@@ -6,7 +6,6 @@
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
   "license": "MIT",
-  "private": true,
   "main": "dist/dutch-postal-code.plugin.js",
   "types": "dist/dutch-postal-code.plugin.d.ts",
   "files": [
