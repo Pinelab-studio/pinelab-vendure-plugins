@@ -1,5 +1,11 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  Permission,
+  RequestContext,
+  UnauthorizedError,
+} from '@vendure/core';
 import gql from 'graphql-tag';
 import { DutchPostalCodePlugin } from './dutch-postal-code.plugin';
 import fetch from 'node-fetch';
@@ -56,10 +62,10 @@ export class PostalCodeResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: { postalCode: string; houseNumber: string }
   ): Promise<DutchAddressLookupResult | undefined> {
-    /*    if (!ctx.channelId || !ctx.session?.token) {
-    // A little sanity check if this call is from a storefront
-          throw new UnauthorizedError();
-        }*/
+    if (!ctx.channelId || !ctx.session?.token) {
+      // A little sanity check if this call is from a storefront
+      throw new UnauthorizedError();
+    }
     const { postalCode, houseNumber } = input;
     const result = await fetch(
       `https://postcode.tech/api/v1/postcode/full?postcode=${postalCode}&number=${houseNumber}`,
