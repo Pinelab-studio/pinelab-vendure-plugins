@@ -1,3 +1,9 @@
 # Pinelab Vendure plugins
-1. Execute `yarn build` in root to build all packages
-1. `yarn lerna:publish` in root to publish packages
+Monorepo with all Vendure plugins created by Pinelab.
+
+## Contributing
+Just create a PR!
+
+## Dev
+1. Run `yarn build` in root to build all packages   
+1. Run `yarn serve` in one of the plugins to start a SQLite pwered dev-server with the plugin installed.
