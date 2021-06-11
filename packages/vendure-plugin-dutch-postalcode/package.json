@@ -4,7 +4,7 @@
   "description": "Vendure plugin for retrieving dutch addresses by postalcode via postcode.tech",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
-  "repository": "https://github.com/martijnvdbrug/shops/tree/master/packages",
+  "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
   "license": "MIT",
   "private": true,
   "main": "dist/dutch-postal-code.plugin.js",
