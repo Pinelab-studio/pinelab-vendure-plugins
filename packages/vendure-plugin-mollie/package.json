@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-mollie",
-  "version": "0.27.0",
+  "version": "0.31.0",
   "description": "Vendure plugin for integration with the Mollie payment platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
