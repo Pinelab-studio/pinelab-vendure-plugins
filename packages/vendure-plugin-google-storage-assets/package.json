@@ -1,0 +1,40 @@
+{
+  "name": "vendure-plugin-google-storage-assets",
+  "version": "0.27.0",
+  "description": "Upload vendure assets to Google storage",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab.studio",
+  "repository": "https://github.com/martijnvdbrug/shops/tree/master/packages/vendure-plugin-google-storage-assets",
+  "license": "MIT",
+  "private": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "test": "jest --preset=\"ts-jest\"",
+    "serve": "ts-node test/dev-server.ts"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^5.8.3"
+  },
+  "peerDependencies": {
+    "sharp": "*"
+  },
+  "devDependencies": {
+    "@types/sharp": "^0.28.0",
+    "@types/tmp": "^0.2.0",
+    "@vendure/admin-ui": "1.0.0-beta.11",
+    "@vendure/admin-ui-plugin": "1.0.0-rc.0",
+    "@vendure/asset-server-plugin": "1.0.0-rc.0",
+    "@vendure/core": "1.0.0-rc.0",
+    "@vendure/testing": "1.0.0-rc.0",
+    "@vendure/ui-devkit": "1.0.0-rc.0",
+    "sharp": "^0.28.1",
+    "ts-jest": "^26.5.5"
+  },
+  "gitHead": "88aecbf0daacf71b110791fc6fcc6dc478670d5a"
+}

@@ -1,0 +1,30 @@
+{
+  "name": "vendure-plugin-webhook",
+  "version": "0.27.0",
+  "description": "Call webhooks on configured events from Vendure",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab.studio",
+  "repository": "https://github.com/martijnvdbrug/shops/tree/master/packages/vendure-plugin-webhook",
+  "license": "MIT",
+  "private": false,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "serve": "ts-node test/dev-server.ts"
+  },
+  "devDependencies": {
+    "@vendure/admin-ui": "1.0.0-beta.11",
+    "@vendure/admin-ui-plugin": "1.0.0-rc.0",
+    "@vendure/asset-server-plugin": "1.0.0-rc.0",
+    "@vendure/core": "1.0.0-rc.0",
+    "@vendure/ui-devkit": "1.0.0-rc.0",
+    "copyfiles": "^2.4.1",
+    "typescript": "4.2.3"
+  },
+  "gitHead": "88aecbf0daacf71b110791fc6fcc6dc478670d5a"
+}

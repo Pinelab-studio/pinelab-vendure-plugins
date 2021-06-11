@@ -1,0 +1,31 @@
+{
+  "name": "vendure-plugin-dutch-postalcode",
+  "version": "0.18.6",
+  "description": "Vendure plugin for retrieving dutch addresses by postalcode via postcode.tech",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab.studio",
+  "repository": "https://github.com/martijnvdbrug/shops/tree/master/packages",
+  "license": "MIT",
+  "private": true,
+  "main": "dist/dutch-postal-code.plugin.js",
+  "types": "dist/dutch-postal-code.plugin.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "test": "jest --preset=\"ts-jest\"",
+    "serve": "yarn ts-node ./test/dev-server"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@vendure/admin-ui": "1.0.0-beta.11",
+    "@vendure/admin-ui-plugin": "1.0.0-rc.0",
+    "@vendure/asset-server-plugin": "1.0.0-rc.0",
+    "@vendure/core": "1.0.0-rc.0",
+    "@vendure/testing": "^1.0.2",
+    "@vendure/ui-devkit": "1.0.0-rc.0",
+    "ts-node": "^9.1.1"
+  }
+}
