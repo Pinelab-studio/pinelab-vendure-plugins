@@ -30,14 +30,14 @@ export class MollieController {
   ): Promise<void> {
     const ctx = await this.createContext(channelToken);
     Logger.info(`Received payment for ${channelToken}`, MolliePlugin.context);
-    const {
-      paymentMethod,
-    } = await this.paymentMethodService.getMethodAndOperations(
-      ctx,
-      `mollie-payment-${channelToken}`
-    );
-    const apiKey = paymentMethod.handler.args.find((a) => a.name === 'apiKey')
-      ?.value;
+    const { paymentMethod } =
+      await this.paymentMethodService.getMethodAndOperations(
+        ctx,
+        `mollie-payment-${channelToken}`
+      );
+    const apiKey = paymentMethod.handler.args.find(
+      (a) => a.name === 'apiKey'
+    )?.value;
     if (!apiKey) {
       throw Error(
         `No apiKey found for mollie-payment for channel ${channelToken}`

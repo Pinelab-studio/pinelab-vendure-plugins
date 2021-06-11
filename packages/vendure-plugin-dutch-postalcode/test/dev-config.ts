@@ -4,7 +4,5 @@ import { DutchPostalCodePlugin } from '../src/dutch-postal-code.plugin';
 
 export const devConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
-  plugins: [
-    DutchPostalCodePlugin.init(process.env.APIKEY as string)
-  ]
+  plugins: [DutchPostalCodePlugin.init(process.env.APIKEY as string)],
 });

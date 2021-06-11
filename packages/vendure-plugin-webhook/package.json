@@ -4,7 +4,7 @@
   "description": "Call webhooks on configured events from Vendure",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
-  "repository": "https://github.com/martijnvdbrug/shops/tree/master/packages/vendure-plugin-webhook",
+  "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
   "main": "dist/index.js",

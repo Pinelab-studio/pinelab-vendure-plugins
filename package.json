@@ -2,9 +2,9 @@
   "name": "pinelab-vendure-plugins",
   "private": true,
   "scripts": {
-    "build": "yarn && yarn lerna exec yarn && yarn lerna run build",
+    "build": "yarn && yarn prettier && yarn lerna exec yarn && yarn lerna run build",
     "publish": "yarn build && yarn lerna publish",
-    "prettier:write": "prettier --write --single-quote \"./**/*.{ts}\""
+    "prettier": "prettier --write --single-quote \"**/*.ts\""
   },
   "devDependencies": {
     "lerna": "^4.0.0",

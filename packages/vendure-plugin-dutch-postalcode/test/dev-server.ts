@@ -1,6 +1,10 @@
 require('dotenv').config();
 import { devConfig } from './dev-config';
-import { createTestEnvironment, registerInitializer, SqljsInitializer } from '@vendure/testing';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
 import { DefaultSearchPlugin, InitialData } from '@vendure/core';
 import { initialData } from '../../test/initialData';
 
@@ -12,6 +16,6 @@ import { initialData } from '../../test/initialData';
   const { server } = createTestEnvironment(devConfig);
   await server.init({
     initialData: initialData as InitialData,
-    productsCsvPath: '../test/products-import.csv'
+    productsCsvPath: '../test/products-import.csv',
   });
 })();
