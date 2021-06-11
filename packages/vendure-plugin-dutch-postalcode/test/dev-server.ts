@@ -12,7 +12,6 @@ import { initialData } from '../../test/initialData';
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   devConfig.plugins.push(DefaultSearchPlugin);
   devConfig.apiOptions.shopApiPlayground = {};
-  // devConfig.plugins.push(AdminUiPlugin.init({ port: 3002, route: 'admin' }));
   const { server } = createTestEnvironment(devConfig);
   await server.init({
     initialData: initialData as InitialData,
