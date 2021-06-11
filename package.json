@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "yarn && yarn prettier && yarn lerna exec yarn && yarn lerna run build",
-    "publish": "yarn build && yarn lerna publish",
+    "lerna:publish": "yarn build && yarn lerna publish",
     "prettier": "prettier --write --single-quote \"**/*.ts\""
   },
   "devDependencies": {
