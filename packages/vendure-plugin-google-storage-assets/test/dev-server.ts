@@ -4,7 +4,12 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { DefaultLogger, DefaultSearchPlugin, LogLevel } from '@vendure/core';
+import {
+  DefaultLogger,
+  DefaultSearchPlugin,
+  LogLevel,
+  InitialData,
+} from '@vendure/core';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { GoogleStorageStrategy } from '../src/google-storage-strategy';
 import { GoogleStoragePlugin } from '../src/google-storage-plugin';
@@ -25,14 +30,13 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
     })
   );
   testConfig.plugins.push(GoogleStoragePlugin);
-
   testConfig.plugins.push(DefaultSearchPlugin);
   testConfig.plugins.push(AdminUiPlugin.init({ route: 'admin', port: 3002 }));
   testConfig.apiOptions.shopApiPlayground = {};
   testConfig.apiOptions.adminApiPlayground = {};
   const { server } = createTestEnvironment(testConfig);
   await server.init({
-    initialData,
+    initialData: initialData as InitialData,
     productsCsvPath: '../test/products-import.csv',
   });
 })();

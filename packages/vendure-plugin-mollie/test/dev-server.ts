@@ -1,20 +1,27 @@
 require('dotenv').config();
-import { devConfig } from './dev-config';
+import { MolliePlugin } from '../src';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
+  testConfig,
 } from '@vendure/testing';
-import { DefaultSearchPlugin } from '@vendure/core';
+import {
+  DefaultLogger,
+  InitialData,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import { initialData } from '../../test/initialData';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
 (async () => {
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
+    plugins: [MolliePlugin, AdminUiPlugin.init({ port: 3002, route: 'admin' })],
+  });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  devConfig.plugins.push(DefaultSearchPlugin);
-  devConfig.plugins.push(AdminUiPlugin.init({ port: 3002, route: 'admin' }));
-
-  const { server } = createTestEnvironment(devConfig);
+  const { server } = createTestEnvironment(config);
   await server.init({
     initialData: {
       ...initialData,
@@ -30,7 +37,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
           },
         },
       ],
-    },
+    } as InitialData,
     productsCsvPath: '../test/products-import.csv',
   });
 })();

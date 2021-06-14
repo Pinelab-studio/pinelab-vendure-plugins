@@ -8,8 +8,8 @@ Events are specified in `vendure-config` and webhooks are configured in the data
 The plugin adds an entity `WebhookPerChannelEntity` to your database.
 Don't forget to run a migration OR `synchronize: true` if you like living on the edge.
 
-## sendcloud.dev-config.ts
-Configure which events should trigger a webhook call in `sendcloud.dev-config.ts`. HttpMethod can be POST (empty body) or GET.
+## vendure-config.ts
+Configure which events should trigger a webhook call in `vendure-config.ts`. HttpMethod can be POST (empty body) or GET.
 ```js
 import {WebhookPlugin} from 'vendure-plugin-webhook';
 
@@ -39,7 +39,7 @@ compileUiExtensions({
     process.exit(0);
 });
 ```
-Then, in your `sendcloud.dev-config.ts` add
+Then, in your `vendure-config.ts` add
 ```js
         AdminUiPlugin.init({
             port: 3002,
