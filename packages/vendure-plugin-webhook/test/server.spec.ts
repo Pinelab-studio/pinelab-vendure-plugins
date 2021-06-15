@@ -42,7 +42,7 @@ describe('Mollie plugin', function () {
             CollectionModificationEvent,
           ],
         }),
-      ],
+      ]
     });
 
     const { server } = createTestEnvironment(config);

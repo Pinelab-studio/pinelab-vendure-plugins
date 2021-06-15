@@ -38,3 +38,4 @@ vendure/static/email/test-emails/
 !/vendure/src/__admin-ui/dist/
 
 /packages/vendure-plugin-google-storage-assets/__data__/
+__admin-ui/
