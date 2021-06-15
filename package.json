@@ -8,7 +8,9 @@
     "prettier": "prettier --write --single-quote \"**/*.ts\""
   },
   "devDependencies": {
+    "husky": "^6.0.0",
     "lerna": "^4.0.0",
-    "prettier": "^2.3.1"
+    "prettier": "^2.3.1",
+    "pretty-quick": "^3.1.0"
   }
 }
