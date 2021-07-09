@@ -1,5 +1,5 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { PostalCodeResolver } from './postal-code.resolver';
+import { PluginCommonModule, VendurePlugin } from "@vendure/core";
+import { PostalCodeResolver } from "./postal-code.resolver";
 
 @VendurePlugin({
   imports: [PluginCommonModule],

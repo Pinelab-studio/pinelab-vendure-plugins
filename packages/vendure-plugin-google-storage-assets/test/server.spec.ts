@@ -3,25 +3,25 @@ import {
   registerInitializer,
   SqljsInitializer,
   testConfig,
-} from '@vendure/testing';
-import { initialData } from '../../test/initialData';
+} from "@vendure/testing";
+import { initialData } from "../../test/initialData";
 import {
   DefaultLogger,
   InitialData,
   LogLevel,
   mergeConfig,
-} from '@vendure/core';
-import { TestServer } from '@vendure/testing/lib/test-server';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
-import { GoogleStorageStrategy } from '../src';
-import { GoogleStoragePlugin } from '../dist';
+} from "@vendure/core";
+import { TestServer } from "@vendure/testing/lib/test-server";
+import { AssetServerPlugin } from "@vendure/asset-server-plugin";
+import { GoogleStorageStrategy } from "../src";
+import { GoogleStoragePlugin } from "../dist";
 
 jest.setTimeout(20000);
-describe('Google Storage Assets plugin', () => {
+describe("Google Storage Assets plugin", () => {
   let testServer: TestServer;
 
-  it('Server should start', async () => {
-    registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  it("Server should start", async () => {
+    registerInitializer("sqljs", new SqljsInitializer("__data__"));
     const config = mergeConfig(testConfig, {
       apiOptions: {
         port: 3102,
@@ -31,10 +31,10 @@ describe('Google Storage Assets plugin', () => {
         AssetServerPlugin.init({
           storageStrategyFactory: () =>
             new GoogleStorageStrategy({
-              bucketName: 'testBucket',
+              bucketName: "testBucket",
             }),
-          route: 'assets',
-          assetUploadDir: '/tmp/vendure/assets',
+          route: "assets",
+          assetUploadDir: "/tmp/vendure/assets",
         }),
         GoogleStoragePlugin,
       ],
@@ -43,7 +43,7 @@ describe('Google Storage Assets plugin', () => {
     testServer = server;
     const serverStart = server.init({
       initialData: initialData as InitialData,
-      productsCsvPath: '../test/products-import.csv',
+      productsCsvPath: "../test/products-import.csv",
     });
     await expect(serverStart).resolves.toEqual(undefined);
   });

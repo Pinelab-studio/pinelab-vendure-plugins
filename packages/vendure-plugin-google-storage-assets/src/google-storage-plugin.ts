@@ -1,6 +1,6 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { assetThumbnailSchema } from './asset-thumbnail.schema';
-import { AssetThumbnailResolvers } from './asset-thumbnail.resolvers';
+import { PluginCommonModule, VendurePlugin } from "@vendure/core";
+import { assetThumbnailSchema } from "./asset-thumbnail.schema";
+import { AssetThumbnailResolvers } from "./asset-thumbnail.resolvers";
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -14,5 +14,5 @@ import { AssetThumbnailResolvers } from './asset-thumbnail.resolvers';
   },
 })
 export class GoogleStoragePlugin {
-  context = 'GoogleStoragePlugin';
+  context = "GoogleStoragePlugin";
 }

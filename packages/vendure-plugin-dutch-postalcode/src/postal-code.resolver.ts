@@ -1,14 +1,14 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Query, Resolver } from "@nestjs/graphql";
 import {
   Allow,
   Ctx,
   Permission,
   RequestContext,
   UnauthorizedError,
-} from '@vendure/core';
-import gql from 'graphql-tag';
-import { DutchPostalCodePlugin } from './dutch-postal-code.plugin';
-import fetch from 'node-fetch';
+} from "@vendure/core";
+import gql from "graphql-tag";
+import { DutchPostalCodePlugin } from "./dutch-postal-code.plugin";
+import fetch from "node-fetch";
 
 interface DutchAddressLookupResult {
   postalCode: string;
@@ -60,7 +60,7 @@ export class PostalCodeResolver {
   @Allow(Permission.Public)
   async dutchAddressLookup(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: { postalCode: string; houseNumber: string }
+    @Args("input") input: { postalCode: string; houseNumber: string }
   ): Promise<DutchAddressLookupResult | undefined> {
     if (!ctx.channelId || !ctx.session?.token) {
       // A little sanity check if this call is from a storefront

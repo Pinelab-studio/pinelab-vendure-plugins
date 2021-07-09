@@ -1,4 +1,4 @@
-import { VendureEvent } from '@vendure/core';
+import { VendureEvent } from "@vendure/core";
 
 export interface WebhookPluginOptions {
   /**
@@ -13,7 +13,7 @@ export interface WebhookPluginOptions {
   /**
    * Do an empty POST or a GET request
    */
-  httpMethod: 'GET' | 'POST';
+  httpMethod: "GET" | "POST";
   /**
    * Wait for more events for the same channel before calling webhook
    * Delay is in ms

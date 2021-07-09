@@ -1,3 +1,3 @@
-export * from './mollie.plugin';
-export * from './';
-export * from './';
+export * from "./mollie.plugin";
+export * from "./";
+export * from "./";

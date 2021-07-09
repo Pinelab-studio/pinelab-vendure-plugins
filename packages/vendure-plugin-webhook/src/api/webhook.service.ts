@@ -1,9 +1,9 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { EventBus } from '@vendure/core';
-import { Connection } from 'typeorm';
-import { WebhookPerChannelEntity } from './webhook-per-channel.entity';
-import { WebhookPlugin } from '../webhook.plugin';
-import fetch from 'node-fetch';
+import { Injectable, OnModuleInit } from "@nestjs/common";
+import { EventBus } from "@vendure/core";
+import { Connection } from "typeorm";
+import { WebhookPerChannelEntity } from "./webhook-per-channel.entity";
+import { WebhookPlugin } from "../webhook.plugin";
+import fetch from "node-fetch";
 
 /**
  * Service for updating and retrieving webhooks from db

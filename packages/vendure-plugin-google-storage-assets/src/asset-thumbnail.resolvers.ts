@@ -1,12 +1,12 @@
-import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
-import { Asset, ConfigService, Ctx, RequestContext } from '@vendure/core';
+import { Parent, ResolveField, Resolver } from "@nestjs/graphql";
+import { Asset, ConfigService, Ctx, RequestContext } from "@vendure/core";
 
 @Resolver()
 export class AssetThumbnailResolvers {
   constructor(private configService: ConfigService) {}
 
-  @ResolveField('thumbnail')
-  @Resolver('Asset')
+  @ResolveField("thumbnail")
+  @Resolver("Asset")
   thumbnail(@Ctx() ctx: RequestContext, @Parent() asset: Asset): string {
     const { assetOptions } = this.configService;
     if (assetOptions.assetStorageStrategy.toAbsoluteUrl) {
