@@ -1510,17 +1510,17 @@
   resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.8.2.tgz#808c9fa7e4517274ed555fa158f2de4b4f468e71"
   integrity sha512-HrCIVMLjE1MOozVoD86622S7aunluLb2PJdPfb3nYiEtohm8mIB/vyv0Fd37AdeMFrTUQXEunw78YloMA3Qilg==
 
-"@vendure/admin-ui-plugin@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/admin-ui-plugin/-/admin-ui-plugin-1.0.2.tgz#087171f5d85850b3b57f12e6148f435dc086ebb1"
-  integrity sha512-7pmNppiVRF8gAP47FK3BQa+ftHxsGPqB/HQqwZDWNiq4ThFCGi5r+gJrL9KKnipuHsMq7ZMdLzu3PDL4HivXuQ==
+"@vendure/admin-ui-plugin@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/admin-ui-plugin/-/admin-ui-plugin-1.1.0.tgz#ae8809cb5a121d13d10482be5c2c1f6fb7fddaa1"
+  integrity sha512-w7AuTkhzKitI9jEWYabZLbVrTZ+2MslZD0kzrD/NWh6a8GQpLa6Nod+VHQy8FV2/6DR5MqGl/Lgm8LblX4Sfsw==
   dependencies:
     fs-extra "^9.0.1"
 
-"@vendure/admin-ui@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/admin-ui/-/admin-ui-1.0.2.tgz#5063a316a8cddafda420dc3765e7311c0c8c56d4"
-  integrity sha512-Q5z++sdzICdW29z5FzXTpPQLIE9WdZY830btBS59OskwCpMuGyhcd3f+YYjP4gov9sIQSNlbQpJ//jYXrtaAHA==
+"@vendure/admin-ui@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/admin-ui/-/admin-ui-1.1.0.tgz#4c129f56c15ac5fca1ccc5ecab0f1e4a2d36133c"
+  integrity sha512-nuJOy8kPrMr5VvwoTDEZ2mQssJJrRRQ0E6vLvOJqg6amjW8E/eJZZvmdckYiDkllUL+uwrvT989VQG1WBFME0g==
   dependencies:
     "@angular/animations" "11.2.5"
     "@angular/cdk" "11.2.4"
@@ -1541,7 +1541,7 @@
     "@ng-select/ng-select" "^6.1.0"
     "@ngx-translate/core" "^13.0.0"
     "@ngx-translate/http-loader" "^6.0.0"
-    "@vendure/common" "^1.0.2"
+    "@vendure/common" "^1.1.0"
     "@webcomponents/custom-elements" "^1.4.3"
     apollo-angular "^2.4.0"
     apollo-upload-client "^14.1.3"
@@ -1565,24 +1565,24 @@
     tslib "^2.1.0"
     zone.js "~0.11.4"
 
-"@vendure/asset-server-plugin@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/asset-server-plugin/-/asset-server-plugin-1.0.2.tgz#e4d8b32aa6350cc6a16879dd1cebb7276681201d"
-  integrity sha512-2ujQDw4YsfCWolD3fht4jD8OggOgRx5PP5yGO6/VOMXVfGmAKCIeYTLuO0EHPPWohrCDpwwRY7VDG1beadBq6g==
+"@vendure/asset-server-plugin@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/asset-server-plugin/-/asset-server-plugin-1.1.0.tgz#c520ec5f853c21db9645a4292eb274510fa13b59"
+  integrity sha512-PShJXf044FyyXaFtM+SfH5tRxhBG2IG4c3WtYzunRLo7xvM1lXzcEiMreYE2aA1b+2q7re1hA85Q02JWI5fGaA==
   dependencies:
     file-type "^16.2.0"
     fs-extra "^9.1.0"
-    sharp "0.28.0"
+    sharp "~0.28.3"
 
-"@vendure/common@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.0.2.tgz#858d963f7309fb80fed76414865a62eedfb3f2ce"
-  integrity sha512-9wdbPDX790cUajOsKnjaauGSHvwK1c0oHQJHwK83BAOGCDhbu1+bHsSu2Wa5OzKJ9797Z/wZjJQGn+DGVDAqcg==
+"@vendure/common@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.1.0.tgz#83b28f9280286ba0483ece8aae7ce43da9a93c5b"
+  integrity sha512-vq0GuZEgFsLHGnXPWRZHhpn3d13hizn86BvpuX5E+XJWdyeIErckWwqXqg31aPz/Z8rR0rbmBFuZPNoq9tTsvQ==
 
-"@vendure/core@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.0.2.tgz#150b5552608dbbccca2b0a22f931012fabec3758"
-  integrity sha512-MlQgHOfLz1cmIRwHwXM/iElUiH4v5wTktH2c8xSHwKjlohN8cpzm7/zS2inlbvA2ujVMqsMGBG6vUqoCL0VPjw==
+"@vendure/core@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.1.0.tgz#558a5cee6dfc4015e55a97e95351b9572cedc1c1"
+  integrity sha512-WHZTHj9ID0c2JrItlCk0Zsg0MdGq2MPFzpDxnCPU6cs/4YQkD5F5jOBzUx36TOh2VJf3ILB+oiIom/nzH09T4A==
   dependencies:
     "@graphql-tools/stitch" "^7.5.3"
     "@nestjs/common" "7.6.17"
@@ -1593,7 +1593,7 @@
     "@nestjs/testing" "7.6.17"
     "@nestjs/typeorm" "7.1.5"
     "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^1.0.2"
+    "@vendure/common" "^1.1.0"
     apollo-server-express "2.24.1"
     bcrypt "^5.0.0"
     body-parser "^1.19.0"
@@ -1615,19 +1615,19 @@
     image-size "^0.9.1"
     mime-types "^2.1.27"
     ms "^2.1.2"
-    nanoid "^2.1.11"
+    nanoid "^3.1.23"
     progress "^2.0.3"
     reflect-metadata "^0.1.13"
     rxjs "^6.6.3"
     typeorm "0.2.31"
 
-"@vendure/testing@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.0.2.tgz#ddcf92953da1fde699d602928357ba316db4c4f6"
-  integrity sha512-dDvWYc8Do1r6N+OT9f7bwGMQZ/hc2O+NiFWJ6ajTfMEmZvaz/JULfghx/PQlfG48S5n08EHvQI5j5VFJZmYkWw==
+"@vendure/testing@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.1.0.tgz#b00c6a957d4ea19f71963cfe029db10b37c5ffdc"
+  integrity sha512-z97Ho7hO5h8pNA5KFlK/MkX8wEfaoY9spEnxYT1fSqwAoYVAmArw/RQJ7CqyzPavIqbJhGXCGtzPwBxHIb8cNw==
   dependencies:
     "@types/node-fetch" "^2.5.4"
-    "@vendure/common" "^1.0.2"
+    "@vendure/common" "^1.1.0"
     faker "^4.1.0"
     form-data "^3.0.0"
     graphql "15.5.0"
@@ -5018,10 +5018,10 @@ mz@^2.4.0:
     object-assign "^4.0.1"
     thenify-all "^1.0.0"
 
-nanoid@^2.1.11:
-  version "2.1.11"
-  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-2.1.11.tgz#ec24b8a758d591561531b4176a01e3ab4f0f0280"
-  integrity sha512-s/snB+WGm6uwi0WjsZdaVcuf3KJXlfGl2LcxgwkEwJF0D/BWzVWAZW/XY4bFaiR7s0Jk3FPvlnepg1H1b1UwlA==
+nanoid@^3.1.23:
+  version "3.1.23"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.23.tgz#f744086ce7c2bc47ee0a8472574d5c78e4183a81"
+  integrity sha512-FiB0kzdP0FFVGDKlRLEQ1BgDzU87dy5NnzjeW9YZNt+/c3+q82EQDUwniSAUxp/F0gFNI1ZhKU1FqYsMuqZVnw==
 
 napi-build-utils@^1.0.1:
   version "1.0.2"
@@ -5069,6 +5069,11 @@ node-addon-api@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-3.1.0.tgz#98b21931557466c6729e51cb77cd39c965f42239"
   integrity sha512-flmrDNB06LIl5lywUz7YlNGZH/5p0M7W28k8hzd9Lshtdh1wshD2Y+U4h9LD6KObOy1f+fEVdgprPrEymjM5uw==
+
+node-addon-api@^3.2.0:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-3.2.1.tgz#81325e0a2117789c0128dab65e7e38f07ceba161"
+  integrity sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==
 
 node-fetch@^2.2.0, node-fetch@^2.3.0, node-fetch@^2.6.0, node-fetch@^2.6.1:
   version "2.6.1"
@@ -5384,7 +5389,7 @@ pkg-dir@^4.2.0:
   dependencies:
     find-up "^4.0.0"
 
-prebuild-install@^6.0.1, prebuild-install@^6.1.2:
+prebuild-install@^6.1.2:
   version "6.1.2"
   resolved "https://registry.yarnpkg.com/prebuild-install/-/prebuild-install-6.1.2.tgz#6ce5fc5978feba5d3cbffedca0682b136a0b5bff"
   integrity sha512-PzYWIKZeP+967WuKYXlTOhYBgGOvTRSfaKI89XnfJ0ansRAH7hDU45X+K+FZeI1Wb/7p/NnuctPH3g0IqKUuSQ==
@@ -5909,20 +5914,6 @@ sha.js@^2.4.11:
     inherits "^2.0.1"
     safe-buffer "^5.0.1"
 
-sharp@0.28.0:
-  version "0.28.0"
-  resolved "https://registry.yarnpkg.com/sharp/-/sharp-0.28.0.tgz#93297cec530b3709e11677cf41565d9a654075a0"
-  integrity sha512-kGTaWLNMCkLYxkH2Pv7s+5LQBnWQ4mRKXs1XD19AWOxShWvU8b78qaWqTR/4ryNcPORO+qBoBnFF/Lzda5HgkQ==
-  dependencies:
-    color "^3.1.3"
-    detect-libc "^1.0.3"
-    node-addon-api "^3.1.0"
-    prebuild-install "^6.0.1"
-    semver "^7.3.5"
-    simple-get "^3.1.0"
-    tar-fs "^2.1.1"
-    tunnel-agent "^0.6.0"
-
 sharp@^0.28.1:
   version "0.28.2"
   resolved "https://registry.yarnpkg.com/sharp/-/sharp-0.28.2.tgz#31c6ebdf8ddb9b4ca3e30179e3f4a73f0c7474e4"
@@ -5931,6 +5922,20 @@ sharp@^0.28.1:
     color "^3.1.3"
     detect-libc "^1.0.3"
     node-addon-api "^3.1.0"
+    prebuild-install "^6.1.2"
+    semver "^7.3.5"
+    simple-get "^3.1.0"
+    tar-fs "^2.1.1"
+    tunnel-agent "^0.6.0"
+
+sharp@~0.28.3:
+  version "0.28.3"
+  resolved "https://registry.yarnpkg.com/sharp/-/sharp-0.28.3.tgz#ecd74cefd020bee4891bb137c9850ee2ce277a8b"
+  integrity sha512-21GEP45Rmr7q2qcmdnjDkNP04Ooh5v0laGS5FDpojOO84D1DJwUijLiSq8XNNM6e8aGXYtoYRh3sVNdm8NodMA==
+  dependencies:
+    color "^3.1.3"
+    detect-libc "^1.0.3"
+    node-addon-api "^3.2.0"
     prebuild-install "^6.1.2"
     semver "^7.3.5"
     simple-get "^3.1.0"

@@ -3,28 +3,29 @@ import {
   registerInitializer,
   SqljsInitializer,
   testConfig,
-} from '@vendure/testing';
+} from "@vendure/testing";
 import {
   CollectionModificationEvent,
   DefaultLogger,
   DefaultSearchPlugin,
+  InitialData,
   LogLevel,
   ProductEvent,
   ProductVariantChannelEvent,
   ProductVariantEvent,
-} from '@vendure/core';
-import { initialData } from '../../test/initialData';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { WebhookPlugin } from '../src';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import * as path from 'path';
+} from "@vendure/core";
+import { initialData } from "../../test/initialData";
+import { AdminUiPlugin } from "@vendure/admin-ui-plugin";
+import { WebhookPlugin } from "../src";
+import { compileUiExtensions } from "@vendure/ui-devkit/compiler";
+import * as path from "path";
 
 (async () => {
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
-  registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  registerInitializer("sqljs", new SqljsInitializer("__data__"));
   testConfig.plugins.push(
     WebhookPlugin.init({
-      httpMethod: 'POST',
+      httpMethod: "POST",
       delay: 3000,
       events: [
         ProductEvent,
@@ -37,10 +38,10 @@ import * as path from 'path';
   testConfig.plugins.push(DefaultSearchPlugin);
   testConfig.plugins.push(
     AdminUiPlugin.init({
-      route: 'admin',
+      route: "admin",
       port: 3002,
       app: compileUiExtensions({
-        outputPath: path.join(__dirname, '__admin-ui'),
+        outputPath: path.join(__dirname, "__admin-ui"),
         extensions: [WebhookPlugin.ui],
         devMode: true,
       }),
@@ -50,7 +51,7 @@ import * as path from 'path';
   testConfig.apiOptions.adminApiPlayground = {};
   const { server } = createTestEnvironment(testConfig);
   await server.init({
-    initialData,
-    productsCsvPath: '../test/products-import.csv',
+    initialData: initialData as InitialData,
+    productsCsvPath: "../test/products-import.csv",
   });
 })();

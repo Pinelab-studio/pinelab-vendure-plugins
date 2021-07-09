@@ -1,0 +1,33 @@
+{
+  "name": "vendure-plugin-google-pubsub-push",
+  "version": "0.18.6",
+  "description": "Vendure plugin for using worker jobs with Google PubSub push subscriptions",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab.studio",
+  "repository": "https://github.com/martijnvdbrug/shops/tree/master/packages/dev-server",
+  "license": "MIT",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "test": "jest --preset=\"ts-jest\"",
+    "serve": "ts-node test/dev-server.ts"
+  },
+  "dependencies": {
+    "@google-cloud/tasks": "^2.3.4"
+  },
+  "devDependencies": {
+    "@types/localtunnel": "^2.0.0",
+    "@vendure/core": "1.1.0",
+    "@vendure/testing": "1.1.0",
+    "@vendure/admin-ui-plugin": "1.1.0",
+    "ngrok": "^4.0.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.3.5"
+  }
+}

@@ -1,6 +1,11 @@
 {
   "name": "pinelab-vendure-plugins",
   "private": true,
+  "keywords": [
+    "vendure",
+    "vendure-plugins",
+    "vendure-pcakges"
+  ],
   "scripts": {
     "build": "yarn && yarn prettier && yarn lerna exec yarn && yarn lerna run build",
     "test": "yarn lerna run test",
