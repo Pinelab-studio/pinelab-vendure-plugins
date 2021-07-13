@@ -2,9 +2,9 @@ import {
   PluginCommonModule,
   RuntimeVendureConfig,
   VendurePlugin,
-} from "@vendure/core";
-import { MollieController } from "./mollie.controller";
-import { molliePaymentHandler } from "./mollie.handler";
+} from '@vendure/core';
+import { MollieController } from './mollie.controller';
+import { molliePaymentHandler } from './mollie.handler';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -15,7 +15,7 @@ import { molliePaymentHandler } from "./mollie.handler";
   },
 })
 export class MolliePlugin {
-  static context = "MolliePlugin";
+  static context = 'MolliePlugin';
   static host: string;
 
   /**

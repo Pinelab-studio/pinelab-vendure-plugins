@@ -1,11 +1,11 @@
-import { PluginCommonModule, VendurePlugin } from "@vendure/core";
-import { AdminUiExtension } from "@vendure/ui-devkit/compiler";
-import path from "path";
-import { WebhookPerChannelEntity } from "./api/webhook-per-channel.entity";
-import { schema } from "./api/schema";
-import { WebhookPluginOptions } from "./api/webhook-plugin-options";
-import { WebhookResolver } from "./api/webhook.resolver";
-import { WebhookService } from "./api/webhook.service";
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
+import { WebhookPerChannelEntity } from './api/webhook-per-channel.entity';
+import { schema } from './api/schema';
+import { WebhookPluginOptions } from './api/webhook-plugin-options';
+import { WebhookResolver } from './api/webhook.resolver';
+import { WebhookService } from './api/webhook.service';
 
 /**
  * Calls a configurable webhook when configured events arise.
@@ -28,18 +28,18 @@ export class WebhookPlugin {
     return WebhookPlugin;
   }
   static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, "ui"),
+    extensionPath: path.join(__dirname, 'ui'),
     ngModules: [
       {
-        type: "lazy",
-        route: "webhook",
-        ngModuleFileName: "webhook.module.ts",
-        ngModuleName: "WebhookModule",
+        type: 'lazy',
+        route: 'webhook',
+        ngModuleFileName: 'webhook.module.ts',
+        ngModuleName: 'WebhookModule',
       },
       {
-        type: "shared",
-        ngModuleFileName: "webhook-nav.module.ts",
-        ngModuleName: "WebhookNavModule",
+        type: 'shared',
+        ngModuleFileName: 'webhook-nav.module.ts',
+        ngModuleName: 'WebhookNavModule',
       },
     ],
   };

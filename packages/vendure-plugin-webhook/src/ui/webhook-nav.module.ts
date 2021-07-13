@@ -1,5 +1,5 @@
-import { NgModule } from "@angular/core";
-import { addNavMenuItem, SharedModule } from "@vendure/admin-ui/core";
+import { NgModule } from '@angular/core';
+import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
 
 /**
  * This module adds the webhook-sections to existing nav
@@ -9,12 +9,12 @@ import { addNavMenuItem, SharedModule } from "@vendure/admin-ui/core";
   providers: [
     addNavMenuItem(
       {
-        id: "webhook",
-        label: "Webhook",
-        routerLink: ["/extensions/webhook"],
-        icon: "cloud-traffic",
+        id: 'webhook',
+        label: 'Webhook',
+        routerLink: ['/extensions/webhook'],
+        icon: 'cloud-traffic',
       },
-      "settings"
+      'settings'
     ),
   ],
 })

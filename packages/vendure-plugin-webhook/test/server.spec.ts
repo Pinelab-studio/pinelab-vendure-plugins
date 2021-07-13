@@ -3,8 +3,8 @@ import {
   registerInitializer,
   SqljsInitializer,
   testConfig,
-} from "@vendure/testing";
-import { initialData } from "../../test/initialData";
+} from '@vendure/testing';
+import { initialData } from '../../test/initialData';
 import {
   CollectionModificationEvent,
   DefaultLogger,
@@ -14,17 +14,17 @@ import {
   ProductEvent,
   ProductVariantChannelEvent,
   ProductVariantEvent,
-} from "@vendure/core";
-import { WebhookPlugin } from "../src";
-import { TestServer } from "@vendure/testing/lib/test-server";
+} from '@vendure/core';
+import { WebhookPlugin } from '../src';
+import { TestServer } from '@vendure/testing/lib/test-server';
 
 jest.setTimeout(20000);
 
-describe("Mollie plugin", function () {
+describe('Mollie plugin', function () {
   let testServer: TestServer;
 
-  it("Server should start", async () => {
-    registerInitializer("sqljs", new SqljsInitializer("__data__"));
+  it('Server should start', async () => {
+    registerInitializer('sqljs', new SqljsInitializer('__data__'));
 
     const config = mergeConfig(testConfig, {
       apiOptions: {
@@ -33,7 +33,7 @@ describe("Mollie plugin", function () {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         WebhookPlugin.init({
-          httpMethod: "POST",
+          httpMethod: 'POST',
           delay: 3000,
           events: [
             ProductEvent,
@@ -49,7 +49,7 @@ describe("Mollie plugin", function () {
     testServer = server;
     const serverStart = server.init({
       initialData: initialData as InitialData,
-      productsCsvPath: "../test/products-import.csv",
+      productsCsvPath: '../test/products-import.csv',
     });
     await expect(serverStart).resolves.toEqual(undefined);
   });

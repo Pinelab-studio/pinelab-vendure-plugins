@@ -1,4 +1,3 @@
 {
-  "singleQuote": true,
-  "files": ["*.ts", "*.js"]
+  "singleQuote": true
 }

@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from "@nestjs/common";
+import { Body, Controller, Param, Post } from '@nestjs/common';
 import {
   ChannelService,
   LanguageCode,
@@ -8,12 +8,12 @@ import {
   PaymentMethodService,
   RequestContext,
   TransactionalConnection,
-} from "@vendure/core";
-import createMollieClient, { PaymentStatus } from "@mollie/api-client";
-import { PaymentStateMachine } from "@vendure/core/dist/service/helpers/payment-state-machine/payment-state-machine";
-import { MolliePlugin } from "./mollie.plugin";
+} from '@vendure/core';
+import createMollieClient, { PaymentStatus } from '@mollie/api-client';
+import { PaymentStateMachine } from '@vendure/core/dist/service/helpers/payment-state-machine/payment-state-machine';
+import { MolliePlugin } from './mollie.plugin';
 
-@Controller("payments")
+@Controller('payments')
 export class MollieController {
   constructor(
     private orderService: OrderService,
@@ -23,9 +23,9 @@ export class MollieController {
     private paymentStateMachine: PaymentStateMachine
   ) {}
 
-  @Post("mollie/:channelToken")
+  @Post('mollie/:channelToken')
   async webhook(
-    @Param("channelToken") channelToken: string,
+    @Param('channelToken') channelToken: string,
     @Body() body: any
   ): Promise<void> {
     const ctx = await this.createContext(channelToken);
@@ -36,7 +36,7 @@ export class MollieController {
         `mollie-payment-${channelToken}`
       );
     const apiKey = paymentMethod.handler.args.find(
-      (a) => a.name === "apiKey"
+      (a) => a.name === 'apiKey'
     )?.value;
     if (!apiKey) {
       throw Error(
@@ -68,7 +68,7 @@ export class MollieController {
         ctx,
         order!,
         dbPayment,
-        "Declined"
+        'Declined'
       );
       Logger.info(
         `Payment for order ${molliePayment.metadata.orderCode} declined!`,
@@ -80,7 +80,7 @@ export class MollieController {
   private async createContext(channelToken: string): Promise<RequestContext> {
     const channel = await this.channelService.getChannelFromToken(channelToken);
     return new RequestContext({
-      apiType: "admin",
+      apiType: 'admin',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
       channel,

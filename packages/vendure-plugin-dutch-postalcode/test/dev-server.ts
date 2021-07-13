@@ -1,19 +1,19 @@
-require("dotenv").config();
-import { DutchPostalCodePlugin } from "../dist/dutch-postal-code.plugin";
+require('dotenv').config();
+import { DutchPostalCodePlugin } from '../dist/dutch-postal-code.plugin';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
-} from "@vendure/testing";
+} from '@vendure/testing';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
   InitialData,
   LogLevel,
   mergeConfig,
-} from "@vendure/core";
-import { initialData } from "../../test/initialData";
+} from '@vendure/core';
+import { initialData } from '../../test/initialData';
 
 (async () => {
   const config = mergeConfig(testConfig, {
@@ -26,10 +26,10 @@ import { initialData } from "../../test/initialData";
       shopApiPlayground: {},
     },
   });
-  registerInitializer("sqljs", new SqljsInitializer("__data__"));
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const { server } = createTestEnvironment(config);
   await server.init({
     initialData: initialData as InitialData,
-    productsCsvPath: "../test/products-import.csv",
+    productsCsvPath: '../test/products-import.csv',
   });
 })();

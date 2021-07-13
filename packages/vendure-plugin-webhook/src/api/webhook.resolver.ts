@@ -1,7 +1,7 @@
-import { Args, Mutation, Resolver, Query } from "@nestjs/graphql";
-import { Allow, Ctx, RequestContext } from "@vendure/core";
-import { Permission } from "@vendure/core";
-import { WebhookService } from "./webhook.service";
+import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
+import { Allow, Ctx, RequestContext } from '@vendure/core';
+import { Permission } from '@vendure/core';
+import { WebhookService } from './webhook.service';
 
 /**
  * Graphql resolvers for retrieving and updating webhook for channel
@@ -23,7 +23,7 @@ export class WebhookResolver {
   @Allow(Permission.UpdateSettings)
   async updateWebhook(
     @Ctx() ctx: RequestContext,
-    @Args("url") url: string
+    @Args('url') url: string
   ): Promise<string | undefined> {
     const webhook = await this.webhookService.saveWebhook(
       url,
