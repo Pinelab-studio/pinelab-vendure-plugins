@@ -1,7 +1,7 @@
 {
-  "name": "vendure-plugin-google-pubsub-push",
-  "version": "0.18.6",
-  "description": "Vendure plugin for using worker jobs with Google PubSub push subscriptions",
+  "name": "vendure-plugin-google-cloud-tasks",
+  "version": "0.1.0",
+  "description": "Vendure plugin for using worker jobs with Google CloudTasks",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/martijnvdbrug/shops/tree/master/packages/dev-server",

@@ -3,11 +3,11 @@ import {
   PluginCommonModule,
   RuntimeVendureConfig,
   VendurePlugin,
-} from "@vendure/core";
-import { CloudTasksJobQueueStrategy } from "./cloud-tasks-job-queue.strategy";
-import { CloudTasksHandler } from "./cloud-tasks.handler";
-import bodyParser from "body-parser";
-import http from "http";
+} from '@vendure/core';
+import { CloudTasksJobQueueStrategy } from './cloud-tasks-job-queue.strategy';
+import { CloudTasksHandler } from './cloud-tasks.handler';
+import bodyParser from 'body-parser';
+import http from 'http';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -20,7 +20,7 @@ import http from "http";
   },
 })
 export class CloudTasksPlugin {
-  static loggerCtx = "CloudTaskPlugin";
+  static loggerCtx = 'CloudTaskPlugin';
   static options: CloudTaskOptions;
 
   static init(options: CloudTaskOptions): typeof CloudTasksPlugin {
@@ -33,8 +33,16 @@ export interface CloudTaskOptions {
   taskHandlerHost: string;
   projectId: string;
   location: string;
+  authSecret: string;
   /**
    * Optional suffix, I.E. for differentiating between test, acc and prod queues
    */
   queueSuffix?: string;
+}
+
+export interface CloudTaskMessage {
+  id: string;
+  data: unknown;
+  queueName: string;
+  createdAt: Date;
 }
