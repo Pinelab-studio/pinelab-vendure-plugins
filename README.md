@@ -30,6 +30,12 @@ Vendure plugin for handling payments via Mollie platform.
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-dutch-postalcode/dev/@vendure/core)  
 Vendure plugin for looking up Dutch addresses based on given postalCode and houseNumber. Uses postcode.tech API.
 
+## Cloud Tasks Job plugin
+
+[![webhook plugin version](https://img.shields.io/npm/v/vendure-plugin-google-cloud-tasks)](https://www.npmjs.com/package/vendure-plugin-google-cloud-tasks)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-dutch-postalcode/dev/@vendure/core)  
+Vendure plugin using Google Cloud Tasks as queue for job processing.
+
 ## Contributing
 
 Just create a PR!

@@ -1,5 +1,7 @@
 # Google Cloud Tasks Vendure Plugin
 
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-cloud-tasks/dev/@vendure/core)
+
 Plugin for using Vendure worker with Google Cloud Tasks. Some services, like Google Cloud Run,
 don't allow any processing outside the request context, including PubSub pull subscriptions.
 
