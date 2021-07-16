@@ -7,7 +7,7 @@
     "vendure-pcakges"
   ],
   "scripts": {
-    "build": "yarn && yarn prettier && yarn lerna exec yarn && yarn lerna run build",
+    "build": "yarn && yarn pretify && yarn lerna exec yarn && yarn lerna run build",
     "test": "yarn lerna run test",
     "lerna:publish": "yarn build && yarn lerna publish",
     "pretify": "prettier --write ."
