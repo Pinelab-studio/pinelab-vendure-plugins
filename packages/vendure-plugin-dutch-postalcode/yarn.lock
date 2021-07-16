@@ -1244,15 +1244,15 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@vendure/common@^1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.0.2.tgz#858d963f7309fb80fed76414865a62eedfb3f2ce"
-  integrity sha512-9wdbPDX790cUajOsKnjaauGSHvwK1c0oHQJHwK83BAOGCDhbu1+bHsSu2Wa5OzKJ9797Z/wZjJQGn+DGVDAqcg==
+"@vendure/common@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.1.0.tgz#83b28f9280286ba0483ece8aae7ce43da9a93c5b"
+  integrity sha512-vq0GuZEgFsLHGnXPWRZHhpn3d13hizn86BvpuX5E+XJWdyeIErckWwqXqg31aPz/Z8rR0rbmBFuZPNoq9tTsvQ==
 
-"@vendure/core@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.0.2.tgz#150b5552608dbbccca2b0a22f931012fabec3758"
-  integrity sha512-MlQgHOfLz1cmIRwHwXM/iElUiH4v5wTktH2c8xSHwKjlohN8cpzm7/zS2inlbvA2ujVMqsMGBG6vUqoCL0VPjw==
+"@vendure/core@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.1.0.tgz#558a5cee6dfc4015e55a97e95351b9572cedc1c1"
+  integrity sha512-WHZTHj9ID0c2JrItlCk0Zsg0MdGq2MPFzpDxnCPU6cs/4YQkD5F5jOBzUx36TOh2VJf3ILB+oiIom/nzH09T4A==
   dependencies:
     "@graphql-tools/stitch" "^7.5.3"
     "@nestjs/common" "7.6.17"
@@ -1263,7 +1263,7 @@
     "@nestjs/testing" "7.6.17"
     "@nestjs/typeorm" "7.1.5"
     "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^1.0.2"
+    "@vendure/common" "^1.1.0"
     apollo-server-express "2.24.1"
     bcrypt "^5.0.0"
     body-parser "^1.19.0"
@@ -1285,19 +1285,19 @@
     image-size "^0.9.1"
     mime-types "^2.1.27"
     ms "^2.1.2"
-    nanoid "^2.1.11"
+    nanoid "^3.1.23"
     progress "^2.0.3"
     reflect-metadata "^0.1.13"
     rxjs "^6.6.3"
     typeorm "0.2.31"
 
-"@vendure/testing@1.0.2":
-  version "1.0.2"
-  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.0.2.tgz#ddcf92953da1fde699d602928357ba316db4c4f6"
-  integrity sha512-dDvWYc8Do1r6N+OT9f7bwGMQZ/hc2O+NiFWJ6ajTfMEmZvaz/JULfghx/PQlfG48S5n08EHvQI5j5VFJZmYkWw==
+"@vendure/testing@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.1.0.tgz#b00c6a957d4ea19f71963cfe029db10b37c5ffdc"
+  integrity sha512-z97Ho7hO5h8pNA5KFlK/MkX8wEfaoY9spEnxYT1fSqwAoYVAmArw/RQJ7CqyzPavIqbJhGXCGtzPwBxHIb8cNw==
   dependencies:
     "@types/node-fetch" "^2.5.4"
-    "@vendure/common" "^1.0.2"
+    "@vendure/common" "^1.1.0"
     faker "^4.1.0"
     form-data "^3.0.0"
     graphql "15.5.0"
@@ -4217,10 +4217,10 @@ mz@^2.4.0:
     object-assign "^4.0.1"
     thenify-all "^1.0.0"
 
-nanoid@^2.1.11:
-  version "2.1.11"
-  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-2.1.11.tgz#ec24b8a758d591561531b4176a01e3ab4f0f0280"
-  integrity sha512-s/snB+WGm6uwi0WjsZdaVcuf3KJXlfGl2LcxgwkEwJF0D/BWzVWAZW/XY4bFaiR7s0Jk3FPvlnepg1H1b1UwlA==
+nanoid@^3.1.23:
+  version "3.1.23"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.23.tgz#f744086ce7c2bc47ee0a8472574d5c78e4183a81"
+  integrity sha512-FiB0kzdP0FFVGDKlRLEQ1BgDzU87dy5NnzjeW9YZNt+/c3+q82EQDUwniSAUxp/F0gFNI1ZhKU1FqYsMuqZVnw==
 
 natural-compare@^1.4.0:
   version "1.4.0"
