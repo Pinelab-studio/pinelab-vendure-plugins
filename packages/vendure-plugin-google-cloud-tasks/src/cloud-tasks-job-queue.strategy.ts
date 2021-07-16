@@ -11,6 +11,8 @@ import {
   CloudTaskOptions,
   CloudTasksPlugin,
 } from './cloud-tasks.plugin';
+import { JobState } from '@vendure/common/lib/generated-types';
+
 export type QueueProcessFunction = (job: Job) => Promise<any>;
 
 export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
@@ -57,7 +59,15 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       `Added job to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
       CloudTasksPlugin.loggerCtx
     );
-    return job;
+    return new Job({
+      id: cloudTaskMessage.id,
+      queueName: job.queueName,
+      data: job.data,
+      attempts: job.attempts,
+      state: JobState.RUNNING,
+      startedAt: job.startedAt,
+      createdAt: job.createdAt,
+    });
   }
 
   async start<Data extends JobData<Data> = {}>(

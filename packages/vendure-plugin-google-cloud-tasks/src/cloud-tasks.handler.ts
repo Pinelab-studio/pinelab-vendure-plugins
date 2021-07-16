@@ -40,10 +40,18 @@ export class CloudTasksHandler {
       startedAt: new Date(),
       createdAt: message.createdAt,
     });
-    await processFn(job);
-    Logger.debug(
-      `Successfully handled ${message.id} after ${attempts} attempts`,
-      CloudTasksPlugin.loggerCtx
-    );
+    try {
+      await processFn(job);
+      Logger.debug(
+        `Successfully handled ${message.id} after ${attempts} attempts`,
+        CloudTasksPlugin.loggerCtx
+      );
+    } catch (error) {
+      Logger.error(
+        `Failed to handle message ${message.id} after ${attempts} attempts`,
+        CloudTasksPlugin.loggerCtx,
+        error
+      );
+    }
   }
 }

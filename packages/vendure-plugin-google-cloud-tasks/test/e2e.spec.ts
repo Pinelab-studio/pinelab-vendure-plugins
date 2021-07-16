@@ -1,27 +1,40 @@
-/* tslint:disable:no-non-null-assertion */
-import {
-  createTestEnvironment,
-  E2E_DEFAULT_CHANNEL_TOKEN,
-  registerInitializer,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import gql from 'graphql-tag';
-import { DefaultLogger, LogLevel } from '@vendure/core';
-import * as path from 'path';
-import { GoogleStorageStrategy } from '../src/google-storage-strategy';
-import { initialData } from '../../dev-server/script/initialData';
+/*import nock from "nock";
+import { createTestEnvironment, registerInitializer, SqljsInitializer, testConfig } from "@vendure/testing";
+import gql from "graphql-tag";
+import { DefaultLogger, InitialData, LogLevel } from "@vendure/core";
+import { initialData } from "../../test/initialData";
+import { CloudTasksPlugin } from "../src/cloud-tasks.plugin";*/
 
-describe('ChannelAware Assets', () => {
+describe('CloudTasks job queue e2e', () => {
+  it('Needs to be implemented', async () => {});
+
+  /*  // TODO record googleapi calls
+  nock("https://oauth2.googleapis.com")
+    .post("/token")
+    .times(2)
+    .reply(200, {
+      access_token: 'abc',
+      refresh_token: '123',
+      expires_in: 10,
+    });
+
+  registerInitializer("sqljs", new SqljsInitializer("__data__"));
+  testConfig.plugins.push(
+    CloudTasksPlugin.init({
+      taskHandlerHost: "https://localhost",
+      projectId: "test-project",
+      location: "europe-west1",
+      authSecret: "some-secret-to-authenticate-cloud-tasks",
+      queueSuffix: "plugin-test"
+    })
+  );
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
-  registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  testConfig.plugins.push(GoogleStorageStrategy);
-  const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
+  const { server, adminClient, shopClient } = createTestEnvironment(testConfig);
 
   beforeAll(async () => {
     await server.init({
-      initialData,
-      productsCsvPath: '../test/products-import.csv',
+      initialData: initialData as InitialData,
+      productsCsvPath: "../test/products-import.csv"
     });
   }, 1800 * 1000);
 
@@ -29,19 +42,23 @@ describe('ChannelAware Assets', () => {
     await server.destroy();
   });
 
-  it('Test', async () => {
-    const ding = await shopClient.query(
+  // FIXME: work with nock to intercept outgoing calls
+  it("Reindex job", async () => {
+    const scope = nock("https://oauth2.googleapis.com/token")
+      .post("/!*", (body) => {
+        console.log(`------------------- body`, body);
+        return body.username && body.password;
+      })
+      .reply(200);
+    const { reindex } = await adminClient.query(
       gql`
-        {
-          products {
-            items {
-              id
-            }
+          mutation {
+              reindex {
+                  id
+              }
           }
-        }
       `
     );
-    console.log(ding);
-    expect(ding).toBeDefined();
-  });
+    expect(reindex).toBeDefined();
+  });*/
 });

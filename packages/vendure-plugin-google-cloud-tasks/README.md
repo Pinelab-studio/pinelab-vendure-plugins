@@ -29,7 +29,7 @@ plugins: [
 ];
 ```
 
-:info: When running locally, make sure your local `gcloud` cli is authenticated.
+:warning: This plugin has only been tested when running worker in main thread.
 
 ## Run dev-server
 
@@ -41,6 +41,8 @@ Make sure you have the following variables in a local `.env` file for the dev-se
 GOOGLE_CLOUD_PROJECT_ID = yourID;
 TASKQUEUE_LOCATION = europe - west1;
 ```
+
+:info: When running locally, make sure your local `gcloud` cli is authenticated.
 
 ## Testing
 

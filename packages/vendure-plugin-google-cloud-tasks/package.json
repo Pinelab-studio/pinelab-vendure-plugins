@@ -19,14 +19,18 @@
     "serve": "ts-node test/dev-server.ts"
   },
   "dependencies": {
-    "@google-cloud/tasks": "^2.3.4"
+    "@google-cloud/tasks": "^2.3.4",
+    "@types/jest": "^26.0.24"
   },
   "devDependencies": {
     "@types/localtunnel": "^2.0.0",
+    "@vendure/admin-ui-plugin": "1.1.0",
     "@vendure/core": "1.1.0",
     "@vendure/testing": "1.1.0",
-    "@vendure/admin-ui-plugin": "1.1.0",
+    "jest": "^27.0.6",
     "ngrok": "^4.0.1",
+    "nock": "^13.1.1",
+    "ts-jest": "^27.0.3",
     "ts-node": "^9.1.1",
     "typescript": "^4.3.5"
   }

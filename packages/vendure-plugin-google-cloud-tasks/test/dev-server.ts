@@ -2,19 +2,37 @@ import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
+  testConfig,
 } from '@vendure/testing';
-import { InitialData, DefaultSearchPlugin } from '@vendure/core';
+import {
+  InitialData,
+  DefaultSearchPlugin,
+  DefaultLogger,
+  LogLevel,
+} from '@vendure/core';
 import { initialData } from '../../test/initialData';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+// @ts-ignore
 import ngrok from 'ngrok';
+import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  require('dotenv').config();
   process.env.PUBLIC_VENDURE_URL = await ngrok.connect(3050);
-  const { devConfig } = require('./dev-config');
-  const { server } = createTestEnvironment(devConfig);
-  devConfig.plugins.push(AdminUiPlugin.init({ route: 'admin', port: 3002 }));
-  devConfig.plugins.push(DefaultSearchPlugin);
+  testConfig.plugins.push(
+    CloudTasksPlugin.init({
+      taskHandlerHost: process.env.PUBLIC_VENDURE_URL!,
+      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID!,
+      location: process.env.TASKQUEUE_LOCATION!,
+      authSecret: 'some-secret-to-authenticate-cloud-tasks',
+      queueSuffix: 'plugin-test',
+    })
+  );
+  testConfig.plugins.push(AdminUiPlugin.init({ route: 'admin', port: 3002 }));
+  testConfig.plugins.push(DefaultSearchPlugin);
+  testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
+  const { server } = createTestEnvironment(testConfig);
   await server.init({
     initialData: initialData as InitialData,
     productsCsvPath: '../test/products-import.csv',
