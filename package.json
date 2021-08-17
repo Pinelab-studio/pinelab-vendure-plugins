@@ -10,12 +10,11 @@
     "build": "yarn && yarn pretify && yarn lerna exec yarn && yarn lerna run build",
     "test": "yarn lerna run test",
     "lerna:publish": "yarn build && yarn lerna publish",
-    "pretify": "prettier --write ."
+    "prettier:write": "prettier --write ."
   },
   "devDependencies": {
     "husky": "^6.0.0",
     "lerna": "^4.0.0",
-    "prettier": "^2.3.1",
-    "pretty-quick": "^3.1.0"
+    "prettier": "^2.3.1"
   }
 }

@@ -30,11 +30,6 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
     job: Job<Data>
   ): Promise<Job<Data>> {
     const queueName = this.getQueueName(job.queueName);
-    if (!CloudTasksJobQueueStrategy.processMap.get(queueName)) {
-      throw Error(
-        `Cannot add Job to queue, because no queue named ${queueName} has been started`
-      );
-    }
     const cloudTaskMessage: CloudTaskMessage = {
       id: `${queueName}-${Date.now()}`,
       queueName: queueName,
