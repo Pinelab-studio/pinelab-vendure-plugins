@@ -20,7 +20,7 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
         width: 300,
       };
     }
-    this.storage = new Storage();
+    this.storage = new Storage({});
   }
 
   toAbsoluteUrl(request: Request | undefined, identifier: string): string {

@@ -39,7 +39,6 @@ export class WebhookComponent implements OnInit {
   }
 
   async save(): Promise<void> {
-    console.log('SAVEDDD', this.webhookForm.value.url);
     try {
       if (this.webhookForm.dirty) {
         const formValue = this.webhookForm.value;

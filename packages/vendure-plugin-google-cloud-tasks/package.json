@@ -16,7 +16,7 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "jest --preset=\"ts-jest\"",
-    "serve": "ts-node test/dev-server.ts"
+    "start": "yarn ts-node test/dev-server.ts"
   },
   "dependencies": {
     "@google-cloud/tasks": "^2.3.4",
@@ -24,9 +24,9 @@
   },
   "devDependencies": {
     "@types/localtunnel": "^2.0.0",
-    "@vendure/admin-ui-plugin": "1.1.0",
-    "@vendure/core": "1.1.0",
-    "@vendure/testing": "1.1.0",
+    "@vendure/admin-ui-plugin": "1.2.0",
+    "@vendure/core": "1.2.0",
+    "@vendure/testing": "1.2.0",
     "jest": "^27.0.6",
     "ngrok": "^4.0.1",
     "nock": "^13.1.1",
