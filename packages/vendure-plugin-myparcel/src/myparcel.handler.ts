@@ -1,25 +1,21 @@
-import { FulfillmentHandler, LanguageCode } from "@vendure/core";
-import { MyparcelPlugin } from "./myparcel.plugin";
+import { FulfillmentHandler, LanguageCode } from '@vendure/core';
+import { MyparcelService } from "./myparcel.service";
 
 export const myparcelHandler = new FulfillmentHandler({
   code: 'my-parcel',
-  description: [{ languageCode: LanguageCode.en, value: 'Manually enter fulfillment details' }],
-  args: {
-    method: {
-      type: 'string',
-      required: false,
+  description: [
+    {
+      languageCode: LanguageCode.en,
+      value: 'Send order to MyParcel',
     },
-    trackingCode: {
-      type: 'string',
-      required: false,
-    },
-  },
-  createFulfillment: (ctx, orders, orderItems, args) => {
-    const apiKey = MyparcelPlugin.apiKeys[ctx.channel.token];
-    console.log(apiKey);
+  ],
+  args: {},
+  createFulfillment: async (ctx, orders, orderItems, args) => {
+    const shipment = await MyparcelService.createShipments(ctx.channel.token, orders);
+    console.log('shipment', shipment);
     return {
       method: 'MyParcel',
-      trackingCode: args.trackingCode,
+      trackingCode: 'Do a test code',
     };
   },
 });

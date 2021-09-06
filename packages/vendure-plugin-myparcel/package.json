@@ -18,7 +18,9 @@
     "build": "rimraf dist && tsc",
     "test": "jest --preset=\"ts-jest\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "@myparcel/js-sdk": "^2.0.3"
+  },
   "devDependencies": {
     "@vendure/admin-ui": "1.2.0",
     "@vendure/admin-ui-plugin": "1.2.0",

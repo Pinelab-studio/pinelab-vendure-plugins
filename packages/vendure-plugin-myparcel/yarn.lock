@@ -1248,7 +1248,7 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@babel/runtime@^7.12.0", "@babel/runtime@^7.12.5", "@babel/runtime@^7.8.4":
+"@babel/runtime@^7.11.2", "@babel/runtime@^7.12.0", "@babel/runtime@^7.12.5", "@babel/runtime@^7.8.4":
   version "7.15.4"
   resolved "https://registry.yarnpkg.com/@babel/runtime/-/runtime-7.15.4.tgz#fd17d16bfdf878e6dd02d19753a39fa8a8d9c84a"
   integrity sha512-99catp6bHCaxr4sJ/DbTGgHS4+Rs2RVd2g7iOap6SLGPDknRK9ztKNsE/Fg6QhSeh1FGE5f6gHGQmvvn3I3xhw==
@@ -1579,6 +1579,16 @@
     semver "^7.3.4"
     tar "^6.1.0"
 
+"@myparcel/js-sdk@^2.0.3":
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/@myparcel/js-sdk/-/js-sdk-2.0.3.tgz#ab7746e87d14d2e1eea9be04feceac95848d736c"
+  integrity sha512-Hf5wU+pbk/fGf1x9xuk19rpKzTmWSqikpkCyksHGff+iNx/LC0Ktf2tkSPeXJeuH/3SF/MDvtJm48+khPzEiAA==
+  dependencies:
+    "@babel/runtime" "^7.11.2"
+    "@teamawesome/transform" "^2.0.2"
+    node-fetch "^2.6.1"
+    uber-json-schema-filter "^2.0.5"
+
 "@nestjs/common@7.6.17":
   version "7.6.17"
   resolved "https://registry.yarnpkg.com/@nestjs/common/-/common-7.6.17.tgz#623c7f93117bea15fff07a6b63fcd644a8764655"
@@ -1845,6 +1855,11 @@
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/@sqltools/formatter/-/formatter-1.2.2.tgz#9390a8127c0dcba61ebd7fdcc748655e191bdd68"
   integrity sha512-/5O7Fq6Vnv8L6ucmPjaWbVG1XkP4FO+w5glqfkIsq3Xw4oyNAdJddbnYodNDAfjVUvo/rrSCTom4kAND7T1o5Q==
+
+"@teamawesome/transform@^2.0.2":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@teamawesome/transform/-/transform-2.0.4.tgz#4decb7820e15c024ab03146fa0bf471b76b9fd59"
+  integrity sha512-xgIHdQBrO2UhLT6uTwBPjiogoEtjVXziIqTrK7BhpG8LHsylf08eJDhNMDVIfps5prTu/eO2FrwoqCeiOsWpyw==
 
 "@tootallnate/once@1":
   version "1.1.2"
@@ -9619,6 +9634,11 @@ typescript@4.3.5:
   version "4.3.5"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.5.tgz#4d1c37cc16e893973c45a06886b7113234f119f4"
   integrity sha512-DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==
+
+uber-json-schema-filter@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/uber-json-schema-filter/-/uber-json-schema-filter-2.0.5.tgz#b6f0347fde04f7c5ca2e5f23f8b67d2be28c60f3"
+  integrity sha1-tvA0f94E98XKLl8j+LZ9K+KMYPM=
 
 unbox-primitive@^1.0.1:
   version "1.0.1"

@@ -3,18 +3,19 @@ import {
   RuntimeVendureConfig,
   VendurePlugin,
 } from '@vendure/core';
-import { myparcelHandler } from "./myparcel.handler";
+import { myparcelHandler } from './myparcel.handler';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   controllers: [],
+  providers: [],
   configuration: (config: RuntimeVendureConfig) => {
-     config.shippingOptions.fulfillmentHandlers.push(myparcelHandler);
+    config.shippingOptions.fulfillmentHandlers.push(myparcelHandler);
     return config;
   },
 })
 export class MyparcelPlugin {
-
+  static loggerCtx = 'MyParcelPlugin'
   static apiKeys: MyParcelApiKeys;
 
   static init(apiKeys: MyParcelApiKeys): typeof MyparcelPlugin {
@@ -27,5 +28,5 @@ export class MyparcelPlugin {
  * ChannelToken: ApiKey
  */
 export interface MyParcelApiKeys {
-  [key: string]: string
+  [key: string]: string;
 }
