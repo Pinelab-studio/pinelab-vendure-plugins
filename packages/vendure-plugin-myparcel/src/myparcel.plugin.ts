@@ -15,7 +15,7 @@ import { myparcelHandler } from './myparcel.handler';
   },
 })
 export class MyparcelPlugin {
-  static loggerCtx = 'MyParcelPlugin'
+  static loggerCtx = 'MyParcelPlugin';
   static apiKeys: MyParcelApiKeys;
 
   static init(apiKeys: MyParcelApiKeys): typeof MyparcelPlugin {
