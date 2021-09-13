@@ -8,6 +8,10 @@
     "target": "es2017",
     "strict": true,
     "sourceMap": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": [
+      "jest",
+      "node"
+    ]
   }
 }

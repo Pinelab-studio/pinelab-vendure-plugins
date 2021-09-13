@@ -4,7 +4,7 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialData } from '../../test/initialData';
+import { initialData } from '../../test/src/initial-data';
 import {
   CollectionModificationEvent,
   DefaultLogger,

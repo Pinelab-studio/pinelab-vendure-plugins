@@ -1,27 +1,52 @@
-import { MyparcelPlugin } from "./myparcel.plugin";
-import { Logger, Order } from "@vendure/core";
-import { OrderAddress } from "@vendure/admin-ui/core";
-import { ApolloError } from "apollo-server-core";
-import axios from "axios";
+import { MyparcelPlugin } from './myparcel.plugin';
+import { FulfillmentService, Logger, Order, FulfillmentState } from "@vendure/core";
+import {Connection} from 'typeorm';
+import {OrderAddress} from '@vendure/common/lib/generated-types';
+import { ApolloError } from 'apollo-server-core';
+import axios from 'axios';
+import {Injectable} from '@nestjs/common'
+import { Fulfillment } from "@vendure/core/dist/entity/fulfillment/fulfillment.entity";
 
+@Injectable()
 export class MyparcelService {
 
-  static client = axios.create({
-    baseURL: "https://api.myparcel.nl/",
+  client = axios.create({
+    baseURL: 'https://api.myparcel.nl/',
     headers: {
-      "Content-Type": "application/vnd.shipment+json;version=1.1;charset=utf-8"
-    }
+      'Content-Type': 'application/vnd.shipment+json;version=1.1;charset=utf-8',
+    },
   });
 
-  static async createShipments(
-    channelToken: string,
-    orders: Order[]
-  ): Promise<unknown | undefined> {
-    const shipments = this.toShipment(orders);
-    return this.post("shipments", { shipments }, channelToken);
+  constructor(private fulfillmentService: FulfillmentService, private connection: Connection) {
   }
 
-  static toShipment(orders: Order[]): MyparcelShipment[] {
+  async updateStatus(shipmentId: string, status: number): Promise<void> {
+    // Get by myparcel ID
+    // Updat to next state
+    const fulfillment = await this.connection.getRepository(Fulfillment).findOne({trackingCode: `MyParcel ${shipmentId}`});
+    if (! fulfillment) {
+      return Logger.error(`No fulfillment found with id ${shipmentId}`, MyparcelPlugin.loggerCtx);
+    }
+    const fulfillmentStatus = myparcelStatusses[status];
+    if (!fulfillmentStatus) {
+      return Logger.info(`No fulfillmentStatus found for myparcelStatus ${status}, not updating fulfillment ${shipmentId}`, MyparcelPlugin.loggerCtx);
+    }
+    // this.fulfillmentService.transitionToState()
+  }
+
+  async createShipments(
+    channelToken: string,
+    orders: Order[]
+  ): Promise<string | undefined> {
+    const shipments = this.toShipment(orders);
+    const res = await this.post<any>('shipments', { shipments }, channelToken);
+    const id =  res.data?.ids?.[0]?.id as string;
+    if (id) {
+      return `MyParcel ${id}`;
+    }
+  }
+
+  toShipment(orders: Order[]): MyparcelShipment[] {
     return orders.map((order) => {
       Logger.info(
         `Creating shipment for ${order.code}`,
@@ -34,7 +59,7 @@ export class MyparcelService {
         reference_identifier: order.code,
         options: {
           package_type: 1, // Parcel
-          label_description: order.code
+          label_description: order.code,
         },
         recipient: {
           cc: address.countryCode!,
@@ -46,26 +71,27 @@ export class MyparcelService {
           postal_code: address.postalCode!,
           person: address.fullName!,
           phone: address.phoneNumber || undefined,
-          email: order.customer?.emailAddress
-        }
+          email: order.customer?.emailAddress,
+        },
       };
     });
   }
 
-  static async post(path: string, body: unknown, channelToken: string): Promise<unknown> {
+  async post<T>(
+    path: string,
+    body: unknown,
+    channelToken: string
+  ): Promise<T> {
     const apiKey = MyparcelPlugin.apiKeys[channelToken];
     if (!apiKey) {
       throw new MyParcelError(`No apiKey found for channel ${channelToken}`);
     }
-    let buff = new Buffer(apiKey);
-    let encodedKey = buff.toString("base64");
-    this.client.defaults.headers["Authorization"] = `basic ${encodedKey}`;
-
-    console.log(JSON.stringify({ data: body }));
-    console.log(this.client.defaults.headers);
+    let buff = Buffer.from(apiKey);
+    let encodedKey = buff.toString('base64');
+    this.client.defaults.headers['Authorization'] = `basic ${encodedKey}`;
     try {
       const res = await this.client.post(path, {
-        data: body
+        data: body,
       });
       return res.data;
     } catch (err) {
@@ -80,7 +106,7 @@ export class MyparcelService {
     }
   }
 
-  static getHousenumber(nrAndSuffix: string): [string, string] {
+  getHousenumber(nrAndSuffix: string): [string, string] {
     if (!nrAndSuffix) {
       throw new MyParcelError(`No houseNr given`);
     }
@@ -91,15 +117,17 @@ export class MyparcelService {
     return [houseNr, suffix];
   }
 
-  static getReadableError(data: MyparcelErrorResponse): string | undefined {
-    const error = Object.values(data.errors?.[0] || {}).find(value => value?.human?.[0])
+  getReadableError(data: MyparcelErrorResponse): string | undefined {
+    const error = Object.values(data.errors?.[0] || {}).find(
+      (value) => value?.human?.[0]
+    );
     return error?.human?.[0];
   }
 }
 
 export class MyParcelError extends ApolloError {
   constructor(message: string) {
-    super(message, "MY_PARCEL_ERROR");
+    super(message, 'MY_PARCEL_ERROR');
   }
 }
 
@@ -139,3 +167,41 @@ export interface MyparcelError {
     human: string[];
   };
 }
+
+export interface MyparcelStatusChangeEvent {
+  data: {
+    hooks: [
+      {
+        shipment_id: string,
+        account_id: number,
+        shop_id: number,
+        status: number,
+        barcode: string
+      }
+    ]
+  }
+}
+
+export const myparcelStatusses: {[key: string]: FulfillmentState} = {
+  1: 'Pending',
+  2: 'Pending',
+  3: 'Shipped',
+  4: 'Shipped',
+  5: 'Shipped',
+  6: 'Shipped',
+  7: 'Delivered',
+  8: 'Delivered',
+  9: 'Delivered',
+  10: 'Delivered',
+  11 : 'Delivered',
+  32 : 'Shipped',
+  33 : 'Shipped',
+  34 : 'Shipped',
+  35 : 'Shipped',
+  36 : 'Delivered',
+  37 : 'Delivered',
+  38 : 'Delivered',
+  99 : 'Delivered'
+}
+
+

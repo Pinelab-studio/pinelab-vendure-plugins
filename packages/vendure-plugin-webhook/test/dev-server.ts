@@ -14,7 +14,7 @@ import {
   ProductVariantChannelEvent,
   ProductVariantEvent,
 } from '@vendure/core';
-import { initialData } from '../../test/initialData';
+import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { WebhookPlugin } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';

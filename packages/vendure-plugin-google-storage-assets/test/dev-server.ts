@@ -13,7 +13,7 @@ import {
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { GoogleStorageStrategy } from '../src/google-storage-strategy';
 import { GoogleStoragePlugin } from '../src/google-storage-plugin';
-import { initialData } from '../../test/initialData';
+import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
 (async () => {

@@ -1,0 +1,13 @@
+{
+  "name": "pinelab-test-utils",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@vendure/core": "^1.2.0",
+    "@vendure/testing": "^1.2.0",
+    "graphql": "^15.5.3",
+    "graphql-tag": "^2.12.5"
+  }
+}

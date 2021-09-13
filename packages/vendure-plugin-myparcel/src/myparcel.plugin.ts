@@ -4,11 +4,12 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { myparcelHandler } from './myparcel.handler';
+import { MyparcelService } from "./myparcel.service";
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   controllers: [],
-  providers: [],
+  providers: [MyparcelService],
   configuration: (config: RuntimeVendureConfig) => {
     config.shippingOptions.fulfillmentHandlers.push(myparcelHandler);
     return config;

@@ -13,7 +13,7 @@ import {
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { initialData } from '../../test/initialData';
+import { initialData } from '../../test/src/initial-data';
 
 (async () => {
   const config = mergeConfig(testConfig, {

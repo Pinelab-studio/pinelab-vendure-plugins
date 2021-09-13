@@ -89,3 +89,14 @@ export const CREATE_PAYMENT_METHOD = gql`
     }
   }
 `;
+
+export const FULFILL = gql`
+    mutation CreateFulfillment($input: FulfillOrderInput!) {
+        addFulfillmentToOrder(input: $input) {
+            ...on Fulfillment {
+                id
+                state
+            }
+        }
+    }
+`;

@@ -10,7 +10,7 @@ import {
   DefaultLogger,
   LogLevel,
 } from '@vendure/core';
-import { initialData } from '../../test/initialData';
+import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 // @ts-ignore
 import ngrok from 'ngrok';
