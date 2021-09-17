@@ -4,7 +4,7 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { myparcelHandler } from './myparcel.handler';
-import { MyparcelService } from "./myparcel.service";
+import { MyparcelService } from './myparcel.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -18,9 +18,11 @@ import { MyparcelService } from "./myparcel.service";
 export class MyparcelPlugin {
   static loggerCtx = 'MyParcelPlugin';
   static apiKeys: MyParcelApiKeys;
+  static webhookHost: string;
 
-  static init(apiKeys: MyParcelApiKeys): typeof MyparcelPlugin {
+  static init(apiKeys: MyParcelApiKeys, vendureHost: string): typeof MyparcelPlugin {
     this.apiKeys = apiKeys;
+    this.webhookHost = vendureHost;
     return MyparcelPlugin;
   }
 }

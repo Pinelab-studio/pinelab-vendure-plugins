@@ -1,4 +1,9 @@
-import { FulfillmentHandler, Injector, LanguageCode, Logger } from "@vendure/core";
+import {
+  FulfillmentHandler,
+  Injector,
+  LanguageCode,
+  Logger,
+} from '@vendure/core';
 import { MyparcelService } from './myparcel.service';
 import { MyparcelPlugin } from './myparcel.plugin';
 
@@ -12,19 +17,18 @@ export const myparcelHandler = new FulfillmentHandler({
     },
   ],
   args: {},
-  init: ((injector: Injector) => {
-     myparcelService = injector.get(MyparcelService)
-  }),
+  init: (injector: Injector) => {
+    myparcelService = injector.get(MyparcelService);
+  },
   createFulfillment: async (ctx, orders, orderItems, args) => {
-    const shipmentId = await myparcelService.createShipments(
-      ctx.channel.token,
-      orders
-    ).catch((err: Error) => {
-      Logger.error(err.message, MyparcelPlugin.loggerCtx, err.stack);
-      throw err;
-    });
+    const shipmentId = await myparcelService
+      .createShipments(ctx.channel.token, orders)
+      .catch((err: Error) => {
+        Logger.error(err.message, MyparcelPlugin.loggerCtx, err.stack);
+        throw err;
+      });
     return {
-      method: shipmentId ? shipmentId : undefined,
+      method: shipmentId,
     };
   },
 });

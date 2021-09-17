@@ -9,9 +9,6 @@
     "strict": true,
     "sourceMap": false,
     "skipLibCheck": true,
-    "types": [
-      "jest",
-      "node"
-    ]
+    "types": ["jest", "node"]
   }
 }

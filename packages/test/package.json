@@ -5,9 +5,15 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
+    "@graphql-codegen/cli": "2.2.0",
+    "@graphql-codegen/typescript-operations": "2.1.4",
     "@vendure/core": "^1.2.0",
     "@vendure/testing": "^1.2.0",
-    "graphql": "^15.5.3",
-    "graphql-tag": "^2.12.5"
+    "graphql-tag": "^2.12.5",
+    "@graphql-codegen/typescript": "2.2.2",
+    "@graphql-codegen/typescript-document-nodes": "2.1.4"
+  },
+  "scripts": {
+    "generate": "graphql-codegen --config codegen.yml"
   }
 }

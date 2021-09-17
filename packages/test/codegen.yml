@@ -1,0 +1,17 @@
+overwrite: true
+generates:
+  src/generated/admin-graphql.ts:
+    documents: "src/admin.graphql"
+    schema: "https://test-api.pinelab.studio/admin-api"
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-document-nodes"
+  src/generated/shop-graphql.ts:
+    documents: "src/shop.graphql"
+    schema: "https://test-api.pinelab.studio/shop-api"
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-document-nodes"
+
