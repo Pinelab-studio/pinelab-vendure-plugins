@@ -4,6 +4,23 @@
 
 Sends orders to MyParcel on fulfillment.
 
+Add this to your plugins in `vendure-config.ts`:
+```js
+      MyparcelPlugin.init(
+        {
+          'channel-token': 'myparcel-key-for-channel'
+        },
+        'https://your-vendure-host.io'
+      )
+```
+
+1. Create a shipmentMethod with `MyParcel fulfillment`.
+2. Place an order and select the shippingMethod.
+3. Go to the Admin UI and click on `fulfill`
+4. Your shipment should be in your MyParcel account.
+
+Reach out to me at [pinelab.studio](https://pinelab.studio) if you need any help.
+
 ## Contributing
 
 Contributions always welcome!
@@ -19,4 +36,4 @@ Contributions always welcome!
 
 Run `yarn test` to run e2e tests
 
-![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)
+[![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)
