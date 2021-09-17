@@ -56,3 +56,5 @@ This plugin sets the `CloudTasksJobQueueStrategy` as the jobQueueStrategy.
 On application start queues are created and the processFunction is saved in a `map<queueName, processFunction>` .
 CloudTasks will push the jobData to `CloudTaskHandler`, the handler will look for the processFunction based on the given queue,
 and pass the jobData to the process function.
+
+[![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)

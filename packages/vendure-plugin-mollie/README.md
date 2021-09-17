@@ -23,3 +23,5 @@ This is used by Mollie to let the plugin know when the status of a payment chang
 4. Set the your Mollie key in the `apiKey` field.
 
 **The redirect url is used like this: `${redirectUrl}order/${order.code}`, so your user will be directed to the page on `https://storefront/order/CH234X5`**
+
+[![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)

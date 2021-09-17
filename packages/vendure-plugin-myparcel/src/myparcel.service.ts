@@ -1,5 +1,5 @@
 import { MyparcelPlugin } from "./myparcel.plugin";
-import { FulfillmentService, FulfillmentState, Logger, Order } from "@vendure/core";
+import { ChannelService, FulfillmentService, FulfillmentState, Logger, Order, RequestContext } from "@vendure/core";
 import { Connection } from "typeorm";
 import { OrderAddress } from "@vendure/common/lib/generated-types";
 import { ApolloError } from "apollo-server-core";
@@ -9,11 +9,11 @@ import { Fulfillment } from "@vendure/core/dist/entity/fulfillment/fulfillment.e
 
 @Injectable()
 export class MyparcelService implements OnModuleInit {
-
   client = axios.create({ baseURL: "https://api.myparcel.nl/" });
 
   constructor(
     private fulfillmentService: FulfillmentService,
+    private channelService: ChannelService,
     private connection: Connection
   ) {
   }
@@ -21,25 +21,44 @@ export class MyparcelService implements OnModuleInit {
   async onModuleInit(): Promise<void> {
     // Create webhook subscription for all channels
     const webhook = `${MyparcelPlugin.webhookHost}/myparcel/update-status`;
-    await Promise.all(Object.entries(MyparcelPlugin.apiKeys).map(([channelToken, apiKey]) => {
-      return this.post("webhook_subscriptions", {
-        webhook_subscriptions: [{
-          hook: "shipment_status_change",
-          url: webhook
-        }]
-      }, apiKey)
-        .then(() => Logger.info(`Set webhook for ${channelToken} to ${webhook}`, MyparcelPlugin.loggerCtx))
-        .catch((error: Error) => Logger.error(`Failed to set webhook for ${channelToken}`, MyparcelPlugin.loggerCtx, error.stack));
-    }));
+    await Promise.all(
+      Object.entries(MyparcelPlugin.apiKeys).map(([channelToken, apiKey]) => {
+        return this.post(
+          "webhook_subscriptions",
+          {
+            webhook_subscriptions: [
+              {
+                hook: "shipment_status_change",
+                url: webhook
+              }
+            ]
+          },
+          apiKey
+        )
+          .then(() =>
+            Logger.info(
+              `Set webhook for ${channelToken} to ${webhook}`,
+              MyparcelPlugin.loggerCtx
+            )
+          )
+          .catch((error: Error) =>
+            Logger.error(
+              `Failed to set webhook for ${channelToken}`,
+              MyparcelPlugin.loggerCtx,
+              error.stack
+            )
+          );
+      })
+    );
     Logger.info(`Initialized MyParcel plugin`, MyparcelPlugin.loggerCtx);
   }
 
-  async updateStatus(shipmentId: string, status: number): Promise<void> {
-    // Get by myparcel ID
-    // Updat to next state
+  async updateStatus(channelToken: string, shipmentId: string, status: number): Promise<void> {
+    const fulfillmentReference= this.getFulfillmentReference(shipmentId);
+    const channel = await this.channelService.getChannelFromToken(channelToken);
     const fulfillment = await this.connection
       .getRepository(Fulfillment)
-      .findOne({ trackingCode: `MyParcel ${shipmentId}` });
+      .findOne({ method: fulfillmentReference });
     if (!fulfillment) {
       return Logger.error(
         `No fulfillment found with id ${shipmentId}`,
@@ -53,7 +72,14 @@ export class MyparcelService implements OnModuleInit {
         MyparcelPlugin.loggerCtx
       );
     }
-    // this.fulfillmentService.transitionToState()
+    const ctx = new RequestContext({
+      apiType: "admin",
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel,
+    });
+    await this.fulfillmentService.transitionToState(ctx, fulfillment.id,  fulfillmentStatus);
+    Logger.info(`Updated fulfillment ${fulfillmentReference} to ${fulfillmentStatus}`);
   }
 
   async createShipments(
@@ -61,9 +87,13 @@ export class MyparcelService implements OnModuleInit {
     orders: Order[]
   ): Promise<string> {
     const shipments = this.toShipment(orders);
-    const res = await this.post("shipments", { shipments }, this.getApiKey(channelToken));
+    const res = await this.post(
+      "shipments",
+      { shipments },
+      this.getApiKey(channelToken)
+    );
     const id = res.data?.ids?.[0]?.id;
-    return `MyParcel ${id}`;
+    return this.getFulfillmentReference(id);
   }
 
   toShipment(orders: Order[]): MyparcelShipment[] {
@@ -97,6 +127,10 @@ export class MyparcelService implements OnModuleInit {
     });
   }
 
+  private getFulfillmentReference(shipmentId: string | number): string {
+    return `MyParcel ${shipmentId}`;
+  }
+
   private getApiKey(channelToken: string): string {
     const apiKey = MyparcelPlugin.apiKeys[channelToken];
     if (!apiKey) {
@@ -105,12 +139,18 @@ export class MyparcelService implements OnModuleInit {
     return apiKey;
   }
 
-  private async post(path: "shipments" | "webhook_subscriptions", body: unknown, apiKey: string): Promise<MyparcelResponse> {
-    const shipmentContentType = "application/vnd.shipment+json;version=1.1;charset=utf-8";
+  private async post(
+    path: "shipments" | "webhook_subscriptions",
+    body: unknown,
+    apiKey: string
+  ): Promise<MyparcelResponse> {
+    const shipmentContentType =
+      "application/vnd.shipment+json;version=1.1;charset=utf-8";
     const defaultContentType = "application/json";
-    const contentType = path === "shipments" ? shipmentContentType : defaultContentType;
-    let buff = Buffer.from(apiKey);
-    let encodedKey = buff.toString("base64");
+    const contentType =
+      path === "shipments" ? shipmentContentType : defaultContentType;
+    const buff = Buffer.from(apiKey);
+    const encodedKey = buff.toString("base64");
     this.client.defaults.headers["Authorization"] = `basic ${encodedKey}`;
     this.client.defaults.headers["Content-Type"] = contentType;
     try {
@@ -181,13 +221,13 @@ export interface MyparcelShipment {
 }
 
 export interface WebhookSubscription {
-  url: string,
-  hook: string
+  url: string;
+  hook: string;
 }
 
 export interface MyparcelResponse {
   data: {
-    ids: { id: number } []
+    ids: { id: number }[];
   };
 }
 
@@ -212,6 +252,7 @@ export interface MyparcelStatusChangeEvent {
         shop_id: number;
         status: number;
         barcode: string;
+        shipment_reference_identifier: string;
       }
     ];
   };

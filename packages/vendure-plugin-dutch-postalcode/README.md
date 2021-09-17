@@ -12,3 +12,5 @@ DutchPostalCodePlugin.init('your-postcode.tech-apikey');
 ## devserver
 
 `yarn serve` to start a devserver.
+
+[![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)

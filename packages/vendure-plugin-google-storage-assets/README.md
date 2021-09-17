@@ -1,5 +1,7 @@
 # Vendure Google Asset Storage plugin
 
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-storage-assets/dev/@vendure/core)
+
 Google Cloud Storage strategy for Vendure ecommerce.  
 Stores assets in a Google Cloud Storage Bucket.
 In the Shop-api it returns the absolute public url to the storage bucket, thus not going through the asset server. I.E. `https://storage.googleapis.com/yourbucket/image.jpg`
@@ -41,3 +43,6 @@ Internally this plugin uses `new Storage();` to instantiate the Storage client, 
 ```
 
 https://cloud.google.com/compute/docs/tutorials/nodejs-guide
+
+
+[![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)

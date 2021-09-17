@@ -1,8 +1,9 @@
-import { SimpleGraphQLClient } from "@vendure/testing";
+import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   AddItemToOrder,
-  AddPaymentToOrder,
-  SetShippingAddress, SetShippingAddressMutationVariables,
+  AddPaymentToOrder, AddPaymentToOrderMutation,
+  SetShippingAddress,
+  SetShippingAddressMutationVariables,
   SetShippingMethod,
   TransitionToState
 } from "./generated/shop-graphql";
@@ -14,20 +15,23 @@ export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   address?: SetShippingAddressMutationVariables
 ) {
-  await shopClient.query(SetShippingAddress, address ?? {
-    input: {
-      fullName: "Martinho Pinelabio",
-      streetLine1: "Verzetsstraat",
-      streetLine2: "12a",
-      city: "Liwwa",
-      postalCode: "8923CP",
-      countryCode: "NL"
+  await shopClient.query(
+    SetShippingAddress,
+    address ?? {
+      input: {
+        fullName: 'Martinho Pinelabio',
+        streetLine1: 'Verzetsstraat',
+        streetLine2: '12a',
+        city: 'Liwwa',
+        postalCode: '8923CP',
+        countryCode: 'NL',
+      },
     }
-  });
+  );
   await shopClient.query(SetShippingMethod, {
-    id: 3
+    id: 3,
   });
-  await shopClient.query(TransitionToState, { state: "ArrangingPayment" });
+  await shopClient.query(TransitionToState, { state: 'ArrangingPayment' });
 }
 
 /**
@@ -36,15 +40,16 @@ export async function proceedToArrangingPayment(
 export async function addPaymentToOrder(
   shopClient: SimpleGraphQLClient,
   code: string
-) {
-  await shopClient.query(AddPaymentToOrder, {
+): Promise<AddPaymentToOrderMutation> {
+  const {addPaymentToOrder} = await shopClient.query(AddPaymentToOrder, {
     input: {
       method: code,
       metadata: {
-        baz: "quux"
-      }
-    }
+        baz: 'quux',
+      },
+    },
   });
+  return addPaymentToOrder
 }
 
 /**
@@ -57,6 +62,6 @@ export async function addItem(
 ) {
   await shopClient.query(AddItemToOrder, {
     productVariantId: variantId,
-    quantity
+    quantity,
   });
 }

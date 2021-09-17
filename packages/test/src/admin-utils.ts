@@ -1,7 +1,15 @@
-import { defaultShippingCalculator, defaultShippingEligibilityChecker, LanguageCode } from "@vendure/core";
-import { Fulfillment } from "@vendure/common/lib/generated-types";
-import { SimpleGraphQLClient } from "@vendure/testing";
-import { CreateFulfillment, CreateShippingMethod } from "./generated/admin-graphql";
+import {
+  defaultShippingCalculator,
+  defaultShippingEligibilityChecker,
+  LanguageCode
+} from "@vendure/core";
+import { Fulfillment } from '@vendure/common/lib/generated-types';
+import { SimpleGraphQLClient } from '@vendure/testing';
+import {
+  CreateFulfillment,
+  CreateShippingMethod,
+  Order, OrderQuery
+} from "./generated/admin-graphql";
 
 /**
  *
@@ -13,34 +21,34 @@ export async function addShippingMethod(
   await adminClient.asSuperAdmin();
   await adminClient.query(CreateShippingMethod, {
     input: {
-      code: "test-shipping-method",
+      code: 'test-shipping-method',
       fulfillmentHandler: fulfillmentHandlerCode,
       checker: {
         code: defaultShippingEligibilityChecker.code,
         arguments: [
           {
-            name: "orderMinimum",
-            value: "0"
-          }
-        ]
+            name: 'orderMinimum',
+            value: '0',
+          },
+        ],
       },
       calculator: {
         code: defaultShippingCalculator.code,
         arguments: [
           {
-            name: "rate",
-            value: "500"
+            name: 'rate',
+            value: '500',
           },
           {
-            name: "taxRate",
-            value: "0"
-          }
-        ]
+            name: 'taxRate',
+            value: '0',
+          },
+        ],
       },
       translations: [
-        { languageCode: LanguageCode.en, name: "test method", description: "" }
-      ]
-    }
+        { languageCode: LanguageCode.en, name: 'test method', description: '' },
+      ],
+    },
   });
 }
 
@@ -51,16 +59,24 @@ export async function fulfill(
 ): Promise<Fulfillment> {
   const lines = items.map((item) => ({
     orderLineId: item[0],
-    quantity: item[1]
+    quantity: item[1],
   }));
   const { addFulfillmentToOrder } = await adminClient.query(CreateFulfillment, {
     input: {
       lines,
       handler: {
         code: handlerCode,
-        arguments: []
-      }
-    }
+        arguments: [],
+      },
+    },
   });
   return addFulfillmentToOrder;
+}
+
+export async function getOrder(
+  adminClient: SimpleGraphQLClient,
+  orderId: string
+): Promise<OrderQuery["order"]> {
+  const { order } = await adminClient.query(Order, {id: orderId});
+  return order;
 }

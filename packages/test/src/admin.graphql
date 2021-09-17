@@ -1,14 +1,37 @@
 mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
-    createShippingMethod(input: $input) {
-        id
-    }
+  createShippingMethod(input: $input) {
+    id
+  }
 }
 
 mutation CreateFulfillment($input: FulfillOrderInput!) {
-    addFulfillmentToOrder(input: $input) {
-        ... on Fulfillment {
-            id
-            state
-        }
+  addFulfillmentToOrder(input: $input) {
+    ... on Fulfillment {
+      id
+      state
+      method
     }
+  }
+}
+
+mutation CreateFulfillment($input: FulfillOrderInput!) {
+  addFulfillmentToOrder(input: $input) {
+    ... on Fulfillment {
+      id
+      state
+      method
+    }
+  }
+}
+
+query order($id: ID!){
+  order(id: $id) {
+    id
+    code
+    fulfillments {
+      id
+      state
+      method
+    }
+  }
 }

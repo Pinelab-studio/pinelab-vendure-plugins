@@ -4985,7 +4985,14 @@ export type CreateFulfillmentMutationVariables = Exact<{
 }>;
 
 
-export type CreateFulfillmentMutation = { __typename?: 'Mutation', addFulfillmentToOrder: { __typename?: 'CreateFulfillmentError' } | { __typename?: 'EmptyOrderLineSelectionError' } | { __typename?: 'Fulfillment', id: string, state: string } | { __typename?: 'FulfillmentStateTransitionError' } | { __typename?: 'InsufficientStockOnHandError' } | { __typename?: 'InvalidFulfillmentHandlerError' } | { __typename?: 'ItemsAlreadyFulfilledError' } };
+export type CreateFulfillmentMutation = { __typename?: 'Mutation', addFulfillmentToOrder: { __typename?: 'CreateFulfillmentError' } | { __typename?: 'EmptyOrderLineSelectionError' } | { __typename?: 'Fulfillment', id: string, state: string, method: string } | { __typename?: 'FulfillmentStateTransitionError' } | { __typename?: 'InsufficientStockOnHandError' } | { __typename?: 'InvalidFulfillmentHandlerError' } | { __typename?: 'ItemsAlreadyFulfilledError' } };
+
+export type OrderQueryVariables = Exact<{
+  id: Scalars['ID'];
+}>;
+
+
+export type OrderQuery = { __typename?: 'Query', order?: Maybe<{ __typename?: 'Order', id: string, code: string, fulfillments?: Maybe<Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string }>> }> };
 
 
 export const CreateShippingMethod = gql`
@@ -5001,6 +5008,20 @@ export const CreateFulfillment = gql`
     ... on Fulfillment {
       id
       state
+      method
+    }
+  }
+}
+    `;
+export const Order = gql`
+    query order($id: ID!) {
+  order(id: $id) {
+    id
+    code
+    fulfillments {
+      id
+      state
+      method
     }
   }
 }

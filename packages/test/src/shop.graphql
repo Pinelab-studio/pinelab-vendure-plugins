@@ -56,6 +56,9 @@ mutation TransitionToState($state: String!) {
 
 mutation AddPaymentToOrder($input: PaymentInput!) {
     addPaymentToOrder(input: $input) {
+        ... on Order {
+            id
+        }
         ... on ErrorResult {
             errorCode
             message

@@ -19,18 +19,23 @@ import {
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { addShippingMethod } from "../../test/src/admin-utils";
+import { addShippingMethod } from '../../test/src/admin-utils';
+import localtunnel from 'localtunnel';
 
 require('dotenv').config();
 
 (async () => {
+  const tunnel = await localtunnel({ port: 3050 });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      MyparcelPlugin.init({
-        'e2e-default-channel': process.env.MYPARCEL_APIKEY!,
-      }, process.env.VENDURE_HOST!),
+      MyparcelPlugin.init(
+        {
+          'e2e-default-channel': process.env.MYPARCEL_APIKEY!,
+        },
+        tunnel.url
+      ),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
