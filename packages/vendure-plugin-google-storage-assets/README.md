@@ -44,5 +44,4 @@ Internally this plugin uses `new Storage();` to instantiate the Storage client, 
 
 https://cloud.google.com/compute/docs/tutorials/nodejs-guide
 
-
 [![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)

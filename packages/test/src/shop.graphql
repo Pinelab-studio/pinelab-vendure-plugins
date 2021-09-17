@@ -1,67 +1,67 @@
 mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
-    addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
-        ... on Order {
-            id
-            code
-            state
-            active
-            total
-            totalWithTax
-            lines {
-                id
-                quantity
-                productVariant {
-                    id
-                }
-                discounts {
-                    adjustmentSource
-                    amount
-                    amountWithTax
-                    description
-                    type
-                }
-            }
+  addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
+    ... on Order {
+      id
+      code
+      state
+      active
+      total
+      totalWithTax
+      lines {
+        id
+        quantity
+        productVariant {
+          id
         }
-        ... on ErrorResult {
-            errorCode
-            message
+        discounts {
+          adjustmentSource
+          amount
+          amountWithTax
+          description
+          type
         }
+      }
     }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
 }
 
 mutation SetShippingAddress($input: CreateAddressInput!) {
-    setOrderShippingAddress(input: $input) {
-        ... on Order {
-            id
-        }
+  setOrderShippingAddress(input: $input) {
+    ... on Order {
+      id
     }
+  }
 }
 
 mutation SetShippingMethod($id: ID!) {
-    setOrderShippingMethod(shippingMethodId: $id) {
-        ... on ErrorResult {
-            errorCode
-            message
-        }
+  setOrderShippingMethod(shippingMethodId: $id) {
+    ... on ErrorResult {
+      errorCode
+      message
     }
+  }
 }
 
 mutation TransitionToState($state: String!) {
-    transitionOrderToState(state: $state) {
-        ... on OrderStateTransitionError {
-            errorCode
-        }
+  transitionOrderToState(state: $state) {
+    ... on OrderStateTransitionError {
+      errorCode
     }
+  }
 }
 
 mutation AddPaymentToOrder($input: PaymentInput!) {
-    addPaymentToOrder(input: $input) {
-        ... on Order {
-            id
-        }
-        ... on ErrorResult {
-            errorCode
-            message
-        }
+  addPaymentToOrder(input: $input) {
+    ... on Order {
+      id
     }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
 }

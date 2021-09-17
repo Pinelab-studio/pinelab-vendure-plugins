@@ -1,8 +1,12 @@
 import gql from 'graphql-tag';
 export type Maybe<T> = T | null;
-export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
-export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
-export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
+export type Exact<T extends { [key: string]: unknown }> = {
+  [K in keyof T]: T[K];
+};
+export type MakeOptional<T, K extends keyof T> = Omit<T, K> &
+  { [SubKey in K]?: Maybe<T[SubKey]> };
+export type MakeMaybe<T, K extends keyof T> = Omit<T, K> &
+  { [SubKey in K]: Maybe<T[SubKey]> };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string;
@@ -18,7 +22,14 @@ export type Scalars = {
   Upload: any;
 };
 
-export type AddFulfillmentToOrderResult = CreateFulfillmentError | EmptyOrderLineSelectionError | Fulfillment | FulfillmentStateTransitionError | InsufficientStockOnHandError | InvalidFulfillmentHandlerError | ItemsAlreadyFulfilledError;
+export type AddFulfillmentToOrderResult =
+  | CreateFulfillmentError
+  | EmptyOrderLineSelectionError
+  | Fulfillment
+  | FulfillmentStateTransitionError
+  | InsufficientStockOnHandError
+  | InvalidFulfillmentHandlerError
+  | ItemsAlreadyFulfilledError;
 
 export type AddItemInput = {
   productVariantId: Scalars['ID'];
@@ -73,7 +84,7 @@ export type Adjustment = {
 
 export enum AdjustmentType {
   DistributedOrderPromotion = 'DISTRIBUTED_ORDER_PROMOTION',
-  Promotion = 'PROMOTION'
+  Promotion = 'PROMOTION',
 }
 
 export type Administrator = Node & {
@@ -128,16 +139,17 @@ export type AdministratorSortParameter = {
   updatedAt?: Maybe<SortOrder>;
 };
 
-export type Allocation = Node & StockMovement & {
-  __typename?: 'Allocation';
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  orderLine: OrderLine;
-  productVariant: ProductVariant;
-  quantity: Scalars['Int'];
-  type: StockMovementType;
-  updatedAt: Scalars['DateTime'];
-};
+export type Allocation = Node &
+  StockMovement & {
+    __typename?: 'Allocation';
+    createdAt: Scalars['DateTime'];
+    id: Scalars['ID'];
+    orderLine: OrderLine;
+    productVariant: ProductVariant;
+    quantity: Scalars['Int'];
+    type: StockMovementType;
+    updatedAt: Scalars['DateTime'];
+  };
 
 /** Returned if an attempting to refund an OrderItem which has already been refunded */
 export type AlreadyRefundedError = ErrorResult & {
@@ -212,7 +224,7 @@ export type AssetSortParameter = {
 export enum AssetType {
   Binary = 'BINARY',
   Image = 'IMAGE',
-  Video = 'VIDEO'
+  Video = 'VIDEO',
 }
 
 export type AssignAssetsToChannelInput = {
@@ -282,18 +294,25 @@ export type CancelOrderInput = {
   reason?: Maybe<Scalars['String']>;
 };
 
-export type CancelOrderResult = CancelActiveOrderError | EmptyOrderLineSelectionError | MultipleOrderError | Order | OrderStateTransitionError | QuantityTooGreatError;
+export type CancelOrderResult =
+  | CancelActiveOrderError
+  | EmptyOrderLineSelectionError
+  | MultipleOrderError
+  | Order
+  | OrderStateTransitionError
+  | QuantityTooGreatError;
 
-export type Cancellation = Node & StockMovement & {
-  __typename?: 'Cancellation';
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  orderLine: OrderLine;
-  productVariant: ProductVariant;
-  quantity: Scalars['Int'];
-  type: StockMovementType;
-  updatedAt: Scalars['DateTime'];
-};
+export type Cancellation = Node &
+  StockMovement & {
+    __typename?: 'Cancellation';
+    createdAt: Scalars['DateTime'];
+    id: Scalars['ID'];
+    orderLine: OrderLine;
+    productVariant: ProductVariant;
+    quantity: Scalars['Int'];
+    type: StockMovementType;
+    updatedAt: Scalars['DateTime'];
+  };
 
 export type Channel = Node & {
   __typename?: 'Channel';
@@ -343,7 +362,6 @@ export type Collection = Node & {
   translations: Array<CollectionTranslation>;
   updatedAt: Scalars['DateTime'];
 };
-
 
 export type CollectionProductVariantsArgs = {
   options?: Maybe<ProductVariantListOptions>;
@@ -1066,7 +1084,7 @@ export enum CurrencyCode {
   /** Zambian kwacha */
   Zmw = 'ZMW',
   /** Zimbabwean dollar */
-  Zwl = 'ZWL'
+  Zwl = 'ZWL',
 }
 
 export type CurrentUser = {
@@ -1094,7 +1112,15 @@ export type CustomField = {
   type: Scalars['String'];
 };
 
-export type CustomFieldConfig = BooleanCustomFieldConfig | DateTimeCustomFieldConfig | FloatCustomFieldConfig | IntCustomFieldConfig | LocaleStringCustomFieldConfig | RelationCustomFieldConfig | StringCustomFieldConfig | TextCustomFieldConfig;
+export type CustomFieldConfig =
+  | BooleanCustomFieldConfig
+  | DateTimeCustomFieldConfig
+  | FloatCustomFieldConfig
+  | IntCustomFieldConfig
+  | LocaleStringCustomFieldConfig
+  | RelationCustomFieldConfig
+  | StringCustomFieldConfig
+  | TextCustomFieldConfig;
 
 export type CustomFields = {
   __typename?: 'CustomFields';
@@ -1136,11 +1162,9 @@ export type Customer = Node & {
   user?: Maybe<User>;
 };
 
-
 export type CustomerHistoryArgs = {
   options?: Maybe<HistoryEntryListOptions>;
 };
-
 
 export type CustomerOrdersArgs = {
   options?: Maybe<OrderListOptions>;
@@ -1164,7 +1188,6 @@ export type CustomerGroup = Node & {
   name: Scalars['String'];
   updatedAt: Scalars['DateTime'];
 };
-
 
 export type CustomerGroupCustomersArgs = {
   options?: Maybe<CustomerListOptions>;
@@ -1272,7 +1295,7 @@ export enum DeletionResult {
   /** The entity was successfully deleted */
   Deleted = 'DELETED',
   /** Deletion did not take place, reason given in message */
-  NotDeleted = 'NOT_DELETED'
+  NotDeleted = 'NOT_DELETED',
 }
 
 export type Discount = {
@@ -1332,7 +1355,7 @@ export enum ErrorCode {
   RefundPaymentIdMissingError = 'REFUND_PAYMENT_ID_MISSING_ERROR',
   RefundStateTransitionError = 'REFUND_STATE_TRANSITION_ERROR',
   SettlePaymentError = 'SETTLE_PAYMENT_ERROR',
-  UnknownError = 'UNKNOWN_ERROR'
+  UnknownError = 'UNKNOWN_ERROR',
 }
 
 export type ErrorResult = {
@@ -1497,7 +1520,7 @@ export type FulfillmentStateTransitionError = ErrorResult & {
 export enum GlobalFlag {
   False = 'FALSE',
   Inherit = 'INHERIT',
-  True = 'TRUE'
+  True = 'TRUE',
 }
 
 export type GlobalSettings = {
@@ -1573,7 +1596,7 @@ export enum HistoryEntryType {
   OrderNote = 'ORDER_NOTE',
   OrderPaymentTransition = 'ORDER_PAYMENT_TRANSITION',
   OrderRefundTransition = 'ORDER_REFUND_TRANSITION',
-  OrderStateTransition = 'ORDER_STATE_TRANSITION'
+  OrderStateTransition = 'ORDER_STATE_TRANSITION',
 }
 
 export type ImportInfo = {
@@ -1709,7 +1732,7 @@ export enum JobState {
   Failed = 'FAILED',
   Pending = 'PENDING',
   Retrying = 'RETRYING',
-  Running = 'RUNNING'
+  Running = 'RUNNING',
 }
 
 /**
@@ -2035,7 +2058,7 @@ export enum LanguageCode {
   /** Traditional Chinese */
   ZhHant = 'zh_Hant',
   /** Zulu */
-  Zu = 'zu'
+  Zu = 'zu',
 }
 
 /** Returned if attempting to set a Channel's defaultLanguageCode to a language which is not enabled in GlobalSettings */
@@ -2067,7 +2090,7 @@ export type LocalizedString = {
 
 export enum LogicalOperator {
   And = 'AND',
-  Or = 'OR'
+  Or = 'OR',
 }
 
 export type ManualPaymentInput = {
@@ -2120,7 +2143,15 @@ export type ModifyOrderOptions = {
   recalculateShipping?: Maybe<Scalars['Boolean']>;
 };
 
-export type ModifyOrderResult = InsufficientStockError | NegativeQuantityError | NoChangesSpecifiedError | Order | OrderLimitError | OrderModificationStateError | PaymentMethodMissingError | RefundPaymentIdMissingError;
+export type ModifyOrderResult =
+  | InsufficientStockError
+  | NegativeQuantityError
+  | NoChangesSpecifiedError
+  | Order
+  | OrderLimitError
+  | OrderModificationStateError
+  | PaymentMethodMissingError
+  | RefundPaymentIdMissingError;
 
 export type MoveCollectionInput = {
   collectionId: Scalars['ID'];
@@ -2337,321 +2368,259 @@ export type Mutation = {
   updateZone: Zone;
 };
 
-
 export type MutationAddCustomersToGroupArgs = {
   customerGroupId: Scalars['ID'];
   customerIds: Array<Scalars['ID']>;
 };
 
-
 export type MutationAddFulfillmentToOrderArgs = {
   input: FulfillOrderInput;
 };
 
-
 export type MutationAddManualPaymentToOrderArgs = {
   input: ManualPaymentInput;
 };
-
 
 export type MutationAddMembersToZoneArgs = {
   memberIds: Array<Scalars['ID']>;
   zoneId: Scalars['ID'];
 };
 
-
 export type MutationAddNoteToCustomerArgs = {
   input: AddNoteToCustomerInput;
 };
 
-
 export type MutationAddNoteToOrderArgs = {
   input: AddNoteToOrderInput;
 };
-
 
 export type MutationAddOptionGroupToProductArgs = {
   optionGroupId: Scalars['ID'];
   productId: Scalars['ID'];
 };
 
-
 export type MutationAssignAssetsToChannelArgs = {
   input: AssignAssetsToChannelInput;
 };
-
 
 export type MutationAssignProductVariantsToChannelArgs = {
   input: AssignProductVariantsToChannelInput;
 };
 
-
 export type MutationAssignProductsToChannelArgs = {
   input: AssignProductsToChannelInput;
 };
 
-
 export type MutationAssignPromotionsToChannelArgs = {
   input: AssignPromotionsToChannelInput;
 };
-
 
 export type MutationAssignRoleToAdministratorArgs = {
   administratorId: Scalars['ID'];
   roleId: Scalars['ID'];
 };
 
-
 export type MutationAuthenticateArgs = {
   input: AuthenticationInput;
   rememberMe?: Maybe<Scalars['Boolean']>;
 };
 
-
 export type MutationCancelJobArgs = {
   jobId: Scalars['ID'];
 };
-
 
 export type MutationCancelOrderArgs = {
   input: CancelOrderInput;
 };
 
-
 export type MutationCreateAdministratorArgs = {
   input: CreateAdministratorInput;
 };
-
 
 export type MutationCreateAssetsArgs = {
   input: Array<CreateAssetInput>;
 };
 
-
 export type MutationCreateChannelArgs = {
   input: CreateChannelInput;
 };
-
 
 export type MutationCreateCollectionArgs = {
   input: CreateCollectionInput;
 };
 
-
 export type MutationCreateCountryArgs = {
   input: CreateCountryInput;
 };
-
 
 export type MutationCreateCustomerArgs = {
   input: CreateCustomerInput;
   password?: Maybe<Scalars['String']>;
 };
 
-
 export type MutationCreateCustomerAddressArgs = {
   customerId: Scalars['ID'];
   input: CreateAddressInput;
 };
 
-
 export type MutationCreateCustomerGroupArgs = {
   input: CreateCustomerGroupInput;
 };
-
 
 export type MutationCreateFacetArgs = {
   input: CreateFacetInput;
 };
 
-
 export type MutationCreateFacetValuesArgs = {
   input: Array<CreateFacetValueInput>;
 };
-
 
 export type MutationCreatePaymentMethodArgs = {
   input: CreatePaymentMethodInput;
 };
 
-
 export type MutationCreateProductArgs = {
   input: CreateProductInput;
 };
-
 
 export type MutationCreateProductOptionArgs = {
   input: CreateProductOptionInput;
 };
 
-
 export type MutationCreateProductOptionGroupArgs = {
   input: CreateProductOptionGroupInput;
 };
-
 
 export type MutationCreateProductVariantsArgs = {
   input: Array<CreateProductVariantInput>;
 };
 
-
 export type MutationCreatePromotionArgs = {
   input: CreatePromotionInput;
 };
-
 
 export type MutationCreateRoleArgs = {
   input: CreateRoleInput;
 };
 
-
 export type MutationCreateShippingMethodArgs = {
   input: CreateShippingMethodInput;
 };
-
 
 export type MutationCreateTagArgs = {
   input: CreateTagInput;
 };
 
-
 export type MutationCreateTaxCategoryArgs = {
   input: CreateTaxCategoryInput;
 };
-
 
 export type MutationCreateTaxRateArgs = {
   input: CreateTaxRateInput;
 };
 
-
 export type MutationCreateZoneArgs = {
   input: CreateZoneInput;
 };
-
 
 export type MutationDeleteAdministratorArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteAssetArgs = {
   input: DeleteAssetInput;
 };
-
 
 export type MutationDeleteAssetsArgs = {
   input: DeleteAssetsInput;
 };
 
-
 export type MutationDeleteChannelArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteCollectionArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteCountryArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteCustomerArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteCustomerAddressArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteCustomerGroupArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteCustomerNoteArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteFacetArgs = {
   force?: Maybe<Scalars['Boolean']>;
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteFacetValuesArgs = {
   force?: Maybe<Scalars['Boolean']>;
   ids: Array<Scalars['ID']>;
 };
 
-
 export type MutationDeleteOrderNoteArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeletePaymentMethodArgs = {
   force?: Maybe<Scalars['Boolean']>;
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteProductArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteProductVariantArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeletePromotionArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteRoleArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteShippingMethodArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteTagArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteTaxCategoryArgs = {
   id: Scalars['ID'];
 };
-
 
 export type MutationDeleteTaxRateArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationDeleteZoneArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationImportProductsArgs = {
   csvFile: Scalars['Upload'];
 };
-
 
 export type MutationLoginArgs = {
   password: Scalars['String'];
@@ -2659,223 +2628,180 @@ export type MutationLoginArgs = {
   username: Scalars['String'];
 };
 
-
 export type MutationModifyOrderArgs = {
   input: ModifyOrderInput;
 };
-
 
 export type MutationMoveCollectionArgs = {
   input: MoveCollectionInput;
 };
 
-
 export type MutationRefundOrderArgs = {
   input: RefundOrderInput;
 };
-
 
 export type MutationRemoveCustomersFromGroupArgs = {
   customerGroupId: Scalars['ID'];
   customerIds: Array<Scalars['ID']>;
 };
 
-
 export type MutationRemoveMembersFromZoneArgs = {
   memberIds: Array<Scalars['ID']>;
   zoneId: Scalars['ID'];
 };
-
 
 export type MutationRemoveOptionGroupFromProductArgs = {
   optionGroupId: Scalars['ID'];
   productId: Scalars['ID'];
 };
 
-
 export type MutationRemoveProductVariantsFromChannelArgs = {
   input: RemoveProductVariantsFromChannelInput;
 };
-
 
 export type MutationRemoveProductsFromChannelArgs = {
   input: RemoveProductsFromChannelInput;
 };
 
-
 export type MutationRemovePromotionsFromChannelArgs = {
   input: RemovePromotionsFromChannelInput;
 };
-
 
 export type MutationRemoveSettledJobsArgs = {
   olderThan?: Maybe<Scalars['DateTime']>;
   queueNames?: Maybe<Array<Scalars['String']>>;
 };
 
-
 export type MutationSetOrderCustomFieldsArgs = {
   input: UpdateOrderInput;
 };
-
 
 export type MutationSettlePaymentArgs = {
   id: Scalars['ID'];
 };
 
-
 export type MutationSettleRefundArgs = {
   input: SettleRefundInput;
 };
-
 
 export type MutationTransitionFulfillmentToStateArgs = {
   id: Scalars['ID'];
   state: Scalars['String'];
 };
 
-
 export type MutationTransitionOrderToStateArgs = {
   id: Scalars['ID'];
   state: Scalars['String'];
 };
-
 
 export type MutationTransitionPaymentToStateArgs = {
   id: Scalars['ID'];
   state: Scalars['String'];
 };
 
-
 export type MutationUpdateActiveAdministratorArgs = {
   input: UpdateActiveAdministratorInput;
 };
-
 
 export type MutationUpdateAdministratorArgs = {
   input: UpdateAdministratorInput;
 };
 
-
 export type MutationUpdateAssetArgs = {
   input: UpdateAssetInput;
 };
-
 
 export type MutationUpdateChannelArgs = {
   input: UpdateChannelInput;
 };
 
-
 export type MutationUpdateCollectionArgs = {
   input: UpdateCollectionInput;
 };
-
 
 export type MutationUpdateCountryArgs = {
   input: UpdateCountryInput;
 };
 
-
 export type MutationUpdateCustomerArgs = {
   input: UpdateCustomerInput;
 };
-
 
 export type MutationUpdateCustomerAddressArgs = {
   input: UpdateAddressInput;
 };
 
-
 export type MutationUpdateCustomerGroupArgs = {
   input: UpdateCustomerGroupInput;
 };
-
 
 export type MutationUpdateCustomerNoteArgs = {
   input: UpdateCustomerNoteInput;
 };
 
-
 export type MutationUpdateFacetArgs = {
   input: UpdateFacetInput;
 };
-
 
 export type MutationUpdateFacetValuesArgs = {
   input: Array<UpdateFacetValueInput>;
 };
 
-
 export type MutationUpdateGlobalSettingsArgs = {
   input: UpdateGlobalSettingsInput;
 };
-
 
 export type MutationUpdateOrderNoteArgs = {
   input: UpdateOrderNoteInput;
 };
 
-
 export type MutationUpdatePaymentMethodArgs = {
   input: UpdatePaymentMethodInput;
 };
-
 
 export type MutationUpdateProductArgs = {
   input: UpdateProductInput;
 };
 
-
 export type MutationUpdateProductOptionArgs = {
   input: UpdateProductOptionInput;
 };
-
 
 export type MutationUpdateProductOptionGroupArgs = {
   input: UpdateProductOptionGroupInput;
 };
 
-
 export type MutationUpdateProductVariantsArgs = {
   input: Array<UpdateProductVariantInput>;
 };
-
 
 export type MutationUpdatePromotionArgs = {
   input: UpdatePromotionInput;
 };
 
-
 export type MutationUpdateRoleArgs = {
   input: UpdateRoleInput;
 };
-
 
 export type MutationUpdateShippingMethodArgs = {
   input: UpdateShippingMethodInput;
 };
 
-
 export type MutationUpdateTagArgs = {
   input: UpdateTagInput;
 };
-
 
 export type MutationUpdateTaxCategoryArgs = {
   input: UpdateTaxCategoryInput;
 };
 
-
 export type MutationUpdateTaxRateArgs = {
   input: UpdateTaxRateInput;
 };
 
-
 export type MutationUpdateWebhookArgs = {
   url: Scalars['String'];
 };
-
 
 export type MutationUpdateZoneArgs = {
   input: UpdateZoneInput;
@@ -2893,7 +2819,10 @@ export type NativeAuthStrategyError = ErrorResult & {
   message: Scalars['String'];
 };
 
-export type NativeAuthenticationResult = CurrentUser | InvalidCredentialsError | NativeAuthStrategyError;
+export type NativeAuthenticationResult =
+  | CurrentUser
+  | InvalidCredentialsError
+  | NativeAuthStrategyError;
 
 /** Retured when attemting to set a negative OrderLine quantity. */
 export type NegativeQuantityError = ErrorResult & {
@@ -2992,7 +2921,6 @@ export type Order = Node & {
   totalWithTax: Scalars['Int'];
   updatedAt: Scalars['DateTime'];
 };
-
 
 export type OrderHistoryArgs = {
   options?: Maybe<HistoryEntryListOptions>;
@@ -3503,7 +3431,7 @@ export enum Permission {
   /** Grants permission to update TaxRate */
   UpdateTaxRate = 'UpdateTaxRate',
   /** Grants permission to update Zone */
-  UpdateZone = 'UpdateZone'
+  UpdateZone = 'UpdateZone',
 }
 
 export type PermissionDefinition = {
@@ -3691,7 +3619,6 @@ export type ProductVariant = Node & {
   updatedAt: Scalars['DateTime'];
   useGlobalOutOfStockThreshold: Scalars['Boolean'];
 };
-
 
 export type ProductVariantStockMovementsArgs = {
   options?: Maybe<StockMovementListOptions>;
@@ -3887,219 +3814,176 @@ export type Query = {
   zones: Array<Zone>;
 };
 
-
 export type QueryAdministratorArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryAdministratorsArgs = {
   options?: Maybe<AdministratorListOptions>;
 };
 
-
 export type QueryAssetArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryAssetsArgs = {
   options?: Maybe<AssetListOptions>;
 };
 
-
 export type QueryChannelArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryCollectionArgs = {
   id?: Maybe<Scalars['ID']>;
   slug?: Maybe<Scalars['String']>;
 };
 
-
 export type QueryCollectionsArgs = {
   options?: Maybe<CollectionListOptions>;
 };
-
 
 export type QueryCountriesArgs = {
   options?: Maybe<CountryListOptions>;
 };
 
-
 export type QueryCountryArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryCustomerArgs = {
   id: Scalars['ID'];
 };
 
-
 export type QueryCustomerGroupArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryCustomerGroupsArgs = {
   options?: Maybe<CustomerGroupListOptions>;
 };
 
-
 export type QueryCustomersArgs = {
   options?: Maybe<CustomerListOptions>;
 };
-
 
 export type QueryFacetArgs = {
   id: Scalars['ID'];
 };
 
-
 export type QueryFacetsArgs = {
   options?: Maybe<FacetListOptions>;
 };
-
 
 export type QueryJobArgs = {
   jobId: Scalars['ID'];
 };
 
-
 export type QueryJobsArgs = {
   options?: Maybe<JobListOptions>;
 };
-
 
 export type QueryJobsByIdArgs = {
   jobIds: Array<Scalars['ID']>;
 };
 
-
 export type QueryOrderArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryOrdersArgs = {
   options?: Maybe<OrderListOptions>;
 };
 
-
 export type QueryPaymentMethodArgs = {
   id: Scalars['ID'];
 };
 
-
 export type QueryPaymentMethodsArgs = {
   options?: Maybe<PaymentMethodListOptions>;
 };
-
 
 export type QueryProductArgs = {
   id?: Maybe<Scalars['ID']>;
   slug?: Maybe<Scalars['String']>;
 };
 
-
 export type QueryProductOptionGroupArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryProductOptionGroupsArgs = {
   filterTerm?: Maybe<Scalars['String']>;
 };
 
-
 export type QueryProductVariantArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryProductVariantsArgs = {
   options?: Maybe<ProductVariantListOptions>;
   productId?: Maybe<Scalars['ID']>;
 };
 
-
 export type QueryProductsArgs = {
   options?: Maybe<ProductListOptions>;
 };
-
 
 export type QueryPromotionArgs = {
   id: Scalars['ID'];
 };
 
-
 export type QueryPromotionsArgs = {
   options?: Maybe<PromotionListOptions>;
 };
-
 
 export type QueryRoleArgs = {
   id: Scalars['ID'];
 };
 
-
 export type QueryRolesArgs = {
   options?: Maybe<RoleListOptions>;
 };
-
 
 export type QuerySearchArgs = {
   input: SearchInput;
 };
 
-
 export type QueryShippingMethodArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryShippingMethodsArgs = {
   options?: Maybe<ShippingMethodListOptions>;
 };
 
-
 export type QueryTagArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryTagsArgs = {
   options?: Maybe<TagListOptions>;
 };
 
-
 export type QueryTaxCategoryArgs = {
   id: Scalars['ID'];
 };
-
 
 export type QueryTaxRateArgs = {
   id: Scalars['ID'];
 };
 
-
 export type QueryTaxRatesArgs = {
   options?: Maybe<TaxRateListOptions>;
 };
-
 
 export type QueryTestEligibleShippingMethodsArgs = {
   input: TestEligibleShippingMethodsInput;
 };
 
-
 export type QueryTestShippingMethodArgs = {
   input: TestShippingMethodInput;
 };
-
 
 export type QueryZoneArgs = {
   id: Scalars['ID'];
@@ -4131,7 +4015,16 @@ export type RefundOrderInput = {
   shipping: Scalars['Int'];
 };
 
-export type RefundOrderResult = AlreadyRefundedError | MultipleOrderError | NothingToRefundError | OrderStateTransitionError | PaymentOrderMismatchError | QuantityTooGreatError | Refund | RefundOrderStateError | RefundStateTransitionError;
+export type RefundOrderResult =
+  | AlreadyRefundedError
+  | MultipleOrderError
+  | NothingToRefundError
+  | OrderStateTransitionError
+  | PaymentOrderMismatchError
+  | QuantityTooGreatError
+  | Refund
+  | RefundOrderStateError
+  | RefundStateTransitionError;
 
 /** Returned if an attempting to refund an Order which is not in the expected state */
 export type RefundOrderStateError = ErrorResult & {
@@ -4174,18 +4067,21 @@ export type RelationCustomFieldConfig = CustomField & {
   type: Scalars['String'];
 };
 
-export type Release = Node & StockMovement & {
-  __typename?: 'Release';
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  orderItem: OrderItem;
-  productVariant: ProductVariant;
-  quantity: Scalars['Int'];
-  type: StockMovementType;
-  updatedAt: Scalars['DateTime'];
-};
+export type Release = Node &
+  StockMovement & {
+    __typename?: 'Release';
+    createdAt: Scalars['DateTime'];
+    id: Scalars['ID'];
+    orderItem: OrderItem;
+    productVariant: ProductVariant;
+    quantity: Scalars['Int'];
+    type: StockMovementType;
+    updatedAt: Scalars['DateTime'];
+  };
 
-export type RemoveOptionGroupFromProductResult = Product | ProductOptionInUseError;
+export type RemoveOptionGroupFromProductResult =
+  | Product
+  | ProductOptionInUseError;
 
 export type RemoveProductVariantsFromChannelInput = {
   channelId: Scalars['ID'];
@@ -4202,16 +4098,17 @@ export type RemovePromotionsFromChannelInput = {
   promotionIds: Array<Scalars['ID']>;
 };
 
-export type Return = Node & StockMovement & {
-  __typename?: 'Return';
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  orderItem: OrderItem;
-  productVariant: ProductVariant;
-  quantity: Scalars['Int'];
-  type: StockMovementType;
-  updatedAt: Scalars['DateTime'];
-};
+export type Return = Node &
+  StockMovement & {
+    __typename?: 'Return';
+    createdAt: Scalars['DateTime'];
+    id: Scalars['ID'];
+    orderItem: OrderItem;
+    productVariant: ProductVariant;
+    quantity: Scalars['Int'];
+    type: StockMovementType;
+    updatedAt: Scalars['DateTime'];
+  };
 
 export type Role = Node & {
   __typename?: 'Role';
@@ -4252,16 +4149,17 @@ export type RoleSortParameter = {
   updatedAt?: Maybe<SortOrder>;
 };
 
-export type Sale = Node & StockMovement & {
-  __typename?: 'Sale';
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  orderItem: OrderItem;
-  productVariant: ProductVariant;
-  quantity: Scalars['Int'];
-  type: StockMovementType;
-  updatedAt: Scalars['DateTime'];
-};
+export type Sale = Node &
+  StockMovement & {
+    __typename?: 'Sale';
+    createdAt: Scalars['DateTime'];
+    id: Scalars['ID'];
+    orderItem: OrderItem;
+    productVariant: ProductVariant;
+    quantity: Scalars['Int'];
+    type: StockMovementType;
+    updatedAt: Scalars['DateTime'];
+  };
 
 export type SearchInput = {
   collectionId?: Maybe<Scalars['ID']>;
@@ -4345,7 +4243,11 @@ export type SettlePaymentError = ErrorResult & {
   paymentErrorMessage: Scalars['String'];
 };
 
-export type SettlePaymentResult = OrderStateTransitionError | Payment | PaymentStateTransitionError | SettlePaymentError;
+export type SettlePaymentResult =
+  | OrderStateTransitionError
+  | Payment
+  | PaymentStateTransitionError
+  | SettlePaymentError;
 
 export type SettleRefundInput = {
   id: Scalars['ID'];
@@ -4449,18 +4351,19 @@ export type SinglePrice = {
 
 export enum SortOrder {
   Asc = 'ASC',
-  Desc = 'DESC'
+  Desc = 'DESC',
 }
 
-export type StockAdjustment = Node & StockMovement & {
-  __typename?: 'StockAdjustment';
-  createdAt: Scalars['DateTime'];
-  id: Scalars['ID'];
-  productVariant: ProductVariant;
-  quantity: Scalars['Int'];
-  type: StockMovementType;
-  updatedAt: Scalars['DateTime'];
-};
+export type StockAdjustment = Node &
+  StockMovement & {
+    __typename?: 'StockAdjustment';
+    createdAt: Scalars['DateTime'];
+    id: Scalars['ID'];
+    productVariant: ProductVariant;
+    quantity: Scalars['Int'];
+    type: StockMovementType;
+    updatedAt: Scalars['DateTime'];
+  };
 
 export type StockMovement = {
   createdAt: Scalars['DateTime'];
@@ -4471,7 +4374,13 @@ export type StockMovement = {
   updatedAt: Scalars['DateTime'];
 };
 
-export type StockMovementItem = Allocation | Cancellation | Release | Return | Sale | StockAdjustment;
+export type StockMovementItem =
+  | Allocation
+  | Cancellation
+  | Release
+  | Return
+  | Sale
+  | StockAdjustment;
 
 export type StockMovementList = {
   __typename?: 'StockMovementList';
@@ -4491,7 +4400,7 @@ export enum StockMovementType {
   Cancellation = 'CANCELLATION',
   Release = 'RELEASE',
   Return = 'RETURN',
-  Sale = 'SALE'
+  Sale = 'SALE',
 }
 
 export type StringCustomFieldConfig = CustomField & {
@@ -4684,11 +4593,15 @@ export type TextCustomFieldConfig = CustomField & {
   type: Scalars['String'];
 };
 
-export type TransitionFulfillmentToStateResult = Fulfillment | FulfillmentStateTransitionError;
+export type TransitionFulfillmentToStateResult =
+  | Fulfillment
+  | FulfillmentStateTransitionError;
 
 export type TransitionOrderToStateResult = Order | OrderStateTransitionError;
 
-export type TransitionPaymentToStateResult = Payment | PaymentStateTransitionError;
+export type TransitionPaymentToStateResult =
+  | Payment
+  | PaymentStateTransitionError;
 
 export type UpdateActiveAdministratorInput = {
   customFields?: Maybe<Scalars['JSON']>;
@@ -4817,7 +4730,9 @@ export type UpdateGlobalSettingsInput = {
   trackInventory?: Maybe<Scalars['Boolean']>;
 };
 
-export type UpdateGlobalSettingsResult = ChannelDefaultLanguageError | GlobalSettings;
+export type UpdateGlobalSettingsResult =
+  | ChannelDefaultLanguageError
+  | GlobalSettings;
 
 export type UpdateOrderAddressInput = {
   city?: Maybe<Scalars['String']>;
@@ -4977,52 +4892,76 @@ export type CreateShippingMethodMutationVariables = Exact<{
   input: CreateShippingMethodInput;
 }>;
 
-
-export type CreateShippingMethodMutation = { __typename?: 'Mutation', createShippingMethod: { __typename?: 'ShippingMethod', id: string } };
+export type CreateShippingMethodMutation = {
+  __typename?: 'Mutation';
+  createShippingMethod: { __typename?: 'ShippingMethod'; id: string };
+};
 
 export type CreateFulfillmentMutationVariables = Exact<{
   input: FulfillOrderInput;
 }>;
 
-
-export type CreateFulfillmentMutation = { __typename?: 'Mutation', addFulfillmentToOrder: { __typename?: 'CreateFulfillmentError' } | { __typename?: 'EmptyOrderLineSelectionError' } | { __typename?: 'Fulfillment', id: string, state: string, method: string } | { __typename?: 'FulfillmentStateTransitionError' } | { __typename?: 'InsufficientStockOnHandError' } | { __typename?: 'InvalidFulfillmentHandlerError' } | { __typename?: 'ItemsAlreadyFulfilledError' } };
+export type CreateFulfillmentMutation = {
+  __typename?: 'Mutation';
+  addFulfillmentToOrder:
+    | { __typename?: 'CreateFulfillmentError' }
+    | { __typename?: 'EmptyOrderLineSelectionError' }
+    | { __typename?: 'Fulfillment'; id: string; state: string; method: string }
+    | { __typename?: 'FulfillmentStateTransitionError' }
+    | { __typename?: 'InsufficientStockOnHandError' }
+    | { __typename?: 'InvalidFulfillmentHandlerError' }
+    | { __typename?: 'ItemsAlreadyFulfilledError' };
+};
 
 export type OrderQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
 
-
-export type OrderQuery = { __typename?: 'Query', order?: Maybe<{ __typename?: 'Order', id: string, code: string, fulfillments?: Maybe<Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string }>> }> };
-
+export type OrderQuery = {
+  __typename?: 'Query';
+  order?: Maybe<{
+    __typename?: 'Order';
+    id: string;
+    code: string;
+    fulfillments?: Maybe<
+      Array<{
+        __typename?: 'Fulfillment';
+        id: string;
+        state: string;
+        method: string;
+      }>
+    >;
+  }>;
+};
 
 export const CreateShippingMethod = gql`
-    mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
-  createShippingMethod(input: $input) {
-    id
+  mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
+    createShippingMethod(input: $input) {
+      id
+    }
   }
-}
-    `;
+`;
 export const CreateFulfillment = gql`
-    mutation CreateFulfillment($input: FulfillOrderInput!) {
-  addFulfillmentToOrder(input: $input) {
-    ... on Fulfillment {
-      id
-      state
-      method
+  mutation CreateFulfillment($input: FulfillOrderInput!) {
+    addFulfillmentToOrder(input: $input) {
+      ... on Fulfillment {
+        id
+        state
+        method
+      }
     }
   }
-}
-    `;
+`;
 export const Order = gql`
-    query order($id: ID!) {
-  order(id: $id) {
-    id
-    code
-    fulfillments {
+  query order($id: ID!) {
+    order(id: $id) {
       id
-      state
-      method
+      code
+      fulfillments {
+        id
+        state
+        method
+      }
     }
   }
-}
-    `;
+`;

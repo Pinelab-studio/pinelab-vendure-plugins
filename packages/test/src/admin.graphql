@@ -24,7 +24,7 @@ mutation CreateFulfillment($input: FulfillOrderInput!) {
   }
 }
 
-query order($id: ID!){
+query order($id: ID!) {
   order(id: $id) {
     id
     code

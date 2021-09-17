@@ -1,22 +1,28 @@
-import { MyparcelPlugin } from "./myparcel.plugin";
-import { ChannelService, FulfillmentService, FulfillmentState, Logger, Order, RequestContext } from "@vendure/core";
-import { Connection } from "typeorm";
-import { OrderAddress } from "@vendure/common/lib/generated-types";
-import { ApolloError } from "apollo-server-core";
-import axios from "axios";
-import { Injectable, OnModuleInit } from "@nestjs/common";
-import { Fulfillment } from "@vendure/core/dist/entity/fulfillment/fulfillment.entity";
+import { MyparcelPlugin } from './myparcel.plugin';
+import {
+  ChannelService,
+  FulfillmentService,
+  FulfillmentState,
+  Logger,
+  Order,
+  RequestContext,
+} from '@vendure/core';
+import { Connection } from 'typeorm';
+import { OrderAddress } from '@vendure/common/lib/generated-types';
+import { ApolloError } from 'apollo-server-core';
+import axios from 'axios';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 
 @Injectable()
 export class MyparcelService implements OnModuleInit {
-  client = axios.create({ baseURL: "https://api.myparcel.nl/" });
+  client = axios.create({ baseURL: 'https://api.myparcel.nl/' });
 
   constructor(
     private fulfillmentService: FulfillmentService,
     private channelService: ChannelService,
     private connection: Connection
-  ) {
-  }
+  ) {}
 
   async onModuleInit(): Promise<void> {
     // Create webhook subscription for all channels
@@ -24,14 +30,14 @@ export class MyparcelService implements OnModuleInit {
     await Promise.all(
       Object.entries(MyparcelPlugin.apiKeys).map(([channelToken, apiKey]) => {
         return this.post(
-          "webhook_subscriptions",
+          'webhook_subscriptions',
           {
             webhook_subscriptions: [
               {
-                hook: "shipment_status_change",
-                url: webhook
-              }
-            ]
+                hook: 'shipment_status_change',
+                url: webhook,
+              },
+            ],
           },
           apiKey
         )
@@ -53,8 +59,12 @@ export class MyparcelService implements OnModuleInit {
     Logger.info(`Initialized MyParcel plugin`, MyparcelPlugin.loggerCtx);
   }
 
-  async updateStatus(channelToken: string, shipmentId: string, status: number): Promise<void> {
-    const fulfillmentReference= this.getFulfillmentReference(shipmentId);
+  async updateStatus(
+    channelToken: string,
+    shipmentId: string,
+    status: number
+  ): Promise<void> {
+    const fulfillmentReference = this.getFulfillmentReference(shipmentId);
     const channel = await this.channelService.getChannelFromToken(channelToken);
     const fulfillment = await this.connection
       .getRepository(Fulfillment)
@@ -73,13 +83,19 @@ export class MyparcelService implements OnModuleInit {
       );
     }
     const ctx = new RequestContext({
-      apiType: "admin",
+      apiType: 'admin',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
       channel,
     });
-    await this.fulfillmentService.transitionToState(ctx, fulfillment.id,  fulfillmentStatus);
-    Logger.info(`Updated fulfillment ${fulfillmentReference} to ${fulfillmentStatus}`);
+    await this.fulfillmentService.transitionToState(
+      ctx,
+      fulfillment.id,
+      fulfillmentStatus
+    );
+    Logger.info(
+      `Updated fulfillment ${fulfillmentReference} to ${fulfillmentStatus}`
+    );
   }
 
   async createShipments(
@@ -88,7 +104,7 @@ export class MyparcelService implements OnModuleInit {
   ): Promise<string> {
     const shipments = this.toShipment(orders);
     const res = await this.post(
-      "shipments",
+      'shipments',
       { shipments },
       this.getApiKey(channelToken)
     );
@@ -109,7 +125,7 @@ export class MyparcelService implements OnModuleInit {
         reference_identifier: order.code,
         options: {
           package_type: 1, // Parcel
-          label_description: order.code
+          label_description: order.code,
         },
         recipient: {
           cc: address.countryCode!,
@@ -121,8 +137,8 @@ export class MyparcelService implements OnModuleInit {
           postal_code: address.postalCode!,
           person: address.fullName!,
           phone: address.phoneNumber || undefined,
-          email: order.customer?.emailAddress
-        }
+          email: order.customer?.emailAddress,
+        },
       };
     });
   }
@@ -140,22 +156,22 @@ export class MyparcelService implements OnModuleInit {
   }
 
   private async post(
-    path: "shipments" | "webhook_subscriptions",
+    path: 'shipments' | 'webhook_subscriptions',
     body: unknown,
     apiKey: string
   ): Promise<MyparcelResponse> {
     const shipmentContentType =
-      "application/vnd.shipment+json;version=1.1;charset=utf-8";
-    const defaultContentType = "application/json";
+      'application/vnd.shipment+json;version=1.1;charset=utf-8';
+    const defaultContentType = 'application/json';
     const contentType =
-      path === "shipments" ? shipmentContentType : defaultContentType;
+      path === 'shipments' ? shipmentContentType : defaultContentType;
     const buff = Buffer.from(apiKey);
-    const encodedKey = buff.toString("base64");
-    this.client.defaults.headers["Authorization"] = `basic ${encodedKey}`;
-    this.client.defaults.headers["Content-Type"] = contentType;
+    const encodedKey = buff.toString('base64');
+    this.client.defaults.headers['Authorization'] = `basic ${encodedKey}`;
+    this.client.defaults.headers['Content-Type'] = contentType;
     try {
       const res = await this.client.post(path, {
-        data: body
+        data: body,
       });
       return res.data;
     } catch (err) {
@@ -191,7 +207,7 @@ export class MyparcelService implements OnModuleInit {
 
 export class MyParcelError extends ApolloError {
   constructor(message: string) {
-    super(message, "MY_PARCEL_ERROR");
+    super(message, 'MY_PARCEL_ERROR');
   }
 }
 
@@ -259,23 +275,23 @@ export interface MyparcelStatusChangeEvent {
 }
 
 export const myparcelStatusses: { [key: string]: FulfillmentState } = {
-  1: "Pending",
-  2: "Pending",
-  3: "Shipped",
-  4: "Shipped",
-  5: "Shipped",
-  6: "Shipped",
-  7: "Delivered",
-  8: "Delivered",
-  9: "Delivered",
-  10: "Delivered",
-  11: "Delivered",
-  32: "Shipped",
-  33: "Shipped",
-  34: "Shipped",
-  35: "Shipped",
-  36: "Delivered",
-  37: "Delivered",
-  38: "Delivered",
-  99: "Delivered"
+  1: 'Pending',
+  2: 'Pending',
+  3: 'Shipped',
+  4: 'Shipped',
+  5: 'Shipped',
+  6: 'Shipped',
+  7: 'Delivered',
+  8: 'Delivered',
+  9: 'Delivered',
+  10: 'Delivered',
+  11: 'Delivered',
+  32: 'Shipped',
+  33: 'Shipped',
+  34: 'Shipped',
+  35: 'Shipped',
+  36: 'Delivered',
+  37: 'Delivered',
+  38: 'Delivered',
+  99: 'Delivered',
 };

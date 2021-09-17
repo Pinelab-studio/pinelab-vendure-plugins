@@ -1,12 +1,13 @@
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   AddItemToOrder,
-  AddPaymentToOrder, AddPaymentToOrderMutation,
+  AddPaymentToOrder,
+  AddPaymentToOrderMutation,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
-  TransitionToState
-} from "./generated/shop-graphql";
+  TransitionToState,
+} from './generated/shop-graphql';
 
 /**
  * Proceed the active order of current shopClient to proceed to payment
@@ -41,7 +42,7 @@ export async function addPaymentToOrder(
   shopClient: SimpleGraphQLClient,
   code: string
 ): Promise<AddPaymentToOrderMutation> {
-  const {addPaymentToOrder} = await shopClient.query(AddPaymentToOrder, {
+  const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
     input: {
       method: code,
       metadata: {
@@ -49,7 +50,7 @@ export async function addPaymentToOrder(
       },
     },
   });
-  return addPaymentToOrder
+  return addPaymentToOrder;
 }
 
 /**

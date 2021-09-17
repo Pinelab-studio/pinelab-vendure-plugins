@@ -1,15 +1,16 @@
 import {
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
-  LanguageCode
-} from "@vendure/core";
+  LanguageCode,
+} from '@vendure/core';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   CreateFulfillment,
   CreateShippingMethod,
-  Order, OrderQuery
-} from "./generated/admin-graphql";
+  Order,
+  OrderQuery,
+} from './generated/admin-graphql';
 
 /**
  *
@@ -76,7 +77,7 @@ export async function fulfill(
 export async function getOrder(
   adminClient: SimpleGraphQLClient,
   orderId: string
-): Promise<OrderQuery["order"]> {
-  const { order } = await adminClient.query(Order, {id: orderId});
+): Promise<OrderQuery['order']> {
+  const { order } = await adminClient.query(Order, { id: orderId });
   return order;
 }

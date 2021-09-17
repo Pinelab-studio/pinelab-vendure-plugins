@@ -5,7 +5,7 @@ import {
 } from '@vendure/core';
 import { myparcelHandler } from './myparcel.handler';
 import { MyparcelService } from './myparcel.service';
-import { MyparcelController } from "./myparcel.controller";
+import { MyparcelController } from './myparcel.controller';
 
 @VendurePlugin({
   imports: [PluginCommonModule],

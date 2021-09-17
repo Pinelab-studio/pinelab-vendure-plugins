@@ -15,11 +15,19 @@ import {
   addPaymentToOrder,
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
-import { addShippingMethod, fulfill, getOrder } from "../../test/src/admin-utils";
+import {
+  addShippingMethod,
+  fulfill,
+  getOrder,
+} from '../../test/src/admin-utils';
 import nock from 'nock';
-import { MyparcelShipment, MyparcelStatusChangeEvent, WebhookSubscription } from "../src/myparcel.service";
+import {
+  MyparcelShipment,
+  MyparcelStatusChangeEvent,
+  WebhookSubscription,
+} from '../src/myparcel.service';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
-import axios from "axios";
+import axios from 'axios';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -166,20 +174,27 @@ describe('MyParcel', () => {
   });
 });
 
-export async function postStatusChange(fulfullmentReference: string, status: number): Promise<void> {
+export async function postStatusChange(
+  fulfullmentReference: string,
+  status: number
+): Promise<void> {
   const shipmentId = fulfullmentReference.replace(`MyParcel `, '');
   let buff = Buffer.from(apiKey);
-  let encodedKey = buff.toString("base64");
-  await axios.post('http://localhost:3050/myparcel/update-status', <MyparcelStatusChangeEvent> {
-    data: {
-      hooks: [
-        {
-          shipment_id: shipmentId,
-          status
-        }
-      ]
+  let encodedKey = buff.toString('base64');
+  await axios.post(
+    'http://localhost:3050/myparcel/update-status',
+    <MyparcelStatusChangeEvent>{
+      data: {
+        hooks: [
+          {
+            shipment_id: shipmentId,
+            status,
+          },
+        ],
+      },
+    },
+    {
+      headers: { 'X-MyParcel-Authorization': encodedKey },
     }
-  },{
-    headers: {'X-MyParcel-Authorization': encodedKey}
-  });
+  );
 }
