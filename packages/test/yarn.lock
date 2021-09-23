@@ -1540,15 +1540,15 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@vendure/common@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.2.0.tgz#434ccd25842b233eeb8fad9822e2d26ad00c7b28"
-  integrity sha512-Yq+aRkvvNLqO4nRx2MeWveLA7Inzq601wUOrts3oGlhj/62W+OyyzCLxRr62ZRcnVO8aFjugTVtGsEprUQVo5g==
+"@vendure/common@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.2.1.tgz#186ac0ca5d340375608a462bba01436c9444def5"
+  integrity sha512-Arf/dMNx4Bqb4zuNXa8ouuHHCV/1ud4SCyCP1qkIXxUjSBoaoFG2mBA3S/wewmDCUhJXGB1YIEQ1sRUr3AHnHw==
 
-"@vendure/core@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.2.0.tgz#40dbc7b177e29f57330b59c9191716f005ed5f36"
-  integrity sha512-uG+pDs8A+xKV4xjvt1OXvHD8H4ZAbzFSOCuVWV195rGHQLeY6aauVOxwRJqotY+aM57lk8PE0B1JdRMiEzIlxQ==
+"@vendure/core@1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.2.1.tgz#657507bbb16d4a5333f21982764bd4a945759840"
+  integrity sha512-E2u5QxrYyh5sF4mRYvGWtOJ9arF+R4PovR6uaEPD5+AIBp/6xptqdHXDFHP5fPGFrFG6KcAk39pBRRnbmAR7hw==
   dependencies:
     "@graphql-tools/stitch" "^7.5.3"
     "@nestjs/common" "7.6.17"
@@ -1559,7 +1559,7 @@
     "@nestjs/testing" "7.6.17"
     "@nestjs/typeorm" "7.1.5"
     "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^1.2.0"
+    "@vendure/common" "^1.2.1"
     apollo-server-express "2.24.1"
     bcrypt "^5.0.0"
     body-parser "^1.19.0"
@@ -1587,13 +1587,13 @@
     rxjs "^6.6.3"
     typeorm "0.2.31"
 
-"@vendure/testing@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.2.0.tgz#792c814ed38922f28ff158c60a0f233b623fe644"
-  integrity sha512-7YkZOMJyQDQMxlOrPde+JxU8qKNbncQFIQXI7D879+81qGaMeYHDzuN2WFteDBeOn4kfN4lM4CYu6eC60Q5lbg==
+"@vendure/testing@1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.2.1.tgz#0f68022f32642259b65b0dd179c80a451bf4b205"
+  integrity sha512-pNoswEe76Llh+wM2bdX4TJT+SpCwRoHSVySFO2TRqrRULUoiG8BuIyJVTAsfkshph8Y+nCl+VemyEWU8vr/P6Q==
   dependencies:
     "@types/node-fetch" "^2.5.4"
-    "@vendure/common" "^1.2.0"
+    "@vendure/common" "^1.2.1"
     faker "^4.1.0"
     form-data "^3.0.0"
     graphql "15.5.1"

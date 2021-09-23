@@ -36,6 +36,12 @@ Vendure plugin for looking up Dutch addresses based on given postalCode and hous
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-dutch-postalcode/dev/@vendure/core)  
 Vendure plugin using Google Cloud Tasks as queue for job processing.
 
+## MyParcel plugin
+
+[![webhook plugin version](https://img.shields.io/npm/v/vendure-plugin-myparcel)](https://www.npmjs.com/package/vendure-plugin-myparcel)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-myparcel/dev/@vendure/core)
+Sends orders to MyParcel on fulfillment.
+
 ## Contributing
 
 Just create a PR!
@@ -45,5 +51,7 @@ Just create a PR!
 Each package has the following commands:
 
 1. `yarn build` compiles typescript. Fails if any types mismatch
-1. `yarn serve` start a devserver with the plugin
-1. `yarn test` run tests for the plugin
+2. `yarn serve` start a devserver with the plugin
+3. `yarn test` run tests for the plugin
+
+[![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)

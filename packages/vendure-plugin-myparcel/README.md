@@ -1,17 +1,18 @@
 # Vendure Plugin for syncing orders to MyParcel
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-cloud-tasks/dev/@vendure/core)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-myparcel/dev/@vendure/core)
 
 Sends orders to MyParcel on fulfillment.
 
 Add this to your plugins in `vendure-config.ts`:
+
 ```js
-      MyparcelPlugin.init(
-        {
-          'channel-token': 'myparcel-key-for-channel'
-        },
-        'https://your-vendure-host.io'
-      )
+MyparcelPlugin.init(
+  {
+    'channel-token': 'myparcel-key-for-channel',
+  },
+  'https://your-vendure-host.io'
+);
 ```
 
 1. Create a shipmentMethod with `MyParcel fulfillment`.

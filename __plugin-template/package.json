@@ -19,11 +19,11 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@vendure/admin-ui": "1.2.0",
-    "@vendure/admin-ui-plugin": "1.2.0",
-    "@vendure/asset-server-plugin": "1.2.0",
-    "@vendure/core": "1.2.0",
-    "@vendure/ui-devkit": "1.2.0",
+    "@vendure/admin-ui": "1.2.1",
+    "@vendure/admin-ui-plugin": "1.2.1",
+    "@vendure/asset-server-plugin": "1.2.1",
+    "@vendure/core": "1.2.1",
+    "@vendure/ui-devkit": "1.2.1",
     "ts-node": "^9.1.1"
   }
 }
