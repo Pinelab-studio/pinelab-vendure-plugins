@@ -18,6 +18,9 @@
     "build": "rimraf dist && tsc",
     "test": "jest --preset=\"ts-jest\""
   },
+  "config": {
+    "vendure": "1.2.1"
+  },
   "dependencies": {
     "axios": "^0.21.4"
   },

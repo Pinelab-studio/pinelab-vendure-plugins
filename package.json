@@ -10,7 +10,8 @@
     "build": "yarn && yarn prettier:write && yarn lerna exec yarn && yarn lerna run build",
     "test": "yarn lerna run test",
     "lerna:publish": "yarn build && yarn lerna publish",
-    "prettier:write": "prettier --write ."
+    "prettier:write": "prettier --write .",
+    "upgrade:vendure": "yarn lerna exec \"yarn upgrade --pattern @vendure --latest\""
   },
   "devDependencies": {
     "husky": "^6.0.0",
