@@ -35,7 +35,8 @@ export class MyparcelController {
     }
     const [channelToken] = entry;
     Logger.debug(
-      `Incoming status-change for shipment ${shipmentId} for channel ${channelToken} with status ${status}`
+      `Incoming status-change for shipment ${shipmentId} for channel ${channelToken} with status ${status}`,
+      MyparcelPlugin.loggerCtx
     );
     await this.myparcelService.updateStatus(channelToken, shipmentId, status);
   }

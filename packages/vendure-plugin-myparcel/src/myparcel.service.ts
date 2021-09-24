@@ -94,7 +94,8 @@ export class MyparcelService implements OnModuleInit {
       fulfillmentStatus
     );
     Logger.info(
-      `Updated fulfillment ${fulfillmentReference} to ${fulfillmentStatus}`
+      `Updated fulfillment ${fulfillmentReference} to ${fulfillmentStatus}`,
+      MyparcelPlugin.loggerCtx
     );
   }
 
