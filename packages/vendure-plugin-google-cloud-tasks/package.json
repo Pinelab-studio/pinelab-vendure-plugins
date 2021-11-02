@@ -20,7 +20,8 @@
   },
   "dependencies": {
     "@google-cloud/tasks": "^2.3.4",
-    "@types/jest": "^26.0.24"
+    "@types/jest": "^26.0.24",
+    "body-parser": "^1.19.0"
   },
   "devDependencies": {
     "@types/localtunnel": "^2.0.0",
