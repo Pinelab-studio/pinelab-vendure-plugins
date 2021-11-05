@@ -13,8 +13,7 @@ import {
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
-import { GoogleStorageStrategy } from '../src';
-import { GoogleStoragePlugin } from '../dist';
+import { GoogleStoragePlugin, GoogleStorageStrategy } from "../src";
 
 jest.setTimeout(20000);
 describe('Google Storage Assets plugin', () => {
@@ -43,7 +42,7 @@ describe('Google Storage Assets plugin', () => {
     testServer = server;
     const serverStart = server.init({
       initialData: initialData as InitialData,
-      productsCsvPath: '../test/products-import.csv',
+      productsCsvPath: '../test/src/products-import.csv',
     });
     await expect(serverStart).resolves.toEqual(undefined);
   });

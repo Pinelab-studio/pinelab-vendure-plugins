@@ -30,6 +30,6 @@ import { initialData } from '../../test/src/initial-data';
   const { server } = createTestEnvironment(config);
   await server.init({
     initialData: initialData as InitialData,
-    productsCsvPath: '../test/products-import.csv',
+    productsCsvPath: '../test/src/products-import.csv',
   });
 })();
