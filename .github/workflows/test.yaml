@@ -17,6 +17,6 @@ jobs:
           node-version: '14'
       - run: yarn
       - name: Build test-utils
-        run: cd packages/test && yarn && yarn build
+        run: cd packages/test && yarn
       - name: Test vendure-plugin-dutch-postalcode
         run: cd packages/vendure-plugin-dutch-postalcode && yarn && yarn build && yarn test
