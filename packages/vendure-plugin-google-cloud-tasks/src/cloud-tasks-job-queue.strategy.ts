@@ -47,7 +47,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
     };
 
     const request = { parent, task };
-    const [_response] = await this.client.createTask(request);
+    await this.client.createTask(request);
 
     Logger.debug(
       `Added job to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,

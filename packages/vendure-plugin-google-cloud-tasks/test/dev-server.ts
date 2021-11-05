@@ -26,7 +26,7 @@ import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
       projectId: process.env.GOOGLE_CLOUD_PROJECT_ID!,
       location: process.env.TASKQUEUE_LOCATION!,
       authSecret: 'some-secret-to-authenticate-cloud-tasks',
-      queueSuffix: 'plugin-test',
+      queueSuffix: 'plugin-test2',
     })
   );
   testConfig.plugins.push(AdminUiPlugin.init({ route: 'admin', port: 3002 }));
@@ -35,6 +35,6 @@ import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
   const { server } = createTestEnvironment(testConfig);
   await server.init({
     initialData: initialData as InitialData,
-    productsCsvPath: '../test/products-import.csv',
+    productsCsvPath: '../test/src/products-import.csv',
   });
 })();
