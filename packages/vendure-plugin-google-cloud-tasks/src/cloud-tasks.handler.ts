@@ -5,7 +5,7 @@ import { JobState } from '@vendure/common/lib/generated-types';
 import { CloudTaskMessage, ROUTE } from './types';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { PROCESS_MAP } from './cloud-tasks-job-queue.strategy';
-import { loggerCtx } from "@vendure/core/dist/job-queue/constants";
+import { loggerCtx } from '@vendure/core/dist/job-queue/constants';
 
 @Controller(ROUTE)
 export class CloudTasksHandler {
@@ -15,7 +15,12 @@ export class CloudTasksHandler {
       req.header('Authorization') !==
       `Bearer ${CloudTasksPlugin.options.authSecret}`
     ) {
-      Logger.warn(`Unauthorized incoming webhook with Auth header ${req.header('Authorization')}`, loggerCtx)
+      Logger.warn(
+        `Unauthorized incoming webhook with Auth header ${req.header(
+          'Authorization'
+        )}`,
+        loggerCtx
+      );
       res.sendStatus(401);
       return;
     }
@@ -28,11 +33,13 @@ export class CloudTasksHandler {
 
     const processFn = PROCESS_MAP.get(message.queueName);
     if (!processFn) {
-      Logger.error(`No process function found for queue ${message.queueName}`, loggerCtx);
+      Logger.error(
+        `No process function found for queue ${message.queueName}`,
+        loggerCtx
+      );
       res.sendStatus(500);
       return;
     }
-
 
     const attemptsHeader = req.header('x-cloudtasks-taskretrycount') ?? 0;
     const attempts = attemptsHeader ? parseInt(attemptsHeader) : 0;
@@ -57,7 +64,8 @@ export class CloudTasksHandler {
     } catch (error: any) {
       Logger.error(
         `Failed to handle message ${message.id} after ${attempts} attempts: ${error}`,
-        CloudTasksPlugin.loggerCtx);
+        CloudTasksPlugin.loggerCtx
+      );
       res.sendStatus(500);
       return;
     }

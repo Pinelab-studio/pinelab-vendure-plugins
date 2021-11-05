@@ -66,6 +66,7 @@ describe('MyParcel', () => {
   let body: OutgoingWebhookSubscription | undefined;
   // This interceptor needs to be in place before startup
   nock('https://api.myparcel.nl/')
+    .persist()
     .post('/webhook_subscriptions', (reqBody) => {
       body = reqBody;
       return true;
@@ -97,7 +98,15 @@ describe('MyParcel', () => {
     adminClient = env.adminClient;
     server = env.server;
     await server.init({
-      initialData,
+      initialData: {
+        ...initialData,
+        paymentMethods: [
+          {
+            name: testPaymentMethod.code,
+            handler: { code: testPaymentMethod.code, arguments: [] },
+          },
+        ],
+      },
       productsCsvPath: '../test/src/products-import.csv',
       customerCount: 2,
     });
