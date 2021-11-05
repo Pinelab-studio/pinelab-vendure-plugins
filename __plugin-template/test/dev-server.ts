@@ -13,7 +13,7 @@ import {
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { initialData } from '../../test/initialData';
+import { initialData } from '../../test/src/initialData';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';

@@ -21,11 +21,11 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 jest.setTimeout(20000);
 
 describe('Mollie plugin', function () {
-  let testServer: TestServer;
+  let server: TestServer;
+  let serverStarted = false;
 
-  it('Server should start', async () => {
+  beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
-
     const config = mergeConfig(testConfig, {
       apiOptions: {
         port: 3104,
@@ -45,16 +45,19 @@ describe('Mollie plugin', function () {
       ],
     });
 
-    const { server } = createTestEnvironment(config);
-    testServer = server;
-    const serverStart = server.init({
+    ({ server } = createTestEnvironment(config));
+    await server.init({
       initialData: initialData as InitialData,
-      productsCsvPath: '../test/products-import.csv',
+      productsCsvPath: '../test/src/products-import.csv',
     });
-    await expect(serverStart).resolves.toEqual(undefined);
+    serverStarted = true;
+  }, 60000);
+
+  it('Should start successfully', async () => {
+    await expect(serverStarted).toBe(true);
   });
 
   afterAll(() => {
-    return testServer.destroy();
+    return server.destroy();
   });
 });

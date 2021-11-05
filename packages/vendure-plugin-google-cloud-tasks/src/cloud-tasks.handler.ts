@@ -1,20 +1,28 @@
-import { Request } from 'express';
-import { Controller, Post, Req, HttpException } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { Controller, Post, Req, Res, HttpException } from '@nestjs/common';
 import { Job, JsonCompatible, Logger } from '@vendure/core';
 import { JobState } from '@vendure/common/lib/generated-types';
 import { CloudTaskMessage, ROUTE } from './types';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { PROCESS_MAP } from './cloud-tasks-job-queue.strategy';
+import { loggerCtx } from '@vendure/core/dist/job-queue/constants';
 
 @Controller(ROUTE)
 export class CloudTasksHandler {
   @Post('handler')
-  async handler(@Req() req: Request): Promise<void> {
+  async handler(@Req() req: Request, @Res() res: Response): Promise<void> {
     if (
       req.header('Authorization') !==
       `Bearer ${CloudTasksPlugin.options.authSecret}`
     ) {
-      throw new HttpException('You are not authorized to do this', 401);
+      Logger.warn(
+        `Unauthorized incoming webhook with Auth header ${req.header(
+          'Authorization'
+        )}`,
+        loggerCtx
+      );
+      res.sendStatus(401);
+      return;
     }
 
     const message: CloudTaskMessage = req.body;
@@ -25,10 +33,12 @@ export class CloudTasksHandler {
 
     const processFn = PROCESS_MAP.get(message.queueName);
     if (!processFn) {
-      throw new HttpException(
+      Logger.error(
         `No process function found for queue ${message.queueName}`,
-        500
+        loggerCtx
       );
+      res.sendStatus(500);
+      return;
     }
 
     const attemptsHeader = req.header('x-cloudtasks-taskretrycount') ?? 0;
@@ -44,18 +54,20 @@ export class CloudTasksHandler {
     });
 
     try {
-      const result = await processFn(job);
+      await processFn(job);
       Logger.debug(
         `Successfully handled ${message.id} after ${attempts} attempts`,
         CloudTasksPlugin.loggerCtx
       );
-      return result;
+      res.sendStatus(200);
+      return;
     } catch (error: any) {
       Logger.error(
-        `Failed to handle message ${message.id} after ${attempts} attempts`,
-        CloudTasksPlugin.loggerCtx,
-        error
+        `Failed to handle message ${message.id} after ${attempts} attempts: ${error}`,
+        CloudTasksPlugin.loggerCtx
       );
+      res.sendStatus(500);
+      return;
     }
   }
 }

@@ -35,10 +35,11 @@ export const initialData: InitialData = {
       ],
     },
   ],
-  paymentMethods: [
+  paymentMethods: [],
+  /*  paymentMethods: [
     {
       name: testPaymentMethod.code,
       handler: { code: testPaymentMethod.code, arguments: [] },
     },
-  ],
+  ],*/
 };
