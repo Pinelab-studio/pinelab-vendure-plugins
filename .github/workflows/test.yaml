@@ -20,3 +20,12 @@ jobs:
         run: cd packages/test && yarn
       - name: Test vendure-plugin-dutch-postalcode
         run: cd packages/vendure-plugin-dutch-postalcode && yarn && yarn build && yarn test
+      - name: Test vendure-plugin-google-cloud-tasks
+        run: cd packages/vendure-plugin-google-cloud-tasks && yarn && yarn build && yarn test
+      - name: Test vendure-plugin-google-storage-assets
+        run: cd packages/vendure-plugin-storage-assets && yarn && yarn build && yarn test
+      - name: Test vendure-plugin-myparcel
+        run: cd packages/vendure-plugin-myparcel && yarn && yarn build && yarn test
+      - name: Test vendure-plugin-webhook
+        run: cd packages/vendure-plugin-webhook && yarn && yarn build && yarn test
+
