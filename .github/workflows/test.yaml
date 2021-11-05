@@ -1,4 +1,4 @@
-name: Deploy Vendure API and worker to prod and dev
+name: Test packages
 on: ['pull_request']
 
 jobs:
@@ -16,4 +16,5 @@ jobs:
         with:
           node-version: '14'
       - run: yarn
+      - run: yarn build
       - run: yarn test
