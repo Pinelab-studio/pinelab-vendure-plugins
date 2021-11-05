@@ -14,7 +14,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { DutchPostalCodePlugin } from '../src/dutch-postal-code.plugin';
 
-jest.setTimeout(20000);
+jest.setTimeout(60000);
 describe('Dutch PostalCode plugin', () => {
   let testServer: TestServer;
 

@@ -110,7 +110,7 @@ describe('MyParcel', () => {
       productsCsvPath: '../test/src/products-import.csv',
       customerCount: 2,
     });
-  }, 120000);
+  }, 60000);
 
   afterAll(async () => {
     await server.destroy();

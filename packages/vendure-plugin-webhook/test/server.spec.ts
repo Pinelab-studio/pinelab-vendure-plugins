@@ -51,7 +51,7 @@ describe('Mollie plugin', function () {
       productsCsvPath: '../test/src/products-import.csv',
     });
     serverStarted = true;
-  }, 10000);
+  }, 60000);
 
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);

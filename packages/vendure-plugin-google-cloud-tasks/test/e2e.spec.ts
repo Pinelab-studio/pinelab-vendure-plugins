@@ -51,7 +51,7 @@ describe('CloudTasks job queue e2e', () => {
       productsCsvPath: '../test/src/products-import.csv',
     });
     started = true;
-  }, 1800 * 1000);
+  }, 60000);
 
   afterAll(async () => {
     await server.destroy();

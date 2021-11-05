@@ -15,7 +15,7 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { GoogleStoragePlugin, GoogleStorageStrategy } from '../src';
 
-jest.setTimeout(20000);
+jest.setTimeout(60000);
 describe('Google Storage Assets plugin', () => {
   let testServer: TestServer;
 
