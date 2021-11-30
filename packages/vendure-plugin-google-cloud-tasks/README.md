@@ -31,8 +31,6 @@ plugins: [
 ];
 ```
 
-:warning: This plugin has only been tested when running worker in main thread.
-
 ## Run dev-server
 
 `yarn serve` to start a local devserver.
