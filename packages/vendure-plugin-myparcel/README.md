@@ -37,4 +37,4 @@ Contributions always welcome!
 
 Run `yarn test` to run e2e tests
 
-[![Pinelab.studio logo](https://pinelab.studio/pinelab_logo.png)](https://pinelab.studio)
+[![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)
