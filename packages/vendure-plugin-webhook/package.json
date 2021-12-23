@@ -18,13 +18,16 @@
     "start": "yarn ts-node test/dev-server.ts",
     "test": "jest --preset=\"ts-jest\""
   },
+  "config": {
+    "vendure": "1.4.3"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.23",
-    "@vendure/admin-ui": "1.4.2",
-    "@vendure/admin-ui-plugin": "1.4.2",
-    "@vendure/core": "1.4.2",
-    "@vendure/testing": "1.4.2",
-    "@vendure/ui-devkit": "1.4.2",
+    "@vendure/admin-ui": "1.4.3",
+    "@vendure/admin-ui-plugin": "1.4.3",
+    "@vendure/core": "1.4.3",
+    "@vendure/testing": "1.4.3",
+    "@vendure/ui-devkit": "1.4.3",
     "copyfiles": "^2.4.1",
     "jest": "^27.0.4",
     "rimraf": "^3.0.2",
