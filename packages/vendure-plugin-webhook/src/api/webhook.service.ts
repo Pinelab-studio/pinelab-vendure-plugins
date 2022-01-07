@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { EventBus } from '@vendure/core';
 import { Connection } from 'typeorm';
 import { WebhookPerChannelEntity } from './webhook-per-channel.entity';
@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
  * Service for updating and retrieving webhooks from db
  */
 @Injectable()
-export class WebhookService implements OnModuleInit {
+export class WebhookService implements OnApplicationBootstrap {
   static queue = new Set<string>();
 
   constructor(private eventBus: EventBus, private connection: Connection) {}
@@ -48,7 +48,7 @@ export class WebhookService implements OnModuleInit {
   /**
    * Subscribe to events specified in config
    */
-  async onModuleInit(): Promise<void> {
+  async onApplicationBootstrap(): Promise<void> {
     if (!WebhookPlugin.options || !WebhookPlugin.options.events) {
       throw Error(
         `Please specify VendureEvents with Webhook.init() in your Vendure config.`

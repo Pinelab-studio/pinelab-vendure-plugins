@@ -11,11 +11,11 @@ import { Connection } from 'typeorm';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { ApolloError } from 'apollo-server-core';
 import axios from 'axios';
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 
 @Injectable()
-export class MyparcelService implements OnModuleInit {
+export class MyparcelService implements OnApplicationBootstrap {
   client = axios.create({ baseURL: 'https://api.myparcel.nl/' });
 
   constructor(
@@ -24,7 +24,7 @@ export class MyparcelService implements OnModuleInit {
     private connection: Connection
   ) {}
 
-  async onModuleInit(): Promise<void> {
+  async onApplicationBootstrap(): Promise<void> {
     // Create webhook subscription for all channels
     const webhook = `${MyparcelPlugin.webhookHost}/myparcel/update-status`;
     await Promise.all(
