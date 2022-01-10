@@ -1,7 +1,7 @@
 {
-  "name": "vendure-plugin-",
+  "name": "vendure-plugin-goedgepickt",
   "version": "0.18.6",
-  "description": "Vendure plugin for ....",
+  "description": "Vendure plugin for integration with the Goedgepickt order picking platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
@@ -14,16 +14,25 @@
     "README.md"
   ],
   "scripts": {
+    "serve": "nodemon --watch \"src/**\" --watch \"script/**\" --ext \"ts,json\" --exec \"ts-node script/dev-server.ts\"",
     "build": "rimraf dist && tsc",
     "test": "jest --preset=\"ts-jest\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "node-fetch": "2"
+  },
   "devDependencies": {
+    "@types/jest": "^27.4.0",
     "@vendure/admin-ui": "1.4.2",
     "@vendure/admin-ui-plugin": "1.4.2",
     "@vendure/asset-server-plugin": "1.4.2",
     "@vendure/core": "1.4.2",
+    "@vendure/testing": "^1.4.3",
     "@vendure/ui-devkit": "1.4.2",
+    "jest": "^27.4.7",
+    "nock": "^13.2.1",
+    "nodemon": "^2.0.15",
+    "ts-jest": "^27.1.2",
     "ts-node": "^9.1.1"
   }
 }

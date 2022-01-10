@@ -52,6 +52,6 @@ import * as path from 'path';
   const { server } = createTestEnvironment(testConfig);
   await server.init({
     initialData: initialData as InitialData,
-    productsCsvPath: '../test/products-import.csv',
+    productsCsvPath: '../test/src/products-import.csv',
   });
 })();
