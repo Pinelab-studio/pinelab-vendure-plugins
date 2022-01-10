@@ -10,7 +10,7 @@ interface RawRequestInput {
   entity: 'products' | 'orders';
   method: 'POST' | 'GET' | 'PUT' | 'DELETE';
   payload?: Object;
-  queryParams?: string
+  queryParams?: string;
 }
 
 export class GoedgepicktClient {
@@ -28,7 +28,7 @@ export class GoedgepicktClient {
     const result = await this.rawRequest({
       entity: 'products',
       method: 'GET',
-      queryParams: `perPage=100&page=${page}`
+      queryParams: `perPage=100&page=${page}`,
     });
     return result.items as Product[];
   }
@@ -59,7 +59,7 @@ export class GoedgepicktClient {
         redirect: 'follow',
       }
     );
-    const json = await result.json() as any;
+    const json = (await result.json()) as any;
     if (json.error || json.errorMessage || json.message) {
       const errorMessage = json.error ?? json.errorMessage ?? json.message;
       throw Error(errorMessage);

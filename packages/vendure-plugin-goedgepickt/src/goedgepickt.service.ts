@@ -1,9 +1,15 @@
-import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
-import { ChannelService, Logger, ProductVariant, ProductVariantService, RequestContext } from "@vendure/core";
-import { GgLoggerContext, GoedgepicktPlugin } from "./goedgepickt.plugin";
-import { GoedgepicktClient } from "./goedgepickt.client";
-import { Product } from "./goedgepickt.types";
-import { UpdateProductVariantInput } from "@vendure/common/lib/generated-types";
+import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  ChannelService,
+  Logger,
+  ProductVariant,
+  ProductVariantService,
+  RequestContext,
+} from '@vendure/core';
+import { GgLoggerContext, GoedgepicktPlugin } from './goedgepickt.plugin';
+import { GoedgepicktClient } from './goedgepickt.client';
+import { Product } from './goedgepickt.types';
+import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 
 @Injectable()
 export class GoedgepicktService implements OnApplicationBootstrap {
@@ -13,8 +19,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
   constructor(
     private variantService: ProductVariantService,
     private channelService: ChannelService
-  ) {
-  }
+  ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     /*    for (const { channelToken } of GoedgepicktPlugin.config.configPerChannel) {
@@ -43,10 +48,10 @@ export class GoedgepicktService implements OnApplicationBootstrap {
             name: variant.name,
             sku: variant.sku,
             productId: variant.sku,
-            stockManagement: true
+            stockManagement: true,
           })
           .catch((error: Error) => {
-            if (error?.message?.indexOf("already exists") > -1) {
+            if (error?.message?.indexOf('already exists') > -1) {
               Logger.info(
                 `Variant '${variant.sku}' already exists in Goedgepickt. Skipping...`,
                 GgLoggerContext
@@ -54,7 +59,13 @@ export class GoedgepicktService implements OnApplicationBootstrap {
             } else {
               throw error; // Throw if any other error than already exists
             }
-          }).then(() => Logger.info(`'${variant.sku}' synced to Goedgepickt`, GgLoggerContext));
+          })
+          .then(() =>
+            Logger.info(
+              `'${variant.sku}' synced to Goedgepickt`,
+              GgLoggerContext
+            )
+          );
       })
     );
   }
@@ -71,27 +82,39 @@ export class GoedgepicktService implements OnApplicationBootstrap {
       if (!results || results.length === 0) {
         break;
       }
-      ggProducts.push(...results);git 
+      ggProducts.push(...results);
       page++;
     }
     const variants = await this.getAllVariants(channelToken);
     const stockPerVariant: UpdateProductVariantInput[] = [];
     for (const ggProduct of ggProducts) {
-      const variant = variants.find(v => v.sku === ggProduct.sku);
+      const variant = variants.find((v) => v.sku === ggProduct.sku);
       const newStock = ggProduct.stock?.freeStock;
       if (newStock) {
-        Logger.warn(`Goedgepickt variant ${ggProduct.sku} has no stock set. Cannot update stock in Vendure for this variant.`, GgLoggerContext);
+        Logger.warn(
+          `Goedgepickt variant ${ggProduct.sku} has no stock set. Cannot update stock in Vendure for this variant.`,
+          GgLoggerContext
+        );
       }
       if (variant) {
-        stockPerVariant.push({ id: variant.id as string, stockOnHand: newStock });
-        Logger.info(`Updating variant ${variant.sku} to have ${newStock} stockOnHand`, GgLoggerContext);
+        stockPerVariant.push({
+          id: variant.id as string,
+          stockOnHand: newStock,
+        });
+        Logger.info(
+          `Updating variant ${variant.sku} to have ${newStock} stockOnHand`,
+          GgLoggerContext
+        );
       } else {
-        Logger.warn(`Goedgepickt product with sku ${ggProduct.sku} doesn't exist as variant in Vendure. Not updating stock for this variant`, GgLoggerContext);
+        Logger.warn(
+          `Goedgepickt product with sku ${ggProduct.sku} doesn't exist as variant in Vendure. Not updating stock for this variant`,
+          GgLoggerContext
+        );
       }
     }
     const ctx = await this.getCtxForChannel(channelToken);
     await this.variantService.update(ctx, stockPerVariant);
-    console.error("=============", JSON.stringify(ggProducts.length));
+    console.error('=============', JSON.stringify(ggProducts.length));
   }
 
   getClientForChannel(channelToken: string): GoedgepicktClient {
@@ -110,18 +133,20 @@ export class GoedgepicktService implements OnApplicationBootstrap {
   async getCtxForChannel(channelToken: string): Promise<RequestContext> {
     const channel = await this.channelService.getChannelFromToken(channelToken);
     return new RequestContext({
-      apiType: "admin",
+      apiType: 'admin',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
-      channel
+      channel,
     });
   }
 
-  private async getAllVariants(channelToken: string): Promise<ProductVariant[]> {
+  private async getAllVariants(
+    channelToken: string
+  ): Promise<ProductVariant[]> {
     const ctx = await this.getCtxForChannel(channelToken);
     const result = await this.variantService.findAll(ctx, {
       skip: 0,
-      take: 10000
+      take: 10000,
     }); // Sensible max of 10 000 variants per channel
     if (result.totalItems > result.items.length) {
       Logger.error(
