@@ -22,7 +22,7 @@ export const localConfig = mergeConfig(testConfig, {
           apiKey: process.env.GOEDGEPICKT_APIKEY!,
           webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
           orderWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_ORDERSTATUS_KEY!,
-          stockWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_STOCK_UPDATE_KEY!
+          stockWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_STOCK_UPDATE_KEY!,
         },
       ],
     }),

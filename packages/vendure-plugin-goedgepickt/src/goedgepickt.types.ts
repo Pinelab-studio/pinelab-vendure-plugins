@@ -59,32 +59,32 @@ export interface OrderInput {
   orderId: string;
   createDate: Date;
   finishDate?: Date;
-  orderStatus: OrderStatus
-  orderItems: OrderItemInput[]
+  orderStatus: OrderStatus;
+  orderItems: OrderItemInput[];
 }
 
 export type OrderStatus = 'on_hold' | 'open' | 'completed';
 
 export interface OrderItemInput {
-  sku: string,
-  taxRate: number
-  productName: string,
-  productQuantity: number
+  sku: string;
+  taxRate: number;
+  productName: string;
+  productQuantity: number;
 }
 
 export interface Order {
-  orderUuid: string
+  orderUuid: string;
 }
 
 export interface IncomingStockUpdateEvent {
-  event: "stockUpdated";
+  event: 'stockUpdated';
   newStock: string;
   productSku: string;
   productUuid: string;
 }
 
 export interface IncomingOrderStatusEvent {
-  event: "orderStatusChanged";
+  event: 'orderStatusChanged';
   newStatus: OrderStatus;
   orderNumber: string;
   orderUuid: string;

@@ -1,20 +1,23 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   ChannelService,
-  Logger, Order, OrderItem,
+  Logger,
+  Order,
+  OrderItem,
   ProductVariant,
   ProductVariantService,
-  RequestContext
-} from "@vendure/core";
+  RequestContext,
+} from '@vendure/core';
 import { GgLoggerContext, GoedgepicktPlugin } from './goedgepickt.plugin';
 import { GoedgepicktClient } from './goedgepickt.client';
 import {
-  IncomingOrderStatusEvent, IncomingStockUpdateEvent,
+  IncomingOrderStatusEvent,
+  IncomingStockUpdateEvent,
   Order as GgOrder,
   OrderInput,
   OrderItemInput,
-  Product as GgProduct
-} from "./goedgepickt.types";
+  Product as GgProduct,
+} from './goedgepickt.types';
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 
 @Injectable()
@@ -55,10 +58,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
           stockManagement: true,
         })
         .then(() =>
-          Logger.info(
-            `'${variant.sku}' synced to Goedgepickt`,
-            GgLoggerContext
-          )
+          Logger.info(`'${variant.sku}' synced to Goedgepickt`, GgLoggerContext)
         )
         .catch((error: Error) => {
           if (error?.message?.indexOf('already exists') > -1) {
@@ -126,11 +126,17 @@ export class GoedgepicktService implements OnApplicationBootstrap {
    * @param order
    * @param orderItems
    */
-  async createOrder(channelToken: string, order: Order, orderItems: OrderItem[]): Promise<GgOrder> {
+  async createOrder(
+    channelToken: string,
+    order: Order,
+    orderItems: OrderItem[]
+  ): Promise<GgOrder> {
     const mergedItems: OrderItemInput[] = [];
     // Merge same SKU's into single item with quantity
-    orderItems.forEach(orderItem => {
-      const existingItem = mergedItems.find(i => i.sku === orderItem.line.productVariant.sku);
+    orderItems.forEach((orderItem) => {
+      const existingItem = mergedItems.find(
+        (i) => i.sku === orderItem.line.productVariant.sku
+      );
       if (existingItem) {
         existingItem.productQuantity++;
       } else {
@@ -138,17 +144,17 @@ export class GoedgepicktService implements OnApplicationBootstrap {
           sku: orderItem.line.productVariant.sku,
           productName: orderItem.line.productVariant.name,
           productQuantity: 1, // OrderItems are always 1 each
-          taxRate: orderItem.taxRate
-        })
+          taxRate: orderItem.taxRate,
+        });
       }
-    })
+    });
     const client = this.getClientForChannel(channelToken);
     return client.createOrder({
       orderId: order.code,
       createDate: order.createdAt,
       finishDate: order.orderPlacedAt,
       orderStatus: 'open',
-      orderItems: mergedItems
+      orderItems: mergedItems,
     });
   }
 
@@ -156,15 +162,16 @@ export class GoedgepicktService implements OnApplicationBootstrap {
    * Update order status in Vendure based on event
    */
   async updateOrderStatus(event: IncomingOrderStatusEvent): Promise<void> {
-
-    Logger.info(`Updated order status of ${event.orderNumber}`, GgLoggerContext);
+    Logger.info(
+      `Updated order status of ${event.orderNumber}`,
+      GgLoggerContext
+    );
   }
 
   /**
    * Update stock in Vendure based on event
    */
   async updateStock(event: IncomingStockUpdateEvent): Promise<void> {
-
     Logger.info(`Updated stock for ${event.productSku}`, GgLoggerContext);
   }
 

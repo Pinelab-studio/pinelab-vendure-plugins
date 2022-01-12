@@ -22,7 +22,7 @@ Plugin for integration with Goedgepickt. This plugin adheres to these principles
 2. Create the following webhooks at https://account.goedgepickt.nl/settings/webhooks:
    1. `Bestelstatus aangepast`
    2. `Voorraad aangepast`
-3. 
+3.
 
 - Plugin uses a hardcoded a limit of 10000 variants per channel. Set `adminListQueryLimit: 10000,` in apiOptions config.
 
