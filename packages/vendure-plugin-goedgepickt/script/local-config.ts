@@ -16,12 +16,13 @@ export const localConfig = mergeConfig(testConfig, {
   },
   plugins: [
     GoedgepicktPlugin.init({
-      vendureHost: process.env.VENDURE_HOST!,
       configPerChannel: [
         {
           channelToken: 'e2e-default-channel',
           apiKey: process.env.GOEDGEPICKT_APIKEY!,
           webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
+          orderWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_ORDERSTATUS_KEY!,
+          stockWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_STOCK_UPDATE_KEY!
         },
       ],
     }),

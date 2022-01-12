@@ -1,14 +1,12 @@
-import fetch from 'node-fetch';
-import { Product, ProductInput } from './goedgepickt.types';
-
-export interface GoedgepicktConfig {
-  apiKey: string;
-  webshopUuid: string;
-}
+import fetch from "node-fetch";
+import { ClientConfig, Order, OrderInput, Product, ProductInput } from "./goedgepickt.types";
+import { Logger } from "@vendure/core";
+import { GgLoggerContext } from "./goedgepickt.plugin";
+import crypto from "crypto";
 
 interface RawRequestInput {
-  entity: 'products' | 'orders';
-  method: 'POST' | 'GET' | 'PUT' | 'DELETE';
+  entity: "products" | "orders";
+  method: "POST" | "GET" | "PUT" | "DELETE";
   payload?: Object;
   queryParams?: string;
 }
@@ -16,54 +14,83 @@ interface RawRequestInput {
 export class GoedgepicktClient {
   private readonly headers: Record<string, string>;
 
-  constructor(private readonly config: GoedgepicktConfig) {
+  constructor(private readonly config: ClientConfig) {
     this.headers = {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${config.apiKey}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.apiKey}`
     };
   }
 
   async getProducts(page = 1): Promise<Product[]> {
     const result = await this.rawRequest({
-      entity: 'products',
-      method: 'GET',
-      queryParams: `perPage=100&page=${page}`,
+      entity: "products",
+      method: "GET",
+      queryParams: `perPage=100&page=${page}`
     });
+    Logger.info(`Fetched ${result.items?.length} products from Goedgepickt`, GgLoggerContext);
     return result.items as Product[];
   }
 
   async createProduct(product: ProductInput): Promise<Product[]> {
     const result = await this.rawRequest({
-      entity: 'products',
-      method: 'POST',
-      payload: product,
+      entity: "products",
+      method: "POST",
+      payload: product
     });
+    Logger.info(`Created product ${product.productId} in Goedgepickt`, GgLoggerContext);
     return result.items as Product[];
   }
 
+  async createOrder(order: OrderInput): Promise<Order> {
+    const result = await this.rawRequest({
+      entity: "orders",
+      method: "POST",
+      payload: order
+    });
+    Logger.info(`Created order ${order.orderId} in Goedgepickt with uuid ${result.orderUuid}`, GgLoggerContext);
+    return result;
+  }
+
   async rawRequest(input: RawRequestInput): Promise<any> {
-    const queryExtension = input.queryParams ? `?${input.queryParams}` : '';
+    const queryExtension = input.queryParams ? `?${input.queryParams}` : "";
     const result = await fetch(
       `https://account.goedgepickt.nl/api/v1/${input.entity}${queryExtension}`,
       {
         method: input.method,
         headers: this.headers,
         body:
-          input.payload && input.method !== 'GET'
+          input.payload && input.method !== "GET"
             ? JSON.stringify({
-                webshopUuid: this.config.webshopUuid,
-                ...input.payload,
-              })
+              webshopUuid: this.config.webshopUuid,
+              ...input.payload
+            })
             : undefined,
-        redirect: 'follow',
+        redirect: "follow"
       }
     );
     const json = (await result.json()) as any;
-    if (json.error || json.errorMessage || json.message) {
-      const errorMessage = json.error ?? json.errorMessage ?? json.message;
+    if (json.error || json.errorMessage || json.errors) {
+      const errorMessage = json.error ?? json.errorMessage ?? json.message; // If json.errors, then there should also be a message
+      Logger.warn(json, GgLoggerContext);
       throw Error(errorMessage);
     }
     return json;
+  }
+
+  validateOrderWebhookSignature(data: string, incomingSignature: string): void {
+    return this.validateSignature(data, this.config.orderWebhookKey, incomingSignature);
+  }
+
+  validateStockWebhookSignature(data: string, incomingSignature: string): void {
+    return this.validateSignature(data, this.config.stockWebhookKey, incomingSignature);
+  }
+
+  private validateSignature(data: string, secret: string, incomingSignature: string): void {
+    const computedSignature = crypto.createHmac("sha256", secret).update(data).digest("hex");
+    if (computedSignature !== incomingSignature) {
+      Logger.warn(`Incoming event has an invalid signature! ${data}`, GgLoggerContext);
+      throw Error(`Invalid signature.`);
+    }
   }
 }

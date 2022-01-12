@@ -1,38 +1,24 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { PluginCommonModule, RuntimeVendureConfig, VendurePlugin } from "@vendure/core";
 import { GoedgepicktService } from './goedgepickt.service';
-
-export interface GoedgepicktConfig {
-  configPerChannel: GoedgepicktChannelConfig[];
-  /**
-   * Needed for incoming webhooks from Goedgepickt
-   */
-  vendureHost: string;
-}
-
-/**
- * Channel specific configs like apiKey and webshopUuid per channel
- */
-export interface GoedgepicktChannelConfig {
-  channelToken: string;
-  apiKey: string;
-  webshopUuid: string;
-}
+import { GoedgepicktController } from "./goedgepickt.controller";
+import { goedgepicktHandler } from "./goedgepickt.handler";
+import { GoedgepicktPluginConfig } from "./goedgepickt.types";
 
 export const GgLoggerContext = 'GoedgepicktPlugin';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  // controllers: [],
+  controllers: [GoedgepicktController],
   providers: [GoedgepicktService],
-  /*  configuration: (config: RuntimeVendureConfig) => {
+    configuration: (config: RuntimeVendureConfig) => {
       config.shippingOptions.fulfillmentHandlers.push(goedgepicktHandler);
       return config;
-    }*/
+    }
 })
 export class GoedgepicktPlugin {
-  static config: GoedgepicktConfig;
+  static config: GoedgepicktPluginConfig;
 
-  static init(config: GoedgepicktConfig): typeof GoedgepicktPlugin {
+  static init(config: GoedgepicktPluginConfig): typeof GoedgepicktPlugin {
     this.config = config;
     return GoedgepicktPlugin;
   }

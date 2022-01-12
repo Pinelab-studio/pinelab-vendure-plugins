@@ -1,14 +1,20 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   ChannelService,
-  Logger,
+  Logger, Order, OrderItem,
   ProductVariant,
   ProductVariantService,
-  RequestContext,
-} from '@vendure/core';
+  RequestContext
+} from "@vendure/core";
 import { GgLoggerContext, GoedgepicktPlugin } from './goedgepickt.plugin';
 import { GoedgepicktClient } from './goedgepickt.client';
-import { Product } from './goedgepickt.types';
+import {
+  IncomingOrderStatusEvent, IncomingStockUpdateEvent,
+  Order as GgOrder,
+  OrderInput,
+  OrderItemInput,
+  Product as GgProduct
+} from "./goedgepickt.types";
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 
 @Injectable()
@@ -38,36 +44,33 @@ export class GoedgepicktService implements OnApplicationBootstrap {
    * Push all products to Goedgepickt for channel
    */
   async pushProducts(channelToken: string): Promise<void> {
-    const ctx = await this.getCtxForChannel(channelToken);
     const variants = await this.getAllVariants(channelToken);
     const client = this.getClientForChannel(channelToken);
-    await Promise.all(
-      variants.map(async (variant) => {
-        return client
-          .createProduct({
-            name: variant.name,
-            sku: variant.sku,
-            productId: variant.sku,
-            stockManagement: true,
-          })
-          .catch((error: Error) => {
-            if (error?.message?.indexOf('already exists') > -1) {
-              Logger.info(
-                `Variant '${variant.sku}' already exists in Goedgepickt. Skipping...`,
-                GgLoggerContext
-              );
-            } else {
-              throw error; // Throw if any other error than already exists
-            }
-          })
-          .then(() =>
+    for (const variant of variants) {
+      await client
+        .createProduct({
+          name: variant.name,
+          sku: variant.sku,
+          productId: variant.sku,
+          stockManagement: true,
+        })
+        .then(() =>
+          Logger.info(
+            `'${variant.sku}' synced to Goedgepickt`,
+            GgLoggerContext
+          )
+        )
+        .catch((error: Error) => {
+          if (error?.message?.indexOf('already exists') > -1) {
             Logger.info(
-              `'${variant.sku}' synced to Goedgepickt`,
+              `Variant '${variant.sku}' already exists in Goedgepickt. Skipping...`,
               GgLoggerContext
-            )
-          );
-      })
-    );
+            );
+          } else {
+            throw error; // Throw if any other error than already exists
+          }
+        });
+    }
   }
 
   /**
@@ -75,7 +78,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
    */
   async pullStocklevels(channelToken: string): Promise<void> {
     const client = this.getClientForChannel(channelToken);
-    const ggProducts: Product[] = [];
+    const ggProducts: GgProduct[] = [];
     let page = 1;
     while (true) {
       const results = await client.getProducts(page);
@@ -90,11 +93,12 @@ export class GoedgepicktService implements OnApplicationBootstrap {
     for (const ggProduct of ggProducts) {
       const variant = variants.find((v) => v.sku === ggProduct.sku);
       const newStock = ggProduct.stock?.freeStock;
-      if (newStock) {
+      if (!newStock) {
         Logger.warn(
           `Goedgepickt variant ${ggProduct.sku} has no stock set. Cannot update stock in Vendure for this variant.`,
           GgLoggerContext
         );
+        continue;
       }
       if (variant) {
         stockPerVariant.push({
@@ -114,7 +118,54 @@ export class GoedgepicktService implements OnApplicationBootstrap {
     }
     const ctx = await this.getCtxForChannel(channelToken);
     await this.variantService.update(ctx, stockPerVariant);
-    console.error('=============', JSON.stringify(ggProducts.length));
+  }
+
+  /**
+   * Accepts the order and corresponding orderItems, because fulfillment can take place for a partial order
+   * @param channelToken
+   * @param order
+   * @param orderItems
+   */
+  async createOrder(channelToken: string, order: Order, orderItems: OrderItem[]): Promise<GgOrder> {
+    const mergedItems: OrderItemInput[] = [];
+    // Merge same SKU's into single item with quantity
+    orderItems.forEach(orderItem => {
+      const existingItem = mergedItems.find(i => i.sku === orderItem.line.productVariant.sku);
+      if (existingItem) {
+        existingItem.productQuantity++;
+      } else {
+        mergedItems.push({
+          sku: orderItem.line.productVariant.sku,
+          productName: orderItem.line.productVariant.name,
+          productQuantity: 1, // OrderItems are always 1 each
+          taxRate: orderItem.taxRate
+        })
+      }
+    })
+    const client = this.getClientForChannel(channelToken);
+    return client.createOrder({
+      orderId: order.code,
+      createDate: order.createdAt,
+      finishDate: order.orderPlacedAt,
+      orderStatus: 'open',
+      orderItems: mergedItems
+    });
+  }
+
+  /**
+   * Update order status in Vendure based on event
+   */
+  async updateOrderStatus(event: IncomingOrderStatusEvent): Promise<void> {
+
+    Logger.info(`Updated order status of ${event.orderNumber}`, GgLoggerContext);
+  }
+
+  /**
+   * Update stock in Vendure based on event
+   */
+  async updateStock(event: IncomingStockUpdateEvent): Promise<void> {
+
+    Logger.info(`Updated stock for ${event.productSku}`, GgLoggerContext);
   }
 
   getClientForChannel(channelToken: string): GoedgepicktClient {
