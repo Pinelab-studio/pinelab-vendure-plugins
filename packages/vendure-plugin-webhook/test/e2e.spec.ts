@@ -17,10 +17,13 @@ import {
 } from '@vendure/core';
 import { WebhookPlugin } from '../src';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { compileUiExtensions } from "@vendure/ui-devkit/compiler";
+import path from "path";
+import * as fs from "fs";
 
 jest.setTimeout(20000);
 
-describe('Mollie plugin', function () {
+describe('Webhook plugin', function () {
   let server: TestServer;
   let serverStarted = false;
 
@@ -56,6 +59,15 @@ describe('Mollie plugin', function () {
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
   });
+
+  it('Should compile admin', async () => {
+    const result = await compileUiExtensions({
+      outputPath: path.join(__dirname, '__admin-ui'),
+      extensions: [WebhookPlugin.ui],
+    }).compile?.();
+    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'))
+    expect(files?.length).toBeGreaterThan(0);
+  }, 60000);
 
   afterAll(() => {
     return server.destroy();
