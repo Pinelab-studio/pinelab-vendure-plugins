@@ -1,15 +1,20 @@
-import { EntityHydrator, FulfillmentHandler, Injector, LanguageCode } from "@vendure/core";
-import { GoedgepicktService } from "./goedgepickt.service";
+import {
+  EntityHydrator,
+  FulfillmentHandler,
+  Injector,
+  LanguageCode,
+} from '@vendure/core';
+import { GoedgepicktService } from './goedgepickt.service';
 
 let goedgepicktService: GoedgepicktService;
 let hydrator: EntityHydrator;
 export const goedgepicktHandler = new FulfillmentHandler({
-  code: "goedgepickt",
+  code: 'goedgepickt',
   description: [
     {
       languageCode: LanguageCode.en,
-      value: "Send order to Goedgepickt"
-    }
+      value: 'Send order to Goedgepickt',
+    },
   ],
   args: {},
   init: (injector: Injector) => {
@@ -21,7 +26,7 @@ export const goedgepicktHandler = new FulfillmentHandler({
     await Promise.all(
       orderItems.map((item) =>
         hydrator.hydrate(ctx, item, {
-          relations: ["line.order", "line.productVariant"]
+          relations: ['line.order', 'line.productVariant'],
         })
       )
     );
@@ -38,7 +43,7 @@ export const goedgepicktHandler = new FulfillmentHandler({
       externalIds.push(ggOrder.orderUuid);
     }
     return {
-      method: externalIds.length === 1 ? externalIds[0] : externalIds.join(",")
+      method: externalIds.length === 1 ? externalIds[0] : externalIds.join(','),
     };
-  }
+  },
 });

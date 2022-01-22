@@ -205,6 +205,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
     const result = await this.variantService.findAll(ctx, {
       skip: 0,
       take: 10000,
+
     }); // Sensible max of 10 000 variants per channel
     if (result.totalItems > result.items.length) {
       Logger.error(
