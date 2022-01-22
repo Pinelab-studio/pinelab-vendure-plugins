@@ -8,10 +8,11 @@ import {
   CustomerService,
   InitialData,
   Order,
-  OrderService, ProductService,
+  OrderService,
+  ProductService,
   RequestContext,
-  ShippingMethodService
-} from "@vendure/core";
+  ShippingMethodService,
+} from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { localConfig } from './local-config';
 import { GoedgepicktService } from '../src/goedgepickt.service';
@@ -32,7 +33,7 @@ import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.e
   /*  await server.app
       .get(GoedgepicktService)
       .pullStocklevels('e2e-default-channel');*/
-  const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel')
+  const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel');
 
   server.app.get(ProductService).findAll(ctx, {});
   await server.app.get(ShippingMethodService).update(ctx, {
