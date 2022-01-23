@@ -1,4 +1,4 @@
-import { MyparcelPlugin } from './myparcel.plugin';
+import { MyparcelPlugin } from '../myparcel.plugin';
 import {
   ChannelService,
   FulfillmentService,
@@ -13,6 +13,8 @@ import { ApolloError } from 'apollo-server-core';
 import axios from 'axios';
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
+import { MyparcelConfigEntity } from "./myparcel-config.entity";
+import { WebhookPerChannelEntity } from "../../../vendure-plugin-webhook/src/api/webhook-per-channel.entity";
 
 @Injectable()
 export class MyparcelService implements OnApplicationBootstrap {
@@ -57,6 +59,16 @@ export class MyparcelService implements OnApplicationBootstrap {
       })
     );
     Logger.info(`Initialized MyParcel plugin`, MyparcelPlugin.loggerCtx);
+  }
+
+  async getApiKey(channelId: string): Promise<MyparcelConfigEntity> {
+    const apiKey = await this.connection
+      .getRepository(MyparcelConfigEntity)
+      .findOne({ channelId });
+    if (!apiKey) {
+      throw new MyParcelError(`No apiKey found for channel ${channelId}`);
+    }
+    return apiKey;
   }
 
   async updateStatus(
@@ -146,14 +158,6 @@ export class MyparcelService implements OnApplicationBootstrap {
 
   private getFulfillmentReference(shipmentId: string | number): string {
     return `MyParcel ${shipmentId}`;
-  }
-
-  private getApiKey(channelToken: string): string {
-    const apiKey = MyparcelPlugin.apiKeys[channelToken];
-    if (!apiKey) {
-      throw new MyParcelError(`No apiKey found for channel ${channelToken}`);
-    }
-    return apiKey;
   }
 
   private async post(

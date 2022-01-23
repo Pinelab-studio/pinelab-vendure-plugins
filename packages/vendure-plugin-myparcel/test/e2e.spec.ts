@@ -25,7 +25,7 @@ import {
   MyparcelShipment,
   MyparcelStatusChangeEvent,
   WebhookSubscription,
-} from '../src/myparcel.service';
+} from '../src/api/myparcel.service';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import axios from 'axios';
 

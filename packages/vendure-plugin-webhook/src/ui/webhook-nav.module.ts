@@ -13,7 +13,7 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
         label: 'Webhook',
         routerLink: ['/extensions/webhook'],
         icon: 'cloud-traffic',
-        requiresPermission: 'SetWebhook'
+        requiresPermission: 'SetWebhook',
       },
       'settings'
     ),

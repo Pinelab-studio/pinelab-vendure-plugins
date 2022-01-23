@@ -5,7 +5,7 @@ import {
   Logger,
 } from '@vendure/core';
 import { MyparcelService } from './myparcel.service';
-import { MyparcelPlugin } from './myparcel.plugin';
+import { MyparcelPlugin } from '../myparcel.plugin';
 
 let myparcelService: MyparcelService;
 export const myparcelHandler = new FulfillmentHandler({

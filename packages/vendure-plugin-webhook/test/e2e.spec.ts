@@ -61,7 +61,10 @@ describe('Webhook plugin', function () {
   });
 
   it('Should compile admin', async () => {
-    fs.rmSync(path.join(__dirname, '__admin-ui'), { recursive: true, force: true });
+    fs.rmSync(path.join(__dirname, '__admin-ui'), {
+      recursive: true,
+      force: true,
+    });
     await compileUiExtensions({
       outputPath: path.join(__dirname, '__admin-ui'),
       extensions: [WebhookPlugin.ui],

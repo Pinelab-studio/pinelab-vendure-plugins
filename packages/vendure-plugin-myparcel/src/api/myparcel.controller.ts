@@ -4,7 +4,7 @@ import {
   MyparcelService,
   MyparcelStatusChangeEvent,
 } from './myparcel.service';
-import { MyparcelPlugin } from './myparcel.plugin';
+import { MyparcelPlugin } from '../myparcel.plugin';
 import { Logger } from '@vendure/core';
 
 @Controller('myparcel')
