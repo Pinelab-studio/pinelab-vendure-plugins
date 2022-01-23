@@ -17,9 +17,9 @@ import {
 } from '@vendure/core';
 import { WebhookPlugin } from '../src';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { compileUiExtensions } from "@vendure/ui-devkit/compiler";
-import path from "path";
-import * as fs from "fs";
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
+import * as fs from 'fs';
 
 jest.setTimeout(20000);
 
@@ -61,11 +61,12 @@ describe('Webhook plugin', function () {
   });
 
   it('Should compile admin', async () => {
-    const result = await compileUiExtensions({
+    fs.rmSync(path.join(__dirname, '__admin-ui'), { recursive: true, force: true });
+    await compileUiExtensions({
       outputPath: path.join(__dirname, '__admin-ui'),
       extensions: [WebhookPlugin.ui],
     }).compile?.();
-    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'))
+    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
     expect(files?.length).toBeGreaterThan(0);
   }, 60000);
 

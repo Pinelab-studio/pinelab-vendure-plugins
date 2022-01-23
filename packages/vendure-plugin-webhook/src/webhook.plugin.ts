@@ -1,12 +1,12 @@
-import { PluginCommonModule, VendurePlugin } from "@vendure/core";
-import { AdminUiExtension } from "@vendure/ui-devkit/compiler";
-import path from "path";
-import { WebhookPerChannelEntity } from "./api/webhook-per-channel.entity";
-import { schema } from "./api/schema";
-import { WebhookPluginOptions } from "./api/webhook-plugin-options";
-import { WebhookResolver } from "./api/webhook.resolver";
-import { WebhookService } from "./api/webhook.service";
-import { webhookPermission } from "./index";
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
+import { WebhookPerChannelEntity } from './api/webhook-per-channel.entity';
+import { schema } from './api/schema';
+import { WebhookPluginOptions } from './api/webhook-plugin-options';
+import { WebhookResolver } from './api/webhook.resolver';
+import { WebhookService } from './api/webhook.service';
+import { webhookPermission } from './index';
 
 /**
  * Calls a configurable webhook when configured events arise.
@@ -18,12 +18,12 @@ import { webhookPermission } from "./index";
   providers: [WebhookService],
   adminApiExtensions: {
     schema,
-    resolvers: [WebhookResolver]
+    resolvers: [WebhookResolver],
   },
-  configuration: config => {
+  configuration: (config) => {
     config.authOptions.customPermissions.push(webhookPermission);
     return config;
-  }
+  },
 })
 export class WebhookPlugin {
   static options: WebhookPluginOptions;
@@ -34,19 +34,19 @@ export class WebhookPlugin {
   }
 
   static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, "ui"),
+    extensionPath: path.join(__dirname, 'ui'),
     ngModules: [
       {
-        type: "lazy",
-        route: "webhook",
-        ngModuleFileName: "webhook.module.ts",
-        ngModuleName: "WebhookModule"
+        type: 'lazy',
+        route: 'webhook',
+        ngModuleFileName: 'webhook.module.ts',
+        ngModuleName: 'WebhookModule',
       },
       {
-        type: "shared",
-        ngModuleFileName: "webhook-nav.module.ts",
-        ngModuleName: "WebhookNavModule"
-      }
-    ]
+        type: 'shared',
+        ngModuleFileName: 'webhook-nav.module.ts',
+        ngModuleName: 'WebhookNavModule',
+      },
+    ],
   };
 }

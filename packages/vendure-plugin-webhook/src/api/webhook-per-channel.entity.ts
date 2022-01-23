@@ -1,5 +1,5 @@
-import { Entity, Column } from 'typeorm';
-import { VendureEntity, DeepPartial, VendureEvent } from '@vendure/core';
+import { Column, Entity } from "typeorm";
+import { DeepPartial, VendureEntity } from "@vendure/core";
 
 /**
  * Here we define a new database entity. Passing this in to the plugin's `entities` array

@@ -1,31 +1,23 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import {
-  DataService,
-  NotificationService,
-  ServerConfigService,
-} from '@vendure/admin-ui/core';
-import { getWebhookQuery, updateWebhookMutation } from './queries';
+import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
+import { FormBuilder, FormGroup, Validators } from "@angular/forms";
+import { DataService, NotificationService } from "@vendure/admin-ui/core";
+import { getWebhookQuery, updateWebhookMutation } from "./queries";
 
 @Component({
-  selector: 'greeter',
-  templateUrl: './webhook.component.html',
+  selector: "webhook-component",
+  templateUrl: "./webhook.component.html"
 })
 export class WebhookComponent implements OnInit {
   webhookForm: FormGroup;
 
   constructor(
-    route: ActivatedRoute,
-    router: Router,
-    serverConfigService: ServerConfigService,
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
     private notificationService: NotificationService
   ) {
     this.webhookForm = this.formBuilder.group({
-      url: ['https://example.com', Validators.required],
+      url: ["https://example.com", Validators.required]
     });
   }
 
@@ -34,7 +26,7 @@ export class WebhookComponent implements OnInit {
       .query(getWebhookQuery)
       .mapStream((d: any) => d.webhook)
       .subscribe((webhook) =>
-        this.webhookForm.controls['url'].setValue(webhook)
+        this.webhookForm.controls["url"].setValue(webhook)
       );
   }
 
@@ -48,12 +40,12 @@ export class WebhookComponent implements OnInit {
       }
       this.webhookForm.markAsPristine();
       this.changeDetector.markForCheck();
-      this.notificationService.success('common.notify-update-success', {
-        entity: 'Webhook',
+      this.notificationService.success("common.notify-update-success", {
+        entity: "Webhook"
       });
     } catch (e) {
-      this.notificationService.error('common.notify-update-error', {
-        entity: 'Webhook',
+      this.notificationService.error("common.notify-update-error", {
+        entity: "Webhook"
       });
     }
   }

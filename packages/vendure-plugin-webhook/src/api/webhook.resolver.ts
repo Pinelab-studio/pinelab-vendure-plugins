@@ -1,5 +1,5 @@
 import { Args, Mutation, Query, Resolver } from "@nestjs/graphql";
-import { Allow, Ctx, Permission, RequestContext } from "@vendure/core";
+import { Allow, Ctx, RequestContext } from "@vendure/core";
 import { WebhookService } from "./webhook.service";
 import { webhookPermission } from "../index";
 
@@ -21,7 +21,7 @@ export class WebhookResolver {
   }
 
   @Mutation()
-  @Allow(Permission.UpdateSettings)
+  @Allow(webhookPermission.Permission)
   async updateWebhook(
     @Ctx() ctx: RequestContext,
     @Args("url") url: string
