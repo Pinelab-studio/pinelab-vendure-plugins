@@ -7,11 +7,12 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
+  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+  mergeConfig, PaymentMethodService, PaymentService, RequestContext
+} from "@vendure/core";
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   addItem,
@@ -21,6 +22,7 @@ import {
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import localtunnel from 'localtunnel';
+import { MyparcelService } from "../src/api/myparcel.service";
 
 require('dotenv').config();
 
@@ -32,9 +34,8 @@ require('dotenv').config();
     plugins: [
       MyparcelPlugin.init(
         {
-          'e2e-default-channel': process.env.MYPARCEL_APIKEY!,
+          vendureHost: tunnel.url
         },
-        tunnel.url
       ),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -52,7 +53,24 @@ require('dotenv').config();
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
-
+  await server.app.get(MyparcelService).createConfig({channelId: '1', apiKey: process.env.MYPARCEL_APIKEY!});
+  const channel = await server.app.get(ChannelService).getDefaultChannel();
+  const ctx = new RequestContext({
+    apiType: "admin",
+    isAuthorized: true,
+    authorizedAsOwnerOnly: false,
+    channel
+  });
+  await server.app.get(PaymentMethodService).create(ctx, {
+    code: 'test-payment-method',
+    "name": "test",
+    "description": "",
+    "enabled": true,
+    "handler": {
+      "code": "test-payment-method",
+      "arguments": []
+    }
+  })
   // Add a test-order at every server start
   await addShippingMethod(adminClient, 'my-parcel');
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
@@ -60,4 +78,5 @@ require('dotenv').config();
   await addItem(shopClient, 'T_2', 2);
   await proceedToArrangingPayment(shopClient);
   await addPaymentToOrder(shopClient, testPaymentMethod.code);
+  console.log('Created test order');
 })();

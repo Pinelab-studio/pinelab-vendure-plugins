@@ -22,7 +22,7 @@ export const myparcelHandler = new FulfillmentHandler({
   },
   createFulfillment: async (ctx, orders, orderItems, args) => {
     const shipmentId = await myparcelService
-      .createShipments(ctx.channel.token, orders)
+      .createShipments(ctx.channel.id as string, orders)
       .catch((err: Error) => {
         Logger.error(err.message, MyparcelPlugin.loggerCtx, err.stack);
         throw err;

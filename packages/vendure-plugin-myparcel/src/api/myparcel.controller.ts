@@ -6,6 +6,8 @@ import {
 } from './myparcel.service';
 import { MyparcelPlugin } from '../myparcel.plugin';
 import { Logger } from '@vendure/core';
+import { logger } from "@vendure/ui-devkit/compiler/utils";
+import { loggerCtx } from "@vendure/core/dist/job-queue/constants";
 
 @Controller('myparcel')
 export class MyparcelController {
@@ -16,28 +18,24 @@ export class MyparcelController {
     @Body() body: MyparcelStatusChangeEvent,
     @Headers('X-MyParcel-Authorization') auth: string
   ): Promise<void> {
+    Logger.info(`Incoming webhook ${body?.data?.hooks}`, MyparcelPlugin.loggerCtx);
     const incomingKey = Buffer.from(auth, 'base64').toString();
-    const entry = Object.entries(MyparcelPlugin.apiKeys).find(
-      ([_, apiKey]) => apiKey === incomingKey
-    );
-    if (!entry) {
-      throw new MyParcelError(
-        `Could not validate incoming webhook with auth header ${incomingKey}`
-      );
-    }
-    const shipmentId = body?.data?.hooks[0].shipment_id;
-    const status = body?.data?.hooks[0].status;
+    const config = await this.myparcelService.getConfigByKey(incomingKey).catch(error => {
+      Logger.error(error, MyparcelPlugin.loggerCtx);
+      throw error;
+    });
+    const shipmentId = body?.data?.hooks?.[0]?.shipment_id;
+    const status = body?.data?.hooks?.[0]?.status;
     if (!shipmentId || !status) {
       return Logger.error(
         `Invalid incoming webhook: ${JSON.stringify(body.data)}`,
         MyparcelPlugin.loggerCtx
       );
     }
-    const [channelToken] = entry;
-    Logger.debug(
-      `Incoming status-change for shipment ${shipmentId} for channel ${channelToken} with status ${status}`,
+    Logger.info(
+      `Incoming status-change for shipment ${shipmentId} for channel ${config.channelId} with status ${status}`,
       MyparcelPlugin.loggerCtx
     );
-    await this.myparcelService.updateStatus(channelToken, shipmentId, status);
+    await this.myparcelService.updateStatus(config.channelId, shipmentId, status);
   }
 }

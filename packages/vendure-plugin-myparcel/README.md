@@ -5,17 +5,17 @@
 Sends orders to MyParcel on fulfillment.
 
 ## Permission
+
 This plugin adds a custom permission 'SetMyParcelConfig' that is needed to set MyParcel config via the admin interface.
 
 ## Plugin installation
+
 Add this to your plugins in `vendure-config.ts`:
 
 ```js
-MyparcelPlugin.init(
-  {
-    vendureHost: 'https://your-vendure-host.io'
-  },
-);
+MyparcelPlugin.init({
+  vendureHost: 'https://your-vendure-host.io',
+});
 ```
 
 1. Create a shipmentMethod with `MyParcel fulfillment`.
