@@ -27,12 +27,19 @@ export class MyparcelService implements OnApplicationBootstrap {
   ) {}
 
   onApplicationBootstrap(): void {
-    // Async, because webhook setting is not really needed for application startup
-    this.setWebhooksForAllChannels()
-      .then(() => Logger.info(`Initialized MyParcel plugin`, loggerCtx))
-      .catch((err) =>
-        Logger.error(`Failed to initialized MyParcel plugin`, loggerCtx, err)
+    if (this.config.syncWebhookOnStartup) {
+      // Async, because webhook setting is not really needed for application startup
+      this.setWebhooksForAllChannels()
+        .then(() => Logger.info(`Initialized MyParcel plugin`, loggerCtx))
+        .catch((err) =>
+          Logger.error(`Failed to initialized MyParcel plugin`, loggerCtx, err)
+        );
+    } else {
+      Logger.info(
+        `Initialized MyParcel plugin without syncing webhook to MyParcel`,
+        loggerCtx
       );
+    }
   }
 
   async setWebhooksForAllChannels(): Promise<void> {

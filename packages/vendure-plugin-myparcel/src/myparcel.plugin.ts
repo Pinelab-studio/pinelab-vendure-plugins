@@ -12,6 +12,10 @@ import { MyparcelResolver } from './api/myparcel.resolver';
 
 export interface MyparcelConfig {
   vendureHost: string;
+  /**
+   * Update webhook in MyParcel platform on Vendure startup or not
+   */
+  syncWebhookOnStartup?: boolean;
 }
 
 @VendurePlugin({
