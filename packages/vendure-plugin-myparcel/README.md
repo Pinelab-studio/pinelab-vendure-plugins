@@ -15,6 +15,7 @@ Add this to your plugins in `vendure-config.ts`:
 ```js
 MyparcelPlugin.init({
   vendureHost: 'https://your-vendure-host.io',
+  syncWebhookOnStartup: true, // If you want to automatically set vendureHost as webhook on MyParcel account
 });
 ```
 
