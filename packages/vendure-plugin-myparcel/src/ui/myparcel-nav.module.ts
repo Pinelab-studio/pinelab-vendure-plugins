@@ -9,14 +9,14 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
   providers: [
     addNavMenuItem(
       {
-        id: 'webhook',
-        label: 'Webhook',
-        routerLink: ['/extensions/webhook'],
-        icon: 'cloud-traffic',
-        requiresPermission: 'SetWebhook',
+        id: 'Myparcel',
+        label: 'MyParcel',
+        routerLink: ['/extensions/myparcel'],
+        icon: 'bundle',
+        requiresPermission: 'SetMyparcelConfig',
       },
       'settings'
     ),
   ],
 })
-export class WebhookNavModule {}
+export class MyparcelNavModule {}

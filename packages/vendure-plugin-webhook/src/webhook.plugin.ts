@@ -6,6 +6,7 @@ import { schema } from './api/schema';
 import { WebhookPluginOptions } from './api/webhook-plugin-options';
 import { WebhookResolver } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
+import { webhookPermission } from './index';
 
 /**
  * Calls a configurable webhook when configured events arise.
@@ -19,6 +20,10 @@ import { WebhookService } from './api/webhook.service';
     schema,
     resolvers: [WebhookResolver],
   },
+  configuration: (config) => {
+    config.authOptions.customPermissions.push(webhookPermission);
+    return config;
+  },
 })
 export class WebhookPlugin {
   static options: WebhookPluginOptions;
@@ -27,6 +32,7 @@ export class WebhookPlugin {
     this.options = options;
     return WebhookPlugin;
   }
+
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
     ngModules: [

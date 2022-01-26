@@ -1,34 +1,61 @@
-import {
-  PluginCommonModule,
-  RuntimeVendureConfig,
-  VendurePlugin,
-} from '@vendure/core';
-import { myparcelHandler } from './myparcel.handler';
-import { MyparcelService } from './myparcel.service';
-import { MyparcelController } from './myparcel.controller';
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { myparcelHandler } from './api/myparcel.handler';
+import { MyparcelController } from './api/myparcel.controller';
+import path from 'path';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { MyparcelConfigEntity } from './api/myparcel-config.entity';
+import { MyparcelService } from './api/myparcel.service';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { myparcelPermission } from './index';
+import { schema } from './api/schema';
+import { MyparcelResolver } from './api/myparcel.resolver';
+
+export interface MyparcelConfig {
+  vendureHost: string;
+}
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  entities: [MyparcelConfigEntity],
+  providers: [
+    MyparcelService,
+    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => MyparcelPlugin.config },
+  ],
   controllers: [MyparcelController],
-  providers: [MyparcelService],
-  configuration: (config: RuntimeVendureConfig) => {
+  adminApiExtensions: {
+    schema,
+    resolvers: [MyparcelResolver],
+  },
+  configuration: (config) => {
     config.shippingOptions.fulfillmentHandlers.push(myparcelHandler);
+    config.authOptions.customPermissions.push(myparcelPermission);
     return config;
   },
 })
 export class MyparcelPlugin {
-  static loggerCtx = 'MyParcelPlugin';
-  static apiKeys: MyParcelApiKeys;
-  static webhookHost: string;
+  static config: MyparcelConfig;
 
-  static init(
-    apiKeys: MyParcelApiKeys,
-    vendureHost: string
-  ): typeof MyparcelPlugin {
-    this.apiKeys = apiKeys;
-    this.webhookHost = vendureHost;
+  static init(config: MyparcelConfig): typeof MyparcelPlugin {
+    this.config = config;
     return MyparcelPlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    ngModules: [
+      {
+        type: 'lazy',
+        route: 'myparcel',
+        ngModuleFileName: 'myparcel.module.ts',
+        ngModuleName: 'MyparcelModule',
+      },
+      {
+        type: 'shared',
+        ngModuleFileName: 'myparcel-nav.module.ts',
+        ngModuleName: 'MyparcelNavModule',
+      },
+    ],
+  };
 }
 
 /**

@@ -8,7 +8,7 @@
   "license": "MIT",
   "private": false,
   "main": "dist/index.js",
-  "types": "dist/google-storage-strategy.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "README.md"

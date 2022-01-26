@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
-import { WebhookComponent } from './webhook.component';
+import { MyparcelComponent } from './myparcel.component';
 
 @NgModule({
   imports: [
@@ -10,22 +10,22 @@ import { WebhookComponent } from './webhook.component';
       {
         path: '',
         pathMatch: 'full',
-        component: WebhookComponent,
-        data: { breadcrumb: 'Webhook' },
+        component: MyparcelComponent,
+        data: { breadcrumb: 'MyParcel' },
       },
     ]),
   ],
   providers: [
     addNavMenuItem(
       {
-        id: 'webhook',
-        label: 'Webhook',
-        routerLink: ['/extensions/webhook'],
+        id: 'myparcel',
+        label: 'MyParcel',
+        routerLink: ['/extensions/myparcel'],
         icon: 'cursor-hand-open',
       },
       'settings'
     ),
   ],
-  declarations: [WebhookComponent],
+  declarations: [MyparcelComponent],
 })
-export class WebhookModule {}
+export class MyparcelModule {}

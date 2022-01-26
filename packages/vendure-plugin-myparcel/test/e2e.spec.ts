@@ -7,7 +7,6 @@ import {
   TestServer,
 } from '@vendure/testing';
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
-import { MyparcelPlugin } from '../src/myparcel.plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
 import {
@@ -22,12 +21,18 @@ import {
 } from '../../test/src/admin-utils';
 import nock from 'nock';
 import {
+  MyparcelService,
   MyparcelShipment,
   MyparcelStatusChangeEvent,
   WebhookSubscription,
-} from '../src/myparcel.service';
+} from '../src/api/myparcel.service';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import axios from 'axios';
+import { MyparcelPlugin } from '../src';
+import { getMyparcelConfig, updateMyparcelConfig } from '../src/ui/queries';
+import fs from 'fs';
+import path from 'path';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -82,12 +87,9 @@ describe('MyParcel', () => {
     const devConfig = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
-        MyparcelPlugin.init(
-          {
-            'e2e-default-channel': apiKey,
-          },
-          'https://test-webhook.com'
-        ),
+        MyparcelPlugin.init({
+          vendureHost: 'https://test-webhook.com',
+        }),
       ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
@@ -116,7 +118,23 @@ describe('MyParcel', () => {
     await server.destroy();
   });
 
+  it('Adds apiKey via Graphql mutation', async () => {
+    await adminClient.asSuperAdmin();
+    const config = await adminClient.query(updateMyparcelConfig, {
+      input: { apiKey },
+    });
+    expect(config.updateMyparcelConfig.apiKey).toEqual(apiKey);
+  });
+
+  it('Retrieves apiKey via Graphql query ', async () => {
+    await adminClient.asSuperAdmin();
+    const config = await adminClient.query(getMyparcelConfig);
+    expect(config.myparcelConfig.apiKey).toEqual(apiKey);
+  });
+
   it('Created webhook on startup', async () => {
+    // Mimic startup again, because real startup didn't have configs in DB populated yet
+    await server.app.get(MyparcelService).setWebhooksForAllChannels();
     const webhook = body?.data?.webhook_subscriptions?.[0];
     expect(webhook?.url).toEqual(
       'https://test-webhook.com/myparcel/update-status'
@@ -181,13 +199,34 @@ describe('MyParcel', () => {
     const order = await getOrder(adminClient, orderId);
     expect(order?.fulfillments?.[0]?.state).toEqual('Delivered');
   });
+
+  it('Removes apiKey via Graphql mutation', async () => {
+    await adminClient.asSuperAdmin();
+    const config = await adminClient.query(updateMyparcelConfig, {
+      input: { apiKey: undefined },
+    });
+    expect(config.updateMyparcelConfig).toEqual(null);
+  });
+
+  it('Should compile admin', async () => {
+    fs.rmSync(path.join(__dirname, '__admin-ui'), {
+      recursive: true,
+      force: true,
+    });
+    await compileUiExtensions({
+      outputPath: path.join(__dirname, '__admin-ui'),
+      extensions: [MyparcelPlugin.ui],
+    }).compile?.();
+    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
+    expect(files?.length).toBeGreaterThan(0);
+  }, 240000);
 });
 
 export async function postStatusChange(
-  fulfullmentReference: string,
+  fulfillmentReference: string,
   status: number
 ): Promise<void> {
-  const shipmentId = fulfullmentReference.replace(`MyParcel `, '');
+  const shipmentId = fulfillmentReference.replace(`MyParcel `, '');
   let buff = Buffer.from(apiKey);
   let encodedKey = buff.toString('base64');
   await axios.post(
