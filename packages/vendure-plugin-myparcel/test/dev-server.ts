@@ -13,7 +13,6 @@ import {
   LogLevel,
   mergeConfig,
   PaymentMethodService,
-  PaymentService,
   RequestContext,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
@@ -27,7 +26,6 @@ import { addShippingMethod } from '../../test/src/admin-utils';
 import localtunnel from 'localtunnel';
 import { MyparcelService } from '../src/api/myparcel.service';
 import path from 'path';
-import { WebhookPlugin } from '../../vendure-plugin-webhook/src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 require('dotenv').config();

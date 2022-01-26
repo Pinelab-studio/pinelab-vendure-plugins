@@ -36,7 +36,7 @@ export class MyparcelComponent implements OnInit {
     private notificationService: NotificationService
   ) {
     this.form = this.formBuilder.group({
-      apiKey: ['your-api-key', Validators.required],
+      apiKey: ['your-api-key'],
     });
   }
 
