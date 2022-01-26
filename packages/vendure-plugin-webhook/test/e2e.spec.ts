@@ -71,7 +71,7 @@ describe('Webhook plugin', function () {
     }).compile?.();
     const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 120000);
 
   afterAll(() => {
     return server.destroy();

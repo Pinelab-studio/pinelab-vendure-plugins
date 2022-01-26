@@ -1,77 +1,96 @@
-import { MyparcelPlugin } from "../myparcel.plugin";
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   Channel,
-  ChannelService,
   FulfillmentService,
   FulfillmentState,
   Logger,
   Order,
-  RequestContext
-} from "@vendure/core";
-import { Connection } from "typeorm";
-import { OrderAddress } from "@vendure/common/lib/generated-types";
-import { ApolloError } from "apollo-server-core";
-import axios from "axios";
-import { Injectable, OnApplicationBootstrap } from "@nestjs/common";
-import { Fulfillment } from "@vendure/core/dist/entity/fulfillment/fulfillment.entity";
-import { MyparcelConfigEntity } from "./myparcel-config.entity";
+  RequestContext,
+} from '@vendure/core';
+import { Connection } from 'typeorm';
+import { OrderAddress } from '@vendure/common/lib/generated-types';
+import { ApolloError } from 'apollo-server-core';
+import axios from 'axios';
+import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
+import { MyparcelConfigEntity } from './myparcel-config.entity';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { MyparcelConfig } from '../myparcel.plugin';
 
 @Injectable()
 export class MyparcelService implements OnApplicationBootstrap {
-  client = axios.create({ baseURL: "https://api.myparcel.nl/" });
+  client = axios.create({ baseURL: 'https://api.myparcel.nl/' });
 
   constructor(
     private fulfillmentService: FulfillmentService,
-    private channelService: ChannelService,
-    private connection: Connection
-  ) {
-  }
+    private connection: Connection,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: MyparcelConfig
+  ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     // Create webhook subscription for all channels
-    const webhook = `${MyparcelPlugin.webhookHost}/myparcel/update-status`;
+    const webhook = `${this.config.vendureHost}/myparcel/update-status`;
     const configs = await this.getAllConfigs();
     await Promise.all(
       configs.map(({ channelId, apiKey }) => {
         return this.post(
-          "webhook_subscriptions",
+          'webhook_subscriptions',
           {
             webhook_subscriptions: [
               {
-                hook: "shipment_status_change",
-                url: webhook
-              }
-            ]
+                hook: 'shipment_status_change',
+                url: webhook,
+              },
+            ],
           },
           apiKey
         )
           .then(() =>
-            Logger.info(
-              `Set webhook for ${channelId} to ${webhook}`,
-              MyparcelPlugin.loggerCtx
-            )
+            Logger.info(`Set webhook for ${channelId} to ${webhook}`, loggerCtx)
           )
           .catch((error: Error) =>
             Logger.error(
               `Failed to set webhook for ${channelId}`,
-              MyparcelPlugin.loggerCtx,
+              loggerCtx,
               error.stack
             )
           );
       })
     );
-    Logger.info(`Initialized MyParcel plugin`, MyparcelPlugin.loggerCtx);
+    Logger.info(`Initialized MyParcel plugin`, loggerCtx);
   }
 
-  async createConfig(config: {channelId: string, apiKey:string }): Promise<void> {
-    await this.connection.getRepository(MyparcelConfigEntity).insert(config);
-}
+  /**
+   * Upserts a MyparcelConfig. Deletes record if apiKey is null/undefined/empty string
+   * @param config
+   */
+  async upsertConfig(config: {
+    channelId: string;
+    apiKey: string;
+  }): Promise<MyparcelConfigEntity | void> {
+    const existing = await this.connection
+      .getRepository(MyparcelConfigEntity)
+      .findOne({ channelId: config.channelId });
+    if ((!config.apiKey || config.apiKey === '') && existing) {
+      await this.connection
+        .getRepository(MyparcelConfigEntity)
+        .delete(existing.id);
+    } else if (existing) {
+      await this.connection
+        .getRepository(MyparcelConfigEntity)
+        .update(existing.id, { apiKey: config.apiKey });
+    } else {
+      await this.connection.getRepository(MyparcelConfigEntity).insert(config);
+    }
+    return this.connection
+      .getRepository(MyparcelConfigEntity)
+      .findOne({ channelId: config.channelId });
+  }
 
   async getConfig(channelId: string): Promise<MyparcelConfigEntity> {
     const config = await this.connection
       .getRepository(MyparcelConfigEntity)
       .findOne({ channelId });
-    if (!config || !config.apiKey || config.apiKey.length === 0) {
+    if (!config) {
       throw new MyParcelError(`No config found for channel ${channelId}`);
     }
     return config;
@@ -81,7 +100,7 @@ export class MyparcelService implements OnApplicationBootstrap {
     const config = await this.connection
       .getRepository(MyparcelConfigEntity)
       .findOne({ apiKey });
-    if (!config || !config.apiKey || config.apiKey.length === 0) {
+    if (!config) {
       throw new MyParcelError(`No config found for apiKey ${apiKey}`);
     }
     return config;
@@ -91,10 +110,7 @@ export class MyparcelService implements OnApplicationBootstrap {
     const configs = await this.connection
       .getRepository(MyparcelConfigEntity)
       .find();
-    if (!configs) {
-      return [];
-    }
-    return configs.filter(config => config?.apiKey?.length > 0);
+    return configs || [];
   }
 
   async updateStatus(
@@ -103,28 +119,30 @@ export class MyparcelService implements OnApplicationBootstrap {
     status: number
   ): Promise<void> {
     const fulfillmentReference = this.getFulfillmentReference(shipmentId);
-    const channel = await this.connection.getRepository(Channel).findOneOrFail(channelId);
+    const channel = await this.connection
+      .getRepository(Channel)
+      .findOneOrFail(channelId);
     const fulfillment = await this.connection
       .getRepository(Fulfillment)
       .findOne({ method: fulfillmentReference });
     if (!fulfillment) {
       return Logger.error(
         `No fulfillment found with id ${shipmentId}`,
-        MyparcelPlugin.loggerCtx
+        loggerCtx
       );
     }
     const fulfillmentStatus = myparcelStatusses[status];
     if (!fulfillmentStatus) {
       return Logger.info(
         `No fulfillmentStatus found for myparcelStatus ${status}, not updating fulfillment ${shipmentId}`,
-        MyparcelPlugin.loggerCtx
+        loggerCtx
       );
     }
     const ctx = new RequestContext({
-      apiType: "admin",
+      apiType: 'admin',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
-      channel
+      channel,
     });
     await this.fulfillmentService.transitionToState(
       ctx,
@@ -133,31 +151,21 @@ export class MyparcelService implements OnApplicationBootstrap {
     );
     Logger.info(
       `Updated fulfillment ${fulfillmentReference} to ${fulfillmentStatus}`,
-      MyparcelPlugin.loggerCtx
+      loggerCtx
     );
   }
 
-  async createShipments(
-    channelId: string,
-    orders: Order[]
-  ): Promise<string> {
+  async createShipments(channelId: string, orders: Order[]): Promise<string> {
     const config = await this.getConfig(channelId);
     const shipments = this.toShipment(orders);
-    const res = await this.post(
-      "shipments",
-      { shipments },
-      config.apiKey
-    );
+    const res = await this.post('shipments', { shipments }, config.apiKey);
     const id = res.data?.ids?.[0]?.id;
     return this.getFulfillmentReference(id);
   }
 
   toShipment(orders: Order[]): MyparcelShipment[] {
     return orders.map((order) => {
-      Logger.info(
-        `Creating shipment for ${order.code}`,
-        MyparcelPlugin.loggerCtx
-      );
+      Logger.info(`Creating shipment for ${order.code}`, loggerCtx);
       const address: OrderAddress = order.shippingAddress;
       const [nr, nrSuffix] = this.getHousenumber(address.streetLine2!);
       return {
@@ -165,7 +173,7 @@ export class MyparcelService implements OnApplicationBootstrap {
         reference_identifier: order.code,
         options: {
           package_type: 1, // Parcel
-          label_description: order.code
+          label_description: order.code,
         },
         recipient: {
           cc: address.countryCode!,
@@ -177,8 +185,8 @@ export class MyparcelService implements OnApplicationBootstrap {
           postal_code: address.postalCode!,
           person: address.fullName!,
           phone: address.phoneNumber || undefined,
-          email: order.customer?.emailAddress
-        }
+          email: order.customer?.emailAddress,
+        },
       };
     });
   }
@@ -188,31 +196,31 @@ export class MyparcelService implements OnApplicationBootstrap {
   }
 
   private async post(
-    path: "shipments" | "webhook_subscriptions",
+    path: 'shipments' | 'webhook_subscriptions',
     body: unknown,
     apiKey: string
   ): Promise<MyparcelResponse> {
     const shipmentContentType =
-      "application/vnd.shipment+json;version=1.1;charset=utf-8";
-    const defaultContentType = "application/json";
+      'application/vnd.shipment+json;version=1.1;charset=utf-8';
+    const defaultContentType = 'application/json';
     const contentType =
-      path === "shipments" ? shipmentContentType : defaultContentType;
+      path === 'shipments' ? shipmentContentType : defaultContentType;
     const buff = Buffer.from(apiKey);
-    const encodedKey = buff.toString("base64");
-    this.client.defaults.headers["Authorization"] = `basic ${encodedKey}`;
-    this.client.defaults.headers["Content-Type"] = contentType;
+    const encodedKey = buff.toString('base64');
+    this.client.defaults.headers['Authorization'] = `basic ${encodedKey}`;
+    this.client.defaults.headers['Content-Type'] = contentType;
     try {
       const res = await this.client.post(path, {
-        data: body
+        data: body,
       });
       return res.data;
     } catch (err) {
       if (err.response?.status >= 400 && err.response?.status < 500) {
         const errorMessage = this.getReadableError(err.response.data);
-        Logger.error(err.response.data, MyparcelPlugin.loggerCtx);
+        Logger.error(err.response.data, loggerCtx);
         throw errorMessage ? new MyParcelError(errorMessage) : err;
       } else {
-        Logger.error(err.response, MyparcelPlugin.loggerCtx);
+        Logger.error(err.response, loggerCtx);
         throw err;
       }
     }
@@ -239,7 +247,7 @@ export class MyparcelService implements OnApplicationBootstrap {
 
 export class MyParcelError extends ApolloError {
   constructor(message: string) {
-    super(message, "MY_PARCEL_ERROR");
+    super(message, 'MY_PARCEL_ERROR');
   }
 }
 
@@ -307,23 +315,23 @@ export interface MyparcelStatusChangeEvent {
 }
 
 export const myparcelStatusses: { [key: string]: FulfillmentState } = {
-  1: "Pending",
-  2: "Pending",
-  3: "Shipped",
-  4: "Shipped",
-  5: "Shipped",
-  6: "Shipped",
-  7: "Delivered",
-  8: "Delivered",
-  9: "Delivered",
-  10: "Delivered",
-  11: "Delivered",
-  32: "Shipped",
-  33: "Shipped",
-  34: "Shipped",
-  35: "Shipped",
-  36: "Delivered",
-  37: "Delivered",
-  38: "Delivered",
-  99: "Delivered"
+  1: 'Pending',
+  2: 'Pending',
+  3: 'Shipped',
+  4: 'Shipped',
+  5: 'Shipped',
+  6: 'Shipped',
+  7: 'Delivered',
+  8: 'Delivered',
+  9: 'Delivered',
+  10: 'Delivered',
+  11: 'Delivered',
+  32: 'Shipped',
+  33: 'Shipped',
+  34: 'Shipped',
+  35: 'Shipped',
+  36: 'Delivered',
+  37: 'Delivered',
+  38: 'Delivered',
+  99: 'Delivered',
 };

@@ -11,8 +11,11 @@ import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
-  mergeConfig, PaymentMethodService, PaymentService, RequestContext
-} from "@vendure/core";
+  mergeConfig,
+  PaymentMethodService,
+  PaymentService,
+  RequestContext,
+} from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   addItem,
@@ -22,7 +25,10 @@ import {
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import localtunnel from 'localtunnel';
-import { MyparcelService } from "../src/api/myparcel.service";
+import { MyparcelService } from '../src/api/myparcel.service';
+import path from 'path';
+import { WebhookPlugin } from '../../vendure-plugin-webhook/src';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 require('dotenv').config();
 
@@ -32,15 +38,18 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      MyparcelPlugin.init(
-        {
-          vendureHost: tunnel.url
-        },
-      ),
+      MyparcelPlugin.init({
+        vendureHost: tunnel.url,
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [MyparcelPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
     paymentOptions: {
@@ -53,24 +62,26 @@ require('dotenv').config();
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
-  await server.app.get(MyparcelService).createConfig({channelId: '1', apiKey: process.env.MYPARCEL_APIKEY!});
+  await server.app
+    .get(MyparcelService)
+    .upsertConfig({ channelId: '1', apiKey: process.env.MYPARCEL_APIKEY! });
   const channel = await server.app.get(ChannelService).getDefaultChannel();
   const ctx = new RequestContext({
-    apiType: "admin",
+    apiType: 'admin',
     isAuthorized: true,
     authorizedAsOwnerOnly: false,
-    channel
+    channel,
   });
   await server.app.get(PaymentMethodService).create(ctx, {
     code: 'test-payment-method',
-    "name": "test",
-    "description": "",
-    "enabled": true,
-    "handler": {
-      "code": "test-payment-method",
-      "arguments": []
-    }
-  })
+    name: 'test',
+    description: '',
+    enabled: true,
+    handler: {
+      code: 'test-payment-method',
+      arguments: [],
+    },
+  });
   // Add a test-order at every server start
   await addShippingMethod(adminClient, 'my-parcel');
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');

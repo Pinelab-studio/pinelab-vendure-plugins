@@ -1,31 +1,42 @@
-import {
-  PluginCommonModule,
-  RuntimeVendureConfig,
-  VendurePlugin,
-} from '@vendure/core';
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { myparcelHandler } from './api/myparcel.handler';
-import { MyparcelService } from './api/myparcel.service';
 import { MyparcelController } from './api/myparcel.controller';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { MyparcelConfigEntity } from './api/myparcel-config.entity';
+import { MyparcelService } from './api/myparcel.service';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { myparcelPermission } from './index';
+import { schema } from './api/schema';
+import { MyparcelResolver } from './api/myparcel.resolver';
+
+export interface MyparcelConfig {
+  vendureHost: string;
+}
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  controllers: [MyparcelController],
   entities: [MyparcelConfigEntity],
-  providers: [MyparcelService],
-  configuration: (config: RuntimeVendureConfig) => {
+  providers: [
+    MyparcelService,
+    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => MyparcelPlugin.config },
+  ],
+  controllers: [MyparcelController],
+  adminApiExtensions: {
+    schema,
+    resolvers: [MyparcelResolver],
+  },
+  configuration: (config) => {
     config.shippingOptions.fulfillmentHandlers.push(myparcelHandler);
+    config.authOptions.customPermissions.push(myparcelPermission);
     return config;
   },
 })
 export class MyparcelPlugin {
-  static loggerCtx = 'MyParcelPlugin';
-  static webhookHost: string;
+  static config: MyparcelConfig;
 
-  static init(config: { vendureHost: string }): typeof MyparcelPlugin {
-    this.webhookHost = config.vendureHost;
+  static init(config: MyparcelConfig): typeof MyparcelPlugin {
+    this.config = config;
     return MyparcelPlugin;
   }
 
@@ -34,14 +45,14 @@ export class MyparcelPlugin {
     ngModules: [
       {
         type: 'lazy',
-        route: 'webhook',
-        ngModuleFileName: 'webhook.module.ts',
-        ngModuleName: 'WebhookModule',
+        route: 'myparcel',
+        ngModuleFileName: 'myparcel.module.ts',
+        ngModuleName: 'MyparcelModule',
       },
       {
         type: 'shared',
-        ngModuleFileName: 'webhook-nav.module.ts',
-        ngModuleName: 'WebhookNavModule',
+        ngModuleFileName: 'myparcel-nav.module.ts',
+        ngModuleName: 'MyparcelNavModule',
       },
     ],
   };

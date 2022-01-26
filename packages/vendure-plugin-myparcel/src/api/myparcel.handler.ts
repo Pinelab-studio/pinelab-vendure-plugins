@@ -6,6 +6,7 @@ import {
 } from '@vendure/core';
 import { MyparcelService } from './myparcel.service';
 import { MyparcelPlugin } from '../myparcel.plugin';
+import { loggerCtx } from '../constants';
 
 let myparcelService: MyparcelService;
 export const myparcelHandler = new FulfillmentHandler({
@@ -24,7 +25,7 @@ export const myparcelHandler = new FulfillmentHandler({
     const shipmentId = await myparcelService
       .createShipments(ctx.channel.id as string, orders)
       .catch((err: Error) => {
-        Logger.error(err.message, MyparcelPlugin.loggerCtx, err.stack);
+        Logger.error(err.message, loggerCtx, err.stack);
         throw err;
       });
     return {
