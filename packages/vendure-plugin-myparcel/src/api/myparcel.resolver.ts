@@ -1,6 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, RequestContext } from '@vendure/core';
-import { MyParcelError, MyparcelService } from './myparcel.service';
+import { MyparcelService } from './myparcel.service';
 import { myparcelPermission } from '../index';
 import { MyparcelConfigEntity } from './myparcel-config.entity';
 
