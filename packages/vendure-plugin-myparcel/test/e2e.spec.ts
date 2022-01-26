@@ -134,7 +134,7 @@ describe('MyParcel', () => {
 
   it('Created webhook on startup', async () => {
     // Mimic startup again, because real startup didn't have configs in DB populated yet
-    await server.app.get(MyparcelService).onApplicationBootstrap();
+    await server.app.get(MyparcelService).setWebhooksForAllChannels();
     const webhook = body?.data?.webhook_subscriptions?.[0];
     expect(webhook?.url).toEqual(
       'https://test-webhook.com/myparcel/update-status'
@@ -219,14 +219,14 @@ describe('MyParcel', () => {
     }).compile?.();
     const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
     expect(files?.length).toBeGreaterThan(0);
-  }, 120000);
+  }, 240000);
 });
 
 export async function postStatusChange(
-  fulfullmentReference: string,
+  fulfillmentReference: string,
   status: number
 ): Promise<void> {
-  const shipmentId = fulfullmentReference.replace(`MyParcel `, '');
+  const shipmentId = fulfillmentReference.replace(`MyParcel `, '');
   let buff = Buffer.from(apiKey);
   let encodedKey = buff.toString('base64');
   await axios.post(
