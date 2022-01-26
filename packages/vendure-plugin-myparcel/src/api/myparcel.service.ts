@@ -101,14 +101,12 @@ export class MyparcelService implements OnApplicationBootstrap {
       .findOne({ channelId: config.channelId });
   }
 
-  async getConfig(channelId: string): Promise<MyparcelConfigEntity> {
-    const config = await this.connection
+  async getConfig(
+    channelId: string
+  ): Promise<MyparcelConfigEntity | undefined> {
+    return this.connection
       .getRepository(MyparcelConfigEntity)
       .findOne({ channelId });
-    if (!config) {
-      throw new MyParcelError(`No config found for channel ${channelId}`);
-    }
-    return config;
   }
 
   async getConfigByKey(apiKey: string): Promise<MyparcelConfigEntity> {
@@ -172,6 +170,9 @@ export class MyparcelService implements OnApplicationBootstrap {
 
   async createShipments(channelId: string, orders: Order[]): Promise<string> {
     const config = await this.getConfig(channelId);
+    if (!config) {
+      throw new MyParcelError(`No config found for channel ${channelId}`);
+    }
     const shipments = this.toShipment(orders);
     const res = await this.post('shipments', { shipments }, config.apiKey);
     const id = res.data?.ids?.[0]?.id;

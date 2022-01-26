@@ -126,7 +126,7 @@ describe('MyParcel', () => {
     expect(config.updateMyparcelConfig.apiKey).toEqual(apiKey);
   });
 
-  it('Retrieves apiKey via Graphql query ', async () => {
+  it('Retrieves apiKey via Graphql query', async () => {
     await adminClient.asSuperAdmin();
     const config = await adminClient.query(getMyparcelConfig);
     expect(config.myparcelConfig.apiKey).toEqual(apiKey);

@@ -1,6 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, RequestContext } from '@vendure/core';
-import { MyparcelService } from './myparcel.service';
+import { MyParcelError, MyparcelService } from './myparcel.service';
 import { myparcelPermission } from '../index';
 import { MyparcelConfigEntity } from './myparcel-config.entity';
 
@@ -15,7 +15,7 @@ export class MyparcelResolver {
   @Allow(myparcelPermission.Permission)
   async myparcelConfig(
     @Ctx() ctx: RequestContext
-  ): Promise<MyparcelConfigEntity> {
+  ): Promise<MyparcelConfigEntity | undefined> {
     return this.service.getConfig(ctx.channelId as string);
   }
 
