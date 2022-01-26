@@ -12,10 +12,10 @@ export class MyparcelController {
     @Body() body: MyparcelStatusChangeEvent,
     @Headers('X-MyParcel-Authorization') auth: string
   ): Promise<void> {
-    Logger.info(`Incoming webhook ${body?.data?.hooks}`, loggerCtx);
-    const incomingKey = Buffer.from(auth, 'base64').toString();
-    const shipmentId = body?.data?.hooks?.[0]?.shipment_id;
     const status = body?.data?.hooks?.[0]?.status;
+    const shipmentId = body?.data?.hooks?.[0]?.shipment_id;
+    Logger.info(`Incoming webhook ${shipmentId}`, loggerCtx);
+    const incomingKey = Buffer.from(auth, 'base64').toString();
     if (!shipmentId || !status) {
       return Logger.error(
         `Invalid incoming webhook: ${JSON.stringify(body.data)}`,
