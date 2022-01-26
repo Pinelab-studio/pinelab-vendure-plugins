@@ -25,7 +25,7 @@ export class MyparcelController {
     const config = await this.myparcelService
       .getConfigByKey(incomingKey)
       .catch((error) => {
-        Logger.error(error, loggerCtx);
+        Logger.error('Failed to get config for incoming key', loggerCtx, error);
         throw error;
       });
     Logger.info(

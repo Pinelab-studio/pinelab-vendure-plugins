@@ -26,7 +26,16 @@ export class MyparcelService implements OnApplicationBootstrap {
     @Inject(PLUGIN_INIT_OPTIONS) private config: MyparcelConfig
   ) {}
 
-  async onApplicationBootstrap(): Promise<void> {
+  onApplicationBootstrap(): void {
+    // Async, because webhook setting is not really needed for application startup
+    this.setWebhooksForAllChannels()
+      .then(() => Logger.info(`Initialized MyParcel plugin`, loggerCtx))
+      .catch((err) =>
+        Logger.error(`Failed to initialized MyParcel plugin`, loggerCtx, err)
+      );
+  }
+
+  async setWebhooksForAllChannels(): Promise<void> {
     // Create webhook subscription for all channels
     const webhook = `${this.config.vendureHost}/myparcel/update-status`;
     const configs = await this.getAllConfigs();
@@ -56,7 +65,6 @@ export class MyparcelService implements OnApplicationBootstrap {
           );
       })
     );
-    Logger.info(`Initialized MyParcel plugin`, loggerCtx);
   }
 
   /**
