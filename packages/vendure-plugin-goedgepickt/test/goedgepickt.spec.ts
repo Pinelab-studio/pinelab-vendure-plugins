@@ -1,6 +1,7 @@
 import {
   createTestEnvironment,
   registerInitializer,
+  SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
@@ -16,16 +17,28 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { GoedgepicktPlugin } from '../src/goedgepickt.plugin';
 import nock from 'nock';
-import { GoedgepicktService } from '../src/goedgepickt.service';
+import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import { createSettledOrder } from '../../test/src/order-utils';
-import { goedgepicktHandler } from '../src/goedgepickt.handler';
+import { goedgepicktHandler } from '../src/api/goedgepickt.handler';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
+import {
+  getGoedgepicktConfig,
+  updateGoedgepicktConfig,
+} from '../src/ui/queries';
+import fs from 'fs';
+import path from 'path';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 jest.setTimeout(20000);
 
 describe('Goedgepickt plugin', function () {
   let server: TestServer;
+  let adminClient: SimpleGraphQLClient;
   let serverStarted = false;
+  const ggConfig = {
+    apiKey: 'test-api-key',
+    webshopUuid: 'test-webshop-uuid',
+  };
 
   let pushProductsPayloads: any[] = [];
   let createOrderPayload;
@@ -90,16 +103,35 @@ describe('Goedgepickt plugin', function () {
       ],
     });
 
-    ({ server } = createTestEnvironment(config));
+    ({ server, adminClient } = createTestEnvironment(config));
     await server.init({
       initialData: initialData as InitialData,
       productsCsvPath: '../test/src/products-import.csv',
     });
     serverStarted = true;
+    await adminClient.asSuperAdmin();
   }, 60000);
 
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
+  });
+
+  it('Updates config via graphql', async () => {
+    const result = await adminClient.query(updateGoedgepicktConfig, {
+      input: ggConfig,
+    });
+    await expect(result.updateGoedgepicktConfig.webshopUuid).toBe(
+      ggConfig.webshopUuid
+    );
+    await expect(result.updateGoedgepicktConfig.apiKey).toBe(ggConfig.apiKey);
+  });
+
+  it('Retrieves config via graphql', async () => {
+    const result = await adminClient.query(getGoedgepicktConfig);
+    await expect(result.goedgepicktConfig.webshopUuid).toBe(
+      ggConfig.webshopUuid
+    );
+    await expect(result.goedgepicktConfig.apiKey).toBe(ggConfig.apiKey);
   });
 
   it('Pushes all products', async () => {
@@ -146,6 +178,19 @@ describe('Goedgepickt plugin', function () {
     await expect(fulfillment.handlerCode).toBe('goedgepickt');
     await expect(fulfillment.method).toBe('testUuid');
   });
+
+  it('Should compile admin', async () => {
+    fs.rmSync(path.join(__dirname, '__admin-ui'), {
+      recursive: true,
+      force: true,
+    });
+    await compileUiExtensions({
+      outputPath: path.join(__dirname, '__admin-ui'),
+      extensions: [GoedgepicktPlugin.ui],
+    }).compile?.();
+    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
+    expect(files?.length).toBeGreaterThan(0);
+  }, 240000);
 
   // TODO incoming webhook order status
   // TODO incoming webhook stock update

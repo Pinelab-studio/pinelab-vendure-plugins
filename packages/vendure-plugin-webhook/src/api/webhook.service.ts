@@ -1,6 +1,5 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { EventBus } from '@vendure/core';
-import { Connection } from 'typeorm';
+import { EventBus, TransactionalConnection } from '@vendure/core';
 import { WebhookPerChannelEntity } from './webhook-per-channel.entity';
 import { WebhookPlugin } from '../webhook.plugin';
 import fetch from 'node-fetch';
@@ -12,7 +11,10 @@ import fetch from 'node-fetch';
 export class WebhookService implements OnApplicationBootstrap {
   static queue = new Set<string>();
 
-  constructor(private eventBus: EventBus, private connection: Connection) {}
+  constructor(
+    private eventBus: EventBus,
+    private connection: TransactionalConnection
+  ) {}
 
   async getWebhook(
     channelId: string

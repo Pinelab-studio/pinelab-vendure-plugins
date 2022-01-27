@@ -1,34 +1,44 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   ChannelService,
+  ConfigService,
   Logger,
   Order,
   OrderItem,
   ProductVariant,
   ProductVariantService,
   RequestContext,
+  TransactionalConnection,
 } from '@vendure/core';
-import { GgLoggerContext, GoedgepicktPlugin } from './goedgepickt.plugin';
 import { GoedgepicktClient } from './goedgepickt.client';
 import {
+  GoedgepicktPluginConfig,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
   Order as GgOrder,
-  OrderInput,
   OrderItemInput,
   Product as GgProduct,
 } from './goedgepickt.types';
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
 
 @Injectable()
 export class GoedgepicktService implements OnApplicationBootstrap {
   // TODO send products to GP on startup via worker!
   // TODO Get stocklevels from GP on startup
 
+  readonly limit: number;
+
   constructor(
     private variantService: ProductVariantService,
-    private channelService: ChannelService
-  ) {}
+    private channelService: ChannelService,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
+    private configService: ConfigService,
+    private connection: TransactionalConnection
+  ) {
+    this.limit = configService.apiOptions.adminListQueryLimit;
+  }
 
   async onApplicationBootstrap(): Promise<void> {
     /*    for (const { channelToken } of GoedgepicktPlugin.config.configPerChannel) {
@@ -41,6 +51,36 @@ export class GoedgepicktService implements OnApplicationBootstrap {
             );
           });
         }*/
+  }
+
+  async upsertConfig(config: {
+    apiKey: string;
+    webshopUuid: string;
+    channelId: string;
+  }): Promise<GoedgepicktConfigEntity> {
+    const existing = await this.connection
+      .getRepository(GoedgepicktConfigEntity)
+      .findOne({ channelId: config.channelId });
+    if (existing) {
+      await this.connection
+        .getRepository(GoedgepicktConfigEntity)
+        .update(existing.id, config);
+    } else {
+      await this.connection
+        .getRepository(GoedgepicktConfigEntity)
+        .insert(config);
+    }
+    return this.connection
+      .getRepository(GoedgepicktConfigEntity)
+      .findOneOrFail({ channelId: config.channelId });
+  }
+
+  async getConfig(
+    channelId: string
+  ): Promise<GoedgepicktConfigEntity | undefined> {
+    return this.connection
+      .getRepository(GoedgepicktConfigEntity)
+      .findOne({ channelId });
   }
 
   /**
@@ -58,13 +98,13 @@ export class GoedgepicktService implements OnApplicationBootstrap {
           stockManagement: true,
         })
         .then(() =>
-          Logger.info(`'${variant.sku}' synced to Goedgepickt`, GgLoggerContext)
+          Logger.info(`'${variant.sku}' synced to Goedgepickt`, loggerCtx)
         )
         .catch((error: Error) => {
           if (error?.message?.indexOf('already exists') > -1) {
             Logger.info(
               `Variant '${variant.sku}' already exists in Goedgepickt. Skipping...`,
-              GgLoggerContext
+              loggerCtx
             );
           } else {
             throw error; // Throw if any other error than already exists
@@ -96,7 +136,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
       if (!newStock) {
         Logger.warn(
           `Goedgepickt variant ${ggProduct.sku} has no stock set. Cannot update stock in Vendure for this variant.`,
-          GgLoggerContext
+          loggerCtx
         );
         continue;
       }
@@ -107,12 +147,12 @@ export class GoedgepicktService implements OnApplicationBootstrap {
         });
         Logger.info(
           `Updating variant ${variant.sku} to have ${newStock} stockOnHand`,
-          GgLoggerContext
+          loggerCtx
         );
       } else {
         Logger.warn(
           `Goedgepickt product with sku ${ggProduct.sku} doesn't exist as variant in Vendure. Not updating stock for this variant`,
-          GgLoggerContext
+          loggerCtx
         );
       }
     }
@@ -162,21 +202,20 @@ export class GoedgepicktService implements OnApplicationBootstrap {
    * Update order status in Vendure based on event
    */
   async updateOrderStatus(event: IncomingOrderStatusEvent): Promise<void> {
-    Logger.info(
-      `Updated order status of ${event.orderNumber}`,
-      GgLoggerContext
-    );
+    Logger.info(`Updated order status of ${event.orderNumber}`, loggerCtx);
+    // TODO
   }
 
   /**
    * Update stock in Vendure based on event
    */
   async updateStock(event: IncomingStockUpdateEvent): Promise<void> {
-    Logger.info(`Updated stock for ${event.productSku}`, GgLoggerContext);
+    Logger.info(`Updated stock for ${event.productSku}`, loggerCtx);
+    // TODO
   }
 
   getClientForChannel(channelToken: string): GoedgepicktClient {
-    const clientConfig = GoedgepicktPlugin.config?.configPerChannel.find(
+    const clientConfig = this.config.configPerChannel.find(
       (c) => c.channelToken === channelToken
     );
     if (!clientConfig) {
@@ -204,13 +243,12 @@ export class GoedgepicktService implements OnApplicationBootstrap {
     const ctx = await this.getCtxForChannel(channelToken);
     const result = await this.variantService.findAll(ctx, {
       skip: 0,
-      take: 10000,
-    }); // Sensible max of 10 000 variants per channel
+      take: this.limit,
+    });
     if (result.totalItems > result.items.length) {
-      Logger.error(
-        `This plugin supports a max of ${result.items.length} variants per channel. Channel ${channelToken} has ${result.totalItems} variants. Only processing first ${result.items} variants`,
-        GgLoggerContext
-      );
+      const message = `This plugin supports a max of ${result.items.length} variants per channel. Channel ${channelToken} has ${result.totalItems} variants. Only processing first ${result.items} variants. You can increase this limit by setting 'adminListQueryLimit' in vendure-config.`;
+      Logger.error(message, loggerCtx);
+      throw Error(message);
     }
     return result.items;
   }

@@ -14,7 +14,8 @@
     "README.md"
   ],
   "scripts": {
-    "serve": "nodemon --watch \"src/**\" --watch \"script/**\" --ext \"ts,json\" --exec \"ts-node script/dev-server.ts\"",
+    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node script/dev-server.ts\"",
+    "start": "ts-node script/dev-server.ts",
     "build": "rimraf dist && tsc",
     "test": "jest --preset=\"ts-jest\""
   },

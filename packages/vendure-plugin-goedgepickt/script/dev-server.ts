@@ -2,11 +2,16 @@ import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
+  testConfig,
 } from '@vendure/testing';
 import {
   Customer,
   CustomerService,
+  DefaultLogger,
+  DefaultSearchPlugin,
   InitialData,
+  LogLevel,
+  mergeConfig,
   Order,
   OrderService,
   ProductService,
@@ -14,15 +19,50 @@ import {
   ShippingMethodService,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
-import { localConfig } from './local-config';
-import { GoedgepicktService } from '../src/goedgepickt.service';
+import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import { createSettledOrder } from '../../test/src/order-utils';
-import { goedgepicktHandler } from '../src/goedgepickt.handler';
+import { goedgepicktHandler } from '../src/api/goedgepickt.handler';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
+import { GoedgepicktPlugin } from '../src';
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import path from 'path';
+import { MyparcelPlugin } from '../../vendure-plugin-myparcel/src';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const { server } = createTestEnvironment(localConfig);
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
+    apiOptions: {
+      adminListQueryLimit: 10000,
+      adminApiPlayground: {},
+      shopApiPlayground: {},
+    },
+    plugins: [
+      GoedgepicktPlugin.init({
+        configPerChannel: [
+          {
+            channelToken: 'e2e-default-channel',
+            apiKey: process.env.GOEDGEPICKT_APIKEY!,
+            webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
+            orderWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_ORDERSTATUS_KEY!,
+            stockWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_STOCK_UPDATE_KEY!,
+          },
+        ],
+      }),
+      DefaultSearchPlugin,
+      AdminUiPlugin.init({
+        port: 3002,
+        route: 'admin',
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [GoedgepicktPlugin.ui],
+          devMode: true,
+        }),
+      }),
+    ],
+  });
+  const { server } = createTestEnvironment(config);
   await server.init({
     initialData: initialData as InitialData,
     productsCsvPath: '../test/src/products-import.csv',
@@ -35,7 +75,7 @@ import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.e
       .pullStocklevels('e2e-default-channel');*/
   const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel');
 
-  server.app.get(ProductService).findAll(ctx, {});
+  // server.app.get(ProductService).findAll(ctx, {});
   await server.app.get(ShippingMethodService).update(ctx, {
     id: 1,
     fulfillmentHandler: goedgepicktHandler.code,

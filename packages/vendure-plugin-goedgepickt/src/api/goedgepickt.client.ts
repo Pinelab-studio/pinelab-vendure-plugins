@@ -7,8 +7,8 @@ import {
   ProductInput,
 } from './goedgepickt.types';
 import { Logger } from '@vendure/core';
-import { GgLoggerContext } from './goedgepickt.plugin';
 import crypto from 'crypto';
+import { loggerCtx } from '../constants';
 
 interface RawRequestInput {
   entity: 'products' | 'orders';
@@ -36,7 +36,7 @@ export class GoedgepicktClient {
     });
     Logger.info(
       `Fetched ${result.items?.length} products from Goedgepickt`,
-      GgLoggerContext
+      loggerCtx
     );
     return result.items as Product[];
   }
@@ -49,7 +49,7 @@ export class GoedgepicktClient {
     });
     Logger.info(
       `Created product ${product.productId} in Goedgepickt`,
-      GgLoggerContext
+      loggerCtx
     );
     return result.items as Product[];
   }
@@ -62,7 +62,7 @@ export class GoedgepicktClient {
     });
     Logger.info(
       `Created order ${order.orderId} in Goedgepickt with uuid ${result.orderUuid}`,
-      GgLoggerContext
+      loggerCtx
     );
     return result;
   }
@@ -87,7 +87,7 @@ export class GoedgepicktClient {
     const json = (await result.json()) as any;
     if (json.error || json.errorMessage || json.errors) {
       const errorMessage = json.error ?? json.errorMessage ?? json.message; // If json.errors, then there should also be a message
-      Logger.warn(json, GgLoggerContext);
+      Logger.warn(json, loggerCtx);
       throw Error(errorMessage);
     }
     return json;
@@ -121,7 +121,7 @@ export class GoedgepicktClient {
     if (computedSignature !== incomingSignature) {
       Logger.warn(
         `Incoming event has an invalid signature! ${data}`,
-        GgLoggerContext
+        loggerCtx
       );
       throw Error(`Invalid signature.`);
     }

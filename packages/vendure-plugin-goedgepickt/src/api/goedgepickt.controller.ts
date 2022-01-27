@@ -1,11 +1,11 @@
 import { Body, Controller, Headers, Param, Post } from '@nestjs/common';
 import { GoedgepicktService } from './goedgepickt.service';
 import { Logger } from '@vendure/core';
-import { GgLoggerContext } from './goedgepickt.plugin';
 import {
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
 } from './goedgepickt.types';
+import { loggerCtx } from '../constants';
 
 @Controller('goedgepickt')
 export class GoedgepicktController {
@@ -19,7 +19,7 @@ export class GoedgepicktController {
   ) {
     Logger.info(
       `Incoming event ${body.event} for channel ${channelToken}`,
-      GgLoggerContext
+      loggerCtx
     );
     const client = this.service.getClientForChannel(channelToken);
     if (body.event === 'orderStatusChanged') {
@@ -29,10 +29,7 @@ export class GoedgepicktController {
       client.validateStockWebhookSignature(JSON.stringify(body), signature);
       await this.service.updateStock(body);
     } else {
-      Logger.warn(
-        `Unknown incoming event: ${JSON.stringify(body)}`,
-        GgLoggerContext
-      );
+      Logger.warn(`Unknown incoming event: ${JSON.stringify(body)}`, loggerCtx);
     }
   }
 }
