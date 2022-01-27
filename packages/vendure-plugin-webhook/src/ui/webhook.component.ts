@@ -1,24 +1,16 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import {
-  DataService,
-  NotificationService,
-  ServerConfigService,
-} from '@vendure/admin-ui/core';
+import { DataService, NotificationService } from '@vendure/admin-ui/core';
 import { getWebhookQuery, updateWebhookMutation } from './queries';
 
 @Component({
-  selector: 'greeter',
+  selector: 'webhook-component',
   templateUrl: './webhook.component.html',
 })
 export class WebhookComponent implements OnInit {
   webhookForm: FormGroup;
 
   constructor(
-    route: ActivatedRoute,
-    router: Router,
-    serverConfigService: ServerConfigService,
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,

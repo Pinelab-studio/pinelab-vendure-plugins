@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-webhook",
-  "version": "1.3.4",
+  "version": "2.0.4",
   "description": "Call webhooks on configured events from Vendure",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
@@ -33,7 +33,7 @@
     "rimraf": "^3.0.2",
     "ts-jest": "^27.0.3",
     "ts-node": "^10.0.0",
-    "typescript": "^4.3.2"
+    "typescript": "4.3.5"
   },
   "gitHead": "1c835bf53f8d259221a24ebac3a2238bb2c89144"
 }

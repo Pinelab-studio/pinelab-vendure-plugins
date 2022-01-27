@@ -4,21 +4,40 @@
 
 Sends orders to MyParcel on fulfillment.
 
+## Permission
+
+This plugin adds a custom permission 'SetMyParcelConfig' that is needed to set MyParcel config via the admin interface.
+
+## Plugin installation
+
 Add this to your plugins in `vendure-config.ts`:
 
 ```js
-MyparcelPlugin.init(
-  {
-    'channel-token': 'myparcel-key-for-channel',
-  },
-  'https://your-vendure-host.io'
-);
+MyparcelPlugin.init({
+  vendureHost: 'https://your-vendure-host.io',
+  syncWebhookOnStartup: true, // If you want to automatically set vendureHost as webhook on MyParcel account
+});
 ```
 
-1. Create a shipmentMethod with `MyParcel fulfillment`.
-2. Place an order and select the shippingMethod.
-3. Go to the Admin UI and click on `fulfill`
-4. Your shipment should be in your MyParcel account.
+Add this to your AdminUiPlugin:
+
+```js
+AdminUiPlugin.init({
+...
+  app: compileUiExtensions({
+    outputPath: path.join(__dirname, '__admin-ui'),
+    extensions: [MyparcelPlugin.ui],
+  })
+})
+```
+
+Start Vendure and login:
+
+1. Go to `Settings` > `MyParcel` and fill in your MyParcel API key.
+2. Create a shipmentMethod with `MyParcel fulfillment`.
+3. Place an order and select the shippingMethod.
+4. Go to the Admin UI and click on `fulfill`
+5. Your shipment should be in your MyParcel account.
 
 Reach out to me at [pinelab.studio](https://pinelab.studio) if you need any help.
 

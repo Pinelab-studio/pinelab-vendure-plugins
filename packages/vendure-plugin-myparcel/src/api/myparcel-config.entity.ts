@@ -7,8 +7,8 @@ import { DeepPartial, VendureEntity } from '@vendure/core';
  * to query in your plugin code.
  */
 @Entity()
-export class WebhookPerChannelEntity extends VendureEntity {
-  constructor(input?: DeepPartial<WebhookPerChannelEntity>) {
+export class MyparcelConfigEntity extends VendureEntity {
+  constructor(input?: DeepPartial<MyparcelConfigEntity>) {
     super(input);
   }
 
@@ -16,5 +16,5 @@ export class WebhookPerChannelEntity extends VendureEntity {
   channelId!: string;
 
   @Column()
-  url!: string;
+  apiKey!: string;
 }
