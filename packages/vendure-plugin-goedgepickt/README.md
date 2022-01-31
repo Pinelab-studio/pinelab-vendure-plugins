@@ -35,7 +35,16 @@ status in Vendure
 
 Stocklevels are updated by one of the following triggers:
 
-1. Every startup all productlevels are pulled from Goedgepickt
-2. Full sync via UI also pulls all stocklevels from Goedgepickt
-3. Goedgepickt calls a webhook when stocklevels change, this will also update stocklevel for a specific variant in
-   Vendure
+1. Every startup all productlevels are pulled from Goedgepickt. This is done via the jobQueue.
+2. Full sync via UI also pulls all stocklevels from Goedgepickt. This is synchronous in the mainprocess, so we can provide feedback to the user.
+3. Goedgepickt calls a webhook when stocklevels change, this will also update stocklevels for the given variant in
+   Vendure.
+
+### Admin UI
+
+You can configure the plugin settings via UI via Settings > Goedgepickt. The button `test` calls the API with the filled
+in credentials to verify if the credentials are correct.
+
+![UI screenshot](./docs/img.png)
+
+[![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)

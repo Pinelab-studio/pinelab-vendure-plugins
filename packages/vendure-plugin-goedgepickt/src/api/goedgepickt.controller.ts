@@ -18,18 +18,30 @@ export class GoedgepicktController {
     @Headers('Signature') signature: string
   ) {
     Logger.info(
-      `Incoming event ${body.event} for channel ${channelToken}`,
+      `Incoming event ${body?.event} for channel ${channelToken}`,
       loggerCtx
     );
-    const client = await this.service.getClientForChannel(channelToken);
-    if (body.event === 'orderStatusChanged') {
-      client.validateOrderWebhookSignature(JSON.stringify(body), signature);
-      await this.service.updateOrderStatus(body);
-    } else if (body.event === 'stockUpdated') {
-      client.validateStockWebhookSignature(JSON.stringify(body), signature);
-      await this.service.updateStock(body);
-    } else {
-      Logger.warn(`Unknown incoming event: ${JSON.stringify(body)}`, loggerCtx);
+    try {
+      const client = await this.service.getClientForChannel(channelToken);
+      if (body.event === 'orderStatusChanged') {
+        client.validateOrderWebhookSignature(JSON.stringify(body), signature);
+        await this.service.updateOrderStatus(channelToken, body.orderNumber);
+      } else if (body.event === 'stockUpdated') {
+        client.validateStockWebhookSignature(JSON.stringify(body), signature);
+        await this.service.updateStock(body);
+      } else {
+        Logger.warn(
+          `Unknown incoming event: ${JSON.stringify(body)}`,
+          loggerCtx
+        );
+      }
+    } catch (err) {
+      Logger.error(
+        `Failed to process incoming webhook for channel ${channelToken}`,
+        loggerCtx,
+        err
+      );
+      throw err;
     }
   }
 }

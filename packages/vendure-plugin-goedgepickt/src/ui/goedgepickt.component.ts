@@ -176,7 +176,7 @@ export class GoedgepicktComponent implements OnInit {
     try {
       await this.dataService.mutate(runGoedgepicktFullSync).toPromise();
       this.notificationService.success('common.notify-update-success', {
-        entity: 'GoedgepicktConfig',
+        entity: 'products and stocklevels',
       });
     } catch (e) {
       this.notificationService.error(e.message);

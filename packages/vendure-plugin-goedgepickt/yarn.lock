@@ -3108,10 +3108,10 @@
   resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.4.3.tgz#64f73f0cfe02a58ab6daed84a5b329777a52e969"
   integrity sha512-X3P74KDacHcFOVDrVolTvtXOW1JwJFcShXjM+uiVWiaYCaVCDqbF98/kWfkBzw+mLpS9ohIShOM0Im0jNPtbpw==
 
-"@vendure/core@1.4.2":
-  version "1.4.2"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.4.2.tgz#28192955b0b1ddca2cd9e26f593c274ada0276a6"
-  integrity sha512-NoawUEWv+DNVF5qMy0jDySRC/WuBc0LsA+fIeT1ZHQfkD183vihrCrIYW21Abq8lMnU69h/jav9FrJU6dggZbg==
+"@vendure/core@1.4.3":
+  version "1.4.3"
+  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.4.3.tgz#18374cc3d613f7421464741abe49f2a5a838196a"
+  integrity sha512-czqhtZB3/BuxRJvbY0fvRRfEwkWVagP7Kgqi/KjhHJDF9V1miZSWxu1+F2epQ2EIS1VR/iF/gs69/qK6R03pCw==
   dependencies:
     "@graphql-tools/stitch" "^7.5.3"
     "@nestjs/common" "7.6.17"
@@ -3122,7 +3122,7 @@
     "@nestjs/testing" "7.6.17"
     "@nestjs/typeorm" "7.1.5"
     "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^1.4.2"
+    "@vendure/common" "^1.4.3"
     apollo-server-express "2.24.1"
     bcrypt "^5.0.0"
     body-parser "^1.19.0"

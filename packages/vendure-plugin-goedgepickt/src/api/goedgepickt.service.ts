@@ -1,10 +1,19 @@
-import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  OnApplicationBootstrap,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
   ChannelService,
   ConfigService,
+  JobQueue,
+  JobQueueService,
   Logger,
   Order,
   OrderItem,
+  OrderService,
+  OrderState,
   ProductVariant,
   ProductVariantService,
   RequestContext,
@@ -18,31 +27,59 @@ import {
   IncomingStockUpdateEvent,
   Order as GgOrder,
   OrderItemInput,
+  OrderStatus,
   Product as GgProduct,
 } from './goedgepickt.types';
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
+import { progressToShipped } from '../../../util/src';
 
 @Injectable()
-export class GoedgepicktService implements OnApplicationBootstrap {
-  // TODO send products to GP on startup via worker!
-  // TODO Get stocklevels from GP on startup
-
+export class GoedgepicktService
+  implements OnApplicationBootstrap, OnModuleInit
+{
   readonly limit: number;
+  private jobQueue: JobQueue<{ channelToken: string }> | undefined;
 
   constructor(
     private variantService: ProductVariantService,
     private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
     private configService: ConfigService,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
+    private jobQueueService: JobQueueService,
+    private orderService: OrderService
   ) {
     this.limit = configService.apiOptions.adminListQueryLimit;
   }
 
+  async onModuleInit() {
+    this.jobQueue = await this.jobQueueService.createQueue({
+      name: 'pull-goedgepickt-stocklevels',
+      process: async (job) => await this.pullStocklevels(job.data.channelToken),
+    });
+  }
+
   async onApplicationBootstrap(): Promise<void> {
-    // TODO pull stocklevels
+    // Push sync jobs to the worker queue
+    const configs = (await this.getConfigs()) || [];
+    for (const config of configs) {
+      if (!this.jobQueue) {
+        return Logger.error(
+          `Stocklevel sync jobQueue not initialized`,
+          loggerCtx
+        );
+      }
+      await this.jobQueue.add(
+        { channelToken: config.channelToken },
+        { retries: 2 }
+      );
+      return Logger.info(
+        `Added stocklevel sync job to queue for channel ${config.channelToken}`,
+        loggerCtx
+      );
+    }
   }
 
   async upsertConfig(
@@ -71,6 +108,10 @@ export class GoedgepicktService implements OnApplicationBootstrap {
     return this.connection
       .getRepository(GoedgepicktConfigEntity)
       .findOne({ channelToken });
+  }
+
+  async getConfigs(): Promise<GoedgepicktConfigEntity[]> {
+    return this.connection.getRepository(GoedgepicktConfigEntity).find();
   }
 
   /**
@@ -108,14 +149,19 @@ export class GoedgepicktService implements OnApplicationBootstrap {
    */
   async setWebhooks(channelToken: string): Promise<GoedgepicktConfigEntity> {
     const client = await this.getClientForChannel(channelToken);
+    let webhookTarget = this.config.vendureHost;
+    if (!webhookTarget.endsWith('/')) {
+      webhookTarget += '/';
+    }
+    webhookTarget = `${webhookTarget}/goedgepickt/webhook/${channelToken}`;
     const [orderStatusWebhook, stockWebhook] = await Promise.all([
       client.setSetWebhook({
         webhookEvent: GoedgepicktEvent.orderStatusChanged,
-        targetUrl: this.config.vendureHost,
+        targetUrl: webhookTarget,
       }),
       client.setSetWebhook({
         webhookEvent: GoedgepicktEvent.stockChanged,
-        targetUrl: this.config.vendureHost,
+        targetUrl: webhookTarget,
       }),
     ]);
     return await this.upsertConfig({
@@ -210,7 +256,21 @@ export class GoedgepicktService implements OnApplicationBootstrap {
   /**
    * Update order status in Vendure based on event
    */
-  async updateOrderStatus(event: IncomingOrderStatusEvent): Promise<void> {
+  async updateOrderStatus(
+    channelToken: string,
+    orderCode: string
+  ): Promise<void> {
+    const ctx = await this.getCtxForChannel(channelToken);
+    const transitionedOrder = await progressToShipped(
+      this.orderService,
+      ctx,
+      orderCode
+    );
+    if (!order) {
+      throw Error(
+        `No order with code ${orderCode} found for channel ${channelToken}`
+      );
+    }
     Logger.info(`Updated order status of ${event.orderNumber}`, loggerCtx);
     // TODO
   }
@@ -218,7 +278,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
   /**
    * Update stock in Vendure based on event
    */
-  async updateStock(event: IncomingStockUpdateEvent): Promise<void> {
+  async updateStock(channelToken: string, productSku: string): Promise<void> {
     Logger.info(`Updated stock for ${event.productSku}`, loggerCtx);
     // TODO
   }
@@ -231,11 +291,6 @@ export class GoedgepicktService implements OnApplicationBootstrap {
         loggerCtx
       );
       throw Error(`No Goedgepickt config found for channel ${channelToken}`);
-    } else if (!config?.orderWebhookKey || !config.stockWebhookKey) {
-      Logger.error(
-        `Goedgepickt webhooks are not configured for channel ${channelToken}`,
-        loggerCtx
-      );
     }
     return new GoedgepicktClient({
       webshopUuid: config.webshopUuid,
