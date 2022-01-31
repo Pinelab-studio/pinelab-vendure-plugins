@@ -108,6 +108,7 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
         width: this.config.thumbnails!.width,
         height: this.config.thumbnails!.height,
       })
+      .flatten({ background: '#ffffff' })
       .toFile(tmpFile.name);
     await this.storage.bucket(this.bucketName).upload(tmpFile.name, {
       destination: `${fileName}_thumbnail.jpg`,
