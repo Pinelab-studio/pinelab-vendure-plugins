@@ -2,22 +2,40 @@
 
 Plugin for integration with Goedgepickt. This plugin adheres to these principles:
 
-- Vendure manages most product information. If you want a new product, add it in Vendure and this plugin will push it to
-  Goedgepickt
-- Goedgepickt manages a products physical properties like size and weight.
-- Goedgepickt manages stock. Stocklevels can change in Goedgepickt because stock can be shared among
-  multiple webshops or even physical stores
-
-## How this plugin works
-
-- Push all products from Vendure to Goedgepickt on every startup (using Vendure Jobs)
-- Syncs all stocklevels from Goedgepickt to Vendure on startup
-- Vendure pushes products to Goedgepickt on Product events
-- Vendure pushes orders to Goedgepickt on order fulfillment. Goedgepickt will handle the stock for us.
-- Goedgepickt will update the order status in Vendure by incoming webhook
+- Vendure is your catalog. If you want a new product, add it in Vendure and this plugin will push it to Goedgepickt
+- Goedgepickt manages all things stock related. StockLevel, size and weight are all managed by Goedgepickt and are
+  leading.
 
 ## Plugin setup
 
-- Plugin uses a hardcoded a limit of 10000 variants per channel. Set `adminListQueryLimit: 10000,` in apiOptions config.
+//TODO steps
 
-// TODO diagram of flow: order placed, order fulfillment, goedgepickt
+## How this plugin works
+
+### Credentials
+
+Add your `apiKey` and `webshopUuid` via the admin UI. When you save your credentials, the plugin will also set the
+webhook in Goedgepickt.
+
+### Product sync
+
+This is a manual action. Via the Admin UI you can trigger a full sync. A full sync pushes all products in Vendure to
+Goedgepickt, including images, titles and description. Products are matched by SKU.
+
+The plugin will also pushe products to Goedgepickt on ProductEvents.
+
+Full sync also pulls stocklevels from Goedgepickt.
+
+### Order fulfillment
+
+This plugin will push orders to Goedgepickt on fulfillment. Goedgepickt calls a webhook that will update the order
+status in Vendure
+
+### Stocklevels
+
+Stocklevels are updated by one of the following triggers:
+
+1. Every startup all productlevels are pulled from Goedgepickt
+2. Full sync via UI also pulls all stocklevels from Goedgepickt
+3. Goedgepickt calls a webhook when stocklevels change, this will also update stocklevel for a specific variant in
+   Vendure

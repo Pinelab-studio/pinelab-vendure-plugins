@@ -21,7 +21,7 @@ export class GoedgepicktController {
       `Incoming event ${body.event} for channel ${channelToken}`,
       loggerCtx
     );
-    const client = this.service.getClientForChannel(channelToken);
+    const client = await this.service.getClientForChannel(channelToken);
     if (body.event === 'orderStatusChanged') {
       client.validateOrderWebhookSignature(JSON.stringify(body), signature);
       await this.service.updateOrderStatus(body);

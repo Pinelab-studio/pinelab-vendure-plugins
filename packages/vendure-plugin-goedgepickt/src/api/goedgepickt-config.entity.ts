@@ -13,7 +13,7 @@ export class GoedgepicktConfigEntity extends VendureEntity {
   }
 
   @Column({ unique: true })
-  channelId!: string;
+  channelToken!: string;
 
   @Column({ nullable: true })
   apiKey?: string;

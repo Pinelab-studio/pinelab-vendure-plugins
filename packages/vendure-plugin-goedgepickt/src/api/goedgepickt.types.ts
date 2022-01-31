@@ -1,22 +1,5 @@
 export interface GoedgepicktPluginConfig {
-  configPerChannel: ClientConfig[];
-}
-
-/**
- * Channel specific configs like apiKey and webshopUuid per channel
- */
-export interface ClientConfig {
-  channelToken: string;
-  apiKey: string;
-  webshopUuid: string;
-  /**
-   * Key for validating incoming order status webhooks
-   */
-  orderWebhookKey: string;
-  /**
-   * * Key for validating incoming stock update webhooks
-   */
-  stockWebhookKey: string;
+  vendureHost: string;
 }
 
 export interface ProductInput {
@@ -88,4 +71,18 @@ export interface IncomingOrderStatusEvent {
   newStatus: OrderStatus;
   orderNumber: string;
   orderUuid: string;
+}
+
+export interface Webhook {
+  uuid: string;
+  webshopUuid: string;
+  webshopName: string;
+  url: string;
+  event: string;
+  secret: string;
+}
+
+export enum GoedgepicktEvent {
+  stockChanged = 'product.stockChanged',
+  orderStatusChanged = 'order.statusChanged',
 }

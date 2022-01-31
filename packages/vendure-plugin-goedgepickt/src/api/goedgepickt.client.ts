@@ -1,26 +1,34 @@
 import fetch from 'node-fetch';
 import {
-  ClientConfig,
+  GoedgepicktEvent,
   Order,
   OrderInput,
   Product,
   ProductInput,
+  Webhook,
 } from './goedgepickt.types';
 import { Logger } from '@vendure/core';
 import crypto from 'crypto';
 import { loggerCtx } from '../constants';
 
 interface RawRequestInput {
-  entity: 'products' | 'orders';
+  entity: 'products' | 'orders' | 'webhooks';
   method: 'POST' | 'GET' | 'PUT' | 'DELETE';
   payload?: Object;
   queryParams?: string;
 }
 
+interface ClientInput {
+  apiKey: string;
+  webshopUuid: string;
+  orderWebhookKey?: string;
+  stockWebhookKey?: string;
+}
+
 export class GoedgepicktClient {
   private readonly headers: Record<string, string>;
 
-  constructor(private readonly config: ClientConfig) {
+  constructor(private readonly config: ClientInput) {
     this.headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
@@ -52,6 +60,22 @@ export class GoedgepicktClient {
       loggerCtx
     );
     return result.items as Product[];
+  }
+
+  async setSetWebhook(input: {
+    webhookEvent: GoedgepicktEvent;
+    targetUrl: string;
+  }): Promise<Webhook> {
+    const result = await this.rawRequest({
+      entity: 'webhooks',
+      method: 'POST',
+      payload: input,
+    });
+    Logger.info(
+      `Set webhook for event ${input.webhookEvent} to url ${input.targetUrl}`,
+      loggerCtx
+    );
+    return result;
   }
 
   async createOrder(order: OrderInput): Promise<Order> {
@@ -94,33 +118,40 @@ export class GoedgepicktClient {
   }
 
   validateOrderWebhookSignature(data: string, incomingSignature: string): void {
-    return this.validateSignature(
+    return this.validateSignature({
       data,
-      this.config.orderWebhookKey,
-      incomingSignature
-    );
+      secret: this.config.orderWebhookKey,
+      incomingSignature,
+    });
   }
 
   validateStockWebhookSignature(data: string, incomingSignature: string): void {
-    return this.validateSignature(
+    return this.validateSignature({
       data,
-      this.config.stockWebhookKey,
-      incomingSignature
-    );
+      secret: this.config.stockWebhookKey,
+      incomingSignature,
+    });
   }
 
-  private validateSignature(
-    data: string,
-    secret: string,
-    incomingSignature: string
-  ): void {
-    const computedSignature = crypto
-      .createHmac('sha256', secret)
-      .update(data)
-      .digest('hex');
-    if (computedSignature !== incomingSignature) {
+  private validateSignature(input: {
+    data: string;
+    secret?: string;
+    incomingSignature: string;
+  }): void {
+    if (!input.secret) {
       Logger.warn(
-        `Incoming event has an invalid signature! ${data}`,
+        `No secret was configured to check incoming webhooks ${input.data}`,
+        loggerCtx
+      );
+      throw Error(`Invalid signature.`);
+    }
+    const computedSignature = crypto
+      .createHmac('sha256', input.secret)
+      .update(input.data)
+      .digest('hex');
+    if (computedSignature !== input.incomingSignature) {
+      Logger.warn(
+        `Incoming event has an invalid signature! ${input.data}`,
         loggerCtx
       );
       throw Error(`Invalid signature.`);

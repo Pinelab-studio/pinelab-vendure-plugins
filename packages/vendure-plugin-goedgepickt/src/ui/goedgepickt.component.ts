@@ -1,14 +1,25 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DataService, NotificationService } from '@vendure/admin-ui/core';
-import { getGoedgepicktConfig, updateGoedgepicktConfig } from './queries';
+import {
+  getGoedgepicktConfig,
+  runGoedgepicktFullSync,
+  updateGoedgepicktConfig,
+} from './queries.graphql';
 import fetch from 'node-fetch';
+import { GoedgepicktConfig } from './generated/graphql';
 
 @Component({
   selector: 'goedgepickt-component',
   template: `
     <div class="clr-row">
       <div class="clr-col">
+        <button class="btn btn-secondary" (click)="fullSync()">
+          Synchronize
+        </button>
+        <vdr-help-tooltip
+          content="Pushes products and pulls stocklevels from Goedgepickt"
+        ></vdr-help-tooltip>
         <form class="form" [formGroup]="form">
           <section class="form-block">
             <vdr-form-field label="apikey" for="apiKey">
@@ -42,6 +53,54 @@ import fetch from 'node-fetch';
               {{ testResultName }}
             </vdr-chip>
           </section>
+          <section class="form-block">
+            <p>
+              The following settings are set automatically and cannot be edited
+            </p>
+            <br />
+            <vdr-form-field
+              label="Order webhook"
+              for="orderWebhookUrl"
+              tooltip="Goedgepickt will call this URL for order status updates"
+            >
+              <input
+                id="orderWebhookUrl"
+                type="text"
+                formControlName="orderWebhookUrl"
+                disabled="disabled"
+              />
+            </vdr-form-field>
+            <vdr-form-field label="Webhook auth secret" for="orderWebhookKey">
+              <input
+                id="orderWebhookKey"
+                type="text"
+                formControlName="orderWebhookKey"
+                disabled="disabled"
+              />
+            </vdr-form-field>
+          </section>
+          <section class="form-block">
+            <vdr-form-field
+              label="Stock webhook"
+              for="stockWebhookUrl"
+              tooltip="Goedgepickt will call this URL for stocklevel updates"
+            >
+              <input
+                id="stockWebhookUrl"
+                type="text"
+                formControlName="stockWebhookUrl"
+                disabled="disabled"
+              />
+            </vdr-form-field>
+            <vdr-form-field label="Webhook auth secret" for="stockWebhookKey">
+              <input
+                id="stockWebhookKey"
+                type="text"
+                formControlName="stockWebhookKey"
+                disabled="disabled"
+              />
+            </vdr-form-field>
+          </section>
         </form>
       </div>
     </div>
@@ -49,8 +108,6 @@ import fetch from 'node-fetch';
 })
 export class GoedgepicktComponent implements OnInit {
   form: FormGroup;
-  orderWebhookKey?: string;
-  stockWebhookKey?: string;
   testFailed?: string;
   testResultName?: string;
 
@@ -63,6 +120,10 @@ export class GoedgepicktComponent implements OnInit {
     this.form = this.formBuilder.group({
       apiKey: ['your-api-key'],
       webshopUuid: ['webshopUuid'],
+      orderWebhookUrl: ['orderWebhookUrl'],
+      orderWebhookKey: ['orderWebhookKey'],
+      stockWebhookUrl: ['stockWebhookUrl'],
+      stockWebhookKey: ['stockWebhookKey'],
     });
   }
 
@@ -70,14 +131,13 @@ export class GoedgepicktComponent implements OnInit {
     await this.dataService
       .query(getGoedgepicktConfig)
       .mapStream((d: any) => d.goedgepicktConfig)
-      .subscribe((config) => {
-        if (!config) {
-          return;
-        }
+      .subscribe((config: GoedgepicktConfig) => {
         this.form.controls['apiKey'].setValue(config.apiKey);
         this.form.controls['webshopUuid'].setValue(config.webshopUuid);
-        this.orderWebhookKey = config.orderWebhookKey;
-        this.stockWebhookKey = config.stockWebhookKey;
+        this.form.controls['orderWebhookUrl'].setValue(config.orderWebhookUrl);
+        this.form.controls['orderWebhookKey'].setValue(config.orderWebhookKey);
+        this.form.controls['stockWebhookUrl'].setValue(config.stockWebhookUrl);
+        this.form.controls['stockWebhookKey'].setValue(config.stockWebhookKey);
       });
   }
 
@@ -85,14 +145,20 @@ export class GoedgepicktComponent implements OnInit {
     try {
       if (this.form.dirty) {
         const formValue = this.form.value;
-        await this.dataService
+        const { updateGoedgepicktConfig: result } = (await this.dataService
           .mutate(updateGoedgepicktConfig, {
             input: {
               apiKey: formValue.apiKey,
               webshopUuid: formValue.webshopUuid,
             },
           })
-          .toPromise();
+          .toPromise()) as any;
+        this.form.controls['apiKey'].setValue(result.apiKey);
+        this.form.controls['webshopUuid'].setValue(result.webshopUuid);
+        this.form.controls['orderWebhookUrl'].setValue(result.orderWebhookUrl);
+        this.form.controls['orderWebhookKey'].setValue(result.orderWebhookKey);
+        this.form.controls['stockWebhookUrl'].setValue(result.stockWebhookUrl);
+        this.form.controls['stockWebhookKey'].setValue(result.stockWebhookKey);
       }
       this.form.markAsPristine();
       this.changeDetector.markForCheck();
@@ -103,6 +169,17 @@ export class GoedgepicktComponent implements OnInit {
       this.notificationService.error('common.notify-update-error', {
         entity: 'GoedgepicktConfig',
       });
+    }
+  }
+
+  async fullSync(): Promise<void> {
+    try {
+      await this.dataService.mutate(runGoedgepicktFullSync).toPromise();
+      this.notificationService.success('common.notify-update-success', {
+        entity: 'GoedgepicktConfig',
+      });
+    } catch (e) {
+      this.notificationService.error(e.message);
     }
   }
 

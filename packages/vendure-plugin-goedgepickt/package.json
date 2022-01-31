@@ -14,15 +14,18 @@
     "README.md"
   ],
   "scripts": {
-    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node script/dev-server.ts\"",
-    "start": "ts-node script/dev-server.ts",
-    "build": "rimraf dist && tsc",
+    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
+    "start": "ts-node test/dev-server.ts",
+    "build": "rimraf dist && tsc && yarn graphql-codegen",
     "test": "jest --preset=\"ts-jest\""
   },
   "dependencies": {
     "node-fetch": "2"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^2.4.0",
+    "@graphql-codegen/typescript": "^2.4.2",
+    "@graphql-codegen/typescript-operations": "^2.2.2",
     "@types/jest": "^27.4.0",
     "@vendure/admin-ui": "1.4.2",
     "@vendure/admin-ui-plugin": "1.4.2",

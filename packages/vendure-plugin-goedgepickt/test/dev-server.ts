@@ -40,15 +40,7 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
     },
     plugins: [
       GoedgepicktPlugin.init({
-        configPerChannel: [
-          {
-            channelToken: 'e2e-default-channel',
-            apiKey: process.env.GOEDGEPICKT_APIKEY!,
-            webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
-            orderWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_ORDERSTATUS_KEY!,
-            stockWebhookKey: process.env.GOEDGEPICKT_WEBHOOK_STOCK_UPDATE_KEY!,
-          },
-        ],
+        vendureHost: 'https://doesnt-exists',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -69,10 +61,11 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
   });
 
   const goedgepicktService = server.app.get(GoedgepicktService);
-  // await server.app.get(GoedgepicktService).pushProducts('e2e-default-channel');
-  /*  await server.app
-      .get(GoedgepicktService)
-      .pullStocklevels('e2e-default-channel');*/
+  await goedgepicktService.upsertConfig({
+    channelToken: 'e2e-default-channel',
+    apiKey: process.env.GOEDGEPICKT_APIKEY!,
+    webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
+  });
   const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel');
 
   // server.app.get(ProductService).findAll(ctx, {});

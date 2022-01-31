@@ -10,7 +10,7 @@ import { GoedgepicktPluginConfig } from './api/goedgepickt.types';
 import { goedgepicktPermission } from './index';
 import { GoedgepicktResolver } from './api/goedgepickt.resolver';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { schema } from './api/schema';
+import { schema } from './api/schema.graphql';
 import { GoedgepicktConfigEntity } from './api/goedgepickt-config.entity';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';

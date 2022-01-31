@@ -12,6 +12,7 @@ import {
 } from '@vendure/core';
 import { GoedgepicktClient } from './goedgepickt.client';
 import {
+  GoedgepicktEvent,
   GoedgepicktPluginConfig,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
@@ -41,26 +42,15 @@ export class GoedgepicktService implements OnApplicationBootstrap {
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    /*    for (const { channelToken } of GoedgepicktPlugin.config.configPerChannel) {
-          // TODO Push a message per channel to worker
-          await this.pushProducts(channelToken).catch((error) => {
-            console.error(error);
-            Logger.error(
-              `Failed to sync products for ${channelToken}: ${error.message}`,
-              GgLoggerContext
-            );
-          });
-        }*/
+    // TODO pull stocklevels
   }
 
-  async upsertConfig(config: {
-    apiKey: string;
-    webshopUuid: string;
-    channelId: string;
-  }): Promise<GoedgepicktConfigEntity> {
+  async upsertConfig(
+    config: Partial<GoedgepicktConfigEntity>
+  ): Promise<GoedgepicktConfigEntity> {
     const existing = await this.connection
       .getRepository(GoedgepicktConfigEntity)
-      .findOne({ channelId: config.channelId });
+      .findOne({ channelToken: config.channelToken });
     if (existing) {
       await this.connection
         .getRepository(GoedgepicktConfigEntity)
@@ -72,15 +62,15 @@ export class GoedgepicktService implements OnApplicationBootstrap {
     }
     return this.connection
       .getRepository(GoedgepicktConfigEntity)
-      .findOneOrFail({ channelId: config.channelId });
+      .findOneOrFail({ channelToken: config.channelToken });
   }
 
   async getConfig(
-    channelId: string
+    channelToken: string
   ): Promise<GoedgepicktConfigEntity | undefined> {
     return this.connection
       .getRepository(GoedgepicktConfigEntity)
-      .findOne({ channelId });
+      .findOne({ channelToken });
   }
 
   /**
@@ -88,7 +78,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
    */
   async pushProducts(channelToken: string): Promise<void> {
     const variants = await this.getAllVariants(channelToken);
-    const client = this.getClientForChannel(channelToken);
+    const client = await this.getClientForChannel(channelToken);
     for (const variant of variants) {
       await client
         .createProduct({
@@ -114,10 +104,32 @@ export class GoedgepicktService implements OnApplicationBootstrap {
   }
 
   /**
+   * Set webhook and update secrets in DB
+   */
+  async setWebhooks(channelToken: string): Promise<GoedgepicktConfigEntity> {
+    const client = await this.getClientForChannel(channelToken);
+    const [orderStatusWebhook, stockWebhook] = await Promise.all([
+      client.setSetWebhook({
+        webhookEvent: GoedgepicktEvent.orderStatusChanged,
+        targetUrl: this.config.vendureHost,
+      }),
+      client.setSetWebhook({
+        webhookEvent: GoedgepicktEvent.stockChanged,
+        targetUrl: this.config.vendureHost,
+      }),
+    ]);
+    return await this.upsertConfig({
+      channelToken: channelToken,
+      orderWebhookKey: orderStatusWebhook.secret,
+      stockWebhookKey: stockWebhook.secret,
+    });
+  }
+
+  /**
    * Pull all stocklevels from Goedgepickt and update in Vendure
    */
   async pullStocklevels(channelToken: string): Promise<void> {
-    const client = this.getClientForChannel(channelToken);
+    const client = await this.getClientForChannel(channelToken);
     const ggProducts: GgProduct[] = [];
     let page = 1;
     while (true) {
@@ -162,9 +174,6 @@ export class GoedgepicktService implements OnApplicationBootstrap {
 
   /**
    * Accepts the order and corresponding orderItems, because fulfillment can take place for a partial order
-   * @param channelToken
-   * @param order
-   * @param orderItems
    */
   async createOrder(
     channelToken: string,
@@ -188,7 +197,7 @@ export class GoedgepicktService implements OnApplicationBootstrap {
         });
       }
     });
-    const client = this.getClientForChannel(channelToken);
+    const client = await this.getClientForChannel(channelToken);
     return client.createOrder({
       orderId: order.code,
       createDate: order.createdAt,
@@ -214,14 +223,26 @@ export class GoedgepicktService implements OnApplicationBootstrap {
     // TODO
   }
 
-  getClientForChannel(channelToken: string): GoedgepicktClient {
-    const clientConfig = this.config.configPerChannel.find(
-      (c) => c.channelToken === channelToken
-    );
-    if (!clientConfig) {
+  async getClientForChannel(channelToken: string): Promise<GoedgepicktClient> {
+    const config = await this.getConfig(channelToken);
+    if (!config || !config?.apiKey || !config.webshopUuid) {
+      Logger.warn(
+        `No Goedgepickt config found for channel ${channelToken}`,
+        loggerCtx
+      );
       throw Error(`No Goedgepickt config found for channel ${channelToken}`);
+    } else if (!config?.orderWebhookKey || !config.stockWebhookKey) {
+      Logger.error(
+        `Goedgepickt webhooks are not configured for channel ${channelToken}`,
+        loggerCtx
+      );
     }
-    return new GoedgepicktClient(clientConfig);
+    return new GoedgepicktClient({
+      webshopUuid: config.webshopUuid,
+      apiKey: config.apiKey,
+      orderWebhookKey: config.orderWebhookKey,
+      stockWebhookKey: config.stockWebhookKey,
+    });
   }
 
   /**

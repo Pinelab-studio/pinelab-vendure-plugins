@@ -1,19 +1,30 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, RequestContext } from '@vendure/core';
-import { goedgepicktPermission } from '../index';
+import {
+  GoedgepicktConfig,
+  goedgepicktPermission,
+  GoedgepicktPluginConfig,
+} from '../index';
 import { GoedgepicktService } from './goedgepickt.service';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
+import { Inject } from '@nestjs/common';
 
 @Resolver()
 export class GoedgepicktResolver {
-  constructor(private service: GoedgepicktService) {}
+  constructor(
+    private service: GoedgepicktService,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
+  ) {}
 
   @Query()
   @Allow(goedgepicktPermission.Permission)
   async goedgepicktConfig(
     @Ctx() ctx: RequestContext
-  ): Promise<GoedgepicktConfigEntity | undefined> {
-    return this.service.getConfig(ctx.channelId as string);
+  ): Promise<GoedgepicktConfig | undefined> {
+    return this.toGraphqlObject(
+      await this.service.getConfig(ctx.channel.token)
+    );
   }
 
   @Mutation()
@@ -21,29 +32,30 @@ export class GoedgepicktResolver {
   async updateGoedgepicktConfig(
     @Ctx() ctx: RequestContext,
     @Args('input') input: { apiKey: string; webshopUuid: string }
-  ): Promise<GoedgepicktConfigEntity | void> {
-    return this.service.upsertConfig({
-      channelId: ctx.channelId as string,
+  ): Promise<GoedgepicktConfig | undefined> {
+    await this.service.upsertConfig({
+      channelToken: ctx.channel.token,
       ...input,
     });
+    const config = await this.service.setWebhooks(ctx.channel.token);
+    return this.toGraphqlObject(config);
   }
 
   @Mutation()
   @Allow(goedgepicktPermission.Permission)
-  async pushProductsToGoedgepickt(
-    @Ctx() ctx: RequestContext
-  ): Promise<boolean> {
-    return false;
+  async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
+    throw Error('didnt work');
+    //return true;
   }
 
-  @Mutation()
-  @Allow(goedgepicktPermission.Permission)
-  async pullGoedgepicktStocklevels(
-    @Ctx() ctx: RequestContext
-  ): Promise<boolean> {
-    return false;
+  private toGraphqlObject(
+    config?: GoedgepicktConfigEntity
+  ): GoedgepicktConfig | undefined {
+    return {
+      __typename: 'GoedgepicktConfig',
+      ...config,
+      orderWebhookUrl: this.config.vendureHost,
+      stockWebhookUrl: this.config.vendureHost,
+    };
   }
 }
-
-pushProductsToGoedgepickt: Boolean;
-pullGoedgepicktStocklevels: Boolean;

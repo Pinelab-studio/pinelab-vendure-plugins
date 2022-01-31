@@ -15,16 +15,19 @@ import {
   ProductVariantService,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { GoedgepicktPlugin } from '../src/goedgepickt.plugin';
+import {
+  GoedgepicktConfig,
+  goedgepicktHandler,
+  GoedgepicktPlugin,
+} from '../src';
 import nock from 'nock';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import { createSettledOrder } from '../../test/src/order-utils';
-import { goedgepicktHandler } from '../src/api/goedgepickt.handler';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import {
   getGoedgepicktConfig,
   updateGoedgepicktConfig,
-} from '../src/ui/queries';
+} from '../src/ui/queries.graphql';
 import fs from 'fs';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
@@ -42,6 +45,7 @@ describe('Goedgepickt plugin', function () {
 
   let pushProductsPayloads: any[] = [];
   let createOrderPayload;
+  let webhookPayloads: any[] = [];
   const apiUrl = 'https://account.goedgepickt.nl/';
   // Update products
   nock(apiUrl)
@@ -79,6 +83,14 @@ describe('Goedgepickt plugin', function () {
       message: 'Order created',
       orderUuid: 'testUuid',
     });
+  // Update webhooks
+  nock(apiUrl)
+    .persist(true)
+    .post('/api/v1/webhooks', (reqBody) => {
+      webhookPayloads.push(reqBody);
+      return true;
+    })
+    .reply(200, { secret: 'test-secret' });
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -90,15 +102,7 @@ describe('Goedgepickt plugin', function () {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         GoedgepicktPlugin.init({
-          configPerChannel: [
-            {
-              channelToken: 'e2e-default-channel',
-              apiKey: 'testApiKey',
-              webshopUuid: 'testWebshopUuid',
-              orderWebhookKey: 'webhookOrder',
-              stockWebhookKey: 'webhookStock',
-            },
-          ],
+          vendureHost: 'https://test-host',
         }),
       ],
     });
@@ -116,14 +120,22 @@ describe('Goedgepickt plugin', function () {
     await expect(serverStarted).toBe(true);
   });
 
-  it('Updates config via graphql', async () => {
-    const result = await adminClient.query(updateGoedgepicktConfig, {
-      input: ggConfig,
-    });
+  it('Updates config via graphql and sets webhooks', async () => {
+    const result: { updateGoedgepicktConfig: GoedgepicktConfig } =
+      await adminClient.query(updateGoedgepicktConfig, {
+        input: ggConfig,
+      });
     await expect(result.updateGoedgepicktConfig.webshopUuid).toBe(
       ggConfig.webshopUuid
     );
-    await expect(result.updateGoedgepicktConfig.apiKey).toBe(ggConfig.apiKey);
+    await expect(result.updateGoedgepicktConfig.orderWebhookKey).toBe(
+      'test-secret'
+    );
+    await expect(result.updateGoedgepicktConfig.stockWebhookKey).toBe(
+      'test-secret'
+    );
+    await expect(webhookPayloads.length).toBe(2); // Order and Stock webhooks
+    await expect(webhookPayloads[0].targetUrl).toBe('https://test-host');
   });
 
   it('Retrieves config via graphql', async () => {
@@ -142,7 +154,7 @@ describe('Goedgepickt plugin', function () {
     const laptopPayload = pushProductsPayloads.find(
       (p) => p.sku === 'L2201516'
     );
-    await expect(laptopPayload.webshopUuid).toBe('testWebshopUuid');
+    await expect(laptopPayload.webshopUuid).toBe(ggConfig.webshopUuid);
     await expect(laptopPayload.productId).toBe('L2201516');
     await expect(laptopPayload.sku).toBe('L2201516');
   });
@@ -179,7 +191,7 @@ describe('Goedgepickt plugin', function () {
     await expect(fulfillment.method).toBe('testUuid');
   });
 
-  it('Should compile admin', async () => {
+  it.skip('Should compile admin', async () => {
     fs.rmSync(path.join(__dirname, '__admin-ui'), {
       recursive: true,
       force: true,

@@ -3,10 +3,17 @@ import gql from 'graphql-tag';
 export const updateGoedgepicktConfig = gql`
   mutation updateGoedgepicktConfig($input: GoedgepicktConfigInput!) {
     updateGoedgepicktConfig(input: $input) {
-      apiKey
-      webshopUuid
-      orderWebhookKey
-      stockWebhookKey
+      ... on GoedgepicktConfig {
+        apiKey
+        webshopUuid
+        orderWebhookKey
+        orderWebhookUrl
+        stockWebhookKey
+        stockWebhookUrl
+      }
+      ... on GoedgepicktError {
+        message
+      }
     }
   }
 `;
@@ -17,18 +24,15 @@ export const getGoedgepicktConfig = gql`
       apiKey
       webshopUuid
       orderWebhookKey
+      orderWebhookUrl
       stockWebhookKey
+      stockWebhookUrl
     }
   }
 `;
 
-export const pushProductsToGoedgepickt = gql`
-  mutation pushProductsToGoedgepickt {
-    pushProductsToGoedgepickt
-  }
-`;
-export const pullGoedgepicktStocklevels = gql`
-  mutation pullGoedgepicktStocklevels {
-    pullGoedgepicktStocklevels
+export const runGoedgepicktFullSync = gql`
+  mutation runGoedgepicktFullSync {
+    runGoedgepicktFullSync
   }
 `;
