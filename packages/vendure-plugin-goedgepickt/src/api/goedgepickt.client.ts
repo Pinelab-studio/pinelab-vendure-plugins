@@ -6,13 +6,14 @@ import {
   Product,
   ProductInput,
   Webhook,
+  Webshop,
 } from './goedgepickt.types';
 import { Logger } from '@vendure/core';
 import crypto from 'crypto';
 import { loggerCtx } from '../constants';
 
 interface RawRequestInput {
-  entity: 'products' | 'orders' | 'webhooks';
+  entity: 'products' | 'orders' | 'webhooks' | 'webshops';
   method: 'POST' | 'GET' | 'PUT' | 'DELETE';
   payload?: Object;
   queryParams?: string;
@@ -42,11 +43,45 @@ export class GoedgepicktClient {
       method: 'GET',
       queryParams: `perPage=100&page=${page}`,
     });
-    Logger.info(
+    Logger.debug(
       `Fetched ${result.items?.length} products from Goedgepickt`,
       loggerCtx
     );
     return result.items as Product[];
+  }
+
+  async getWebshop(): Promise<Webshop> {
+    const { items }: { items: Webshop[] } = await this.rawRequest({
+      entity: 'webshops',
+      method: 'GET',
+    });
+    Logger.debug(
+      `Fetched ${items.length} webshops from Goedgepickt`,
+      loggerCtx
+    );
+    const currentShop = items.find(
+      (item) => item.uuid === this.config.webshopUuid
+    );
+    if (!currentShop) {
+      Logger.error(
+        `Current webshop with uuid ${this.config.webshopUuid} is not present on Goedgepickt account`
+      );
+      throw Error(`Could not find webshop on Goedgepickt account`);
+    }
+    return currentShop;
+  }
+
+  async getWebhooks(): Promise<Webhook[]> {
+    const { name } = await this.getWebshop();
+    const { items }: { items: Webhook[] } = await this.rawRequest({
+      entity: 'webhooks',
+      method: 'GET',
+    });
+    Logger.debug(
+      `Fetched ${items.length} webhooks from Goedgepickt`,
+      loggerCtx
+    );
+    return items.filter((item) => item.webshopName === name);
   }
 
   async createProduct(product: ProductInput): Promise<Product[]> {
@@ -55,17 +90,17 @@ export class GoedgepicktClient {
       method: 'POST',
       payload: product,
     });
-    Logger.info(
+    Logger.debug(
       `Created product ${product.productId} in Goedgepickt`,
       loggerCtx
     );
     return result.items as Product[];
   }
 
-  async setSetWebhook(input: {
+  async createWebhook(input: {
     webhookEvent: GoedgepicktEvent;
     targetUrl: string;
-  }): Promise<Webhook> {
+  }): Promise<{ uuid: string; secret: string }> {
     const result = await this.rawRequest({
       entity: 'webhooks',
       method: 'POST',
@@ -117,7 +152,7 @@ export class GoedgepicktClient {
     return json;
   }
 
-  validateOrderWebhookSignature(data: string, incomingSignature: string): void {
+  validateOrderWebhookSignature(data: Object, incomingSignature: string): void {
     return this.validateSignature({
       data,
       secret: this.config.orderWebhookKey,
@@ -125,7 +160,7 @@ export class GoedgepicktClient {
     });
   }
 
-  validateStockWebhookSignature(data: string, incomingSignature: string): void {
+  validateStockWebhookSignature(data: Object, incomingSignature: string): void {
     return this.validateSignature({
       data,
       secret: this.config.stockWebhookKey,
@@ -134,7 +169,7 @@ export class GoedgepicktClient {
   }
 
   private validateSignature(input: {
-    data: string;
+    data: Object;
     secret?: string;
     incomingSignature: string;
   }): void {
@@ -145,10 +180,10 @@ export class GoedgepicktClient {
       );
       throw Error(`Invalid signature.`);
     }
-    const computedSignature = crypto
-      .createHmac('sha256', input.secret)
-      .update(input.data)
-      .digest('hex');
+    const computedSignature = GoedgepicktClient.computeSignature(
+      input.secret,
+      input.data
+    );
     if (computedSignature !== input.incomingSignature) {
       Logger.warn(
         `Incoming event has an invalid signature! ${input.data}`,
@@ -156,5 +191,12 @@ export class GoedgepicktClient {
       );
       throw Error(`Invalid signature.`);
     }
+  }
+
+  static computeSignature(secret: string, data: Object): string {
+    return crypto
+      .createHmac('sha256', secret)
+      .update(JSON.stringify(data))
+      .digest('hex');
   }
 }

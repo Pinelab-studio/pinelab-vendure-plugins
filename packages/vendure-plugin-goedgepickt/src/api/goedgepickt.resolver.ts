@@ -23,6 +23,7 @@ export class GoedgepicktResolver {
     @Ctx() ctx: RequestContext
   ): Promise<GoedgepicktConfig | undefined> {
     return this.toGraphqlObject(
+      ctx.channel.token,
       await this.service.getConfig(ctx.channel.token)
     );
   }
@@ -38,7 +39,7 @@ export class GoedgepicktResolver {
       ...input,
     });
     const config = await this.service.setWebhooks(ctx.channel.token);
-    return this.toGraphqlObject(config);
+    return this.toGraphqlObject(ctx.channel.token, config);
   }
 
   @Mutation()
@@ -68,13 +69,15 @@ export class GoedgepicktResolver {
   }
 
   private toGraphqlObject(
+    channelToken: string,
     config?: GoedgepicktConfigEntity
   ): GoedgepicktConfig | undefined {
+    const webhookUrl = this.service.getWebhookUrl(channelToken);
     return {
       __typename: 'GoedgepicktConfig',
       ...config,
-      orderWebhookUrl: this.config.vendureHost,
-      stockWebhookUrl: this.config.vendureHost,
+      orderWebhookUrl: webhookUrl,
+      stockWebhookUrl: webhookUrl,
     };
   }
 }

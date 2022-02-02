@@ -7,8 +7,8 @@
   "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
   "license": "MIT",
   "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/vendure-plugin-goedgepickt/src/index.js",
+  "types": "dist/vendure-plugin-goedgepickt/src/index.d.ts",
   "files": [
     "dist",
     "README.md"
@@ -27,6 +27,7 @@
     "@graphql-codegen/typescript": "^2.4.2",
     "@graphql-codegen/typescript-operations": "^2.2.2",
     "@types/jest": "^27.4.0",
+    "@types/localtunnel": "^2.0.1",
     "@vendure/admin-ui": "1.4.2",
     "@vendure/admin-ui-plugin": "1.4.2",
     "@vendure/asset-server-plugin": "1.4.2",
@@ -34,6 +35,7 @@
     "@vendure/testing": "^1.4.3",
     "@vendure/ui-devkit": "1.4.2",
     "jest": "^27.4.7",
+    "localtunnel": "^2.0.2",
     "nock": "^13.2.1",
     "nodemon": "^2.0.15",
     "ts-jest": "^27.1.2",

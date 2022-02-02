@@ -8,7 +8,17 @@ Plugin for integration with Goedgepickt. This plugin adheres to these principles
 
 ## Plugin setup
 
-//TODO steps
+### Vendure config
+
+// TODO
+
+### Admin UI
+
+You can configure the plugin settings per channel via the Vendure Admin UI via Settings > Goedgepickt. The button `test`
+calls the API with the filled in credentials to verify if the credentials are correct.
+
+When you save the plugin will make sure the configured verndureHost is set as webhook for order and stock updates. **The
+plugin will never delete webhooks**, so if you ever change your url, you should manually delete the old webhook via Goedgepickt.
 
 ## How this plugin works
 
@@ -36,14 +46,10 @@ status in Vendure
 Stocklevels are updated by one of the following triggers:
 
 1. Every startup all productlevels are pulled from Goedgepickt. This is done via the jobQueue.
-2. Full sync via UI also pulls all stocklevels from Goedgepickt. This is synchronous in the mainprocess, so we can provide feedback to the user.
+2. Full sync via UI also pulls all stocklevels from Goedgepickt. This is synchronous in the mainprocess, so we can
+   provide feedback to the user.
 3. Goedgepickt calls a webhook when stocklevels change, this will also update stocklevels for the given variant in
    Vendure.
-
-### Admin UI
-
-You can configure the plugin settings via UI via Settings > Goedgepickt. The button `test` calls the API with the filled
-in credentials to verify if the credentials are correct.
 
 ![UI screenshot](./docs/img.png)
 

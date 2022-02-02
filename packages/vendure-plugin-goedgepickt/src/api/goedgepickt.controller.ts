@@ -24,11 +24,19 @@ export class GoedgepicktController {
     try {
       const client = await this.service.getClientForChannel(channelToken);
       if (body.event === 'orderStatusChanged') {
-        client.validateOrderWebhookSignature(JSON.stringify(body), signature);
-        await this.service.updateOrderStatus(channelToken, body.orderNumber);
+        client.validateOrderWebhookSignature(body, signature);
+        await this.service.updateOrderStatus(
+          channelToken,
+          body.orderNumber,
+          body.newStatus
+        );
       } else if (body.event === 'stockUpdated') {
-        client.validateStockWebhookSignature(JSON.stringify(body), signature);
-        await this.service.updateStock(body);
+        client.validateStockWebhookSignature(body, signature);
+        await this.service.updateStock(
+          channelToken,
+          body.productSku,
+          Number(body.newStock)
+        );
       } else {
         Logger.warn(
           `Unknown incoming event: ${JSON.stringify(body)}`,

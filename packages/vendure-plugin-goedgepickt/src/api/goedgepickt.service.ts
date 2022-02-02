@@ -9,11 +9,11 @@ import {
   ConfigService,
   JobQueue,
   JobQueueService,
+  ListQueryBuilder,
   Logger,
   Order,
   OrderItem,
   OrderService,
-  OrderState,
   ProductVariant,
   ProductVariantService,
   RequestContext,
@@ -23,8 +23,6 @@ import { GoedgepicktClient } from './goedgepickt.client';
 import {
   GoedgepicktEvent,
   GoedgepicktPluginConfig,
-  IncomingOrderStatusEvent,
-  IncomingStockUpdateEvent,
   Order as GgOrder,
   OrderItemInput,
   OrderStatus,
@@ -33,7 +31,12 @@ import {
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import { progressToShipped } from '../../../util/src';
+import {
+  fulfillOrder,
+  transitionToDelivered,
+  transitionToShipped,
+} from '../../../util/src';
+import { goedgepicktHandler } from './goedgepickt.handler';
 
 @Injectable()
 export class GoedgepicktService
@@ -48,6 +51,7 @@ export class GoedgepicktService
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
     private configService: ConfigService,
     private connection: TransactionalConnection,
+    private listBuilder: ListQueryBuilder,
     private jobQueueService: JobQueueService,
     private orderService: OrderService
   ) {
@@ -149,25 +153,48 @@ export class GoedgepicktService
    */
   async setWebhooks(channelToken: string): Promise<GoedgepicktConfigEntity> {
     const client = await this.getClientForChannel(channelToken);
-    let webhookTarget = this.config.vendureHost;
-    if (!webhookTarget.endsWith('/')) {
-      webhookTarget += '/';
-    }
-    webhookTarget = `${webhookTarget}/goedgepickt/webhook/${channelToken}`;
-    const [orderStatusWebhook, stockWebhook] = await Promise.all([
-      client.setSetWebhook({
+    const webhookTarget = this.getWebhookUrl(channelToken);
+    // Check if webhooks already present
+    const webhooks = await client.getWebhooks();
+    const orderStatusWebhook = webhooks.find(
+      (webhook) =>
+        webhook.targetUrl === webhookTarget &&
+        webhook.webhookEvent === GoedgepicktEvent.orderStatusChanged
+    );
+    const stockWebhook = webhooks.find(
+      (webhook) =>
+        webhook.targetUrl === webhookTarget &&
+        webhook.webhookEvent === GoedgepicktEvent.stockChanged
+    );
+    let orderSecret = orderStatusWebhook?.webhookSecret;
+    let stockSecret = stockWebhook?.webhookSecret;
+    if (!orderSecret) {
+      Logger.info(
+        `Creating OrderStatusWebhook because it didn't exist.`,
+        loggerCtx
+      );
+      const created = await client.createWebhook({
         webhookEvent: GoedgepicktEvent.orderStatusChanged,
         targetUrl: webhookTarget,
-      }),
-      client.setSetWebhook({
+      });
+      orderSecret = created.secret;
+    } else {
+      Logger.info(`OrderStatusWebhook already present`, loggerCtx);
+    }
+    if (!stockSecret) {
+      Logger.info(`Creating stockWebhook because it didn't exist.`, loggerCtx);
+      const created = await client.createWebhook({
         webhookEvent: GoedgepicktEvent.stockChanged,
         targetUrl: webhookTarget,
-      }),
-    ]);
+      });
+      stockSecret = created.secret;
+    } else {
+      Logger.info(`StockWebhook already present`, loggerCtx);
+    }
     return await this.upsertConfig({
       channelToken: channelToken,
-      orderWebhookKey: orderStatusWebhook.secret,
-      stockWebhookKey: stockWebhook.secret,
+      orderWebhookKey: orderSecret,
+      stockWebhookKey: stockSecret,
     });
   }
 
@@ -258,29 +285,44 @@ export class GoedgepicktService
    */
   async updateOrderStatus(
     channelToken: string,
-    orderCode: string
+    orderCode: string,
+    newStatus: OrderStatus
   ): Promise<void> {
     const ctx = await this.getCtxForChannel(channelToken);
-    const transitionedOrder = await progressToShipped(
-      this.orderService,
-      ctx,
-      orderCode
-    );
+    let order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
-      throw Error(
-        `No order with code ${orderCode} found for channel ${channelToken}`
+      throw Error(`Order with code ${orderCode} doesn't exists`);
+    }
+    if (newStatus !== 'completed') {
+      return Logger.info(
+        `No status updates needed for order ${orderCode} for status ${newStatus}`,
+        loggerCtx
       );
     }
-    Logger.info(`Updated order status of ${event.orderNumber}`, loggerCtx);
-    // TODO
+    order = await fulfillOrder(this.orderService, ctx, order, {
+      code: goedgepicktHandler.code,
+      arguments: [],
+    });
+    // order = await transitionToShipped(this.orderService, ctx, order);
+    await transitionToDelivered(this.orderService, ctx, order);
+    Logger.info(`Updated order status of ${orderCode}`, loggerCtx);
   }
 
   /**
    * Update stock in Vendure based on event
    */
-  async updateStock(channelToken: string, productSku: string): Promise<void> {
-    Logger.info(`Updated stock for ${event.productSku}`, loggerCtx);
-    // TODO
+  async updateStock(
+    channelToken: string,
+    productSku: string,
+    newStock: number
+  ): Promise<void> {
+    const ctx = await this.getCtxForChannel(channelToken);
+    const variants = await this.getVariantBySku(ctx, productSku);
+    const updatedStock: UpdateProductVariantInput[] = variants.map(
+      (variant) => ({ id: variant.id, stockOnHand: newStock })
+    );
+    await this.variantService.update(ctx, updatedStock);
+    Logger.info(`Updated stock for ${productSku}`, loggerCtx);
   }
 
   async getClientForChannel(channelToken: string): Promise<GoedgepicktClient> {
@@ -298,6 +340,14 @@ export class GoedgepicktService
       orderWebhookKey: config.orderWebhookKey,
       stockWebhookKey: config.stockWebhookKey,
     });
+  }
+
+  getWebhookUrl(channelToken: string): string {
+    let webhookTarget = this.config.vendureHost;
+    if (!webhookTarget.endsWith('/')) {
+      webhookTarget += '/';
+    }
+    return `${webhookTarget}goedgepickt/webhook/${channelToken}`;
   }
 
   /**
@@ -327,5 +377,25 @@ export class GoedgepicktService
       throw Error(message);
     }
     return result.items;
+  }
+
+  /**
+   * Find variants by sku for this channel
+   */
+  async getVariantBySku(
+    ctx: RequestContext,
+    sku: string
+  ): Promise<ProductVariant[]> {
+    return await this.listBuilder
+      .build(
+        ProductVariant,
+        {},
+        {
+          channelId: ctx.channelId,
+          where: { deletedAt: null, sku },
+          ctx,
+        }
+      )
+      .getMany();
   }
 }

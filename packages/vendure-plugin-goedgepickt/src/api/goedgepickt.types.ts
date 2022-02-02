@@ -74,12 +74,18 @@ export interface IncomingOrderStatusEvent {
 }
 
 export interface Webhook {
-  uuid: string;
-  webshopUuid: string;
+  webhookUuid: string;
+  webhookEvent: GoedgepicktEvent;
+  webhookSecret: string;
+  targetUrl: string;
   webshopName: string;
+}
+
+export interface Webshop {
+  uuid: string;
+  name: string;
   url: string;
-  event: string;
-  secret: string;
+  platform: string;
 }
 
 export enum GoedgepicktEvent {

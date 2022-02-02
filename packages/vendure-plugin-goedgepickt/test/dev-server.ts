@@ -17,16 +17,18 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import { createSettledOrder } from '../../test/src/order-utils';
-import { goedgepicktHandler } from '../src/api/goedgepickt.handler';
+import { goedgepicktHandler } from '../src';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import { GoedgepicktPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktConfigEntity } from '../src/api/goedgepickt-config.entity';
+import localtunnel from 'localtunnel';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  const tunnel = await localtunnel({ port: 3050 });
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     apiOptions: {
@@ -36,18 +38,18 @@ import { GoedgepicktConfigEntity } from '../src/api/goedgepickt-config.entity';
     },
     plugins: [
       GoedgepicktPlugin.init({
-        vendureHost: 'https://doesnt-exists',
+        vendureHost: tunnel.url,
       }),
       DefaultSearchPlugin,
-      /*      AdminUiPlugin.init({
+      AdminUiPlugin.init({
         port: 3002,
-        route: "admin",
+        route: 'admin',
         app: compileUiExtensions({
-          outputPath: path.join(__dirname, "__admin-ui"),
+          outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [GoedgepicktPlugin.ui],
-          devMode: true
-        })
-      })*/
+          devMode: true,
+        }),
+      }),
     ],
   });
   const { server } = createTestEnvironment(config);
