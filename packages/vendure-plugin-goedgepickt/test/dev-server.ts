@@ -32,7 +32,6 @@ import localtunnel from 'localtunnel';
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     apiOptions: {
-      adminListQueryLimit: 10000,
       adminApiPlayground: {},
       shopApiPlayground: {},
     },

@@ -44,7 +44,12 @@ export async function transitionToDelivered(
   order: Order,
   handler: ConfigurableOperationInput
 ): Promise<Fulfillment> {
-  const fulfillment = transitionToShipped(orderService, ctx, order, handler);
+  const fulfillment = await transitionToShipped(
+    orderService,
+    ctx,
+    order,
+    handler
+  );
   const result = await orderService.transitionFulfillmentToState(
     ctx,
     (fulfillment as any).id,

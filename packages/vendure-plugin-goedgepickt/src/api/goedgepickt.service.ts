@@ -48,7 +48,7 @@ type VariantWithImage = Translated<ProductVariant> & {
 export class GoedgepicktService
   implements OnApplicationBootstrap, OnModuleInit
 {
-  readonly limit: number;
+  readonly queryLimit: number;
   private jobQueue: JobQueue<{ channelToken: string }> | undefined;
 
   constructor(
@@ -62,7 +62,7 @@ export class GoedgepicktService
     private orderService: OrderService,
     private entityHydrator: EntityHydrator
   ) {
-    this.limit = configService.apiOptions.adminListQueryLimit;
+    this.queryLimit = configService.apiOptions.adminListQueryLimit;
   }
 
   async onModuleInit() {
@@ -163,6 +163,7 @@ export class GoedgepicktService
           }
         });
     }
+    Logger.info(`Synced ${variants.length} to Goedgepickt`, loggerCtx);
   }
 
   /**
@@ -256,7 +257,10 @@ export class GoedgepicktService
     }
     const ctx = await this.getCtxForChannel(channelToken);
     await this.updateStock(ctx, stockPerVariant);
-    Logger.info(`Updated stockLevels for ${channelToken}`, loggerCtx);
+    Logger.info(
+      `Updated stockLevels of ${variants.length} variants for ${channelToken}`,
+      loggerCtx
+    );
   }
 
   /**
@@ -317,7 +321,7 @@ export class GoedgepicktService
       code: goedgepicktHandler.code,
       arguments: [],
     });
-    Logger.info(`Updated order status of ${orderCode}`, loggerCtx);
+    Logger.info(`Updated orderstatus of ${orderCode}`, loggerCtx);
   }
 
   /**
@@ -385,17 +389,19 @@ export class GoedgepicktService
     channelToken: string
   ): Promise<VariantWithImage[]> {
     let ctx = await this.getCtxForChannel(channelToken);
-    const result = await this.variantService.findAll(ctx, {
-      skip: 0,
-      take: this.limit,
-      filter: {},
-    });
-    if (result.totalItems > result.items.length) {
-      const message = `This plugin supports a max of ${result.items.length} variants per channel. Channel ${channelToken} has ${result.totalItems} variants. Only processing first ${result.items} variants. You can increase this limit by setting 'adminListQueryLimit' in vendure-config.`;
-      Logger.error(message, loggerCtx);
-      throw Error(message);
+    const variants: VariantWithImage[] = [];
+    let hasMore = true;
+    let skip = 0;
+    while (hasMore) {
+      const result = await this.variantService.findAll(ctx, {
+        skip,
+        take: this.queryLimit,
+        filter: {},
+      });
+      variants.push(...result.items);
+      skip += this.queryLimit;
+      hasMore = result.totalItems > result.items.length;
     }
-    const newVariants: VariantWithImage[] = result.items;
     // Resolve images as if we are shop client
     const shopCtx = new RequestContext({
       apiType: 'shop',
@@ -405,7 +411,7 @@ export class GoedgepicktService
     });
     // Hydrate with images
     return Promise.all(
-      newVariants.map(async (variant) => {
+      variants.map(async (variant) => {
         await this.entityHydrator.hydrate(ctx, variant, {
           relations: ['product', 'product.featuredAsset'],
         });
