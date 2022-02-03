@@ -289,12 +289,33 @@ export class GoedgepicktService
       }
     });
     const client = await this.getClientForChannel(channelToken);
+    if (
+      !order.shippingAddress.streetLine2 ||
+      !order.shippingAddress.streetLine1
+    ) {
+      throw Error(
+        `Order.shippingAddress.streetLine1 and streetLine2 are needed to push order to Goedgepickt`
+      );
+    }
+    const { houseNumber, addition } =
+      GoedgepicktService.splitHouseNumberAndAddition(
+        order.shippingAddress.streetLine2
+      );
     return client.createOrder({
       orderId: order.code,
       createDate: order.createdAt,
       finishDate: order.orderPlacedAt,
       orderStatus: 'open',
       orderItems: mergedItems,
+      shippingFirstName: order.customer?.firstName,
+      shippingLastName: order.customer?.lastName,
+      shippingCompany: order.shippingAddress.company,
+      shippingAddress: order.shippingAddress.streetLine1,
+      shippingHouseNumber: houseNumber,
+      shippingHouseNumberAddition: addition || undefined,
+      shippingZipcode: order.shippingAddress.postalCode!,
+      shippingCity: order.shippingAddress.city!,
+      shippingCountry: order.shippingAddress.countryCode!,
     });
   }
 
@@ -440,5 +461,18 @@ export class GoedgepicktService
       stockOnHand: input.stock >= 0 ? input.stock : 0,
     }));
     return this.variantService.update(ctx, positiveLevels);
+  }
+
+  static splitHouseNumberAndAddition(houseNumberString: string): {
+    houseNumber: number;
+    addition?: string;
+  } {
+    const [houseNumber, ...addition] = houseNumberString.match(
+      /[a-z]+|\d+/gi
+    ) as any[];
+    return {
+      houseNumber,
+      addition: addition.join(),
+    };
   }
 }

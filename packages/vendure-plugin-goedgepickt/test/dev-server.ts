@@ -73,7 +73,7 @@ import localtunnel from 'localtunnel';
     translations: [],
   });
   const order = await createSettledOrder(server.app, ctx as any, 1);
-  /*  const fulfillment = (await server.app
+  const fulfillment = (await server.app
     .get(OrderService)
     .createFulfillment(ctx, {
       handler: { code: goedgepicktHandler.code, arguments: [] },
@@ -81,5 +81,5 @@ import localtunnel from 'localtunnel';
         orderLineId: line.id,
         quantity: line.quantity,
       })),
-    })) as Fulfillment;*/
+    })) as Fulfillment;
 })();

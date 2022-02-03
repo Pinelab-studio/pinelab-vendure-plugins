@@ -41,6 +41,9 @@ export class GoedgepicktPlugin {
 
   static init(config: GoedgepicktPluginConfig): typeof GoedgepicktPlugin {
     this.config = config;
+    if (this.config.setWebhook !== false) {
+      this.config.setWebhook = true; // If not explicitly set to false, set to true
+    }
     return GoedgepicktPlugin;
   }
 

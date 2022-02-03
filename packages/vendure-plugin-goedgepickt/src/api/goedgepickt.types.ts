@@ -1,5 +1,9 @@
 export interface GoedgepicktPluginConfig {
   vendureHost: string;
+  /**
+   * Set webhook in Goedgepickt when saving credentials
+   */
+  setWebhook?: boolean;
 }
 
 export interface ProductInput {
@@ -47,6 +51,17 @@ export interface OrderInput {
   finishDate?: Date;
   orderStatus: OrderStatus;
   orderItems: OrderItemInput[];
+  shippingFirstName?: string;
+  shippingLastName?: string;
+  shippingCompany?: string;
+  shippingAddress: string;
+  shippingHouseNumber: number;
+  shippingHouseNumberAddition?: string;
+  shippingAddress2?: string;
+  shippingZipcode: string;
+  shippingCity: string;
+  shippingCountry: string;
+  shippingMethod?: string;
 }
 
 export type OrderStatus = 'on_hold' | 'open' | 'completed';
@@ -82,6 +97,7 @@ export interface Webhook {
   webhookSecret: string;
   targetUrl: string;
   webshopName: string;
+  webshopUuid: string;
 }
 
 export interface Webshop {

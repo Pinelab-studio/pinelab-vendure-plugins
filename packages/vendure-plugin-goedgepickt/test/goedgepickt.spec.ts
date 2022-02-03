@@ -23,10 +23,15 @@ import {
   GoedgepicktPlugin,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
+  OrderInput,
 } from '../src';
 import nock from 'nock';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
-import { createSettledOrder } from '../../test/src/order-utils';
+import {
+  createSettledOrder,
+  testAddress,
+  testCustomer,
+} from '../../test/src/order-utils';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import {
   getGoedgepicktConfig,
@@ -51,7 +56,7 @@ describe('Goedgepickt plugin', function () {
   };
 
   let pushProductsPayloads: any[] = [];
-  let createOrderPayload;
+  let createOrderPayload: OrderInput;
   let webhookPayloads: any[] = [];
   let order: Order;
   const apiUrl = 'https://account.goedgepickt.nl/';
@@ -195,8 +200,24 @@ describe('Goedgepickt plugin', function () {
           quantity: line.quantity,
         })),
       })) as Fulfillment;
+    const { houseNumber, addition } =
+      GoedgepicktService.splitHouseNumberAndAddition(testAddress.streetLine2!);
     await expect(fulfillment.handlerCode).toBe('goedgepickt');
     await expect(fulfillment.method).toBe('testUuid');
+    await expect(createOrderPayload.orderId).toBe(order.code);
+    await expect(createOrderPayload.shippingCompany).toBe(testAddress.company);
+    await expect(createOrderPayload.shippingAddress).toBe(
+      testAddress.streetLine1
+    );
+    await expect(createOrderPayload.shippingHouseNumber).toBe(houseNumber);
+    await expect(createOrderPayload.shippingHouseNumberAddition).toBe(addition);
+    await expect(createOrderPayload.shippingZipcode).toBe(
+      testAddress.postalCode
+    );
+    await expect(createOrderPayload.shippingCity).toBe(testAddress.city);
+    await expect(createOrderPayload.shippingCountry).toBe(
+      testAddress.countryCode
+    );
   });
 
   it('Completes order via webhook', async () => {

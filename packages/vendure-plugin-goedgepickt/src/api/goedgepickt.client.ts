@@ -50,29 +50,7 @@ export class GoedgepicktClient {
     return result.items as Product[];
   }
 
-  async getWebshop(): Promise<Webshop> {
-    const { items }: { items: Webshop[] } = await this.rawRequest({
-      entity: 'webshops',
-      method: 'GET',
-    });
-    Logger.debug(
-      `Fetched ${items.length} webshops from Goedgepickt`,
-      loggerCtx
-    );
-    const currentShop = items.find(
-      (item) => item.uuid === this.config.webshopUuid
-    );
-    if (!currentShop) {
-      Logger.error(
-        `Current webshop with uuid ${this.config.webshopUuid} is not present on Goedgepickt account`
-      );
-      throw Error(`Could not find webshop on Goedgepickt account`);
-    }
-    return currentShop;
-  }
-
   async getWebhooks(): Promise<Webhook[]> {
-    const { name } = await this.getWebshop();
     const { items }: { items: Webhook[] } = await this.rawRequest({
       entity: 'webhooks',
       method: 'GET',
@@ -81,7 +59,7 @@ export class GoedgepicktClient {
       `Fetched ${items.length} webhooks from Goedgepickt`,
       loggerCtx
     );
-    return items.filter((item) => item.webshopName === name);
+    return items.filter((item) => item.webshopUuid === this.config.webshopUuid);
   }
 
   async createProduct(product: ProductInput): Promise<Product[]> {

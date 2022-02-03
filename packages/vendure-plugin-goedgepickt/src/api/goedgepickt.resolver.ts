@@ -34,11 +34,13 @@ export class GoedgepicktResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: { apiKey: string; webshopUuid: string }
   ): Promise<GoedgepicktConfig | undefined> {
-    await this.service.upsertConfig({
+    let config = await this.service.upsertConfig({
       channelToken: ctx.channel.token,
       ...input,
     });
-    const config = await this.service.setWebhooks(ctx.channel.token);
+    if (this.config.setWebhook) {
+      config = await this.service.setWebhooks(ctx.channel.token);
+    }
     return this.toGraphqlObject(ctx.channel.token, config);
   }
 
