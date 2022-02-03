@@ -2,66 +2,70 @@ import {
   FulfillmentStateTransitionError,
   Order,
   OrderService,
-  OrderStateTransitionError,
   RequestContext,
 } from '@vendure/core';
 import { ConfigurableOperationInput } from '@vendure/common/lib/generated-types';
+import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 
-export async function fulfillOrder(
+/**
+ * Fulfills all items to shipped using transitionFulfillmentToState
+ */
+export async function transitionToShipped(
   orderService: OrderService,
   ctx: RequestContext,
   order: Order,
   handler: ConfigurableOperationInput
-): Promise<Order> {
-  console.error('====================', order.lines);
+): Promise<Fulfillment> {
+  const lines = order.lines.map((line) => ({
+    orderLineId: line.id,
+    quantity: line.quantity,
+  }));
   const fulfillment = await orderService.createFulfillment(ctx, {
     handler,
-    lines: order.lines.map((line) => ({
-      orderLineId: line.id,
-      quantity: line.quantity,
-    })),
+    lines,
   });
-  console.error('====================', fulfillment);
   const result = await orderService.transitionFulfillmentToState(
     ctx,
     (fulfillment as any).id,
     'Shipped'
   );
-  console.error('====================resss', result);
-  throwIfTransitionFailed(result as FulfillmentStateTransitionError);
-  return (await orderService.findOne(ctx, order.id))!;
+  return throwIfTransitionFailed(
+    `Could not transition ${order.code} to Shipped`,
+    result
+  );
 }
 
-export async function transitionToShipped(
-  orderService: OrderService,
-  ctx: RequestContext,
-  order: Order
-): Promise<Order> {
-  const result = await orderService.transitionToState(ctx, order.id, 'Shipped');
-  throwIfTransitionFailed(result as OrderStateTransitionError);
-  return order;
-}
-
+/**
+ * Fulfills all items to shipped, then to delivered using transitionFulfillmentToState
+ */
 export async function transitionToDelivered(
   orderService: OrderService,
   ctx: RequestContext,
-  order: Order
-): Promise<Order> {
-  const result = await orderService.transitionToState(
+  order: Order,
+  handler: ConfigurableOperationInput
+): Promise<Fulfillment> {
+  const fulfillment = transitionToShipped(orderService, ctx, order, handler);
+  const result = await orderService.transitionFulfillmentToState(
     ctx,
-    order.id,
+    (fulfillment as any).id,
     'Delivered'
   );
-  throwIfTransitionFailed(result as OrderStateTransitionError);
-  return result as Order;
+  return throwIfTransitionFailed(
+    `Could not transition ${order.code} to Delivered`,
+    result
+  );
 }
 
 function throwIfTransitionFailed(
-  result: OrderStateTransitionError | FulfillmentStateTransitionError
-): void {
-  if (result.transitionError || result.errorCode) {
+  message: string,
+  result: FulfillmentStateTransitionError | Fulfillment
+): Fulfillment {
+  const errorResult = result as FulfillmentStateTransitionError;
+  if (errorResult.transitionError || errorResult.errorCode) {
     throw Error(
-      `${result.message} - ${result.transitionError} - from ${result.fromState} - to ${result.toState}`
+      `${message}: ${errorResult.message} - from ${errorResult.fromState} to ${errorResult.toState} - ${errorResult.transitionError}`
     );
   }
+  // We know its a fulfillment here
+  return result as Fulfillment;
 }

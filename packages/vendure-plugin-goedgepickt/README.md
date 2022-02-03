@@ -32,9 +32,7 @@ webhook in Goedgepickt.
 This is a manual action. Via the Admin UI you can trigger a full sync. A full sync pushes all products in Vendure to
 Goedgepickt, including images, titles and description. Products are matched by SKU.
 
-The plugin will also pushe products to Goedgepickt on ProductEvents.
-
-Full sync also pulls stocklevels from Goedgepickt.
+Full sync also pulls stocklevels from Goedgepickt and updates in Vendure.
 
 ### Order fulfillment
 

@@ -32,7 +32,7 @@ export class GoedgepicktController {
         );
       } else if (body.event === 'stockUpdated') {
         client.validateStockWebhookSignature(body, signature);
-        await this.service.updateStock(
+        await this.service.processStockUpdateEvent(
           channelToken,
           body.productSku,
           Number(body.newStock)

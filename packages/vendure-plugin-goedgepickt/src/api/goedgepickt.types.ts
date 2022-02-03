@@ -7,6 +7,9 @@ export interface ProductInput {
   sku: string;
   productId: string;
   stockManagement: boolean;
+  url: string;
+  picture?: string;
+  price: string;
 }
 
 export interface Product {

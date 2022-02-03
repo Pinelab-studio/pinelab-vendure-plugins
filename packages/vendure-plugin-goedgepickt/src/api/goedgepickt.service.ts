@@ -7,6 +7,7 @@ import {
 import {
   ChannelService,
   ConfigService,
+  EntityHydrator,
   JobQueue,
   JobQueueService,
   ListQueryBuilder,
@@ -18,6 +19,7 @@ import {
   ProductVariantService,
   RequestContext,
   TransactionalConnection,
+  Translated,
 } from '@vendure/core';
 import { GoedgepicktClient } from './goedgepickt.client';
 import {
@@ -28,15 +30,19 @@ import {
   OrderStatus,
   Product as GgProduct,
 } from './goedgepickt.types';
-import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import {
-  fulfillOrder,
-  transitionToDelivered,
-  transitionToShipped,
-} from '../../../util/src';
+import { transitionToDelivered } from '../../../util/src';
 import { goedgepicktHandler } from './goedgepickt.handler';
+
+interface StockInput {
+  variantId: string;
+  stock: number;
+}
+
+type VariantWithImage = Translated<ProductVariant> & {
+  absoluteImageUrl?: string;
+};
 
 @Injectable()
 export class GoedgepicktService
@@ -53,7 +59,8 @@ export class GoedgepicktService
     private connection: TransactionalConnection,
     private listBuilder: ListQueryBuilder,
     private jobQueueService: JobQueueService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private entityHydrator: EntityHydrator
   ) {
     this.limit = configService.apiOptions.adminListQueryLimit;
   }
@@ -61,7 +68,14 @@ export class GoedgepicktService
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'pull-goedgepickt-stocklevels',
-      process: async (job) => await this.pullStocklevels(job.data.channelToken),
+      process: async (job) =>
+        await this.pullStocklevels(job.data.channelToken).catch((error) => {
+          Logger.error(
+            `Failed to pull stocklevels for ${job.data.channelToken}`,
+            loggerCtx,
+            error
+          );
+        }),
     });
   }
 
@@ -131,6 +145,9 @@ export class GoedgepicktService
           sku: variant.sku,
           productId: variant.sku,
           stockManagement: true,
+          url: `${this.config.vendureHost}/admin/catalog/products/${variant.productId};id=${variant.productId};tab=variants`,
+          picture: variant.absoluteImageUrl,
+          price: (variant.price / 100).toFixed(2),
         })
         .then(() =>
           Logger.info(`'${variant.sku}' synced to Goedgepickt`, loggerCtx)
@@ -214,7 +231,7 @@ export class GoedgepicktService
       page++;
     }
     const variants = await this.getAllVariants(channelToken);
-    const stockPerVariant: UpdateProductVariantInput[] = [];
+    const stockPerVariant: StockInput[] = [];
     for (const ggProduct of ggProducts) {
       const variant = variants.find((v) => v.sku === ggProduct.sku);
       const newStock = ggProduct.stock?.freeStock;
@@ -227,13 +244,9 @@ export class GoedgepicktService
       }
       if (variant) {
         stockPerVariant.push({
-          id: variant.id as string,
-          stockOnHand: newStock,
+          variantId: variant.id as string,
+          stock: newStock,
         });
-        Logger.info(
-          `Updating variant ${variant.sku} to have ${newStock} stockOnHand`,
-          loggerCtx
-        );
       } else {
         Logger.warn(
           `Goedgepickt product with sku ${ggProduct.sku} doesn't exist as variant in Vendure. Not updating stock for this variant`,
@@ -242,7 +255,8 @@ export class GoedgepicktService
       }
     }
     const ctx = await this.getCtxForChannel(channelToken);
-    await this.variantService.update(ctx, stockPerVariant);
+    await this.updateStock(ctx, stockPerVariant);
+    Logger.info(`Updated stockLevels for ${channelToken}`, loggerCtx);
   }
 
   /**
@@ -299,30 +313,34 @@ export class GoedgepicktService
         loggerCtx
       );
     }
-    order = await fulfillOrder(this.orderService, ctx, order, {
+    await transitionToDelivered(this.orderService, ctx, order, {
       code: goedgepicktHandler.code,
       arguments: [],
     });
-    // order = await transitionToShipped(this.orderService, ctx, order);
-    await transitionToDelivered(this.orderService, ctx, order);
     Logger.info(`Updated order status of ${orderCode}`, loggerCtx);
   }
 
   /**
    * Update stock in Vendure based on event
    */
-  async updateStock(
+  async processStockUpdateEvent(
     channelToken: string,
     productSku: string,
     newStock: number
   ): Promise<void> {
     const ctx = await this.getCtxForChannel(channelToken);
-    const variants = await this.getVariantBySku(ctx, productSku);
-    const updatedStock: UpdateProductVariantInput[] = variants.map(
-      (variant) => ({ id: variant.id, stockOnHand: newStock })
+    const { items: variants } = await this.variantService.findAll(ctx, {
+      filter: { sku: { eq: productSku } },
+    });
+    const updatedStock: StockInput[] = variants.map((variant) => ({
+      variantId: variant.id as string,
+      stock: newStock,
+    }));
+    await this.updateStock(ctx, updatedStock);
+    Logger.info(
+      `Updated stock for ${productSku} to ${newStock} via incoming event`,
+      loggerCtx
     );
-    await this.variantService.update(ctx, updatedStock);
-    Logger.info(`Updated stock for ${productSku}`, loggerCtx);
   }
 
   async getClientForChannel(channelToken: string): Promise<GoedgepicktClient> {
@@ -365,37 +383,56 @@ export class GoedgepicktService
 
   private async getAllVariants(
     channelToken: string
-  ): Promise<ProductVariant[]> {
-    const ctx = await this.getCtxForChannel(channelToken);
+  ): Promise<VariantWithImage[]> {
+    let ctx = await this.getCtxForChannel(channelToken);
     const result = await this.variantService.findAll(ctx, {
       skip: 0,
       take: this.limit,
+      filter: {},
     });
     if (result.totalItems > result.items.length) {
       const message = `This plugin supports a max of ${result.items.length} variants per channel. Channel ${channelToken} has ${result.totalItems} variants. Only processing first ${result.items} variants. You can increase this limit by setting 'adminListQueryLimit' in vendure-config.`;
       Logger.error(message, loggerCtx);
       throw Error(message);
     }
-    return result.items;
+    const newVariants: VariantWithImage[] = result.items;
+    // Resolve images as if we are shop client
+    const shopCtx = new RequestContext({
+      apiType: 'shop',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel: ctx.channel,
+    });
+    // Hydrate with images
+    return Promise.all(
+      newVariants.map(async (variant) => {
+        await this.entityHydrator.hydrate(ctx, variant, {
+          relations: ['product', 'product.featuredAsset'],
+        });
+        let imageUrl =
+          variant.featuredAsset?.preview ||
+          variant.product.featuredAsset?.preview;
+        if (
+          this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl &&
+          imageUrl
+        ) {
+          imageUrl = this.configService.assetOptions.assetStorageStrategy
+            .toAbsoluteUrl!(shopCtx.req as any, imageUrl);
+        }
+        variant.absoluteImageUrl = imageUrl;
+        return variant;
+      })
+    );
   }
 
-  /**
-   * Find variants by sku for this channel
-   */
-  async getVariantBySku(
+  private async updateStock(
     ctx: RequestContext,
-    sku: string
+    stockInput: StockInput[]
   ): Promise<ProductVariant[]> {
-    return await this.listBuilder
-      .build(
-        ProductVariant,
-        {},
-        {
-          channelId: ctx.channelId,
-          where: { deletedAt: null, sku },
-          ctx,
-        }
-      )
-      .getMany();
+    const positiveLevels = stockInput.map((input) => ({
+      id: input.variantId,
+      stockOnHand: input.stock >= 0 ? input.stock : 0,
+    }));
+    return this.variantService.update(ctx, positiveLevels);
   }
 }

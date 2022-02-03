@@ -22,6 +22,7 @@ import {
   goedgepicktHandler,
   GoedgepicktPlugin,
   IncomingOrderStatusEvent,
+  IncomingStockUpdateEvent,
 } from '../src';
 import nock from 'nock';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
@@ -171,6 +172,11 @@ describe('Goedgepickt plugin', function () {
     await expect(laptopPayload.webshopUuid).toBe(ggConfig.webshopUuid);
     await expect(laptopPayload.productId).toBe('L2201516');
     await expect(laptopPayload.sku).toBe('L2201516');
+    await expect(laptopPayload.name).toBe('Laptop 15 inch 16GB');
+    await expect(laptopPayload.price).toBe('2299.00');
+    await expect(laptopPayload.url).toBe(
+      `https://test-host/admin/catalog/products/1;id=1;tab=variants`
+    );
     const updatedVariant = await findVariantBySku('L2201308');
     await expect(updatedVariant?.stockOnHand).toBe(33);
   });
@@ -214,8 +220,18 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Decreases stock via webhook', async () => {
+    const body: IncomingStockUpdateEvent = {
+      event: 'stockUpdated',
+      newStock: '123',
+      productSku: 'L2201308',
+      productUuid: 'doesntmatter',
+    };
+    const signature = GoedgepicktClient.computeSignature('test-secret', body);
+    await server.app
+      .get(GoedgepicktController)
+      .webhook('e2e-default-channel', body, signature);
     const updatedVariant = await findVariantBySku('L2201308');
-    expect(false).toBe(true);
+    expect(updatedVariant.stockOnHand).toBe(123);
   });
 
   it.skip('Should compile admin', async () => {
@@ -230,9 +246,6 @@ describe('Goedgepickt plugin', function () {
     const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
     expect(files?.length).toBeGreaterThan(0);
   }, 240000);
-
-  // TODO incoming webhook order status
-  // TODO incoming webhook stock update
 
   afterAll(() => {
     return server.destroy();
