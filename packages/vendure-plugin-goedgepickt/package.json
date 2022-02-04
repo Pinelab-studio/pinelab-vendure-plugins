@@ -1,12 +1,12 @@
 {
   "name": "vendure-plugin-goedgepickt",
-  "version": "0.18.6",
+  "version": "0.1.1",
   "description": "Vendure plugin for integration with the Goedgepickt order picking platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "main": "dist/vendure-plugin-goedgepickt/src/index.js",
   "types": "dist/vendure-plugin-goedgepickt/src/index.d.ts",
   "files": [
