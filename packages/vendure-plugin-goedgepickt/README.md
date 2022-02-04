@@ -34,12 +34,13 @@ plugin will never delete webhooks**, so if you ever change your url, you should 
 
 ## How this plugin works
 
-### Product sync
+### Full sync
 
 This is a manual action. Via the Admin UI you can trigger a full sync. A full sync:
 
 1. Pushes all products in Vendure to Goedgepickt. Products are matched by SKU.
 2. Pulls stocklevels from Goedgepickt and updates in Vendure.
+3. Sets/verifies webhook set on Goedgepickt account
 
 ### Order fulfillment
 

@@ -78,7 +78,7 @@ export class GoedgepicktClient {
   async createWebhook(input: {
     webhookEvent: GoedgepicktEvent;
     targetUrl: string;
-  }): Promise<{ uuid: string; secret: string }> {
+  }): Promise<Webhook> {
     const result = await this.rawRequest({
       entity: 'webhooks',
       method: 'POST',

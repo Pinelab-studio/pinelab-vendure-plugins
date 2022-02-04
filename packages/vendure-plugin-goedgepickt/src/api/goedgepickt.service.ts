@@ -195,7 +195,7 @@ export class GoedgepicktService
         webhookEvent: GoedgepicktEvent.orderStatusChanged,
         targetUrl: webhookTarget,
       });
-      orderSecret = created.secret;
+      orderSecret = created.webhookSecret;
     } else {
       Logger.info(`OrderStatusWebhook already present`, loggerCtx);
     }
@@ -205,7 +205,7 @@ export class GoedgepicktService
         webhookEvent: GoedgepicktEvent.stockChanged,
         targetUrl: webhookTarget,
       });
-      stockSecret = created.secret;
+      stockSecret = created.webhookSecret;
     } else {
       Logger.info(`StockWebhook already present`, loggerCtx);
     }
@@ -271,6 +271,8 @@ export class GoedgepicktService
     order: Order,
     orderItems: OrderItem[]
   ): Promise<GgOrder> {
+    const ctx = await this.getCtxForChannel(channelToken);
+    await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
     const mergedItems: OrderItemInput[] = [];
     // Merge same SKU's into single item with quantity
     orderItems.forEach((orderItem) => {
@@ -312,7 +314,7 @@ export class GoedgepicktService
       shippingCompany: order.shippingAddress.company,
       shippingAddress: order.shippingAddress.streetLine1,
       shippingHouseNumber: houseNumber,
-      shippingHouseNumberAddition: addition || undefined,
+      shippingHouseNumberAddition: addition,
       shippingZipcode: order.shippingAddress.postalCode!,
       shippingCity: order.shippingAddress.city!,
       shippingCountry: order.shippingAddress.countryCode!,
@@ -472,7 +474,7 @@ export class GoedgepicktService
     ) as any[];
     return {
       houseNumber,
-      addition: addition.join(),
+      addition: addition.join() || undefined, // .join() can result in empty string
     };
   }
 }

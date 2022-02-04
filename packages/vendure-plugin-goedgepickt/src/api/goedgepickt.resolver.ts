@@ -64,6 +64,9 @@ export class GoedgepicktResolver {
       );
       errorMessage += 'Failed to pull stocklevels.';
     });
+    if (this.config.setWebhook) {
+      await this.service.setWebhooks(ctx.channel.token);
+    }
     if (errorMessage!) {
       throw Error(errorMessage);
     }

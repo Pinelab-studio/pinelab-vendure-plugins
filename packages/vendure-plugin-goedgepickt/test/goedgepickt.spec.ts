@@ -110,7 +110,7 @@ describe('Goedgepickt plugin', function () {
       webhookPayloads.push(reqBody);
       return true;
     })
-    .reply(200, { secret: 'test-secret' });
+    .reply(200, { webhookSecret: 'test-secret' });
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -205,6 +205,12 @@ describe('Goedgepickt plugin', function () {
     await expect(fulfillment.handlerCode).toBe('goedgepickt');
     await expect(fulfillment.method).toBe('testUuid');
     await expect(createOrderPayload.orderId).toBe(order.code);
+    await expect(createOrderPayload.shippingFirstName).toBe(
+      testCustomer.firstName
+    );
+    await expect(createOrderPayload.shippingLastName).toBe(
+      testCustomer.lastName
+    );
     await expect(createOrderPayload.shippingCompany).toBe(testAddress.company);
     await expect(createOrderPayload.shippingAddress).toBe(
       testAddress.streetLine1
