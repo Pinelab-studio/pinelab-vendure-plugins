@@ -16,7 +16,7 @@
   "scripts": {
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
-    "build": "rimraf dist && tsc && yarn graphql-codegen",
+    "build": "rimraf dist && tsc && yarn graphql-codegen && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-goedgepickt/src/",
     "test": "jest --preset=\"ts-jest\""
   },
   "dependencies": {
@@ -34,6 +34,7 @@
     "@vendure/core": "1.4.3",
     "@vendure/testing": "^1.4.3",
     "@vendure/ui-devkit": "1.4.2",
+    "copyfiles": "^2.4.1",
     "jest": "^27.4.7",
     "localtunnel": "^2.0.2",
     "nock": "^13.2.1",
