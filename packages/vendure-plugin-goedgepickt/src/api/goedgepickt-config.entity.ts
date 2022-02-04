@@ -15,7 +15,7 @@ export class GoedgepicktConfigEntity extends VendureEntity {
   @Column({ unique: true })
   channelToken!: string;
 
-  @Column({ nullable: true, type: 'longtext' })
+  @Column({ nullable: true, length: 1500 })
   apiKey?: string;
 
   @Column({ nullable: true })
