@@ -6,14 +6,14 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
   providers: [
     addNavMenuItem(
       {
-        id: 'Myparcel',
-        label: 'MyParcel',
-        routerLink: ['/extensions/myparcel'],
-        icon: 'bundle',
-        requiresPermission: 'SetMyparcelConfig',
+        id: 'goedgepickt',
+        label: 'Goedgepickt',
+        routerLink: ['/extensions/goedgepickt'],
+        icon: 'check',
+        requiresPermission: 'SetGoedgepicktConfig',
       },
       'settings'
     ),
   ],
 })
-export class MyparcelNavModule {}
+export class GoedgepicktNavModule {}

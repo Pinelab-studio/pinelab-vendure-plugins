@@ -22,6 +22,7 @@ chrome-profiler-events*.json
 connect.lock
 coverage
 dist
+generated/
 lib/
 libpeerconnection.log
 node_modules

@@ -11,8 +11,8 @@ import {
   InitialData,
 } from '@vendure/core';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
-import { GoogleStorageStrategy } from '../src/google-storage-strategy';
-import { GoogleStoragePlugin } from '../src/google-storage-plugin';
+import { GoogleStorageStrategy } from '../src';
+import { GoogleStoragePlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
@@ -23,7 +23,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
     AssetServerPlugin.init({
       storageStrategyFactory: () =>
         new GoogleStorageStrategy({
-          bucketName: 'pinelab-shops-test-assets',
+          bucketName: 'pinelab-testing',
         }),
       route: 'assets',
       assetUploadDir: '/tmp/vendure/assets',

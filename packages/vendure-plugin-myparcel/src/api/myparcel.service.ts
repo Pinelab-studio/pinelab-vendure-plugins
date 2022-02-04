@@ -6,8 +6,8 @@ import {
   Logger,
   Order,
   RequestContext,
+  TransactionalConnection,
 } from '@vendure/core';
-import { Connection } from 'typeorm';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { ApolloError } from 'apollo-server-core';
 import axios from 'axios';
@@ -22,7 +22,7 @@ export class MyparcelService implements OnApplicationBootstrap {
 
   constructor(
     private fulfillmentService: FulfillmentService,
-    private connection: Connection,
+    private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: MyparcelConfig
   ) {}
 
