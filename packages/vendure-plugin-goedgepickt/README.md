@@ -1,4 +1,7 @@
-# Goedgepickt plugin
+[![plugin version](https://img.shields.io/npm/v/vendure-plugin-myparcel)](https://www.npmjs.com/package/vendure-plugin-goedgepickt)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-goedgepickt/dev/@vendure/core)
+
+# Vendure Goedgepickt plugin
 
 Plugin for integration with Goedgepickt. The seperation between Vendure and Goedgepickt is as follows:
 
