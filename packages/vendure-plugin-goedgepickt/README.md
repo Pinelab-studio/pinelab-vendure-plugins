@@ -28,6 +28,22 @@ plugins: [
 
 ### Admin UI
 
+Add this plugin to your Admin UI and compile.
+
+```js
+compileUiExtensions({
+  outputPath: path.join(__dirname, '__admin-ui'),
+  extensions: [
+    ...
+    GoedgepicktPlugin.ui,
+    ...
+  ]
+```
+
+Read more about Admin UI compilation in the Vendure docs https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step
+
+### Credentials via Admin UI
+
 You can configure your `apiKey` and `webshopUuid` per channel via the Vendure Admin UI via Settings > Goedgepickt. The button `test`
 calls the API with the filled in credentials to verify if the credentials are correct.
 
