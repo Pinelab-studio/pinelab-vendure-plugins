@@ -9,7 +9,8 @@ Plugin for integration with Goedgepickt. The seperation between Vendure and Goed
 
 ## Plugin setup
 
-The plugin needs some static config in `vendure-config.ts` and dynamic per-channel config that can be set via the Admin UI.
+The plugin needs some static config in `vendure-config.ts` and dynamic per-channel config that can be set via the Admin
+UI.
 
 ### Vendure config
 
@@ -18,13 +19,19 @@ Add this to your plugin in `vendure-config.ts`:
 ```js
 plugins: [
   ...
-  GoedgepicktPlugin.init({
-    vendureHost: tunnel.url,
-    setWebhook: true // set webhooks in Goedgepickt or not
-  }),
+    GoedgepicktPlugin.init({
+      vendureHost: tunnel.url,
+      setWebhook: true // set webhooks in Goedgepickt or not
+    }),
   ...
 ]
 ```
+
+### Database migration
+
+Run a database migration to add the GoedgepicktConfig entity to your database. It is used to store apiKeys and
+webshopUuid's per channel.
+https://www.vendure.io/docs/developer-guide/migrations/
 
 ### Admin UI
 
@@ -35,20 +42,23 @@ compileUiExtensions({
   outputPath: path.join(__dirname, '__admin-ui'),
   extensions: [
     ...
-    GoedgepicktPlugin.ui,
+      GoedgepicktPlugin.ui,
     ...
   ]
 ```
 
-Read more about Admin UI compilation in the Vendure docs https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step
+Read more about Admin UI compilation in the Vendure
+docs https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step
 
 ### Credentials via Admin UI
 
-You can configure your `apiKey` and `webshopUuid` per channel via the Vendure Admin UI via Settings > Goedgepickt. The button `test`
+You can configure your `apiKey` and `webshopUuid` per channel via the Vendure Admin UI via Settings > Goedgepickt. The
+button `test`
 calls the API with the filled in credentials to verify if the credentials are correct.
 
-When you save the credentials, the plugin will make sure the configured vendureHost is set as webhook for order and stock updates. **The
-plugin will never delete webhooks**, so if you ever change your url, you should manually delete the old webhook via Goedgepickt.
+When you save the credentials, the plugin will make sure the configured vendureHost is set as webhook for order and
+stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
+old webhook via Goedgepickt.
 
 ## How this plugin works
 
@@ -62,8 +72,8 @@ This is a manual action. Via the Admin UI you can trigger a full sync. A full sy
 
 ### Order fulfillment
 
-This plugin will push orders to Goedgepickt on order fulfillment by Vendure. Goedgepickt calls a webhook that will update the order
-status in Vendure.
+This plugin will push orders to Goedgepickt on order fulfillment by Vendure. Goedgepickt calls a webhook that will
+update the order status in Vendure.
 
 ### Stocklevels
 
