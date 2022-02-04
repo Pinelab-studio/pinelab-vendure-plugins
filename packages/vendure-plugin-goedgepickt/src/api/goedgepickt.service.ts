@@ -10,7 +10,6 @@ import {
   EntityHydrator,
   JobQueue,
   JobQueueService,
-  ListQueryBuilder,
   Logger,
   Order,
   OrderItem,
@@ -57,7 +56,6 @@ export class GoedgepicktService
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
     private configService: ConfigService,
     private connection: TransactionalConnection,
-    private listBuilder: ListQueryBuilder,
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
     private entityHydrator: EntityHydrator
