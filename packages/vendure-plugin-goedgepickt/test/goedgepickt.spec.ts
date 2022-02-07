@@ -68,7 +68,11 @@ describe('Goedgepickt plugin', function () {
       return true;
     })
     .reply(200, []);
-  // Get products first-time
+  // Get products first-time (used by FullSync)
+  nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
+    items: [],
+  });
+  // Get products second time
   nock(apiUrl)
     .get('/api/v1/products')
     .query(true)
@@ -82,7 +86,7 @@ describe('Goedgepickt plugin', function () {
         },
       ],
     });
-  // Get products second-time
+  // Get products third-time
   nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
     items: [],
   });

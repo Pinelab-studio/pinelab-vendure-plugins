@@ -28,6 +28,7 @@ import {
   OrderItemInput,
   OrderStatus,
   Product as GgProduct,
+  ProductInput,
 } from './goedgepickt.types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
@@ -134,32 +135,40 @@ export class GoedgepicktService
    * Push all products to Goedgepickt for channel
    */
   async pushProducts(channelToken: string): Promise<void> {
-    const variants = await this.getAllVariants(channelToken);
     const client = await this.getClientForChannel(channelToken);
+    const [ggProducts, variants] = await Promise.all([
+      client.getAllProducts(),
+      this.getAllVariants(channelToken),
+    ]);
     for (const variant of variants) {
-      await client
-        .createProduct({
-          name: variant.name,
-          sku: variant.sku,
-          productId: variant.sku,
-          stockManagement: true,
-          url: `${this.config.vendureHost}/admin/catalog/products/${variant.productId};id=${variant.productId};tab=variants`,
-          picture: variant.absoluteImageUrl,
-          price: (variant.price / 100).toFixed(2),
-        })
-        .then(() =>
-          Logger.info(`'${variant.sku}' synced to Goedgepickt`, loggerCtx)
-        )
-        .catch((error: Error) => {
-          if (error?.message?.indexOf('already exists') > -1) {
-            Logger.info(
-              `Variant '${variant.sku}' already exists in Goedgepickt. Skipping...`,
-              loggerCtx
-            );
-          } else {
-            throw error; // Throw if any other error than already exists
-          }
-        });
+      const product: ProductInput = {
+        name: variant.name,
+        sku: variant.sku,
+        productId: variant.sku,
+        stockManagement: true,
+        url: `${this.config.vendureHost}/admin/catalog/products/${variant.productId};id=${variant.productId};tab=variants`,
+        picture: variant.absoluteImageUrl,
+        price: (variant.price / 100).toFixed(2),
+      };
+      const exists = ggProducts.find(
+        (ggProduct) => ggProduct.sku === product.sku
+      );
+      try {
+        if (exists) {
+          await client.updateProduct(exists.uuid, product);
+          Logger.info(`Updated ${variant.sku}`, loggerCtx);
+        } else {
+          await client.createProduct(product);
+          Logger.info(`Created ${variant.sku}`, loggerCtx);
+        }
+      } catch (err) {
+        // Don't throw, because we want other products to sync
+        Logger.error(
+          `Failed to push variant ${variant.sku}: ${err.message}`,
+          loggerCtx,
+          err
+        );
+      }
     }
     Logger.info(`Synced ${variants.length} to Goedgepickt`, loggerCtx);
   }
@@ -219,18 +228,9 @@ export class GoedgepicktService
    */
   async pullStocklevels(channelToken: string): Promise<void> {
     const client = await this.getClientForChannel(channelToken);
-    const ggProducts: GgProduct[] = [];
-    let page = 1;
-    while (true) {
-      const results = await client.getProducts(page);
-      if (!results || results.length === 0) {
-        break;
-      }
-      ggProducts.push(...results);
-      page++;
-    }
     const variants = await this.getAllVariants(channelToken);
     const stockPerVariant: StockInput[] = [];
+    const ggProducts = await client.getAllProducts();
     for (const ggProduct of ggProducts) {
       const variant = variants.find((v) => v.sku === ggProduct.sku);
       const newStock = ggProduct.stock?.freeStock;

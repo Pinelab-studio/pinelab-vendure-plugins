@@ -6,7 +6,6 @@ import {
   Product,
   ProductInput,
   Webhook,
-  Webshop,
 } from './goedgepickt.types';
 import { Logger } from '@vendure/core';
 import crypto from 'crypto';
@@ -17,6 +16,7 @@ interface RawRequestInput {
   method: 'POST' | 'GET' | 'PUT' | 'DELETE';
   payload?: Object;
   queryParams?: string;
+  pathParam?: string;
 }
 
 interface ClientInput {
@@ -37,6 +37,9 @@ export class GoedgepicktClient {
     };
   }
 
+  /**
+   * Gets paginated products. 100 products per page
+   */
   async getProducts(page = 1): Promise<Product[]> {
     const result = await this.rawRequest({
       entity: 'products',
@@ -48,6 +51,23 @@ export class GoedgepicktClient {
       loggerCtx
     );
     return result.items as Product[];
+  }
+
+  /**
+   * Gets all products without pagination. Stores all results in memory, so use with care
+   */
+  async getAllProducts(): Promise<Product[]> {
+    const products: Product[] = [];
+    let page = 1;
+    while (true) {
+      const results = await this.getProducts(page);
+      if (!results || results.length === 0) {
+        break;
+      }
+      products.push(...results);
+      page++;
+    }
+    return products;
   }
 
   async getWebhooks(): Promise<Webhook[]> {
@@ -72,6 +92,17 @@ export class GoedgepicktClient {
       `Created product ${product.productId} in Goedgepickt`,
       loggerCtx
     );
+    return result.items as Product[];
+  }
+
+  async updateProduct(uuid: string, product: ProductInput): Promise<Product[]> {
+    const result = await this.rawRequest({
+      entity: 'products',
+      method: 'PUT',
+      payload: product,
+      pathParam: `${uuid}`,
+    });
+    Logger.debug(`Updated product ${uuid} in Goedgepickt`, loggerCtx);
     return result.items as Product[];
   }
 
@@ -106,8 +137,9 @@ export class GoedgepicktClient {
 
   async rawRequest(input: RawRequestInput): Promise<any> {
     const queryExtension = input.queryParams ? `?${input.queryParams}` : '';
+    const pathParam = input.pathParam ? `/${input.pathParam}` : '';
     const result = await fetch(
-      `https://account.goedgepickt.nl/api/v1/${input.entity}${queryExtension}`,
+      `https://account.goedgepickt.nl/api/v1/${input.entity}${pathParam}${queryExtension}`,
       {
         method: input.method,
         headers: this.headers,
