@@ -85,6 +85,9 @@ describe('MyParcel', () => {
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const devConfig = mergeConfig(testConfig, {
+      apiOptions: {
+        port: 3051,
+      },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         MyparcelPlugin.init({
@@ -208,7 +211,7 @@ describe('MyParcel', () => {
     expect(config.updateMyparcelConfig).toEqual(null);
   });
 
-  it('Should compile admin', async () => {
+  it.skip('Should compile admin', async () => {
     fs.rmSync(path.join(__dirname, '__admin-ui'), {
       recursive: true,
       force: true,
@@ -230,7 +233,7 @@ export async function postStatusChange(
   let buff = Buffer.from(apiKey);
   let encodedKey = buff.toString('base64');
   await axios.post(
-    'http://localhost:3050/myparcel/update-status',
+    'http://localhost:3051/myparcel/update-status',
     <MyparcelStatusChangeEvent>{
       data: {
         hooks: [

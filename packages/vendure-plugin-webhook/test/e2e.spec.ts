@@ -60,7 +60,7 @@ describe('Webhook plugin', function () {
     await expect(serverStarted).toBe(true);
   });
 
-  it('Should compile admin', async () => {
+  it.skip('Should compile admin', async () => {
     fs.rmSync(path.join(__dirname, '__admin-ui'), {
       recursive: true,
       force: true,

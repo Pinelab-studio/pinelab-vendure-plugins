@@ -265,7 +265,7 @@ describe('Goedgepickt plugin', function () {
     expect(updatedVariant.stockOnHand).toBe(123);
   });
 
-  it('Should compile admin', async () => {
+  it.skip('Should compile admin', async () => {
     fs.rmSync(path.join(__dirname, '__admin-ui'), {
       recursive: true,
       force: true,

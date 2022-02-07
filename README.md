@@ -36,7 +36,7 @@ Vendure plugin using Google Cloud Tasks as queue for job processing.
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-myparcel/dev/@vendure/core)  
 Sends orders to MyParcel on fulfillment.
 
-## Goedgepickt plugin
+## GoedGepickt plugin
 
 [![plugin version](https://img.shields.io/npm/v/vendure-plugin-myparcel)](https://www.npmjs.com/package/vendure-plugin-goedgepickt)
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-myparcel/dev/@vendure/core)  
