@@ -1,4 +1,5 @@
 import { OrderExportArgument } from '../ui/generated/graphql';
+import { Order } from '@vendure/core';
 
 interface ExportSuccess {
   orderCode: string;
@@ -22,6 +23,10 @@ export interface OrderExportStrategy {
   /**
    * Error results are not recorded if this function throws an error
    * @param args
+   * @param orders including shippingAddress, billingAddress, order.lines, order.lines.variant
    */
-  exportOrders(args: OrderExportArgument[]): Promise<ExportResult[]>;
+  exportOrders(
+    args: OrderExportArgument[],
+    orders: Order[]
+  ): Promise<ExportResult[]>;
 }
