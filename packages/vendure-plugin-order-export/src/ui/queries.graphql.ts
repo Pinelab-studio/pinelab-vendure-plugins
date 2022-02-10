@@ -1,8 +1,8 @@
 import gql from 'graphql-tag';
 
-export const getStrategies = gql`
-  query allOrderExportStrategies {
-    allOrderExportStrategies {
+export const getConfigs = gql`
+  query allOrderExportConfigs {
+    allOrderExportConfigs {
       name
       arguments {
         name
@@ -12,9 +12,9 @@ export const getStrategies = gql`
   }
 `;
 
-export const saveStrategy = gql`
-  mutation updateOrderExportStrategy($input: OrderExportStrategyInput!) {
-    updateOrderExportStrategy(input: $input) {
+export const saveConfig = gql`
+  mutation updateOrderExportConfig($input: OrderExportConfigInput!) {
+    updateOrderExportConfig(input: $input) {
       name
       arguments {
         name

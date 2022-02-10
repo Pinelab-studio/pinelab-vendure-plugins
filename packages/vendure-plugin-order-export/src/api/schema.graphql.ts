@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const schema = gql`
-  type OrderExportStrategy {
+  type OrderExportConfig {
     name: ID!
     arguments: [OrderExportArgument!]!
   }
@@ -16,18 +16,18 @@ export const schema = gql`
     value: String
   }
 
-  input OrderExportStrategyInput {
-    name: ID!
+  input OrderExportConfigInput {
+    name: String!
     arguments: [OrderExportArgumentInput!]!
   }
 
   extend type Mutation {
-    updateOrderExportStrategy(
-      input: OrderExportStrategyInput!
-    ): [OrderExportStrategy!]!
+    updateOrderExportConfig(
+      input: OrderExportConfigInput!
+    ): [OrderExportConfig!]!
   }
 
   extend type Query {
-    allOrderExportStrategies: [OrderExportStrategy!]!
+    allOrderExportConfigs: [OrderExportConfig!]!
   }
 `;

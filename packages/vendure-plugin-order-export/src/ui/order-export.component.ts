@@ -2,13 +2,13 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DataService, NotificationService } from '@vendure/admin-ui/core';
 import {
-  AllOrderExportStrategiesQuery,
-  OrderExportStrategy,
-  OrderExportStrategyInput,
-  UpdateOrderExportStrategyMutation,
-  UpdateOrderExportStrategyMutationVariables,
+  AllOrderExportConfigsQuery,
+  OrderExportConfig,
+  OrderExportConfigInput,
+  UpdateOrderExportConfigMutation,
+  UpdateOrderExportConfigMutationVariables,
 } from './generated/graphql';
-import { getStrategies, saveStrategy } from './queries.graphql';
+import { getConfigs, saveConfig } from './queries.graphql';
 
 @Component({
   selector: 'order-export-component',
@@ -62,8 +62,8 @@ import { getStrategies, saveStrategy } from './queries.graphql';
   `,
 })
 export class OrderExportComponent implements OnInit {
-  strategies: OrderExportStrategy[] = [];
-  selectedStrategy: OrderExportStrategy | undefined;
+  strategies: OrderExportConfig[] = [];
+  selectedStrategy: OrderExportConfig | undefined;
   configForm: FormGroup;
 
   constructor(
@@ -78,8 +78,8 @@ export class OrderExportComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     // get all strategies via GraphQL
     await this.dataService
-      .query<AllOrderExportStrategiesQuery>(getStrategies)
-      .mapStream((result) => result.allOrderExportStrategies)
+      .query<AllOrderExportConfigsQuery>(getConfigs)
+      .mapStream((result) => result.allOrderExportConfigs)
       .subscribe(
         (strategies) => {
           this.strategies = strategies;
@@ -113,7 +113,7 @@ export class OrderExportComponent implements OnInit {
     if (!this.selectedStrategy) {
       this.notificationService.error(`No order export strategy selected!`);
     }
-    const strategy: OrderExportStrategyInput = {
+    const strategy: OrderExportConfigInput = {
       name: this.selectedStrategy!.name,
       arguments: this.selectedStrategy!.arguments.map((arg) => ({
         name: arg.name,
@@ -122,12 +122,12 @@ export class OrderExportComponent implements OnInit {
     };
     await this.dataService
       .mutate<
-        UpdateOrderExportStrategyMutation,
-        UpdateOrderExportStrategyMutationVariables
-      >(saveStrategy, { input: strategy })
+        UpdateOrderExportConfigMutation,
+        UpdateOrderExportConfigMutationVariables
+      >(saveConfig, { input: strategy })
       .subscribe(
         (result) => {
-          this.strategies = result.updateOrderExportStrategy;
+          this.strategies = result.updateOrderExportConfig;
           this.notificationService.success('common.notify-update-success', {
             entity: 'Order export settings',
           });

@@ -1,6 +1,6 @@
-import { OrderExportStrategy } from '../ui/generated/graphql';
+import { OrderExportConfig } from '../ui/generated/graphql';
 
-export const strategies: OrderExportStrategy[] = [
+export const strategies: OrderExportConfig[] = [
   {
     name: 'e-boekhouden',
     arguments: [

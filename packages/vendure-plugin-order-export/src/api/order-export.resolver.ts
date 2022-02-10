@@ -2,8 +2,8 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, RequestContext } from '@vendure/core';
 import { orderExportPermission } from '../index';
 import {
-  OrderExportStrategy,
-  OrderExportStrategyInput,
+  OrderExportConfig,
+  OrderExportConfigInput,
 } from '../ui/generated/graphql';
 import { strategies } from './strategies';
 
@@ -18,7 +18,7 @@ export class OrderExportResolver {
   @Allow(orderExportPermission.Permission)
   async allOrderExportStrategies(
     @Ctx() ctx: RequestContext
-  ): Promise<OrderExportStrategy[]> {
+  ): Promise<OrderExportConfig[]> {
     return strategies;
   }
 
@@ -26,8 +26,8 @@ export class OrderExportResolver {
   @Allow(orderExportPermission.Permission)
   async updateOrderExportStrategy(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: OrderExportStrategyInput
-  ): Promise<OrderExportStrategy[]> {
+    @Args('input') input: OrderExportConfigInput
+  ): Promise<OrderExportConfig[]> {
     console.log('==========', input);
     return strategies;
   }
