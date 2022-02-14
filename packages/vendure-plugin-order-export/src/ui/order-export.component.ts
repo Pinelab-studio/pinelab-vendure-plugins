@@ -3,12 +3,14 @@ import { FormBuilder, FormGroup } from '@angular/forms';
 import { DataService, NotificationService } from '@vendure/admin-ui/core';
 import {
   AllOrderExportConfigsQuery,
+  ExportedOrder,
+  GetFailedOrdersQuery,
   OrderExportConfig,
   OrderExportConfigInput,
   UpdateOrderExportConfigMutation,
   UpdateOrderExportConfigMutationVariables,
 } from './generated/graphql';
-import { getConfigs, saveConfig } from './queries.graphql';
+import { getConfigs, getFailedOrders, saveConfig } from './queries.graphql';
 
 @Component({
   selector: 'order-export-component',
@@ -56,6 +58,8 @@ import { getConfigs, saveConfig } from './queries.graphql';
           </section>
         </form>
         <hr />
+        <h4>Failed exports</h4>
+        <hr />
         <h4>Last 20 exports</h4>
       </div>
     </div>
@@ -63,6 +67,7 @@ import { getConfigs, saveConfig } from './queries.graphql';
 })
 export class OrderExportComponent implements OnInit {
   strategies: OrderExportConfig[] = [];
+  failedExports: ExportedOrder[] = [];
   selectedStrategy: OrderExportConfig | undefined;
   configForm: FormGroup;
 
@@ -90,6 +95,18 @@ export class OrderExportComponent implements OnInit {
           this.notificationService.error(
             'Error getting order export strategies'
           );
+        }
+      );
+    await this.dataService
+      .query<GetFailedOrdersQuery>(getFailedOrders)
+      .mapStream((result) => result.allExportedOrders)
+      .subscribe(
+        (strategies) => {
+          this.failedExports = strategies;
+        },
+        (error) => {
+          console.error(error);
+          this.notificationService.error('Error getting exported orders');
         }
       );
   }

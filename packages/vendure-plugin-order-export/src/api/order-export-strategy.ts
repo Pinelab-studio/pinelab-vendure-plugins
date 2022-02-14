@@ -1,32 +1,21 @@
-import { OrderExportArgument } from '../ui/generated/graphql';
+import {
+  ExportedOrder,
+  OrderExportArgument,
+  OrderExportArgumentInput,
+} from '../ui/generated/graphql';
 import { Order } from '@vendure/core';
 
-interface ExportSuccess {
-  orderCode: string;
-  /**
-   * Reference to the external platform. For example the uuid of the exported order
-   */
-  reference: string;
-}
-
-interface ExportFailure {
-  orderCode: string;
-  /**
-   * Free textfield to show the admin what went wrong
-   */
-  error: string;
-}
-
-type ExportResult = ExportFailure | ExportSuccess;
+export type ExportResult = Pick<ExportedOrder, 'reference' | 'message'>;
 
 export interface OrderExportStrategy {
+  name: string;
+  arguments: OrderExportArgument[];
+
   /**
-   * Error results are not recorded if this function throws an error
+   * If the function doesn't throw an error it will be recorded as a succesful export.
+   * If an error is thrown, the export is recoreded as failed and the error.message is also recorded
    * @param args
-   * @param orders including shippingAddress, billingAddress, order.lines, order.lines.variant
+   * @param order including shippingAddress, billingAddress, order.lines, order.lines.variant
    */
-  exportOrders(
-    args: OrderExportArgument[],
-    orders: Order[]
-  ): Promise<ExportResult[]>;
+  exportOrder(args: OrderExportArgument[], order: Order): Promise<ExportResult>;
 }

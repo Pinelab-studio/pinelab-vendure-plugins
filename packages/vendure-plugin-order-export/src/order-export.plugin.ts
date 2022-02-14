@@ -8,10 +8,23 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { orderExportPermission } from './index';
 import { OrderExportResolver } from './api/order-export.resolver';
 import { schema } from './api/schema.graphql';
+import { OrderExportStrategy } from './api/order-export-strategy';
+import { OrderExportService } from './api/order-export.service';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+
+export interface OrderExportPluginConfig {
+  strategies: OrderExportStrategy[];
+}
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  providers: [],
+  providers: [
+    OrderExportService,
+    {
+      provide: PLUGIN_INIT_OPTIONS,
+      useFactory: () => OrderExportPlugin.config,
+    },
+  ],
   adminApiExtensions: {
     resolvers: [OrderExportResolver],
     schema,
@@ -22,7 +35,10 @@ import { schema } from './api/schema.graphql';
   },
 })
 export class OrderExportPlugin {
-  static init(): typeof OrderExportPlugin {
+  static config: OrderExportPluginConfig;
+
+  static init(config: OrderExportPluginConfig): typeof OrderExportPlugin {
+    this.config = config;
     return OrderExportPlugin;
   }
 

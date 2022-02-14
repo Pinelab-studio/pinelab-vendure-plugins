@@ -12,6 +12,21 @@ export const getConfigs = gql`
   }
 `;
 
+export const getFailedOrders = gql`
+  query getFailedOrders {
+    allExportedOrders(filter: { successful: false }) {
+      id
+      createdAt
+      updatedAt
+      orderId
+      reference
+      message
+      externalLink
+      successful
+    }
+  }
+`;
+
 export const saveConfig = gql`
   mutation updateOrderExportConfig($input: OrderExportConfigInput!) {
     updateOrderExportConfig(input: $input) {

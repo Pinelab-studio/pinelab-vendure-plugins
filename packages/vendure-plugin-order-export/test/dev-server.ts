@@ -25,6 +25,7 @@ import { addShippingMethod } from '../../test/src/admin-utils';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { OrderExportPlugin } from '../src/order-export.plugin';
+import { FakeExporter } from './fake-exporter';
 
 require('dotenv').config();
 
@@ -32,8 +33,14 @@ require('dotenv').config();
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    apiOptions: {
+      adminApiPlayground: {},
+      shopApiPlayground: {},
+    },
     plugins: [
-      OrderExportPlugin.init(),
+      OrderExportPlugin.init({
+        strategies: [new FakeExporter()],
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
