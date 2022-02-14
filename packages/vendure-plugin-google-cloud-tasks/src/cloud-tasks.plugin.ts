@@ -16,7 +16,12 @@ import { CloudTaskOptions, ROUTE } from './types';
       CloudTasksPlugin.options
     );
     config.apiOptions.middleware = [
-      { route: `/${ROUTE}`, handler: json() },
+      {
+        route: `/${ROUTE}`,
+        handler: json({
+          limit: CloudTasksPlugin.options.bodySizeLimit || '1mb',
+        }),
+      },
       ...config.apiOptions.middleware,
     ];
     return config;
