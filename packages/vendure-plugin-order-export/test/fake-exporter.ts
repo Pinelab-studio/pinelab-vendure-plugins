@@ -3,6 +3,13 @@ import { Order } from '@vendure/core';
 
 export class FakeExporter implements OrderExportStrategy {
   name = 'Fake importer';
+  arguments = [
+    {
+      name: 'fake-input-argument',
+      value: 'place-holder-value',
+    },
+  ];
+
   async exportOrder(
     args: OrderExportArgument[],
     order: Order
@@ -13,11 +20,4 @@ export class FakeExporter implements OrderExportStrategy {
       reference: '2',
     };
   }
-
-  arguments: OrderExportArgument[] = [
-    {
-      name: 'fake-input-argument',
-      value: 'place-holder-value',
-    },
-  ];
 }
