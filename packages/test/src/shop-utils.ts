@@ -41,7 +41,7 @@ export async function proceedToArrangingPayment(
 export async function addPaymentToOrder(
   shopClient: SimpleGraphQLClient,
   code: string
-): Promise<AddPaymentToOrderMutation> {
+): Promise<AddPaymentToOrderMutation['addPaymentToOrder']> {
   const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
     input: {
       method: code,

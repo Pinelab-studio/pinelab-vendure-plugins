@@ -13,7 +13,7 @@ This plugin adds a custom permission 'SetMyParcelConfig' that is needed to set M
 Add this to your plugins in `vendure-config.ts`:
 
 ```js
-MyparcelPlugin.init({
+InvoicePlugin.init({
   vendureHost: 'https://your-vendure-host.io',
   syncWebhookOnStartup: true, // If you want to automatically set vendureHost as webhook on MyParcel account
 });
@@ -23,11 +23,13 @@ Add this to your AdminUiPlugin:
 
 ```js
 AdminUiPlugin.init({
-...
-  app: compileUiExtensions({
-    outputPath: path.join(__dirname, '__admin-ui'),
-    extensions: [MyparcelPlugin.ui],
-  })
+  ...
+    app
+:
+compileUiExtensions({
+  outputPath: path.join(__dirname, '__admin-ui'),
+  extensions: [InvoicePlugin.ui],
+})
 })
 ```
 

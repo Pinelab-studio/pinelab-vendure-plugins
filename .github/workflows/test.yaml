@@ -30,3 +30,5 @@ jobs:
         run: cd packages/vendure-plugin-webhook && yarn && yarn build && yarn test
       - name: Test vendure-plugin-goedgepickt
         run: cd packages/vendure-plugin-goedgepickt && yarn && yarn build && yarn test
+      - name: Test vendure-plugin-invoice
+        run: cd packages/vendure-plugin-invoice && yarn && yarn build && yarn test
