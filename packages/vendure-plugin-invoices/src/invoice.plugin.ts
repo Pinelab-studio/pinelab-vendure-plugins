@@ -1,16 +1,36 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { invoicePermission } from './index';
+import {
+  DefaultStorageStrategy,
+  invoicePermission,
+  StorageStrategy,
+} from './index';
 import { schema } from './api/schema.graphql';
 import { InvoiceService } from './api/invoice.service';
+import {
+  DataStrategy,
+  DefaultDataStrategy,
+} from './api/strategies/data-strategy';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { InvoiceConfigEntity } from './api/entities/invoice-config.entity';
+import { InvoiceResolver } from './api/invoice.resolver';
+import { InvoiceEntity } from './api/entities/invoice.entity';
+
+export interface InvoicePluginConfig {
+  dataStrategy: DataStrategy;
+  storageStrategy: StorageStrategy;
+}
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [],
-  providers: [InvoiceService],
+  entities: [InvoiceConfigEntity, InvoiceEntity],
+  providers: [
+    InvoiceService,
+    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
+  ],
   controllers: [],
   adminApiExtensions: {
     schema,
-    resolvers: [],
+    resolvers: [InvoiceResolver],
   },
   configuration: (config) => {
     config.authOptions.customPermissions.push(invoicePermission);
@@ -18,7 +38,14 @@ import { InvoiceService } from './api/invoice.service';
   },
 })
 export class InvoicePlugin {
-  static init(): typeof InvoicePlugin {
+  static config: InvoicePluginConfig;
+
+  static init(config: Partial<InvoicePluginConfig>): typeof InvoicePlugin {
+    this.config = {
+      ...config,
+      storageStrategy: config.storageStrategy || new DefaultStorageStrategy(),
+      dataStrategy: config.dataStrategy || new DefaultDataStrategy(),
+    };
     return InvoicePlugin;
   }
 }

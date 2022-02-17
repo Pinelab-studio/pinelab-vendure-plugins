@@ -16,6 +16,20 @@ import {
   addPaymentToOrder,
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
+import {
+  InvoiceConfigQuery,
+  MutationUpsertInvoiceConfigArgs,
+} from '../src/ui/generated/graphql';
+import {
+  AllInvoicesQuery,
+  UpsertInvoiceConfigMutation,
+} from '../dist/ui/generated/graphql';
+import { defaultTemplate } from '../src/api/default-template';
+import {
+  getConfigQuery,
+  upsertConfigMutation,
+} from '../src/ui/queries.graphql';
+import { getAllInvoicesQuery } from '../dist/ui/queries.graphql';
 
 jest.setTimeout(20000);
 
@@ -32,7 +46,7 @@ describe('Goedgepickt plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [InvoicePlugin.init()],
+      plugins: [InvoicePlugin.init({})],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -60,7 +74,28 @@ describe('Goedgepickt plugin', function () {
     await expect(serverStarted).toBe(true);
   });
 
-  it('Create placed order', async () => {
+  it('Upserts config', async () => {
+    await adminClient.asSuperAdmin();
+    const result = await adminClient.query<
+      UpsertInvoiceConfigMutation,
+      MutationUpsertInvoiceConfigArgs
+    >(upsertConfigMutation, {
+      input: { enabled: true, templateString: defaultTemplate },
+    });
+    expect(result.upsertInvoiceConfig.id).toBeDefined();
+    expect(result.upsertInvoiceConfig.enabled).toBe(true);
+    expect(result.upsertInvoiceConfig.templateString).toBe(defaultTemplate);
+  });
+
+  it('Gets config', async () => {
+    await adminClient.asSuperAdmin();
+    const result = await adminClient.query<InvoiceConfigQuery>(getConfigQuery);
+    expect(result.invoiceConfig?.id).toBeDefined();
+    expect(result.invoiceConfig?.enabled).toBe(true);
+    expect(result.invoiceConfig?.templateString).toBe(defaultTemplate);
+  });
+
+  it('Creates a placed order', async () => {
     await addShippingMethod(adminClient, 'manual-fulfillment');
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -80,6 +115,35 @@ describe('Goedgepickt plugin', function () {
     });
     const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
     expect((order as any).id).toBeDefined();
+  });
+
+  it('Gets all invoices after 1s', async () => {
+    // Give the worker some time to process
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const result = await adminClient.query<AllInvoicesQuery>(
+      getAllInvoicesQuery
+    );
+    expect(result.allInvoices[0].id).toBeDefined();
+    expect(result.allInvoices[0].orderCode).toBeDefined();
+    expect(result.allInvoices[0].orderId).toBeDefined();
+    expect(result.allInvoices[0].customerEmail).toBe(
+      'hayden.zieme12@hotmail.com'
+    );
+    expect(result.allInvoices[0].downloadUrl).toContain(
+      '/invoices/e2e-default-channel/'
+    );
+  });
+
+  it('Download PDF via URl', async () => {
+    // TODO
+  });
+
+  it('Throws an error on duplicate invoices in DB', async () => {
+    // TODO
+  });
+
+  it('List created invoices', async () => {
+    // TODO
   });
 
   afterAll(() => {

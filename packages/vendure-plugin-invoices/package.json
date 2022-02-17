@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
-    "build": "rimraf dist && tsc && yarn graphql-codegen && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "jest --preset=\"ts-jest\""
   },
   "dependencies": {
