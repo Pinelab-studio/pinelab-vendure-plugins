@@ -11,8 +11,6 @@ import {
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
-  PaymentMethodService,
-  RequestContext,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
@@ -22,9 +20,8 @@ import {
 } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { InvoicePlugin } from '../src';
+import { InvoiceService } from '../src/api/invoice.service';
 
 require('dotenv').config();
 
@@ -33,7 +30,7 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      InvoicePlugin.init(),
+      InvoicePlugin.init({}),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -51,16 +48,33 @@ require('dotenv').config();
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
+  // add default Config
+  const channel = await server.app.get(ChannelService).getDefaultChannel();
+  await server.app
+    .get(InvoiceService)
+    .upsertConfig(channel.id as string, { enabled: true });
   // Add a test-order at every server start
   await addShippingMethod(adminClient, 'manual-fulfillment');
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 2);
   await proceedToArrangingPayment(shopClient);
-  await addPaymentToOrder(shopClient, testPaymentMethod.code);
-  console.log('Created test order');
+  const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
+  console.log(
+    `Download invoice via http://localhost:3050/invoices/e2e-default-channel/${
+      (order as any).code
+    }?email=hayden.zieme12@hotmail.com`
+  );
 })();

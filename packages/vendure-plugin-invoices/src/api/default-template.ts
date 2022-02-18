@@ -3,7 +3,7 @@ export const defaultTemplate = `
 <html style="zoom: 0.55">
   <head>
     <meta charset="utf-8" />
-    <title>Bestelling {{ order.code }}</title>
+    <title>Order {{ order.code }}</title>
   </head>
   <body style="font-family: Arial, Helvetica, sans-serif">
     <table style="width: 100%">
@@ -11,16 +11,14 @@ export const defaultTemplate = `
         <td>
           <br />
           <br />
-          Wormenkwekerij Wasse<br />
-          Reikampen 6<br />
-          9415 RB, Hijken<br />
-          Kvk: 66626811<br />
-          Btw nr: NL001413015b26<br />
+          https://pinelab.studio<br />
+          Thanks for your order at Pinelab.studio!
         </td>
       </tr>
     </table>
 
     <hr />
+    
     <br />
     <br />
     <br />
@@ -36,8 +34,8 @@ export const defaultTemplate = `
           {{/if}} {{/with}}
         </td>
         <td>
-          Bestelnummer: {{ order.code }} <br />
-          Datum: {{ order.orderPlacedAt }}
+          Order: {{ order.code }} <br />
+          Date: {{ orderDate }}
         </td>
       </tr>
     </table>
@@ -66,7 +64,7 @@ export const defaultTemplate = `
       </tr>
       <tr>
         <td></td>
-        <td>Verzendkosten</td>
+        <td>Shipping with tax</td>
         <td style="text-align: right">
           €{{ formatMoney order.shippingWithTax }}
         </td>
@@ -79,12 +77,12 @@ export const defaultTemplate = `
 
     <table style="width: 100%">
       <tr>
-        <td style="text-align: right">Totaal Excl.</td>
+        <td style="text-align: right">Subtotal </td>
         <td style="text-align: right">€{{ formatMoney order.total }}</td>
       </tr>
 
       <tr style="text-align: right">
-        <td><strong>Totaal Incl.</strong></td>
+        <td><strong>Total inc. tax</strong></td>
         <td style="text-align: right">
           <strong>€{{ formatMoney order.totalWithTax }}</strong>
         </td>

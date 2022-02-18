@@ -10,6 +10,7 @@ import {
   EventBus,
   JobQueue,
   JobQueueService,
+  JsonCompatible,
   Logger,
   Order,
   OrderPlacedEvent,
@@ -29,19 +30,37 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { InvoiceData } from './strategies/data-strategy';
+import { Repository } from 'typeorm';
+import { ReadStream } from 'fs';
+import {
+  LocalStorageStrategy,
+  RemoteStorageStrategy,
+} from './strategies/storage-strategy';
+import { Response } from 'express';
+
+interface DownloadInput {
+  channelToken: string;
+  customerEmail: string;
+  orderCode: string;
+  res: Response;
+}
 
 @Injectable()
 export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   jobQueue: JobQueue<{ channelId: string; orderCode: string }> | undefined;
+  invoiceRepo: Repository<InvoiceEntity>;
+  configRepo: Repository<InvoiceConfigEntity>;
 
   constructor(
     private eventBus: EventBus,
     private jobService: JobQueueService,
     private orderService: OrderService,
     private channelService: ChannelService,
-    private connection: TransactionalConnection,
+    connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
   ) {
+    this.invoiceRepo = connection.getRepository(InvoiceEntity);
+    this.configRepo = connection.getRepository(InvoiceConfigEntity);
     Handlebars.registerHelper('formatMoney', (amount?: number) => {
       if (amount == null) {
         return amount;
@@ -51,20 +70,20 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   async onModuleInit(): Promise<void> {
+    // Init jobQueue
     this.jobQueue = await this.jobService.createQueue({
       name: 'generate-invoice',
       process: async (job) =>
-        await this.createAndSaveInvoice(
-          job.data.channelId,
-          job.data.orderCode
-        ).catch((error) => {
-          Logger.error(
-            `Failed to generate invoice for  ${job.data.orderCode}`,
-            loggerCtx,
-            error
-          );
-          throw error;
-        }),
+        this.createAndSaveInvoice(job.data.channelId, job.data.orderCode).catch(
+          (error) => {
+            Logger.error(
+              `Failed to generate invoice for  ${job.data.orderCode}`,
+              loggerCtx,
+              error
+            );
+            throw error;
+          }
+        ),
     });
   }
 
@@ -72,19 +91,28 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Listen for OrderPlacedEvents. When an event occures, place generate-invoice job in queue
    */
   onApplicationBootstrap(): void {
-    this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       if (!this.jobQueue) {
         return Logger.error(`Invoice jobQueue not initialized`, loggerCtx);
       }
+      const enabled = await this.isInvoicePluginEnabled(
+        ctx.channelId as string
+      );
+      if (!enabled) {
+        return Logger.debug(
+          `Invoice generation not enabled for order ${order.code}`,
+          loggerCtx
+        );
+      }
       await this.jobQueue.add(
         {
-          channelId: event.ctx.channelId as string,
-          orderCode: event.order.code,
+          channelId: ctx.channelId as string,
+          orderCode: order.code,
         },
         { retries: 3 }
       );
       return Logger.info(
-        `Added invoice job to queue for order ${event.order.code}`,
+        `Added invoice job to queue for order ${order.code}`,
         loggerCtx
       );
     });
@@ -95,22 +123,33 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Checks if an invoice has already been created for this order
    */
   async createAndSaveInvoice(channelId: string, orderCode: string) {
-    const [order, invoice] = await Promise.all([
+    const [order, existingInvoice, config] = await Promise.all([
       this.orderService.findOneByCode(await this.createCtx(), orderCode),
       this.getInvoice(orderCode),
+      this.getConfig(channelId),
     ]);
-    if (!order) {
+    if (!config) {
+      throw Error(
+        `Cannot generate invoice for ${orderCode}, because no config was found`
+      );
+    } else if (!config.enabled) {
+      return Logger.warn(
+        `Not generating invoice for ${orderCode}, because plugin is disabled. This message should not be in the queue!`,
+        loggerCtx
+      );
+    } else if (!order) {
       throw Error(`No order found with code ${orderCode}`);
     }
-    if (invoice) {
+    if (existingInvoice) {
       throw Error(
-        `An invoice with number ${invoice.invoiceNumber} was already created for order ${orderCode}`
+        `An invoice with number ${existingInvoice.invoiceNumber} was already created for order ${orderCode}`
       );
     }
     const { invoiceNumber, customerEmail, tmpFileName } =
-      await this.generateInvoice(channelId, order);
+      await this.generateInvoice(channelId, config, order);
     const storageReference = await this.config.storageStrategy.save(
-      tmpFileName
+      tmpFileName,
+      invoiceNumber
     );
     return this.saveInvoice({
       channelId,
@@ -122,17 +161,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     });
   }
 
-  private async generateInvoice(
+  async generateInvoice(
     channelId: string,
+    config: InvoiceConfigEntity,
     order: Order
   ): Promise<{ tmpFileName: string } & InvoiceData> {
-    const config = await this.getConfig(channelId);
-    if (!config) {
-      throw Error(`No invoice config found for channel ${channelId}`);
-    }
-    // TODO get previous invoice
-    const data = await this.config.dataStrategy.getData(undefined, order);
-    const tmpFile = tmp.fileSync({ postfix: '.pdf', name: data.invoiceNumber });
+    const latest = await this.getLatestInvoice(channelId);
+    const data = await this.config.dataStrategy.getData(latest, order);
+    const tmpFile = tmp.fileSync({ postfix: '.pdf' });
     const html = config.templateString;
     const options = {
       format: 'A4',
@@ -154,24 +190,51 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     };
   }
 
+  /**
+   * Returns a redirect if a publicUrl is created
+   * otherwise returns a ReadStream from a file
+   */
+  async downloadInvoice(input: DownloadInput): Promise<ReadStream | string> {
+    const channel = await this.channelService.getChannelFromToken(
+      input.channelToken
+    );
+    const invoice = await this.invoiceRepo.findOne({
+      orderCode: input.orderCode,
+    });
+    if (!invoice) {
+      throw Error(`No invoice exists for ${input.orderCode}`);
+    } else if (invoice.customerEmail !== input.customerEmail) {
+      throw Error(
+        `This invoice doesnt belong to customer ${input.customerEmail}`
+      );
+    } else if (invoice.channelId != channel.id) {
+      throw Error(
+        `This invoice doesnt belong to channel ${input.channelToken}`
+      );
+    }
+    const strategy = this.config.storageStrategy;
+    if ((strategy as RemoteStorageStrategy).getPublicUrl) {
+      return (strategy as RemoteStorageStrategy).getPublicUrl(invoice);
+    } else {
+      return (strategy as LocalStorageStrategy).streamFile(invoice, input.res);
+    }
+  }
+
   async upsertConfig(
     channelId: string,
     input: InvoiceConfigInput
   ): Promise<InvoiceConfigEntity> {
-    const repo = this.connection.getRepository(InvoiceConfigEntity);
-    const existing = await repo.findOne({ channelId });
+    const existing = await this.configRepo.findOne({ channelId });
     if (existing) {
-      await repo.update(existing.id, input);
+      await this.configRepo.update(existing.id, input);
     } else {
-      await repo.insert({ ...input, channelId });
+      await this.configRepo.insert({ ...input, channelId });
     }
-    return repo.findOneOrFail({ channelId });
+    return this.configRepo.findOneOrFail({ channelId });
   }
 
   async getConfig(channelId: string): Promise<InvoiceConfigEntity | undefined> {
-    const config = await this.connection
-      .getRepository(InvoiceConfigEntity)
-      .findOne({ channelId });
+    const config = await this.configRepo.findOne({ channelId });
     if (!config) {
       return undefined;
     }
@@ -181,8 +244,16 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return config;
   }
 
+  async isInvoicePluginEnabled(channelId: string): Promise<boolean> {
+    const result = await this.configRepo.findOne({
+      select: ['enabled'],
+      where: { channelId },
+    });
+    return !!result?.enabled;
+  }
+
   async getInvoice(orderCode: string): Promise<InvoiceEntity | undefined> {
-    return this.connection.getRepository(InvoiceEntity).findOne({ orderCode });
+    return this.invoiceRepo.findOne({ orderCode });
   }
 
   /**
@@ -191,7 +262,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   async getLatestInvoice(
     channelId: string
   ): Promise<InvoiceEntity | undefined> {
-    return this.connection.getRepository(InvoiceEntity).findOne({
+    return this.invoiceRepo.findOne({
       where: [{ channelId }],
       order: { createdAt: 'DESC' },
     });
@@ -203,7 +274,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (page) {
       skip = page * take;
     }
-    const invoices = await this.connection.getRepository(InvoiceEntity).find({
+    const invoices = await this.invoiceRepo.find({
       where: [{ channelId: channel.id }],
       order: { createdAt: 'DESC' },
       skip,
@@ -219,7 +290,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   async saveInvoice(
     invoice: Partial<InvoiceEntity>
   ): Promise<InvoiceEntity | undefined> {
-    return this.connection.getRepository(InvoiceEntity).save(invoice);
+    return this.invoiceRepo.save(invoice);
   }
 
   async createCtx(): Promise<RequestContext> {

@@ -138,11 +138,23 @@ describe('Goedgepickt plugin', function () {
     // TODO
   });
 
+  it('Download fails for invalid email', async () => {
+    // TODO
+  });
+
+  it('Download fails for invalid channel', async () => {
+    // TODO
+  });
+
   it('Throws an error on duplicate invoices in DB', async () => {
     // TODO
   });
 
   it('List created invoices', async () => {
+    // TODO
+  });
+
+  it('Create another should have incremental invoice number', async () => {
     // TODO
   });
 

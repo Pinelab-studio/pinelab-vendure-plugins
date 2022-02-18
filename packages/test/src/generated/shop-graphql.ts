@@ -3203,6 +3203,7 @@ export const AddPaymentToOrder = gql`
     addPaymentToOrder(input: $input) {
       ... on Order {
         id
+        code
       }
       ... on ErrorResult {
         errorCode

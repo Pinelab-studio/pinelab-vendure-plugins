@@ -14,6 +14,7 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
 import { InvoiceConfigEntity } from './api/entities/invoice-config.entity';
 import { InvoiceResolver } from './api/invoice.resolver';
 import { InvoiceEntity } from './api/entities/invoice.entity';
+import { InvoiceController } from './api/invoice.controller';
 
 export interface InvoicePluginConfig {
   dataStrategy: DataStrategy;
@@ -27,7 +28,7 @@ export interface InvoicePluginConfig {
     InvoiceService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
   ],
-  controllers: [],
+  controllers: [InvoiceController],
   adminApiExtensions: {
     schema,
     resolvers: [InvoiceResolver],
