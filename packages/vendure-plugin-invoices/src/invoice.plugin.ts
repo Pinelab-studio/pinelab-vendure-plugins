@@ -15,8 +15,15 @@ import { InvoiceConfigEntity } from './api/entities/invoice-config.entity';
 import { InvoiceResolver } from './api/invoice.resolver';
 import { InvoiceEntity } from './api/entities/invoice.entity';
 import { InvoiceController } from './api/invoice.controller';
+import path from 'path';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 
 export interface InvoicePluginConfig {
+  /**
+   * Hostname to use for download links, can be the Vendure instance,
+   * but also the worker instance if you want
+   */
+  downloadHost: string;
   dataStrategy: DataStrategy;
   storageStrategy: StorageStrategy;
 }
@@ -41,7 +48,9 @@ export interface InvoicePluginConfig {
 export class InvoicePlugin {
   static config: InvoicePluginConfig;
 
-  static init(config: Partial<InvoicePluginConfig>): typeof InvoicePlugin {
+  static init(
+    config: Partial<InvoicePluginConfig> & { downloadHost: string }
+  ): typeof InvoicePlugin {
     this.config = {
       ...config,
       storageStrategy: config.storageStrategy || new DefaultStorageStrategy(),
@@ -49,4 +58,21 @@ export class InvoicePlugin {
     };
     return InvoicePlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    ngModules: [
+      {
+        type: 'lazy',
+        route: 'invoices',
+        ngModuleFileName: 'invoices.module.ts',
+        ngModuleName: 'InvoicesModule',
+      },
+      {
+        type: 'shared',
+        ngModuleFileName: 'invoices-nav.module.ts',
+        ngModuleName: 'InvoicesNavModule',
+      },
+    ],
+  };
 }

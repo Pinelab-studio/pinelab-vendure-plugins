@@ -13,15 +13,15 @@ import {
   mergeConfig,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import {
-  addItem,
-  addPaymentToOrder,
-  proceedToArrangingPayment,
-} from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { addShippingMethod } from '../../test/src/admin-utils';
+import {
+  addShippingMethod,
+  createSettledOrder,
+} from '../../test/src/admin-utils';
 import { InvoicePlugin } from '../src';
 import { InvoiceService } from '../src/api/invoice.service';
+import path from 'path';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 require('dotenv').config();
 
@@ -30,16 +30,18 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      InvoicePlugin.init({}),
+      InvoicePlugin.init({
+        downloadHost: 'http://localhost:3050',
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [],
+          extensions: [InvoicePlugin.ui],
           devMode: true,
-        }),*/
+        }),
       }),
     ],
     paymentOptions: {
@@ -65,16 +67,12 @@ require('dotenv').config();
   await server.app
     .get(InvoiceService)
     .upsertConfig(channel.id as string, { enabled: true });
-  // Add a test-order at every server start
+  // Add a testorders at every server start
+  await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient, 'manual-fulfillment');
-  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  await addItem(shopClient, 'T_1', 1);
-  await addItem(shopClient, 'T_2', 2);
-  await proceedToArrangingPayment(shopClient);
-  const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
-  console.log(
-    `Download invoice via http://localhost:3050/invoices/e2e-default-channel/${
-      (order as any).code
-    }?email=hayden.zieme12@hotmail.com`
-  );
+  const orders = 52;
+  for (let i = 1; i <= orders; i++) {
+    await createSettledOrder(shopClient);
+  }
+  console.log(`Created ${orders} orders`);
 })();

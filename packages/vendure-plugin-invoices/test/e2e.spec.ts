@@ -55,7 +55,11 @@ describe('Invoices plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [InvoicePlugin.init({})],
+      plugins: [
+        InvoicePlugin.init({
+          downloadHost: 'http://localhost:3106',
+        }),
+      ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -162,7 +166,7 @@ describe('Invoices plugin', function () {
     expect(json.message).toBeDefined();
   });
 
-  it('Hasgit  incremental invoice number', async () => {
+  it('Has incremental invoice number', async () => {
     await createSettledOrder(shopClient);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const result = await adminClient.query<AllInvoicesQuery>(

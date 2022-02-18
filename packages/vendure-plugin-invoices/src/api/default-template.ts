@@ -26,15 +26,18 @@ export const defaultTemplate = `
     <table style="width: 100%">
       <tr>
         <td>
-          {{#with order.address }} {{ fullName }}<br />
+          {{#with order.address }} 
+          {{ fullName }}<br />
           {{#if company}} {{ company }}<br />
           {{/if}} {{#if streetLine1}} {{ streetLine1 }} {{ streetLine2 }}<br />
           {{/if}} {{#if postalCode}} {{ postalCode }}, {{ city }}<br />
           {{/if}} {{#if country}} {{ country }}<br />
           {{/if}} {{/with}}
+          {{ customerEmail }}<br />
         </td>
         <td>
           Order: {{ order.code }} <br />
+          InvoiceNr: {{ invoiceNumber }} <br />
           Date: {{ orderDate }}
         </td>
       </tr>

@@ -13,7 +13,7 @@ export const schema = gql`
     orderCode: String!
     orderId: String!
     customerEmail: String!
-    invoiceNumber: String!
+    invoiceNumber: Int!
     downloadUrl: String!
   }
 

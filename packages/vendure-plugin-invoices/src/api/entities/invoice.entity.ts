@@ -16,8 +16,8 @@ export class InvoiceEntity extends VendureEntity {
   orderId!: string;
   @Column({ nullable: false })
   customerEmail!: string;
-  @Column({ nullable: false })
-  invoiceNumber!: string;
+  @Column({ nullable: false, type: 'int' })
+  invoiceNumber!: number;
   @Column({ nullable: false })
   storageReference!: string;
 }

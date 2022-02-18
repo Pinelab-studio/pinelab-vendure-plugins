@@ -1,9 +1,8 @@
 import { Order } from '@vendure/core';
-import { Invoice } from '../../ui/generated/graphql';
 import { InvoiceEntity } from '../entities/invoice.entity';
 
 export interface InvoiceData extends Object {
-  invoiceNumber: string;
+  invoiceNumber: number;
   customerEmail: string;
 }
 
@@ -13,21 +12,27 @@ export interface DataStrategy {
    * Must include a unique invoiceNumber
    */
   getData(
-    previousInvoice: InvoiceEntity | undefined,
+    latestInvoiceNumber: number | undefined,
     order: Order
   ): Promise<InvoiceData>;
 }
 
 export class DefaultDataStrategy implements DataStrategy {
-  async getData(previousInvoice: InvoiceEntity | undefined, order: Order) {
+  async getData(latestInvoiceNumber: number | undefined, order: Order) {
     if (!order.customer?.emailAddress) {
       throw Error(`Order doesnt have a customer.email set!`);
     }
-    let nr = Number(previousInvoice?.invoiceNumber);
-    nr = nr ? nr + 1 : Math.floor(Math.random() * 90000) + 10000; // Increment or generate random
+    let nr = latestInvoiceNumber;
+    if (nr) {
+      nr += 1;
+    } else {
+      nr = Math.floor(Math.random() * 90000) + 10000;
+    }
     return {
-      orderDate: order.orderPlacedAt?.toISOString(),
-      invoiceNumber: String(nr),
+      orderDate: order.orderPlacedAt
+        ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
+        : 'unknown',
+      invoiceNumber: nr,
       customerEmail: order.customer.emailAddress,
       order,
     };

@@ -23,6 +23,15 @@ How it works
 
 // TODO dataStrategy, default numbering + External codesample
 
+## Audit
+
+// TODO logs successfull and failed attempts with IP address
+
+## Admin UI screenshots
+
+(Images don't show on NPM, visit Githuib instead)
+// TODO add screenshots
+
 ## Contributing
 
 Contributions always welcome! Just create a PR on Github

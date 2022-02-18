@@ -22,7 +22,7 @@ interface BaseStorageStrategy {
    * You receive the path to the created
    * tmpFile
    */
-  save(tmpFile: string, invoiceNumber: string): Promise<string>;
+  save(tmpFile: string, invoiceNumber: number): Promise<string>;
 }
 
 export interface RemoteStorageStrategy extends BaseStorageStrategy {
@@ -50,7 +50,7 @@ export interface LocalStorageStrategy extends BaseStorageStrategy {
 export class DefaultStorageStrategy implements LocalStorageStrategy {
   invoiceDir = 'invoices';
 
-  async save(tmpFile: string, invoiceNumber: string) {
+  async save(tmpFile: string, invoiceNumber: number) {
     if (!existsSync(this.invoiceDir)) {
       mkdirSync(this.invoiceDir);
     }
@@ -64,7 +64,7 @@ export class DefaultStorageStrategy implements LocalStorageStrategy {
     const file = createReadStream(invoice.storageReference);
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${invoice.invoiceNumber}.pdf"`,
+      'Content-Disposition': `inline; filename="${invoice.invoiceNumber}.pdf"`,
     });
     return file;
   }

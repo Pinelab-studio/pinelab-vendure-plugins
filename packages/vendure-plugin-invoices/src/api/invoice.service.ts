@@ -4,6 +4,7 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
+import { Connection, Repository } from 'typeorm';
 import {
   Channel,
   ChannelService,
@@ -16,7 +17,6 @@ import {
   OrderPlacedEvent,
   OrderService,
   RequestContext,
-  TransactionalConnection,
 } from '@vendure/core';
 
 import { Invoice, InvoiceConfigInput } from '../ui/generated/graphql';
@@ -30,7 +30,6 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { InvoiceData } from './strategies/data-strategy';
-import { Repository } from 'typeorm';
 import { ReadStream } from 'fs';
 import {
   LocalStorageStrategy,
@@ -50,13 +49,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   jobQueue: JobQueue<{ channelId: string; orderCode: string }> | undefined;
   invoiceRepo: Repository<InvoiceEntity>;
   configRepo: Repository<InvoiceConfigEntity>;
+  retries = 10;
 
   constructor(
     private eventBus: EventBus,
     private jobService: JobQueueService,
     private orderService: OrderService,
     private channelService: ChannelService,
-    connection: TransactionalConnection,
+    connection: Connection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
   ) {
     this.invoiceRepo = connection.getRepository(InvoiceEntity);
@@ -75,11 +75,17 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       name: 'generate-invoice',
       process: async (job) =>
         this.createAndSaveInvoice(job.data.channelId, job.data.orderCode).catch(
-          (error) => {
-            Logger.error(
-              `Failed to generate invoice for  ${job.data.orderCode}`,
-              loggerCtx,
-              error
+          async (error) => {
+            if (job.attempts >= this.retries) {
+              Logger.error(
+                `Failed to generate invoice for ${job.data.orderCode}. This was the final attempt.`,
+                loggerCtx,
+                error
+              );
+            }
+            Logger.warn(
+              `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
+              loggerCtx
             );
             throw error;
           }
@@ -109,7 +115,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           channelId: ctx.channelId as string,
           orderCode: order.code,
         },
-        { retries: 3 }
+        { retries: this.retries }
       );
       return Logger.info(
         `Added invoice job to queue for order ${order.code}`,
@@ -123,7 +129,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Checks if an invoice has already been created for this order
    */
   async createAndSaveInvoice(channelId: string, orderCode: string) {
-    const [order, existingInvoice, config] = await Promise.all([
+    let [order, existingInvoice, config] = await Promise.all([
       this.orderService.findOneByCode(await this.createCtx(), orderCode),
       this.getInvoice(orderCode),
       this.getConfig(channelId),
@@ -169,8 +175,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     config: InvoiceConfigEntity,
     order: Order
   ): Promise<{ tmpFileName: string } & InvoiceData> {
-    const latest = await this.getLatestInvoice(channelId);
-    const data = await this.config.dataStrategy.getData(latest, order);
+    const latestInvoiceNumber = await this.getLatestInvoiceNumber(channelId);
+    const data = await this.config.dataStrategy.getData(
+      latestInvoiceNumber,
+      order
+    );
     const tmpFile = tmp.fileSync({ postfix: '.pdf' });
     const html = config.templateString;
     const options = {
@@ -264,31 +273,32 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Get most recent invoice for this channel
    */
-  async getLatestInvoice(
-    channelId: string
-  ): Promise<InvoiceEntity | undefined> {
-    return this.invoiceRepo.findOne({
+  async getLatestInvoiceNumber(channelId: string): Promise<number | undefined> {
+    const result = await this.invoiceRepo.findOne({
       where: [{ channelId }],
-      order: { createdAt: 'DESC' },
+      select: ['invoiceNumber'],
+      order: { invoiceNumber: 'DESC' },
+      cache: false,
     });
+    return result?.invoiceNumber;
   }
 
   async getAllInvoices(channel: Channel, page?: number): Promise<Invoice[]> {
     let skip = 0;
-    const take = 50;
+    const take = 25;
     if (page) {
       skip = page * take;
     }
     const invoices = await this.invoiceRepo.find({
       where: [{ channelId: channel.id }],
-      order: { createdAt: 'DESC' },
+      order: { invoiceNumber: 'DESC' },
       skip,
       take,
     });
     return invoices.map((invoice) => ({
       ...invoice,
       id: invoice.id as string,
-      downloadUrl: `/invoices/${channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
+      downloadUrl: `${this.config.downloadHost}/invoices/${channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
     }));
   }
 
