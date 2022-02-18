@@ -28,6 +28,7 @@ export const getAllInvoicesQuery = gql`
       orderCode
       orderId
       customerEmail
+      invoiceNumber
       downloadUrl
     }
   }

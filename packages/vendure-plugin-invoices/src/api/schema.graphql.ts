@@ -10,10 +10,11 @@ export const schema = gql`
   type Invoice {
     id: ID!
     createdAt: DateTime
-    orderCode: String
-    orderId: String
-    customerEmail: String
-    downloadUrl: String
+    orderCode: String!
+    orderId: String!
+    customerEmail: String!
+    invoiceNumber: String!
+    downloadUrl: String!
   }
 
   input InvoiceConfigInput {

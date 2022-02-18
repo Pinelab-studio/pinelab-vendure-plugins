@@ -161,6 +161,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     });
   }
 
+  /**
+   * Just generates PDF, no storing in DB
+   */
   async generateInvoice(
     channelId: string,
     config: InvoiceConfigEntity,
@@ -201,7 +204,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const invoice = await this.invoiceRepo.findOne({
       orderCode: input.orderCode,
     });
-    if (!invoice) {
+    if (channel.token != input.channelToken) {
+      throw Error(`Channel ${input.channelToken} doesn't exist`);
+    } else if (!invoice) {
       throw Error(`No invoice exists for ${input.orderCode}`);
     } else if (invoice.customerEmail !== input.customerEmail) {
       throw Error(
@@ -287,7 +292,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     }));
   }
 
-  async saveInvoice(
+  private async saveInvoice(
     invoice: Partial<InvoiceEntity>
   ): Promise<InvoiceEntity | undefined> {
     return this.invoiceRepo.save(invoice);

@@ -6,38 +6,49 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  ChannelService,
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  Order,
+} from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { InvoicePlugin } from '../src';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
+import fetch from 'node-fetch';
 import {
   addItem,
   addPaymentToOrder,
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
 import {
+  Invoice,
   InvoiceConfigQuery,
   MutationUpsertInvoiceConfigArgs,
 } from '../src/ui/generated/graphql';
 import {
   AllInvoicesQuery,
   UpsertInvoiceConfigMutation,
-} from '../dist/ui/generated/graphql';
+} from '../src/ui/generated/graphql';
 import { defaultTemplate } from '../src/api/default-template';
 import {
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
-import { getAllInvoicesQuery } from '../dist/ui/queries.graphql';
+import { getAllInvoicesQuery } from '../src/ui/queries.graphql';
+import { InvoiceService } from '../src/api/invoice.service';
 
 jest.setTimeout(20000);
 
-describe('Goedgepickt plugin', function () {
+describe('Invoices plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
+  let invoice: Invoice;
+  let order: Order;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -113,7 +124,10 @@ describe('Goedgepickt plugin', function () {
         countryCode: 'NL',
       },
     });
-    const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
+    order = (await addPaymentToOrder(
+      shopClient,
+      testPaymentMethod.code
+    )) as Order;
     expect((order as any).id).toBeDefined();
   });
 
@@ -123,31 +137,50 @@ describe('Goedgepickt plugin', function () {
     const result = await adminClient.query<AllInvoicesQuery>(
       getAllInvoicesQuery
     );
-    expect(result.allInvoices[0].id).toBeDefined();
-    expect(result.allInvoices[0].orderCode).toBeDefined();
-    expect(result.allInvoices[0].orderId).toBeDefined();
-    expect(result.allInvoices[0].customerEmail).toBe(
-      'hayden.zieme12@hotmail.com'
-    );
-    expect(result.allInvoices[0].downloadUrl).toContain(
-      '/invoices/e2e-default-channel/'
-    );
-  });
-
-  it('Download PDF via URl', async () => {
-    // TODO
-  });
-
-  it('Download fails for invalid email', async () => {
-    // TODO
-  });
-
-  it('Download fails for invalid channel', async () => {
-    // TODO
+    invoice = result.allInvoices[0];
+    expect(invoice.id).toBeDefined();
+    expect(invoice.orderCode).toBeDefined();
+    expect(invoice.orderId).toBeDefined();
+    expect(invoice.customerEmail).toBe('hayden.zieme12@hotmail.com');
+    expect(invoice.downloadUrl).toContain('/invoices/e2e-default-channel/');
+    expect(invoice.downloadUrl).toContain('/invoices/e2e-default-channel/');
   });
 
   it('Throws an error on duplicate invoices in DB', async () => {
-    // TODO
+    expect.assertions(1);
+    try {
+      const channel = await server.app.get(ChannelService).getDefaultChannel();
+      await server.app
+        .get(InvoiceService)
+        .createAndSaveInvoice(channel.id as string, invoice.orderCode);
+    } catch (e) {
+      expect(e.message).toContain('was already created');
+    }
+  });
+
+  it('Download endpoint returns a ReadStream', async () => {
+    const res = await fetch(
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12@hotmail.com`
+    );
+    expect(res.body.pipe).toBeDefined();
+  });
+
+  it('Download fails for invalid email', async () => {
+    const res = await fetch(
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=malicious@gmail.com`
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.message).toBeDefined();
+  });
+
+  it('Download fails for invalid channel', async () => {
+    const res = await fetch(
+      `http://localhost:3106/invoices/wrong-channel/${order.code}?email=hayden.zieme12@hotmail.com`
+    );
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.message).toBeDefined();
   });
 
   it('List created invoices', async () => {
