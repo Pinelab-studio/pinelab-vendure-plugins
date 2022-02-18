@@ -1,9 +1,7 @@
-import { Column, Entity, Unique } from 'typeorm';
+import { Column, Entity, Unique, BeforeRemove, BeforeUpdate } from 'typeorm';
 import { DeepPartial, VendureEntity } from '@vendure/core';
 
 @Entity('invoice')
-@Unique(['channelId', 'orderCode'])
-@Unique(['channelId', 'orderId'])
 @Unique(['channelId', 'invoiceNumber'])
 export class InvoiceEntity extends VendureEntity {
   constructor(input?: DeepPartial<InvoiceEntity>) {

@@ -12,33 +12,31 @@ import {
   LogLevel,
   mergeConfig,
   Order,
+  TransactionalConnection,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { InvoicePlugin } from '../src';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { addShippingMethod } from '../../test/src/admin-utils';
+import {
+  addShippingMethod,
+  createSettledOrder,
+} from '../../test/src/admin-utils';
 import fetch from 'node-fetch';
 import {
-  addItem,
-  addPaymentToOrder,
-  proceedToArrangingPayment,
-} from '../../test/src/shop-utils';
-import {
+  AllInvoicesQuery,
   Invoice,
   InvoiceConfigQuery,
   MutationUpsertInvoiceConfigArgs,
-} from '../src/ui/generated/graphql';
-import {
-  AllInvoicesQuery,
   UpsertInvoiceConfigMutation,
 } from '../src/ui/generated/graphql';
 import { defaultTemplate } from '../src/api/default-template';
 import {
+  getAllInvoicesQuery,
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
-import { getAllInvoicesQuery } from '../src/ui/queries.graphql';
 import { InvoiceService } from '../src/api/invoice.service';
+import { InvoiceEntity } from '../src/api/entities/invoice.entity';
 
 jest.setTimeout(20000);
 
@@ -108,26 +106,7 @@ describe('Invoices plugin', function () {
 
   it('Creates a placed order', async () => {
     await addShippingMethod(adminClient, 'manual-fulfillment');
-    await shopClient.asUserWithCredentials(
-      'hayden.zieme12@hotmail.com',
-      'test'
-    );
-    await addItem(shopClient, 'T_1', 1);
-    await addItem(shopClient, 'T_2', 2);
-    await proceedToArrangingPayment(shopClient, {
-      input: {
-        fullName: 'Martinho Pinelabio',
-        streetLine1: 'Verzetsstraat',
-        streetLine2: '12a',
-        city: 'Liwwa',
-        postalCode: '8923CP',
-        countryCode: 'NL',
-      },
-    });
-    order = (await addPaymentToOrder(
-      shopClient,
-      testPaymentMethod.code
-    )) as Order;
+    order = await createSettledOrder(shopClient);
     expect((order as any).id).toBeDefined();
   });
 
@@ -183,12 +162,17 @@ describe('Invoices plugin', function () {
     expect(json.message).toBeDefined();
   });
 
-  it('List created invoices', async () => {
-    // TODO
-  });
-
-  it('Create another should have incremental invoice number', async () => {
-    // TODO
+  it('Hasgit  incremental invoice number', async () => {
+    await createSettledOrder(shopClient);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const result = await adminClient.query<AllInvoicesQuery>(
+      getAllInvoicesQuery
+    );
+    const newInvoice = result.allInvoices[0];
+    const oldInvoice = result.allInvoices[1];
+    expect(Number(newInvoice.invoiceNumber) - 1).toBe(
+      Number(oldInvoice.invoiceNumber)
+    );
   });
 
   afterAll(() => {
