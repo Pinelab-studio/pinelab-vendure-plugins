@@ -1,13 +1,6 @@
-import {
-  createReadStream,
-  existsSync,
-  mkdirSync,
-  ReadStream,
-  renameSync,
-} from 'fs';
+import { ReadStream } from 'fs';
 import { Response } from 'express';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import * as path from 'path';
 
 /**
  * The invoice plugin will first try to use getPublicUrl, when that function is
@@ -23,6 +16,12 @@ interface BaseStorageStrategy {
    * tmpFile
    */
   save(tmpFile: string, invoiceNumber: number): Promise<string>;
+
+  /**
+   * Bundles multiple files by invoiceNumbers in zipFile for download via admin UI
+   * Will only be called by admins
+   */
+  streamMultiple(invoices: InvoiceEntity[], res: Response): Promise<ReadStream>;
 }
 
 export interface RemoteStorageStrategy extends BaseStorageStrategy {
@@ -41,31 +40,4 @@ export interface LocalStorageStrategy extends BaseStorageStrategy {
    * and content-disposition
    */
   streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream>;
-}
-
-/**
- * Default storage strategy just stores file on local disk with sync operations
- * Use this strategy just for testing
- */
-export class DefaultStorageStrategy implements LocalStorageStrategy {
-  invoiceDir = 'invoices';
-
-  async save(tmpFile: string, invoiceNumber: number) {
-    if (!existsSync(this.invoiceDir)) {
-      mkdirSync(this.invoiceDir);
-    }
-    const fileName = path.basename(tmpFile);
-    const newPath = `${this.invoiceDir}/${invoiceNumber}-${fileName}`;
-    renameSync(tmpFile, newPath);
-    return newPath;
-  }
-
-  async streamFile(invoice: InvoiceEntity, res: Response) {
-    const file = createReadStream(invoice.storageReference);
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="${invoice.invoiceNumber}.pdf"`,
-    });
-    return file;
-  }
 }

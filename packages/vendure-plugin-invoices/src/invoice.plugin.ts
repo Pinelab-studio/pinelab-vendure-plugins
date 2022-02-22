@@ -1,15 +1,8 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import {
-  DefaultStorageStrategy,
-  invoicePermission,
-  StorageStrategy,
-} from './index';
+import { invoicePermission, StorageStrategy } from './index';
 import { schema } from './api/schema.graphql';
 import { InvoiceService } from './api/invoice.service';
-import {
-  DataStrategy,
-  DefaultDataStrategy,
-} from './api/strategies/data-strategy';
+import { DataStrategy } from './api/strategies/data-strategy';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { InvoiceConfigEntity } from './api/entities/invoice-config.entity';
 import { InvoiceResolver } from './api/invoice.resolver';
@@ -17,6 +10,8 @@ import { InvoiceEntity } from './api/entities/invoice.entity';
 import { InvoiceController } from './api/invoice.controller';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { DefaultDataStrategy } from './api/strategies/default-data-strategy';
+import { LocalFileStrategy } from './api/strategies/local-file-strategy';
 
 export interface InvoicePluginConfig {
   /**
@@ -53,7 +48,7 @@ export class InvoicePlugin {
   ): typeof InvoicePlugin {
     this.config = {
       ...config,
-      storageStrategy: config.storageStrategy || new DefaultStorageStrategy(),
+      storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       dataStrategy: config.dataStrategy || new DefaultDataStrategy(),
     };
     return InvoicePlugin;

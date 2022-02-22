@@ -19,10 +19,13 @@ import {
   RequestContext,
 } from '@vendure/core';
 
-import { Invoice, InvoiceConfigInput } from '../ui/generated/graphql';
+import {
+  InvoiceConfigInput,
+  InvoiceList,
+  InvoicesListInput,
+} from '../ui/generated/graphql';
 // @ts-ignore
 import * as pdf from 'pdf-creator-node';
-import * as tmp from 'tmp';
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
 import { InvoicePluginConfig } from '../invoice.plugin';
@@ -36,6 +39,7 @@ import {
   RemoteStorageStrategy,
 } from './strategies/storage-strategy';
 import { Response } from 'express';
+import { createTempFile } from './file.util';
 
 interface DownloadInput {
   channelToken: string;
@@ -180,7 +184,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       latestInvoiceNumber,
       order
     );
-    const tmpFile = tmp.fileSync({ postfix: '.pdf' });
+    const tmpFilePath = await createTempFile('.pdf');
     const html = config.templateString;
     const options = {
       format: 'A4',
@@ -191,12 +195,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const document = {
       html,
       data,
-      path: tmpFile.name,
+      path: tmpFilePath,
       type: '',
     };
     await pdf.create(document, options);
     return {
-      tmpFileName: tmpFile.name,
+      tmpFileName: tmpFilePath,
       invoiceNumber: data.invoiceNumber,
       customerEmail: data.customerEmail,
     };
@@ -232,6 +236,26 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     } else {
       return (strategy as LocalStorageStrategy).streamFile(invoice, input.res);
     }
+  }
+
+  async downloadMultiple(
+    channelId: string,
+    invoiceNumbers: string[],
+    res: Response
+  ): Promise<ReadStream> {
+    const nrSelectors = invoiceNumbers.map((i) => ({
+      invoiceNumber: i,
+      channelId,
+    }));
+    const invoices = await this.invoiceRepo.find({
+      where: nrSelectors,
+    });
+    if (!invoices) {
+      throw Error(
+        `No invoices found for channel ${channelId} and invoiceNumbers ${invoiceNumbers}`
+      );
+    }
+    return this.config.storageStrategy.streamMultiple(invoices, res);
   }
 
   async upsertConfig(
@@ -283,27 +307,35 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return result?.invoiceNumber;
   }
 
-  async getAllInvoices(channel: Channel, page?: number): Promise<Invoice[]> {
+  async getAllInvoices(
+    channel: Channel,
+    input?: InvoicesListInput
+  ): Promise<InvoiceList> {
     let skip = 0;
-    const take = 25;
-    if (page) {
-      skip = page * take;
+    let take = 25;
+    if (input) {
+      take = input.itemsPerPage;
+      skip = input.page > 1 ? take * input.page : 0;
     }
-    const invoices = await this.invoiceRepo.find({
+    const [invoices, totalItems] = await this.invoiceRepo.findAndCount({
       where: [{ channelId: channel.id }],
       order: { invoiceNumber: 'DESC' },
       skip,
       take,
     });
-    return invoices.map((invoice) => ({
+    const invoicesWithUrl = invoices.map((invoice) => ({
       ...invoice,
       id: invoice.id as string,
       downloadUrl: `${this.config.downloadHost}/invoices/${channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
     }));
+    return {
+      items: invoicesWithUrl,
+      totalItems,
+    };
   }
 
   private async saveInvoice(
-    invoice: Partial<InvoiceEntity>
+    invoice: Omit<InvoiceEntity, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<InvoiceEntity | undefined> {
     return this.invoiceRepo.save(invoice);
   }

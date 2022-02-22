@@ -21,15 +21,18 @@ export const getConfigQuery = gql`
 `;
 
 export const getAllInvoicesQuery = gql`
-  query allInvoices($page: Int) {
-    allInvoices(page: $page) {
-      id
-      createdAt
-      orderCode
-      orderId
-      customerEmail
-      invoiceNumber
-      downloadUrl
+  query invoices($input: InvoicesListInput) {
+    invoices(input: $input) {
+      items {
+        id
+        createdAt
+        orderCode
+        orderId
+        customerEmail
+        invoiceNumber
+        downloadUrl
+      }
+      totalItems
     }
   }
 `;

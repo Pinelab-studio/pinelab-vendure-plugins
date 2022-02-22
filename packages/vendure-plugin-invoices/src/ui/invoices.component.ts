@@ -1,16 +1,24 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
-import { DataService, NotificationService } from '@vendure/admin-ui/core';
+import {
+  DataService,
+  getAppConfig,
+  getServerLocation,
+  LocalStorageService,
+  NotificationService,
+} from '@vendure/admin-ui/core';
 import {
   getAllInvoicesQuery,
   getConfigQuery,
   upsertConfigMutation,
 } from './queries.graphql';
 import {
-  AllInvoicesQuery,
   Invoice,
   InvoiceConfig,
   InvoiceConfigQuery,
+  InvoiceList,
+  InvoicesQuery,
+  InvoicesQueryVariables,
   UpsertInvoiceConfigMutation,
   UpsertInvoiceConfigMutationVariables,
 } from './generated/graphql';
@@ -49,7 +57,25 @@ import {
           <hr />
           <section>
             <h2>Created invoices</h2>
-            <vdr-data-table [items]="invoices">
+            <button
+              class="btn btn-primary"
+              (click)="downloadSelected()"
+              [disabled]="selectedInvoices?.length == 0"
+            >
+              Download
+            </button>
+            <vdr-data-table
+              [items]="invoicesList?.items"
+              [itemsPerPage]="itemsPerPage"
+              [totalItems]="invoicesList?.totalItems"
+              [currentPage]="page"
+              (pageChange)="setPageNumber($event)"
+              (itemsPerPageChange)="setItemsPerPage($event)"
+              [allSelected]="areAllSelected()"
+              [isRowSelectedFn]="isSelected"
+              (rowSelectChange)="toggleSelect($event)"
+              (allSelectChange)="toggleSelectAll()"
+            >
               <vdr-dt-column>Invoice nr.</vdr-dt-column>
               <vdr-dt-column>Created</vdr-dt-column>
               <vdr-dt-column>Customer</vdr-dt-column>
@@ -81,13 +107,17 @@ import {
 })
 export class InvoicesComponent implements OnInit {
   form: FormGroup;
-  invoices: Invoice[] = [];
+  invoicesList: InvoiceList | undefined;
+  itemsPerPage = 10;
+  page = 1;
+  selectedInvoices: Invoice[] = [];
 
   constructor(
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private localStorageService: LocalStorageService
   ) {
     this.form = this.formBuilder.group({
       enabled: ['enabled'],
@@ -103,11 +133,20 @@ export class InvoicesComponent implements OnInit {
         this.form.controls['enabled'].setValue(config?.enabled);
         this.form.controls['templateString'].setValue(config?.templateString);
       });
+    await this.getAllInvoices();
+  }
+
+  async getAllInvoices(): Promise<void> {
     await this.dataService
-      .query<AllInvoicesQuery>(getAllInvoicesQuery)
-      .mapStream((r) => r.allInvoices)
-      .subscribe((invoices) => {
-        this.invoices = invoices;
+      .query<InvoicesQuery, InvoicesQueryVariables>(getAllInvoicesQuery, {
+        input: {
+          page: this.page,
+          itemsPerPage: this.itemsPerPage,
+        },
+      })
+      .mapStream((r) => r.invoices)
+      .subscribe((result) => {
+        this.invoicesList = result;
       });
   }
 
@@ -139,5 +178,78 @@ export class InvoicesComponent implements OnInit {
         entity: 'InvoiceConfig',
       });
     }
+  }
+
+  async downloadSelected(): Promise<void> {
+    try {
+      const nrs = this.selectedInvoices.map((i) => i.invoiceNumber).join(',');
+      const res = await this.fetch(`invoices/download?nrs=${nrs}`);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      document.body.appendChild(a);
+      a.setAttribute('hidden', 'true');
+      a.href = blobUrl;
+      a.download = 'invoices.zip';
+      a.setAttribute('target', '_blank');
+      a.click();
+      // window.open(blobUrl, "_blank")?.focus();
+    } catch (err) {
+      console.error(err);
+      this.notificationService.error(err.message);
+    }
+  }
+
+  async setPageNumber(page: number) {
+    this.page = page;
+    await this.getAllInvoices();
+  }
+
+  async setItemsPerPage(nrOfItems: number) {
+    this.page = 1;
+    this.itemsPerPage = Number(nrOfItems);
+    await this.getAllInvoices();
+  }
+
+  isSelected = (row: Invoice): boolean => {
+    return !!this.selectedInvoices?.find((selected) => selected.id === row.id);
+  };
+
+  toggleSelect(row: Invoice): void {
+    if (this.isSelected(row)) {
+      this.selectedInvoices = this.selectedInvoices.filter(
+        (s) => s.id !== row.id
+      );
+    } else {
+      this.selectedInvoices.push(row);
+    }
+  }
+
+  toggleSelectAll() {
+    if (this.areAllSelected()) {
+      this.selectedInvoices = [];
+    } else {
+      this.selectedInvoices = this.invoicesList?.items || [];
+    }
+  }
+
+  areAllSelected(): boolean {
+    return this.selectedInvoices.length === this.invoicesList?.items.length;
+  }
+
+  private fetch(path: string) {
+    const url = `${getServerLocation()}/${path}`;
+    const headers: Record<string, string> = {};
+    const channelToken = this.localStorageService.get('activeChannelToken');
+    if (channelToken) {
+      headers['vendure-token'] = channelToken;
+    }
+    const authToken = this.localStorageService.get('authToken');
+    if (authToken) {
+      headers.authorization = `Bearer ${authToken}`;
+    }
+    return fetch(url, {
+      headers,
+    });
   }
 }

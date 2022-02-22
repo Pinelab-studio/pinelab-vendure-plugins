@@ -1,13 +1,34 @@
 import { InvoiceService } from './invoice.service';
 import { Res, Req, Controller, Query, Param, Get } from '@nestjs/common';
 import { Response, Request } from 'express';
-import { Logger } from '@vendure/core';
+import { Allow, Ctx, Logger, Permission, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
 
 @Controller('invoices')
 export class InvoiceController {
   constructor(private service: InvoiceService) {}
+
+  @Allow(Permission.ReadOrder)
+  @Get('/download')
+  async downloadMultipleInvoices(
+    @Ctx() ctx: RequestContext,
+    @Query('nrs') numbers: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    if (!ctx.channelId) {
+      throw Error(`Channel id is needed to download invoices`);
+    }
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const stream = await this.service.downloadMultiple(
+      ctx.channelId as string,
+      numbers.split(','),
+      res
+    );
+    Logger.info(`Invoices ${numbers} downloaded from ${ip}`, loggerCtx);
+    stream.pipe(res);
+  }
 
   @Get('/:channelToken/:orderCode')
   async downloadInvoice(

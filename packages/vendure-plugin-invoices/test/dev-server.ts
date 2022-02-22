@@ -70,7 +70,7 @@ require('dotenv').config();
   // Add a testorders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient, 'manual-fulfillment');
-  const orders = 52;
+  const orders = 15;
   for (let i = 1; i <= orders; i++) {
     await createSettledOrder(shopClient);
   }

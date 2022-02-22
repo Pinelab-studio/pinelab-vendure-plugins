@@ -17,6 +17,16 @@ export const schema = gql`
     downloadUrl: String!
   }
 
+  type InvoiceList {
+    items: [Invoice!]!
+    totalItems: Int!
+  }
+
+  input InvoicesListInput {
+    page: Int!
+    itemsPerPage: Int!
+  }
+
   input InvoiceConfigInput {
     enabled: Boolean!
     templateString: String
@@ -29,8 +39,8 @@ export const schema = gql`
   extend type Query {
     invoiceConfig: InvoiceConfig
     """
-    Get paginated invoices. Always returns 50 per page.
+    Get paginated invoices
     """
-    allInvoices(page: Int): [Invoice!]!
+    invoices(input: InvoicesListInput): InvoiceList!
   }
 `;

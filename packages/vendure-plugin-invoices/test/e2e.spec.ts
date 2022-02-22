@@ -12,7 +12,6 @@ import {
   LogLevel,
   mergeConfig,
   Order,
-  TransactionalConnection,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { InvoicePlugin } from '../src';
@@ -23,7 +22,6 @@ import {
 } from '../../test/src/admin-utils';
 import fetch from 'node-fetch';
 import {
-  AllInvoicesQuery,
   Invoice,
   InvoiceConfigQuery,
   MutationUpsertInvoiceConfigArgs,
@@ -36,7 +34,7 @@ import {
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
 import { InvoiceService } from '../src/api/invoice.service';
-import { InvoiceEntity } from '../src/api/entities/invoice.entity';
+import { InvoicesQuery } from '../dist/ui/generated/graphql';
 
 jest.setTimeout(20000);
 
@@ -47,6 +45,7 @@ describe('Invoices plugin', function () {
   let serverStarted = false;
   let invoice: Invoice;
   let order: Order;
+  let invoices: Invoice[] = [];
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -117,10 +116,9 @@ describe('Invoices plugin', function () {
   it('Gets all invoices after 1s', async () => {
     // Give the worker some time to process
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const result = await adminClient.query<AllInvoicesQuery>(
-      getAllInvoicesQuery
-    );
-    invoice = result.allInvoices[0];
+    const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
+    invoice = result.invoices.items[0];
+    expect(result.invoices.totalItems).toBe(1);
     expect(invoice.id).toBeDefined();
     expect(invoice.orderCode).toBeDefined();
     expect(invoice.orderId).toBeDefined();
@@ -141,10 +139,12 @@ describe('Invoices plugin', function () {
     }
   });
 
-  it('Download endpoint returns a ReadStream', async () => {
+  it('Downloads a pdf', async () => {
     const res = await fetch(
       `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12@hotmail.com`
     );
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-type')).toBe('application/pdf');
     expect(res.body.pipe).toBeDefined();
   });
 
@@ -169,14 +169,31 @@ describe('Invoices plugin', function () {
   it('Has incremental invoice number', async () => {
     await createSettledOrder(shopClient);
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    const result = await adminClient.query<AllInvoicesQuery>(
-      getAllInvoicesQuery
-    );
-    const newInvoice = result.allInvoices[0];
-    const oldInvoice = result.allInvoices[1];
+    const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
+    const newInvoice = result.invoices.items[0];
+    const oldInvoice = result.invoices.items[1];
+    invoices = result.invoices.items;
+    expect(result.invoices.totalItems).toBe(2);
     expect(Number(newInvoice.invoiceNumber) - 1).toBe(
       Number(oldInvoice.invoiceNumber)
     );
+  });
+
+  it('Download multiple invoices as zip', async () => {
+    const invoiceNrs = invoices.map((i) => i.invoiceNumber);
+    const res = await adminClient.fetch(
+      `http://localhost:3106/invoices/download?nrs=${invoiceNrs.join(',')}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-type')).toBe('application/zip');
+    expect(res.body.pipe).toBeDefined();
+  });
+
+  it('Download as zip fails for unauthenticated calls', async () => {
+    const res = await fetch(
+      'http://localhost:3106/invoices/download?nrs=1,2,3'
+    );
+    expect(res.status).toBe(403);
   });
 
   afterAll(() => {

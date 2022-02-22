@@ -6,6 +6,8 @@ import {
   Invoice,
   InvoiceConfig,
   InvoiceConfigInput,
+  InvoiceList,
+  InvoicesListInput,
 } from '../ui/generated/graphql';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 
@@ -32,10 +34,10 @@ export class InvoiceResolver {
 
   @Query()
   @Allow(invoicePermission.Permission)
-  async allInvoices(
+  async invoices(
     @Ctx() ctx: RequestContext,
-    @Args('page') page?: number
-  ): Promise<Invoice[]> {
-    return this.service.getAllInvoices(ctx.channel, page);
+    @Args('input') input?: InvoicesListInput
+  ): Promise<InvoiceList> {
+    return this.service.getAllInvoices(ctx.channel, input);
   }
 }
