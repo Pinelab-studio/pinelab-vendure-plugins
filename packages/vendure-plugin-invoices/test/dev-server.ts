@@ -18,8 +18,11 @@ import {
   addShippingMethod,
   createSettledOrder,
 } from '../../test/src/admin-utils';
-import { InvoicePlugin } from '../src';
-import { InvoiceService } from '../src/api/invoice.service';
+import {
+  InvoicePlugin,
+  GoogleStorageInvoiceStrategy,
+  InvoiceService,
+} from '../src';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
@@ -32,6 +35,12 @@ require('dotenv').config();
     plugins: [
       InvoicePlugin.init({
         downloadHost: 'http://localhost:3050',
+        storageStrategy: new GoogleStorageInvoiceStrategy({
+          bucketName: process.env.TEST_BUCKET!,
+          storageOptions: {
+            keyFilename: 'key.json',
+          },
+        }),
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

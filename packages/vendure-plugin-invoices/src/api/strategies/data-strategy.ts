@@ -1,8 +1,17 @@
-import { Order } from '@vendure/core';
+import { RequestContext, Order, Injector } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
 
-export interface InvoiceData extends Object {
+export interface InvoiceData {
   invoiceNumber: number;
   customerEmail: string;
+  [key: string]: Object;
+}
+
+export interface DataFnInput {
+  ctx: RequestContext;
+  injector: Injector;
+  latestInvoiceNumber: number | undefined;
+  order: Order;
 }
 
 export interface DataStrategy {
@@ -10,8 +19,5 @@ export interface DataStrategy {
    * Create a dataobject that is passed to your HTML template
    * Must include a unique invoiceNumber
    */
-  getData(
-    latestInvoiceNumber: number | undefined,
-    order: Order
-  ): Promise<InvoiceData>;
+  getData(input: DataFnInput): Promise<InvoiceData>;
 }

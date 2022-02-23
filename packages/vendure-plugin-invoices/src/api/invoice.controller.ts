@@ -1,7 +1,24 @@
 import { InvoiceService } from './invoice.service';
-import { Res, Req, Controller, Query, Param, Get } from '@nestjs/common';
-import { Response, Request } from 'express';
-import { Allow, Ctx, Logger, Permission, RequestContext } from '@vendure/core';
+import {
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  Body,
+  BadRequestException,
+} from '@nestjs/common';
+import { Request, Response } from 'express';
+import {
+  Allow,
+  Ctx,
+  Logger,
+  Permission,
+  RequestContext,
+  UnauthorizedError,
+} from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
 
@@ -27,6 +44,28 @@ export class InvoiceController {
       res
     );
     Logger.info(`Invoices ${numbers} downloaded from ${ip}`, loggerCtx);
+    stream.pipe(res);
+  }
+
+  @Allow(Permission.ReadOrder)
+  @Post('/preview')
+  async preview(
+    @Ctx() ctx: RequestContext,
+    @Res() req: Request,
+    @Res() res: Response,
+    @Body() data: { template: string }
+  ) {
+    if (!ctx.channel?.token) {
+      throw new BadRequestException('No channel set for request');
+    }
+    if (!data?.template || !data?.template.trim()) {
+      throw new BadRequestException('No template given');
+    }
+    const stream = await this.service.testTemplate(ctx, data.template);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="test-invoice.pdf"`,
+    });
     stream.pipe(res);
   }
 

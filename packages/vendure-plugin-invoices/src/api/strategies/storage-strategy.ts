@@ -15,7 +15,11 @@ interface BaseStorageStrategy {
    * You receive the path to the created
    * tmpFile
    */
-  save(tmpFile: string, invoiceNumber: number): Promise<string>;
+  save(
+    tmpFile: string,
+    invoiceNumber: number,
+    channelToken: string
+  ): Promise<string>;
 
   /**
    * Bundles multiple files by invoiceNumbers in zipFile for download via admin UI

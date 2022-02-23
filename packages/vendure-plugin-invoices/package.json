@@ -25,6 +25,7 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "@google-cloud/storage": "^5.18.2",
     "@graphql-codegen/cli": "^2.4.0",
     "@graphql-codegen/typescript": "^2.4.2",
     "@graphql-codegen/typescript-operations": "^2.2.2",

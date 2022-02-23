@@ -8,7 +8,9 @@ import { Connection, Repository } from 'typeorm';
 import {
   Channel,
   ChannelService,
+  EntityHydrator,
   EventBus,
+  Injector,
   JobQueue,
   JobQueueService,
   JsonCompatible,
@@ -33,13 +35,15 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { InvoiceData } from './strategies/data-strategy';
-import { ReadStream } from 'fs';
+import { createReadStream, ReadStream } from 'fs';
 import {
   LocalStorageStrategy,
   RemoteStorageStrategy,
 } from './strategies/storage-strategy';
 import { Response } from 'express';
 import { createTempFile } from './file.util';
+import { SortOrder } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
 
 interface DownloadInput {
   channelToken: string;
@@ -50,7 +54,7 @@ interface DownloadInput {
 
 @Injectable()
 export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
-  jobQueue: JobQueue<{ channelId: string; orderCode: string }> | undefined;
+  jobQueue: JobQueue<{ channelToken: string; orderCode: string }> | undefined;
   invoiceRepo: Repository<InvoiceEntity>;
   configRepo: Repository<InvoiceConfigEntity>;
   retries = 10;
@@ -60,6 +64,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     private jobService: JobQueueService,
     private orderService: OrderService,
     private channelService: ChannelService,
+    private moduleRef: ModuleRef,
     connection: Connection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
   ) {
@@ -78,22 +83,23 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     this.jobQueue = await this.jobService.createQueue({
       name: 'generate-invoice',
       process: async (job) =>
-        this.createAndSaveInvoice(job.data.channelId, job.data.orderCode).catch(
-          async (error) => {
-            if (job.attempts >= this.retries) {
-              Logger.error(
-                `Failed to generate invoice for ${job.data.orderCode}. This was the final attempt.`,
-                loggerCtx,
-                error
-              );
-            }
-            Logger.warn(
-              `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
-              loggerCtx
+        this.createAndSaveInvoice(
+          job.data.channelToken,
+          job.data.orderCode
+        ).catch(async (error) => {
+          if (job.attempts >= this.retries) {
+            Logger.error(
+              `Failed to generate invoice for ${job.data.orderCode}. This was the final attempt.`,
+              loggerCtx,
+              error
             );
-            throw error;
           }
-        ),
+          Logger.warn(
+            `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
+            loggerCtx
+          );
+          throw error;
+        }),
     });
   }
 
@@ -116,7 +122,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       }
       await this.jobQueue.add(
         {
-          channelId: ctx.channelId as string,
+          channelToken: ctx.channel.token,
           orderCode: order.code,
         },
         { retries: this.retries }
@@ -132,11 +138,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Creates an invoice and save it to DB
    * Checks if an invoice has already been created for this order
    */
-  async createAndSaveInvoice(channelId: string, orderCode: string) {
+  async createAndSaveInvoice(channelToken: string, orderCode: string) {
+    const ctx = await this.createCtx(channelToken);
     let [order, existingInvoice, config] = await Promise.all([
-      this.orderService.findOneByCode(await this.createCtx(), orderCode),
+      this.orderService.findOneByCode(ctx, orderCode),
       this.getInvoice(orderCode),
-      this.getConfig(channelId),
+      this.getConfig(ctx.channelId as string),
     ]);
     if (!config) {
       throw Error(
@@ -156,13 +163,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
     }
     const { invoiceNumber, customerEmail, tmpFileName } =
-      await this.generateInvoice(channelId, config, order);
+      await this.generateInvoice(ctx, config.templateString!, order);
     const storageReference = await this.config.storageStrategy.save(
       tmpFileName,
-      invoiceNumber
+      invoiceNumber,
+      channelToken
     );
     return this.saveInvoice({
-      channelId,
+      channelId: ctx.channelId as string,
       invoiceNumber,
       orderCode,
       customerEmail,
@@ -175,17 +183,21 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Just generates PDF, no storing in DB
    */
   async generateInvoice(
-    channelId: string,
-    config: InvoiceConfigEntity,
+    ctx: RequestContext,
+    templateString: string,
     order: Order
   ): Promise<{ tmpFileName: string } & InvoiceData> {
-    const latestInvoiceNumber = await this.getLatestInvoiceNumber(channelId);
-    const data = await this.config.dataStrategy.getData(
-      latestInvoiceNumber,
-      order
+    const latestInvoiceNumber = await this.getLatestInvoiceNumber(
+      ctx.channelId as string
     );
+    const data = await this.config.dataStrategy.getData({
+      ctx,
+      injector: new Injector(this.moduleRef),
+      order,
+      latestInvoiceNumber,
+    });
     const tmpFilePath = await createTempFile('.pdf');
-    const html = config.templateString;
+    const html = templateString;
     const options = {
       format: 'A4',
       orientation: 'portrait',
@@ -204,6 +216,31 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       invoiceNumber: data.invoiceNumber,
       customerEmail: data.customerEmail,
     };
+  }
+
+  /**
+   * Generates an invoice for the latest placed order and the given template
+   */
+  async testTemplate(
+    ctx: RequestContext,
+    template: string
+  ): Promise<ReadStream> {
+    const {
+      items: [latestOrder],
+    } = await this.orderService.findAll(ctx, {
+      sort: { orderPlacedAt: 'DESC' as any },
+      take: 1,
+    });
+    const config = await this.getConfig(ctx.channelId as string);
+    if (!config) {
+      throw Error(`No config found for channel ${ctx.channel.token}`);
+    }
+    const { tmpFileName } = await this.generateInvoice(
+      ctx,
+      template,
+      latestOrder
+    );
+    return createReadStream(tmpFileName);
   }
 
   /**
@@ -231,10 +268,20 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
     }
     const strategy = this.config.storageStrategy;
-    if ((strategy as RemoteStorageStrategy).getPublicUrl) {
-      return (strategy as RemoteStorageStrategy).getPublicUrl(invoice);
-    } else {
-      return (strategy as LocalStorageStrategy).streamFile(invoice, input.res);
+    try {
+      if ((strategy as RemoteStorageStrategy).getPublicUrl) {
+        return await (strategy as RemoteStorageStrategy).getPublicUrl(invoice);
+      } else {
+        return await (strategy as LocalStorageStrategy).streamFile(
+          invoice,
+          input.res
+        );
+      }
+    } catch (error) {
+      Logger.error(
+        `Failed to download invoice ${invoice.invoiceNumber} for channel ${input.channelToken}`
+      );
+      throw error;
     }
   }
 
@@ -340,8 +387,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return this.invoiceRepo.save(invoice);
   }
 
-  async createCtx(): Promise<RequestContext> {
-    const channel = await this.channelService.getDefaultChannel();
+  private async createCtx(channelToken: string): Promise<RequestContext> {
+    const channel = await this.channelService.getChannelFromToken(channelToken);
     return new RequestContext({
       apiType: 'admin',
       isAuthorized: true,

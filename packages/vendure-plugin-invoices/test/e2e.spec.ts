@@ -196,6 +196,13 @@ describe('Invoices plugin', function () {
     expect(res.status).toBe(403);
   });
 
+  it('Preview fails for unauthenticated calls', async () => {
+    const res = await fetch('http://localhost:3106/invoices/preview', {
+      method: 'POST',
+    });
+    expect(res.status).toBe(403);
+  });
+
   afterAll(() => {
     return server.destroy();
   });
