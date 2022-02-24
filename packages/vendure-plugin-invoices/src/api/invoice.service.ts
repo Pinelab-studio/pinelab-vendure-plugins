@@ -319,9 +319,16 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   async getConfig(channelId: string): Promise<InvoiceConfigEntity | undefined> {
-    const config = await this.configRepo.findOne({ channelId });
+    let config = await this.configRepo.findOne({ channelId });
     if (!config) {
-      return undefined;
+      // sample config for display
+      config = {
+        id: channelId,
+        channelId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        enabled: false,
+      };
     }
     if (!config.templateString || !config.templateString.trim()) {
       config.templateString = defaultTemplate;
