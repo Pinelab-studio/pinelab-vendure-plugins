@@ -23,11 +23,13 @@ Add this to your AdminUiPlugin:
 
 ```js
 AdminUiPlugin.init({
-...
-  app: compileUiExtensions({
-    outputPath: path.join(__dirname, '__admin-ui'),
-    extensions: [MyparcelPlugin.ui],
-  })
+  ...
+    app
+:
+compileUiExtensions({
+  outputPath: path.join(__dirname, '__admin-ui'),
+  extensions: [MyparcelPlugin.ui],
+})
 })
 ```
 

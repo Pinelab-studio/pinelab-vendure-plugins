@@ -42,6 +42,12 @@ Sends orders to MyParcel on fulfillment.
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-myparcel/dev/@vendure/core)  
 Plugin for integrating with the Goedgepickt platform.
 
+## Invoices plugin
+
+[![plugin version](https://img.shields.io/npm/v/vendure-plugin-invoices)](https://www.npmjs.com/package/vendure-plugin-goedgepickt)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-invoices/dev/@vendure/core)  
+Plugin for generating PDF invoices for placed orders
+
 ## Contributing
 
 Just create a PR!
