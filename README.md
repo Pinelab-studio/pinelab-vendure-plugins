@@ -3,7 +3,7 @@
 
 # Pinelab Vendure plugins
 
-Monorepo with all Vendure plugins created by Pinelab.
+Free Vendure plugins for everyone!
 
 ## Webhook plugin
 

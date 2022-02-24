@@ -4,7 +4,7 @@
   "description": "Vendure plugin for ....",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
-  "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": true,
   "main": "dist/index.js",
