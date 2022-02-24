@@ -101,8 +101,10 @@ info for info about locally using signedUrls: https://github.com/googleapis/node
 
 Implement your own strategy for storing invoices by implementing one of these interfaces:
 
-- `RemoteStorageStrategy` for storing PDF files on an external platform like Google Cloud or S3.
-- `LocalFileStrategy` streams the invoice through the Vendure service to the user.
+### Remote storage strategy
+
+`RemoteStorageStrategy` for storing PDF files on an external platform like Google Cloud or S3.
+It redirects the user to a public/authorized URL for the user to download the invoice PDF.
 
 ```ts
 import { RemoteStorageStrategy, zipFiles } from 'vendure-plugin-invoices';
@@ -135,6 +137,35 @@ export class YourRemoteStrategy implements RemoteStorageStrategy {
 }
 ```
 
+### Local file storage
+
+`LocalFileStrategy` streams the invoice through the Vendure service to the user.
+
+```ts
+import { LocalStorageStrategy, zipFiles } from 'vendure-plugin-invoices';
+
+export class YourLocalStrategy implements LocalStorageStrategy {
+  async save(tmpFile: string, invoiceNumber: number, channelToken: string) {
+    // save the tmpFile somewhere
+    return 'new/path.pdf';
+  }
+
+  async streamMultiple(
+    invoices: InvoiceEntity[],
+    res: Response
+  ): Promise<ReadStream> {
+    // make a zip of your files
+    const zipFile = await zipFiles(files);
+    return createReadStream(zipFile);
+  }
+
+  async streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream> {
+    // stream a single PDF to the user
+    return createReadStream(invoice.storageReference);
+  }
+}
+```
+
 ## Custom invoice numbering and custom data
 
 Implement the `DataStrategy` to pass custom data to your template or generate custom invoicenumbers:
@@ -147,6 +178,7 @@ export class DefaultDataStrategy implements DataStrategy {
     order,
     latestInvoiceNumber,
   }: DataFnInput): Promise<InvoiceData> {
+    // Do something with the data
     return {
       invoiceNumber: String(Math.floor(Math.random() * 90000) + 10000),
       customerEmail: 'just used for admin display',
