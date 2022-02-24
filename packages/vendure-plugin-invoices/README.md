@@ -78,6 +78,8 @@ InvoicePlugin.init({
 });
 ```
 
+[Enable the service account IAM in Google Cloud Console](https://console.developers.google.com/apis/api/iamcredentials.googleapis.com/overview)
+
 The strategy will use the projectId and credentials in from your environment, so if you are running in Cloud Functions
 or Cloud Run you should be fine with this config.
 

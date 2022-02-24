@@ -41,6 +41,7 @@ describe('CloudTasks job queue e2e', () => {
     }),
     DefaultSearchPlugin
   );
+  testConfig.apiOptions.port = 3103;
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
   const { server, adminClient } = createTestEnvironment(testConfig);
   let started = false;
@@ -93,7 +94,7 @@ describe('CloudTasks job queue e2e', () => {
 
   it('Should fail unauthorized webhook', async () => {
     const buff = new Buffer(task.body, 'base64');
-    const res = await fetch(`http://localhost:3050/cloud-tasks/handler`, {
+    const res = await fetch(`http://localhost:3103/cloud-tasks/handler`, {
       method: 'post',
       body: buff.toString(),
       headers: {
@@ -106,7 +107,7 @@ describe('CloudTasks job queue e2e', () => {
 
   it('Should handle incoming task', async () => {
     const buff = new Buffer(task.body, 'base64');
-    const res = await fetch(`http://localhost:3050/cloud-tasks/handler`, {
+    const res = await fetch(`http://localhost:3103/cloud-tasks/handler`, {
       method: 'post',
       body: buff.toString(),
       headers: {
