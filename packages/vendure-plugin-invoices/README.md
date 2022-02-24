@@ -1,30 +1,29 @@
 # Vendure Plugin for generating invoices
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-myparcel/dev/@vendure/core)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-invoices/dev/@vendure/core)
 
 A plugin for generating PDF invoices for placed orders.
 
-- Generates PDF invoices on OrderPlaced events
-- Shows all generated invoices in Admin UI if you have the permission `AllowInvoicesPermission`
-- Save an HTML template per channel via the Admin UI
-- Download multiple invoices as zip via the Admin UI
+- View created invoices via the Vendure admin
+- Set templates per channel
+- Download multiple files as zip
+
+![Invoices screenshot](images/invoice.jpeg)
 
 For the developers:
 
 - Customize invoice storage by implementing your own `StorageStrategy`
 - Customize invoice numbering and template data by implementing your own `DataStrategy`
 
-The default storage strategy is `LocalFileStrategy`, which stores invoices in the directory `invoices` in the root of
-your project.
+The default `LocalFileStrategy` stores invoices in the directory `invoices` in the root of your project.
 
-The default data strategy is `DefaultDatastrategy` which generates incremental invoicenumbers and passes
-most order fields as template data.
+The `DefaultDatastrategy` generates incremental invoicenumbers and passes most order fields as template data.
 
 ## Getting started
 
 1. Add the following config to your `vendure-config.ts`:
 
-```js
+```ts
 plugins: [
   InvoicePlugin.init({
     // Used as host for creating downloadUrls
@@ -53,20 +52,28 @@ The bottom table holds an overview of already generated invoices.
 
 ## Adding invoices to your order-confirmation
 
-Invoices are generated via the worker and are not available when order confirmations are send. What you can do is add the following link to your email:
+Invoices are generated via the worker and are not available when order confirmations are send. What you can do is add
+the following link to your email:
 `https://<your server>/invoices/e2e-default-channel/C7YH7WME4LTQNFRZ?email=hayden.zieme12@hotmail.com`.
 
-The server will check if the ordercode belongs to the given channel AND the given customer emailaddress. If so, it will return the invoice.
+The server will check if the ordercode belongs to the given channel AND the given customer emailaddress. If so, it will
+return the invoice.
+
+## Admin UI
+
+The Vendure admin can be used to view created invoices and change invoice settings. Make sure you
+have `AllowInvoicesPermission` for the 'Invoices' menu item to show.
+![Admin invoice settings](images/admin-settings.jpeg)
+![Admin invoices overview](images/admin-table.jpeg)
 
 ## Google storage strategy
 
-This plugin also includes a strategy for storing invoices in Google Storage.
-Make sure you install the Gcloud package:
+This plugin also includes a strategy for storing invoices in Google Storage. Make sure you install the Gcloud package:
 `yarn add @google-cloud/storage`
 
-and set the folling config:
+and set the following config:
 
-```js
+```ts
 InvoicePlugin.init({
   downloadHost: 'http://localhost:3050',
   storageStrategy: new GoogleStorageInvoiceStrategy({
@@ -75,11 +82,12 @@ InvoicePlugin.init({
 });
 ```
 
-The strategy will use the projectId and credentials in from your environment, so if you are running in Cloud Functions or Cloud Run you should be fine with this config.
+The strategy will use the projectId and credentials in from your environment, so if you are running in Cloud Functions
+or Cloud Run you should be fine with this config.
 
 :warning: However, if you want to run it locally or on some other environment, use this:
 
-```js
+```ts
 InvoicePlugin.init({
   downloadHost: 'http://localhost:3050',
   storageStrategy: new GoogleStorageInvoiceStrategy({
@@ -91,70 +99,58 @@ InvoicePlugin.init({
 });
 ```
 
-This is needed to generate signedUrls, which are used to give customers temporary access to a file on Storage.
-See this info for info about locally using signedUrls: https://github.com/googleapis/nodejs-storage/issues/360
+This is needed to generate signedUrls, which are used to give customers temporary access to a file on Storage. See this
+info for info about locally using signedUrls: https://github.com/googleapis/nodejs-storage/issues/360
 
 ## Custom file storage
 
-Implement `RemoteStorageStrategy` or `LocalFileStrategy` interface to create your own way of storing invoices.
+Implement your own strategy for storing invoices by implementing one of these interfaces:
+`RemoteStorageStrategy` for storing PDF files on an external platform. It uses the `getPublicUrl` to redirect a user to
+an external platform for downloading the invoice.
+`LocalFileStrategy` streams the invoice through the Vendure service to the user.
 
-```js
-/**
- * The invoice plugin will first try to use getPublicUrl, when that function is
- * not implemented, it will try to stream the file to the client
- */
-export type StorageStrategy = RemoteStorageStrategy | LocalStorageStrategy;
+```ts
+import { RemoteStorageStrategy, zipFiles } from 'vendure-plugin-invoices';
 
-interface BaseStorageStrategy {
-  /**
-   * Store the given file where you want and return a reference
-   * that can later be used to retrieve the same file
-   * You receive the path to the created
-   * tmpFile
-   */
-  save(
+export class YourRemoteStrategy implements RemoteStorageStrategy {
+  async save(
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string
-  ): Promise<string>;
+  ): Promise<string> {
+    // Save the invoice in your favorite cloud storage. The string you return will be saved as unique reference to your invoice.
+    // You should be able to retrieve the file later with just the unique reference
+    return 'unique-reference';
+  }
 
-  /**
-   * Bundles multiple files by invoiceNumbers in zipFile for download via admin UI
-   * Will only be called by admins
-   */
-  streamMultiple(invoices: InvoiceEntity[], res: Response): Promise<ReadStream>;
-}
+  async getPublicUrl(invoice: InvoiceEntity): Promise<string> {
+    // Most cloud based storages have the ability to generate a signed URL, which is available for X amount of time.
+    // This way the downloading of invoices does not go through the vendure service
+    return 'https://your-signed-url/invoice.pdf';
+  }
 
-export interface RemoteStorageStrategy extends BaseStorageStrategy {
-  /**
-   * Returns a downloadlink where  user can download the Invoice file.
-   * For example an downloadLink to a Google storage bucket
-   * or Amazon S3 instance
-   */
-  getPublicUrl(invoice: InvoiceEntity): Promise<string>;
-}
-
-export interface LocalStorageStrategy extends BaseStorageStrategy {
-  /**
-   * Stream the file via the server to the client.
-   * Use res.set() to set content-type
-   * and content-disposition
-   */
-  streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream>;
+  async streamMultiple(
+    invoices: InvoiceEntity[],
+    res: Response
+  ): Promise<ReadStream> {
+    // zip files and return stream
+    const zipped = zipFiles(files);
+    return createReadStream(zipped);
+  }
 }
 ```
 
 ## Custom invoice numbering and custom data
 
-Implement the `DataStrategy` to pass custom data or generate custom invoicenumbers:
+Implement the `DataStrategy` to pass custom data to your template or generate custom invoicenumbers:
 
-```js
+```ts
 export class DefaultDataStrategy implements DataStrategy {
   async getData({
+    ctx,
     injector,
     order,
     latestInvoiceNumber,
-    ctx,
   }: DataFnInput): Promise<InvoiceData> {
     return {
       invoiceNumber: String(Math.floor(Math.random() * 90000) + 10000),
@@ -171,12 +167,6 @@ You can access this data in your HTML template using Handlebars.js:
 ```html
 <h1>{{ someCustomField }}</h1>
 ```
-
-## Admin UI screenshots
-
-(Images don't show on NPM, visit Github instead)
-![Pinelab.studio logo](./docs/admin-settings.jpeg)
-![Pinelab.studio logo](./docs/admin-table.jpeg)
 
 ## Contributing
 
