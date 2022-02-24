@@ -6,18 +6,12 @@ A plugin for generating PDF invoices for placed orders.
 
 - View created invoices via the Vendure admin
 - Set templates per channel
-- Download multiple files as zip
+- Preview HTML templates before using them
+- Download multiple pdf's as zip
+- Easily implement your own storage strategy
+- Pass custom data to your custom HTML template
 
 ![Invoices screenshot](images/invoice.jpeg)
-
-For the developers:
-
-- Customize invoice storage by implementing your own `StorageStrategy`
-- Customize invoice numbering and template data by implementing your own `DataStrategy`
-
-The default `LocalFileStrategy` stores invoices in the directory `invoices` in the root of your project.
-
-The `DefaultDatastrategy` generates incremental invoicenumbers and passes most order fields as template data.
 
 ## Getting started
 
@@ -27,7 +21,7 @@ The `DefaultDatastrategy` generates incremental invoicenumbers and passes most o
 plugins: [
   InvoicePlugin.init({
     // Used as host for creating downloadUrls
-    downloadHost: 'http://localhost:3106',
+    vendureHost: 'http://localhost:3106',
   }),
   AdminUiPlugin.init({
     port: 3002,
@@ -41,12 +35,13 @@ plugins: [
 ];
 ```
 
-2. Start Vendure and navigate to the admin
-3. Make sure you have the permission `AllowInvoicesPermission`
-4. Go to Sales > Invoices.
-5. Unfold the `settings` accordion.
-6. Check the checkbox to enable invoice generation for the current channel on order placement.
-7. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
+2. Run a [migration](https://www.vendure.io/docs/developer-guide/migrations/), because this plugin adds 2 entities to the db.
+3. Start Vendure and navigate to the admin
+4. Make sure you have the permission `AllowInvoicesPermission`
+5. Go to Sales > Invoices.
+6. Unfold the `settings` accordion.
+7. Check the checkbox to enable invoice generation for the current channel on order placement.
+8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
 The bottom table holds an overview of already generated invoices.
 
@@ -54,6 +49,7 @@ The bottom table holds an overview of already generated invoices.
 
 Invoices are generated via the worker and are not available when order confirmations are send. What you can do is add
 the following link to your email:
+
 `https://<your server>/invoices/e2e-default-channel/C7YH7WME4LTQNFRZ?email=hayden.zieme12@hotmail.com`.
 
 The server will check if the ordercode belongs to the given channel AND the given customer emailaddress. If so, it will
@@ -68,14 +64,13 @@ have `AllowInvoicesPermission` for the 'Invoices' menu item to show.
 
 ## Google storage strategy
 
-This plugin also includes a strategy for storing invoices in Google Storage. Make sure you install the Gcloud package:
-`yarn add @google-cloud/storage`
+This plugin also includes a strategy for storing invoices in Google Storage. Install the gcloud package and set the following config:
 
-and set the following config:
+`yarn add @google-cloud/storage`
 
 ```ts
 InvoicePlugin.init({
-  downloadHost: 'http://localhost:3050',
+  vendureHost: 'http://localhost:3050',
   storageStrategy: new GoogleStorageInvoiceStrategy({
     bucketName: 'bucketname',
   }),
@@ -89,7 +84,7 @@ or Cloud Run you should be fine with this config.
 
 ```ts
 InvoicePlugin.init({
-  downloadHost: 'http://localhost:3050',
+  vendureHost: 'http://localhost:3050',
   storageStrategy: new GoogleStorageInvoiceStrategy({
     bucketName: 'bucketname',
     storageOptions: {
@@ -105,9 +100,9 @@ info for info about locally using signedUrls: https://github.com/googleapis/node
 ## Custom file storage
 
 Implement your own strategy for storing invoices by implementing one of these interfaces:
-`RemoteStorageStrategy` for storing PDF files on an external platform. It uses the `getPublicUrl` to redirect a user to
-an external platform for downloading the invoice.
-`LocalFileStrategy` streams the invoice through the Vendure service to the user.
+
+- `RemoteStorageStrategy` for storing PDF files on an external platform like Google Cloud or S3.
+- `LocalFileStrategy` streams the invoice through the Vendure service to the user.
 
 ```ts
 import { RemoteStorageStrategy, zipFiles } from 'vendure-plugin-invoices';

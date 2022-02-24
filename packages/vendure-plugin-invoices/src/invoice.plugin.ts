@@ -18,7 +18,7 @@ export interface InvoicePluginConfig {
    * Hostname to use for download links, can be the Vendure instance,
    * but also the worker instance if you want
    */
-  downloadHost: string;
+  vendureHost: string;
   dataStrategy: DataStrategy;
   storageStrategy: StorageStrategy;
 }
@@ -44,7 +44,7 @@ export class InvoicePlugin {
   static config: InvoicePluginConfig;
 
   static init(
-    config: Partial<InvoicePluginConfig> & { downloadHost: string }
+    config: Partial<InvoicePluginConfig> & { vendureHost: string }
   ): typeof InvoicePlugin {
     this.config = {
       ...config,

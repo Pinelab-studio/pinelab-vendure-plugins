@@ -34,7 +34,7 @@ require('dotenv').config();
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
       InvoicePlugin.init({
-        downloadHost: 'http://localhost:3050',
+        vendureHost: 'http://localhost:3050',
         storageStrategy: new GoogleStorageInvoiceStrategy({
           bucketName: process.env.TEST_BUCKET!,
           storageOptions: {

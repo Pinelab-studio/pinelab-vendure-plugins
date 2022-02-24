@@ -56,7 +56,7 @@ describe('Invoices plugin', function () {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         InvoicePlugin.init({
-          downloadHost: 'http://localhost:3106',
+          vendureHost: 'http://localhost:3106',
         }),
       ],
       paymentOptions: {

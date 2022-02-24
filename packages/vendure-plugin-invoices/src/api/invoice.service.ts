@@ -373,7 +373,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const invoicesWithUrl = invoices.map((invoice) => ({
       ...invoice,
       id: invoice.id as string,
-      downloadUrl: `${this.config.downloadHost}/invoices/${channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
+      downloadUrl: `${this.config.vendureHost}/invoices/${channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
     }));
     return {
       items: invoicesWithUrl,
