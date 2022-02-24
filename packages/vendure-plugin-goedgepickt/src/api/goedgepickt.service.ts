@@ -235,7 +235,7 @@ export class GoedgepicktService
       const variant = variants.find((v) => v.sku === ggProduct.sku);
       const newStock = ggProduct.stock?.freeStock;
       if (!newStock) {
-        Logger.warn(
+        Logger.info(
           `Goedgepickt variant ${ggProduct.sku} has no stock set. Cannot update stock in Vendure for this variant.`,
           loggerCtx
         );
@@ -247,7 +247,7 @@ export class GoedgepicktService
           stock: newStock,
         });
       } else {
-        Logger.warn(
+        Logger.info(
           `Goedgepickt product with sku ${ggProduct.sku} doesn't exist as variant in Vendure. Not updating stock for this variant`,
           loggerCtx
         );
@@ -371,10 +371,6 @@ export class GoedgepicktService
   async getClientForChannel(channelToken: string): Promise<GoedgepicktClient> {
     const config = await this.getConfig(channelToken);
     if (!config || !config?.apiKey || !config.webshopUuid) {
-      Logger.warn(
-        `No Goedgepickt config found for channel ${channelToken}`,
-        loggerCtx
-      );
       throw Error(`No Goedgepickt config found for channel ${channelToken}`);
     }
     return new GoedgepicktClient({
