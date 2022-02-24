@@ -21,12 +21,13 @@ import {
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
+import { invoicePermission } from '../index';
 
 @Controller('invoices')
 export class InvoiceController {
   constructor(private service: InvoiceService) {}
 
-  @Allow(Permission.ReadOrder)
+  @Allow(invoicePermission.Permission)
   @Get('/download')
   async downloadMultipleInvoices(
     @Ctx() ctx: RequestContext,
@@ -47,7 +48,7 @@ export class InvoiceController {
     stream.pipe(res);
   }
 
-  @Allow(Permission.ReadOrder)
+  @Allow(invoicePermission.Permission)
   @Post('/preview')
   async preview(
     @Ctx() ctx: RequestContext,
