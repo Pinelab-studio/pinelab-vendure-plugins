@@ -11,7 +11,7 @@ A plugin for generating PDF invoices for placed orders.
 - Easily implement your own storage strategy
 - Pass custom data to your custom HTML template
 
-![Invoices screenshot](images/invoice.jpeg)
+![Invoices screenshot](https://github.com/martijnvdbrug/pinelab-vendure-plugins/blob/master/packages/vendure-plugin-invoices/images/invoice.jpeg?raw=true)
 
 ## Getting started
 
@@ -59,8 +59,9 @@ return the invoice.
 
 The Vendure admin can be used to view created invoices and change invoice settings. Make sure you
 have `AllowInvoicesPermission` for the 'Invoices' menu item to show.
-![Admin invoice settings](images/admin-settings.jpeg)
-![Admin invoices overview](images/admin-table.jpeg)
+
+![Admin invoice settings](https://github.com/martijnvdbrug/pinelab-vendure-plugins/blob/master/packages/vendure-plugin-invoices/images/admin-settings.jpeg?raw=true)
+![Admin invoices overview](https://github.com/martijnvdbrug/pinelab-vendure-plugins/blob/master/packages/vendure-plugin-invoices/images/admin-table.jpeg?raw=true)
 
 ## Google storage strategy
 
