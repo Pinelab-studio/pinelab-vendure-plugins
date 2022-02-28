@@ -78,8 +78,8 @@ InvoicePlugin.init({
 });
 ```
 
-[Enable the service account IAM in Google Cloud Console](https://console.developers.google.com/apis/api/iamcredentials.googleapis.com/overview)
-[Make sure Cloud Run service account has permissions](https://github.com/googleapis/nodejs-storage/issues/1222)
+- [Enable the service account IAM in Google Cloud Console](https://console.developers.google.com/apis/api/iamcredentials.googleapis.com/overview)
+- [Add role 'Service account token creator' to the Cloud Run service account](https://github.com/googleapis/nodejs-storage/issues/1222)
 
 The strategy will use the projectId and credentials in from your environment, so if you are running in Cloud Functions
 or Cloud Run you should be fine with this config.
