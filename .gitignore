@@ -40,3 +40,5 @@ vendure/static/email/test-emails/
 
 /packages/vendure-plugin-google-storage-assets/__data__/
 __admin-ui/
+/packages/vendure-plugin-invoices/invoices/
+/packages/vendure-plugin-invoices/key.json

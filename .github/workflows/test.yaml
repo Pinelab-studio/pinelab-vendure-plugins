@@ -18,6 +18,8 @@ jobs:
       - run: yarn
       - name: Build test-utils
         run: cd packages/test && yarn
+      - name: Build utils
+        run: cd packages/util && yarn
       - name: Test vendure-plugin-dutch-postalcode
         run: cd packages/vendure-plugin-dutch-postalcode && yarn && yarn build && yarn test
       - name: Test vendure-plugin-google-cloud-tasks
@@ -30,3 +32,5 @@ jobs:
         run: cd packages/vendure-plugin-webhook && yarn && yarn build && yarn test
       - name: Test vendure-plugin-goedgepickt
         run: cd packages/vendure-plugin-goedgepickt && yarn && yarn build && yarn test
+      - name: Test vendure-plugin-invoice
+        run: cd packages/vendure-plugin-invoices && yarn && yarn build && yarn test

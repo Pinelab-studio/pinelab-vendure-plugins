@@ -1,10 +1,10 @@
 {
   "name": "vendure-plugin-google-cloud-tasks",
-  "version": "2.2.0",
+  "version": "2.2.3",
   "description": "Vendure plugin for using worker jobs with Google CloudTasks",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
-  "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
   "main": "dist/cloud-tasks.plugin.js",
@@ -19,7 +19,7 @@
     "start": "yarn ts-node test/dev-server.ts"
   },
   "dependencies": {
-    "@google-cloud/tasks": "^2.3.4",
+    "@google-cloud/tasks": "^2.5.0",
     "body-parser": "^1.19.0"
   },
   "devDependencies": {
