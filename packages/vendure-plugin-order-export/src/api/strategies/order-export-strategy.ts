@@ -2,12 +2,12 @@ import {
   ExportedOrder,
   OrderExportArgument,
   OrderExportArgumentInput,
-} from '../ui/generated/graphql';
+} from '../../ui/generated/graphql';
 import { Order } from '@vendure/core';
 
 export type ExportResult = Pick<ExportedOrder, 'reference' | 'message'>;
 
-export interface OrderExportStrategy {
+export abstract class OrderExportStrategy {
   name: string;
   arguments: OrderExportArgument[];
 
@@ -17,5 +17,12 @@ export interface OrderExportStrategy {
    * @param args
    * @param order including shippingAddress, billingAddress, order.lines, order.lines.variant
    */
-  exportOrder(args: OrderExportArgument[], order: Order): Promise<ExportResult>;
+  abstract exportOrder(args: OrderExportArgument[], order: Order): Promise<ExportResult>;
+
+  /**
+   * Gets all settled orders, and makes them ExportableOrders at runtime.
+   */
+  getExportableOrders(page: ):
+
 }
+

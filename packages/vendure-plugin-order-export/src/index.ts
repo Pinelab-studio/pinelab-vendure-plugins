@@ -5,5 +5,5 @@ export const orderExportPermission = new PermissionDefinition({
   description: 'Allows exporting orders via order-export plugin',
 });
 export * from './order-export.plugin';
-export * from './api/order-export-strategy';
+export * from './api/strategies/order-export-strategy';
 export * from './ui/generated/graphql';

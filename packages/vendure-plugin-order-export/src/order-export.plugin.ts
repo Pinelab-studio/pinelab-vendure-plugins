@@ -8,7 +8,7 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { orderExportPermission } from './index';
 import { OrderExportResolver } from './api/order-export.resolver';
 import { schema } from './api/schema.graphql';
-import { OrderExportStrategy } from './api/order-export-strategy';
+import { OrderExportStrategy } from './api/strategies/order-export-strategy';
 import { OrderExportService } from './api/order-export.service';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 

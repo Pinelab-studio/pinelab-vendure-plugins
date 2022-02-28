@@ -4,7 +4,7 @@ export const schema = gql`
   #    scalar JSON
   #    scalar DateTime
 
-  type ExportedOrder {
+  type ExportableOrder {
     id: ID!
     createdAt: DateTime
     updatedAt: DateTime
@@ -24,8 +24,7 @@ export const schema = gql`
     """
     Indicates whether the order has been successfully exported or not
     """
-    successful: Boolean!
-    order: Order
+    successful: Boolean
   }
 
   type OrderExportConfig {
@@ -61,6 +60,6 @@ export const schema = gql`
 
   extend type Query {
     allOrderExportConfigs: [OrderExportConfig!]!
-    allExportedOrders(filter: allExportedOrdersFilter): [ExportedOrder!]!
+    allExportedOrders(filter: allExportedOrdersFilter): [ExportableOrder!]!
   }
 `;
