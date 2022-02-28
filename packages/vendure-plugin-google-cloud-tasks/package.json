@@ -19,7 +19,7 @@
     "start": "yarn ts-node test/dev-server.ts"
   },
   "dependencies": {
-    "@google-cloud/tasks": "^2.3.4",
+    "@google-cloud/tasks": "^2.5.0",
     "body-parser": "^1.19.0"
   },
   "devDependencies": {
