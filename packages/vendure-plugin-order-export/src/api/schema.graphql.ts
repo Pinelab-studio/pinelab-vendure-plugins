@@ -1,14 +1,14 @@
 import gql from 'graphql-tag';
 
 export const schema = gql`
-  #    scalar JSON
-  #    scalar DateTime
-
-  type ExportableOrder {
+  type OrderExportResult {
     id: ID!
     createdAt: DateTime
     updatedAt: DateTime
+    orderPlacedAt: DateTime
     orderId: String!
+    orderCode: String!
+    customerEmail: String
     """
     Reference to the external platform. For example the uuid of the exported order
     """
@@ -25,6 +25,11 @@ export const schema = gql`
     Indicates whether the order has been successfully exported or not
     """
     successful: Boolean
+  }
+
+  type OrderExportResultList {
+    items: [OrderExportResult!]!
+    totalItems: Int!
   }
 
   type OrderExportConfig {
@@ -47,9 +52,9 @@ export const schema = gql`
     arguments: [OrderExportArgumentInput!]!
   }
 
-  input allExportedOrdersFilter {
-    limit: Int
-    successful: Boolean
+  input OrderExportResultFilter {
+    page: Int!
+    itemsPerPage: Int!
   }
 
   extend type Mutation {
@@ -59,7 +64,7 @@ export const schema = gql`
   }
 
   extend type Query {
-    allOrderExportConfigs: [OrderExportConfig!]!
-    allExportedOrders(filter: allExportedOrdersFilter): [ExportableOrder!]!
+    orderExportConfigs: [OrderExportConfig!]!
+    orderExportResults(filter: OrderExportResultFilter!): OrderExportResultList!
   }
 `;

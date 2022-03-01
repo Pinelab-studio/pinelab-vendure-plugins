@@ -2,7 +2,7 @@ import { ExportResult, OrderExportArgument, OrderExportStrategy } from '../src';
 import { Order } from '@vendure/core';
 
 export class FakeExporter implements OrderExportStrategy {
-  name = 'Fake importer';
+  name = 'Fake exporter';
   arguments = [
     {
       name: 'fake-input-argument',

@@ -1,8 +1,8 @@
 import gql from 'graphql-tag';
 
 export const getConfigs = gql`
-  query allOrderExportConfigs {
-    allOrderExportConfigs {
+  query orderExportConfigs {
+    orderExportConfigs {
       name
       arguments {
         name
@@ -12,17 +12,23 @@ export const getConfigs = gql`
   }
 `;
 
-export const getFailedOrders = gql`
-  query getFailedOrders {
-    allExportedOrders(filter: { successful: false }) {
-      id
-      createdAt
-      updatedAt
-      orderId
-      reference
-      message
-      externalLink
-      successful
+export const getExports = gql`
+  query orderExportResults($filter: OrderExportResultFilter!) {
+    orderExportResults(filter: $filter) {
+      totalItems
+      items {
+        id
+        createdAt
+        updatedAt
+        orderPlacedAt
+        orderId
+        orderCode
+        customerEmail
+        reference
+        message
+        externalLink
+        successful
+      }
     }
   }
 `;

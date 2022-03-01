@@ -20,22 +20,6 @@ export type Scalars = {
   JSON: any;
 };
 
-export type ExportedOrder = {
-  __typename?: 'ExportedOrder';
-  createdAt?: Maybe<Scalars['DateTime']>;
-  /** Field that will be shown as anchor in UI */
-  externalLink?: Maybe<Scalars['String']>;
-  id: Scalars['ID'];
-  /** Free text field for additional messages */
-  message?: Maybe<Scalars['String']>;
-  orderId: Scalars['String'];
-  /** Reference to the external platform. For example the uuid of the exported order */
-  reference?: Maybe<Scalars['String']>;
-  /** Indicates whether the order has been successfully exported or not */
-  successful: Scalars['Boolean'];
-  updatedAt?: Maybe<Scalars['DateTime']>;
-};
-
 export type Mutation = {
   __typename?: 'Mutation';
   updateOrderExportConfig: Array<OrderExportConfig>;
@@ -67,28 +51,51 @@ export type OrderExportConfigInput = {
   name: Scalars['String'];
 };
 
+export type OrderExportResult = {
+  __typename?: 'OrderExportResult';
+  createdAt?: Maybe<Scalars['DateTime']>;
+  customerEmail?: Maybe<Scalars['String']>;
+  /** Field that will be shown as anchor in UI */
+  externalLink?: Maybe<Scalars['String']>;
+  id: Scalars['ID'];
+  /** Free text field for additional messages */
+  message?: Maybe<Scalars['String']>;
+  orderCode: Scalars['String'];
+  orderId: Scalars['String'];
+  orderPlacedAt?: Maybe<Scalars['DateTime']>;
+  /** Reference to the external platform. For example the uuid of the exported order */
+  reference?: Maybe<Scalars['String']>;
+  /** Indicates whether the order has been successfully exported or not */
+  successful?: Maybe<Scalars['Boolean']>;
+  updatedAt?: Maybe<Scalars['DateTime']>;
+};
+
+export type OrderExportResultFilter = {
+  itemsPerPage: Scalars['Int'];
+  page: Scalars['Int'];
+};
+
+export type OrderExportResultList = {
+  __typename?: 'OrderExportResultList';
+  items: Array<OrderExportResult>;
+  totalItems: Scalars['Int'];
+};
+
 export type Query = {
   __typename?: 'Query';
-  allExportedOrders: Array<ExportedOrder>;
-  allOrderExportConfigs: Array<OrderExportConfig>;
+  orderExportConfigs: Array<OrderExportConfig>;
+  orderExportResults: OrderExportResultList;
 };
 
-export type QueryAllExportedOrdersArgs = {
-  filter?: InputMaybe<AllExportedOrdersFilter>;
+export type QueryOrderExportResultsArgs = {
+  filter: OrderExportResultFilter;
 };
 
-export type AllExportedOrdersFilter = {
-  limit?: InputMaybe<Scalars['Int']>;
-  successful?: InputMaybe<Scalars['Boolean']>;
-};
+export type OrderExportConfigsQueryVariables = Exact<{ [key: string]: never }>;
 
-export type AllOrderExportConfigsQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type AllOrderExportConfigsQuery = {
+export type OrderExportConfigsQuery = {
   __typename?: 'Query';
-  allOrderExportConfigs: Array<{
+  orderExportConfigs: Array<{
     __typename?: 'OrderExportConfig';
     name: string;
     arguments: Array<{
@@ -99,21 +106,30 @@ export type AllOrderExportConfigsQuery = {
   }>;
 };
 
-export type GetFailedOrdersQueryVariables = Exact<{ [key: string]: never }>;
+export type OrderExportResultsQueryVariables = Exact<{
+  filter: OrderExportResultFilter;
+}>;
 
-export type GetFailedOrdersQuery = {
+export type OrderExportResultsQuery = {
   __typename?: 'Query';
-  allExportedOrders: Array<{
-    __typename?: 'ExportedOrder';
-    id: string;
-    createdAt?: any | null;
-    updatedAt?: any | null;
-    orderId: string;
-    reference?: string | null;
-    message?: string | null;
-    externalLink?: string | null;
-    successful: boolean;
-  }>;
+  orderExportResults: {
+    __typename?: 'OrderExportResultList';
+    totalItems: number;
+    items: Array<{
+      __typename?: 'OrderExportResult';
+      id: string;
+      createdAt?: any | null;
+      updatedAt?: any | null;
+      orderPlacedAt?: any | null;
+      orderId: string;
+      orderCode: string;
+      customerEmail?: string | null;
+      reference?: string | null;
+      message?: string | null;
+      externalLink?: string | null;
+      successful?: boolean | null;
+    }>;
+  };
 };
 
 export type UpdateOrderExportConfigMutationVariables = Exact<{
