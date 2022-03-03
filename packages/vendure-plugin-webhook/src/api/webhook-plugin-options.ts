@@ -20,7 +20,7 @@ export interface WebhookPluginOptions {
    */
   delay?: number;
   /**
-   * Listen for events in worker process. Defaults to true
+   * Disable the plugin. Default is false
    */
-  enableInWorker?: boolean;
+  disabled?: boolean;
 }

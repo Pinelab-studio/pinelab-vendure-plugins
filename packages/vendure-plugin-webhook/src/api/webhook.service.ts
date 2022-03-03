@@ -19,8 +19,7 @@ export class WebhookService implements OnApplicationBootstrap {
 
   constructor(
     private eventBus: EventBus,
-    private connection: TransactionalConnection,
-    private processContext: ProcessContext
+    private connection: TransactionalConnection
   ) {}
 
   async getWebhook(
@@ -63,8 +62,8 @@ export class WebhookService implements OnApplicationBootstrap {
         `Please specify VendureEvents with Webhook.init() in your Vendure config.`
       );
     }
-    if (this.processContext.isWorker && !WebhookPlugin.options.enableInWorker) {
-      Logger.info(`Not listening for events in worker process`, loggerCtx);
+    if (!WebhookPlugin.options.disabled) {
+      Logger.info(`Webhook plugin disabled`, loggerCtx);
       return;
     }
     WebhookPlugin.options.events!.forEach((configuredEvent) => {
