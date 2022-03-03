@@ -1,5 +1,10 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { EventBus, Logger, TransactionalConnection } from '@vendure/core';
+import {
+  EventBus,
+  Logger,
+  ProcessContext,
+  TransactionalConnection,
+} from '@vendure/core';
 import { WebhookPerChannelEntity } from './webhook-per-channel.entity';
 import { WebhookPlugin } from '../webhook.plugin';
 import fetch from 'node-fetch';
@@ -14,7 +19,8 @@ export class WebhookService implements OnApplicationBootstrap {
 
   constructor(
     private eventBus: EventBus,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
+    private processContext: ProcessContext
   ) {}
 
   async getWebhook(
@@ -56,6 +62,10 @@ export class WebhookService implements OnApplicationBootstrap {
       throw Error(
         `Please specify VendureEvents with Webhook.init() in your Vendure config.`
       );
+    }
+    if (this.processContext.isWorker && !WebhookPlugin.options.enableInWorker) {
+      Logger.info(`Not listening for events in worker process`, loggerCtx);
+      return;
     }
     WebhookPlugin.options.events!.forEach((configuredEvent) => {
       this.eventBus.ofType(configuredEvent).subscribe((event) => {

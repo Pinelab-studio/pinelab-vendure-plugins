@@ -19,4 +19,8 @@ export interface WebhookPluginOptions {
    * Delay is in ms
    */
   delay?: number;
+  /**
+   * Listen for events in worker process. Defaults to true
+   */
+  enableInWorker?: boolean;
 }

@@ -70,7 +70,7 @@ export class GoedgepicktService
       process: async (job) =>
         await this.pullStocklevels(job.data.channelToken).catch((error) => {
           Logger.error(
-            `Failed to pull stocklevels for ${job.data.channelToken}`,
+            `Failed to pull stocklevels for ${job.data.channelToken}: ${error.message}`,
             loggerCtx,
             error
           );
