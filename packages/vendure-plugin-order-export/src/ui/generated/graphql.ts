@@ -22,7 +22,12 @@ export type Scalars = {
 
 export type Mutation = {
   __typename?: 'Mutation';
+  exportOrders?: Maybe<Scalars['Boolean']>;
   updateOrderExportConfig: Array<OrderExportConfig>;
+};
+
+export type MutationExportOrdersArgs = {
+  orderIds: Array<Scalars['ID']>;
 };
 
 export type MutationUpdateOrderExportConfigArgs = {
@@ -147,4 +152,13 @@ export type UpdateOrderExportConfigMutation = {
       value?: string | null;
     }>;
   }>;
+};
+
+export type ExportOrdersMutationVariables = Exact<{
+  orderIds: Array<Scalars['ID']> | Scalars['ID'];
+}>;
+
+export type ExportOrdersMutation = {
+  __typename?: 'Mutation';
+  exportOrders?: boolean | null;
 };

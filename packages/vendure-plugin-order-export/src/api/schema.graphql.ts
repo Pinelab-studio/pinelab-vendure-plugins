@@ -61,6 +61,7 @@ export const schema = gql`
     updateOrderExportConfig(
       input: OrderExportConfigInput!
     ): [OrderExportConfig!]!
+    exportOrders(orderIds: [ID!]!): Boolean
   }
 
   extend type Query {

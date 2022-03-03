@@ -44,3 +44,9 @@ export const saveConfig = gql`
     }
   }
 `;
+
+export const exportOrders = gql`
+  mutation exportOrders($orderIds: [ID!]!) {
+    exportOrders(orderIds: $orderIds)
+  }
+`;

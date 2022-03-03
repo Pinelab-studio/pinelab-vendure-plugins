@@ -2,6 +2,8 @@ import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DataService, NotificationService } from '@vendure/admin-ui/core';
 import {
+  ExportOrdersMutation,
+  ExportOrdersMutationVariables,
   OrderExportConfig,
   OrderExportConfigInput,
   OrderExportConfigsQuery,
@@ -12,7 +14,12 @@ import {
   UpdateOrderExportConfigMutation,
   UpdateOrderExportConfigMutationVariables,
 } from './generated/graphql';
-import { getConfigs, getExports, saveConfig } from './queries.graphql';
+import {
+  exportOrders,
+  getConfigs,
+  getExports,
+  saveConfig,
+} from './queries.graphql';
 
 @Component({
   selector: 'order-export-component',
@@ -22,7 +29,7 @@ import { getConfigs, getExports, saveConfig } from './queries.graphql';
         <!-- strategy form -->
         <form class="form">
           <section class="form-block">
-            <vdr-form-field label="Export" for="apiKey">
+            <vdr-form-field label="Exporter">
               <select
                 class="custom-select"
                 (change)="setStrategy($event.target.value)"
@@ -35,12 +42,8 @@ import { getConfigs, getExports, saveConfig } from './queries.graphql';
                 </option>
               </select>
             </vdr-form-field>
-            <button class="btn btn-primary" (click)="export()">Export</button>
           </section>
         </form>
-        <hr />
-        <!-- Config form -->
-        <h4>Settings</h4>
         <form class="form" [formGroup]="configForm">
           <section class="form-block">
             <vdr-form-field
@@ -50,15 +53,22 @@ import { getConfigs, getExports, saveConfig } from './queries.graphql';
             >
               <input [id]="arg.name" type="text" [formControlName]="arg.name" />
             </vdr-form-field>
-            <button
-              class="btn btn-primary"
-              (click)="save()"
-              [disabled]="configForm.invalid || configForm.pristine"
-            >
-              Save
-            </button>
           </section>
         </form>
+        <button
+          class="btn btn-secondary"
+          (click)="save()"
+          [disabled]="configForm.invalid || configForm.pristine"
+        >
+          Save
+        </button>
+        <button
+          class="btn btn-primary"
+          [disabled]="selectedExports?.length === 0"
+          (click)="export()"
+        >
+          Export
+        </button>
         <hr />
         <h4>Exports</h4>
 
@@ -78,16 +88,19 @@ import { getConfigs, getExports, saveConfig } from './queries.graphql';
           <vdr-dt-column>Exported at</vdr-dt-column>
           <vdr-dt-column>Customer</vdr-dt-column>
           <vdr-dt-column>Order</vdr-dt-column>
-          <ng-template let-order="item">
+          <vdr-dt-column>Message</vdr-dt-column>
+          <vdr-dt-column>Link</vdr-dt-column>
+          <ng-template let-orderExport="item">
             <td class="left align-middle">
               <vdr-chip
                 *ngIf="
-                  order.successful === false || order.successful === true;
-                  else not
+                  orderExport.successful === false ||
+                    orderExport.successful === true;
+                  else notExported
                 "
-                [colorType]="order.successful ? 'success' : 'error'"
+                [colorType]="orderExport.successful ? 'success' : 'error'"
               >
-                <ng-container *ngIf="order.successful; else failed">
+                <ng-container *ngIf="orderExport.successful; else failed">
                   <clr-icon shape="check-circle"></clr-icon>
                   Exported
                 </ng-container>
@@ -96,15 +109,29 @@ import { getConfigs, getExports, saveConfig } from './queries.graphql';
                   Failed
                 </ng-template>
               </vdr-chip>
-              <vdr-chip> Not exported </vdr-chip>
+              <ng-template #notExported>
+                <vdr-chip> Not exported</vdr-chip>
+              </ng-template>
             </td>
             <td class="left align-middle">
-              {{ order.createdAt | date }}
+              {{ orderExport.createdAt | date }}
             </td>
-            <td class="left align-middle">{{ order.customerEmail }}</td>
+            <td class="left align-middle">{{ orderExport.customerEmail }}</td>
             <td class="left align-middle">
-              <a [routerLink]="['/orders', order.orderId]">
-                {{ order.orderCode }}
+              <a [routerLink]="['/orders', orderExport.orderId]">
+                {{ orderExport.orderCode }}
+              </a>
+            </td>
+            <td class="left align-middle">
+              {{ orderExport.message }}
+            </td>
+            <td class="left align-middle">
+              <a
+                *ngIf="orderExport.link"
+                :href="orderExport.link"
+                target="_blank"
+              >
+                <clr-icon shape="logout"></clr-icon>
               </a>
             </td>
           </ng-template>
@@ -228,7 +255,19 @@ export class OrderExportComponent implements OnInit {
   }
 
   async export(): Promise<void> {
-    console.log('exportt');
+    await this.save();
+    const orderIds = this.selectedExports.map((s) => s.orderId);
+    await this.dataService
+      .mutate<ExportOrdersMutation, ExportOrdersMutationVariables>(
+        exportOrders,
+        { orderIds }
+      )
+      .subscribe(
+        () => {
+          this.notificationService.success('Successfully exported orders');
+        },
+        (error) => this.notificationService.error(error.message)
+      );
   }
 
   async setPageNumber(page: number) {

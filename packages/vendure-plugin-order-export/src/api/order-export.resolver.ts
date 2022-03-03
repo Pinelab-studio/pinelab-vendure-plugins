@@ -51,4 +51,14 @@ export class OrderExportResolver {
     console.log('==========', input);
     return strategies;
   }
+
+  @Mutation()
+  @Allow(orderExportPermission.Permission)
+  async exportOrders(
+    @Ctx() ctx: RequestContext,
+    @Args('orderIds') orderIds: string[]
+  ): Promise<boolean> {
+    await this.service.exportOrders(ctx, orderIds);
+    return true;
+  }
 }

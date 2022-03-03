@@ -4,7 +4,10 @@ import {
 } from '../ui/generated/graphql';
 import { Order } from '@vendure/core';
 
-export type ExportResult = Pick<OrderExportResult, 'reference' | 'message'>;
+export type ExportResult = Pick<
+  OrderExportResult,
+  'reference' | 'message' | 'externalLink'
+>;
 
 export interface OrderExportStrategy {
   name: string;

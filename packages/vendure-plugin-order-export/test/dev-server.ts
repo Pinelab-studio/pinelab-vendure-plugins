@@ -28,9 +28,6 @@ require('dotenv').config();
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
-    dbConnectionOptions: {
-      logging: ['query', 'error'],
-    },
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},

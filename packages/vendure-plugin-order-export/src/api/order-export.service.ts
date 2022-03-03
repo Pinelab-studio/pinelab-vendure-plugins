@@ -15,7 +15,6 @@ import {
 import { Repository } from 'typeorm';
 import { OrderExportResultEntity } from './order-export-result.entity';
 import { OrderExportConfigEntity } from './order-export-config.entity';
-import { SortOrder } from '@vendure/core';
 
 @Injectable()
 export class OrderExportService {
@@ -48,6 +47,23 @@ export class OrderExportService {
       totalItems,
       items: items.map((item) => this.mapToOrderExportResult(item, exports)),
     };
+  }
+
+  async exportOrders(ctx: RequestContext, orderIds: string[]): Promise<void> {
+    const orders = await this.connection.findByIdsInChannel(
+      ctx,
+      Order,
+      orderIds,
+      ctx.channelId,
+      {
+        relations: [
+          'customer',
+          'billingAddress',
+          'lines',
+          'lines.productVariant',
+        ],
+      }
+    );
   }
 
   private mapToOrderExportResult(

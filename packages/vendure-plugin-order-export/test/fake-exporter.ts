@@ -5,8 +5,12 @@ export class FakeExporter implements OrderExportStrategy {
   name = 'Fake exporter';
   arguments = [
     {
-      name: 'fake-input-argument',
-      value: 'place-holder-value',
+      name: 'Message',
+      value: 'leave a message',
+    },
+    {
+      name: 'Make it fail',
+      value: '0',
     },
   ];
 
@@ -14,10 +18,15 @@ export class FakeExporter implements OrderExportStrategy {
     args: OrderExportArgument[],
     order: Order
   ): Promise<ExportResult> {
-    console.log(`I got this order ${order.code}`);
+    const message = args.find((a) => a.name === 'Message')?.value;
+    const shouldFail = args.find((a) => a.name === 'Make it fail')?.value;
+    if (shouldFail === '1' || shouldFail === 'true') {
+      throw Error(`${order.code} failed because of a test error!`);
+    }
     return {
-      message: 'OKEE',
-      reference: '2',
+      message,
+      reference: order.code,
+      externalLink: '/orders/',
     };
   }
 }
