@@ -62,7 +62,7 @@ export class WebhookService implements OnApplicationBootstrap {
         `Please specify VendureEvents with Webhook.init() in your Vendure config.`
       );
     }
-    if (!WebhookPlugin.options.disabled) {
+    if (WebhookPlugin.options.disabled) {
       Logger.info(`Webhook plugin disabled`, loggerCtx);
       return;
     }
