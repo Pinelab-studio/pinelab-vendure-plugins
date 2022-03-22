@@ -17,8 +17,12 @@
     "build": "rimraf dist && tsc",
     "test": "jest --preset=\"ts-jest\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "coinbase-commerce-node": "^1.0.4"
+  },
   "devDependencies": {
+    "@nestjs/cli": "^8.2.4",
+    "@types/coinbase-commerce-node": "^1.0.6",
     "@types/jest": "^27.0.1",
     "@vendure/admin-ui": "1.4.3",
     "@vendure/admin-ui-plugin": "1.4.3",

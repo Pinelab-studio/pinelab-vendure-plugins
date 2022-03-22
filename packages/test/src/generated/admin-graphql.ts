@@ -105,6 +105,7 @@ export type AdministratorFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   emailAddress?: Maybe<StringOperators>;
   firstName?: Maybe<StringOperators>;
+  id?: Maybe<IdOperators>;
   lastName?: Maybe<StringOperators>;
   updatedAt?: Maybe<DateOperators>;
 };
@@ -116,9 +117,15 @@ export type AdministratorList = PaginatedList & {
 };
 
 export type AdministratorListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<AdministratorFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<AdministratorSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -184,6 +191,7 @@ export type AssetFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   fileSize?: Maybe<NumberOperators>;
   height?: Maybe<NumberOperators>;
+  id?: Maybe<IdOperators>;
   mimeType?: Maybe<StringOperators>;
   name?: Maybe<StringOperators>;
   preview?: Maybe<StringOperators>;
@@ -201,11 +209,17 @@ export type AssetList = PaginatedList & {
 };
 
 export type AssetListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<AssetFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<AssetSortParameter>;
   tags?: Maybe<Array<Scalars['String']>>;
   tagsOperator?: Maybe<LogicalOperator>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -272,10 +286,13 @@ export type BooleanCustomFieldConfig = CustomField & {
   label?: Maybe<Array<LocalizedString>>;
   list: Scalars['Boolean'];
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   readonly?: Maybe<Scalars['Boolean']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
+/** Operators for filtering on a Boolean field */
 export type BooleanOperators = {
   eq?: Maybe<Scalars['Boolean']>;
 };
@@ -379,6 +396,7 @@ export type CollectionBreadcrumb = {
 export type CollectionFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   description?: Maybe<StringOperators>;
+  id?: Maybe<IdOperators>;
   isPrivate?: Maybe<BooleanOperators>;
   languageCode?: Maybe<StringOperators>;
   name?: Maybe<StringOperators>;
@@ -394,9 +412,15 @@ export type CollectionList = PaginatedList & {
 };
 
 export type CollectionListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<CollectionFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<CollectionSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -488,6 +512,7 @@ export type Country = Node & {
   __typename?: 'Country';
   code: Scalars['String'];
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<Scalars['JSON']>;
   enabled: Scalars['Boolean'];
   id: Scalars['ID'];
   languageCode: LanguageCode;
@@ -500,6 +525,7 @@ export type CountryFilterParameter = {
   code?: Maybe<StringOperators>;
   createdAt?: Maybe<DateOperators>;
   enabled?: Maybe<BooleanOperators>;
+  id?: Maybe<IdOperators>;
   languageCode?: Maybe<StringOperators>;
   name?: Maybe<StringOperators>;
   updatedAt?: Maybe<DateOperators>;
@@ -512,9 +538,15 @@ export type CountryList = PaginatedList & {
 };
 
 export type CountryListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<CountryFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<CountrySortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -536,6 +568,7 @@ export type CountryTranslation = {
 };
 
 export type CountryTranslationInput = {
+  customFields?: Maybe<Scalars['JSON']>;
   id?: Maybe<Scalars['ID']>;
   languageCode: LanguageCode;
   name?: Maybe<Scalars['String']>;
@@ -606,11 +639,13 @@ export type CreateCollectionTranslationInput = {
 
 export type CreateCountryInput = {
   code: Scalars['String'];
+  customFields?: Maybe<Scalars['JSON']>;
   enabled: Scalars['Boolean'];
   translations: Array<CountryTranslationInput>;
 };
 
 export type CreateCustomerGroupInput = {
+  customFields?: Maybe<Scalars['JSON']>;
   customerIds?: Maybe<Array<Scalars['ID']>>;
   name: Scalars['String'];
 };
@@ -662,6 +697,7 @@ export type CreateGroupOptionInput = {
 export type CreatePaymentMethodInput = {
   checker?: Maybe<ConfigurableOperationInput>;
   code: Scalars['String'];
+  customFields?: Maybe<Scalars['JSON']>;
   description?: Maybe<Scalars['String']>;
   enabled: Scalars['Boolean'];
   handler: ConfigurableOperationInput;
@@ -718,6 +754,7 @@ export type CreatePromotionInput = {
   actions: Array<ConfigurableOperationInput>;
   conditions: Array<ConfigurableOperationInput>;
   couponCode?: Maybe<Scalars['String']>;
+  customFields?: Maybe<Scalars['JSON']>;
   enabled: Scalars['Boolean'];
   endsAt?: Maybe<Scalars['DateTime']>;
   name: Scalars['String'];
@@ -748,12 +785,14 @@ export type CreateTagInput = {
 };
 
 export type CreateTaxCategoryInput = {
+  customFields?: Maybe<Scalars['JSON']>;
   isDefault?: Maybe<Scalars['Boolean']>;
   name: Scalars['String'];
 };
 
 export type CreateTaxRateInput = {
   categoryId: Scalars['ID'];
+  customFields?: Maybe<Scalars['JSON']>;
   customerGroupId?: Maybe<Scalars['ID']>;
   enabled: Scalars['Boolean'];
   name: Scalars['String'];
@@ -762,6 +801,7 @@ export type CreateTaxRateInput = {
 };
 
 export type CreateZoneInput = {
+  customFields?: Maybe<Scalars['JSON']>;
   memberIds?: Maybe<Array<Scalars['ID']>>;
   name: Scalars['String'];
 };
@@ -1110,8 +1150,10 @@ export type CustomField = {
   label?: Maybe<Array<LocalizedString>>;
   list: Scalars['Boolean'];
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   readonly?: Maybe<Scalars['Boolean']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 export type CustomFieldConfig =
@@ -1131,19 +1173,26 @@ export type CustomFields = {
   Asset: Array<CustomFieldConfig>;
   Channel: Array<CustomFieldConfig>;
   Collection: Array<CustomFieldConfig>;
+  Country: Array<CustomFieldConfig>;
   Customer: Array<CustomFieldConfig>;
+  CustomerGroup: Array<CustomFieldConfig>;
   Facet: Array<CustomFieldConfig>;
   FacetValue: Array<CustomFieldConfig>;
   Fulfillment: Array<CustomFieldConfig>;
   GlobalSettings: Array<CustomFieldConfig>;
   Order: Array<CustomFieldConfig>;
   OrderLine: Array<CustomFieldConfig>;
+  PaymentMethod: Array<CustomFieldConfig>;
   Product: Array<CustomFieldConfig>;
   ProductOption: Array<CustomFieldConfig>;
   ProductOptionGroup: Array<CustomFieldConfig>;
   ProductVariant: Array<CustomFieldConfig>;
+  Promotion: Array<CustomFieldConfig>;
   ShippingMethod: Array<CustomFieldConfig>;
+  TaxCategory: Array<CustomFieldConfig>;
+  TaxRate: Array<CustomFieldConfig>;
   User: Array<CustomFieldConfig>;
+  Zone: Array<CustomFieldConfig>;
 };
 
 export type Customer = Node & {
@@ -1176,6 +1225,7 @@ export type CustomerFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   emailAddress?: Maybe<StringOperators>;
   firstName?: Maybe<StringOperators>;
+  id?: Maybe<IdOperators>;
   lastName?: Maybe<StringOperators>;
   phoneNumber?: Maybe<StringOperators>;
   title?: Maybe<StringOperators>;
@@ -1185,6 +1235,7 @@ export type CustomerFilterParameter = {
 export type CustomerGroup = Node & {
   __typename?: 'CustomerGroup';
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<Scalars['JSON']>;
   customers: CustomerList;
   id: Scalars['ID'];
   name: Scalars['String'];
@@ -1197,6 +1248,7 @@ export type CustomerGroupCustomersArgs = {
 
 export type CustomerGroupFilterParameter = {
   createdAt?: Maybe<DateOperators>;
+  id?: Maybe<IdOperators>;
   name?: Maybe<StringOperators>;
   updatedAt?: Maybe<DateOperators>;
 };
@@ -1208,9 +1260,15 @@ export type CustomerGroupList = PaginatedList & {
 };
 
 export type CustomerGroupListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<CustomerGroupFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<CustomerGroupSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -1228,9 +1286,15 @@ export type CustomerList = PaginatedList & {
 };
 
 export type CustomerListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<CustomerFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<CustomerSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -1245,6 +1309,7 @@ export type CustomerSortParameter = {
   updatedAt?: Maybe<SortOrder>;
 };
 
+/** Operators for filtering on a DateTime field */
 export type DateOperators = {
   after?: Maybe<Scalars['DateTime']>;
   before?: Maybe<Scalars['DateTime']>;
@@ -1270,9 +1335,11 @@ export type DateTimeCustomFieldConfig = CustomField & {
   max?: Maybe<Scalars['String']>;
   min?: Maybe<Scalars['String']>;
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   readonly?: Maybe<Scalars['Boolean']>;
   step?: Maybe<Scalars['Int']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 export type DeleteAssetInput = {
@@ -1382,6 +1449,7 @@ export type Facet = Node & {
 export type FacetFilterParameter = {
   code?: Maybe<StringOperators>;
   createdAt?: Maybe<DateOperators>;
+  id?: Maybe<IdOperators>;
   isPrivate?: Maybe<BooleanOperators>;
   languageCode?: Maybe<StringOperators>;
   name?: Maybe<StringOperators>;
@@ -1395,9 +1463,15 @@ export type FacetList = PaginatedList & {
 };
 
 export type FacetListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<FacetFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<FacetSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -1486,9 +1560,11 @@ export type FloatCustomFieldConfig = CustomField & {
   max?: Maybe<Scalars['Float']>;
   min?: Maybe<Scalars['Float']>;
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   readonly?: Maybe<Scalars['Boolean']>;
   step?: Maybe<Scalars['Float']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 export type FulfillOrderInput = {
@@ -1537,6 +1613,30 @@ export type GlobalSettings = {
   updatedAt: Scalars['DateTime'];
 };
 
+export type GoedgepicktConfig = {
+  __typename?: 'GoedgepicktConfig';
+  apiKey?: Maybe<Scalars['String']>;
+  orderWebhookKey?: Maybe<Scalars['String']>;
+  orderWebhookUrl?: Maybe<Scalars['String']>;
+  stockWebhookKey?: Maybe<Scalars['String']>;
+  stockWebhookUrl?: Maybe<Scalars['String']>;
+  webshopUuid?: Maybe<Scalars['String']>;
+};
+
+export type GoedgepicktConfigInput = {
+  apiKey?: Maybe<Scalars['String']>;
+  webshopUuid?: Maybe<Scalars['String']>;
+};
+
+export type GoedgepicktConfigUpdateResult =
+  | GoedgepicktConfig
+  | GoedgepicktError;
+
+export type GoedgepicktError = {
+  __typename?: 'GoedgepicktError';
+  message?: Maybe<Scalars['String']>;
+};
+
 export type HistoryEntry = Node & {
   __typename?: 'HistoryEntry';
   administrator?: Maybe<Administrator>;
@@ -1550,6 +1650,7 @@ export type HistoryEntry = Node & {
 
 export type HistoryEntryFilterParameter = {
   createdAt?: Maybe<DateOperators>;
+  id?: Maybe<IdOperators>;
   isPublic?: Maybe<BooleanOperators>;
   type?: Maybe<StringOperators>;
   updatedAt?: Maybe<DateOperators>;
@@ -1562,9 +1663,15 @@ export type HistoryEntryList = PaginatedList & {
 };
 
 export type HistoryEntryListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<HistoryEntryFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<HistoryEntrySortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -1600,6 +1707,14 @@ export enum HistoryEntryType {
   OrderRefundTransition = 'ORDER_REFUND_TRANSITION',
   OrderStateTransition = 'ORDER_STATE_TRANSITION',
 }
+
+/** Operators for filtering on an ID field */
+export type IdOperators = {
+  eq?: Maybe<Scalars['String']>;
+  in?: Maybe<Array<Scalars['String']>>;
+  notEq?: Maybe<Scalars['String']>;
+  notIn?: Maybe<Array<Scalars['String']>>;
+};
 
 export type ImportInfo = {
   __typename?: 'ImportInfo';
@@ -1639,9 +1754,11 @@ export type IntCustomFieldConfig = CustomField & {
   max?: Maybe<Scalars['Int']>;
   min?: Maybe<Scalars['Int']>;
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   readonly?: Maybe<Scalars['Boolean']>;
   step?: Maybe<Scalars['Int']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 /** Returned if the user authentication credentials are not valid */
@@ -1659,6 +1776,40 @@ export type InvalidFulfillmentHandlerError = ErrorResult & {
   message: Scalars['String'];
 };
 
+export type Invoice = {
+  __typename?: 'Invoice';
+  createdAt?: Maybe<Scalars['DateTime']>;
+  customerEmail: Scalars['String'];
+  downloadUrl: Scalars['String'];
+  id: Scalars['ID'];
+  invoiceNumber: Scalars['Int'];
+  orderCode: Scalars['String'];
+  orderId: Scalars['String'];
+};
+
+export type InvoiceConfig = {
+  __typename?: 'InvoiceConfig';
+  enabled: Scalars['Boolean'];
+  id: Scalars['ID'];
+  templateString?: Maybe<Scalars['String']>;
+};
+
+export type InvoiceConfigInput = {
+  enabled: Scalars['Boolean'];
+  templateString?: Maybe<Scalars['String']>;
+};
+
+export type InvoiceList = {
+  __typename?: 'InvoiceList';
+  items: Array<Invoice>;
+  totalItems: Scalars['Int'];
+};
+
+export type InvoicesListInput = {
+  itemsPerPage: Scalars['Int'];
+  page: Scalars['Int'];
+};
+
 /** Returned if the specified items are already part of a Fulfillment */
 export type ItemsAlreadyFulfilledError = ErrorResult & {
   __typename?: 'ItemsAlreadyFulfilledError';
@@ -1668,6 +1819,7 @@ export type ItemsAlreadyFulfilledError = ErrorResult & {
 
 export type Job = Node & {
   __typename?: 'Job';
+  attempts: Scalars['Int'];
   createdAt: Scalars['DateTime'];
   data?: Maybe<Scalars['JSON']>;
   duration: Scalars['Int'];
@@ -1677,17 +1829,27 @@ export type Job = Node & {
   progress: Scalars['Float'];
   queueName: Scalars['String'];
   result?: Maybe<Scalars['JSON']>;
+  retries: Scalars['Int'];
   settledAt?: Maybe<Scalars['DateTime']>;
   startedAt?: Maybe<Scalars['DateTime']>;
   state: JobState;
 };
 
+export type JobBufferSize = {
+  __typename?: 'JobBufferSize';
+  bufferId: Scalars['String'];
+  size: Scalars['Int'];
+};
+
 export type JobFilterParameter = {
+  attempts?: Maybe<NumberOperators>;
   createdAt?: Maybe<DateOperators>;
   duration?: Maybe<NumberOperators>;
+  id?: Maybe<IdOperators>;
   isSettled?: Maybe<BooleanOperators>;
   progress?: Maybe<NumberOperators>;
   queueName?: Maybe<StringOperators>;
+  retries?: Maybe<NumberOperators>;
   settledAt?: Maybe<DateOperators>;
   startedAt?: Maybe<DateOperators>;
   state?: Maybe<StringOperators>;
@@ -1700,9 +1862,15 @@ export type JobList = PaginatedList & {
 };
 
 export type JobListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<JobFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<JobSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -1713,11 +1881,13 @@ export type JobQueue = {
 };
 
 export type JobSortParameter = {
+  attempts?: Maybe<SortOrder>;
   createdAt?: Maybe<SortOrder>;
   duration?: Maybe<SortOrder>;
   id?: Maybe<SortOrder>;
   progress?: Maybe<SortOrder>;
   queueName?: Maybe<SortOrder>;
+  retries?: Maybe<SortOrder>;
   settledAt?: Maybe<SortOrder>;
   startedAt?: Maybe<SortOrder>;
 };
@@ -2079,9 +2249,11 @@ export type LocaleStringCustomFieldConfig = CustomField & {
   length?: Maybe<Scalars['Int']>;
   list: Scalars['Boolean'];
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   pattern?: Maybe<Scalars['String']>;
   readonly?: Maybe<Scalars['Boolean']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 export type LocalizedString = {
@@ -2174,7 +2346,10 @@ export type Mutation = {
   addCustomersToGroup: CustomerGroup;
   addFulfillmentToOrder: AddFulfillmentToOrderResult;
   /**
-   * Used to manually create a new Payment against an Order. This is used when a completed Order
+   * Used to manually create a new Payment against an Order.
+   * This can be used by an Administrator when an Order is in the ArrangingPayment state.
+   *
+   * It is also used when a completed Order
    * has been modified (using `modifyOrder`) and the price has increased. The extra payment
    * can then be manually arranged by the administrator, and the details used to create a new
    * Payment.
@@ -2286,6 +2461,7 @@ export type Mutation = {
   deleteTaxRate: DeletionResponse;
   /** Delete a Zone */
   deleteZone: DeletionResponse;
+  flushBufferedJobs: Success;
   importProducts?: Maybe<ImportInfo>;
   /** Authenticates the user using the native authentication strategy. This mutation is an alias for `authenticate({ native: { ... }})` */
   login: NativeAuthenticationResult;
@@ -2311,8 +2487,10 @@ export type Mutation = {
   removeProductsFromChannel: Array<Product>;
   /** Removes Promotions from the specified Channel */
   removePromotionsFromChannel: Array<Promotion>;
-  /** Remove all settled jobs in the given queues olfer than the given date. Returns the number of jobs deleted. */
+  /** Remove all settled jobs in the given queues older than the given date. Returns the number of jobs deleted. */
   removeSettledJobs: Scalars['Int'];
+  runGoedgepicktFullSync?: Maybe<Scalars['Boolean']>;
+  runPendingSearchIndexUpdates: Success;
   setOrderCustomFields?: Maybe<Order>;
   settlePayment: SettlePaymentResult;
   settleRefund: SettleRefundResult;
@@ -2343,6 +2521,8 @@ export type Mutation = {
   /** Update one or more FacetValues */
   updateFacetValues: Array<FacetValue>;
   updateGlobalSettings: UpdateGlobalSettingsResult;
+  updateGoedgepicktConfig?: Maybe<GoedgepicktConfigUpdateResult>;
+  updateMyparcelConfig?: Maybe<MyparcelConfig>;
   updateOrderNote: HistoryEntry;
   /** Update an existing PaymentMethod */
   updatePaymentMethod: PaymentMethod;
@@ -2368,6 +2548,7 @@ export type Mutation = {
   updateWebhook?: Maybe<Scalars['String']>;
   /** Update an existing Zone */
   updateZone: Zone;
+  upsertInvoiceConfig: InvoiceConfig;
 };
 
 export type MutationAddCustomersToGroupArgs = {
@@ -2620,6 +2801,10 @@ export type MutationDeleteZoneArgs = {
   id: Scalars['ID'];
 };
 
+export type MutationFlushBufferedJobsArgs = {
+  bufferIds?: Maybe<Array<Scalars['String']>>;
+};
+
 export type MutationImportProductsArgs = {
   csvFile: Scalars['Upload'];
 };
@@ -2753,6 +2938,14 @@ export type MutationUpdateGlobalSettingsArgs = {
   input: UpdateGlobalSettingsInput;
 };
 
+export type MutationUpdateGoedgepicktConfigArgs = {
+  input: GoedgepicktConfigInput;
+};
+
+export type MutationUpdateMyparcelConfigArgs = {
+  input: MyparcelConfigInput;
+};
+
 export type MutationUpdateOrderNoteArgs = {
   input: UpdateOrderNoteInput;
 };
@@ -2809,6 +3002,19 @@ export type MutationUpdateZoneArgs = {
   input: UpdateZoneInput;
 };
 
+export type MutationUpsertInvoiceConfigArgs = {
+  input?: Maybe<InvoiceConfigInput>;
+};
+
+export type MyparcelConfig = {
+  __typename?: 'MyparcelConfig';
+  apiKey?: Maybe<Scalars['String']>;
+};
+
+export type MyparcelConfigInput = {
+  apiKey?: Maybe<Scalars['String']>;
+};
+
 export type NativeAuthInput = {
   password: Scalars['String'];
   username: Scalars['String'];
@@ -2851,6 +3057,7 @@ export type NothingToRefundError = ErrorResult & {
   message: Scalars['String'];
 };
 
+/** Operators for filtering on a Int or Float field */
 export type NumberOperators = {
   between?: Maybe<NumberRange>;
   eq?: Maybe<Scalars['Float']>;
@@ -2949,6 +3156,7 @@ export type OrderFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   currencyCode?: Maybe<StringOperators>;
   customerLastName?: Maybe<StringOperators>;
+  id?: Maybe<IdOperators>;
   orderPlacedAt?: Maybe<DateOperators>;
   shipping?: Maybe<NumberOperators>;
   shippingWithTax?: Maybe<NumberOperators>;
@@ -2980,7 +3188,7 @@ export type OrderItem = Node & {
   fulfillment?: Maybe<Fulfillment>;
   id: Scalars['ID'];
   /**
-   * The actual unit price, taking into account both item discounts _and_ prorated (proportially-distributed)
+   * The actual unit price, taking into account both item discounts _and_ prorated (proportionally-distributed)
    * Order-level discounts. This value is the true economic value of the OrderItem, and is used in tax
    * and refund calculations.
    */
@@ -3031,14 +3239,14 @@ export type OrderLine = Node & {
   items: Array<OrderItem>;
   /** The total price of the line excluding tax and discounts. */
   linePrice: Scalars['Int'];
-  /** The total price of the line including tax bit excluding discounts. */
+  /** The total price of the line including tax but excluding discounts. */
   linePriceWithTax: Scalars['Int'];
   /** The total tax on this line */
   lineTax: Scalars['Int'];
   order: Order;
   productVariant: ProductVariant;
   /**
-   * The actual line price, taking into account both item discounts _and_ prorated (proportially-distributed)
+   * The actual line price, taking into account both item discounts _and_ prorated (proportionally-distributed)
    * Order-level discounts. This value is the true economic value of the OrderLine, and is used in tax
    * and refund calculations.
    */
@@ -3046,7 +3254,7 @@ export type OrderLine = Node & {
   /** The proratedLinePrice including tax */
   proratedLinePriceWithTax: Scalars['Int'];
   /**
-   * The actual unit price, taking into account both item discounts _and_ prorated (proportially-distributed)
+   * The actual unit price, taking into account both item discounts _and_ prorated (proportionally-distributed)
    * Order-level discounts. This value is the true economic value of the OrderItem, and is used in tax
    * and refund calculations.
    */
@@ -3079,9 +3287,15 @@ export type OrderList = PaginatedList & {
 };
 
 export type OrderListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<OrderFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<OrderSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -3180,6 +3394,7 @@ export type PaymentMethod = Node & {
   checker?: Maybe<ConfigurableOperation>;
   code: Scalars['String'];
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<Scalars['JSON']>;
   description: Scalars['String'];
   enabled: Scalars['Boolean'];
   handler: ConfigurableOperation;
@@ -3193,6 +3408,7 @@ export type PaymentMethodFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   description?: Maybe<StringOperators>;
   enabled?: Maybe<BooleanOperators>;
+  id?: Maybe<IdOperators>;
   name?: Maybe<StringOperators>;
   updatedAt?: Maybe<DateOperators>;
 };
@@ -3204,9 +3420,15 @@ export type PaymentMethodList = PaginatedList & {
 };
 
 export type PaymentMethodListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<PaymentMethodFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<PaymentMethodSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -3223,6 +3445,7 @@ export type PaymentMethodMissingError = ErrorResult & {
 export type PaymentMethodQuote = {
   __typename?: 'PaymentMethodQuote';
   code: Scalars['String'];
+  customFields?: Maybe<Scalars['JSON']>;
   description: Scalars['String'];
   eligibilityMessage?: Maybe<Scalars['String']>;
   id: Scalars['ID'];
@@ -3264,6 +3487,8 @@ export type PaymentStateTransitionError = ErrorResult & {
  * @docsCategory common
  */
 export enum Permission {
+  /** Allow this user to enable invoice generation */
+  AllowInvoicesPermission = 'AllowInvoicesPermission',
   /** Authenticated means simply that the user is logged in */
   Authenticated = 'Authenticated',
   /** Grants permission to create Administrator */
@@ -3390,6 +3615,12 @@ export enum Permission {
   ReadTaxRate = 'ReadTaxRate',
   /** Grants permission to read Zone */
   ReadZone = 'ReadZone',
+  /** Allows setting Goedgepickt configurations */
+  SetGoedgepicktConfig = 'SetGoedgepicktConfig',
+  /** Allows setting MyParcel configurations */
+  SetMyparcelConfig = 'SetMyparcelConfig',
+  /** Allows setting a webhook URL */
+  SetWebhook = 'SetWebhook',
   /** SuperAdmin has unrestricted access to all operations */
   SuperAdmin = 'SuperAdmin',
   /** Grants permission to update Administrator */
@@ -3468,13 +3699,21 @@ export type Product = Node & {
   slug: Scalars['String'];
   translations: Array<ProductTranslation>;
   updatedAt: Scalars['DateTime'];
+  /** Returns a paginated, sortable, filterable list of ProductVariants */
+  variantList: ProductVariantList;
+  /** Returns all ProductVariants */
   variants: Array<ProductVariant>;
+};
+
+export type ProductVariantListArgs = {
+  options?: Maybe<ProductVariantListOptions>;
 };
 
 export type ProductFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   description?: Maybe<StringOperators>;
   enabled?: Maybe<BooleanOperators>;
+  id?: Maybe<IdOperators>;
   languageCode?: Maybe<StringOperators>;
   name?: Maybe<StringOperators>;
   slug?: Maybe<StringOperators>;
@@ -3488,9 +3727,15 @@ export type ProductList = PaginatedList & {
 };
 
 export type ProductListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<ProductFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<ProductSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -3630,11 +3875,13 @@ export type ProductVariantFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   currencyCode?: Maybe<StringOperators>;
   enabled?: Maybe<BooleanOperators>;
+  id?: Maybe<IdOperators>;
   languageCode?: Maybe<StringOperators>;
   name?: Maybe<StringOperators>;
   outOfStockThreshold?: Maybe<NumberOperators>;
   price?: Maybe<NumberOperators>;
   priceWithTax?: Maybe<NumberOperators>;
+  productId?: Maybe<IdOperators>;
   sku?: Maybe<StringOperators>;
   stockAllocated?: Maybe<NumberOperators>;
   stockLevel?: Maybe<StringOperators>;
@@ -3651,9 +3898,15 @@ export type ProductVariantList = PaginatedList & {
 };
 
 export type ProductVariantListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<ProductVariantFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<ProductVariantSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -3694,6 +3947,7 @@ export type Promotion = Node & {
   conditions: Array<ConfigurableOperation>;
   couponCode?: Maybe<Scalars['String']>;
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<Scalars['JSON']>;
   enabled: Scalars['Boolean'];
   endsAt?: Maybe<Scalars['DateTime']>;
   id: Scalars['ID'];
@@ -3708,6 +3962,7 @@ export type PromotionFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   enabled?: Maybe<BooleanOperators>;
   endsAt?: Maybe<DateOperators>;
+  id?: Maybe<IdOperators>;
   name?: Maybe<StringOperators>;
   perCustomerUsageLimit?: Maybe<NumberOperators>;
   startsAt?: Maybe<DateOperators>;
@@ -3721,9 +3976,15 @@ export type PromotionList = PaginatedList & {
 };
 
 export type PromotionListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<PromotionFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<PromotionSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -3771,17 +4032,24 @@ export type Query = {
   facets: FacetList;
   fulfillmentHandlers: Array<ConfigurableOperationDefinition>;
   globalSettings: GlobalSettings;
+  goedgepicktConfig?: Maybe<GoedgepicktConfig>;
+  invoiceConfig?: Maybe<InvoiceConfig>;
+  /** Get paginated invoices */
+  invoices: InvoiceList;
   job?: Maybe<Job>;
+  jobBufferSize: Array<JobBufferSize>;
   jobQueues: Array<JobQueue>;
   jobs: JobList;
   jobsById: Array<Job>;
   me?: Maybe<CurrentUser>;
+  myparcelConfig?: Maybe<MyparcelConfig>;
   order?: Maybe<Order>;
   orders: OrderList;
   paymentMethod?: Maybe<PaymentMethod>;
   paymentMethodEligibilityCheckers: Array<ConfigurableOperationDefinition>;
   paymentMethodHandlers: Array<ConfigurableOperationDefinition>;
   paymentMethods: PaymentMethodList;
+  pendingSearchIndexUpdates: Scalars['Int'];
   /** Get a Product either by id or slug. If neither id nor slug is speicified, an error will result. */
   product?: Maybe<Product>;
   productOptionGroup?: Maybe<ProductOptionGroup>;
@@ -3877,8 +4145,16 @@ export type QueryFacetsArgs = {
   options?: Maybe<FacetListOptions>;
 };
 
+export type QueryInvoicesArgs = {
+  input?: Maybe<InvoicesListInput>;
+};
+
 export type QueryJobArgs = {
   jobId: Scalars['ID'];
+};
+
+export type QueryJobBufferSizeArgs = {
+  bufferIds?: Maybe<Array<Scalars['String']>>;
 };
 
 export type QueryJobsArgs = {
@@ -4064,9 +4340,11 @@ export type RelationCustomFieldConfig = CustomField & {
   label?: Maybe<Array<LocalizedString>>;
   list: Scalars['Boolean'];
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   readonly?: Maybe<Scalars['Boolean']>;
   scalarFields: Array<Scalars['String']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 export type Release = Node &
@@ -4127,6 +4405,7 @@ export type RoleFilterParameter = {
   code?: Maybe<StringOperators>;
   createdAt?: Maybe<DateOperators>;
   description?: Maybe<StringOperators>;
+  id?: Maybe<IdOperators>;
   updatedAt?: Maybe<DateOperators>;
 };
 
@@ -4137,9 +4416,15 @@ export type RoleList = PaginatedList & {
 };
 
 export type RoleListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<RoleFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<RoleSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -4288,6 +4573,7 @@ export type ShippingMethodFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   description?: Maybe<StringOperators>;
   fulfillmentHandlerCode?: Maybe<StringOperators>;
+  id?: Maybe<IdOperators>;
   name?: Maybe<StringOperators>;
   updatedAt?: Maybe<DateOperators>;
 };
@@ -4299,15 +4585,22 @@ export type ShippingMethodList = PaginatedList & {
 };
 
 export type ShippingMethodListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<ShippingMethodFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<ShippingMethodSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
 export type ShippingMethodQuote = {
   __typename?: 'ShippingMethodQuote';
   code: Scalars['String'];
+  customFields?: Maybe<Scalars['JSON']>;
   description: Scalars['String'];
   id: Scalars['ID'];
   /** Any optional metadata returned by the ShippingCalculator in the ShippingCalculationResult */
@@ -4413,10 +4706,12 @@ export type StringCustomFieldConfig = CustomField & {
   length?: Maybe<Scalars['Int']>;
   list: Scalars['Boolean'];
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   options?: Maybe<Array<StringFieldOption>>;
   pattern?: Maybe<Scalars['String']>;
   readonly?: Maybe<Scalars['Boolean']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 export type StringFieldOption = {
@@ -4425,6 +4720,7 @@ export type StringFieldOption = {
   value: Scalars['String'];
 };
 
+/** Operators for filtering on a String field */
 export type StringOperators = {
   contains?: Maybe<Scalars['String']>;
   eq?: Maybe<Scalars['String']>;
@@ -4473,6 +4769,7 @@ export type Tag = Node & {
 
 export type TagFilterParameter = {
   createdAt?: Maybe<DateOperators>;
+  id?: Maybe<IdOperators>;
   updatedAt?: Maybe<DateOperators>;
   value?: Maybe<StringOperators>;
 };
@@ -4484,9 +4781,15 @@ export type TagList = PaginatedList & {
 };
 
 export type TagListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<TagFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<TagSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -4500,6 +4803,7 @@ export type TagSortParameter = {
 export type TaxCategory = Node & {
   __typename?: 'TaxCategory';
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<Scalars['JSON']>;
   id: Scalars['ID'];
   isDefault: Scalars['Boolean'];
   name: Scalars['String'];
@@ -4516,6 +4820,7 @@ export type TaxRate = Node & {
   __typename?: 'TaxRate';
   category: TaxCategory;
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<Scalars['JSON']>;
   customerGroup?: Maybe<CustomerGroup>;
   enabled: Scalars['Boolean'];
   id: Scalars['ID'];
@@ -4528,6 +4833,7 @@ export type TaxRate = Node & {
 export type TaxRateFilterParameter = {
   createdAt?: Maybe<DateOperators>;
   enabled?: Maybe<BooleanOperators>;
+  id?: Maybe<IdOperators>;
   name?: Maybe<StringOperators>;
   updatedAt?: Maybe<DateOperators>;
   value?: Maybe<NumberOperators>;
@@ -4540,9 +4846,15 @@ export type TaxRateList = PaginatedList & {
 };
 
 export type TaxRateListOptions = {
+  /** Allows the results to be filtered */
   filter?: Maybe<TaxRateFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: Maybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
   skip?: Maybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
   sort?: Maybe<TaxRateSortParameter>;
+  /** Takes n results, for use in pagination */
   take?: Maybe<Scalars['Int']>;
 };
 
@@ -4591,8 +4903,10 @@ export type TextCustomFieldConfig = CustomField & {
   label?: Maybe<Array<LocalizedString>>;
   list: Scalars['Boolean'];
   name: Scalars['String'];
+  nullable?: Maybe<Scalars['Boolean']>;
   readonly?: Maybe<Scalars['Boolean']>;
   type: Scalars['String'];
+  ui?: Maybe<Scalars['JSON']>;
 };
 
 export type TransitionFulfillmentToStateResult =
@@ -4683,12 +4997,14 @@ export type UpdateCollectionTranslationInput = {
 
 export type UpdateCountryInput = {
   code?: Maybe<Scalars['String']>;
+  customFields?: Maybe<Scalars['JSON']>;
   enabled?: Maybe<Scalars['Boolean']>;
   id: Scalars['ID'];
   translations?: Maybe<Array<CountryTranslationInput>>;
 };
 
 export type UpdateCustomerGroupInput = {
+  customFields?: Maybe<Scalars['JSON']>;
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
 };
@@ -4762,6 +5078,7 @@ export type UpdateOrderNoteInput = {
 export type UpdatePaymentMethodInput = {
   checker?: Maybe<ConfigurableOperationInput>;
   code?: Maybe<Scalars['String']>;
+  customFields?: Maybe<Scalars['JSON']>;
   description?: Maybe<Scalars['String']>;
   enabled?: Maybe<Scalars['Boolean']>;
   handler?: Maybe<ConfigurableOperationInput>;
@@ -4814,6 +5131,7 @@ export type UpdatePromotionInput = {
   actions?: Maybe<Array<ConfigurableOperationInput>>;
   conditions?: Maybe<Array<ConfigurableOperationInput>>;
   couponCode?: Maybe<Scalars['String']>;
+  customFields?: Maybe<Scalars['JSON']>;
   enabled?: Maybe<Scalars['Boolean']>;
   endsAt?: Maybe<Scalars['DateTime']>;
   id: Scalars['ID'];
@@ -4848,6 +5166,7 @@ export type UpdateTagInput = {
 };
 
 export type UpdateTaxCategoryInput = {
+  customFields?: Maybe<Scalars['JSON']>;
   id: Scalars['ID'];
   isDefault?: Maybe<Scalars['Boolean']>;
   name?: Maybe<Scalars['String']>;
@@ -4855,6 +5174,7 @@ export type UpdateTaxCategoryInput = {
 
 export type UpdateTaxRateInput = {
   categoryId?: Maybe<Scalars['ID']>;
+  customFields?: Maybe<Scalars['JSON']>;
   customerGroupId?: Maybe<Scalars['ID']>;
   enabled?: Maybe<Scalars['Boolean']>;
   id: Scalars['ID'];
@@ -4864,6 +5184,7 @@ export type UpdateTaxRateInput = {
 };
 
 export type UpdateZoneInput = {
+  customFields?: Maybe<Scalars['JSON']>;
   id: Scalars['ID'];
   name?: Maybe<Scalars['String']>;
 };
@@ -4884,6 +5205,7 @@ export type User = Node & {
 export type Zone = Node & {
   __typename?: 'Zone';
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<Scalars['JSON']>;
   id: Scalars['ID'];
   members: Array<Country>;
   name: Scalars['String'];
@@ -4936,6 +5258,22 @@ export type OrderQuery = {
   }>;
 };
 
+export type CreatePaymentMethodMutationVariables = Exact<{
+  input: CreatePaymentMethodInput;
+}>;
+
+export type CreatePaymentMethodMutation = {
+  __typename?: 'Mutation';
+  createPaymentMethod: {
+    __typename?: 'PaymentMethod';
+    id: string;
+    code: string;
+    name: string;
+    description: string;
+    enabled: boolean;
+  };
+};
+
 export const CreateShippingMethod = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
     createShippingMethod(input: $input) {
@@ -4964,6 +5302,17 @@ export const Order = gql`
         state
         method
       }
+    }
+  }
+`;
+export const CreatePaymentMethod = gql`
+  mutation createPaymentMethod($input: CreatePaymentMethodInput!) {
+    createPaymentMethod(input: $input) {
+      id
+      code
+      name
+      description
+      enabled
     }
   }
 `;

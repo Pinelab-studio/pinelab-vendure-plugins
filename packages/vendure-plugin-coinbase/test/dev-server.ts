@@ -1,4 +1,4 @@
-import { BitpayPlugin } from '../src/bitpay-plugin';
+import { CoinbasePlugin } from '../src/bitpay-plugin';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -22,7 +22,7 @@ require('dotenv').config();
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      BitpayPlugin,
+      CoinbasePlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
