@@ -1,17 +1,17 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { invoicePermission, StorageStrategy } from './index';
-import { schema } from './api/schema.graphql';
-import { InvoiceService } from './api/invoice.service';
-import { DataStrategy } from './api/strategies/data-strategy';
-import { PLUGIN_INIT_OPTIONS } from './constants';
+import { PluginCommonModule, RuntimeVendureConfig, Type, VendurePlugin } from '@vendure/core';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 import { InvoiceConfigEntity } from './api/entities/invoice-config.entity';
-import { InvoiceResolver } from './api/invoice.resolver';
 import { InvoiceEntity } from './api/entities/invoice.entity';
 import { InvoiceController } from './api/invoice.controller';
-import path from 'path';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { InvoiceResolver } from './api/invoice.resolver';
+import { InvoiceService } from './api/invoice.service';
+import { schema } from './api/schema.graphql';
+import { DataStrategy } from './api/strategies/data-strategy';
 import { DefaultDataStrategy } from './api/strategies/default-data-strategy';
 import { LocalFileStrategy } from './api/strategies/local-file-strategy';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { invoicePermission, StorageStrategy } from './index';
 
 export interface InvoicePluginConfig {
   /**
@@ -35,23 +35,28 @@ export interface InvoicePluginConfig {
     schema,
     resolvers: [InvoiceResolver],
   },
-  configuration: (config) => {
-    config.authOptions.customPermissions.push(invoicePermission);
-    return config;
-  },
+  configuration: (config) => InvoicePlugin.configure(config),
 })
 export class InvoicePlugin {
   static config: InvoicePluginConfig;
 
   static init(
     config: Partial<InvoicePluginConfig> & { vendureHost: string }
-  ): typeof InvoicePlugin {
-    this.config = {
+  ): Type<InvoicePlugin> {
+    InvoicePlugin.config = {
       ...config,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       dataStrategy: config.dataStrategy || new DefaultDataStrategy(),
     };
-    return InvoicePlugin;
+    return this;
+  }
+
+  static async configure(config: RuntimeVendureConfig) {
+     config.authOptions.customPermissions.push(invoicePermission);
+     if (this.config.storageStrategy) {
+       await this.config.storageStrategy.init();
+     }
+     return config;
   }
 
   static ui: AdminUiExtension = {

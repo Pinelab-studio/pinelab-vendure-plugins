@@ -1,5 +1,5 @@
-import { ReadStream } from 'fs';
 import { Response } from 'express';
+import { ReadStream } from 'fs';
 import { InvoiceEntity } from '../entities/invoice.entity';
 
 /**
@@ -26,6 +26,8 @@ interface BaseStorageStrategy {
    * Will only be called by admins
    */
   streamMultiple(invoices: InvoiceEntity[], res: Response): Promise<ReadStream>;
+
+  init(): Promise<void>;
 }
 
 export interface RemoteStorageStrategy extends BaseStorageStrategy {
@@ -35,6 +37,7 @@ export interface RemoteStorageStrategy extends BaseStorageStrategy {
    * or Amazon S3 instance
    */
   getPublicUrl(invoice: InvoiceEntity): Promise<string>;
+
 }
 
 export interface LocalStorageStrategy extends BaseStorageStrategy {
