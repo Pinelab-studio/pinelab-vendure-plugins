@@ -37,7 +37,6 @@ export interface RemoteStorageStrategy extends BaseStorageStrategy {
    * or Amazon S3 instance
    */
   getPublicUrl(invoice: InvoiceEntity): Promise<string>;
-
 }
 
 export interface LocalStorageStrategy extends BaseStorageStrategy {

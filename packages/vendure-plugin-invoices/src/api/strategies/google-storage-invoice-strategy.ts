@@ -15,7 +15,7 @@ interface GoogleInvoiceConfig {
 }
 
 export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
-  private storage: import("@google-cloud/storage").Storage;
+  private storage: import('@google-cloud/storage').Storage;
   private bucketName: string;
 
   constructor(private config: GoogleInvoiceConfig) {
@@ -23,7 +23,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
   }
 
   async init(): Promise<void> {
-    const storage = await import("@google-cloud/storage");
+    const storage = await import('@google-cloud/storage');
 
     this.storage = this.config.storageOptions
       ? new storage.Storage(this.config.storageOptions)

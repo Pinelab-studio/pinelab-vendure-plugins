@@ -12,7 +12,7 @@ import { LocalStorageStrategy } from './storage-strategy';
 export class LocalFileStrategy implements LocalStorageStrategy {
   invoiceDir = 'invoices';
 
-  async init(): Promise<void> { }
+  async init(): Promise<void> {}
 
   async save(tmpFile: string, invoiceNumber: number, channelToken: string) {
     if (!(await exists(this.invoiceDir))) {

@@ -3,20 +3,20 @@ import {
   DefaultLogger,
   LogLevel,
   mergeConfig,
-  Order
+  Order,
 } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig
+  testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import fetch from 'node-fetch';
 import {
   addShippingMethod,
-  createSettledOrder
+  createSettledOrder,
 } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -28,16 +28,13 @@ import {
   Invoice,
   InvoiceConfigQuery,
   MutationUpsertInvoiceConfigArgs,
-  UpsertInvoiceConfigMutation
+  UpsertInvoiceConfigMutation,
 } from '../src/ui/generated/graphql';
 import {
   getAllInvoicesQuery,
   getConfigQuery,
-  upsertConfigMutation
+  upsertConfigMutation,
 } from '../src/ui/queries.graphql';
-<<<<<<< HEAD
-=======
->>>>>>> aff4c3e (feat(invoices) - defer loading of @google-cloud/storage)
 
 jest.setTimeout(20000);
 

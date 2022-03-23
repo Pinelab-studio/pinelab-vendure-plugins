@@ -1,4 +1,9 @@
-import { PluginCommonModule, RuntimeVendureConfig, Type, VendurePlugin } from '@vendure/core';
+import {
+  PluginCommonModule,
+  RuntimeVendureConfig,
+  Type,
+  VendurePlugin,
+} from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { InvoiceConfigEntity } from './api/entities/invoice-config.entity';
@@ -52,11 +57,11 @@ export class InvoicePlugin {
   }
 
   static async configure(config: RuntimeVendureConfig) {
-     config.authOptions.customPermissions.push(invoicePermission);
-     if (this.config.storageStrategy) {
-       await this.config.storageStrategy.init();
-     }
-     return config;
+    config.authOptions.customPermissions.push(invoicePermission);
+    if (this.config.storageStrategy) {
+      await this.config.storageStrategy.init();
+    }
+    return config;
   }
 
   static ui: AdminUiExtension = {
