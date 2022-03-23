@@ -20,7 +20,6 @@ import {
 } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { GoogleStorageInvoiceStrategy } from '../dist';
 import { InvoicesQuery } from '../dist/ui/generated/graphql';
 import { InvoicePlugin } from '../src';
 import { defaultTemplate } from '../src/api/default-template';
@@ -36,6 +35,9 @@ import {
   getConfigQuery,
   upsertConfigMutation
 } from '../src/ui/queries.graphql';
+<<<<<<< HEAD
+=======
+>>>>>>> aff4c3e (feat(invoices) - defer loading of @google-cloud/storage)
 
 jest.setTimeout(20000);
 
@@ -58,10 +60,6 @@ describe('Invoices plugin', function () {
       plugins: [
         InvoicePlugin.init({
           vendureHost: 'http://localhost:3106',
-          storageStrategy: new GoogleStorageInvoiceStrategy({
-            bucketName: "bucket",
-            
-          })
         }),
       ],
       paymentOptions: {
