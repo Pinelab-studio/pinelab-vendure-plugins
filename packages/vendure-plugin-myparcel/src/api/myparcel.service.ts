@@ -223,12 +223,19 @@ export class MyparcelService implements OnApplicationBootstrap {
       path === 'shipments' ? shipmentContentType : defaultContentType;
     const buff = Buffer.from(apiKey);
     const encodedKey = buff.toString('base64');
-    this.client.defaults.headers['Authorization'] = `basic ${encodedKey}`;
-    this.client.defaults.headers['Content-Type'] = contentType;
     try {
-      const res = await this.client.post(path, {
-        data: body,
-      });
+      const res = await this.client.post(
+        path,
+        {
+          data: body,
+        },
+        {
+          headers: {
+            Authorization: `basic ${encodedKey}`,
+            'Content-Type': contentType,
+          },
+        }
+      );
       return res.data;
     } catch (err) {
       if (err.response?.status >= 400 && err.response?.status < 500) {
