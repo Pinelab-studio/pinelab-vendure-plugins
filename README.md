@@ -60,4 +60,9 @@ Each package has the following commands:
 2. `yarn serve` start a devserver with the plugin
 3. `yarn test` run tests for the plugin
 
+### Upgrading dependencies
+
+1. Don't upgrade `node-fetch`, it should stay at 2.x
+2. Vendure ui-devkit depends on `typescript@4.3.5`
+
 [![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)
