@@ -25,6 +25,7 @@
     "tmp": "^0.2.1"
   },
   "devDependencies": {
+    "aws-sdk": "^2.1099.0",
     "@google-cloud/storage": "^5.18.2",
     "@graphql-codegen/cli": "^2.4.0",
     "@graphql-codegen/typescript": "^2.4.8",
