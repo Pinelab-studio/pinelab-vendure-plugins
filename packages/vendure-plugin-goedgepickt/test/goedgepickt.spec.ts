@@ -15,6 +15,7 @@ import {
   OrderService,
   ProductVariant,
   ProductVariantService,
+  ShippingMethodService,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
@@ -53,6 +54,7 @@ describe('Goedgepickt plugin', function () {
   const ggConfig = {
     apiKey: 'test-api-key',
     webshopUuid: 'test-webshop-uuid',
+    autoFulfill: true,
   };
 
   let pushProductsPayloads: any[] = [];
@@ -188,6 +190,20 @@ describe('Goedgepickt plugin', function () {
     );
     const updatedVariant = await findVariantBySku('L2201308');
     await expect(updatedVariant?.stockOnHand).toBe(33);
+  });
+
+  it('Set goedgepickt as fulfillment handler', async () => {
+    const ctx = await server.app
+      .get(GoedgepicktService)
+      .getCtxForChannel('e2e-default-channel');
+    const shippingMethod = await server.app
+      .get(ShippingMethodService)
+      .update(ctx, {
+        id: 1,
+        fulfillmentHandler: goedgepicktHandler.code,
+        translations: [],
+      });
+    expect(shippingMethod.fulfillmentHandlerCode).toBe('goedgepickt');
   });
 
   it('Pushes order', async () => {
