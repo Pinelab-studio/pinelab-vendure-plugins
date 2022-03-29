@@ -41,11 +41,11 @@ Run this script once to compile the admin UI. **Run with ts-node** to compile th
 ```js
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
-import { webhookAdminUi } from 'vendure-plugin-webhook';
+import { WebhookPLugin } from 'vendure-plugin-webhook';
 
 compileUiExtensions({
   outputPath: path.join(__dirname, '__admin-ui'),
-  extensions: [webhookAdminUi],
+  extensions: [WebhookPlugin.ui],
 })
   .compile?.()
   .then(() => {
