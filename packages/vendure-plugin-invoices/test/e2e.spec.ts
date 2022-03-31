@@ -109,7 +109,7 @@ describe('Invoices plugin', function () {
 
   it('Creates a placed order', async () => {
     await addShippingMethod(adminClient, 'manual-fulfillment');
-    order = await createSettledOrder(shopClient);
+    order = await createSettledOrder(shopClient, 3);
     expect((order as any).id).toBeDefined();
   });
 
@@ -167,7 +167,7 @@ describe('Invoices plugin', function () {
   });
 
   it('Has incremental invoice number', async () => {
-    await createSettledOrder(shopClient);
+    await createSettledOrder(shopClient, 3);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
     const newInvoice = result.invoices.items[0];

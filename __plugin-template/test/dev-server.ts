@@ -1,5 +1,4 @@
-require('dotenv').config();
-import { SimpleCmsPlugin } from '../src/SimpleCmsPlugin';
+import { BitpayPlugin } from '../src/bitpay-plugin';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -13,26 +12,21 @@ import {
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { initialData } from '../../test/src/initialData';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
+import { initialData } from '../../test/src/initial-data';
+
+require('dotenv').config();
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      SimpleCmsPlugin,
+      BitpayPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [SimpleCmsPlugin.ui],
-          devMode: true,
-        }),
       }),
     ],
   });

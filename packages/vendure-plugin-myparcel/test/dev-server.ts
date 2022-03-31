@@ -85,7 +85,7 @@ require('dotenv').config();
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 2);
-  await proceedToArrangingPayment(shopClient);
+  await proceedToArrangingPayment(shopClient, 3);
   await addPaymentToOrder(shopClient, testPaymentMethod.code);
   console.log('Created test order');
 })();
