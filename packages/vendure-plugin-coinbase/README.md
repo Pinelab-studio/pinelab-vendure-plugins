@@ -22,7 +22,7 @@ plugins: [CoinbasePlugin];
 2. Go to the Admin UI > Settings > Payment methods and add a payment method with handler `coinbase-payment-handler`
 3. Set your Coinbase API key. You can find your API key at https://beta.commerce.coinbase.com/settings/security
 4. Set your desired storefront redirectUrl, something like `https://storefront/order/`. Your customer will be
-   redirecte to this page + order code: `https://storefront/order/897HH7HG7`
+   redirected to this page + order code: `https://storefront/order/897HH7HG7`
 5. Save the payment method
 
 ### 3. Set webhook in Coinbase
