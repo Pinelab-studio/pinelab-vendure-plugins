@@ -1,7 +1,7 @@
 {
-  "name": "vendure-plugin-bitpay",
+  "name": "vendure-plugin-coinbase",
   "version": "0.18.6",
-  "description": "Vendure plugin for Bitpay payments",
+  "description": "Vendure plugin for Coinbase payments",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
