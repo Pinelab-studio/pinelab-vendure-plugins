@@ -1,9 +1,9 @@
-import { promises as fs, createReadStream, ReadStream } from 'fs';
+import { Response } from 'express';
+import { createReadStream, promises as fs, ReadStream } from 'fs';
 import path from 'path';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { Response } from 'express';
-import { LocalStorageStrategy } from './storage-strategy';
 import { exists, zipFiles, ZippableFile } from '../file.util';
+import { LocalStorageStrategy } from './storage-strategy';
 
 /**
  * Default storage strategy just stores file on local disk with sync operations
@@ -11,6 +11,8 @@ import { exists, zipFiles, ZippableFile } from '../file.util';
  */
 export class LocalFileStrategy implements LocalStorageStrategy {
   invoiceDir = 'invoices';
+
+  async init(): Promise<void> {}
 
   async save(tmpFile: string, invoiceNumber: number, channelToken: string) {
     if (!(await exists(this.invoiceDir))) {

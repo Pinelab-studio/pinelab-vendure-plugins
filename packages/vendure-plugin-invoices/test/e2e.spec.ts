@@ -1,40 +1,40 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import {
   ChannelService,
   DefaultLogger,
   LogLevel,
   mergeConfig,
   Order,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { InvoicePlugin } from '../src';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
+import fetch from 'node-fetch';
 import {
   addShippingMethod,
   createSettledOrder,
 } from '../../test/src/admin-utils';
-import fetch from 'node-fetch';
+import { initialData } from '../../test/src/initial-data';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { InvoicesQuery } from '../dist/ui/generated/graphql';
+import { InvoicePlugin } from '../src';
+import { defaultTemplate } from '../src/api/default-template';
+import { InvoiceService } from '../src/api/invoice.service';
 import {
   Invoice,
   InvoiceConfigQuery,
   MutationUpsertInvoiceConfigArgs,
   UpsertInvoiceConfigMutation,
 } from '../src/ui/generated/graphql';
-import { defaultTemplate } from '../src/api/default-template';
 import {
   getAllInvoicesQuery,
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
-import { InvoiceService } from '../src/api/invoice.service';
-import { InvoicesQuery } from '../dist/ui/generated/graphql';
 
 jest.setTimeout(20000);
 
