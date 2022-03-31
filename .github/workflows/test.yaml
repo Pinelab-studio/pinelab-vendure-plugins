@@ -34,3 +34,5 @@ jobs:
         run: cd packages/vendure-plugin-goedgepickt && yarn && yarn build && yarn test
       - name: Test vendure-plugin-invoice
         run: cd packages/vendure-plugin-invoices && yarn && yarn build && yarn test
+      - name: Test vendure-plugin-coinbase
+        run: cd packages/vendure-plugin-coinbase && yarn && yarn build && yarn test

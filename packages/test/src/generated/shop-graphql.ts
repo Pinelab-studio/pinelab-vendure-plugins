@@ -3293,7 +3293,7 @@ export type SetShippingAddressMutation = {
   __typename?: 'Mutation';
   setOrderShippingAddress:
     | { __typename?: 'NoActiveOrderError' }
-    | { __typename?: 'Order'; id: string };
+    | { __typename?: 'Order'; id: string; code: string };
 };
 
 export type SetShippingMethodMutationVariables = Exact<{
@@ -3350,7 +3350,7 @@ export type AddPaymentToOrderMutation = {
         errorCode: ErrorCode;
         message: string;
       }
-    | { __typename?: 'Order'; id: string }
+    | { __typename?: 'Order'; id: string; code: string }
     | {
         __typename?: 'OrderPaymentStateError';
         errorCode: ErrorCode;
@@ -3410,6 +3410,7 @@ export const SetShippingAddress = gql`
     setOrderShippingAddress(input: $input) {
       ... on Order {
         id
+        code
       }
     }
   }
@@ -3438,6 +3439,7 @@ export const AddPaymentToOrder = gql`
     addPaymentToOrder(input: $input) {
       ... on Order {
         id
+        code
       }
       ... on ErrorResult {
         errorCode

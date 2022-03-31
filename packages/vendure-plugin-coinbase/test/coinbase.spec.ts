@@ -38,12 +38,12 @@ describe('Coinbase payments', () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       apiOptions: {
-        port: 3106,
+        port: 3107,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [CoinbasePlugin],
     });
-    httpClient = axios.create({ baseURL: 'http://localhost:3106' });
+    httpClient = axios.create({ baseURL: 'http://localhost:3107' });
     httpClient.defaults.headers.common['Content-Type'] = 'application/json';
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
