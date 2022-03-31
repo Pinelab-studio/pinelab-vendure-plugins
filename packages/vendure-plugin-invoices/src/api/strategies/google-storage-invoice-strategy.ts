@@ -30,7 +30,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
         : new storage.Storage();
     } catch (err: any) {
       Logger.error(
-        `Could not find the "aws-sdk" package. Make sure it is installed`,
+        `Could not find the "@google-cloud/storage" package. Make sure it is installed`,
         GoogleStorageInvoiceStrategy.name,
         err.stack
       );
