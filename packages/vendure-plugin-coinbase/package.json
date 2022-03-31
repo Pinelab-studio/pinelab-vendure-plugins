@@ -6,7 +6,7 @@
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "main": "dist/coinbase.plugin.js",
   "types": "dist/coinbase.plugin.d.ts",
   "files": [
