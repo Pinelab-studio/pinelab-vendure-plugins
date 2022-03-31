@@ -6,7 +6,7 @@ Accept crypto payments via Coinbase Commerce in Vendure.
 
 ## Getting started
 
-You need to install the plugin, set credentials in Vendure and set a webhook in your Coinbase account
+You need to install the plugin, set API key in Vendure and set a webhook in your Coinbase account
 
 ### 1. Install the plugin in Vendure
 
@@ -16,12 +16,12 @@ Add the plugin to your `vendure-config.ts`:
 plugins: [CoinbasePlugin];
 ```
 
-### 2. Set credentials in Vendure
+### 2. Set API key in Vendure
 
 1. Start your server
-2. Go to the Admin UI > Settings > Payment methods and add a payment method
-3. Fill in your Coinbase ApiKey. You can find your apiKey at https://beta.commerce.coinbase.com/settings/security
-4. Fill in your desired storefront redirectUrl, something like `https://storefront/order/`. Your customer will be
+2. Go to the Admin UI > Settings > Payment methods and add a payment method with handler `coinbase-payment-handler`
+3. Set your Coinbase API key. You can find your API key at https://beta.commerce.coinbase.com/settings/security
+4. Set your desired storefront redirectUrl, something like `https://storefront/order/`. Your customer will be
    redirecte to this page + order code: `https://storefront/order/897HH7HG7`
 5. Save the payment method
 
@@ -48,6 +48,14 @@ given chargeId to validate the status on Coinbase.
 ## Contributing
 
 Contributions always welcome!
+
+### Dev server
+
+Run `yarn start` to start the dev server. This logs will output a Coinbase hosted checkout URL you can use to do a payment.
+
+Use NGROK or localtunnel to make your localhost publicly available. Set the tunnel url as webhook in your Coinbase account.
+
+After paying you should see your order in the Admin UI on 'PaymentSettled'.
 
 ### Testing
 

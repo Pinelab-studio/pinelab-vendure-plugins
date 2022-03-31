@@ -77,7 +77,7 @@ export class CoinbaseService {
     ) {
       throw Error(
         `Incoming Coinbase webhook is missing metadata.orderCode, metadata.channelToken or code field: ${JSON.stringify(
-          event.data
+          event.data?.metadata
         )}`
       );
     }

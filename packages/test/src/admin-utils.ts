@@ -24,7 +24,8 @@ import { testPaymentMethod } from './test-payment-method';
  */
 export async function addShippingMethod(
   adminClient: SimpleGraphQLClient,
-  fulfillmentHandlerCode: string
+  fulfillmentHandlerCode: string,
+  price = '500'
 ) {
   await adminClient.asSuperAdmin();
   await adminClient.query(CreateShippingMethod, {
@@ -45,7 +46,7 @@ export async function addShippingMethod(
         arguments: [
           {
             name: 'rate',
-            value: '500',
+            value: price,
           },
           {
             name: 'taxRate',
