@@ -40,7 +40,7 @@ export const coinbaseHandler = new PaymentMethodHandler({
     args,
     metadata
   ): Promise<CreatePaymentResult | CreatePaymentErrorResult> => {
-    // Creating a payment immediately settles the payment in Mollie flow, so only Admins and internal calls should be allowed to do this
+    // Creating a payment immediately settles the payment, so only Admins and internal calls should be allowed to do this
     if (ctx.apiType !== 'admin') {
       throw Error(`CreatePayment is not allowed for apiType '${ctx.apiType}'`);
     }
