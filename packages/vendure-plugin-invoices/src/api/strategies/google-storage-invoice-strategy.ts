@@ -1,4 +1,4 @@
-import { StorageOptions } from '@google-cloud/storage';
+import { Logger } from '@vendure/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
 import path from 'path';
@@ -11,7 +11,7 @@ interface GoogleInvoiceConfig {
   /**
    * Passed directly to gclouds node library with new Storage(storageOptions)
    */
-  storageOptions?: StorageOptions;
+  storageOptions?: import('@google-cloud/storage').StorageOptions;
 }
 
 export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
@@ -23,11 +23,18 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
   }
 
   async init(): Promise<void> {
-    const storage = await import('@google-cloud/storage');
-
-    this.storage = this.config.storageOptions
-      ? new storage.Storage(this.config.storageOptions)
-      : new storage.Storage();
+    try {
+      const storage = await import('@google-cloud/storage');
+      this.storage = this.config.storageOptions
+        ? new storage.Storage(this.config.storageOptions)
+        : new storage.Storage();
+    } catch (err: any) {
+      Logger.error(
+        `Could not find the "aws-sdk" package. Make sure it is installed`,
+        GoogleStorageInvoiceStrategy.name,
+        err.stack
+      );
+    }
   }
 
   async getPublicUrl(invoice: InvoiceEntity): Promise<string> {
