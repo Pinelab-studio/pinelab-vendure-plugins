@@ -22,12 +22,6 @@ export const coinbaseHandler = new PaymentMethodHandler({
       type: 'string',
       label: [{ languageCode: LanguageCode.en, value: 'API Key' }],
     },
-    sharedSecret: {
-      type: 'string',
-      label: [
-        { languageCode: LanguageCode.en, value: 'Webhook shared secret' },
-      ],
-    },
     redirectUrl: {
       type: 'string',
       label: [{ languageCode: LanguageCode.en, value: 'Redirect URL' }],
@@ -57,13 +51,7 @@ export const coinbaseHandler = new PaymentMethodHandler({
       metadata, // Store all given metadata on a payment
     };
   },
-  settlePayment: async (
-    ctx,
-    order,
-    payment,
-    args
-  ): Promise<SettlePaymentResult> => {
-    // this should never be called
+  settlePayment: async (): Promise<SettlePaymentResult> => {
     return { success: true };
   },
   createRefund: async (
@@ -71,16 +59,19 @@ export const coinbaseHandler = new PaymentMethodHandler({
     input,
     amount,
     order,
-    payment,
-    args
+    payment
   ): Promise<CreateRefundResult> => {
     Logger.warn(
       `This plugin does not support refunds. You need to manually refund ${payment.transactionId} via Coinbase`,
       loggerCtx
     );
     return {
-      state: 'Settled',
-      transactionId: payment.transactionId,
+      state: 'Failed',
+      metadata: {
+        public: {
+          message: `This plugin does not support refunds. You need to manually refund ${payment.transactionId} via Coinbase`,
+        },
+      },
     };
   },
 });

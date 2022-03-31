@@ -28,6 +28,7 @@ query order($id: ID!) {
   order(id: $id) {
     id
     code
+    state
     fulfillments {
       id
       state

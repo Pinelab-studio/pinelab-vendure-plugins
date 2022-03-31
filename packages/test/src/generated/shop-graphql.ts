@@ -1,5 +1,6 @@
 import gql from 'graphql-tag';
 export type Maybe<T> = T | null;
+export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = {
   [K in keyof T]: T[K];
 };
@@ -64,10 +65,11 @@ export type Adjustment = {
 
 export enum AdjustmentType {
   DistributedOrderPromotion = 'DISTRIBUTED_ORDER_PROMOTION',
+  Other = 'OTHER',
   Promotion = 'PROMOTION',
 }
 
-/** Retured when attemting to set the Customer for an Order when already logged in. */
+/** Returned when attempting to set the Customer for an Order when already logged in. */
 export type AlreadyLoggedInError = ErrorResult & {
   __typename?: 'AlreadyLoggedInError';
   errorCode: ErrorCode;
@@ -111,7 +113,7 @@ export enum AssetType {
 }
 
 export type AuthenticationInput = {
-  native?: Maybe<NativeAuthInput>;
+  native?: InputMaybe<NativeAuthInput>;
 };
 
 export type AuthenticationMethod = Node & {
@@ -140,9 +142,14 @@ export type BooleanCustomFieldConfig = CustomField & {
   ui?: Maybe<Scalars['JSON']>;
 };
 
+/** Operators for filtering on a list of Boolean fields */
+export type BooleanListOperators = {
+  inList: Scalars['Boolean'];
+};
+
 /** Operators for filtering on a Boolean field */
 export type BooleanOperators = {
-  eq?: Maybe<Scalars['Boolean']>;
+  eq?: InputMaybe<Scalars['Boolean']>;
 };
 
 export type Channel = Node & {
@@ -182,7 +189,7 @@ export type Collection = Node & {
 };
 
 export type CollectionProductVariantsArgs = {
-  options?: Maybe<ProductVariantListOptions>;
+  options?: InputMaybe<ProductVariantListOptions>;
 };
 
 export type CollectionBreadcrumb = {
@@ -193,14 +200,14 @@ export type CollectionBreadcrumb = {
 };
 
 export type CollectionFilterParameter = {
-  createdAt?: Maybe<DateOperators>;
-  description?: Maybe<StringOperators>;
-  id?: Maybe<IdOperators>;
-  languageCode?: Maybe<StringOperators>;
-  name?: Maybe<StringOperators>;
-  position?: Maybe<NumberOperators>;
-  slug?: Maybe<StringOperators>;
-  updatedAt?: Maybe<DateOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  description?: InputMaybe<StringOperators>;
+  id?: InputMaybe<IdOperators>;
+  languageCode?: InputMaybe<StringOperators>;
+  name?: InputMaybe<StringOperators>;
+  position?: InputMaybe<NumberOperators>;
+  slug?: InputMaybe<StringOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
 };
 
 export type CollectionList = PaginatedList & {
@@ -211,15 +218,15 @@ export type CollectionList = PaginatedList & {
 
 export type CollectionListOptions = {
   /** Allows the results to be filtered */
-  filter?: Maybe<CollectionFilterParameter>;
+  filter?: InputMaybe<CollectionFilterParameter>;
   /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
-  filterOperator?: Maybe<LogicalOperator>;
+  filterOperator?: InputMaybe<LogicalOperator>;
   /** Skips the first n results, for use in pagination */
-  skip?: Maybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
   /** Specifies which properties to sort the results by */
-  sort?: Maybe<CollectionSortParameter>;
+  sort?: InputMaybe<CollectionSortParameter>;
   /** Takes n results, for use in pagination */
-  take?: Maybe<Scalars['Int']>;
+  take?: InputMaybe<Scalars['Int']>;
 };
 
 /**
@@ -233,13 +240,13 @@ export type CollectionResult = {
 };
 
 export type CollectionSortParameter = {
-  createdAt?: Maybe<SortOrder>;
-  description?: Maybe<SortOrder>;
-  id?: Maybe<SortOrder>;
-  name?: Maybe<SortOrder>;
-  position?: Maybe<SortOrder>;
-  slug?: Maybe<SortOrder>;
-  updatedAt?: Maybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  description?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  name?: InputMaybe<SortOrder>;
+  position?: InputMaybe<SortOrder>;
+  slug?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
 };
 
 export type CollectionTranslation = {
@@ -355,27 +362,27 @@ export type CouponCodeLimitError = ErrorResult & {
 };
 
 export type CreateAddressInput = {
-  city?: Maybe<Scalars['String']>;
-  company?: Maybe<Scalars['String']>;
+  city?: InputMaybe<Scalars['String']>;
+  company?: InputMaybe<Scalars['String']>;
   countryCode: Scalars['String'];
-  customFields?: Maybe<Scalars['JSON']>;
-  defaultBillingAddress?: Maybe<Scalars['Boolean']>;
-  defaultShippingAddress?: Maybe<Scalars['Boolean']>;
-  fullName?: Maybe<Scalars['String']>;
-  phoneNumber?: Maybe<Scalars['String']>;
-  postalCode?: Maybe<Scalars['String']>;
-  province?: Maybe<Scalars['String']>;
+  customFields?: InputMaybe<Scalars['JSON']>;
+  defaultBillingAddress?: InputMaybe<Scalars['Boolean']>;
+  defaultShippingAddress?: InputMaybe<Scalars['Boolean']>;
+  fullName?: InputMaybe<Scalars['String']>;
+  phoneNumber?: InputMaybe<Scalars['String']>;
+  postalCode?: InputMaybe<Scalars['String']>;
+  province?: InputMaybe<Scalars['String']>;
   streetLine1: Scalars['String'];
-  streetLine2?: Maybe<Scalars['String']>;
+  streetLine2?: InputMaybe<Scalars['String']>;
 };
 
 export type CreateCustomerInput = {
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: InputMaybe<Scalars['JSON']>;
   emailAddress: Scalars['String'];
   firstName: Scalars['String'];
   lastName: Scalars['String'];
-  phoneNumber?: Maybe<Scalars['String']>;
-  title?: Maybe<Scalars['String']>;
+  phoneNumber?: InputMaybe<Scalars['String']>;
+  title?: InputMaybe<Scalars['String']>;
 };
 
 /**
@@ -755,18 +762,18 @@ export type Customer = Node & {
 };
 
 export type CustomerOrdersArgs = {
-  options?: Maybe<OrderListOptions>;
+  options?: InputMaybe<OrderListOptions>;
 };
 
 export type CustomerFilterParameter = {
-  createdAt?: Maybe<DateOperators>;
-  emailAddress?: Maybe<StringOperators>;
-  firstName?: Maybe<StringOperators>;
-  id?: Maybe<IdOperators>;
-  lastName?: Maybe<StringOperators>;
-  phoneNumber?: Maybe<StringOperators>;
-  title?: Maybe<StringOperators>;
-  updatedAt?: Maybe<DateOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  emailAddress?: InputMaybe<StringOperators>;
+  firstName?: InputMaybe<StringOperators>;
+  id?: InputMaybe<IdOperators>;
+  lastName?: InputMaybe<StringOperators>;
+  phoneNumber?: InputMaybe<StringOperators>;
+  title?: InputMaybe<StringOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
 };
 
 export type CustomerGroup = Node & {
@@ -780,7 +787,7 @@ export type CustomerGroup = Node & {
 };
 
 export type CustomerGroupCustomersArgs = {
-  options?: Maybe<CustomerListOptions>;
+  options?: InputMaybe<CustomerListOptions>;
 };
 
 export type CustomerList = PaginatedList & {
@@ -791,34 +798,39 @@ export type CustomerList = PaginatedList & {
 
 export type CustomerListOptions = {
   /** Allows the results to be filtered */
-  filter?: Maybe<CustomerFilterParameter>;
+  filter?: InputMaybe<CustomerFilterParameter>;
   /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
-  filterOperator?: Maybe<LogicalOperator>;
+  filterOperator?: InputMaybe<LogicalOperator>;
   /** Skips the first n results, for use in pagination */
-  skip?: Maybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
   /** Specifies which properties to sort the results by */
-  sort?: Maybe<CustomerSortParameter>;
+  sort?: InputMaybe<CustomerSortParameter>;
   /** Takes n results, for use in pagination */
-  take?: Maybe<Scalars['Int']>;
+  take?: InputMaybe<Scalars['Int']>;
 };
 
 export type CustomerSortParameter = {
-  createdAt?: Maybe<SortOrder>;
-  emailAddress?: Maybe<SortOrder>;
-  firstName?: Maybe<SortOrder>;
-  id?: Maybe<SortOrder>;
-  lastName?: Maybe<SortOrder>;
-  phoneNumber?: Maybe<SortOrder>;
-  title?: Maybe<SortOrder>;
-  updatedAt?: Maybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  emailAddress?: InputMaybe<SortOrder>;
+  firstName?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  lastName?: InputMaybe<SortOrder>;
+  phoneNumber?: InputMaybe<SortOrder>;
+  title?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
+};
+
+/** Operators for filtering on a list of Date fields */
+export type DateListOperators = {
+  inList: Scalars['DateTime'];
 };
 
 /** Operators for filtering on a DateTime field */
 export type DateOperators = {
-  after?: Maybe<Scalars['DateTime']>;
-  before?: Maybe<Scalars['DateTime']>;
-  between?: Maybe<DateRange>;
-  eq?: Maybe<Scalars['DateTime']>;
+  after?: InputMaybe<Scalars['DateTime']>;
+  before?: InputMaybe<Scalars['DateTime']>;
+  between?: InputMaybe<DateRange>;
+  eq?: InputMaybe<Scalars['DateTime']>;
 };
 
 export type DateRange = {
@@ -885,7 +897,7 @@ export type DutchPostalCodeInput = {
   postalCode: Scalars['String'];
 };
 
-/** Retured when attemting to create a Customer with an email address already registered to an existing User. */
+/** Returned when attempting to create a Customer with an email address already registered to an existing User. */
 export type EmailAddressConflictError = ErrorResult & {
   __typename?: 'EmailAddressConflictError';
   errorCode: ErrorCode;
@@ -905,6 +917,7 @@ export enum ErrorCode {
   InsufficientStockError = 'INSUFFICIENT_STOCK_ERROR',
   InvalidCredentialsError = 'INVALID_CREDENTIALS_ERROR',
   MissingPasswordError = 'MISSING_PASSWORD_ERROR',
+  MolliePaymentIntentError = 'MOLLIE_PAYMENT_INTENT_ERROR',
   NativeAuthStrategyError = 'NATIVE_AUTH_STRATEGY_ERROR',
   NegativeQuantityError = 'NEGATIVE_QUANTITY_ERROR',
   NotVerifiedError = 'NOT_VERIFIED_ERROR',
@@ -916,6 +929,7 @@ export enum ErrorCode {
   PasswordAlreadySetError = 'PASSWORD_ALREADY_SET_ERROR',
   PasswordResetTokenExpiredError = 'PASSWORD_RESET_TOKEN_EXPIRED_ERROR',
   PasswordResetTokenInvalidError = 'PASSWORD_RESET_TOKEN_INVALID_ERROR',
+  PasswordValidationError = 'PASSWORD_VALIDATION_ERROR',
   PaymentDeclinedError = 'PAYMENT_DECLINED_ERROR',
   PaymentFailedError = 'PAYMENT_FAILED_ERROR',
   UnknownError = 'UNKNOWN_ERROR',
@@ -942,12 +956,12 @@ export type Facet = Node & {
 };
 
 export type FacetFilterParameter = {
-  code?: Maybe<StringOperators>;
-  createdAt?: Maybe<DateOperators>;
-  id?: Maybe<IdOperators>;
-  languageCode?: Maybe<StringOperators>;
-  name?: Maybe<StringOperators>;
-  updatedAt?: Maybe<DateOperators>;
+  code?: InputMaybe<StringOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  id?: InputMaybe<IdOperators>;
+  languageCode?: InputMaybe<StringOperators>;
+  name?: InputMaybe<StringOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
 };
 
 export type FacetList = PaginatedList & {
@@ -958,23 +972,23 @@ export type FacetList = PaginatedList & {
 
 export type FacetListOptions = {
   /** Allows the results to be filtered */
-  filter?: Maybe<FacetFilterParameter>;
+  filter?: InputMaybe<FacetFilterParameter>;
   /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
-  filterOperator?: Maybe<LogicalOperator>;
+  filterOperator?: InputMaybe<LogicalOperator>;
   /** Skips the first n results, for use in pagination */
-  skip?: Maybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
   /** Specifies which properties to sort the results by */
-  sort?: Maybe<FacetSortParameter>;
+  sort?: InputMaybe<FacetSortParameter>;
   /** Takes n results, for use in pagination */
-  take?: Maybe<Scalars['Int']>;
+  take?: InputMaybe<Scalars['Int']>;
 };
 
 export type FacetSortParameter = {
-  code?: Maybe<SortOrder>;
-  createdAt?: Maybe<SortOrder>;
-  id?: Maybe<SortOrder>;
-  name?: Maybe<SortOrder>;
-  updatedAt?: Maybe<SortOrder>;
+  code?: InputMaybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  name?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
 };
 
 export type FacetTranslation = {
@@ -1008,8 +1022,8 @@ export type FacetValue = Node & {
  * * ID=1 AND (ID=2 OR ID=3): `{ facetValueFilters: [{ and: 1 }, { or: [2,3] }] }`
  */
 export type FacetValueFilterInput = {
-  and?: Maybe<Scalars['ID']>;
-  or?: Maybe<Array<Scalars['ID']>>;
+  and?: InputMaybe<Scalars['ID']>;
+  or?: InputMaybe<Array<Scalars['ID']>>;
 };
 
 /**
@@ -1075,10 +1089,10 @@ export type HistoryEntry = Node & {
 };
 
 export type HistoryEntryFilterParameter = {
-  createdAt?: Maybe<DateOperators>;
-  id?: Maybe<IdOperators>;
-  type?: Maybe<StringOperators>;
-  updatedAt?: Maybe<DateOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  id?: InputMaybe<IdOperators>;
+  type?: InputMaybe<StringOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
 };
 
 export type HistoryEntryList = PaginatedList & {
@@ -1089,21 +1103,21 @@ export type HistoryEntryList = PaginatedList & {
 
 export type HistoryEntryListOptions = {
   /** Allows the results to be filtered */
-  filter?: Maybe<HistoryEntryFilterParameter>;
+  filter?: InputMaybe<HistoryEntryFilterParameter>;
   /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
-  filterOperator?: Maybe<LogicalOperator>;
+  filterOperator?: InputMaybe<LogicalOperator>;
   /** Skips the first n results, for use in pagination */
-  skip?: Maybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
   /** Specifies which properties to sort the results by */
-  sort?: Maybe<HistoryEntrySortParameter>;
+  sort?: InputMaybe<HistoryEntrySortParameter>;
   /** Takes n results, for use in pagination */
-  take?: Maybe<Scalars['Int']>;
+  take?: InputMaybe<Scalars['Int']>;
 };
 
 export type HistoryEntrySortParameter = {
-  createdAt?: Maybe<SortOrder>;
-  id?: Maybe<SortOrder>;
-  updatedAt?: Maybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
 };
 
 export enum HistoryEntryType {
@@ -1133,16 +1147,21 @@ export enum HistoryEntryType {
   OrderStateTransition = 'ORDER_STATE_TRANSITION',
 }
 
+/** Operators for filtering on a list of ID fields */
+export type IdListOperators = {
+  inList: Scalars['ID'];
+};
+
 /** Operators for filtering on an ID field */
 export type IdOperators = {
-  eq?: Maybe<Scalars['String']>;
-  in?: Maybe<Array<Scalars['String']>>;
-  notEq?: Maybe<Scalars['String']>;
-  notIn?: Maybe<Array<Scalars['String']>>;
+  eq?: InputMaybe<Scalars['String']>;
+  in?: InputMaybe<Array<Scalars['String']>>;
+  notEq?: InputMaybe<Scalars['String']>;
+  notIn?: InputMaybe<Array<Scalars['String']>>;
 };
 
 /**
- * Retured if the token used to change a Customer's email address is valid, but has
+ * Returned if the token used to change a Customer's email address is valid, but has
  * expired according to the `verificationTokenDuration` setting in the AuthOptions.
  */
 export type IdentifierChangeTokenExpiredError = ErrorResult & {
@@ -1152,7 +1171,7 @@ export type IdentifierChangeTokenExpiredError = ErrorResult & {
 };
 
 /**
- * Retured if the token used to change a Customer's email address is either
+ * Returned if the token used to change a Customer's email address is either
  * invalid or does not match any expected tokens.
  */
 export type IdentifierChangeTokenInvalidError = ErrorResult & {
@@ -1561,12 +1580,31 @@ export enum LogicalOperator {
   Or = 'OR',
 }
 
-/** Retured when attemting to register or verify a customer account without a password, when one is required. */
+/** Returned when attempting to register or verify a customer account without a password, when one is required. */
 export type MissingPasswordError = ErrorResult & {
   __typename?: 'MissingPasswordError';
   errorCode: ErrorCode;
   message: Scalars['String'];
 };
+
+export type MolliePaymentIntent = {
+  __typename?: 'MolliePaymentIntent';
+  url: Scalars['String'];
+};
+
+export type MolliePaymentIntentError = ErrorResult & {
+  __typename?: 'MolliePaymentIntentError';
+  errorCode: ErrorCode;
+  message: Scalars['String'];
+};
+
+export type MolliePaymentIntentInput = {
+  paymentMethodCode: Scalars['String'];
+};
+
+export type MolliePaymentIntentResult =
+  | MolliePaymentIntent
+  | MolliePaymentIntentError;
 
 export type Mutation = {
   __typename?: 'Mutation';
@@ -1582,6 +1620,7 @@ export type Mutation = {
   authenticate: AuthenticationResult;
   /** Create a new Customer Address */
   createCustomerAddress: Address;
+  createMolliePaymentIntent: MolliePaymentIntentResult;
   /** Delete an existing Address */
   deleteCustomerAddress: Success;
   /** Authenticates the user using the native authentication strategy. This mutation is an alias for `authenticate({ native: { ... }})` */
@@ -1599,7 +1638,7 @@ export type Mutation = {
    *    verificationToken would then be passed to the `verifyCustomerAccount` mutation _without_ a password. The Customer is then
    *    verified and authenticated in one step.
    * 2. **The Customer is registered _without_ a password**. A verificationToken will be created (and typically emailed to the Customer). That
-   *    verificationToken would then be passed to the `verifyCustomerAccount` mutation _with_ the chosed password of the Customer. The Customer is then
+   *    verificationToken would then be passed to the `verifyCustomerAccount` mutation _with_ the chosen password of the Customer. The Customer is then
    *    verified and authenticated in one step.
    *
    * _If `authOptions.requireVerification` is set to `false`:_
@@ -1650,7 +1689,7 @@ export type Mutation = {
   /**
    * Verify a Customer email address with the token sent to that address. Only applicable if `authOptions.requireVerification` is set to true.
    *
-   * If the Customer was not registered with a password in the `registerCustomerAccount` mutation, the a password _must_ be
+   * If the Customer was not registered with a password in the `registerCustomerAccount` mutation, the password _must_ be
    * provided here.
    */
   verifyCustomerAccount: VerifyCustomerAccountResult;
@@ -1676,11 +1715,15 @@ export type MutationApplyCouponCodeArgs = {
 
 export type MutationAuthenticateArgs = {
   input: AuthenticationInput;
-  rememberMe?: Maybe<Scalars['Boolean']>;
+  rememberMe?: InputMaybe<Scalars['Boolean']>;
 };
 
 export type MutationCreateCustomerAddressArgs = {
   input: CreateAddressInput;
+};
+
+export type MutationCreateMolliePaymentIntentArgs = {
+  input: MolliePaymentIntentInput;
 };
 
 export type MutationDeleteCustomerAddressArgs = {
@@ -1689,7 +1732,7 @@ export type MutationDeleteCustomerAddressArgs = {
 
 export type MutationLoginArgs = {
   password: Scalars['String'];
-  rememberMe?: Maybe<Scalars['Boolean']>;
+  rememberMe?: InputMaybe<Scalars['Boolean']>;
   username: Scalars['String'];
 };
 
@@ -1765,7 +1808,7 @@ export type MutationUpdateCustomerPasswordArgs = {
 };
 
 export type MutationVerifyCustomerAccountArgs = {
-  password?: Maybe<Scalars['String']>;
+  password?: InputMaybe<Scalars['String']>;
   token: Scalars['String'];
 };
 
@@ -1774,7 +1817,7 @@ export type NativeAuthInput = {
   username: Scalars['String'];
 };
 
-/** Retured when attempting an operation that relies on the NativeAuthStrategy, if that strategy is not configured. */
+/** Returned when attempting an operation that relies on the NativeAuthStrategy, if that strategy is not configured. */
 export type NativeAuthStrategyError = ErrorResult & {
   __typename?: 'NativeAuthStrategyError';
   errorCode: ErrorCode;
@@ -1787,7 +1830,7 @@ export type NativeAuthenticationResult =
   | NativeAuthStrategyError
   | NotVerifiedError;
 
-/** Retured when attemting to set a negative OrderLine quantity. */
+/** Returned when attempting to set a negative OrderLine quantity. */
 export type NegativeQuantityError = ErrorResult & {
   __typename?: 'NegativeQuantityError';
   errorCode: ErrorCode;
@@ -1818,14 +1861,19 @@ export type NotVerifiedError = ErrorResult & {
   message: Scalars['String'];
 };
 
+/** Operators for filtering on a list of Number fields */
+export type NumberListOperators = {
+  inList: Scalars['Float'];
+};
+
 /** Operators for filtering on a Int or Float field */
 export type NumberOperators = {
-  between?: Maybe<NumberRange>;
-  eq?: Maybe<Scalars['Float']>;
-  gt?: Maybe<Scalars['Float']>;
-  gte?: Maybe<Scalars['Float']>;
-  lt?: Maybe<Scalars['Float']>;
-  lte?: Maybe<Scalars['Float']>;
+  between?: InputMaybe<NumberRange>;
+  eq?: InputMaybe<Scalars['Float']>;
+  gt?: InputMaybe<Scalars['Float']>;
+  gte?: InputMaybe<Scalars['Float']>;
+  lt?: InputMaybe<Scalars['Float']>;
+  lte?: InputMaybe<Scalars['Float']>;
 };
 
 export type NumberRange = {
@@ -1891,7 +1939,7 @@ export type Order = Node & {
 };
 
 export type OrderHistoryArgs = {
-  options?: Maybe<HistoryEntryListOptions>;
+  options?: InputMaybe<HistoryEntryListOptions>;
 };
 
 export type OrderAddress = {
@@ -1910,21 +1958,21 @@ export type OrderAddress = {
 };
 
 export type OrderFilterParameter = {
-  active?: Maybe<BooleanOperators>;
-  code?: Maybe<StringOperators>;
-  createdAt?: Maybe<DateOperators>;
-  currencyCode?: Maybe<StringOperators>;
-  id?: Maybe<IdOperators>;
-  orderPlacedAt?: Maybe<DateOperators>;
-  shipping?: Maybe<NumberOperators>;
-  shippingWithTax?: Maybe<NumberOperators>;
-  state?: Maybe<StringOperators>;
-  subTotal?: Maybe<NumberOperators>;
-  subTotalWithTax?: Maybe<NumberOperators>;
-  total?: Maybe<NumberOperators>;
-  totalQuantity?: Maybe<NumberOperators>;
-  totalWithTax?: Maybe<NumberOperators>;
-  updatedAt?: Maybe<DateOperators>;
+  active?: InputMaybe<BooleanOperators>;
+  code?: InputMaybe<StringOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  currencyCode?: InputMaybe<StringOperators>;
+  id?: InputMaybe<IdOperators>;
+  orderPlacedAt?: InputMaybe<DateOperators>;
+  shipping?: InputMaybe<NumberOperators>;
+  shippingWithTax?: InputMaybe<NumberOperators>;
+  state?: InputMaybe<StringOperators>;
+  subTotal?: InputMaybe<NumberOperators>;
+  subTotalWithTax?: InputMaybe<NumberOperators>;
+  total?: InputMaybe<NumberOperators>;
+  totalQuantity?: InputMaybe<NumberOperators>;
+  totalWithTax?: InputMaybe<NumberOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
 };
 
 export type OrderItem = Node & {
@@ -1964,7 +2012,7 @@ export type OrderItem = Node & {
   updatedAt: Scalars['DateTime'];
 };
 
-/** Retured when the maximum order size limit has been reached. */
+/** Returned when the maximum order size limit has been reached. */
 export type OrderLimitError = ErrorResult & {
   __typename?: 'OrderLimitError';
   errorCode: ErrorCode;
@@ -2041,15 +2089,15 @@ export type OrderList = PaginatedList & {
 
 export type OrderListOptions = {
   /** Allows the results to be filtered */
-  filter?: Maybe<OrderFilterParameter>;
+  filter?: InputMaybe<OrderFilterParameter>;
   /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
-  filterOperator?: Maybe<LogicalOperator>;
+  filterOperator?: InputMaybe<LogicalOperator>;
   /** Skips the first n results, for use in pagination */
-  skip?: Maybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
   /** Specifies which properties to sort the results by */
-  sort?: Maybe<OrderSortParameter>;
+  sort?: InputMaybe<OrderSortParameter>;
   /** Takes n results, for use in pagination */
-  take?: Maybe<Scalars['Int']>;
+  take?: InputMaybe<Scalars['Int']>;
 };
 
 /** Returned when attempting to modify the contents of an Order that is not in the `AddingItems` state. */
@@ -2067,19 +2115,19 @@ export type OrderPaymentStateError = ErrorResult & {
 };
 
 export type OrderSortParameter = {
-  code?: Maybe<SortOrder>;
-  createdAt?: Maybe<SortOrder>;
-  id?: Maybe<SortOrder>;
-  orderPlacedAt?: Maybe<SortOrder>;
-  shipping?: Maybe<SortOrder>;
-  shippingWithTax?: Maybe<SortOrder>;
-  state?: Maybe<SortOrder>;
-  subTotal?: Maybe<SortOrder>;
-  subTotalWithTax?: Maybe<SortOrder>;
-  total?: Maybe<SortOrder>;
-  totalQuantity?: Maybe<SortOrder>;
-  totalWithTax?: Maybe<SortOrder>;
-  updatedAt?: Maybe<SortOrder>;
+  code?: InputMaybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  orderPlacedAt?: InputMaybe<SortOrder>;
+  shipping?: InputMaybe<SortOrder>;
+  shippingWithTax?: InputMaybe<SortOrder>;
+  state?: InputMaybe<SortOrder>;
+  subTotal?: InputMaybe<SortOrder>;
+  subTotalWithTax?: InputMaybe<SortOrder>;
+  total?: InputMaybe<SortOrder>;
+  totalQuantity?: InputMaybe<SortOrder>;
+  totalWithTax?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
 };
 
 /** Returned if there is an error in transitioning the Order state */
@@ -2113,7 +2161,7 @@ export type PaginatedList = {
   totalItems: Scalars['Int'];
 };
 
-/** Retured when attemting to verify a customer account with a password, when a password has already been set. */
+/** Returned when attempting to verify a customer account with a password, when a password has already been set. */
 export type PasswordAlreadySetError = ErrorResult & {
   __typename?: 'PasswordAlreadySetError';
   errorCode: ErrorCode;
@@ -2121,7 +2169,7 @@ export type PasswordAlreadySetError = ErrorResult & {
 };
 
 /**
- * Retured if the token used to reset a Customer's password is valid, but has
+ * Returned if the token used to reset a Customer's password is valid, but has
  * expired according to the `verificationTokenDuration` setting in the AuthOptions.
  */
 export type PasswordResetTokenExpiredError = ErrorResult & {
@@ -2131,13 +2179,21 @@ export type PasswordResetTokenExpiredError = ErrorResult & {
 };
 
 /**
- * Retured if the token used to reset a Customer's password is either
+ * Returned if the token used to reset a Customer's password is either
  * invalid or does not match any expected tokens.
  */
 export type PasswordResetTokenInvalidError = ErrorResult & {
   __typename?: 'PasswordResetTokenInvalidError';
   errorCode: ErrorCode;
   message: Scalars['String'];
+};
+
+/** Returned when attempting to register or verify a customer account where the given password fails password validation. */
+export type PasswordValidationError = ErrorResult & {
+  __typename?: 'PasswordValidationError';
+  errorCode: ErrorCode;
+  message: Scalars['String'];
+  validationErrorMessage: Scalars['String'];
 };
 
 export type Payment = Node & {
@@ -2407,7 +2463,7 @@ export type Product = Node & {
   assets: Array<Asset>;
   collections: Array<Collection>;
   createdAt: Scalars['DateTime'];
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<ProductCustomFields>;
   description: Scalars['String'];
   facetValues: Array<FacetValue>;
   featuredAsset?: Maybe<Asset>;
@@ -2425,17 +2481,25 @@ export type Product = Node & {
 };
 
 export type ProductVariantListArgs = {
-  options?: Maybe<ProductVariantListOptions>;
+  options?: InputMaybe<ProductVariantListOptions>;
+};
+
+export type ProductCustomFields = {
+  __typename?: 'ProductCustomFields';
+  metaDescription?: Maybe<Scalars['String']>;
+  metaTitle?: Maybe<Scalars['String']>;
 };
 
 export type ProductFilterParameter = {
-  createdAt?: Maybe<DateOperators>;
-  description?: Maybe<StringOperators>;
-  id?: Maybe<IdOperators>;
-  languageCode?: Maybe<StringOperators>;
-  name?: Maybe<StringOperators>;
-  slug?: Maybe<StringOperators>;
-  updatedAt?: Maybe<DateOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  description?: InputMaybe<StringOperators>;
+  id?: InputMaybe<IdOperators>;
+  languageCode?: InputMaybe<StringOperators>;
+  metaDescription?: InputMaybe<StringOperators>;
+  metaTitle?: InputMaybe<StringOperators>;
+  name?: InputMaybe<StringOperators>;
+  slug?: InputMaybe<StringOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
 };
 
 export type ProductList = PaginatedList & {
@@ -2446,15 +2510,15 @@ export type ProductList = PaginatedList & {
 
 export type ProductListOptions = {
   /** Allows the results to be filtered */
-  filter?: Maybe<ProductFilterParameter>;
+  filter?: InputMaybe<ProductFilterParameter>;
   /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
-  filterOperator?: Maybe<LogicalOperator>;
+  filterOperator?: InputMaybe<LogicalOperator>;
   /** Skips the first n results, for use in pagination */
-  skip?: Maybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
   /** Specifies which properties to sort the results by */
-  sort?: Maybe<ProductSortParameter>;
+  sort?: InputMaybe<ProductSortParameter>;
   /** Takes n results, for use in pagination */
-  take?: Maybe<Scalars['Int']>;
+  take?: InputMaybe<Scalars['Int']>;
 };
 
 export type ProductOption = Node & {
@@ -2503,23 +2567,32 @@ export type ProductOptionTranslation = {
 };
 
 export type ProductSortParameter = {
-  createdAt?: Maybe<SortOrder>;
-  description?: Maybe<SortOrder>;
-  id?: Maybe<SortOrder>;
-  name?: Maybe<SortOrder>;
-  slug?: Maybe<SortOrder>;
-  updatedAt?: Maybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  description?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  metaDescription?: InputMaybe<SortOrder>;
+  metaTitle?: InputMaybe<SortOrder>;
+  name?: InputMaybe<SortOrder>;
+  slug?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
 };
 
 export type ProductTranslation = {
   __typename?: 'ProductTranslation';
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<ProductTranslationCustomFields>;
   description: Scalars['String'];
   id: Scalars['ID'];
   languageCode: LanguageCode;
   name: Scalars['String'];
   slug: Scalars['String'];
   updatedAt: Scalars['DateTime'];
+};
+
+export type ProductTranslationCustomFields = {
+  __typename?: 'ProductTranslationCustomFields';
+  metaDescription?: Maybe<Scalars['String']>;
+  metaTitle?: Maybe<Scalars['String']>;
 };
 
 export type ProductVariant = Node & {
@@ -2547,17 +2620,17 @@ export type ProductVariant = Node & {
 };
 
 export type ProductVariantFilterParameter = {
-  createdAt?: Maybe<DateOperators>;
-  currencyCode?: Maybe<StringOperators>;
-  id?: Maybe<IdOperators>;
-  languageCode?: Maybe<StringOperators>;
-  name?: Maybe<StringOperators>;
-  price?: Maybe<NumberOperators>;
-  priceWithTax?: Maybe<NumberOperators>;
-  productId?: Maybe<IdOperators>;
-  sku?: Maybe<StringOperators>;
-  stockLevel?: Maybe<StringOperators>;
-  updatedAt?: Maybe<DateOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  currencyCode?: InputMaybe<StringOperators>;
+  id?: InputMaybe<IdOperators>;
+  languageCode?: InputMaybe<StringOperators>;
+  name?: InputMaybe<StringOperators>;
+  price?: InputMaybe<NumberOperators>;
+  priceWithTax?: InputMaybe<NumberOperators>;
+  productId?: InputMaybe<IdOperators>;
+  sku?: InputMaybe<StringOperators>;
+  stockLevel?: InputMaybe<StringOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
 };
 
 export type ProductVariantList = PaginatedList & {
@@ -2568,27 +2641,27 @@ export type ProductVariantList = PaginatedList & {
 
 export type ProductVariantListOptions = {
   /** Allows the results to be filtered */
-  filter?: Maybe<ProductVariantFilterParameter>;
+  filter?: InputMaybe<ProductVariantFilterParameter>;
   /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
-  filterOperator?: Maybe<LogicalOperator>;
+  filterOperator?: InputMaybe<LogicalOperator>;
   /** Skips the first n results, for use in pagination */
-  skip?: Maybe<Scalars['Int']>;
+  skip?: InputMaybe<Scalars['Int']>;
   /** Specifies which properties to sort the results by */
-  sort?: Maybe<ProductVariantSortParameter>;
+  sort?: InputMaybe<ProductVariantSortParameter>;
   /** Takes n results, for use in pagination */
-  take?: Maybe<Scalars['Int']>;
+  take?: InputMaybe<Scalars['Int']>;
 };
 
 export type ProductVariantSortParameter = {
-  createdAt?: Maybe<SortOrder>;
-  id?: Maybe<SortOrder>;
-  name?: Maybe<SortOrder>;
-  price?: Maybe<SortOrder>;
-  priceWithTax?: Maybe<SortOrder>;
-  productId?: Maybe<SortOrder>;
-  sku?: Maybe<SortOrder>;
-  stockLevel?: Maybe<SortOrder>;
-  updatedAt?: Maybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  name?: InputMaybe<SortOrder>;
+  price?: InputMaybe<SortOrder>;
+  priceWithTax?: InputMaybe<SortOrder>;
+  productId?: InputMaybe<SortOrder>;
+  sku?: InputMaybe<SortOrder>;
+  stockLevel?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
 };
 
 export type ProductVariantTranslation = {
@@ -2630,13 +2703,13 @@ export type Query = {
   activeCustomer?: Maybe<Customer>;
   /**
    * The active Order. Will be `null` until an Order is created via `addItemToOrder`. Once an Order reaches the
-   * state of `PaymentApproved` or `PaymentSettled`, then that Order is no longer considered "active" and this
+   * state of `PaymentAuthorized` or `PaymentSettled`, then that Order is no longer considered "active" and this
    * query will once again return `null`.
    */
   activeOrder?: Maybe<Order>;
   /** An array of supported Countries */
   availableCountries: Array<Country>;
-  /** Returns a Collection either by its id or slug. If neither 'id' nor 'slug' is speicified, an error will result. */
+  /** Returns a Collection either by its id or slug. If neither 'id' nor 'slug' is specified, an error will result. */
   collection?: Maybe<Collection>;
   /** A list of Collections available to the shop */
   collections: CollectionList;
@@ -2665,7 +2738,7 @@ export type Query = {
    * general anonymous access to Order data.
    */
   orderByCode?: Maybe<Order>;
-  /** Get a Product either by id or slug. If neither 'id' nor 'slug' is speicified, an error will result. */
+  /** Get a Product either by id or slug. If neither 'id' nor 'slug' is specified, an error will result. */
   product?: Maybe<Product>;
   /** Get a list of Products */
   products: ProductList;
@@ -2674,12 +2747,12 @@ export type Query = {
 };
 
 export type QueryCollectionArgs = {
-  id?: Maybe<Scalars['ID']>;
-  slug?: Maybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+  slug?: InputMaybe<Scalars['String']>;
 };
 
 export type QueryCollectionsArgs = {
-  options?: Maybe<CollectionListOptions>;
+  options?: InputMaybe<CollectionListOptions>;
 };
 
 export type QueryDutchAddressLookupArgs = {
@@ -2691,7 +2764,7 @@ export type QueryFacetArgs = {
 };
 
 export type QueryFacetsArgs = {
-  options?: Maybe<FacetListOptions>;
+  options?: InputMaybe<FacetListOptions>;
 };
 
 export type QueryOrderArgs = {
@@ -2703,12 +2776,12 @@ export type QueryOrderByCodeArgs = {
 };
 
 export type QueryProductArgs = {
-  id?: Maybe<Scalars['ID']>;
-  slug?: Maybe<Scalars['String']>;
+  id?: InputMaybe<Scalars['ID']>;
+  slug?: InputMaybe<Scalars['String']>;
 };
 
 export type QueryProductsArgs = {
-  options?: Maybe<ProductListOptions>;
+  options?: InputMaybe<ProductListOptions>;
 };
 
 export type QuerySearchArgs = {
@@ -2740,15 +2813,16 @@ export type Refund = Node & {
 export type RegisterCustomerAccountResult =
   | MissingPasswordError
   | NativeAuthStrategyError
+  | PasswordValidationError
   | Success;
 
 export type RegisterCustomerInput = {
   emailAddress: Scalars['String'];
-  firstName?: Maybe<Scalars['String']>;
-  lastName?: Maybe<Scalars['String']>;
-  password?: Maybe<Scalars['String']>;
-  phoneNumber?: Maybe<Scalars['String']>;
-  title?: Maybe<Scalars['String']>;
+  firstName?: InputMaybe<Scalars['String']>;
+  lastName?: InputMaybe<Scalars['String']>;
+  password?: InputMaybe<Scalars['String']>;
+  phoneNumber?: InputMaybe<Scalars['String']>;
+  title?: InputMaybe<Scalars['String']>;
 };
 
 export type RelationCustomFieldConfig = CustomField & {
@@ -2779,8 +2853,10 @@ export type RequestUpdateCustomerEmailAddressResult =
 export type ResetPasswordResult =
   | CurrentUser
   | NativeAuthStrategyError
+  | NotVerifiedError
   | PasswordResetTokenExpiredError
-  | PasswordResetTokenInvalidError;
+  | PasswordResetTokenInvalidError
+  | PasswordValidationError;
 
 export type Role = Node & {
   __typename?: 'Role';
@@ -2800,16 +2876,16 @@ export type RoleList = PaginatedList & {
 };
 
 export type SearchInput = {
-  collectionId?: Maybe<Scalars['ID']>;
-  collectionSlug?: Maybe<Scalars['String']>;
-  facetValueFilters?: Maybe<Array<FacetValueFilterInput>>;
-  facetValueIds?: Maybe<Array<Scalars['ID']>>;
-  facetValueOperator?: Maybe<LogicalOperator>;
-  groupByProduct?: Maybe<Scalars['Boolean']>;
-  skip?: Maybe<Scalars['Int']>;
-  sort?: Maybe<SearchResultSortParameter>;
-  take?: Maybe<Scalars['Int']>;
-  term?: Maybe<Scalars['String']>;
+  collectionId?: InputMaybe<Scalars['ID']>;
+  collectionSlug?: InputMaybe<Scalars['String']>;
+  facetValueFilters?: InputMaybe<Array<FacetValueFilterInput>>;
+  facetValueIds?: InputMaybe<Array<Scalars['ID']>>;
+  facetValueOperator?: InputMaybe<LogicalOperator>;
+  groupByProduct?: InputMaybe<Scalars['Boolean']>;
+  skip?: InputMaybe<Scalars['Int']>;
+  sort?: InputMaybe<SearchResultSortParameter>;
+  take?: InputMaybe<Scalars['Int']>;
+  term?: InputMaybe<Scalars['String']>;
 };
 
 export type SearchReindexResponse = {
@@ -2841,7 +2917,7 @@ export type SearchResult = {
   productVariantAsset?: Maybe<SearchResultAsset>;
   productVariantId: Scalars['ID'];
   productVariantName: Scalars['String'];
-  /** A relevence score for the result. Differs between database implementations */
+  /** A relevance score for the result. Differs between database implementations */
   score: Scalars['Float'];
   sku: Scalars['String'];
   slug: Scalars['String'];
@@ -2858,8 +2934,8 @@ export type SearchResultAsset = {
 export type SearchResultPrice = PriceRange | SinglePrice;
 
 export type SearchResultSortParameter = {
-  name?: Maybe<SortOrder>;
-  price?: Maybe<SortOrder>;
+  name?: InputMaybe<SortOrder>;
+  price?: InputMaybe<SortOrder>;
 };
 
 export type SetCustomerForOrderResult =
@@ -2961,15 +3037,20 @@ export type StringFieldOption = {
   value: Scalars['String'];
 };
 
+/** Operators for filtering on a list of String fields */
+export type StringListOperators = {
+  inList: Scalars['String'];
+};
+
 /** Operators for filtering on a String field */
 export type StringOperators = {
-  contains?: Maybe<Scalars['String']>;
-  eq?: Maybe<Scalars['String']>;
-  in?: Maybe<Array<Scalars['String']>>;
-  notContains?: Maybe<Scalars['String']>;
-  notEq?: Maybe<Scalars['String']>;
-  notIn?: Maybe<Array<Scalars['String']>>;
-  regex?: Maybe<Scalars['String']>;
+  contains?: InputMaybe<Scalars['String']>;
+  eq?: InputMaybe<Scalars['String']>;
+  in?: InputMaybe<Array<Scalars['String']>>;
+  notContains?: InputMaybe<Scalars['String']>;
+  notEq?: InputMaybe<Scalars['String']>;
+  notIn?: InputMaybe<Array<Scalars['String']>>;
+  regex?: InputMaybe<Scalars['String']>;
 };
 
 /** Indicates that an operation succeeded, where we do not want to return any more specific information. */
@@ -3057,19 +3138,19 @@ export type TextCustomFieldConfig = CustomField & {
 export type TransitionOrderToStateResult = Order | OrderStateTransitionError;
 
 export type UpdateAddressInput = {
-  city?: Maybe<Scalars['String']>;
-  company?: Maybe<Scalars['String']>;
-  countryCode?: Maybe<Scalars['String']>;
-  customFields?: Maybe<Scalars['JSON']>;
-  defaultBillingAddress?: Maybe<Scalars['Boolean']>;
-  defaultShippingAddress?: Maybe<Scalars['Boolean']>;
-  fullName?: Maybe<Scalars['String']>;
+  city?: InputMaybe<Scalars['String']>;
+  company?: InputMaybe<Scalars['String']>;
+  countryCode?: InputMaybe<Scalars['String']>;
+  customFields?: InputMaybe<Scalars['JSON']>;
+  defaultBillingAddress?: InputMaybe<Scalars['Boolean']>;
+  defaultShippingAddress?: InputMaybe<Scalars['Boolean']>;
+  fullName?: InputMaybe<Scalars['String']>;
   id: Scalars['ID'];
-  phoneNumber?: Maybe<Scalars['String']>;
-  postalCode?: Maybe<Scalars['String']>;
-  province?: Maybe<Scalars['String']>;
-  streetLine1?: Maybe<Scalars['String']>;
-  streetLine2?: Maybe<Scalars['String']>;
+  phoneNumber?: InputMaybe<Scalars['String']>;
+  postalCode?: InputMaybe<Scalars['String']>;
+  province?: InputMaybe<Scalars['String']>;
+  streetLine1?: InputMaybe<Scalars['String']>;
+  streetLine2?: InputMaybe<Scalars['String']>;
 };
 
 export type UpdateCustomerEmailAddressResult =
@@ -3079,20 +3160,21 @@ export type UpdateCustomerEmailAddressResult =
   | Success;
 
 export type UpdateCustomerInput = {
-  customFields?: Maybe<Scalars['JSON']>;
-  firstName?: Maybe<Scalars['String']>;
-  lastName?: Maybe<Scalars['String']>;
-  phoneNumber?: Maybe<Scalars['String']>;
-  title?: Maybe<Scalars['String']>;
+  customFields?: InputMaybe<Scalars['JSON']>;
+  firstName?: InputMaybe<Scalars['String']>;
+  lastName?: InputMaybe<Scalars['String']>;
+  phoneNumber?: InputMaybe<Scalars['String']>;
+  title?: InputMaybe<Scalars['String']>;
 };
 
 export type UpdateCustomerPasswordResult =
   | InvalidCredentialsError
   | NativeAuthStrategyError
+  | PasswordValidationError
   | Success;
 
 export type UpdateOrderInput = {
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: InputMaybe<Scalars['JSON']>;
 };
 
 export type UpdateOrderItemsResult =
@@ -3126,7 +3208,7 @@ export type VerificationTokenExpiredError = ErrorResult & {
 };
 
 /**
- * Retured if the verification token (used to verify a Customer's email address) is either
+ * Returned if the verification token (used to verify a Customer's email address) is either
  * invalid or does not match any expected tokens.
  */
 export type VerificationTokenInvalidError = ErrorResult & {
@@ -3140,6 +3222,7 @@ export type VerifyCustomerAccountResult =
   | MissingPasswordError
   | NativeAuthStrategyError
   | PasswordAlreadySetError
+  | PasswordValidationError
   | VerificationTokenExpiredError
   | VerificationTokenInvalidError;
 
@@ -3244,10 +3327,10 @@ export type TransitionToStateMutationVariables = Exact<{
 
 export type TransitionToStateMutation = {
   __typename?: 'Mutation';
-  transitionOrderToState?: Maybe<
+  transitionOrderToState?:
     | { __typename?: 'Order' }
     | { __typename?: 'OrderStateTransitionError'; errorCode: ErrorCode }
-  >;
+    | null;
 };
 
 export type AddPaymentToOrderMutationVariables = Exact<{

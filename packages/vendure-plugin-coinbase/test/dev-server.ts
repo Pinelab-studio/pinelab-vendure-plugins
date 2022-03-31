@@ -1,4 +1,3 @@
-import { CoinbasePlugin } from '../src/bitpay-plugin';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -14,6 +13,7 @@ import {
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { initialData } from '../../test/src/initial-data';
+import { CoinbasePlugin } from '../src/coinbase.plugin';
 
 require('dotenv').config();
 
@@ -21,6 +21,10 @@ require('dotenv').config();
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    apiOptions: {
+      shopApiPlayground: true,
+      adminApiPlayground: true,
+    },
     plugins: [
       CoinbasePlugin,
       DefaultSearchPlugin,

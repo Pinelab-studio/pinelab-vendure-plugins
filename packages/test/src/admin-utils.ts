@@ -90,12 +90,13 @@ export async function getOrder(
 }
 
 export async function createSettledOrder(
-  shopClient: SimpleGraphQLClient
+  shopClient: SimpleGraphQLClient,
+  shippingMethodId: string | number
 ): Promise<Order> {
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 2);
-  await proceedToArrangingPayment(shopClient, {
+  await proceedToArrangingPayment(shopClient, shippingMethodId, {
     input: {
       fullName: 'Martinho Pinelabio',
       streetLine1: 'Verzetsstraat',
