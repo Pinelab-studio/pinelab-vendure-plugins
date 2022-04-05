@@ -65,6 +65,7 @@ import localtunnel from 'localtunnel';
     channelToken: 'e2e-default-channel',
     apiKey: process.env.GOEDGEPICKT_APIKEY!,
     webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
+    autoFulfill: true,
   });
   const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel');
   await server.app.get(ShippingMethodService).update(ctx, {
@@ -73,7 +74,7 @@ import localtunnel from 'localtunnel';
     translations: [],
   });
   const order = await createSettledOrder(server.app, ctx as any, 1);
-  const fulfillment = (await server.app
+  /*  const fulfillment = (await server.app
     .get(OrderService)
     .createFulfillment(ctx, {
       handler: { code: goedgepicktHandler.code, arguments: [] },
@@ -81,5 +82,5 @@ import localtunnel from 'localtunnel';
         orderLineId: line.id,
         quantity: line.quantity,
       })),
-    })) as Fulfillment;
+    })) as Fulfillment;*/
 })();

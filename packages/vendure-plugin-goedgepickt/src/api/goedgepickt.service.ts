@@ -33,7 +33,7 @@ import {
 } from './goedgepickt.types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import { transitionToDelivered } from '../../../util/src';
+import { fulfillAll, transitionToDelivered } from '../../../util/src';
 import { goedgepicktHandler } from './goedgepickt.handler';
 
 interface StockInput {
@@ -121,7 +121,15 @@ export class GoedgepicktService
         `Autofulfilling order ${order.code} for channel ${event.ctx.channel.token}`,
         loggerCtx
       );
-      // TODO auto fulfill
+      await fulfillAll(event.ctx, this.orderService, order, {
+        code: goedgepicktHandler.code,
+        arguments: [],
+      }).catch((error) =>
+        Logger.error(
+          `Failed to autofulfill order ${order.code}: ${error?.message}`,
+          loggerCtx
+        )
+      );
     });
   }
 

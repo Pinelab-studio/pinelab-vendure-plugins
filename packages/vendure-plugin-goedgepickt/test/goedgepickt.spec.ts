@@ -44,6 +44,7 @@ import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktController } from '../src/api/goedgepickt.controller';
 import { GoedgepicktClient } from '../src/api/goedgepickt.client';
+import { getOrder } from '../../test/src/admin-utils';
 
 jest.setTimeout(20000);
 
@@ -206,12 +207,12 @@ describe('Goedgepickt plugin', function () {
     expect(shippingMethod.fulfillmentHandlerCode).toBe('goedgepickt');
   });
 
-  it('Pushes order', async () => {
+  it('Pushes order with autofulfill', async () => {
     const ctx = await server.app
       .get(GoedgepicktService)
       .getCtxForChannel('e2e-default-channel');
     order = await createSettledOrder(server.app, ctx as any, 1);
-    const fulfillment = (await server.app
+    /*    const fulfillment = (await server.app
       .get(OrderService)
       .createFulfillment(ctx, {
         handler: { code: goedgepicktHandler.code, arguments: [] },
@@ -219,11 +220,12 @@ describe('Goedgepickt plugin', function () {
           orderLineId: line.id,
           quantity: line.quantity,
         })),
-      })) as Fulfillment;
+      })) as Fulfillment;*/
+    const adminOrder = await getOrder(adminClient, order.id as string);
+    const fulfillment = adminOrder?.fulfillments?.[0];
     const { houseNumber, addition } =
       GoedgepicktService.splitHouseNumberAndAddition(testAddress.streetLine2!);
-    await expect(fulfillment.handlerCode).toBe('goedgepickt');
-    await expect(fulfillment.method).toBe('testUuid');
+    await expect(fulfillment?.method).toBe('testUuid');
     await expect(createOrderPayload.orderId).toBe(order.code);
     await expect(createOrderPayload.shippingFirstName).toBe(
       testCustomer.firstName
