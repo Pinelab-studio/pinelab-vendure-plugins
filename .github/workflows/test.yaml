@@ -16,6 +16,8 @@ jobs:
         with:
           node-version: '14'
       - run: yarn
+      - name: Prettier
+        run: yarn prettier:check
       - name: Build test-utils
         run: cd packages/test && yarn
       - name: Build utils
