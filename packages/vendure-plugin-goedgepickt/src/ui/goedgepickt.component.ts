@@ -22,6 +22,14 @@ import { GoedgepicktConfig } from './generated/graphql';
         ></vdr-help-tooltip>
         <form class="form" [formGroup]="form">
           <section class="form-block">
+            <vdr-form-field label="Enabled" for="enabled">
+              <input
+                type="checkbox"
+                name="enabled"
+                clrCheckbox
+                formControlName="enabled"
+              />
+            </vdr-form-field>
             <vdr-form-field label="apikey" for="apiKey">
               <input id="apiKey" type="text" formControlName="apiKey" />
             </vdr-form-field>
@@ -30,6 +38,18 @@ import { GoedgepicktConfig } from './generated/graphql';
                 id="webshopUuid"
                 type="text"
                 formControlName="webshopUuid"
+              />
+            </vdr-form-field>
+            <vdr-form-field
+              label="Autofulfill"
+              for="autoFulfill"
+              tooltip="Automatically send orders to Goedgepickt on PaymentSettled"
+            >
+              <input
+                type="checkbox"
+                name="autoFulfill"
+                clrCheckbox
+                formControlName="autoFulfill"
               />
             </vdr-form-field>
             <button
@@ -118,8 +138,10 @@ export class GoedgepicktComponent implements OnInit {
     private notificationService: NotificationService
   ) {
     this.form = this.formBuilder.group({
+      enabled: ['enabled'],
       apiKey: ['your-api-key'],
       webshopUuid: ['webshopUuid'],
+      autoFulfill: ['autoFulfill'],
       orderWebhookUrl: ['orderWebhookUrl'],
       orderWebhookKey: ['orderWebhookKey'],
       stockWebhookUrl: ['stockWebhookUrl'],
@@ -132,8 +154,10 @@ export class GoedgepicktComponent implements OnInit {
       .query(getGoedgepicktConfig)
       .mapStream((d: any) => d.goedgepicktConfig)
       .subscribe((config: GoedgepicktConfig) => {
+        this.form.controls['enabled'].setValue(config.enabled);
         this.form.controls['apiKey'].setValue(config.apiKey);
         this.form.controls['webshopUuid'].setValue(config.webshopUuid);
+        this.form.controls['autoFulfill'].setValue(config.autoFulfill);
         this.form.controls['orderWebhookUrl'].setValue(config.orderWebhookUrl);
         this.form.controls['orderWebhookKey'].setValue(config.orderWebhookKey);
         this.form.controls['stockWebhookUrl'].setValue(config.stockWebhookUrl);
@@ -148,13 +172,17 @@ export class GoedgepicktComponent implements OnInit {
         const { updateGoedgepicktConfig: result } = (await this.dataService
           .mutate(updateGoedgepicktConfig, {
             input: {
+              enabled: formValue.enabled,
               apiKey: formValue.apiKey,
               webshopUuid: formValue.webshopUuid,
+              autoFulfill: formValue.autoFulfill,
             },
           })
           .toPromise()) as any;
+        this.form.controls['enabled'].setValue(result.enabled);
         this.form.controls['apiKey'].setValue(result.apiKey);
         this.form.controls['webshopUuid'].setValue(result.webshopUuid);
+        this.form.controls['autoFulfill'].setValue(result.autoFulfill);
         this.form.controls['orderWebhookUrl'].setValue(result.orderWebhookUrl);
         this.form.controls['orderWebhookKey'].setValue(result.orderWebhookKey);
         this.form.controls['stockWebhookUrl'].setValue(result.stockWebhookUrl);

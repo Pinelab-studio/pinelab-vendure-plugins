@@ -4,8 +4,10 @@ export const updateGoedgepicktConfig = gql`
   mutation updateGoedgepicktConfig($input: GoedgepicktConfigInput!) {
     updateGoedgepicktConfig(input: $input) {
       ... on GoedgepicktConfig {
+        enabled
         apiKey
         webshopUuid
+        autoFulfill
         orderWebhookKey
         orderWebhookUrl
         stockWebhookKey
@@ -21,8 +23,10 @@ export const updateGoedgepicktConfig = gql`
 export const getGoedgepicktConfig = gql`
   query goedgepicktConfig {
     goedgepicktConfig {
+      enabled
       apiKey
       webshopUuid
+      autoFulfill
       orderWebhookKey
       orderWebhookUrl
       stockWebhookKey
