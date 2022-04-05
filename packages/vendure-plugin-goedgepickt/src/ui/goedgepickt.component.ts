@@ -22,7 +22,7 @@ import { GoedgepicktConfig } from './generated/graphql';
         ></vdr-help-tooltip>
         <form class="form" [formGroup]="form">
           <section class="form-block">
-            <vdr-form-field label="apikey" for="apiKey">
+            <vdr-form-field label="Enabled" for="enabled">
               <input
                 type="checkbox"
                 name="enabled"
@@ -38,6 +38,18 @@ import { GoedgepicktConfig } from './generated/graphql';
                 id="webshopUuid"
                 type="text"
                 formControlName="webshopUuid"
+              />
+            </vdr-form-field>
+            <vdr-form-field
+              label="Autofulfill"
+              for="autoFulfill"
+              tooltip="Automatically send orders to Goedgepickt on PaymentSettled"
+            >
+              <input
+                type="checkbox"
+                name="autoFulfill"
+                clrCheckbox
+                formControlName="autoFulfill"
               />
             </vdr-form-field>
             <button
@@ -160,8 +172,10 @@ export class GoedgepicktComponent implements OnInit {
         const { updateGoedgepicktConfig: result } = (await this.dataService
           .mutate(updateGoedgepicktConfig, {
             input: {
+              enabled: formValue.enabled,
               apiKey: formValue.apiKey,
               webshopUuid: formValue.webshopUuid,
+              autoFulfill: formValue.autoFulfill,
             },
           })
           .toPromise()) as any;

@@ -18,7 +18,6 @@ import { initialData } from '../../test/src/initial-data';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import { createSettledOrder } from '../../test/src/order-utils';
 import { goedgepicktHandler } from '../src';
-import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import { GoedgepicktPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
@@ -38,6 +37,7 @@ import localtunnel from 'localtunnel';
     plugins: [
       GoedgepicktPlugin.init({
         vendureHost: tunnel.url,
+        setWebhook: false,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
