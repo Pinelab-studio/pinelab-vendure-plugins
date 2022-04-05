@@ -212,15 +212,7 @@ describe('Goedgepickt plugin', function () {
       .get(GoedgepicktService)
       .getCtxForChannel('e2e-default-channel');
     order = await createSettledOrder(server.app, ctx as any, 1);
-    /*    const fulfillment = (await server.app
-      .get(OrderService)
-      .createFulfillment(ctx, {
-        handler: { code: goedgepicktHandler.code, arguments: [] },
-        lines: order.lines.map((line) => ({
-          orderLineId: line.id,
-          quantity: line.quantity,
-        })),
-      })) as Fulfillment;*/
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
     const adminOrder = await getOrder(adminClient, order.id as string);
     const fulfillment = adminOrder?.fulfillments?.[0];
     const { houseNumber, addition } =

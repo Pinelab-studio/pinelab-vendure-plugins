@@ -2,12 +2,14 @@ import gql from 'graphql-tag';
 
 export const schema = gql`
   input GoedgepicktConfigInput {
+    enabled: Boolean
     apiKey: String
     webshopUuid: String
     autoFulfill: Boolean
   }
 
   type GoedgepicktConfig {
+    enabled: Boolean
     apiKey: String
     webshopUuid: String
     autoFulfill: Boolean

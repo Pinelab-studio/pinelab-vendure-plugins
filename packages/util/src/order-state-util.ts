@@ -6,16 +6,10 @@ import {
   RequestContext,
 } from '@vendure/core';
 import {
-  AddFulfillmentToOrderResult,
   ConfigurableOperationInput,
-  CreateFulfillmentError,
-  EmptyOrderLineSelectionError,
-  InsufficientStockOnHandError,
-  InvalidFulfillmentHandlerError,
   ItemsAlreadyFulfilledError,
 } from '@vendure/common/lib/generated-types';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
-import { ErrorResultUnion } from '@vendure/core/dist/common/error/error-result';
 
 /**
  * Create a fulfillment for all orderlines. Returns fulfillments[0] if already fulfilled
