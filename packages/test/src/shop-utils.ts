@@ -8,12 +8,14 @@ import {
   SetShippingMethod,
   TransitionToState,
 } from './generated/shop-graphql';
+import { Order } from '@vendure/core';
 
 /**
- * Proceed the active order of current shopClient to proceed to payment
+ * Set active order to have an address and a shippingmethod
  */
-export async function proceedToArrangingPayment(
+export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
+  shippingMethodId: string | number,
   address?: SetShippingAddressMutationVariables
 ) {
   await shopClient.query(
@@ -30,8 +32,19 @@ export async function proceedToArrangingPayment(
     }
   );
   await shopClient.query(SetShippingMethod, {
-    id: 3,
+    id: shippingMethodId,
   });
+}
+
+/**
+ * Proceed the active order of current shopClient to proceed to ArrangingPayment
+ */
+export async function proceedToArrangingPayment(
+  shopClient: SimpleGraphQLClient,
+  shippingMethodId: string | number,
+  address?: SetShippingAddressMutationVariables
+) {
+  await setAddressAndShipping(shopClient, shippingMethodId, address);
   await shopClient.query(TransitionToState, { state: 'ArrangingPayment' });
 }
 
@@ -60,9 +73,10 @@ export async function addItem(
   shopClient: SimpleGraphQLClient,
   variantId: string,
   quantity: number
-) {
-  await shopClient.query(AddItemToOrder, {
+): Promise<Order> {
+  const { addItemToOrder } = await shopClient.query(AddItemToOrder, {
     productVariantId: variantId,
     quantity,
   });
+  return addItemToOrder;
 }

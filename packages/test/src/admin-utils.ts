@@ -24,7 +24,8 @@ import { testPaymentMethod } from './test-payment-method';
  */
 export async function addShippingMethod(
   adminClient: SimpleGraphQLClient,
-  fulfillmentHandlerCode: string
+  fulfillmentHandlerCode: string,
+  price = '500'
 ) {
   await adminClient.asSuperAdmin();
   await adminClient.query(CreateShippingMethod, {
@@ -45,7 +46,7 @@ export async function addShippingMethod(
         arguments: [
           {
             name: 'rate',
-            value: '500',
+            value: price,
           },
           {
             name: 'taxRate',
@@ -90,12 +91,13 @@ export async function getOrder(
 }
 
 export async function createSettledOrder(
-  shopClient: SimpleGraphQLClient
+  shopClient: SimpleGraphQLClient,
+  shippingMethodId: string | number
 ): Promise<Order> {
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 2);
-  await proceedToArrangingPayment(shopClient, {
+  await proceedToArrangingPayment(shopClient, shippingMethodId, {
     input: {
       fullName: 'Martinho Pinelabio',
       streetLine1: 'Verzetsstraat',

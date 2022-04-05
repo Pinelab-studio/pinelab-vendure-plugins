@@ -81,7 +81,7 @@ require('dotenv').config();
   await addShippingMethod(adminClient, 'manual-fulfillment');
   const orders = 15;
   for (let i = 1; i <= orders; i++) {
-    await createSettledOrder(shopClient);
+    await createSettledOrder(shopClient, 3);
   }
   console.log(`Created ${orders} orders`);
 })();
