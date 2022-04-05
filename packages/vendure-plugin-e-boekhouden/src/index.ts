@@ -1,8 +1,8 @@
 import { PermissionDefinition } from '@vendure/core';
 
 export const eBoekhoudenPermission = new PermissionDefinition({
-  name: 'Eboekhouden',
-  description: 'Allows enabling e-boekhouden plugin',
+  name: 'eBoekhouden',
+  description: 'Allows enabling e-Boekhouden plugin',
 });
 export * from './ui/generated/graphql';
 export * from './e-boekhouden.plugin';

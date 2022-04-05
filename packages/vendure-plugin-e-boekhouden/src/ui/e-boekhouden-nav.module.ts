@@ -6,14 +6,14 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
   providers: [
     addNavMenuItem(
       {
-        id: 'goedgepickt',
-        label: 'Goedgepickt',
-        routerLink: ['/extensions/goedgepickt'],
-        icon: 'check',
-        requiresPermission: 'SetGoedgepicktConfig',
+        id: 'e-boekhouden',
+        label: 'e-Boekhouden',
+        routerLink: ['/extensions/e-boekhouden'],
+        icon: 'dollar-bill',
+        requiresPermission: 'eBoekhouden',
       },
       'settings'
     ),
   ],
 })
-export class GoedgepicktNavModule {}
+export class EBoekhoudenNavModule {}

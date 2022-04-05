@@ -5,14 +5,16 @@ export const schema = gql`
     enabled: Boolean
     username: String
     secret1: String
-    secret2: Boolean
+    secret2: String
+    contraAccount: String
   }
 
   type EBoekhoudenConfig {
       enabled: Boolean
       username: String
       secret1: String
-      secret2: Boolean
+      secret2: String
+      contraAccount: String
   }
   
   extend type Mutation {

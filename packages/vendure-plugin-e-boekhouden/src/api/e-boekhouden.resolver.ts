@@ -10,7 +10,6 @@ import { eBoekhoudenPermission } from "../index";
 export class EBoekhoudenResolver {
   constructor(
     private service: EBoekhoudenService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
   ) {}
 
   @Query()

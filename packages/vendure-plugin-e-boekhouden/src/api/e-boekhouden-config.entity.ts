@@ -21,4 +21,7 @@ export class EBoekhoudenConfigEntity extends VendureEntity {
 
   @Column({ nullable: false} )
   secret2!: string;
+
+  @Column({ nullable: false} )
+  contraAccount!: string;
 }
