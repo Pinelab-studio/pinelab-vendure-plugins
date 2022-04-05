@@ -154,7 +154,7 @@ describe('MyParcel', () => {
     );
     await addItem(shopClient, 'T_1', 1);
     await addItem(shopClient, 'T_2', 2);
-    await proceedToArrangingPayment(shopClient, address);
+    await proceedToArrangingPayment(shopClient, 3, address);
     const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
     orderId = (order as any).id;
     expect(shopClient).toBeDefined();

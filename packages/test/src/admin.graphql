@@ -28,10 +28,21 @@ query order($id: ID!) {
   order(id: $id) {
     id
     code
+    state
     fulfillments {
       id
       state
       method
     }
+  }
+}
+
+mutation createPaymentMethod($input: CreatePaymentMethodInput!) {
+  createPaymentMethod(input: $input) {
+    id
+    code
+    name
+    description
+    enabled
   }
 }

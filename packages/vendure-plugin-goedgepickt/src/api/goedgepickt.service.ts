@@ -8,11 +8,13 @@ import {
   ChannelService,
   ConfigService,
   EntityHydrator,
+  EventBus,
   JobQueue,
   JobQueueService,
   Logger,
   Order,
   OrderItem,
+  OrderPlacedEvent,
   OrderService,
   ProductVariant,
   ProductVariantService,
@@ -27,12 +29,11 @@ import {
   Order as GgOrder,
   OrderItemInput,
   OrderStatus,
-  Product as GgProduct,
   ProductInput,
 } from './goedgepickt.types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import { transitionToDelivered } from '../../../util/src';
+import { fulfillAll, transitionToDelivered } from '../../../util/src';
 import { goedgepicktHandler } from './goedgepickt.handler';
 
 interface StockInput {
@@ -59,18 +60,20 @@ export class GoedgepicktService
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
+    private eventBus: EventBus
   ) {
     this.queryLimit = configService.apiOptions.adminListQueryLimit;
   }
 
   async onModuleInit() {
+    // Start JobQueue
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'pull-goedgepickt-stocklevels',
       process: async (job) =>
         await this.pullStocklevels(job.data.channelToken).catch((error) => {
           Logger.error(
-            `Failed to pull stocklevels for ${job.data.channelToken}`,
+            `Failed to pull stocklevels for ${job.data.channelToken}: ${error.message}`,
             loggerCtx,
             error
           );
@@ -80,7 +83,7 @@ export class GoedgepicktService
 
   async onApplicationBootstrap(): Promise<void> {
     // Push sync jobs to the worker queue
-    const configs = (await this.getConfigs()) || [];
+    const configs = (await this.getConfigs()).filter((config) => true);
     for (const config of configs) {
       if (!this.jobQueue) {
         return Logger.error(
@@ -97,6 +100,37 @@ export class GoedgepicktService
         loggerCtx
       );
     }
+    // Listen for Settled orders for autoFulfillment
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
+      const config = await this.getConfig(event.ctx.channel.token);
+      if (!config?.enabled || !config.autoFulfill) {
+        return;
+      }
+      const order = await this.entityHydrator.hydrate(event.ctx, event.order, {
+        relations: ['shippingLines', 'shippingLines.shippingMethod'],
+      });
+      const hasGoedgepicktHandler = order.shippingLines.some(
+        (shippingLine) =>
+          shippingLine.shippingMethod?.fulfillmentHandlerCode ===
+          goedgepicktHandler.code
+      );
+      if (!hasGoedgepicktHandler) {
+        return;
+      }
+      Logger.info(
+        `Autofulfilling order ${order.code} for channel ${event.ctx.channel.token}`,
+        loggerCtx
+      );
+      await fulfillAll(event.ctx, this.orderService, order, {
+        code: goedgepicktHandler.code,
+        arguments: [],
+      }).catch((error) =>
+        Logger.error(
+          `Failed to autofulfill order ${order.code}: ${error?.message}`,
+          loggerCtx
+        )
+      );
+    });
   }
 
   async upsertConfig(
@@ -371,7 +405,7 @@ export class GoedgepicktService
   async getClientForChannel(channelToken: string): Promise<GoedgepicktClient> {
     const config = await this.getConfig(channelToken);
     if (!config || !config?.apiKey || !config.webshopUuid) {
-      throw Error(`No Goedgepickt config found for channel ${channelToken}`);
+      throw Error(`Incomplete config found for channel ${channelToken}`);
     }
     return new GoedgepicktClient({
       webshopUuid: config.webshopUuid,

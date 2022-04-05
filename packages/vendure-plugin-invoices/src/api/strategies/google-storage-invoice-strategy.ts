@@ -1,28 +1,40 @@
-import { RemoteStorageStrategy } from './storage-strategy';
+import { Logger } from '@vendure/core';
 import { Response } from 'express';
-import { InvoiceEntity } from '../entities/invoice.entity';
 import { createReadStream, ReadStream } from 'fs';
-import { Storage, StorageOptions } from '@google-cloud/storage';
 import path from 'path';
+import { InvoiceEntity } from '../entities/invoice.entity';
 import { createTempFile, zipFiles, ZippableFile } from '../file.util';
+import { RemoteStorageStrategy } from './storage-strategy';
 
 interface GoogleInvoiceConfig {
   bucketName: string;
   /**
    * Passed directly to gclouds node library with new Storage(storageOptions)
    */
-  storageOptions?: StorageOptions;
+  storageOptions?: import('@google-cloud/storage').StorageOptions;
 }
 
 export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
-  storage: Storage;
-  bucketName: string;
+  private storage: import('@google-cloud/storage').Storage;
+  private bucketName: string;
 
   constructor(private config: GoogleInvoiceConfig) {
     this.bucketName = config.bucketName;
-    this.storage = config.storageOptions
-      ? new Storage(config.storageOptions)
-      : new Storage();
+  }
+
+  async init(): Promise<void> {
+    try {
+      const storage = await import('@google-cloud/storage');
+      this.storage = this.config.storageOptions
+        ? new storage.Storage(this.config.storageOptions)
+        : new storage.Storage();
+    } catch (err: any) {
+      Logger.error(
+        `Could not find the "@google-cloud/storage" package. Make sure it is installed`,
+        GoogleStorageInvoiceStrategy.name,
+        err.stack
+      );
+    }
   }
 
   async getPublicUrl(invoice: InvoiceEntity): Promise<string> {

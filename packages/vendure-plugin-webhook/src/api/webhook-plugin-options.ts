@@ -19,4 +19,8 @@ export interface WebhookPluginOptions {
    * Delay is in ms
    */
   delay?: number;
+  /**
+   * Disable the plugin. Default is false
+   */
+  disabled?: boolean;
 }
