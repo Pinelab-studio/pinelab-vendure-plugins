@@ -33,7 +33,6 @@ import {
   testAddress,
   testCustomer,
 } from '../../test/src/order-utils';
-import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import {
   getGoedgepicktConfig,
   runGoedgepicktFullSync,
