@@ -23,7 +23,6 @@ connect.lock
 coverage
 dist
 generated/
-!ui/generated/
 lib/
 libpeerconnection.log
 node_modules
