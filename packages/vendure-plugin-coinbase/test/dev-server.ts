@@ -67,8 +67,8 @@ require('dotenv').config();
   await server.app
     .get(Connection)
     .getRepository(ProductVariantPrice)
-    .update({ id: 1 }, { price: 1 });
-  console.log('Set variant T_1 to $0.01');
+    .update({ id: 1 }, { price: 300 });
+  console.log('Set variant T_1 to 3.00');
   // Create Free shippingmethod
   await addShippingMethod(adminClient, 'manual-fulfillment', '0');
   console.log('Created shippingMethod with $0');

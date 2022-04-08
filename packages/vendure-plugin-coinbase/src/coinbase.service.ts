@@ -5,7 +5,6 @@ import {
   EntityHydrator,
   ErrorResult,
   Logger,
-  Order,
   OrderService,
   OrderStateTransitionError,
   PaymentMethodService,
@@ -54,6 +53,10 @@ export class CoinbaseService {
         amount: `${(order.totalWithTax / 100).toFixed(2)}`,
         currency: order.currencyCode,
       },
+      metadata: {
+        orderCode: order.code,
+        channelToken: ctx.channel.token,
+      },
       pricing_type: 'fixed_price',
       redirect_url: `${redirectUrl}/${order.code}`,
     });
@@ -65,7 +68,7 @@ export class CoinbaseService {
   ): Promise<void> {
     if (event?.type !== 'charge:confirmed') {
       Logger.info(
-        `Incoming webhook is of type ${event?.type}, not processing this event.`,
+        `Incoming webhook is of type ${event?.type} for order ${event?.data?.metadata?.orderCode}, not processing this event.`,
         loggerCtx
       );
       return;
@@ -93,6 +96,7 @@ export class CoinbaseService {
     const { apiKey, method } = await this.getCoinbasePaymentMethod(ctx);
     const client = new CoinbaseClient({ apiKey });
     const charge = await client.getCharge(event.data.code);
+    console.log(JSON.stringify(charge));
     if (!charge.data.confirmed_at) {
       Logger.error(
         `Requested charge ${event.data.code} does not have 'confirmed_at' on Coinbase. This payment will not be settled.`,
