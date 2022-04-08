@@ -4,11 +4,9 @@
 
 Accept crypto payments via Coinbase Commerce in Vendure.
 
-**Orders are NOT transitioned to `PaymentSettled` when Coinbase redirects the customer to the confirmation page. You
-should notify your customer with a message that the order will be handled when their transaction is confirmed**
-
-**A payment can not be reversed by a customer, but can theoretically be rejected, but this is usually not the case. It's
-your own responsibility to check for failed payments in Coinbase.**
+**Orders are NOT transitioned to `PaymentSettled` when Coinbase redirects the customer to the confirmation page, because
+crypto transactions can take some time to confirm. You should notify your customer with a message that the order will be
+handled when their transaction is confirmed.**
 
 ## Getting started
 
