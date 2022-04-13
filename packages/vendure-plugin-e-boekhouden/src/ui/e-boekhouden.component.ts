@@ -1,11 +1,18 @@
-import { ChangeDetectorRef, Component, OnInit } from "@angular/core";
-import { FormBuilder, FormGroup } from "@angular/forms";
-import { DataService, NotificationService } from "@vendure/admin-ui/core";
-import { eBoekhoudenConfigQuery, updateEBoekhoudenConfigMutation } from "./queries.graphql";
-import { EBoekhoudenConfig, UpdateEBoekhoudenConfigMutation } from "./generated/graphql";
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup } from '@angular/forms';
+import { DataService, NotificationService } from '@vendure/admin-ui/core';
+import {
+  eBoekhoudenConfigQuery,
+  updateEBoekhoudenConfigMutation,
+} from './queries.graphql';
+import {
+  EBoekhoudenConfig,
+  UpdateEBoekhoudenConfigMutation,
+  UpdateEBoekhoudenConfigMutationVariables,
+} from './generated/graphql';
 
 @Component({
-  selector: "e-boekhouden-component",
+  selector: 'e-boekhouden-component',
   template: `
     <form class="form" [formGroup]="form">
       <section class="form-block">
@@ -17,11 +24,35 @@ import { EBoekhoudenConfig, UpdateEBoekhoudenConfigMutation } from "./generated/
             formControlName="enabled"
           />
         </vdr-form-field>
-        <vdr-form-field label="apikey" for="apiKey">
-          <input id="apiKey" type="text" formControlName="apiKey" />
+        <vdr-form-field label="Username" for="username">
+          <input id="username" type="text" formControlName="username" />
         </vdr-form-field>
+        <vdr-form-field label="Secret 1" for="secret1">
+          <input id="secret1" type="text" formControlName="secret1" />
+        </vdr-form-field>
+        <vdr-form-field label="Secret 2" for="secret2">
+          <input id="secret2" type="text" formControlName="secret2" />
+        </vdr-form-field>
+        <vdr-form-field label="Account" for="account">
+          <input id="account" type="text" formControlName="account" />
+        </vdr-form-field>
+        <vdr-form-field label="Contra account" for="contraAccount">
+          <input
+            id="contraAccount"
+            type="text"
+            formControlName="contraAccount"
+          />
+        </vdr-form-field>
+        <button
+          class="btn btn-primary"
+          (click)="save()"
+          [disabled]="form.invalid || form.pristine"
+        >
+          Save
+        </button>
+      </section>
     </form>
-  `
+  `,
 })
 export class EBoekhoudenComponent implements OnInit {
   form: FormGroup;
@@ -35,11 +66,12 @@ export class EBoekhoudenComponent implements OnInit {
     private notificationService: NotificationService
   ) {
     this.form = this.formBuilder.group({
-      enabled: ["enabled"],
-      username: ["username"],
-      secret1: ["secret1"],
-      secret2: ["secret2"],
-      contraAccount: ["contraAccount"]
+      enabled: ['enabled'],
+      username: ['username'],
+      secret1: ['secret1'],
+      secret2: ['secret2'],
+      account: ['account'],
+      contraAccount: ['contraAccount'],
     });
   }
 
@@ -54,32 +86,36 @@ export class EBoekhoudenComponent implements OnInit {
     try {
       if (this.form.dirty) {
         const formValue = this.form.value;
-        const { updateEBoekhoudenConfig: result } = (await this.dataService
-          .mutate(updateEBoekhoudenConfigMutation, {
+        const { updateEBoekhoudenConfig: result } = await this.dataService
+          .mutate<
+            UpdateEBoekhoudenConfigMutation,
+            UpdateEBoekhoudenConfigMutationVariables
+          >(updateEBoekhoudenConfigMutation, {
             input: {
-              ...formValue
-            }
+              ...formValue,
+            },
           })
-          .toPromise()) as UpdateEBoekhoudenConfigMutation;
+          .toPromise();
         this.setValues(result);
       }
       this.form.markAsPristine();
       this.changeDetector.markForCheck();
-      this.notificationService.success("common.notify-update-success", {
-        entity: "Eboekhouden config"
+      this.notificationService.success('common.notify-update-success', {
+        entity: 'Eboekhouden config',
       });
     } catch (e) {
-      this.notificationService.error("common.notify-update-error", {
-        entity: "Eboekhouden config"
+      this.notificationService.error('common.notify-update-error', {
+        entity: 'Eboekhouden config',
       });
     }
   }
 
   private setValues(values?: EBoekhoudenConfig | null): void {
-    this.form.controls["enabled"].setValue(values?.enabled);
-    this.form.controls["username"].setValue(values?.username);
-    this.form.controls["secret1"].setValue(values?.secret1);
-    this.form.controls["secret2"].setValue(values?.secret2);
-    this.form.controls["contraAccount"].setValue(values?.contraAccount);
+    this.form.controls['enabled'].setValue(values?.enabled);
+    this.form.controls['username'].setValue(values?.username);
+    this.form.controls['secret1'].setValue(values?.secret1);
+    this.form.controls['secret2'].setValue(values?.secret2);
+    this.form.controls['account'].setValue(values?.account);
+    this.form.controls['contraAccount'].setValue(values?.contraAccount);
   }
 }

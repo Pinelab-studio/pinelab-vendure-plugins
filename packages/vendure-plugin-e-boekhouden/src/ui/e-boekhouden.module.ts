@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
-import { EBoekhoudenComponent } from "./e-boekhouden.component";
+import { EBoekhoudenComponent } from './e-boekhouden.component';
 
 @NgModule({
   imports: [

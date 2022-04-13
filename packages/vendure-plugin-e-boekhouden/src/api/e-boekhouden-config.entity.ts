@@ -13,15 +13,18 @@ export class EBoekhoudenConfigEntity extends VendureEntity {
   @Column({ nullable: false })
   enabled!: boolean;
 
-  @Column({ nullable: false})
+  @Column({ nullable: false })
   username!: string;
 
   @Column({ nullable: false })
   secret1!: string;
 
-  @Column({ nullable: false} )
+  @Column({ nullable: false })
   secret2!: string;
 
-  @Column({ nullable: false} )
+  @Column({ nullable: false })
+  account!: string;
+
+  @Column({ nullable: false })
   contraAccount!: string;
 }

@@ -11,102 +11,37 @@ import {
   InitialData,
   LogLevel,
   mergeConfig,
-  Order,
-  OrderService,
-  ProductVariant,
-  ProductVariantService,
-  ShippingMethodService,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
+  EBoekhoudenConfig,
+  EBoekhoudenConfigQuery,
+  EBoekhoudenPlugin,
+  UpdateEBoekhoudenConfigMutation,
+  UpdateEBoekhoudenConfigMutationVariables,
 } from '../src';
-import nock from 'nock';
 import {
-  createSettledOrder,
-  testAddress,
-  testCustomer,
-} from '../../test/src/order-utils';
-import {
+  eBoekhoudenConfigQuery,
+  updateEBoekhoudenConfigMutation,
 } from '../src/ui/queries.graphql';
-import fs from 'fs';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { GoedgepicktController } from '../src/api/goedgepickt.controller';
-import { GoedgepicktClient } from '../src/api/goedgepickt.client';
-import { getOrder } from '../../test/src/admin-utils';
+import { createSettledOrder } from '../../test/src/admin-utils';
+import nock from 'nock';
 
 jest.setTimeout(20000);
 
 describe('Goedgepickt plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
+  let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  const ggConfig = {
-    apiKey: 'test-api-key',
-    webshopUuid: 'test-webshop-uuid',
-    autoFulfill: true,
+  const eBoekhoudenConfig: EBoekhoudenConfig = {
+    contraAccount: '8010',
+    account: '1010',
+    enabled: true,
+    secret1: 'secret1234',
+    secret2: 'secret456',
+    username: 'testUsername',
   };
-
-  let pushProductsPayloads: any[] = [];
-  let createOrderPayload: OrderInput;
-  let webhookPayloads: any[] = [];
-  let order: Order;
-  const apiUrl = 'https://account.goedgepickt.nl/';
-  // Update products
-  nock(apiUrl)
-    .persist(true)
-    .post('/api/v1/products', (reqBody) => {
-      pushProductsPayloads.push(reqBody);
-      return true;
-    })
-    .reply(200, []);
-  // Get products first-time (used by FullSync)
-  nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
-    items: [],
-  });
-  // Get products second time
-  nock(apiUrl)
-    .get('/api/v1/products')
-    .query(true)
-    .reply(200, {
-      items: [
-        {
-          sku: 'L2201308',
-          stock: {
-            freeStock: 33,
-          },
-        },
-      ],
-    });
-  // Get products third-time
-  nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
-    items: [],
-  });
-  // Create order
-  nock(apiUrl)
-    .post('/api/v1/orders', (reqBody) => {
-      createOrderPayload = reqBody;
-      return true;
-    })
-    .reply(200, {
-      message: 'Order created',
-      orderUuid: 'testUuid',
-    });
-  // Get webshops
-  nock(apiUrl)
-    .persist(true)
-    .get('/api/v1/webshops')
-    .reply(200, { items: [{ uuid: ggConfig.webshopUuid }] });
-  // get webhooks
-  nock(apiUrl).persist(true).get('/api/v1/webhooks').reply(200, { items: [] });
-  // Update webhooks
-  nock(apiUrl)
-    .persist(true)
-    .post('/api/v1/webhooks', (reqBody) => {
-      webhookPayloads.push(reqBody);
-      return true;
-    })
-    .reply(200, { webhookSecret: 'test-secret' });
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -116,14 +51,10 @@ describe('Goedgepickt plugin', function () {
         port: 3105,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [
-        EBoekhoudenPlugin.init({
-          vendureHost: 'https://test-host',
-        }),
-      ],
+      plugins: [EBoekhoudenPlugin],
     });
 
-    ({ server, adminClient } = createTestEnvironment(config));
+    ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData: initialData as InitialData,
       productsCsvPath: '../test/src/products-import.csv',
@@ -134,6 +65,47 @@ describe('Goedgepickt plugin', function () {
 
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
+  });
+
+  it('Should get null', async () => {
+    const { eBoekhoudenConfig: result } =
+      await adminClient.query<EBoekhoudenConfigQuery>(eBoekhoudenConfigQuery);
+    expect(result).toBeNull();
+  });
+
+  it('Should save config', async () => {
+    const { updateEBoekhoudenConfig: result } = await adminClient.query<
+      UpdateEBoekhoudenConfigMutation,
+      UpdateEBoekhoudenConfigMutationVariables
+    >(updateEBoekhoudenConfigMutation, { input: eBoekhoudenConfig });
+    expect(result?.enabled).toBe(eBoekhoudenConfig.enabled);
+    expect(result?.secret1).toBe(eBoekhoudenConfig.secret1);
+    expect(result?.secret2).toBe(eBoekhoudenConfig.secret2);
+    expect(result?.username).toBe(eBoekhoudenConfig.username);
+    expect(result?.contraAccount).toBe(eBoekhoudenConfig.contraAccount);
+    expect(result?.account).toBe(eBoekhoudenConfig.account);
+  });
+
+  it('Should get config', async () => {
+    const { eBoekhoudenConfig: result } =
+      await adminClient.query<EBoekhoudenConfigQuery>(eBoekhoudenConfigQuery);
+    expect(result?.enabled).toBe(eBoekhoudenConfig.enabled);
+    expect(result?.secret1).toBe(eBoekhoudenConfig.secret1);
+    expect(result?.secret2).toBe(eBoekhoudenConfig.secret2);
+    expect(result?.username).toBe(eBoekhoudenConfig.username);
+  });
+
+  it('Should send order to e-Boekhouden', async () => {
+    const payloads = [];
+    nock('https://soap.e-boekhouden.nl/')
+      .persist(true)
+      .get(/.*/, (body) => {
+        payloads.push(body);
+        return true;
+      })
+      .reply(200, { webhookSecret: 'test-secret' });
+    const order = await createSettledOrder(shopClient, 1);
+    expect(payloads.length).toBeGreaterThan(1);
   });
 
   afterAll(() => {
