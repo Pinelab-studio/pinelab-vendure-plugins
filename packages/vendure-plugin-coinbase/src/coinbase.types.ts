@@ -84,6 +84,10 @@ export interface ChargeInput {
     amount: string;
     currency: string;
   };
+  metadata: {
+    orderCode: string;
+    channelToken: string;
+  };
   pricing_type: 'fixed_price' | 'no_price';
   redirect_url: string;
 }
@@ -91,7 +95,11 @@ export interface ChargeInput {
 export interface ChargeConfirmedWebhookEvent {
   event?: {
     id?: string;
-    type?: 'charge:created' | 'charge:confirmed' | 'charge:failed';
+    type?:
+      | 'charge:created'
+      | 'charge:confirmed'
+      | 'charge:failed'
+      | 'charge:pending';
     data?: {
       id?: string;
       code?: string;

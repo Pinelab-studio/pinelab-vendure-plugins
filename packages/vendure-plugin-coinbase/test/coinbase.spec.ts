@@ -16,7 +16,7 @@ import { CreatePaymentMethod } from '../../test/src/generated/admin-graphql';
 import { addItem, setAddressAndShipping } from '../../test/src/shop-utils';
 import nock from 'nock';
 import axios, { AxiosInstance } from 'axios';
-import { ChargeResult } from '../src/coinbase.types';
+import { ChargeInput, ChargeResult } from '../src/coinbase.types';
 import { getOrder } from '../../test/src/admin-utils';
 import { CreatePaymentIntentMutation } from './queries';
 
@@ -98,8 +98,12 @@ describe('Coinbase payments', () => {
   });
 
   it('Should create payment intent', async () => {
+    let payload: ChargeInput;
     nock('https://api.commerce.coinbase.com/')
-      .post('/charges')
+      .post('/charges', (reqBody) => {
+        payload = reqBody;
+        return true;
+      })
       .reply(200, {
         data: { hosted_url: 'https://mock-hosted-checkout/charges' },
       });
@@ -109,6 +113,12 @@ describe('Coinbase payments', () => {
     );
     expect(createCoinbasePaymentIntent).toBe(
       'https://mock-hosted-checkout/charges'
+    );
+    const adminOrder = await getOrder(adminClient, order.id as string);
+    expect(payload!.metadata.channelToken).toBe(E2E_DEFAULT_CHANNEL_TOKEN);
+    expect(payload!.metadata.orderCode).toBe(adminOrder!.code);
+    expect(payload!.local_price.amount).toBe(
+      (adminOrder!.totalWithTax / 100).toFixed(2)
     );
   });
 
