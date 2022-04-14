@@ -6,13 +6,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import {
-  DefaultLogger,
-  LogLevel,
-  mergeConfig,
-  TaxRate,
-  TaxRateService,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig, TaxRate } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
   EBoekhoudenConfig,

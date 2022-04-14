@@ -5,23 +5,13 @@ import {
 } from '@vendure/core';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import { SimpleGraphQLClient } from '@vendure/testing';
-import { Order } from '@vendure/core';
 import {
   CreateFulfillment,
   CreateShippingMethod,
-  OrderQuery,
   Order as OrderGraphql,
+  OrderQuery,
 } from './generated/admin-graphql';
-import {
-  addItem,
-  addPaymentToOrder,
-  proceedToArrangingPayment,
-} from './shop-utils';
-import { testPaymentMethod } from './test-payment-method';
 
-/**
- *
- */
 export async function addShippingMethod(
   adminClient: SimpleGraphQLClient,
   fulfillmentHandlerCode: string,
