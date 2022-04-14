@@ -3,12 +3,16 @@ import {
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
+  ErrorCode,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
   TransitionToState,
+  TransitionToStateMutation,
+  TransitionToStateMutationVariables,
 } from './generated/shop-graphql';
-import { Order } from '@vendure/core';
+import { ErrorResult, Order } from '@vendure/core';
+import { testPaymentMethod } from './test-payment-method';
 
 /**
  * Set active order to have an address and a shippingmethod
@@ -45,7 +49,11 @@ export async function proceedToArrangingPayment(
   address?: SetShippingAddressMutationVariables
 ) {
   await setAddressAndShipping(shopClient, shippingMethodId, address);
-  await shopClient.query(TransitionToState, { state: 'ArrangingPayment' });
+  const result = await shopClient.query<
+    TransitionToStateMutation,
+    TransitionToStateMutationVariables
+  >(TransitionToState, { state: 'ArrangingPayment' });
+  return result.transitionOrderToState;
 }
 
 /**
@@ -79,4 +87,27 @@ export async function addItem(
     quantity,
   });
   return addItemToOrder;
+}
+
+export async function createSettledOrder(
+  shopClient: SimpleGraphQLClient,
+  shippingMethodId: string | number
+): Promise<Order> {
+  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  await addItem(shopClient, 'T_1', 1);
+  await addItem(shopClient, 'T_2', 2);
+  const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
+    input: {
+      fullName: 'Martinho Pinelabio',
+      streetLine1: 'Verzetsstraat',
+      streetLine2: '12a',
+      city: 'Liwwa',
+      postalCode: '8923CP',
+      countryCode: 'NL',
+    },
+  });
+  if ((res as ErrorResult)?.errorCode) {
+    throw Error((res as ErrorResult).errorCode);
+  }
+  return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
 }

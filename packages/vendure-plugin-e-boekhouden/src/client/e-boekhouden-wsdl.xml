@@ -1,0 +1,1362 @@
+
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://www.e-boekhouden.nl/soap" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" targetNamespace="http://www.e-boekhouden.nl/soap" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+    <wsdl:types>
+        <s:schema elementFormDefault="qualified" targetNamespace="http://www.e-boekhouden.nl/soap">
+            <s:element name="GetAdministraties">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetAdministratiesResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetAdministratiesResult" type="tns:cResultGetAdministraties" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cResultGetAdministraties">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Administraties" type="tns:ArrayOfCAdministratie" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cError">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="LastErrorCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="LastErrorDescription" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCAdministratie">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cAdministratie" nillable="true" type="tns:cAdministratie" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cAdministratie">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="Bedrijf" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Plaats" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Guid" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="StartBoekjaar" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSaldo">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cSaldoFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cSaldoFilter">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="GbCode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenPlaatsId" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumVan" nillable="true" type="s:dateTime" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumTot" nillable="true" type="s:dateTime" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSaldoResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetSaldoResult" type="tns:cResultGetSaldo" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cResultGetSaldo">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Saldo" type="s:double" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSaldi">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cSaldiFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cSaldiFilter">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenPlaatsId" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumVan" nillable="true" type="s:dateTime" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumTot" nillable="true" type="s:dateTime" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Categorie" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetSaldiResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetSaldiResult" type="tns:cResultGetSaldi" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cResultGetSaldi">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Saldi" type="tns:ArrayOfCSaldo" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCSaldo">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cSaldo" nillable="true" type="tns:cSaldo" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cSaldo">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Code" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Categorie" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Saldo" type="s:double" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddFactuur">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="oFact" type="tns:cFactuur" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cFactuur">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Relatiecode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Datum" type="s:dateTime" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Betalingstermijn" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuursjabloon" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="PerEmailVerzenden" type="s:boolean" />
+                    <s:element minOccurs="0" maxOccurs="1" name="EmailOnderwerp" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="EmailBericht" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="EmailVanAdres" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="EmailVanNaam" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="AutomatischeIncasso" type="s:boolean" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoIBAN" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoMachtigingSoort" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoMachtigingID" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="IncassoMachtigingDatumOndertekening" type="s:dateTime" />
+                    <s:element minOccurs="1" maxOccurs="1" name="IncassoMachtigingFirst" type="s:boolean" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoRekeningNummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoTnv" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoPlaats" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoOmschrijvingRegel1" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoOmschrijvingRegel2" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IncassoOmschrijvingRegel3" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="InBoekhoudingPlaatsen" type="s:boolean" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BoekhoudmutatieOmschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Regels" type="tns:ArrayOfCFactuurRegel" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCFactuurRegel">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cFactuurRegel" nillable="true" type="tns:cFactuurRegel" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cFactuurRegel">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="Aantal" type="s:double" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Eenheid" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Code" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Omschrijving" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="PrijsPerEenheid" type="s:double" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BTWCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="TegenrekeningCode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenplaatsID" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddFactuurResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="AddFactuurResult" type="tns:cResultAddFactuur" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cResultAddFactuur">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetFacturen">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cFactuurFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cFactuurFilter">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Relatiecode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumVan" type="s:dateTime" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumTm" type="s:dateTime" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetFacturenResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetFacturenResult" type="tns:cResultGetFacturen" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cResultGetFacturen">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Facturen" type="tns:ArrayOfCFactuurList" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCFactuurList">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cFactuurList" nillable="true" type="tns:cFactuurList" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cFactuurList">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Relatiecode" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Datum" type="s:dateTime" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Betalingstermijn" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="TotaalExclBTW" type="s:double" />
+                    <s:element minOccurs="1" maxOccurs="1" name="TotaalBTW" type="s:double" />
+                    <s:element minOccurs="1" maxOccurs="1" name="TotaalInclBTW" type="s:double" />
+                    <s:element minOccurs="1" maxOccurs="1" name="TotaalOpenstaand" type="s:double" />
+                    <s:element minOccurs="0" maxOccurs="1" name="URLPDFBestand" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Regels" type="tns:ArrayOfCFactuurRegel" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddMutatie">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="oMut" type="tns:cMutatie" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cMutatie">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="MutatieNr" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Soort" type="tns:enMutatieSoorten" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Datum" type="s:dateTime" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Rekening" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="RelatieCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Boekstuk" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Omschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Betalingstermijn" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Betalingskenmerk" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="InExBTW" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="MutatieRegels" type="tns:ArrayOfCMutatieRegel" />
+                </s:sequence>
+            </s:complexType>
+            <s:simpleType name="enMutatieSoorten">
+                <s:restriction base="s:string">
+                    <s:enumeration value="OpeningsSaldo" />
+                    <s:enumeration value="FactuurOntvangen" />
+                    <s:enumeration value="FactuurVerstuurd" />
+                    <s:enumeration value="FactuurbetalingOntvangen" />
+                    <s:enumeration value="FactuurbetalingVerstuurd" />
+                    <s:enumeration value="GeldOntvangen" />
+                    <s:enumeration value="GeldUitgegeven" />
+                    <s:enumeration value="Memoriaal" />
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="ArrayOfCMutatieRegel">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cMutatieRegel" nillable="true" type="tns:cMutatieRegel" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cMutatieRegel">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragInvoer" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragExclBTW" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragBTW" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragInclBTW" type="s:decimal" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BTWCode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BTWPercentage" type="s:decimal" />
+                    <s:element minOccurs="0" maxOccurs="1" name="TegenrekeningCode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenplaatsID" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultAddMutatie">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Mutatienummer" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddMutatieResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="AddMutatieResult" type="tns:cResultAddMutatie" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetMutaties">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cMutatieFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cMutatieFilter">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="MutatieNr" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="MutatieNrVan" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="MutatieNrTm" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumVan" type="s:dateTime" />
+                    <s:element minOccurs="1" maxOccurs="1" name="DatumTm" type="s:dateTime" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultGetMutaties">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Mutaties" type="tns:ArrayOfCMutatieList" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCMutatieList">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cMutatieList" nillable="true" type="tns:cMutatieList" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cMutatieList">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="MutatieNr" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Soort" type="tns:enMutatieSoorten" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Datum" type="s:dateTime" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Rekening" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="RelatieCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Boekstuk" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Omschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Betalingstermijn" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="InExBTW" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="MutatieRegels" type="tns:ArrayOfCMutatieListRegel" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCMutatieListRegel">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cMutatieListRegel" nillable="true" type="tns:cMutatieListRegel" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cMutatieListRegel">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragInvoer" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragExclBTW" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragBTW" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BedragInclBTW" type="s:decimal" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BTWCode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BTWPercentage" type="s:decimal" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Factuurnummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="TegenrekeningCode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenplaatsID" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetMutatiesResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetMutatiesResult" type="tns:cResultGetMutaties" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="AddGrootboekrekening">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="oGb" type="tns:cGrootboekrekening" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cGrootboekrekening">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Code" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Omschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Categorie" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Groep" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultAddGrootboekrekening">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Gb_ID" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddGrootboekrekeningResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="AddGrootboekrekeningResult" type="tns:cResultAddGrootboekrekening" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="UpdateGrootboekrekening">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="oGb" type="tns:cGrootboekrekening" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="UpdateGrootboekrekeningResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="UpdateGrootboekrekeningResult" type="tns:cError" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetGrootboekrekeningen">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cGrootboekrekeningFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cGrootboekrekeningFilter">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Code" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Categorie" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultGetGrootboekrekeningen">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Rekeningen" type="tns:ArrayOfCGrootboekrekening" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCGrootboekrekening">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cGrootboekrekening" nillable="true" type="tns:cGrootboekrekening" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetGrootboekrekeningenResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetGrootboekrekeningenResult" type="tns:cResultGetGrootboekrekeningen" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="AddRelatie">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="oRel" type="tns:cRelatie" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cRelatie">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="AddDatum" type="s:dateTime" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Code" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Bedrijf" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Contactpersoon" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Geslacht" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Adres" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Postcode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Plaats" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Land" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Adres2" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Postcode2" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Plaats2" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Land2" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Telefoon" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="GSM" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="FAX" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Email" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Site" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Notitie" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Bankrekening" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Girorekening" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BTWNummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="KvkNummer" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Aanhef" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="IBAN" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BIC" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BP" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def1" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def2" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def3" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def4" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def5" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def6" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def7" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def8" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def9" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Def10" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="LA" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Gb_ID" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="GeenEmail" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="NieuwsbriefgroepenCount" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultAddRelatie">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Rel_ID" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AddRelatieResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="AddRelatieResult" type="tns:cResultAddRelatie" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="UpdateRelatie">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="oRel" type="tns:cRelatie" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="UpdateRelatieResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="UpdateRelatieResult" type="tns:cError" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetRelaties">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cRelatieFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cRelatieFilter">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="Trefwoord" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Code" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="ID" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultGetRelaties">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Relaties" type="tns:ArrayOfCRelatie" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCRelatie">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cRelatie" nillable="true" type="tns:cRelatie" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetRelatiesResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetRelatiesResult" type="tns:cResultGetRelaties" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetOpenPosten">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="1" maxOccurs="1" name="OpSoort" type="tns:enOpenpostenSoort" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:simpleType name="enOpenpostenSoort">
+                <s:restriction base="s:string">
+                    <s:enumeration value="Debiteuren" />
+                    <s:enumeration value="Crediteuren" />
+                </s:restriction>
+            </s:simpleType>
+            <s:complexType name="cResultGetOpenPosten">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Openposten" type="tns:ArrayOfCOpenPost" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCOpenPost">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cOpenPost" nillable="true" type="tns:cOpenPost" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cOpenPost">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="MutDatum" type="s:dateTime" />
+                    <s:element minOccurs="0" maxOccurs="1" name="MutFactuur" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="RelCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="RelBedrijf" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Bedrag" type="s:double" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Voldaan" type="s:double" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Openstaand" type="s:double" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetOpenPostenResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetOpenPostenResult" type="tns:cResultGetOpenPosten" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="OpenSession">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="Username" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode1" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="Source" type="s:string" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cResultOpenSession">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="OpenSessionResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="OpenSessionResult" type="tns:cResultOpenSession" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="OpenSessionSub">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="Username" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode1" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="Source" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="AdministratieGUID" type="s:string" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="OpenSessionSubResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="OpenSessionSubResult" type="tns:cResultOpenSession" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="CloseSession">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="CloseSessionResponse">
+                <s:complexType />
+            </s:element>
+            <s:element name="AutoLogin">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="Username" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cResultAutoLogin">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Token" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="AutoLoginResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="AutoLoginResult" type="tns:cResultAutoLogin" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetKostenplaatsen">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cKostenplaatsFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cKostenplaatsFilter">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="KostenplaatsID" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="KostenplaatsParentID" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Omschrijving" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultGetKostenplaatsen">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Kostenplaatsen" type="tns:ArrayOfCKostenplaats" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCKostenplaats">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cKostenplaats" nillable="true" type="tns:cKostenplaats" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cKostenplaats">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenplaatsId" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Omschrijving" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenplaatsParentId" type="s:long" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetKostenplaatsenResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetKostenplaatsenResult" type="tns:cResultGetKostenplaatsen" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:element name="GetArtikelen">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="SessionID" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="SecurityCode2" type="s:string" />
+                        <s:element minOccurs="0" maxOccurs="1" name="cFilter" type="tns:cArtikelFilter" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+            <s:complexType name="cArtikelFilter">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ArtikelID" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="ArtikelOmschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="ArtikelCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="GroepOmschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="GroepCode" type="s:string" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cResultGetArtikelen">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="1" name="ErrorMsg" type="tns:cError" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Artikelen" type="tns:ArrayOfCArtikel" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="ArrayOfCArtikel">
+                <s:sequence>
+                    <s:element minOccurs="0" maxOccurs="unbounded" name="cArtikel" nillable="true" type="tns:cArtikel" />
+                </s:sequence>
+            </s:complexType>
+            <s:complexType name="cArtikel">
+                <s:sequence>
+                    <s:element minOccurs="1" maxOccurs="1" name="ArtikelID" type="s:long" />
+                    <s:element minOccurs="0" maxOccurs="1" name="ArtikelOmschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="ArtikelCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="GroepOmschrijving" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="GroepCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="Eenheid" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="InkoopprijsExclBTW" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="VerkoopprijsExclBTW" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="VerkoopprijsInclBTW" type="s:decimal" />
+                    <s:element minOccurs="0" maxOccurs="1" name="BTWCode" type="s:string" />
+                    <s:element minOccurs="0" maxOccurs="1" name="TegenrekeningCode" type="s:string" />
+                    <s:element minOccurs="1" maxOccurs="1" name="BtwPercentage" type="s:decimal" />
+                    <s:element minOccurs="1" maxOccurs="1" name="KostenplaatsID" type="s:long" />
+                    <s:element minOccurs="1" maxOccurs="1" name="Actief" type="s:boolean" />
+                </s:sequence>
+            </s:complexType>
+            <s:element name="GetArtikelenResponse">
+                <s:complexType>
+                    <s:sequence>
+                        <s:element minOccurs="0" maxOccurs="1" name="GetArtikelenResult" type="tns:cResultGetArtikelen" />
+                    </s:sequence>
+                </s:complexType>
+            </s:element>
+        </s:schema>
+    </wsdl:types>
+    <wsdl:message name="GetAdministratiesSoapIn">
+        <wsdl:part name="parameters" element="tns:GetAdministraties" />
+    </wsdl:message>
+    <wsdl:message name="GetAdministratiesSoapOut">
+        <wsdl:part name="parameters" element="tns:GetAdministratiesResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetSaldoSoapIn">
+        <wsdl:part name="parameters" element="tns:GetSaldo" />
+    </wsdl:message>
+    <wsdl:message name="GetSaldoSoapOut">
+        <wsdl:part name="parameters" element="tns:GetSaldoResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetSaldiSoapIn">
+        <wsdl:part name="parameters" element="tns:GetSaldi" />
+    </wsdl:message>
+    <wsdl:message name="GetSaldiSoapOut">
+        <wsdl:part name="parameters" element="tns:GetSaldiResponse" />
+    </wsdl:message>
+    <wsdl:message name="AddFactuurSoapIn">
+        <wsdl:part name="parameters" element="tns:AddFactuur" />
+    </wsdl:message>
+    <wsdl:message name="AddFactuurSoapOut">
+        <wsdl:part name="parameters" element="tns:AddFactuurResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetFacturenSoapIn">
+        <wsdl:part name="parameters" element="tns:GetFacturen" />
+    </wsdl:message>
+    <wsdl:message name="GetFacturenSoapOut">
+        <wsdl:part name="parameters" element="tns:GetFacturenResponse" />
+    </wsdl:message>
+    <wsdl:message name="AddMutatieSoapIn">
+        <wsdl:part name="parameters" element="tns:AddMutatie" />
+    </wsdl:message>
+    <wsdl:message name="AddMutatieSoapOut">
+        <wsdl:part name="parameters" element="tns:AddMutatieResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetMutatiesSoapIn">
+        <wsdl:part name="parameters" element="tns:GetMutaties" />
+    </wsdl:message>
+    <wsdl:message name="GetMutatiesSoapOut">
+        <wsdl:part name="parameters" element="tns:GetMutatiesResponse" />
+    </wsdl:message>
+    <wsdl:message name="AddGrootboekrekeningSoapIn">
+        <wsdl:part name="parameters" element="tns:AddGrootboekrekening" />
+    </wsdl:message>
+    <wsdl:message name="AddGrootboekrekeningSoapOut">
+        <wsdl:part name="parameters" element="tns:AddGrootboekrekeningResponse" />
+    </wsdl:message>
+    <wsdl:message name="UpdateGrootboekrekeningSoapIn">
+        <wsdl:part name="parameters" element="tns:UpdateGrootboekrekening" />
+    </wsdl:message>
+    <wsdl:message name="UpdateGrootboekrekeningSoapOut">
+        <wsdl:part name="parameters" element="tns:UpdateGrootboekrekeningResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetGrootboekrekeningenSoapIn">
+        <wsdl:part name="parameters" element="tns:GetGrootboekrekeningen" />
+    </wsdl:message>
+    <wsdl:message name="GetGrootboekrekeningenSoapOut">
+        <wsdl:part name="parameters" element="tns:GetGrootboekrekeningenResponse" />
+    </wsdl:message>
+    <wsdl:message name="AddRelatieSoapIn">
+        <wsdl:part name="parameters" element="tns:AddRelatie" />
+    </wsdl:message>
+    <wsdl:message name="AddRelatieSoapOut">
+        <wsdl:part name="parameters" element="tns:AddRelatieResponse" />
+    </wsdl:message>
+    <wsdl:message name="UpdateRelatieSoapIn">
+        <wsdl:part name="parameters" element="tns:UpdateRelatie" />
+    </wsdl:message>
+    <wsdl:message name="UpdateRelatieSoapOut">
+        <wsdl:part name="parameters" element="tns:UpdateRelatieResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetRelatiesSoapIn">
+        <wsdl:part name="parameters" element="tns:GetRelaties" />
+    </wsdl:message>
+    <wsdl:message name="GetRelatiesSoapOut">
+        <wsdl:part name="parameters" element="tns:GetRelatiesResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetOpenPostenSoapIn">
+        <wsdl:part name="parameters" element="tns:GetOpenPosten" />
+    </wsdl:message>
+    <wsdl:message name="GetOpenPostenSoapOut">
+        <wsdl:part name="parameters" element="tns:GetOpenPostenResponse" />
+    </wsdl:message>
+    <wsdl:message name="OpenSessionSoapIn">
+        <wsdl:part name="parameters" element="tns:OpenSession" />
+    </wsdl:message>
+    <wsdl:message name="OpenSessionSoapOut">
+        <wsdl:part name="parameters" element="tns:OpenSessionResponse" />
+    </wsdl:message>
+    <wsdl:message name="OpenSessionSubSoapIn">
+        <wsdl:part name="parameters" element="tns:OpenSessionSub" />
+    </wsdl:message>
+    <wsdl:message name="OpenSessionSubSoapOut">
+        <wsdl:part name="parameters" element="tns:OpenSessionSubResponse" />
+    </wsdl:message>
+    <wsdl:message name="CloseSessionSoapIn">
+        <wsdl:part name="parameters" element="tns:CloseSession" />
+    </wsdl:message>
+    <wsdl:message name="CloseSessionSoapOut">
+        <wsdl:part name="parameters" element="tns:CloseSessionResponse" />
+    </wsdl:message>
+    <wsdl:message name="AutoLoginSoapIn">
+        <wsdl:part name="parameters" element="tns:AutoLogin" />
+    </wsdl:message>
+    <wsdl:message name="AutoLoginSoapOut">
+        <wsdl:part name="parameters" element="tns:AutoLoginResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetKostenplaatsenSoapIn">
+        <wsdl:part name="parameters" element="tns:GetKostenplaatsen" />
+    </wsdl:message>
+    <wsdl:message name="GetKostenplaatsenSoapOut">
+        <wsdl:part name="parameters" element="tns:GetKostenplaatsenResponse" />
+    </wsdl:message>
+    <wsdl:message name="GetArtikelenSoapIn">
+        <wsdl:part name="parameters" element="tns:GetArtikelen" />
+    </wsdl:message>
+    <wsdl:message name="GetArtikelenSoapOut">
+        <wsdl:part name="parameters" element="tns:GetArtikelenResponse" />
+    </wsdl:message>
+    <wsdl:portType name="soapAppSoap">
+        <wsdl:operation name="GetAdministraties">
+            <wsdl:input message="tns:GetAdministratiesSoapIn" />
+            <wsdl:output message="tns:GetAdministratiesSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetSaldo">
+            <wsdl:input message="tns:GetSaldoSoapIn" />
+            <wsdl:output message="tns:GetSaldoSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetSaldi">
+            <wsdl:input message="tns:GetSaldiSoapIn" />
+            <wsdl:output message="tns:GetSaldiSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="AddFactuur">
+            <wsdl:input message="tns:AddFactuurSoapIn" />
+            <wsdl:output message="tns:AddFactuurSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetFacturen">
+            <wsdl:input message="tns:GetFacturenSoapIn" />
+            <wsdl:output message="tns:GetFacturenSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="AddMutatie">
+            <wsdl:input message="tns:AddMutatieSoapIn" />
+            <wsdl:output message="tns:AddMutatieSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetMutaties">
+            <wsdl:input message="tns:GetMutatiesSoapIn" />
+            <wsdl:output message="tns:GetMutatiesSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="AddGrootboekrekening">
+            <wsdl:input message="tns:AddGrootboekrekeningSoapIn" />
+            <wsdl:output message="tns:AddGrootboekrekeningSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="UpdateGrootboekrekening">
+            <wsdl:input message="tns:UpdateGrootboekrekeningSoapIn" />
+            <wsdl:output message="tns:UpdateGrootboekrekeningSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetGrootboekrekeningen">
+            <wsdl:input message="tns:GetGrootboekrekeningenSoapIn" />
+            <wsdl:output message="tns:GetGrootboekrekeningenSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="AddRelatie">
+            <wsdl:input message="tns:AddRelatieSoapIn" />
+            <wsdl:output message="tns:AddRelatieSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="UpdateRelatie">
+            <wsdl:input message="tns:UpdateRelatieSoapIn" />
+            <wsdl:output message="tns:UpdateRelatieSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetRelaties">
+            <wsdl:input message="tns:GetRelatiesSoapIn" />
+            <wsdl:output message="tns:GetRelatiesSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetOpenPosten">
+            <wsdl:input message="tns:GetOpenPostenSoapIn" />
+            <wsdl:output message="tns:GetOpenPostenSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="OpenSession">
+            <wsdl:input message="tns:OpenSessionSoapIn" />
+            <wsdl:output message="tns:OpenSessionSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="OpenSessionSub">
+            <wsdl:input message="tns:OpenSessionSubSoapIn" />
+            <wsdl:output message="tns:OpenSessionSubSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="CloseSession">
+            <wsdl:input message="tns:CloseSessionSoapIn" />
+            <wsdl:output message="tns:CloseSessionSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="AutoLogin">
+            <wsdl:input message="tns:AutoLoginSoapIn" />
+            <wsdl:output message="tns:AutoLoginSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetKostenplaatsen">
+            <wsdl:input message="tns:GetKostenplaatsenSoapIn" />
+            <wsdl:output message="tns:GetKostenplaatsenSoapOut" />
+        </wsdl:operation>
+        <wsdl:operation name="GetArtikelen">
+            <wsdl:input message="tns:GetArtikelenSoapIn" />
+            <wsdl:output message="tns:GetArtikelenSoapOut" />
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="soapAppSoap" type="tns:soapAppSoap">
+        <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+        <wsdl:operation name="GetAdministraties">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetAdministraties" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSaldo">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetSaldo" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSaldi">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetSaldi" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddFactuur">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/AddFactuur" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetFacturen">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetFacturen" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddMutatie">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/AddMutatie" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetMutaties">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetMutaties" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddGrootboekrekening">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/AddGrootboekrekening" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="UpdateGrootboekrekening">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/UpdateGrootboekrekening" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetGrootboekrekeningen">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetGrootboekrekeningen" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddRelatie">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/AddRelatie" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="UpdateRelatie">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/UpdateRelatie" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetRelaties">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetRelaties" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetOpenPosten">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetOpenPosten" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="OpenSession">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/OpenSession" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="OpenSessionSub">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/OpenSessionSub" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CloseSession">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/CloseSession" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AutoLogin">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/AutoLogin" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetKostenplaatsen">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetKostenplaatsen" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetArtikelen">
+            <soap:operation soapAction="http://www.e-boekhouden.nl/soap/GetArtikelen" style="document" />
+            <wsdl:input>
+                <soap:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:binding name="soapAppSoap12" type="tns:soapAppSoap">
+        <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+        <wsdl:operation name="GetAdministraties">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetAdministraties" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSaldo">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetSaldo" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetSaldi">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetSaldi" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddFactuur">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/AddFactuur" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetFacturen">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetFacturen" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddMutatie">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/AddMutatie" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetMutaties">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetMutaties" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddGrootboekrekening">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/AddGrootboekrekening" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="UpdateGrootboekrekening">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/UpdateGrootboekrekening" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetGrootboekrekeningen">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetGrootboekrekeningen" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AddRelatie">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/AddRelatie" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="UpdateRelatie">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/UpdateRelatie" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetRelaties">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetRelaties" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetOpenPosten">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetOpenPosten" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="OpenSession">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/OpenSession" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="OpenSessionSub">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/OpenSessionSub" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="CloseSession">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/CloseSession" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="AutoLogin">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/AutoLogin" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetKostenplaatsen">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetKostenplaatsen" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="GetArtikelen">
+            <soap12:operation soapAction="http://www.e-boekhouden.nl/soap/GetArtikelen" style="document" />
+            <wsdl:input>
+                <soap12:body use="literal" />
+            </wsdl:input>
+            <wsdl:output>
+                <soap12:body use="literal" />
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="soapApp">
+        <wsdl:port name="soapAppSoap" binding="tns:soapAppSoap">
+            <soap:address location="http://soap.e-boekhouden.nl/soap.asmx" />
+        </wsdl:port>
+        <wsdl:port name="soapAppSoap12" binding="tns:soapAppSoap12">
+            <soap12:address location="http://soap.e-boekhouden.nl/soap.asmx" />
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

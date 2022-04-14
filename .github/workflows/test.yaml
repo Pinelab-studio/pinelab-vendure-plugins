@@ -22,27 +22,30 @@ jobs:
         run: cd packages/test && yarn
       - name: Build utils
         run: cd packages/util && yarn
-      - name: Test vendure-plugin-dutch-postalcode
+      - name: vendure-plugin-dutch-postalcode
         if: always()
         run: cd packages/vendure-plugin-dutch-postalcode && yarn && yarn build && yarn test
-      - name: Test vendure-plugin-google-cloud-tasks
+      - name: vendure-plugin-google-cloud-tasks
         if: always()
         run: cd packages/vendure-plugin-google-cloud-tasks && yarn && yarn build && yarn test
-      - name: Test vendure-plugin-google-storage-assets
+      - name: vendure-plugin-google-storage-assets
         if: always()
         run: cd packages/vendure-plugin-google-storage-assets && yarn && yarn build && yarn test
-      - name: Test vendure-plugin-myparcel
+      - name: vendure-plugin-myparcel
         if: always()
         run: cd packages/vendure-plugin-myparcel && yarn && yarn build && yarn test
-      - name: Test vendure-plugin-webhook
+      - name: vendure-plugin-webhook
         if: always()
         run: cd packages/vendure-plugin-webhook && yarn && yarn build && yarn test
-      - name: Test vendure-plugin-goedgepickt
+      - name: vendure-plugin-goedgepickt
         if: always()
         run: cd packages/vendure-plugin-goedgepickt && yarn && yarn build && yarn test
-      - name: Test vendure-plugin-invoice
+      - name: vendure-plugin-invoice
         if: always()
         run: cd packages/vendure-plugin-invoices && yarn && yarn build && yarn test
-      - name: Test vendure-plugin-coinbase
+      - name: vendure-plugin-coinbase
         if: always()
         run: cd packages/vendure-plugin-coinbase && yarn && yarn build && yarn test
+      - name: vendure-plugin-e-boekhouden
+        if: always()
+        run: cd packages/vendure-plugin-e-boekhouden && yarn && yarn build && yarn test

@@ -8,7 +8,6 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import {
   DefaultLogger,
-  InitialData,
   LogLevel,
   mergeConfig,
   Order,
@@ -29,11 +28,6 @@ import {
 import nock from 'nock';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import {
-  createSettledOrder,
-  testAddress,
-  testCustomer,
-} from '../../test/src/order-utils';
-import {
   getGoedgepicktConfig,
   runGoedgepicktFullSync,
   updateGoedgepicktConfig,
@@ -44,12 +38,15 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktController } from '../src/api/goedgepickt.controller';
 import { GoedgepicktClient } from '../src/api/goedgepickt.client';
 import { getOrder } from '../../test/src/admin-utils';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 jest.setTimeout(20000);
 
 describe('Goedgepickt plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
+  let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
   const ggConfig = {
     apiKey: 'test-api-key',
@@ -131,11 +128,22 @@ describe('Goedgepickt plugin', function () {
           vendureHost: 'https://test-host',
         }),
       ],
+      paymentOptions: {
+        paymentMethodHandlers: [testPaymentMethod],
+      },
     });
 
-    ({ server, adminClient } = createTestEnvironment(config));
+    ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
-      initialData: initialData as InitialData,
+      initialData: {
+        ...initialData,
+        paymentMethods: [
+          {
+            name: testPaymentMethod.code,
+            handler: { code: testPaymentMethod.code, arguments: [] },
+          },
+        ],
+      },
       productsCsvPath: '../test/src/products-import.csv',
     });
     serverStarted = true;
@@ -207,36 +215,20 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes order with autofulfill', async () => {
-    const ctx = await server.app
-      .get(GoedgepicktService)
-      .getCtxForChannel('e2e-default-channel');
-    order = await createSettledOrder(server.app, ctx as any, 1);
+    order = await createSettledOrder(shopClient, 1);
     await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
     const adminOrder = await getOrder(adminClient, order.id as string);
     const fulfillment = adminOrder?.fulfillments?.[0];
-    const { houseNumber, addition } =
-      GoedgepicktService.splitHouseNumberAndAddition(testAddress.streetLine2!);
     await expect(fulfillment?.method).toBe('testUuid');
     await expect(createOrderPayload.orderId).toBe(order.code);
-    await expect(createOrderPayload.shippingFirstName).toBe(
-      testCustomer.firstName
-    );
-    await expect(createOrderPayload.shippingLastName).toBe(
-      testCustomer.lastName
-    );
-    await expect(createOrderPayload.shippingCompany).toBe(testAddress.company);
-    await expect(createOrderPayload.shippingAddress).toBe(
-      testAddress.streetLine1
-    );
-    await expect(createOrderPayload.shippingHouseNumber).toBe(houseNumber);
-    await expect(createOrderPayload.shippingHouseNumberAddition).toBe(addition);
-    await expect(createOrderPayload.shippingZipcode).toBe(
-      testAddress.postalCode
-    );
-    await expect(createOrderPayload.shippingCity).toBe(testAddress.city);
-    await expect(createOrderPayload.shippingCountry).toBe(
-      testAddress.countryCode
-    );
+    await expect(createOrderPayload.shippingFirstName).toBe('Hayden');
+    await expect(createOrderPayload.shippingLastName).toBe('Zieme');
+    await expect(createOrderPayload.shippingAddress).toBe('Verzetsstraat');
+    await expect(createOrderPayload.shippingHouseNumber).toBe('12');
+    await expect(createOrderPayload.shippingHouseNumberAddition).toBe('a');
+    await expect(createOrderPayload.shippingZipcode).toBe('8923CP');
+    await expect(createOrderPayload.shippingCity).toBe('Liwwa');
+    await expect(createOrderPayload.shippingCountry).toBe('NL');
   });
 
   it('Completes order via webhook', async () => {

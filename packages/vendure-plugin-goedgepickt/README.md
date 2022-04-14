@@ -18,12 +18,12 @@ Add this to your plugin in `vendure-config.ts`:
 
 ```js
 plugins: [
-  ...
-    GoedgepicktPlugin.init({
-      vendureHost: tunnel.url,
-      setWebhook: true // set webhooks in Goedgepickt or not
-    }),
-  ...
+   ...
+           GoedgepicktPlugin.init({
+              vendureHost: tunnel.url,
+              setWebhook: true // set webhooks in Goedgepickt or not
+           }),
+   ...
 ]
 ```
 
@@ -39,12 +39,12 @@ Add this plugin to your Admin UI and compile.
 
 ```js
 compileUiExtensions({
-  outputPath: path.join(__dirname, '__admin-ui'),
-  extensions: [
-    ...
-      GoedgepicktPlugin.ui,
-    ...
-  ]
+   outputPath: path.join(__dirname, '__admin-ui'),
+   extensions: [
+      ...
+              GoedgepicktPlugin.ui,
+      ...
+   ]
 ```
 
 Read more about Admin UI compilation in the Vendure

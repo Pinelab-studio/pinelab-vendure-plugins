@@ -1,4 +1,3 @@
-import { testPaymentMethod } from './test-payment-method';
 import { LanguageCode } from '@vendure/common/lib/generated-types';
 import { InitialData } from '@vendure/core';
 

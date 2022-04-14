@@ -50,7 +50,7 @@ export class GoedgepicktService
   implements OnApplicationBootstrap, OnModuleInit
 {
   readonly queryLimit: number;
-  private jobQueue: JobQueue<{ channelToken: string }> | undefined;
+  private pullStockLevelsQueue: JobQueue<{ channelToken: string }> | undefined;
 
   constructor(
     private variantService: ProductVariantService,
@@ -68,7 +68,7 @@ export class GoedgepicktService
 
   async onModuleInit() {
     // Start JobQueue
-    this.jobQueue = await this.jobQueueService.createQueue({
+    this.pullStockLevelsQueue = await this.jobQueueService.createQueue({
       name: 'pull-goedgepickt-stocklevels',
       process: async (job) =>
         await this.pullStocklevels(job.data.channelToken).catch((error) => {
@@ -83,15 +83,17 @@ export class GoedgepicktService
 
   async onApplicationBootstrap(): Promise<void> {
     // Push sync jobs to the worker queue
-    const configs = (await this.getConfigs()).filter((config) => true);
+    const configs = (await this.getConfigs()).filter(
+      (config) => config.enabled
+    );
     for (const config of configs) {
-      if (!this.jobQueue) {
+      if (!this.pullStockLevelsQueue) {
         return Logger.error(
           `Stocklevel sync jobQueue not initialized`,
           loggerCtx
         );
       }
-      await this.jobQueue.add(
+      await this.pullStockLevelsQueue.add(
         { channelToken: config.channelToken },
         { retries: 2 }
       );
