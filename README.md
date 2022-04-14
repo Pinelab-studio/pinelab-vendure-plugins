@@ -39,14 +39,26 @@ Sends orders to MyParcel on fulfillment.
 ## GoedGepickt plugin
 
 [![plugin version](https://img.shields.io/npm/v/vendure-plugin-myparcel)](https://www.npmjs.com/package/vendure-plugin-goedgepickt)
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-myparcel/dev/@vendure/core)  
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-goedgepickt/dev/@vendure/core)  
 Plugin for integrating with the Goedgepickt platform.
 
 ## Invoices plugin
 
-[![plugin version](https://img.shields.io/npm/v/vendure-plugin-invoices)](https://www.npmjs.com/package/vendure-plugin-goedgepickt)
+[![plugin version](https://img.shields.io/npm/v/vendure-plugin-invoices)](https://www.npmjs.com/package/vendure-plugin-invoices)
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-invoices/dev/@vendure/core)  
 Plugin for generating PDF invoices for placed orders
+
+## Coinbase plugin
+
+[![plugin version](https://img.shields.io/npm/v/vendure-plugin-invoices)](https://www.npmjs.com/package/vendure-plugin-coinbase)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-coinbase/dev/@vendure/core)  
+Plugin for paying with cryptocurrency via Coinbase
+
+## e-Boekhouden plugin
+
+[![plugin version](https://img.shields.io/npm/v/vendure-plugin-invoices)](https://www.npmjs.com/package/vendure-plugin-e-boekhouden)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-e-boekhouden/dev/@vendure/core)  
+Plugin for registering your taxes from placed orders with the Dutch e-Boekhouden accounting platform.
 
 ## Contributing
 
@@ -54,11 +66,13 @@ Just create a PR!
 
 ## Development
 
-Each package has the following commands:
+**Each package** has the following commands:
 
 1. `yarn build` compiles typescript. Fails if any types mismatch
 2. `yarn serve` start a devserver with the plugin
 3. `yarn test` run tests for the plugin
+
+Note: Some packages need the `packages/test` or `packages/util` built first.
 
 ### Upgrading dependencies
 
