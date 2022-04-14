@@ -2,19 +2,12 @@ name: Test packages
 on: ['pull_request']
 
 jobs:
-  test:
-    name: ${{ matrix.package }}
+  prettier:
+    name: Prettier
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
-    strategy:
-      matrix:
-        package:
-          [
-            'vendure-plugin-dutch-postalcode',
-            'vendure-plugin-google-cloud-tasks',
-          ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -25,6 +18,32 @@ jobs:
         run: yarn
       - name: Prettier
         run: yarn prettier:check
+  test:
+    name: ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        package:
+          [
+            'vendure-plugin-coinbase',
+            'vendure-plugin-dutch-postalcode',
+            'vendure-plugin-e-boekhouden',
+            'vendure-plugin-goedgepickt',
+            'vendure-plugin-google-cloud-tasks',
+            'vendure-plugin-google-storage-assets',
+            'vendure-plugin-invoices',
+            'vendure-plugin-myparcel',
+            'vendure-plugin-webhook',
+          ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
       - name: Build test-utils
         run: cd packages/test && yarn
       - name: Build utils
