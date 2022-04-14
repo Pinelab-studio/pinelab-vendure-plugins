@@ -4,6 +4,10 @@
 
 Plugin voor Dutch accounting platform E-boekhouden.nl. This is only for Dutch accounting so only EUR is supported.
 
+Sends orders to e-Boekhouden as `GeldOntvange` mutation and configured `account` and `contraAccount` numbers.
+Creates a mutationLine for each taxRate of the order's tax summary.
+![Screenshot](screenshot.png)
+
 ## Plugin setup
 
 ### Vendure config
