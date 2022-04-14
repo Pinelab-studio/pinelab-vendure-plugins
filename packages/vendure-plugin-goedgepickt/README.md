@@ -19,7 +19,7 @@ Add this to your plugin in `vendure-config.ts`:
 ```js
 plugins: [
    ...
-           EBoekhoudenPlugin.init({
+           GoedgepicktPlugin.init({
               vendureHost: tunnel.url,
               setWebhook: true // set webhooks in Goedgepickt or not
            }),
@@ -42,7 +42,7 @@ compileUiExtensions({
    outputPath: path.join(__dirname, '__admin-ui'),
    extensions: [
       ...
-              EBoekhoudenPlugin.ui,
+              GoedgepicktPlugin.ui,
       ...
    ]
 ```
