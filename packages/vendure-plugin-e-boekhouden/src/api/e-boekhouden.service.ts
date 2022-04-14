@@ -18,7 +18,6 @@ import { EBoekhoudenConfigEntity } from './e-boekhouden-config.entity';
 import { EBoekhoudenConfigInput } from '../ui/generated/graphql';
 import { createClientAsync, EBoekhoudenWsdlClient, ErrorMsg } from '../client';
 import { loggerCtx } from '../constants';
-import { createFacetIdCountMap } from '@vendure/core/dist/plugin/default-search-plugin/search-strategy/search-strategy-utils';
 import { EBoekhoudenAdapter } from './e-boekhouden.adapter';
 
 interface JobData {

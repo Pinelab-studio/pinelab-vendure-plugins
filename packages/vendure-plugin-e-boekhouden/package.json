@@ -18,7 +18,7 @@
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "jest --preset=\"ts-jest\"",
-    "generate-soap-client": "wsdl-tsclient ./src/client/e-boekhouden-wsdl.xml -o ./src/client/"
+    "generate-soap-client": "rimraf src/client/eboekhoudenwsdl &&  wsdl-tsclient ./src/client/e-boekhouden-wsdl.xml -o ./src/client/"
   },
   "dependencies": {
     "soap": "^0.43.0"
