@@ -7,11 +7,11 @@ import { OrderTaxSummary } from '@vendure/admin-ui/core';
 const toPrice = (price: number) => (price / 100).toFixed(2);
 
 export class EBoekhoudenAdapter {
+  /**
+   * Transforms an order, together with config, to a e-Boekhouden mutation format
+   * using the order.taxSummary
+   */
   static toMutation(order: Order, config: EBoekhoudenConfigEntity): OMut {
-    // TODO
-    // TODO shipping as line
-    // TODO orders per taxTotals?
-    console.log(JSON.stringify(order));
     const description = `Order ${order.code} - ${order.customer?.firstName} ${order.customer?.lastName} (${order.customer?.emailAddress})`;
     const cMutatieRegel = order.taxSummary.map((summary) =>
       this.toMutationLine(summary, config)
@@ -21,7 +21,6 @@ export class EBoekhoudenAdapter {
       Datum: this.toDateString(order.orderPlacedAt || order.updatedAt),
       Rekening: config.account,
       Omschrijving: description,
-      Betalingstermijn: '30',
       InExBTW: 'IN',
       MutatieRegels: {
         cMutatieRegel,
@@ -56,8 +55,11 @@ export class EBoekhoudenAdapter {
     } else if (value === 0) {
       return 'GEEN';
     } else {
-      Logger.error(`Unknown taxValue ${value} for ${reference}`, loggerCtx);
-      return 'AFW';
+      Logger.error(
+        `Unknown taxValue ${value} for ${reference}. Used 21 as default`,
+        loggerCtx
+      );
+      return 'HOOG_VERK_21';
     }
   }
 

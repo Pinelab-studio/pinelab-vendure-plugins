@@ -8,9 +8,10 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import {
   DefaultLogger,
-  InitialData,
   LogLevel,
   mergeConfig,
+  TaxRate,
+  TaxRateService,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
@@ -24,8 +25,10 @@ import {
   eBoekhoudenConfigQuery,
   updateEBoekhoudenConfigMutation,
 } from '../src/ui/queries.graphql';
-import { createSettledOrder } from '../../test/src/admin-utils';
 import nock from 'nock';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { Connection } from 'typeorm';
 
 jest.setTimeout(20000);
 
@@ -52,14 +55,30 @@ describe('Goedgepickt plugin', function () {
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [EBoekhoudenPlugin],
+      paymentOptions: {
+        paymentMethodHandlers: [testPaymentMethod],
+      },
     });
 
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
-      initialData: initialData as InitialData,
+      initialData: {
+        ...initialData,
+        paymentMethods: [
+          {
+            name: testPaymentMethod.code,
+            handler: { code: testPaymentMethod.code, arguments: [] },
+          },
+        ],
+      },
       productsCsvPath: '../test/src/products-import.csv',
+      customerCount: 2,
     });
     serverStarted = true;
+    await server.app
+      .get(Connection)
+      .getRepository(TaxRate)
+      .update({ id: 2 }, { value: 21 }); // Set europe to 21
     await adminClient.asSuperAdmin();
   }, 60000);
 
@@ -96,19 +115,62 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Should send order to e-Boekhouden', async () => {
-    const payloads = [];
-    nock('https://soap.e-boekhouden.nl/')
-      .persist(true)
-      .get(/.*/, (body) => {
-        payloads.push(body);
-        return true;
-      })
-      .reply(200, { webhookSecret: 'test-secret' });
-    const order = await createSettledOrder(shopClient, 1);
-    expect(payloads.length).toBeGreaterThan(1);
+    const payloads: any = [];
+    const savePayload = (body: any) => {
+      payloads.push(body);
+      return true;
+    };
+    // Mock OpenSession
+    nock(`http://soap.e-boekhouden.nl`)
+      .post(/.*/, savePayload)
+      .reply(200, openSessionMock);
+    // Mock AddMutatie
+    nock(`http://soap.e-boekhouden.nl`)
+      .post(/.*/, savePayload)
+      .reply(200, addMutatieMock);
+    // Close Session
+    nock(`http://soap.e-boekhouden.nl`).post(/.*/, savePayload).reply(200);
+    await createSettledOrder(shopClient, 1);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Delay for async events
+    expect(payloads.length).toBe(3); // Open, add, close
+    expect(payloads[1]).toContain('4957.37'); // Total inc tax
+    expect(payloads[1]).toContain('4097.00'); // Total ex tax
+    expect(payloads[1]).toContain('HOOG_VERK_21');
+    expect(payloads[1]).toContain(eBoekhoudenConfig.account);
+    expect(payloads[1]).toContain(eBoekhoudenConfig.contraAccount);
   });
 
   afterAll(() => {
     return server.destroy();
   });
 });
+
+const openSessionMock = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <soap:Body>
+        <OpenSessionResponse xmlns="http://www.e-boekhouden.nl/soap">
+            <OpenSessionResult>
+                <ErrorMsg>
+                    <LastErrorCode />
+                    <LastErrorDescription />
+                </ErrorMsg>
+                <SessionID>{some-bogus-sessionId}</SessionID>
+            </OpenSessionResult>
+        </OpenSessionResponse>
+    </soap:Body>
+</soap:Envelope>`;
+
+const addMutatieMock = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <soap:Body>
+        <AddMutatieResponse xmlns="http://www.e-boekhouden.nl/soap">
+            <AddMutatieResult>
+                <ErrorMsg>
+                    <LastErrorCode/>
+                    <LastErrorDescription/>
+                </ErrorMsg>
+                <Mutatienummer>12</Mutatienummer>
+            </AddMutatieResult>
+        </AddMutatieResponse>
+    </soap:Body>
+</soap:Envelope>`;

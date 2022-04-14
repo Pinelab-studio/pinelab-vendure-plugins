@@ -76,7 +76,7 @@ import { EBoekhoudenService } from '../src/api/e-boekhouden.service';
       arguments: [],
     },
   });
-  await server.app.get(TaxRateService).update(ctx, { id: 2, value: 21 }); // Set europ to 21
+  await server.app.get(TaxRateService).update(ctx, { id: 2, value: 21 }); // Set europe to 21
   await server.app
     .get(EBoekhoudenService)
     .upsertConfig(E2E_DEFAULT_CHANNEL_TOKEN, {

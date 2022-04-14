@@ -14,10 +14,7 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import fetch from 'node-fetch';
-import {
-  addShippingMethod,
-  createSettledOrder,
-} from '../../test/src/admin-utils';
+import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { InvoicesQuery } from '../dist/ui/generated/graphql';
@@ -35,6 +32,7 @@ import {
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 jest.setTimeout(20000);
 

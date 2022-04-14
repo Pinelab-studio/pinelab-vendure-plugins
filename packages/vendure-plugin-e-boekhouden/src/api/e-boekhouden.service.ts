@@ -60,15 +60,13 @@ export class EBoekhoudenService
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    this.eventBus
-      .ofType(OrderPlacedEvent)
-      .subscribe(
-        async (event) =>
-          await this.jobQueue.add({
-            channelToken: event.ctx.channel.token,
-            orderCode: event.order.code,
-          })
-      );
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(
+      async (event) =>
+        await this.jobQueue.add({
+          channelToken: event.ctx.channel.token,
+          orderCode: event.order.code,
+        })
+    );
   }
 
   async upsertConfig(
@@ -138,7 +136,6 @@ export class EBoekhoudenService
         oMut: mutation,
       });
       this.validate(result[0].AddMutatieResult);
-      console.log('Result: \n' + JSON.stringify(result));
       Logger.info(
         `Successfully send order ${orderCode} to e-boekhouden with mutationNr ${result?.[0]?.AddMutatieResult?.Mutatienummer}`,
         loggerCtx

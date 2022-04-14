@@ -89,23 +89,3 @@ export async function getOrder(
   const { order } = await adminClient.query(OrderGraphql, { id: orderId });
   return order;
 }
-
-export async function createSettledOrder(
-  shopClient: SimpleGraphQLClient,
-  shippingMethodId: string | number
-): Promise<Order> {
-  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  await addItem(shopClient, 'T_1', 1);
-  await addItem(shopClient, 'T_2', 2);
-  await proceedToArrangingPayment(shopClient, shippingMethodId, {
-    input: {
-      fullName: 'Martinho Pinelabio',
-      streetLine1: 'Verzetsstraat',
-      streetLine2: '12a',
-      city: 'Liwwa',
-      postalCode: '8923CP',
-      countryCode: 'NL',
-    },
-  });
-  return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
-}
