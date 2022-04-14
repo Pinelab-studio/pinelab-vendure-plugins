@@ -369,7 +369,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     let take = 25;
     if (input) {
       take = input.itemsPerPage;
-      skip = input.page > 1 ? take * input.page : 0;
+      skip = input.page > 1 ? take * (input.page - 1) : 0;
     }
     const [invoices, totalItems] = await this.invoiceRepo.findAndCount({
       where: [{ channelId: channel.id }],
