@@ -2,50 +2,53 @@ name: Test packages
 on: ['pull_request']
 
 jobs:
-  test:
-    name: Run tests for all packages
+  prettier:
+    name: Prettier
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-      - run: yarn
+      - name: Yarn root
+        run: yarn
       - name: Prettier
         run: yarn prettier:check
+  test:
+    name: Build & test ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      matrix:
+        package:
+          [
+            'vendure-plugin-coinbase',
+            'vendure-plugin-dutch-postalcode',
+            'vendure-plugin-e-boekhouden',
+            'vendure-plugin-goedgepickt',
+            'vendure-plugin-google-cloud-tasks',
+            'vendure-plugin-google-storage-assets',
+            'vendure-plugin-invoices',
+            'vendure-plugin-myparcel',
+            'vendure-plugin-webhook',
+          ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
       - name: Build test-utils
         run: cd packages/test && yarn
       - name: Build utils
         run: cd packages/util && yarn
-      - name: vendure-plugin-dutch-postalcode
-        if: always()
-        run: cd packages/vendure-plugin-dutch-postalcode && yarn && yarn build && yarn test
-      - name: vendure-plugin-google-cloud-tasks
-        if: always()
-        run: cd packages/vendure-plugin-google-cloud-tasks && yarn && yarn build && yarn test
-      - name: vendure-plugin-google-storage-assets
-        if: always()
-        run: cd packages/vendure-plugin-google-storage-assets && yarn && yarn build && yarn test
-      - name: vendure-plugin-myparcel
-        if: always()
-        run: cd packages/vendure-plugin-myparcel && yarn && yarn build && yarn test
-      - name: vendure-plugin-webhook
-        if: always()
-        run: cd packages/vendure-plugin-webhook && yarn && yarn build && yarn test
-      - name: vendure-plugin-goedgepickt
-        if: always()
-        run: cd packages/vendure-plugin-goedgepickt && yarn && yarn build && yarn test
-      - name: vendure-plugin-invoice
-        if: always()
-        run: cd packages/vendure-plugin-invoices && yarn && yarn build && yarn test
-      - name: vendure-plugin-coinbase
-        if: always()
-        run: cd packages/vendure-plugin-coinbase && yarn && yarn build && yarn test
-      - name: vendure-plugin-e-boekhouden
-        if: always()
-        run: cd packages/vendure-plugin-e-boekhouden && yarn && yarn build && yarn test
+      - name: Build
+        run: cd packages/${{ matrix.package }} && yarn && yarn build
+      - name: Test
+        run: cd packages/${{ matrix.package }} && yarn test

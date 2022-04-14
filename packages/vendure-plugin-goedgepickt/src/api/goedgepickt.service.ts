@@ -51,6 +51,9 @@ export class GoedgepicktService
 {
   readonly queryLimit: number;
   private pullStockLevelsQueue: JobQueue<{ channelToken: string }> | undefined;
+  private autofulfilleQueue:
+    | JobQueue<{ channelToken: string; orderCode: string }>
+    | undefined;
 
   constructor(
     private variantService: ProductVariantService,
@@ -79,6 +82,19 @@ export class GoedgepicktService
           );
         }),
     });
+    this.autofulfilleQueue = await this.jobQueueService.createQueue({
+      name: 'autofulfill-goedgepickt-orders',
+      process: async (job) =>
+        await this.autoFulfill(job.data.channelToken, job.data.orderCode).catch(
+          (e) => {
+            Logger.error(
+              `Failed to autofulfill order ${job.data.orderCode}`,
+              loggerCtx,
+              e
+            );
+          }
+        ),
+    });
   }
 
   async onApplicationBootstrap(): Promise<void> {
@@ -87,51 +103,17 @@ export class GoedgepicktService
       (config) => config.enabled
     );
     for (const config of configs) {
-      if (!this.pullStockLevelsQueue) {
-        return Logger.error(
-          `Stocklevel sync jobQueue not initialized`,
-          loggerCtx
-        );
-      }
-      await this.pullStockLevelsQueue.add(
+      await this.pullStockLevelsQueue!.add(
         { channelToken: config.channelToken },
         { retries: 2 }
-      );
-      return Logger.info(
-        `Added stocklevel sync job to queue for channel ${config.channelToken}`,
-        loggerCtx
       );
     }
     // Listen for Settled orders for autoFulfillment
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
-      const config = await this.getConfig(event.ctx.channel.token);
-      if (!config?.enabled || !config.autoFulfill) {
-        return;
-      }
-      const order = await this.entityHydrator.hydrate(event.ctx, event.order, {
-        relations: ['shippingLines', 'shippingLines.shippingMethod'],
+      await this.autofulfilleQueue!.add({
+        orderCode: event.order.code,
+        channelToken: event.ctx.channel.token,
       });
-      const hasGoedgepicktHandler = order.shippingLines.some(
-        (shippingLine) =>
-          shippingLine.shippingMethod?.fulfillmentHandlerCode ===
-          goedgepicktHandler.code
-      );
-      if (!hasGoedgepicktHandler) {
-        return;
-      }
-      Logger.info(
-        `Autofulfilling order ${order.code} for channel ${event.ctx.channel.token}`,
-        loggerCtx
-      );
-      await fulfillAll(event.ctx, this.orderService, order, {
-        code: goedgepicktHandler.code,
-        arguments: [],
-      }).catch((error) =>
-        Logger.error(
-          `Failed to autofulfill order ${order.code}: ${error?.message}`,
-          loggerCtx
-        )
-      );
     });
   }
 
@@ -493,6 +475,49 @@ export class GoedgepicktService
       stockOnHand: input.stock >= 0 ? input.stock : 0,
     }));
     return this.variantService.update(ctx, positiveLevels);
+  }
+
+  private async autoFulfill(
+    channelToken: string,
+    orderCode: string
+  ): Promise<void> {
+    const ctx = await this.getCtxForChannel(channelToken);
+    const config = await this.getConfig(channelToken);
+    if (!config?.enabled || !config.autoFulfill) {
+      return;
+    }
+    Logger.info(
+      `Autofulfilling order ${orderCode} for channel ${channelToken}`,
+      loggerCtx
+    );
+    let order = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!order) {
+      Logger.error(
+        `No order found with code ${orderCode}. Can not autofulfilling this order.`,
+        loggerCtx
+      );
+      return;
+    }
+    order = await this.entityHydrator.hydrate(ctx, order, {
+      relations: ['shippingLines', 'shippingLines.shippingMethod'],
+    });
+    const hasGoedgepicktHandler = order.shippingLines.some(
+      (shippingLine) =>
+        shippingLine.shippingMethod?.fulfillmentHandlerCode ===
+        goedgepicktHandler.code
+    );
+    if (!hasGoedgepicktHandler) {
+      Logger.info(
+        `Order ${order.code} does not have Goedgepickt set as handler. Not autofulfilling this order.`,
+        loggerCtx
+      );
+      return;
+    }
+    await fulfillAll(ctx, this.orderService, order, {
+      code: goedgepicktHandler.code,
+      arguments: [],
+    });
+    Logger.info(`Order ${order.code} autofulfilled`, loggerCtx);
   }
 
   static splitHouseNumberAndAddition(houseNumberString: string): {
