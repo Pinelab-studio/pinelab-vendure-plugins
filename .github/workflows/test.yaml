@@ -19,7 +19,7 @@ jobs:
       - name: Prettier
         run: yarn prettier:check
   test:
-    name: ${{ matrix.package }}
+    name: Build & test ${{ matrix.package }}
     runs-on: ubuntu-latest
     defaults:
       run:
