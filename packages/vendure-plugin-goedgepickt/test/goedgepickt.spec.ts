@@ -67,28 +67,6 @@ describe('Goedgepickt plugin', function () {
       return true;
     })
     .reply(200, []);
-  // Get products first-time (used by FullSync)
-  nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
-    items: [],
-  });
-  // Get products second time
-  nock(apiUrl)
-    .get('/api/v1/products')
-    .query(true)
-    .reply(200, {
-      items: [
-        {
-          sku: 'L2201308',
-          stock: {
-            freeStock: 33,
-          },
-        },
-      ],
-    });
-  // Get products third-time
-  nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
-    items: [],
-  });
   // Create order
   nock(apiUrl)
     .post('/api/v1/orders', (reqBody) => {
@@ -122,10 +100,11 @@ describe('Goedgepickt plugin', function () {
         adminListQueryLimit: 10000,
         port: 3105,
       },
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
+      logger: new DefaultLogger({ level: LogLevel.Info }),
       plugins: [
         GoedgepicktPlugin.init({
           vendureHost: 'https://test-host',
+          webhookSecret: 'test',
         }),
       ],
       paymentOptions: {
@@ -183,8 +162,23 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes products and updates stocklevel on FullSync', async () => {
+    nock(apiUrl).put('/api/v1/products/test-uuid').reply(200, []);
+    nock(apiUrl)
+      .get('/api/v1/products')
+      .query(true)
+      .reply(200, {
+        items: [
+          {
+            uuid: 'test-uuid',
+            sku: 'L2201308',
+            stock: {
+              freeStock: 33,
+            },
+          },
+        ],
+      });
     await adminClient.query(runGoedgepicktFullSync);
-    await expect(pushProductsPayloads.length).toBe(4);
+    await expect(pushProductsPayloads.length).toBe(3);
     const laptopPayload = pushProductsPayloads.find(
       (p) => p.sku === 'L2201516'
     );

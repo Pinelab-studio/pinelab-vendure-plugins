@@ -18,12 +18,12 @@ Add this to your plugin in `vendure-config.ts`:
 
 ```js
 plugins: [
-   ...
-           GoedgepicktPlugin.init({
-              vendureHost: tunnel.url,
-              setWebhook: true // set webhooks in Goedgepickt or not
-           }),
-   ...
+  ...
+    GoedgepicktPlugin.init({
+      vendureHost: tunnel.url,
+      setWebhook: true // set webhooks in Goedgepickt or not
+    }),
+  ...
 ]
 ```
 
@@ -39,12 +39,12 @@ Add this plugin to your Admin UI and compile.
 
 ```js
 compileUiExtensions({
-   outputPath: path.join(__dirname, '__admin-ui'),
-   extensions: [
-      ...
-              GoedgepicktPlugin.ui,
-      ...
-   ]
+  outputPath: path.join(__dirname, '__admin-ui'),
+  extensions: [
+    ...
+      GoedgepicktPlugin.ui,
+    ...
+  ]
 ```
 
 Read more about Admin UI compilation in the Vendure
@@ -60,15 +60,27 @@ When you save the credentials, the plugin will make sure the configured vendureH
 stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
 old webhook via GoedGepickt.
 
+### Cron sync via endpoint
+
+Full sync can also be called via endpoint `/goedgepickt/full-sync/<webhook-secret>/`. You can use this to
+periodically run the full sync. The endpoint does a sync for all channels with Goedgepickt plugin enabled.
+
+1. Pushes all products in Vendure to GoedGepickt. Products are matched by SKU.
+2. Pulls stocklevels from GoedGepickt and updates in Vendure.
+
+This endpoint pushes a job to the worker, so receiving a status 200 doesn't necessarily mean the sync succeeded.
+
 ## How this plugin works
 
-### Full sync
+### Run full sync via Admin UI
 
 This is a manual action. Via the Admin UI you can trigger a full sync. A full sync:
 
 1. Pushes all products in Vendure to GoedGepickt. Products are matched by SKU.
 2. Pulls stocklevels from GoedGepickt and updates in Vendure.
 3. Sets/verifies webhook set on GoedGepickt account
+
+This action is synchronous, so the Admin UI will provide you feedback if the action succeeded or not.
 
 ### Order fulfillment
 
@@ -79,10 +91,9 @@ update the order status in Vendure.
 
 Stocklevels are updated in Vendure:
 
-1. On every startup all productlevels are pulled from GoedGepickt. This is done via the jobQueue.
-2. Via full sync via UI also pulls all stocklevels from GoedGepickt. This is synchronous in the mainprocess, so we can
+1. Via full sync via UI also pulls all stocklevels from GoedGepickt. This is synchronous in the mainprocess, so we can
    provide feedback to the user.
-3. Via stockUpdate per variant webhook from GoedGepickt.
+2. Via stockUpdate per variant webhook from GoedGepickt.
 
 ![UI screenshot](./docs/img.png)
 

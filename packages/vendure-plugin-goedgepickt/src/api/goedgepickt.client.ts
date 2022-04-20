@@ -61,10 +61,10 @@ export class GoedgepicktClient {
     let page = 1;
     while (true) {
       const results = await this.getProducts(page);
-      if (!results || results.length === 0) {
+      products.push(...results);
+      if (!results || results.length < 100) {
         break;
       }
-      products.push(...results);
       page++;
     }
     return products;
