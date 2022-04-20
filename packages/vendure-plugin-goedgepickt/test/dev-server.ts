@@ -41,7 +41,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       GoedgepicktPlugin.init({
         vendureHost: tunnel.url,
         endpointSecret: 'test',
-        setWebhook: false,
+        setWebhook: true,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -85,14 +85,5 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     fulfillmentHandler: goedgepicktHandler.code,
     translations: [],
   });
-  const order = await createSettledOrder(shopClient, 1);
-  /*  const fulfillment = (await server.app
-    .get(OrderService)
-    .createFulfillment(ctx, {
-      handler: { code: goedgepicktHandler.code, arguments: [] },
-      lines: order.lines.map((line) => ({
-        orderLineId: line.id,
-        quantity: line.quantity,
-      })),
-    })) as Fulfillment;*/
+  await createSettledOrder(shopClient, 1);
 })();

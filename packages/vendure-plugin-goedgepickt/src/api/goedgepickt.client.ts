@@ -61,7 +61,9 @@ export class GoedgepicktClient {
     let page = 1;
     while (true) {
       const results = await this.getProducts(page);
-      products.push(...results);
+      if (results && Array.isArray(results)) {
+        products.push(...results);
+      }
       if (!results || results.length < 100) {
         break;
       }
@@ -75,8 +77,11 @@ export class GoedgepicktClient {
       entity: 'webhooks',
       method: 'GET',
     });
+    if (!items) {
+      return [];
+    }
     Logger.debug(
-      `Fetched ${items.length} webhooks from Goedgepickt`,
+      `Fetched ${items?.length} webhooks from Goedgepickt`,
       loggerCtx
     );
     return items.filter((item) => item.webshopUuid === this.config.webshopUuid);

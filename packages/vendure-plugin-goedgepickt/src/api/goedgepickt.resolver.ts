@@ -48,7 +48,9 @@ export class GoedgepicktResolver {
   @Allow(goedgepicktPermission.Permission)
   async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
     await this.service.fullSync(ctx.channel.token);
-    await this.service.setWebhooks(ctx.channel.token);
+    if (this.config.setWebhook) {
+      await this.service.setWebhooks(ctx.channel.token);
+    }
     return true;
   }
 
