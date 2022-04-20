@@ -9,18 +9,22 @@ import {
   ConfigService,
   EntityHydrator,
   EventBus,
+  ID,
   JobQueue,
   JobQueueService,
+  ListQueryBuilder,
   Logger,
   Order,
   OrderItem,
   OrderPlacedEvent,
   OrderService,
+  ProductPriceApplicator,
   ProductVariant,
   ProductVariantService,
   RequestContext,
   TransactionalConnection,
   Translated,
+  translateDeep,
 } from '@vendure/core';
 import { GoedgepicktClient } from './goedgepickt.client';
 import {
@@ -41,7 +45,12 @@ interface StockInput {
   stock: number;
 }
 
-type VariantWithImage = Translated<ProductVariant> & {
+type VariantWithImage = {
+  id: ID;
+  productId: ID;
+  sku: string;
+  name: string;
+  price: number;
   absoluteImageUrl?: string;
 };
 
@@ -64,7 +73,9 @@ export class GoedgepicktService
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
     private entityHydrator: EntityHydrator,
-    private eventBus: EventBus
+    private listQueryBuilder: ListQueryBuilder,
+    private eventBus: EventBus,
+    private productPriceApplicator: ProductPriceApplicator
   ) {
     this.queryLimit = configService.apiOptions.adminListQueryLimit;
   }
@@ -409,19 +420,51 @@ export class GoedgepicktService
     channelToken: string
   ): Promise<VariantWithImage[]> {
     let ctx = await this.getCtxForChannel(channelToken);
-    const variants: VariantWithImage[] = [];
-    let hasMore = true;
+    const translatedVariants: VariantWithImage[] = [];
+    const take = 100;
     let skip = 0;
+    let hasMore = true;
     while (hasMore) {
-      const result = await this.variantService.findAll(ctx, {
-        skip,
-        take: this.queryLimit,
-        filter: {},
-      });
-      variants.push(...result.items);
-      skip += this.queryLimit;
-      hasMore = result.totalItems > result.items.length;
+      const variants = await this.listQueryBuilder
+        .build(
+          ProductVariant,
+          {
+            skip,
+            take,
+          },
+          {
+            relations: [
+              'featuredAsset',
+              'channels',
+              'product',
+              'product.featuredAsset',
+              'taxCategory',
+            ],
+            channelId: ctx.channelId,
+            where: { deletedAt: null },
+            ctx,
+          }
+        )
+        .getMany();
+      hasMore = !!variants.length;
+      skip += take;
+      const variantsWithPrice = await Promise.all(
+        variants.map((v) =>
+          this.productPriceApplicator.applyChannelPriceAndTax(v, ctx)
+        )
+      );
+      const mappedVariants = variantsWithPrice
+        .map((v) => translateDeep(v, ctx.languageCode))
+        .map((v) => this.setAbsoluteImage(ctx, v));
+      translatedVariants.push(...mappedVariants);
     }
+    return translatedVariants;
+  }
+
+  private setAbsoluteImage(
+    ctx: RequestContext,
+    variant: Translated<ProductVariant>
+  ): VariantWithImage {
     // Resolve images as if we are shop client
     const shopCtx = new RequestContext({
       apiType: 'shop',
@@ -429,26 +472,23 @@ export class GoedgepicktService
       authorizedAsOwnerOnly: false,
       channel: ctx.channel,
     });
-    // Hydrate with images
-    return Promise.all(
-      variants.map(async (variant) => {
-        await this.entityHydrator.hydrate(ctx, variant, {
-          relations: ['product', 'product.featuredAsset'],
-        });
-        let imageUrl =
-          variant.featuredAsset?.preview ||
-          variant.product.featuredAsset?.preview;
-        if (
-          this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl &&
-          imageUrl
-        ) {
-          imageUrl = this.configService.assetOptions.assetStorageStrategy
-            .toAbsoluteUrl!(shopCtx.req as any, imageUrl);
-        }
-        variant.absoluteImageUrl = imageUrl;
-        return variant;
-      })
-    );
+    let imageUrl =
+      variant.featuredAsset?.preview || variant.product.featuredAsset?.preview;
+    if (
+      this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl &&
+      imageUrl
+    ) {
+      imageUrl = this.configService.assetOptions.assetStorageStrategy
+        .toAbsoluteUrl!(shopCtx.req as any, imageUrl);
+    }
+    return {
+      id: variant.id,
+      productId: variant.productId,
+      sku: variant.sku,
+      name: variant.name,
+      price: variant.price,
+      absoluteImageUrl: imageUrl,
+    };
   }
 
   private async updateStock(
