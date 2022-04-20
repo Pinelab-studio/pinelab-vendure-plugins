@@ -1,15 +1,49 @@
-import { Body, Controller, Headers, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Param,
+  Post,
+  Get,
+  Inject,
+} from '@nestjs/common';
 import { GoedgepicktService } from './goedgepickt.service';
 import { Logger } from '@vendure/core';
 import {
+  GoedgepicktPluginConfig,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
 } from './goedgepickt.types';
-import { loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 
 @Controller('goedgepickt')
 export class GoedgepicktController {
-  constructor(private service: GoedgepicktService) {}
+  constructor(
+    private service: GoedgepicktService,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
+  ) {}
+
+  @Get('fullsync/:secret')
+  async sync(@Param('secret') secret: string): Promise<void> {
+    if (secret !== this.config.endpointSecret) {
+      Logger.warn(
+        `Invalid incoming fullsync request with secret ${secret}`,
+        loggerCtx
+      );
+      return;
+    }
+    // Push sync jobs to the worker queue
+    const configs = (await this.service.getConfigs()).filter(
+      (config) => config.enabled
+    );
+    for (const config of configs) {
+      await this.service.fullSyncQueue!.add(
+        { channelToken: config.channelToken },
+        { retries: 2 }
+      );
+      Logger.info(`Added full sync job for ${config.channelToken}`);
+    }
+  }
 
   @Post('webhook/:channelToken')
   async webhook(

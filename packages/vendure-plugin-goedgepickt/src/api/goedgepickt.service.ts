@@ -50,7 +50,7 @@ export class GoedgepicktService
   implements OnApplicationBootstrap, OnModuleInit
 {
   readonly queryLimit: number;
-  private pullStockLevelsQueue: JobQueue<{ channelToken: string }> | undefined;
+  public fullSyncQueue: JobQueue<{ channelToken: string }> | undefined;
   private autofulfilleQueue:
     | JobQueue<{ channelToken: string; orderCode: string }>
     | undefined;
@@ -71,12 +71,12 @@ export class GoedgepicktService
 
   async onModuleInit() {
     // Start JobQueue
-    this.pullStockLevelsQueue = await this.jobQueueService.createQueue({
-      name: 'pull-goedgepickt-stocklevels',
+    this.fullSyncQueue = await this.jobQueueService.createQueue({
+      name: 'goedgepickt-full-sync',
       process: async (job) =>
-        await this.pullStocklevels(job.data.channelToken).catch((error) => {
+        await this.fullSync(job.data.channelToken).catch((error) => {
           Logger.error(
-            `Failed to pull stocklevels for ${job.data.channelToken}: ${error.message}`,
+            `Failed to sync products and stocklevels for ${job.data.channelToken}: ${error.message}`,
             loggerCtx,
             error
           );
@@ -98,16 +98,6 @@ export class GoedgepicktService
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    // Push sync jobs to the worker queue
-    const configs = (await this.getConfigs()).filter(
-      (config) => config.enabled
-    );
-    for (const config of configs) {
-      await this.pullStockLevelsQueue!.add(
-        { channelToken: config.channelToken },
-        { retries: 2 }
-      );
-    }
     // Listen for Settled orders for autoFulfillment
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
       await this.autofulfilleQueue!.add({
@@ -150,14 +140,17 @@ export class GoedgepicktService
   }
 
   /**
-   * Push all products to Goedgepickt for channel
+   * For given channel:
+   * 1. Push all products to Goedgepickt
+   * 2. Pulls all stocklevels from Goedgepickt
    */
-  async pushProducts(channelToken: string): Promise<void> {
+  async fullSync(channelToken: string): Promise<void> {
     const client = await this.getClientForChannel(channelToken);
     const [ggProducts, variants] = await Promise.all([
       client.getAllProducts(),
       this.getAllVariants(channelToken),
     ]);
+    // Push products to Goedgepickt
     for (const variant of variants) {
       const product: ProductInput = {
         name: variant.name,
@@ -188,7 +181,37 @@ export class GoedgepicktService
         );
       }
     }
-    Logger.info(`Synced ${variants.length} to Goedgepickt`, loggerCtx);
+    Logger.info(`Synced ${variants.length} variants to Goedgepickt`, loggerCtx);
+    // Pull stockLevels from Goedgepickt
+    const stockPerVariant: StockInput[] = [];
+    for (const ggProduct of ggProducts) {
+      const variant = variants.find((v) => v.sku === ggProduct.sku);
+      const newStock = ggProduct.stock?.freeStock;
+      if (!newStock) {
+        Logger.info(
+          `Goedgepickt variant ${ggProduct.sku} has no stock set. Cannot update stock in Vendure for this variant.`,
+          loggerCtx
+        );
+        continue;
+      }
+      if (!variant) {
+        Logger.info(
+          `Goedgepickt product with sku ${ggProduct.sku} doesn't exist as variant in Vendure. Not updating stock for this variant`,
+          loggerCtx
+        );
+        continue;
+      }
+      stockPerVariant.push({
+        variantId: variant.id as string,
+        stock: newStock,
+      });
+    }
+    const ctx = await this.getCtxForChannel(channelToken);
+    await this.updateStock(ctx, stockPerVariant);
+    Logger.info(
+      `Updated stockLevels of ${stockPerVariant.length} variants for ${channelToken}`,
+      loggerCtx
+    );
   }
 
   /**
@@ -239,44 +262,6 @@ export class GoedgepicktService
       orderWebhookKey: orderSecret,
       stockWebhookKey: stockSecret,
     });
-  }
-
-  /**
-   * Pull all stocklevels from Goedgepickt and update in Vendure
-   */
-  async pullStocklevels(channelToken: string): Promise<void> {
-    const client = await this.getClientForChannel(channelToken);
-    const variants = await this.getAllVariants(channelToken);
-    const stockPerVariant: StockInput[] = [];
-    const ggProducts = await client.getAllProducts();
-    for (const ggProduct of ggProducts) {
-      const variant = variants.find((v) => v.sku === ggProduct.sku);
-      const newStock = ggProduct.stock?.freeStock;
-      if (!newStock) {
-        Logger.info(
-          `Goedgepickt variant ${ggProduct.sku} has no stock set. Cannot update stock in Vendure for this variant.`,
-          loggerCtx
-        );
-        continue;
-      }
-      if (variant) {
-        stockPerVariant.push({
-          variantId: variant.id as string,
-          stock: newStock,
-        });
-      } else {
-        Logger.info(
-          `Goedgepickt product with sku ${ggProduct.sku} doesn't exist as variant in Vendure. Not updating stock for this variant`,
-          loggerCtx
-        );
-      }
-    }
-    const ctx = await this.getCtxForChannel(channelToken);
-    await this.updateStock(ctx, stockPerVariant);
-    Logger.info(
-      `Updated stockLevels of ${variants.length} variants for ${channelToken}`,
-      loggerCtx
-    );
   }
 
   /**
