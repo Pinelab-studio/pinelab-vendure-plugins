@@ -21,6 +21,7 @@ plugins: [
   ...
     GoedgepicktPlugin.init({
       vendureHost: tunnel.url,
+       endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
       setWebhook: true // set webhooks in Goedgepickt or not
     }),
   ...

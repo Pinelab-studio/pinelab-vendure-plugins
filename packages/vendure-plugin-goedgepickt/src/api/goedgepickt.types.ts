@@ -3,7 +3,7 @@ export interface GoedgepicktPluginConfig {
   /**
    * Used to validate incoming sync webhook
    */
-  webhookSecret: string;
+  endpointSecret: string;
   /**
    * Set webhook in Goedgepickt when saving credentials
    */

@@ -40,7 +40,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     plugins: [
       GoedgepicktPlugin.init({
         vendureHost: tunnel.url,
-        webhookSecret: 'test',
+        endpointSecret: 'test',
         setWebhook: false,
       }),
       DefaultSearchPlugin,

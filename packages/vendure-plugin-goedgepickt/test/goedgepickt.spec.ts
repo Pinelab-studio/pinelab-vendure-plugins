@@ -104,7 +104,7 @@ describe('Goedgepickt plugin', function () {
       plugins: [
         GoedgepicktPlugin.init({
           vendureHost: 'https://test-host',
-          webhookSecret: 'test',
+          endpointSecret: 'test',
         }),
       ],
       paymentOptions: {

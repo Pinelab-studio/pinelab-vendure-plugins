@@ -25,9 +25,9 @@ export class GoedgepicktController {
 
   @Get('fullsync/:secret')
   async sync(@Param('secret') secret: string): Promise<void> {
-    if (secret !== this.config.webhookSecret) {
+    if (secret !== this.config.endpointSecret) {
       Logger.warn(
-        `Invalid incoming fullsync webhook with secret ${secret}`,
+        `Invalid incoming fullsync request with secret ${secret}`,
         loggerCtx
       );
       return;
