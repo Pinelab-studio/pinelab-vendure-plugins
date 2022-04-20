@@ -178,10 +178,10 @@ export class GoedgepicktService
       try {
         if (exists) {
           await client.updateProduct(exists.uuid, product);
-          Logger.info(`Updated ${variant.sku}`, loggerCtx);
+          Logger.debug(`Updated variant ${variant.sku}`, loggerCtx);
         } else {
           await client.createProduct(product);
-          Logger.info(`Created ${variant.sku}`, loggerCtx);
+          Logger.debug(`Created variant ${variant.sku}`, loggerCtx);
         }
       } catch (err) {
         // Don't throw, because we want other products to sync
@@ -192,7 +192,10 @@ export class GoedgepicktService
         );
       }
     }
-    Logger.info(`Synced ${variants.length} variants to Goedgepickt`, loggerCtx);
+    Logger.info(
+      `Pushed ${variants.length} variants for channel ${channelToken}`,
+      loggerCtx
+    );
     // Pull stockLevels from Goedgepickt
     const stockPerVariant: StockInput[] = [];
     for (const ggProduct of ggProducts) {
@@ -220,7 +223,7 @@ export class GoedgepicktService
     const ctx = await this.getCtxForChannel(channelToken);
     await this.updateStock(ctx, stockPerVariant);
     Logger.info(
-      `Updated stockLevels of ${stockPerVariant.length} variants for ${channelToken}`,
+      `Synced stockLevels of ${stockPerVariant.length} variants for channel ${channelToken}`,
       loggerCtx
     );
   }
