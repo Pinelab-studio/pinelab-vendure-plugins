@@ -1697,15 +1697,15 @@
   resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.8.3.tgz#781d360c282436494b32fe7d9f7f8e64b3118aa3"
   integrity sha512-fbF6oTd4sGGy0xjHPKAt+eS2CrxJ3+6gQ3FGcBoIJR2TLAyCkCyI8JqZNy+FeON0AhVgNJoUumVoZQjBFUqHkw==
 
-"@vendure/common@^1.5.1":
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.5.1.tgz#f952fd38806c7149539e9b05cd48a2564b1ae34d"
-  integrity sha512-FeTwObRVQHQHWGPUAqlgZUtacNHKJi84k3LCcdieSD1gKV6qvmseX+lQSwlZnlR5CiwIPLzSi3pBVueD1opFXw==
+"@vendure/common@^1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.5.2.tgz#06efdaf538eef9dcdf0cd8be472a08843a26f5f5"
+  integrity sha512-wveQvOG/mUVZGs55R3DyYPNdlVeTx82N5POf6YOToKS+C0lMjqa8EWNIJkFY1vSR/0zXviPyhNCN1Mu/UKXCZg==
 
-"@vendure/core@1.5.1":
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.5.1.tgz#9ba92f0aec9230448f4bc427fe4376de46bf422d"
-  integrity sha512-NzDpDTb5dpOXRFusEvEl/qyrtBc8hr62GjGeBJDsoFqRsWLDVVeAFjbvGCOBRTHwVaLRqr+E+YV84NTNLttQKg==
+"@vendure/core@1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.5.2.tgz#00aa7cf970caa8bfc4b957bcae07905fe6e9bc28"
+  integrity sha512-O2Mh76/Mmd0J9rbJ6kWKE+5UxoEypBTt6xjwOFK8Hm/5c6uZ+dPtthQqeSXxgqFpf8UnX3JYZfH8fRzmtJDO3w==
   dependencies:
     "@graphql-tools/stitch" "^7.5.3"
     "@nestjs/common" "7.6.17"
@@ -1716,7 +1716,7 @@
     "@nestjs/testing" "7.6.17"
     "@nestjs/typeorm" "7.1.5"
     "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^1.5.1"
+    "@vendure/common" "^1.5.2"
     apollo-server-express "2.24.1"
     bcrypt "^5.0.0"
     body-parser "^1.19.0"
@@ -1744,13 +1744,13 @@
     rxjs "^6.6.3"
     typeorm "0.2.41"
 
-"@vendure/testing@1.5.1":
-  version "1.5.1"
-  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.5.1.tgz#dfffdf3113f93047d2619cb654efdf005076c942"
-  integrity sha512-cbO8MHNxqtzZp41HfUgDVgCgZClyXi6mQwa4BODXq4HYO6JIJgKQ0U9vH1V8t2E2nHolA3Cqn9ICcowbCAJcWg==
+"@vendure/testing@1.5.2":
+  version "1.5.2"
+  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.5.2.tgz#c6cd34481b2170cc359bbeb494e4426e842ded2e"
+  integrity sha512-1kj9loKNbs1mHZKwzYGLr3QT5U8RsTPdA1vLDTWsWQqzYTBPPB4lhHZKHlhIgLPy58Jo1OJvtWDufyFzYof26w==
   dependencies:
     "@types/node-fetch" "^2.5.4"
-    "@vendure/common" "^1.5.1"
+    "@vendure/common" "^1.5.2"
     faker "^4.1.0"
     form-data "^3.0.0"
     graphql "15.5.1"
