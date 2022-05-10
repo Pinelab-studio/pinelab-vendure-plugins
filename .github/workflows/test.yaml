@@ -1,4 +1,3 @@
-name: Test packages
 on: ['pull_request']
 
 jobs:
@@ -19,7 +18,7 @@ jobs:
       - name: Prettier
         run: yarn prettier:check
   test:
-    name: Build & test ${{ matrix.package }}
+    name: ${{ matrix.package }}
     runs-on: ubuntu-latest
     defaults:
       run:
