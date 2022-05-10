@@ -161,7 +161,7 @@ export class GoedgepicktClient {
     const json = (await result.json()) as any;
     if (json.error || json.errorMessage || json.errors) {
       const errorMessage = json.error ?? json.errorMessage ?? json.message; // If json.errors, then there should also be a message
-      Logger.warn(json, loggerCtx);
+      Logger.warn(JSON.stringify(json), loggerCtx);
       throw Error(errorMessage);
     }
     return json;
