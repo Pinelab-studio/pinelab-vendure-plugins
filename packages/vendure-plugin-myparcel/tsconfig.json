@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "declaration": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "lib": ["dom"]
   },
   "include": ["src/"],
   "exclude": ["src/ui"]
