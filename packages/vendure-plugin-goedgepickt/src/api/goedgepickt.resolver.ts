@@ -47,7 +47,12 @@ export class GoedgepicktResolver {
   @Mutation()
   @Allow(goedgepicktPermission.Permission)
   async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
-    await this.service.fullSync(ctx.channel.token);
+    const channelToken = ctx.channel.token;
+    const config = await this.service.getConfig(channelToken);
+    if (!config?.apiKey) {
+      throw Error(`No GoedGepickt apiKey set for channel ${channelToken}`);
+    }
+    await this.service.fullSyncQueue!.add({ channelToken }, { retries: 2 });
     if (this.config.setWebhook) {
       await this.service.setWebhooks(ctx.channel.token);
     }

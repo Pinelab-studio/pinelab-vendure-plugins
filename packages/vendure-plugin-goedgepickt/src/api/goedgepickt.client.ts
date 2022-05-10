@@ -190,7 +190,9 @@ export class GoedgepicktClient {
   }): void {
     if (!input.secret) {
       Logger.warn(
-        `No secret was configured to check incoming webhooks ${input.data}`,
+        `No secret was configured to check incoming webhooks ${JSON.stringify(
+          input.data
+        )}`,
         loggerCtx
       );
       throw Error(`Invalid signature.`);
