@@ -35,6 +35,10 @@ require('dotenv').config();
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    apiOptions: {
+      adminApiPlayground: true,
+      shopApiPlayground: true,
+    },
     plugins: [
       MyparcelPlugin.init({
         vendureHost: tunnel.url,
@@ -43,11 +47,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
+        /*        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [MyparcelPlugin.ui],
           devMode: true,
-        }),
+        }),*/
       }),
     ],
     paymentOptions: {

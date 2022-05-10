@@ -7,8 +7,11 @@ import { MyparcelConfigEntity } from './api/myparcel-config.entity';
 import { MyparcelService } from './api/myparcel.service';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { myparcelPermission } from './index';
-import { schema } from './api/schema';
-import { MyparcelResolver } from './api/myparcel.resolver';
+import {
+  adminSchema,
+  MyparcelAdminResolver,
+} from './api/myparcel.admin.graphql';
+import { MyParcelShopResolver, shopSchema } from './api/myparcel.shop.graphql';
 
 export interface MyparcelConfig {
   vendureHost: string;
@@ -27,8 +30,12 @@ export interface MyparcelConfig {
   ],
   controllers: [MyparcelController],
   adminApiExtensions: {
-    schema,
-    resolvers: [MyparcelResolver],
+    schema: adminSchema,
+    resolvers: [MyparcelAdminResolver],
+  },
+  shopApiExtensions: {
+    schema: shopSchema,
+    resolvers: [MyParcelShopResolver],
   },
   configuration: (config) => {
     config.shippingOptions.fulfillmentHandlers.push(myparcelHandler);

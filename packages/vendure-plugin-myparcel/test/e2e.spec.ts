@@ -33,6 +33,7 @@ import { getMyparcelConfig, updateMyparcelConfig } from '../src/ui/queries';
 import fs from 'fs';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import gql from 'graphql-tag';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -144,6 +145,29 @@ describe('MyParcel', () => {
     );
     expect(webhook?.hook).toEqual('shipment_status_change');
     expect(contentType).toEqual('application/json');
+  });
+
+  it('Returns drop off points', async () => {
+    nock('https://api.myparcel.nl/')
+      .get('/drop_off_points?postal_code=8923CP&carried_id=1')
+      .reply(200, {
+        data: {
+          drop_off_points: [
+            {
+              carrier_id: 1,
+            },
+          ],
+        },
+      });
+    const { myparcelDropOffPoints: res } = await shopClient.query(gql`
+      query {
+        myparcelDropOffPoints(input: { carrierId: "1", postalCode: "8923CP" }) {
+          carrier_id
+        }
+      }
+    `);
+    expect(res.length).toEqual(1);
+    expect(res?.[0].carrier_id).toEqual(1);
   });
 
   it('Setup order untill payment', async () => {
