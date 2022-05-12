@@ -54,16 +54,6 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
         }),*/
       }),
     ],
-    customFields: {
-      Order: [
-        {
-          name: 'pickupLocationNumber',
-          type: 'string',
-          public: true,
-          nullable: true,
-        },
-      ],
-    },
   });
   const { server, shopClient } = createTestEnvironment(config);
   await server.init({
