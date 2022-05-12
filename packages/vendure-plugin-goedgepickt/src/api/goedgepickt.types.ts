@@ -51,8 +51,9 @@ export interface Stock {
 
 export interface OrderInput {
   orderId: string;
-  createDate: Date;
-  finishDate?: Date;
+  orderDisplayId?: string;
+  createDate: string;
+  finishDate?: string;
   orderStatus: OrderStatus;
   orderItems: OrderItemInput[];
   shippingFirstName?: string;
@@ -62,10 +63,31 @@ export interface OrderInput {
   shippingHouseNumber: number;
   shippingHouseNumberAddition?: string;
   shippingAddress2?: string;
-  shippingZipcode: string;
-  shippingCity: string;
-  shippingCountry: string;
+  shippingZipcode?: string;
+  shippingCity?: string;
+  shippingCountry?: string;
   shippingMethod?: string;
+  paymentMethod?: string;
+  billingFirstName?: string;
+  billingLastName?: string;
+  billingCompany?: string;
+  billingHouseNumber?: number;
+  billingHouseNumberAddition?: string;
+  billingZipcode?: string;
+  billingCity?: string;
+  billingCountry?: string;
+  billingEmail?: string;
+  billingPhone?: string;
+  pickupLocationData?: {
+    locationNumber?: string;
+    carrier?: string;
+    location?: string;
+    street?: string;
+    houseNumber?: string;
+    zipcode?: string;
+    city?: string;
+    country?: string;
+  };
 }
 
 export type OrderStatus = 'on_hold' | 'open' | 'completed';
