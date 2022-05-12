@@ -21,7 +21,7 @@ plugins: [
   ...
     GoedgepicktPlugin.init({
       vendureHost: tunnel.url,
-       endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
+      endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
       setWebhook: true // set webhooks in Goedgepickt or not
     }),
   ...
@@ -30,8 +30,7 @@ plugins: [
 
 ### Database migration
 
-Run a database migration to add the GoedgepicktConfig entity to your database. It is used to store apiKeys and
-webshopUuid's per channel.
+Run a database migration to add the new fields and entities to your database.
 https://www.vendure.io/docs/developer-guide/migrations/
 
 ### Admin UI
@@ -63,13 +62,46 @@ old webhook via GoedGepickt.
 
 ### Cron sync via endpoint
 
-Full sync can also be called via endpoint `/goedgepickt/full-sync/<webhook-secret>/`. You can use this to
-periodically run the full sync. The endpoint does a sync for all channels with Goedgepickt plugin enabled.
+Full sync can also be called via endpoint `/goedgepickt/full-sync/<webhook-secret>/`. You can use this to periodically
+run the full sync. The endpoint does a sync for all channels with Goedgepickt plugin enabled.
 
 1. Pushes all products in Vendure to GoedGepickt. Products are matched by SKU.
 2. Pulls stocklevels from GoedGepickt and updates in Vendure.
 
 This endpoint pushes a job to the worker, so receiving a status 200 doesn't necessarily mean the sync succeeded.
+
+## Pickup points / drop off points
+
+This plugin uses custom fields on an order as pickup location address. You can set a pickup points on an order with this
+mutation, the plugin will then send the address to Goedgepickt:
+
+```graphql
+mutation {
+  setOrderCustomFields(
+    input: {
+      customFields: {
+        pickupLocationNumber: "1234"
+        pickupLocationCarrier: "1"
+        pickupLocationName: "Local shop"
+        pickupLocationStreet: "Shopstreet"
+        pickupLocationHouseNumber: "13"
+        pickupLocationZipcode: "8888HG"
+        pickupLocationCity: "Leeuwarden"
+        pickupLocationCountry: "nl"
+      }
+    }
+  ) {
+    ... on Order {
+      id
+      code
+    }
+    ... on NoActiveOrderError {
+      errorCode
+      message
+    }
+  }
+}
+```
 
 ## How this plugin works
 

@@ -14,6 +14,7 @@ import { schema } from './api/schema.graphql';
 import { GoedgepicktConfigEntity } from './api/goedgepickt-config.entity';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { customFields } from './api/custom-fields';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -33,6 +34,10 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
   configuration: (config: RuntimeVendureConfig) => {
     config.shippingOptions.fulfillmentHandlers.push(goedgepicktHandler);
     config.authOptions.customPermissions.push(goedgepicktPermission);
+    config.customFields = {
+      ...config.customFields,
+      ...customFields,
+    };
     return config;
   },
 })

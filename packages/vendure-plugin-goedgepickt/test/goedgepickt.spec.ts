@@ -38,8 +38,10 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktController } from '../src/api/goedgepickt.controller';
 import { GoedgepicktClient } from '../src/api/goedgepickt.client';
 import { getOrder } from '../../test/src/admin-utils';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import gql from 'graphql-tag';
+import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 
 jest.setTimeout(20000);
 
@@ -210,6 +212,12 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes order with autofulfill', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    await addItem(shopClient, 'T_1', 1);
+    const res = await shopClient.query(SET_CUSTOM_FIELDS);
     order = await createSettledOrder(shopClient, 1);
     await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
     const adminOrder = await getOrder(adminClient, order.id as string);
@@ -224,6 +232,16 @@ describe('Goedgepickt plugin', function () {
     await expect(createOrderPayload.shippingZipcode).toBe('8923CP');
     await expect(createOrderPayload.shippingCity).toBe('Liwwa');
     await expect(createOrderPayload.shippingCountry).toBe('NL');
+    await expect(createOrderPayload.pickupLocationData?.houseNumber).toBe(
+      '13a'
+    );
+    await expect(createOrderPayload.pickupLocationData?.city).toBe(
+      'Leeuwarden'
+    );
+    await expect(createOrderPayload.pickupLocationData?.locationNumber).toBe(
+      '1234'
+    );
+    await expect(createOrderPayload.pickupLocationData?.country).toBe('NL');
   });
 
   it('Completes order via webhook', async () => {
@@ -286,3 +304,31 @@ describe('Goedgepickt plugin', function () {
     return result.items.find((variant) => variant.sku === sku)!;
   }
 });
+
+const SET_CUSTOM_FIELDS = gql`
+  mutation {
+    setOrderCustomFields(
+      input: {
+        customFields: {
+          pickupLocationNumber: "1234"
+          pickupLocationCarrier: "1"
+          pickupLocationName: "Local shop"
+          pickupLocationStreet: "Shopstreet"
+          pickupLocationHouseNumber: "13a"
+          pickupLocationZipcode: "8888HG"
+          pickupLocationCity: "Leeuwarden"
+          pickupLocationCountry: "nl"
+        }
+      }
+    ) {
+      ... on Order {
+        id
+        code
+      }
+      ... on NoActiveOrderError {
+        errorCode
+        message
+      }
+    }
+  }
+`;

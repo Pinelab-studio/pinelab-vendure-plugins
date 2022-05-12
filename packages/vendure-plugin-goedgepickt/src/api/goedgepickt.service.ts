@@ -31,6 +31,7 @@ import {
   GoedgepicktEvent,
   GoedgepicktPluginConfig,
   Order as GgOrder,
+  OrderInput,
   OrderItemInput,
   OrderStatus,
   ProductInput,
@@ -39,6 +40,7 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
 import { fulfillAll, transitionToDelivered } from '../../../util/src';
 import { goedgepicktHandler } from './goedgepickt.handler';
+import { PickupPointCustomFields } from './custom-fields';
 
 interface StockInput {
   variantId: string;
@@ -240,10 +242,19 @@ export class GoedgepicktService
       GoedgepicktService.splitHouseNumberAndAddition(
         order.shippingAddress.streetLine2
       );
-    return client.createOrder({
+    const billingAddress =
+      order.billingAddress && order.billingAddress.streetLine1
+        ? order.billingAddress
+        : order.shippingAddress;
+    const { houseNumber: billingHouseNumber, addition: billingAddition } =
+      GoedgepicktService.splitHouseNumberAndAddition(
+        order.shippingAddress.streetLine2
+      );
+    const orderInput: OrderInput = {
       orderId: order.code,
-      createDate: order.createdAt,
-      finishDate: order.orderPlacedAt,
+      orderDisplayId: order.code,
+      createDate: GoedgepicktService.toLocalTime(order.createdAt)!,
+      finishDate: GoedgepicktService.toLocalTime(order.orderPlacedAt),
       orderStatus: 'open',
       orderItems: mergedItems,
       shippingFirstName: order.customer?.firstName,
@@ -252,10 +263,40 @@ export class GoedgepicktService
       shippingAddress: order.shippingAddress.streetLine1,
       shippingHouseNumber: houseNumber,
       shippingHouseNumberAddition: addition,
-      shippingZipcode: order.shippingAddress.postalCode!,
-      shippingCity: order.shippingAddress.city!,
-      shippingCountry: order.shippingAddress.countryCode!,
-    });
+      shippingZipcode: order.shippingAddress.postalCode,
+      shippingCity: order.shippingAddress.city,
+      shippingCountry: order.shippingAddress.countryCode?.toUpperCase(),
+      billingFirstName: order.customer?.firstName,
+      billingLastName: order.customer?.lastName,
+      billingCompany: billingAddress.company,
+      billingHouseNumber: billingHouseNumber,
+      billingHouseNumberAddition: billingAddition,
+      billingZipcode: billingAddress.postalCode,
+      billingCity: billingAddress.city,
+      billingCountry: billingAddress.countryCode?.toUpperCase(),
+      billingEmail: order.customer?.emailAddress,
+      billingPhone: order.customer?.phoneNumber,
+      paymentMethod: order.payments?.[0]?.method,
+    };
+    const customFields = order.customFields as
+      | PickupPointCustomFields
+      | undefined;
+    if (
+      customFields?.pickupLocationNumber ||
+      customFields?.pickupLocationName
+    ) {
+      orderInput.pickupLocationData = {
+        locationNumber: customFields.pickupLocationNumber,
+        location: customFields.pickupLocationName,
+        carrier: customFields.pickupLocationCarrier,
+        street: customFields.pickupLocationStreet,
+        houseNumber: customFields.pickupLocationHouseNumber,
+        zipcode: customFields.pickupLocationZipcode,
+        city: customFields.pickupLocationCity,
+        country: customFields.pickupLocationCountry?.toUpperCase(),
+      };
+    }
+    return client.createOrder(orderInput);
   }
 
   /**
@@ -563,5 +604,13 @@ export class GoedgepicktService
       houseNumber,
       addition: addition.join() || undefined, // .join() can result in empty string
     };
+  }
+
+  static toLocalTime(date?: Date) {
+    if (!date) {
+      return undefined;
+    }
+    const tzoffset = date.getTimezoneOffset() * 60000; //offset in milliseconds
+    return new Date(date.getTime() - tzoffset).toISOString().slice(0, -1);
   }
 }

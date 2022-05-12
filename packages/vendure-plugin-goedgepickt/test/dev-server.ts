@@ -47,13 +47,23 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*app: compileUiExtensions({
+        /*        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [GoedgepicktPlugin.ui],
           devMode: true,
         }),*/
       }),
     ],
+    customFields: {
+      Order: [
+        {
+          name: 'pickupLocationNumber',
+          type: 'string',
+          public: true,
+          nullable: true,
+        },
+      ],
+    },
   });
   const { server, shopClient } = createTestEnvironment(config);
   await server.init({
