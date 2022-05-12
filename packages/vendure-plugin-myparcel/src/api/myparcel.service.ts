@@ -111,7 +111,10 @@ export class MyparcelService implements OnApplicationBootstrap {
         `No apiKey found for channel ${ctx.channel.token}`
       );
     }
-    const searchParams = new URLSearchParams({ postal_code: input.postalCode });
+    const searchParams = new URLSearchParams({
+      postal_code: input.postalCode,
+      limit: '10',
+    });
     if (input.countryCode) {
       searchParams.append('cc', input.countryCode);
     } else if (input.carrierId) {

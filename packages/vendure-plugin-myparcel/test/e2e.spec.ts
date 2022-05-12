@@ -149,7 +149,7 @@ describe('MyParcel', () => {
 
   it('Returns drop off points', async () => {
     nock('https://api.myparcel.nl/')
-      .get('/drop_off_points?postal_code=8923CP&carried_id=1')
+      .get('/drop_off_points?postal_code=8923CP&limit=10&carried_id=1')
       .reply(200, {
         data: {
           drop_off_points: [
