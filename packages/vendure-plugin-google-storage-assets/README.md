@@ -21,7 +21,8 @@ In the admin api, it returns the relative url, because the Admin UI needs resizi
                 thumbnails: {
                     width: 400,
                     height: 400,
-                }
+                },
+                useAssetServe
             }),
             route: 'assets',
             assetUploadDir: '/tmp/vendure/assets',
