@@ -22,7 +22,7 @@ In the admin api, it returns the relative url, because the Admin UI needs resizi
                     width: 400,
                     height: 400,
                 },
-                useAssetServe
+                useAssetServerForAdminUi: false
             }),
             route: 'assets',
             assetUploadDir: '/tmp/vendure/assets',
