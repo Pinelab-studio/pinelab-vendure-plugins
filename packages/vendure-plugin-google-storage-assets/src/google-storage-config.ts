@@ -6,4 +6,8 @@ export interface GoogleStorageConfig {
     width: number;
   };
   storageOptions?: StorageOptions;
+  /**
+   * Proxy images through the asset-server for admin UI, so that images are resized for admin UI.
+   */
+  useAssetServerForAdminUi?: boolean;
 }
