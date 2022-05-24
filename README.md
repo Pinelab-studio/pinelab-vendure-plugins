@@ -3,7 +3,7 @@
 
 # Pinelab Vendure plugins
 
-Free **Vendure** plugins for everyone! Check 'em out:
+Monorepo with **free Vendure** plugins for everyone! Check out the plugins in this repository:
 
 - [PDF Invoices generation](packages/vendure-plugin-invoices/README.md)
 - [Google Cloud Storage for Vendure assets](packages/vendure-plugin-google-storage-assets/README.md)
