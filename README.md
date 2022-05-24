@@ -3,7 +3,17 @@
 
 # Pinelab Vendure plugins
 
-Free Vendure plugins for everyone!
+Free **Vendure** plugins for everyone! Check 'em out:
+
+- [PDF Invoices generation](packages/vendure-plugin-invoices/README.md)
+- [Google Cloud Storage for Vendure assets](packages/vendure-plugin-google-storage-assets/README.md)
+- [Google Cloud Tasks Vendure JobQueue integration](packages/vendure-plugin-google-cloud-tasks/README.md)
+- [Send webhooks on configurable Vendure events ](packages/vendure-plugin-webhook/README.md)
+- [Coinbase crypto payments plugin](packages/vendure-plugin-coinbase/README.md)
+- [Dutch postal code address completion](packages/vendure-plugin-dutch-postalcode/README.md)
+- [E-boekhouden - Dutch accounting software integration](packages/vendure-plugin-e-boekhouden/README.md)
+- [GoedGepickt order picking integration](packages/vendure-plugin-goedgepickt/README.md)
+- [MyParcel shipping integration](packages/vendure-plugin-myparcel/README.md)
 
 ## Webhook plugin
 
@@ -74,9 +84,12 @@ Just create a PR!
 
 Note: Some packages need the `packages/test` or `packages/util` built first.
 
-### Upgrading dependencies
+## Enjoying our plugins?
 
-1. Don't upgrade `node-fetch`, it should stay at 2.x
-2. Vendure ui-devkit depends on `typescript@4.3.5`
+Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
 
-[![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)
+Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
+<br/>
+<br/>
+<br/>
+[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)
