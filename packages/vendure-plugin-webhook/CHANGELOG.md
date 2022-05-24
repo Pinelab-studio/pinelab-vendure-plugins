@@ -8,9 +8,3 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 ### Bug Fixes
 
 - **all-plugins:** updated readmes ([3c4da0b](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/3c4da0b54712bd864ddc2336d40073169c58e052))
-
-# [3.3.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.2.0...v3.3.0) (2022-05-16)
-
-### Features
-
-- commitlint added ([def92b8](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/def92b88d7b82b8ddb6fc2c9e3a649830df07bdc))
