@@ -68,4 +68,12 @@ This will add a formfield for updating the webhook for the current channel under
 ![Webhook admin UI](webhook-admin-ui.jpeg)  
 For more information about using pre-compiled admin UI in production: https://www.vendure.io/docs/plugins/extending-the-admin-ui/
 
-[![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)
+## Enjoying our plugins?
+
+Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
+
+Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
+<br/>
+<br/>
+<br/>
+[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)

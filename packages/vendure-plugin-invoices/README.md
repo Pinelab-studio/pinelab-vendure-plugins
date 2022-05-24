@@ -216,5 +216,12 @@ yarn start
 yarn serve
 ```
 
-Reach out to me at [pinelab.studio](https://pinelab.studio) if you need any help.
-[![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)
+## Enjoying our plugins?
+
+Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
+
+Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
+<br/>
+<br/>
+<br/>
+[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)
