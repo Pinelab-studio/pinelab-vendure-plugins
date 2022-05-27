@@ -67,7 +67,7 @@ export class CloudTasksHandler {
           CloudTasksPlugin.loggerCtx
         );
       } else {
-        Logger.warn(
+        Logger.error(
           `Failed to handle message ${message.id} after final attempt (${attempts} attempts made): ${error}`,
           CloudTasksPlugin.loggerCtx
         );

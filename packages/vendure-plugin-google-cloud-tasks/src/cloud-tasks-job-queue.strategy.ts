@@ -28,7 +28,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       queueName: queueName,
       data: job.data,
       createdAt: new Date(),
-      maxRetries: job.retries,
+      maxRetries: job.retries || 3,
     };
     const parent = this.getQueuePath(queueName);
     const task = {
@@ -43,9 +43,9 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       },
     };
     const request = { parent, task };
-    await this.client.createTask(request, { maxRetries: job.retries });
+    await this.client.createTask(request, { maxRetries: cloudTaskMessage.maxRetries });
     Logger.debug(
-      `Added job to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
+      `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
       CloudTasksPlugin.loggerCtx
     );
     return new Job({
