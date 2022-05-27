@@ -456,7 +456,7 @@ export class GoedgepicktService
       );
       productInputs.push(this.mapToProductInput(variant, existing?.uuid));
     }
-    const pushBatches = this.getBatches(productInputs, 30); // Batch of 30, so we stay under the 60 per minute limit in a single job
+    const pushBatches = this.getBatches(productInputs, 15); // Batch of 15, so we stay under the 60 per minute limit in a single job
     for (const batch of pushBatches) {
       await this.jobQueue.add(
         {
@@ -537,7 +537,7 @@ export class GoedgepicktService
   }: PushProductByVariantsJobData): Promise<void> {
     const client = await this.getClientForChannel(channelToken);
     const channel = await this.channelService.getChannelFromToken(channelToken);
-    const batches = this.getBatches(variants, 30);
+    const batches = this.getBatches(variants, 15);
     for (const batch of batches) {
       for (const variant of batch) {
         const existing = await client.findProductBySku(variant.sku);
