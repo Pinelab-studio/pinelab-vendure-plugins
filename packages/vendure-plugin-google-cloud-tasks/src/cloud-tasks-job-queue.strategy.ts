@@ -43,7 +43,9 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       },
     };
     const request = { parent, task };
-    await this.client.createTask(request, { maxRetries: cloudTaskMessage.maxRetries });
+    await this.client.createTask(request, {
+      maxRetries: cloudTaskMessage.maxRetries,
+    });
     Logger.debug(
       `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
       CloudTasksPlugin.loggerCtx
