@@ -60,15 +60,25 @@ When you save the credentials, the plugin will make sure the configured vendureH
 stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
 old webhook via GoedGepickt.
 
-### Cron sync via endpoint
+## Event based syncs
 
-Full sync can also be called via endpoint `/goedgepickt/full-sync/<webhook-secret>/`. You can use this to periodically
-run the full sync. The endpoint does a sync for all channels with Goedgepickt plugin enabled.
+Stocklevels in Vendure will be updated by incoming webhook events from GoedGepickt.
+
+Vendure variants will be pushed to GoedGepickt on product variant creation events. Name, price and image updates are
+only done by full sync.
+
+## Full sync
+
+Full sync:
 
 1. Pushes all products in Vendure to GoedGepickt. Products are matched by SKU.
 2. Pulls stocklevels from GoedGepickt and updates in Vendure.
 
-This endpoint pushes a job to the worker, so receiving a status 200 doesn't necessarily mean the sync succeeded.
+Full sync creates jobs with batches of products for both stocklevel updates and product pushes. GoedGepickt has rate
+limit, so some jobs might fail and should be retried with exponential backoff for the sync to succeed.
+
+Full sync can be run manually via the Admin ui or via a GET request to endpoint`/goedgepickt/fullsync/<webhook-secret>/`
+. Full sync can be resource heavy, so use with care.
 
 ## Pickup points / drop off points
 

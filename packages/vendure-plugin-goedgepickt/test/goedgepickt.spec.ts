@@ -8,10 +8,12 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import {
   DefaultLogger,
+  LanguageCode,
   LogLevel,
   mergeConfig,
   Order,
   OrderService,
+  ProductService,
   ProductVariant,
   ProductVariantService,
   ShippingMethodService,
@@ -41,7 +43,6 @@ import { getOrder } from '../../test/src/admin-utils';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import gql from 'graphql-tag';
-import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 
 jest.setTimeout(20000);
 
@@ -79,6 +80,13 @@ describe('Goedgepickt plugin', function () {
       message: 'Order created',
       orderUuid: 'testUuid',
     });
+  // Find by SKU
+  nock(apiUrl)
+    .persist(true)
+    .get(
+      '/api/v1/products?searchAttribute=sku&searchDelimiter=%3D&searchValue=sku123'
+    )
+    .reply(200, { items: [] });
   // Get webshops
   nock(apiUrl)
     .persist(true)
@@ -277,6 +285,38 @@ describe('Goedgepickt plugin', function () {
       .webhook('e2e-default-channel', body, signature);
     const updatedVariant = await findVariantBySku('L2201308');
     expect(updatedVariant.stockOnHand).toBe(123);
+  });
+
+  it('Pushes product on product creation', async () => {
+    const ctx = await server.app
+      .get(GoedgepicktService)
+      .getCtxForChannel('e2e-default-channel');
+    await server.app.get(ProductService).create(ctx, {
+      translations: [
+        {
+          languageCode: LanguageCode.en,
+          name: 'test',
+          slug: 'test',
+          description: '',
+        },
+      ],
+    });
+    await server.app.get(ProductVariantService).create(ctx, [
+      {
+        productId: 2,
+        price: 1200,
+        sku: 'sku123',
+        translations: [
+          {
+            languageCode: LanguageCode.en,
+            name: 'test variant',
+          },
+        ],
+      },
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
+    const payload = pushProductsPayloads.find((p) => p.sku === 'sku123');
+    expect(payload).toBeDefined();
   });
 
   it.skip('Should compile admin', async () => {

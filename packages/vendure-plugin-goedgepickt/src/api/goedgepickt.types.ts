@@ -11,6 +11,7 @@ export interface GoedgepicktPluginConfig {
 }
 
 export interface ProductInput {
+  uuid?: string;
   name: string;
   sku: string;
   productId: string;
@@ -88,6 +89,7 @@ export interface OrderInput {
     city?: string;
     country?: string;
   };
+  ignoreUnknownProductWarnings?: boolean;
 }
 
 export type OrderStatus = 'on_hold' | 'open' | 'completed';
