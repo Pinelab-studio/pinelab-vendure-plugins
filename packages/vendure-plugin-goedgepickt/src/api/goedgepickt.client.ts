@@ -29,7 +29,7 @@ export interface ClientInput {
 export class GoedgepicktClient {
   private readonly headers: Record<string, string>;
 
-  constructor(public readonly config: ClientInput) {
+  constructor(private readonly config: ClientInput) {
     this.headers = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
