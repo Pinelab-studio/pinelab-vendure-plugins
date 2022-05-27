@@ -129,7 +129,7 @@ export class GoedgepicktService
             await this.handlePushByVariantsJob(data);
           }
           Logger.info(
-            `Successfully process job ${data.action} (${id}) for channel ${data.channelToken}`
+            `Successfully processed job ${data.action} (${id}) for channel ${data.channelToken}`
           );
         } catch (error) {
           Logger.warn(
@@ -441,9 +441,7 @@ export class GoedgepicktService
   }
 
   /**
-   * Creates jobs for pushing products and updating stocklevels
-   * Product pushes are 1 product per job, because we need retries
-   * Stocklevel updates are batched per 100
+   * Creates 2 types of jobs: jobs for pushing products and jobs for updating stocklevels
    */
   async createFullsyncJobs(channelToken: string) {
     const client = await this.getClientForChannel(channelToken);
@@ -459,7 +457,7 @@ export class GoedgepicktService
       );
       productInputs.push(this.mapToProductInput(variant, existing?.uuid));
     }
-    const pushBatches = this.getBatches(productInputs, 30);
+    const pushBatches = this.getBatches(productInputs, 30); // Batch of 30, so we stay under the 60 per minute limit in a single job
     for (const batch of pushBatches) {
       await this.jobQueue.add(
         {
