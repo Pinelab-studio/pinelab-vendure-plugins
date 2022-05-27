@@ -45,8 +45,7 @@ export const goedgepicktHandler = new FulfillmentHandler({
         );
         externalIds.push(ggOrder.orderUuid);
       } catch (e) {
-        Logger.error(`Failed to create order: ${e?.message}`, loggerCtx);
-        Logger.error(JSON.stringify(e), loggerCtx);
+        Logger.error(`Failed to create order: ${e}`, loggerCtx);
         throw e;
       }
     }

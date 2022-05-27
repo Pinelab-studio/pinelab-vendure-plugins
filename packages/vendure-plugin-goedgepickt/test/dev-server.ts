@@ -7,7 +7,6 @@ import {
 import {
   DefaultLogger,
   DefaultSearchPlugin,
-  InitialData,
   LogLevel,
   mergeConfig,
   ShippingMethodService,
@@ -15,8 +14,7 @@ import {
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
-import { goedgepicktHandler } from '../src';
-import { GoedgepicktPlugin } from '../src';
+import { goedgepicktHandler, GoedgepicktPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
@@ -47,11 +45,11 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [GoedgepicktPlugin.ui],
           devMode: true,
-        }),*/
+        }),
       }),
     ],
   });
