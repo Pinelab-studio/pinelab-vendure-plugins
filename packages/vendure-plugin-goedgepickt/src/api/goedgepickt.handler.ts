@@ -47,6 +47,7 @@ export const goedgepicktHandler = new FulfillmentHandler({
       } catch (e) {
         Logger.error(`Failed to create order: ${e?.message}`, loggerCtx);
         Logger.error(JSON.stringify(e), loggerCtx);
+        throw e;
       }
     }
     return {

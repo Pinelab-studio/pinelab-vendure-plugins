@@ -32,16 +32,9 @@ export class GoedgepicktController {
       );
       return;
     }
-    // Push sync jobs to the worker queue
-    const configs = (await this.service.getConfigs()).filter(
-      (config) => config.enabled
-    );
-    for (const config of configs) {
-      await this.service.fullSyncQueue!.add(
-        { channelToken: config.channelToken },
-        { retries: 2 }
-      );
-      Logger.info(`Added full sync job for ${config.channelToken}`);
+    const configs = await this.service.getConfigs();
+    for (const config of configs.filter(config => config.enabled)) {
+      await this.service.createFullsyncJobs(config.channelToken)
     }
   }
 

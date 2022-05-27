@@ -49,10 +49,10 @@ export class GoedgepicktResolver {
   async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
     const channelToken = ctx.channel.token;
     const config = await this.service.getConfig(channelToken);
-    if (!config?.apiKey) {
+    if (!config?.apiKey || !config.webshopUuid) {
       throw Error(`No GoedGepickt apiKey set for channel ${channelToken}`);
     }
-    await this.service.fullSyncQueue!.add({ channelToken }, { retries: 2 });
+    await this.service.createFullsyncJobs(channelToken);
     if (this.config.setWebhook) {
       await this.service.setWebhooks(ctx.channel.token);
     }
