@@ -63,12 +63,12 @@ export class CloudTasksHandler {
     } catch (error: any) {
       if (attempts === job.retries) {
         Logger.error(
-          `Failed to handle message ${message.id} after ${attempts} attempts. Retrying... ${error}`,
+          `Failed to handle message ${message.id} after final attempt (${attempts} attempts made): ${error}`,
           CloudTasksPlugin.loggerCtx
         );
       } else {
-        Logger.error(
-          `Failed to handle message ${message.id} after final attempt (${attempts} attempts made): ${error}`,
+        Logger.warn(
+          `Failed to handle message ${message.id} after ${attempts} attempts. Retrying... ${error}`,
           CloudTasksPlugin.loggerCtx
         );
       }
