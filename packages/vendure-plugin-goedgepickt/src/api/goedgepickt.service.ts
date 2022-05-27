@@ -431,9 +431,24 @@ export class GoedgepicktService
       client.getAllProducts(),
       this.getAllVariants(channelToken)
     ]);
-    // Create product push jobs
-    await this.createPushJobs(channelToken, variants, ggProducts);
-    // Create update stocklevel jobs
+    // Create product push jobs. 30 products per job
+    const productInputs: ProductInput[] = [];
+    for (const variant of variants) {
+      const existing = ggProducts.find(
+        (ggProduct) => ggProduct.sku === variant.sku
+      );
+      productInputs.push(this.mapToProductInput(variant, existing?.uuid));
+    }
+    const pushBatches = this.getBatches(productInputs, 30);
+    for (const batch of pushBatches) {
+      await this.jobQueue.add({
+        action: "push-product",
+        channelToken,
+        products: batch
+      }, { retries: 20 });
+      Logger.info(`Created PushProducts job for ${batch.length} variants for channel ${channelToken}`, loggerCtx);
+    }
+    // Create update stocklevel jobs 100 variants per job
     const stockPerVariant: StockInput[] = [];
     for (const ggProduct of ggProducts) {
       const newStock = ggProduct.stock?.freeStock;
@@ -457,25 +472,6 @@ export class GoedgepicktService
         channelToken: channelToken
       }, { retries: 5 });
       Logger.info(`Created stocklevel update job for ${batch.length} variants`, loggerCtx);
-    }
-  }
-
-  async createPushJobs(channelToken: string, variants: VariantWithImage[], ggProducts: Product[]) {
-    const productInputs: ProductInput[] = [];
-    for (const variant of variants) {
-      const existing = ggProducts.find(
-        (ggProduct) => ggProduct.sku === variant.sku
-      );
-      productInputs.push(this.mapToProductInput(variant, existing?.uuid));
-    }
-    const pushBatches = this.getBatches(productInputs, 30);
-    for (const batch of pushBatches) {
-      await this.jobQueue.add({
-        action: "push-product",
-        channelToken,
-        products: batch
-      }, { retries: 20 });
-      Logger.info(`Created PushProducts job for ${batch.length} variants for channel ${channelToken}`, loggerCtx);
     }
   }
 
