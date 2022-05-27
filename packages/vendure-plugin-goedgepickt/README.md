@@ -64,7 +64,8 @@ old webhook via GoedGepickt.
 
 Stocklevels in Vendure will be updated by incoming webhook events from GoedGepickt.
 
-Vendure variants will be pushed to GoedGepickt on `ProductVariantEvent` events.
+Vendure variants will be pushed to GoedGepickt on product variant creation events. Name, price and image updates are
+only done by full sync.
 
 ## Full sync
 
@@ -73,10 +74,11 @@ Full sync:
 1. Pushes all products in Vendure to GoedGepickt. Products are matched by SKU.
 2. Pulls stocklevels from GoedGepickt and updates in Vendure.
 
-Full sync creates jobs with batches of products for both stocklevel updates and product pushes. GoedGepickt has rate limit, so some jobs might fail and should be retried with exponential backoff for the sync to succeed.
+Full sync creates jobs with batches of products for both stocklevel updates and product pushes. GoedGepickt has rate
+limit, so some jobs might fail and should be retried with exponential backoff for the sync to succeed.
 
-Full sync can be run manually via the Admin ui or via a GET request to endpoint`/goedgepickt/fullsync/<webhook-secret>/`. 
-Full sync can be resource heavy, so use with care.
+Full sync can be run manually via the Admin ui or via a GET request to endpoint`/goedgepickt/fullsync/<webhook-secret>/`
+. Full sync can be resource heavy, so use with care.
 
 ## Pickup points / drop off points
 
@@ -85,29 +87,29 @@ mutation, the plugin will then send the address to Goedgepickt:
 
 ```graphql
 mutation {
-    setOrderCustomFields(
-        input: {
-            customFields: {
-                pickupLocationNumber: "1234"
-                pickupLocationCarrier: "1"
-                pickupLocationName: "Local shop"
-                pickupLocationStreet: "Shopstreet"
-                pickupLocationHouseNumber: "13"
-                pickupLocationZipcode: "8888HG"
-                pickupLocationCity: "Leeuwarden"
-                pickupLocationCountry: "nl"
-            }
-        }
-    ) {
-        ... on Order {
-            id
-            code
-        }
-        ... on NoActiveOrderError {
-            errorCode
-            message
-        }
+  setOrderCustomFields(
+    input: {
+      customFields: {
+        pickupLocationNumber: "1234"
+        pickupLocationCarrier: "1"
+        pickupLocationName: "Local shop"
+        pickupLocationStreet: "Shopstreet"
+        pickupLocationHouseNumber: "13"
+        pickupLocationZipcode: "8888HG"
+        pickupLocationCity: "Leeuwarden"
+        pickupLocationCountry: "nl"
+      }
     }
+  ) {
+    ... on Order {
+      id
+      code
+    }
+    ... on NoActiveOrderError {
+      errorCode
+      message
+    }
+  }
 }
 ```
 

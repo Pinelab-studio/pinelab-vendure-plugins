@@ -89,7 +89,7 @@ export interface OrderInput {
     city?: string;
     country?: string;
   };
-  ignoreUnknownProductWarnings?: boolean
+  ignoreUnknownProductWarnings?: boolean;
 }
 
 export type OrderStatus = 'on_hold' | 'open' | 'completed';

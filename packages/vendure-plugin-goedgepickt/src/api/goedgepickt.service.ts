@@ -1,4 +1,9 @@
-import { Inject, Injectable, OnApplicationBootstrap, OnModuleInit } from "@nestjs/common";
+import {
+  Inject,
+  Injectable,
+  OnApplicationBootstrap,
+  OnModuleInit,
+} from '@nestjs/common';
 import {
   Channel,
   ChannelService,
@@ -22,9 +27,9 @@ import {
   RequestContext,
   TransactionalConnection,
   Translated,
-  translateDeep
-} from "@vendure/core";
-import { GoedgepicktClient } from "./goedgepickt.client";
+  translateDeep,
+} from '@vendure/core';
+import { GoedgepicktClient } from './goedgepickt.client';
 import {
   GoedgepicktEvent,
   GoedgepicktPluginConfig,
@@ -33,13 +38,13 @@ import {
   OrderItemInput,
   OrderStatus,
   Product,
-  ProductInput
-} from "./goedgepickt.types";
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from "../constants";
-import { GoedgepicktConfigEntity } from "./goedgepickt-config.entity";
-import { fulfillAll, transitionToDelivered } from "../../../util/src";
-import { goedgepicktHandler } from "./goedgepickt.handler";
-import { PickupPointCustomFields } from "./custom-fields";
+  ProductInput,
+} from './goedgepickt.types';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
+import { fulfillAll, transitionToDelivered } from '../../../util/src';
+import { goedgepicktHandler } from './goedgepickt.handler';
+import { PickupPointCustomFields } from './custom-fields';
 
 interface StockInput {
   variantId: string;
@@ -56,34 +61,39 @@ type VariantWithImage = {
 };
 
 interface PushProductJobData {
-  action: "push-product"
-  channelToken: string,
+  action: 'push-product';
+  channelToken: string;
   products: ProductInput[];
 }
 
 interface PushProductByVariantsJobData {
-  action: "push-product-by-variants"
-  channelToken: string,
+  action: 'push-product-by-variants';
+  channelToken: string;
   variants: ProductVariant[];
 }
 
 interface UpdateStockJobData {
-  action: "update-stock";
+  action: 'update-stock';
   channelToken: string;
   stock: StockInput[];
 }
 
 interface AutofulfillOrderJobData {
-  action: "autofulfill-order";
+  action: 'autofulfill-order';
   channelToken: string;
   orderCode: string;
 }
 
-type JobData = PushProductJobData | PushProductByVariantsJobData | UpdateStockJobData | AutofulfillOrderJobData;
+type JobData =
+  | PushProductJobData
+  | PushProductByVariantsJobData
+  | UpdateStockJobData
+  | AutofulfillOrderJobData;
 
 @Injectable()
 export class GoedgepicktService
-  implements OnApplicationBootstrap, OnModuleInit {
+  implements OnApplicationBootstrap, OnModuleInit
+{
   readonly queryLimit: number;
   // @ts-ignore
   private jobQueue!: JobQueue<JobData>;
@@ -106,19 +116,21 @@ export class GoedgepicktService
 
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
-      name: "goedgepickt-sync",
+      name: 'goedgepickt-sync',
       process: async ({ data, id }) => {
         try {
-          if (data.action === "autofulfill-order") {
+          if (data.action === 'autofulfill-order') {
             await this.autoFulfill(data.channelToken, data.orderCode);
-          } else if (data.action === "push-product") {
+          } else if (data.action === 'push-product') {
             await this.handlePushProductJob(data);
-          } else if (data.action === "update-stock") {
+          } else if (data.action === 'update-stock') {
             await this.updateStock(data.channelToken, data.stock);
-          } else if (data.action === "push-product-by-variants") {
+          } else if (data.action === 'push-product-by-variants') {
             await this.handlePushByVariantsJob(data);
           }
-          Logger.info(`Successfully process job ${data.action} (${id}) for channel ${data.channelToken}`);
+          Logger.info(
+            `Successfully process job ${data.action} (${id}) for channel ${data.channelToken}`
+          );
         } catch (error) {
           Logger.warn(
             `Failed to process job ${data.action} (${id}) for channel ${data.channelToken}: ${error.message}`,
@@ -127,30 +139,38 @@ export class GoedgepicktService
           Logger.warn(JSON.stringify(error), loggerCtx);
           throw error;
         }
-      }
+      },
     });
   }
 
   async onApplicationBootstrap(): Promise<void> {
     // Listen for Settled orders for autoFulfillment
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
-      await this.jobQueue.add({
-        action: "autofulfill-order",
-        orderCode: event.order.code,
-        channelToken: event.ctx.channel.token
-      },{ retries: 10 });
+      await this.jobQueue.add(
+        {
+          action: 'autofulfill-order',
+          orderCode: event.order.code,
+          channelToken: event.ctx.channel.token,
+        },
+        { retries: 10 }
+      );
     });
     // Listen for Variant changes
-    this.eventBus.ofType(ProductVariantEvent).subscribe(async ({ ctx, variants, type}) => {
-      if (type !== 'created') {
-        return;
-      }
-      await this.jobQueue.add({
-        action: "push-product-by-variants",
-        channelToken: ctx.channel.token,
-        variants: variants
-      }, { retries: 10 });
-    });
+    this.eventBus
+      .ofType(ProductVariantEvent)
+      .subscribe(async ({ ctx, variants, type }) => {
+        if (type !== 'created') {
+          return;
+        }
+        await this.jobQueue.add(
+          {
+            action: 'push-product-by-variants',
+            channelToken: ctx.channel.token,
+            variants: variants,
+          },
+          { retries: 10 }
+        );
+      });
   }
 
   async upsertConfig(
@@ -212,7 +232,7 @@ export class GoedgepicktService
       );
       const created = await client.createWebhook({
         webhookEvent: GoedgepicktEvent.orderStatusChanged,
-        targetUrl: webhookTarget
+        targetUrl: webhookTarget,
       });
       orderSecret = created.webhookSecret;
     } else {
@@ -222,7 +242,7 @@ export class GoedgepicktService
       Logger.info(`Creating stockWebhook because it didn't exist.`, loggerCtx);
       const created = await client.createWebhook({
         webhookEvent: GoedgepicktEvent.stockChanged,
-        targetUrl: webhookTarget
+        targetUrl: webhookTarget,
       });
       stockSecret = created.webhookSecret;
     } else {
@@ -231,7 +251,7 @@ export class GoedgepicktService
     return await this.upsertConfig({
       channelToken: channelToken,
       orderWebhookKey: orderSecret,
-      stockWebhookKey: stockSecret
+      stockWebhookKey: stockSecret,
     });
   }
 
@@ -244,7 +264,7 @@ export class GoedgepicktService
     orderItems: OrderItem[]
   ): Promise<GgOrder> {
     const ctx = await this.getCtxForChannel(channelToken);
-    await this.entityHydrator.hydrate(ctx, order, { relations: ["customer"] });
+    await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
     const mergedItems: OrderItemInput[] = [];
     // Merge same SKU's into single item with quantity
     orderItems.forEach((orderItem) => {
@@ -258,7 +278,7 @@ export class GoedgepicktService
           sku: orderItem.line.productVariant.sku,
           productName: orderItem.line.productVariant.name,
           productQuantity: 1, // OrderItems are always 1 each
-          taxRate: orderItem.taxRate
+          taxRate: orderItem.taxRate,
         });
       }
     });
@@ -288,7 +308,7 @@ export class GoedgepicktService
       orderDisplayId: order.code,
       createDate: GoedgepicktService.toLocalTime(order.createdAt)!,
       finishDate: GoedgepicktService.toLocalTime(order.orderPlacedAt),
-      orderStatus: "open",
+      orderStatus: 'open',
       orderItems: mergedItems,
       shippingFirstName: order.customer?.firstName,
       shippingLastName: order.customer?.lastName,
@@ -310,7 +330,7 @@ export class GoedgepicktService
       billingEmail: order.customer?.emailAddress,
       billingPhone: order.customer?.phoneNumber,
       paymentMethod: order.payments?.[0]?.method,
-      ignoreUnknownProductWarnings: true
+      ignoreUnknownProductWarnings: true,
     };
     const customFields = order.customFields as
       | PickupPointCustomFields
@@ -327,7 +347,7 @@ export class GoedgepicktService
         houseNumber: customFields.pickupLocationHouseNumber,
         zipcode: customFields.pickupLocationZipcode,
         city: customFields.pickupLocationCity,
-        country: customFields.pickupLocationCountry?.toUpperCase()
+        country: customFields.pickupLocationCountry?.toUpperCase(),
       };
     }
     return client.createOrder(orderInput);
@@ -350,7 +370,7 @@ export class GoedgepicktService
       );
       return;
     }
-    if (newStatus !== "completed") {
+    if (newStatus !== 'completed') {
       return Logger.info(
         `No status updates needed for order ${orderCode} for status ${newStatus}`,
         loggerCtx
@@ -358,7 +378,7 @@ export class GoedgepicktService
     }
     await transitionToDelivered(this.orderService, ctx, order, {
       code: goedgepicktHandler.code,
-      arguments: []
+      arguments: [],
     });
     Logger.info(`Updated orderstatus of ${orderCode}`, loggerCtx);
   }
@@ -373,11 +393,11 @@ export class GoedgepicktService
   ): Promise<void> {
     const ctx = await this.getCtxForChannel(channelToken);
     const { items: variants } = await this.variantService.findAll(ctx, {
-      filter: { sku: { eq: productSku } }
+      filter: { sku: { eq: productSku } },
     });
     const updatedStock: StockInput[] = variants.map((variant) => ({
       variantId: variant.id as string,
-      stock: newStock
+      stock: newStock,
     }));
     await this.updateStock(ctx.channel.token, updatedStock);
     Logger.info(
@@ -395,14 +415,14 @@ export class GoedgepicktService
       webshopUuid: config.webshopUuid,
       apiKey: config.apiKey,
       orderWebhookKey: config.orderWebhookKey,
-      stockWebhookKey: config.stockWebhookKey
+      stockWebhookKey: config.stockWebhookKey,
     });
   }
 
   getWebhookUrl(channelToken: string): string {
     let webhookTarget = this.config.vendureHost;
-    if (!webhookTarget.endsWith("/")) {
-      webhookTarget += "/";
+    if (!webhookTarget.endsWith('/')) {
+      webhookTarget += '/';
     }
     return `${webhookTarget}goedgepickt/webhook/${channelToken}`;
   }
@@ -413,10 +433,10 @@ export class GoedgepicktService
   async getCtxForChannel(channelToken: string): Promise<RequestContext> {
     const channel = await this.channelService.getChannelFromToken(channelToken);
     return new RequestContext({
-      apiType: "admin",
+      apiType: 'admin',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
-      channel
+      channel,
     });
   }
 
@@ -429,7 +449,7 @@ export class GoedgepicktService
     const client = await this.getClientForChannel(channelToken);
     const [ggProducts, variants] = await Promise.all([
       client.getAllProducts(),
-      this.getAllVariants(channelToken)
+      this.getAllVariants(channelToken),
     ]);
     // Create product push jobs. 30 products per job
     const productInputs: ProductInput[] = [];
@@ -441,12 +461,18 @@ export class GoedgepicktService
     }
     const pushBatches = this.getBatches(productInputs, 30);
     for (const batch of pushBatches) {
-      await this.jobQueue.add({
-        action: "push-product",
-        channelToken,
-        products: batch
-      }, { retries: 20 });
-      Logger.info(`Created PushProducts job for ${batch.length} variants for channel ${channelToken}`, loggerCtx);
+      await this.jobQueue.add(
+        {
+          action: 'push-product',
+          channelToken,
+          products: batch,
+        },
+        { retries: 20 }
+      );
+      Logger.info(
+        `Created PushProducts job for ${batch.length} variants for channel ${channelToken}`,
+        loggerCtx
+      );
     }
     // Create update stocklevel jobs 100 variants per job
     const stockPerVariant: StockInput[] = [];
@@ -461,24 +487,33 @@ export class GoedgepicktService
       }
       stockPerVariant.push({
         variantId: variant.id as string,
-        stock: newStock
+        stock: newStock,
       });
     }
     const stockBatches = this.getBatches(stockPerVariant, 100);
     for (const batch of stockBatches) {
-      await this.jobQueue.add({
-        action: "update-stock",
-        stock: batch,
-        channelToken: channelToken
-      }, { retries: 5 });
-      Logger.info(`Created stocklevel update job for ${batch.length} variants`, loggerCtx);
+      await this.jobQueue.add(
+        {
+          action: 'update-stock',
+          stock: batch,
+          channelToken: channelToken,
+        },
+        { retries: 5 }
+      );
+      Logger.info(
+        `Created stocklevel update job for ${batch.length} variants`,
+        loggerCtx
+      );
     }
   }
 
   /**
    * Create or update product in Goedgepickt based on given productInput
    */
-  async handlePushProductJob({ products, channelToken }: PushProductJobData): Promise<void> {
+  async handlePushProductJob({
+    products,
+    channelToken,
+  }: PushProductJobData): Promise<void> {
     const client = await this.getClientForChannel(channelToken);
     for (const product of products) {
       if (product.uuid) {
@@ -489,21 +524,29 @@ export class GoedgepicktService
         Logger.debug(`Created variant ${product.sku}`, loggerCtx);
       }
     }
-    Logger.info(`Pushed ${products.length} products to GoedGepickt for channel ${channelToken}`, loggerCtx);
+    Logger.info(
+      `Pushed ${products.length} products to GoedGepickt for channel ${channelToken}`,
+      loggerCtx
+    );
   }
 
   /**
    * Create or update products in Goedgepickt based on given Vendure variants
    * Waits for 1 minute every 30 products, because of Goedgepickts rate limit
    */
-  async handlePushByVariantsJob({ channelToken, variants }: PushProductByVariantsJobData): Promise<void> {
+  async handlePushByVariantsJob({
+    channelToken,
+    variants,
+  }: PushProductByVariantsJobData): Promise<void> {
     const client = await this.getClientForChannel(channelToken);
     const channel = await this.channelService.getChannelFromToken(channelToken);
     const batches = this.getBatches(variants, 30);
     for (const batch of batches) {
       for (const variant of batch) {
         const existing = await client.findProductBySku(variant.sku);
-        const product = this.mapToProductInput(this.setAbsoluteImage(channel, variant));
+        const product = this.mapToProductInput(
+          this.setAbsoluteImage(channel, variant)
+        );
         const uuid = existing?.[0]?.uuid;
         if (uuid) {
           await client.updateProduct(uuid, product);
@@ -513,9 +556,11 @@ export class GoedgepicktService
           Logger.debug(`Created variant ${product.sku}`, loggerCtx);
         }
       }
-      await new Promise((resolve => setTimeout(resolve, 62000)));
+      await new Promise((resolve) => setTimeout(resolve, 62000));
     }
-    Logger.info(`Pushed ${variants.length} variants to GoedGepickt for channel ${channelToken}`);
+    Logger.info(
+      `Pushed ${variants.length} variants to GoedGepickt for channel ${channelToken}`
+    );
   }
 
   private async getAllVariants(
@@ -532,19 +577,19 @@ export class GoedgepicktService
           ProductVariant,
           {
             skip,
-            take
+            take,
           },
           {
             relations: [
-              "featuredAsset",
-              "channels",
-              "product",
-              "product.featuredAsset",
-              "taxCategory"
+              'featuredAsset',
+              'channels',
+              'product',
+              'product.featuredAsset',
+              'taxCategory',
             ],
             channelId: ctx.channelId,
             where: { deletedAt: null },
-            ctx
+            ctx,
           }
         )
         .getMany();
@@ -569,10 +614,10 @@ export class GoedgepicktService
   ): VariantWithImage {
     // Resolve images as if we are shop client
     const shopCtx = new RequestContext({
-      apiType: "shop",
+      apiType: 'shop',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
-      channel
+      channel,
     });
     let imageUrl =
       variant.featuredAsset?.preview || variant.product?.featuredAsset?.preview;
@@ -589,7 +634,7 @@ export class GoedgepicktService
       sku: variant.sku,
       name: variant.name,
       price: variant.price,
-      absoluteImageUrl: imageUrl
+      absoluteImageUrl: imageUrl,
     };
   }
 
@@ -600,7 +645,7 @@ export class GoedgepicktService
     const ctx = await this.getCtxForChannel(channelToken);
     const positiveLevels = stockInput.map((input) => ({
       id: input.variantId,
-      stockOnHand: input.stock >= 0 ? input.stock : 0
+      stockOnHand: input.stock >= 0 ? input.stock : 0,
     }));
     return this.variantService.update(ctx, positiveLevels);
   }
@@ -627,7 +672,7 @@ export class GoedgepicktService
       return;
     }
     order = await this.entityHydrator.hydrate(ctx, order, {
-      relations: ["shippingLines", "shippingLines.shippingMethod"]
+      relations: ['shippingLines', 'shippingLines.shippingMethod'],
     });
     const hasGoedgepicktHandler = order.shippingLines.some(
       (shippingLine) =>
@@ -643,12 +688,15 @@ export class GoedgepicktService
     }
     await fulfillAll(ctx, this.orderService, order, {
       code: goedgepicktHandler.code,
-      arguments: []
+      arguments: [],
     });
     Logger.info(`Order ${order.code} autofulfilled`, loggerCtx);
   }
 
-  private mapToProductInput(variant: VariantWithImage, uuid?: string): ProductInput {
+  private mapToProductInput(
+    variant: VariantWithImage,
+    uuid?: string
+  ): ProductInput {
     return {
       uuid,
       name: variant.name,
@@ -657,7 +705,7 @@ export class GoedgepicktService
       stockManagement: true,
       url: `${this.config.vendureHost}/admin/catalog/products/${variant.productId};id=${variant.productId};tab=variants`,
       picture: variant.absoluteImageUrl,
-      price: (variant.price / 100).toFixed(2)
+      price: (variant.price / 100).toFixed(2),
     };
   }
 
@@ -678,7 +726,7 @@ export class GoedgepicktService
     ) as any[];
     return {
       houseNumber,
-      addition: addition.join() || undefined // .join() can result in empty string
+      addition: addition.join() || undefined, // .join() can result in empty string
     };
   }
 

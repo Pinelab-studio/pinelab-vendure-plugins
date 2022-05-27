@@ -33,8 +33,8 @@ export class GoedgepicktController {
       return;
     }
     const configs = await this.service.getConfigs();
-    for (const config of configs.filter(config => config.enabled)) {
-      await this.service.createFullsyncJobs(config.channelToken)
+    for (const config of configs.filter((config) => config.enabled)) {
+      await this.service.createFullsyncJobs(config.channelToken);
     }
   }
 

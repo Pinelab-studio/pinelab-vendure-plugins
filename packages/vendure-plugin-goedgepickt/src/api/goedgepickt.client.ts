@@ -104,7 +104,7 @@ export class GoedgepicktClient {
     const result = await this.rawRequest({
       entity: 'products',
       method: 'GET',
-      queryParams: `searchAttribute=sku&searchDelimiter=%3D&searchValue=${sku}`
+      queryParams: `searchAttribute=sku&searchDelimiter=%3D&searchValue=${sku}`,
     });
     return result.items as Product[];
   }
