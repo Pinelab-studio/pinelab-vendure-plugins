@@ -10,7 +10,7 @@
     "postinstall": "yarn husky install",
     "build": "yarn && yarn prettier:write && yarn lerna exec yarn && yarn lerna run build",
     "test": "yarn lerna run test",
-    "lerna:publish": "yarn && yarn lerna exec yarn && yarn lerna run build && yarn lerna publish --conventional-commits",
+    "lerna:publish": "yarn && yarn lerna exec yarn && yarn lerna run build && yarn lerna publish",
     "prettier:write": "prettier --write .",
     "prettier:check": "prettier --check .",
     "upgrade:vendure": "yarn lerna exec \"yarn upgrade --pattern @vendure --latest\""
