@@ -197,13 +197,7 @@ export class GoedgepicktClient {
     incomingSignature: string;
   }): void {
     if (!input.secret) {
-      Logger.warn(
-        `No secret was configured to check incoming webhooks ${JSON.stringify(
-          input.data
-        )}`,
-        loggerCtx
-      );
-      throw Error(`Invalid signature.`);
+      throw Error(`GoedGepickt plugin doesn't have a webhook secret configured`)
     }
     const computedSignature = GoedgepicktClient.computeSignature(
       input.secret,
