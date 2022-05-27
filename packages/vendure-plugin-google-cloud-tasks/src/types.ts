@@ -18,6 +18,7 @@ export interface CloudTaskMessage {
   data: unknown;
   queueName: string;
   createdAt: Date;
+  maxRetries: number;
 }
 
 export const ROUTE = 'cloud-tasks';

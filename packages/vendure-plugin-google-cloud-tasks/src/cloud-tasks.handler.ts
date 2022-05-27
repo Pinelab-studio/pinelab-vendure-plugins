@@ -40,7 +40,6 @@ export class CloudTasksHandler {
       res.sendStatus(500);
       return;
     }
-
     const attemptsHeader = req.header('x-cloudtasks-taskretrycount') ?? 0;
     const attempts = attemptsHeader ? parseInt(attemptsHeader) : 0;
     const job = new Job({
@@ -51,8 +50,8 @@ export class CloudTasksHandler {
       state: JobState.RUNNING,
       startedAt: new Date(),
       createdAt: message.createdAt,
+      retries: message.maxRetries,
     });
-
     try {
       await processFn(job);
       Logger.debug(
@@ -62,10 +61,17 @@ export class CloudTasksHandler {
       res.sendStatus(200);
       return;
     } catch (error: any) {
-      Logger.error(
-        `Failed to handle message ${message.id} after ${attempts} attempts: ${error}`,
-        CloudTasksPlugin.loggerCtx
-      );
+      if (attempts === job.retries) {
+        Logger.error(
+          `Failed to handle message ${message.id} after ${attempts} attempts. Retrying... ${error}`,
+          CloudTasksPlugin.loggerCtx
+        );
+      } else {
+        Logger.warn(
+          `Failed to handle message ${message.id} after final attempt (${attempts} attempts made): ${error}`,
+          CloudTasksPlugin.loggerCtx
+        );
+      }
       res.sendStatus(500);
       return;
     }
