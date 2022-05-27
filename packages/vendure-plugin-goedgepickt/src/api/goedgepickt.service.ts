@@ -133,10 +133,9 @@ export class GoedgepicktService
           );
         } catch (error) {
           Logger.warn(
-            `Failed to process job ${data.action} (${id}) for channel ${data.channelToken}: ${error.message}`,
+            `Failed to process job ${data.action} (${id}) for channel ${data.channelToken}: ${error}`,
             loggerCtx
           );
-          Logger.warn(JSON.stringify(error), loggerCtx);
           throw error;
         }
       },
@@ -664,7 +663,7 @@ export class GoedgepicktService
     let order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       Logger.error(
-        `No order found with code ${orderCode}. Can not autofulfilling this order.`,
+        `No order found with code ${orderCode}. Can not autofulfill this order.`,
         loggerCtx
       );
       return;

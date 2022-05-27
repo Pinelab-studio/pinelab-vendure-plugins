@@ -171,7 +171,7 @@ export class GoedgepicktClient {
     if (response.ok) {
       return json;
     }
-    Logger.error(JSON.stringify(json), loggerCtx);
+    Logger.warn(JSON.stringify(json), loggerCtx);
     throw Error(json.error || json.errorMessage || json.message);
   }
 
