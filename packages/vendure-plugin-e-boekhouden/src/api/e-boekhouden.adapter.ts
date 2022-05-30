@@ -4,7 +4,7 @@ import { EBoekhoudenConfigEntity } from './e-boekhouden-config.entity';
 import { loggerCtx } from '../constants';
 import { OrderTaxSummary } from '@vendure/admin-ui/core';
 
-const toPrice = (price: number) => (price / 100).toFixed(2);
+const toPrice = (price: number) => (Math.round(price) / 100).toFixed(2);
 
 export class EBoekhoudenAdapter {
   /**
@@ -32,11 +32,14 @@ export class EBoekhoudenAdapter {
     tax: OrderTaxSummary,
     config: EBoekhoudenConfigEntity
   ): CMutatieRegel {
-    const totalInc = tax.taxTotal + tax.taxBase;
+    const taxMultiplier = tax.taxRate / 100 + 1;
+    const totalInc = tax.taxBase + tax.taxTotal;
+    const totalEx = totalInc / taxMultiplier;
+    const taxAmount = totalInc - totalEx;
     return {
-      BedragExclBTW: toPrice(tax.taxBase),
+      BedragExclBTW: toPrice(totalEx),
       BedragInclBTW: toPrice(totalInc),
-      BedragBTW: toPrice(tax.taxTotal),
+      BedragBTW: toPrice(taxAmount),
       BTWPercentage: String(tax.taxRate),
       TegenrekeningCode: config.contraAccount,
       BTWCode: this.getTax(tax.taxRate, tax.description),
