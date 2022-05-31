@@ -9,6 +9,11 @@ Cancel and complete order buttons for easier completion and cancellation of orde
 Add the buttons you want to the AdminUiPlugin config:
 
 ```js
+import {
+  cancelOrderButton,
+  completeOrderButton,
+} from 'vendure-plugin-admin-ui-helpers';
+
 AdminUiPlugin.init({
   port: 3002,
   route: 'admin',
