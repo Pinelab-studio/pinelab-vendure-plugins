@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-admin-ui-helpers",
-  "version": "3.5.1",
+  "version": "3.6.0",
   "description": "Vendure plugin for various admin ui helpers. Cancel button, complete order button etc.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
@@ -19,7 +19,6 @@
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "jest --preset=\"ts-jest\" --passWithNoTests"
   },
-  "dependencies": {},
   "devDependencies": {
     "@types/jest": "^27.4.1",
     "@vendure/admin-ui-plugin": "1.5.2",
