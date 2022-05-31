@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.6.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.6.0...v3.6.1) (2022-05-31)
+
+### Bug Fixes
+
+- **admin-ui-helpers:** state fixes ([debaf4f](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/debaf4f9c22b8d2b34062d63adb2868c6f586274))
+
 # [3.6.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.5.4...v3.6.0) (2022-05-31)
 
 ### Features
