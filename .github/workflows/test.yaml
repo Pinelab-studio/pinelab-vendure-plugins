@@ -37,6 +37,7 @@ jobs:
             'vendure-plugin-invoices',
             'vendure-plugin-myparcel',
             'vendure-plugin-webhook',
+            'vendure-plugin-admin-ui-helpers',
           ]
     steps:
       - name: Checkout code

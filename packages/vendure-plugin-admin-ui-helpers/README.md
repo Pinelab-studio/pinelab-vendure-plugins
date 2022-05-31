@@ -2,15 +2,32 @@
 
 # Vendure Admin UI Helpers plugin
 
-Collection of admin UI helpers
+Cancel and complete order buttons for easier completion and cancellation of orders.
+
+## Installation
+
+Add the buttons you want to the AdminUiPlugin config:
+
+```js
+AdminUiPlugin.init({
+  port: 3002,
+  route: 'admin',
+  app: compileUiExtensions({
+    outputPath: path.join(__dirname, '__admin-ui'),
+    extensions: [completeOrderButton, cancelOrderButton],
+  }),
+});
+```
+
+![Buttons](./docs/buttons.jpeg)
 
 ## Complete order button
 
-Adds a 'Complete order' to the order detail overview. This moves the order to the `Deliverd` state.
+Adds a 'Complete order' to the order detail overview. This moves the order to the `Delivered` state.
 
 ## Cancel order button
 
-Adds a 'Complete order' to the order detail overview. Cancels and refunds the order.
+Adds a 'Cancel order' to the order detail overview. Cancels and refunds the order.
 
 ## Enjoying our plugins?
 
