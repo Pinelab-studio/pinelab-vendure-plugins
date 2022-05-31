@@ -73,12 +73,16 @@ export async function refund(
   dataService: DataService,
   order: OrderDetailFragment
 ): Promise<void> {
+  let lines = order.lines.map((line) => ({
+    quantity: line.quantity,
+    orderLineId: String(line.id),
+  }));
+  if (order.state === 'AddingItems') {
+    lines = [];
+  }
   const { refundOrder } = await dataService.order
     .refundOrder({
-      lines: order.lines.map((line) => ({
-        quantity: line.quantity,
-        orderLineId: String(line.id),
-      })),
+      lines,
       reason: 'Manual refund',
       paymentId: order.payments![0].id,
       adjustment: 0,

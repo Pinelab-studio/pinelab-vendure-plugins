@@ -33,6 +33,11 @@ import { RouterModule } from '@angular/router';
           if (!order) {
             return notificationService.error('Could not find order...');
           }
+          if (order.state === 'AddingItems') {
+            return notificationService.error(
+              'Active orders cannot be completed.'
+            );
+          }
           if (order.state === 'Delivered') {
             return notificationService.warning('Order is already Delivered.');
           }
