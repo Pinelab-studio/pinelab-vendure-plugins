@@ -718,52 +718,15 @@
   resolved "https://registry.yarnpkg.com/@types/zen-observable/-/zen-observable-0.8.3.tgz#781d360c282436494b32fe7d9f7f8e64b3118aa3"
   integrity sha512-fbF6oTd4sGGy0xjHPKAt+eS2CrxJ3+6gQ3FGcBoIJR2TLAyCkCyI8JqZNy+FeON0AhVgNJoUumVoZQjBFUqHkw==
 
-"@vendure/common@1.5.2", "@vendure/common@^1.5.2":
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.5.2.tgz#06efdaf538eef9dcdf0cd8be472a08843a26f5f5"
-  integrity sha512-wveQvOG/mUVZGs55R3DyYPNdlVeTx82N5POf6YOToKS+C0lMjqa8EWNIJkFY1vSR/0zXviPyhNCN1Mu/UKXCZg==
+"@vendure/common@1.6.2", "@vendure/common@^1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-1.6.2.tgz#a6ec21393651028d4208e0c2e2cd56e105794797"
+  integrity sha512-yE/e5BokcVwStXnAHkLDs22mbkyoVJFRQEM8+hX0j44rHUvfl/wTidwaE3tweUvVN3FUD4Ol8iHKD1mriFZI8g==
 
-"@vendure/core@1.5.2":
-  version "1.5.2"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.5.2.tgz#00aa7cf970caa8bfc4b957bcae07905fe6e9bc28"
-  integrity sha512-O2Mh76/Mmd0J9rbJ6kWKE+5UxoEypBTt6xjwOFK8Hm/5c6uZ+dPtthQqeSXxgqFpf8UnX3JYZfH8fRzmtJDO3w==
-  dependencies:
-    "@graphql-tools/stitch" "^7.5.3"
-    "@nestjs/common" "7.6.17"
-    "@nestjs/core" "7.6.17"
-    "@nestjs/graphql" "7.10.6"
-    "@nestjs/platform-express" "7.6.17"
-    "@nestjs/terminus" "7.2.0"
-    "@nestjs/testing" "7.6.17"
-    "@nestjs/typeorm" "7.1.5"
-    "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^1.5.2"
-    apollo-server-express "2.24.1"
-    bcrypt "^5.0.0"
-    body-parser "^1.19.0"
-    chalk "^4.1.0"
-    commander "^7.1.0"
-    cookie-session "^2.0.0-rc.1"
-    csv-parse "^4.12.0"
-    express "^4.17.1"
-    fs-extra "^10.0.0"
-    graphql "15.5.1"
-    graphql-scalars "^1.10.0"
-    graphql-tag "^2.12.4"
-    graphql-upload "^12.0.0"
-    http-proxy-middleware "^2.0.1"
-    i18next "^19.8.1"
-    i18next-express-middleware "^2.0.0"
-    i18next-fs-backend "^1.1.1"
-    i18next-icu "^1.4.2"
-    image-size "^1.0.0"
-    mime-types "^2.1.27"
-    ms "^2.1.2"
-    nanoid "^3.1.23"
-    progress "^2.0.3"
-    reflect-metadata "^0.1.13"
-    rxjs "^6.6.3"
-    typeorm "0.2.41"
+"@vendure/core@1.6.2":
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-1.6.2.tgz#fb7f9b0768817538aeb0f283bc925dcd96562356"
+  integrity sha512-NQi6mD8cX4Dp5XfFPLJw0Wc1Am3aEFOLFJQXY8xq16Auje+QfNVAUzWDWL5gqeM+YUqhDsZ/R5eYl6tkzhB5YA==
 
 "@wry/equality@^0.1.2":
   version "0.1.11"
@@ -1959,6 +1922,11 @@ graphql-extensions@^0.15.0:
     "@apollographql/apollo-tools" "^0.5.0"
     apollo-server-env "^3.1.0"
     apollo-server-types "^0.9.0"
+
+graphql-fields@^2.0.3:
+  version "2.0.3"
+  resolved "https://registry.yarnpkg.com/graphql-fields/-/graphql-fields-2.0.3.tgz#5e68dff7afbb202be4f4f40623e983b22c96ab8f"
+  integrity sha512-x3VE5lUcR4XCOxPIqaO4CE+bTK8u6gVouOdpQX9+EKHr+scqtK5Pp/l8nIGqIpN1TUlkKE6jDCCycm/WtLRAwA==
 
 graphql-scalars@^1.10.0:
   version "1.14.1"
