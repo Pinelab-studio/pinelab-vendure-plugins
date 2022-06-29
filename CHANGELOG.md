@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.8.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.7.0...v3.8.0) (2022-06-29)
+
+### Features
+
+- **e-boekhouden:** exporting tax utility ([ee5573e](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/ee5573ea65e96542e7c10d8a94f5aba069e40214))
+
 # [3.7.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.6.1...v3.7.0) (2022-06-20)
 
 ### Bug Fixes
