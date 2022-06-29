@@ -6,6 +6,24 @@ import { OrderTaxSummary } from '@vendure/admin-ui/core';
 
 const toPrice = (price: number) => (Math.round(price) / 100).toFixed(2);
 
+/**
+ * Recalculate taxes based on the taxBase+taxTotal (the totalIncVAT), because Vendure calculates taxes per orderline and
+ * EBoekhouden calculates taxes based on the total per taxRate.
+ * This can result in small rounding differences
+ * @param summary
+ */
+export const recalculateTaxFromTotalIncVAT = (summary: OrderTaxSummary) => {
+  const taxMultiplier = summary.taxRate / 100 + 1;
+  const totalIncVAT = summary.taxBase + summary.taxTotal;
+  const totalExVAT = totalIncVAT / taxMultiplier;
+  const totalTax = totalIncVAT - totalExVAT;
+  return {
+    totalIncVAT,
+    totalExVAT,
+    totalTax,
+  };
+};
+
 export class EBoekhoudenAdapter {
   /**
    * Transforms an order, together with config, to a e-Boekhouden mutation format
@@ -32,18 +50,15 @@ export class EBoekhoudenAdapter {
     tax: OrderTaxSummary,
     config: EBoekhoudenConfigEntity
   ): CMutatieRegel {
-    const taxMultiplier = tax.taxRate / 100 + 1;
-    const totalInc = tax.taxBase + tax.taxTotal;
-    const totalEx = totalInc / taxMultiplier;
-    const taxAmount = totalInc - totalEx;
+    const recalculatedTax = recalculateTaxFromTotalIncVAT(tax);
     return {
-      BedragExclBTW: toPrice(totalEx),
-      BedragInclBTW: toPrice(totalInc),
-      BedragBTW: toPrice(taxAmount),
+      BedragExclBTW: toPrice(recalculatedTax.totalExVAT),
+      BedragInclBTW: toPrice(recalculatedTax.totalIncVAT),
+      BedragBTW: toPrice(recalculatedTax.totalTax),
       BTWPercentage: String(tax.taxRate),
       TegenrekeningCode: config.contraAccount,
       BTWCode: this.getTax(tax.taxRate, tax.description),
-      BedragInvoer: toPrice(totalInc),
+      BedragInvoer: toPrice(recalculatedTax.totalIncVAT),
     };
   }
 
