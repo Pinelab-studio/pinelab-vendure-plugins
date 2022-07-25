@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.8.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.8.0...v3.8.1) (2022-07-25)
+
+### Bug Fixes
+
+- format ([e3f72e4](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/e3f72e40e188ab05428f5f46a0bae08ce16c8cc6))
+- **google-cloud-tasks:** return http 200 after max attempts to prevent retries by gcloud ([9d99b19](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/9d99b19a03c51ea93efa4b7d48cc543c50734bee))
+
 # [3.7.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.6.1...v3.7.0) (2022-06-20)
 
 ### Bug Fixes
