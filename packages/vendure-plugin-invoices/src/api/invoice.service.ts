@@ -87,13 +87,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           job.data.channelToken,
           job.data.orderCode
         ).catch(async (error) => {
-          if (job.attempts >= this.retries) {
-            Logger.error(
-              `Failed to generate invoice for ${job.data.orderCode}. This was the final attempt.`,
-              loggerCtx,
-              error
-            );
-          }
           Logger.warn(
             `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
             loggerCtx

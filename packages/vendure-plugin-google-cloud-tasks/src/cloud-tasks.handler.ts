@@ -63,17 +63,19 @@ export class CloudTasksHandler {
     } catch (error: any) {
       if (attempts === job.retries) {
         Logger.error(
-          `Failed to handle message ${message.id} after final attempt (${attempts} attempts made): ${error}`,
+          `Failed to handle message ${message.id} after final attempt (${attempts} attempts made). Marking with status 200 to prevent retries: ${error}`,
           CloudTasksPlugin.loggerCtx
         );
+        res.sendStatus(200);
+        return;
       } else {
         Logger.warn(
           `Failed to handle message ${message.id} after ${attempts} attempts. Retrying... ${error}`,
           CloudTasksPlugin.loggerCtx
         );
+        res.sendStatus(500);
+        return;
       }
-      res.sendStatus(500);
-      return;
     }
   }
 }
