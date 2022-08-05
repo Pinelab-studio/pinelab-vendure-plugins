@@ -41,6 +41,7 @@
           "myparcel",
           "webhook",
           "admin-ui-helpers",
+          "order-export",
           "all-plugins"
         ]
       ]
