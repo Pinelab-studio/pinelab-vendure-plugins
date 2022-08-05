@@ -20,20 +20,17 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
     job: Job<Data>
   ): Promise<Job<Data>> {
     const queueName = this.getQueueName(job.queueName);
-
     if (!LIVE_QUEUES.has(queueName)) {
       await this.createQueue(queueName);
     }
-
     const cloudTaskMessage: CloudTaskMessage = {
       id: `${queueName}-${Date.now()}`,
       queueName: queueName,
       data: job.data,
       createdAt: new Date(),
+      maxRetries: job.retries || 3,
     };
-
     const parent = this.getQueuePath(queueName);
-
     const task = {
       httpRequest: {
         httpMethod: 'POST' as const,
@@ -45,15 +42,14 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
         body: Buffer.from(JSON.stringify(cloudTaskMessage)).toString('base64'),
       },
     };
-
     const request = { parent, task };
-    await this.client.createTask(request);
-
+    await this.client.createTask(request, {
+      maxRetries: cloudTaskMessage.maxRetries,
+    });
     Logger.debug(
-      `Added job to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
+      `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
       CloudTasksPlugin.loggerCtx
     );
-
     return new Job({
       id: cloudTaskMessage.id,
       queueName: job.queueName,
@@ -62,6 +58,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       state: JobState.RUNNING,
       startedAt: job.startedAt,
       createdAt: job.createdAt,
+      retries: job.retries,
     });
   }
 

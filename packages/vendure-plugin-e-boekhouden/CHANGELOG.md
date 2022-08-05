@@ -1,0 +1,38 @@
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+## [3.8.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.8.0...v3.8.1) (2022-07-25)
+
+### Bug Fixes
+
+- format ([e3f72e4](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/e3f72e40e188ab05428f5f46a0bae08ce16c8cc6))
+
+# [3.8.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.7.0...v3.8.0) (2022-06-29)
+
+### Features
+
+- **e-boekhouden:** exporting tax utility ([ee5573e](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/ee5573ea65e96542e7c10d8a94f5aba069e40214))
+
+# [3.7.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.6.1...v3.7.0) (2022-06-20)
+
+### Bug Fixes
+
+- new yarn lockfiles ([bcf017a](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/bcf017a3bbf7f7581a2e02b4bcc1cc1ab18fca88))
+
+### Features
+
+- upgraded vendure to 1.6.2 ([bf04e3c](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/bf04e3c3e4e41d338622b9487bd2e7c54e7d299f))
+
+## [3.3.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.3.0...v3.3.1) (2022-05-24)
+
+### Bug Fixes
+
+- **all-plugins:** updated readmes ([3c4da0b](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/3c4da0b54712bd864ddc2336d40073169c58e052))
+
+# [3.3.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.2.0...v3.3.0) (2022-05-16)
+
+### Features
+
+- commitlint added ([def92b8](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/def92b88d7b82b8ddb6fc2c9e3a649830df07bdc))

@@ -94,20 +94,18 @@ export class EBoekhoudenService
   ): Promise<EBoekhoudenConfigEntity | undefined> {
     return this.connection
       .getRepository(EBoekhoudenConfigEntity)
-      .findOne({ channelToken });
+      .findOne({ channelToken }, { cache: 60000 });
   }
 
   async getConfigs(): Promise<EBoekhoudenConfigEntity[]> {
-    return this.connection.getRepository(EBoekhoudenConfigEntity).find();
+    return this.connection
+      .getRepository(EBoekhoudenConfigEntity)
+      .find({ cache: 60000 });
   }
 
   async pushOrder({ orderCode, channelToken }: JobData): Promise<void> {
     const config = await this.getConfig(channelToken);
-    if (!config || !config.enabled) {
-      Logger.info(
-        `Not processing order ${orderCode} for ${channelToken}, because plugin is not enabled.`,
-        loggerCtx
-      );
+    if (!config?.enabled) {
       return;
     }
     const channel = await this.channelService.getChannelFromToken(channelToken);

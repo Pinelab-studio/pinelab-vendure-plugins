@@ -7,23 +7,21 @@ import {
 import {
   DefaultLogger,
   DefaultSearchPlugin,
-  InitialData,
   LogLevel,
   mergeConfig,
-  OrderService,
   ShippingMethodService,
   TransactionalConnection,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
-import { createSettledOrder } from '../../test/src/order-utils';
-import { goedgepicktHandler } from '../src';
-import { GoedgepicktPlugin } from '../src';
+import { goedgepicktHandler, GoedgepicktPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktConfigEntity } from '../src/api/goedgepickt-config.entity';
 import localtunnel from 'localtunnel';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -34,10 +32,14 @@ import localtunnel from 'localtunnel';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
     plugins: [
       GoedgepicktPlugin.init({
         vendureHost: tunnel.url,
-        setWebhook: false,
+        endpointSecret: 'test',
+        setWebhook: true,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -51,9 +53,17 @@ import localtunnel from 'localtunnel';
       }),
     ],
   });
-  const { server } = createTestEnvironment(config);
+  const { server, shopClient } = createTestEnvironment(config);
   await server.init({
-    initialData: initialData as InitialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
 
@@ -73,14 +83,5 @@ import localtunnel from 'localtunnel';
     fulfillmentHandler: goedgepicktHandler.code,
     translations: [],
   });
-  const order = await createSettledOrder(server.app, ctx as any, 1);
-  /*  const fulfillment = (await server.app
-    .get(OrderService)
-    .createFulfillment(ctx, {
-      handler: { code: goedgepicktHandler.code, arguments: [] },
-      lines: order.lines.map((line) => ({
-        orderLineId: line.id,
-        quantity: line.quantity,
-      })),
-    })) as Fulfillment;*/
+  await createSettledOrder(shopClient, 1);
 })();

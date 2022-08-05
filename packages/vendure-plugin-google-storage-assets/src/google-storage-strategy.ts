@@ -11,9 +11,14 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   storage: Storage;
   urlPrefix = 'https://storage.googleapis.com';
   bucketName: string;
+  readonly useAssetServerForAdminUi: boolean;
 
   constructor(private config: GoogleStorageConfig) {
     this.bucketName = config.bucketName;
+    this.useAssetServerForAdminUi =
+      config.useAssetServerForAdminUi === undefined
+        ? true
+        : config.useAssetServerForAdminUi;
     if (!config.thumbnails) {
       config.thumbnails = {
         height: 300,
@@ -24,7 +29,10 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   }
 
   toAbsoluteUrl(request: Request | undefined, identifier: string): string {
-    if ((request as any)?.vendureRequestContext?._apiType === 'admin') {
+    if (
+      this.useAssetServerForAdminUi &&
+      (request as any)?.vendureRequestContext?._apiType === 'admin'
+    ) {
       // go via assetServer if admin
       return `${request!.protocol}://${request!.get(
         'host'

@@ -15,6 +15,10 @@ import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.e
 import { MyparcelConfigEntity } from './myparcel-config.entity';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MyparcelConfig } from '../myparcel.plugin';
+import {
+  MyparcelDropOffPoint,
+  MyparcelDropOffPointInput,
+} from '../generated/graphql';
 
 @Injectable()
 export class MyparcelService implements OnApplicationBootstrap {
@@ -48,18 +52,14 @@ export class MyparcelService implements OnApplicationBootstrap {
     const configs = await this.getAllConfigs();
     await Promise.all(
       configs.map(({ channelId, apiKey }) => {
-        return this.post(
-          'webhook_subscriptions',
-          {
-            webhook_subscriptions: [
-              {
-                hook: 'shipment_status_change',
-                url: webhook,
-              },
-            ],
-          },
-          apiKey
-        )
+        return this.request('webhook_subscriptions', 'POST', apiKey, {
+          webhook_subscriptions: [
+            {
+              hook: 'shipment_status_change',
+              url: webhook,
+            },
+          ],
+        })
           .then(() =>
             Logger.info(`Set webhook for ${channelId} to ${webhook}`, loggerCtx)
           )
@@ -99,6 +99,35 @@ export class MyparcelService implements OnApplicationBootstrap {
     return this.connection
       .getRepository(MyparcelConfigEntity)
       .findOne({ channelId: config.channelId });
+  }
+
+  async getDropOffPoints(
+    ctx: RequestContext,
+    input: MyparcelDropOffPointInput
+  ): Promise<MyparcelDropOffPoint[]> {
+    const config = await this.getConfig(String(ctx.channelId));
+    if (!config || !config?.apiKey) {
+      throw new MyParcelError(
+        `No apiKey found for channel ${ctx.channel.token}`
+      );
+    }
+    const searchParams = new URLSearchParams({
+      postal_code: input.postalCode,
+      limit: '10',
+    });
+    if (input.countryCode) {
+      searchParams.append('cc', input.countryCode);
+    } else if (input.carrierId) {
+      searchParams.append('carried_id', input.carrierId);
+    }
+    const path = `drop_off_points?${searchParams.toString()}`;
+    const res = await this.request(path, 'GET', config.apiKey);
+    const results = res.data.drop_off_points || [];
+    Logger.debug(
+      `Fetched ${results.length} drop off points from MyParcel for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
+    return results.slice(0, 10);
   }
 
   async getConfig(
@@ -174,7 +203,9 @@ export class MyparcelService implements OnApplicationBootstrap {
       throw new MyParcelError(`No config found for channel ${channelId}`);
     }
     const shipments = this.toShipment(orders);
-    const res = await this.post('shipments', { shipments }, config.apiKey);
+    const res = await this.request('shipments', 'POST', config.apiKey, {
+      shipments,
+    });
     const id = res.data?.ids?.[0]?.id;
     return this.getFulfillmentReference(id);
   }
@@ -211,10 +242,11 @@ export class MyparcelService implements OnApplicationBootstrap {
     return `MyParcel ${shipmentId}`;
   }
 
-  private async post(
-    path: 'shipments' | 'webhook_subscriptions',
-    body: unknown,
-    apiKey: string
+  private async request(
+    path: 'shipments' | 'webhook_subscriptions' | 'drop_off_points' | string,
+    method: 'GET' | 'POST',
+    apiKey: string,
+    body?: unknown
   ): Promise<MyparcelResponse> {
     const shipmentContentType =
       'application/vnd.shipment+json;version=1.1;charset=utf-8';
@@ -223,20 +255,29 @@ export class MyparcelService implements OnApplicationBootstrap {
       path === 'shipments' ? shipmentContentType : defaultContentType;
     const buff = Buffer.from(apiKey);
     const encodedKey = buff.toString('base64');
+    const headers = {
+      Authorization: `basic ${encodedKey}`,
+      'Content-Type': contentType,
+      'User-Agent': 'CustomApiCall/2',
+    };
     try {
-      const res = await this.client.post(
-        path,
-        {
-          data: body,
-        },
-        {
-          headers: {
-            Authorization: `basic ${encodedKey}`,
-            'Content-Type': contentType,
+      if (method === 'POST') {
+        const res = await this.client.post(
+          path,
+          {
+            data: body,
           },
-        }
-      );
-      return res.data;
+          {
+            headers,
+          }
+        );
+        return res.data;
+      } else {
+        const res = await this.client.get(path, {
+          headers,
+        });
+        return res.data;
+      }
     } catch (err) {
       if (err.response?.status >= 400 && err.response?.status < 500) {
         const errorMessage = this.getReadableError(err.response.data);
@@ -305,9 +346,7 @@ export interface WebhookSubscription {
 }
 
 export interface MyparcelResponse {
-  data: {
-    ids: { id: number }[];
-  };
+  data: any;
 }
 
 export interface MyparcelErrorResponse {

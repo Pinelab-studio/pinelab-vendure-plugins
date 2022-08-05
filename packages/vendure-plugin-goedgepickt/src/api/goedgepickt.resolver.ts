@@ -1,5 +1,5 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
+import { Allow, Ctx, RequestContext } from '@vendure/core';
 import {
   GoedgepicktConfig,
   goedgepicktPermission,
@@ -7,7 +7,7 @@ import {
 } from '../index';
 import { GoedgepicktService } from './goedgepickt.service';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { Inject } from '@nestjs/common';
 
 @Resolver()
@@ -47,28 +47,14 @@ export class GoedgepicktResolver {
   @Mutation()
   @Allow(goedgepicktPermission.Permission)
   async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
-    let errorMessage: string;
-    await this.service.pushProducts(ctx.channel.token).catch((err) => {
-      Logger.error(
-        `Failed to push products for channel ${ctx.channel.token}`,
-        loggerCtx,
-        err
-      );
-      errorMessage = 'Failed to push products. \n';
-    });
-    await this.service.pullStocklevels(ctx.channel.token).catch((err) => {
-      Logger.error(
-        `Failed to pull stocklevels for channel ${ctx.channel.token}`,
-        loggerCtx,
-        err
-      );
-      errorMessage += 'Failed to pull stocklevels.';
-    });
+    const channelToken = ctx.channel.token;
+    const config = await this.service.getConfig(channelToken);
+    if (!config?.apiKey || !config?.webshopUuid) {
+      throw Error(`No GoedGepickt apiKey set for channel ${channelToken}`);
+    }
+    await this.service.createFullsyncJobs(channelToken);
     if (this.config.setWebhook) {
       await this.service.setWebhooks(ctx.channel.token);
-    }
-    if (errorMessage!) {
-      throw Error(errorMessage);
     }
     return true;
   }

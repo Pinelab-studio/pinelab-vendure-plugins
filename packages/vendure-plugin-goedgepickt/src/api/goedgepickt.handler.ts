@@ -3,8 +3,10 @@ import {
   FulfillmentHandler,
   Injector,
   LanguageCode,
+  Logger,
 } from '@vendure/core';
 import { GoedgepicktService } from './goedgepickt.service';
+import { loggerCtx } from '../constants';
 
 let goedgepicktService: GoedgepicktService;
 let hydrator: EntityHydrator;
@@ -35,12 +37,17 @@ export const goedgepicktHandler = new FulfillmentHandler({
       const itemsPerOrder = orderItems.filter(
         (item) => item.line.order.id === order.id
       );
-      const ggOrder = await goedgepicktService.createOrder(
-        ctx.channel.token,
-        order,
-        itemsPerOrder
-      );
-      externalIds.push(ggOrder.orderUuid);
+      try {
+        const ggOrder = await goedgepicktService.createOrder(
+          ctx.channel.token,
+          order,
+          itemsPerOrder
+        );
+        externalIds.push(ggOrder.orderUuid);
+      } catch (e) {
+        Logger.error(`Failed to create order: ${e}`, loggerCtx);
+        throw e;
+      }
     }
     return {
       method: externalIds.length === 1 ? externalIds[0] : externalIds.join(','),

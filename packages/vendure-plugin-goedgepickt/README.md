@@ -18,19 +18,19 @@ Add this to your plugin in `vendure-config.ts`:
 
 ```js
 plugins: [
-   ...
-           GoedgepicktPlugin.init({
-              vendureHost: tunnel.url,
-              setWebhook: true // set webhooks in Goedgepickt or not
-           }),
-   ...
+  ...
+    GoedgepicktPlugin.init({
+      vendureHost: tunnel.url,
+      endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
+      setWebhook: true // set webhooks in Goedgepickt or not
+    }),
+  ...
 ]
 ```
 
 ### Database migration
 
-Run a database migration to add the GoedgepicktConfig entity to your database. It is used to store apiKeys and
-webshopUuid's per channel.
+Run a database migration to add the new fields and entities to your database.
 https://www.vendure.io/docs/developer-guide/migrations/
 
 ### Admin UI
@@ -39,12 +39,12 @@ Add this plugin to your Admin UI and compile.
 
 ```js
 compileUiExtensions({
-   outputPath: path.join(__dirname, '__admin-ui'),
-   extensions: [
-      ...
-              GoedgepicktPlugin.ui,
-      ...
-   ]
+  outputPath: path.join(__dirname, '__admin-ui'),
+  extensions: [
+    ...
+      GoedgepicktPlugin.ui,
+    ...
+  ]
 ```
 
 Read more about Admin UI compilation in the Vendure
@@ -60,15 +60,70 @@ When you save the credentials, the plugin will make sure the configured vendureH
 stock updates. **The plugin will never delete webhooks**, so if you ever change your url, you should manually delete the
 old webhook via GoedGepickt.
 
+## Event based syncs
+
+Stocklevels in Vendure will be updated by incoming webhook events from GoedGepickt.
+
+Vendure variants will be pushed to GoedGepickt on product variant creation events. Name, price and image updates are
+only done by full sync.
+
+## Full sync
+
+Full sync:
+
+1. Pushes all products in Vendure to GoedGepickt. Products are matched by SKU.
+2. Pulls stocklevels from GoedGepickt and updates in Vendure.
+
+Full sync creates jobs with batches of products for both stocklevel updates and product pushes. GoedGepickt has rate
+limit, so some jobs might fail and should be retried with exponential backoff for the sync to succeed.
+
+Full sync can be run manually via the Admin ui or via a GET request to endpoint`/goedgepickt/fullsync/<webhook-secret>/`
+. Full sync can be resource heavy, so use with care.
+
+## Pickup points / drop off points
+
+This plugin uses custom fields on an order as pickup location address. You can set a pickup points on an order with this
+mutation, the plugin will then send the address to Goedgepickt:
+
+```graphql
+mutation {
+  setOrderCustomFields(
+    input: {
+      customFields: {
+        pickupLocationNumber: "1234"
+        pickupLocationCarrier: "1"
+        pickupLocationName: "Local shop"
+        pickupLocationStreet: "Shopstreet"
+        pickupLocationHouseNumber: "13"
+        pickupLocationZipcode: "8888HG"
+        pickupLocationCity: "Leeuwarden"
+        pickupLocationCountry: "nl"
+      }
+    }
+  ) {
+    ... on Order {
+      id
+      code
+    }
+    ... on NoActiveOrderError {
+      errorCode
+      message
+    }
+  }
+}
+```
+
 ## How this plugin works
 
-### Full sync
+### Run full sync via Admin UI
 
 This is a manual action. Via the Admin UI you can trigger a full sync. A full sync:
 
 1. Pushes all products in Vendure to GoedGepickt. Products are matched by SKU.
 2. Pulls stocklevels from GoedGepickt and updates in Vendure.
 3. Sets/verifies webhook set on GoedGepickt account
+
+This action is synchronous, so the Admin UI will provide you feedback if the action succeeded or not.
 
 ### Order fulfillment
 
@@ -79,11 +134,18 @@ update the order status in Vendure.
 
 Stocklevels are updated in Vendure:
 
-1. On every startup all productlevels are pulled from GoedGepickt. This is done via the jobQueue.
-2. Via full sync via UI also pulls all stocklevels from GoedGepickt. This is synchronous in the mainprocess, so we can
+1. Via full sync via UI also pulls all stocklevels from GoedGepickt. This is synchronous in the mainprocess, so we can
    provide feedback to the user.
-3. Via stockUpdate per variant webhook from GoedGepickt.
+2. Via stockUpdate per variant webhook from GoedGepickt.
 
 ![UI screenshot](./docs/img.png)
 
-[![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)
+## Enjoying our plugins?
+
+Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
+
+Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
+<br/>
+<br/>
+<br/>
+[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)

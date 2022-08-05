@@ -1,15 +1,42 @@
-import { Body, Controller, Headers, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Headers,
+  Param,
+  Post,
+  Get,
+  Inject,
+} from '@nestjs/common';
 import { GoedgepicktService } from './goedgepickt.service';
 import { Logger } from '@vendure/core';
 import {
+  GoedgepicktPluginConfig,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
 } from './goedgepickt.types';
-import { loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 
 @Controller('goedgepickt')
 export class GoedgepicktController {
-  constructor(private service: GoedgepicktService) {}
+  constructor(
+    private service: GoedgepicktService,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
+  ) {}
+
+  @Get('fullsync/:secret')
+  async sync(@Param('secret') secret: string): Promise<void> {
+    if (secret !== this.config.endpointSecret) {
+      Logger.warn(
+        `Invalid incoming fullsync request with secret ${secret}`,
+        loggerCtx
+      );
+      return;
+    }
+    const configs = await this.service.getConfigs();
+    for (const config of configs.filter((config) => config.enabled)) {
+      await this.service.createFullsyncJobs(config.channelToken);
+    }
+  }
 
   @Post('webhook/:channelToken')
   async webhook(
@@ -45,7 +72,7 @@ export class GoedgepicktController {
       }
     } catch (err) {
       Logger.error(
-        `Failed to process incoming webhook for channel ${channelToken}`,
+        `Failed to process incoming webhook ${body?.event} for channel ${channelToken}`,
         loggerCtx,
         err
       );

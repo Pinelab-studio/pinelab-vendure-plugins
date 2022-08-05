@@ -8,10 +8,12 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import {
   DefaultLogger,
+  LanguageCode,
   LogLevel,
   mergeConfig,
   Order,
   OrderService,
+  ProductService,
   ProductVariant,
   ProductVariantService,
   ShippingMethodService,
@@ -38,8 +40,9 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktController } from '../src/api/goedgepickt.controller';
 import { GoedgepicktClient } from '../src/api/goedgepickt.client';
 import { getOrder } from '../../test/src/admin-utils';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import gql from 'graphql-tag';
 
 jest.setTimeout(20000);
 
@@ -67,28 +70,6 @@ describe('Goedgepickt plugin', function () {
       return true;
     })
     .reply(200, []);
-  // Get products first-time (used by FullSync)
-  nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
-    items: [],
-  });
-  // Get products second time
-  nock(apiUrl)
-    .get('/api/v1/products')
-    .query(true)
-    .reply(200, {
-      items: [
-        {
-          sku: 'L2201308',
-          stock: {
-            freeStock: 33,
-          },
-        },
-      ],
-    });
-  // Get products third-time
-  nock(apiUrl).get('/api/v1/products').query(true).reply(200, {
-    items: [],
-  });
   // Create order
   nock(apiUrl)
     .post('/api/v1/orders', (reqBody) => {
@@ -99,6 +80,13 @@ describe('Goedgepickt plugin', function () {
       message: 'Order created',
       orderUuid: 'testUuid',
     });
+  // Find by SKU
+  nock(apiUrl)
+    .persist(true)
+    .get(
+      '/api/v1/products?searchAttribute=sku&searchDelimiter=%3D&searchValue=sku123'
+    )
+    .reply(200, { items: [] });
   // Get webshops
   nock(apiUrl)
     .persist(true)
@@ -122,10 +110,11 @@ describe('Goedgepickt plugin', function () {
         adminListQueryLimit: 10000,
         port: 3105,
       },
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
+      logger: new DefaultLogger({ level: LogLevel.Info }),
       plugins: [
         GoedgepicktPlugin.init({
           vendureHost: 'https://test-host',
+          endpointSecret: 'test',
         }),
       ],
       paymentOptions: {
@@ -183,8 +172,24 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes products and updates stocklevel on FullSync', async () => {
+    nock(apiUrl).put('/api/v1/products/test-uuid').reply(200, []);
+    nock(apiUrl)
+      .get('/api/v1/products')
+      .query(true)
+      .reply(200, {
+        items: [
+          {
+            uuid: 'test-uuid',
+            sku: 'L2201308',
+            stock: {
+              freeStock: 33,
+            },
+          },
+        ],
+      });
     await adminClient.query(runGoedgepicktFullSync);
-    await expect(pushProductsPayloads.length).toBe(4);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
+    await expect(pushProductsPayloads.length).toBe(3);
     const laptopPayload = pushProductsPayloads.find(
       (p) => p.sku === 'L2201516'
     );
@@ -215,6 +220,12 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes order with autofulfill', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    await addItem(shopClient, 'T_1', 1);
+    const res = await shopClient.query(SET_CUSTOM_FIELDS);
     order = await createSettledOrder(shopClient, 1);
     await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
     const adminOrder = await getOrder(adminClient, order.id as string);
@@ -229,6 +240,16 @@ describe('Goedgepickt plugin', function () {
     await expect(createOrderPayload.shippingZipcode).toBe('8923CP');
     await expect(createOrderPayload.shippingCity).toBe('Liwwa');
     await expect(createOrderPayload.shippingCountry).toBe('NL');
+    await expect(createOrderPayload.pickupLocationData?.houseNumber).toBe(
+      '13a'
+    );
+    await expect(createOrderPayload.pickupLocationData?.city).toBe(
+      'Leeuwarden'
+    );
+    await expect(createOrderPayload.pickupLocationData?.locationNumber).toBe(
+      '1234'
+    );
+    await expect(createOrderPayload.pickupLocationData?.country).toBe('NL');
   });
 
   it('Completes order via webhook', async () => {
@@ -266,6 +287,38 @@ describe('Goedgepickt plugin', function () {
     expect(updatedVariant.stockOnHand).toBe(123);
   });
 
+  it('Pushes product on product creation', async () => {
+    const ctx = await server.app
+      .get(GoedgepicktService)
+      .getCtxForChannel('e2e-default-channel');
+    await server.app.get(ProductService).create(ctx, {
+      translations: [
+        {
+          languageCode: LanguageCode.en,
+          name: 'test',
+          slug: 'test',
+          description: '',
+        },
+      ],
+    });
+    await server.app.get(ProductVariantService).create(ctx, [
+      {
+        productId: 2,
+        price: 1200,
+        sku: 'sku123',
+        translations: [
+          {
+            languageCode: LanguageCode.en,
+            name: 'test variant',
+          },
+        ],
+      },
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
+    const payload = pushProductsPayloads.find((p) => p.sku === 'sku123');
+    expect(payload).toBeDefined();
+  });
+
   it.skip('Should compile admin', async () => {
     fs.rmSync(path.join(__dirname, '__admin-ui'), {
       recursive: true,
@@ -291,3 +344,31 @@ describe('Goedgepickt plugin', function () {
     return result.items.find((variant) => variant.sku === sku)!;
   }
 });
+
+const SET_CUSTOM_FIELDS = gql`
+  mutation {
+    setOrderCustomFields(
+      input: {
+        customFields: {
+          pickupLocationNumber: "1234"
+          pickupLocationCarrier: "1"
+          pickupLocationName: "Local shop"
+          pickupLocationStreet: "Shopstreet"
+          pickupLocationHouseNumber: "13a"
+          pickupLocationZipcode: "8888HG"
+          pickupLocationCity: "Leeuwarden"
+          pickupLocationCountry: "nl"
+        }
+      }
+    ) {
+      ... on Order {
+        id
+        code
+      }
+      ... on NoActiveOrderError {
+        errorCode
+        message
+      }
+    }
+  }
+`;

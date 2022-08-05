@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-webhook",
-  "version": "2.6.0",
+  "version": "3.8.1",
   "description": "Call webhooks on configured events from Vendure",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
@@ -23,11 +23,10 @@
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
-    "@vendure/admin-ui": "1.5.0",
-    "@vendure/admin-ui-plugin": "1.5.0",
-    "@vendure/core": "1.5.0",
-    "@vendure/testing": "1.5.0",
-    "@vendure/ui-devkit": "1.5.0",
+    "@vendure/admin-ui-plugin": "1.6.2",
+    "@vendure/core": "1.6.2",
+    "@vendure/testing": "1.6.2",
+    "@vendure/ui-devkit": "1.6.2",
     "copyfiles": "^2.4.1",
     "jest": "^27.5.1",
     "rimraf": "^3.0.2",

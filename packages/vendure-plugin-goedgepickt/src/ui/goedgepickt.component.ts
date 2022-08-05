@@ -14,7 +14,11 @@ import { GoedgepicktConfig } from './generated/graphql';
   template: `
     <div class="clr-row">
       <div class="clr-col">
-        <button class="btn btn-secondary" (click)="fullSync()">
+        <button
+          class="btn btn-secondary"
+          [disabled]="loadingSync"
+          (click)="fullSync()"
+        >
           Synchronize
         </button>
         <vdr-help-tooltip
@@ -130,6 +134,7 @@ export class GoedgepicktComponent implements OnInit {
   form: FormGroup;
   testFailed?: string;
   testResultName?: string;
+  loadingSync = false;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -202,12 +207,15 @@ export class GoedgepicktComponent implements OnInit {
 
   async fullSync(): Promise<void> {
     try {
+      this.loadingSync = true;
       await this.dataService.mutate(runGoedgepicktFullSync).toPromise();
       this.notificationService.success('common.notify-update-success', {
         entity: 'products and stocklevels',
       });
     } catch (e) {
       this.notificationService.error(e.message);
+    } finally {
+      this.loadingSync = false;
     }
   }
 

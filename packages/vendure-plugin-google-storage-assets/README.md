@@ -21,7 +21,8 @@ In the admin api, it returns the relative url, because the Admin UI needs resizi
                 thumbnails: {
                     width: 400,
                     height: 400,
-                }
+                },
+                useAssetServerForAdminUi: false
             }),
             route: 'assets',
             assetUploadDir: '/tmp/vendure/assets',
@@ -44,4 +45,12 @@ Internally this plugin uses `new Storage();` to instantiate the Storage client, 
 
 https://cloud.google.com/compute/docs/tutorials/nodejs-guide
 
-[![Pinelab.studio logo](https://pinelab.studio/img/pinelab-logo.png)](https://pinelab.studio)
+## Enjoying our plugins?
+
+Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
+
+Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
+<br/>
+<br/>
+<br/>
+[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)

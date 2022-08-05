@@ -7,16 +7,43 @@
     "vendure-packges"
   ],
   "scripts": {
+    "postinstall": "yarn husky install",
     "build": "yarn && yarn prettier:write && yarn lerna exec yarn && yarn lerna run build",
     "test": "yarn lerna run test",
-    "lerna:publish": "yarn && yarn lerna exec yarn && yarn lerna run build && yarn lerna publish",
+    "lerna:publish": "yarn && yarn lerna exec yarn && yarn lerna run build && yarn lerna publish --conventional-commits",
     "prettier:write": "prettier --write .",
     "prettier:check": "prettier --check .",
     "upgrade:vendure": "yarn lerna exec \"yarn upgrade --pattern @vendure --latest\""
   },
   "devDependencies": {
+    "@commitlint/cli": "^16.3.0",
+    "@commitlint/config-conventional": "^16.2.4",
     "husky": "^7.0.4",
     "lerna": "^4.0.0",
     "prettier": "^2.5.1"
+  },
+  "commitlint": {
+    "extends": [
+      "@commitlint/config-conventional"
+    ],
+    "rules": {
+      "scope-enum": [
+        2,
+        "always",
+        [
+          "coinbase",
+          "dutch-postalcode",
+          "e-boekhouden",
+          "goedgepickt",
+          "google-cloud-tasks",
+          "google-storage-assets",
+          "invoices",
+          "myparcel",
+          "webhook",
+          "admin-ui-helpers",
+          "all-plugins"
+        ]
+      ]
+    }
   }
 }

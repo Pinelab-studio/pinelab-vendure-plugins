@@ -19,7 +19,7 @@ interface RawRequestInput {
   pathParam?: string;
 }
 
-interface ClientInput {
+export interface ClientInput {
   apiKey: string;
   webshopUuid: string;
   orderWebhookKey?: string;
@@ -61,10 +61,12 @@ export class GoedgepicktClient {
     let page = 1;
     while (true) {
       const results = await this.getProducts(page);
-      if (!results || results.length === 0) {
+      if (results && Array.isArray(results)) {
+        products.push(...results);
+      }
+      if (!results || results.length < 100) {
         break;
       }
-      products.push(...results);
       page++;
     }
     return products;
@@ -75,8 +77,11 @@ export class GoedgepicktClient {
       entity: 'webhooks',
       method: 'GET',
     });
+    if (!items) {
+      return [];
+    }
     Logger.debug(
-      `Fetched ${items.length} webhooks from Goedgepickt`,
+      `Fetched ${items?.length} webhooks from Goedgepickt`,
       loggerCtx
     );
     return items.filter((item) => item.webshopUuid === this.config.webshopUuid);
@@ -89,9 +94,18 @@ export class GoedgepicktClient {
       payload: product,
     });
     Logger.debug(
-      `Created product ${product.productId} in Goedgepickt`,
+      `Created product ${result.items?.[0]?.uuid} in Goedgepickt`,
       loggerCtx
     );
+    return result.items as Product[];
+  }
+
+  async findProductBySku(sku: string): Promise<Product[]> {
+    const result = await this.rawRequest({
+      entity: 'products',
+      method: 'GET',
+      queryParams: `searchAttribute=sku&searchDelimiter=%3D&searchValue=${sku}`,
+    });
     return result.items as Product[];
   }
 
@@ -138,7 +152,7 @@ export class GoedgepicktClient {
   async rawRequest(input: RawRequestInput): Promise<any> {
     const queryExtension = input.queryParams ? `?${input.queryParams}` : '';
     const pathParam = input.pathParam ? `/${input.pathParam}` : '';
-    const result = await fetch(
+    const response = await fetch(
       `https://account.goedgepickt.nl/api/v1/${input.entity}${pathParam}${queryExtension}`,
       {
         method: input.method,
@@ -153,13 +167,12 @@ export class GoedgepicktClient {
         redirect: 'follow',
       }
     );
-    const json = (await result.json()) as any;
-    if (json.error || json.errorMessage || json.errors) {
-      const errorMessage = json.error ?? json.errorMessage ?? json.message; // If json.errors, then there should also be a message
-      Logger.warn(json, loggerCtx);
-      throw Error(errorMessage);
+    const json = (await response.json()) as any;
+    if (response.ok) {
+      return json;
     }
-    return json;
+    Logger.warn(JSON.stringify(json), loggerCtx);
+    throw Error(json.error || json.errorMessage || json.message);
   }
 
   validateOrderWebhookSignature(data: Object, incomingSignature: string): void {
@@ -184,11 +197,9 @@ export class GoedgepicktClient {
     incomingSignature: string;
   }): void {
     if (!input.secret) {
-      Logger.warn(
-        `No secret was configured to check incoming webhooks ${input.data}`,
-        loggerCtx
+      throw Error(
+        `GoedGepickt plugin doesn't have a webhook secret configured`
       );
-      throw Error(`Invalid signature.`);
     }
     const computedSignature = GoedgepicktClient.computeSignature(
       input.secret,

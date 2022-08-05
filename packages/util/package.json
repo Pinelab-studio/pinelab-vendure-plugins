@@ -1,11 +1,11 @@
 {
   "name": "pinelab-vendure-utils",
-  "version": "2.6.0",
+  "version": "3.7.0",
   "main": "index.ts",
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@vendure/common": "1.5.0",
-    "@vendure/core": "1.5.0"
+    "@vendure/common": "1.6.2",
+    "@vendure/core": "1.6.2"
   }
 }
