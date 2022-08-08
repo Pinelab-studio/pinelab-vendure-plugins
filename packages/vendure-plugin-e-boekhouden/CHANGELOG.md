@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.9.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.8.1...v3.9.0) (2022-08-08)
+
+### Bug Fixes
+
+- **e-boekhouden,order-export:** typo and init setup ([8aa7d6f](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/8aa7d6f8eba822b2610cc27c728c20a1305fed6d))
+
 ## [3.8.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.8.0...v3.8.1) (2022-07-25)
 
 ### Bug Fixes

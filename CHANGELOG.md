@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.9.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.8.1...v3.9.0) (2022-08-08)
+
+### Bug Fixes
+
+- **e-boekhouden,order-export:** typo and init setup ([8aa7d6f](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/8aa7d6f8eba822b2610cc27c728c20a1305fed6d))
+- **order-export:** typo and force exit jest ([0e3b1c5](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/0e3b1c5366f7061385dae1df1bc9c697f98d94cc))
+- **order-export:** yarnlock ([0127536](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/012753673e8cc797ab7f4cc781aed0600dae1bb5))
+- typo ([6294159](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/62941597a86414d48a01af8ea537a317dcf5cdb8))
+
+### Features
+
+- added order-export to test ([d708242](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/d70824220a7453bbc2a18de33ca38afbe31ecfe9))
+- node 16 for tests ([caef399](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/caef399a0fd025c4b2c30c3bddabd5d0614a301e))
+- **order-export:** finished order export plugin ([96c643b](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/96c643b728582afb4435e32d2d33eb2017cb6592))
+- upgraded to node 16 for tests ([27d3a47](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/27d3a47153b1aa462590481f4cbc514df51af419))
+
 ## [3.8.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.8.0...v3.8.1) (2022-07-25)
 
 ### Bug Fixes
