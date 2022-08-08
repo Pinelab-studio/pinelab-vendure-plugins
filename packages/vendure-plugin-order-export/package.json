@@ -1,5 +1,5 @@
 {
-  "name": "vendure-plugin-orer-export",
+  "name": "vendure-plugin-order-export",
   "version": "3.8.1",
   "description": "Vendure plugin for exporting orders to a file",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -17,7 +17,7 @@
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "jest --preset=\"ts-jest\""
+    "test": "jest --preset=\"ts-jest\" --forceExit"
   },
   "dependencies": {
     "csv-writer": "^1.6.0"
