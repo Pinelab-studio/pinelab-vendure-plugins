@@ -14,6 +14,7 @@ export interface Config {
   endpoint?: any;
   s3ForcePathStyle?: boolean;
   credentials?: any;
+  signatureVersion?: string;
 }
 
 export class S3StorageStrategy implements RemoteStorageStrategy {
