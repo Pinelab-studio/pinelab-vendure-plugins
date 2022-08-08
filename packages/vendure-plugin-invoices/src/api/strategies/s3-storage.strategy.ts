@@ -52,13 +52,13 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     invoiceNumber: number,
     channelToken: string
   ): Promise<string> {
-    const Key: string = `invoices/${channelToken}/${path.basename(
-      tmpFile
-    )}-${invoiceNumber}.pdf`;
+    const Key: string = `invoices/${channelToken}/${invoiceNumber}.pdf`;
     await this.s3!.upload({
       Bucket: this.bucket,
       Key,
       Body: await readFile(tmpFile),
+      ContentType: 'application/pdf',
+      ContentDisposition: 'inline',
     }).promise();
     return Key;
   }
