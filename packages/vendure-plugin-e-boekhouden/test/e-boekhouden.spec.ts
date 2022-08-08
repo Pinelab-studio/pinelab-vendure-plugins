@@ -26,7 +26,7 @@ import { Connection } from 'typeorm';
 
 jest.setTimeout(20000);
 
-describe('Goedgepickt plugin', function () {
+describe('E-boekhouden plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;

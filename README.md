@@ -5,6 +5,7 @@
 
 Monorepo with **free Vendure** plugins for everyone! Check out the plugins in this repository:
 
+- [Admin UI helpers](packages/vendure-plugin-admin-ui-helpers/README.md)
 - [PDF Invoices generation](packages/vendure-plugin-invoices/README.md)
 - [Google Cloud Storage for Vendure assets](packages/vendure-plugin-google-storage-assets/README.md)
 - [Google Cloud Tasks Vendure JobQueue integration](packages/vendure-plugin-google-cloud-tasks/README.md)
@@ -14,6 +15,7 @@ Monorepo with **free Vendure** plugins for everyone! Check out the plugins in th
 - [E-boekhouden - Dutch accounting software integration](packages/vendure-plugin-e-boekhouden/README.md)
 - [GoedGepickt order picking integration](packages/vendure-plugin-goedgepickt/README.md)
 - [MyParcel shipping integration](packages/vendure-plugin-myparcel/README.md)
+- [Order export plugin](packages/vendure-plugin-order-export/README.md)
 
 ## Enjoying our plugins?
 
