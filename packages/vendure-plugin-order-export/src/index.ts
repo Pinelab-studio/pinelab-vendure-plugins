@@ -1,9 +1,8 @@
 import { PermissionDefinition } from '@vendure/core';
 
-export const eBoekhoudenPermission = new PermissionDefinition({
-  name: 'eBoekhouden',
-  description: 'Allows enabling e-Boekhouden plugin',
+export const orderExportPermission = new PermissionDefinition({
+  name: 'ExportOrders',
+  description: 'Allows administrator to export orders',
 });
-export * from './ui/generated/graphql';
-export * from './e-boekhouden.plugin';
-export { recalculateTaxFromTotalIncVAT } from './api/e-boekhouden.adapter';
+export * from './order-export.plugin';
+export * from './api/export-strategy';

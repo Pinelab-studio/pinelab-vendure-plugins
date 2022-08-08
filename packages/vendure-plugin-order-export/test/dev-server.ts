@@ -1,33 +1,25 @@
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 require('dotenv').config();
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import {
   createTestEnvironment,
-  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import {
-  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
   InitialData,
   LogLevel,
   mergeConfig,
-  PaymentMethodService,
-  RequestContext,
-  TaxRateService,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import {
-  addItem,
-  addPaymentToOrder,
-  proceedToArrangingPayment,
-} from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import * as path from 'path';
+import { DefaultExportStrategy, OrderExportPlugin } from '../src';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -39,12 +31,15 @@ import * as path from 'path';
     },
     plugins: [
       DefaultSearchPlugin,
+      OrderExportPlugin.init({
+        exportStrategies: [new DefaultExportStrategy()],
+      }),
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
         app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [],
+          extensions: [OrderExportPlugin.ui],
           devMode: true,
         }),
       }),
@@ -55,7 +50,18 @@ import * as path from 'path';
   });
   const { server, shopClient } = createTestEnvironment(config);
   await server.init({
-    initialData: initialData as InitialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
 })();

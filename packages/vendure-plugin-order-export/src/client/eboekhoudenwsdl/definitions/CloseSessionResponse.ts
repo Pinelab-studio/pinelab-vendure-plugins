@@ -1,2 +1,0 @@
-/** CloseSessionResponse */
-export interface CloseSessionResponse {}

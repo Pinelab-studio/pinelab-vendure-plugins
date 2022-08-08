@@ -1,2 +1,0 @@
-/** Relatiecode */
-export interface Relatiecode {}

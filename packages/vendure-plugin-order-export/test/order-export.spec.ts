@@ -6,10 +6,12 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { DefaultLogger, LogLevel, mergeConfig, TaxRate } from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { Connection } from 'typeorm';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import gql from 'graphql-tag';
+import { OrderExportPlugin } from '../src';
 
 jest.setTimeout(20000);
 
@@ -26,7 +28,11 @@ describe('Order export plugin', function () {
         port: 3105,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [],
+      plugins: [
+        OrderExportPlugin.init({
+          exportStrategies: [],
+        }),
+      ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -44,17 +50,40 @@ describe('Order export plugin', function () {
         ],
       },
       productsCsvPath: '../test/src/products-import.csv',
-      customerCount: 2,
     });
+    await createSettledOrder(shopClient, 1);
+    await createSettledOrder(shopClient, 1);
+    await createSettledOrder(shopClient, 1);
     serverStarted = true;
-    await server.app
-      .get(Connection)
-      .getRepository(TaxRate)
-      .update({ id: 2 }, { value: 21 }); // Set europe to 21
-    await adminClient.asSuperAdmin();
   }, 60000);
 
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
+  });
+
+  it('Should fetch available strategies', async () => {
+    await adminClient.asSuperAdmin();
+    const result = await adminClient.query(
+      gql`
+        query availableOrderExportStrategies {
+          availableOrderExportStrategies
+        }
+      `
+    );
+    await expect(result.availableOrderExportStrategies.length).toBe(1);
+  });
+
+  it('Should fetch export file', async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    await adminClient.asSuperAdmin();
+    const res = await adminClient.fetch(
+      `http://localhost:3105/export-orders/export/example-export?startDate=${yesterday.toISOString()}&endDate=${tomorrow.toISOString()}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-type')).toContain('text/csv');
+    expect(res.body.pipe).toBeDefined();
   });
 });

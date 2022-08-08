@@ -1,2 +1,2 @@
-export const loggerCtx = 'EBoekhoudenPlugin';
-export const PLUGIN_INIT_OPTIONS = Symbol('EBOEKHOUDEN_PLUGIN_OPTIONS');
+export const loggerCtx = 'OrderExportPlugin';
+export const PLUGIN_INIT_OPTIONS = Symbol('ORDEREXPORT_PLUGIN_OPTIONS');

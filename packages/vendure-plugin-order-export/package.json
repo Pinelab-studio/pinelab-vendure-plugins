@@ -16,15 +16,13 @@
   "scripts": {
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "jest --preset=\"ts-jest\"",
-    "generate": "graphql-codegen --config codegen.yml"
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "test": "jest --preset=\"ts-jest\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "csv-writer": "^1.6.0"
+  },
   "devDependencies": {
-    "@graphql-codegen/cli": "^2.6.2",
-    "@graphql-codegen/typescript": "^2.4.8",
-    "@graphql-codegen/typescript-operations": "^2.3.5",
     "@types/jest": "^27.4.1",
     "@vendure/admin-ui-plugin": "1.6.2",
     "@vendure/core": "1.6.2",
