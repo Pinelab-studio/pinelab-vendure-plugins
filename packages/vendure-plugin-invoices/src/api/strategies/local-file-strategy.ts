@@ -19,7 +19,7 @@ export class LocalFileStrategy implements LocalStorageStrategy {
       await fs.mkdir(this.invoiceDir);
     }
     const fileName = path.basename(tmpFile);
-    const newPath = `${this.invoiceDir}/${invoiceNumber}-${fileName}`;
+    const newPath = `${this.invoiceDir}/${invoiceNumber}.pdf`;
     await fs.rename(tmpFile, newPath);
     return newPath;
   }
