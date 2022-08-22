@@ -45,6 +45,13 @@ plugins: [
 
 The bottom table holds an overview of already generated invoices.
 
+:warning: If you are using Docker with node:16 or higher as base, you need to add this to your Dockerfile:
+
+```shell
+# PhantomJS fix https://github.com/bazelbuild/rules_closure/issues/351
+ENV OPENSSL_CONF=/dev/null
+```
+
 ## Adding invoices to your order-confirmation
 
 Invoices are generated via the worker and are not available when order confirmations are send. What you can do is add

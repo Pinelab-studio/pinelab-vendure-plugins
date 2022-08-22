@@ -169,7 +169,7 @@ export class MyparcelService implements OnApplicationBootstrap {
       .findOne({ method: fulfillmentReference });
     if (!fulfillment) {
       return Logger.error(
-        `No fulfillment found with id ${shipmentId}`,
+        `No fulfillment found with method ${fulfillmentReference} for channel with id ${channelId}`,
         loggerCtx
       );
     }
