@@ -42,7 +42,7 @@ export class GoedgepicktController {
   async webhook(
     @Param('channelToken') channelToken: string,
     @Body() body: IncomingStockUpdateEvent | IncomingOrderStatusEvent,
-    @Headers('Signature') signature: string
+    @Headers('signature') signature: string
   ) {
     Logger.info(
       `Incoming event ${body?.event} for channel ${channelToken}`,
@@ -50,33 +50,51 @@ export class GoedgepicktController {
     );
     try {
       const client = await this.service.getClientForChannel(channelToken);
-      if (body.event === 'orderStatusChanged') {
-        client.validateOrderWebhookSignature(body, signature);
-        await this.service.updateOrderStatus(
-          channelToken,
-          body.orderNumber,
-          body.newStatus
-        );
-      } else if (body.event === 'stockUpdated') {
-        client.validateStockWebhookSignature(body, signature);
-        await this.service.processStockUpdateEvent(
-          channelToken,
-          body.productSku,
-          Number(body.newStock)
-        );
-      } else {
-        Logger.warn(
-          `Unknown incoming event: ${JSON.stringify(body)}`,
-          loggerCtx
-        );
+      switch (body.event) {
+        case 'orderStatusChanged':
+          if (!client.isOrderWebhookSignatureValid(body, signature)) {
+            return Logger.error(
+              `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
+              loggerCtx
+            );
+          }
+          await this.service.updateOrderStatus(
+            channelToken,
+            body.orderNumber,
+            body.newStatus
+          );
+          break;
+        case 'stockUpdated':
+          if (!client.isStockWebhookSignatureValid(body, signature)) {
+            return Logger.error(
+              `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
+              loggerCtx
+            );
+          }
+          await this.service.processStockUpdateEvent(
+            channelToken,
+            body.productSku,
+            Number(body.newStock)
+          );
+          break;
+        default:
+          return Logger.warn(
+            `Unknown incoming event: ${JSON.stringify(body)}`,
+            loggerCtx
+          );
       }
+      Logger.info(
+        `Successfully processed webhook with event ${body.event} for channel ${channelToken}`,
+        loggerCtx
+      );
     } catch (err) {
       Logger.error(
-        `Failed to process incoming webhook ${body?.event} for channel ${channelToken}`,
+        `Failed to process incoming webhook ${body?.event} for channel ${channelToken}: ${err?.message}`,
         loggerCtx,
         err
       );
       throw err;
     }
+    return;
   }
 }

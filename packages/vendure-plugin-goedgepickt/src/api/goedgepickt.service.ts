@@ -37,7 +37,6 @@ import {
   OrderInput,
   OrderItemInput,
   OrderStatus,
-  Product,
   ProductInput,
 } from './goedgepickt.types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
@@ -127,6 +126,8 @@ export class GoedgepicktService
             await this.updateStock(data.channelToken, data.stock);
           } else if (data.action === 'push-product-by-variants') {
             await this.handlePushByVariantsJob(data);
+          } else {
+            return Logger.error(`Invalid jobqueue action '${data}'`, loggerCtx);
           }
           Logger.info(
             `Successfully processed job ${data.action} (${id}) for channel ${data.channelToken}`
@@ -158,17 +159,24 @@ export class GoedgepicktService
     this.eventBus
       .ofType(ProductVariantEvent)
       .subscribe(async ({ ctx, variants, type }) => {
-        if (type !== 'created') {
-          return;
+        if (type === 'created' || type === 'updated') {
+          // Batch per 15 because of the Goedgepickt limit
+          const batches = this.getBatches(variants, 15);
+          for (const batch of batches) {
+            await this.jobQueue.add(
+              {
+                action: 'push-product-by-variants',
+                channelToken: ctx.channel.token,
+                variants: batch,
+              },
+              { retries: 10 }
+            );
+            Logger.info(
+              `Added ${variants.length} to 'push-product-by-variants' queue, because they were ${type}`,
+              loggerCtx
+            );
+          }
         }
-        await this.jobQueue.add(
-          {
-            action: 'push-product-by-variants',
-            channelToken: ctx.channel.token,
-            variants: variants,
-          },
-          { retries: 10 }
-        );
       });
   }
 
@@ -369,17 +377,18 @@ export class GoedgepicktService
       );
       return;
     }
-    if (newStatus !== 'completed') {
+    if (newStatus === 'completed') {
+      await transitionToDelivered(this.orderService, ctx, order, {
+        code: goedgepicktHandler.code,
+        arguments: [],
+      });
+      Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
+    } else {
       return Logger.info(
         `No status updates needed for order ${orderCode} for status ${newStatus}`,
         loggerCtx
       );
     }
-    await transitionToDelivered(this.orderService, ctx, order, {
-      code: goedgepicktHandler.code,
-      arguments: [],
-    });
-    Logger.info(`Updated orderstatus of ${orderCode}`, loggerCtx);
   }
 
   /**
@@ -537,23 +546,19 @@ export class GoedgepicktService
   }: PushProductByVariantsJobData): Promise<void> {
     const client = await this.getClientForChannel(channelToken);
     const channel = await this.channelService.getChannelFromToken(channelToken);
-    const batches = this.getBatches(variants, 15);
-    for (const batch of batches) {
-      for (const variant of batch) {
-        const existing = await client.findProductBySku(variant.sku);
-        const product = this.mapToProductInput(
-          this.setAbsoluteImage(channel, variant)
-        );
-        const uuid = existing?.[0]?.uuid;
-        if (uuid) {
-          await client.updateProduct(uuid, product);
-          Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
-        } else {
-          await client.createProduct(product);
-          Logger.debug(`Created variant ${product.sku}`, loggerCtx);
-        }
+    for (const variant of variants) {
+      const existing = await client.findProductBySku(variant.sku);
+      const product = this.mapToProductInput(
+        this.setAbsoluteImage(channel, variant)
+      );
+      const uuid = existing?.[0]?.uuid;
+      if (uuid) {
+        await client.updateProduct(uuid, product);
+        Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
+      } else {
+        await client.createProduct(product);
+        Logger.debug(`Created variant ${product.sku}`, loggerCtx);
       }
-      await new Promise((resolve) => setTimeout(resolve, 62000));
     }
     Logger.info(
       `Pushed ${variants.length} variants to GoedGepickt for channel ${channelToken}`

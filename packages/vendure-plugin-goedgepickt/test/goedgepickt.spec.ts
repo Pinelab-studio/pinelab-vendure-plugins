@@ -37,7 +37,6 @@ import {
 import fs from 'fs';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { GoedgepicktController } from '../src/api/goedgepickt.controller';
 import { GoedgepicktClient } from '../src/api/goedgepickt.client';
 import { getOrder } from '../../test/src/admin-utils';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
@@ -47,6 +46,7 @@ import gql from 'graphql-tag';
 jest.setTimeout(20000);
 
 describe('Goedgepickt plugin', function () {
+  const defaultChannelToken = 'e2e-default-channel';
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -84,7 +84,7 @@ describe('Goedgepickt plugin', function () {
   nock(apiUrl)
     .persist(true)
     .get(
-      '/api/v1/products?searchAttribute=sku&searchDelimiter=%3D&searchValue=sku123'
+      /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
     )
     .reply(200, { items: [] });
   // Get webshops
@@ -189,7 +189,7 @@ describe('Goedgepickt plugin', function () {
       });
     await adminClient.query(runGoedgepicktFullSync);
     await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
-    await expect(pushProductsPayloads.length).toBe(3);
+    await expect(pushProductsPayloads.length).toBeGreaterThan(3); // Atleast 3, but can be more because of batching
     const laptopPayload = pushProductsPayloads.find(
       (p) => p.sku === 'L2201516'
     );
@@ -208,7 +208,7 @@ describe('Goedgepickt plugin', function () {
   it('Set goedgepickt as fulfillment handler', async () => {
     const ctx = await server.app
       .get(GoedgepicktService)
-      .getCtxForChannel('e2e-default-channel');
+      .getCtxForChannel(defaultChannelToken);
     const shippingMethod = await server.app
       .get(ShippingMethodService)
       .update(ctx, {
@@ -252,6 +252,34 @@ describe('Goedgepickt plugin', function () {
     await expect(createOrderPayload.pickupLocationData?.country).toBe('NL');
   });
 
+  it('Fails webhook with invalid signature', async () => {
+    const body: IncomingOrderStatusEvent = {
+      newStatus: 'completed',
+      orderNumber: order.code,
+      event: 'orderStatusChanged',
+      orderUuid: 'doesntmatter',
+    };
+    const signature = 'wrong-signature';
+    const res = await shopClient.fetch(
+      `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          signature: signature,
+        },
+      }
+    );
+    const ctx = await server.app
+      .get(GoedgepicktService)
+      .getCtxForChannel(defaultChannelToken);
+    order = (await server.app
+      .get(OrderService)
+      .findOneByCode(ctx, order.code))!;
+    expect(res.ok).toBe(true);
+    expect(order.state).toBe('PaymentSettled');
+  });
+
   it('Completes order via webhook', async () => {
     const body: IncomingOrderStatusEvent = {
       newStatus: 'completed',
@@ -260,15 +288,23 @@ describe('Goedgepickt plugin', function () {
       orderUuid: 'doesntmatter',
     };
     const signature = GoedgepicktClient.computeSignature('test-secret', body);
-    await server.app
-      .get(GoedgepicktController)
-      .webhook('e2e-default-channel', body, signature);
+    const res = await shopClient.fetch(
+      `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          signature: signature,
+        },
+      }
+    );
     const ctx = await server.app
       .get(GoedgepicktService)
-      .getCtxForChannel('e2e-default-channel');
+      .getCtxForChannel(defaultChannelToken);
     order = (await server.app
       .get(OrderService)
       .findOneByCode(ctx, order.code))!;
+    expect(res.ok).toBe(true);
     expect(order.state).toBe('Delivered');
   });
 
@@ -280,17 +316,25 @@ describe('Goedgepickt plugin', function () {
       productUuid: 'doesntmatter',
     };
     const signature = GoedgepicktClient.computeSignature('test-secret', body);
-    await server.app
-      .get(GoedgepicktController)
-      .webhook('e2e-default-channel', body, signature);
+    const res = await shopClient.fetch(
+      `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          signature: signature,
+        },
+      }
+    );
     const updatedVariant = await findVariantBySku('L2201308');
+    expect(res.ok).toBe(true);
     expect(updatedVariant.stockOnHand).toBe(123);
   });
 
   it('Pushes product on product creation', async () => {
     const ctx = await server.app
       .get(GoedgepicktService)
-      .getCtxForChannel('e2e-default-channel');
+      .getCtxForChannel(defaultChannelToken);
     await server.app.get(ProductService).create(ctx, {
       translations: [
         {
@@ -339,7 +383,7 @@ describe('Goedgepickt plugin', function () {
   async function findVariantBySku(sku: string): Promise<ProductVariant> {
     const ctx = await server.app
       .get(GoedgepicktService)
-      .getCtxForChannel('e2e-default-channel');
+      .getCtxForChannel(defaultChannelToken);
     const result = await server.app.get(ProductVariantService).findAll(ctx);
     return result.items.find((variant) => variant.sku === sku)!;
   }

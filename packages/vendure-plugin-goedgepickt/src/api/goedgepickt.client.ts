@@ -175,27 +175,33 @@ export class GoedgepicktClient {
     throw Error(json.error || json.errorMessage || json.message);
   }
 
-  validateOrderWebhookSignature(data: Object, incomingSignature: string): void {
-    return this.validateSignature({
+  isOrderWebhookSignatureValid(
+    data: Object,
+    incomingSignature: string
+  ): boolean {
+    return this.isSignatureValid({
       data,
       secret: this.config.orderWebhookKey,
       incomingSignature,
     });
   }
 
-  validateStockWebhookSignature(data: Object, incomingSignature: string): void {
-    return this.validateSignature({
+  isStockWebhookSignatureValid(
+    data: Object,
+    incomingSignature: string
+  ): boolean {
+    return this.isSignatureValid({
       data,
       secret: this.config.stockWebhookKey,
       incomingSignature,
     });
   }
 
-  private validateSignature(input: {
+  private isSignatureValid(input: {
     data: Object;
     secret?: string;
     incomingSignature: string;
-  }): void {
+  }): boolean {
     if (!input.secret) {
       throw Error(
         `GoedGepickt plugin doesn't have a webhook secret configured`
@@ -205,13 +211,7 @@ export class GoedgepicktClient {
       input.secret,
       input.data
     );
-    if (computedSignature !== input.incomingSignature) {
-      Logger.warn(
-        `Incoming event has an invalid signature! ${input.data}`,
-        loggerCtx
-      );
-      throw Error(`Invalid signature.`);
-    }
+    return computedSignature === input.incomingSignature;
   }
 
   static computeSignature(secret: string, data: Object): string {

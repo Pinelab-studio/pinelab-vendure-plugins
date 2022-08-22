@@ -92,7 +92,7 @@ export interface OrderInput {
   ignoreUnknownProductWarnings?: boolean;
 }
 
-export type OrderStatus = 'on_hold' | 'open' | 'completed';
+export type OrderStatus = 'on_hold' | 'open' | 'completed' | 'cancelled';
 
 export interface OrderItemInput {
   sku: string;
