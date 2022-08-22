@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.11.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.11.0...v3.11.1) (2022-08-22)
+
+### Bug Fixes
+
+- **invoices,myparcel:** dockerfile readme update and myparcel logging ([ebe637c](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/ebe637c877fc6791480f9ff47ac11109b4c116ca))
+
 ## [3.9.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.9.0...v3.9.1) (2022-08-09)
 
 **Note:** Version bump only for package vendure-plugin-invoices
