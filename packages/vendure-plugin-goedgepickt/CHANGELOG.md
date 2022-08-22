@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.10.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.9.1...v3.10.0) (2022-08-22)
+
+### Features
+
+- **goedgepickt:** logging improvement and batching of variant jobs ([ab288e9](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/ab288e9db81a1dd1ebcaefbcdf959ee1bcb1f213))
+
 ## [3.8.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.8.0...v3.8.1) (2022-07-25)
 
 ### Bug Fixes
