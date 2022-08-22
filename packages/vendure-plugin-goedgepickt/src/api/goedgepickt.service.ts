@@ -526,7 +526,16 @@ export class GoedgepicktService
         await client.updateProduct(product.uuid, product);
         Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
       } else {
-        await client.createProduct(product);
+        await client.createProduct(product).catch((e) => {
+          if (
+            typeof e?.message === 'string' &&
+            e.message.indexOf('already exists') > -1
+          ) {
+            // Ignore, this has already been created in previous try of this batch
+          } else {
+            throw e;
+          }
+        });
         Logger.debug(`Created variant ${product.sku}`, loggerCtx);
       }
     }
