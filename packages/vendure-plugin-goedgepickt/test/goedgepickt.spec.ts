@@ -189,7 +189,7 @@ describe('Goedgepickt plugin', function () {
       });
     await adminClient.query(runGoedgepicktFullSync);
     await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
-    await expect(pushProductsPayloads.length).toBeGreaterThan(3); // Atleast 3, but can be more because of batching
+    await expect(pushProductsPayloads.length).toBeGreaterThanOrEqual(3); // After multiple restarts we have 1 extra
     const laptopPayload = pushProductsPayloads.find(
       (p) => p.sku === 'L2201516'
     );
