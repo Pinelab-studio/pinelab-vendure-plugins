@@ -53,7 +53,7 @@ export class GoedgepicktController {
       switch (body.event) {
         case 'orderStatusChanged':
           if (!client.isOrderWebhookSignatureValid(body, signature)) {
-            return Logger.error(
+            return Logger.warn(
               `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
               loggerCtx
             );
@@ -66,7 +66,7 @@ export class GoedgepicktController {
           break;
         case 'stockUpdated':
           if (!client.isStockWebhookSignatureValid(body, signature)) {
-            return Logger.error(
+            return Logger.warn(
               `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
               loggerCtx
             );
