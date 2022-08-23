@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.11.3](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.11.2...v3.11.3) (2022-08-23)
+
+### Bug Fixes
+
+- **goedgepickt:** logging improvement ([f27ec6b](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/f27ec6bc3e47825f13c8a19ba6b6b197ebb0e31a))
+
 ## [3.11.2](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.11.1...v3.11.2) (2022-08-23)
 
 ### Bug Fixes
