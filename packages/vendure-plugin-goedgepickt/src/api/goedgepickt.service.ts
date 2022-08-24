@@ -378,6 +378,9 @@ export class GoedgepicktService
       return;
     }
     if (newStatus === 'completed') {
+      if (order.state === 'Delivered') {
+        return;
+      }
       await transitionToDelivered(this.orderService, ctx, order, {
         code: goedgepicktHandler.code,
         arguments: [],
@@ -484,7 +487,7 @@ export class GoedgepicktService
     const stockPerVariant: StockInput[] = [];
     for (const ggProduct of ggProducts) {
       const newStock = ggProduct.stock?.freeStock;
-      if (!newStock) {
+      if (newStock === undefined || newStock === null) {
         continue; // Not updating if no stock from GG
       }
       const variant = variants.find((v) => v.sku === ggProduct.sku);
