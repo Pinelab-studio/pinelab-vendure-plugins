@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.11.4](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.11.3...v3.11.4) (2022-08-24)
+
+### Bug Fixes
+
+- **goedgepickt:** also sync 0 stock ([1905463](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/1905463de9d964effdbe7c329ac83f259c9d4f75))
+
 ## [3.8.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.8.0...v3.8.1) (2022-07-25)
 
 ### Bug Fixes
