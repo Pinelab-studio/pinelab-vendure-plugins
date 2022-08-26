@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.11.5](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.11.4...v3.11.5) (2022-08-26)
+
+### Bug Fixes
+
+- **google-cloud-tasks:** added beforeListen true for bodyparser limit to have effect ([e0b1c28](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/e0b1c28d9ffced3e81f4686ae06f62ef3eb01685))
+
 ## [3.11.4](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.11.3...v3.11.4) (2022-08-24)
 
 ### Bug Fixes
