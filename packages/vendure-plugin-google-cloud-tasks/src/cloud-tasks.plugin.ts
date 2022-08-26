@@ -18,6 +18,7 @@ import { CloudTaskOptions, ROUTE } from './types';
     config.apiOptions.middleware = [
       {
         route: `/${ROUTE}`,
+        beforeListen: true,
         handler: json({
           limit: CloudTasksPlugin.options.bodySizeLimit || '1mb',
         }),
