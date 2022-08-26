@@ -129,9 +129,6 @@ export class GoedgepicktService
           } else {
             return Logger.error(`Invalid jobqueue action '${data}'`, loggerCtx);
           }
-          Logger.info(
-            `Successfully processed job ${data.action} (${id}) for channel ${data.channelToken}`
-          );
         } catch (error) {
           Logger.warn(
             `Failed to process job ${data.action} (${id}) for channel ${data.channelToken}: ${error}`,
@@ -661,7 +658,12 @@ export class GoedgepicktService
       id: input.variantId,
       stockOnHand: input.stock >= 0 ? input.stock : 0,
     }));
-    return this.variantService.update(ctx, positiveLevels);
+    const variants = await this.variantService.update(ctx, positiveLevels);
+    Logger.info(
+      `Updated stock of ${positiveLevels.length} variants for channel ${channelToken}`,
+      loggerCtx
+    );
+    return variants;
   }
 
   private async autoFulfill(
