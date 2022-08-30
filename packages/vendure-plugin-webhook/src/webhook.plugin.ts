@@ -3,7 +3,10 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { WebhookPerChannelEntity } from './api/webhook-per-channel.entity';
 import { schema } from './api/schema';
-import { WebhookPluginOptions } from './api/webhook-plugin-options';
+import {
+  WebhookPluginOptions,
+  WebhookRequestFn,
+} from './api/webhook-plugin-options';
 import { WebhookResolver } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
 import { webhookPermission } from './index';
@@ -26,10 +29,16 @@ import { webhookPermission } from './index';
   },
 })
 export class WebhookPlugin {
-  static options: WebhookPluginOptions;
+  static options: WebhookPluginOptions & { requestFn: WebhookRequestFn };
 
   static init(options: WebhookPluginOptions): typeof WebhookPlugin {
-    this.options = options;
+    const defaultFn: WebhookRequestFn = (event) => ({
+      body: JSON.stringify(event),
+    });
+    this.options = {
+      ...options,
+      requestFn: options.requestFn || defaultFn,
+    };
     return WebhookPlugin;
   }
 

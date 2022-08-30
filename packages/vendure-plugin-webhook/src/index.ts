@@ -6,3 +6,4 @@ export const webhookPermission = new PermissionDefinition({
 });
 
 export * from './webhook.plugin';
+export * from './api/webhook-plugin-options';

@@ -4,6 +4,7 @@ import {
   Logger,
   ProcessContext,
   TransactionalConnection,
+  VendureEvent,
 } from '@vendure/core';
 import { WebhookPerChannelEntity } from './webhook-per-channel.entity';
 import { WebhookPlugin } from '../webhook.plugin';
@@ -76,7 +77,7 @@ export class WebhookService implements OnApplicationBootstrap {
           );
           return;
         }
-        this.addToQueue(channelId as string) // Async, because we dont want failures in Vendure if a webhook fails
+        this.addToQueue(channelId as string, event) // Async, because we dont want failures in Vendure if a webhook fails
           .catch((e) =>
             Logger.error(
               `Failed to call webhook for event ${event.constructor.name} for channel ${channelId}`,
@@ -89,35 +90,39 @@ export class WebhookService implements OnApplicationBootstrap {
   }
 
   /**
-   * Call webhook for channel. Saves up events in batches for 1 second.
+   * Call webhook for channel. Saves up events in batches if a delay is defined
    * If multiple events arise within 1s, the webhook will only be called once
    */
-  async addToQueue(channelId: string): Promise<void> {
+  async addToQueue(channelId: string, event: VendureEvent): Promise<void> {
     const webhookPerChannel = await this.getWebhook(channelId);
     if (!webhookPerChannel || !webhookPerChannel.url) {
       Logger.info(`No webhook defined for channel ${channelId}`, loggerCtx);
       return;
     }
     WebhookService.queue.add(webhookPerChannel.url);
-    setTimeout(this.doWebhook, WebhookPlugin.options.delay || 0);
+    if (WebhookPlugin.options.delay) {
+      setTimeout(() => this.doWebhook(event), WebhookPlugin.options.delay);
+    } else {
+      await this.doWebhook(event);
+    }
   }
 
-  async doWebhook(): Promise<void> {
+  async doWebhook(event: VendureEvent): Promise<void> {
     // Check if queue already handled
     if (WebhookService.queue.size === 0) {
       return;
     }
     // Copy queue, and empty original
-    const channels: string[] = [];
-    WebhookService.queue.forEach((channel) => {
-      channels.push(channel);
-    });
+    const channels = Array.from(WebhookService.queue);
     WebhookService.queue.clear();
     await Promise.all(
       channels.map(async (channel) => {
         try {
+          const request = WebhookPlugin.options.requestFn?.(event);
           await fetch(channel!, {
             method: WebhookPlugin.options.httpMethod,
+            headers: request?.headers,
+            body: request?.body,
           });
           Logger.info(
             `Successfully triggered webhook for channel ${channel}`,
