@@ -166,7 +166,7 @@ export class GoedgepicktService
                 channelToken: ctx.channel.token,
                 variants: batch,
               },
-              { retries: 10 }
+              { retries: 20 }
             );
             Logger.info(
               `Added ${variants.length} to 'push-product-by-variants' queue, because they were ${type}`,
@@ -504,7 +504,7 @@ export class GoedgepicktService
           stock: batch,
           channelToken: channelToken,
         },
-        { retries: 5 }
+        { retries: 10 }
       );
       Logger.info(
         `Created stocklevel update job for ${batch.length} variants`,
