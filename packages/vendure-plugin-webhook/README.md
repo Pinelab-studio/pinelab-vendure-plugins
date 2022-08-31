@@ -9,7 +9,7 @@ platforms when orders are placed by subscribing to OrderPlacedEvents!
 ## Plugin setup
 
 1. `yarn add vendure-plugin-webhook`
-2. Add the webhook to your plugins in your `vendure-configt.ts`:
+2. Add the WebhookPlugin to your plugins in your `vendure-configt.ts`:
 
 ```ts
 import { WebhookPlugin } from 'vendure-plugin-webhook';
