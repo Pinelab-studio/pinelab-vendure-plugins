@@ -29,16 +29,10 @@ import { webhookPermission } from './index';
   },
 })
 export class WebhookPlugin {
-  static options: WebhookPluginOptions & { requestFn: WebhookRequestFn };
+  static options: WebhookPluginOptions;
 
   static init(options: WebhookPluginOptions): typeof WebhookPlugin {
-    const defaultFn: WebhookRequestFn = (event) => ({
-      body: JSON.stringify(event),
-    });
-    this.options = {
-      ...options,
-      requestFn: options.requestFn || defaultFn,
-    };
+    this.options = options;
     return WebhookPlugin;
   }
 

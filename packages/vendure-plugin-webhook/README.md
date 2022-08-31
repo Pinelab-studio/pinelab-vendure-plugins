@@ -1,44 +1,49 @@
 # Vendure Webhook plugin
 
-Triggers a channel aware webhook based on configured events.
-Events are specified in `vendure-config` and webhooks are configured in the database via the admin UI.
+Triggers a webhook based on configured events. Events are specified in `vendure-config` and webhooks are configured per
+channel via the admin UI.
+
+Use this plugin to trigger builds when ProductEvents or CollectionEvents occur, or send notifications to external
+platforms when orders are placed by subscribing to OrderPlacedEvents!
+
+## Plugin setup
 
 1. `yarn add vendure-plugin-webhook`
+2. Add the webhook to your plugins in your `vendure-configt.ts`:
 
-## Database entity
-
-The plugin adds an entity `WebhookPerChannelEntity` to your database.
-Don't forget to run a migration OR `synchronize: true` if you like living on the edge.
-
-## Permission
-
-This plugin adds a custom permission 'SetWebhook' that is needed to set a webhook via the admin interface.
-
-## vendure-config.ts
-
-Configure which events should trigger a webhook call in `vendure-config.ts`. HttpMethod can be POST (empty body) or GET.
-
-```js
+```ts
 import { WebhookPlugin } from 'vendure-plugin-webhook';
 
 plugins: [
   WebhookPlugin.init({
     httpMethod: 'POST',
-    delay: 3000, // Optional if you want to wait for more events
+    /**
+     * Optional: 'delay' Deduplicates events within 3000ms.
+     * If 4 events were fired for the same channel within 3 seconds,
+     * only 1 webhook call will be sent
+     */
+    delay: 3000,
     events: [ProductEvent, ProductVariantChannelEvent, ProductVariantEvent],
+    /**
+     * Optional: 'requestFn' allows you to send custom headers
+     * and a custom body with your webhook call.
+     * Without this function, the webhook POST will have an empty body
+     */
+    requestFn: (event) => {
+      return {
+        headers: { test: '1234' },
+        body: JSON.stringify({ createdAt: event.createdAt }),
+      };
+    },
   }),
 ];
 ```
 
-The `delay` is optional. Some actions/updates trigger mutliple events, resulting in multiple calls to your webhook.
-If you want to prevent this, you can set the `delay`, the plugin will then wait X seconds for more events,
-before calling your webhook.
+3. The plugin adds an entity `WebhookPerChannelEntity` to your database. Don't forget to run a migration
+   OR `synchronize: true` if you like living on the edge.
+4. Add `Webhook.ui` to your admin UI extensions:
 
-## Compile admin UI
-
-Run this script once to compile the admin UI. **Run with ts-node** to compile the admin UI:
-
-```js
+```ts
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
 import { WebhookPlugin } from 'vendure-plugin-webhook';
@@ -53,20 +58,11 @@ compileUiExtensions({
   });
 ```
 
-Then, in your `vendure-config.ts` add
+For more information on admin UI extensions
+see https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step
 
-```js
-        AdminUiPlugin.init({
-            port: 3002,
-            app: {
-                path: path.join(__dirname, '__admin-ui/dist')
-            },
-        }),
-```
-
-This will add a formfield for updating the webhook for the current channel under `Settings`:"  
-![Webhook admin UI](webhook-admin-ui.jpeg)  
-For more information about using pre-compiled admin UI in production: https://www.vendure.io/docs/plugins/extending-the-admin-ui/
+5. Start the server and assign the permission `SetWebhook` to administrators who should be able to set webhooks.
+6. Go to `settings > webhook` to set the webhook url for the current channel.
 
 ## Enjoying our plugins?
 
