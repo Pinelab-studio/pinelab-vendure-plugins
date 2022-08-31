@@ -18,7 +18,7 @@ plugins: [
   WebhookPlugin.init({
     httpMethod: 'POST',
     /**
-     * Optional: 'delay' Deduplicates events within 3000ms.
+     * Optional: 'delay' waits and deduplicates events for 3000ms.
      * If 4 events were fired for the same channel within 3 seconds,
      * only 1 webhook call will be sent
      */
@@ -27,7 +27,7 @@ plugins: [
     /**
      * Optional: 'requestFn' allows you to send custom headers
      * and a custom body with your webhook call.
-     * Without this function, the webhook POST will have an empty body
+     * By default, the webhook POST will have an empty body
      */
     requestFn: (event) => {
       return {
@@ -61,7 +61,7 @@ compileUiExtensions({
 For more information on admin UI extensions
 see https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-deployment-step
 
-5. Start the server and assign the permission `SetWebhook` to administrators who should be able to set webhooks.
+5. Start the server and assign the permission `SetWebhook` to administrators who should be able to configure webhooks.
 6. Go to `settings > webhook` to set the webhook url for the current channel.
 
 ## Enjoying our plugins?
