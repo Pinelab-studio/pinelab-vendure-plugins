@@ -3,7 +3,10 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { WebhookPerChannelEntity } from './api/webhook-per-channel.entity';
 import { schema } from './api/schema';
-import { WebhookPluginOptions } from './api/webhook-plugin-options';
+import {
+  WebhookPluginOptions,
+  WebhookRequestFn,
+} from './api/webhook-plugin-options';
 import { WebhookResolver } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
 import { webhookPermission } from './index';
