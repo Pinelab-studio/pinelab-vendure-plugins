@@ -17,6 +17,16 @@ Monorepo with **free Vendure** plugins for everyone! Check out the plugins in th
 - [MyParcel shipping integration](packages/vendure-plugin-myparcel/README.md)
 - [Order export plugin](packages/vendure-plugin-order-export/README.md)
 
+## Upgrading Vendure version
+
+1. Create a new branch like `feat/vendure-1.7.1`
+2. Upgrade all Vendure dependencies by running `yarn upgrade:vendure`
+3. Create a PR to merge into `master`
+4. Merge PR after checks succeeded
+5. `git checkout master`
+6. `git pull`
+7. `yarn lerna:publish`
+
 ## Enjoying our plugins?
 
 Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
