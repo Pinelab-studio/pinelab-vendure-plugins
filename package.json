@@ -13,7 +13,8 @@
     "lerna:publish": "yarn && yarn lerna exec yarn && yarn lerna run build && yarn lerna publish --conventional-commits",
     "prettier:write": "prettier --write .",
     "prettier:check": "prettier --check .",
-    "upgrade:vendure": "yarn lerna exec \"yarn upgrade --pattern @vendure --latest\""
+    "upgrade:vendure": "yarn lerna exec \"yarn upgrade --pattern @vendure --latest\"",
+    "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
     "@commitlint/cli": "^16.3.0",
