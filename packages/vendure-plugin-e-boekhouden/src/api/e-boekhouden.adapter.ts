@@ -2,7 +2,7 @@ import { CMutatieRegel, OMut } from '../client';
 import { Logger, Order } from '@vendure/core';
 import { EBoekhoudenConfigEntity } from './e-boekhouden-config.entity';
 import { loggerCtx } from '../constants';
-import { OrderTaxSummary } from '@vendure/admin-ui/core';
+import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
 
 const toPrice = (price: number) => (Math.round(price) / 100).toFixed(2);
 
