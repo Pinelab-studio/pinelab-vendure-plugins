@@ -5,7 +5,7 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@vendure/common": "1.6.2",
-    "@vendure/core": "1.6.2"
+    "@vendure/common": "1.7.1",
+    "@vendure/core": "1.7.1"
   }
 }

@@ -9,8 +9,8 @@
     "@graphql-codegen/typescript": "2.4.8",
     "@graphql-codegen/typescript-document-nodes": "2.2.8",
     "@graphql-codegen/typescript-operations": "2.3.5",
-    "@vendure/core": "1.6.2",
-    "@vendure/testing": "1.6.2",
+    "@vendure/core": "1.7.1",
+    "@vendure/testing": "1.7.1",
     "graphql-tag": "^2.12.6"
   },
   "scripts": {
