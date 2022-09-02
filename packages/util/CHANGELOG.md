@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.13.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
+
+### Features
+
+- upgraded to venduer 1.7.1 ([1ad0371](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/1ad0371ee1be4f0d1371407b93e76809be08d851))
+
 # [3.7.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.6.1...v3.7.0) (2022-06-20)
 
 ### Bug Fixes

@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.13.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
+
+### Bug Fixes
+
+- **e-boekhouden:** new import ([1b49879](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/1b49879db6cb9891b927ff5a8bfa133027de6ebe))
+- lockfile ([a3bdfaf](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/a3bdfafe6bac27a5c96b4f6e7b12228c0b1834f8))
+
+### Features
+
+- readme ([d890328](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/d89032825544d1c71fb778534508086669d01c31))
+- remove node_modules command ([dda0f7f](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/dda0f7fe90d56a8b86631c5603386f4225966738))
+- upgraded to venduer 1.7.1 ([1ad0371](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/1ad0371ee1be4f0d1371407b93e76809be08d851))
+
 # [3.12.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.11.6...v3.12.0) (2022-08-31)
 
 ### Features
