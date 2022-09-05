@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.14.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.13.0...v3.14.0) (2022-09-05)
+
+### Features
+
+- **goedgepickt:** send shippingmethod ([d6134db](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/d6134dbed64dda92c3eaef1c62799351af438b4f))
+
 # [3.13.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
 
 ### Bug Fixes
