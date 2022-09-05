@@ -268,7 +268,9 @@ export class GoedgepicktService
     orderItems: OrderItem[]
   ): Promise<GgOrder> {
     const ctx = await this.getCtxForChannel(channelToken);
-    await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
+    await this.entityHydrator.hydrate(ctx, order, {
+      relations: ['customer', 'shippingLines.shippingMethod'],
+    });
     const mergedItems: OrderItemInput[] = [];
     // Merge same SKU's into single item with quantity
     orderItems.forEach((orderItem) => {
@@ -335,6 +337,9 @@ export class GoedgepicktService
       billingPhone: order.customer?.phoneNumber,
       paymentMethod: order.payments?.[0]?.method,
       ignoreUnknownProductWarnings: true,
+      shippingMethod: order.shippingLines
+        .map((line) => line.shippingMethod?.name)
+        .join(','),
     };
     const customFields = order.customFields as
       | PickupPointCustomFields

@@ -250,6 +250,7 @@ describe('Goedgepickt plugin', function () {
       '1234'
     );
     await expect(createOrderPayload.pickupLocationData?.country).toBe('NL');
+    await expect(createOrderPayload.shippingMethod).toBe('Standard Shipping');
   });
 
   it('Fails webhook with invalid signature', async () => {
