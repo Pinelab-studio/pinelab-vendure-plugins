@@ -291,10 +291,11 @@ export class GoedgepicktService
     const client = await this.getClientForChannel(channelToken);
     if (
       !order.shippingAddress.streetLine2 ||
-      !order.shippingAddress.streetLine1
+      !order.shippingAddress.streetLine1 ||
+      !order.orderPlacedAt
     ) {
       throw Error(
-        `Order.shippingAddress.streetLine1 and streetLine2 are needed to push order to Goedgepickt`
+        `Missing required order fields streetLine1, streetLine2 or order.orderPlacedAt. Cannot push order to GoedGepickt`
       );
     }
     const { houseNumber, addition } =
@@ -312,8 +313,7 @@ export class GoedgepicktService
     const orderInput: OrderInput = {
       orderId: order.code,
       orderDisplayId: order.code,
-      createDate: GoedgepicktService.toLocalTime(order.createdAt)!,
-      finishDate: GoedgepicktService.toLocalTime(order.orderPlacedAt),
+      createDate: GoedgepicktService.toLocalTime(order.orderPlacedAt)!,
       orderStatus: 'open',
       orderItems: mergedItems,
       shippingFirstName: order.customer?.firstName,
