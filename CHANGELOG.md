@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.14.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.14.0...v3.14.1) (2022-09-07)
+
+### Bug Fixes
+
+- **goedgepickt:** orderplacedat date instead of creationdate ([0bb3a9b](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/0bb3a9b8496317fcbc94d682cce3a865e3a88f9e))
+
 # [3.14.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.13.0...v3.14.0) (2022-09-05)
 
 ### Features
