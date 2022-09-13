@@ -83,7 +83,7 @@ describe('Order export plugin', function () {
     expect(res.code).toBeDefined();
   });
 
-  it('Creates shippingmethod 3 for everything except BE, with weight between 150 and 500 ', async () => {
+  it('Creates shippingmethod 3 for everything except BE, with weight between 150 and 200 ', async () => {
     await adminClient.asSuperAdmin();
     const res = await createShippingMethod(adminClient, {
       minWeight: 0,
