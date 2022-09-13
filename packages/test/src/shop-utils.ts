@@ -95,6 +95,7 @@ export async function createSettledOrder(
 ): Promise<Order> {
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
+  await addItem(shopClient, 'T_2', 2);
   const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
     input: {
       fullName: 'Martinho Pinelabio',
