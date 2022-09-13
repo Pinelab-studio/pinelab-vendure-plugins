@@ -30,6 +30,7 @@ query order($id: ID!) {
     code
     state
     totalWithTax
+    shippingWithTax
     fulfillments {
       id
       state

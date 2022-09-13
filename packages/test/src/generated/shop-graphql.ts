@@ -1069,8 +1069,15 @@ export type Fulfillment = Node & {
   method: Scalars['String'];
   orderItems: Array<OrderItem>;
   state: Scalars['String'];
+  summary: Array<FulfillmentLineSummary>;
   trackingCode?: Maybe<Scalars['String']>;
   updatedAt: Scalars['DateTime'];
+};
+
+export type FulfillmentLineSummary = {
+  __typename?: 'FulfillmentLineSummary';
+  orderLine: OrderLine;
+  quantity: Scalars['Int'];
 };
 
 export enum GlobalFlag {
@@ -1813,6 +1820,31 @@ export type MutationVerifyCustomerAccountArgs = {
   token: Scalars['String'];
 };
 
+export type MyparcelDropOffPoint = {
+  __typename?: 'MyparcelDropOffPoint';
+  available_days: Array<Scalars['Int']>;
+  carrier_id?: Maybe<Scalars['Int']>;
+  city: Scalars['String'];
+  cut_off_time?: Maybe<Scalars['String']>;
+  distance?: Maybe<Scalars['Int']>;
+  latitude?: Maybe<Scalars['String']>;
+  location_code: Scalars['String'];
+  location_name: Scalars['String'];
+  longitude?: Maybe<Scalars['String']>;
+  number: Scalars['String'];
+  number_suffix?: Maybe<Scalars['String']>;
+  phone?: Maybe<Scalars['String']>;
+  postal_code: Scalars['String'];
+  reference?: Maybe<Scalars['String']>;
+  street: Scalars['String'];
+};
+
+export type MyparcelDropOffPointInput = {
+  carrierId?: InputMaybe<Scalars['String']>;
+  countryCode?: InputMaybe<Scalars['String']>;
+  postalCode: Scalars['String'];
+};
+
 export type NativeAuthInput = {
   password: Scalars['String'];
   username: Scalars['String'];
@@ -1893,7 +1925,7 @@ export type Order = Node & {
   couponCodes: Array<Scalars['String']>;
   createdAt: Scalars['DateTime'];
   currencyCode: CurrencyCode;
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<OrderCustomFields>;
   customer?: Maybe<Customer>;
   discounts: Array<Discount>;
   fulfillments?: Maybe<Array<Fulfillment>>;
@@ -1958,6 +1990,18 @@ export type OrderAddress = {
   streetLine2?: Maybe<Scalars['String']>;
 };
 
+export type OrderCustomFields = {
+  __typename?: 'OrderCustomFields';
+  pickupLocationCarrier?: Maybe<Scalars['String']>;
+  pickupLocationCity?: Maybe<Scalars['String']>;
+  pickupLocationCountry?: Maybe<Scalars['String']>;
+  pickupLocationHouseNumber?: Maybe<Scalars['String']>;
+  pickupLocationName?: Maybe<Scalars['String']>;
+  pickupLocationNumber?: Maybe<Scalars['String']>;
+  pickupLocationStreet?: Maybe<Scalars['String']>;
+  pickupLocationZipcode?: Maybe<Scalars['String']>;
+};
+
 export type OrderFilterParameter = {
   active?: InputMaybe<BooleanOperators>;
   code?: InputMaybe<StringOperators>;
@@ -1965,6 +2009,14 @@ export type OrderFilterParameter = {
   currencyCode?: InputMaybe<StringOperators>;
   id?: InputMaybe<IdOperators>;
   orderPlacedAt?: InputMaybe<DateOperators>;
+  pickupLocationCarrier?: InputMaybe<StringOperators>;
+  pickupLocationCity?: InputMaybe<StringOperators>;
+  pickupLocationCountry?: InputMaybe<StringOperators>;
+  pickupLocationHouseNumber?: InputMaybe<StringOperators>;
+  pickupLocationName?: InputMaybe<StringOperators>;
+  pickupLocationNumber?: InputMaybe<StringOperators>;
+  pickupLocationStreet?: InputMaybe<StringOperators>;
+  pickupLocationZipcode?: InputMaybe<StringOperators>;
   shipping?: InputMaybe<NumberOperators>;
   shippingWithTax?: InputMaybe<NumberOperators>;
   state?: InputMaybe<StringOperators>;
@@ -2042,6 +2094,7 @@ export type OrderLine = Node & {
   discountedUnitPriceWithTax: Scalars['Int'];
   discounts: Array<Discount>;
   featuredAsset?: Maybe<Asset>;
+  fulfillments?: Maybe<Array<Fulfillment>>;
   id: Scalars['ID'];
   items: Array<OrderItem>;
   /** The total price of the line excluding tax and discounts. */
@@ -2120,6 +2173,14 @@ export type OrderSortParameter = {
   createdAt?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   orderPlacedAt?: InputMaybe<SortOrder>;
+  pickupLocationCarrier?: InputMaybe<SortOrder>;
+  pickupLocationCity?: InputMaybe<SortOrder>;
+  pickupLocationCountry?: InputMaybe<SortOrder>;
+  pickupLocationHouseNumber?: InputMaybe<SortOrder>;
+  pickupLocationName?: InputMaybe<SortOrder>;
+  pickupLocationNumber?: InputMaybe<SortOrder>;
+  pickupLocationStreet?: InputMaybe<SortOrder>;
+  pickupLocationZipcode?: InputMaybe<SortOrder>;
   shipping?: InputMaybe<SortOrder>;
   shippingWithTax?: InputMaybe<SortOrder>;
   state?: InputMaybe<SortOrder>;
@@ -2381,6 +2442,8 @@ export enum Permission {
   DeleteTaxRate = 'DeleteTaxRate',
   /** Grants permission to delete Zone */
   DeleteZone = 'DeleteZone',
+  /** Allows administrator to export orders */
+  ExportOrders = 'ExportOrders',
   /** Owner means the user owns this entity, e.g. a Customer's own Order */
   Owner = 'Owner',
   /** Public means any unauthenticated user may perform the operation */
@@ -2475,6 +2538,8 @@ export enum Permission {
   UpdateTaxRate = 'UpdateTaxRate',
   /** Grants permission to update Zone */
   UpdateZone = 'UpdateZone',
+  /** Allows enabling e-Boekhouden plugin */
+  EBoekhouden = 'eBoekhouden',
 }
 
 /** The price range where the result has more than one price */
@@ -2512,6 +2577,7 @@ export type ProductVariantListArgs = {
 
 export type ProductCustomFields = {
   __typename?: 'ProductCustomFields';
+  keywords?: Maybe<Scalars['String']>;
   metaDescription?: Maybe<Scalars['String']>;
   metaTitle?: Maybe<Scalars['String']>;
 };
@@ -2520,6 +2586,7 @@ export type ProductFilterParameter = {
   createdAt?: InputMaybe<DateOperators>;
   description?: InputMaybe<StringOperators>;
   id?: InputMaybe<IdOperators>;
+  keywords?: InputMaybe<StringOperators>;
   languageCode?: InputMaybe<StringOperators>;
   metaDescription?: InputMaybe<StringOperators>;
   metaTitle?: InputMaybe<StringOperators>;
@@ -2596,6 +2663,7 @@ export type ProductSortParameter = {
   createdAt?: InputMaybe<SortOrder>;
   description?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
+  keywords?: InputMaybe<SortOrder>;
   metaDescription?: InputMaybe<SortOrder>;
   metaTitle?: InputMaybe<SortOrder>;
   name?: InputMaybe<SortOrder>;
@@ -2617,6 +2685,7 @@ export type ProductTranslation = {
 
 export type ProductTranslationCustomFields = {
   __typename?: 'ProductTranslationCustomFields';
+  keywords?: Maybe<Scalars['String']>;
   metaDescription?: Maybe<Scalars['String']>;
   metaTitle?: Maybe<Scalars['String']>;
 };
@@ -2750,6 +2819,7 @@ export type Query = {
   facets: FacetList;
   /** Returns information about the current authenticated User */
   me?: Maybe<CurrentUser>;
+  myparcelDropOffPoints: Array<MyparcelDropOffPoint>;
   /** Returns the possible next states that the activeOrder can transition to */
   nextOrderStates: Array<Scalars['String']>;
   /**
@@ -2791,6 +2861,10 @@ export type QueryFacetArgs = {
 
 export type QueryFacetsArgs = {
   options?: InputMaybe<FacetListOptions>;
+};
+
+export type QueryMyparcelDropOffPointsArgs = {
+  input: MyparcelDropOffPointInput;
 };
 
 export type QueryOrderArgs = {
@@ -2996,6 +3070,7 @@ export type ShippingMethod = Node & {
   description: Scalars['String'];
   fulfillmentHandlerCode: Scalars['String'];
   id: Scalars['ID'];
+  languageCode: LanguageCode;
   name: Scalars['String'];
   translations: Array<ShippingMethodTranslation>;
   updatedAt: Scalars['DateTime'];
@@ -3199,8 +3274,19 @@ export type UpdateCustomerPasswordResult =
   | PasswordValidationError
   | Success;
 
+export type UpdateOrderCustomFieldsInput = {
+  pickupLocationCarrier?: InputMaybe<Scalars['String']>;
+  pickupLocationCity?: InputMaybe<Scalars['String']>;
+  pickupLocationCountry?: InputMaybe<Scalars['String']>;
+  pickupLocationHouseNumber?: InputMaybe<Scalars['String']>;
+  pickupLocationName?: InputMaybe<Scalars['String']>;
+  pickupLocationNumber?: InputMaybe<Scalars['String']>;
+  pickupLocationStreet?: InputMaybe<Scalars['String']>;
+  pickupLocationZipcode?: InputMaybe<Scalars['String']>;
+};
+
 export type UpdateOrderInput = {
-  customFields?: InputMaybe<Scalars['JSON']>;
+  customFields?: InputMaybe<UpdateOrderCustomFieldsInput>;
 };
 
 export type UpdateOrderItemsResult =
@@ -3355,7 +3441,12 @@ export type TransitionToStateMutation = {
   __typename?: 'Mutation';
   transitionOrderToState?:
     | { __typename?: 'Order' }
-    | { __typename?: 'OrderStateTransitionError'; errorCode: ErrorCode }
+    | {
+        __typename?: 'OrderStateTransitionError';
+        errorCode: ErrorCode;
+        message: string;
+        transitionError: string;
+      }
     | null;
 };
 
@@ -3376,7 +3467,13 @@ export type AddPaymentToOrderMutation = {
         errorCode: ErrorCode;
         message: string;
       }
-    | { __typename?: 'Order'; id: string; code: string }
+    | {
+        __typename?: 'Order';
+        id: string;
+        code: string;
+        state: string;
+        shippingWithTax: number;
+      }
     | {
         __typename?: 'OrderPaymentStateError';
         errorCode: ErrorCode;
@@ -3456,6 +3553,8 @@ export const TransitionToState = gql`
     transitionOrderToState(state: $state) {
       ... on OrderStateTransitionError {
         errorCode
+        message
+        transitionError
       }
     }
   }
@@ -3466,6 +3565,8 @@ export const AddPaymentToOrder = gql`
       ... on Order {
         id
         code
+        state
+        shippingWithTax
       }
       ... on ErrorResult {
         errorCode
