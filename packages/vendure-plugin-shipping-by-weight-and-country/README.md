@@ -3,6 +3,9 @@
 This plugin adds a shipping eligibility checker to Vendure that checks the total weight and the shipping country of an
 order, to verify if a shipping method is eligible for a given order.
 
+The weight of a product can be configured on the customfield `Product.weight`. You can configure the units to be in KG,
+grams or whatever unit you like.
+
 Some examples:
 
 - Create a shippingmethod for orders placed in Australia, with a total order weight between 10kg and 40kg
