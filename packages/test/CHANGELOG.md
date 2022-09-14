@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.15.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.14.1...v3.15.0) (2022-09-14)
+
+### Features
+
+- restored settleOrder ([5cd01a8](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/5cd01a8cee4df48c979cdfd19692152b46789f74))
+- **shipping:** added shipping by country and weight plugin ([10735b1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/10735b166b19f6e09445569a235636bb62f9d8ea))
+
 # [3.13.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
 
 ### Features
