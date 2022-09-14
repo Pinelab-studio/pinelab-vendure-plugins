@@ -16,7 +16,7 @@ Monorepo with **free Vendure** plugins for everyone! Check out the plugins in th
 - [GoedGepickt order picking integration](packages/vendure-plugin-goedgepickt/README.md)
 - [MyParcel shipping integration](packages/vendure-plugin-myparcel/README.md)
 - [Order export plugin](packages/vendure-plugin-order-export/README.md)
-- [Shipping by weight and country](packages/vendure-plugin-order-export/README.md)
+- [Shipping by weight and country](packages/vendure-plugin-shipping-by-weight-and-country/README.md)
 
 ## Upgrading Vendure version
 
