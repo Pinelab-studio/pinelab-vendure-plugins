@@ -43,6 +43,7 @@
           "webhook",
           "admin-ui-helpers",
           "order-export",
+          "shipping",
           "all-plugins"
         ]
       ]

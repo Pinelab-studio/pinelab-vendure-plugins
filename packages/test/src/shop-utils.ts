@@ -107,6 +107,7 @@ export async function createSettledOrder(
     },
   });
   if ((res as ErrorResult)?.errorCode) {
+    console.error(JSON.stringify(res));
     throw Error((res as ErrorResult).errorCode);
   }
   return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
