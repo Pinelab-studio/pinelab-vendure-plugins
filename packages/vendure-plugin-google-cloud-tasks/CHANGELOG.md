@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.16.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.16.0...v3.16.1) (2022-09-15)
+
+### Bug Fixes
+
+- **google-cloud-tasks:** readme ([36c9856](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/36c98568401c2c8cfd0ca882bbf59a4f4d73f5cf))
+
 # [3.16.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.15.0...v3.16.0) (2022-09-15)
 
 ### Features
