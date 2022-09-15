@@ -29,7 +29,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
         queueName: queueName,
         data: job.data,
         createdAt: new Date(),
-        maxRetries: job.retries || 3,
+        maxRetries: job.retries || this.options.defaultRetries || 3,
       };
       const parent = this.getQueuePath(queueName);
       const task = {
