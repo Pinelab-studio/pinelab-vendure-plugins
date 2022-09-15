@@ -11,6 +11,10 @@ export interface CloudTaskOptions {
    * Optional size limit to be passed to `body-parser/json`
    */
   bodySizeLimit?: string;
+  /**
+   * Default nr of retries a job should attempt if no job.retries is given
+   */
+  defaultRetries?: number;
 }
 
 export interface CloudTaskMessage {

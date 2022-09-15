@@ -38,6 +38,7 @@ describe('CloudTasks job queue e2e', () => {
       location: 'europe-west1',
       authSecret: 'some-secret',
       queueSuffix: 'plugin-test',
+      defaultRetries: 50,
     }),
     DefaultSearchPlugin
   );
@@ -90,6 +91,8 @@ describe('CloudTasks job queue e2e', () => {
     expect(mockClient.createQueue).toHaveBeenCalled();
     expect(mockClient.createTask).toHaveBeenCalled();
     expect(task.url).toBe('https://localhost/cloud-tasks/handler');
+    const body = JSON.parse(Buffer.from(task.body, 'base64').toString('utf8'));
+    expect(body.maxRetries).toBe(50);
   });
 
   it('Should fail unauthorized webhook', async () => {
