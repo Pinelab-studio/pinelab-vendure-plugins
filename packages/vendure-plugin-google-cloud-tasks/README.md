@@ -27,6 +27,8 @@ plugins: [
     // Used to distinguish taskQueues within the same
     // Google Project (if you have OTAP environments in the same project for example)
     queueSuffix: 'plugin-test',
+    // Default amount of retries when no job.retries is given
+    defaultRetries: 15,
   }),
 ];
 ```
