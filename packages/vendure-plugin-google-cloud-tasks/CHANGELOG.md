@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.16.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.15.0...v3.16.0) (2022-09-15)
+
+### Features
+
+- **google-cloud-tasks:** configurable default retries ([0b30df6](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/0b30df6bef84a2898939f555d0874c7326160735))
+
 # [3.13.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
 
 ### Features
