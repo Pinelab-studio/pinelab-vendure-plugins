@@ -20,21 +20,18 @@ export class StockMonitoringResolver {
   async productVariantsWithLowStock(
     @Ctx() ctx: RequestContext
   ): Promise<ProductVariant[]> {
-    const variants = await this.connection
+    return this.connection
       .getRepository(ctx, ProductVariant)
-      .find({
-        where: {
-          stockOnHand: LessThan(StockMonitoringPlugin.threshold),
-          enabled: true,
-          deletedAt: null,
-        },
-        relations: ['product'],
-        order: {
-          stockOnHand: 'ASC',
-        },
-      });
-    return variants.map((variant) =>
-      translateEntity(variant, ctx.languageCode)
-    );
+      .createQueryBuilder('variant')
+      .leftJoin('variant.product', 'product')
+      .leftJoin('product.channels', 'channel')
+      .where('variant.enabled = true')
+      .andWhere('variant.stockOnHand < :threshold', {
+        threshold: StockMonitoringPlugin.threshold,
+      })
+      .andWhere('variant.deletedAt IS NULL')
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .orderBy('variant.stockOnHand', 'ASC')
+      .getMany();
   }
 }
