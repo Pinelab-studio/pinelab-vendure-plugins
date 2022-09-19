@@ -1,7 +1,7 @@
 {
-  "name": "vendure-plugin-google-cloud-tasks",
+  "name": "vendure-plugin-stock-monitoring",
   "version": "3.16.1",
-  "description": "Vendure plugin for using worker jobs with Google CloudTasks",
+  "description": "Vendure plugin for monitoring stock levels through a widget or by email",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
