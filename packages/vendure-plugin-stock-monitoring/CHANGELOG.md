@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.17.2](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.17.1...v3.17.2) (2022-09-19)
+
+### Bug Fixes
+
+- **stock-monitoring:** limit queyr to 50 ([d47f7dd](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/d47f7dd743e277e154b665782156790212b002ba))
+
 ## [3.17.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.17.0...v3.17.1) (2022-09-19)
 
 ### Bug Fixes
