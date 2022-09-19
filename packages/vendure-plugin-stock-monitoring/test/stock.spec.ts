@@ -25,7 +25,7 @@ describe('Order export plugin', function () {
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  const testEmailDir = '__data__/test-emails';
+  const testEmailDir = path.join(__dirname, './test-emails');
   const emailHandlerConfig = {
     subject: 'Low stock',
     threshold: 100,
