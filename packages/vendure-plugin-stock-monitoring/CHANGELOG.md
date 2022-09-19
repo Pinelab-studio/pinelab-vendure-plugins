@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.17.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.17.0...v3.17.1) (2022-09-19)
+
+### Bug Fixes
+
+- **stock-monitoring:** channel aware stock ([5cb5085](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/5cb50859f825cff4a796b5046c0b44e9e7ae2f43))
+- **stock-monitoring:** channel aware stock ([c7b6e2a](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/c7b6e2aeffc1e3f6faea728bf95c4ba4eaff9e1c))
+
 # [3.17.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.16.2...v3.17.0) (2022-09-19)
 
 ### Bug Fixes
