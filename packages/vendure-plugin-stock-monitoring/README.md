@@ -7,7 +7,7 @@ This plugin helps you monitor the stocklevels in two ways:
 
 ## Stocklevel widget
 
-![img.png](docs/widget.png)
+![Widget](https://github.com/Pinelab-studio/pinelab-vendure-plugins/raw/master/packages/vendure-plugin-stock-monitoring/docs/widget.png)
 
 1. Add the plugin to your `vendure-config.ts` to expose a `productVariantsWithLowStock` query in the admin API.
 
