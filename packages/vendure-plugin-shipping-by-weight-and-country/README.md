@@ -49,7 +49,7 @@ of an order.
 ### Examples
 
 Example 1 - Eligible for orders with shipping country Nederland (NL) with a weight below 3000 grams.
-![Example 1](docs/example1.png)
+![Example 1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/raw/master/packages/vendure-plugin-shipping-by-weight-and-country/docs/example1.png)
 
 Example 2 - Eligible for orders in all countries except Australia and Canada, with a weight between 1500 and 5000 grams
-![Example 2](docs/example2.png)
+![Example 2](https://github.com/Pinelab-studio/pinelab-vendure-plugins/raw/master/packages/vendure-plugin-shipping-by-weight-and-country/docs/example2.png)
