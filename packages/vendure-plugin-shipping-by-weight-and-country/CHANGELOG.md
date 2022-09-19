@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [3.16.2](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.16.1...v3.16.2) (2022-09-19)
+
+### Bug Fixes
+
+- **shipping:** absolute img urls for npm ([a5dda86](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/a5dda86d8784b71a29900e8c078bf3f3aa4abe6c))
+
 # [3.15.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.14.1...v3.15.0) (2022-09-14)
 
 ### Features
