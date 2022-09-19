@@ -107,7 +107,6 @@ describe('Order export plugin', function () {
       GET_OUT_OF_STOCK_VARIANTS
     );
     expect(productVariantsWithLowStock.length).toBe(4);
-    console.log(productVariantsWithLowStock);
     expect(productVariantsWithLowStock[0].name).toBeDefined();
     expect(productVariantsWithLowStock[0].enabled).toBe(true);
     expect(productVariantsWithLowStock[0].stockOnHand).toBeLessThan(101);
