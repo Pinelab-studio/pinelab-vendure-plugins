@@ -7,14 +7,14 @@
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
-  "main": "dist/cloud-tasks.plugin.js",
-  "types": "dist/cloud-tasks.plugin.d.ts",
+  "main": "dist/stock-monitoring.plugin.js",
+  "types": "dist/stock-monitoring.plugin.d.ts",
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "jest --preset=\"ts-jest\" --forceExit",
     "start": "yarn ts-node test/dev-server.ts"
   },
@@ -26,6 +26,7 @@
     "@vendure/email-plugin": "^1.7.1",
     "@vendure/testing": "1.7.1",
     "@vendure/ui-devkit": "^1.7.1",
+    "copyfiles": "^2.4.1",
     "jest": "^27.5.1",
     "node-fetch": "^2.0.0",
     "ts-jest": "^27.1.3",
