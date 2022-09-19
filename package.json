@@ -44,6 +44,7 @@
           "admin-ui-helpers",
           "order-export",
           "shipping",
+          "stock-monitoring",
           "all-plugins"
         ]
       ]
