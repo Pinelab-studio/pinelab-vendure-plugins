@@ -42,3 +42,4 @@ vendure/static/email/test-emails/
 __admin-ui/
 /packages/vendure-plugin-invoices/invoices/
 /packages/vendure-plugin-invoices/key.json
+/packages/vendure-plugin-stock-monitoring/test/test-emails/
