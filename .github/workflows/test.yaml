@@ -40,6 +40,7 @@ jobs:
             'vendure-plugin-admin-ui-helpers',
             'vendure-plugin-order-export',
             'vendure-plugin-shipping-by-weight-and-country',
+            'vendure-plugin-stock-monitoring',
           ]
     steps:
       - name: Checkout code
