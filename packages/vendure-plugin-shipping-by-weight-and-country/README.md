@@ -1,5 +1,7 @@
 # Shipping by weight and country
 
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-shipping-by-weight-and-country/dev/@vendure/core)
+
 This plugin adds a shipping eligibility checker to Vendure that checks the total weight and the shipping country of an
 order, to verify if a shipping method is eligible for a given order.
 

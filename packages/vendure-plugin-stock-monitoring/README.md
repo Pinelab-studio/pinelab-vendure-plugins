@@ -1,5 +1,7 @@
 # Vendure stock monitoring plugin
 
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-stock-monitoring/dev/@vendure/core)
+
 This plugin helps you monitor the stocklevels in two ways:
 
 1. A dashboard widget that displays variants who's stocklevel is below a given threshold
