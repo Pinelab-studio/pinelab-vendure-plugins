@@ -1,45 +1,43 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { INestApplication } from '@nestjs/common';
 import { SendcloudService } from './sendcloud.service';
-import { SendcloudOptions } from './types/sendcloud-options';
 import { SendcloudController } from './sendcloud.controller';
 import { SendcloudClient } from './sendcloud.client';
 import { json } from 'body-parser';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
-import { PLUGIN_OPTIONS } from './constants';
 import { gql } from 'apollo-server-core';
 import { SendcloudResolver } from './sendcloud.resolver';
+import path from 'path';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 
 const cloneBuffer = require('clone-buffer');
 
 @VendurePlugin({
   adminApiExtensions: {
     schema: gql`
+      type SendCloudConfig {
+        id: ID!
+        secret: String
+        publicKey: String
+      }
+      input SendCloudConfigInput {
+        secret: String
+        publicKey: String
+      }
       extend type Mutation {
-        sendToSendcloud(orderId: ID!): Boolean!
+        sendToSendCloud(orderId: ID!): Boolean!
+        updateSendCloudConfig(input: SendCloudConfigInput): SendCloudConfig!
+      }
+      extend type Query {
+        sendCloudConfig: SendCloudConfig
       }
     `,
     resolvers: [SendcloudResolver],
   },
-  providers: [
-    SendcloudService,
-    {
-      useFactory: () => SendcloudPlugin.options,
-      provide: PLUGIN_OPTIONS,
-    },
-  ],
+  providers: [SendcloudService],
   imports: [PluginCommonModule],
   controllers: [SendcloudController],
 })
 export class SendcloudPlugin {
-  private static options: SendcloudOptions;
-
-  static init(options: SendcloudOptions): typeof SendcloudPlugin {
-    this.options = options;
-    return SendcloudPlugin;
-  }
-
   static beforeVendureBootstrap(app: INestApplication): void | Promise<void> {
     // Save raw body for signature verification
     app.use(
@@ -56,4 +54,21 @@ export class SendcloudPlugin {
       })
     );
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    ngModules: [
+      {
+        type: 'lazy',
+        route: 'sendcloud',
+        ngModuleFileName: 'sendcloud.module.ts',
+        ngModuleName: 'SendcloudModule',
+      },
+      {
+        type: 'shared',
+        ngModuleFileName: 'sendcloud-nav.module.ts',
+        ngModuleName: 'SendcloudNavModule',
+      },
+    ],
+  };
 }

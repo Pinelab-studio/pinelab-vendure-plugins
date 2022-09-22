@@ -25,6 +25,7 @@ import fs from 'fs';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import gql from 'graphql-tag';
+import { SendcloudPlugin } from '../src/api';
 
 const apiKey = 'test-api-key';
 
@@ -55,7 +56,7 @@ describe('MyParcel', () => {
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
-        MyparcelPlugin.init({
+        SendcloudPlugin.init({
           vendureHost: 'https://test-webhook.com',
         }),
       ],
@@ -88,6 +89,8 @@ describe('MyParcel', () => {
   });
 
   it('Creates shippingmethod with Sendcloud handler', async () => {});
+
+  it('Autofulfills order when it has Sendcloud handler', async () => {});
 
   it('Sends order to Sendcloud on order placement with custom parcel properties', async () => {});
 });

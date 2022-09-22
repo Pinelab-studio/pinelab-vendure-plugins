@@ -8,7 +8,7 @@ import { SendcloudService } from './sendcloud.service';
 import { loggerCtx } from './constants';
 
 let sendcloudService: SendcloudService;
-export const myparcelHandler = new FulfillmentHandler({
+export const sendcloudHandler = new FulfillmentHandler({
   code: 'sendcloud',
   description: [
     {

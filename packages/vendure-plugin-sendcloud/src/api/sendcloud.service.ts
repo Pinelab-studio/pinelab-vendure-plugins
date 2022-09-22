@@ -1,7 +1,6 @@
 import {
   Injectable,
   OnApplicationBootstrap,
-  Inject,
   OnModuleInit,
 } from '@nestjs/common';
 import {
@@ -9,17 +8,18 @@ import {
   EmptyOrderLineSelectionError,
   EventBus,
   FulfillmentStateTransitionError,
+  ID,
+  JobQueue,
+  JobQueueService,
   Logger,
   Order,
+  OrderPlacedEvent,
   OrderService,
-  OrderStateTransitionEvent,
   ProductVariant,
   RequestContext,
   TransactionalConnection,
   translateDeep,
 } from '@vendure/core';
-import { filter } from 'rxjs/operators';
-import { SendcloudClient } from './sendcloud.client';
 import {
   addCouponCodes,
   addNote,
@@ -31,50 +31,68 @@ import { SendcloudParcelStatus } from './types/sendcloud-parcel-status';
 import { OrderLineInput } from '@vendure/admin-ui/core';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import { Connection } from 'typeorm';
-import { loggerCtx, PLUGIN_OPTIONS } from './constants';
-import { SendcloudOptions } from './types/sendcloud-options';
-import { LanguageCode } from '@vendure/common/lib/generated-types';
+import { loggerCtx } from './constants';
+import { SendcloudConfigEntity } from './sendcloud-config.entity';
+import { SendcloudClient } from './sendcloud.client';
+import { sendcloudHandler } from './sendcloud.handler';
+import { fulfillAll } from '../../../util/src';
+
+interface SendcloudJobData {
+  orderCode: string;
+  channelToken: string;
+}
 
 @Injectable()
-export class SendcloudService implements OnApplicationBootstrap {
-  client: SendcloudClient;
-  // Dirty hack to prevent duplicate event listener
-  static isListening = false;
+export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
+  // @ts-ignore
+  private jobQueue!: JobQueue<SendcloudJobData>;
 
   constructor(
-    @Inject(PLUGIN_OPTIONS) private options: SendcloudOptions,
     private eventBus: EventBus,
     private connection: TransactionalConnection,
     private rawConnection: Connection,
     private orderService: OrderService,
-    private channelService: ChannelService
-  ) {
-    this.client = new SendcloudClient(options.publicKey, options.secret);
+    private channelService: ChannelService,
+    private jobQueueService: JobQueueService
+  ) {}
+
+  async onModuleInit() {
+    this.jobQueue = await this.jobQueueService.createQueue({
+      name: 'sendcloud',
+      process: async ({ data }) => {
+        try {
+          await this.autoFulfill(data.channelToken, data.orderCode);
+        } catch (error) {
+          Logger.warn(
+            `Failed to autofulfill order ${data.orderCode} for channel ${data.channelToken}`,
+            loggerCtx
+          );
+          throw error;
+        }
+      },
+    });
   }
 
   onApplicationBootstrap(): void {
-    if (!SendcloudService.isListening) {
-      SendcloudService.isListening = true;
-      this.eventBus
-        .ofType(OrderStateTransitionEvent)
-        .pipe(
-          filter((event) => {
-            const isPickup = !!event.order.shippingLines.find(
-              (s) => s.shippingMethodId == 11
-            );
-            return event.toState === 'PaymentSettled' && !isPickup;
-          })
-        )
-        .subscribe((event) =>
-          this.syncToSendloud(event.ctx, event.order).catch((e) =>
-            Logger.error(
-              `Failed to sync order ${event.order.code} to SendCloud, ${e}`,
-              loggerCtx
-            )
-          )
+    // Listen for Settled orders for autoFulfillment
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
+      const sendcloudCode = event.order.shippingLines.find(
+        (line) => line.shippingMethod?.code === sendcloudHandler.code
+      );
+      if (!sendcloudCode) {
+        return Logger.info(
+          `Order ${event.order.code} does not have SendCloud set as handler. Not autofulfilling this order.`,
+          loggerCtx
         );
-      Logger.info(`Listening for settled orders`, loggerCtx);
-    }
+      }
+      await this.jobQueue.add(
+        {
+          orderCode: event.order.code,
+          channelToken: event.ctx.channel.token,
+        },
+        { retries: 10 }
+      );
+    });
   }
 
   async syncToSendloud(
@@ -234,16 +252,78 @@ export class SendcloudService implements OnApplicationBootstrap {
     );
   }
 
-  /**
-   * Get ctx for DEFAULT channel
-   */
-  async createContext(): Promise<RequestContext> {
-    const channel = await this.channelService.getDefaultChannel();
+  async upsertConfig(
+    ctx: RequestContext,
+    config: {
+      secret: string;
+      publicKey: string;
+    }
+  ): Promise<SendcloudConfigEntity> {
+    const repo = this.connection.getRepository(ctx, SendcloudConfigEntity);
+    const existing = await repo.findOne({ channelId: String(ctx.channelId) });
+    if (existing) {
+      await repo.update(existing.id, {
+        secret: config.secret,
+        publicKey: config.publicKey,
+      });
+    } else {
+      await repo.insert({
+        channelId: String(ctx.channelId),
+        secret: config.secret,
+        publicKey: config.publicKey,
+      });
+    }
+    return repo.findOneOrFail({ channelId: String(ctx.channelId) });
+  }
+
+  async getConfig(ctx: RequestContext): Promise<SendcloudConfigEntity | void> {
+    return this.connection
+      .getRepository(ctx, SendcloudConfigEntity)
+      .findOne({ channelId: String(ctx.channelId) });
+  }
+
+  async getClient(ctx: RequestContext): Promise<SendcloudClient> {
+    const config = await this.getConfig(ctx);
+    if (!config || !config?.secret || !config.publicKey) {
+      throw Error(`Incomplete config found for channel ${ctx.channel.token}`);
+    }
+    return new SendcloudClient(config.publicKey, config.secret);
+  }
+
+  async createContext(channelToken: string): Promise<RequestContext> {
+    const channel = await this.channelService.getChannelFromToken(channelToken);
     return new RequestContext({
       apiType: 'admin',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
       channel,
     });
+  }
+
+  private async autoFulfill(
+    channelToken: string,
+    orderCode: string
+  ): Promise<void> {
+    const ctx = await this.createContext(channelToken);
+    const config = await this.getConfig(ctx);
+    if (!config?.secret || !config?.publicKey) {
+      return;
+    }
+    Logger.info(
+      `Autofulfilling order ${orderCode} for channel ${channelToken}`,
+      loggerCtx
+    );
+    let order = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!order) {
+      return Logger.error(
+        `No order found with code ${orderCode}. Can not autofulfill this order.`,
+        loggerCtx
+      );
+    }
+    await fulfillAll(ctx, this.orderService, order, {
+      code: sendcloudHandler.code,
+      arguments: [],
+    });
+    Logger.info(`Order ${order.code} autofulfilled`, loggerCtx);
   }
 }
