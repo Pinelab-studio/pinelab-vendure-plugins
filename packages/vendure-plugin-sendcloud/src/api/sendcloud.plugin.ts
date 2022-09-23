@@ -8,6 +8,11 @@ import { gql } from 'apollo-server-core';
 import { SendcloudResolver } from './sendcloud.resolver';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { AdditionalParcelInputFn } from './types/sendcloud.types';
+
+interface Input {
+  additionalParcelInputFn: AdditionalParcelInputFn;
+}
 
 const cloneBuffer = require('clone-buffer');
 
@@ -38,6 +43,14 @@ const cloneBuffer = require('clone-buffer');
   controllers: [SendcloudController],
 })
 export class SendcloudPlugin {
+  static options: Input;
+
+  static init(input: Input): typeof SendcloudPlugin {
+    this.options = input;
+    return SendcloudPlugin;
+  }
+
+  // FIXME this van be done in a cleaner manner
   static beforeVendureBootstrap(app: INestApplication): void | Promise<void> {
     // Save raw body for signature verification
     app.use(

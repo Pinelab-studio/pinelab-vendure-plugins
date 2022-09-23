@@ -24,3 +24,7 @@ If you want orders to be updated in Vendure, set up a webhook in your SendCloud 
 
 **This plugin autofulfills orders when the SendCloud handler is set for the shippingmethod**
 The whole order is automatically fulfilled when it is placed (OrderPlacedEvent) and sent to Sendcloud.
+
+## Additional parcel input
+
+// TODO

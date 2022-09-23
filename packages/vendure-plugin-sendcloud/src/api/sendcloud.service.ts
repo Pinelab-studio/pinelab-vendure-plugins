@@ -3,6 +3,7 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
   EmptyOrderLineSelectionError,
@@ -26,8 +27,6 @@ import {
   addNrOfOrders,
   toParcelInput,
 } from './sendcloud.adapter';
-import { Parcel } from './types/sendcloud-api-response.types';
-import { SendcloudParcelStatus } from './types/sendcloud-parcel-status';
 import { OrderLineInput } from '@vendure/admin-ui/core';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import { Connection } from 'typeorm';
@@ -53,7 +52,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     private rawConnection: Connection,
     private orderService: OrderService,
     private channelService: ChannelService,
-    private jobQueueService: JobQueueService
+    private jobQueueService: JobQueueService,
+    private moduleRef: ModuleRef
   ) {}
 
   async onModuleInit() {
@@ -76,6 +76,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   onApplicationBootstrap(): void {
     // Listen for Settled orders for autoFulfillment
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
+      console.log(JSON.stringify(event.order));
       const sendcloudCode = event.order.shippingLines.find(
         (line) => line.shippingMethod?.code === sendcloudHandler.code
       );
@@ -111,7 +112,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       const product = variantsWithProduct.find(
         (variant) => variant.id === line.productVariant.id
       )?.product;
-      line.productVariant.product = product;
+      line.productVariant.product = product!;
       line.productVariant = translateDeep(
         line.productVariant,
         originalCtx.channel.defaultLanguageCode
@@ -128,6 +129,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       nrOfOrders = orders.length;
     }
     const parcelInput = toParcelInput(order);
+
+    // TODO additional parcel input strategy
     if ((order.customFields as any).customerNote) {
       addNote(parcelInput, (order.customFields as any).customerNote);
     }
