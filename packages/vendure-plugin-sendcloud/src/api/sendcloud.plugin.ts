@@ -1,9 +1,6 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { INestApplication } from '@nestjs/common';
+import { Middleware, PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { SendcloudService } from './sendcloud.service';
 import { SendcloudController } from './sendcloud.controller';
-import { SendcloudClient } from './sendcloud.client';
-import { json } from 'body-parser';
 import { gql } from 'apollo-server-core';
 import { SendcloudResolver } from './sendcloud.resolver';
 import path from 'path';
@@ -13,12 +10,29 @@ import { PLUGIN_OPTIONS } from './constants';
 import { sendcloudHandler } from './sendcloud.handler';
 import { SendcloudConfigEntity } from './sendcloud-config.entity';
 import { sendcloudPermission } from '../index';
+import bodyParser from 'body-parser';
 
 export interface SendcloudPluginOptions {
+  /**
+   * You can send additional ParcelItems (rows) to SendCloud.
+   * For example if you want the couponCodes applied also on your
+   * packaging slip in SendCloud
+   */
   additionalParcelItemsFn?: AdditionalParcelInputFn;
 }
 
-const cloneBuffer = require('clone-buffer');
+export const sendcloudMiddleware: Middleware = {
+  route: '/sendcloud/webhook/e2e-default-channel',
+  beforeListen: true,
+  handler: bodyParser.json({
+    verify(req, _, buf) {
+      if (Buffer.isBuffer(buf)) {
+        (req as any).rawBody = Buffer.from(buf);
+      }
+      return true;
+    },
+  }),
+};
 
 @VendurePlugin({
   adminApiExtensions: {
@@ -56,29 +70,15 @@ const cloneBuffer = require('clone-buffer');
     config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
     config.authOptions.customPermissions.push(sendcloudPermission);
     // save rawBody for signature verification
-    config.apiOptions.middleware.push({
-      route: `/sendcloud*`,
-      beforeListen: true,
-      handler: json({
-        verify: (req: any, res, buf, encoding) => {
-          if (
-            req.headers[SendcloudClient.signatureHeader] &&
-            Buffer.isBuffer(buf)
-          ) {
-            req.rawBody = cloneBuffer(buf);
-          }
-          return true;
-        },
-      }),
-    });
+    config.apiOptions.middleware.push(sendcloudMiddleware);
     return config;
   },
 })
 export class SendcloudPlugin {
   private static options: SendcloudPluginOptions;
 
-  static init(input: SendcloudPluginOptions): typeof SendcloudPlugin {
-    this.options = input;
+  static init(options: SendcloudPluginOptions): typeof SendcloudPlugin {
+    this.options = options;
     return SendcloudPlugin;
   }
 

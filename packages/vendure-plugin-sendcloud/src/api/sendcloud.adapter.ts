@@ -27,7 +27,6 @@ export function toParcelInput(order: Order): ParcelInput {
 }
 
 /**
- * @param variant including corresponding product
  * @param line
  */
 export function toParcelInputItem(line: OrderLine): ParcelInputItem {

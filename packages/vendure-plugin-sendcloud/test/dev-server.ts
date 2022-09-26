@@ -19,6 +19,7 @@ import {
   ParcelInputItem,
   SendcloudPlugin,
   sendcloudHandler,
+  sendcloudMiddleware,
 } from '../src';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -75,6 +76,7 @@ require('dotenv').config();
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
+  server.app.use(sendcloudMiddleware.route, sendcloudMiddleware.handler);
   await addShippingMethod(adminClient, sendcloudHandler.code);
   await adminClient.asSuperAdmin();
   await updateSendCloudConfig(

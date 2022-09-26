@@ -34,7 +34,7 @@ export class SendcloudClient {
   }
 
   /**
-   * Verifies if the incoming webhook si actually from SendCloud
+   * Verifies if the incoming webhook is actually from SendCloud
    */
   isValidWebhook(body: string, signature: string): boolean {
     if (!body || !signature) {

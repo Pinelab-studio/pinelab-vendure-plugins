@@ -33,7 +33,5 @@
     "ts-node": "^10.7.0",
     "typescript": "4.3.5"
   },
-  "dependencies": {
-    "clone-buffer": "^1.0.0"
-  }
+  "dependencies": {}
 }

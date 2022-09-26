@@ -7,6 +7,7 @@ import {
 import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
+  EntityHydrator,
   EventBus,
   FulfillmentStateTransitionError,
   ID,
@@ -51,7 +52,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     private channelService: ChannelService,
     private jobQueueService: JobQueueService,
     private moduleRef: ModuleRef,
-    @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions
+    @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions,
+    private entityHydrator: EntityHydrator
   ) {}
 
   async onModuleInit() {
@@ -85,23 +87,12 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   }
 
   async syncToSendloud(ctx: RequestContext, order: Order): Promise<Parcel> {
-    const variantIds = order.lines.map((l) => l.productVariant.id);
-    const variantsWithProduct = await this.connection.findByIdsInChannel(
-      ctx,
-      ProductVariant,
-      variantIds,
-      ctx.channelId,
-      { relations: ['translations', 'product', 'product.translations'] }
-    );
-    order.lines.forEach((line) => {
-      const product = variantsWithProduct.find(
-        (variant) => variant.id === line.productVariant.id
-      )?.product;
-      line.productVariant.product = product!;
-      line.productVariant = translateDeep(
-        line.productVariant,
-        ctx.channel.defaultLanguageCode
-      );
+    await this.entityHydrator.hydrate(ctx, order, {
+      relations: [
+        'lines',
+        'lines.productVariant',
+        'lines.productVariant.product',
+      ],
     });
     const additionalParcelItems: ParcelInputItem[] = [];
     if (this.options.additionalParcelItemsFn) {
@@ -274,7 +265,11 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       `Autofulfilling order ${orderCode} for channel ${channelToken}`,
       loggerCtx
     );
-    let order = await this.orderService.findOneByCode(ctx, orderCode);
+    let order = await this.orderService.findOneByCode(ctx, orderCode, [
+      'shippingLines',
+      'shippingLines.shippingMethod',
+      'lines',
+    ]);
     if (!order) {
       return Logger.error(
         `No order found with code ${orderCode}. Can not autofulfill this order.`,
@@ -282,7 +277,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       );
     }
     const hasSendcloudHandler = order.shippingLines.find(
-      (line) => line.shippingMethod?.code === sendcloudHandler.code
+      (line) =>
+        line.shippingMethod?.fulfillmentHandlerCode === sendcloudHandler.code
     );
     if (!hasSendcloudHandler) {
       return Logger.info(
