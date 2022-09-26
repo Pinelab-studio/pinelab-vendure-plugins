@@ -8,8 +8,8 @@ import {
   RequestContext,
 } from '@vendure/core';
 import { SendcloudService } from './sendcloud.service';
-import { sendcloudPermission } from './index';
 import { SendcloudConfigEntity } from './sendcloud-config.entity';
+import { sendcloudPermission } from '../index';
 
 @Resolver()
 export class SendcloudResolver {
@@ -39,9 +39,8 @@ export class SendcloudResolver {
   @Allow(sendcloudPermission.Permission)
   async updateSendCloudConfig(
     @Ctx() ctx: RequestContext,
-    @Args('secret') secret: string,
-    @Args('publicKey') publicKey: string
+    @Args('input') input: { secret: string; publicKey: string }
   ): Promise<SendcloudConfigEntity> {
-    return this.service.upsertConfig(ctx, { secret, publicKey });
+    return this.service.upsertConfig(ctx, input);
   }
 }

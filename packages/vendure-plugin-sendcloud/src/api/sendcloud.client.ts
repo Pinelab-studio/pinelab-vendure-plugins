@@ -1,10 +1,9 @@
 import fetch from 'node-fetch';
 import { Response } from 'node-fetch';
-import { ParcelInput } from './types/sendcloud-api-input.types';
-import { Parcel } from './types/sendcloud-api-response.types';
 import crypto from 'crypto';
 import { Logger } from '@vendure/core';
 import { loggerCtx } from './constants';
+import { Parcel, ParcelInput } from './types/sendcloud-api.types';
 
 export class SendcloudClient {
   static signatureHeader = 'sendcloud-signature';

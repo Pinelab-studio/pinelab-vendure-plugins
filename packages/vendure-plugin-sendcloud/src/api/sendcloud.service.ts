@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   OnApplicationBootstrap,
   OnModuleInit,
@@ -6,10 +7,10 @@ import {
 import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
-  EmptyOrderLineSelectionError,
   EventBus,
   FulfillmentStateTransitionError,
   ID,
+  Injector,
   JobQueue,
   JobQueueService,
   Logger,
@@ -21,20 +22,16 @@ import {
   TransactionalConnection,
   translateDeep,
 } from '@vendure/core';
-import {
-  addCouponCodes,
-  addNote,
-  addNrOfOrders,
-  toParcelInput,
-} from './sendcloud.adapter';
-import { OrderLineInput } from '@vendure/admin-ui/core';
-import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
+import { toParcelInput } from './sendcloud.adapter';
 import { Connection } from 'typeorm';
-import { loggerCtx } from './constants';
+import { loggerCtx, PLUGIN_OPTIONS } from './constants';
 import { SendcloudConfigEntity } from './sendcloud-config.entity';
 import { SendcloudClient } from './sendcloud.client';
 import { sendcloudHandler } from './sendcloud.handler';
-import { fulfillAll } from '../../../util/src';
+import { fulfillAll, transitionToShipped } from '../../../util/src';
+import { Parcel, ParcelInputItem } from './types/sendcloud-api.types';
+import { SendcloudPluginOptions } from './sendcloud.plugin';
+import { SendcloudParcelStatus } from './types/sendcloud.types';
 
 interface SendcloudJobData {
   orderCode: string;
@@ -53,7 +50,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     private orderService: OrderService,
     private channelService: ChannelService,
     private jobQueueService: JobQueueService,
-    private moduleRef: ModuleRef
+    private moduleRef: ModuleRef,
+    @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions
   ) {}
 
   async onModuleInit() {
@@ -64,7 +62,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
           await this.autoFulfill(data.channelToken, data.orderCode);
         } catch (error) {
           Logger.warn(
-            `Failed to autofulfill order ${data.orderCode} for channel ${data.channelToken}`,
+            `Failed to autofulfill order ${data.orderCode} for channel ${data.channelToken}: ${error}`,
             loggerCtx
           );
           throw error;
@@ -76,16 +74,6 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   onApplicationBootstrap(): void {
     // Listen for Settled orders for autoFulfillment
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
-      console.log(JSON.stringify(event.order));
-      const sendcloudCode = event.order.shippingLines.find(
-        (line) => line.shippingMethod?.code === sendcloudHandler.code
-      );
-      if (!sendcloudCode) {
-        return Logger.info(
-          `Order ${event.order.code} does not have SendCloud set as handler. Not autofulfilling this order.`,
-          loggerCtx
-        );
-      }
       await this.jobQueue.add(
         {
           orderCode: event.order.code,
@@ -96,16 +84,13 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     });
   }
 
-  async syncToSendloud(
-    originalCtx: RequestContext,
-    order: Order
-  ): Promise<Parcel> {
+  async syncToSendloud(ctx: RequestContext, order: Order): Promise<Parcel> {
     const variantIds = order.lines.map((l) => l.productVariant.id);
     const variantsWithProduct = await this.connection.findByIdsInChannel(
-      originalCtx,
+      ctx,
       ProductVariant,
       variantIds,
-      originalCtx.channelId,
+      ctx.channelId,
       { relations: ['translations', 'product', 'product.translations'] }
     );
     order.lines.forEach((line) => {
@@ -115,28 +100,22 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       line.productVariant.product = product!;
       line.productVariant = translateDeep(
         line.productVariant,
-        originalCtx.channel.defaultLanguageCode
+        ctx.channel.defaultLanguageCode
       );
     });
-    let nrOfOrders = undefined;
-    if (order.customer?.id) {
-      const orders = await this.connection.getRepository(Order).find({
-        where: {
-          customer: { id: order.customer.id },
-          state: 'Delivered',
-        },
-      });
-      nrOfOrders = orders.length;
+    const additionalParcelItems: ParcelInputItem[] = [];
+    if (this.options.additionalParcelItemsFn) {
+      additionalParcelItems.push(
+        ...(await this.options.additionalParcelItemsFn(
+          ctx,
+          new Injector(this.moduleRef),
+          order
+        ))
+      );
     }
     const parcelInput = toParcelInput(order);
-
-    // TODO additional parcel input strategy
-    if ((order.customFields as any).customerNote) {
-      addNote(parcelInput, (order.customFields as any).customerNote);
-    }
-    addNrOfOrders(parcelInput, nrOfOrders);
-    addCouponCodes(parcelInput, order.couponCodes);
-    return this.client.createParcel(parcelInput);
+    parcelInput.parcel_items.unshift(...additionalParcelItems);
+    return (await this.getClient(ctx)).createParcel(parcelInput);
   }
 
   /**
@@ -144,6 +123,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
    * Returns order if transition wa successful
    */
   async updateOrder(
+    ctx: RequestContext,
     sendcloudStatus: SendcloudParcelStatus,
     orderCode: string
   ): Promise<void> {
@@ -154,11 +134,14 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       );
       return;
     }
-    const ctx = await this.createContext();
     let order = await this.rawConnection
       .getRepository(Order)
       .findOne({ code: orderCode }, { relations: ['lines', 'lines.items'] });
     if (!order) {
+      Logger.warn(
+        `Cannot update status from SendCloud: No order with code ${orderCode} found`,
+        loggerCtx
+      );
       throw Error(
         `Cannot update status from SendCloud: No order with code ${orderCode} found`
       );
@@ -170,7 +153,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       );
     }
     if (sendcloudStatus.orderState === 'Shipped') {
-      const res: any = await this.shipAll(ctx, order);
+      await this.shipAll(ctx, order);
       return Logger.info(
         `Successfully update order ${orderCode} to ${sendcloudStatus.orderState}`,
         loggerCtx
@@ -178,11 +161,14 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     }
     order = await this.rawConnection
       .getRepository(Order)
-      .findOne({ code: orderCode }, { relations: ['lines', 'lines.items'] }); // refetch order for concurrency
+      .findOneOrFail(
+        { code: orderCode },
+        { relations: ['lines', 'lines.items'] }
+      ); // Refetch in case state was updated
     if (sendcloudStatus.orderState === 'Delivered') {
       if (order.state !== 'Shipped') {
         await this.shipAll(ctx, order).catch((e) => {
-          Logger.error(e, loggerCtx);
+          Logger.warn(e, loggerCtx);
         }); // ShipAll in case previous webhook was missed, but catch because it might have been done already
       }
       const fulfillments = await this.orderService.getOrderFulfillments(
@@ -191,11 +177,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       );
       const [result] = await Promise.all(
         fulfillments.map((f) =>
-          this.orderService.transitionFulfillmentToState(
-            ctx,
-            f.id,
-            sendcloudStatus.orderState!
-          )
+          this.orderService.transitionFulfillmentToState(ctx, f.id, 'Delivered')
         )
       );
       if ((result as FulfillmentStateTransitionError)?.errorCode) {
@@ -215,44 +197,20 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   /**
    * Fulfill and ship all items
    */
-  async shipAll(
-    ctx: RequestContext,
-    order: Order
-  ): Promise<Fulfillment | FulfillmentStateTransitionError> {
-    const lines: OrderLineInput[] = order.lines.map(
-      (line) =>
-        ({
-          orderLineId: line.id,
-          quantity: line.quantity,
-        } as OrderLineInput)
-    );
-    const fulfillment = await this.orderService.createFulfillment(ctx, {
-      handler: {
-        code: 'manual-fulfillment',
-        arguments: [
-          {
-            name: 'method',
-            value: 'Sendcloud',
-          },
-          {
-            name: 'trackingCode',
-            value: '-',
-          },
-        ],
-      },
-      lines: lines,
+  async shipAll(ctx: RequestContext, order: Order): Promise<void> {
+    await transitionToShipped(this.orderService, ctx, order, {
+      code: 'manual-fulfillment',
+      arguments: [
+        {
+          name: 'method',
+          value: 'Sendcloud',
+        },
+        {
+          name: 'trackingCode',
+          value: '-',
+        },
+      ],
     });
-    if ((fulfillment as EmptyOrderLineSelectionError).errorCode) {
-      const error = fulfillment as EmptyOrderLineSelectionError;
-      throw Error(
-        `Unable to ship all items for order ${order.code}: ${error.errorCode} - ${error.message}`
-      );
-    }
-    return this.orderService.transitionFulfillmentToState(
-      ctx,
-      (fulfillment as any).id,
-      'Shipped'
-    );
   }
 
   async upsertConfig(
@@ -320,6 +278,15 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     if (!order) {
       return Logger.error(
         `No order found with code ${orderCode}. Can not autofulfill this order.`,
+        loggerCtx
+      );
+    }
+    const hasSendcloudHandler = order.shippingLines.find(
+      (line) => line.shippingMethod?.code === sendcloudHandler.code
+    );
+    if (!hasSendcloudHandler) {
+      return Logger.info(
+        `Order ${order.code} does not have SendCloud set as handler. Not autofulfilling this order.`,
         loggerCtx
       );
     }

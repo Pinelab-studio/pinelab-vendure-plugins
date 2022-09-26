@@ -1,8 +1,5 @@
 import { Order, OrderLine } from '@vendure/core';
-import {
-  ParcelInput,
-  ParcelInputItem,
-} from './types/sendcloud-api-input.types';
+import { ParcelInput, ParcelInputItem } from './types/sendcloud-api.types';
 
 /**
  * Transforms order and variants to ParcelInput
@@ -60,58 +57,4 @@ export function getTotalWeight(items: ParcelInputItem[]): string {
     totalWeight += parseFloat(item.weight) * item.quantity;
   });
   return totalWeight.toFixed(3);
-}
-
-/**
- * Add customerNote as parcelitem
- */
-export function addNote(parceInput: ParcelInput, note: string): ParcelInput {
-  parceInput.parcel_items.unshift({
-    description: note,
-    quantity: 1,
-    weight: '0.1',
-    sku: 'Klant notitie',
-    value: '0',
-  });
-  return parceInput;
-}
-
-/**
- * Add nr of orders for this customer as parcelItem
- */
-export function addNrOfOrders(
-  parceInput: ParcelInput,
-  nrOfOrders: number
-): ParcelInput {
-  const nrOfOrderString =
-    typeof nrOfOrders === undefined ? 'Niet beschikbaar' : String(nrOfOrders);
-  parceInput.parcel_items.unshift({
-    description: nrOfOrderString,
-    quantity: 1,
-    weight: '0.1',
-    sku: `Aantal punten`,
-    value: '0',
-  });
-  return parceInput;
-}
-
-/**
- * Add couponcodes to sendCloud payload
- */
-export function addCouponCodes(
-  parceInput: ParcelInput,
-  couponCodes: string[] = []
-): ParcelInput | undefined {
-  const couponCodesString = couponCodes.join(',');
-  if (!couponCodes || couponCodes.length === 0 || !couponCodesString.trim()) {
-    return;
-  }
-  parceInput.parcel_items.unshift({
-    description: couponCodesString,
-    quantity: 1,
-    weight: '0.1',
-    sku: `Couponcodes`,
-    value: '0',
-  });
-  return parceInput;
 }

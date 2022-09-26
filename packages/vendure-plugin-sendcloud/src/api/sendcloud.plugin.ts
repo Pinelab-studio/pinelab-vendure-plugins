@@ -9,9 +9,13 @@ import { SendcloudResolver } from './sendcloud.resolver';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { AdditionalParcelInputFn } from './types/sendcloud.types';
+import { PLUGIN_OPTIONS } from './constants';
+import { sendcloudHandler } from './sendcloud.handler';
+import { SendcloudConfigEntity } from './sendcloud-config.entity';
+import { sendcloudPermission } from '../index';
 
-interface Input {
-  additionalParcelInputFn: AdditionalParcelInputFn;
+export interface SendcloudPluginOptions {
+  additionalParcelItemsFn?: AdditionalParcelInputFn;
 }
 
 const cloneBuffer = require('clone-buffer');
@@ -38,23 +42,24 @@ const cloneBuffer = require('clone-buffer');
     `,
     resolvers: [SendcloudResolver],
   },
-  providers: [SendcloudService],
+  providers: [
+    SendcloudService,
+    {
+      provide: PLUGIN_OPTIONS,
+      useFactory: () => SendcloudPlugin.options,
+    },
+  ],
   imports: [PluginCommonModule],
   controllers: [SendcloudController],
-})
-export class SendcloudPlugin {
-  static options: Input;
-
-  static init(input: Input): typeof SendcloudPlugin {
-    this.options = input;
-    return SendcloudPlugin;
-  }
-
-  // FIXME this van be done in a cleaner manner
-  static beforeVendureBootstrap(app: INestApplication): void | Promise<void> {
-    // Save raw body for signature verification
-    app.use(
-      json({
+  entities: [SendcloudConfigEntity],
+  configuration: (config) => {
+    config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
+    config.authOptions.customPermissions.push(sendcloudPermission);
+    // save rawBody for signature verification
+    config.apiOptions.middleware.push({
+      route: `/sendcloud*`,
+      beforeListen: true,
+      handler: json({
         verify: (req: any, res, buf, encoding) => {
           if (
             req.headers[SendcloudClient.signatureHeader] &&
@@ -64,8 +69,17 @@ export class SendcloudPlugin {
           }
           return true;
         },
-      })
-    );
+      }),
+    });
+    return config;
+  },
+})
+export class SendcloudPlugin {
+  private static options: SendcloudPluginOptions;
+
+  static init(input: SendcloudPluginOptions): typeof SendcloudPlugin {
+    this.options = input;
+    return SendcloudPlugin;
   }
 
   static ui: AdminUiExtension = {

@@ -13,8 +13,16 @@ import {
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { SendcloudPlugin } from '../src/api';
-
+import {
+  getCouponCodes,
+  getNrOfOrders,
+  ParcelInputItem,
+  SendcloudPlugin,
+  sendcloudHandler,
+} from '../src';
+import { addShippingMethod } from '../../test/src/admin-utils';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { updateSendCloudConfig } from './test.helpers';
 require('dotenv').config();
 
 (async () => {
@@ -26,7 +34,17 @@ require('dotenv').config();
       shopApiPlayground: true,
     },
     plugins: [
-      SendcloudPlugin,
+      SendcloudPlugin.init({
+        additionalParcelItemsFn: async (ctx, injector, order) => {
+          const additionalInputs: ParcelInputItem[] = [];
+          additionalInputs.push(await getNrOfOrders(ctx, injector, order));
+          const coupons = getCouponCodes(order);
+          if (coupons) {
+            additionalInputs.push(coupons);
+          }
+          return additionalInputs;
+        },
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -44,8 +62,26 @@ require('dotenv').config();
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      shippingMethods: [],
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
+  await addShippingMethod(adminClient, sendcloudHandler.code);
+  await adminClient.asSuperAdmin();
+  await updateSendCloudConfig(
+    adminClient,
+    process.env.SECRET!,
+    process.env.PUBLIC!
+  );
+  await createSettledOrder(shopClient, 1);
+  console.log('created test order');
 })();

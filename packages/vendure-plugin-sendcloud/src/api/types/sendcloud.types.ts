@@ -1,5 +1,5 @@
-import { Injector, Order } from '@vendure/core';
-import { ParcelInput } from './sendcloud-api.types';
+import { Injector, Order, RequestContext } from '@vendure/core';
+import { ParcelInput, ParcelInputItem } from './sendcloud-api.types';
 
 export interface SendcloudParcelStatus {
   id: number;
@@ -171,6 +171,7 @@ export const sendcloudStates: SendcloudParcelStatus[] = [
 ];
 
 export type AdditionalParcelInputFn = (
+  ctx: RequestContext,
   injector: Injector,
   order: Order
-) => Promise<ParcelInput[]>;
+) => Promise<ParcelInputItem[]>;
