@@ -1,4 +1,4 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { PluginCommonModule, VendureEvent, VendurePlugin } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { WebhookPerChannelEntity } from './api/webhook-per-channel.entity';
@@ -29,9 +29,11 @@ import { webhookPermission } from './index';
   },
 })
 export class WebhookPlugin {
-  static options: WebhookPluginOptions;
+  static options: WebhookPluginOptions<any>;
 
-  static init(options: WebhookPluginOptions): typeof WebhookPlugin {
+  static init<T extends VendureEvent>(
+    options: WebhookPluginOptions<T>
+  ): typeof WebhookPlugin {
     this.options = options;
     return WebhookPlugin;
   }

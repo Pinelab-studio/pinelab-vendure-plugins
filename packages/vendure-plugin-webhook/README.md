@@ -23,16 +23,23 @@ plugins: [
      * only 1 webhook call will be sent
      */
     delay: 3000,
-    events: [ProductEvent, ProductVariantChannelEvent, ProductVariantEvent],
+    events: [ProductEvent, ProductVariantEvent],
     /**
      * Optional: 'requestFn' allows you to send custom headers
      * and a custom body with your webhook call.
      * By default, the webhook POST will have an empty body
      */
-    requestFn: (event) => {
+    requestFn: async (
+      event: ProductEvent | ProductVariantEvent,
+      injector: Injector
+    ) => {
+      // Get data via injector and build your request headers and body
+      const { id } = await injector
+        .get(ChannelService)
+        .getChannelFromToken(event.ctx.channel.token);
       return {
         headers: { test: '1234' },
-        body: JSON.stringify({ createdAt: event.createdAt }),
+        body: JSON.stringify({ createdAt: event.createdAt, channelId: id }),
       };
     },
   }),

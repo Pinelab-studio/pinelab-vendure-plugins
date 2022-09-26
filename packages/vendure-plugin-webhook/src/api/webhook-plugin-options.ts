@@ -1,12 +1,15 @@
-import { VendureEvent } from '@vendure/core';
+import { Injector, ProductEvent, VendureEvent } from '@vendure/core';
 
 export interface WebhookRequestFnResult {
   body?: ArrayBuffer | ArrayBufferView | NodeJS.ReadableStream | string;
   headers?: Record<string, string>;
 }
-export type WebhookRequestFn = (event: VendureEvent) => WebhookRequestFnResult;
+export type WebhookRequestFn<T> = (
+  event: T,
+  injector: Injector
+) => Promise<WebhookRequestFnResult>;
 
-export interface WebhookPluginOptions {
+export interface WebhookPluginOptions<T extends VendureEvent> {
   /**
    * Trigger webhooks if one of these events occur.
    */
@@ -18,7 +21,7 @@ export interface WebhookPluginOptions {
   /**
    * Define a custom body and headers for the webhook request
    */
-  requestFn?: WebhookRequestFn;
+  requestFn?: WebhookRequestFn<T>;
   /**
    * Wait for more events for the same channel before calling webhook
    * Delay is in ms
