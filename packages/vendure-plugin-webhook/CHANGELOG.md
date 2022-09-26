@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.18.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.17.2...v3.18.0) (2022-09-26)
+
+### Features
+
+- **webhook:** pass injector to requestFn ([9c3a77e](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/9c3a77ea6646157b1a1ab134bd79518bd6d4a9cb))
+
 # [3.13.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
 
 ### Bug Fixes
