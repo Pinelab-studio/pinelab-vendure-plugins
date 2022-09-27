@@ -41,6 +41,7 @@ jobs:
             'vendure-plugin-order-export',
             'vendure-plugin-shipping-by-weight-and-country',
             'vendure-plugin-stock-monitoring',
+            'vendure-plugin-sendcloud',
           ]
     steps:
       - name: Checkout code

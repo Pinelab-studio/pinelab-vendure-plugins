@@ -175,7 +175,7 @@ export class GoedgepicktClient {
   }
 
   isOrderWebhookSignatureValid(
-    data: Object,
+    data: string,
     incomingSignature: string
   ): boolean {
     return this.isSignatureValid({
@@ -186,7 +186,7 @@ export class GoedgepicktClient {
   }
 
   isStockWebhookSignatureValid(
-    data: Object,
+    data: string,
     incomingSignature: string
   ): boolean {
     return this.isSignatureValid({
@@ -197,7 +197,7 @@ export class GoedgepicktClient {
   }
 
   private isSignatureValid(input: {
-    data: Object;
+    data: string;
     secret?: string;
     incomingSignature: string;
   }): boolean {
@@ -213,10 +213,7 @@ export class GoedgepicktClient {
     return computedSignature === input.incomingSignature;
   }
 
-  static computeSignature(secret: string, data: Object): string {
-    return crypto
-      .createHmac('sha256', secret)
-      .update(JSON.stringify(data))
-      .digest('hex');
+  static computeSignature(secret: string, data: string): string {
+    return crypto.createHmac('sha256', secret).update(data).digest('hex');
   }
 }

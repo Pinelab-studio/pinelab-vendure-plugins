@@ -15,6 +15,7 @@ import { GoedgepicktConfigEntity } from './api/goedgepickt-config.entity';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { customFields } from './api/custom-fields';
+import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -32,6 +33,7 @@ import { customFields } from './api/custom-fields';
     resolvers: [GoedgepicktResolver],
   },
   configuration: (config: RuntimeVendureConfig) => {
+    config.apiOptions.middleware.push(createRawBodyMiddleWare('/goedgepickt*'));
     config.shippingOptions.fulfillmentHandlers.push(goedgepicktHandler);
     config.authOptions.customPermissions.push(goedgepicktPermission);
     config.customFields = {
