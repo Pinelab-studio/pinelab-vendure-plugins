@@ -192,17 +192,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
    */
   async shipAll(ctx: RequestContext, order: Order): Promise<void> {
     await transitionToShipped(this.orderService, ctx, order, {
-      code: 'manual-fulfillment',
-      arguments: [
-        {
-          name: 'method',
-          value: 'Sendcloud',
-        },
-        {
-          name: 'trackingCode',
-          value: '-',
-        },
-      ],
+      code: sendcloudHandler.code,
+      arguments: [],
     });
   }
 
