@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.19.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.18.0...v3.19.0) (2022-09-27)
+
+### Features
+
+- **sendcloud:** rEADME ([4f7a288](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/4f7a28887ee1bfb612936c1276583e37d99bfc24))
+
 # [3.13.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
 
 ### Bug Fixes

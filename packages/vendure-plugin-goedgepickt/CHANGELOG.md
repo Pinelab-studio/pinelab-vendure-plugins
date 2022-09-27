@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.19.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.18.0...v3.19.0) (2022-09-27)
+
+### Features
+
+- **goedgepickt:** string ([b539b32](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/b539b324be8aabf6357313581720f095cabf5dce))
+- **sendcloud:** finished sc impl with e2e ([50eefc5](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/50eefc53c6988166bec8a9d6d233a564dbec893b))
+- **sendcloud:** stringify body ([3c520fc](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/3c520fc8a1c1c8f7cf632e2ca0833f3f4dd39878))
+- **sendcloud:** test fixes after using bodyparser rawbody ([3f6fe7d](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/3f6fe7d023f850b17797f56f80ad38ee2183410b))
+
 ## [3.14.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.14.0...v3.14.1) (2022-09-07)
 
 ### Bug Fixes
