@@ -116,7 +116,7 @@ describe('SendCloud', () => {
   });
 
   it('Autofulfills order when it has Sendcloud handler', async () => {
-    let authHeader: string | undefined;
+    let authHeader: any | undefined;
     let body: { parcel: ParcelInput } | undefined;
     nock('https://panel.sendcloud.sc')
       .persist()
@@ -150,6 +150,7 @@ describe('SendCloud', () => {
     expect(
       body?.parcel.parcel_items.find((i) => i.hs_code === 'test hs')
     ).toBeDefined();
+    expect(authHeader?.[0]).toContain('Basic');
   });
 
   it('Updates order via webhook', async () => {
