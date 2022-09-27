@@ -288,7 +288,10 @@ describe('Goedgepickt plugin', function () {
       event: 'orderStatusChanged',
       orderUuid: 'doesntmatter',
     };
-    const signature = GoedgepicktClient.computeSignature('test-secret', body);
+    const signature = GoedgepicktClient.computeSignature(
+      'test-secret',
+      JSON.stringify(body)
+    );
     const res = await shopClient.fetch(
       `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
       {
@@ -316,7 +319,10 @@ describe('Goedgepickt plugin', function () {
       productSku: 'L2201308',
       productUuid: 'doesntmatter',
     };
-    const signature = GoedgepicktClient.computeSignature('test-secret', body);
+    const signature = GoedgepicktClient.computeSignature(
+      'test-secret',
+      JSON.stringify(body)
+    );
     const res = await shopClient.fetch(
       `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
       {
