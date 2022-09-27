@@ -31,8 +31,10 @@ import { SendcloudClient } from './sendcloud.client';
 import { sendcloudHandler } from './sendcloud.handler';
 import { fulfillAll, transitionToShipped } from '../../../util/src';
 import { Parcel, ParcelInputItem } from './types/sendcloud-api.types';
-import { SendcloudPluginOptions } from './sendcloud.plugin';
-import { SendcloudParcelStatus } from './types/sendcloud.types';
+import {
+  SendcloudParcelStatus,
+  SendcloudPluginOptions,
+} from './types/sendcloud.types';
 
 interface SendcloudJobData {
   orderCode: string;
@@ -104,7 +106,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
         ))
       );
     }
-    const parcelInput = toParcelInput(order);
+    const parcelInput = toParcelInput(order, this.options);
     parcelInput.parcel_items.unshift(...additionalParcelItems);
     return (await this.getClient(ctx)).createParcel(parcelInput);
   }
@@ -228,7 +230,9 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     return repo.findOneOrFail({ channelId: String(ctx.channelId) });
   }
 
-  async getConfig(ctx: RequestContext): Promise<SendcloudConfigEntity | void> {
+  async getConfig(
+    ctx: RequestContext
+  ): Promise<SendcloudConfigEntity | undefined> {
     return this.connection
       .getRepository(ctx, SendcloudConfigEntity)
       .findOne({ channelId: String(ctx.channelId) });

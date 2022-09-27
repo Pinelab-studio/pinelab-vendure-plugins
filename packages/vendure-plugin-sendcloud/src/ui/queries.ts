@@ -9,3 +9,13 @@ export const UPDATE_SENDCLOUD_CONFIG = gql`
     }
   }
 `;
+
+export const GET_SENDCLOUD_CONFIG = gql`
+  query sendCloudConfig {
+    sendCloudConfig {
+      id
+      secret
+      publicKey
+    }
+  }
+`;

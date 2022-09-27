@@ -1,6 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { DataService, NotificationService } from '@vendure/admin-ui/core';
+import { GET_SENDCLOUD_CONFIG, UPDATE_SENDCLOUD_CONFIG } from './queries';
 
 @Component({
   selector: 'sendcloud-component',
@@ -45,11 +46,12 @@ export class SendcloudComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     await this.dataService
-      .query(getMyparcelConfig)
-      .mapStream((d: any) => d.myparcelConfig)
-      .subscribe((config) =>
-        this.form.controls['apiKey'].setValue(config.apiKey)
-      );
+      .query(GET_SENDCLOUD_CONFIG)
+      .mapStream((d: any) => d.sendCloudConfig)
+      .subscribe((config) => {
+        this.form.controls['secret'].setValue(config.secret);
+        this.form.controls['publicKey'].setValue(config.publicKey);
+      });
   }
 
   async save(): Promise<void> {
@@ -57,17 +59,19 @@ export class SendcloudComponent implements OnInit {
       if (this.form.dirty) {
         const formValue = this.form.value;
         await this.dataService
-          .mutate(updateMyparcelConfig, { input: { apiKey: formValue.apiKey } })
+          .mutate(UPDATE_SENDCLOUD_CONFIG, {
+            input: { secret: formValue.secret, publicKey: formValue.publicKey },
+          })
           .toPromise();
       }
       this.form.markAsPristine();
       this.changeDetector.markForCheck();
       this.notificationService.success('common.notify-update-success', {
-        entity: 'MyparcelConfig',
+        entity: 'SendCloud config',
       });
     } catch (e) {
       this.notificationService.error('common.notify-update-error', {
-        entity: 'MyparcelConfig',
+        entity: 'SendCloud config',
       });
     }
   }

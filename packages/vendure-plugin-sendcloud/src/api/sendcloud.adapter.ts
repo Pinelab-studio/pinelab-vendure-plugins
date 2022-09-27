@@ -1,14 +1,19 @@
 import { Order, OrderLine } from '@vendure/core';
 import { ParcelInput, ParcelInputItem } from './types/sendcloud-api.types';
+import { SendcloudPluginOptions } from './types/sendcloud.types';
 
 /**
  * Transforms order and variants to ParcelInput
  * @param order including lines, shippingaddress and customer
+ * @param options
  */
-export function toParcelInput(order: Order): ParcelInput {
+export function toParcelInput(
+  order: Order,
+  options: SendcloudPluginOptions
+): ParcelInput {
   const items = order.lines
     .filter((line) => line.quantity >= 1)
-    .map(toParcelInputItem);
+    .map((line) => toParcelInputItem(line, options));
   return {
     name: order.shippingAddress.fullName || '-',
     company_name: order.shippingAddress.company,
@@ -26,13 +31,13 @@ export function toParcelInput(order: Order): ParcelInput {
   };
 }
 
-/**
- * @param line
- */
-export function toParcelInputItem(line: OrderLine): ParcelInputItem {
+export function toParcelInputItem(
+  line: OrderLine,
+  options: SendcloudPluginOptions
+): ParcelInputItem {
   const variant = line.productVariant;
-  let weightPerUnit = (variant.product?.customFields as any)?.weight || 0;
-  let hsCode = (variant.product?.customFields as any)?.hsCode;
+  let weightPerUnit = options.weightFn?.(line) || 0;
+  let hsCode = options.hsCodeFn?.(line);
   if (weightPerUnit < 0.001) {
     weightPerUnit = 0.001;
   }
@@ -43,9 +48,12 @@ export function toParcelInputItem(line: OrderLine): ParcelInputItem {
     sku: variant.sku,
     value: (variant.priceWithTax / 100).toFixed(2),
   };
+  const originCountry = options.originCountryFn?.(line);
+  if (originCountry) {
+    parcelInput.origin_country = originCountry;
+  }
   if (hsCode && hsCode.length > 1) {
     parcelInput.hs_code = hsCode;
-    parcelInput.origin_country = 'NL';
   }
   return parcelInput;
 }

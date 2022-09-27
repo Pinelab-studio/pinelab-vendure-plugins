@@ -1,4 +1,4 @@
-import { Injector, Order, RequestContext } from '@vendure/core';
+import { Injector, Order, OrderLine, RequestContext } from '@vendure/core';
 import { ParcelInput, ParcelInputItem } from './sendcloud-api.types';
 
 export interface SendcloudParcelStatus {
@@ -170,8 +170,35 @@ export const sendcloudStates: SendcloudParcelStatus[] = [
   },
 ];
 
+export interface SendcloudPluginOptions {
+  /**
+   * Function to specify the weight of a parcelItem
+   * based on the given orderLine
+   */
+  weightFn?: CustomFieldFn<number>;
+  /**
+   * Function to specify the hsCode for a parcelItem
+   */
+  hsCodeFn?: CustomFieldFn<string>;
+  originCountryFn?: CustomFieldFn<string>;
+
+  /**
+   * You can send additional ParcelItems (rows) to SendCloud.
+   * For example if you want the couponCodes applied on an order
+   * also on your packaging slip in SendCloud
+   */
+  additionalParcelItemsFn?: AdditionalParcelInputFn;
+}
+
 export type AdditionalParcelInputFn = (
   ctx: RequestContext,
   injector: Injector,
   order: Order
 ) => Promise<ParcelInputItem[]>;
+
+export type CustomFieldFn<T = string | number> = (
+  /**
+   * OrderLine with line.productVariant and line.productVariant.product
+   */
+  line: OrderLine
+) => T;

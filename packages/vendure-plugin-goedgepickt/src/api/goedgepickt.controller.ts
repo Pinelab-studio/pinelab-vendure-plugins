@@ -6,6 +6,7 @@ import {
   Post,
   Get,
   Inject,
+  Req,
 } from '@nestjs/common';
 import { GoedgepicktService } from './goedgepickt.service';
 import { Logger } from '@vendure/core';
@@ -15,6 +16,7 @@ import {
   IncomingStockUpdateEvent,
 } from './goedgepickt.types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { Request } from 'express';
 
 @Controller('goedgepickt')
 export class GoedgepicktController {
@@ -41,6 +43,7 @@ export class GoedgepicktController {
   @Post('webhook/:channelToken')
   async webhook(
     @Param('channelToken') channelToken: string,
+    @Req() req: Request,
     @Body() body: IncomingStockUpdateEvent | IncomingOrderStatusEvent,
     @Headers('signature') signature: string
   ) {
@@ -50,9 +53,10 @@ export class GoedgepicktController {
     );
     try {
       const client = await this.service.getClientForChannel(channelToken);
+      const rawBody = (req as any).rawBody || body; // TestEnvironment doesnt have middleware applied, so no rawBody available
       switch (body.event) {
         case 'orderStatusChanged':
-          if (!client.isOrderWebhookSignatureValid(body, signature)) {
+          if (!client.isOrderWebhookSignatureValid(rawBody, signature)) {
             return Logger.warn(
               `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
               loggerCtx
@@ -65,7 +69,7 @@ export class GoedgepicktController {
           );
           break;
         case 'stockUpdated':
-          if (!client.isStockWebhookSignatureValid(body, signature)) {
+          if (!client.isStockWebhookSignatureValid(rawBody, signature)) {
             return Logger.warn(
               `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
               loggerCtx

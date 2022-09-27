@@ -17,13 +17,16 @@ import {
   getCouponCodes,
   getNrOfOrders,
   ParcelInputItem,
-  SendcloudPlugin,
   sendcloudHandler,
   sendcloudMiddleware,
+  SendcloudPlugin,
 } from '../src';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { updateSendCloudConfig } from './test.helpers';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import * as path from 'path';
+
 require('dotenv').config();
 
 (async () => {
@@ -50,11 +53,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [MyparcelPlugin.ui],
+          extensions: [SendcloudPlugin.ui],
           devMode: true,
-        }),*/
+        }),
       }),
     ],
     paymentOptions: {

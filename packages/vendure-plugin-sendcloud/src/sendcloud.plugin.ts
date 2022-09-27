@@ -1,38 +1,21 @@
 import { Middleware, PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { SendcloudService } from './sendcloud.service';
-import { SendcloudController } from './sendcloud.controller';
 import { gql } from 'apollo-server-core';
-import { SendcloudResolver } from './sendcloud.resolver';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import { AdditionalParcelInputFn } from './types/sendcloud.types';
-import { PLUGIN_OPTIONS } from './constants';
-import { sendcloudHandler } from './sendcloud.handler';
-import { SendcloudConfigEntity } from './sendcloud-config.entity';
-import { sendcloudPermission } from '../index';
 import bodyParser from 'body-parser';
-
-export interface SendcloudPluginOptions {
-  /**
-   * You can send additional ParcelItems (rows) to SendCloud.
-   * For example if you want the couponCodes applied also on your
-   * packaging slip in SendCloud
-   */
-  additionalParcelItemsFn?: AdditionalParcelInputFn;
-}
-
-export const sendcloudMiddleware: Middleware = {
-  route: '/sendcloud/webhook/e2e-default-channel',
-  beforeListen: true,
-  handler: bodyParser.json({
-    verify(req, _, buf) {
-      if (Buffer.isBuffer(buf)) {
-        (req as any).rawBody = Buffer.from(buf);
-      }
-      return true;
-    },
-  }),
-};
+import {
+  AdditionalParcelInputFn,
+  CustomFieldFn,
+  SendcloudPluginOptions,
+} from './api/types/sendcloud.types';
+import { SendcloudResolver } from './api/sendcloud.resolver';
+import { SendcloudService } from './api/sendcloud.service';
+import { PLUGIN_OPTIONS } from './api/constants';
+import { SendcloudController } from './api/sendcloud.controller';
+import { SendcloudConfigEntity } from './api/sendcloud-config.entity';
+import { sendcloudHandler } from './api/sendcloud.handler';
+import { sendcloudPermission } from './index';
+import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 
 @VendurePlugin({
   adminApiExtensions: {
@@ -70,7 +53,9 @@ export const sendcloudMiddleware: Middleware = {
     config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
     config.authOptions.customPermissions.push(sendcloudPermission);
     // save rawBody for signature verification
-    config.apiOptions.middleware.push(sendcloudMiddleware);
+    config.apiOptions.middleware.push(
+      createRawBodyMiddleWare('/sendcloud/webhook*')
+    );
     return config;
   },
 })

@@ -25,6 +25,7 @@ export const sendcloudHandler = new FulfillmentHandler({
     const trackingCodes: (string | number)[] = [];
     await Promise.all(
       orders.map(async (order) => {
+        // const { id, tracking_number } = await sendcloudService
         const { id, tracking_number } = await sendcloudService
           .syncToSendloud(ctx, order)
           .catch((err: unknown) => {

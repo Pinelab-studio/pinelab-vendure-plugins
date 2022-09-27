@@ -31,7 +31,7 @@ export async function getNrOfOrders(
     description: String(nrOfOrders),
     quantity: 1,
     weight: '0.1',
-    sku: `Orders`,
+    sku: `Nr of orders`,
     value: '0',
   };
 }

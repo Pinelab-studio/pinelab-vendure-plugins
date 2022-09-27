@@ -1,4 +1,4 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
@@ -33,6 +33,14 @@ export class SendcloudResolver {
     );
     await this.service.syncToSendloud(ctx, order);
     return true;
+  }
+
+  @Query()
+  @Allow(sendcloudPermission.Permission)
+  async sendCloudConfig(
+    @Ctx() ctx: RequestContext
+  ): Promise<SendcloudConfigEntity | undefined> {
+    return this.service.getConfig(ctx);
   }
 
   @Mutation()

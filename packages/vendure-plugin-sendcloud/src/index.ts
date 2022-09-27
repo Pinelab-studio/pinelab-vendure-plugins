@@ -5,7 +5,7 @@ export const sendcloudPermission = new PermissionDefinition({
   description: 'Allows setting SendCloud configuration',
 });
 
-export * from './api/sendcloud.plugin';
+export * from './sendcloud.plugin';
 export * from './api/sendcloud.handler';
 export * from './api/additional-parcel-input-items';
 export * from './api/types/sendcloud.types';
