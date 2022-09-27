@@ -9,7 +9,7 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
         id: 'sendcloud',
         label: 'SendCloud',
         routerLink: ['/extensions/sendcloud'],
-        icon: 'bundle',
+        icon: 'cloud',
         requiresPermission: 'SetSendCloudConfig',
       },
       'settings'
