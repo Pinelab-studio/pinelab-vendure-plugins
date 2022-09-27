@@ -18,7 +18,7 @@ export class SendcloudController {
     @Headers(SendcloudClient.signatureHeader) signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<unknown> {
-    const rawBody = (req as any).rawBody || body; // TestEnvironment doesnt have middleware applied, so no rawBody available
+    const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
     const ctx = await this.sendcloudService.createContext(channelToken);
     const client = await this.sendcloudService.getClient(ctx);
     if (!client.isValidWebhook(rawBody, signature)) {

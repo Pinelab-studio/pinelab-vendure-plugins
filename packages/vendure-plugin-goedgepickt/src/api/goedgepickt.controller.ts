@@ -53,7 +53,7 @@ export class GoedgepicktController {
     );
     try {
       const client = await this.service.getClientForChannel(channelToken);
-      const rawBody = (req as any).rawBody || body; // TestEnvironment doesnt have middleware applied, so no rawBody available
+      const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
       switch (body.event) {
         case 'orderStatusChanged':
           if (!client.isOrderWebhookSignatureValid(rawBody, signature)) {

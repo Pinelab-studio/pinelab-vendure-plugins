@@ -30,14 +30,16 @@ AdminUiPlugin.init({
 }),
 ```
 
-3. Go to your SendCloud account and go to `Settings > Integrations` and create an integration.
-4. Write down the `secret` and `publicKey` of the created integration
-5. For the same integration, add the webhook `https://your-vendure-domain.io/sendcloud/webhook/your-channel-token`. This
+3. Run a DB [migration](https://www.vendure.io/docs/developer-guide/migrations/) to add the new SendCloudConfigEntity to
+   the database.
+4. Go to your SendCloud account and go to `Settings > Integrations` and create an integration.
+5. Write down the `secret` and `publicKey` of the created integration
+6. For the same integration, add the webhook `https://your-vendure-domain.io/sendcloud/webhook/your-channel-token`. This
    will update orders when the status changes in SendCloud.
-6. Start Vendure and login as admin
-7. Make sure you have the permission `SetSendCloudConfig`
-8. Go to `Settings > SendCloud`
-9. You can fill in your SendCloud `secret` and `public key` here and click save.
+7. Start Vendure and login as admin
+8. Make sure you have the permission `SetSendCloudConfig`
+9. Go to `Settings > SendCloud`
+10. You can fill in your SendCloud `secret` and `public key` here and click save.
 
 Now, when an order is placed, it will be automatically fulfilled and send to SendCloud.
 
