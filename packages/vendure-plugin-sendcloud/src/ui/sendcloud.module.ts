@@ -15,17 +15,7 @@ import { SendcloudComponent } from './sendcloud.component';
       },
     ]),
   ],
-  providers: [
-    addNavMenuItem(
-      {
-        id: 'sendcloud',
-        label: 'SendCloud',
-        routerLink: ['/extensions/sendcloud'],
-        icon: 'cursor-hand-open',
-      },
-      'settings'
-    ),
-  ],
+  providers: [],
   declarations: [SendcloudComponent],
 })
 export class SendcloudModule {}
