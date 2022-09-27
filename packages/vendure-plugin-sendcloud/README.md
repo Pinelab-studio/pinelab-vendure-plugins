@@ -2,29 +2,82 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-sendcloud/dev/@vendure/core)
 
-This plugins creates orders in SendCloud as soon as a Vendure Order transitions to `PaymentSettled`.
-The plugin uses `product.customFields.weight` to sync weight to SendCloud. It will divide the weight by 1000, because Sendcloud expects kilograms instead of grams.
-If you don't have this field, no problem, a weight of `0` will be synced to SendCloud.
+### Visit [pinelab-plugins.com](https://pinelab-plugins.com/plugin/vendure-plugin-sendcloud) for more documentation and examples.
 
-Add this to your `vendure-config.ts` to get the plugin up and running:
+This plugin syncs orders to the SendCloud fulfillment platform.
 
-```js
-Plugins: [
-  SendcloudPlugin.init({
-     publicKey: process.env.SENDCLOUD_API_PUBLIC,
-     secret: process.env.SENDCLOUD_API_SECRET
-  }),
+## Installation
+
+1. Add the plugin to your `vendure-config.ts`:
+
+```ts
+plugins: [
+  SendcloudPlugin.init({}),
   ...
 ]
 ```
 
-You need both your SendCloud public key and secret key.
+2. Add the SendCloud Ui to the Vendure admin:
 
-If you want orders to be updated in Vendure, set up a webhook in your SendCloud account pointing to `https://your-vendure-domain.io/sendcloud/webhook`
+```ts
+AdminUiPlugin.init({
+  port: 3002,
+  route: 'admin',
+  app: compileUiExtensions({
+    outputPath: path.join(__dirname, '__admin-ui'),
+    extensions: [SendcloudPlugin.ui],
+  }),
+}),
+```
 
-**This plugin autofulfills orders when the SendCloud handler is set for the shippingmethod**
-The whole order is automatically fulfilled when it is placed (OrderPlacedEvent) and sent to Sendcloud.
+3. Go to your SendCloud account and go to `Settings > Integrations` and create an integration.
+4. Write down the `secret` and `publicKey` of the created integration
+5. For the same integration, add the webhook `https://your-vendure-domain.io/sendcloud/webhook/your-channel-token`. This
+   will update orders when the status changes in SendCloud.
+6. Start Vendure and login as admin
+7. Make sure you have the permission `SetSendCloudConfig`
+8. Go to `Settings > SendCloud`
+9. You can fill in your SendCloud `secret` and `public key` here and click save.
 
-## Additional parcel input
+Now, when an order is placed, it will be automatically fulfilled and send to SendCloud.
 
-// TODO
+## Additional configuration
+
+You can choose to send additional info to SendCloud: `weight`, `hsCode`, `origin_country` and additional parcel items.
+Parcel items will show up as rows on your SendCloud packaging slips.
+
+```ts
+import 'SendCloudPlugin, getNrOfOrders';
+
+from;
+('vendure-plugin-sendcloud');
+plugins: [
+  SendcloudPlugin.init({
+    /**
+     * Implement the weightFn to determine the weight of a parcel item,
+     * or set a default value
+     */
+    weightFn: (line) =>
+      (line.productVariant.product?.customFields as any)?.weight || 5,
+    /**
+     * Implement the hsCodeFn to set the hsCode of a parcel item,
+     * or set a default value
+     */
+    hsCodeFn: (line) =>
+      (line.productVariant.product?.customFields as any)?.hsCode || 'test hs',
+    /**
+     * Implement the originCountryFn to set the origin_country of a parcel item,
+     * or set a default value
+     */
+    originCountryFn: (line) => 'NL',
+    /**
+     * Implement the additionalParcelItemsFn to add additional rows to the SendCloud order.
+     * This example adds the nr of previous orders of the current customer to SendCloud
+     */
+    additionalParcelItemsFn: async (ctx, injector, order) => {
+      additionalInputs.push(await getNrOfOrders(ctx, injector, order));
+      return additionalInputs;
+    },
+  }),
+];
+```

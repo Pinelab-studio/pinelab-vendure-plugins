@@ -7,7 +7,7 @@ import {
 import { ParcelInputItem } from './types/sendcloud-api.types';
 
 /**
- * Add nr of orders for this customer as parcelItem
+ * Add nr of previously placed orders for this customer as parcelItem
  */
 export async function getNrOfOrders(
   ctx: RequestContext,
