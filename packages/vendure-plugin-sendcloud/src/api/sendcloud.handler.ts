@@ -45,6 +45,7 @@ export const sendcloudHandler = new FulfillmentHandler({
       trackingCode: trackingCodes.join(','),
       customFields: {
         parcelIds: externalIds,
+        trackingCodes,
       },
     };
   },
