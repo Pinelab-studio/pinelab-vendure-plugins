@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.20.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.19.0...v3.20.0) (2022-09-28)
+
+### Features
+
+- **goedgepickt:** customfields push ([0966780](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/0966780033eb74d2d93e117cc7543da5d57d84d2))
+
 # [3.19.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.18.0...v3.19.0) (2022-09-27)
 
 ### Features
