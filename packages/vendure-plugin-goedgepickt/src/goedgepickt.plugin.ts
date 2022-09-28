@@ -36,10 +36,7 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
     config.apiOptions.middleware.push(createRawBodyMiddleWare('/goedgepickt*'));
     config.shippingOptions.fulfillmentHandlers.push(goedgepicktHandler);
     config.authOptions.customPermissions.push(goedgepicktPermission);
-    config.customFields = {
-      ...config.customFields,
-      ...customFields,
-    };
+    config.customFields.Order.push(...customFields.Order!);
     return config;
   },
 })
