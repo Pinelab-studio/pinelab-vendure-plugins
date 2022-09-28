@@ -6,7 +6,7 @@
 
 This plugin syncs orders to the SendCloud fulfillment platform.
 
-## Installation
+## Getting started
 
 1. Add the plugin to your `vendure-config.ts`:
 

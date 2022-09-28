@@ -2,16 +2,9 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-invoices/dev/@vendure/core)
 
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-invoices)
+
 A plugin for generating PDF invoices for placed orders.
-
-- View created invoices via the Vendure admin
-- Set templates per channel
-- Preview HTML templates before using them
-- Download multiple pdf's as zip
-- Easily implement your own storage strategy
-- Pass custom data to your custom HTML template
-
-![Invoices screenshot](https://raw.githubusercontent.com/Pinelab-studio/pinelab-vendure-plugins/master/packages/vendure-plugin-invoices/images/invoice.jpeg)
 
 ## Getting started
 
@@ -20,63 +13,54 @@ A plugin for generating PDF invoices for placed orders.
 ```ts
 plugins: [
   InvoicePlugin.init({
-    // Used as host for creating downloadUrls
+    // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
   }),
+  // Add the invoices page to the admin ui
   AdminUiPlugin.init({
     port: 3002,
     route: 'admin',
     app: compileUiExtensions({
       outputPath: path.join(__dirname, '__admin-ui'),
       extensions: [InvoicePlugin.ui],
-      devMode: true,
     }),
   }),
 ];
 ```
 
-2. Run a [migration](https://www.vendure.io/docs/developer-guide/migrations/), because this plugin adds 2 entities to the db.
-3. Start Vendure and navigate to the admin
+2. Run a [migration](https://www.vendure.io/docs/developer-guide/migrations/), to add the Invoice and InvoiceConfig
+   entities to the database.
+3. Start Vendure and login to the admin dashboard
 4. Make sure you have the permission `AllowInvoicesPermission`
-5. Go to Sales > Invoices.
-6. Unfold the `settings` accordion.
-7. Check the checkbox to enable invoice generation for the current channel on order placement.
+5. Go to `Sales > Invoices`.
+6. Unfold the `Settings` accordion.
+7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
-The bottom table holds an overview of already generated invoices.
-
-:warning: If you are using Docker with node:16 or higher as base, you need to add this to your Dockerfile:
+If you are using Docker with node:16 or higher as base, you need to add this to your Dockerfile:
 
 ```shell
 # PhantomJS fix https://github.com/bazelbuild/rules_closure/issues/351
 ENV OPENSSL_CONF=/dev/null
 ```
 
-## Adding invoices to your order-confirmation
+### Adding invoices to your order-confirmation email
 
-Invoices are generated via the worker and are not available when order confirmations are send. What you can do is add
-the following link to your email:
+Add the following link to your email template:
 
 `https://<your server>/invoices/e2e-default-channel/C7YH7WME4LTQNFRZ?email=hayden.zieme12@hotmail.com`.
 
-The server will check if the ordercode belongs to the given channel AND the given customer emailaddress. If so, it will
-return the invoice.
+When the customer clicks the link, the server will check if the `ordercode`, `channelCode` and `customer emailaddress`
+match with the requested order. If so, it will return the invoice.
 
-## Admin UI
+### Google Storage strategy
 
-The Vendure admin can be used to view created invoices and change invoice settings. Make sure you
-have `AllowInvoicesPermission` for the 'Invoices' menu item to show.
-
-![Admin invoice settings](https://raw.githubusercontent.com/Pinelab-studio/pinelab-vendure-plugins/master/packages/vendure-plugin-invoices/images/admin-settings.jpeg)
-![Admin invoices overview](https://raw.githubusercontent.com/Pinelab-studio/pinelab-vendure-plugins/master/packages/vendure-plugin-invoices/images/admin-table.jpeg)
-
-## Google storage strategy
-
-This plugin also includes a strategy for storing invoices in Google Storage. Install the gcloud package and set the following config:
+This plugin also includes a strategy for storing invoices in Google Storage:
 
 `yarn add @google-cloud/storage`
 
 ```ts
+// In vendure-config.ts
 InvoicePlugin.init({
   vendureHost: 'http://localhost:3050',
   storageStrategy: new GoogleStorageInvoiceStrategy({
@@ -88,12 +72,19 @@ InvoicePlugin.init({
 - [Enable the service account IAM in Google Cloud Console](https://console.developers.google.com/apis/api/iamcredentials.googleapis.com/overview)
 - [Add role 'Service account token creator' to the Cloud Run service account](https://github.com/googleapis/nodejs-storage/issues/1222)
 
-The strategy will use the projectId and credentials in from your environment, so if you are running in Cloud Functions
-or Cloud Run you should be fine with this config.
+The strategy will use the projectId and credentials in from your environment, which is useful for Google Cloud Run or
+Cloud Functions.
 
-:warning: However, if you want to run it locally or on some other environment, use this:
+However, if you want to run it locally or on a custom environment, you need to pass a keyFile to the plugin. This is
+needed to generate signedUrls, which are used to give customers temporary access to a file on Storage. More info about
+locally using signedUrls: https://github.com/googleapis/nodejs-storage/issues/360
 
 ```ts
+import {
+  InvoicePlugin,
+  GoogleStorageInvoiceStrategy,
+} from 'vendure-plugin-invoices';
+
 InvoicePlugin.init({
   vendureHost: 'http://localhost:3050',
   storageStrategy: new GoogleStorageInvoiceStrategy({
@@ -105,17 +96,35 @@ InvoicePlugin.init({
 });
 ```
 
-This is needed to generate signedUrls, which are used to give customers temporary access to a file on Storage. See this
-info for info about locally using signedUrls: https://github.com/googleapis/nodejs-storage/issues/360
+### Amazon S3 Storage strategy
 
-## Custom file storage
+This plugin also includes a strategy for storing invoices on Amazon S3.
+
+`yarn add aws-sdk`
+
+```ts
+import { InvoicePlugin, S3StorageStrategy } from 'vendure-plugin-invoices';
+
+InvoicePlugin.init({
+  vendureHost: 'http://localhost:3050',
+  storageStrategy: new S3StorageStrategy({
+    expiresInSeconds: 360,
+    /**
+     * Config here will be passed directly to `new AWS.S3()`
+     * See https://www.npmjs.com/package/aws-sdk for more info
+     */
+  }),
+});
+```
+
+### Custom file storage
 
 Implement your own strategy for storing invoices by implementing one of these interfaces:
 
-### Remote storage strategy
+#### Remote storage strategy
 
-`RemoteStorageStrategy` for storing PDF files on an external platform like Google Cloud or S3.
-It redirects the user to a public/authorized URL for the user to download the invoice PDF.
+`RemoteStorageStrategy` for storing PDF files on an external platform like Google Cloud or S3. It redirects the user to
+a public/authorized URL for the user to download the invoice PDF.
 
 ```ts
 import { RemoteStorageStrategy, zipFiles } from 'vendure-plugin-invoices';
@@ -148,7 +157,7 @@ export class YourRemoteStrategy implements RemoteStorageStrategy {
 }
 ```
 
-### Local file storage
+#### Local file storage
 
 `LocalFileStrategy` streams the invoice through the Vendure service to the user.
 
@@ -177,9 +186,9 @@ export class YourLocalStrategy implements LocalStorageStrategy {
 }
 ```
 
-## Custom invoice numbering and custom data
+### Custom invoice numbering and custom data
 
-Implement the `DataStrategy` to pass custom data to your template or generate custom invoicenumbers:
+Implement the `DataStrategy` to pass custom data to your template or generate custom invoice numbers:
 
 ```ts
 export class DefaultDataStrategy implements DataStrategy {
@@ -205,30 +214,3 @@ You can access this data in your HTML template using Handlebars.js:
 ```html
 <h1>{{ someCustomField }}</h1>
 ```
-
-## Contributing
-
-Contributions always welcome! Just create a PR on Github. The commands you need:
-
-```shell
-# Run e2e test
-yarn test
-
-# Start server with auto-reloading admin UI
-yarn start
-
-# Serve auto-reloading backend. This sometimes messes with phantom processes
-# from admin ui compilation. You might want to disable admin compilation
-# in dev-server.ts if you use this
-yarn serve
-```
-
-## Enjoying our plugins?
-
-Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
-
-Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
-<br/>
-<br/>
-<br/>
-[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)
