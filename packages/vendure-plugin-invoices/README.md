@@ -44,7 +44,7 @@ If you are using Docker with node:16 or higher as base, you need to add this to 
 ENV OPENSSL_CONF=/dev/null
 ```
 
-### Adding invoices to your order-confirmation email
+## Adding invoices to your order-confirmation email
 
 Add the following link to your email template:
 
@@ -53,7 +53,7 @@ Add the following link to your email template:
 When the customer clicks the link, the server will check if the `ordercode`, `channelCode` and `customer emailaddress`
 match with the requested order. If so, it will return the invoice.
 
-### Google Storage strategy
+## Google Storage strategy
 
 This plugin also includes a strategy for storing invoices in Google Storage:
 
@@ -96,7 +96,7 @@ InvoicePlugin.init({
 });
 ```
 
-### Amazon S3 Storage strategy
+## Amazon S3 Storage strategy
 
 This plugin also includes a strategy for storing invoices on Amazon S3.
 
@@ -117,7 +117,7 @@ InvoicePlugin.init({
 });
 ```
 
-### Custom file storage
+## Custom file storage
 
 Implement your own strategy for storing invoices by implementing one of these interfaces:
 
@@ -186,7 +186,7 @@ export class YourLocalStrategy implements LocalStorageStrategy {
 }
 ```
 
-### Custom invoice numbering and custom data
+## Custom invoice numbering and custom data
 
 Implement the `DataStrategy` to pass custom data to your template or generate custom invoice numbers:
 
