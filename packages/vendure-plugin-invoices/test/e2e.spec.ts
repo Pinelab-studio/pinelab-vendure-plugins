@@ -33,6 +33,7 @@ import {
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import gql from 'graphql-tag';
 
 jest.setTimeout(20000);
 
@@ -54,6 +55,7 @@ describe('Invoices plugin', function () {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         InvoicePlugin.init({
+          licenseKey: 'test-licensekey',
           vendureHost: 'http://localhost:3106',
         }),
       ],
@@ -199,6 +201,30 @@ describe('Invoices plugin', function () {
       method: 'POST',
     });
     expect(res.status).toBe(403);
+  });
+
+  it('Returns license key', async () => {
+    await adminClient.asSuperAdmin();
+    const { isInvoicePluginLicenseValid } = await adminClient.query(
+      gql`
+        query {
+          isInvoicePluginLicenseValid
+        }
+      `
+    );
+    expect(isInvoicePluginLicenseValid).toBe(false);
+  });
+
+  it('Does not return license key for unauthorized', async () => {
+    await adminClient.asAnonymousUser();
+    const promise = adminClient.query(
+      gql`
+        query {
+          isInvoicePluginLicenseValid
+        }
+      `
+    );
+    await expect(promise).rejects.toThrow('authorized');
   });
 
   afterAll(() => {

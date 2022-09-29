@@ -1,4 +1,5 @@
 import {
+  Logger,
   PluginCommonModule,
   RuntimeVendureConfig,
   Type,
@@ -15,10 +16,16 @@ import { schema } from './api/schema.graphql';
 import { DataStrategy } from './api/strategies/data-strategy';
 import { DefaultDataStrategy } from './api/strategies/default-data-strategy';
 import { LocalFileStrategy } from './api/strategies/local-file-strategy';
-import { PLUGIN_INIT_OPTIONS } from './constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS, PLUGIN_NAME } from './constants';
 import { invoicePermission, StorageStrategy } from './index';
+import { logIfInvalidLicense } from '../../util/src/license';
 
 export interface InvoicePluginConfig {
+  /**
+   * Licensekey for commercial use of this plugin.
+   * For more information visit https://pinelab-plugins.com/plugin/vendure-plugin-invoices/
+   */
+  licenseKey?: string;
   /**
    * Hostname to use for download links, can be the Vendure instance,
    * but also the worker instance if you want
@@ -48,6 +55,7 @@ export class InvoicePlugin {
   static init(
     config: Partial<InvoicePluginConfig> & { vendureHost: string }
   ): Type<InvoicePlugin> {
+    logIfInvalidLicense(Logger, PLUGIN_NAME, loggerCtx, config.licenseKey);
     InvoicePlugin.config = {
       ...config,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),

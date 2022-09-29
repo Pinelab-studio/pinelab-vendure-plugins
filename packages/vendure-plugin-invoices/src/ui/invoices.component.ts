@@ -9,6 +9,7 @@ import {
 import {
   getAllInvoicesQuery,
   getConfigQuery,
+  isInvoicePluginLicenseValid,
   upsertConfigMutation,
 } from './queries.graphql';
 import {
@@ -18,6 +19,7 @@ import {
   InvoiceList,
   InvoicesQuery,
   InvoicesQueryVariables,
+  IsInvoicePluginLicenseValidQuery,
   UpsertInvoiceConfigMutation,
   UpsertInvoiceConfigMutationVariables,
 } from './generated/graphql';
@@ -62,6 +64,18 @@ import {
                 content="Preview the HTML template. Uses the most recent placed order. Just a preview, it doesn't save any invoices!"
               ></vdr-help-tooltip>
             </form>
+            <br />
+            <small *ngIf="!isLicenseValid" style="color: red;">
+              For commercial use of this plugin, please purchase a license at
+              <a
+                href="https://pinelab-plugins.com/plugin/vendure-plugin-invoices/"
+                target="_blank"
+                >pinelab-plugins.com</a
+              >.
+              <br />
+              Already a user of this plugin? You might be applicable for a free
+              license! Contact us at <b>plugins@pinelab.studio</b>
+            </small>
           </section>
         </clr-accordion-content>
       </clr-accordion-panel>
@@ -122,6 +136,7 @@ export class InvoicesComponent implements OnInit {
   page = 1;
   selectedInvoices: Invoice[] = [];
   serverPath: string;
+  isLicenseValid: boolean | undefined | null;
 
   constructor(
     private formBuilder: FormBuilder,
@@ -138,13 +153,18 @@ export class InvoicesComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await this.dataService
+    this.dataService
       .query<InvoiceConfigQuery>(getConfigQuery)
       .mapStream((d) => d.invoiceConfig)
       .subscribe((config) => {
         this.form.controls['enabled'].setValue(config?.enabled);
         this.form.controls['templateString'].setValue(config?.templateString);
       });
+    // Validate license
+    this.dataService
+      .query<IsInvoicePluginLicenseValidQuery>(isInvoicePluginLicenseValid)
+      .mapStream((l) => l.isInvoicePluginLicenseValid)
+      .subscribe((result) => (this.isLicenseValid = result));
     await this.getAllInvoices();
   }
 
