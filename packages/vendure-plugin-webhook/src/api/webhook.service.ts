@@ -1,8 +1,9 @@
 import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
+  Injector,
   Logger,
-  ProcessContext,
   TransactionalConnection,
   VendureEvent,
 } from '@vendure/core';
@@ -20,7 +21,8 @@ export class WebhookService implements OnApplicationBootstrap {
 
   constructor(
     private eventBus: EventBus,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
+    private moduleRef: ModuleRef
   ) {}
 
   async getWebhook(
@@ -118,7 +120,10 @@ export class WebhookService implements OnApplicationBootstrap {
     await Promise.all(
       channels.map(async (channel) => {
         try {
-          const request = WebhookPlugin.options.requestFn?.(event);
+          const request = await WebhookPlugin.options.requestFn?.(
+            event,
+            new Injector(this.moduleRef)
+          );
           await fetch(channel!, {
             method: WebhookPlugin.options.httpMethod,
             headers: request?.headers,

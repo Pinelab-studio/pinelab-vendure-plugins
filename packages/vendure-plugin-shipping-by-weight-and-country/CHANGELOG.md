@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.19.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.18.0...v3.19.0) (2022-09-27)
+
+### Features
+
+- wip sendcloud plugin ([ff4c0e5](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/ff4c0e5b04f123b63836fb89a24cf4de988c49c0))
+
 ## [3.16.2](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.16.1...v3.16.2) (2022-09-19)
 
 ### Bug Fixes

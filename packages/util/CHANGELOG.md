@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.19.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.18.0...v3.19.0) (2022-09-27)
+
+### Features
+
+- **sendcloud:** finished sc impl with e2e ([50eefc5](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/50eefc53c6988166bec8a9d6d233a564dbec893b))
+
 # [3.13.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
 
 ### Features

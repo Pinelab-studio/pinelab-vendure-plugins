@@ -1,4 +1,8 @@
-# Shipping by weight and country
+# Shipping by weight and country Vendure Plugin
+
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-shipping-by-weight-and-country/dev/@vendure/core)
+
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-shipping-by-weight-and-country)
 
 This plugin adds a shipping eligibility checker to Vendure that checks the total weight and the shipping country of an
 order, to verify if a shipping method is eligible for a given order.
@@ -12,9 +16,9 @@ Some examples:
 - Create a shippingmethod for all orders except the ones placed in Canada and Norway, with a total order weight below
   1100 grams
 
-## Plugin setup
+## Getting started
 
-Add the following to the plugins in `vendure-config.ts`:
+1. Add the following to the plugins in `vendure-config.ts`:
 
 ```ts
 plugins: [
@@ -36,20 +40,10 @@ plugins: [
 ]
 ```
 
-## Admin configuration
-
-1. Start your server
-2. Login to the admin UI and go to `Shipping methods`
-3. Create a new shippingmethod
-4. Under `Shipping eligibility checker` you should see `Check by weight and country`
+2. Start your server
+3. Login to the admin UI and go to `Shipping methods`
+4. Create a new shippingmethod
+5. Under `Shipping eligibility checker` you should see `Check by weight and country`
 
 This checker can be used to have a shippingmethod eligible for an order based on the total weight and shipping country
 of an order.
-
-### Examples
-
-Example 1 - Eligible for orders with shipping country Nederland (NL) with a weight below 3000 grams.
-![Example 1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/raw/master/packages/vendure-plugin-shipping-by-weight-and-country/docs/example1.png)
-
-Example 2 - Eligible for orders in all countries except Australia and Canada, with a weight between 1500 and 5000 grams
-![Example 2](https://github.com/Pinelab-studio/pinelab-vendure-plugins/raw/master/packages/vendure-plugin-shipping-by-weight-and-country/docs/example2.png)

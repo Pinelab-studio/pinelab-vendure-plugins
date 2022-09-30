@@ -7,18 +7,16 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import {
   ChannelService,
-  CollectionModificationEvent,
   DefaultLogger,
   EventBus,
   InitialData,
+  Injector,
   LogLevel,
   mergeConfig,
   ProductEvent,
-  ProductVariantChannelEvent,
-  ProductVariantEvent,
   RequestContext,
 } from '@vendure/core';
-import { WebhookPlugin, WebhookRequestFn } from '../src';
+import { WebhookPlugin } from '../src';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
@@ -49,11 +47,17 @@ describe('Webhook plugin', function () {
       plugins: [
         WebhookPlugin.init({
           httpMethod: 'POST',
-          requestFn: (event) => {
-            // Do stuff with your event here
+          requestFn: async (event: ProductEvent, injector: Injector) => {
+            // Get data via injector and build your request headers and body
+            const { id } = await injector
+              .get(ChannelService)
+              .getChannelFromToken(event.ctx.channel.token);
             return {
               headers: { test: '1234' },
-              body: JSON.stringify({ createdAt: event.createdAt }),
+              body: JSON.stringify({
+                createdAt: event.createdAt,
+                channelId: id,
+              }),
             };
           },
           delay: 200,
@@ -90,6 +94,7 @@ describe('Webhook plugin', function () {
     await new Promise((resolve) => setTimeout(resolve, 500));
     expect(received.length).toBe(1);
     expect(received[0].createdAt).toBeDefined();
+    expect(received[0].channelId).toBeDefined();
   });
 
   it('Should send custom headers', async () => {
