@@ -1,24 +1,41 @@
 # Vendure Plugin Dutch Postalcodes
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-dutch-postalcode/dev/@vendure/core)  
-Find Dutch adresses by postalCode and housenumber using postcode.tech.
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-dutch-postalcode/dev/@vendure/core)
 
-Add to your plugins in `vendure-config.ts`
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-dutch-postalcode)
+
+Find Dutch addresses by postalcode and housenumber using https://postcode.tech's api. You need to register to obtain an API key,
+but registering is free of charge.
+
+## Getting started
+
+1. Register at https://postcode.tech/ to get an API key
+2. Add the following code to your plugins in `vendure-config.ts`
 
 ```js
-DutchPostalCodePlugin.init('your-postcode.tech-apikey');
+plugins: [
+  DutchPostalCodePlugin.init('your-postcode.tech-apikey'),
+  ...
+]
 ```
 
-## devserver
+3. Start your Vendure server
+4. You can now lookup address details based on a postalcode and housenumber via the shop-api
 
-`yarn serve` to start a devserver.
+```graphql
+query {
+  dutchAddressLookup(input: { postalCode: "8932BR", houseNumber: "48" }) {
+    lat
+    lon
+    postalCode
+    houseNumber
+    street
+    city
+    municipality
+    province
+  }
+}
+```
 
-## Enjoying our plugins?
-
-Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
-
-Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
-<br/>
-<br/>
-<br/>
-[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)
+The api has permission `Public` set, which requires you to be authorized as guest or logged in customer. If you have an
+activeOrder, you're usually authorized.

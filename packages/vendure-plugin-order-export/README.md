@@ -1,40 +1,35 @@
+# Vendure Order Export Plugin
+
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-order-export/dev/@vendure/core)
 
-# Vendure Order export plugin
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-order-export)
 
-This plugin allows administrators to export orders to a file. The default exports orders and their totals to a
-csv file. You can implement your own strategy to determine what and how data is exported.
+This plugin allows administrators to export orders to a file. The default exports orders and their totals to a csv file.
+You can implement your own strategy to determine what and how data is exported.
 
-1. Go to the admin ui, sales > order-export
-2. Select a date range
-3. Download your export file!
-
-The plugin currently processes the export in the main thread, so be careful with heavy tasks in your strategy.
-
-## Plugin setup
+## Getting started
 
 1. Add the server and admin UI extensions in your `vendure-config.ts`
 
-```js
+```ts
+import { OrderExportPlugin } from 'vendure-plugin-order-export';
+
 // Server plugin
 plugins: [
   OrderExportPlugin.init({
     // Optionally add your own strategies here
     exportStrategies: [],
   }),
+   AdminUiPlugin.init({
+      port: 3002,
+      route: 'admin',
+      app: compileUiExtensions({
+         outputPath: path.join(__dirname, '__admin-ui'),
+         extensions: [OrderExportPlugin.ui],
+      }),
+   }),
+   ...
 ];
-```
-
-```js
-// Admin UI extension
-AdminUiPlugin.init({
-  port: 3002,
-  route: 'admin',
-  app: compileUiExtensions({
-    outputPath: path.join(__dirname, '__admin-ui'),
-    extensions: [OrderExportPlugin.ui],
-  }),
-});
 ```
 
 2. Make sure your user has the permission `ExportOrders`
@@ -42,7 +37,7 @@ AdminUiPlugin.init({
    sales.'
 4. Select a date range, select an export strategy and click export!
 
-## Export strategies
+### Custom export strategies
 
 You can easily implement your own export strategy and pass it to the plugin:
 
@@ -97,13 +92,3 @@ plugins: [
   }),
 ];
 ```
-
-## Enjoying our plugins?
-
-Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
-
-Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
-<br/>
-<br/>
-<br/>
-[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)
