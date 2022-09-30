@@ -2,39 +2,50 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-storage-assets/dev/@vendure/core)
 
-Google Cloud Storage strategy for Vendure ecommerce.  
-Stores assets in a Google Cloud Storage Bucket.
-In the Shop-api it returns the absolute public url to the storage bucket, thus not going through the asset server. I.E. `https://storage.googleapis.com/yourbucket/image.jpg`
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-google-storage-assets)
 
-In the admin api, it returns the relative url, because the Admin UI needs resizing functionality of the asset server.
+Plugin for storing Vendure assets on Google Cloud Storage
 
-## Installation
+## Getting started
 
 1. `yarn add vendure-plugin-google-storage-assets`
 1. Create a bucket which is publicly available in Google Cloud.
 1. Add to your `sendcloud.dev-config.ts`
 
-```js
-        AssetServerPlugin.init({
-            storageStrategyFactory: () => new GoogleStorageStrategy({
-                bucketname: 'your-bucket-name',
-                thumbnails: {
-                    width: 400,
-                    height: 400,
-                },
-                useAssetServerForAdminUi: false
-            }),
-            route: 'assets',
-            assetUploadDir: '/tmp/vendure/assets',
-            port: 3001,
-        }),
-        GoogleStoragePlugin, // Append asset.thumbnail to shop-api and admin-api
+```ts
+import { GoogleStoragePlugin, GoogleStorageStrategy } from 'vendure-plugin-google-storage-assets'
+
+plugins: [
+  AssetServerPlugin.init({
+    storageStrategyFactory: () => new GoogleStorageStrategy({
+      bucketname: 'your-bucket-name',
+      /**
+       * Use to pre-generate thumbnail sized images.
+       * Thumbnails are available on product.featured_asset.thumbnail via GraphQL
+       */
+      thumbnails: {
+        width: 500,
+        height: 500,
+      },
+      /**
+       * You can set this to 'false' to make the Vendure admin ui also consume images directly
+       * from the Google Cloud Storage CDN,
+       * instead of via the Vendure asset server
+       */
+      useAssetServerForAdminUi: false
+    }),
+    route: 'assets',
+    assetUploadDir: '/tmp/vendure/assets',
+    port: 3001,
+  }),
+  GoogleStoragePlugin,
 ```
 
-## Local development
+### Local development
 
 For local development, use `gcloud auth application-default login` to authorize for your Gcloud project.  
-Internally this plugin uses `new Storage();` to instantiate the Storage client, which uses ENV variables to authenticate:
+Internally this plugin uses `new Storage();` to instantiate the Storage client, which uses ENV variables to
+authenticate:
 
 ```
 // By default, the client will authenticate using the service account file
@@ -44,13 +55,3 @@ Internally this plugin uses `new Storage();` to instantiate the Storage client, 
 ```
 
 https://cloud.google.com/compute/docs/tutorials/nodejs-guide
-
-## Enjoying our plugins?
-
-Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
-
-Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
-<br/>
-<br/>
-<br/>
-[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)

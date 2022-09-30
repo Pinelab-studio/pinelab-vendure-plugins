@@ -1,15 +1,19 @@
 # Vendure Webhook plugin
 
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-webhook/dev/@vendure/core)
+
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-webhook)
+
 Triggers a webhook based on configured events. Events are specified in `vendure-config` and webhooks are configured per
 channel via the admin UI.
 
 Use this plugin to trigger builds when ProductEvents or CollectionEvents occur, or send notifications to external
 platforms when orders are placed by subscribing to OrderPlacedEvents!
 
-## Plugin setup
+## Getting started
 
 1. `yarn add vendure-plugin-webhook`
-2. Add the WebhookPlugin to your plugins in your `vendure-configt.ts`:
+2. Add the `WebhookPlugin` to your plugins in your `vendure-configt.ts`:
 
 ```ts
 import { WebhookPlugin } from 'vendure-plugin-webhook';
@@ -51,18 +55,18 @@ plugins: [
 4. Add `Webhook.ui` to your admin UI extensions:
 
 ```ts
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import * as path from 'path';
 import { WebhookPlugin } from 'vendure-plugin-webhook';
 
-compileUiExtensions({
-  outputPath: path.join(__dirname, '__admin-ui'),
-  extensions: [WebhookPlugin.ui],
-})
-  .compile?.()
-  .then(() => {
-    process.exit(0);
-  });
+plugins: [
+  AdminUiPlugin.init({
+    port: 3002,
+    route: 'admin',
+    app: compileUiExtensions({
+      outputPath: path.join(__dirname, '__admin-ui'),
+      extensions: [WebhookPlugin.ui],
+    }),
+  }),
+];
 ```
 
 For more information on admin UI extensions
@@ -70,13 +74,3 @@ see https://www.vendure.io/docs/plugins/extending-the-admin-ui/#compiling-as-a-d
 
 5. Start the server and assign the permission `SetWebhook` to administrators who should be able to configure webhooks.
 6. Go to `settings > webhook` to set the webhook url for the current channel.
-
-## Enjoying our plugins?
-
-Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
-
-Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
-<br/>
-<br/>
-<br/>
-[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)
