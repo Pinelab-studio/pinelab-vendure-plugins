@@ -152,7 +152,7 @@ export const defaultTemplate = `
                     <h5>{{ taxRate }}%</h5>
                 </td>
                 <td id="amount-info"> 
-                    <h5>${{ formatMoney discountedLinePriceWithTax }}</h5>
+                    <h5>$ {{ formatMoney discountedLinePriceWithTax }}</h5>
                 </td>
             </tr>
             {{/each}}
@@ -164,7 +164,7 @@ export const defaultTemplate = `
                 <td id="quantity-info"></td>
                 <td id="product-info"><h20>Shipping costs</h20></td>
                 <td id="vat-info"></td>
-                <td id="amount-info"><h20>${{ formatMoney priceWithTax }}</h20></td>
+                <td id="amount-info"><h20>$ {{ formatMoney priceWithTax }}</h20></td>
             </tr>
             {{/each}}
 
@@ -175,7 +175,7 @@ export const defaultTemplate = `
                 <td id="quantity-info"></td>
                 <td id="product-info"><h20>{{ description }}</h20></td>
                 <td id="vat-info"></td>
-                <td id="amount-info"><h20>${{ formatMoney amountWithTax }}</h20></td>
+                <td id="amount-info"><h20>$ {{ formatMoney amountWithTax }}</h20></td>
             </tr>
             {{/each}}
         </table>
@@ -191,12 +191,12 @@ export const defaultTemplate = `
               <td id="tax-information" style="width: 50%">
                   {{#each order.taxSummary }}
                   <h6>{{ description }}:</h6>
-                  <h5>TAX {{ taxRate }}%: ${{ formatMoney taxTotal }}</h5>
+                  <h5>TAX {{ taxRate }}%: $ {{ formatMoney taxTotal }}</h5>
                   {{/each}}
               </td>
               <td id="total-amount ">
-                  <h5>Subtotal (ex VAT): ${{ formatMoney order.total }}</h5>
-                  <h2>Total: ${{ formatMoney order.totalWithTax }}</h2>  
+                  <h5>Subtotal (ex VAT): $ {{ formatMoney order.total }}</h5>
+                  <h2>Total: $ {{ formatMoney order.totalWithTax }}</h2>  
                   <h6>Thanks for your order at Pinelab.studio</h6>
               </td>
           </tr>
