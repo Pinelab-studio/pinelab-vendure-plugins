@@ -32,19 +32,19 @@ export const defaultTemplate = `
                 font-weight: normal;
             }
 
-            #quantity-info {
+            .quantity-info {
                 width: 10%;
             }
 
-            #product-info {
+            .product-info {
                 width: 58%;
             }
 
-            #vat-info {
+            .vat-info {
                 width: 20%;
             }
 
-            #subtotal-info {
+            .subtotal-info {
                 width: 20%;
             }
             
@@ -96,7 +96,6 @@ export const defaultTemplate = `
                     {{ customerEmail }}<br /></h20>
                 </td>
                 <td id="billing-info">
-                    
                     {{#if order.billingAddress.streetLine1}}
                         <h4>Billing Info</h4>
                         <h20>{{#with order.billingAddress }}
@@ -119,16 +118,16 @@ export const defaultTemplate = `
 
         <table style="width: 96%">
             <tr>
-                <td id="quantity-info"> 
+                <td class="quantity-info"> 
                     <h4>Qty</h4>
                 </td>
-                <td id="product-info"> 
+                <td class="product-info"> 
                     <h4>Product</h4>
                 </td>
-                <td id="vat-info"> 
+                <td class="vat-info"> 
                     <h4>VAT</h4>
                 </td>
-                <td id="subtotal-info"> 
+                <td class="subtotal-info"> 
                     <h4>Total</h4>
                 </td>
             </tr>
@@ -142,17 +141,17 @@ export const defaultTemplate = `
         <table style="width: 96%">
             {{#each order.lines }}
             <tr>
-                <td id="quantity-info"> 
+                <td class="quantity-info"> 
                     <h4>{{ quantity }}</h4>
                 </td>
-                <td id="product-info"> 
+                <td class="product-info"> 
                     <h5>{{ productVariant.name }}</h5> 
                 </td>
-                <td id="vat-info"> 
+                <td class="vat-info"> 
                     <h5>{{ taxRate }}%</h5>
                 </td>
-                <td id="amount-info"> 
-                    <h5>$ {{ formatMoney discountedLinePriceWithTax }}</h5>
+                <td class="amount-info"> 
+                    <h5>&dollar;{{ formatMoney discountedLinePriceWithTax }}</h5>
                 </td>
             </tr>
             {{/each}}
@@ -161,10 +160,10 @@ export const defaultTemplate = `
 
             {{#each order.shippingLines }}
             <tr>
-                <td id="quantity-info"></td>
-                <td id="product-info"><h20>Shipping costs</h20></td>
-                <td id="vat-info"></td>
-                <td id="amount-info"><h20>$ {{ formatMoney priceWithTax }}</h20></td>
+                <td class="quantity-info"></td>
+                <td class="product-info"><h20>Shipping costs</h20></td>
+                <td class="vat-info"></td>
+                <td class="amount-info"><h20>&dollar;{{ formatMoney priceWithTax }}</h20></td>
             </tr>
             {{/each}}
 
@@ -172,10 +171,10 @@ export const defaultTemplate = `
 
             {{#each order.discounts }}
             <tr>
-                <td id="quantity-info"></td>
-                <td id="product-info"><h20>{{ description }}</h20></td>
-                <td id="vat-info"></td>
-                <td id="amount-info"><h20>$ {{ formatMoney amountWithTax }}</h20></td>
+                <td class="quantity-info"></td>
+                <td class="product-info"><h20>{{ description }}</h20></td>
+                <td class="vat-info"></td>
+                <td class="amount-info"><h20>&dollar;{{ formatMoney amountWithTax }}</h20></td>
             </tr>
             {{/each}}
         </table>
@@ -191,12 +190,12 @@ export const defaultTemplate = `
               <td id="tax-information" style="width: 50%">
                   {{#each order.taxSummary }}
                   <h6>{{ description }}:</h6>
-                  <h5>TAX {{ taxRate }}%: $ {{ formatMoney taxTotal }}</h5>
+                  <h5>TAX {{ taxRate }}%: &dollar;{{ formatMoney taxTotal }}</h5>
                   {{/each}}
               </td>
               <td id="total-amount ">
-                  <h5>Subtotal (ex VAT): $ {{ formatMoney order.total }}</h5>
-                  <h2>Total: $ {{ formatMoney order.totalWithTax }}</h2>  
+                  <h5>Subtotal (ex VAT): &dollar;{{ formatMoney order.total }}</h5>
+                  <h2>Total: &dollar;{{ formatMoney order.totalWithTax }}</h2>  
                   <h6>Thanks for your order at Pinelab.studio</h6>
               </td>
           </tr>
@@ -216,13 +215,13 @@ export const defaultTemplate = `
                   <h5>Company details</h5>
               </tr>
               <td id="company-details" style="width: 50%">
-                  <h4>CoC:<h20> 202505808</h20></h4>
-                  <h4>VAT:<h20> 385782365926563</h20></h4>
-                  <h4>IBAN:<h20> NL20INGB0243521845</h20></h4>  
-                  <h4>Email Address:<h20> contact@pinelab.studio</h20></h4> 
+                  <h4>CoC:<h20> 123456789</h20></h4>
+                  <h4>VAT:<h20> 121212121212</h20></h4>
+                  <h4>IBAN:<h20> NL20INGB12345678910</h20></h4>  
+                  <h4>Email Address:<h20> plugins@pinelab.studio</h20></h4> 
               </td>
               <td>   
-                  <h4>Mobile Number:<h20> +31 6 94343242</h20></h4> 
+                  <h4>Mobile Number:<h20> +31 6 12345678</h20></h4> 
                   <h4>Address:<h20> Cornelis Trooststraat 48,
                   8932 BR Leeuwarden, Friesland, The Netherlands </h20></h4>
               </td>  
@@ -230,5 +229,6 @@ export const defaultTemplate = `
       </table>
   </body>
 </html>
+
 
 `;
