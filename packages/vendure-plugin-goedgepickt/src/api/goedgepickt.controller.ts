@@ -76,8 +76,9 @@ export class GoedgepicktController {
             );
           }
           await this.service.updateOrderStatus(
-            channelToken,
+            ctx,
             body.orderNumber,
+            body.orderUuid,
             body.newStatus
           );
           break;
@@ -89,7 +90,7 @@ export class GoedgepicktController {
             );
           }
           await this.service.processStockUpdateEvent(
-            channelToken,
+            ctx,
             body.productSku,
             Number(body.newStock)
           );

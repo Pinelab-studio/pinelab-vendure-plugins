@@ -79,6 +79,19 @@ describe('Goedgepickt plugin', function () {
       message: 'Order created',
       orderUuid: 'testUuid',
     });
+  // Get order
+  nock(apiUrl)
+    .get('/api/v1/orders/testUuid')
+    .reply(200, {
+      message: 'Order created',
+      orderUuid: 'testUuid',
+      shipments: [
+        {
+          trackTraceCode: 'XYZ',
+          trackTraceUrl: 'pinelab.studio/xyz',
+        },
+      ],
+    });
   // Find by SKU
   nock(apiUrl)
     .persist(true)
@@ -218,7 +231,7 @@ describe('Goedgepickt plugin', function () {
     expect(shippingMethod.fulfillmentHandlerCode).toBe('goedgepickt');
   });
 
-  it('Pushes order with autofulfill', async () => {
+  it('Pushes order after placement', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
@@ -227,10 +240,8 @@ describe('Goedgepickt plugin', function () {
     const res = await shopClient.query(SET_CUSTOM_FIELDS);
     order = await createSettledOrder(shopClient, 1);
     await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
-    const adminOrder = await getOrder(adminClient, order.id as string);
-    const fulfillment = adminOrder?.fulfillments?.[0];
-    await expect(fulfillment?.method).toBe('testUuid');
     await expect(createOrderPayload.orderId).toBe(order.code);
+    await expect(createOrderPayload.orderItems.length).toBe(2);
     await expect(createOrderPayload.shippingFirstName).toBe('Hayden');
     await expect(createOrderPayload.shippingLastName).toBe('Zieme');
     await expect(createOrderPayload.shippingAddress).toBe('Verzetsstraat');
@@ -257,7 +268,7 @@ describe('Goedgepickt plugin', function () {
       newStatus: 'completed',
       orderNumber: order.code,
       event: 'orderStatusChanged',
-      orderUuid: 'doesntmatter',
+      orderUuid: 'testUuid',
     };
     const signature = 'wrong-signature';
     const res = await shopClient.fetch(
@@ -285,7 +296,7 @@ describe('Goedgepickt plugin', function () {
       newStatus: 'completed',
       orderNumber: order.code,
       event: 'orderStatusChanged',
-      orderUuid: 'doesntmatter',
+      orderUuid: 'testUuid',
     };
     const signature = GoedgepicktClient.computeSignature(
       'test-secret',
@@ -309,6 +320,13 @@ describe('Goedgepickt plugin', function () {
       .findOneByCode(ctx, order.code))!;
     expect(res.ok).toBe(true);
     expect(order.state).toBe('Delivered');
+  });
+
+  it('Has fulfillment after completion', async () => {
+    const adminOrder = await getOrder(adminClient, order.id as string);
+    const fulfillment = adminOrder?.fulfillments?.[0];
+    expect(fulfillment?.method).toBe('GoedGepickt - testUuid');
+    expect(fulfillment?.trackingCode).toBe('pinelab.studio/xyz');
   });
 
   it('Decreases stock via webhook', async () => {

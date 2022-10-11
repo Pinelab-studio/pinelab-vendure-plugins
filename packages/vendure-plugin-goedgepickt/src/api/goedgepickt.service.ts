@@ -78,8 +78,8 @@ interface UpdateStockJobData {
   stock: StockInput[];
 }
 
-interface AutofulfillOrderJobData {
-  action: 'autofulfill-order';
+interface SyncOrderJobData {
+  action: 'sync-order';
   ctx: SerializedRequestContext;
   orderCode: string;
 }
@@ -88,7 +88,7 @@ type JobData =
   | PushProductJobData
   | PushProductByVariantsJobData
   | UpdateStockJobData
-  | AutofulfillOrderJobData;
+  | SyncOrderJobData;
 
 @Injectable()
 export class GoedgepicktService
@@ -120,8 +120,8 @@ export class GoedgepicktService
       process: async ({ data, id }) => {
         try {
           const ctx = RequestContext.deserialize(data.ctx);
-          if (data.action === 'autofulfill-order') {
-            await this.autoFulfill(ctx, data.orderCode);
+          if (data.action === 'sync-order') {
+            await this.syncOrder(ctx, data.orderCode);
           } else if (data.action === 'push-product') {
             await this.handlePushProductJob(ctx, data);
           } else if (data.action === 'update-stock') {
@@ -147,7 +147,7 @@ export class GoedgepicktService
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
       await this.jobQueue.add(
         {
-          action: 'autofulfill-order',
+          action: 'sync-order',
           orderCode: event.order.code,
           ctx: event.ctx.serialize(),
         },
@@ -263,33 +263,16 @@ export class GoedgepicktService
   }
 
   /**
-   * Accepts the order and corresponding orderItems, because fulfillment can take place for a partial order
+   * Create order in GoedGepickt
+   * Needs an order including lines, items and variants
    */
-  async createOrder(
-    ctx: RequestContext,
-    order: Order,
-    orderItems: OrderItem[]
-  ): Promise<GgOrder> {
-    await this.entityHydrator.hydrate(ctx, order, {
-      relations: ['customer', 'shippingLines.shippingMethod'],
-    });
-    const mergedItems: OrderItemInput[] = [];
-    // Merge same SKU's into single item with quantity
-    orderItems.forEach((orderItem) => {
-      const existingItem = mergedItems.find(
-        (i) => i.sku === orderItem.line.productVariant.sku
-      );
-      if (existingItem) {
-        existingItem.productQuantity++;
-      } else {
-        mergedItems.push({
-          sku: orderItem.line.productVariant.sku,
-          productName: orderItem.line.productVariant.name,
-          productQuantity: 1, // OrderItems are always 1 each
-          taxRate: orderItem.taxRate,
-        });
-      }
-    });
+  async createOrder(ctx: RequestContext, order: Order): Promise<GgOrder> {
+    const orderItems: OrderItemInput[] = order.lines.map((orderLine) => ({
+      sku: orderLine.productVariant.sku,
+      productName: orderLine.productVariant.name,
+      productQuantity: orderLine.quantity,
+      taxRate: orderLine.taxRate,
+    }));
     const client = await this.getClientForChannel(ctx);
     if (
       !order.shippingAddress.streetLine2 ||
@@ -317,7 +300,7 @@ export class GoedgepicktService
       orderDisplayId: order.code,
       createDate: GoedgepicktService.toLocalTime(order.orderPlacedAt)!,
       orderStatus: 'open',
-      orderItems: mergedItems,
+      orderItems,
       shippingFirstName: order.customer?.firstName,
       shippingLastName: order.customer?.lastName,
       shippingCompany: order.shippingAddress.company,
@@ -368,15 +351,15 @@ export class GoedgepicktService
    * Update order status in Vendure based on event
    */
   async updateOrderStatus(
-    channelToken: string,
+    ctx: RequestContext,
     orderCode: string,
+    orderUuid: string,
     newStatus: OrderStatus
   ): Promise<void> {
-    const ctx = await this.getCtxForChannel(channelToken);
     let order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       Logger.warn(
-        `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${channelToken}`,
+        `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${ctx.channel.token}`,
         loggerCtx
       );
       return;
@@ -387,7 +370,12 @@ export class GoedgepicktService
       }
       await transitionToDelivered(this.orderService, ctx, order, {
         code: goedgepicktHandler.code,
-        arguments: [],
+        arguments: [
+          {
+            name: 'goedGepicktOrderUUID',
+            value: orderUuid,
+          },
+        ],
       });
       Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
     } else {
@@ -402,11 +390,10 @@ export class GoedgepicktService
    * Update stock in Vendure based on event
    */
   async processStockUpdateEvent(
-    channelToken: string,
+    ctx: RequestContext,
     productSku: string,
     newStock: number
   ): Promise<void> {
-    const ctx = await this.getCtxForChannel(channelToken);
     const { items: variants } = await this.variantService.findAll(ctx, {
       filter: { sku: { eq: productSku } },
     });
@@ -671,7 +658,10 @@ export class GoedgepicktService
     return variants;
   }
 
-  private async autoFulfill(
+  /**
+   * Sync order to Goedgepickt platform
+   */
+  private async syncOrder(
     ctx: RequestContext,
     orderCode: string
   ): Promise<void> {
@@ -680,19 +670,24 @@ export class GoedgepicktService
       return;
     }
     Logger.info(
-      `Autofulfilling order ${orderCode} for channel ${ctx.channel.token}`,
+      `Syncing order ${orderCode} for channel ${ctx.channel.token} to GoedGepickt`,
       loggerCtx
     );
     let order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       Logger.error(
-        `No order found with code ${orderCode}. Can not autofulfill this order.`,
+        `No order found with code ${orderCode}. Can not sync this order.`,
         loggerCtx
       );
       return;
     }
     order = await this.entityHydrator.hydrate(ctx, order, {
-      relations: ['shippingLines', 'shippingLines.shippingMethod'],
+      relations: [
+        'shippingLines',
+        'shippingLines.shippingMethod',
+        'lines.items',
+        'lines.productVariant',
+      ],
     });
     const hasGoedgepicktHandler = order.shippingLines.some(
       (shippingLine) =>
@@ -701,16 +696,16 @@ export class GoedgepicktService
     );
     if (!hasGoedgepicktHandler) {
       Logger.info(
-        `Order ${order.code} does not have Goedgepickt set as handler. Not autofulfilling this order.`,
+        `Order ${order.code} does not have Goedgepickt set as handler. Not syncing this order.`,
         loggerCtx
       );
       return;
     }
-    await fulfillAll(ctx, this.orderService, order, {
-      code: goedgepicktHandler.code,
-      arguments: [],
-    });
-    Logger.info(`Order ${order.code} autofulfilled`, loggerCtx);
+    await this.createOrder(ctx, order);
+    Logger.info(
+      `Order ${order.code} for channel ${ctx.channel.token} synced to GoedGepickt`,
+      loggerCtx
+    );
   }
 
   private mapToProductInput(

@@ -103,6 +103,10 @@ export interface OrderItemInput {
 
 export interface Order {
   orderUuid: string;
+  shipments?: {
+    trackTraceUrl?: string;
+    trackTraceCode?: string;
+  }[];
 }
 
 export interface IncomingStockUpdateEvent {
