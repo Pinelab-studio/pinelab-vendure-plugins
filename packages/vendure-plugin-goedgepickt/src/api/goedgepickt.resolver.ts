@@ -24,7 +24,7 @@ export class GoedgepicktResolver {
   ): Promise<GoedgepicktConfig | undefined> {
     return this.toGraphqlObject(
       ctx.channel.token,
-      await this.service.getConfig(ctx.channel.token)
+      await this.service.getConfig(ctx)
     );
   }
 
@@ -34,12 +34,9 @@ export class GoedgepicktResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: { apiKey: string; webshopUuid: string }
   ): Promise<GoedgepicktConfig | undefined> {
-    let config = await this.service.upsertConfig({
-      channelToken: ctx.channel.token,
-      ...input,
-    });
+    let config = await this.service.upsertConfig(ctx, input);
     if (this.config.setWebhook) {
-      config = await this.service.setWebhooks(ctx.channel.token);
+      config = await this.service.setWebhooks(ctx);
     }
     return this.toGraphqlObject(ctx.channel.token, config);
   }
@@ -48,13 +45,13 @@ export class GoedgepicktResolver {
   @Allow(goedgepicktPermission.Permission)
   async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
     const channelToken = ctx.channel.token;
-    const config = await this.service.getConfig(channelToken);
+    const config = await this.service.getConfig(ctx);
     if (!config?.apiKey || !config?.webshopUuid) {
       throw Error(`No GoedGepickt apiKey set for channel ${channelToken}`);
     }
     await this.service.createFullsyncJobs(channelToken);
     if (this.config.setWebhook) {
-      await this.service.setWebhooks(ctx.channel.token);
+      await this.service.setWebhooks(ctx);
     }
     return true;
   }

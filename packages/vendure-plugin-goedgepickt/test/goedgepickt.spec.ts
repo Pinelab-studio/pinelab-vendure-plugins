@@ -54,7 +54,6 @@ describe('Goedgepickt plugin', function () {
   const ggConfig = {
     apiKey: 'test-api-key',
     webshopUuid: 'test-webshop-uuid',
-    autoFulfill: true,
   };
 
   let pushProductsPayloads: any[] = [];

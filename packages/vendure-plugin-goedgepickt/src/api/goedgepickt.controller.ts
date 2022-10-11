@@ -51,8 +51,21 @@ export class GoedgepicktController {
       `Incoming event ${body?.event} for channel ${channelToken}`,
       loggerCtx
     );
+    if (!signature) {
+      return Logger.warn(
+        `Ignoring incoming event without signature for channel ${channelToken}`,
+        loggerCtx
+      );
+    }
+    if (!channelToken) {
+      return Logger.warn(
+        `Ignoring incoming event without channelToken`,
+        loggerCtx
+      );
+    }
     try {
-      const client = await this.service.getClientForChannel(channelToken);
+      const ctx = await this.service.getCtxForChannel(channelToken);
+      const client = await this.service.getClientForChannel(ctx);
       const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
       switch (body.event) {
         case 'orderStatusChanged':

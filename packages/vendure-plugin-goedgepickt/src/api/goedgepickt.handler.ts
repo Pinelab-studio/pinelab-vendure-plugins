@@ -39,7 +39,7 @@ export const goedgepicktHandler = new FulfillmentHandler({
       );
       try {
         const ggOrder = await goedgepicktService.createOrder(
-          ctx.channel.token,
+          ctx,
           order,
           itemsPerOrder
         );
