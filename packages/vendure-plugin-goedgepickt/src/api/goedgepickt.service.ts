@@ -143,7 +143,6 @@ export class GoedgepicktService
   }
 
   async onApplicationBootstrap(): Promise<void> {
-    // Listen for Settled orders for autoFulfillment
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
       await this.jobQueue.add(
         {
