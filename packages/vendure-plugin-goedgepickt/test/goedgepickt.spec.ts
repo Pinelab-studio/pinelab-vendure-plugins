@@ -325,8 +325,8 @@ describe('Goedgepickt plugin', function () {
   it('Has fulfillment after completion', async () => {
     const adminOrder = await getOrder(adminClient, order.id as string);
     const fulfillment = adminOrder?.fulfillments?.[0];
-    expect(fulfillment?.method).toBe('GoedGepickt - testUuid');
-    expect(fulfillment?.trackingCode).toBe('pinelab.studio/xyz');
+    expect(fulfillment?.method).toBe('GoedGepickt - pinelab.studio/xyz');
+    expect(fulfillment?.trackingCode).toBe('XYZ');
   });
 
   it('Decreases stock via webhook', async () => {

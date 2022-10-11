@@ -45,10 +45,8 @@ export const goedgepicktHandler = new FulfillmentHandler({
     const orderCodes = orders.map((o) => o.code);
     Logger.info(`Fulfilled orders ${orderCodes.join(',')}`, loggerCtx);
     return {
-      method: `GoedGepickt - ${
-        args.goedGepicktOrderUUID ? args.goedGepicktOrderUUID : ''
-      }`,
-      trackingCode: trackingUrls.join(','),
+      method: `GoedGepickt - ${trackingUrls.join(',')}`,
+      trackingCode: trackingCodes.join(','),
       customFields: {
         trackingCodes,
       },

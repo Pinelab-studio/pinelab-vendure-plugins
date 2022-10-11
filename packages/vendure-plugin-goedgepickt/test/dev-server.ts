@@ -75,7 +75,6 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     channelToken: 'e2e-default-channel',
     apiKey: process.env.GOEDGEPICKT_APIKEY!,
     webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
-    autoFulfill: true,
   });
   const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel');
   await server.app.get(ShippingMethodService).update(ctx, {
