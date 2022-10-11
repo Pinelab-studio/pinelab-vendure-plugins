@@ -149,6 +149,18 @@ export class GoedgepicktClient {
     return result;
   }
 
+  /**
+   * Gets paginated products. 100 products per page
+   */
+  async getOrder(uuid: string): Promise<Order> {
+    const result = await this.rawRequest({
+      entity: 'orders',
+      method: 'GET',
+      pathParam: uuid,
+    });
+    return result as Order;
+  }
+
   async rawRequest(input: RawRequestInput): Promise<any> {
     const queryExtension = input.queryParams ? `?${input.queryParams}` : '';
     const pathParam = input.pathParam ? `/${input.pathParam}` : '';

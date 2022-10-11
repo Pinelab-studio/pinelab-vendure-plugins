@@ -168,7 +168,7 @@ export class MyparcelService implements OnApplicationBootstrap {
       .getRepository(Fulfillment)
       .findOne({ method: fulfillmentReference });
     if (!fulfillment) {
-      return Logger.error(
+      return Logger.warn(
         `No fulfillment found with method ${fulfillmentReference} for channel with id ${channelId}`,
         loggerCtx
       );
@@ -281,10 +281,10 @@ export class MyparcelService implements OnApplicationBootstrap {
     } catch (err) {
       if (err.response?.status >= 400 && err.response?.status < 500) {
         const errorMessage = this.getReadableError(err.response.data);
-        Logger.error(err.response.data, loggerCtx);
+        Logger.warn(err.response.data, loggerCtx);
         throw errorMessage ? new MyParcelError(errorMessage) : err;
       } else {
-        Logger.error(err.response, loggerCtx);
+        Logger.warn(err.response, loggerCtx);
         throw err;
       }
     }

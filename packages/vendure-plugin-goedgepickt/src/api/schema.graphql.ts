@@ -5,14 +5,12 @@ export const schema = gql`
     enabled: Boolean
     apiKey: String
     webshopUuid: String
-    autoFulfill: Boolean
   }
 
   type GoedgepicktConfig {
     enabled: Boolean
     apiKey: String
     webshopUuid: String
-    autoFulfill: Boolean
     orderWebhookUrl: String
     orderWebhookKey: String
     stockWebhookUrl: String

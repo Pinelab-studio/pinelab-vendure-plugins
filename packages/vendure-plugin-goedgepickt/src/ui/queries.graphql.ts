@@ -7,7 +7,6 @@ export const updateGoedgepicktConfig = gql`
         enabled
         apiKey
         webshopUuid
-        autoFulfill
         orderWebhookKey
         orderWebhookUrl
         stockWebhookKey
@@ -26,7 +25,6 @@ export const getGoedgepicktConfig = gql`
       enabled
       apiKey
       webshopUuid
-      autoFulfill
       orderWebhookKey
       orderWebhookUrl
       stockWebhookKey

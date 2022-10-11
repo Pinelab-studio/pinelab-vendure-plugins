@@ -18,9 +18,6 @@ export class GoedgepicktConfigEntity extends VendureEntity {
   @Column({ default: true })
   enabled!: boolean;
 
-  @Column({ default: false })
-  autoFulfill!: boolean;
-
   @Column({ nullable: true, length: 1500 })
   apiKey?: string;
 
