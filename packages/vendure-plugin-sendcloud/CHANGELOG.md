@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.21.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.20.0...v3.21.0) (2022-10-11)
+
+### Features
+
+- **invoices:** readme ([63b17d3](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/63b17d3005e2782209651697007c0a82b00ee0c0))
+
 # [3.19.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.18.0...v3.19.0) (2022-09-27)
 
 ### Bug Fixes

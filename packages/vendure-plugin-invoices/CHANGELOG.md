@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.21.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.20.0...v3.21.0) (2022-10-11)
+
+### Features
+
+- **invoices:** new default invoice ([1bb01a7](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/1bb01a7614741fd07ebd2d30b549ff0b8f84e280))
+- **invoices:** new default template ([2fd8a12](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/2fd8a1244f786e025ec1082172a765e221ed391b))
+- **invoices:** new default template ([db13496](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/db13496fa90029228c63e62bee6a0667f75a5ec5))
+- **invoices:** readme ([6f31f28](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/6f31f28867b4cbf9fbce7f4f7a29eb0358128ed3))
+- **invoices:** readme ([63b17d3](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/63b17d3005e2782209651697007c0a82b00ee0c0))
+
 # [3.13.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
 
 ### Bug Fixes
