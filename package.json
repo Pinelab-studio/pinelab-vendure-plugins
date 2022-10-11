@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "postinstall": "yarn husky install",
-    "build": "yarn && yarn prettier:write && yarn lerna exec yarn && yarn lerna run build",
+    "build": "yarn && yarn prettier:write && yarn lerna exec yarn && yarn lerna run build --concurrency 1",
     "lerna:publish": "yarn && yarn lerna exec yarn && yarn lerna run build && yarn lerna publish --conventional-commits",
     "prettier:write": "prettier --write .",
     "prettier:check": "prettier --check .",
