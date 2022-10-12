@@ -35,6 +35,8 @@ query order($id: ID!) {
       id
       state
       method
+      trackingCode
+      customFields
     }
   }
 }

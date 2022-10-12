@@ -44,18 +44,6 @@ import { GoedgepicktConfig } from './generated/graphql';
                 formControlName="webshopUuid"
               />
             </vdr-form-field>
-            <vdr-form-field
-              label="Autofulfill"
-              for="autoFulfill"
-              tooltip="Automatically send orders to Goedgepickt on PaymentSettled"
-            >
-              <input
-                type="checkbox"
-                name="autoFulfill"
-                clrCheckbox
-                formControlName="autoFulfill"
-              />
-            </vdr-form-field>
             <button
               class="btn btn-primary"
               (click)="save()"
@@ -146,7 +134,6 @@ export class GoedgepicktComponent implements OnInit {
       enabled: ['enabled'],
       apiKey: ['your-api-key'],
       webshopUuid: ['webshopUuid'],
-      autoFulfill: ['autoFulfill'],
       orderWebhookUrl: ['orderWebhookUrl'],
       orderWebhookKey: ['orderWebhookKey'],
       stockWebhookUrl: ['stockWebhookUrl'],
@@ -162,7 +149,6 @@ export class GoedgepicktComponent implements OnInit {
         this.form.controls['enabled'].setValue(config.enabled);
         this.form.controls['apiKey'].setValue(config.apiKey);
         this.form.controls['webshopUuid'].setValue(config.webshopUuid);
-        this.form.controls['autoFulfill'].setValue(config.autoFulfill);
         this.form.controls['orderWebhookUrl'].setValue(config.orderWebhookUrl);
         this.form.controls['orderWebhookKey'].setValue(config.orderWebhookKey);
         this.form.controls['stockWebhookUrl'].setValue(config.stockWebhookUrl);
@@ -180,14 +166,12 @@ export class GoedgepicktComponent implements OnInit {
               enabled: formValue.enabled,
               apiKey: formValue.apiKey,
               webshopUuid: formValue.webshopUuid,
-              autoFulfill: formValue.autoFulfill,
             },
           })
           .toPromise()) as any;
         this.form.controls['enabled'].setValue(result.enabled);
         this.form.controls['apiKey'].setValue(result.apiKey);
         this.form.controls['webshopUuid'].setValue(result.webshopUuid);
-        this.form.controls['autoFulfill'].setValue(result.autoFulfill);
         this.form.controls['orderWebhookUrl'].setValue(result.orderWebhookUrl);
         this.form.controls['orderWebhookKey'].setValue(result.orderWebhookKey);
         this.form.controls['stockWebhookUrl'].setValue(result.stockWebhookUrl);

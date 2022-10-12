@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.21.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.20.0...v3.21.0) (2022-10-11)
+
+### Features
+
+- **goedgepickt:** push first, fulfill later ([546c93a](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/546c93aefddf69814a97435a5376fe0b5a1b3d8d))
+
 # [3.15.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.14.1...v3.15.0) (2022-09-14)
 
 ### Features

@@ -751,9 +751,14 @@ export type CreatePaymentMethodInput = {
   name: Scalars['String'];
 };
 
+export type CreateProductCustomFieldsInput = {
+  hsCode?: InputMaybe<Scalars['String']>;
+  weight?: InputMaybe<Scalars['Int']>;
+};
+
 export type CreateProductInput = {
   assetIds?: InputMaybe<Array<Scalars['ID']>>;
-  customFields?: InputMaybe<Scalars['JSON']>;
+  customFields?: InputMaybe<CreateProductCustomFieldsInput>;
   enabled?: InputMaybe<Scalars['Boolean']>;
   facetValueIds?: InputMaybe<Array<Scalars['ID']>>;
   featuredAssetId?: InputMaybe<Scalars['ID']>;
@@ -2591,6 +2596,7 @@ export type Mutation = {
   removeSettledJobs: Scalars['Int'];
   runGoedgepicktFullSync?: Maybe<Scalars['Boolean']>;
   runPendingSearchIndexUpdates: Success;
+  sendToSendCloud: Scalars['Boolean'];
   setOrderCustomFields?: Maybe<Order>;
   settlePayment: SettlePaymentResult;
   settleRefund: SettleRefundResult;
@@ -2638,6 +2644,7 @@ export type Mutation = {
   updatePromotion: UpdatePromotionResult;
   /** Update an existing Role */
   updateRole: Role;
+  updateSendCloudConfig: SendCloudConfig;
   /** Update an existing ShippingMethod */
   updateShippingMethod: ShippingMethod;
   /** Update an existing Tag */
@@ -2968,6 +2975,10 @@ export type MutationRemoveSettledJobsArgs = {
   queueNames?: InputMaybe<Array<Scalars['String']>>;
 };
 
+export type MutationSendToSendCloudArgs = {
+  orderId: Scalars['ID'];
+};
+
 export type MutationSetOrderCustomFieldsArgs = {
   input: UpdateOrderInput;
 };
@@ -3089,6 +3100,10 @@ export type MutationUpdatePromotionArgs = {
 
 export type MutationUpdateRoleArgs = {
   input: UpdateRoleInput;
+};
+
+export type MutationUpdateSendCloudConfigArgs = {
+  input?: InputMaybe<SendCloudConfigInput>;
 };
 
 export type MutationUpdateShippingMethodArgs = {
@@ -3270,6 +3285,7 @@ export type OrderAddress = {
 
 export type OrderCustomFields = {
   __typename?: 'OrderCustomFields';
+  customerNote?: Maybe<Scalars['String']>;
   pickupLocationCarrier?: Maybe<Scalars['String']>;
   pickupLocationCity?: Maybe<Scalars['String']>;
   pickupLocationCountry?: Maybe<Scalars['String']>;
@@ -3286,6 +3302,7 @@ export type OrderFilterParameter = {
   createdAt?: InputMaybe<DateOperators>;
   currencyCode?: InputMaybe<StringOperators>;
   customerLastName?: InputMaybe<StringOperators>;
+  customerNote?: InputMaybe<StringOperators>;
   id?: InputMaybe<IdOperators>;
   orderPlacedAt?: InputMaybe<DateOperators>;
   pickupLocationCarrier?: InputMaybe<StringOperators>;
@@ -3470,6 +3487,7 @@ export type OrderSortParameter = {
   code?: InputMaybe<SortOrder>;
   createdAt?: InputMaybe<SortOrder>;
   customerLastName?: InputMaybe<SortOrder>;
+  customerNote?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   orderPlacedAt?: InputMaybe<SortOrder>;
   pickupLocationCarrier?: InputMaybe<SortOrder>;
@@ -3635,7 +3653,7 @@ export type PaymentStateTransitionError = ErrorResult & {
  *
  * ## Understanding Permission.Owner
  *
- * `Permission.Owner` is a special permission which is used in some of the Vendure resolvers to indicate that that resolver should only
+ * `Permission.Owner` is a special permission which is used in some Vendure resolvers to indicate that that resolver should only
  * be accessible to the "owner" of that resource.
  *
  * For example, the Shop API `activeCustomer` query resolver should only return the Customer object for the "owner" of that Customer, i.e.
@@ -3795,6 +3813,8 @@ export enum Permission {
   SetGoedgepicktConfig = 'SetGoedgepicktConfig',
   /** Allows setting MyParcel configurations */
   SetMyparcelConfig = 'SetMyparcelConfig',
+  /** Allows setting SendCloud configuration */
+  SetSendCloudConfig = 'SetSendCloudConfig',
   /** Allows setting a webhook URL */
   SetWebhook = 'SetWebhook',
   /** SuperAdmin has unrestricted access to all operations */
@@ -3894,15 +3914,18 @@ export type ProductVariantListArgs = {
 
 export type ProductCustomFields = {
   __typename?: 'ProductCustomFields';
+  hsCode?: Maybe<Scalars['String']>;
   keywords?: Maybe<Scalars['String']>;
   metaDescription?: Maybe<Scalars['String']>;
   metaTitle?: Maybe<Scalars['String']>;
+  weight?: Maybe<Scalars['Int']>;
 };
 
 export type ProductFilterParameter = {
   createdAt?: InputMaybe<DateOperators>;
   description?: InputMaybe<StringOperators>;
   enabled?: InputMaybe<BooleanOperators>;
+  hsCode?: InputMaybe<StringOperators>;
   id?: InputMaybe<IdOperators>;
   keywords?: InputMaybe<StringOperators>;
   languageCode?: InputMaybe<StringOperators>;
@@ -3911,6 +3934,7 @@ export type ProductFilterParameter = {
   name?: InputMaybe<StringOperators>;
   slug?: InputMaybe<StringOperators>;
   updatedAt?: InputMaybe<DateOperators>;
+  weight?: InputMaybe<NumberOperators>;
 };
 
 export type ProductList = PaginatedList & {
@@ -4002,6 +4026,7 @@ export type ProductOptionTranslationInput = {
 export type ProductSortParameter = {
   createdAt?: InputMaybe<SortOrder>;
   description?: InputMaybe<SortOrder>;
+  hsCode?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   keywords?: InputMaybe<SortOrder>;
   metaDescription?: InputMaybe<SortOrder>;
@@ -4009,6 +4034,7 @@ export type ProductSortParameter = {
   name?: InputMaybe<SortOrder>;
   slug?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
+  weight?: InputMaybe<SortOrder>;
 };
 
 export type ProductTranslation = {
@@ -4272,6 +4298,7 @@ export type Query = {
   productVariant?: Maybe<ProductVariant>;
   /** List ProductVariants either all or for the specific product. */
   productVariants: ProductVariantList;
+  productVariantsWithLowStock: Array<ProductVariant>;
   /** List Products */
   products: ProductList;
   promotion?: Maybe<Promotion>;
@@ -4281,6 +4308,7 @@ export type Query = {
   role?: Maybe<Role>;
   roles: RoleList;
   search: SearchResponse;
+  sendCloudConfig?: Maybe<SendCloudConfig>;
   shippingCalculators: Array<ConfigurableOperationDefinition>;
   shippingEligibilityCheckers: Array<ConfigurableOperationDefinition>;
   shippingMethod?: Maybe<ShippingMethod>;
@@ -4733,6 +4761,18 @@ export type SearchResultSortParameter = {
   price?: InputMaybe<SortOrder>;
 };
 
+export type SendCloudConfig = {
+  __typename?: 'SendCloudConfig';
+  id: Scalars['ID'];
+  publicKey?: Maybe<Scalars['String']>;
+  secret?: Maybe<Scalars['String']>;
+};
+
+export type SendCloudConfigInput = {
+  publicKey?: InputMaybe<Scalars['String']>;
+  secret?: InputMaybe<Scalars['String']>;
+};
+
 export type ServerConfig = {
   __typename?: 'ServerConfig';
   customFieldConfig: CustomFields;
@@ -4767,6 +4807,7 @@ export type ShippingLine = {
   discountedPrice: Scalars['Int'];
   discountedPriceWithTax: Scalars['Int'];
   discounts: Array<Discount>;
+  id: Scalars['ID'];
   price: Scalars['Int'];
   priceWithTax: Scalars['Int'];
   shippingMethod: ShippingMethod;
@@ -5291,6 +5332,7 @@ export type UpdateOrderAddressInput = {
 };
 
 export type UpdateOrderCustomFieldsInput = {
+  customerNote?: InputMaybe<Scalars['String']>;
   pickupLocationCarrier?: InputMaybe<Scalars['String']>;
   pickupLocationCity?: InputMaybe<Scalars['String']>;
   pickupLocationCountry?: InputMaybe<Scalars['String']>;
@@ -5323,9 +5365,14 @@ export type UpdatePaymentMethodInput = {
   name?: InputMaybe<Scalars['String']>;
 };
 
+export type UpdateProductCustomFieldsInput = {
+  hsCode?: InputMaybe<Scalars['String']>;
+  weight?: InputMaybe<Scalars['Int']>;
+};
+
 export type UpdateProductInput = {
   assetIds?: InputMaybe<Array<Scalars['ID']>>;
-  customFields?: InputMaybe<Scalars['JSON']>;
+  customFields?: InputMaybe<UpdateProductCustomFieldsInput>;
   enabled?: InputMaybe<Scalars['Boolean']>;
   facetValueIds?: InputMaybe<Array<Scalars['ID']>>;
   featuredAssetId?: InputMaybe<Scalars['ID']>;
@@ -5492,6 +5539,8 @@ export type OrderQuery = {
       id: string;
       state: string;
       method: string;
+      trackingCode?: string | null;
+      customFields?: any | null;
     }> | null;
   } | null;
 };
@@ -5542,6 +5591,8 @@ export const Order = gql`
         id
         state
         method
+        trackingCode
+        customFields
       }
     }
   }

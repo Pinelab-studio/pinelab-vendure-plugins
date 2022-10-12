@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [3.21.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.20.0...v3.21.0) (2022-10-11)
+
+### Bug Fixes
+
+- lerna no paralel ([c587e06](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/c587e06d86f413767e78700e706bbd84305b217a))
+
+### Features
+
+- **goedgepickt:** comment ([9f71220](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/9f71220e77cb742e4d9fcf1f194673603cdd8bc1))
+- **goedgepickt:** e2e fixes ([61e3624](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/61e3624113203a56d4fab264e4cfc066cf1e3748))
+- **goedgepickt:** push first, fulfill later ([546c93a](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/546c93aefddf69814a97435a5376fe0b5a1b3d8d))
+- **invoices:** new default invoice ([1bb01a7](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/1bb01a7614741fd07ebd2d30b549ff0b8f84e280))
+- **invoices:** new default template ([2fd8a12](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/2fd8a1244f786e025ec1082172a765e221ed391b))
+- **invoices:** new default template ([db13496](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/db13496fa90029228c63e62bee6a0667f75a5ec5))
+- **invoices:** readme ([6f31f28](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/6f31f28867b4cbf9fbce7f4f7a29eb0358128ed3))
+- **invoices:** readme ([63b17d3](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/63b17d3005e2782209651697007c0a82b00ee0c0))
+- **myparcel:** logging warn ([c51af74](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/c51af742264732a9e11ad769099bf7850e1b2831))
+- readme updates for all packages ([7f9940b](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/7f9940bf5cfac94680d7f4646aa5e37254b68098))
+
 # [3.20.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.19.0...v3.20.0) (2022-09-28)
 
 ### Features
