@@ -1,14 +1,14 @@
 {
   "name": "vendure-plugin-invoices",
-  "version": "3.21.0",
+  "version": "4.0.0",
   "description": "Vendure plugin for invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/vendure-plugin-invoices/src/index.js",
+  "types": "dist/vendure-plugin-invoices/src/index.d.ts",
   "files": [
     "dist",
     "README.md"
@@ -16,7 +16,7 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-invoices/src",
     "test": "jest --preset=\"ts-jest\""
   },
   "dependencies": {

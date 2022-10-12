@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.0.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.21.0...v4.0.0) (2022-10-12)
+
+### ⚠ BREAKING CHANGES
+
+- **invoices:** added licensekey check
+
+### Features
+
+- **invoices:** added licensekey check ([61a9e08](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/61a9e08113252ee9d9fa0b0c87bfd09084702ff3))
+
 # [3.19.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.18.0...v3.19.0) (2022-09-27)
 
 ### Features
