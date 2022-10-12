@@ -7,6 +7,8 @@ export const invoicePermission = new PermissionDefinition({
 export * from './invoice.plugin';
 export * from './api/strategies/storage-strategy';
 export * from './api/strategies/data-strategy';
+export * from './api/strategies/default-data-strategy';
+export * from './api/strategies/s3-storage.strategy';
 export * from './api/strategies/google-storage-invoice-strategy';
 export * from './api/strategies/local-file-strategy';
 export * from './api/file.util';
