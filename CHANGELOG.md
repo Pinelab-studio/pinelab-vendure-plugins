@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [4.0.2](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.1...v4.0.2) (2022-10-12)
+
+### Bug Fixes
+
+- **invoices:** exporting strategies ([4b05882](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/4b05882f25249f99df407548d799609371f68bbe))
+
 ### [4.0.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.0...v4.0.1) (2022-10-12)
 
 **Note:** Version bump only for package pinelab-vendure-plugins
