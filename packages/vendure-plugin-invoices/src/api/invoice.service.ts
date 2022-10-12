@@ -42,7 +42,6 @@ import {
 } from './strategies/storage-strategy';
 import { Response } from 'express';
 import { createTempFile } from './file.util';
-import { SortOrder } from '@vendure/core';
 import { ModuleRef } from '@nestjs/core';
 import { logIfInvalidLicense } from '../../../util/src/license';
 
@@ -126,6 +125,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     });
+    logIfInvalidLicense(Logger, PLUGIN_NAME, loggerCtx, this.config.licenseKey);
   }
 
   /**
