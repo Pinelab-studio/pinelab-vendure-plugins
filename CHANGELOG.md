@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [4.0.3](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.2...v4.0.3) (2022-10-12)
+
+### Bug Fixes
+
+- **invoices:** log on startup ([bb9a41c](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/bb9a41c740eac3096aa063a406a5e65573c188e6))
+
 ### [4.0.2](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.1...v4.0.2) (2022-10-12)
 
 ### Bug Fixes
