@@ -42,5 +42,6 @@ export const schema = gql`
     Get paginated invoices
     """
     invoices(input: InvoicesListInput): InvoiceList!
+    isInvoicePluginLicenseValid: Boolean!
   }
 `;

@@ -6,6 +6,7 @@
   "private": true,
   "devDependencies": {
     "@vendure/common": "1.7.1",
-    "@vendure/core": "1.7.1"
+    "@vendure/core": "1.7.1",
+    "ts-node": "^10.9.1"
   }
 }

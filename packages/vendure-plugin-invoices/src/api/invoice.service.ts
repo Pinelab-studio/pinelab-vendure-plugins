@@ -31,7 +31,7 @@ import * as pdf from 'pdf-creator-node';
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
 import { InvoicePluginConfig } from '../invoice.plugin';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS, PLUGIN_NAME } from '../constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { InvoiceData } from './strategies/data-strategy';
@@ -44,6 +44,7 @@ import { Response } from 'express';
 import { createTempFile } from './file.util';
 import { SortOrder } from '@vendure/core';
 import { ModuleRef } from '@nestjs/core';
+import { logIfInvalidLicense } from '../../../util/src/license';
 
 interface DownloadInput {
   channelToken: string;
@@ -180,6 +181,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     templateString: string,
     order: Order
   ): Promise<{ tmpFileName: string } & InvoiceData> {
+    logIfInvalidLicense(Logger, PLUGIN_NAME, loggerCtx, this.config.licenseKey);
     const latestInvoiceNumber = await this.getLatestInvoiceNumber(
       ctx.channelId as string
     );
