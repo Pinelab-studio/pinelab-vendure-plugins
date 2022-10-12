@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [4.0.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.0...v4.0.1) (2022-10-12)
+
+**Note:** Version bump only for package pinelab-test-utils
+
 ## [4.0.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v3.21.0...v4.0.0) (2022-10-12)
 
 **Note:** Version bump only for package pinelab-test-utils
