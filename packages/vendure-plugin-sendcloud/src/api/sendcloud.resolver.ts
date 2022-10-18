@@ -31,7 +31,7 @@ export class SendcloudResolver {
     Logger.info(
       `Sync to Sendcloud mutation called by user ${ctx.activeUserId} for order ${orderId}`
     );
-    await this.service.syncToSendloud(ctx, order);
+    await this.service.createOrderInSendcloud(ctx, order);
     return true;
   }
 

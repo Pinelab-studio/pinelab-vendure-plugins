@@ -17,7 +17,6 @@ import {
   ListQueryBuilder,
   Logger,
   Order,
-  OrderItem,
   OrderPlacedEvent,
   OrderService,
   ProductPriceApplicator,
@@ -42,7 +41,7 @@ import {
 } from './goedgepickt.types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import { fulfillAll, transitionToDelivered } from '../../../util/src';
+import { transitionToDelivered } from '../../../util/src';
 import { goedgepicktHandler } from './goedgepickt.handler';
 import { PickupPointCustomFields } from './custom-fields';
 

@@ -26,7 +26,6 @@ import { getSendCloudConfig, updateSendCloudConfig } from './test.helpers';
 import { addShippingMethod, getOrder } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import nock from 'nock';
-import { SendcloudController } from '../src/api/sendcloud.controller';
 import { SendcloudClient } from '../src/api/sendcloud.client';
 import crypto from 'crypto';
 
@@ -95,6 +94,22 @@ describe('SendCloud', () => {
     await server.destroy();
   });
 
+  let authHeader: any | undefined;
+  let body: { parcel: ParcelInput } | undefined;
+  nock('https://panel.sendcloud.sc')
+    .persist()
+    .post('/api/v2/parcels', (reqBody) => {
+      body = reqBody;
+      return true;
+    })
+    .matchHeader('Authorization', (val) => {
+      authHeader = val;
+      return true;
+    })
+    .reply(200, {
+      parcel: { id: 'test-id', tracking_number: 'test-tracking' },
+    });
+
   it('Creates shippingmethod with Sendcloud handler', async () => {
     await addShippingMethod(adminClient, sendcloudHandler.code);
   });
@@ -115,29 +130,12 @@ describe('SendCloud', () => {
     expect(config.id).toBeDefined();
   });
 
-  it('Autofulfills order when it has Sendcloud handler', async () => {
-    let authHeader: any | undefined;
-    let body: { parcel: ParcelInput } | undefined;
-    nock('https://panel.sendcloud.sc')
-      .persist()
-      .post('/api/v2/parcels', (reqBody) => {
-        body = reqBody;
-        return true;
-      })
-      .matchHeader('Authorization', (val) => {
-        authHeader = val;
-        return true;
-      })
-      .reply(200, {
-        parcel: { id: 'test-id', tracking_number: 'test-tracking' },
-      });
+  it('Syncs order after placement when it has Sendcloud handler', async () => {
     const { id } = await createSettledOrder(shopClient, 1);
     await new Promise((resolve) => setTimeout(resolve, 500));
     const order = await getOrder(adminClient, String(id));
     orderCode = order?.code;
     orderId = order?.id;
-    expect(order?.fulfillments?.length).toBe(1);
-    // Test if additional input has bee added
     expect(
       body?.parcel.parcel_items.find((i) => i.sku === 'additional')
     ).toBeDefined();
@@ -158,6 +156,7 @@ describe('SendCloud', () => {
       action: 'parcel_status_changed',
       parcel: {
         order_number: orderCode,
+        tracking_number: 'test-tracking',
         status: {
           id: 11,
           message: 'Delivered',
@@ -177,6 +176,8 @@ describe('SendCloud', () => {
       }
     );
     const order = await getOrder(adminClient, String(orderId));
+    const fulfilment = order?.fulfillments?.[0];
     expect(order?.state).toBe('Delivered');
+    expect(fulfilment?.trackingCode).toBe('test-tracking');
   });
 });
