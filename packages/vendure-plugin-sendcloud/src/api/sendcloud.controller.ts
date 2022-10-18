@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post, Req, Param } from '@nestjs/common';
+import { Body, Controller, Headers, Param, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { SendcloudService } from './sendcloud.service';
 import { SendcloudClient } from './sendcloud.client';
@@ -35,9 +35,8 @@ export class SendcloudController {
       );
     }
     Logger.info(
-      `Incoming Sendcloud webhook: ${body.action} - ${JSON.stringify(
-        body.parcel
-      )}`
+      `Incoming Sendcloud webhook: ${body.action} - ${body.parcel?.id} - ${body.parcel?.order_number} - ${body.parcel?.status.id} (${body.parcel?.status.message})`,
+      loggerCtx
     );
     const status = sendcloudStates.find(
       (s) => s.id === body.parcel?.status?.id
@@ -45,6 +44,12 @@ export class SendcloudController {
     if (!status) {
       return Logger.warn(
         `Status is ${body.action}, but no matching SendCloud status was found for ${body.parcel?.status}`,
+        loggerCtx
+      );
+    }
+    if (!status.orderState) {
+      return Logger.info(
+        `No corresponding Vendure order state for SendCloud status ${body.parcel?.status}. Ignoring this webhook.`,
         loggerCtx
       );
     }
@@ -56,10 +61,11 @@ export class SendcloudController {
         loggerCtx
       );
     }
-    await this.sendcloudService.updateOrder(
+    await this.sendcloudService.updateOrderStatus(
       ctx,
       status,
-      body.parcel.order_number
+      body.parcel.order_number,
+      body.parcel.tracking_number
     );
   }
 }

@@ -17,7 +17,7 @@ import fetch from 'node-fetch';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { InvoicesQuery } from '../dist/ui/generated/graphql';
+import { InvoicesQuery } from '../src/ui/generated/graphql';
 import { InvoicePlugin } from '../src';
 import { defaultTemplate } from '../src/api/default-template';
 import { InvoiceService } from '../src/api/invoice.service';

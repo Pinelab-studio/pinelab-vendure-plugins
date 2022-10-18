@@ -25,7 +25,7 @@ export class SendcloudClient {
     if (!res.ok) {
       throw Error(res.statusText);
     }
-    const json = await res.json();
+    const json = (await res.json()) as any;
     Logger.info(
       `Created parcel in SendCloud with for order ${parcelInput.order_number}  with id ${json.parcel?.id}`,
       loggerCtx
@@ -54,7 +54,7 @@ export class SendcloudClient {
       body: JSON.stringify(body),
     });
     if (!res.ok) {
-      const json = await res.json();
+      const json = (await res.json()) as any;
       throw Error(`${res.statusText}: ${json.error?.message}`);
     }
     return res;
