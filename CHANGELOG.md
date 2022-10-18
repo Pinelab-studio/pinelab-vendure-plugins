@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.1.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.3...v4.1.0) (2022-10-18)
+
+### Features
+
+- **invoices:** wrong import ([fd6caa9](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/fd6caa91872bd94f1d1695275dc2d9320d07d226))
+- **sendcloud:** sync on placement ([17c5329](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/17c53296063d95142bd9ddb9f195c9c73158e2c0))
+
+### Bug Fixes
+
+- **invoices:** typo ([ef5bc29](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/ef5bc29c2a81baca7cd0b7dd5f3046702053fcbe))
+
 ### [4.0.3](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.2...v4.0.3) (2022-10-12)
 
 ### Bug Fixes

@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.1.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.0.3...v4.1.0) (2022-10-18)
+
+### Features
+
+- **sendcloud:** sync on placement ([17c5329](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/17c53296063d95142bd9ddb9f195c9c73158e2c0))
+
 ### [4.0.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.0.0...v4.0.1) (2022-10-12)
 
 **Note:** Version bump only for package vendure-plugin-webhook
