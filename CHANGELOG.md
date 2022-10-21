@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [4.1.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.1.0...v4.1.1) (2022-10-21)
+
+### Features
+
+- readme plugins.com link ([21f3734](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/21f37341133738a993e553575dea8aa3d1cb8b2e))
+
+### Bug Fixes
+
+- **goedgepickt:** dont allow negative stock ([55035a8](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/55035a83f56c9e1a973755d3da4db2d03ea9ae52))
+- **goedgepickt:** error logging ([6312cc8](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/6312cc8d0a8d3a9a7e2adc42b24e2c1c89aa2431))
+
 ## [4.1.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.3...v4.1.0) (2022-10-18)
 
 ### Features
