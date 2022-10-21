@@ -397,7 +397,7 @@ export class GoedgepicktService
     });
     const updatedStock: StockInput[] = variants.map((variant) => ({
       variantId: variant.id as string,
-      stock: newStock,
+      stock: newStock < 0 ? 0 : newStock,
     }));
     await this.updateStock(ctx, updatedStock);
     Logger.info(
