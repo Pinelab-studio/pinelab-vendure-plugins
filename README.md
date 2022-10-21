@@ -3,7 +3,9 @@
 
 # Pinelab Vendure plugins
 
-Monorepo with **free Vendure** plugins for everyone! Check out the plugins in this repository:
+### Visit [pinelab-plugins.com](https://pinelab-plugins.com/) for official docs and examples.
+
+Check out the plugins in this repository:
 
 - [Admin UI helpers](packages/vendure-plugin-admin-ui-helpers/README.md)
 - [PDF Invoices generation](packages/vendure-plugin-invoices/README.md)
@@ -18,22 +20,14 @@ Monorepo with **free Vendure** plugins for everyone! Check out the plugins in th
 - [Order export plugin](packages/vendure-plugin-order-export/README.md)
 - [Shipping by weight and country](packages/vendure-plugin-shipping-by-weight-and-country/README.md)
 
+# Development
+
+Contributions welcome!
+
 ## Upgrading Vendure version
 
-1. Create a new branch like `feat/vendure-1.7.1`
+Follow these steps to upgrade the vendure version of all plugins at once.
+
+1. Create and checkout a new branch like `feat/vendure-1.7.1`
 2. Upgrade all Vendure dependencies by running `yarn upgrade:vendure`
 3. Create a PR to merge into `master`
-4. Merge PR after checks succeeded
-5. `git checkout master`
-6. `git pull`
-7. `yarn lerna:publish`
-
-## Enjoying our plugins?
-
-Enjoy the Pinelab Vendure plugins? [Consider becoming a sponsor](https://github.com/sponsors/Pinelab-studio).
-
-Or check out [pinelab.studio](https://pinelab.studio) for more articles about our integrations.
-<br/>
-<br/>
-<br/>
-[![Pinelab.studio logo](https://pinelab.studio/assets/img/favicon.png)](https://pinelab.studio)
