@@ -128,7 +128,10 @@ export class GoedgepicktService
           } else if (data.action === 'push-product-by-variants') {
             await this.handlePushByVariantsJob(ctx, data);
           } else {
-            return Logger.error(`Invalid jobqueue action '${data}'`, loggerCtx);
+            return Logger.error(
+              `Invalid jobqueue action '${JSON.stringify(data)}'`,
+              loggerCtx
+            );
           }
         } catch (error) {
           Logger.warn(
