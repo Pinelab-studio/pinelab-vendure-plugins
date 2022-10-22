@@ -6,6 +6,24 @@ import { nrOfOrders } from './data';
 @Component({
   selector: 'metrics-wdiget',
   template: `
+    <div class="btn-group btn-outline-primary btn-sm">
+      <button
+        class="btn"
+        [class.btn-primary]="selection === 'weekly'"
+        (click)="selectTimeFrame('weekly')"
+      >
+        Weekly
+      </button>
+      <button
+        class="btn"
+        [class.btn-primary]="selection === 'monthly'"
+        (click)="selectTimeFrame('monthly')"
+      >
+        Monthly
+      </button>
+    </div>
+    <br />
+
     <div class="chart-container">
       <canvas id="nrOfOrders"></canvas>
     </div>
@@ -17,10 +35,14 @@ import { nrOfOrders } from './data';
     </div>
   `,
   styles: [
-    '.chart-container { height: 200px; width: 33%; padding-right: 20px; display: inline-block; }',
+    '.chart-container { height: 200px; width: 33%; padding-right: 20px; display: inline-block; padding-top: 20px;}',
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
+  ordersChart: any;
+  conversionChart: any;
+  aovChart: any;
+  selection: 'monthly' | 'weekly' = 'monthly';
   nrOfOrdersChart?: any;
   // Config for all charts
   config = {
@@ -43,9 +65,44 @@ export class MetricsWidgetComponent implements OnInit {
   constructor() {}
 
   ngOnInit() {
-    this.createChart('nrOfOrders', 'Nr of placed orders', nrOfOrders);
-    this.createChart('aov', 'Average order value €', nrOfOrders);
-    this.createChart('conversion', 'Conversion rate %', nrOfOrders);
+    this.ordersChart = this.createChart(
+      'nrOfOrders',
+      'Nr of placed orders',
+      nrOfOrders
+    );
+    this.aovChart = this.createChart(
+      'aov',
+      'Average order value €',
+      nrOfOrders
+    );
+    this.conversionChart = this.createChart(
+      'conversion',
+      'Conversion rate %',
+      nrOfOrders
+    );
+  }
+
+  selectTimeFrame(select: 'monthly' | 'weekly') {
+    this.selection = select;
+    console.log(`Show ${this.selection}`);
+    this.ordersChart.destroy();
+    this.aovChart.destroy();
+    this.conversionChart.destroy();
+    this.ordersChart = this.createChart(
+      'nrOfOrders',
+      'Nr of placed orders',
+      nrOfOrders
+    );
+    this.aovChart = this.createChart(
+      'aov',
+      'Average order value €',
+      nrOfOrders
+    );
+    this.conversionChart = this.createChart(
+      'conversion',
+      'Conversion rate %',
+      nrOfOrders
+    );
   }
 
   createChart(id: string, title: string, data: typeof nrOfOrders) {
@@ -53,7 +110,6 @@ export class MetricsWidgetComponent implements OnInit {
     const [min, max] = [20, 80];
     const s = 100;
     const l = Math.floor(Math.random() * (max - min + 1)) + min;
-    console.log(s, l);
     return new Chart(id, {
       type: 'bar',
       data: {
