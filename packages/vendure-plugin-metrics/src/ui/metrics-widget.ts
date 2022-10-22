@@ -1,76 +1,84 @@
 import { Component, NgModule, OnInit } from '@angular/core';
 import { SharedModule } from '@vendure/admin-ui/core';
-import { NgxChartsModule } from '@swimlane/ngx-charts';
+import Chart from 'chart.js/auto';
+import { nrOfOrders } from './data';
 
 @Component({
   selector: 'metrics-wdiget',
   template: `
-    <ngx-charts-bar-vertical
-      [view]="view"
-      [scheme]="colorScheme"
-      [results]="single"
-      [gradient]="gradient"
-      [xAxis]="showXAxis"
-      [yAxis]="showYAxis"
-      [legend]="false"
-      [showXAxisLabel]="showXAxisLabel"
-      [showYAxisLabel]="showYAxisLabel"
-      [xAxisLabel]="xAxisLabel"
-      [yAxisLabel]="yAxisLabel"
-      (select)="onSelect($event)"
-    >
-    </ngx-charts-bar-vertical>
+    <div class="chart-container">
+      <canvas id="nrOfOrders"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="conversion"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="aov"></canvas>
+    </div>
   `,
-  styles: [],
+  styles: [
+    '.chart-container { height: 200px; width: 33%; padding-right: 20px; display: inline-block; }',
+  ],
 })
 export class MetricsWidgetComponent implements OnInit {
-  // FIXME: niet gebruiken, library outdated. Beter simpele HTML library
-
-  single: any[] = [
-    {
-      name: 'Germany',
-      value: 8940000,
+  nrOfOrdersChart?: any;
+  // Config for all charts
+  config = {
+    x: {
+      grid: {
+        display: false,
+      },
     },
-    {
-      name: 'USA',
-      value: 5000000,
+    y: {
+      ticks: {
+        display: false,
+      },
+      grid: {
+        display: false,
+        drawBorder: false,
+      },
     },
-    {
-      name: 'France',
-      value: 7200000,
-    },
-  ];
-  multi: any[] = [];
-
-  view = [400];
-
-  // options
-  showXAxis = true;
-  showYAxis = true;
-  gradient = false;
-  showLegend = true;
-  showXAxisLabel = true;
-  xAxisLabel = 'Country';
-  showYAxisLabel = true;
-  yAxisLabel = 'Population';
-
-  colorScheme = {
-    domain: ['#5AA454', '#A10A28', '#C7B42C', '#AAAAAA'],
   };
 
-  constructor() {
-    Object.assign(this, { single: this.single });
+  constructor() {}
+
+  ngOnInit() {
+    this.createChart('nrOfOrders', 'Nr of placed orders', nrOfOrders);
+    this.createChart('aov', 'Average order value €', nrOfOrders);
+    this.createChart('conversion', 'Conversion rate %', nrOfOrders);
   }
 
-  ngOnInit() {}
-
-  onSelect(event) {
-    console.log(event);
+  createChart(id: string, title: string, data: typeof nrOfOrders) {
+    const h = 196; // Vendure hue
+    const [min, max] = [20, 80];
+    const s = 100;
+    const l = Math.floor(Math.random() * (max - min + 1)) + min;
+    console.log(s, l);
+    return new Chart(id, {
+      type: 'bar',
+      data: {
+        // values on X-Axis
+        labels: nrOfOrders.dataset.map((d) => d.label),
+        datasets: [
+          {
+            label: title,
+            data: data.dataset.map((d) => d.data),
+            backgroundColor: 'hsla(' + h + ', ' + s + '%, ' + l + '%, 0.4)',
+            borderColor: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
+            borderWidth: 1,
+          },
+        ],
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: this.config,
+      },
+    });
   }
 }
 
 @NgModule({
-  imports: [SharedModule, NgxChartsModule],
+  imports: [SharedModule],
   declarations: [MetricsWidgetComponent],
 })
 export class MetricsWidgetModule {}

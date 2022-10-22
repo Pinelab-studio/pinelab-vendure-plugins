@@ -32,6 +32,6 @@
     "typescript": "4.3.5"
   },
   "dependencies": {
-    "@swimlane/ngx-charts": "^20.1.0"
+    "chart.js": "^3.9.1"
   }
 }
