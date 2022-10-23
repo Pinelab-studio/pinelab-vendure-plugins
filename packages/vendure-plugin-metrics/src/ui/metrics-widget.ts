@@ -1,7 +1,7 @@
-import { Component, NgModule, OnInit } from '@angular/core';
+import { Component, NgModule, OnInit, AfterViewInit } from '@angular/core';
 import { SharedModule } from '@vendure/admin-ui/core';
 import Chart from 'chart.js/auto';
-import { nrOfOrders } from './data';
+import { chartDatas } from './data';
 
 @Component({
   selector: 'metrics-wdiget',
@@ -24,24 +24,18 @@ import { nrOfOrders } from './data';
     </div>
     <br />
 
-    <div class="chart-container">
-      <canvas id="nrOfOrders"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="conversion"></canvas>
-    </div>
-    <div class="chart-container">
-      <canvas id="aov"></canvas>
+    <div *ngFor="let id of chartIds" class="chart-container">
+      <canvas [id]="id"></canvas>
     </div>
   `,
   styles: [
     '.chart-container { height: 200px; width: 33%; padding-right: 20px; display: inline-block; padding-top: 20px;}',
+    '@media screen and (max-width: 768px) { .chart-container { width: 100%; } }',
   ],
 })
-export class MetricsWidgetComponent implements OnInit {
-  ordersChart: any;
-  conversionChart: any;
-  aovChart: any;
+export class MetricsWidgetComponent implements OnInit, AfterViewInit {
+  chartIds: string[] = [];
+  charts: any[] = [];
   selection: 'monthly' | 'weekly' = 'monthly';
   nrOfOrdersChart?: any;
   // Config for all charts
@@ -64,60 +58,38 @@ export class MetricsWidgetComponent implements OnInit {
 
   constructor() {}
 
-  ngOnInit() {
-    this.ordersChart = this.createChart(
-      'nrOfOrders',
-      'Nr of placed orders',
-      nrOfOrders
-    );
-    this.aovChart = this.createChart(
-      'aov',
-      'Average order value €',
-      nrOfOrders
-    );
-    this.conversionChart = this.createChart(
-      'conversion',
-      'Conversion rate %',
-      nrOfOrders
+  async ngOnInit() {
+    this.chartIds = chartDatas.map((d) => d.id);
+    //await new Promise(resolve => setTimeout(resolve, 500)); // Wait for canvasses tp be drawn so Chart.js can find them
+  }
+
+  ngAfterViewInit() {
+    chartDatas.forEach((chartData) =>
+      this.charts.push(this.createChart(chartData))
     );
   }
 
   selectTimeFrame(select: 'monthly' | 'weekly') {
     this.selection = select;
-    console.log(`Show ${this.selection}`);
-    this.ordersChart.destroy();
-    this.aovChart.destroy();
-    this.conversionChart.destroy();
-    this.ordersChart = this.createChart(
-      'nrOfOrders',
-      'Nr of placed orders',
-      nrOfOrders
-    );
-    this.aovChart = this.createChart(
-      'aov',
-      'Average order value €',
-      nrOfOrders
-    );
-    this.conversionChart = this.createChart(
-      'conversion',
-      'Conversion rate %',
-      nrOfOrders
+    this.charts.forEach((chart) => chart.destroy());
+    chartDatas.forEach((chartData) =>
+      this.charts.push(this.createChart(chartData))
     );
   }
 
-  createChart(id: string, title: string, data: typeof nrOfOrders) {
+  createChart(data: typeof chartDatas[0]) {
     const h = 196; // Vendure hue
     const [min, max] = [20, 80];
     const s = 100;
     const l = Math.floor(Math.random() * (max - min + 1)) + min;
-    return new Chart(id, {
+    return new Chart(data.id, {
       type: 'bar',
       data: {
         // values on X-Axis
-        labels: nrOfOrders.dataset.map((d) => d.label),
+        labels: data.dataset.map((d) => d.label),
         datasets: [
           {
-            label: title,
+            label: data.title,
             data: data.dataset.map((d) => d.data),
             backgroundColor: 'hsla(' + h + ', ' + s + '%, ' + l + '%, 0.4)',
             borderColor: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',

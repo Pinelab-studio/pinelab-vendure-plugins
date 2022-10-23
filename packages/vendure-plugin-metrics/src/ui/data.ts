@@ -1,4 +1,6 @@
-export const nrOfOrders = {
+const nrOfOrders = {
+  id: 'aov',
+  title: 'Average order value €',
   timeUnit: 'Monthly',
   dataset: [
     {
@@ -102,3 +104,18 @@ export const nrOfOrders = {
     },
   ],
 };
+export const chartDatas = [
+  nrOfOrders,
+  {
+    ...nrOfOrders,
+    id: 'aov2',
+  },
+  {
+    ...nrOfOrders,
+    id: 'aov3',
+  },
+  {
+    ...nrOfOrders,
+    id: 'aov4',
+  },
+];
