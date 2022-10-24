@@ -1,7 +1,15 @@
-import { Component, NgModule, OnInit, AfterViewInit } from '@angular/core';
-import { SharedModule } from '@vendure/admin-ui/core';
+import { Component, NgModule, OnInit } from '@angular/core';
+import { DataService, SharedModule } from '@vendure/admin-ui/core';
+import {
+  MetricInterval,
+  MetricListQuery,
+  MetricListQueryVariables,
+} from './generated/graphql';
 import Chart from 'chart.js/auto';
-import { chartDatas } from './data';
+import { GET_METRICS } from './queries.graphql';
+import { Observable } from 'rxjs';
+
+type Metric = MetricListQuery['metricList']['metrics'][0];
 
 @Component({
   selector: 'metrics-wdiget',
@@ -9,23 +17,24 @@ import { chartDatas } from './data';
     <div class="btn-group btn-outline-primary btn-sm">
       <button
         class="btn"
-        [class.btn-primary]="selection === 'weekly'"
-        (click)="selectTimeFrame('weekly')"
+        [class.btn-primary]="selection === 'WEEKLY'"
+        (click)="selectTimeFrame('WEEKLY')"
       >
         Weekly
       </button>
       <button
         class="btn"
-        [class.btn-primary]="selection === 'monthly'"
-        (click)="selectTimeFrame('monthly')"
+        [class.btn-primary]="selection === 'MONTHLY'"
+        (click)="selectTimeFrame('MONTHLY')"
       >
         Monthly
       </button>
     </div>
+    {{ startDate | date }} - {{ endDate | date }}
     <br />
 
-    <div *ngFor="let id of chartIds" class="chart-container">
-      <canvas [id]="id"></canvas>
+    <div *ngFor="let metric of metrics$ | async" class="chart-container">
+      <canvas [id]="metric.id"></canvas>
     </div>
   `,
   styles: [
@@ -33,10 +42,12 @@ import { chartDatas } from './data';
     '@media screen and (max-width: 768px) { .chart-container { width: 100%; } }',
   ],
 })
-export class MetricsWidgetComponent implements OnInit, AfterViewInit {
-  chartIds: string[] = [];
+export class MetricsWidgetComponent implements OnInit {
+  metrics$: Observable<Metric[]> | undefined;
   charts: any[] = [];
-  selection: 'monthly' | 'weekly' = 'monthly';
+  selection: MetricInterval = MetricInterval.Monthly;
+  startDate?: Date;
+  endDate?: Date;
   nrOfOrdersChart?: any;
   // Config for all charts
   config = {
@@ -56,43 +67,51 @@ export class MetricsWidgetComponent implements OnInit, AfterViewInit {
     },
   };
 
-  constructor() {}
+  constructor(private dataService: DataService) {}
 
   async ngOnInit() {
-    this.chartIds = chartDatas.map((d) => d.id);
-    //await new Promise(resolve => setTimeout(resolve, 500)); // Wait for canvasses tp be drawn so Chart.js can find them
+    this.metrics$ = this.dataService
+      .query<MetricListQuery, MetricListQueryVariables>(GET_METRICS, {
+        input: {
+          interval: this.selection,
+          endDate: new Date().toISOString(),
+        },
+      })
+      .mapStream((list) => {
+        this.startDate = list.metricList.startDate;
+        this.endDate = list.metricList.endDate;
+        return list.metricList.metrics;
+      });
+    this.metrics$.subscribe(async (metrics) => {
+      this.charts.forEach((chart) => chart.destroy());
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      metrics.forEach((chartData) =>
+        this.charts.push(this.createChart(chartData))
+      );
+    });
   }
 
-  ngAfterViewInit() {
-    chartDatas.forEach((chartData) =>
-      this.charts.push(this.createChart(chartData))
-    );
+  selectTimeFrame(select: string) {
+    this.selection = select as MetricInterval;
+    // TODO: refetch data
   }
 
-  selectTimeFrame(select: 'monthly' | 'weekly') {
-    this.selection = select;
-    this.charts.forEach((chart) => chart.destroy());
-    chartDatas.forEach((chartData) =>
-      this.charts.push(this.createChart(chartData))
-    );
-  }
-
-  createChart(data: typeof chartDatas[0]) {
+  createChart(metric: Metric) {
     const h = 196; // Vendure hue
-    const [min, max] = [20, 80];
     const s = 100;
-    const l = Math.floor(Math.random() * (max - min + 1)) + min;
-    return new Chart(data.id, {
+    const l = Math.floor(Math.random() * (80 - 20 + 1)) + 20;
+    const color = h + ', ' + s + '%, ' + l + '%';
+    return new Chart(metric.id, {
       type: 'bar',
       data: {
         // values on X-Axis
-        labels: data.dataset.map((d) => d.label),
+        labels: metric.data.map((d) => d.label),
         datasets: [
           {
-            label: data.title,
-            data: data.dataset.map((d) => d.data),
-            backgroundColor: 'hsla(' + h + ', ' + s + '%, ' + l + '%, 0.4)',
-            borderColor: 'hsl(' + h + ', ' + s + '%, ' + l + '%)',
+            label: metric.title,
+            data: metric.data.map((d) => d.value),
+            backgroundColor: `hsla(${color}, 0.4)`,
+            borderColor: `hsla(${color})`,
             borderWidth: 1,
           },
         ],

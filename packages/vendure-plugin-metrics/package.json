@@ -14,11 +14,14 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-invoices/src",
     "test": "jest --preset=\"ts-jest\" --forceExit",
     "start": "yarn ts-node test/dev-server.ts"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^2.4.0",
+    "@graphql-codegen/typescript": "^2.4.8",
+    "@graphql-codegen/typescript-operations": "^2.3.5",
     "@types/jest": "^27.4.1",
     "@vendure/admin-ui-plugin": "1.7.4",
     "@vendure/core": "1.7.4",
@@ -32,6 +35,7 @@
     "typescript": "4.3.5"
   },
   "dependencies": {
-    "chart.js": "^3.9.1"
+    "chart.js": "^3.9.1",
+    "date-fns": "^2.29.3"
   }
 }

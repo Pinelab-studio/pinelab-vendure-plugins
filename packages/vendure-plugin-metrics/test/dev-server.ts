@@ -14,6 +14,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { MetricsPlugin } from '../src/MetricsPlugin';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 (async () => {
   require('dotenv').config();
@@ -26,6 +27,7 @@ import { MetricsPlugin } from '../src/MetricsPlugin';
       shopApiPlayground: {},
     },
     plugins: [
+      MetricsPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -43,4 +45,9 @@ import { MetricsPlugin } from '../src/MetricsPlugin';
     initialData,
     productsCsvPath: '../test/src/products-import.csv',
   });
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
 })();
