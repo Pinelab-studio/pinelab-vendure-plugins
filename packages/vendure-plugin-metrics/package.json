@@ -14,7 +14,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-invoices/src",
+    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "jest --preset=\"ts-jest\" --forceExit",
     "start": "yarn ts-node test/dev-server.ts"
   },
