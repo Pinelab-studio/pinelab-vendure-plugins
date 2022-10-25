@@ -12,7 +12,7 @@ import { Observable } from 'rxjs';
 type Metric = MetricListQuery['metricList']['metrics'][0];
 
 @Component({
-  selector: 'metrics-wdiget',
+  selector: 'metrics-widget',
   template: `
     <div class="btn-group btn-outline-primary btn-sm">
       <button
@@ -30,11 +30,10 @@ type Metric = MetricListQuery['metricList']['metrics'][0];
         Monthly
       </button>
     </div>
-    {{ startDate | date }} - {{ endDate | date }}
     <br />
 
     <div *ngFor="let metric of metrics$ | async" class="chart-container">
-      <canvas [id]="metric.id"></canvas>
+      <canvas [id]="metric.code"></canvas>
     </div>
   `,
   styles: [
@@ -46,8 +45,6 @@ export class MetricsWidgetComponent implements OnInit {
   metrics$: Observable<Metric[]> | undefined;
   charts: any[] = [];
   selection: MetricInterval = MetricInterval.Monthly;
-  startDate?: Date;
-  endDate?: Date;
   nrOfOrdersChart?: any;
   // Config for all charts
   config = {
@@ -70,30 +67,31 @@ export class MetricsWidgetComponent implements OnInit {
   constructor(private dataService: DataService) {}
 
   async ngOnInit() {
-    this.metrics$ = this.dataService
-      .query<MetricListQuery, MetricListQueryVariables>(GET_METRICS, {
-        input: {
-          interval: this.selection,
-          endDate: new Date().toISOString(),
-        },
-      })
-      .mapStream((list) => {
-        this.startDate = list.metricList.startDate;
-        this.endDate = list.metricList.endDate;
-        return list.metricList.metrics;
-      });
-    this.metrics$.subscribe(async (metrics) => {
-      this.charts.forEach((chart) => chart.destroy());
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      metrics.forEach((chartData) =>
-        this.charts.push(this.createChart(chartData))
-      );
-    });
+    this.observe();
   }
 
   selectTimeFrame(select: string) {
     this.selection = select as MetricInterval;
-    // TODO: refetch data
+    this.observe();
+  }
+
+  observe() {
+    this.metrics$ = this.dataService
+      .query<MetricListQuery, MetricListQueryVariables>(GET_METRICS, {
+        input: {
+          interval: this.selection,
+        },
+      })
+      .mapStream((list) => {
+        return list.metricList.metrics;
+      });
+    this.metrics$.subscribe(async (metrics) => {
+      this.charts.forEach((chart) => chart.destroy());
+      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for Angular redraw
+      metrics.forEach((chartData) =>
+        this.charts.push(this.createChart(chartData))
+      );
+    });
   }
 
   createChart(metric: Metric) {
@@ -101,15 +99,15 @@ export class MetricsWidgetComponent implements OnInit {
     const s = 100;
     const l = Math.floor(Math.random() * (80 - 20 + 1)) + 20;
     const color = h + ', ' + s + '%, ' + l + '%';
-    return new Chart(metric.id, {
+    return new Chart(metric.code, {
       type: 'bar',
       data: {
         // values on X-Axis
-        labels: metric.data.map((d) => d.label),
+        labels: metric.entries.map((e) => e.label),
         datasets: [
           {
             label: metric.title,
-            data: metric.data.map((d) => d.value),
+            data: metric.entries.map((e) => e.value),
             backgroundColor: `hsla(${color}, 0.4)`,
             borderColor: `hsla(${color})`,
             borderWidth: 1,

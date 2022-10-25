@@ -1,27 +1,6 @@
-import {
-  Injector,
-  ListQueryBuilder,
-  Logger,
-  Order,
-  RequestContext,
-  Session,
-  TransactionalConnection,
-} from '@vendure/core';
-import { Metric, MetricInterval } from '../ui/generated/graphql';
-import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
-import { Between, IsNull, Not } from 'typeorm';
-import { loggerCtx } from '../constants';
-
-/**
- * Data loaded in this function is passed to all strategies.
- * For example: Load all placed orders if you want to show orders per month/week
- */
-export type MetricDataLoaderFunction<T> = (
-  ctx: RequestContext,
-  injector: Injector,
-  startDate: Date,
-  endDate: Date
-) => Promise<T>;
+import { RequestContext } from '@vendure/core';
+import { MetricEntry, MetricInterval } from '../ui/generated/graphql';
+import { MetricData } from './metrics.service';
 
 /**
  * Calculate your metric data based on the given input.
@@ -29,79 +8,136 @@ export type MetricDataLoaderFunction<T> = (
  * as this function is executed everytime a user views its dashboard
  *
  */
-export type MetricCalculation<T> = (
-  ctx: RequestContext,
-  injector: Injector,
-  interval: MetricInterval,
-  data: T
-) => Promise<Metric>;
+export interface MetricCalculation {
+  code: string;
+  getTitle(ctx: RequestContext): string;
+  calculateEntry(
+    ctx: RequestContext,
+    interval: MetricInterval,
+    weekOrMonthNr: number,
+    data: MetricData
+  ): MetricEntry;
+}
 
-export type DefaultData = {
-  orders: Order[];
-  sessions: Session[];
-};
+function getMonthName(step: number): string {
+  const monthNames = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
+  return monthNames[step];
+}
 
 /**
- * Default data loader that fetches placed Orders and Sessions, so we can calculate:
- * Average order value, Conversion and placed orders per month/week
+ * Calculates the average order value per month/week
  */
-export const defaultDataLoader: MetricDataLoaderFunction<DefaultData> = async (
-  ctx,
-  injector,
-  startDate,
-  endDate
-) => {
-  const listBuilder = injector.get(ListQueryBuilder);
-  const ordersPromise = listBuilder
-    .build(
-      Order,
-      {},
-      {
-        ctx,
-        relations: [],
-        channelId: ctx.channelId,
-        /*    where: {
-      orderPlacedAt: Not(IsNull())
-    }*/
-      }
-    )
-    .getManyAndCount();
-  const connection = injector.get(TransactionalConnection);
-  const sessionPromise = connection.rawConnection.getRepository(Session).count({
-    updatedAt: Between(startDate.toISOString(), endDate.toISOString()),
-  });
-  const [[orders, nrOfOrders], sessions] = await Promise.all([
-    ordersPromise,
-    sessionPromise,
-  ]);
-  console.log('Orders', JSON.stringify(orders[0]));
-  console.log('Sesions', sessions);
-  if (nrOfOrders > orders.length) {
-    Logger.error(
-      `Too many orders, only using first ${orders.length} orders.`,
-      loggerCtx
-    );
-  }
-  return {
-    orders: [],
-    sessions: [],
-  };
-};
+export class AverageOrderValueMetric implements MetricCalculation {
+  readonly code = 'aov';
 
-export const averageOrderValueMetric: MetricCalculation<DefaultData> = async (
-  ctx,
-  injector,
-  interval,
-  data
-) => {
-  return {
-    id: generatePublicId(),
-    title: `Average order value in ${ctx.channel.currencyCode}`,
-    data: [
-      {
-        label: 'Jan',
-        value: 123,
-      },
-    ],
-  };
-};
+  getTitle(ctx: RequestContext): string {
+    return `Average order value in ${ctx.channel.currencyCode}`;
+  }
+
+  calculateEntry(
+    ctx: RequestContext,
+    interval: MetricInterval,
+    weekOrMonthNr: number,
+    data: MetricData
+  ): MetricEntry {
+    const label =
+      interval === MetricInterval.Monthly
+        ? getMonthName(weekOrMonthNr)
+        : `Week ${weekOrMonthNr}`;
+    if (!data.orders.length) {
+      return {
+        label,
+        value: 0,
+      };
+    }
+    const total = data.orders
+      .map((o) => o.totalWithTax)
+      .reduce((total, current) => total + current);
+    const average = Math.round((total / data.orders.length) * 10) / 10;
+    return {
+      label,
+      value: average,
+    };
+  }
+}
+
+/**
+ * Calculates the conversion of sessions to orders per month/week
+ */
+export class ConversionRateMetric implements MetricCalculation {
+  readonly code = 'cvr';
+
+  getTitle(ctx: RequestContext): string {
+    return `Sessions to order conversion in %`;
+  }
+
+  calculateEntry(
+    ctx: RequestContext,
+    interval: MetricInterval,
+    weekOrMonthNr: number,
+    data: MetricData
+  ): MetricEntry {
+    const label =
+      interval === MetricInterval.Monthly
+        ? getMonthName(weekOrMonthNr)
+        : `Week ${weekOrMonthNr}`;
+    const nrOfSessions = data.sessions.length;
+    const nrOfOrders = data.orders.length;
+    if (!nrOfOrders) {
+      return {
+        label,
+        value: 0,
+      };
+    } else if (!nrOfSessions) {
+      return {
+        label,
+        value: 100,
+      };
+    }
+    const rate = Math.round((nrOfOrders / nrOfSessions) * 100 * 10) / 10;
+    return {
+      label,
+      value: rate,
+    };
+  }
+}
+
+/**
+ * Calculates the conversion of sessions to orders per month/week
+ */
+export class NrOfOrdersMetric implements MetricCalculation {
+  readonly code = 'nr-of-orders';
+
+  getTitle(ctx: RequestContext): string {
+    return `Nr. of orders`;
+  }
+
+  calculateEntry(
+    ctx: RequestContext,
+    interval: MetricInterval,
+    weekOrMonthNr: number,
+    data: MetricData
+  ): MetricEntry {
+    const label =
+      interval === MetricInterval.Monthly
+        ? getMonthName(weekOrMonthNr)
+        : `Week ${weekOrMonthNr}`;
+    return {
+      label,
+      value: data.orders.length,
+    };
+  }
+}

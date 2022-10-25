@@ -4,13 +4,11 @@ export const GET_METRICS = gql`
   query metricList($input: MetricListInput!) {
     metricList(input: $input) {
       id
-      startDate
-      endDate
       interval
       metrics {
-        id
+        code
         title
-        data {
+        entries {
           label
           value
         }

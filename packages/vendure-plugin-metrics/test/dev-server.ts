@@ -15,6 +15,7 @@ import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { MetricsPlugin } from '../src/MetricsPlugin';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 (async () => {
   require('dotenv').config();
@@ -25,6 +26,9 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
+    },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
     },
     plugins: [
       MetricsPlugin,
@@ -42,7 +46,15 @@ import { createSettledOrder } from '../../test/src/shop-utils';
   });
   const { server, shopClient } = createTestEnvironment(config);
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
   await createSettledOrder(shopClient, 1);

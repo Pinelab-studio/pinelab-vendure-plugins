@@ -5,16 +5,21 @@ import { schema } from './api/schema.graphql';
 import { MetricsResolver } from './api/metrics.resolver';
 import { MetricsService } from './api/metrics.service';
 import {
-  averageOrderValueMetric,
-  defaultDataLoader,
+  AverageOrderValueMetric,
+  ConversionRateMetric,
   MetricCalculation,
-  MetricDataLoaderFunction,
+  NrOfOrdersMetric,
 } from './api/strategies';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 
 export interface MetricsPluginOptions {
-  dataLoader: MetricDataLoaderFunction<any>;
-  metricCalculations: MetricCalculation<any>[];
+  metrics: MetricCalculation[];
+  /**
+   * Relations to fetch for orders.
+   * Getting many orders with many relation can be heavy on the DB,
+   * so handle with care
+   */
+  orderRelations?: string[];
 }
 
 @VendurePlugin({
@@ -33,8 +38,11 @@ export interface MetricsPluginOptions {
 })
 export class MetricsPlugin {
   static options: MetricsPluginOptions = {
-    dataLoader: defaultDataLoader,
-    metricCalculations: [averageOrderValueMetric],
+    metrics: [
+      new AverageOrderValueMetric(),
+      new ConversionRateMetric(),
+      new NrOfOrdersMetric(),
+    ],
   };
 
   static init(options: MetricsPluginOptions): typeof MetricsPlugin {

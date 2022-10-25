@@ -7,28 +7,24 @@ export const schema = gql`
   }
   type MetricList {
     id: ID!
-    startDate: DateTime!
-    endDate: DateTime!
     interval: MetricInterval!
     metrics: [Metric!]!
   }
   type Metric {
-    id: ID!
+    code: String!
     title: String!
-    data: [MetricEntry!]!
+    entries: [MetricEntry!]!
   }
   type MetricEntry {
     label: String!
     value: Float!
   }
   input MetricListInput {
-    endDate: DateTime!
     interval: MetricInterval!
   }
-
   extend type Query {
     """
-    Get metrics from given date with the preceding 12 entries:
+    Get metrics untill now with the preceding 123 entries
     Preceding 12 weeks for WEEKLY and the preceding 12 months when given a MONTHLY interval
     """
     metricList(input: MetricListInput): MetricList!
