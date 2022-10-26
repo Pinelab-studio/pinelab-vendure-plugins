@@ -1,17 +1,14 @@
 import gql from 'graphql-tag';
 
 export const GET_METRICS = gql`
-  query metricList($input: MetricListInput!) {
-    metricList(input: $input) {
-      id
+  query metricSummary($input: MetricSummaryInput!) {
+    metricSummary(input: $input) {
       interval
-      metrics {
-        code
-        title
-        entries {
-          label
-          value
-        }
+      code
+      title
+      entries {
+        label
+        value
       }
     }
   }

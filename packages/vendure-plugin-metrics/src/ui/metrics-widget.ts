@@ -1,28 +1,15 @@
-import {
-  Component,
-  NgModule,
-  OnInit,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, NgModule, OnInit } from '@angular/core';
 import { DataService, SharedModule } from '@vendure/admin-ui/core';
 import {
   MetricInterval,
-  MetricListQuery,
-  MetricListQueryVariables,
+  MetricSummary,
+  MetricSummaryQuery,
+  MetricSummaryQueryVariables,
 } from './generated/graphql';
 import Chart from 'chart.js/auto';
 import { GET_METRICS } from './queries.graphql';
-import { Observable, BehaviorSubject } from 'rxjs';
-import {
-  distinctUntilChanged,
-  shareReplay,
-  skip,
-  first,
-  switchMap,
-} from 'rxjs/operators';
-
-type Metric = MetricListQuery['metricList']['metrics'][0];
+import { BehaviorSubject, Observable } from 'rxjs';
+import { switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'metrics-widget',
@@ -58,7 +45,7 @@ type Metric = MetricListQuery['metricList']['metrics'][0];
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
-  metrics$: Observable<Metric[]> | undefined;
+  metrics$: Observable<MetricSummary[]> | undefined;
   charts: any[] = [];
   selection: MetricInterval = MetricInterval.Monthly;
   selection$ = new BehaviorSubject<MetricInterval>(MetricInterval.Monthly);
@@ -88,14 +75,14 @@ export class MetricsWidgetComponent implements OnInit {
     this.metrics$ = this.selection$.pipe(
       switchMap((selection) => {
         return this.dataService
-          .query<MetricListQuery, MetricListQueryVariables>(GET_METRICS, {
+          .query<MetricSummaryQuery, MetricSummaryQueryVariables>(GET_METRICS, {
             input: {
               interval: selection,
             },
           })
           .refetchOnChannelChange()
-          .mapStream((list) => {
-            return list.metricList.metrics;
+          .mapStream((metricSummary) => {
+            return metricSummary.metricSummary;
           });
       })
     );
@@ -108,7 +95,7 @@ export class MetricsWidgetComponent implements OnInit {
     });
   }
 
-  createChart(metric: Metric) {
+  createChart(metric: MetricSummary) {
     const h = 196; // Vendure hue
     const s = 100;
     const l = Math.floor(Math.random() * (80 - 20 + 1)) + 20;

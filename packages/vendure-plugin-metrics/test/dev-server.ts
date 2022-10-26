@@ -13,10 +13,9 @@ import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { MetricsPlugin } from '../src/MetricsPlugin';
+import { MetricsPlugin } from '../src/';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { AverageOrderValueMetric, ConversionRateMetric } from '../src';
 
 (async () => {
   require('dotenv').config();

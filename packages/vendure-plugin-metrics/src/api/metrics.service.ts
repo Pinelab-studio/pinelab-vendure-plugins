@@ -1,14 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import {
-  Metric,
-  MetricEntry,
   MetricInterval,
-  MetricList,
-  MetricListInput,
+  MetricSummary,
+  MetricSummaryEntry,
+  MetricSummaryInput,
 } from '../ui/generated/graphql';
 import {
-  Injector,
   ListQueryBuilder,
   Logger,
   Order,
@@ -17,8 +14,6 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import {
-  differenceInMonths,
-  differenceInWeeks,
   Duration,
   endOfDay,
   getISOWeek,
@@ -27,7 +22,6 @@ import {
   sub,
 } from 'date-fns';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 import { MetricsPluginOptions } from '../MetricsPlugin';
 import { Cache } from './cache';
 import { Between } from 'typeorm';
@@ -39,8 +33,7 @@ export type MetricData = {
 
 @Injectable()
 export class MetricsService {
-  nrOfEntries = 12;
-  cache = new Cache<MetricList>();
+  cache = new Cache<MetricSummary[]>();
 
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions,
@@ -50,8 +43,8 @@ export class MetricsService {
 
   async getMetrics(
     ctx: RequestContext,
-    { interval }: MetricListInput
-  ): Promise<MetricList> {
+    { interval }: MetricSummaryInput
+  ): Promise<MetricSummary[]> {
     // Set 23:59:59.999 as endDate
     const endDate = endOfDay(new Date());
     // Check if we have cached result
@@ -66,41 +59,31 @@ export class MetricsService {
     }
     // No cache, calculating new metrics
     Logger.info(
-      `No cache hit, calculating ${
-        this.nrOfEntries
-      } ${interval} metric entries before ${endDate.toISOString()} for channel ${
+      `No cache hit, calculating ${interval} metrics until ${endDate.toISOString()} for channel ${
         ctx.channel.token
       }`,
       loggerCtx
     );
     const data = await this.loadData(ctx, interval, endDate);
-    const metrics: Metric[] = [];
+    const metrics: MetricSummary[] = [];
     this.options.metrics.forEach((metric) => {
       // Calculate entry (month or week)
-      const entries: MetricEntry[] = [];
-      data.forEach((dataPerStep, weekOrMonthNr) => {
-        const entry = metric.calculateEntry(
-          ctx,
-          interval,
-          weekOrMonthNr,
-          dataPerStep
+      const entries: MetricSummaryEntry[] = [];
+      data.forEach((dataPerTick, weekOrMonthNr) => {
+        entries.push(
+          metric.calculateEntry(ctx, interval, weekOrMonthNr, dataPerTick)
         );
-        entries.push(entry);
       });
       // Create metric with calculated entries
       metrics.push({
+        interval,
         title: metric.getTitle(ctx),
         code: metric.code,
         entries,
       });
     });
-    const metricList: MetricList = {
-      id: generatePublicId(),
-      interval,
-      metrics,
-    };
-    this.cache.set(cacheKey, metricList);
-    return metricList;
+    this.cache.set(cacheKey, metrics);
+    return metrics;
   }
 
   async loadData(
@@ -108,11 +91,25 @@ export class MetricsService {
     interval: MetricInterval,
     endDate: Date
   ): Promise<Map<number, MetricData>> {
-    const weeksOrMonths: Duration =
-      interval === MetricInterval.Weekly
-        ? { weeks: this.nrOfEntries }
-        : { months: this.nrOfEntries };
-    const startDate = startOfDay(sub(endDate, weeksOrMonths));
+    let nrOfEntries: number;
+    let backInTimeAmount: Duration;
+    // What function to use to get the current Tick of a date (i.e. the week or month number)
+    let getTickNrFn: typeof getMonth | typeof getISOWeek;
+    let maxTick: number;
+    if (interval === MetricInterval.Monthly) {
+      nrOfEntries = 12;
+      backInTimeAmount = { months: nrOfEntries };
+      getTickNrFn = getMonth;
+      maxTick = 12; // max 12 months
+    } else {
+      // Weekly
+      nrOfEntries = 26;
+      backInTimeAmount = { weeks: nrOfEntries };
+      getTickNrFn = getISOWeek;
+      maxTick = 52; // max 52 weeks
+    }
+    const startDate = startOfDay(sub(endDate, backInTimeAmount));
+    const startTick = getTickNrFn(startDate);
     // Get orders in a loop until we have all
     let skip = 0;
     const take = 1000;
@@ -162,36 +159,27 @@ export class MetricsService {
         hasMoreSessions = false;
       }
     }
-    // Get week and month nrs
+    // Get ticks (weeks or months depending on the interval)
     const dataPerInterval = new Map<number, MetricData>();
-    const start =
-      interval === MetricInterval.Monthly
-        ? getMonth(startDate)
-        : getISOWeek(startDate);
-    const weekOrMonthNrs = [];
-    const max = interval === MetricInterval.Monthly ? 12 : 52;
-    for (let i = 1; i <= this.nrOfEntries; i++) {
-      if (start + i >= max) {
-        // make sure we dont go over 12 months or 52 weeks
-        weekOrMonthNrs.push(start + i - max);
+    const ticks = [];
+    for (let i = 1; i <= nrOfEntries; i++) {
+      if (startTick + i >= maxTick) {
+        // make sure we dont go over month 12 or week 52
+        ticks.push(startTick + i - maxTick);
       } else {
-        weekOrMonthNrs.push(start + i);
+        ticks.push(startTick + i);
       }
     }
-    weekOrMonthNrs.forEach((weekOrMonthNr) => {
-      const getMonthOrWeekNrFn =
-        interval === MetricInterval.Monthly ? getMonth : getISOWeek;
-      const ordersInThisStep = orders.filter(
-        (order) => getMonthOrWeekNrFn(order.orderPlacedAt!) === weekOrMonthNr
+    ticks.forEach((tick) => {
+      const ordersInCurrentTick = orders.filter(
+        (order) => getTickNrFn(order.orderPlacedAt!) === tick
       );
-      const sessionsInThisStep = sessions.filter(
-        (session) =>
-          getMonthOrWeekNrFn(session.createdAt) === weekOrMonthNr ||
-          getMonthOrWeekNrFn(session.updatedAt)
+      const sessionsInCurrentTick = sessions.filter((session) =>
+        getTickNrFn(session.updatedAt)
       );
-      dataPerInterval.set(weekOrMonthNr, {
-        orders: ordersInThisStep,
-        sessions: sessionsInThisStep,
+      dataPerInterval.set(tick, {
+        orders: ordersInCurrentTick,
+        sessions: sessionsInCurrentTick,
       });
     });
     return dataPerInterval;

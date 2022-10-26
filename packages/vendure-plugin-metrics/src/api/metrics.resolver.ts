@@ -1,18 +1,18 @@
-import { Query, Resolver, Args } from '@nestjs/graphql';
+import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
-import { MetricList, MetricListInput } from '../ui/generated/graphql';
 import { MetricsService } from './metrics.service';
+import { MetricSummary, MetricSummaryInput } from '../ui/generated/graphql';
 
 @Resolver()
 export class MetricsResolver {
   constructor(private service: MetricsService) {}
 
   @Query()
-  //FIXME @Allow(Permission.ReadOrder)
-  async metricList(
+  @Allow(Permission.ReadOrder)
+  async metricSummary(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: MetricListInput
-  ): Promise<MetricList> {
+    @Args('input') input: MetricSummaryInput
+  ): Promise<MetricSummary[]> {
     return this.service.getMetrics(ctx, input);
   }
 }

@@ -1,5 +1,5 @@
 import { RequestContext } from '@vendure/core';
-import { MetricEntry, MetricInterval } from '../ui/generated/graphql';
+import { MetricInterval, MetricSummaryEntry } from '../ui/generated/graphql';
 import { MetricData } from './metrics.service';
 
 /**
@@ -18,10 +18,10 @@ export interface MetricCalculation {
     interval: MetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricEntry;
+  ): MetricSummaryEntry;
 }
 
-function getMonthName(step: number): string {
+export function getMonthName(monthNr: number): string {
   const monthNames = [
     'Jan',
     'Feb',
@@ -36,7 +36,7 @@ function getMonthName(step: number): string {
     'Nov',
     'Dec',
   ];
-  return monthNames[step];
+  return monthNames[monthNr];
 }
 
 /**
@@ -54,7 +54,7 @@ export class AverageOrderValueMetric implements MetricCalculation {
     interval: MetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricEntry {
+  ): MetricSummaryEntry {
     const label =
       interval === MetricInterval.Monthly
         ? getMonthName(weekOrMonthNr)
@@ -91,7 +91,7 @@ export class ConversionRateMetric implements MetricCalculation {
     interval: MetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricEntry {
+  ): MetricSummaryEntry {
     const label =
       interval === MetricInterval.Monthly
         ? getMonthName(weekOrMonthNr)
@@ -132,7 +132,7 @@ export class NrOfOrdersMetric implements MetricCalculation {
     interval: MetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricEntry {
+  ): MetricSummaryEntry {
     const label =
       interval === MetricInterval.Monthly
         ? getMonthName(weekOrMonthNr)
