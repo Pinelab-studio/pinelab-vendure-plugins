@@ -45,6 +45,7 @@
           "shipping",
           "stock-monitoring",
           "sendcloud",
+          "metrics",
           "all-plugins"
         ]
       ]
