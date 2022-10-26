@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [4.1.2](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.1.1...v4.1.2) (2022-10-26)
+
+### Bug Fixes
+
+- **myparcel:** e2e fix ([662eb51](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/662eb511ee1ee92e61aa0996644470749a44a946))
+- **myparcel:** manually filter results on carrier_id ([b9514be](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/b9514be7e558b525aae9e53499365a86c26d2e3b))
+
 ## [4.1.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.0.3...v4.1.0) (2022-10-18)
 
 ### Features
