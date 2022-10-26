@@ -113,16 +113,21 @@ export class MyparcelService implements OnApplicationBootstrap {
     }
     const searchParams = new URLSearchParams({
       postal_code: input.postalCode,
-      limit: '10',
+      limit: '30',
     });
+    if (input.carrierId) {
+      searchParams.append('carried_id', input.carrierId);
+    }
     if (input.countryCode) {
       searchParams.append('cc', input.countryCode);
-    } else if (input.carrierId) {
-      searchParams.append('carried_id', input.carrierId);
     }
     const path = `drop_off_points?${searchParams.toString()}`;
     const res = await this.request(path, 'GET', config.apiKey);
-    const results = res.data.drop_off_points || [];
+    let results = res.data.drop_off_points || [];
+    // FIXME because of myparcel bug: also returns other carriers
+    if (input.carrierId) {
+      results = results.filter((r: any) => r.carrier_id == input.carrierId);
+    }
     Logger.debug(
       `Fetched ${results.length} drop off points from MyParcel for channel ${ctx.channel.token}`,
       loggerCtx
