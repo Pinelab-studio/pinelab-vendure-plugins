@@ -25,8 +25,6 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import localtunnel from 'localtunnel';
 import { MyparcelService } from '../src/api/myparcel.service';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 require('dotenv').config();
 
