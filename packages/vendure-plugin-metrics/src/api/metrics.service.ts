@@ -6,6 +6,7 @@ import {
   MetricSummaryInput,
 } from '../ui/generated/graphql';
 import {
+  ConfigService,
   ListQueryBuilder,
   Logger,
   Order,
@@ -38,7 +39,8 @@ export class MetricsService {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions,
     private listBuilder: ListQueryBuilder,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
+    private configService: ConfigService
   ) {}
 
   async getMetrics(
@@ -112,7 +114,7 @@ export class MetricsService {
     const startTick = getTickNrFn(startDate);
     // Get orders in a loop until we have all
     let skip = 0;
-    const take = 1000;
+    const take = this.configService.apiOptions.adminListQueryLimit;
     let hasMoreOrders = true;
     const orders: Order[] = [];
     while (hasMoreOrders) {
@@ -150,8 +152,10 @@ export class MetricsService {
       const [items, nrOfSessions] = await this.connection.rawConnection
         .getRepository(Session)
         .findAndCount({
-          updatedAt: Between(startDate.toISOString(), endDate.toISOString()),
-          createdAt: Between(startDate.toISOString(), endDate.toISOString()),
+          select: ['updatedAt'],
+          where: {
+            updatedAt: Between(startDate.toISOString(), endDate.toISOString()),
+          },
         });
       sessions.push(...items);
       skip += items.length;
@@ -174,8 +178,8 @@ export class MetricsService {
       const ordersInCurrentTick = orders.filter(
         (order) => getTickNrFn(order.orderPlacedAt!) === tick
       );
-      const sessionsInCurrentTick = sessions.filter((session) =>
-        getTickNrFn(session.updatedAt)
+      const sessionsInCurrentTick = sessions.filter(
+        (session) => getTickNrFn(session.updatedAt) === tick
       );
       dataPerInterval.set(tick, {
         orders: ordersInCurrentTick,
