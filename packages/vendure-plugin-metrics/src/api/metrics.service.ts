@@ -149,7 +149,7 @@ export class MetricsService {
     const sessions: Session[] = [];
     skip = 0;
     let hasMoreSessions = true;
-    while (hasMoreOrders) {
+    while (hasMoreSessions) {
       const [items, nrOfSessions] = await this.connection.rawConnection
         .getRepository(Session)
         .findAndCount({

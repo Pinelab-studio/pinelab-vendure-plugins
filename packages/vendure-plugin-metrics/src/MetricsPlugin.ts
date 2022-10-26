@@ -39,8 +39,8 @@ export interface MetricsPluginOptions {
 export class MetricsPlugin {
   static options: MetricsPluginOptions = {
     metrics: [
-      new AverageOrderValueMetric(),
       new ConversionRateMetric(),
+      new AverageOrderValueMetric(),
       new NrOfOrdersMetric(),
     ],
   };

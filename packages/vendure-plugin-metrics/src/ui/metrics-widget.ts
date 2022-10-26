@@ -1,4 +1,10 @@
-import { Component, NgModule, OnInit } from '@angular/core';
+import {
+  Component,
+  NgModule,
+  OnInit,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { DataService, SharedModule } from '@vendure/admin-ui/core';
 import {
   MetricInterval,
@@ -7,25 +13,35 @@ import {
 } from './generated/graphql';
 import Chart from 'chart.js/auto';
 import { GET_METRICS } from './queries.graphql';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
+import {
+  distinctUntilChanged,
+  shareReplay,
+  skip,
+  first,
+  switchMap,
+} from 'rxjs/operators';
 
 type Metric = MetricListQuery['metricList']['metrics'][0];
 
 @Component({
   selector: 'metrics-widget',
   template: `
-    <div class="btn-group btn-outline-primary btn-sm">
+    <div
+      class="btn-group btn-outline-primary btn-sm"
+      *ngIf="selection$ | async as selection"
+    >
       <button
         class="btn"
         [class.btn-primary]="selection === 'WEEKLY'"
-        (click)="selectTimeFrame('WEEKLY')"
+        (click)="selection$.next('WEEKLY')"
       >
         Weekly
       </button>
       <button
         class="btn"
         [class.btn-primary]="selection === 'MONTHLY'"
-        (click)="selectTimeFrame('MONTHLY')"
+        (click)="selection$.next('MONTHLY')"
       >
         Monthly
       </button>
@@ -45,6 +61,7 @@ export class MetricsWidgetComponent implements OnInit {
   metrics$: Observable<Metric[]> | undefined;
   charts: any[] = [];
   selection: MetricInterval = MetricInterval.Monthly;
+  selection$ = new BehaviorSubject<MetricInterval>(MetricInterval.Monthly);
   nrOfOrdersChart?: any;
   // Config for all charts
   config = {
@@ -55,7 +72,7 @@ export class MetricsWidgetComponent implements OnInit {
     },
     y: {
       ticks: {
-        display: false,
+        display: true,
       },
       grid: {
         display: false,
@@ -67,27 +84,24 @@ export class MetricsWidgetComponent implements OnInit {
   constructor(private dataService: DataService) {}
 
   async ngOnInit() {
-    this.observe();
-  }
-
-  selectTimeFrame(select: string) {
-    this.selection = select as MetricInterval;
-    this.observe();
-  }
-
-  observe() {
-    this.metrics$ = this.dataService
-      .query<MetricListQuery, MetricListQueryVariables>(GET_METRICS, {
-        input: {
-          interval: this.selection,
-        },
+    //this.observe();
+    this.metrics$ = this.selection$.pipe(
+      switchMap((selection) => {
+        return this.dataService
+          .query<MetricListQuery, MetricListQueryVariables>(GET_METRICS, {
+            input: {
+              interval: selection,
+            },
+          })
+          .refetchOnChannelChange()
+          .mapStream((list) => {
+            return list.metricList.metrics;
+          });
       })
-      .mapStream((list) => {
-        return list.metricList.metrics;
-      });
+    );
     this.metrics$.subscribe(async (metrics) => {
+      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for Angular redraw
       this.charts.forEach((chart) => chart.destroy());
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Wait for Angular redraw
       metrics.forEach((chartData) =>
         this.charts.push(this.createChart(chartData))
       );

@@ -10,7 +10,9 @@ import { MetricData } from './metrics.service';
  */
 export interface MetricCalculation {
   code: string;
+
   getTitle(ctx: RequestContext): string;
+
   calculateEntry(
     ctx: RequestContext,
     interval: MetricInterval,
@@ -66,7 +68,7 @@ export class AverageOrderValueMetric implements MetricCalculation {
     const total = data.orders
       .map((o) => o.totalWithTax)
       .reduce((total, current) => total + current);
-    const average = Math.round((total / data.orders.length) * 10) / 10;
+    const average = Math.round(total / data.orders.length) / 100;
     return {
       label,
       value: average,
@@ -110,7 +112,7 @@ export class ConversionRateMetric implements MetricCalculation {
     const rate = Math.round((nrOfOrders / nrOfSessions) * 100 * 10) / 10;
     return {
       label,
-      value: rate,
+      value: rate > 100 ? 100 : rate,
     };
   }
 }

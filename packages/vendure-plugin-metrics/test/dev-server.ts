@@ -16,6 +16,7 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { MetricsPlugin } from '../src/MetricsPlugin';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { AverageOrderValueMetric, ConversionRateMetric } from '../src';
 
 (async () => {
   require('dotenv').config();
