@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [4.2.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.2.0...v4.2.1) (2022-10-27)
+
+### Bug Fixes
+
+- **metrics:** export types ([3216160](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/3216160f68736acb59dd038ba4651fa74965d0a1))
+
 ## [4.2.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.1.2...v4.2.0) (2022-10-27)
 
 ### Features
