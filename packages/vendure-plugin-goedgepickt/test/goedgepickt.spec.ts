@@ -350,6 +350,8 @@ describe('Goedgepickt plugin', function () {
         },
       }
     );
+    // Await async job processing
+    await new Promise((resolve) => setTimeout(resolve, 200));
     const updatedVariant = await findVariantBySku('L2201308');
     expect(res.ok).toBe(true);
     expect(updatedVariant.stockOnHand).toBe(123);
