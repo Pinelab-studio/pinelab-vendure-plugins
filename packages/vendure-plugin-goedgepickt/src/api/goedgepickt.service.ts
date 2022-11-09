@@ -37,7 +37,6 @@ import {
   OrderInput,
   OrderItemInput,
   OrderStatus,
-  Product,
   ProductInput,
 } from './goedgepickt.types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
