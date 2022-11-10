@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [4.2.3](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.2.2...v4.2.3) (2022-11-10)
+
+### Bug Fixes
+
+- **goedgepickt:** code cleanup ([c2a91b1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/c2a91b1677adc216dbed6abe8802f23cae07c7bf))
+- **goedgepickt:** import ([b558e65](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/b558e65bc7328ea9105a2ed2f59ac3d723bfb4d6))
+- **goedgepickt:** take allocation into acount for stockupdates ([93e4d12](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/93e4d1202c049ec645f565f92787a2839596a0a2))
+
 ### [4.2.2](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.2.1...v4.2.2) (2022-10-27)
 
 ### Bug Fixes
