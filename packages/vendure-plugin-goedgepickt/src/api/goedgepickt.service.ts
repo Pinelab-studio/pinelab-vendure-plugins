@@ -57,6 +57,7 @@ type VariantWithImage = {
   name: string;
   price: number;
   absoluteImageUrl?: string;
+  stockAllocated: number;
 };
 
 interface PushProductJobData {
@@ -124,7 +125,7 @@ export class GoedgepicktService
           } else if (data.action === 'push-product') {
             await this.handlePushProductJob(ctx, data);
           } else if (data.action === 'update-stock') {
-            await this.updateStock(ctx, data.stock);
+            await this.handleStockUpdateJob(ctx, data.stock);
           } else if (data.action === 'push-product-by-variants') {
             await this.handlePushByVariantsJob(ctx, data);
           } else {
@@ -388,23 +389,23 @@ export class GoedgepicktService
   }
 
   /**
-   * Update stock in Vendure based on event
+   * Update stock in Vendure based on Goedgepickt webhook event
    */
   async processStockUpdateEvent(
     ctx: RequestContext,
     productSku: string,
-    newStock: number
+    ggStock: number
   ): Promise<void> {
     const { items: variants } = await this.variantService.findAll(ctx, {
       filter: { sku: { eq: productSku } },
     });
-    const updatedStock: StockInput[] = variants.map((variant) => ({
-      variantId: variant.id as string,
-      stock: newStock < 0 ? 0 : newStock,
-    }));
-    await this.updateStock(ctx, updatedStock);
+    await this.createStockUpdateJobs(
+      ctx,
+      [{ sku: productSku, stockLevel: ggStock }],
+      variants
+    );
     Logger.info(
-      `Updated stock for ${productSku} to ${newStock} via incoming event`,
+      `Created stock update job for ${productSku} to ${ggStock} via incoming event`,
       loggerCtx
     );
   }
@@ -476,37 +477,16 @@ export class GoedgepicktService
         loggerCtx
       );
     }
-    // Create update stocklevel jobs 100 variants per job
-    const stockPerVariant: StockInput[] = [];
-    for (const ggProduct of ggProducts) {
-      const newStock = ggProduct.stock?.freeStock;
-      if (newStock === undefined || newStock === null) {
-        continue; // Not updating if no stock from GG
-      }
-      const variant = variants.find((v) => v.sku === ggProduct.sku);
-      if (!variant) {
-        continue; // Not updating if we have no variant with SKU
-      }
-      stockPerVariant.push({
-        variantId: variant.id as string,
-        stock: newStock,
-      });
-    }
-    const stockBatches = this.getBatches(stockPerVariant, 100);
-    for (const batch of stockBatches) {
-      await this.jobQueue.add(
-        {
-          action: 'update-stock',
-          stock: batch,
-          ctx: ctx.serialize(),
-        },
-        { retries: 10 }
-      );
-      Logger.info(
-        `Created stocklevel update job for ${batch.length} variants`,
-        loggerCtx
-      );
-    }
+    // Create update stocklevel jobs
+    const inputs = ggProducts.map((p) => ({
+      sku: p.sku,
+      stockLevel: p.stock?.freeStock,
+    }));
+    await this.createStockUpdateJobs(ctx, inputs, variants);
+    Logger.info(
+      `Created stock update jobs for ${inputs.length} products via fullsync`,
+      loggerCtx
+    );
   }
 
   /**
@@ -567,6 +547,65 @@ export class GoedgepicktService
     Logger.info(
       `Pushed ${variants.length} variants to GoedGepickt for channel ${ctx.channel.token}`
     );
+  }
+
+  /**
+   * Create batched jobs for updating variant stock
+   */
+  private async createStockUpdateJobs(
+    ctx: RequestContext,
+    ggProducts: { sku: string; stockLevel: number | undefined | null }[],
+    variants: Pick<ProductVariant, 'id' | 'stockAllocated' | 'sku'>[]
+  ) {
+    const stockPerVariant: StockInput[] = [];
+    for (const ggProduct of ggProducts) {
+      const ggStock = ggProduct.stockLevel;
+      if (ggStock === undefined || ggStock === null) {
+        continue; // Not updating if no stock from GG
+      }
+      const variant = variants.find((v) => v.sku === ggProduct.sku);
+      if (!variant) {
+        continue; // Not updating if we have no variant with SKU
+      }
+      // If ggStock=0 and allocated=1, set Vendure stock=1 to prevent out of stock errors during fulfillment
+      const newStock = ggStock + variant.stockAllocated;
+      stockPerVariant.push({
+        variantId: variant.id as string,
+        stock: newStock,
+      });
+    }
+    // Create jobs per 100 variants
+    const stockBatches = this.getBatches(stockPerVariant, 100);
+    for (const batch of stockBatches) {
+      await this.jobQueue.add(
+        {
+          action: 'update-stock',
+          stock: batch,
+          ctx: ctx.serialize(),
+        },
+        { retries: 10 }
+      );
+      Logger.info(
+        `Created stocklevel update job for ${batch.length} variants`,
+        loggerCtx
+      );
+    }
+  }
+
+  private async handleStockUpdateJob(
+    ctx: RequestContext,
+    stockInput: StockInput[]
+  ): Promise<ProductVariant[]> {
+    const variantsWithStock = stockInput.map((input) => ({
+      id: input.variantId,
+      stockOnHand: input.stock,
+    }));
+    const variants = await this.variantService.update(ctx, variantsWithStock);
+    Logger.info(
+      `Updated stock of ${variantsWithStock.length} variants for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
+    return variants;
   }
 
   private async getAllVariants(
@@ -640,23 +679,8 @@ export class GoedgepicktService
       name: variant.name,
       price: variant.price,
       absoluteImageUrl: imageUrl,
+      stockAllocated: variant.stockAllocated,
     };
-  }
-
-  private async updateStock(
-    ctx: RequestContext,
-    stockInput: StockInput[]
-  ): Promise<ProductVariant[]> {
-    const positiveLevels = stockInput.map((input) => ({
-      id: input.variantId,
-      stockOnHand: input.stock >= 0 ? input.stock : 0,
-    }));
-    const variants = await this.variantService.update(ctx, positiveLevels);
-    Logger.info(
-      `Updated stock of ${positiveLevels.length} variants for channel ${ctx.channel.token}`,
-      loggerCtx
-    );
-    return variants;
   }
 
   /**
