@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.3.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
+
+### Bug Fixes
+
+- venduer 1.8.3 is out ([ed48e72](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/ed48e729f47a8164416b8c64a9c4fc8078647072))
+
 ## [4.1.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.0.3...v4.1.0) (2022-10-18)
 
 ### Features

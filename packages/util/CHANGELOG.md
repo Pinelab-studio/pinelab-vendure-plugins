@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.3.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
+
+### Features
+
+- updated all to vendure 1.8.2 ([01fbf07](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/01fbf07a8c089327557d2d7f303c7c7ab19c2d71))
+
+### Bug Fixes
+
+- all packages tyo 1.8.3 ([9351d16](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/9351d16d1b4d5bf271dec05d72bd395f86145aae))
+
 ## [4.1.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.0.3...v4.1.0) (2022-10-18)
 
 ### Features
