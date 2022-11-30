@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.4.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.3.0...v4.4.0) (2022-11-30)
+
+### Features
+
+- lerna script concurrency ([f6f4bf9](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/f6f4bf99517c6355332f0f314c4fe427ae03a460))
+- **myparcel:** added emailaddres to myparcel shipment ([278a392](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/278a392118b489839a50a43f84a29548a3553589))
+
 ## [4.3.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
 
 ### Features
