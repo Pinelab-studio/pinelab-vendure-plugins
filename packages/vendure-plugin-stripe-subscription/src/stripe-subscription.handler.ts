@@ -22,6 +22,15 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
       type: 'string',
       label: [{ languageCode: LanguageCode.en, value: 'Your Stripe API key' }],
     },
+    redirectUrl: {
+      type: 'string',
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'The storefront url to be redirected to after Stripe payment',
+        },
+      ],
+    },
   },
 
   init(injector: Injector) {},
