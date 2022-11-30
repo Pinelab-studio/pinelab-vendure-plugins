@@ -209,6 +209,7 @@ describe('MyParcel', () => {
     expect(shipment?.recipient.number).toEqual('12');
     expect(shipment?.recipient.number_suffix).toEqual('a');
     expect(shipment?.recipient.postal_code).toEqual('8923CP');
+    expect(shipment?.recipient.email).toEqual('hayden.zieme12@hotmail.com');
     expect(shipment?.recipient.cc).toEqual('NL');
     expect(contentType).toEqual(
       'application/vnd.shipment+json;version=1.1;charset=utf-8'

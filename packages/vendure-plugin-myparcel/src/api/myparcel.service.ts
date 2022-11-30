@@ -1,6 +1,7 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   Channel,
+  EntityHydrator,
   FulfillmentService,
   FulfillmentState,
   Logger,
@@ -27,7 +28,8 @@ export class MyparcelService implements OnApplicationBootstrap {
   constructor(
     private fulfillmentService: FulfillmentService,
     private connection: TransactionalConnection,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: MyparcelConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: MyparcelConfig,
+    private hydrator: EntityHydrator
   ) {}
 
   onApplicationBootstrap(): void {
@@ -202,11 +204,16 @@ export class MyparcelService implements OnApplicationBootstrap {
     );
   }
 
-  async createShipments(channelId: string, orders: Order[]): Promise<string> {
-    const config = await this.getConfig(channelId);
+  async createShipments(ctx: RequestContext, orders: Order[]): Promise<string> {
+    const config = await this.getConfig(String(ctx.channelId));
     if (!config) {
-      throw new MyParcelError(`No config found for channel ${channelId}`);
+      throw new MyParcelError(`No config found for channel ${ctx.channelId}`);
     }
+    await Promise.all(
+      orders.map((order) =>
+        this.hydrator.hydrate(ctx, order, { relations: ['customer'] })
+      )
+    );
     const shipments = this.toShipment(orders);
     const res = await this.request('shipments', 'POST', config.apiKey, {
       shipments,
