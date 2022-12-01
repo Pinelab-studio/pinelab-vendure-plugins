@@ -2491,6 +2491,11 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.9.tgz#02d013de7058cea16d36168ef2fc653464cfbad4"
   integrity sha512-CRpX21/kGdzjOpFsZSkcrXMGIBWMGNIHXXBVFSH+ggkftxg+XYP20TESbh+zFvFj3EQOl5byk0HTRn1IL6hbqg==
 
+"@types/node@>=8.1.0":
+  version "18.11.10"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-18.11.10.tgz#4c64759f3c2343b7e6c4b9caf761c7a3a05cee34"
+  integrity sha512-juG3RWMBOqcOuXC643OAdSA525V44cVgGV6dUDuiFtss+8Fk5x1hI93Rsld43VeJVIeqlP9I7Fn9/qaVqoEAuQ==
+
 "@types/node@^10.1.0":
   version "10.17.60"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-10.17.60.tgz#35f3d6213daed95da7f0f73e75bcc6980e90597b"
@@ -3289,13 +3294,6 @@ autoprefixer@^10.4.2:
     normalize-range "^0.1.2"
     picocolors "^1.0.0"
     postcss-value-parser "^4.2.0"
-
-axios@0.21.4:
-  version "0.21.4"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.21.4.tgz#c67b90dc0568e5c1cf2b0b858c43ba28e2eda575"
-  integrity sha512-ut5vewkiu8jjGBdqpM44XxjuCjq9LAKeHVmoVfHVzy8eHgxxq8SbAVQNovDA8mVi05kP0Ea/n/UzcSHcTJQfNg==
-  dependencies:
-    follow-redirects "^1.14.0"
 
 axios@0.26.0:
   version "0.26.0"
@@ -4257,13 +4255,6 @@ debug@4, debug@^4.1.0, debug@^4.1.1, debug@^4.3.1, debug@^4.3.2, debug@^4.3.3:
   dependencies:
     ms "2.1.2"
 
-debug@4.3.2:
-  version "4.3.2"
-  resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.2.tgz#f0a49c18ac8779e31d4a0c6029dfb76873c7428b"
-  integrity sha512-mOp8wKcvj7XxC78zLgw/ZA+6TSgkoE2C/ienthhRD298T7UNwAg9diBpLRxC0mOezLl4B0xV7M0cCO6P/O0Xhw==
-  dependencies:
-    ms "2.1.2"
-
 debug@4.3.3:
   version "4.3.3"
   resolved "https://registry.yarnpkg.com/debug/-/debug-4.3.3.tgz#04266e0b70a98d4462e6e288e38259213332b664"
@@ -5031,7 +5022,7 @@ find-up@^4.0.0, find-up@^4.1.0:
     locate-path "^5.0.0"
     path-exists "^4.0.0"
 
-follow-redirects@^1.0.0, follow-redirects@^1.14.0, follow-redirects@^1.14.8:
+follow-redirects@^1.0.0, follow-redirects@^1.14.8:
   version "1.15.2"
   resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.15.2.tgz#b460864144ba63f2681096f274c4e57026da2c13"
   integrity sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==
@@ -6582,16 +6573,6 @@ loader-utils@^2.0.0:
     emojis-list "^3.0.0"
     json5 "^2.1.2"
 
-localtunnel@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/localtunnel/-/localtunnel-2.0.2.tgz#528d50087151c4790f89c2db374fe7b0a48501f0"
-  integrity sha512-n418Cn5ynvJd7m/N1d9WVJISLJF/ellZnfsLnx8WBWGzxv/ntNcFkJ1o6se5quUhCplfLGBNL5tYHiq5WF3Nug==
-  dependencies:
-    axios "0.21.4"
-    debug "4.3.2"
-    openurl "1.1.1"
-    yargs "17.1.1"
-
 locate-path@^5.0.0:
   version "5.0.0"
   resolved "https://registry.yarnpkg.com/locate-path/-/locate-path-5.0.0.tgz#1afba396afd676a6d42504d0a67a3a7eb9f62aa0"
@@ -7354,11 +7335,6 @@ open@8.4.0, open@^8.0.9:
     is-docker "^2.1.1"
     is-wsl "^2.2.0"
 
-openurl@1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/openurl/-/openurl-1.1.1.tgz#3875b4b0ef7a52c156f0db41d4609dbb0f94b387"
-  integrity sha512-d/gTkTb1i1GKz5k3XE3XFV/PxQ1k45zDqGP2OA7YhgsaLoqm6qRvARAZOFer1fcXritWlGBRCu/UgeS4HAnXAA==
-
 optimism@^0.16.1:
   version "0.16.2"
   resolved "https://registry.yarnpkg.com/optimism/-/optimism-0.16.2.tgz#519b0c78b3b30954baed0defe5143de7776bf081"
@@ -8118,7 +8094,7 @@ punycode@^2.1.0, punycode@^2.1.1:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.1.1.tgz#b58b010ac40c22c5657616c8d2c2c02c7bf479ec"
   integrity sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
 
-qs@6.11.0:
+qs@6.11.0, qs@^6.11.0:
   version "6.11.0"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.11.0.tgz#fd0d963446f7a65e1367e01abd85429453f0c37a"
   integrity sha512-MvjoMCJwEarSbUYk5O+nmoSzSutSsTwF85zcHPQ9OrlFoZOYIjaqBAJIqIXjptyD5vThxGq52Xu/MaJzRkIk4Q==
@@ -8952,6 +8928,14 @@ strip-json-comments@^3.1.1:
   version "3.1.1"
   resolved "https://registry.yarnpkg.com/strip-json-comments/-/strip-json-comments-3.1.1.tgz#31f1281b3832630434831c310c01cccda8cbe006"
   integrity sha512-6fPc+R4ihwqP6N/aIv2f1gMH8lOVtWQHoqC4yK6oSDVVocumAsfCqjkXnqiYMhmMwS/mEHLp7Vehlt3ql6lEig==
+
+stripe@^11.1.0:
+  version "11.1.0"
+  resolved "https://registry.yarnpkg.com/stripe/-/stripe-11.1.0.tgz#28931a1136ccc2dffa44ef27027275a7b346a266"
+  integrity sha512-erOslPQZSYKOotQjmKRy4eBon/tdhzLIYzBdPSNVWDdatSQozkkPlh8mVeXNwubYYZYx61/yS23eWiGDF93z2w==
+  dependencies:
+    "@types/node" ">=8.1.0"
+    qs "^6.11.0"
 
 stylus-loader@6.2.0:
   version "6.2.0"
@@ -9833,19 +9817,6 @@ yargs-parser@^21.1.1:
   version "21.1.1"
   resolved "https://registry.yarnpkg.com/yargs-parser/-/yargs-parser-21.1.1.tgz#9096bceebf990d21bb31fa9516e0ede294a77d35"
   integrity sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==
-
-yargs@17.1.1:
-  version "17.1.1"
-  resolved "https://registry.yarnpkg.com/yargs/-/yargs-17.1.1.tgz#c2a8091564bdb196f7c0a67c1d12e5b85b8067ba"
-  integrity sha512-c2k48R0PwKIqKhPMWjeiF6y2xY/gPMUlro0sgxqXpbOIohWiLNXWslsootttv7E1e73QPAMQSg5FeySbVcpsPQ==
-  dependencies:
-    cliui "^7.0.2"
-    escalade "^3.1.1"
-    get-caller-file "^2.0.5"
-    require-directory "^2.1.1"
-    string-width "^4.2.0"
-    y18n "^5.0.5"
-    yargs-parser "^20.2.2"
 
 yargs@^16.0.0, yargs@^16.1.0, yargs@^16.2.0:
   version "16.2.0"

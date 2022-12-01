@@ -1,4 +1,3 @@
-import { initialData } from '../../test/src/initial-data';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -11,18 +10,22 @@ import {
   mergeConfig,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import gql from 'graphql-tag';
 import { stripeSubscriptionHandler } from '../src/stripe-subscription.handler';
-import localtunnel from 'localtunnel';
+import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+import {
+  ADD_ITEM_TO_ORDER,
+  CREATE_PAYMENT_LINK,
+  CREATE_PAYMENT_METHOD,
+  setShipping,
+} from './helpers';
 
-export const CREATE_PAYMENT_METHOD = gql`
-  mutation CreatePaymentMethod($input: CreatePaymentMethodInput!) {
-    createPaymentMethod(input: $input) {
-      id
-    }
-  }
-`;
-
+/**
+ * Use something like NGROK to start a reverse tunnel to receive webhooks:  ngrok http 3050
+ * Set the generated url as webhook endpoint in your Stripe account: https://8837-85-145-210-58.eu.ngrok.io/stripe-subscriptions/webhook
+ * Make sure it listens for all checkout events. This can be configured in Stripe when setting the webhook
+ * Now, you are ready to `yarn start`
+ * The logs will display a link that can be used to subscribe via Stripe
+ */
 (async () => {
   require('dotenv').config();
   const { testConfig } = require('@vendure/testing');
@@ -34,6 +37,9 @@ export const CREATE_PAYMENT_METHOD = gql`
       shopApiPlayground: {},
     },
     plugins: [
+      StripeSubscriptionPlugin.init({
+        apiVersion: '2020-08-27',
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -41,29 +47,43 @@ export const CREATE_PAYMENT_METHOD = gql`
       }),
     ],
   });
-  const tunnel = await localtunnel({ port: 3050 });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
-    initialData,
+    initialData: require('../../test/src/initial-data').initialData,
     productsCsvPath: '../test/src/products-import.csv',
   });
-  // Create method
+  // Create stripe payment method
+  await adminClient.asSuperAdmin();
   await adminClient.query(CREATE_PAYMENT_METHOD, {
     input: {
-      code: 'mollie',
-      name: 'Mollie payment test',
-      description: 'This is a Mollie test payment method',
+      code: 'stripe-subscription',
+      name: 'Stripe test payment',
+      description: 'This is a Stripe payment method',
       enabled: true,
       handler: {
         code: stripeSubscriptionHandler.code,
         arguments: [
           {
             name: 'redirectUrl',
-            value: `${tunnel.url}/admin/orders?filter=open&page=1`,
+            value: `https://example.com/`,
           },
           { name: 'apiKey', value: process.env.STRIPE_APIKEY! },
         ],
       },
     },
   });
+  console.log(`Created paymentMethod ${stripeSubscriptionHandler.code}`);
+  // Prepare order
+  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  const { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '1',
+    quantity: 2,
+  });
+  await setShipping(shopClient);
+  console.log(`Prepared order ${order.code}`);
+  const { createStripeSubscriptionPaymentLink: link } = await shopClient.query(
+    CREATE_PAYMENT_LINK,
+    { code: stripeSubscriptionHandler.code }
+  );
+  console.log(`Payment link for order ${order.code}: ${link}`);
 })();

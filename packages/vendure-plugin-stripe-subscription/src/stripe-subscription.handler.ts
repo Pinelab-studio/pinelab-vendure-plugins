@@ -6,6 +6,7 @@ import {
   PaymentMethodHandler,
   SettlePaymentResult,
 } from '@vendure/core';
+import { getApiType } from '@vendure/core/dist/api/common/get-api-type';
 
 export const stripeSubscriptionHandler = new PaymentMethodHandler({
   code: 'stripe-subscription',
@@ -47,11 +48,11 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     if (ctx.apiType !== 'admin') {
       throw Error(`CreatePayment is not allowed for apiType '${ctx.apiType}'`);
     }
-    // TODO get total amount of a subscription
     return {
-      amount: order.totalWithTax, // FIXME
-      state: 'Settled' as const,
-      transactionId: metadata.paymentIntentId, // FIXME get subscription or transactionId
+      amount,
+      state: 'Settled',
+      transactionId: metadata.subscriptionId,
+      metadata,
     };
   },
 
