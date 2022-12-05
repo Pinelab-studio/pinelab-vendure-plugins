@@ -1,5 +1,4 @@
-schema: 'src/**/*.graphql.ts'
-documents: 'src/**/*.graphql.ts'
+schema: 'src/**/*.ts'
 generates:
   ./src/generated/graphql.ts:
     plugins:

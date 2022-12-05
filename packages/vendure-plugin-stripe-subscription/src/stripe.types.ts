@@ -29,7 +29,8 @@ export interface CustomerDetails {
 export interface Metadata {
   orderCode: string;
   channelToken: string;
-  paymentMethodId: string;
+  paymentMethodCode: string;
+  endDate: number;
 }
 
 export interface PhoneNumberCollection {

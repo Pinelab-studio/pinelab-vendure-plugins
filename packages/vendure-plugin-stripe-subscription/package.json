@@ -14,17 +14,21 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc && yarn generate && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "jest --preset=\"ts-jest\" --forceExit",
-    "start": "yarn ts-node test/dev-server.ts"
+    "start": "yarn ts-node test/dev-server.ts",
+    "generate": "graphql-codegen"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^2.4.0",
+    "@graphql-codegen/typescript": "^2.4.8",
+    "@graphql-codegen/typescript-operations": "^2.3.5",
     "@types/jest": "^27.4.1",
     "@types/localtunnel": "^2.0.1",
-    "@vendure/admin-ui-plugin": "2.0.0-next.24",
-    "@vendure/core": "2.0.0-next.24",
-    "@vendure/testing": "2.0.0-next.24",
-    "@vendure/ui-devkit": "2.0.0-next.24",
+    "@vendure/admin-ui-plugin": "2.0.0-next.25",
+    "@vendure/core": "2.0.0-next.25",
+    "@vendure/testing": "2.0.0-next.25",
+    "@vendure/ui-devkit": "2.0.0-next.25",
     "copyfiles": "^2.4.1",
     "jest": "^27.5.1",
     "node-fetch": "^2.0.0",

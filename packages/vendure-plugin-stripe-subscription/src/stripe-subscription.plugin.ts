@@ -24,6 +24,13 @@ export interface StripeSubscriptionPluginOptions {}
     `,
     resolvers: [StripeSubscriptionResolver],
   },
+  adminApiExtensions: {
+    schema: gql`
+      extend enum HistoryEntryType {
+        SUBSCRIPTION_ERROR
+      }
+    `,
+  },
   controllers: [StripeSubscriptionController],
   providers: [
     StripeSubscriptionService,
