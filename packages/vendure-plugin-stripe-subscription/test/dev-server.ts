@@ -50,7 +50,7 @@ import {
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
     initialData: require('../../test/src/initial-data').initialData,
-    productsCsvPath: '../test/src/products-import.csv',
+    productsCsvPath: `${__dirname}/memberships.csv`,
   });
   // Create stripe payment method
   await adminClient.asSuperAdmin();

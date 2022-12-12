@@ -69,6 +69,16 @@ export const CREATE_PAYMENT_LINK = gql`
   }
 `;
 
+export const CREATE_PRODUCT = gql`
+  mutation createStripeSubscriptionPaymentLink($code: String!) {
+    createStripeSubscriptionPaymentLink(paymentMethodCode: $code)
+  }
+`;
+
+export async function createSampleMembership(
+  adminClient: SimpleGraphQLClient
+) {}
+
 export async function setShipping(
   shopClient: SimpleGraphQLClient
 ): Promise<void> {

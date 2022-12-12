@@ -21,6 +21,13 @@ import { StripeSubscriptionPluginOptions } from './stripe-subscription.plugin';
 import { IncomingCheckoutWebhook } from './stripe.types';
 import { HistoryEntryType } from '@vendure/common/lib/generated-types';
 
+export interface StripeHandlerConfig {
+  stripeClient: Stripe;
+  redirectUrl: string;
+  downpaymentLabel?: string;
+  prorationLabel?: string;
+}
+
 @Injectable()
 export class StripeSubscriptionService {
   constructor(
@@ -74,31 +81,41 @@ export class StripeSubscriptionService {
           items: [{price: 'price_CBXbz9i7AIOTzr'}, {price: 'price_IFuCu48Snc02bc', quantity: 2}],
         });*/
     // FIXME use real dynamic values
-    const endDate = new Date('2023-12-30').getTime() / 1000;
-    const { stripeClient, redirectUrl } = await this.getStripeClient(
+    const { stripeClient, redirectUrl } = await this.getStripeHandler(
       ctx,
       paymentMethodCode
     );
+
     const session = await stripeClient.checkout.sessions.create({
       mode: 'subscription',
       locale: 'en',
       customer_email: order.customer.emailAddress,
+      /*      discounts: [{
+        coupon: 'rOHUq3ml' // Downpayment discount
+      }],*/
       line_items: [
         {
-          price: 'price_1MACWhDzZuaioTddo4JPtlgz', // one time downpayment
+          price: 'price_1MChevDzZuaioTddfCBc7ERg', // One time downpayment
           quantity: 1,
         },
         {
-          price: 'price_1MACTGDzZuaioTddFW0kxY56', // monthly
+          price: 'price_1MCheGDzZuaioTddPkGRcVkf', // $90 monthly
+          // price: 'price_1MChzwDzZuaioTddKwNnihVq', // $60 monthly
+          quantity: 1,
+        },
+        {
+          price: 'price_1ME9feDzZuaioTddc9Oe1rpr', // Prorated amount
           quantity: 1,
         },
       ],
+      subscription_data: {
+        trial_period_days: 20,
+      },
       metadata: {
         orderCode: order.code,
         channelToken: ctx.channel.token,
         paymentMethodCode: paymentMethodCode,
-        endDate,
-        // TODO add amount in $ of susbcriptions to prevent order update after stripe checkout
+        // TODO add amount in $ of subcriptions to prevent order update after stripe checkout
       },
       success_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
@@ -190,7 +207,7 @@ export class StripeSubscriptionService {
       );
     }
     try {
-      const { stripeClient } = await this.getStripeClient(
+      const { stripeClient } = await this.getStripeHandler(
         ctx,
         paymentMethodCode
       );
@@ -236,10 +253,10 @@ export class StripeSubscriptionService {
     });
   }
 
-  private async getStripeClient(
+  private async getStripeHandler(
     ctx: RequestContext,
     paymentMethodCode: string
-  ): Promise<{ stripeClient: Stripe; redirectUrl: string }> {
+  ): Promise<StripeHandlerConfig> {
     const paymentMethod = await this.getPaymentMethodByCode(
       ctx,
       paymentMethodCode
@@ -265,10 +282,16 @@ export class StripeSubscriptionService {
       );
     }
     return {
-      redirectUrl,
       stripeClient: new Stripe(apiKey, {
         apiVersion: null as any, // Null uses accounts default version
       }),
+      redirectUrl,
+      downpaymentLabel: paymentMethod.handler.args.find(
+        (arg) => arg.name === 'downpaymentLabel'
+      )?.value,
+      prorationLabel: paymentMethod.handler.args.find(
+        (arg) => arg.name === 'prorationLabel'
+      )?.value,
     };
   }
 

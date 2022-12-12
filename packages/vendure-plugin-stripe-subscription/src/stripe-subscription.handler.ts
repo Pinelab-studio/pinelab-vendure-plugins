@@ -21,14 +21,54 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
   args: {
     apiKey: {
       type: 'string',
-      label: [{ languageCode: LanguageCode.en, value: 'Your Stripe API key' }],
+      label: [{ languageCode: LanguageCode.en, value: 'Stripe API key' }],
     },
     redirectUrl: {
       type: 'string',
       label: [
         {
           languageCode: LanguageCode.en,
+          value: 'Storefront redirect url',
+        },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
           value: 'The storefront url to be redirected to after Stripe payment',
+        },
+      ],
+    },
+    downpaymentLabel: {
+      type: 'string',
+      defaultValue: 'Downpayment',
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Stripe downpayment label',
+        },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value:
+            'The label that is displayed for the downpayment on the Stripe checkout page',
+        },
+      ],
+    },
+    prorationLabel: {
+      type: 'string',
+      defaultValue: 'Remaining amount for the current date',
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Stripe proration label',
+        },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value:
+            'The label that is displayed for the prorated amount on the Stripe checkout page',
         },
       ],
     },

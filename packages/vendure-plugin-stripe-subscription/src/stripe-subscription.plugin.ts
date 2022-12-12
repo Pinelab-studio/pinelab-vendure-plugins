@@ -1,8 +1,4 @@
-import {
-  PluginCommonModule,
-  RequestContext,
-  VendurePlugin,
-} from '@vendure/core';
+import { LanguageCode, PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import { gql } from 'graphql-tag';
 import { StripeSubscriptionService } from './stripe-subscription.service';
@@ -14,6 +10,11 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
 
 export interface StripeSubscriptionPluginOptions {}
 
+export enum PaymentFrequency {
+  PAID_IN_FULL = 'Paid in full',
+  MONTHLY = 'Monthly',
+}
+
 @VendurePlugin({
   imports: [PluginCommonModule],
   shopApiExtensions: {
@@ -23,13 +24,6 @@ export interface StripeSubscriptionPluginOptions {}
       }
     `,
     resolvers: [StripeSubscriptionResolver],
-  },
-  adminApiExtensions: {
-    schema: gql`
-      extend enum HistoryEntryType {
-        SUBSCRIPTION_ERROR
-      }
-    `,
   },
   controllers: [StripeSubscriptionController],
   providers: [
@@ -41,6 +35,54 @@ export interface StripeSubscriptionPluginOptions {}
   ],
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);
+    config.customFields.ProductVariant.push(
+      // TODO duration
+      {
+        name: 'subscriptionDuration',
+        label: [
+          {
+            languageCode: LanguageCode.en,
+            value: 'Subscription duration in months',
+          },
+        ],
+        type: 'int',
+        public: true,
+      },
+      {
+        name: 'paymentFrequency',
+        label: [
+          {
+            languageCode: LanguageCode.en,
+            value: 'Payment frequency',
+          },
+        ],
+        type: 'string',
+        options: [
+          { value: PaymentFrequency.MONTHLY },
+          { value: PaymentFrequency.PAID_IN_FULL },
+        ],
+        public: true,
+      },
+      {
+        name: 'downpaymentCycles',
+        label: [
+          {
+            languageCode: LanguageCode.en,
+            value: 'Downpayment cycles',
+          },
+        ],
+        description: [
+          {
+            languageCode: LanguageCode.en,
+            value:
+              "The amount of payment cycles that has to be paid upfront. For example: when the payment frequency is 'Monthly' and downpayment cycles is '2', the customer has to pay 2 months up front during checkout to subscribe.",
+          },
+        ],
+
+        type: 'int',
+        public: true,
+      }
+    );
     return config;
   },
 })
