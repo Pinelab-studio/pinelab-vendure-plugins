@@ -14,6 +14,7 @@ import {
   mergeConfig,
   PaymentMethodService,
   RequestContext,
+  UserInputError,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
@@ -37,9 +38,22 @@ require('dotenv').config();
       adminApiPlayground: true,
       shopApiPlayground: true,
     },
+    customFields: {},
     plugins: [
       MyparcelPlugin.init({
         vendureHost: tunnel.url,
+        getCustomsInformationFn: (orderLine) => {
+          console.log(orderLine.productVariant.product);
+          return {
+            weightInGrams:
+              (orderLine.productVariant.product.customFields as any).weight ||
+              0,
+            classification:
+              (orderLine.productVariant.product.customFields as any).hsCode ||
+              '0181', // sample code
+            countryCodeOfOrigin: 'NL',
+          };
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -87,7 +101,16 @@ require('dotenv').config();
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 2);
-  await proceedToArrangingPayment(shopClient, 3);
+  await proceedToArrangingPayment(shopClient, 3, {
+    input: {
+      fullName: 'Martinho Pinelabio',
+      streetLine1: 'Black Bear Rd',
+      streetLine2: '14844',
+      city: 'West Palm Beach, Florida',
+      postalCode: '33418',
+      countryCode: 'US',
+    },
+  });
   await addPaymentToOrder(shopClient, testPaymentMethod.code);
   console.log('Created test order');
 })();
