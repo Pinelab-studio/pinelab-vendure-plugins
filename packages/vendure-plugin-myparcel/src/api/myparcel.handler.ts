@@ -19,7 +19,7 @@ export const myparcelHandler = new FulfillmentHandler({
   args: {
     customsContents: {
       type: 'string',
-      required: true,
+      required: false,
       label: [
         {
           languageCode: LanguageCode.en,
