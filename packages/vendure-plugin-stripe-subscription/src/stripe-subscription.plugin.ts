@@ -15,6 +15,11 @@ export enum PaymentFrequency {
   MONTHLY = 'Monthly',
 }
 
+export enum BillingMoment {
+  FIRST_OF_THE_MONTH = 'Every first day of the month',
+  LAST_OF_THE_MONTH = 'Every last day of the month',
+}
+
 @VendurePlugin({
   imports: [PluginCommonModule],
   shopApiExtensions: {
@@ -36,7 +41,7 @@ export enum PaymentFrequency {
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);
     config.customFields.ProductVariant.push(
-      // TODO duration
+      // TODO BillingMoment
       {
         name: 'subscriptionDuration',
         label: [

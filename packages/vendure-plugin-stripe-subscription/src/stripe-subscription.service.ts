@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import {
   ActiveOrderService,
   ChannelService,
@@ -14,6 +14,11 @@ import {
   PaymentMethodService,
   RequestContext,
   UserInputError,
+  EventBus,
+  ProductEvent,
+  ProductVariant,
+  ProductVariantEvent,
+  Product,
 } from '@vendure/core';
 import Stripe from 'stripe';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
@@ -38,19 +43,57 @@ export class StripeSubscriptionService {
     private orderService: OrderService,
     private historyService: HistoryService,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private options: StripeSubscriptionPluginOptions
+    private options: StripeSubscriptionPluginOptions,
+    private eventBus: EventBus
   ) {}
+
+  // @ts-ignore
+  private jobQueue!: JobQueue<JobData>;
+
+  onModuleInit() {
+    this.eventBus
+      .ofType(ProductVariantEvent)
+      .subscribe(this.handleProductEvent);
+  }
+
+  async handleProductEvent(event: ProductVariantEvent): Promise<void> {
+    Logger.info(
+      `Handling ${event.constructor.name} '${event.type}'`,
+      loggerCtx
+    );
+    console.log(JSON.stringify(event.entity)); // FIXME
+    console.log(JSON.stringify(event.input)); // FIXME
+    try {
+      if (event.type === 'created') {
+        //  await this.createStripeProduct(event.ctx, event.entity)
+      }
+    } catch (err: unknown) {
+      Logger.error(`Failed to handle ${event.constructor.name}`, loggerCtx);
+    }
+  }
+
+  async createStripeProduct(productWithVariants: Product) {
+    // TODO
+    //  create product in Stripe based on variant if its a subscription (has duration) ?? OR do we also save yearly one time payments?
+    //  Create prorated price per day: yearly price / 365
+    //  Create yearly price for preconfigured downpayment
+    //  Save Stripe product Reference on Product
+    //  Save stripe price-references on variant: downpaymentPrice, dailyProrationPrice,
+  }
+
+  async deleteStripeProduct() {
+    // TODO delete stripe product
+  }
+
+  async updateStripeProduct(ctx: RequestContext) {
+    // TODO update stripe product
+    Logger.info('Updating stripe product');
+  }
 
   async createStripeSubscriptionPaymentLink(
     ctx: RequestContext,
     paymentMethodCode: string
   ): Promise<string> {
-    // Get paymentmethod by code
-    // Get apiKey from method
-    // get products from activeOrder
-    // Get or create subscriptions based on products in activeOrder https://stripe.com/docs/billing/subscriptions/multiple-products
-    // Create paymentLink for created subscriptions: https://stripe.com/docs/payments/payment-links/api
-    // Use installments https://stripe.com/docs/billing/subscriptions/subscription-schedules/use-cases#installment-plans
     const order = await this.activeOrderService.getActiveOrder(ctx, undefined);
     if (!order) {
       throw new UserInputError('No active order for session');
@@ -75,17 +118,15 @@ export class StripeSubscriptionService {
         'Cannot create payment intent for order without shippingMethod'
       );
     }
-    // FIXME Create prices with correct downpayment
-    /*    const subscription = await stripe.subscriptions.create({
-          customer: 'cus_MW2cN5ZB8vCy4f',
-          items: [{price: 'price_CBXbz9i7AIOTzr'}, {price: 'price_IFuCu48Snc02bc', quantity: 2}],
-        });*/
-    // FIXME use real dynamic values
     const { stripeClient, redirectUrl } = await this.getStripeHandler(
       ctx,
       paymentMethodCode
     );
 
+    // TODO
+    //  Throw error when memberships with different intervals
+    //  create one time checkout for Downpayment + prorated if a membership
+    //  OR create a one time payment for the paid-in-full amount. This will be converted to yearly
     const session = await stripeClient.checkout.sessions.create({
       mode: 'subscription',
       locale: 'en',
@@ -95,16 +136,7 @@ export class StripeSubscriptionService {
       }],*/
       line_items: [
         {
-          price: 'price_1MChevDzZuaioTddfCBc7ERg', // One time downpayment
-          quantity: 1,
-        },
-        {
-          price: 'price_1MCheGDzZuaioTddPkGRcVkf', // $90 monthly
-          // price: 'price_1MChzwDzZuaioTddKwNnihVq', // $60 monthly
-          quantity: 1,
-        },
-        {
-          price: 'price_1ME9feDzZuaioTddc9Oe1rpr', // Prorated amount
+          price: 'price_1MChzwDzZuaioTddKwNnihVq',
           quantity: 1,
         },
       ],
@@ -116,6 +148,7 @@ export class StripeSubscriptionService {
         channelToken: ctx.channel.token,
         paymentMethodCode: paymentMethodCode,
         // TODO add amount in $ of subcriptions to prevent order update after stripe checkout
+        //   Add the subscriptions to be created on webhook handling
       },
       success_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
@@ -127,6 +160,8 @@ export class StripeSubscriptionService {
     return session.url;
   }
 
+  // TODO create subscription for yearly downpayments and monthly membership fee
+  //   OR create yearly one-time fee for paid-in-full
   async handlePaymentCompleteEvent({
     data: { object: eventData },
   }: IncomingCheckoutWebhook): Promise<void> {
