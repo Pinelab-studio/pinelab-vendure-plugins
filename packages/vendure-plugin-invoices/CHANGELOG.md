@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.5.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.4.0...v4.5.0) (2022-12-14)
+
+### Features
+
+- **invoices:** more time to generate PDFs ([ddea87d](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/ddea87de7196194ed37d4d237c1aee34af868e77))
+
 ## [4.3.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
 
 ### Bug Fixes

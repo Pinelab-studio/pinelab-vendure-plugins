@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.5.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.4.0...v4.5.0) (2022-12-14)
+
+### Features
+
+- **myparcel:** send customs data ([9be3d87](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/9be3d878fd4bf5a0c6d2ef3114b99dfc21b2a70a))
+
 ## [4.3.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
 
 ### Features

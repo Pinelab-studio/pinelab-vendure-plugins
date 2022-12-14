@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.5.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.4.0...v4.5.0) (2022-12-14)
+
+### Features
+
+- **invoices:** more time to generate PDFs ([ddea87d](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/ddea87de7196194ed37d4d237c1aee34af868e77))
+- **myparcel:** readme ([d6a03d9](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/d6a03d9f31bd001681910efd75a69d684c05e976))
+- **myparcel:** send customs data ([9be3d87](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/9be3d878fd4bf5a0c6d2ef3114b99dfc21b2a70a))
+- **myparcel:** wip customs data ([1dc34cc](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/1dc34cc4d0fc548b7e9d7797f71b8a7fa6dd1793))
+- **myparcel:** wip customs data ([4dd1d34](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/4dd1d340ee84b7891bc57cad4b5379302ac3bf38))
+
 ## [4.4.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.3.0...v4.4.0) (2022-11-30)
 
 ### Features
