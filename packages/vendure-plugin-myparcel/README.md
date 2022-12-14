@@ -68,3 +68,5 @@ MyparcelPlugin.init({
   },
 });
 ```
+
+You can find more information about the classification codes [here](https://myparcelnl.github.io/api/#7_E).
