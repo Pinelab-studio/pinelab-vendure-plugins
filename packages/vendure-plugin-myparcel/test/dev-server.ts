@@ -10,10 +10,12 @@ import {
   ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
+  LanguageCode,
   LogLevel,
   mergeConfig,
   PaymentMethodService,
   RequestContext,
+  UserInputError,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
@@ -37,9 +39,30 @@ require('dotenv').config();
       adminApiPlayground: true,
       shopApiPlayground: true,
     },
+    customFields: {
+      Product: [
+        {
+          name: 'weight',
+          label: [{ value: 'Weight', languageCode: LanguageCode.en }],
+          type: 'int',
+          ui: { component: 'text-form-input' },
+        },
+      ],
+    },
     plugins: [
       MyparcelPlugin.init({
         vendureHost: tunnel.url,
+        getCustomsInformationFn: (orderLine) => {
+          return {
+            weightInGrams:
+              (orderLine.productVariant.product.customFields as any)?.weight ||
+              0,
+            classification:
+              (orderLine.productVariant.product.customFields as any)?.hsCode ||
+              '0181',
+            countryCodeOfOrigin: 'NL',
+          };
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -87,7 +110,16 @@ require('dotenv').config();
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 2);
-  await proceedToArrangingPayment(shopClient, 3);
+  await proceedToArrangingPayment(shopClient, 3, {
+    input: {
+      fullName: 'Martinho Pinelabio',
+      streetLine1: 'Black Bear Rd',
+      streetLine2: '14841',
+      city: 'West Palm Beach, Florida',
+      postalCode: '33419',
+      countryCode: 'US',
+    },
+  });
   await addPaymentToOrder(shopClient, testPaymentMethod.code);
   console.log('Created test order');
 })();

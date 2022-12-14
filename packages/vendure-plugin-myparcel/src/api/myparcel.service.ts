@@ -4,10 +4,14 @@ import {
   EntityHydrator,
   FulfillmentService,
   FulfillmentState,
+  LanguageCode,
   Logger,
   Order,
+  OrderLine,
   RequestContext,
   TransactionalConnection,
+  translateDeep,
+  UserInputError,
 } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { ApolloError } from 'apollo-server-core';
@@ -204,17 +208,23 @@ export class MyparcelService implements OnApplicationBootstrap {
     );
   }
 
-  async createShipments(ctx: RequestContext, orders: Order[]): Promise<string> {
+  async createShipments(
+    ctx: RequestContext,
+    orders: Order[],
+    customsContent: string
+  ): Promise<string> {
     const config = await this.getConfig(String(ctx.channelId));
     if (!config) {
       throw new MyParcelError(`No config found for channel ${ctx.channelId}`);
     }
     await Promise.all(
       orders.map((order) =>
-        this.hydrator.hydrate(ctx, order, { relations: ['customer'] })
+        this.hydrator.hydrate(ctx, order, {
+          relations: ['customer', 'lines.productVariant.product'],
+        })
       )
     );
-    const shipments = this.toShipment(orders);
+    const shipments = this.toShipment(orders, customsContent);
     const res = await this.request('shipments', 'POST', config.apiKey, {
       shipments,
     });
@@ -222,12 +232,12 @@ export class MyparcelService implements OnApplicationBootstrap {
     return this.getFulfillmentReference(id);
   }
 
-  toShipment(orders: Order[]): MyparcelShipment[] {
+  toShipment(orders: Order[], customsContent: string): MyparcelShipment[] {
     return orders.map((order) => {
       Logger.info(`Creating shipment for ${order.code}`, loggerCtx);
       const address: OrderAddress = order.shippingAddress;
       const [nr, nrSuffix] = this.getHousenumber(address.streetLine2!);
-      return {
+      const shipment: MyparcelShipment = {
         carrier: 1, // PostNL
         reference_identifier: order.code,
         options: {
@@ -247,7 +257,52 @@ export class MyparcelService implements OnApplicationBootstrap {
           email: order.customer?.emailAddress,
         },
       };
+      if (customsContent) {
+        // Set customs information
+        const items = order.lines.map((line) =>
+          this.getCustomsItem(line, order.currencyCode)
+        );
+        const totalWeight = items.reduce(
+          (acc, curr) => curr.weight * curr.amount + acc,
+          0
+        );
+        shipment.physical_properties = {
+          weight: totalWeight,
+        };
+        shipment.customs_declaration = {
+          contents: parseInt(customsContent),
+          invoice: order.code,
+          weight: totalWeight,
+          items,
+        };
+      }
+      return shipment;
     });
+  }
+
+  private getCustomsItem(line: OrderLine, currencyCode: string): CustomsItem {
+    if (!this.config.getCustomsInformationFn) {
+      throw new UserInputError(
+        `No "getCustomsInformationFn" configured. Can not create customs information`
+      );
+    }
+    const { classification, countryCodeOfOrigin, weightInGrams } =
+      this.config.getCustomsInformationFn(line);
+    const name =
+      line.productVariant.product.translations.find(
+        (t) => t.languageCode === LanguageCode.en
+      )?.name || line.productVariant.product.translations[0].name;
+    return {
+      description: name,
+      amount: line.quantity,
+      weight: weightInGrams,
+      item_value: {
+        amount: line.proratedLinePriceWithTax,
+        currency: currencyCode,
+      },
+      classification,
+      country: countryCodeOfOrigin,
+    };
   }
 
   private getFulfillmentReference(shipmentId: string | number): string {
@@ -350,6 +405,31 @@ export interface MyparcelShipment {
   reference_identifier?: string;
   recipient: MyparcelRecipient;
   options: MyparcelShipmentOptions;
+  customs_declaration?: CustomsDeclaration;
+  physical_properties?: {
+    weight: number;
+  };
+}
+
+export interface ItemValue {
+  amount: number;
+  currency: string;
+}
+
+export interface CustomsItem {
+  description: string;
+  amount: number;
+  weight: number;
+  item_value: ItemValue;
+  classification: string;
+  country: string;
+}
+
+export interface CustomsDeclaration {
+  contents: string | number;
+  invoice: string;
+  weight: number;
+  items: CustomsItem[];
 }
 
 export interface WebhookSubscription {

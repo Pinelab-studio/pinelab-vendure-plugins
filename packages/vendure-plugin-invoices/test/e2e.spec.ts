@@ -113,9 +113,9 @@ describe('Invoices plugin', function () {
     expect((order as any).id).toBeDefined();
   });
 
-  it('Gets all invoices after 1s', async () => {
+  it('Gets all invoices after 3s', async () => {
     // Give the worker some time to process
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
     invoice = result.invoices.items[0];
     expect(result.invoices.totalItems).toBe(1);
