@@ -54,7 +54,8 @@ export async function addShippingMethod(
 export async function fulfill(
   adminClient: SimpleGraphQLClient,
   handlerCode: string,
-  items: [variantId: string, quantity: number][]
+  items: [variantId: string, quantity: number][],
+  args?: { name: string; value: string }[]
 ): Promise<Fulfillment> {
   const lines = items.map((item) => ({
     orderLineId: item[0],
@@ -65,7 +66,7 @@ export async function fulfill(
       lines,
       handler: {
         code: handlerCode,
-        arguments: [],
+        arguments: args || {},
       },
     },
   });

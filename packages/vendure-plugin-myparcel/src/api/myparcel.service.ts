@@ -4,11 +4,14 @@ import {
   EntityHydrator,
   FulfillmentService,
   FulfillmentState,
+  LanguageCode,
   Logger,
   Order,
   OrderLine,
   RequestContext,
   TransactionalConnection,
+  translateDeep,
+  UserInputError,
 } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { ApolloError } from 'apollo-server-core';
@@ -254,17 +257,20 @@ export class MyparcelService implements OnApplicationBootstrap {
           email: order.customer?.emailAddress,
         },
       };
-      if (this.config.getCustomsInformationFn) {
+      if (customsContent) {
         // Set customs information
         const items = order.lines.map((line) =>
           this.getCustomsItem(line, order.currencyCode)
         );
-        const totalWeight = items.reduce((acc, curr) => curr.weight + acc, 0);
+        const totalWeight = items.reduce(
+          (acc, curr) => curr.weight * curr.amount + acc,
+          0
+        );
         shipment.physical_properties = {
           weight: totalWeight,
         };
         shipment.customs_declaration = {
-          contents: customsContent,
+          contents: parseInt(customsContent),
           invoice: order.code,
           weight: totalWeight,
           items,
@@ -276,14 +282,18 @@ export class MyparcelService implements OnApplicationBootstrap {
 
   private getCustomsItem(line: OrderLine, currencyCode: string): CustomsItem {
     if (!this.config.getCustomsInformationFn) {
-      throw Error(
+      throw new UserInputError(
         `No "getCustomsInformationFn" configured. Can not create customs information`
       );
     }
     const { classification, countryCodeOfOrigin, weightInGrams } =
       this.config.getCustomsInformationFn(line);
+    const name =
+      line.productVariant.product.translations.find(
+        (t) => t.languageCode === LanguageCode.en
+      )?.name || line.productVariant.product.translations[0].name;
     return {
-      description: line.productVariant.product.name,
+      description: name,
       amount: line.quantity,
       weight: weightInGrams,
       item_value: {

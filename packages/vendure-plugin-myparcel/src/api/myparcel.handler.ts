@@ -20,15 +20,26 @@ export const myparcelHandler = new FulfillmentHandler({
     customsContents: {
       type: 'string',
       required: false,
+      defaultValue: '',
       label: [
         {
           languageCode: LanguageCode.en,
           value: 'Type of contents in the package.',
         },
       ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Only select this for shipments outside the EU!',
+        },
+      ],
       ui: {
         component: 'select-form-input',
         options: [
+          {
+            value: '',
+            label: [{ languageCode: LanguageCode.en, value: '-' }],
+          },
           {
             value: 1,
             label: [

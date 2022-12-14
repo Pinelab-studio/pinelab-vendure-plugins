@@ -93,6 +93,13 @@ describe('MyParcel', () => {
       plugins: [
         MyparcelPlugin.init({
           vendureHost: 'https://test-webhook.com',
+          getCustomsInformationFn: (orderLine) => {
+            return {
+              weightInGrams: 30,
+              classification: 'mock classification code',
+              countryCodeOfOrigin: 'NL',
+            };
+          },
         }),
       ],
       paymentOptions: {
@@ -197,10 +204,20 @@ describe('MyParcel', () => {
         return true;
       })
       .reply(200, myparcelRes);
-    fulfillment = await fulfill(adminClient, 'my-parcel', [
-      ['T_1', 1],
-      ['T_2', 2],
-    ]);
+    fulfillment = await fulfill(
+      adminClient,
+      'my-parcel',
+      [
+        ['T_1', 1],
+        ['T_2', 2],
+      ],
+      [
+        {
+          name: 'customsContents',
+          value: '1',
+        },
+      ]
+    );
     const shipment = body?.data?.shipments?.[0];
     expect(fulfillment.state).toEqual('Pending');
     expect(shipment?.carrier).toEqual(1);
@@ -214,6 +231,21 @@ describe('MyParcel', () => {
     expect(contentType).toEqual(
       'application/vnd.shipment+json;version=1.1;charset=utf-8'
     );
+    // Customs information
+    expect(shipment?.physical_properties?.weight).toEqual(30 * 3);
+    expect(shipment?.customs_declaration?.weight).toEqual(30 * 3);
+    expect(
+      shipment?.customs_declaration?.items.every((i) => i.weight === 30)
+    ).toBeTruthy();
+    expect(
+      shipment?.customs_declaration?.items.every(
+        (i) => i.classification === 'mock classification code'
+      )
+    ).toBeTruthy();
+    expect(
+      shipment?.customs_declaration?.items.every((i) => i.country === 'NL')
+    ).toBeTruthy();
+    expect(shipment?.customs_declaration?.contents).toEqual(1);
   });
 
   it('Updates to Shipped after status change webhook', async () => {
