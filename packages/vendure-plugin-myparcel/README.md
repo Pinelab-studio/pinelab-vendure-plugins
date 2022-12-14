@@ -22,7 +22,7 @@ plugins: [
 ]
 ```
 
-2. Add this to your AdminUiPlugin:
+2. Add `MyparcelPlugin.ui` to your AdminUiPlugin extensions:
 
 ```ts
 import { MyparcelPlugin } from 'vendure-plugin-myparcel';
@@ -47,3 +47,26 @@ Read more about Admin UI compilation in the Vendure
 5. Place an order and select the shippingMethod.
 6. Go to the Admin UI and click on `fulfill`
 7. Your shipment should be in your MyParcel account.
+
+## Customs information for shipments outside the EU
+
+MyParcel requires additional customs information for shipments outside the EU. When you ship outside the EU, you should
+implement the `getCustomsInformationFn` when initializing the plugin:
+
+```ts
+MyparcelPlugin.init({
+  vendureHost: 'https://your-vendure-host.io',
+  getCustomsInformationFn: (orderItem) => {
+    return {
+      weightInGrams: (orderItem.line.productVariant.product.customFields as any)
+        .weight,
+      classification: (
+        orderItem.line.productVariant.product.customFields as any
+      ).hsCode,
+      countryCodeOfOrigin: 'NL',
+    };
+  },
+});
+```
+
+You can find more information about the classification codes [here](https://myparcelnl.github.io/api/#7_E).
