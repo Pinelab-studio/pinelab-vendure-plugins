@@ -54,6 +54,7 @@ export class StripeSubscriptionService {
     this.eventBus
       .ofType(ProductVariantEvent)
       .subscribe(this.handleProductEvent);
+    // TODO jobqueue creation for stripe products
   }
 
   async handleProductEvent(event: ProductVariantEvent): Promise<void> {
