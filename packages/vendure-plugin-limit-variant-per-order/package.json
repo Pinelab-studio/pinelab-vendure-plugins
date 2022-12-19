@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-limit-product-per-order",
-  "version": "4.6.0",
+  "version": "4.7.0",
   "description": "Vendure plugin to limit the amount of a specific product that can be ordered per single order.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
