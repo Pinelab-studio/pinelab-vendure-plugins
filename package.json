@@ -46,6 +46,7 @@
           "stock-monitoring",
           "sendcloud",
           "metrics",
+          "limit-variant",
           "all-plugins"
         ]
       ]
