@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "strictPropertyInitialization": false,
+    "outDir": "dist",
+    "lib": ["dom"]
+  },
+  "include": ["src/"],
+  "exclude": ["src/ui"]
+}
