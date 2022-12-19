@@ -7,8 +7,8 @@
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/limit-variant-per-order.plugin.js",
+  "types": "dist/limit-variant-per-order.plugin.d.ts",
   "files": [
     "dist",
     "README.md"
