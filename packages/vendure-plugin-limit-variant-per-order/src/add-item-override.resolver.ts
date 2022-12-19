@@ -13,6 +13,7 @@ import { Order } from '@vendure/core/dist/entity/order/order.entity';
 import {
   UpdateOrderItemsResult,
   MutationAddItemToOrderArgs,
+  MutationAdjustOrderLineArgs,
 } from '@vendure/common/lib/generated-shop-types';
 import { ApolloError } from 'apollo-server-core';
 
@@ -36,14 +37,42 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
       return result;
     }
     const order = result as Order;
+    this.validate(order, args.productVariantId);
+    return result;
+  }
+
+  @Transaction()
+  @Mutation()
+  @Allow(Permission.UpdateOrder, Permission.Owner)
+  async adjustOrderLine(
+    @Ctx() ctx: RequestContext,
+    @Args() args: MutationAdjustOrderLineArgs
+  ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
+    const result = await super.adjustOrderLine(ctx, args);
+    if (!(result as Order).code) {
+      return result;
+    }
+    const order = result as Order;
+    const orderLine = order.lines.find((line) => line.id == args.orderLineId);
+    if (orderLine) {
+      this.validate(order, orderLine.productVariant.id);
+    }
+    return result;
+  }
+
+  /**
+   * Throw an error if quantity is over maxPerOrder
+   */
+  private validate(order: Order, variantId: string | number): void {
     const orderLine = order.lines.find(
-      (line) => line.productVariant.id == args.productVariantId
+      (line) => line.productVariant.id == variantId
     )!;
     const maxPerOrder = (orderLine.productVariant.customFields as any)
       .maxPerOrder;
     if (maxPerOrder && orderLine.quantity > maxPerOrder) {
       Logger.warn(
-        `There can be only max ${maxPerOrder} of ${orderLine.productVariant.name} per order, throwing error to prevent this item from being added.`
+        `There can be only max ${maxPerOrder} of ${orderLine.productVariant.name} per order, throwing error to prevent this item from being added.`,
+        loggerCtx
       );
       throw new ApolloError(
         `You are only allowed to order max ${maxPerOrder} of ${orderLine.productVariant.name}`,
@@ -51,6 +80,5 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
       );
       // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added
     }
-    return result;
   }
 }

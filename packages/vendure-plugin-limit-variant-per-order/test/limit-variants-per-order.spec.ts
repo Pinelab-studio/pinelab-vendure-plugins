@@ -105,6 +105,19 @@ describe('Limit variants per order plugin', function () {
     expect(order.lines[0].quantity).toBe(2);
   });
 
+  it('Fails for adjust orderLine', async () => {
+    const promise = shopClient.query(gql`
+      mutation {
+        adjustOrderLine(orderLineId: 1, quantity: 4) {
+          __typename
+        }
+      }
+    `);
+    await expect(promise).rejects.toThrow(
+      'You are only allowed to order max 2 of Laptop 13 inch 8GB'
+    );
+  });
+
   afterAll(() => {
     return server.destroy();
   });
