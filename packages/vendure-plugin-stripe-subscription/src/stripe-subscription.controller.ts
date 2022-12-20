@@ -14,11 +14,11 @@ export class StripeSubscriptionResolver {
 
   @Mutation()
   @Allow(Permission.Owner)
-  async createStripeSubscriptionPaymentLink(
+  async createStripeSubscriptionCheckout(
     @Ctx() ctx: RequestContext,
     @Args('paymentMethodCode') code: string
   ): Promise<string> {
-    return this.stripeSubscriptionService.createStripeSubscriptionPaymentLink(
+    return this.stripeSubscriptionService.createStripeSubscriptionCheckout(
       ctx,
       code
     );

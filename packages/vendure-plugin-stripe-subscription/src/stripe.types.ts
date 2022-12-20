@@ -30,7 +30,7 @@ export interface Metadata {
   orderCode: string;
   channelToken: string;
   paymentMethodCode: string;
-  endDate: number;
+  amount: number;
 }
 
 export interface PhoneNumberCollection {

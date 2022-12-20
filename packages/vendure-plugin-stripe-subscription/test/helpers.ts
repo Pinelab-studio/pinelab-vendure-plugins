@@ -64,14 +64,8 @@ export const SET_SHIPPING_METHOD = gql`
 `;
 
 export const CREATE_PAYMENT_LINK = gql`
-  mutation createStripeSubscriptionPaymentLink($code: String!) {
-    createStripeSubscriptionPaymentLink(paymentMethodCode: $code)
-  }
-`;
-
-export const CREATE_PRODUCT = gql`
-  mutation createStripeSubscriptionPaymentLink($code: String!) {
-    createStripeSubscriptionPaymentLink(paymentMethodCode: $code)
+  mutation createStripeSubscriptionCheckout($code: String!) {
+    createStripeSubscriptionCheckout(paymentMethodCode: $code)
   }
 `;
 

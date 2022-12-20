@@ -6,32 +6,35 @@
 
 This plugin allows you to sell subscription based services or memberships through Vendure.
 
+!! This plugin currently only supports checkout of 1 single "Paid-in-full" subscription per order.
+
 ## Getting started
 
-1. Add the plugin to your `vendure-config.ts`
+1. Add the plugin to your `vendure-config.ts` plugins:
 
 ```ts
-// TODO
+plugins: [StripeSubscriptionPlugin];
 ```
 
-## How subscriptions work
+2. Start the Vendure server and login to the admin UI
+3. Create a variant with the following custom fields:
 
-// TODO describe concepts
+```js
+  subscriptionDownpayment: 0, // or empty
+  durationInterval: 'month',
+  durationCount: 6,
+  startDate: 'Start of the billing interval',
+  billingInterval: 'month',
+  billingType: 'Paid in full'
+```
 
-- A Vendure product variant is a membership
-- A membership can have a duration. When duration is 0, the membership is indefinite.
-- A membership has a fixed start date, I.E. every 1st of the month
-- A membership can be paid with a single payment or paid on a monthly basis. This is decided based on the variant
-  picked.
-- Only memberships with the same payment frequency + one time payment can be paid in a single order: A monthly
-  subscription and a one-time-payment can be checked out in the same order, but a Monthly and a Weekly subscription can
-  not be in the same order. This is due to a limitation in Stripe.
-- Customers are redirected to the one time orders are transitioned to `PaymentSettled` when a customer has completed the Stripe checkout successfully.
-  For one time payments this means everything is paid, for subscriptions this means only the initial amount has been
-  paid and Stripe will handle future payments automatically.
-- Payment frequency
-- Startdate
-- Proration
-- Downpayment
-
-### examples
+4. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler.
+5. Set your API key
+6. Set a redirect url. This is used to redirect your customer back to your storefront from the Stripe platform.
+7. The `label` fields are optional, used for displaying on the hosted Stripe checkout.
+8. Save the payment method.
+9. From your storefront, add the created variant to your order
+10. Add a shippingaddress and a shippingmethod to the order
+11. Call the mutation `createStripeSubscriptionCheckout('stripe-subscription-payment')` to receive an url to the hosted Stripe checkout page.
+12. Redirect your customer to the url.
+13. The order will be settled when a customer completes the checkout.

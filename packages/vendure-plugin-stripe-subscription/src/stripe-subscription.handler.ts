@@ -89,7 +89,7 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
       throw Error(`CreatePayment is not allowed for apiType '${ctx.apiType}'`);
     }
     return {
-      amount,
+      amount: metadata.amount,
       state: 'Settled',
       transactionId: metadata.subscriptionId,
       metadata,

@@ -18,6 +18,7 @@ import {
   CREATE_PAYMENT_METHOD,
   setShipping,
 } from './helpers';
+import { StripeSubscriptionService } from '../src/stripe-subscription.service';
 
 /**
  * Use something like NGROK to start a reverse tunnel to receive webhooks:  ngrok http 3050
@@ -37,9 +38,7 @@ import {
       shopApiPlayground: {},
     },
     plugins: [
-      StripeSubscriptionPlugin.init({
-        apiVersion: '2020-08-27',
-      }),
+      StripeSubscriptionPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -49,8 +48,11 @@ import {
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
-    initialData: require('../../test/src/initial-data').initialData,
-    productsCsvPath: `${__dirname}/memberships.csv`,
+    initialData: {
+      ...require('../../test/src/initial-data').initialData,
+      shippingMethods: [{ name: 'Standard Shipping', price: 0 }],
+    },
+    productsCsvPath: `${__dirname}/subscriptions.csv`,
   });
   // Create stripe payment method
   await adminClient.asSuperAdmin();
@@ -77,11 +79,11 @@ import {
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   const { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
-    quantity: 2,
+    quantity: 1,
   });
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);
-  const { createStripeSubscriptionPaymentLink: link } = await shopClient.query(
+  const { createStripeSubscriptionCheckout: link } = await shopClient.query(
     CREATE_PAYMENT_LINK,
     { code: stripeSubscriptionHandler.code }
   );

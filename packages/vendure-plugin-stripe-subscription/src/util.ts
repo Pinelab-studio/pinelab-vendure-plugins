@@ -1,0 +1,63 @@
+import {
+  BillingInterval,
+  DurationInterval,
+  StartDate,
+} from './subscription-custom-fields';
+import {
+  startOfMonth,
+  endOfMonth,
+  differenceInDays,
+  startOfWeek,
+  endOfWeek,
+  startOfDay,
+} from 'date-fns';
+
+/**
+ * Calculate day rate based on the total price and duration of the subscription
+ * Example: $200 per 6 months
+ *          = $400 per 12 months
+ *          $400 / 365 = $1,10 per day
+ */
+export function getDayRate(
+  totalPrice: number,
+  durationInterval: DurationInterval,
+  durationCount: number
+): number {
+  let intervalsPerYear = 1; // Default is 1 year
+  if (durationInterval === DurationInterval.MONTH) {
+    intervalsPerYear = 12;
+  } else if (durationInterval === DurationInterval.WEEK) {
+    intervalsPerYear = 52;
+  } else if (durationInterval === DurationInterval.DAY) {
+    intervalsPerYear = 365;
+  }
+  const pricePerYear = (intervalsPerYear / durationCount) * totalPrice;
+  return Math.round(pricePerYear / 365);
+}
+
+export function getDaysUntilNextStartDate(
+  now: Date,
+  interval: BillingInterval,
+  startMoment: StartDate
+): number {
+  const startOfToday = startOfDay(now);
+  let nextStartDate = new Date();
+  if (interval === BillingInterval.MONTH) {
+    const nextMonth = new Date(
+      startOfToday.getFullYear(),
+      startOfToday.getMonth() + 1,
+      1
+    );
+    nextStartDate =
+      startMoment === StartDate.START
+        ? startOfMonth(nextMonth)
+        : endOfMonth(startOfToday);
+  } else if (interval === BillingInterval.WEEK) {
+    const nextWeek = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
+    nextStartDate =
+      startMoment === StartDate.START
+        ? startOfWeek(nextWeek)
+        : endOfWeek(startOfToday);
+  }
+  return differenceInDays(nextStartDate, startOfToday);
+}
