@@ -66,8 +66,8 @@ import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
         code: 'stripe-subscription',
         arguments: [
           {
-            name: 'redirectUrl',
-            value: `https://example.com/`,
+            name: 'webhookSecret',
+            value: `124514`,
           },
           { name: 'apiKey', value: process.env.STRIPE_APIKEY! },
         ],
@@ -83,9 +83,9 @@ import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
   });
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);
-  const { createStripeSubscriptionCheckout: link } = await shopClient.query(
+  const { createStripeSubscriptionIntent: secret } = await shopClient.query(
     CREATE_PAYMENT_LINK,
     { code: 'stripe-subscription-method' }
   );
-  console.log(`Payment link for order ${order.code}: ${link}`);
+  console.log(`Response: ${secret}`);
 })();

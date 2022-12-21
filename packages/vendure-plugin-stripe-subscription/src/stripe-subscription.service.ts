@@ -41,7 +41,7 @@ import {
 
 export interface StripeHandlerConfig {
   stripeClient: StripeClient;
-  redirectUrl: string;
+  webhookSecret: string;
   downpaymentLabel?: string;
   prorationLabel?: string;
 }
@@ -129,7 +129,7 @@ export class StripeSubscriptionService {
     // TODO delete stripe product
   }
 
-  async createStripeSubscriptionCheckout(
+  async createStripeSubscriptionPaymentIntent(
     ctx: RequestContext,
     paymentMethodCode: string
   ): Promise<string> {
@@ -168,12 +168,12 @@ export class StripeSubscriptionService {
         `Only single subscription checkouts are supported for now`
       );
     }
-    const session = await this.createSingleSubscriptionCheckout(
+    /*    const session = await this.createSingleSubscriptionCheckout(
       ctx,
       order,
       paymentMethodCode
     );
-    if (!session.url) {
+        if (!session.url) {
       Logger.error(`Failed to create payment link ${JSON.stringify(session)}`);
       throw Error('Failed to create payment link');
     }
@@ -189,6 +189,10 @@ export class StripeSubscriptionService {
       )
     );
     return session.url;
+    */
+
+    const intent = await this.createSetupIntent(ctx, order, paymentMethodCode);
+    return intent.client_secret!;
   }
 
   /**
@@ -259,6 +263,18 @@ export class StripeSubscriptionService {
     return variant as ValidatedVariantWithSubscriptionFields;
   }
 
+  private async createSetupIntent(
+    ctx: RequestContext,
+    order: OrderWithSubscriptions,
+    paymentMethodCode: string
+  ): Promise<Stripe.SetupIntent> {
+    const { stripeClient, prorationLabel } = await this.getStripeHandler(ctx);
+    return stripeClient.setupIntents.create({
+      // TODO get or create customer
+      payment_method_types: ['card'], // TODO make configurable per channel
+    });
+  }
+
   /**
    * Create a checkout session specific to paid-in-full memberships
    */
@@ -272,8 +288,7 @@ export class StripeSubscriptionService {
         'We only support checkout of a single membership per order for now!'
       );
     }
-    const { stripeClient, redirectUrl, prorationLabel } =
-      await this.getStripeHandler(ctx);
+    const { stripeClient, prorationLabel } = await this.getStripeHandler(ctx);
     const line = order.lines[0];
     const pricing = await this.getSubscriptionPricing(
       ctx,
@@ -306,8 +321,8 @@ export class StripeSubscriptionService {
         paymentMethodCode,
         amount: order.totalWithTax,
       },
-      success_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `https://example.com/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `https://example.com/?session_id={CHECKOUT_SESSION_ID}`,
     };
 
     if (pricing.proratedDays) {
@@ -443,23 +458,23 @@ export class StripeSubscriptionService {
     const apiKey = paymentMethod.handler.args.find(
       (arg) => arg.name === 'apiKey'
     )?.value;
-    let redirectUrl = paymentMethod.handler.args.find(
-      (arg) => arg.name === 'redirectUrl'
+    let webhookSecret = paymentMethod.handler.args.find(
+      (arg) => arg.name === 'webhookSecret'
     )?.value;
-    if (!apiKey || !redirectUrl) {
+    if (!apiKey || !webhookSecret) {
       Logger.warn(
-        `CreatePaymentIntent failed, because no apiKey or redirect is configured for ${paymentMethod.code}`,
+        `Noo apiKey or redirect is configured for ${paymentMethod.code}`,
         loggerCtx
       );
-      throw new UserInputError(
-        `Paymentmethod ${paymentMethod.code} has no apiKey or redirectUrl configured`
+      throw Error(
+        `Payment method ${paymentMethod.code} has no apiKey or redirectUrl configured`
       );
     }
     return {
       stripeClient: new StripeClient(apiKey, {
         apiVersion: null as any, // Null uses accounts default version
       }),
-      redirectUrl,
+      webhookSecret,
       downpaymentLabel: paymentMethod.handler.args.find(
         (arg) => arg.name === 'downpaymentLabel'
       )?.value,

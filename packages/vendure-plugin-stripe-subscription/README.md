@@ -27,7 +27,7 @@ plugins: [StripeSubscriptionPlugin];
   durationCount: 6,
   startDate: 'Start of the billing interval',
   billingInterval: 'month',
-  billingType: 'Paid in full'
+  billingCount: 6,
 ```
 
 4. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler.
@@ -39,10 +39,11 @@ plugins: [StripeSubscriptionPlugin];
 ## Storefront usage
 
 1. From your storefront, add the created variant to your order
-2. Add a shippingaddress and a shippingmethod to the order
-3. Call the mutation `createStripeSubscriptionCheckout('stripe-subscription-payment')` to receive an url to the hosted Stripe checkout page.
-4. Redirect your customer to the url.
-5. The order will be settled when a customer completes the checkout.
+2. Add a shippingaddress and a shippingmethod to the order (mandatory).
+3. Call the graphql mutation `createStripeSubscriptionIntent('stripe-subscription-payment')` to receive the Setup intent.
+4. Have the customer fill out his payment details.
+5. Vendure will create the subscriptions after the intent has successfully been completed by the customer.
+6. The order will be settled by Vendure when the subscriptions are created.
 
 ### Preview pricing calculations
 

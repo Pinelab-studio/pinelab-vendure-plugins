@@ -23,18 +23,19 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
       type: 'string',
       label: [{ languageCode: LanguageCode.en, value: 'Stripe API key' }],
     },
-    redirectUrl: {
+    webhookSecret: {
       type: 'string',
       label: [
         {
           languageCode: LanguageCode.en,
-          value: 'Storefront redirect url',
+          value: 'Webhook secret',
         },
       ],
       description: [
         {
           languageCode: LanguageCode.en,
-          value: 'The storefront url to be redirected to after Stripe payment',
+          value:
+            'Secret to validate incoming webhooks. Get this from your Stripe dashboard',
         },
       ],
     },

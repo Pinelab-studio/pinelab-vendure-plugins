@@ -47,7 +47,7 @@ const _scalars = gql`
         ): StripeSubscriptionPricing
       }
       extend type Mutation {
-        createStripeSubscriptionCheckout(paymentMethodCode: String!): String!
+        createStripeSubscriptionIntent(paymentMethodCode: String!): String!
       }
     `,
     resolvers: [StripeSubscriptionResolver],

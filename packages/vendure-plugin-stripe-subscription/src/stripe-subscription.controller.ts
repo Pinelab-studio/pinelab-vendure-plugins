@@ -1,7 +1,6 @@
-import { Body, Controller, Param, Post, Req, Headers } from '@nestjs/common';
-import { Logger } from '@vendure/core';
-import { Args, Mutation, Query, ResolveField, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
+import { Body, Controller, Get, Headers, Post, Req, Res } from '@nestjs/common';
+import { Allow, Ctx, Logger, Permission, RequestContext } from '@vendure/core';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { loggerCtx } from './constants';
 import { IncomingCheckoutWebhook } from './stripe.types';
@@ -18,11 +17,11 @@ export class StripeSubscriptionResolver {
 
   @Mutation()
   @Allow(Permission.Owner)
-  async createStripeSubscriptionCheckout(
+  async createStripeSubscriptionIntent(
     @Ctx() ctx: RequestContext,
     @Args('paymentMethodCode') code: string
   ): Promise<string> {
-    return this.stripeSubscriptionService.createStripeSubscriptionCheckout(
+    return this.stripeSubscriptionService.createStripeSubscriptionPaymentIntent(
       ctx,
       code
     );
