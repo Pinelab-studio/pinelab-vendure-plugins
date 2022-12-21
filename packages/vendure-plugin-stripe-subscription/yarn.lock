@@ -10826,6 +10826,14 @@ vary@^1, vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
+vendure-plugin-stripe-subscription@4.4.0-beta.2:
+  version "4.4.0-beta.2"
+  resolved "https://registry.yarnpkg.com/vendure-plugin-stripe-subscription/-/vendure-plugin-stripe-subscription-4.4.0-beta.2.tgz#095f9ffc8e814575bacb1055e26bf5981794c39c"
+  integrity sha512-0LMILDYON/vIgzNlbXlfnO8ZvmwC7kxq0eNTx5VtAz4ephp6A2tHyfpM6whDSNbzmYNaFH+YdH7O54ka0cpUWw==
+  dependencies:
+    date-fns "^2.29.3"
+    stripe "^11.1.0"
+
 w3c-hr-time@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/w3c-hr-time/-/w3c-hr-time-1.0.2.tgz#0a89cdf5cc15822df9c360543676963e0cc308cd"

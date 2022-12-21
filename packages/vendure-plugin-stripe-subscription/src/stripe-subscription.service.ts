@@ -433,7 +433,7 @@ export class StripeSubscriptionService {
   ): Promise<StripeHandlerConfig> {
     const paymentMethods = await this.paymentMethodService.findAll(ctx);
     const paymentMethod = paymentMethods.items.find(
-      (pm) => pm.code === stripeSubscriptionHandler.code
+      (pm) => pm.handler.code === stripeSubscriptionHandler.code
     );
     if (!paymentMethod) {
       throw new UserInputError(
