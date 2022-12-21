@@ -218,9 +218,9 @@ export class StripeSubscriptionService {
     const { customFields: subscriptionFields } =
       this.validateVariantAsSubscription(variant);
     const daysUntilStart = getDaysUntilNextStartDate(
-      new Date(),
+      input?.startDate || new Date(),
       subscriptionFields.billingInterval,
-      input?.startDate || subscriptionFields.startDate
+      subscriptionFields.startDate
     );
     const dayRate = getDayRate(
       variant.priceWithTax,

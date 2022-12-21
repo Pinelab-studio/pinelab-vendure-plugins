@@ -35,8 +35,37 @@ plugins: [StripeSubscriptionPlugin];
 6. Set a redirect url. This is used to redirect your customer back to your storefront from the Stripe platform.
 7. The `label` fields are optional, used for displaying on the hosted Stripe checkout.
 8. Save the payment method.
-9. From your storefront, add the created variant to your order
-10. Add a shippingaddress and a shippingmethod to the order
-11. Call the mutation `createStripeSubscriptionCheckout('stripe-subscription-payment')` to receive an url to the hosted Stripe checkout page.
-12. Redirect your customer to the url.
-13. The order will be settled when a customer completes the checkout.
+
+## Storefront usage
+
+1. From your storefront, add the created variant to your order
+2. Add a shippingaddress and a shippingmethod to the order
+3. Call the mutation `createStripeSubscriptionCheckout('stripe-subscription-payment')` to receive an url to the hosted Stripe checkout page.
+4. Redirect your customer to the url.
+5. The order will be settled when a customer completes the checkout.
+
+### Preview pricing calculations
+
+You can preview the pricing model of a subscription without adding it to cart with the following query on the shop-api:
+
+```graphql
+{
+  getStripeSubscriptionPricing(
+    input: {
+      productVariantId: 1
+      startDate: "2022-12-25T00:00:00.000Z"
+      downpayment: 1200
+    }
+  ) {
+    downpayment
+    totalProratedAmount
+    proratedDays
+    proratedDays
+    recurringPrice
+    interval
+    intervalCount
+  }
+}
+```
+
+`Downpayment` and `startDate` are optional parameters. Without them, the subscriptions default will be used.
