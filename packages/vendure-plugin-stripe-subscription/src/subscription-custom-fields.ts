@@ -1,10 +1,11 @@
 import {
   CustomFieldConfig,
   LanguageCode,
-  ProductVariant,
   Order,
   OrderLine,
+  ProductVariant,
 } from '@vendure/core';
+import { SubscriptionBillingInterval } from './generated/graphql';
 
 /**
  * Custom fields for managing subscriptions.
@@ -13,13 +14,22 @@ import {
 export interface VariantWithSubscriptionFields extends ProductVariant {
   customFields: {
     subscriptionDownpayment?: number;
+    durationInterval?: DurationInterval;
+    durationCount?: number;
+    startDate?: StartDate;
+    billingInterval?: SubscriptionBillingInterval;
+    billingCount?: number;
+  };
+}
+
+export interface ValidatedVariantWithSubscriptionFields extends ProductVariant {
+  customFields: {
+    subscriptionDownpayment?: number;
     durationInterval: DurationInterval;
     durationCount: number;
     startDate: StartDate;
-    billingInterval: BillingInterval;
-    billingCount?: number;
-    billingType: BillingType;
-    stripeProductId?: string;
+    billingInterval: SubscriptionBillingInterval;
+    billingCount: number;
   };
 }
 
@@ -37,19 +47,9 @@ export enum DurationInterval {
   YEAR = 'year',
 }
 
-export enum BillingInterval {
-  WEEK = 'week',
-  MONTH = 'month',
-}
-
 export enum StartDate {
   START = 'Start of the billing interval',
   END = 'End of the billing interval',
-}
-
-export enum BillingType {
-  PAID_IN_FULL = 'Paid in full',
-  PER_INTERVAL = 'Per interval',
 }
 
 export const productVariantCustomFields: CustomFieldConfig[] = [
@@ -99,7 +99,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
       { value: DurationInterval.YEAR },
     ],
     public: true,
-    nullable: false,
+    nullable: true,
     ui: { tab: 'subscription' },
   },
   /* ------------ Duration count -------------------------- */
@@ -119,7 +119,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     ],
     type: 'int',
     public: true,
-    nullable: false,
+    nullable: true,
     ui: { tab: 'subscription' },
   },
   /* ------------ Start date -------------------------- */
@@ -140,7 +140,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     type: 'string',
     options: [{ value: StartDate.START }, { value: StartDate.END }],
     public: true,
-    nullable: false,
+    nullable: true,
     ui: { tab: 'subscription' },
   },
   /* ------------ Billing interval -------------------------- */
@@ -160,11 +160,11 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     ],
     type: 'string',
     options: [
-      { value: BillingInterval.WEEK },
-      { value: BillingInterval.MONTH },
+      { value: SubscriptionBillingInterval.Week },
+      { value: SubscriptionBillingInterval.Month },
     ],
     public: true,
-    nullable: false,
+    nullable: true,
     ui: { tab: 'subscription' },
   },
   /* ------------ Billing count -------------------------- */
@@ -179,46 +179,11 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     description: [
       {
         languageCode: LanguageCode.en,
-        value:
-          'The nr. of intervals for the billing moment. ' +
-          'Not needed for "Paid in full"',
+        value: 'The nr. of intervals for billing',
       },
     ],
     type: 'int',
     public: true,
-    nullable: true,
-    ui: { tab: 'subscription' },
-  },
-  /* ------------ Billing type -------------------------- */
-  {
-    name: 'billingType',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Billing type',
-      },
-    ],
-    type: 'string',
-    options: [
-      { value: BillingType.PER_INTERVAL },
-      { value: BillingType.PAID_IN_FULL },
-    ],
-    public: true,
-    nullable: false,
-    ui: { tab: 'subscription' },
-  },
-  /* ------------ Stripe productId -------------------------- */
-  {
-    name: 'stripeProductId',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Stripe Product ID',
-      },
-    ],
-    type: 'string',
-    public: false,
-    readonly: true,
     nullable: true,
     ui: { tab: 'subscription' },
   },

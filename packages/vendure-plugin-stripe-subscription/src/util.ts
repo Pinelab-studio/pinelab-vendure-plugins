@@ -1,8 +1,4 @@
-import {
-  BillingInterval,
-  DurationInterval,
-  StartDate,
-} from './subscription-custom-fields';
+import { DurationInterval, StartDate } from './subscription-custom-fields';
 import {
   startOfMonth,
   endOfMonth,
@@ -11,6 +7,7 @@ import {
   endOfWeek,
   startOfDay,
 } from 'date-fns';
+import { SubscriptionBillingInterval } from './generated/graphql';
 
 /**
  * Calculate day rate based on the total price and duration of the subscription
@@ -37,12 +34,12 @@ export function getDayRate(
 
 export function getDaysUntilNextStartDate(
   now: Date,
-  interval: BillingInterval,
+  interval: SubscriptionBillingInterval,
   startMoment: StartDate
 ): number {
   const startOfToday = startOfDay(now);
   let nextStartDate = new Date();
-  if (interval === BillingInterval.MONTH) {
+  if (interval === SubscriptionBillingInterval.Month) {
     const nextMonth = new Date(
       startOfToday.getFullYear(),
       startOfToday.getMonth() + 1,
@@ -52,7 +49,7 @@ export function getDaysUntilNextStartDate(
       startMoment === StartDate.START
         ? startOfMonth(nextMonth)
         : endOfMonth(startOfToday);
-  } else if (interval === BillingInterval.WEEK) {
+  } else if (interval === SubscriptionBillingInterval.Week) {
     const nextWeek = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
     nextStartDate =
       startMoment === StartDate.START

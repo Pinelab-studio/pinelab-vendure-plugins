@@ -5,6 +5,10 @@ import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { loggerCtx } from './constants';
 import { IncomingCheckoutWebhook } from './stripe.types';
+import {
+  StripeSubscriptionPricing,
+  StripeSubscriptionPricingInput,
+} from './generated/graphql';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -22,6 +26,14 @@ export class StripeSubscriptionResolver {
       ctx,
       code
     );
+  }
+
+  @Query()
+  async getStripeSubscriptionPricing(
+    @Ctx() ctx: RequestContext,
+    @Args('input') input: StripeSubscriptionPricingInput
+  ): Promise<StripeSubscriptionPricing> {
+    return this.stripeSubscriptionService.getSubscriptionPricing(ctx, input);
   }
 }
 

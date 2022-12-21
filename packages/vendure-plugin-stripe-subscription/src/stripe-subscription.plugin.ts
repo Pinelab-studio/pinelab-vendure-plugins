@@ -11,10 +11,41 @@ import { productVariantCustomFields } from './subscription-custom-fields';
 
 export interface StripeSubscriptionPluginOptions {}
 
+const _scalars = gql`
+  scalar DateTime
+`;
+
 @VendurePlugin({
   imports: [PluginCommonModule],
   shopApiExtensions: {
     schema: gql`
+      enum SubscriptionBillingInterval {
+        week
+        month
+      }
+      type StripeSubscriptionPricing {
+        downpayment: Int!
+        totalProratedAmount: Int!
+        proratedDays: Int!
+        dayRate: Int!
+        recurringPrice: Int!
+        interval: SubscriptionBillingInterval!
+        intervalCount: Int!
+      }
+      input StripeSubscriptionPricingInput {
+        productVariantId: ID!
+        startDate: DateTime
+        downpayment: Int
+      }
+      extend type Query {
+        """
+        Preview the pricing model of a given subscription.
+        Start date and downpayment are optional: if not supplied, the subscriptions default will be used
+        """
+        getStripeSubscriptionPricing(
+          input: StripeSubscriptionPricingInput
+        ): StripeSubscriptionPricing
+      }
       extend type Mutation {
         createStripeSubscriptionCheckout(paymentMethodCode: String!): String!
       }

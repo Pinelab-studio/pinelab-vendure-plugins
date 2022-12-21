@@ -57,7 +57,7 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     },
     prorationLabel: {
       type: 'string',
-      defaultValue: 'Remaining amount for the current date',
+      defaultValue: 'Pro-rated amount',
       label: [
         {
           languageCode: LanguageCode.en,

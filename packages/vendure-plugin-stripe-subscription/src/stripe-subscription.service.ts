@@ -27,13 +27,17 @@ import { IncomingCheckoutWebhook } from './stripe.types';
 import { HistoryEntryType } from '@vendure/common/lib/generated-types';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import {
-  BillingType,
   OrderWithSubscriptions,
+  ValidatedVariantWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
 import { StripeClient } from './stripe.client';
 import { Stripe } from 'stripe';
 import { getDayRate, getDaysUntilNextStartDate } from './util';
+import {
+  StripeSubscriptionPricing,
+  StripeSubscriptionPricingInput,
+} from './generated/graphql';
 
 export interface StripeHandlerConfig {
   stripeClient: StripeClient;
@@ -154,16 +158,17 @@ export class StripeSubscriptionService {
       );
     }
     const hasUnsupportedSubscriptions = order.lines.some(
-      (line) =>
-        line.productVariant.customFields.billingType !==
-        BillingType.PAID_IN_FULL
+      (line) => line.productVariant.customFields.subscriptionDownpayment
     );
     if (hasUnsupportedSubscriptions) {
+      throw new UserInputError(`Downpayments are not supported yet`);
+    }
+    if (order.lines.length > 1) {
       throw new UserInputError(
-        `Only Paid-in-full subscriptions are supported for now. // TODO`
+        `Only single subscription checkouts are supported for now`
       );
     }
-    const session = await this.createPaidInFullCheckout(
+    const session = await this.createSingleSubscriptionCheckout(
       ctx,
       order,
       paymentMethodCode
@@ -187,9 +192,77 @@ export class StripeSubscriptionService {
   }
 
   /**
+   * Used for previewing the price of a subscription
+   */
+  async getSubscriptionPricing(
+    ctx: RequestContext,
+    input?: StripeSubscriptionPricingInput,
+    variant?: VariantWithSubscriptionFields
+  ): Promise<StripeSubscriptionPricing> {
+    if (!variant && !input?.productVariantId) {
+      throw Error(
+        `Either variant or input.productvariantId is needed to calculate pricing!`
+      );
+    }
+    if (!variant) {
+      variant = (await this.variantService.findOne(
+        ctx,
+        input!.productVariantId
+      )) as VariantWithSubscriptionFields;
+      if (!variant) {
+        throw new UserInputError(
+          `No variant found with id ${input!.productVariantId}`
+        );
+      }
+    }
+    const { customFields: subscriptionFields } =
+      this.validateVariantAsSubscription(variant);
+    const daysUntilStart = getDaysUntilNextStartDate(
+      new Date(),
+      subscriptionFields.billingInterval,
+      input?.startDate || subscriptionFields.startDate
+    );
+    const dayRate = getDayRate(
+      variant.priceWithTax,
+      subscriptionFields.durationInterval!,
+      subscriptionFields.durationCount!
+    );
+    return {
+      downpayment: 0, // TODO
+      totalProratedAmount: daysUntilStart * dayRate,
+      proratedDays: daysUntilStart,
+      dayRate,
+      recurringPrice: variant.priceWithTax,
+      interval: subscriptionFields.billingInterval,
+      intervalCount: subscriptionFields.billingCount,
+    };
+  }
+
+  /**
+   * Throw an error if not all necessary subscription fields are present on a variant
+   * @private
+   */
+  private validateVariantAsSubscription(
+    variant: VariantWithSubscriptionFields
+  ): ValidatedVariantWithSubscriptionFields {
+    if (
+      !variant.customFields.billingInterval ||
+      !variant.customFields.billingCount ||
+      !variant.customFields.durationInterval ||
+      !variant.customFields.durationCount ||
+      !variant.customFields.startDate
+    ) {
+      throw new UserInputError(
+        `Variants doesn't have necessary subscription custom fields, cannot calculate subscription pricing`
+      );
+    }
+    return variant as ValidatedVariantWithSubscriptionFields;
+  }
+
+  /**
    * Create a checkout session specific to paid-in-full memberships
    */
-  private async createPaidInFullCheckout(
+  private async createSingleSubscriptionCheckout(
     ctx: RequestContext,
     order: OrderWithSubscriptions,
     paymentMethodCode: string
@@ -202,6 +275,11 @@ export class StripeSubscriptionService {
     const { stripeClient, redirectUrl, prorationLabel } =
       await this.getStripeHandler(ctx);
     const line = order.lines[0];
+    const pricing = await this.getSubscriptionPricing(
+      ctx,
+      undefined,
+      line.productVariant
+    );
     const recurringPrice: Stripe.Checkout.SessionCreateParams.LineItem = {
       quantity: 1,
       price_data: {
@@ -209,11 +287,11 @@ export class StripeSubscriptionService {
           name: line.productVariant.name,
         },
         currency: order.currencyCode,
-        unit_amount: line.proratedLinePriceWithTax,
+        unit_amount: pricing.recurringPrice,
         // For paid-in-full we use the duration of the subscription as renewal
         recurring: {
-          interval: line.productVariant.customFields.durationInterval,
-          interval_count: line.productVariant.customFields.durationCount,
+          interval: pricing.interval,
+          interval_count: pricing.intervalCount,
         },
       },
     };
@@ -231,35 +309,22 @@ export class StripeSubscriptionService {
       success_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${redirectUrl}?session_id={CHECKOUT_SESSION_ID}`,
     };
-    const daysUntilStart = getDaysUntilNextStartDate(
-      new Date(),
-      line.productVariant.customFields.billingInterval,
-      line.productVariant.customFields.startDate
-    );
-    if (daysUntilStart) {
+
+    if (pricing.proratedDays) {
       // This means we have to add proration to the checkout
-      const dayRate = getDayRate(
-        line.productVariant.priceWithTax,
-        line.productVariant.customFields.durationInterval,
-        line.productVariant.customFields.durationCount
-      );
-      Logger.info(
-        `Adding ${daysUntilStart} prorated days of $${dayRate} each to subscription for order ${order.code}`,
-        loggerCtx
-      );
       const proratedPrice: Stripe.Checkout.SessionCreateParams.LineItem = {
         price_data: {
           currency: order.currencyCode,
-          unit_amount: dayRate,
+          unit_amount: pricing.dayRate,
           product_data: {
             name: prorationLabel || 'Prorated amount',
           },
         },
-        quantity: daysUntilStart,
+        quantity: pricing.proratedDays,
       };
       sessionInput.line_items!.push(proratedPrice);
       sessionInput.subscription_data = {
-        trial_period_days: daysUntilStart, // set start date
+        trial_period_days: pricing.proratedDays, // set start date
       };
     }
     return stripeClient.checkout.sessions.create(sessionInput);

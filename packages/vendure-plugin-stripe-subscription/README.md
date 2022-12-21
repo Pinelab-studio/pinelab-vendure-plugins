@@ -10,7 +10,9 @@ This plugin allows you to sell subscription based services or memberships throug
 
 ## Getting started
 
-1. Add the plugin to your `vendure-config.ts` plugins:
+1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook` (Use something liek localtunnel or ngrok for local development)
+2. Select all `Checkout` and `PaymentIntent` events for the webhook.
+3. Add the plugin to your `vendure-config.ts` plugins:
 
 ```ts
 plugins: [StripeSubscriptionPlugin];

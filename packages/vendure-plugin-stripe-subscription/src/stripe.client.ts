@@ -6,19 +6,6 @@ import { VariantWithSubscriptionFields } from './subscription-custom-fields';
  * Wrapper around the Stripe client with specifics for this subscription plugin
  */
 export class StripeClient extends Stripe {
-  async getOrCreateProductId(
-    productVariant: VariantWithSubscriptionFields
-  ): Promise<string> {
-    if (productVariant.customFields.stripeProductId) {
-      return productVariant.customFields.stripeProductId;
-    } else {
-      const product = await this.products.create({
-        name: productVariant.name,
-      });
-      return product.id;
-    }
-  }
-
   // FIXME do we really want to pre-generate prices? Maybe only day-rate?
   /*        // Create day rate
           const dayRate = await stripeClient.prices.create({
