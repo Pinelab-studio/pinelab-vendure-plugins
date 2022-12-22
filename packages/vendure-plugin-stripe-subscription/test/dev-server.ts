@@ -17,8 +17,8 @@ import {
   setShipping,
 } from './helpers';
 
-import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
-// import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+// import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
 
 /**
  * Use something like NGROK to start a reverse tunnel to receive webhooks:  ngrok http 3050
