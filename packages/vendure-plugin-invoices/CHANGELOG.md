@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.7.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.7.0...v4.7.1) (2022-12-22)
+
+### Bug Fixes
+
+- **invoices:** use updatedAt if orderPlacedAt is not filled yet ([ac71bc6](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/ac71bc63666725981da70355318ac574668c324e))
+
 ## [4.5.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.4.0...v4.5.0) (2022-12-14)
 
 ### Features
