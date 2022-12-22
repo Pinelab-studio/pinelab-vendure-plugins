@@ -31,7 +31,7 @@ export class DefaultDataStrategy implements DataStrategy {
     return {
       orderDate: order.orderPlacedAt
         ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
-        : 'unknown',
+        : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt),
       invoiceNumber: nr,
       customerEmail: order.customer.emailAddress,
       order: order,
