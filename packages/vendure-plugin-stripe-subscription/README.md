@@ -19,17 +19,7 @@ plugins: [StripeSubscriptionPlugin];
 ```
 
 2. Start the Vendure server and login to the admin UI
-3. Create a variant with the following custom fields:
-
-```js
-  subscriptionDownpayment: 0, // or empty
-  durationInterval: 'month',
-  durationCount: 6,
-  startDate: 'Start of the billing interval',
-  billingInterval: 'month',
-  billingCount: 6,
-```
-
+3. Create a variant and select a `Subscription schedule` via the admin UI
 4. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler.
 5. Set your API key
 6. Set a redirect url. This is used to redirect your customer back to your storefront from the Stripe platform.
@@ -40,10 +30,12 @@ plugins: [StripeSubscriptionPlugin];
 
 1. From your storefront, add the created variant to your order
 2. Add a shippingaddress and a shippingmethod to the order (mandatory).
-3. Call the graphql mutation `createStripeSubscriptionIntent('stripe-subscription-payment')` to receive the Setup intent.
+3. Call the graphql mutation `createStripeSubscriptionIntent` to receive the Setup intent.
 4. Have the customer fill out his payment details.
 5. Vendure will create the subscriptions after the intent has successfully been completed by the customer.
 6. The order will be settled by Vendure when the subscriptions are created.
+
+It's important to inform your customers what you will be billing in the future: https://stripe.com/docs/payments/setup-intents#mandates
 
 ### Preview pricing calculations
 
@@ -70,3 +62,17 @@ You can preview the pricing model of a subscription without adding it to cart wi
 ```
 
 `Downpayment` and `startDate` are optional parameters. Without them, the subscriptions default will be used.
+
+### Contributing and dev server
+
+You can locally test this plugin by checking out the source.
+
+1. Create a .env file with the following contents:
+
+```
+STRIPE_APIKEY=sk_test_
+STRIPE_PUBLISHABLE_KEY=pk_test_
+```
+
+2. Run `yarn start`
+3. Go to `http://localhost:3050/checkout` to view the Stripe checkout

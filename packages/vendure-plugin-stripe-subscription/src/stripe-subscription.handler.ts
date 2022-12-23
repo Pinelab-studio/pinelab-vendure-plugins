@@ -112,13 +112,6 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     payment,
     args
   ): Promise<CreateRefundResult> {
-    // TODO
-    return {
-      state: 'Failed' as const,
-      transactionId: payment.transactionId,
-      metadata: {
-        message: 'Not implemented', //FIXME
-      },
-    };
+    throw Error(`Stripe subscriptions can not be refunded via Vendure`);
   },
 });

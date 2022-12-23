@@ -64,8 +64,8 @@ export const SET_SHIPPING_METHOD = gql`
 `;
 
 export const CREATE_PAYMENT_LINK = gql`
-  mutation createStripeSubscriptionIntent($code: String!) {
-    createStripeSubscriptionIntent(paymentMethodCode: $code)
+  mutation createStripeSubscriptionIntent {
+    createStripeSubscriptionIntent
   }
 `;
 

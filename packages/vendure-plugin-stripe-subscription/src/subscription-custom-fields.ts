@@ -1,11 +1,12 @@
 import {
+  Customer,
   CustomFieldConfig,
   LanguageCode,
   Order,
   OrderLine,
   ProductVariant,
 } from '@vendure/core';
-import { SubscriptionBillingInterval } from './generated/graphql';
+import { schedules } from './schedules';
 
 /**
  * Custom fields for managing subscriptions.
@@ -13,23 +14,13 @@ import { SubscriptionBillingInterval } from './generated/graphql';
  */
 export interface VariantWithSubscriptionFields extends ProductVariant {
   customFields: {
-    subscriptionDownpayment?: number;
-    durationInterval?: DurationInterval;
-    durationCount?: number;
-    startDate?: StartDate;
-    billingInterval?: SubscriptionBillingInterval;
-    billingCount?: number;
+    subscriptionSchedule?: string;
   };
 }
 
-export interface ValidatedVariantWithSubscriptionFields extends ProductVariant {
+export interface CustomerWithSubscriptionFields extends Customer {
   customFields: {
-    subscriptionDownpayment?: number;
-    durationInterval: DurationInterval;
-    durationCount: number;
-    startDate: StartDate;
-    billingInterval: SubscriptionBillingInterval;
-    billingCount: number;
+    stripeCustomerId?: string;
   };
 }
 
@@ -38,152 +29,38 @@ export interface ValidatedVariantWithSubscriptionFields extends ProductVariant {
  */
 export interface OrderWithSubscriptions extends Order {
   lines: (OrderLine & { productVariant: VariantWithSubscriptionFields })[];
-}
-
-export enum DurationInterval {
-  DAY = 'day',
-  WEEK = 'week',
-  MONTH = 'month',
-  YEAR = 'year',
-}
-
-export enum StartDate {
-  START = 'Start of the billing interval',
-  END = 'End of the billing interval',
+  customer: CustomerWithSubscriptionFields;
 }
 
 export const productVariantCustomFields: CustomFieldConfig[] = [
-  /* ------------ Downpayment -------------------------- */
   {
-    name: 'subscriptionDownpayment',
+    name: 'subscriptionSchedule',
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Subscription downpayment',
-      },
-    ],
-    description: [
-      {
-        languageCode: LanguageCode.en,
-        value:
-          'Optional downpayment for a subscription. ' +
-          'If set, the customer is required to pay this amount up front, ' +
-          'and it will be deducted from the monthly price ',
-      },
-    ],
-    type: 'int',
-    public: true,
-    nullable: true,
-    ui: { tab: 'subscription', component: 'currency-form-input' },
-  },
-  /* ------------ Duration interval -------------------------- */
-  {
-    name: 'durationInterval',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Duration interval',
-      },
-    ],
-    description: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Interval used to specify the duration of the subscription',
+        value: 'Susbcription schedule',
       },
     ],
     type: 'string',
-    options: [
-      { value: DurationInterval.DAY },
-      { value: DurationInterval.WEEK },
-      { value: DurationInterval.MONTH },
-      { value: DurationInterval.YEAR },
-    ],
+    options: schedules.map((s) => ({ value: s.name })),
     public: true,
     nullable: true,
     ui: { tab: 'subscription' },
   },
-  /* ------------ Duration count -------------------------- */
+];
+
+export const customerCustomFields: CustomFieldConfig[] = [
+  /* ------------ Stripe customer ID -------------------------- */
   {
-    name: 'durationCount',
+    name: 'stripeCustomerId',
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Duration count',
-      },
-    ],
-    description: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'The nr of intervals for the duration of the subscription',
-      },
-    ],
-    type: 'int',
-    public: true,
-    nullable: true,
-    ui: { tab: 'subscription' },
-  },
-  /* ------------ Start date -------------------------- */
-  {
-    name: 'startDate',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Start date',
-      },
-    ],
-    description: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'I.E. "start of the week"',
+        value: 'Stripe customer ID',
       },
     ],
     type: 'string',
-    options: [{ value: StartDate.START }, { value: StartDate.END }],
-    public: true,
-    nullable: true,
-    ui: { tab: 'subscription' },
-  },
-  /* ------------ Billing interval -------------------------- */
-  {
-    name: 'billingInterval',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Billing interval',
-      },
-    ],
-    description: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'The interval used for billing and start date',
-      },
-    ],
-    type: 'string',
-    options: [
-      { value: SubscriptionBillingInterval.Week },
-      { value: SubscriptionBillingInterval.Month },
-    ],
-    public: true,
-    nullable: true,
-    ui: { tab: 'subscription' },
-  },
-  /* ------------ Billing count -------------------------- */
-  {
-    name: 'billingCount',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Billing count',
-      },
-    ],
-    description: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'The nr. of intervals for billing',
-      },
-    ],
-    type: 'int',
-    public: true,
+    public: false,
     nullable: true,
     ui: { tab: 'subscription' },
   },

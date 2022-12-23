@@ -46,47 +46,9 @@ export interface TotalDetails {
 export interface Object {
   id: string;
   object: string;
-  after_expiration?: any;
-  allow_promotion_codes?: any;
-  amount_subtotal: number;
-  amount_total: number;
-  automatic_tax: AutomaticTax;
-  billing_address_collection?: any;
-  cancel_url: string;
-  client_reference_id?: any;
-  consent?: any;
-  consent_collection?: any;
-  created: number;
-  currency: string;
-  custom_text: CustomText;
   customer: string;
-  customer_creation: string;
-  customer_details: CustomerDetails;
-  customer_email?: any;
-  expires_at: number;
-  livemode: boolean;
-  locale: string;
+  payment_method: string;
   metadata: Metadata;
-  mode: string;
-  payment_intent?: any;
-  payment_link?: any;
-  payment_method_collection: string;
-  payment_method_options?: any;
-  payment_method_types: string[];
-  payment_status: string;
-  phone_number_collection: PhoneNumberCollection;
-  recovered_from?: any;
-  setup_intent?: any;
-  shipping?: any;
-  shipping_address_collection?: any;
-  shipping_options: any[];
-  shipping_rate?: any;
-  status: string;
-  submit_type?: any;
-  subscription: string;
-  success_url: string;
-  total_details: TotalDetails;
-  url?: any;
 }
 
 export interface Data {

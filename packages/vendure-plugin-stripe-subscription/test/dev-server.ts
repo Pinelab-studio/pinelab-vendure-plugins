@@ -10,6 +10,7 @@ import {
   mergeConfig,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
@@ -17,8 +18,10 @@ import {
   setShipping,
 } from './helpers';
 
-// import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
-import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+// import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+
+export let clientSecret = 'test';
 
 /**
  * Use something like NGROK to start a reverse tunnel to receive webhooks:  ngrok http 3050
@@ -38,6 +41,7 @@ import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
       shopApiPlayground: {},
     },
     plugins: [
+      StripeTestCheckoutPlugin,
       StripeSubscriptionPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -78,14 +82,14 @@ import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   const { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '1',
+    productVariantId: '2',
     quantity: 1,
   });
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(
-    CREATE_PAYMENT_LINK,
-    { code: 'stripe-subscription-method' }
+    CREATE_PAYMENT_LINK
   );
-  console.log(`Response: ${secret}`);
+  clientSecret = secret;
+  console.log(`Go to http://localhost:3050/checkout/ to test your intent`);
 })();

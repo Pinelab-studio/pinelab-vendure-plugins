@@ -1,4 +1,3 @@
-import { DurationInterval, StartDate } from './subscription-custom-fields';
 import {
   startOfMonth,
   endOfMonth,
@@ -8,6 +7,7 @@ import {
   startOfDay,
 } from 'date-fns';
 import { SubscriptionBillingInterval } from './generated/graphql';
+import { DurationInterval, StartDate } from './schedules';
 
 /**
  * Calculate day rate based on the total price and duration of the subscription
@@ -21,11 +21,11 @@ export function getDayRate(
   durationCount: number
 ): number {
   let intervalsPerYear = 1; // Default is 1 year
-  if (durationInterval === DurationInterval.MONTH) {
+  if (durationInterval === DurationInterval.Month) {
     intervalsPerYear = 12;
-  } else if (durationInterval === DurationInterval.WEEK) {
+  } else if (durationInterval === DurationInterval.week) {
     intervalsPerYear = 52;
-  } else if (durationInterval === DurationInterval.DAY) {
+  } else if (durationInterval === DurationInterval.Day) {
     intervalsPerYear = 365;
   }
   const pricePerYear = (intervalsPerYear / durationCount) * totalPrice;
@@ -57,4 +57,8 @@ export function getDaysUntilNextStartDate(
         : endOfWeek(startOfToday);
   }
   return differenceInDays(nextStartDate, startOfToday);
+}
+
+export function printMoney(amount: number): string {
+  return (amount / 100).toFixed(2);
 }

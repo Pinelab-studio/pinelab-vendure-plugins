@@ -18,12 +18,10 @@ export class StripeSubscriptionResolver {
   @Mutation()
   @Allow(Permission.Owner)
   async createStripeSubscriptionIntent(
-    @Ctx() ctx: RequestContext,
-    @Args('paymentMethodCode') code: string
+    @Ctx() ctx: RequestContext
   ): Promise<string> {
     return this.stripeSubscriptionService.createStripeSubscriptionPaymentIntent(
-      ctx,
-      code
+      ctx
     );
   }
 

@@ -7,7 +7,10 @@ import {
   StripeSubscriptionResolver,
 } from './stripe-subscription.controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { productVariantCustomFields } from './subscription-custom-fields';
+import {
+  customerCustomFields,
+  productVariantCustomFields,
+} from './subscription-custom-fields';
 
 export interface StripeSubscriptionPluginOptions {}
 
@@ -31,6 +34,7 @@ const _scalars = gql`
         recurringPrice: Int!
         interval: SubscriptionBillingInterval!
         intervalCount: Int!
+        amountDueNow: Int!
       }
       input StripeSubscriptionPricingInput {
         productVariantId: ID!
@@ -47,7 +51,7 @@ const _scalars = gql`
         ): StripeSubscriptionPricing
       }
       extend type Mutation {
-        createStripeSubscriptionIntent(paymentMethodCode: String!): String!
+        createStripeSubscriptionIntent: String!
       }
     `,
     resolvers: [StripeSubscriptionResolver],
@@ -63,6 +67,7 @@ const _scalars = gql`
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);
     config.customFields.ProductVariant.push(...productVariantCustomFields);
+    config.customFields.Customer.push(...customerCustomFields);
     return config;
   },
 })
