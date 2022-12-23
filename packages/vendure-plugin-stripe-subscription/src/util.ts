@@ -23,7 +23,7 @@ export function getDayRate(
   let intervalsPerYear = 1; // Default is 1 year
   if (durationInterval === DurationInterval.Month) {
     intervalsPerYear = 12;
-  } else if (durationInterval === DurationInterval.week) {
+  } else if (durationInterval === DurationInterval.Week) {
     intervalsPerYear = 52;
   } else if (durationInterval === DurationInterval.Day) {
     intervalsPerYear = 365;

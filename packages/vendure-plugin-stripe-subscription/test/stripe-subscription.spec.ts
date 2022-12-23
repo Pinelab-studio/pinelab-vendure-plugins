@@ -13,11 +13,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { stripeSubscriptionHandler } from '../src/stripe-subscription.handler';
 import { getDayRate, getDaysUntilNextStartDate } from '../src/util';
-import {
-  BillingInterval,
-  DurationInterval,
-  StartDate,
-} from '../src/subscription-custom-fields';
+import { DurationInterval, StartDate } from '../src/schedules';
+import { SubscriptionBillingInterval } from '../src';
 
 jest.setTimeout(20000);
 
@@ -69,15 +66,15 @@ describe('Order export plugin', function () {
   });
 
   test.each([
-    [40000, 1, DurationInterval.YEAR, 110],
-    [80000, 2, DurationInterval.YEAR, 110],
-    [20000, 6, DurationInterval.MONTH, 110],
-    [80000, 24, DurationInterval.MONTH, 110],
-    [20000, 26, DurationInterval.WEEK, 110],
-    [40000, 52, DurationInterval.WEEK, 110],
-    [40000, 365, DurationInterval.DAY, 110],
-    [110, 1, DurationInterval.DAY, 110],
-    [39890, 364, DurationInterval.DAY, 110],
+    [40000, 1, DurationInterval.Year, 110],
+    [80000, 2, DurationInterval.Year, 110],
+    [20000, 6, DurationInterval.Month, 110],
+    [80000, 24, DurationInterval.Month, 110],
+    [20000, 26, DurationInterval.Week, 110],
+    [40000, 52, DurationInterval.Week, 110],
+    [40000, 365, DurationInterval.Day, 110],
+    [110, 1, DurationInterval.Day, 110],
+    [39890, 364, DurationInterval.Day, 110],
   ])(
     'Day rate for $%i per %i %s should be $%i',
     (
@@ -91,16 +88,36 @@ describe('Order export plugin', function () {
   );
 
   test.each([
-    [new Date('2022-12-20'), StartDate.START, BillingInterval.MONTH, 12],
-    [new Date('2022-12-20'), StartDate.END, BillingInterval.MONTH, 11],
-    [new Date('2022-12-20'), StartDate.START, BillingInterval.WEEK, 5],
-    [new Date('2022-12-20'), StartDate.END, BillingInterval.WEEK, 4],
+    [
+      new Date('2022-12-20'),
+      StartDate.START,
+      SubscriptionBillingInterval.Month,
+      12,
+    ],
+    [
+      new Date('2022-12-20'),
+      StartDate.END,
+      SubscriptionBillingInterval.Month,
+      11,
+    ],
+    [
+      new Date('2022-12-20'),
+      StartDate.START,
+      SubscriptionBillingInterval.Week,
+      5,
+    ],
+    [
+      new Date('2022-12-20'),
+      StartDate.END,
+      SubscriptionBillingInterval.Week,
+      4,
+    ],
   ])(
     'Calculate days: from %s to "%s" of %s should be %i $#1',
     (
       now: Date,
       startDate: StartDate,
-      interval: BillingInterval,
+      interval: SubscriptionBillingInterval,
       expected: number
     ) => {
       expect(getDaysUntilNextStartDate(now, interval, startDate)).toBe(

@@ -2,9 +2,9 @@ import { SubscriptionBillingInterval } from './generated/graphql';
 
 export enum DurationInterval {
   Day = 'day',
-  week = 'week',
+  Week = 'week',
   Month = 'month',
-  year = 'year',
+  Year = 'year',
 }
 
 export enum StartDate {
@@ -40,5 +40,14 @@ export const schedules: Schedule[] = [
     startDate: StartDate.START,
     billingInterval: SubscriptionBillingInterval.Month,
     billingCount: 6,
+  },
+  {
+    name: '40 weeks, billed weekly, 99 Registration',
+    downpayment: 9900,
+    durationInterval: DurationInterval.Week,
+    durationCount: 40,
+    startDate: StartDate.START,
+    billingInterval: SubscriptionBillingInterval.Week,
+    billingCount: 1,
   },
 ];

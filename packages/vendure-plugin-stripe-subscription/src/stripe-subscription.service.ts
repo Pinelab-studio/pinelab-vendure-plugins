@@ -167,20 +167,19 @@ export class StripeSubscriptionService {
     }
     const downpayment = input?.downpayment || schedule.downpayment;
     const billingsPerDuration = schedule.durationCount / schedule.billingCount; // TODO Only works when the duration and billing intervals are the same... should be a function
-    console.log(billingsPerDuration);
-    console.log(JSON.stringify(schedule));
     const recurringPrice = Math.floor(
       variant.priceWithTax - downpayment / billingsPerDuration
     );
+    const totalProratedAmount = daysUntilStart * dayRate;
     return {
       downpayment: downpayment,
-      totalProratedAmount: daysUntilStart * dayRate,
+      totalProratedAmount: totalProratedAmount,
       proratedDays: daysUntilStart,
       dayRate,
       recurringPrice: recurringPrice,
       interval: schedule.billingInterval,
       intervalCount: schedule.billingCount,
-      amountDueNow: downpayment + daysUntilStart * dayRate,
+      amountDueNow: downpayment + totalProratedAmount,
     };
   }
 
