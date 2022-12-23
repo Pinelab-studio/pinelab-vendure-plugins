@@ -153,11 +153,6 @@ export class StripeSubscriptionService {
       schedule.billingInterval,
       schedule.startDate
     );
-    const dayRate = getDayRate(
-      variant.priceWithTax,
-      schedule.durationInterval!,
-      schedule.durationCount!
-    );
     if (
       schedule.billingInterval.valueOf() !== schedule.durationInterval.valueOf()
     ) {
@@ -165,8 +160,14 @@ export class StripeSubscriptionService {
         `Not implemented yet: billingInterval and durationInterval have to be equal`
       ); // FIXME
     }
-    const downpayment = input?.downpayment || schedule.downpayment;
     const billingsPerDuration = schedule.durationCount / schedule.billingCount; // TODO Only works when the duration and billing intervals are the same... should be a function
+    const totalSubscriptionPrice = variant.priceWithTax * billingsPerDuration;
+    const dayRate = getDayRate(
+      totalSubscriptionPrice,
+      schedule.durationInterval!,
+      schedule.durationCount!
+    );
+    const downpayment = input?.downpayment || schedule.downpayment;
     const recurringPrice = Math.floor(
       variant.priceWithTax - downpayment / billingsPerDuration
     );
