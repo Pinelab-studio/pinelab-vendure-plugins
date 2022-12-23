@@ -22,7 +22,7 @@ plugins: [StripeSubscriptionPlugin];
 3. Create a variant and select a `Subscription schedule` via the admin UI
 4. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler.
 5. Set your API key
-6. Set a redirect url. This is used to redirect your customer back to your storefront from the Stripe platform.
+6. Get the webhook secret from you Stripe dashboard and save it here.
 7. The `label` fields are optional, used for displaying on the hosted Stripe checkout.
 8. Save the payment method.
 
@@ -57,6 +57,7 @@ You can preview the pricing model of a subscription without adding it to cart wi
     recurringPrice
     interval
     intervalCount
+    amountDueNow
   }
 }
 ```
