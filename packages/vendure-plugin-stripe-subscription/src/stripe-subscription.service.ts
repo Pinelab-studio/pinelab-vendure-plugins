@@ -373,7 +373,7 @@ export class StripeSubscriptionService {
           customerId: stripeCustomerId,
           productId: product.id,
           currencyCode: order.currencyCode,
-          amount: pricing.recurringPrice,
+          amount: pricing.downpayment,
           interval: downpaymentInterval,
           intervalCount: downpaymentIntervalCount,
           paymentMethodId: paymentMethod,

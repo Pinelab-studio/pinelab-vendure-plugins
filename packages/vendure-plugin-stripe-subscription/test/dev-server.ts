@@ -18,8 +18,8 @@ import {
   setShipping,
 } from './helpers';
 
-import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
-// import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+// import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
 
 export let clientSecret = 'test';
 
