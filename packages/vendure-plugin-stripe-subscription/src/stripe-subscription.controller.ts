@@ -17,6 +17,7 @@ import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
 } from './generated/graphql';
+import { Request } from 'express';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
