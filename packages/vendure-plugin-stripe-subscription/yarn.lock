@@ -10826,10 +10826,10 @@ vary@^1, vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
-vendure-plugin-stripe-subscription@4.4.0-beta.12:
-  version "4.4.0-beta.12"
-  resolved "https://registry.yarnpkg.com/vendure-plugin-stripe-subscription/-/vendure-plugin-stripe-subscription-4.4.0-beta.12.tgz#d524b306e2ebac216c3dbc7fc6ed676568fa1937"
-  integrity sha512-PKt+fwrcMc7rI03fxlfNZNnx0MqzxtAGFa8QrMBAAn/FijNQOMEsAkuyKtnCVaGXKgPY0/4pWxyiHv8ETKknrQ==
+vendure-plugin-stripe-subscription@4.4.0-beta.13:
+  version "4.4.0-beta.13"
+  resolved "https://registry.yarnpkg.com/vendure-plugin-stripe-subscription/-/vendure-plugin-stripe-subscription-4.4.0-beta.13.tgz#6b1f29ca2cd427077e8f97dbc58507a5de57e4e0"
+  integrity sha512-Q+JsfPQ0HaaJNWm9D5Kewv0YQk79xRuqo3lmDN6/V57ztB3IwkVVbO1F16GgIhyxKEcnKbtIupIBidvtzLuEDw==
   dependencies:
     date-fns "^2.29.3"
     stripe "^11.1.0"
