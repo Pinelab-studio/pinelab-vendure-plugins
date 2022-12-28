@@ -124,11 +124,11 @@ export class StripeSubscriptionService {
   }
 
   /**
-   * Used for previewing the price of a subscription
+   * Used for previewing the prices including VAT of a subscription
    */
   async getSubscriptionPricing(
     ctx: RequestContext,
-    input?: StripeSubscriptionPricingInput,
+    input?: Partial<StripeSubscriptionPricingInput>,
     variant?: VariantWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing> {
     if (!variant && !input?.productVariantId) {
@@ -139,7 +139,7 @@ export class StripeSubscriptionService {
     if (!variant) {
       variant = (await this.variantService.findOne(
         ctx,
-        input!.productVariantId
+        input!.productVariantId!
       )) as VariantWithSubscriptionFields;
     }
     if (!variant) {
@@ -161,15 +161,18 @@ export class StripeSubscriptionService {
       ); // FIXME
     }
     const billingsPerDuration = schedule.durationCount / schedule.billingCount; // TODO Only works when the duration and billing intervals are the same... should be a function
-    const totalSubscriptionPrice = variant.priceWithTax * billingsPerDuration;
+    const totalSubscriptionPrice = variant.price * billingsPerDuration;
     const dayRate = getDayRate(
       totalSubscriptionPrice,
       schedule.durationInterval!,
       schedule.durationCount!
     );
-    const downpayment = input?.downpayment || schedule.downpayment;
+    const downpayment =
+      input?.downpayment || input?.downpayment === 0
+        ? input.downpayment
+        : schedule.downpayment;
     const recurringPrice = Math.floor(
-      variant.priceWithTax - downpayment / billingsPerDuration
+      variant.price - downpayment / billingsPerDuration
     );
     const totalProratedAmount = daysUntilStart * dayRate;
     return {
@@ -228,10 +231,11 @@ export class StripeSubscriptionService {
     });
   }
 
-  async handlePaymentCompleteEvent({
-    type,
-    data: { object: eventData },
-  }: IncomingCheckoutWebhook): Promise<void> {
+  async handlePaymentCompleteEvent(
+    { type, data: { object: eventData } }: IncomingCheckoutWebhook,
+    signature: string | undefined,
+    rawBodyPayload: Buffer
+  ): Promise<void> {
     if (type !== 'setup_intent.succeeded') {
       Logger.info(
         `Received incoming '${type}' webhook, not processing this event.`,
@@ -276,6 +280,7 @@ export class StripeSubscriptionService {
       ctx,
       order.id
     );
+    stripeClient.validateWebhookSignature(rawBodyPayload, signature);
     // FIXME push this to jobqueue for async creation
     await this.createSubscriptions(
       ctx,
@@ -481,7 +486,7 @@ export class StripeSubscriptionService {
     }
     return {
       paymentMethodCode: paymentMethod.code,
-      stripeClient: new StripeClient(apiKey, {
+      stripeClient: new StripeClient(webhookSecret, apiKey, {
         apiVersion: null as any, // Null uses accounts default version
       }),
       webhookSecret,

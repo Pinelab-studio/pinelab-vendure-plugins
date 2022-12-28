@@ -2,8 +2,16 @@ import gql from 'graphql-tag';
 import { SimpleGraphQLClient } from '@vendure/testing';
 
 export const ADD_ITEM_TO_ORDER = gql`
-  mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
-    addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
+  mutation AddItemToOrder(
+    $productVariantId: ID!
+    $quantity: Int!
+    $customFields: OrderLineCustomFieldsInput
+  ) {
+    addItemToOrder(
+      productVariantId: $productVariantId
+      quantity: $quantity
+      customFields: $customFields
+    ) {
       ... on Order {
         id
         code
@@ -12,6 +20,21 @@ export const ADD_ITEM_TO_ORDER = gql`
         errorCode
         message
       }
+    }
+  }
+`;
+
+export const GET_PRICING = gql`
+  query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
+    stripeSubscriptionPricing(input: $input) {
+      downpayment
+      totalProratedAmount
+      proratedDays
+      dayRate
+      recurringPrice
+      interval
+      intervalCount
+      amountDueNow
     }
   }
 `;

@@ -1,5 +1,14 @@
 import { Body, Controller, Get, Headers, Post, Req, Res } from '@nestjs/common';
-import { Allow, Ctx, Logger, Permission, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  ID,
+  Logger,
+  OrderService,
+  Permission,
+  RequestContext,
+  UserInputError,
+} from '@vendure/core';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { loggerCtx } from './constants';
@@ -13,7 +22,10 @@ export type RequestWithRawBody = Request & { rawBody: any };
 
 @Resolver()
 export class StripeSubscriptionResolver {
-  constructor(private stripeSubscriptionService: StripeSubscriptionService) {}
+  constructor(
+    private stripeSubscriptionService: StripeSubscriptionService,
+    private orderService: OrderService
+  ) {}
 
   @Mutation()
   @Allow(Permission.Owner)
@@ -26,11 +38,34 @@ export class StripeSubscriptionResolver {
   }
 
   @Query()
-  async getStripeSubscriptionPricing(
+  async stripeSubscriptionPricing(
     @Ctx() ctx: RequestContext,
     @Args('input') input: StripeSubscriptionPricingInput
   ): Promise<StripeSubscriptionPricing> {
     return this.stripeSubscriptionService.getSubscriptionPricing(ctx, input);
+  }
+
+  @Query()
+  async stripeSubscriptionPricingForOrderLine(
+    @Ctx() ctx: RequestContext,
+    @Args('orderLineId') orderLineId: ID
+  ): Promise<StripeSubscriptionPricing> {
+    const order = await this.orderService.findOneByOrderLineId(
+      ctx,
+      orderLineId,
+      ['lines.productVariant']
+    );
+    const orderLine = order?.lines.find((line) => line.id === orderLineId);
+    if (!orderLine) {
+      throw new UserInputError(
+        `No order with orderLineId '${orderLineId}' found`
+      );
+    }
+    return this.stripeSubscriptionService.getSubscriptionPricing(
+      ctx,
+      undefined,
+      orderLine.productVariant
+    );
   }
 }
 
@@ -45,9 +80,12 @@ export class StripeSubscriptionController {
     @Body() body: IncomingCheckoutWebhook
   ): Promise<void> {
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
-    // TODO verify signature
     try {
-      await this.stripeSubscriptionService.handlePaymentCompleteEvent(body);
+      await this.stripeSubscriptionService.handlePaymentCompleteEvent(
+        body,
+        signature,
+        request.rawBody
+      );
     } catch (error) {
       Logger.error(
         `Failed to process incoming webhook ${body.type} (${body.id}): ${error?.message}`,

@@ -9,8 +9,11 @@ import {
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import {
   customerCustomFields,
+  orderLineCustomFields,
   productVariantCustomFields,
 } from './subscription-custom-fields';
+import { createRawBodyMiddleWare } from '../../util/src/raw-body';
+import { SubscriptionOrderItemCalculation } from './subscription-order-item-calculation';
 
 export interface StripeSubscriptionPluginOptions {}
 
@@ -43,11 +46,18 @@ const _scalars = gql`
       }
       extend type Query {
         """
-        Preview the pricing model of a given subscription.
-        Start date and downpayment are optional: if not supplied, the subscriptions default will be used
+        Preview the pricing model of a given subscription. Prices are excluding tax!
+        Start date and downpayment are optional: if not supplied, the subscriptions default will be used.
         """
-        getStripeSubscriptionPricing(
+        stripeSubscriptionPricing(
           input: StripeSubscriptionPricingInput
+        ): StripeSubscriptionPricing
+        """
+        Preview the pricing model of a given subscription. Prices are excluding tax!
+        Start date and downpayment are optional: if not supplied, the subscriptions default will be used.
+        """
+        stripeSubscriptionPricingForOrderLine(
+          orderLineId: ID
         ): StripeSubscriptionPricing
       }
       extend type Mutation {
@@ -66,8 +76,14 @@ const _scalars = gql`
   ],
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);
+    config.apiOptions.middleware.push(
+      createRawBodyMiddleWare('/stripe-subscription*')
+    );
+    config.orderOptions.orderItemPriceCalculationStrategy =
+      new SubscriptionOrderItemCalculation();
     config.customFields.ProductVariant.push(...productVariantCustomFields);
     config.customFields.Customer.push(...customerCustomFields);
+    config.customFields.OrderLine.push(...orderLineCustomFields);
     return config;
   },
 })

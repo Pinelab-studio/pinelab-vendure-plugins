@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { CustomerWithSubscriptionFields } from './subscription-custom-fields';
+import { ID } from '@vendure/core';
 
 interface SubscriptionInput {
   customerId: string;
@@ -15,6 +16,14 @@ interface SubscriptionInput {
  * Wrapper around the Stripe client with specifics for this subscription plugin
  */
 export class StripeClient extends Stripe {
+  constructor(
+    private webhookSecret: string,
+    apiKey: string,
+    config: Stripe.StripeConfig
+  ) {
+    super(apiKey, config);
+  }
+
   async getOrCreateClient(
     customer: CustomerWithSubscriptionFields
   ): Promise<Stripe.Customer> {
@@ -36,6 +45,19 @@ export class StripeClient extends Stripe {
       email: customer.emailAddress,
       name: `${customer.firstName} ${customer.lastName}`,
     });
+  }
+
+  /**
+   * Throws an error if incoming webhook signature is invalid
+   */
+  validateWebhookSignature(
+    payload: Buffer,
+    signature: string | undefined
+  ): void {
+    if (!signature) {
+      throw Error(`Can not validate webhook signature without a signature!`);
+    }
+    this.webhooks.constructEvent(payload, signature, this.webhookSecret);
   }
 
   async createOffSessionSubscription({

@@ -11,10 +11,16 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import * as path from 'path';
 import * as fs from 'fs';
-import { stripeSubscriptionHandler } from '../src/stripe-subscription.handler';
-import { getDayRate, getDaysUntilNextStartDate } from '../src/util';
 import { DurationInterval, StartDate } from '../src/schedules';
-import { SubscriptionBillingInterval } from '../src';
+import {
+  getDayRate,
+  getDaysUntilNextStartDate,
+  stripeSubscriptionHandler,
+  SubscriptionBillingInterval,
+  StripeSubscriptionPlugin,
+} from '../src';
+import { CREATE_PAYMENT_METHOD, GET_PRICING } from './helpers';
+import { StripeSubscriptionPricing } from 'vendure-plugin-stripe-subscription';
 
 jest.setTimeout(20000);
 
@@ -40,7 +46,7 @@ describe('Order export plugin', function () {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [],
+      plugins: [StripeSubscriptionPlugin],
       paymentOptions: {
         paymentMethodHandlers: [stripeSubscriptionHandler],
       },
@@ -56,13 +62,35 @@ describe('Order export plugin', function () {
           },
         ],
       },
-      productsCsvPath: '../test/src/products-import.csv',
+      productsCsvPath: `${__dirname}/subscriptions.csv`,
     });
     serverStarted = true;
   }, 60000);
 
   it('Should start successfully', async () => {
     expect(serverStarted).toBe(true);
+  });
+
+  it('Creates Stripe subscription method', async () => {
+    await adminClient.asSuperAdmin();
+    await adminClient.query(CREATE_PAYMENT_METHOD, {
+      input: {
+        code: 'stripe-subscription-method',
+        name: 'Stripe test payment',
+        description: 'This is a Stripe payment method',
+        enabled: true,
+        handler: {
+          code: 'stripe-subscription',
+          arguments: [
+            {
+              name: 'webhookSecret',
+              value: 'testsecret',
+            },
+            { name: 'apiKey', value: 'test-api-key' },
+          ],
+        },
+      },
+    });
   });
 
   test.each([
@@ -126,9 +154,46 @@ describe('Order export plugin', function () {
     }
   );
 
+  it('Should calculate default pricing', async () => {
+    // Uses the default downpayment of $199
+    const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
+      input: {
+        productVariantId: 2,
+      },
+    });
+    const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
+    expect(pricing.downpayment).toBe(19900);
+    expect(pricing.recurringPrice).toBe(5683);
+    expect(pricing.interval).toBe('month');
+    expect(pricing.intervalCount).toBe(1);
+    expect(pricing.dayRate).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmount + pricing.downpayment
+    );
+  });
+
+  it('Should calculate pricing with custom downpayment', async () => {
+    const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
+      input: {
+        productVariantId: 2,
+        downpayment: 0,
+      },
+    });
+    const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
+    expect(pricing.downpayment).toBe(0);
+    expect(pricing.recurringPrice).toBe(9000);
+    expect(pricing.interval).toBe('month');
+    expect(pricing.intervalCount).toBe(1);
+    expect(pricing.dayRate).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmount + pricing.downpayment
+    );
+  });
+
   // TODO
   // Create paymentmethod
-  // Prepare order
-  // Create paymentlink with one time payment
-  // Create paymentlink with monthly payments, downpayment and prorated amount
+  // Create order without customFields
+  // Create paymentlink
+  // Mock webhook callback
+  // Create order with customfields. OrderLine amount should be different
 });

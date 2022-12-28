@@ -24,6 +24,13 @@ export interface CustomerWithSubscriptionFields extends Customer {
   };
 }
 
+export interface OrderLineWithSubscriptionFields extends Customer {
+  customFields: {
+    downpayment?: number;
+    startDate?: Date;
+  };
+}
+
 /**
  * An order that can have subscriptions in it
  */
@@ -61,6 +68,35 @@ export const customerCustomFields: CustomFieldConfig[] = [
     ],
     type: 'string',
     public: false,
+    nullable: true,
+    ui: { tab: 'subscription' },
+  },
+];
+
+export const orderLineCustomFields: CustomFieldConfig[] = [
+  {
+    name: 'downpayment',
+    label: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Downpayment ex Tax',
+      },
+    ],
+    type: 'int',
+    public: true,
+    nullable: true,
+    ui: { tab: 'subscription' },
+  },
+  {
+    name: 'startDate',
+    label: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Startdate',
+      },
+    ],
+    type: 'datetime',
+    public: true,
     nullable: true,
     ui: { tab: 'subscription' },
   },

@@ -8,6 +8,7 @@ import {
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
+  OrderService,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
@@ -71,9 +72,9 @@ export let clientSecret = 'test';
         arguments: [
           {
             name: 'webhookSecret',
-            value: `124514`,
+            value: process.env.STRIPE_WEBHOOK_SECRET,
           },
-          { name: 'apiKey', value: process.env.STRIPE_APIKEY! },
+          { name: 'apiKey', value: process.env.STRIPE_APIKEY },
         ],
       },
     },
@@ -81,9 +82,15 @@ export let clientSecret = 'test';
   console.log(`Created paymentMethod stripe-subscription`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  const in3Days = new Date();
+  in3Days.setDate(in3Days.getDate() + 3);
   const { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '2',
     quantity: 1,
+    customFields: {
+      downpayment: 19900,
+      startDate: in3Days,
+    },
   });
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);

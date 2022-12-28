@@ -4,15 +4,14 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-stripe-subscription)
 
-This plugin allows you to sell subscription based services or memberships through Vendure.
-
-!! This plugin currently only supports checkout of 1 single "Paid-in-full" subscription per order.
+This plugin allows you to sell subscription based services or memberships through Vendure. This plugin was made in
+collaboration with the great people at [isoutfitters.com](https://isoutfitters.com/)
 
 ## Getting started
 
 1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook` (
    Use something liek localtunnel or ngrok for local development)
-2. Select all `SetupIntent` events for the webhook.
+2. Select `setup_intent.succeeded` as event for the webhook.
 3. Add the plugin to your `vendure-config.ts` plugins:
 
 ```ts
@@ -23,7 +22,8 @@ plugins: [StripeSubscriptionPlugin];
 3. Create a variant and select a `Subscription schedule` via the admin UI
 4. The price of the variant should be the **price per billing interval**. I.E. for a subscription of $50 per 1 month,
    the variant price should be $50. For a subscription of $300 per 6 months, the variant price should be set to $300.
-5. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. **Your payment method MUST have 'stripe-subscription' in the code**
+5. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. **
+   Your payment method MUST have 'stripe-subscription' in the code**
 6. Set your API key
 7. Get the webhook secret from you Stripe dashboard and save it here.
 8. The `label` fields are optional, used for displaying on the hosted Stripe checkout.
@@ -66,6 +66,15 @@ You can preview the pricing model of a subscription without adding it to cart wi
 ```
 
 `Downpayment` and `startDate` are optional parameters. Without them, the subscriptions default will be used.
+
+### OrderItemCalculationStrategy
+
+This plugin sets `SubscriptionOrderItemCalculation` as `OrderItemCalculationStrategy`, which calculates the amount due
+for a subscription, if the variant is a subscription. For non-subscription variants, the normal default orderline
+calculation is used.
+
+**Only 1 strategy can be used per Vendure instance, so any other OrderItemCalculationStrategies are overwritten by this
+plugin.**
 
 ### Contributing and dev server
 
