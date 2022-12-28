@@ -50,4 +50,22 @@ export const schedules: Schedule[] = [
     billingInterval: SubscriptionBillingInterval.Week,
     billingCount: 1,
   },
+  {
+    name: '12 months, billed monthly, 199 downpayment',
+    downpayment: 19900,
+    durationInterval: DurationInterval.Month,
+    durationCount: 12,
+    startDate: StartDate.START,
+    billingInterval: SubscriptionBillingInterval.Month,
+    billingCount: 1,
+  },
+  {
+    name: '12 months, paid in full, 199 downpayment',
+    downpayment: 19900,
+    durationInterval: DurationInterval.Month,
+    durationCount: 12,
+    startDate: StartDate.START,
+    billingInterval: SubscriptionBillingInterval.Month,
+    billingCount: 12,
+  },
 ];
