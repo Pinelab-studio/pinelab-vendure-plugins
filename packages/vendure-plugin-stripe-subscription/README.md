@@ -23,7 +23,7 @@ plugins: [StripeSubscriptionPlugin];
 3. Create a variant and select a `Subscription schedule` via the admin UI
 4. The price of the variant should be the **price per billing interval**. I.E. for a subscription of $50 per 1 month,
    the variant price should be $50. For a subscription of $300 per 6 months, the variant price should be set to $300.
-5. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler.
+5. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. **Your payment method MUST have 'stripe-subscription' in the code**
 6. Set your API key
 7. Get the webhook secret from you Stripe dashboard and save it here.
 8. The `label` fields are optional, used for displaying on the hosted Stripe checkout.

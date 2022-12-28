@@ -25,7 +25,6 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { StripeSubscriptionPluginOptions } from './stripe-subscription.plugin';
 import { IncomingCheckoutWebhook } from './stripe.types';
 import { HistoryEntryType } from '@vendure/common/lib/generated-types';
-import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import {
   OrderWithSubscriptions,
   VariantWithSubscriptionFields,
@@ -38,6 +37,7 @@ import {
   StripeSubscriptionPricingInput,
 } from './generated/graphql';
 import { Schedule, schedules } from './schedules';
+import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -200,7 +200,7 @@ export class StripeSubscriptionService {
     ctx: RequestContext,
     order: OrderWithSubscriptions
   ): Promise<Stripe.SetupIntent> {
-    const { stripeClient } = await this.getStripeHandler(ctx);
+    const { stripeClient } = await this.getStripeHandler(ctx, order.id);
     const stripeCustomer = await stripeClient.getOrCreateClient(order.customer);
     this.customerService
       .update(ctx, {
@@ -273,7 +273,8 @@ export class StripeSubscriptionService {
     }
     // Create subscriptions for customer
     const { stripeClient, paymentMethodCode } = await this.getStripeHandler(
-      ctx
+      ctx,
+      order.id
     );
     // FIXME push this to jobqueue for async creation
     await this.createSubscriptions(
@@ -440,15 +441,27 @@ export class StripeSubscriptionService {
    * Get the paymentMethod with the stripe handler, should be only 1!
    */
   private async getStripeHandler(
-    ctx: RequestContext
+    ctx: RequestContext,
+    orderId: ID
   ): Promise<StripeHandlerConfig> {
-    const paymentMethods = await this.paymentMethodService.findAll(ctx);
-    const paymentMethod = paymentMethods.items.find(
-      (pm) => pm.handler.code === stripeSubscriptionHandler.code
+    const paymentMethodQuotes =
+      await this.orderService.getEligiblePaymentMethods(ctx, orderId);
+    const paymentMethodQuote = paymentMethodQuotes.find(
+      (pm) => pm.code.indexOf('stripe-subscription') > -1
     );
-    if (!paymentMethod) {
-      throw new UserInputError(
-        `No paymentMethod found with handler ${stripeSubscriptionHandler.code}`
+    if (!paymentMethodQuote) {
+      throw Error(`No payment method found with code 'stripe-subscription'`);
+    }
+    const paymentMethod = await this.paymentMethodService.findOne(
+      ctx,
+      paymentMethodQuote.id
+    );
+    if (
+      !paymentMethod ||
+      paymentMethod.handler.code !== stripeSubscriptionHandler.code
+    ) {
+      throw Error(
+        `Payment method '${paymentMethodQuote.code}' doesn't have handler '${stripeSubscriptionHandler.code}' configured.`
       );
     }
     const apiKey = paymentMethod.handler.args.find(
@@ -459,11 +472,11 @@ export class StripeSubscriptionService {
     )?.value;
     if (!apiKey || !webhookSecret) {
       Logger.warn(
-        `Noo apiKey or redirect is configured for ${paymentMethod.code}`,
+        `No api key or webhook secret is configured for ${paymentMethod.code}`,
         loggerCtx
       );
       throw Error(
-        `Payment method ${paymentMethod.code} has no apiKey or redirectUrl configured`
+        `Payment method ${paymentMethod.code} has no api key or webhook secret configured`
       );
     }
     return {
