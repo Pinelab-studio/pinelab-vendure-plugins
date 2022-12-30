@@ -6,7 +6,7 @@ import {
   OrderLine,
   ProductVariant,
 } from '@vendure/core';
-import { schedules } from './schedules';
+import { schedules } from './schedule.service';
 
 /**
  * Custom fields for managing subscriptions.
@@ -49,7 +49,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
       },
     ],
     type: 'string',
-    options: schedules.map((s) => ({ value: s.name })),
+    options: schedules.map((s) => ({ value: s.name! })),
     public: true,
     nullable: true,
     ui: { tab: 'subscription' },

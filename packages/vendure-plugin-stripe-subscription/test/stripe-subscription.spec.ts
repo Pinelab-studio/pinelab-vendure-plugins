@@ -9,7 +9,6 @@ import { initialData } from '../../test/src/initial-data';
 import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { DurationInterval, StartDate } from '../src/schedules';
 import {
   getDayRate,
   getDaysUntilNextStartDate,
@@ -30,6 +29,7 @@ import {
 // @ts-ignore
 import nock from 'nock';
 import { getOrder } from '../../test/src/admin-utils';
+import { DurationInterval, StartDate } from '../src/schedule.entity';
 
 jest.setTimeout(20000);
 
@@ -226,13 +226,33 @@ describe('Order export plugin', function () {
 
   it('Should create subscriptions on webhook succeed', async () => {
     // Mock API
+    let subscriptionBody: any;
+    let downpaymentBody: any;
     nock('https://api.stripe.com')
       .get(/customers.*/)
       .reply(200, { data: [{ id: 'customer-test-id' }] });
     nock('https://api.stripe.com')
-      .post(/setup_intents.*/)
+      .post(/products.*/)
       .reply(200, {
-        client_secret: 'mock-secret-1234',
+        id: 'test-product',
+      });
+    nock('https://api.stripe.com')
+      .post(/subscriptions.*/, (body) => {
+        subscriptionBody = body;
+        return true;
+      })
+      .reply(200, {
+        id: 'mock-recurring-sub',
+        status: 'active',
+      });
+    nock('https://api.stripe.com')
+      .post(/subscriptions.*/, (body) => {
+        downpaymentBody = body;
+        return true;
+      })
+      .reply(200, {
+        id: 'mock-downpayment-sub',
+        status: 'active',
       });
     let adminOrder = await getOrder(adminClient as any, order!.id as string);
     await adminClient.fetch(
@@ -258,7 +278,43 @@ describe('Order export plugin', function () {
     await new Promise((resolve) => setTimeout(resolve, 500));
     adminOrder = await getOrder(adminClient as any, order!.id as string);
     expect(adminOrder?.state).toBe('PaymentSettled');
+    // Recurring subscription
+    expect(subscriptionBody?.customer).toBe('mock');
+    expect(subscriptionBody?.billing_cycle_anchor).toBeDefined();
+    expect(subscriptionBody?.proration_behavior).toBe('create_prorations');
+    expect(subscriptionBody?.['items[0][price_data][unit_amount]']).toBe(
+      '5683'
+    );
+    expect(
+      subscriptionBody?.['items[0][price_data][recurring][interval]']
+    ).toBe('month');
+    expect(
+      subscriptionBody?.['items[0][price_data][recurring][interval_count]']
+    ).toBe('1');
+    // Downpayment subscription
+    expect(downpaymentBody?.customer).toBe('mock');
+    expect(downpaymentBody?.billing_cycle_anchor).toBeDefined();
+    expect(downpaymentBody?.proration_behavior).toBe('none');
+    expect(downpaymentBody?.['items[0][price_data][unit_amount]']).toBe(
+      '19900'
+    );
+    expect(downpaymentBody?.['items[0][price_data][recurring][interval]']).toBe(
+      'month'
+    );
+    expect(
+      downpaymentBody?.['items[0][price_data][recurring][interval_count]']
+    ).toBe('6');
+  });
 
-    // TODO check outgoing subscription requests
+  it('Can create Schedules', async () => {
+    expect(true).toBe(false);
+  });
+
+  it('Can update Schedules', async () => {
+    expect(true).toBe(false);
+  });
+
+  it('Can delete Schedules', async () => {
+    expect(true).toBe(false);
   });
 });

@@ -7,7 +7,7 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { SubscriptionBillingInterval } from './generated/graphql';
-import { DurationInterval, StartDate } from './schedules';
+import { DurationInterval, StartDate } from './schedule.entity';
 
 /**
  * Calculate day rate based on the total price and duration of the subscription

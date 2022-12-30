@@ -14,6 +14,8 @@ import {
 } from './subscription-custom-fields';
 import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 import { SubscriptionOrderItemCalculation } from './subscription-order-item-calculation';
+import { Schedule } from './schedule.entity';
+import { ScheduleService } from './schedule.service';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -28,6 +30,7 @@ const _scalars = gql`
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  entities: [Schedule],
   shopApiExtensions: {
     schema: gql`
       enum SubscriptionBillingInterval {
@@ -75,6 +78,7 @@ const _scalars = gql`
   controllers: [StripeSubscriptionController],
   providers: [
     StripeSubscriptionService,
+    ScheduleService,
     {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => StripeSubscriptionPlugin.options,

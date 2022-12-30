@@ -15,7 +15,6 @@ import {
   OrderService,
   OrderStateTransitionError,
   PaymentMethodService,
-  ProductVariant,
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
@@ -41,8 +40,8 @@ import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
 } from './generated/graphql';
-import { Schedule, schedules } from './schedules';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
+import { ScheduleService } from './schedule.service';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -74,7 +73,8 @@ export class StripeSubscriptionService {
     private options: StripeSubscriptionPluginOptions,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
-    private customerService: CustomerService
+    private customerService: CustomerService,
+    private scheduleService: ScheduleService
   ) {}
 
   private jobQueue!: JobQueue<JobData>;
@@ -158,7 +158,7 @@ export class StripeSubscriptionService {
         `No variant found with id ${input!.productVariantId}`
       );
     }
-    const schedule = await this.getSchedule(variant);
+    const schedule = await this.scheduleService.getSchedule(variant);
     if (
       schedule.billingInterval.valueOf() !== schedule.durationInterval.valueOf()
     ) {
@@ -202,18 +202,6 @@ export class StripeSubscriptionService {
       amountDueNow: downpayment + totalProratedAmount,
       subscriptionStartDate,
     };
-  }
-
-  async getSchedule(variant: VariantWithSubscriptionFields): Promise<Schedule> {
-    const schedule = schedules.find(
-      (s) => s.name === variant!.customFields.subscriptionSchedule
-    );
-    if (!schedule) {
-      throw Error(
-        `No schedule found with name "${variant.customFields.subscriptionSchedule}"`
-      );
-    }
-    return schedule;
   }
 
   private async createSetupIntent(
@@ -263,13 +251,15 @@ export class StripeSubscriptionService {
     const orderCode = eventData.metadata.orderCode;
     const channelToken = eventData.metadata.channelToken;
     if (!orderCode) {
-      throw Error(
-        `Incoming webhook is missing metadata.orderCode, cannot process this event`
+      return Logger.warn(
+        `Incoming webhook is missing metadata.orderCode, cannot process this event`,
+        loggerCtx
       );
     }
     if (!channelToken) {
-      throw Error(
-        `Incoming webhook is missing metadata.channelToken, cannot process this event`
+      return Logger.warn(
+        `Incoming webhook is missing metadata.channelToken, cannot process this event`,
+        loggerCtx
       );
     }
     const ctx = await this.createContext(channelToken);
@@ -301,7 +291,7 @@ export class StripeSubscriptionService {
         stripePaymentMethodId: eventData.payment_method,
         stripeCustomerId: eventData.customer,
       },
-      { retries: 1 }
+      { retries: 0 }
     ); // Only 1 try, because subscription creation isn't transaction-proof
     // Status is complete, we can settle payment
     if (order.state !== 'ArrangingPayment') {
@@ -335,7 +325,8 @@ export class StripeSubscriptionService {
       );
     }
     Logger.info(
-      `Successfully settled payment for order ${order.code} for channel ${channelToken}`
+      `Successfully settled payment for order ${order.code} for channel ${channelToken}`,
+      loggerCtx
     );
   }
 
@@ -389,20 +380,34 @@ export class StripeSubscriptionService {
           proration: true,
           description: orderLine.productVariant.name,
         });
-        Logger.info(
-          `Created recurring subscription for ${order.code}`,
-          loggerCtx
-        );
-        await this.logOrderHistory(
-          ctx,
-          order.id,
-          `Created subscription ${recurring.id}: ${printMoney(
-            pricing.recurringPrice
-          )} every ${pricing.intervalCount} ${pricing.interval}(s)`
-        );
+        if (recurring.status !== 'active') {
+          Logger.error(
+            `Subscription for order ${order.code} was created, but it is in status '${recurring.status}'. Additional steps are needed, check your Stripe dashboard`,
+            loggerCtx
+          );
+          await this.logOrderHistory(
+            ctx,
+            order.id,
+            `Failed to create active subscription ${recurring.id}! It is still in status '${recurring.status}'. Check your Stripe dashboard.`
+          );
+        } else {
+          Logger.info(
+            `Created recurring subscription for ${order.code}`,
+            loggerCtx
+          );
+          await this.logOrderHistory(
+            ctx,
+            order.id,
+            `Created subscription ${recurring.id}: ${printMoney(
+              pricing.recurringPrice
+            )} every ${pricing.intervalCount} ${pricing.interval}(s)`
+          );
+        }
         if (pricing.downpayment) {
           // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
-          const schedule = await this.getSchedule(orderLine.productVariant);
+          const schedule = await this.scheduleService.getSchedule(
+            orderLine.productVariant
+          );
           const downpaymentInterval = schedule.durationInterval!;
           const downpaymentIntervalCount = schedule.durationCount!;
           const downpayment = await stripeClient.createOffSessionSubscription({
@@ -417,17 +422,29 @@ export class StripeSubscriptionService {
             proration: false, // no proration for downpayments
             description: `Downpayment`,
           });
-          Logger.info(
-            `Created downpayment subscription for ${order.code}`,
-            loggerCtx
-          );
-          await this.logOrderHistory(
-            ctx,
-            order.id,
-            `Created downpayment subscription ${downpayment.id}: ${printMoney(
-              pricing.downpayment
-            )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s)`
-          );
+          if (downpayment.status !== 'active') {
+            Logger.error(
+              `Subscription for order ${order.code} was created, but it is in status '${downpayment.status}'. Additional steps are needed, check your Stripe dashboard`,
+              loggerCtx
+            );
+            await this.logOrderHistory(
+              ctx,
+              order.id,
+              `Failed to create active subscription ${downpayment.id}! It is still in status '${downpayment.status}'. Check your Stripe dashboard. `
+            );
+          } else {
+            Logger.info(
+              `Created downpayment subscription for ${order.code}`,
+              loggerCtx
+            );
+            await this.logOrderHistory(
+              ctx,
+              order.id,
+              `Created downpayment subscription ${downpayment.id}: ${printMoney(
+                pricing.downpayment
+              )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s)`
+            );
+          }
         }
       } catch (e: unknown) {
         await this.logOrderHistory(

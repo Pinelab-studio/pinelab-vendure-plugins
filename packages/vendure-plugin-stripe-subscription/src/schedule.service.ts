@@ -1,28 +1,9 @@
 import { SubscriptionBillingInterval } from './generated/graphql';
+import { DurationInterval, Schedule, StartDate } from './schedule.entity';
+import { Injectable } from '@nestjs/common';
+import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 
-export enum DurationInterval {
-  Day = 'day',
-  Week = 'week',
-  Month = 'month',
-  Year = 'year',
-}
-
-export enum StartDate {
-  START = 'Start of the billing interval',
-  END = 'End of the billing interval',
-}
-
-export interface Schedule {
-  name: string;
-  downpayment: number;
-  durationInterval: DurationInterval;
-  durationCount: number;
-  startDate: StartDate;
-  billingInterval: SubscriptionBillingInterval;
-  billingCount: number;
-}
-
-export const schedules: Schedule[] = [
+export const schedules: Partial<Schedule>[] = [
   {
     name: '6 months, billed monthly, 199 downpayment',
     downpayment: 19900,
@@ -69,3 +50,18 @@ export const schedules: Schedule[] = [
     billingCount: 12,
   },
 ];
+
+@Injectable()
+export class ScheduleService {
+  async getSchedule(variant: VariantWithSubscriptionFields): Promise<Schedule> {
+    const schedule = schedules.find(
+      (s) => s.name === variant!.customFields.subscriptionSchedule
+    );
+    if (!schedule) {
+      throw Error(
+        `No schedule found with name "${variant.customFields.subscriptionSchedule}"`
+      );
+    }
+    return schedule as Schedule;
+  }
+}

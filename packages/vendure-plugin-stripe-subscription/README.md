@@ -41,6 +41,21 @@ plugins: [StripeSubscriptionPlugin];
 It's important to inform your customers what you will be billing in the
 future: https://stripe.com/docs/payments/setup-intents#mandates
 
+## Caveats
+
+1. This plugin creates subscriptions off-session (in the background). Because of this, you can not use prorations in the
+   EU area. This is due to the fact that prorations are one-time payments, and one time payment require additional SCA
+   confirmation.
+
+2. This plugin overrides any set OrderItemCalculationStrategies. The strategy in this plugin is used for calculating the
+   amount due for a subscription, if the variant is a subscription. For non-subscription variants, the normal default
+   orderline calculation is used. Only 1 strategy can be used per Vendure instance, so any other
+   OrderItemCalculationStrategies are overwritten by this plugin.
+
+## Advanced features
+
+// TODO prorations, downpayment, startdates, enddates
+
 ### Preview pricing calculations
 
 You can preview the pricing model of a subscription without adding it to cart with the following query on the shop-api:
@@ -66,15 +81,6 @@ You can preview the pricing model of a subscription without adding it to cart wi
 ```
 
 `Downpayment` and `startDate` are optional parameters. Without them, the subscriptions default will be used.
-
-### OrderItemCalculationStrategy
-
-This plugin sets `SubscriptionOrderItemCalculation` as `OrderItemCalculationStrategy`, which calculates the amount due
-for a subscription, if the variant is a subscription. For non-subscription variants, the normal default orderline
-calculation is used.
-
-**Only 1 strategy can be used per Vendure instance, so any other OrderItemCalculationStrategies are overwritten by this
-plugin.**
 
 ### Contributing and dev server
 
