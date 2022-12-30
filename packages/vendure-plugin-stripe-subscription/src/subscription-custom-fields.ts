@@ -79,7 +79,7 @@ export const orderLineCustomFields: CustomFieldConfig[] = [
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Downpayment ex Tax',
+        value: 'Downpayment',
       },
     ],
     type: 'int',
@@ -92,7 +92,7 @@ export const orderLineCustomFields: CustomFieldConfig[] = [
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Startdate',
+        value: 'Start dDate',
       },
     ],
     type: 'datetime',

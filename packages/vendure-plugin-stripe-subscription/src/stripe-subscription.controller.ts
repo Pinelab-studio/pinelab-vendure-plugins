@@ -2,10 +2,12 @@ import { Body, Controller, Get, Headers, Post, Req, Res } from '@nestjs/common';
 import {
   Allow,
   Ctx,
+  EntityHydrator,
   ID,
   Logger,
   OrderService,
   Permission,
+  ProductService,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
@@ -16,16 +18,21 @@ import { IncomingStripeWebhook } from './stripe.types';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
+  StripeSubscriptionSchedule,
 } from './generated/graphql';
 import { Request } from 'express';
+import { ScheduleService } from './schedule.service';
+import { Schedule } from './schedule.entity';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
 @Resolver()
-export class StripeSubscriptionResolver {
+export class ShopResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private productService: ProductService,
+    private hydrator: EntityHydrator
   ) {}
 
   @Mutation()
@@ -68,6 +75,44 @@ export class StripeSubscriptionResolver {
       orderLine.productVariant
     );
   }
+
+  @Query()
+  async stripeSubscriptionPricingForProduct(
+    @Ctx() ctx: RequestContext,
+    @Args('productId') productId: ID
+  ): Promise<StripeSubscriptionPricing[]> {
+    const product = await this.productService.findOne(ctx, productId);
+    if (!product) {
+      throw new UserInputError(`No product with id '${productId}' found`);
+    }
+    await this.hydrator.hydrate(ctx, product, {
+      relations: ['variants'],
+      applyProductVariantPrices: true,
+    });
+    console.log(product.variants[0].price);
+    return await Promise.all(
+      product.variants.map((variant) =>
+        this.stripeSubscriptionService.getSubscriptionPricing(
+          ctx,
+          undefined,
+          variant
+        )
+      )
+    );
+  }
+}
+
+@Resolver()
+export class AdminResolver {
+  constructor(private scheduleService: ScheduleService) {}
+
+  @Allow(Permission.ReadSettings)
+  @Query()
+  async stripeSubscriptionSchedules(
+    @Ctx() ctx: RequestContext
+  ): Promise<Schedule[]> {
+    return this.scheduleService.getSchedules(ctx);
+  }
 }
 
 @Controller('stripe-subscriptions')
@@ -89,9 +134,11 @@ export class StripeSubscriptionController {
       );
     } catch (error) {
       Logger.error(
-        `Failed to process incoming webhook ${body.type} (${body.id}): ${error?.message}`,
+        `Failed to process incoming webhook ${body.type} (${body.id}): ${
+          (error as Error)?.message
+        }`,
         loggerCtx,
-        error
+        (error as Error)?.stack
       );
       throw error;
     }

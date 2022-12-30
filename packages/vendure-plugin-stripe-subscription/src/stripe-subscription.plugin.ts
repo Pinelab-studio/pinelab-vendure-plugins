@@ -4,7 +4,7 @@ import { gql } from 'graphql-tag';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import {
   StripeSubscriptionController,
-  StripeSubscriptionResolver,
+  ShopResolver,
 } from './stripe-subscription.controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import {
@@ -16,6 +16,9 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 import { SubscriptionOrderItemCalculation } from './subscription-order-item-calculation';
 import { Schedule } from './schedule.entity';
 import { ScheduleService } from './schedule.service';
+import path from 'path';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { adminSchemaExtensions, shopSchemaExtensions } from './graphql-schemas';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -24,56 +27,15 @@ export interface StripeSubscriptionPluginOptions {
   disableWebhookSignatureChecking: boolean;
 }
 
-const _scalars = gql`
-  scalar DateTime
-`;
-
 @VendurePlugin({
   imports: [PluginCommonModule],
   entities: [Schedule],
   shopApiExtensions: {
-    schema: gql`
-      enum SubscriptionBillingInterval {
-        week
-        month
-      }
-      type StripeSubscriptionPricing {
-        downpayment: Int!
-        totalProratedAmount: Int!
-        proratedDays: Int!
-        dayRate: Int!
-        recurringPrice: Int!
-        interval: SubscriptionBillingInterval!
-        intervalCount: Int!
-        amountDueNow: Int!
-        subscriptionStartDate: DateTime!
-      }
-      input StripeSubscriptionPricingInput {
-        productVariantId: ID!
-        startDate: DateTime
-        downpayment: Int
-      }
-      extend type Query {
-        """
-        Preview the pricing model of a given subscription. Prices are excluding tax!
-        Start date and downpayment are optional: if not supplied, the subscriptions default will be used.
-        """
-        stripeSubscriptionPricing(
-          input: StripeSubscriptionPricingInput
-        ): StripeSubscriptionPricing
-        """
-        Preview the pricing model of a given subscription. Prices are excluding tax!
-        Start date and downpayment are optional: if not supplied, the subscriptions default will be used.
-        """
-        stripeSubscriptionPricingForOrderLine(
-          orderLineId: ID
-        ): StripeSubscriptionPricing
-      }
-      extend type Mutation {
-        createStripeSubscriptionIntent: String!
-      }
-    `,
-    resolvers: [StripeSubscriptionResolver],
+    schema: shopSchemaExtensions,
+    resolvers: [ShopResolver],
+  },
+  adminApiExtensions: {
+    schema: adminSchemaExtensions,
   },
   controllers: [StripeSubscriptionController],
   providers: [
@@ -104,4 +66,21 @@ export class StripeSubscriptionPlugin {
     this.options = options;
     return StripeSubscriptionPlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    ngModules: [
+      {
+        type: 'lazy',
+        route: 'subscription-schedules',
+        ngModuleFileName: 'schedules.module.ts',
+        ngModuleName: 'SchedulesModule',
+      },
+      {
+        type: 'shared',
+        ngModuleFileName: 'schedules-nav.module.ts',
+        ngModuleName: 'SchedulesNavModule',
+      },
+    ],
+  };
 }

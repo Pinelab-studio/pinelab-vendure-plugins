@@ -12,22 +12,34 @@ collaboration with the great people at [isoutfitters.com](https://isoutfitters.c
 1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook` (
    Use something liek localtunnel or ngrok for local development)
 2. Select `setup_intent.succeeded` as event for the webhook.
-3. Add the plugin to your `vendure-config.ts` plugins:
+3. Add the plugin to your `vendure-config.ts` plugins and admin UI compilation:
 
 ```ts
-plugins: [StripeSubscriptionPlugin];
+import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+
+plugins: [
+  StripeSubscriptionPlugin,
+  AdminUiPlugin.init({
+    port: 3002,
+    route: 'admin',
+    app: compileUiExtensions({
+      outputPath: path.join(__dirname, '__admin-ui'),
+      extensions: [StripeSubscriptionPlugin.ui],
+    }),
+  }),
+];
 ```
 
-2. Start the Vendure server and login to the admin UI
-3. Create a variant and select a `Subscription schedule` via the admin UI
-4. The price of the variant should be the **price per billing interval**. I.E. for a subscription of $50 per 1 month,
+5. Start the Vendure server and login to the admin UI
+6. Create a variant and select a `Subscription schedule` via the admin UI
+7. The price of the variant should be the **price per billing interval**. I.E. for a subscription of $50 per 1 month,
    the variant price should be $50. For a subscription of $300 per 6 months, the variant price should be set to $300.
-5. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. **
+8. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. **
    Your payment method MUST have 'stripe-subscription' in the code**
-6. Set your API key
-7. Get the webhook secret from you Stripe dashboard and save it here.
-8. The `label` fields are optional, used for displaying on the hosted Stripe checkout.
-9. Save the payment method.
+9. Set your API key
+10. Get the webhook secret from you Stripe dashboard and save it here.
+11. The `label` fields are optional, used for displaying on the hosted Stripe checkout.
+12. Save the payment method.
 
 ## Storefront usage
 

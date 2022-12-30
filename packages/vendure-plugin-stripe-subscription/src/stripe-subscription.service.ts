@@ -184,7 +184,7 @@ export class StripeSubscriptionService {
     const subscriptionStartDate = getNextStartDate(
       now,
       schedule.billingInterval,
-      schedule.startDate
+      schedule.startMoment
     );
     const daysUntilStart = getDaysUntilNextStartDate(
       input?.startDate || now,
@@ -192,6 +192,7 @@ export class StripeSubscriptionService {
     );
     const totalProratedAmount = daysUntilStart * dayRate;
     return {
+      variantId: variant.id as string,
       downpayment: downpayment,
       totalProratedAmount: totalProratedAmount,
       proratedDays: daysUntilStart,

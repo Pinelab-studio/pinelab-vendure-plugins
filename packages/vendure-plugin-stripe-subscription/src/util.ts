@@ -6,8 +6,11 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { SubscriptionBillingInterval } from './generated/graphql';
-import { DurationInterval, StartDate } from './schedule.entity';
+import {
+  SubscriptionBillingInterval,
+  SubscriptionDurationInterval,
+  SubscriptionStartMoment,
+} from './generated/graphql';
 
 /**
  * Calculate day rate based on the total price and duration of the subscription
@@ -17,15 +20,15 @@ import { DurationInterval, StartDate } from './schedule.entity';
  */
 export function getDayRate(
   totalPrice: number,
-  durationInterval: DurationInterval,
+  durationInterval: SubscriptionDurationInterval,
   durationCount: number
 ): number {
   let intervalsPerYear = 1; // Default is 1 year
-  if (durationInterval === DurationInterval.Month) {
+  if (durationInterval === SubscriptionDurationInterval.Month) {
     intervalsPerYear = 12;
-  } else if (durationInterval === DurationInterval.Week) {
+  } else if (durationInterval === SubscriptionDurationInterval.Week) {
     intervalsPerYear = 52;
-  } else if (durationInterval === DurationInterval.Day) {
+  } else if (durationInterval === SubscriptionDurationInterval.Day) {
     intervalsPerYear = 365;
   }
   const pricePerYear = (intervalsPerYear / durationCount) * totalPrice;
@@ -46,9 +49,12 @@ export function getDaysUntilNextStartDate(
 export function getNextStartDate(
   now: Date,
   interval: SubscriptionBillingInterval,
-  startMoment: StartDate
+  startMoment: SubscriptionStartMoment
 ): Date {
   const startOfToday = startOfDay(now);
+  if (startMoment === SubscriptionStartMoment.TimeOfPurchase) {
+    return new Date();
+  }
   let nextStartDate = new Date();
   if (interval === SubscriptionBillingInterval.Month) {
     const nextMonth = new Date(
@@ -57,13 +63,13 @@ export function getNextStartDate(
       1
     );
     nextStartDate =
-      startMoment === StartDate.START
+      startMoment === SubscriptionStartMoment.StartOfBillingInterval
         ? startOfMonth(nextMonth)
         : endOfMonth(startOfToday);
   } else if (interval === SubscriptionBillingInterval.Week) {
     const nextWeek = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
     nextStartDate =
-      startMoment === StartDate.START
+      startMoment === SubscriptionStartMoment.StartOfBillingInterval
         ? startOfWeek(nextWeek)
         : endOfWeek(startOfToday);
   }

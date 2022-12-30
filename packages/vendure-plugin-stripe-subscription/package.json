@@ -14,7 +14,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && yarn generate && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && tsc && yarn generate && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-stripe-subscription/src/",
     "test": "jest --preset=\"ts-jest\" --forceExit",
     "start": "yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen"
@@ -36,8 +36,8 @@
     "node-fetch": "^2.0.0",
     "ts-jest": "^27.1.3",
     "ts-node": "^10.7.0",
-    "typescript": "4.3.5",
-    "vendure-plugin-stripe-subscription": "4.4.0-beta.13"
+    "vendure-plugin-stripe-subscription": "4.4.0-beta.13",
+    "typescript": "4.5.X"
   },
   "dependencies": {
     "date-fns": "^2.29.3",

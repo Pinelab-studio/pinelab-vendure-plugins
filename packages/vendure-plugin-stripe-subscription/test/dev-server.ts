@@ -8,7 +8,6 @@ import {
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
-  OrderService,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
@@ -19,8 +18,8 @@ import {
   setShipping,
 } from './helpers';
 
-import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
-// import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+// import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
 
 export let clientSecret = 'test';
 
@@ -48,6 +47,10 @@ export let clientSecret = 'test';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
+        /*        app: compileUiExtensions({
+                          outputPath: path.join(__dirname, '__admin-ui'),
+                          extensions: [StripeSubscriptionPlugin.ui],
+                        }),*/
       }),
     ],
   });

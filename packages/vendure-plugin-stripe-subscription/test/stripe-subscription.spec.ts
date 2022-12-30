@@ -18,6 +18,8 @@ import {
   StripeSubscriptionPlugin,
   StripeSubscriptionPricing,
   SubscriptionBillingInterval,
+  SubscriptionDurationInterval,
+  SubscriptionStartMoment,
 } from '../src';
 import {
   ADD_ITEM_TO_ORDER,
@@ -28,8 +30,8 @@ import {
 } from './helpers';
 // @ts-ignore
 import nock from 'nock';
+// @ts-ignore
 import { getOrder } from '../../test/src/admin-utils';
-import { DurationInterval, StartDate } from '../src/schedule.entity';
 
 jest.setTimeout(20000);
 
@@ -97,21 +99,21 @@ describe('Order export plugin', function () {
 
   describe('Calculate day rate', () => {
     test.each([
-      [40000, 1, DurationInterval.Year, 110],
-      [80000, 2, DurationInterval.Year, 110],
-      [20000, 6, DurationInterval.Month, 110],
-      [80000, 24, DurationInterval.Month, 110],
-      [20000, 26, DurationInterval.Week, 110],
-      [40000, 52, DurationInterval.Week, 110],
-      [40000, 365, DurationInterval.Day, 110],
-      [110, 1, DurationInterval.Day, 110],
-      [39890, 364, DurationInterval.Day, 110],
+      [40000, 1, SubscriptionDurationInterval.Year, 110],
+      [80000, 2, SubscriptionDurationInterval.Year, 110],
+      [20000, 6, SubscriptionDurationInterval.Month, 110],
+      [80000, 24, SubscriptionDurationInterval.Month, 110],
+      [20000, 26, SubscriptionDurationInterval.Week, 110],
+      [40000, 52, SubscriptionDurationInterval.Week, 110],
+      [40000, 365, SubscriptionDurationInterval.Day, 110],
+      [110, 1, SubscriptionDurationInterval.Day, 110],
+      [39890, 364, SubscriptionDurationInterval.Day, 110],
     ])(
       'Day rate for $%i per %i %s should be $%i',
       (
         price: number,
         count: number,
-        interval: DurationInterval,
+        interval: SubscriptionDurationInterval,
         expected: number
       ) => {
         expect(getDayRate(price, interval, count)).toBe(expected);
@@ -123,25 +125,25 @@ describe('Order export plugin', function () {
     test.each([
       [
         new Date('2022-12-20'),
-        StartDate.START,
+        SubscriptionStartMoment.StartOfBillingInterval,
         SubscriptionBillingInterval.Month,
         12,
       ],
       [
         new Date('2022-12-20'),
-        StartDate.END,
+        SubscriptionStartMoment.EndOfBillingInterval,
         SubscriptionBillingInterval.Month,
         11,
       ],
       [
         new Date('2022-12-20'),
-        StartDate.START,
+        SubscriptionStartMoment.StartOfBillingInterval,
         SubscriptionBillingInterval.Week,
         5,
       ],
       [
         new Date('2022-12-20'),
-        StartDate.END,
+        SubscriptionStartMoment.EndOfBillingInterval,
         SubscriptionBillingInterval.Week,
         4,
       ],
@@ -149,7 +151,7 @@ describe('Order export plugin', function () {
       'Calculate days: from %s to "%s" of %s should be %i $#1',
       (
         now: Date,
-        startDate: StartDate,
+        startDate: SubscriptionStartMoment,
         interval: SubscriptionBillingInterval,
         expected: number
       ) => {
