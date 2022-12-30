@@ -1,5 +1,5 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { IncomingCheckoutWebhook } from '../src';
+import { IncomingStripeWebhook } from '../src';
 import { Body, Controller, Get, Headers, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { clientSecret } from './dev-server';
@@ -13,7 +13,7 @@ export class CheckoutController {
   async webhook(
     @Headers('stripe-signature') signature: string | undefined,
     @Res() res: Response,
-    @Body() body: IncomingCheckoutWebhook
+    @Body() body: IncomingStripeWebhook
   ): Promise<void> {
     res.send(`
 <head>

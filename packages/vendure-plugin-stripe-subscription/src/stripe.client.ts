@@ -10,6 +10,9 @@ interface SubscriptionInput {
   interval: Stripe.SubscriptionCreateParams.Item.PriceData.Recurring.Interval;
   intervalCount: number;
   paymentMethodId: string;
+  startDate: Date;
+  proration: boolean;
+  description?: string;
 }
 
 /**
@@ -68,9 +71,15 @@ export class StripeClient extends Stripe {
     interval,
     intervalCount,
     paymentMethodId,
+    startDate,
+    proration,
+    description,
   }: SubscriptionInput): Promise<Stripe.Subscription> {
     return this.subscriptions.create({
       customer: customerId,
+      billing_cycle_anchor: this.toStripeTimeStamp(startDate),
+      proration_behavior: proration ? 'create_prorations' : 'none',
+      description: description,
       items: [
         {
           price_data: {
@@ -88,5 +97,9 @@ export class StripeClient extends Stripe {
       default_payment_method: paymentMethodId,
       payment_behavior: 'allow_incomplete',
     });
+  }
+
+  toStripeTimeStamp(date: Date): number {
+    return Math.round(date.getTime() / 1000);
   }
 }

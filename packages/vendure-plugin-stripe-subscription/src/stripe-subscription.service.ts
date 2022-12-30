@@ -23,7 +23,7 @@ import {
 } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { StripeSubscriptionPluginOptions } from './stripe-subscription.plugin';
-import { IncomingCheckoutWebhook } from './stripe.types';
+import { IncomingStripeWebhook } from './stripe.types';
 import { HistoryEntryType } from '@vendure/common/lib/generated-types';
 import {
   OrderWithSubscriptions,
@@ -31,7 +31,12 @@ import {
 } from './subscription-custom-fields';
 import { StripeClient } from './stripe.client';
 import { Stripe } from 'stripe';
-import { getDayRate, getDaysUntilNextStartDate, printMoney } from './util';
+import {
+  getDayRate,
+  getDaysUntilNextStartDate,
+  getNextStartDate,
+  printMoney,
+} from './util';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
@@ -48,9 +53,11 @@ export interface StripeHandlerConfig {
 }
 
 export interface JobData {
-  action: 'created' | 'updated' | 'deleted';
+  action: 'createSubscriptionsForOrder';
   ctx: SerializedRequestContext;
-  variants: ProductVariant[];
+  orderCode: string;
+  stripeCustomerId: string;
+  stripePaymentMethodId: string;
 }
 
 @Injectable()
@@ -70,7 +77,6 @@ export class StripeSubscriptionService {
     private customerService: CustomerService
   ) {}
 
-  // @ts-ignore
   private jobQueue!: JobQueue<JobData>;
 
   async onModuleInit() {
@@ -80,7 +86,12 @@ export class StripeSubscriptionService {
       process: async ({ data, id }) => {
         try {
           const ctx = RequestContext.deserialize(data.ctx);
-          // TODO handle subscription creation
+          await this.createSubscriptions(
+            ctx,
+            data.orderCode,
+            data.stripeCustomerId,
+            data.stripePaymentMethodId
+          );
         } catch (error) {
           Logger.warn(
             `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
@@ -148,11 +159,6 @@ export class StripeSubscriptionService {
       );
     }
     const schedule = await this.getSchedule(variant);
-    const daysUntilStart = getDaysUntilNextStartDate(
-      input?.startDate || new Date(),
-      schedule.billingInterval,
-      schedule.startDate
-    );
     if (
       schedule.billingInterval.valueOf() !== schedule.durationInterval.valueOf()
     ) {
@@ -174,6 +180,16 @@ export class StripeSubscriptionService {
     const recurringPrice = Math.floor(
       variant.price - downpayment / billingsPerDuration
     );
+    const now = new Date();
+    const subscriptionStartDate = getNextStartDate(
+      now,
+      schedule.billingInterval,
+      schedule.startDate
+    );
+    const daysUntilStart = getDaysUntilNextStartDate(
+      input?.startDate || now,
+      subscriptionStartDate
+    );
     const totalProratedAmount = daysUntilStart * dayRate;
     return {
       downpayment: downpayment,
@@ -184,6 +200,7 @@ export class StripeSubscriptionService {
       interval: schedule.billingInterval,
       intervalCount: schedule.billingCount,
       amountDueNow: downpayment + totalProratedAmount,
+      subscriptionStartDate,
     };
   }
 
@@ -232,7 +249,7 @@ export class StripeSubscriptionService {
   }
 
   async handlePaymentCompleteEvent(
-    { type, data: { object: eventData } }: IncomingCheckoutWebhook,
+    { type, data: { object: eventData } }: IncomingStripeWebhook,
     signature: string | undefined,
     rawBodyPayload: Buffer
   ): Promise<void> {
@@ -256,17 +273,10 @@ export class StripeSubscriptionService {
       );
     }
     const ctx = await this.createContext(channelToken);
-    const order = (await this.orderService.findOneByCode(ctx, orderCode, [
-      'customer',
-      'lines',
-    ])) as OrderWithSubscriptions;
+    const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       throw Error(`Cannot find order with code ${orderCode}`);
     }
-    await this.entityHydrator.hydrate(ctx, order, {
-      relations: ['lines.productVariant'],
-      applyProductVariantPrices: true,
-    });
     if (!eventData.customer) {
       await this.logOrderHistory(
         ctx,
@@ -280,15 +290,19 @@ export class StripeSubscriptionService {
       ctx,
       order.id
     );
-    stripeClient.validateWebhookSignature(rawBodyPayload, signature);
-    // FIXME push this to jobqueue for async creation
-    await this.createSubscriptions(
-      ctx,
-      stripeClient,
-      order,
-      eventData.customer,
-      eventData.payment_method
-    );
+    if (!this.options?.disableWebhookSignatureChecking) {
+      stripeClient.validateWebhookSignature(rawBodyPayload, signature);
+    }
+    await this.jobQueue.add(
+      {
+        action: 'createSubscriptionsForOrder',
+        ctx: ctx.serialize(),
+        orderCode: order.code,
+        stripePaymentMethodId: eventData.payment_method,
+        stripeCustomerId: eventData.customer,
+      },
+      { retries: 1 }
+    ); // Only 1 try, because subscription creation isn't transaction-proof
     // Status is complete, we can settle payment
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
@@ -330,11 +344,19 @@ export class StripeSubscriptionService {
    */
   private async createSubscriptions(
     ctx: RequestContext,
-    stripeClient: StripeClient,
-    order: OrderWithSubscriptions,
+    orderCode: string,
     stripeCustomerId: string,
-    paymentMethod: string
+    stripePaymentMethodId: string
   ): Promise<void> {
+    const order = (await this.orderService.findOneByCode(ctx, orderCode, [
+      'customer',
+      'lines',
+      'lines.productVariant',
+    ])) as OrderWithSubscriptions;
+    if (!order) {
+      throw Error(`Cannot find order with code ${orderCode}`);
+    }
+    const { stripeClient } = await this.getStripeHandler(ctx, order.id);
     const customer = await stripeClient.customers.retrieve(stripeCustomerId);
     if (!customer) {
       throw Error(
@@ -354,61 +376,68 @@ export class StripeSubscriptionService {
         `Creating subscriptions with pricing ${JSON.stringify(pricing)}`,
         loggerCtx
       );
-      const recurring = await stripeClient.createOffSessionSubscription({
-        customerId: stripeCustomerId,
-        productId: product.id,
-        currencyCode: order.currencyCode,
-        amount: pricing.recurringPrice,
-        interval: pricing.interval,
-        intervalCount: pricing.intervalCount,
-        paymentMethodId: paymentMethod,
-      });
-      await this.logOrderHistory(
-        ctx,
-        order.id,
-        `Created subscription ${recurring.id}: ${printMoney(
-          pricing.recurringPrice
-        )} every ${pricing.intervalCount} ${pricing.interval}(s)`
-      );
-      if (pricing.downpayment) {
-        // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
-        const schedule = await this.getSchedule(orderLine.productVariant);
-        const downpaymentInterval = schedule.durationInterval!;
-        const downpaymentIntervalCount = schedule.durationCount!;
-        const downpayment = await stripeClient.createOffSessionSubscription({
+      try {
+        const recurring = await stripeClient.createOffSessionSubscription({
           customerId: stripeCustomerId,
           productId: product.id,
           currencyCode: order.currencyCode,
-          amount: pricing.downpayment,
-          interval: downpaymentInterval,
-          intervalCount: downpaymentIntervalCount,
-          paymentMethodId: paymentMethod,
+          amount: pricing.recurringPrice,
+          interval: pricing.interval,
+          intervalCount: pricing.intervalCount,
+          paymentMethodId: stripePaymentMethodId,
+          startDate: pricing.subscriptionStartDate,
+          proration: true,
+          description: orderLine.productVariant.name,
         });
+        Logger.info(
+          `Created recurring subscription for ${order.code}`,
+          loggerCtx
+        );
         await this.logOrderHistory(
           ctx,
           order.id,
-          `Created downpayment subscription ${downpayment.id}: ${printMoney(
-            pricing.downpayment
-          )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s)`
+          `Created subscription ${recurring.id}: ${printMoney(
+            pricing.recurringPrice
+          )} every ${pricing.intervalCount} ${pricing.interval}(s)`
         );
-      }
-      if (pricing.proratedDays) {
-        // This means we have to add proration to the checkout
-        const proration = await stripeClient.paymentIntents.create({
-          amount: pricing.totalProratedAmount,
-          currency: order.currencyCode,
-          customer: stripeCustomerId,
-          payment_method: paymentMethod,
-          off_session: true,
-          confirm: true,
-        });
+        if (pricing.downpayment) {
+          // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
+          const schedule = await this.getSchedule(orderLine.productVariant);
+          const downpaymentInterval = schedule.durationInterval!;
+          const downpaymentIntervalCount = schedule.durationCount!;
+          const downpayment = await stripeClient.createOffSessionSubscription({
+            customerId: stripeCustomerId,
+            productId: product.id,
+            currencyCode: order.currencyCode,
+            amount: pricing.downpayment,
+            interval: downpaymentInterval,
+            intervalCount: downpaymentIntervalCount,
+            paymentMethodId: stripePaymentMethodId,
+            startDate: pricing.subscriptionStartDate,
+            proration: false, // no proration for downpayments
+            description: `Downpayment`,
+          });
+          Logger.info(
+            `Created downpayment subscription for ${order.code}`,
+            loggerCtx
+          );
+          await this.logOrderHistory(
+            ctx,
+            order.id,
+            `Created downpayment subscription ${downpayment.id}: ${printMoney(
+              pricing.downpayment
+            )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s)`
+          );
+        }
+      } catch (e: unknown) {
         await this.logOrderHistory(
           ctx,
           order.id,
-          `Created prorated payment ${proration.id} of ${printMoney(
-            pricing.totalProratedAmount
-          )} (${printMoney(pricing.dayRate)} x ${pricing.proratedDays} days)`
+          `Failed to create subscriptions! Check your Stripe dashboard: ${
+            (e as Error).message
+          }`
         );
+        throw e;
       }
     }
   }

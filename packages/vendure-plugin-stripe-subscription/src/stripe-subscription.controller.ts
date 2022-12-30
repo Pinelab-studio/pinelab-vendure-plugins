@@ -12,7 +12,7 @@ import {
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { loggerCtx } from './constants';
-import { IncomingCheckoutWebhook } from './stripe.types';
+import { IncomingStripeWebhook } from './stripe.types';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
@@ -78,7 +78,7 @@ export class StripeSubscriptionController {
   async webhook(
     @Headers('stripe-signature') signature: string | undefined,
     @Req() request: RequestWithRawBody,
-    @Body() body: IncomingCheckoutWebhook
+    @Body() body: IncomingStripeWebhook
   ): Promise<void> {
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
     try {

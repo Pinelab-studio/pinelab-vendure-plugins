@@ -1,10 +1,10 @@
 import {
-  startOfMonth,
-  endOfMonth,
   differenceInDays,
-  startOfWeek,
+  endOfMonth,
   endOfWeek,
   startOfDay,
+  startOfMonth,
+  startOfWeek,
 } from 'date-fns';
 import { SubscriptionBillingInterval } from './generated/graphql';
 import { DurationInterval, StartDate } from './schedules';
@@ -34,9 +34,20 @@ export function getDayRate(
 
 export function getDaysUntilNextStartDate(
   now: Date,
+  nextStartDate: Date
+): number {
+  const startOfToday = startOfDay(now);
+  return differenceInDays(nextStartDate, startOfToday);
+}
+
+/**
+ * Get the next startDate for a given start moment (first or last of the Interval)
+ */
+export function getNextStartDate(
+  now: Date,
   interval: SubscriptionBillingInterval,
   startMoment: StartDate
-): number {
+): Date {
   const startOfToday = startOfDay(now);
   let nextStartDate = new Date();
   if (interval === SubscriptionBillingInterval.Month) {
@@ -56,7 +67,7 @@ export function getDaysUntilNextStartDate(
         ? startOfWeek(nextWeek)
         : endOfWeek(startOfToday);
   }
-  return differenceInDays(nextStartDate, startOfToday);
+  return nextStartDate;
 }
 
 export function printMoney(amount: number): string {

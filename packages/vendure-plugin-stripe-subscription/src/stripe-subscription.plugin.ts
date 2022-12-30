@@ -15,7 +15,12 @@ import {
 import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 import { SubscriptionOrderItemCalculation } from './subscription-order-item-calculation';
 
-export interface StripeSubscriptionPluginOptions {}
+export interface StripeSubscriptionPluginOptions {
+  /**
+   * Only use this for testing purposes, NEVER in production
+   */
+  disableWebhookSignatureChecking: boolean;
+}
 
 const _scalars = gql`
   scalar DateTime
@@ -38,6 +43,7 @@ const _scalars = gql`
         interval: SubscriptionBillingInterval!
         intervalCount: Int!
         amountDueNow: Int!
+        subscriptionStartDate: DateTime!
       }
       input StripeSubscriptionPricingInput {
         productVariantId: ID!
@@ -88,9 +94,9 @@ const _scalars = gql`
   },
 })
 export class StripeSubscriptionPlugin {
-  static options: Required<StripeSubscriptionPluginOptions>;
+  static options: StripeSubscriptionPluginOptions;
 
-  static init(options: Partial<StripeSubscriptionPluginOptions>) {
+  static init(options: StripeSubscriptionPluginOptions) {
     this.options = options;
     return StripeSubscriptionPlugin;
   }

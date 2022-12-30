@@ -6,21 +6,30 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import * as path from 'path';
-import * as fs from 'fs';
 import { DurationInterval, StartDate } from '../src/schedules';
 import {
   getDayRate,
   getDaysUntilNextStartDate,
+  getNextStartDate,
+  IncomingStripeWebhook,
   stripeSubscriptionHandler,
-  SubscriptionBillingInterval,
   StripeSubscriptionPlugin,
+  StripeSubscriptionPricing,
+  SubscriptionBillingInterval,
 } from '../src';
-import { CREATE_PAYMENT_METHOD, GET_PRICING } from './helpers';
-import { StripeSubscriptionPricing } from 'vendure-plugin-stripe-subscription';
+import {
+  ADD_ITEM_TO_ORDER,
+  CREATE_PAYMENT_LINK,
+  CREATE_PAYMENT_METHOD,
+  GET_PRICING,
+  setShipping,
+} from './helpers';
+// @ts-ignore
+import nock from 'nock';
+import { getOrder } from '../../test/src/admin-utils';
 
 jest.setTimeout(20000);
 
@@ -29,24 +38,17 @@ describe('Order export plugin', function () {
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  const testEmailDir = path.join(__dirname, './test-emails');
-  const emailHandlerConfig = {
-    subject: 'Low stock',
-    threshold: 100,
-  };
+  let order: Order | undefined = undefined;
 
   beforeAll(async () => {
-    try {
-      const files = fs.readdirSync(testEmailDir);
-      for (const file of files) {
-        fs.unlinkSync(path.join(testEmailDir, file)); // Delete previous test emails
-      }
-    } catch (err) {}
-
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [StripeSubscriptionPlugin],
+      plugins: [
+        StripeSubscriptionPlugin.init({
+          disableWebhookSignatureChecking: true,
+        }),
+      ],
       paymentOptions: {
         paymentMethodHandlers: [stripeSubscriptionHandler],
       },
@@ -93,66 +95,69 @@ describe('Order export plugin', function () {
     });
   });
 
-  test.each([
-    [40000, 1, DurationInterval.Year, 110],
-    [80000, 2, DurationInterval.Year, 110],
-    [20000, 6, DurationInterval.Month, 110],
-    [80000, 24, DurationInterval.Month, 110],
-    [20000, 26, DurationInterval.Week, 110],
-    [40000, 52, DurationInterval.Week, 110],
-    [40000, 365, DurationInterval.Day, 110],
-    [110, 1, DurationInterval.Day, 110],
-    [39890, 364, DurationInterval.Day, 110],
-  ])(
-    'Day rate for $%i per %i %s should be $%i',
-    (
-      price: number,
-      count: number,
-      interval: DurationInterval,
-      expected: number
-    ) => {
-      expect(getDayRate(price, interval, count)).toBe(expected);
-    }
-  );
+  describe('Calculate day rate', () => {
+    test.each([
+      [40000, 1, DurationInterval.Year, 110],
+      [80000, 2, DurationInterval.Year, 110],
+      [20000, 6, DurationInterval.Month, 110],
+      [80000, 24, DurationInterval.Month, 110],
+      [20000, 26, DurationInterval.Week, 110],
+      [40000, 52, DurationInterval.Week, 110],
+      [40000, 365, DurationInterval.Day, 110],
+      [110, 1, DurationInterval.Day, 110],
+      [39890, 364, DurationInterval.Day, 110],
+    ])(
+      'Day rate for $%i per %i %s should be $%i',
+      (
+        price: number,
+        count: number,
+        interval: DurationInterval,
+        expected: number
+      ) => {
+        expect(getDayRate(price, interval, count)).toBe(expected);
+      }
+    );
+  });
 
-  test.each([
-    [
-      new Date('2022-12-20'),
-      StartDate.START,
-      SubscriptionBillingInterval.Month,
-      12,
-    ],
-    [
-      new Date('2022-12-20'),
-      StartDate.END,
-      SubscriptionBillingInterval.Month,
-      11,
-    ],
-    [
-      new Date('2022-12-20'),
-      StartDate.START,
-      SubscriptionBillingInterval.Week,
-      5,
-    ],
-    [
-      new Date('2022-12-20'),
-      StartDate.END,
-      SubscriptionBillingInterval.Week,
-      4,
-    ],
-  ])(
-    'Calculate days: from %s to "%s" of %s should be %i $#1',
-    (
-      now: Date,
-      startDate: StartDate,
-      interval: SubscriptionBillingInterval,
-      expected: number
-    ) => {
-      expect(getDaysUntilNextStartDate(now, interval, startDate)).toBe(
-        expected
-      );
-    }
-  );
+  describe('Calculate nr of days until next subscription start date', () => {
+    test.each([
+      [
+        new Date('2022-12-20'),
+        StartDate.START,
+        SubscriptionBillingInterval.Month,
+        12,
+      ],
+      [
+        new Date('2022-12-20'),
+        StartDate.END,
+        SubscriptionBillingInterval.Month,
+        11,
+      ],
+      [
+        new Date('2022-12-20'),
+        StartDate.START,
+        SubscriptionBillingInterval.Week,
+        5,
+      ],
+      [
+        new Date('2022-12-20'),
+        StartDate.END,
+        SubscriptionBillingInterval.Week,
+        4,
+      ],
+    ])(
+      'Calculate days: from %s to "%s" of %s should be %i $#1',
+      (
+        now: Date,
+        startDate: StartDate,
+        interval: SubscriptionBillingInterval,
+        expected: number
+      ) => {
+        const nextStartDate = getNextStartDate(now, interval, startDate);
+        expect(getDaysUntilNextStartDate(now, nextStartDate)).toBe(expected);
+      }
+    );
+  });
 
   it('Should calculate default pricing', async () => {
     // Uses the default downpayment of $199
@@ -190,10 +195,70 @@ describe('Order export plugin', function () {
     );
   });
 
-  // TODO
-  // Create paymentmethod
-  // Create order without customFields
-  // Create paymentlink
-  // Mock webhook callback
-  // Create order with customfields. OrderLine amount should be different
+  it('Should create a setup intent for payment details', async () => {
+    // Mock API
+    nock('https://api.stripe.com')
+      .get(/customers.*/)
+      .reply(200, { data: [{ id: 'customer-test-id' }] });
+    nock('https://api.stripe.com')
+      .post(/setup_intents.*/)
+      .reply(200, {
+        client_secret: 'mock-secret-1234',
+      });
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const { addItemToOrder } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+      productVariantId: '2',
+      quantity: 1,
+      customFields: {
+        downpayment: 0,
+      },
+    });
+    order = addItemToOrder;
+    await setShipping(shopClient);
+    const { createStripeSubscriptionIntent: secret } = await shopClient.query(
+      CREATE_PAYMENT_LINK
+    );
+    expect(secret).toBe('mock-secret-1234');
+  });
+
+  it('Should create subscriptions on webhook succeed', async () => {
+    // Mock API
+    nock('https://api.stripe.com')
+      .get(/customers.*/)
+      .reply(200, { data: [{ id: 'customer-test-id' }] });
+    nock('https://api.stripe.com')
+      .post(/setup_intents.*/)
+      .reply(200, {
+        client_secret: 'mock-secret-1234',
+      });
+    let adminOrder = await getOrder(adminClient as any, order!.id as string);
+    await adminClient.fetch(
+      'http://localhost:3050/stripe-subscriptions/webhook',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          type: 'setup_intent.succeeded',
+          data: {
+            object: {
+              customer: 'mock',
+              metadata: {
+                orderCode: order!.code,
+                paymentMethodCode: 'stripe-subscription-method',
+                channelToken: 'e2e-default-channel',
+                amount: adminOrder?.totalWithTax,
+              },
+            },
+          },
+        } as IncomingStripeWebhook),
+      }
+    );
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    adminOrder = await getOrder(adminClient as any, order!.id as string);
+    expect(adminOrder?.state).toBe('PaymentSettled');
+
+    // TODO check outgoing subscription requests
+  });
 });
