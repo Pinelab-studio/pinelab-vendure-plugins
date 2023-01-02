@@ -153,7 +153,7 @@ export class StripeSubscriptionService {
         input!.productVariantId!
       )) as VariantWithSubscriptionFields;
     }
-    if (!variant) {
+    if (!variant || !variant?.enabled) {
       throw new UserInputError(
         `No variant found with id ${input!.productVariantId}`
       );

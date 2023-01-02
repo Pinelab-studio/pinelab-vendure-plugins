@@ -98,7 +98,7 @@ export class ShopResolver {
     });
     const subscriptionVariants = product.variants.filter(
       (v: VariantWithSubscriptionFields) =>
-        !!v.customFields.subscriptionSchedule
+        !!v.customFields.subscriptionSchedule && v.enabled
     );
     return await Promise.all(
       subscriptionVariants.map((variant) =>
