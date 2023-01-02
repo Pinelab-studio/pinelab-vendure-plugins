@@ -1,4 +1,4 @@
-import gql from 'graphql-tag';
+import { gql } from 'graphql-tag';
 import { SimpleGraphQLClient } from '@vendure/testing';
 
 export const ADD_ITEM_TO_ORDER = gql`
@@ -35,6 +35,39 @@ export const GET_PRICING = gql`
       interval
       intervalCount
       amountDueNow
+      subscriptionStartDate
+    }
+  }
+`;
+
+export const GET_PRICING_FOR_PRODUCT = gql`
+  query stripeSubscriptionPricingForProduct($productId: ID!) {
+    stripeSubscriptionPricingForProduct(productId: $productId) {
+      downpayment
+      totalProratedAmount
+      proratedDays
+      dayRate
+      recurringPrice
+      interval
+      intervalCount
+      amountDueNow
+      subscriptionStartDate
+    }
+  }
+`;
+
+export const GET_PRICING_FOR_ORDERLINE = gql`
+  query stripeSubscriptionPricingForOrderLine($orderLineId: ID!) {
+    stripeSubscriptionPricingForOrderLine(orderLineId: $orderLineId) {
+      downpayment
+      totalProratedAmount
+      proratedDays
+      dayRate
+      recurringPrice
+      interval
+      intervalCount
+      amountDueNow
+      subscriptionStartDate
     }
   }
 `;
@@ -92,13 +125,10 @@ export const CREATE_PAYMENT_LINK = gql`
   }
 `;
 
-export async function createSampleMembership(
-  adminClient: SimpleGraphQLClient
-) {}
-
 export async function setShipping(
   shopClient: SimpleGraphQLClient
 ): Promise<void> {
+  //@ts-ignore
   await shopClient.query(SET_SHIPPING_ADDRESS, {
     input: {
       fullName: 'name',
@@ -108,6 +138,7 @@ export async function setShipping(
       countryCode: 'AT',
     },
   });
+  //@ts-ignore
   await shopClient.query(SET_SHIPPING_METHOD, {
     id: 1,
   });

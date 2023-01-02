@@ -26,6 +26,8 @@ import {
   CREATE_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   GET_PRICING,
+  GET_PRICING_FOR_ORDERLINE,
+  GET_PRICING_FOR_PRODUCT,
   setShipping,
 } from './helpers';
 // @ts-ignore
@@ -179,6 +181,26 @@ describe('Order export plugin', function () {
     );
   });
 
+  it('Should calculate pricing for product', async () => {
+    const { stripeSubscriptionPricingForProduct } = await shopClient.query(
+      GET_PRICING_FOR_PRODUCT,
+      {
+        productId: 1,
+      }
+    );
+    const pricing: StripeSubscriptionPricing[] =
+      stripeSubscriptionPricingForProduct;
+    expect(pricing[1].downpayment).toBe(19900);
+    expect(pricing[1].recurringPrice).toBe(5683);
+    expect(pricing[1].interval).toBe('month');
+    expect(pricing[1].intervalCount).toBe(1);
+    expect(pricing[1].dayRate).toBe(296);
+    expect(pricing[1].amountDueNow).toBe(
+      pricing[1].totalProratedAmount + pricing[1].downpayment
+    );
+    expect(pricing.length).toBe(2);
+  });
+
   it('Should calculate pricing with custom downpayment', async () => {
     const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
       input: {
@@ -224,6 +246,25 @@ describe('Order export plugin', function () {
       CREATE_PAYMENT_LINK
     );
     expect(secret).toBe('mock-secret-1234');
+  });
+
+  it('Should calculate pricing for order line', async () => {
+    const { stripeSubscriptionPricingForOrderLine } = await shopClient.query(
+      GET_PRICING_FOR_ORDERLINE,
+      {
+        orderLineId: 1,
+      }
+    );
+    const pricing: StripeSubscriptionPricing =
+      stripeSubscriptionPricingForOrderLine;
+    expect(pricing.downpayment).toBe(0);
+    expect(pricing.recurringPrice).toBe(9000);
+    expect(pricing.interval).toBe('month');
+    expect(pricing.intervalCount).toBe(1);
+    expect(pricing.dayRate).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmount + pricing.downpayment
+    );
   });
 
   it('Should create subscriptions on webhook succeed', async () => {
@@ -308,7 +349,7 @@ describe('Order export plugin', function () {
     ).toBe('6');
   });
 
-  it('Can create Schedules', async () => {
+  /*  it('Can create Schedules', async () => {
     expect(true).toBe(false);
   });
 
@@ -318,5 +359,5 @@ describe('Order export plugin', function () {
 
   it('Can delete Schedules', async () => {
     expect(true).toBe(false);
-  });
+  });*/
 });

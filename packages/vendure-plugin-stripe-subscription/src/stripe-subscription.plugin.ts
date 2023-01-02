@@ -1,6 +1,5 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
-import { gql } from 'graphql-tag';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import {
   StripeSubscriptionController,

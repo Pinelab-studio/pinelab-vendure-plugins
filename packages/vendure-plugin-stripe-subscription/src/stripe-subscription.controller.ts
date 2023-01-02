@@ -23,6 +23,7 @@ import {
 import { Request } from 'express';
 import { ScheduleService } from './schedule.service';
 import { Schedule } from './schedule.entity';
+import { OrderLineWithSubscriptionFields } from './subscription-custom-fields';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -61,9 +62,10 @@ export class ShopResolver {
     const order = await this.orderService.findOneByOrderLineId(
       ctx,
       orderLineId,
-      ['lines.productVariant']
+      ['lines', 'lines.productVariant']
     );
-    const orderLine = order?.lines.find((line) => line.id === orderLineId);
+    const orderLine: OrderLineWithSubscriptionFields | undefined =
+      order?.lines.find((line) => line.id === orderLineId);
     if (!orderLine) {
       throw new UserInputError(
         `No order with orderLineId '${orderLineId}' found`
@@ -71,7 +73,10 @@ export class ShopResolver {
     }
     return this.stripeSubscriptionService.getSubscriptionPricing(
       ctx,
-      undefined,
+      {
+        downpayment: orderLine.customFields.downpayment,
+        startDate: orderLine.customFields.startDate,
+      },
       orderLine.productVariant
     );
   }
@@ -89,7 +94,6 @@ export class ShopResolver {
       relations: ['variants'],
       applyProductVariantPrices: true,
     });
-    console.log(product.variants[0].price);
     return await Promise.all(
       product.variants.map((variant) =>
         this.stripeSubscriptionService.getSubscriptionPricing(

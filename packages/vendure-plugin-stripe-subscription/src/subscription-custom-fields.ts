@@ -24,7 +24,7 @@ export interface CustomerWithSubscriptionFields extends Customer {
   };
 }
 
-export interface OrderLineWithSubscriptionFields extends Customer {
+export interface OrderLineWithSubscriptionFields extends OrderLine {
   customFields: {
     downpayment?: number;
     startDate?: Date;
