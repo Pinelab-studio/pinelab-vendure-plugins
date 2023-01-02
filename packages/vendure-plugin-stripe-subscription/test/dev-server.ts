@@ -19,6 +19,8 @@ import {
 } from './helpers';
 
 import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import * as path from 'path';
 // import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
 
 export let clientSecret = 'test';
@@ -48,9 +50,10 @@ export let clientSecret = 'test';
         port: 3002,
         route: 'admin',
         /*        app: compileUiExtensions({
-                          outputPath: path.join(__dirname, '__admin-ui'),
-                          extensions: [StripeSubscriptionPlugin.ui],
-                        }),*/
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [StripeSubscriptionPlugin.ui],
+          devMode: false
+        }),*/
       }),
     ],
   });

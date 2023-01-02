@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
 import {
   Allow,
   Ctx,
@@ -18,12 +18,14 @@ import { IncomingStripeWebhook } from './stripe.types';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
-  StripeSubscriptionSchedule,
 } from './generated/graphql';
 import { Request } from 'express';
 import { ScheduleService } from './schedule.service';
 import { Schedule } from './schedule.entity';
-import { OrderLineWithSubscriptionFields } from './subscription-custom-fields';
+import {
+  OrderLineWithSubscriptionFields,
+  VariantWithSubscriptionFields,
+} from './subscription-custom-fields';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -94,8 +96,12 @@ export class ShopResolver {
       relations: ['variants'],
       applyProductVariantPrices: true,
     });
+    const subscriptionVariants = product.variants.filter(
+      (v: VariantWithSubscriptionFields) =>
+        !!v.customFields.subscriptionSchedule
+    );
     return await Promise.all(
-      product.variants.map((variant) =>
+      subscriptionVariants.map((variant) =>
         this.stripeSubscriptionService.getSubscriptionPricing(
           ctx,
           undefined,
