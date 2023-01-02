@@ -3,7 +3,7 @@
   "compilerOptions": {
     "declaration": true,
     "outDir": "dist",
-    "skipLibCheck": false
+    "skipLibCheck": true
   },
   "include": ["src/"],
   "exclude": ["src/ui"]
