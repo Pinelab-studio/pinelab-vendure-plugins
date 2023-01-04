@@ -164,6 +164,23 @@ describe('Order export plugin', function () {
   });
 
   it('Should calculate default pricing', async () => {
+    const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
+      input: {
+        productVariantId: 1,
+      },
+    });
+    const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
+    expect(pricing.downpayment).toBe(0);
+    expect(pricing.recurringPrice).toBe(54000);
+    expect(pricing.interval).toBe('month');
+    expect(pricing.intervalCount).toBe(6);
+    expect(pricing.dayRate).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmount + pricing.downpayment + pricing.recurringPrice
+    );
+  });
+
+  it('Should calculate default pricing', async () => {
     // Uses the default downpayment of $199
     const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
       input: {
@@ -350,14 +367,14 @@ describe('Order export plugin', function () {
   });
 
   /*  it('Can create Schedules', async () => {
-    expect(true).toBe(false);
-  });
+      expect(true).toBe(false);
+    });
 
-  it('Can update Schedules', async () => {
-    expect(true).toBe(false);
-  });
+    it('Can update Schedules', async () => {
+      expect(true).toBe(false);
+    });
 
-  it('Can delete Schedules', async () => {
-    expect(true).toBe(false);
-  });*/
+    it('Can delete Schedules', async () => {
+      expect(true).toBe(false);
+    });*/
 });
