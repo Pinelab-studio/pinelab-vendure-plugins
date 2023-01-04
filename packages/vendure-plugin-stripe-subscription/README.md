@@ -55,8 +55,8 @@ future: https://stripe.com/docs/payments/setup-intents#mandates
 
 ## Caveats
 
-1. This plugin creates subscriptions off-session (in the background). Because of this, you can not use prorations in the
-   EU area. This is due to the fact that prorations are one-time payments, and one time payment require additional SCA
+1. This plugin creates subscriptions off-session (in the background). Because of this, you can not use prorations or paid-up-front subscriptions in the
+   EU area. This is due to the fact that prorations and paid-up-front are one-time payments, and one time payment require additional SCA
    confirmation.
 
 2. This plugin overrides any set OrderItemCalculationStrategies. The strategy in this plugin is used for calculating the

@@ -76,10 +76,11 @@ export const adminSchemaExtensions = gql`
     durationInterval: SubscriptionDurationInterval!
     durationCount: Int!
     startMoment: SubscriptionStartMoment!
+    paidUpFront: Boolean!
     billingInterval: SubscriptionBillingInterval!
     billingCount: Int!
   }
   extend type Query {
-    stripeSubscriptionSchedules: StripeSubscriptionSchedule
+    stripeSubscriptionSchedules: [StripeSubscriptionSchedule!]!
   }
 `;

@@ -8,8 +8,8 @@ import { Injectable } from '@nestjs/common';
 import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 import { RequestContext } from '@vendure/core';
 
-export const schedules: Partial<Schedule>[] = [
-  {
+export const schedules: Schedule[] = [
+  new Schedule({
     name: '6 months, billed monthly, 199 downpayment',
     downpayment: 19900,
     durationInterval: SubscriptionDurationInterval.Month,
@@ -17,17 +17,17 @@ export const schedules: Partial<Schedule>[] = [
     startMoment: SubscriptionStartMoment.StartOfBillingInterval,
     billingInterval: SubscriptionBillingInterval.Month,
     billingCount: 1,
-  },
-  {
-    name: '6 months, paid in full, 199 downpayment',
-    downpayment: 19900,
+  }),
+  new Schedule({
+    name: '6 months, paid in full, no downpayment',
+    downpayment: 0,
     durationInterval: SubscriptionDurationInterval.Month,
     durationCount: 6,
     startMoment: SubscriptionStartMoment.StartOfBillingInterval,
     billingInterval: SubscriptionBillingInterval.Month,
     billingCount: 6,
-  },
-  {
+  }),
+  new Schedule({
     name: '40 weeks, billed weekly, 99 Registration',
     downpayment: 9900,
     durationInterval: SubscriptionDurationInterval.Week,
@@ -35,8 +35,8 @@ export const schedules: Partial<Schedule>[] = [
     startMoment: SubscriptionStartMoment.StartOfBillingInterval,
     billingInterval: SubscriptionBillingInterval.Week,
     billingCount: 1,
-  },
-  {
+  }),
+  new Schedule({
     name: '12 months, billed monthly, 199 downpayment',
     downpayment: 19900,
     durationInterval: SubscriptionDurationInterval.Month,
@@ -44,16 +44,16 @@ export const schedules: Partial<Schedule>[] = [
     startMoment: SubscriptionStartMoment.StartOfBillingInterval,
     billingInterval: SubscriptionBillingInterval.Month,
     billingCount: 1,
-  },
-  {
-    name: '12 months, paid in full, 199 downpayment',
-    downpayment: 19900,
+  }),
+  new Schedule({
+    name: '12 months, paid in full, no downpayment',
+    downpayment: 0,
     durationInterval: SubscriptionDurationInterval.Month,
     durationCount: 12,
     startMoment: SubscriptionStartMoment.StartOfBillingInterval,
     billingInterval: SubscriptionBillingInterval.Month,
     billingCount: 12,
-  },
+  }),
 ];
 
 @Injectable()
@@ -67,10 +67,10 @@ export class ScheduleService {
         `No schedule found with name "${variant.customFields.subscriptionSchedule}"`
       );
     }
-    return schedule as Schedule;
+    return schedule;
   }
 
   async getSchedules(ctx: RequestContext): Promise<Schedule[]> {
-    return schedules as Schedule[];
+    return schedules;
   }
 }

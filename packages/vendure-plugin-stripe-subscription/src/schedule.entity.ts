@@ -1,6 +1,5 @@
 import { DeepPartial, VendureEntity } from '@vendure/core';
 import {
-  StripeSubscriptionSchedule,
   SubscriptionBillingInterval,
   SubscriptionDurationInterval,
   SubscriptionStartMoment,
@@ -33,4 +32,15 @@ export class Schedule extends VendureEntity {
 
   @Column({ type: 'integer', nullable: false })
   billingCount!: number;
+
+  /**
+   * When billing and duration cycles are the same, this is a paid-up-front schedule
+   * and the user pays the total amount of a subscription up front
+   */
+  get paidUpFront(): boolean {
+    return (
+      this.billingInterval.valueOf() == this.durationInterval.valueOf() &&
+      this.billingCount.valueOf() == this.durationCount.valueOf()
+    );
+  }
 }

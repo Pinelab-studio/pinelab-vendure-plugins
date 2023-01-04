@@ -173,13 +173,6 @@ export class StripeSubscriptionService {
       schedule.durationInterval!,
       schedule.durationCount!
     );
-    const downpayment =
-      input?.downpayment || input?.downpayment === 0
-        ? input.downpayment
-        : schedule.downpayment;
-    const recurringPrice = Math.floor(
-      variant.price - downpayment / billingsPerDuration
-    );
     const now = new Date();
     const subscriptionStartDate = getNextStartDate(
       now,
@@ -191,16 +184,29 @@ export class StripeSubscriptionService {
       subscriptionStartDate
     );
     const totalProratedAmount = daysUntilStart * dayRate;
+    const downpayment =
+      input?.downpayment || input?.downpayment === 0
+        ? input.downpayment
+        : schedule.downpayment;
+    let amountDueNow = downpayment + totalProratedAmount;
+    let recurringPrice = Math.floor(
+      variant.price - downpayment / billingsPerDuration
+    );
+    if (schedule.paidUpFront) {
+      // User pays
+      amountDueNow = variant.price + totalProratedAmount;
+      recurringPrice = variant.price;
+    }
     return {
       variantId: variant.id as string,
-      downpayment: downpayment,
+      downpayment,
       totalProratedAmount: totalProratedAmount,
       proratedDays: daysUntilStart,
       dayRate,
       recurringPrice: recurringPrice,
       interval: schedule.billingInterval,
       intervalCount: schedule.billingCount,
-      amountDueNow: downpayment + totalProratedAmount,
+      amountDueNow,
       subscriptionStartDate,
     };
   }
@@ -208,7 +214,7 @@ export class StripeSubscriptionService {
   private async createSetupIntent(
     ctx: RequestContext,
     order: OrderWithSubscriptions
-  ): Promise<Stripe.SetupIntent> {
+  ): Promise<Stripe.SetupIntent | Stripe.PaymentIntent> {
     const { stripeClient } = await this.getStripeHandler(ctx, order.id);
     const stripeCustomer = await stripeClient.getOrCreateClient(order.customer);
     this.customerService
