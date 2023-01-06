@@ -8,15 +8,9 @@ const _scalar = gql`
 `;
 
 const sharedTypes = gql`
-  enum SubscriptionBillingInterval {
+  enum SubscriptionInterval {
     week
     month
-  }
-  enum SubscriptionDurationInterval {
-    day
-    week
-    month
-    year
   }
   enum SubscriptionStartMoment {
     start_of_billing_interval
@@ -35,7 +29,7 @@ export const shopSchemaExtensions = gql`
     proratedDays: Int!
     dayRate: Int!
     recurringPrice: Int!
-    interval: SubscriptionBillingInterval!
+    interval: SubscriptionInterval!
     intervalCount: Int!
     amountDueNow: Int!
     subscriptionStartDate: DateTime!
@@ -73,11 +67,11 @@ export const adminSchemaExtensions = gql`
     updatedAt: DateTime
     name: String!
     downpayment: Int!
-    durationInterval: SubscriptionDurationInterval!
+    durationInterval: SubscriptionInterval!
     durationCount: Int!
     startMoment: SubscriptionStartMoment!
     paidUpFront: Boolean!
-    billingInterval: SubscriptionBillingInterval!
+    billingInterval: SubscriptionInterval!
     billingCount: Int!
   }
   extend type Query {

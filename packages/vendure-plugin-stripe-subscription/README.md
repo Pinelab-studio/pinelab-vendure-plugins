@@ -53,20 +53,31 @@ plugins: [
 It's important to inform your customers what you will be billing in the
 future: https://stripe.com/docs/payments/setup-intents#mandates
 
-## Caveats
+# Concepts and advanced features
 
-1. This plugin creates subscriptions off-session (in the background). Because of this, you can not use prorations or paid-up-front subscriptions in the
-   EU area. This is due to the fact that prorations and paid-up-front are one-time payments, and one time payment require additional SCA
-   confirmation.
+There are 2 types of subscriptions, paid-up-front and normal recurring subscriptions.
 
-2. This plugin overrides any set OrderItemCalculationStrategies. The strategy in this plugin is used for calculating the
-   amount due for a subscription, if the variant is a subscription. For non-subscription variants, the normal default
-   orderline calculation is used. Only 1 strategy can be used per Vendure instance, so any other
-   OrderItemCalculationStrategies are overwritten by this plugin.
+## Prorations
 
-## Advanced features
+All subscriptions have a fixed start moment, for example "Every first of the month". This is also when billing will
+occur. If a customer orders a subscription now, but the subscription starts in 5 days, a prorated amount for the
+remaining 5 days will be billed to the customer.
 
-// TODO prorations, downpayment, startdates, enddates
+### Customer chosen start dates
+
+// TODO
+
+### Customer chosen downpayments
+
+// TODO
+
+## Normal recurring subscriptions
+
+// TODO example
+
+## Paid up front
+
+// TODO. No downpayments! example
 
 ### Preview pricing calculations
 
@@ -93,6 +104,13 @@ You can preview the pricing model of a subscription without adding it to cart wi
 ```
 
 `Downpayment` and `startDate` are optional parameters. Without them, the subscriptions default will be used.
+
+## Caveats
+
+1. This plugin overrides any set OrderItemCalculationStrategies. The strategy in this plugin is used for calculating the
+   amount due for a subscription, if the variant is a subscription. For non-subscription variants, the normal default
+   orderline calculation is used. Only 1 strategy can be used per Vendure instance, so any other
+   OrderItemCalculationStrategies are overwritten by this plugin.
 
 ### Contributing and dev server
 

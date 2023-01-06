@@ -17,8 +17,7 @@ import {
   stripeSubscriptionHandler,
   StripeSubscriptionPlugin,
   StripeSubscriptionPricing,
-  SubscriptionBillingInterval,
-  SubscriptionDurationInterval,
+  SubscriptionInterval,
   SubscriptionStartMoment,
 } from '../src';
 import {
@@ -99,23 +98,23 @@ describe('Order export plugin', function () {
     });
   });
 
+  it('TODO getNextCycle', async () => {
+    // TODO getNextCycle() test
+    expect(true).toBe(true);
+  });
+
   describe('Calculate day rate', () => {
     test.each([
-      [40000, 1, SubscriptionDurationInterval.Year, 110],
-      [80000, 2, SubscriptionDurationInterval.Year, 110],
-      [20000, 6, SubscriptionDurationInterval.Month, 110],
-      [80000, 24, SubscriptionDurationInterval.Month, 110],
-      [20000, 26, SubscriptionDurationInterval.Week, 110],
-      [40000, 52, SubscriptionDurationInterval.Week, 110],
-      [40000, 365, SubscriptionDurationInterval.Day, 110],
-      [110, 1, SubscriptionDurationInterval.Day, 110],
-      [39890, 364, SubscriptionDurationInterval.Day, 110],
+      [20000, 6, SubscriptionInterval.Month, 110],
+      [80000, 24, SubscriptionInterval.Month, 110],
+      [20000, 26, SubscriptionInterval.Week, 110],
+      [40000, 52, SubscriptionInterval.Week, 110],
     ])(
       'Day rate for $%i per %i %s should be $%i',
       (
         price: number,
         count: number,
-        interval: SubscriptionDurationInterval,
+        interval: SubscriptionInterval,
         expected: number
       ) => {
         expect(getDayRate(price, interval, count)).toBe(expected);
@@ -128,25 +127,25 @@ describe('Order export plugin', function () {
       [
         new Date('2022-12-20'),
         SubscriptionStartMoment.StartOfBillingInterval,
-        SubscriptionBillingInterval.Month,
+        SubscriptionInterval.Month,
         12,
       ],
       [
         new Date('2022-12-20'),
         SubscriptionStartMoment.EndOfBillingInterval,
-        SubscriptionBillingInterval.Month,
+        SubscriptionInterval.Month,
         11,
       ],
       [
         new Date('2022-12-20'),
         SubscriptionStartMoment.StartOfBillingInterval,
-        SubscriptionBillingInterval.Week,
+        SubscriptionInterval.Week,
         5,
       ],
       [
         new Date('2022-12-20'),
         SubscriptionStartMoment.EndOfBillingInterval,
-        SubscriptionBillingInterval.Week,
+        SubscriptionInterval.Week,
         4,
       ],
     ])(
@@ -154,7 +153,7 @@ describe('Order export plugin', function () {
       (
         now: Date,
         startDate: SubscriptionStartMoment,
-        interval: SubscriptionBillingInterval,
+        interval: SubscriptionInterval,
         expected: number
       ) => {
         const nextStartDate = getNextStartDate(now, interval, startDate);
@@ -163,7 +162,7 @@ describe('Order export plugin', function () {
     );
   });
 
-  it('Should calculate default pricing', async () => {
+  it('Should calculate default pricing for paid up front', async () => {
     const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
       input: {
         productVariantId: 1,
@@ -180,7 +179,7 @@ describe('Order export plugin', function () {
     );
   });
 
-  it('Should calculate default pricing', async () => {
+  it('Should calculate default pricing for recurring', async () => {
     // Uses the default downpayment of $199
     const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
       input: {
@@ -190,6 +189,65 @@ describe('Order export plugin', function () {
     const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
     expect(pricing.downpayment).toBe(19900);
     expect(pricing.recurringPrice).toBe(5683);
+    expect(pricing.interval).toBe('month');
+    expect(pricing.intervalCount).toBe(1);
+    expect(pricing.dayRate).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmount + pricing.downpayment
+    );
+  });
+
+  it('Should calculate pricing for recurring with 400 custom downpayment', async () => {
+    // Uses the default downpayment of $199
+    const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
+      input: {
+        productVariantId: 2,
+        downpayment: 40000,
+      },
+    });
+    const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
+    expect(pricing.downpayment).toBe(40000);
+    expect(pricing.recurringPrice).toBe(2333);
+    expect(pricing.interval).toBe('month');
+    expect(pricing.intervalCount).toBe(1);
+    expect(pricing.dayRate).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmount + pricing.downpayment
+    );
+  });
+
+  it('Should calculate pricing with 0 custom downpayment', async () => {
+    const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
+      input: {
+        productVariantId: 2,
+        downpayment: 0,
+      },
+    });
+    const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
+    expect(pricing.downpayment).toBe(0);
+    expect(pricing.recurringPrice).toBe(9000);
+    expect(pricing.interval).toBe('month');
+    expect(pricing.intervalCount).toBe(1);
+    expect(pricing.dayRate).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmount + pricing.downpayment
+    );
+  });
+
+  it('Should calculate pricing for recurring with custom downpayment and custom startDate', async () => {
+    // Uses the default downpayment of $199
+    const in3Days = new Date();
+    in3Days.setDate(in3Days.getDate() + 3);
+    const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
+      input: {
+        productVariantId: 2,
+        downpayment: 40000,
+        startDate: in3Days.toISOString(),
+      },
+    });
+    const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
+    expect(pricing.downpayment).toBe(40000);
+    expect(pricing.recurringPrice).toBe(2333);
     expect(pricing.interval).toBe('month');
     expect(pricing.intervalCount).toBe(1);
     expect(pricing.dayRate).toBe(296);
@@ -218,25 +276,7 @@ describe('Order export plugin', function () {
     expect(pricing.length).toBe(2);
   });
 
-  it('Should calculate pricing with custom downpayment', async () => {
-    const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
-      input: {
-        productVariantId: 2,
-        downpayment: 0,
-      },
-    });
-    const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-    expect(pricing.downpayment).toBe(0);
-    expect(pricing.recurringPrice).toBe(9000);
-    expect(pricing.interval).toBe('month');
-    expect(pricing.intervalCount).toBe(1);
-    expect(pricing.dayRate).toBe(296);
-    expect(pricing.amountDueNow).toBe(
-      pricing.totalProratedAmount + pricing.downpayment
-    );
-  });
-
-  it('Should create a setup intent for payment details', async () => {
+  it('Should create an intent for payment details', async () => {
     // Mock API
     nock('https://api.stripe.com')
       .get(/customers.*/)
@@ -373,6 +413,7 @@ describe('Order export plugin', function () {
     it('Can update Schedules', async () => {
       expect(true).toBe(false);
     });
+
 
     it('Can delete Schedules', async () => {
       expect(true).toBe(false);

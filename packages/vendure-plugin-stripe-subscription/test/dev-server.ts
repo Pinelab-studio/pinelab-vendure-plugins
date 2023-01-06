@@ -90,14 +90,24 @@ export let clientSecret = 'test';
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   const in3Days = new Date();
   in3Days.setDate(in3Days.getDate() + 3);
-  const { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '2',
+  // Add paid in full
+  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '1',
     quantity: 1,
     customFields: {
-      downpayment: 19900,
+      // downpayment: 40000,
       startDate: in3Days,
     },
   });
+  // Add monthly sub
+  /*  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '2',
+    quantity: 1,
+    customFields: {
+      downpayment: 40000,
+      startDate: in3Days,
+    },
+  });*/
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(

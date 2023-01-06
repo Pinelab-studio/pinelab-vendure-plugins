@@ -53,7 +53,8 @@ const form = document.getElementById('payment-form');
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const {error} = await stripe.confirmSetup({
+  // const {error} = await stripe.confirmSetup({
+  const {error} = await stripe.confirmPayment({
     //\`Elements\` instance that was used to create the Payment Element
     elements,
     confirmParams: {

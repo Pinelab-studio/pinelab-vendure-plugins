@@ -35,7 +35,9 @@ export interface OrderLineWithSubscriptionFields extends OrderLine {
  * An order that can have subscriptions in it
  */
 export interface OrderWithSubscriptions extends Order {
-  lines: (OrderLine & { productVariant: VariantWithSubscriptionFields })[];
+  lines: (OrderLineWithSubscriptionFields & {
+    productVariant: VariantWithSubscriptionFields;
+  })[];
   customer: CustomerWithSubscriptionFields;
 }
 

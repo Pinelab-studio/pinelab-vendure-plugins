@@ -1,0 +1,88 @@
+import {
+    createTestEnvironment,
+    registerInitializer,
+    SimpleGraphQLClient,
+    SqljsInitializer,
+    testConfig,
+} from '@vendure/testing';
+import { initialData } from '../../test/src/initial-data';
+import {
+    ChannelService,
+    DefaultLogger,
+    EntityHydrator,
+    LogLevel,
+    mergeConfig,
+    Order,
+    OrderService,
+    RequestContext
+} from '@vendure/core';
+import { TestServer } from '@vendure/testing/lib/test-server';
+import { gql } from "graphql-tag";
+
+jest.setTimeout(20000);
+
+export const ADD_ITEM_TO_ORDER = gql`
+    mutation AddItemToOrder(
+        $productVariantId: ID!
+        $quantity: Int!
+    ) {
+        addItemToOrder(
+            productVariantId: $productVariantId
+            quantity: $quantity
+        ) {
+            ... on Order {
+                id
+                code
+            }
+            ... on ErrorResult {
+                errorCode
+                message
+            }
+        }
+    }
+`;
+
+describe('Order export plugin', function () {
+    let server: TestServer;
+    let adminClient: SimpleGraphQLClient;
+    let shopClient: SimpleGraphQLClient;
+
+
+    beforeAll(async () => {
+        registerInitializer('sqljs', new SqljsInitializer('__data__'));
+        const config = mergeConfig(testConfig, {
+            logger: new DefaultLogger({ level: LogLevel.Debug }),
+        });
+        ({ server, adminClient, shopClient } = createTestEnvironment(config));
+        await server.init({
+            initialData,
+            productsCsvPath: `${__dirname}/subscriptions.csv`,
+        });
+    }, 60000);
+
+    it('Should hyrate all orderlines', async () => {
+        const { addItemToOrder } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+            productVariantId: '2',
+            quantity: 1,
+        });
+        await shopClient.query(ADD_ITEM_TO_ORDER, {
+            productVariantId: '1',
+            quantity: 1,
+        });
+        const channel = await server.app.get(ChannelService).getDefaultChannel();
+        const ctx = new RequestContext({
+            channel,
+            authorizedAsOwnerOnly: false,
+            isAuthorized: true,
+            apiType: 'admin'
+        });
+        const order = await server.app.get(OrderService).findOneByCode(ctx, addItemToOrder!.code);
+        console.log(order)
+        await server.app.get(EntityHydrator).hydrate(ctx, order!, {
+            relations: ['customer', 'shippingLines', 'lines.productVariant'],
+            applyProductVariantPrices: true,
+        });
+        console.log(order!.lines.map(line => line.productVariant));
+        expect(false).toBe('mock-secret-1234');
+    });
+});

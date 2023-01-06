@@ -77,7 +77,8 @@ export class StripeClient extends Stripe {
   }: SubscriptionInput): Promise<Stripe.Subscription> {
     return this.subscriptions.create({
       customer: customerId,
-      billing_cycle_anchor: this.toStripeTimeStamp(startDate),
+      // billing_cycle_anchor: this.toStripeTimeStamp(startDate),
+      trial_end: this.toStripeTimeStamp(startDate),
       proration_behavior: proration ? 'create_prorations' : 'none',
       description: description,
       items: [
