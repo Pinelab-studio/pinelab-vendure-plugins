@@ -52,7 +52,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     options: schedules.map((s) => ({ value: s.name! })),
     public: true,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription' },
   },
 ];
 
@@ -63,13 +63,13 @@ export const customerCustomFields: CustomFieldConfig[] = [
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Stripe customer ID',
+        value: 'Stripe Customer ID',
       },
     ],
     type: 'string',
     public: false,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription' },
   },
 ];
 
@@ -85,19 +85,19 @@ export const orderLineCustomFields: CustomFieldConfig[] = [
     type: 'int',
     public: true,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription', component: 'currency-form-input'} },
   },
   {
     name: 'startDate',
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Start dDate',
+        value: 'Start Date',
       },
     ],
     type: 'datetime',
     public: true,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription' },
   },
 ];
