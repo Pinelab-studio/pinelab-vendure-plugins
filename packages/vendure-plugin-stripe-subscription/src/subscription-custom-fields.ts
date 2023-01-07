@@ -85,7 +85,7 @@ export const orderLineCustomFields: CustomFieldConfig[] = [
     type: 'int',
     public: true,
     nullable: true,
-    ui: { tab: 'Subscription', component: 'currency-form-input'} },
+    ui: { tab: 'Subscription', component: 'currency-form-input' },
   },
   {
     name: 'startDate',
