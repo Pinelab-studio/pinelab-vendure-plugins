@@ -7,6 +7,7 @@ import {
   ProductVariant,
 } from '@vendure/core';
 import { schedules } from './schedule.service';
+import { Schedule } from './schedule.entity';
 
 /**
  * Custom fields for managing subscriptions.
@@ -54,8 +55,24 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     options: schedules.map((s) => ({ value: s.name! })),
     public: true,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription' },
   },
+  /*  {
+    name: 'subscriptionSchedule2',
+    label: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Susbcription schedule2',
+      },
+    ],
+    type: 'relation',
+    entity: Schedule,
+    graphQLType: 'StripeSubscriptionSchedule',
+    eager: false,
+    public: true,
+    nullable: true,
+    ui: { ui: 'schedule-form-selector' },
+  },*/
 ];
 
 export const customerCustomFields: CustomFieldConfig[] = [
@@ -71,7 +88,7 @@ export const customerCustomFields: CustomFieldConfig[] = [
     type: 'string',
     public: false,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription' },
   },
 ];
 
@@ -87,19 +104,19 @@ export const orderLineCustomFields: CustomFieldConfig[] = [
     type: 'int',
     public: true,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription', component: 'currency-form-input' },
   },
   {
     name: 'startDate',
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Start dDate',
+        value: 'Start Date',
       },
     ],
     type: 'datetime',
     public: true,
     nullable: true,
-    ui: { tab: 'subscription' },
+    ui: { tab: 'Subscription' },
   },
 ];

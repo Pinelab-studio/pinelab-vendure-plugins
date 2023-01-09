@@ -1,11 +1,12 @@
 import {
   SubscriptionInterval,
   SubscriptionStartMoment,
-} from './generated/graphql';
+  UpsertStripeSubscriptionScheduleInput,
+} from './ui/generated/graphql';
 import { Schedule } from './schedule.entity';
 import { Injectable } from '@nestjs/common';
 import { VariantWithSubscriptionFields } from './subscription-custom-fields';
-import { RequestContext } from '@vendure/core';
+import { RequestContext, TransactionalConnection } from '@vendure/core';
 
 export const schedules: Schedule[] = [
   new Schedule({
@@ -57,6 +58,8 @@ export const schedules: Schedule[] = [
 
 @Injectable()
 export class ScheduleService {
+  constructor(private connection: TransactionalConnection) {}
+
   async getSchedule(variant: VariantWithSubscriptionFields): Promise<Schedule> {
     const schedule = schedules.find(
       (s) => s.name === variant!.customFields.subscriptionSchedule
@@ -70,6 +73,29 @@ export class ScheduleService {
   }
 
   async getSchedules(ctx: RequestContext): Promise<Schedule[]> {
-    return schedules;
+    return this.connection
+      .getRepository(ctx, Schedule)
+      .find({ where: { channelId: String(ctx.channelId) } });
+  }
+
+  async upsert(
+    ctx: RequestContext,
+    input: UpsertStripeSubscriptionScheduleInput
+  ): Promise<Schedule> {
+    const { id } = await this.connection.getRepository(ctx, Schedule).save({
+      id: input.id || undefined,
+      channelId: String(ctx.channelId),
+      name: input.name || undefined,
+      downpayment:
+        input.downpayment || input.downpayment === 0
+          ? input.downpayment
+          : undefined,
+      durationInterval: input.durationInterval || undefined,
+      durationCount: input.durationCount || undefined,
+      startMoment: input.startMoment || undefined,
+      billingInterval: input.billingInterval || undefined,
+      billingCount: input.billingCount || undefined,
+    });
+    return this.connection.getRepository(ctx, Schedule).findOneOrFail({ id });
   }
 }

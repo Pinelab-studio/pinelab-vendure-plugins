@@ -17,6 +17,19 @@ const sharedTypes = gql`
     end_of_billing_interval
     time_of_purchase
   }
+  type StripeSubscriptionSchedule {
+    id: ID!
+    createdAt: DateTime
+    updatedAt: DateTime
+    name: String!
+    downpayment: Int!
+    durationInterval: SubscriptionInterval!
+    durationCount: Int!
+    startMoment: SubscriptionStartMoment!
+    paidUpFront: Boolean!
+    billingInterval: SubscriptionInterval!
+    billingCount: Int!
+  }
 `;
 
 export const shopSchemaExtensions = gql`
@@ -61,20 +74,22 @@ export const shopSchemaExtensions = gql`
 
 export const adminSchemaExtensions = gql`
   ${sharedTypes}
-  type StripeSubscriptionSchedule {
-    id: ID!
-    createdAt: DateTime
-    updatedAt: DateTime
-    name: String!
-    downpayment: Int!
-    durationInterval: SubscriptionInterval!
-    durationCount: Int!
-    startMoment: SubscriptionStartMoment!
-    paidUpFront: Boolean!
-    billingInterval: SubscriptionInterval!
-    billingCount: Int!
+  input UpsertStripeSubscriptionScheduleInput {
+    id: ID
+    name: String
+    downpayment: Int
+    durationInterval: SubscriptionInterval
+    durationCount: Int
+    startMoment: SubscriptionStartMoment
+    billingInterval: SubscriptionInterval
+    billingCount: Int
   }
   extend type Query {
     stripeSubscriptionSchedules: [StripeSubscriptionSchedule!]!
+  }
+  extend type Mutation {
+    upsertStripeSubscriptionSchedule(
+      input: UpsertStripeSubscriptionScheduleInput!
+    ): StripeSubscriptionSchedule!
   }
 `;

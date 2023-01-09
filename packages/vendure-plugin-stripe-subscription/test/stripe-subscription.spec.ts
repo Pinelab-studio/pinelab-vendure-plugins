@@ -27,6 +27,7 @@ import {
   GET_PRICING,
   GET_PRICING_FOR_ORDERLINE,
   GET_PRICING_FOR_PRODUCT,
+  GET_SCHEDULES,
   setShipping,
 } from './helpers';
 // @ts-ignore
@@ -406,16 +407,31 @@ describe('Order export plugin', function () {
     ).toBe('6');
   });
 
-  /*  it('Can create Schedules', async () => {
-      expect(true).toBe(false);
-    });
+  it('Can retrieve Schedules', async () => {
+    await adminClient.asSuperAdmin();
+    const { stripeSubscriptionSchedules: schedules } = await adminClient.query(
+      GET_SCHEDULES
+    );
+    expect(schedules[0]).toBeDefined();
+    expect(schedules[0].id).toBeDefined();
+  });
 
-    it('Can update Schedules', async () => {
-      expect(true).toBe(false);
-    });
+  /*
+
+      it('Can retrieve Schedules', async () => {
+        expect(true).toBe(false);
+      });
+
+     it('Can create Schedules', async () => {
+        expect(true).toBe(false);
+      });
+
+      it('Can update Schedules', async () => {
+        expect(true).toBe(false);
+      });
 
 
-    it('Can delete Schedules', async () => {
-      expect(true).toBe(false);
-    });*/
+      it('Can delete Schedules', async () => {
+        expect(true).toBe(false);
+      });*/
 });

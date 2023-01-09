@@ -11,7 +11,7 @@ import {
 import {
   SubscriptionInterval,
   SubscriptionStartMoment,
-} from './generated/graphql';
+} from './ui/generated/graphql';
 
 /**
  * Calculate day rate based on the total price and duration of the subscription

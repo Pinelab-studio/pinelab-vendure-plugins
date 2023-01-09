@@ -1,4 +1,4 @@
-export * from './generated/graphql';
+export * from './ui/generated/graphql';
 export * from './subscription-custom-fields';
 export * from './util';
 export * from './stripe.client';

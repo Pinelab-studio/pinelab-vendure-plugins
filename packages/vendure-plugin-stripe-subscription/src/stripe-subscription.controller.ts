@@ -18,7 +18,8 @@ import { IncomingStripeWebhook } from './stripe.types';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
-} from './generated/graphql';
+  UpsertStripeSubscriptionScheduleInput,
+} from './ui/generated/graphql';
 import { Request } from 'express';
 import { ScheduleService } from './schedule.service';
 import { Schedule } from './schedule.entity';
@@ -122,6 +123,15 @@ export class AdminResolver {
     @Ctx() ctx: RequestContext
   ): Promise<Schedule[]> {
     return this.scheduleService.getSchedules(ctx);
+  }
+
+  @Allow(Permission.UpdateSettings)
+  @Mutation()
+  async upsertStripeSubscriptionSchedule(
+    @Ctx() ctx: RequestContext,
+    @Args('input') input: UpsertStripeSubscriptionScheduleInput
+  ): Promise<Schedule> {
+    return this.scheduleService.upsert(ctx, input);
   }
 }
 

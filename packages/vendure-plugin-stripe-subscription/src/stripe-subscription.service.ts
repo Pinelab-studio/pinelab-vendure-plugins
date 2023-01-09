@@ -39,7 +39,7 @@ import {
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
-} from './generated/graphql';
+} from './ui/generated/graphql';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import { ScheduleService } from './schedule.service';
 

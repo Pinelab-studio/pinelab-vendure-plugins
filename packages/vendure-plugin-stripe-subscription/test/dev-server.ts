@@ -21,6 +21,8 @@ import {
 import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
+import { UPSERT_SCHEDULES } from '../src/ui/queries';
+import { SubscriptionInterval, SubscriptionStartMoment } from '../src';
 // import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
 
 export let clientSecret = 'test';
@@ -49,11 +51,11 @@ export let clientSecret = 'test';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [StripeSubscriptionPlugin.ui],
-          devMode: false
-        }),*/
+          devMode: true,
+        }),
       }),
     ],
   });
@@ -86,6 +88,18 @@ export let clientSecret = 'test';
     },
   });
   console.log(`Created paymentMethod stripe-subscription`);
+  await adminClient.query(UPSERT_SCHEDULES, {
+    input: {
+      name: '6 months, billed monthly, 199 downpayment',
+      downpayment: 19900,
+      durationInterval: SubscriptionInterval.Month,
+      durationCount: 6,
+      startMoment: SubscriptionStartMoment.StartOfBillingInterval,
+      billingInterval: SubscriptionInterval.Month,
+      billingCount: 1,
+    },
+  });
+  console.log(`Created subscription schedule`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   const in3Days = new Date();
@@ -101,13 +115,13 @@ export let clientSecret = 'test';
   });
   // Add monthly sub
   /*  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '2',
-    quantity: 1,
-    customFields: {
-      downpayment: 40000,
-      startDate: in3Days,
-    },
-  });*/
+      productVariantId: '2',
+      quantity: 1,
+      customFields: {
+        downpayment: 40000,
+        startDate: in3Days,
+      },
+    });*/
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(

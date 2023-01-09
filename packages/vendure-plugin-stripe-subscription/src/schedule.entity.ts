@@ -2,7 +2,7 @@ import { DeepPartial, VendureEntity } from '@vendure/core';
 import {
   SubscriptionInterval,
   SubscriptionStartMoment,
-} from './generated/graphql';
+} from './ui/generated/graphql';
 import { Column, Entity } from 'typeorm';
 
 @Entity()
@@ -14,7 +14,10 @@ export class Schedule extends VendureEntity {
   @Column({ nullable: false })
   name!: string;
 
-  @Column({ type: 'integer', nullable: true })
+  @Column({ nullable: false })
+  channelId!: string;
+
+  @Column({ type: 'integer', nullable: false })
   downpayment!: number;
 
   @Column({ nullable: false })
