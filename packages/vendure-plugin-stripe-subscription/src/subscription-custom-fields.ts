@@ -31,7 +31,6 @@ export interface OrderLineWithSubscriptionFields extends OrderLine {
   customFields: {
     downpayment?: number;
     startDate?: Date;
-    pricing?: StripeSubscriptionPricing;
   };
   productVariant: VariantWithSubscriptionFields;
 }
@@ -72,10 +71,9 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     type: 'relation',
     entity: Schedule,
     graphQLType: 'StripeSubscriptionSchedule',
-    eager: false,
     public: true,
     nullable: true,
-    ui: { ui: 'schedule-form-selector' },
+    ui: { ui: 'schedule-form-selector', tab: 'Subscription' },
   },
 ];
 

@@ -8,7 +8,6 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   getDayRate,
   getDaysUntilNextStartDate,
@@ -60,15 +59,7 @@ describe('Order export plugin', function () {
     });
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
-      initialData: {
-        ...initialData,
-        paymentMethods: [
-          {
-            name: testPaymentMethod.code,
-            handler: { code: testPaymentMethod.code, arguments: [] },
-          },
-        ],
-      },
+      initialData,
       productsCsvPath: `${__dirname}/subscriptions.csv`,
     });
     serverStarted = true;
@@ -412,20 +403,20 @@ describe('Order export plugin', function () {
 
   /*
 
-        it('Can retrieve Schedules', async () => {
-          expect(true).toBe(false);
-        });
+          it('Can retrieve Schedules', async () => {
+            expect(true).toBe(false);
+          });
 
-       it('Can create Schedules', async () => {
-          expect(true).toBe(false);
-        });
+         it('Can create Schedules', async () => {
+            expect(true).toBe(false);
+          });
 
-        it('Can update Schedules', async () => {
-          expect(true).toBe(false);
-        });
+          it('Can update Schedules', async () => {
+            expect(true).toBe(false);
+          });
 
 
-        it('Can delete Schedules', async () => {
-          expect(true).toBe(false);
-        });*/
+          it('Can delete Schedules', async () => {
+            expect(true).toBe(false);
+          });*/
 });
