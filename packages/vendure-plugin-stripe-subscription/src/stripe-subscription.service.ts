@@ -39,6 +39,7 @@ import {
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
+  StripeSubscriptionSchedule,
 } from './ui/generated/graphql';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import { ScheduleService } from './schedule.service';
@@ -282,6 +283,7 @@ export class StripeSubscriptionService {
       intervalCount: schedule.billingCount,
       amountDueNow,
       subscriptionStartDate,
+      schedule: schedule as StripeSubscriptionSchedule,
     };
   }
 

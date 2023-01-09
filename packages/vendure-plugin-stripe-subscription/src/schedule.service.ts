@@ -69,7 +69,13 @@ export class ScheduleService {
         `No schedule found with name "${variant.customFields.subscriptionSchedule}"`
       );
     }
-    return schedule;
+    return {
+      ...schedule,
+      id: schedule.name,
+      createdAt: new Date(),
+      paidUpFront: schedule.paidUpFront,
+      updatedAt: new Date(),
+    };
   }
 
   async getSchedules(ctx: RequestContext): Promise<Schedule[]> {

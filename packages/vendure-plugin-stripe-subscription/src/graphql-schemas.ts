@@ -30,10 +30,24 @@ const sharedTypes = gql`
     billingInterval: SubscriptionInterval!
     billingCount: Int!
   }
+  input UpsertStripeSubscriptionScheduleInput {
+    id: ID
+    name: String
+    downpayment: Int
+    durationInterval: SubscriptionInterval
+    durationCount: Int
+    startMoment: SubscriptionStartMoment
+    billingInterval: SubscriptionInterval
+    billingCount: Int
+  }
 `;
 
 export const shopSchemaExtensions = gql`
   ${sharedTypes}
+
+  extend type OrderLine {
+    subscriptionPricing: StripeSubscriptionPricing
+  }
 
   type StripeSubscriptionPricing {
     variantId: String!
@@ -46,6 +60,7 @@ export const shopSchemaExtensions = gql`
     intervalCount: Int!
     amountDueNow: Int!
     subscriptionStartDate: DateTime!
+    schedule: StripeSubscriptionSchedule!
   }
   input StripeSubscriptionPricingInput {
     productVariantId: ID!
@@ -60,9 +75,6 @@ export const shopSchemaExtensions = gql`
     stripeSubscriptionPricing(
       input: StripeSubscriptionPricingInput
     ): StripeSubscriptionPricing
-    stripeSubscriptionPricingForOrderLine(
-      orderLineId: ID!
-    ): StripeSubscriptionPricing
     stripeSubscriptionPricingForProduct(
       productId: ID!
     ): [StripeSubscriptionPricing!]!
@@ -74,16 +86,6 @@ export const shopSchemaExtensions = gql`
 
 export const adminSchemaExtensions = gql`
   ${sharedTypes}
-  input UpsertStripeSubscriptionScheduleInput {
-    id: ID
-    name: String
-    downpayment: Int
-    durationInterval: SubscriptionInterval
-    durationCount: Int
-    startMoment: SubscriptionStartMoment
-    billingInterval: SubscriptionInterval
-    billingCount: Int
-  }
   extend type Query {
     stripeSubscriptionSchedules: [StripeSubscriptionSchedule!]!
   }

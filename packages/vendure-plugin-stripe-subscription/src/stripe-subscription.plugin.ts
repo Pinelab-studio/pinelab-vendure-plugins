@@ -5,6 +5,7 @@ import {
   StripeSubscriptionController,
   ShopResolver,
   AdminResolver,
+  ShopOrderLinePricingResolver,
 } from './stripe-subscription.controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import {
@@ -32,7 +33,7 @@ export interface StripeSubscriptionPluginOptions {
   entities: [Schedule],
   shopApiExtensions: {
     schema: shopSchemaExtensions,
-    resolvers: [ShopResolver],
+    resolvers: [ShopResolver, ShopOrderLinePricingResolver],
   },
   adminApiExtensions: {
     schema: adminSchemaExtensions,

@@ -56,18 +56,33 @@ export const GET_PRICING_FOR_PRODUCT = gql`
   }
 `;
 
-export const GET_PRICING_FOR_ORDERLINE = gql`
-  query stripeSubscriptionPricingForOrderLine($orderLineId: ID!) {
-    stripeSubscriptionPricingForOrderLine(orderLineId: $orderLineId) {
-      downpayment
-      totalProratedAmount
-      proratedDays
-      dayRate
-      recurringPrice
-      interval
-      intervalCount
-      amountDueNow
-      subscriptionStartDate
+export const GET_ORDER_WITH_PRICING = gql`
+  query getOrderWithPricing {
+    activeOrder {
+      lines {
+        subscriptionPricing {
+          downpayment
+          totalProratedAmount
+          proratedDays
+          dayRate
+          recurringPrice
+          interval
+          intervalCount
+          amountDueNow
+          subscriptionStartDate
+          schedule {
+            id
+            name
+            downpayment
+            durationInterval
+            durationCount
+            startMoment
+            paidUpFront
+            billingCount
+            billingInterval
+          }
+        }
+      }
     }
   }
 `;

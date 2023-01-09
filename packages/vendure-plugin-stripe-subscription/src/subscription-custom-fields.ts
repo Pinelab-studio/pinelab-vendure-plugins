@@ -8,6 +8,7 @@ import {
 } from '@vendure/core';
 import { schedules } from './schedule.service';
 import { Schedule } from './schedule.entity';
+import { StripeSubscriptionPricing } from './ui/generated/graphql';
 
 /**
  * Custom fields for managing subscriptions.
@@ -26,10 +27,13 @@ export interface CustomerWithSubscriptionFields extends Customer {
 }
 
 export interface OrderLineWithSubscriptionFields extends OrderLine {
+  subscriptionPricing?: StripeSubscriptionPricing;
   customFields: {
     downpayment?: number;
     startDate?: Date;
+    pricing?: StripeSubscriptionPricing;
   };
+  productVariant: VariantWithSubscriptionFields;
 }
 
 /**
@@ -57,7 +61,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     nullable: true,
     ui: { tab: 'Subscription' },
   },
-  /*  {
+  {
     name: 'subscriptionSchedule2',
     label: [
       {
@@ -72,7 +76,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     public: true,
     nullable: true,
     ui: { ui: 'schedule-form-selector' },
-  },*/
+  },
 ];
 
 export const customerCustomFields: CustomFieldConfig[] = [

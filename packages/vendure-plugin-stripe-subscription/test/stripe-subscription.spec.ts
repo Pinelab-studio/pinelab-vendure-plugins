@@ -14,6 +14,7 @@ import {
   getDaysUntilNextStartDate,
   getNextStartDate,
   IncomingStripeWebhook,
+  OrderLineWithSubscriptionFields,
   stripeSubscriptionHandler,
   StripeSubscriptionPlugin,
   StripeSubscriptionPricing,
@@ -24,8 +25,8 @@ import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
+  GET_ORDER_WITH_PRICING,
   GET_PRICING,
-  GET_PRICING_FOR_ORDERLINE,
   GET_PRICING_FOR_PRODUCT,
   GET_SCHEDULES,
   setShipping,
@@ -306,23 +307,16 @@ describe('Order export plugin', function () {
     expect(secret).toBe('mock-secret-1234');
   });
 
-  it('Should calculate pricing for order line', async () => {
-    const { stripeSubscriptionPricingForOrderLine } = await shopClient.query(
-      GET_PRICING_FOR_ORDERLINE,
-      {
-        orderLineId: 1,
-      }
-    );
-    const pricing: StripeSubscriptionPricing =
-      stripeSubscriptionPricingForOrderLine;
-    expect(pricing.downpayment).toBe(0);
-    expect(pricing.recurringPrice).toBe(9000);
-    expect(pricing.interval).toBe('month');
-    expect(pricing.intervalCount).toBe(1);
-    expect(pricing.dayRate).toBe(296);
-    expect(pricing.amountDueNow).toBe(
-      pricing.totalProratedAmount + pricing.downpayment
-    );
+  it('Should have pricing and schedule on order line', async () => {
+    const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
+    const line: OrderLineWithSubscriptionFields = activeOrder.lines[0];
+    expect(line.subscriptionPricing).toBeDefined();
+    expect(line.subscriptionPricing?.schedule).toBeDefined();
+    expect(line.subscriptionPricing?.schedule.name).toBeDefined();
+    expect(line.subscriptionPricing?.schedule.downpayment).toBe(19900);
+    expect(line.subscriptionPricing?.schedule.durationInterval).toBe('month');
+    expect(line.subscriptionPricing?.schedule.durationCount).toBe(6);
+    expect(line.subscriptionPricing?.schedule.paidUpFront).toBe(false);
   });
 
   it('Should create subscriptions on webhook succeed', async () => {
@@ -418,20 +412,20 @@ describe('Order export plugin', function () {
 
   /*
 
-      it('Can retrieve Schedules', async () => {
-        expect(true).toBe(false);
-      });
+        it('Can retrieve Schedules', async () => {
+          expect(true).toBe(false);
+        });
 
-     it('Can create Schedules', async () => {
-        expect(true).toBe(false);
-      });
+       it('Can create Schedules', async () => {
+          expect(true).toBe(false);
+        });
 
-      it('Can update Schedules', async () => {
-        expect(true).toBe(false);
-      });
+        it('Can update Schedules', async () => {
+          expect(true).toBe(false);
+        });
 
 
-      it('Can delete Schedules', async () => {
-        expect(true).toBe(false);
-      });*/
+        it('Can delete Schedules', async () => {
+          expect(true).toBe(false);
+        });*/
 });

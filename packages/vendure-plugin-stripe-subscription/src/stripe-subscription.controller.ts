@@ -11,7 +11,14 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { loggerCtx } from './constants';
 import { IncomingStripeWebhook } from './stripe.types';
@@ -58,33 +65,6 @@ export class ShopResolver {
   }
 
   @Query()
-  async stripeSubscriptionPricingForOrderLine(
-    @Ctx() ctx: RequestContext,
-    @Args('orderLineId') orderLineId: ID
-  ): Promise<StripeSubscriptionPricing> {
-    const order = await this.orderService.findOneByOrderLineId(
-      ctx,
-      orderLineId,
-      ['lines', 'lines.productVariant']
-    );
-    const orderLine: OrderLineWithSubscriptionFields | undefined =
-      order?.lines.find((line) => line.id === orderLineId);
-    if (!orderLine) {
-      throw new UserInputError(
-        `No order with orderLineId '${orderLineId}' found`
-      );
-    }
-    return this.stripeSubscriptionService.getSubscriptionPricing(
-      ctx,
-      {
-        downpayment: orderLine.customFields.downpayment,
-        startDate: orderLine.customFields.startDate,
-      },
-      orderLine.productVariant
-    );
-  }
-
-  @Query()
   async stripeSubscriptionPricingForProduct(
     @Ctx() ctx: RequestContext,
     @Args('productId') productId: ID
@@ -110,6 +90,30 @@ export class ShopResolver {
         )
       )
     );
+  }
+}
+
+@Resolver('OrderLine')
+export class ShopOrderLinePricingResolver {
+  constructor(private subscriptionService: StripeSubscriptionService) {}
+
+  @ResolveField()
+  async subscriptionPricing(
+    @Ctx() ctx: RequestContext,
+    @Parent() orderLine: OrderLineWithSubscriptionFields
+  ): Promise<StripeSubscriptionPricing | undefined> {
+    if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
+      const pricing = await this.subscriptionService.getSubscriptionPricing(
+        ctx,
+        {
+          downpayment: orderLine.customFields.downpayment,
+          startDate: orderLine.customFields.startDate,
+        },
+        orderLine.productVariant
+      );
+      return pricing;
+    }
+    return;
   }
 }
 
