@@ -137,6 +137,14 @@ export class AdminResolver {
   ): Promise<Schedule> {
     return this.scheduleService.upsert(ctx, input);
   }
+  @Allow(Permission.UpdateSettings)
+  @Mutation()
+  async deleteStripeSubscriptionSchedule(
+    @Ctx() ctx: RequestContext,
+    @Args('scheduleId') scheduleId: string
+  ): Promise<void> {
+    return this.scheduleService.delete(ctx, scheduleId);
+  }
 }
 
 @Controller('stripe-subscriptions')

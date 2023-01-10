@@ -93,5 +93,6 @@ export const adminSchemaExtensions = gql`
     upsertStripeSubscriptionSchedule(
       input: UpsertStripeSubscriptionScheduleInput!
     ): StripeSubscriptionSchedule!
+    deleteStripeSubscriptionSchedule(scheduleId: ID!): Boolean
   }
 `;

@@ -35,3 +35,9 @@ export const UPSERT_SCHEDULES = gql`
     }
   }
 `;
+
+export const DELETE_SCHEDULE = gql`
+  mutation deleteStripeSubscriptionSchedule($scheduleId: ID!) {
+    deleteStripeSubscriptionSchedule(scheduleId: $scheduleId)
+  }
+`;

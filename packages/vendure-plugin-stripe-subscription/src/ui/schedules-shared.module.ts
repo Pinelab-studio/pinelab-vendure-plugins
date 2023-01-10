@@ -17,7 +17,7 @@ import { ScheduleRelationSelectorComponent } from './schedule-relation-selector.
     addNavMenuItem(
       {
         id: 'stripe-subscription-schedules',
-        label: 'Subscription schedules',
+        label: 'Subscriptions',
         routerLink: ['/extensions/subscription-schedules'],
         icon: 'calendar',
         requiresPermission: 'UpdateSettings',

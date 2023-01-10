@@ -5,7 +5,7 @@ import {
   ModalService,
   NotificationService,
 } from '@vendure/admin-ui/core';
-import { GET_SCHEDULES, UPSERT_SCHEDULES } from './queries';
+import { DELETE_SCHEDULE, GET_SCHEDULES, UPSERT_SCHEDULES } from './queries';
 import {
   StripeSubscriptionSchedule,
   SubscriptionInterval,
@@ -84,6 +84,7 @@ import {
                 id="durationCount"
                 type="number"
                 formControlName="durationCount"
+                min="1"
               />
               <select
                 clrSelect
@@ -96,61 +97,112 @@ import {
                 </option>
               </select>
             </vdr-form-field>
+            <!-- Paid up front ------->
+            <vdr-form-field
+              label="Paid up front"
+              for="isPaidUpFront"
+              tooltip="When paid up front, the customer is required to pay the full amount of the complete subscription up front."
+            >
+              <clr-checkbox-wrapper>
+                <input
+                  type="checkbox"
+                  clrCheckbox
+                  formControlName="isPaidUpFront"
+                />
+              </clr-checkbox-wrapper>
+            </vdr-form-field>
             <!-- Billing ------------------->
-            <vdr-form-field
-              label="Billing will occur every "
-              for="billingInterval"
-            >
-              <input
-                class="count"
-                id="billingCount"
-                type="number"
-                formControlName="billingCount"
-              />
-              <select
-                clrSelect
-                name="options"
-                formControlName="billingInterval"
-                required
+            <div *ngIf="!form.value.isPaidUpFront">
+              <vdr-form-field
+                label="Billing will occur every "
+                for="billingInterval"
               >
-                <option *ngFor="let interval of intervals" [value]="interval">
-                  {{ interval }}{{ form.value.billingCount > 1 ? 's' : '' }}
-                </option>
-              </select>
-              <span>on the</span>
-              <select
-                clrSelect
-                name="options"
-                formControlName="startMoment"
-                required
+                <input
+                  class="count"
+                  id="billingCount"
+                  type="number"
+                  formControlName="billingCount"
+                  min="1"
+                />
+                <select
+                  clrSelect
+                  name="options"
+                  formControlName="billingInterval"
+                  required
+                >
+                  <option *ngFor="let interval of intervals" [value]="interval">
+                    {{ interval }}{{ form.value.billingCount > 1 ? 's' : '' }}
+                  </option>
+                </select>
+                <span>on the</span>
+                <select
+                  clrSelect
+                  name="options"
+                  formControlName="startMoment"
+                  required
+                >
+                  <option *ngFor="let moment of moments" [value]="moment.value">
+                    {{ moment.name }}
+                  </option>
+                </select>
+                <span
+                  *ngIf="
+                    form.value.startMoment === 'time_of_purchase';
+                    else showWeek
+                  "
+                ></span>
+                <span
+                  #showWeek
+                  *ngIf="form.value.billingInterval === 'week'; else showMonth"
+                  >day of the week</span
+                >
+                <span #showMonth *ngIf="form.value.billingInterval === 'month'"
+                  >of the month</span
+                >
+              </vdr-form-field>
+              <vdr-form-field
+                label="Downpayment"
+                for="billingInterval"
+                tooltip="A downpayment requires a customer to pay an amount up front. The prorated amount will be deducted from the monthly/weekly price"
               >
-                <option *ngFor="let moment of moments" [value]="moment.value">
-                  {{ moment.name }}
-                </option>
-              </select>
-              <span *ngIf="form.value.billingInterval === 'week'">
-                day of the week
-              </span>
-              <span
-                *ngIf="
-                  form.value.billingInterval === 'month' &&
-                  form.value.startMoment !== 'time_of_purchase'
-                "
+                <vdr-currency-input
+                  clrInput
+                  [currencyCode]="currencyCode"
+                  formControlName="downpayment"
+                ></vdr-currency-input>
+              </vdr-form-field>
+            </div>
+            <div *ngIf="form.value.isPaidUpFront">
+              <vdr-form-field
+                label="Start of subscription"
+                for="billingInterval"
               >
-                of the month
-              </span>
-            </vdr-form-field>
-            <vdr-form-field
-              label="Downpayment"
-              for="billingInterval"
-              tooltip="A downpayment requires a user to pay an amount up front. The prorated amount will be deducted from the monthly/weekly price"
-            >
-              <vdr-currency-input
-                clrInput
-                [currencyCode]="currencyCode"
-                formControlName="downpayment"
-              ></vdr-currency-input>
-            </vdr-form-field>
+                <select
+                  clrSelect
+                  name="options"
+                  formControlName="startMoment"
+                  required
+                >
+                  <option *ngFor="let moment of moments" [value]="moment.value">
+                    {{ moment.name }}
+                  </option>
+                </select>
+                <span
+                  *ngIf="
+                    form.value.startMoment === 'time_of_purchase';
+                    else showWeek
+                  "
+                ></span>
+                <span
+                  #showWeek
+                  *ngIf="form.value.durationInterval === 'week'; else showMonth"
+                  >day of the week</span
+                >
+                <span #showMonth *ngIf="form.value.durationInterval === 'month'"
+                  >of the month</span
+                >
+              </vdr-form-field>
+            </div>
             <button
               class="btn btn-primary"
               (click)="save()"
@@ -196,7 +248,8 @@ export class SchedulesComponent implements OnInit {
   ) {
     this.form = this.formBuilder.group({
       name: ['name', Validators.required],
-      downpayment: ['downpayment', Validators.required],
+      isPaidUpFront: [false],
+      downpayment: [0, Validators.required],
       durationInterval: ['durationInterval', Validators.required],
       durationCount: ['durationCount', Validators.required],
       startMoment: ['startMoment', Validators.required],
@@ -281,6 +334,13 @@ export class SchedulesComponent implements OnInit {
     try {
       if (this.form.dirty) {
         const formValue = this.form.value;
+
+        if (formValue.isPaidUpFront) {
+          formValue.downpayment = 0;
+          // For paid up front duration and billing cycles are the same
+          formValue.billingInterval = formValue.durationInterval;
+          formValue.billingCount = formValue.durationCount;
+        }
         await this.dataService
           .mutate(UPSERT_SCHEDULES, {
             input: {
@@ -306,7 +366,7 @@ export class SchedulesComponent implements OnInit {
         entity: 'Schedule',
       });
     } finally {
-      this.fetchSchedules();
+      await this.fetchSchedules();
     }
   }
 
@@ -321,10 +381,13 @@ export class SchedulesComponent implements OnInit {
       })
       .subscribe(async (confirm) => {
         if (confirm) {
-          console.log('TODO delete');
+          await this.dataService
+            .mutate(DELETE_SCHEDULE, { scheduleId })
+            .toPromise();
           this.notificationService.success('Deleted schedule', {
             entity: 'Product',
           });
+          this.selectedSchedule = undefined;
           await this.fetchSchedules();
         }
       });

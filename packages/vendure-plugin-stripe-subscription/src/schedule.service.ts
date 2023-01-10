@@ -104,4 +104,16 @@ export class ScheduleService {
     });
     return this.connection.getRepository(ctx, Schedule).findOneOrFail({ id });
   }
+
+  async delete(ctx: RequestContext, scheduleId: string): Promise<void> {
+    const { id } = await this.connection
+      .getRepository(ctx, Schedule)
+      .findOneOrFail({
+        where: {
+          id: scheduleId,
+          channelId: ctx.channelId,
+        },
+      });
+    await this.connection.getRepository(ctx, Schedule).delete({ id });
+  }
 }
