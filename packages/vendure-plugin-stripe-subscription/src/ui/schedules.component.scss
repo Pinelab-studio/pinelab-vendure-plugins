@@ -35,7 +35,7 @@
     transition: width 0.3s, opacity 0.2s 0.3s, visibility 0s 0.3s;
 
     &.expanded {
-      width: 30vw;
+      width: 50vw;
       visibility: visible;
       opacity: 1;
       padding-left: 12px;
@@ -48,4 +48,14 @@
       cursor: pointer;
     }
   }
+}
+
+.stripe-schedules-edit span {
+  padding: 5px 5px 0 5px;
+}
+
+.count {
+  width: 40px;
+  margin-right: 10px;
+  flex: none !important;
 }

@@ -17,6 +17,11 @@ import {
   styleUrls: ['./schedules.component.scss'],
   template: `
     <h1>Stripe Subscription Schedules</h1>
+    <p>
+      Manage subscription schedules here. A schedule can be connected to a
+      product variant to make it a subscription.
+    </p>
+    <br />
     <button class="btn btn-primary" (click)="newSchedule()">
       Create new schedule
     </button>
@@ -55,7 +60,13 @@ import {
       <div class="stripe-schedules-edit" [class.expanded]="selectedSchedule">
         <div class="contents-header">
           <div class="header-title-row">
-            {{ selectedSchedule?.name }} {{ selectedSchedule?.id }}
+            <h2>
+              {{
+                selectedSchedule?.id
+                  ? 'Edit schedule ' + selectedSchedule?.id
+                  : 'Create new schedule'
+              }}
+            </h2>
             <button type="button" class="close-button" (click)="closeEdit()">
               <clr-icon shape="close"></clr-icon>
             </button>
@@ -67,14 +78,13 @@ import {
             <vdr-form-field label="Name" for="name">
               <input id="name" type="text" formControlName="name" />
             </vdr-form-field>
-            <vdr-form-field label="Downpayment" for="downpayment">
-              <vdr-currency-input
-                clrInput
-                formControlName="downpayment"
-                [currencyCode]="currencyCode"
-              ></vdr-currency-input>
-            </vdr-form-field>
-            <vdr-form-field label="Duration interval" for="durationInterval">
+            <vdr-form-field label="The duration is" for="durationCount">
+              <input
+                class="count"
+                id="durationCount"
+                type="number"
+                formControlName="durationCount"
+              />
               <select
                 clrSelect
                 name="options"
@@ -82,30 +92,21 @@ import {
                 required
               >
                 <option *ngFor="let interval of intervals" [value]="interval">
-                  {{ interval }}
+                  {{ interval }}{{ form.value.durationCount > 1 ? 's' : '' }}
                 </option>
               </select>
             </vdr-form-field>
-            <vdr-form-field label="Duration count" for="durationCount">
+            <!-- Billing ------------------->
+            <vdr-form-field
+              label="Billing will occur every "
+              for="billingInterval"
+            >
               <input
-                id="durationCount"
+                class="count"
+                id="billingCount"
                 type="number"
-                formControlName="durationCount"
+                formControlName="billingCount"
               />
-            </vdr-form-field>
-            <vdr-form-field label="Start moment" for="startMoment">
-              <select
-                clrSelect
-                name="options"
-                formControlName="startMoment"
-                required
-              >
-                <option *ngFor="let moment of moments" [value]="moment">
-                  {{ moment }}
-                </option>
-              </select>
-            </vdr-form-field>
-            <vdr-form-field label="Billing interval" for="billingInterval">
               <select
                 clrSelect
                 name="options"
@@ -113,16 +114,42 @@ import {
                 required
               >
                 <option *ngFor="let interval of intervals" [value]="interval">
-                  {{ interval }}
+                  {{ interval }}{{ form.value.billingCount > 1 ? 's' : '' }}
                 </option>
               </select>
+              <span>on the</span>
+              <select
+                clrSelect
+                name="options"
+                formControlName="startMoment"
+                required
+              >
+                <option *ngFor="let moment of moments" [value]="moment.value">
+                  {{ moment.name }}
+                </option>
+              </select>
+              <span *ngIf="form.value.billingInterval === 'week'">
+                day of the week
+              </span>
+              <span
+                *ngIf="
+                  form.value.billingInterval === 'month' &&
+                  form.value.startMoment !== 'time_of_purchase'
+                "
+              >
+                of the month
+              </span>
             </vdr-form-field>
-            <vdr-form-field label="Billing count" for="billingCount">
-              <input
-                id="billingCount"
-                type="number"
-                formControlName="billingCount"
-              />
+            <vdr-form-field
+              label="Downpayment"
+              for="billingInterval"
+              tooltip="A downpayment requires a user to pay an amount up front. The prorated amount will be deducted from the monthly/weekly price"
+            >
+              <vdr-currency-input
+                clrInput
+                [currencyCode]="currencyCode"
+                formControlName="downpayment"
+              ></vdr-currency-input>
             </vdr-form-field>
             <button
               class="btn btn-primary"
@@ -146,8 +173,18 @@ export class SchedulesComponent implements OnInit {
   currencyCode!: string;
   intervals = [SubscriptionInterval.Week, SubscriptionInterval.Month];
   moments = [
-    SubscriptionStartMoment.StartOfBillingInterval,
-    SubscriptionStartMoment.EndOfBillingInterval,
+    {
+      name: 'first',
+      value: SubscriptionStartMoment.StartOfBillingInterval,
+    },
+    {
+      name: 'last',
+      value: SubscriptionStartMoment.EndOfBillingInterval,
+    },
+    {
+      name: 'time of purchase',
+      value: SubscriptionStartMoment.TimeOfPurchase,
+    },
   ];
 
   constructor(
@@ -173,6 +210,14 @@ export class SchedulesComponent implements OnInit {
     this.dataService.settings.getActiveChannel().single$.subscribe((data) => {
       this.currencyCode = data.activeChannel.currencyCode;
     });
+  }
+
+  selectDurationInterval(interval: 'week' | 'month') {
+    this.form.controls['durationInterval'].setValue(interval);
+  }
+
+  selectBillingInterval(interval: 'week' | 'month') {
+    this.form.controls['billingInterval'].setValue(interval);
   }
 
   edit(scheduleId: string): void {
