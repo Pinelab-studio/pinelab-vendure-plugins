@@ -11,6 +11,7 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import {
   getDayRate,
   getDaysUntilNextStartDate,
+  getNextCyclesStartDate,
   getNextStartDate,
   IncomingStripeWebhook,
   OrderLineWithSubscriptionFields,
@@ -91,9 +92,31 @@ describe('Order export plugin', function () {
     });
   });
 
-  it('TODO getNextCycle', async () => {
-    // TODO getNextCycle() test
-    expect(true).toBe(true);
+  // TODO fix DST errors https://stackoverflow.com/questions/64353831/why-startofmonth-results-in-different-timezone-that-endofmonth
+
+  describe.only('Get next cycles start date', () => {
+    test.each([
+      [
+        new Date('2022-12-20'),
+        SubscriptionStartMoment.StartOfBillingInterval,
+        12,
+        SubscriptionInterval.Month,
+        new Date('2024-01-01'),
+      ],
+    ])(
+      'Calculates next cycles start date from %s to the %s in %s %ss',
+      (
+        now: Date,
+        startDate: SubscriptionStartMoment,
+        intervalCount: number,
+        interval: SubscriptionInterval,
+        expected: Date
+      ) => {
+        expect(
+          getNextCyclesStartDate(now, startDate, interval, intervalCount)
+        ).toEqual(expected);
+      }
+    );
   });
 
   describe('Calculate day rate', () => {
@@ -142,7 +165,7 @@ describe('Order export plugin', function () {
         4,
       ],
     ])(
-      'Calculate days: from %s to "%s" of %s should be %i $#1',
+      'Calculate days: from %s to "%s" of %s should be %i',
       (
         now: Date,
         startDate: SubscriptionStartMoment,

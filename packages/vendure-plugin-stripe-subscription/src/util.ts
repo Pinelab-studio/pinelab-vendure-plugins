@@ -41,40 +41,49 @@ export function getDaysUntilNextStartDate(
 }
 
 /**
- * Get the next startDate for a given start moment (first or last of the Interval)
+ * Get the next startDate for a given start moment (first or last of the Interval). Always returns the start of the day (00:00:000)
  */
 export function getNextStartDate(
   now: Date,
   interval: SubscriptionInterval,
   startMoment: SubscriptionStartMoment
 ): Date {
-  const startOfToday = startOfDay(now);
   if (startMoment === SubscriptionStartMoment.TimeOfPurchase) {
-    return new Date();
+    return now;
   }
   let nextStartDate = new Date();
   if (interval === SubscriptionInterval.Month) {
-    const nextMonth = new Date(
-      startOfToday.getFullYear(),
-      startOfToday.getMonth() + 1,
-      1
-    );
-    nextStartDate =
-      startMoment === SubscriptionStartMoment.StartOfBillingInterval
-        ? startOfMonth(nextMonth)
-        : endOfMonth(startOfToday);
+    if (startMoment === SubscriptionStartMoment.StartOfBillingInterval) {
+      const nextMonth = addMonths(now, 1);
+      nextStartDate = startOfMonth(nextMonth);
+      console.log(`next month ${nextMonth}`);
+    } else if (startMoment === SubscriptionStartMoment.EndOfBillingInterval) {
+      nextStartDate = endOfMonth(now);
+    } else {
+      throw Error(
+        `Unhandled combination of startMoment=${startMoment} and interval=${interval}`
+      );
+    }
   } else if (interval === SubscriptionInterval.Week) {
-    const nextWeek = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
-    nextStartDate =
-      startMoment === SubscriptionStartMoment.StartOfBillingInterval
-        ? startOfWeek(nextWeek)
-        : endOfWeek(startOfToday);
+    if (startMoment === SubscriptionStartMoment.StartOfBillingInterval) {
+      const nextWeek = addWeeks(now, 1);
+      nextStartDate = startOfWeek(nextWeek);
+    } else if (startMoment === SubscriptionStartMoment.EndOfBillingInterval) {
+      nextStartDate = endOfWeek(now);
+    } else {
+      throw Error(
+        `Unhandled combination of startMoment=${startMoment} and interval=${interval}`
+      );
+    }
   }
-  return nextStartDate;
+  console.log(`next startdate ${nextStartDate}`);
+  console.log(`StartOfDay startdate ${startOfDay(nextStartDate)}`);
+  return startOfDay(nextStartDate);
 }
 
 /**
  * Get the next cycles startDate. Used for paid-up-front subscriptions, where a user already paid for the first cycle
+ * and we need the next cycles start date
  */
 export function getNextCyclesStartDate(
   now: Date,
@@ -82,7 +91,8 @@ export function getNextCyclesStartDate(
   interval: SubscriptionInterval,
   intervalCount: number
 ): Date {
-  let oneCycleFromNow = new Date(startOfDay(now));
+  let oneCycleFromNow = new Date(now);
+  oneCycleFromNow.setHours(13); // Set middle of day to prevent daylight saving errors https://github.com/date-fns/date-fns/issues/571
   if (interval === SubscriptionInterval.Month) {
     oneCycleFromNow = addMonths(oneCycleFromNow, intervalCount);
   } else {
