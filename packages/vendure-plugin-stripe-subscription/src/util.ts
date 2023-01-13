@@ -56,7 +56,6 @@ export function getNextStartDate(
     if (startMoment === SubscriptionStartMoment.StartOfBillingInterval) {
       const nextMonth = addMonths(now, 1);
       nextStartDate = startOfMonth(nextMonth);
-      console.log(`next month ${nextMonth}`);
     } else if (startMoment === SubscriptionStartMoment.EndOfBillingInterval) {
       nextStartDate = endOfMonth(now);
     } else {
@@ -76,8 +75,6 @@ export function getNextStartDate(
       );
     }
   }
-  console.log(`next startdate ${nextStartDate}`);
-  console.log(`StartOfDay startdate ${startOfDay(nextStartDate)}`);
   return startOfDay(nextStartDate);
 }
 
