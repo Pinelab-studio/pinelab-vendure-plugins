@@ -222,7 +222,12 @@ export class StripeSubscriptionService {
         `Given Variant.price should have a price, given price is ${variant.price}`
       );
     }
-    const schedule = await this.scheduleService.getSchedule(variant);
+    const schedule = variant.customFields.subscriptionSchedule;
+    if (!schedule) {
+      throw new UserInputError(
+        `Variant ${variant.id} doesn't have a schedule attached`
+      );
+    }
     if (schedule.billingInterval != schedule.durationInterval) {
       throw Error(
         `Not implemented yet: billingInterval and durationInterval have to be equal`
@@ -454,9 +459,13 @@ export class StripeSubscriptionService {
           const downpaymentProduct = await stripeClient.products.create({
             name: `${order.code} - ${order.customer.emailAddress} - ${orderLine.productVariant.name} - Downpayment`,
           });
-          const schedule = await this.scheduleService.getSchedule(
-            orderLine.productVariant
-          );
+          const schedule =
+            orderLine.productVariant.customFields.subscriptionSchedule;
+          if (!schedule) {
+            throw new UserInputError(
+              `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
+            );
+          }
           const downpaymentInterval = schedule.durationInterval;
           const downpaymentIntervalCount = schedule.durationCount;
           const downpayment = await stripeClient.createOffSessionSubscription({

@@ -11,13 +11,12 @@ import { GET_SCHEDULES } from './queries';
   selector: 'schedule-relation-selector',
   template: `
     <div *ngIf="formControl.value as schedule">
-      <vdr-chip> 5</vdr-chip>
-      {{ schedule.name }}
+      Selected: <vdr-chip>{{ schedule.name }}</vdr-chip>
     </div>
     <select appendTo="body" [formControl]="formControl">
-      <option [ngValue]="null">Select a schedule...</option>
-      <option *ngFor="let item of schedules$ | async" [ngValue]="item">
-        <b>{{ item.name }}</b>
+      <option [ngValue]="null">none</option>
+      <option *ngFor="let item of schedules$ | async" [ngValue]="item" selected>
+        {{ item.name }}
       </option>
     </select>
   `,
@@ -32,13 +31,9 @@ export class ScheduleRelationSelectorComponent
 
   schedules$!: Observable<StripeSubscriptionSchedule[]>;
 
-  constructor(
-    private dataService: DataService,
-    private route: ActivatedRoute
-  ) {}
+  constructor(private dataService: DataService) {}
 
   ngOnInit() {
-    console.log('INITT');
     this.schedules$ = this.dataService
       .query(GET_SCHEDULES)
       .mapSingle((result: any) => result.stripeSubscriptionSchedules ?? []);

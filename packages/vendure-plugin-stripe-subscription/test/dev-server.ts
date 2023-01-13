@@ -16,6 +16,7 @@ import {
   CREATE_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   setShipping,
+  UPDATE_VARIANT,
 } from './helpers';
 
 import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
@@ -99,7 +100,29 @@ export let clientSecret = 'test';
       billingCount: 1,
     },
   });
+  await adminClient.query(UPSERT_SCHEDULES, {
+    input: {
+      name: '6 months, billed monthly, 199 downpayment',
+      downpayment: 19900,
+      durationInterval: SubscriptionInterval.Month,
+      durationCount: 6,
+      startMoment: SubscriptionStartMoment.StartOfBillingInterval,
+      billingInterval: SubscriptionInterval.Month,
+      billingCount: 1,
+    },
+  });
   console.log(`Created subscription schedule`);
+  await adminClient.query(UPDATE_VARIANT, {
+    input: [
+      {
+        id: 1,
+        customFields: {
+          subscriptionScheduleId: 1,
+        },
+      },
+    ],
+  });
+  console.log(`Added schedule to variant`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   const in3Days = new Date();
@@ -113,15 +136,6 @@ export let clientSecret = 'test';
       startDate: in3Days,
     },
   });
-  // Add monthly sub
-  /*  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-      productVariantId: '2',
-      quantity: 1,
-      customFields: {
-        downpayment: 40000,
-        startDate: in3Days,
-      },
-    });*/
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(

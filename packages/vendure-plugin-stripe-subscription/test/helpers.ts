@@ -158,6 +158,17 @@ export const GET_SCHEDULES = gql`
   }
 `;
 
+export const UPDATE_VARIANT = gql`
+  mutation updateProductVariants($input: [UpdateProductVariantInput!]!) {
+    updateProductVariants(input: $input) {
+      ... on ProductVariant {
+        id
+      }
+      __typename
+    }
+  }
+`;
+
 export async function setShipping(
   shopClient: SimpleGraphQLClient
 ): Promise<void> {

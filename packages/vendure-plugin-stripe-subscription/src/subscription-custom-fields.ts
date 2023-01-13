@@ -6,7 +6,6 @@ import {
   OrderLine,
   ProductVariant,
 } from '@vendure/core';
-import { schedules } from './schedule.service';
 import { Schedule } from './schedule.entity';
 import { StripeSubscriptionPricing } from './ui/generated/graphql';
 
@@ -16,7 +15,7 @@ import { StripeSubscriptionPricing } from './ui/generated/graphql';
  */
 export interface VariantWithSubscriptionFields extends ProductVariant {
   customFields: {
-    subscriptionSchedule?: string;
+    subscriptionSchedule?: Schedule;
   };
 }
 
@@ -54,26 +53,13 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
         value: 'Susbcription schedule',
       },
     ],
-    type: 'string',
-    options: schedules.map((s) => ({ value: s.name! })),
-    public: true,
-    nullable: true,
-    ui: { tab: 'Subscription' },
-  },
-  {
-    name: 'subscriptionSchedule2',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Susbcription schedule2',
-      },
-    ],
     type: 'relation',
     entity: Schedule,
     graphQLType: 'StripeSubscriptionSchedule',
     public: true,
     nullable: true,
-    ui: { ui: 'schedule-form-selector', tab: 'Subscription' },
+    eager: true,
+    ui: { component: 'schedule-form-selector', tab: 'Subscription' },
   },
 ];
 
