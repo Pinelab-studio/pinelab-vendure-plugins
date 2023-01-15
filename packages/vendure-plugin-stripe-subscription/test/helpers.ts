@@ -56,18 +56,33 @@ export const GET_PRICING_FOR_PRODUCT = gql`
   }
 `;
 
-export const GET_PRICING_FOR_ORDERLINE = gql`
-  query stripeSubscriptionPricingForOrderLine($orderLineId: ID!) {
-    stripeSubscriptionPricingForOrderLine(orderLineId: $orderLineId) {
-      downpayment
-      totalProratedAmount
-      proratedDays
-      dayRate
-      recurringPrice
-      interval
-      intervalCount
-      amountDueNow
-      subscriptionStartDate
+export const GET_ORDER_WITH_PRICING = gql`
+  query getOrderWithPricing {
+    activeOrder {
+      lines {
+        subscriptionPricing {
+          downpayment
+          totalProratedAmount
+          proratedDays
+          dayRate
+          recurringPrice
+          interval
+          intervalCount
+          amountDueNow
+          subscriptionStartDate
+          schedule {
+            id
+            name
+            downpayment
+            durationInterval
+            durationCount
+            startMoment
+            paidUpFront
+            billingCount
+            billingInterval
+          }
+        }
+      }
     }
   }
 `;
@@ -122,6 +137,35 @@ export const SET_SHIPPING_METHOD = gql`
 export const CREATE_PAYMENT_LINK = gql`
   mutation createStripeSubscriptionIntent {
     createStripeSubscriptionIntent
+  }
+`;
+
+export const GET_SCHEDULES = gql`
+  {
+    stripeSubscriptionSchedules {
+      id
+      createdAt
+      updatedAt
+      name
+      downpayment
+      durationInterval
+      durationCount
+      startMoment
+      paidUpFront
+      billingInterval
+      billingCount
+    }
+  }
+`;
+
+export const UPDATE_VARIANT = gql`
+  mutation updateProductVariants($input: [UpdateProductVariantInput!]!) {
+    updateProductVariants(input: $input) {
+      ... on ProductVariant {
+        id
+      }
+      __typename
+    }
   }
 `;
 

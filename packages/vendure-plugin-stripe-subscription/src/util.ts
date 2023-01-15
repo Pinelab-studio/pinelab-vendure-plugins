@@ -1,4 +1,6 @@
 import {
+  addMonths,
+  addWeeks,
   differenceInDays,
   endOfMonth,
   endOfWeek,
@@ -7,10 +9,9 @@ import {
   startOfWeek,
 } from 'date-fns';
 import {
-  SubscriptionBillingInterval,
-  SubscriptionDurationInterval,
+  SubscriptionInterval,
   SubscriptionStartMoment,
-} from './generated/graphql';
+} from './ui/generated/graphql';
 
 /**
  * Calculate day rate based on the total price and duration of the subscription
@@ -20,16 +21,12 @@ import {
  */
 export function getDayRate(
   totalPrice: number,
-  durationInterval: SubscriptionDurationInterval,
+  durationInterval: SubscriptionInterval,
   durationCount: number
 ): number {
-  let intervalsPerYear = 1; // Default is 1 year
-  if (durationInterval === SubscriptionDurationInterval.Month) {
-    intervalsPerYear = 12;
-  } else if (durationInterval === SubscriptionDurationInterval.Week) {
+  let intervalsPerYear = 12; // Default is 1 month
+  if (durationInterval === SubscriptionInterval.Week) {
     intervalsPerYear = 52;
-  } else if (durationInterval === SubscriptionDurationInterval.Day) {
-    intervalsPerYear = 365;
   }
   const pricePerYear = (intervalsPerYear / durationCount) * totalPrice;
   return Math.round(pricePerYear / 365);
@@ -44,38 +41,67 @@ export function getDaysUntilNextStartDate(
 }
 
 /**
- * Get the next startDate for a given start moment (first or last of the Interval)
+ * Get the next startDate for a given start moment (first or last of the Interval). Always returns the start of the day (00:00:000)
  */
 export function getNextStartDate(
   now: Date,
-  interval: SubscriptionBillingInterval,
+  interval: SubscriptionInterval,
   startMoment: SubscriptionStartMoment
 ): Date {
-  const startOfToday = startOfDay(now);
   if (startMoment === SubscriptionStartMoment.TimeOfPurchase) {
-    return new Date();
+    return now;
   }
   let nextStartDate = new Date();
-  if (interval === SubscriptionBillingInterval.Month) {
-    const nextMonth = new Date(
-      startOfToday.getFullYear(),
-      startOfToday.getMonth() + 1,
-      1
-    );
-    nextStartDate =
-      startMoment === SubscriptionStartMoment.StartOfBillingInterval
-        ? startOfMonth(nextMonth)
-        : endOfMonth(startOfToday);
-  } else if (interval === SubscriptionBillingInterval.Week) {
-    const nextWeek = new Date(startOfToday.getTime() + 7 * 24 * 60 * 60 * 1000);
-    nextStartDate =
-      startMoment === SubscriptionStartMoment.StartOfBillingInterval
-        ? startOfWeek(nextWeek)
-        : endOfWeek(startOfToday);
+  if (interval === SubscriptionInterval.Month) {
+    if (startMoment === SubscriptionStartMoment.StartOfBillingInterval) {
+      const nextMonth = addMonths(now, 1);
+      nextStartDate = startOfMonth(nextMonth);
+    } else if (startMoment === SubscriptionStartMoment.EndOfBillingInterval) {
+      nextStartDate = endOfMonth(now);
+    } else {
+      throw Error(
+        `Unhandled combination of startMoment=${startMoment} and interval=${interval}`
+      );
+    }
+  } else if (interval === SubscriptionInterval.Week) {
+    if (startMoment === SubscriptionStartMoment.StartOfBillingInterval) {
+      const nextWeek = addWeeks(now, 1);
+      nextStartDate = startOfWeek(nextWeek);
+    } else if (startMoment === SubscriptionStartMoment.EndOfBillingInterval) {
+      nextStartDate = endOfWeek(now);
+    } else {
+      throw Error(
+        `Unhandled combination of startMoment=${startMoment} and interval=${interval}`
+      );
+    }
   }
-  return nextStartDate;
+  return startOfDay(nextStartDate);
 }
 
+/**
+ * Get the next cycles startDate. Used for paid-up-front subscriptions, where a user already paid for the first cycle
+ * and we need the next cycles start date
+ */
+export function getNextCyclesStartDate(
+  now: Date,
+  startMoment: SubscriptionStartMoment,
+  interval: SubscriptionInterval,
+  intervalCount: number
+): Date {
+  let oneCycleFromNow = new Date(now);
+  oneCycleFromNow.setHours(13); // Set middle of day to prevent daylight saving errors https://github.com/date-fns/date-fns/issues/571
+  if (interval === SubscriptionInterval.Month) {
+    oneCycleFromNow = addMonths(oneCycleFromNow, intervalCount);
+  } else {
+    // Week
+    oneCycleFromNow = addWeeks(oneCycleFromNow, intervalCount);
+  }
+  return getNextStartDate(oneCycleFromNow, interval, startMoment);
+}
+
+/**
+ * Yes, it's real, this helper function prints money for you!
+ */
 export function printMoney(amount: number): string {
   return (amount / 100).toFixed(2);
 }

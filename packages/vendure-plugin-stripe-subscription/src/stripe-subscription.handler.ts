@@ -6,7 +6,6 @@ import {
   PaymentMethodHandler,
   SettlePaymentResult,
 } from '@vendure/core';
-import { getApiType } from '@vendure/core/dist/api/common/get-api-type';
 
 export const stripeSubscriptionHandler = new PaymentMethodHandler({
   code: 'stripe-subscription',

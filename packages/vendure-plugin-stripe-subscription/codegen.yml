@@ -1,9 +1,11 @@
 schema: 'src/**/*.ts'
 documents: 'src/ui/queries.ts'
 generates:
-  ./src/generated/graphql.ts:
+  ./src/ui/generated/graphql.ts:
     plugins:
       - typescript
       - typescript-operations
     config:
       avoidOptionals: false
+      scalars:
+        DateTime: Date

@@ -4,6 +4,8 @@ import { StripeSubscriptionService } from './stripe-subscription.service';
 import {
   StripeSubscriptionController,
   ShopResolver,
+  AdminResolver,
+  ShopOrderLinePricingResolver,
 } from './stripe-subscription.controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import {
@@ -31,10 +33,11 @@ export interface StripeSubscriptionPluginOptions {
   entities: [Schedule],
   shopApiExtensions: {
     schema: shopSchemaExtensions,
-    resolvers: [ShopResolver],
+    resolvers: [ShopResolver, ShopOrderLinePricingResolver],
   },
   adminApiExtensions: {
     schema: adminSchemaExtensions,
+    resolvers: [AdminResolver],
   },
   controllers: [StripeSubscriptionController],
   providers: [
@@ -77,8 +80,8 @@ export class StripeSubscriptionPlugin {
       },
       {
         type: 'shared',
-        ngModuleFileName: 'schedules-nav.module.ts',
-        ngModuleName: 'SchedulesNavModule',
+        ngModuleFileName: 'schedules-shared.module.ts',
+        ngModuleName: 'SchedulesSharedModule',
       },
     ],
   };

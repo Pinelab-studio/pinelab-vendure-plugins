@@ -11,14 +11,22 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { loggerCtx } from './constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
-} from './generated/graphql';
+  UpsertStripeSubscriptionScheduleInput,
+} from './ui/generated/graphql';
 import { Request } from 'express';
 import { ScheduleService } from './schedule.service';
 import { Schedule } from './schedule.entity';
@@ -57,33 +65,6 @@ export class ShopResolver {
   }
 
   @Query()
-  async stripeSubscriptionPricingForOrderLine(
-    @Ctx() ctx: RequestContext,
-    @Args('orderLineId') orderLineId: ID
-  ): Promise<StripeSubscriptionPricing> {
-    const order = await this.orderService.findOneByOrderLineId(
-      ctx,
-      orderLineId,
-      ['lines', 'lines.productVariant']
-    );
-    const orderLine: OrderLineWithSubscriptionFields | undefined =
-      order?.lines.find((line) => line.id === orderLineId);
-    if (!orderLine) {
-      throw new UserInputError(
-        `No order with orderLineId '${orderLineId}' found`
-      );
-    }
-    return this.stripeSubscriptionService.getSubscriptionPricing(
-      ctx,
-      {
-        downpayment: orderLine.customFields.downpayment,
-        startDate: orderLine.customFields.startDate,
-      },
-      orderLine.productVariant
-    );
-  }
-
-  @Query()
   async stripeSubscriptionPricingForProduct(
     @Ctx() ctx: RequestContext,
     @Args('productId') productId: ID
@@ -112,6 +93,30 @@ export class ShopResolver {
   }
 }
 
+@Resolver('OrderLine')
+export class ShopOrderLinePricingResolver {
+  constructor(private subscriptionService: StripeSubscriptionService) {}
+
+  @ResolveField()
+  async subscriptionPricing(
+    @Ctx() ctx: RequestContext,
+    @Parent() orderLine: OrderLineWithSubscriptionFields
+  ): Promise<StripeSubscriptionPricing | undefined> {
+    if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
+      const pricing = await this.subscriptionService.getSubscriptionPricing(
+        ctx,
+        {
+          downpayment: orderLine.customFields.downpayment,
+          startDate: orderLine.customFields.startDate,
+        },
+        orderLine.productVariant
+      );
+      return pricing;
+    }
+    return;
+  }
+}
+
 @Resolver()
 export class AdminResolver {
   constructor(private scheduleService: ScheduleService) {}
@@ -122,6 +127,23 @@ export class AdminResolver {
     @Ctx() ctx: RequestContext
   ): Promise<Schedule[]> {
     return this.scheduleService.getSchedules(ctx);
+  }
+
+  @Allow(Permission.UpdateSettings)
+  @Mutation()
+  async upsertStripeSubscriptionSchedule(
+    @Ctx() ctx: RequestContext,
+    @Args('input') input: UpsertStripeSubscriptionScheduleInput
+  ): Promise<Schedule> {
+    return this.scheduleService.upsert(ctx, input);
+  }
+  @Allow(Permission.UpdateSettings)
+  @Mutation()
+  async deleteStripeSubscriptionSchedule(
+    @Ctx() ctx: RequestContext,
+    @Args('scheduleId') scheduleId: string
+  ): Promise<void> {
+    return this.scheduleService.delete(ctx, scheduleId);
   }
 }
 
