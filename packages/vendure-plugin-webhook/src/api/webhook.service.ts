@@ -74,7 +74,7 @@ export class WebhookService implements OnApplicationBootstrap {
         const channelId = (event as any)?.ctx?.channelId;
         if (!channelId) {
           Logger.error(
-            `Cannnot trigger webhook for event ${event.constructor.name}, because there is no channelId in event.ctx`,
+            `Cannot trigger webhook for event ${event.constructor.name}, because there is no channelId in event.ctx`,
             loggerCtx
           );
           return;
