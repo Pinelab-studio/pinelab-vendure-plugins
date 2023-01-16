@@ -169,7 +169,7 @@ export class StripeSubscriptionService {
         } for ${line.productVariant.name}:
                 ${printMoney(pricing.recurringPrice)} every ${
           pricing.intervalCount
-        } ${pricing.interval}(s), 
+        } ${pricing.interval}(s),
                 ${printMoney(pricing.downpayment)} downpayment,
                 ${printMoney(pricing.totalProratedAmount)} prorated amount,
                 `,
@@ -234,7 +234,15 @@ export class StripeSubscriptionService {
       ); // FIXME
     }
     const billingsPerDuration = schedule.durationCount / schedule.billingCount; // TODO Only works when the duration and billing intervals are the same... should be a function
-    const totalSubscriptionPrice = variant.price * billingsPerDuration;
+    let downpayment =
+      input?.downpayment || input?.downpayment === 0
+        ? input.downpayment
+        : schedule.downpayment;
+    if (schedule.paidUpFront) {
+      // Paid-up-front subscriptions cant have downpayments
+      downpayment = 0;
+    }
+    const totalSubscriptionPrice = (variant.price * billingsPerDuration) + downpayment;
     const dayRate = getDayRate(
       totalSubscriptionPrice,
       schedule.durationInterval!,
@@ -260,17 +268,9 @@ export class StripeSubscriptionService {
       );
     }
     const totalProratedAmount = daysUntilStart * dayRate;
-    let downpayment =
-      input?.downpayment || input?.downpayment === 0
-        ? input.downpayment
-        : schedule.downpayment;
-    if (schedule.paidUpFront) {
-      // Paid-up-front subscriptions cant have downpayments
-      downpayment = 0;
-    }
     let amountDueNow = downpayment + totalProratedAmount;
     let recurringPrice = Math.floor(
-      variant.price - downpayment / billingsPerDuration
+      (totalSubscriptionPrice - downpayment) / billingsPerDuration
     );
     if (schedule.paidUpFront) {
       // User pays for the full membership now

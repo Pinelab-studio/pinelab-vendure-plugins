@@ -70,7 +70,7 @@ export const customerCustomFields: CustomFieldConfig[] = [
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Stripe customer ID',
+        value: 'Stripe Customer ID',
       },
     ],
     type: 'string',
