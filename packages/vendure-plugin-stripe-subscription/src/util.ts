@@ -41,7 +41,7 @@ export function getDaysUntilNextStartDate(
 }
 
 /**
- * Get the next startDate for a given start moment (first or last of the Interval). Always returns the start of the day (00:00:000)
+ * Get the next startDate for a given start moment (first or last of the Interval). Always returns the middle of the day for billing
  */
 export function getNextStartDate(
   now: Date,
@@ -75,7 +75,7 @@ export function getNextStartDate(
       );
     }
   }
-  return startOfDay(nextStartDate);
+  return getMiddleOfDay(nextStartDate);
 }
 
 /**
@@ -89,7 +89,6 @@ export function getNextCyclesStartDate(
   intervalCount: number
 ): Date {
   let oneCycleFromNow = new Date(now);
-  oneCycleFromNow.setHours(13); // Set middle of day to prevent daylight saving errors https://github.com/date-fns/date-fns/issues/571
   if (interval === SubscriptionInterval.Month) {
     oneCycleFromNow = addMonths(oneCycleFromNow, intervalCount);
   } else {
@@ -97,6 +96,15 @@ export function getNextCyclesStartDate(
     oneCycleFromNow = addWeeks(oneCycleFromNow, intervalCount);
   }
   return getNextStartDate(oneCycleFromNow, interval, startMoment);
+}
+
+/**
+ * Return the middle of the day (13:00) for dates, because that makes more sense for billing
+ */
+export function getMiddleOfDay(date: Date): Date {
+  const start = new Date(date);
+  start.setHours(13, 0, 0, 0);
+  return start;
 }
 
 /**

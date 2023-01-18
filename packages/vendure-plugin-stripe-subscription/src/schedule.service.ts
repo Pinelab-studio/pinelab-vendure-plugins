@@ -35,8 +35,8 @@ export class ScheduleService {
   }
 
   async delete(ctx: RequestContext, scheduleId: string): Promise<void> {
-    const { id } = await this.connection
-      .getRepository(ctx, Schedule)
+    const { id } = await this.connection.rawConnection
+      .getRepository(Schedule)
       .findOneOrFail({
         where: {
           id: scheduleId,

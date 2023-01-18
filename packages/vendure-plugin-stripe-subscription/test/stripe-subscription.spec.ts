@@ -92,28 +92,46 @@ describe('Order export plugin', function () {
     });
   });
 
-  // TODO fix DST errors https://stackoverflow.com/questions/64353831/why-startofmonth-results-in-different-timezone-that-endofmonth
-
-  describe.only('Get next cycles start date', () => {
+  describe('Get next cycles start date', () => {
     test.each([
       [
-        new Date('2022-12-20'),
+        'Start of the month, in 12 months',
+        new Date('2022-12-20T12:00:00.000Z'),
         SubscriptionStartMoment.StartOfBillingInterval,
         12,
         SubscriptionInterval.Month,
-        new Date('2024-01-01'),
+        '2024-01-01',
+      ],
+      [
+        'End of the month, in 6 months',
+        new Date('2022-12-20T12:00:00.000Z'),
+        SubscriptionStartMoment.EndOfBillingInterval,
+        6,
+        SubscriptionInterval.Month,
+        '2023-06-30',
+      ],
+      [
+        'Time of purchase, in 8 weeks',
+        new Date('2022-12-20'),
+        SubscriptionStartMoment.TimeOfPurchase,
+        8,
+        SubscriptionInterval.Week,
+        '2023-02-14',
       ],
     ])(
-      'Calculates next cycles start date from %s to the %s in %s %ss',
+      'Calculates next cycles start date for "%s"',
       (
+        _message: string,
         now: Date,
         startDate: SubscriptionStartMoment,
         intervalCount: number,
         interval: SubscriptionInterval,
-        expected: Date
+        expected: string
       ) => {
         expect(
           getNextCyclesStartDate(now, startDate, interval, intervalCount)
+            .toISOString()
+            .split('T')[0]
         ).toEqual(expected);
       }
     );
