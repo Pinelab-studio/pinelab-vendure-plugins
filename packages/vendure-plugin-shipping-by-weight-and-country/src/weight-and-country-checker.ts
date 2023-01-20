@@ -17,7 +17,10 @@ export function calculateOrderWeight(
     const product = products.find(
       (p) => p.id === line.productVariant.productId
     );
-    const weight = (product?.customFields as any).weight || 0;
+    const weight =
+      (line.productVariant.customFields as any).weight ??
+      (product?.customFields as any).weight ??
+      0;
     const lineWeight = weight * line.quantity;
     return acc + lineWeight;
   }, 0);
