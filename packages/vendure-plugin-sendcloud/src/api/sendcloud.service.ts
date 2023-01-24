@@ -90,9 +90,10 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   }
 
   async createOrderInSendcloud(
-    ctx: RequestContext,
+    userCtx: RequestContext,
     order: Order
   ): Promise<Parcel> {
+    const ctx = await this.createContext(userCtx.channel.token); // Recreate a ctx with the channel's default language
     await this.entityHydrator.hydrate(ctx, order, {
       relations: [
         'lines',
@@ -238,6 +239,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       apiType: 'admin',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
+      languageCode: channel.defaultLanguageCode,
       channel,
     });
   }
