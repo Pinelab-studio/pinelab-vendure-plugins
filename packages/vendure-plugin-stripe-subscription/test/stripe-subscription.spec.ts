@@ -9,6 +9,7 @@ import { initialData } from '../../test/src/initial-data';
 import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
+  getBillingsPerDuration,
   getDayRate,
   getDaysUntilNextStartDate,
   getNextCyclesStartDate,
@@ -37,7 +38,6 @@ import nock from 'nock';
 // @ts-ignore
 import { getOrder } from '../../test/src/admin-utils';
 import { UPSERT_SCHEDULES } from '../src/ui/queries';
-import * as assert from 'assert';
 
 jest.setTimeout(20000);
 
@@ -159,6 +159,33 @@ describe('Order export plugin', function () {
     );
   });
 
+  describe('Calculate billings per duration', () => {
+    test.each([
+      [SubscriptionInterval.Week, 1, SubscriptionInterval.Month, 3, 12],
+      [SubscriptionInterval.Week, 2, SubscriptionInterval.Month, 1, 2],
+      [SubscriptionInterval.Week, 3, SubscriptionInterval.Month, 3, 4],
+      [SubscriptionInterval.Month, 3, SubscriptionInterval.Month, 6, 2],
+    ])(
+      'for %sly %s',
+      (
+        billingInterval: SubscriptionInterval,
+        billingCount: number,
+        durationInterval: SubscriptionInterval,
+        durationCount: number,
+        expected: number
+      ) => {
+        expect(
+          getBillingsPerDuration({
+            billingInterval,
+            billingCount,
+            durationCount,
+            durationInterval,
+          })
+        ).toBe(expected);
+      }
+    );
+  });
+
   describe('Calculate nr of days until next subscription start date', () => {
     test.each([
       [
@@ -252,16 +279,16 @@ describe('Order export plugin', function () {
     expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 54000);
   });
 
-  it('Creates a monthly subscription for variant 2', async () => {
+  it('Creates a 3 month, billed weekly subscription for variant 2', async () => {
     const { upsertStripeSubscriptionSchedule: schedule } =
       await adminClient.query(UPSERT_SCHEDULES, {
         input: {
           name: '6 months, billed monthly, 199 downpayment',
           downpayment: 19900,
           durationInterval: SubscriptionInterval.Month,
-          durationCount: 6,
+          durationCount: 3,
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
-          billingInterval: SubscriptionInterval.Month,
+          billingInterval: SubscriptionInterval.Week,
           billingCount: 1,
         },
       });
@@ -282,8 +309,8 @@ describe('Order export plugin', function () {
     expect(schedule.name).toBe('6 months, billed monthly, 199 downpayment');
     expect(schedule.downpayment).toBe(19900);
     expect(schedule.durationInterval).toBe(SubscriptionInterval.Month);
-    expect(schedule.durationCount).toBe(6);
-    expect(schedule.billingInterval).toBe(SubscriptionInterval.Month);
+    expect(schedule.durationCount).toBe(3);
+    expect(schedule.billingInterval).toBe(SubscriptionInterval.Week);
     expect(schedule.billingCount).toBe(1);
     expect(schedule.startMoment).toBe(
       SubscriptionStartMoment.StartOfBillingInterval
@@ -301,7 +328,7 @@ describe('Order export plugin', function () {
     const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
     expect(pricing.downpayment).toBe(19900);
     expect(pricing.recurringPrice).toBe(9000);
-    expect(pricing.interval).toBe('month');
+    expect(pricing.interval).toBe('week');
     expect(pricing.intervalCount).toBe(1);
     expect(pricing.dayRate).toBe(405);
     expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 19900);

@@ -12,6 +12,8 @@ import {
   SubscriptionInterval,
   SubscriptionStartMoment,
 } from './ui/generated/graphql';
+import { Schedule } from './schedule.entity';
+import { UserInputError } from '@vendure/core';
 
 /**
  * Calculate day rate based on the total price and duration of the subscription
@@ -105,6 +107,37 @@ export function getMiddleOfDay(date: Date): Date {
   const start = new Date(date);
   start.setHours(13, 0, 0, 0);
   return start;
+}
+
+/**
+ * Get the number of billings per full duration of the schedule
+ */
+export function getBillingsPerDuration(
+  schedule: Pick<
+    Schedule,
+    'durationInterval' | 'durationCount' | 'billingInterval' | 'billingCount'
+  >
+): number {
+  if (
+    schedule.durationInterval === SubscriptionInterval.Week &&
+    schedule.billingInterval === SubscriptionInterval.Month
+  ) {
+    throw new UserInputError(
+      `Billing interval must be greater or equal to duration interval. E.g. billing cannot occur monthly for a schedule with a duration of 3 weeks.`
+    );
+  }
+  if (schedule.billingInterval === schedule.durationInterval) {
+    return schedule.durationCount / schedule.billingCount;
+  }
+  if (
+    schedule.billingInterval === SubscriptionInterval.Week &&
+    schedule.durationInterval === SubscriptionInterval.Month
+  ) {
+    return (4 / schedule.billingCount) * schedule.durationCount;
+  }
+  throw Error(
+    `Can not calculate billingsPerDurations for billingInterval ${schedule.billingInterval} and durationInterval ${schedule.durationInterval}`
+  );
 }
 
 /**

@@ -54,11 +54,11 @@ export let clientSecret = 'test';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
+        /*        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [StripeSubscriptionPlugin.ui],
           devMode: true,
-        }),
+        }),*/
       }),
     ],
   });

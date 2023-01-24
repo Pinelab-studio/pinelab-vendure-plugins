@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-stripe-subscription",
-  "version": "4.4.0-beta.28",
+  "version": "4.4.0-beta.29",
   "description": "Vendure plugin for selling subscriptions via Stripe",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",

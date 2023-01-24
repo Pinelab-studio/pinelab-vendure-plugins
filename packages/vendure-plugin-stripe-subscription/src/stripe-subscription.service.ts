@@ -30,6 +30,7 @@ import {
 } from './subscription-custom-fields';
 import { StripeClient } from './stripe.client';
 import {
+  getBillingsPerDuration,
   getDayRate,
   getDaysUntilNextStartDate,
   getNextCyclesStartDate,
@@ -147,17 +148,6 @@ export class StripeSubscriptionService {
       );
     let totalAmountDueNow = 0;
     for (const line of order.lines) {
-      await this.entityHydrator.hydrate(ctx, line.productVariant, {
-        relations: ['productVariantPrices'],
-        applyProductVariantPrices: true,
-      });
-
-      console.log(
-        'ERRORRRORR',
-        line.productVariant.name,
-        JSON.stringify(line.productVariant)
-      );
-
       const pricing = await this.getPricing(
         ctx,
         {
@@ -230,12 +220,7 @@ export class StripeSubscriptionService {
         `Variant ${variant.id} doesn't have a schedule attached`
       );
     }
-    if (schedule.billingInterval != schedule.durationInterval) {
-      throw Error(
-        `Not implemented yet: billingInterval and durationInterval have to be equal`
-      ); // FIXME
-    }
-    const billingsPerDuration = schedule.durationCount / schedule.billingCount; // TODO Only works when the duration and billing intervals are the same... should be a function
+    const billingsPerDuration = getBillingsPerDuration(schedule);
     let downpayment = schedule.downpayment;
     if (input?.downpayment || input?.downpayment === 0) {
       downpayment = input.downpayment;
