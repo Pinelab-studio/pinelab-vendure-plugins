@@ -21,7 +21,7 @@ export function toParcelInput(
     house_number: order.shippingAddress.streetLine2!,
     city: order.shippingAddress.city!,
     postal_code: order.shippingAddress.postalCode!,
-    country: order.shippingAddress.countryCode!,
+    country: order.shippingAddress.countryCode!.toUpperCase(),
     telephone: order.customer?.phoneNumber,
     request_label: false,
     email: order.customer?.emailAddress,

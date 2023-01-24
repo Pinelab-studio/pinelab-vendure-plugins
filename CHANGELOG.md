@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.8.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.7.2...v4.8.0) (2023-01-24)
+
+### Features
+
+- **sendcloud:** default lang for sync ([05d330a](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/05d330addb51244ffe4ede40ce389c20792ca1ab))
+
+## [4.7.2](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.7.1...v4.7.2) (2023-01-17)
+
+### Bug Fixes
+
+- **sendcloud:** uppercase country ([6ac5813](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/6ac5813b7d16749556523198a30fca2eae4117a7))
+
 ## [4.7.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.7.0...v4.7.1) (2022-12-22)
 
 ### Bug Fixes
