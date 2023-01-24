@@ -24,6 +24,16 @@ export const ADD_ITEM_TO_ORDER = gql`
   }
 `;
 
+export const REMOVE_ALL_ORDERLINES = gql`
+  mutation {
+    removeAllOrderLines {
+      ... on Order {
+        id
+      }
+    }
+  }
+`;
+
 export const GET_PRICING = gql`
   query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
     stripeSubscriptionPricing(input: $input) {
@@ -36,6 +46,17 @@ export const GET_PRICING = gql`
       intervalCount
       amountDueNow
       subscriptionStartDate
+      schedule {
+        id
+        name
+        downpayment
+        durationInterval
+        durationCount
+        startMoment
+        paidUpFront
+        billingCount
+        billingInterval
+      }
     }
   }
 `;
@@ -52,6 +73,17 @@ export const GET_PRICING_FOR_PRODUCT = gql`
       intervalCount
       amountDueNow
       subscriptionStartDate
+      schedule {
+        id
+        name
+        downpayment
+        durationInterval
+        durationCount
+        startMoment
+        paidUpFront
+        billingCount
+        billingInterval
+      }
     }
   }
 `;
@@ -163,6 +195,11 @@ export const UPDATE_VARIANT = gql`
     updateProductVariants(input: $input) {
       ... on ProductVariant {
         id
+        customFields {
+          subscriptionSchedule {
+            id
+          }
+        }
       }
       __typename
     }

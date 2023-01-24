@@ -104,9 +104,7 @@ export class StripeSubscriptionService {
     });
   }
 
-  async createStripeSubscriptionPaymentIntent(
-    ctx: RequestContext
-  ): Promise<string> {
+  async createPaymentIntent(ctx: RequestContext): Promise<string> {
     const order = (await this.activeOrderService.getActiveOrder(
       ctx,
       undefined
@@ -118,12 +116,6 @@ export class StripeSubscriptionService {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
       applyProductVariantPrices: true,
     });
-
-    if (order.lines.length > 1) {
-      throw Error(`FIXME: only 1 subscription per order is allowed.`);
-      // FIXME with the above hydration, the last orderline.variant.price is always 0. Report bug to Vendure
-    }
-
     if (!order.lines?.length) {
       throw new UserInputError('Cannot create payment intent for empty order');
     }
@@ -155,7 +147,18 @@ export class StripeSubscriptionService {
       );
     let totalAmountDueNow = 0;
     for (const line of order.lines) {
-      const pricing = await this.getSubscriptionPricing(
+      await this.entityHydrator.hydrate(ctx, line.productVariant, {
+        relations: ['productVariantPrices'],
+        applyProductVariantPrices: true,
+      });
+
+      console.log(
+        'ERRORRRORR',
+        line.productVariant.name,
+        JSON.stringify(line.productVariant)
+      );
+
+      const pricing = await this.getPricing(
         ctx,
         {
           downpayment: line.customFields.downpayment,
@@ -195,7 +198,7 @@ export class StripeSubscriptionService {
   /**
    * Used for previewing the prices including VAT of a subscription
    */
-  async getSubscriptionPricing(
+  async getPricing(
     ctx: RequestContext,
     input?: Partial<StripeSubscriptionPricingInput>,
     variant?: VariantWithSubscriptionFields
@@ -217,9 +220,8 @@ export class StripeSubscriptionService {
       );
     }
     if (!variant.price) {
-      // This can happen when a given variant is not fully hydrated. This results in weird calculations
       throw Error(
-        `Given Variant.price should have a price, given price is ${variant.price}`
+        `Variant "${variant.name}" has price ${variant.price}, can not calculate subscription pricing without variant price`
       );
     }
     const schedule = variant.customFields.subscriptionSchedule;
@@ -234,16 +236,37 @@ export class StripeSubscriptionService {
       ); // FIXME
     }
     const billingsPerDuration = schedule.durationCount / schedule.billingCount; // TODO Only works when the duration and billing intervals are the same... should be a function
-    let downpayment =
-      input?.downpayment || input?.downpayment === 0
-        ? input.downpayment
-        : schedule.downpayment;
-    if (schedule.paidUpFront) {
+    let downpayment = schedule.downpayment;
+    if (input?.downpayment || input?.downpayment === 0) {
+      downpayment = input.downpayment;
+    }
+    if (schedule.paidUpFront && schedule.downpayment) {
       // Paid-up-front subscriptions cant have downpayments
-      downpayment = 0;
+      throw new UserInputError(
+        `Paid-up-front subscriptions can not have downpayments!`
+      );
+    }
+    if (schedule.paidUpFront && downpayment) {
+      throw new UserInputError(
+        `You can not use downpayments with Paid-up-front subscriptions`
+      );
     }
     const totalSubscriptionPrice =
-      variant.price * billingsPerDuration + downpayment;
+      variant.price * billingsPerDuration + schedule.downpayment;
+    if (downpayment > totalSubscriptionPrice) {
+      throw new UserInputError(
+        `Downpayment can not be higher than the total subscription value, which is (${printMoney(
+          totalSubscriptionPrice
+        )})`
+      );
+    }
+    if (downpayment < schedule.downpayment) {
+      throw new UserInputError(
+        `Downpayment can not be lower than schedules default downpayment, which is (${printMoney(
+          schedule.downpayment
+        )})`
+      );
+    }
     const dayRate = getDayRate(
       totalSubscriptionPrice,
       schedule.durationInterval!,
@@ -412,7 +435,7 @@ export class StripeSubscriptionService {
       );
     }
     for (const orderLine of order.lines) {
-      const pricing = await this.getSubscriptionPricing(
+      const pricing = await this.getPricing(
         ctx,
         {
           startDate: orderLine.customFields.startDate,

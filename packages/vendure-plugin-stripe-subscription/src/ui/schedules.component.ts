@@ -163,7 +163,7 @@ import {
               <vdr-form-field
                 label="Downpayment"
                 for="billingInterval"
-                tooltip="A downpayment requires a customer to pay an amount up front. The prorated amount will be deducted from the monthly/weekly price"
+                tooltip="A downpayment requires a customer to pay an amount up front."
               >
                 <vdr-currency-input
                   clrInput
