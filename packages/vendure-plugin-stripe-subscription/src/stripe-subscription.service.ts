@@ -242,7 +242,8 @@ export class StripeSubscriptionService {
       // Paid-up-front subscriptions cant have downpayments
       downpayment = 0;
     }
-    const totalSubscriptionPrice = (variant.price * billingsPerDuration) + downpayment;
+    const totalSubscriptionPrice =
+      variant.price * billingsPerDuration + downpayment;
     const dayRate = getDayRate(
       totalSubscriptionPrice,
       schedule.durationInterval!,
