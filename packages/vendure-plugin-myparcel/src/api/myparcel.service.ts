@@ -292,7 +292,6 @@ export class MyparcelService implements OnApplicationBootstrap {
       line.productVariant.product.translations.find(
         (t) => t.languageCode === LanguageCode.en
       )?.name || line.productVariant.product.translations[0].name;
-    console.log(`LINEE`, line.proratedLinePriceWithTax, currencyCode);
     return {
       description: name,
       amount: line.quantity,
