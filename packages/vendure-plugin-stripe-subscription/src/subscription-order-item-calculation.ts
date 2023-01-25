@@ -27,7 +27,7 @@ export class SubscriptionOrderItemCalculation
     order: Order
   ): Promise<PriceCalculationResult> {
     if (productVariant.customFields.subscriptionSchedule) {
-      const pricing = await subcriptionService!.getSubscriptionPricing(
+      const pricing = await subcriptionService!.getPricing(
         ctx,
         {
           downpayment: orderLineCustomFields.downpayment,

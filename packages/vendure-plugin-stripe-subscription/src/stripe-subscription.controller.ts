@@ -51,9 +51,7 @@ export class ShopResolver {
   async createStripeSubscriptionIntent(
     @Ctx() ctx: RequestContext
   ): Promise<string> {
-    return this.stripeSubscriptionService.createStripeSubscriptionPaymentIntent(
-      ctx
-    );
+    return this.stripeSubscriptionService.createPaymentIntent(ctx);
   }
 
   @Query()
@@ -61,7 +59,7 @@ export class ShopResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: StripeSubscriptionPricingInput
   ): Promise<StripeSubscriptionPricing> {
-    return this.stripeSubscriptionService.getSubscriptionPricing(ctx, input);
+    return this.stripeSubscriptionService.getPricing(ctx, input);
   }
 
   @Query()
@@ -83,11 +81,7 @@ export class ShopResolver {
     );
     return await Promise.all(
       subscriptionVariants.map((variant) =>
-        this.stripeSubscriptionService.getSubscriptionPricing(
-          ctx,
-          undefined,
-          variant
-        )
+        this.stripeSubscriptionService.getPricing(ctx, undefined, variant)
       )
     );
   }
@@ -103,7 +97,7 @@ export class ShopOrderLinePricingResolver {
     @Parent() orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing | undefined> {
     if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
-      const pricing = await this.subscriptionService.getSubscriptionPricing(
+      const pricing = await this.subscriptionService.getPricing(
         ctx,
         {
           downpayment: orderLine.customFields.downpayment,

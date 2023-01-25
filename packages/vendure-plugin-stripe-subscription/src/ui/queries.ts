@@ -32,6 +32,7 @@ export const UPSERT_SCHEDULES = gql`
       startMoment
       billingInterval
       billingCount
+      paidUpFront
     }
   }
 `;

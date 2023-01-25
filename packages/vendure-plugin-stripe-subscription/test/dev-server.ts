@@ -19,12 +19,14 @@ import {
   UPDATE_VARIANT,
 } from './helpers';
 
-import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
 import { UPSERT_SCHEDULES } from '../src/ui/queries';
 import { SubscriptionInterval, SubscriptionStartMoment } from '../src';
-// import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+
+// Test published version
+import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+//  import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
 
 export let clientSecret = 'test';
 
@@ -52,11 +54,11 @@ export let clientSecret = 'test';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
+        /*        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [StripeSubscriptionPlugin.ui],
           devMode: true,
-        }),
+        }),*/
       }),
     ],
   });
