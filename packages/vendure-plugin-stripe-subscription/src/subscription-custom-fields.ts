@@ -50,7 +50,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
     label: [
       {
         languageCode: LanguageCode.en,
-        value: 'Susbcription schedule',
+        value: 'Subscription Schedule',
       },
     ],
     type: 'relation',
