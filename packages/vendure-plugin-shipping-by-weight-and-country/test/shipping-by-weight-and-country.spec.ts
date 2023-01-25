@@ -12,6 +12,7 @@ import {
   LogLevel,
   mergeConfig,
   ProductService,
+  ProductVariantService,
   RequestContext,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
@@ -107,6 +108,75 @@ describe('Order export plugin', function () {
     expect(order.shippingWithTax).toBe(333);
   });
 
+  it('Is eligible for method 1 with country NL and product weight 100', async () => {
+    const channel = await server.app.get(ChannelService).getDefaultChannel();
+    const ctx = new RequestContext({
+      channel,
+      authorizedAsOwnerOnly: false,
+      apiType: 'admin',
+      isAuthorized: true,
+    });
+
+    const product = await server.app
+      .get(ProductService)
+      .update(ctx, { id: 1, customFields: { weight: 25 } });
+    expect((product.customFields as any).weight).toBe(25);
+
+    const order = await createSettledOrder(shopClient, 1);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingWithTax).toBe(111);
+  });
+
+  it('Is eligible for method 1 with country NL and product weight 25 variant weight 50', async () => {
+    const channel = await server.app.get(ChannelService).getDefaultChannel();
+    const ctx = new RequestContext({
+      channel,
+      authorizedAsOwnerOnly: false,
+      apiType: 'admin',
+      isAuthorized: true,
+    });
+
+    const product = await server.app
+      .get(ProductService)
+      .update(ctx, { id: 1, customFields: { weight: 25 } });
+    expect((product.customFields as any).weight).toBe(25);
+
+    const productVariants = await server.app
+      .get(ProductVariantService)
+      .update(ctx, [{ id: 1, customFields: { weight: 50 } }]);
+    expect(productVariants.length).toBe(1);
+    expect((productVariants[0].customFields as any).weight).toBe(50);
+
+    const order = await createSettledOrder(shopClient, 1);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingWithTax).toBe(111);
+  });
+
+  it('Is eligible for method 1 with country NL and product weight 50 variant weight 0', async () => {
+    const channel = await server.app.get(ChannelService).getDefaultChannel();
+    const ctx = new RequestContext({
+      channel,
+      authorizedAsOwnerOnly: false,
+      apiType: 'admin',
+      isAuthorized: true,
+    });
+
+    const product = await server.app
+      .get(ProductService)
+      .update(ctx, { id: 1, customFields: { weight: 50 } });
+    expect((product.customFields as any).weight).toBe(50);
+
+    const productVariants = await server.app
+      .get(ProductVariantService)
+      .update(ctx, [{ id: 1, customFields: { weight: 0 } }]);
+    expect(productVariants.length).toBe(1);
+    expect((productVariants[0].customFields as any).weight).toBe(0);
+
+    const order = await createSettledOrder(shopClient, 1);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingWithTax).toBe(111);
+  });
+
   it('Is NOT eligible for method 2 with country NL', async () => {
     await adminClient.asSuperAdmin();
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
@@ -126,6 +196,34 @@ describe('Order export plugin', function () {
       .get(ProductService)
       .update(ctx, { id: 1, customFields: { weight: 200 } });
     expect((product.customFields as any).weight).toBe(200);
+    await expect(createSettledOrder(shopClient, 1)).rejects.toThrow(
+      'ORDER_STATE_TRANSITION_ERROR'
+    );
+    await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
+      'ORDER_STATE_TRANSITION_ERROR'
+    );
+  });
+
+  it('Is NOT eligible for method 1 and 2 with variant weight 200', async () => {
+    const channel = await server.app.get(ChannelService).getDefaultChannel();
+    const ctx = new RequestContext({
+      channel,
+      authorizedAsOwnerOnly: false,
+      apiType: 'admin',
+      isAuthorized: true,
+    });
+
+    const product = await server.app
+      .get(ProductService)
+      .update(ctx, { id: 1, customFields: { weight: 0 } });
+    expect((product.customFields as any).weight).toBe(0);
+
+    const productVariants = await server.app
+      .get(ProductVariantService)
+      .update(ctx, [{ id: 1, customFields: { weight: 200 } }]);
+    expect(productVariants.length).toBe(1);
+    expect((productVariants[0].customFields as any).weight).toBe(200);
+
     await expect(createSettledOrder(shopClient, 1)).rejects.toThrow(
       'ORDER_STATE_TRANSITION_ERROR'
     );
