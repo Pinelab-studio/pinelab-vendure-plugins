@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.9.1](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.9.0...v4.9.1) (2023-01-27)
+
+### Bug Fixes
+
+- **sendcloud:** email and shippingmethod to sendcloud ([8dd3d30](https://github.com/martijnvdbrug/pinelab-vendure-plugins/commit/8dd3d306ad0382838a198e0932fe3719ec5238ca))
+
 ## [4.9.0](https://github.com/martijnvdbrug/pinelab-vendure-plugins/compare/v4.8.0...v4.9.0) (2023-01-27)
 
 ### Features
