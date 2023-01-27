@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-variant-bulk-update",
-  "version": "4.7.0",
+  "version": "4.9.0",
   "description": "Vendure plugin to bulk update all variants of a product",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
