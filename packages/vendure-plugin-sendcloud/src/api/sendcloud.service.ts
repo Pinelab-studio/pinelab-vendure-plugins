@@ -96,9 +96,9 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     const ctx = await this.createContext(userCtx.channel.token); // Recreate a ctx with the channel's default language
     await this.entityHydrator.hydrate(ctx, order, {
       relations: [
-        'lines',
-        'lines.productVariant',
+        'customer',
         'lines.productVariant.product',
+        'shippingLines.shippingMethod',
       ],
     });
     const additionalParcelItems: ParcelInputItem[] = [];

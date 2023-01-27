@@ -28,6 +28,8 @@ export function toParcelInput(
     order_number: order.code,
     parcel_items: items,
     weight: getTotalWeight(items),
+    shipping_method_checkout_name:
+      order.shippingLines?.[0].shippingMethod?.code,
   };
 }
 
