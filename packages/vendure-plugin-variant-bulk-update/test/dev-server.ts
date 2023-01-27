@@ -6,7 +6,6 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
-  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -14,7 +13,7 @@ import {
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { VariantBulkPlugin } from '../src/variant-bulk.plugin';
+import { VariantBulkUpdatePlugin } from '../src/variant-bulk-update.plugin';
 
 require('dotenv').config();
 
@@ -22,32 +21,21 @@ require('dotenv').config();
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    apiOptions: {
+      adminApiPlayground: {},
+    },
     plugins: [
-      VariantBulkPlugin,
+      VariantBulkUpdatePlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
       }),
     ],
-    apiOptions: {
-      shopApiPlayground: true,
-    },
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
-    initialData: {
-      ...initialData,
-      paymentMethods: [
-        {
-          name: testPaymentMethod.code,
-          handler: { code: testPaymentMethod.code, arguments: [] },
-        },
-      ],
-    },
+    initialData,
     productsCsvPath: '../test/src/products-import.csv',
   });
 })();

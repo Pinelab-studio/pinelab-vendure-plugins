@@ -39,9 +39,9 @@ describe('Limit variants per order plugin', function () {
     await expect(serverStarted).toBe(true);
   });
 
-  it('Updates variant price', async () => {
+  it('Updates variant prices', async () => {
     await adminClient.asSuperAdmin();
-    const { updateProduct: product } = await adminClient.query(gql`
+    await adminClient.query(gql`
       mutation {
         updateProduct(input: { id: "T_1", customFields: { price: 2222 } }) {
           ... on Product {
@@ -56,8 +56,18 @@ describe('Limit variants per order plugin', function () {
         }
       }
     `);
-    console.log('product', product);
-    expect(product).toBe(2);
+    await new Promise((resolve) => setTimeout(resolve, 300)); // Let the worker do its work
+    const { product } = await adminClient.query(gql`
+      query {
+        product(id: "T_1") {
+          variants {
+            price
+          }
+        }
+      }
+    `);
+    expect(product.variants[0].price).toBe(2222);
+    expect(product.variants[1].price).toBe(2222);
   });
 
   afterAll(() => {

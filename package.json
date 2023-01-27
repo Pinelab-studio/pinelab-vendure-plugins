@@ -47,6 +47,7 @@
           "sendcloud",
           "metrics",
           "limit-variant",
+          "variant-bulk-update",
           "all-plugins"
         ]
       ]

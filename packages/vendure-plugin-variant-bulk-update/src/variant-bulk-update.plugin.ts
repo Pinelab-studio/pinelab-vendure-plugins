@@ -65,20 +65,24 @@ export class VariantBulkUpdatePlugin implements OnModuleInit {
       )
       .subscribe(async (event) => {
         const { product, ctx } = event as ProductEventWithCustomFields;
-        if (product.customFields.price) {
-          console.log(`Updating price top ${product.customFields.price}`);
-          const variantIds = await this.connection
+        if (product.customFields?.price) {
+          const variants = await this.connection
             .getRepository(ctx, ProductVariant)
             .createQueryBuilder('variant')
             .select(['variant.id'])
             .where('variant.productId = :productId', { productId: product.id })
             .getMany();
-          console.log('IDS', variantIds);
-
-          Logger.info(
-            `Updated prices of all variants of product ${product.id} to ${product.customFields.price}`
+          await this.variantService.update(
+            ctx,
+            variants.map((v) => ({
+              id: v.id,
+              price: product.customFields.price,
+            }))
           );
-          //this.variantService.update(ctx, []);
+          Logger.info(
+            `Updated prices of ${variants.length} variants of product ${product.id} to ${product.customFields.price}`,
+            loggerCtx
+          );
         }
       });
   }
