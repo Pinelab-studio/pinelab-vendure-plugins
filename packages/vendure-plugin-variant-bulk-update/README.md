@@ -20,9 +20,10 @@ plugins: [
 ];
 ```
 
-2. Start Vendure, login and go to a product
-3. Set the field `price` of a product to €300 and update the product.
-4. All variants of the product will now be €300
+2. Run a database migration to add the price field on a product.
+3. Start Vendure, login and go to a product.
+4. Set the field `price` of a product to €300 and save the product.
+5. All variants of the product will now be €300.
 
 If you only want to update variants once, you should clear the `product.customFields.price` field again. When
 the `price` field has a value, and a product is updated, all variants will be updated again.

@@ -42,7 +42,7 @@ const loggerCtx = 'VariantBulkUpdatePlugin';
         {
           languageCode: LanguageCode.en,
           value:
-            "Set the price of all variants using this field. Leave it empty if you don't want to update all variants",
+            'Setting this field will update the variant prices everytime you update the product',
         },
       ],
       ui: { tab: 'Bulk update', component: 'currency-form-input' },
