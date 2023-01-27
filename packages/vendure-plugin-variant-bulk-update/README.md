@@ -1,8 +1,8 @@
 # Vendure Plugin for bulk updating all variants of a product
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-variant-price-bulk-update/dev/@vendure/core)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-variant-bulk-update/dev/@vendure/core)
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-variant-price-bulk-update)
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-variant-bulk-update)
 
 Tiny plugin that allows you to update the prices of all variants for a given product. This is especially useful for
 products with a lot of variants.
@@ -29,3 +29,7 @@ If you only want to update variants once, you should clear the `product.customFi
 the `price` field has a value, and a product is updated, all variants will be updated again.
 
 Update of variants is done async, so it might happen that you need to refresh your product page to fetch the updated prices.
+
+## Contribute
+
+This plugin can easily be extendded to also bulk update other fields than price. So, Pull Requests are always welcome!
