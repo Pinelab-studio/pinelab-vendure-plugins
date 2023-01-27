@@ -34,6 +34,16 @@ export const REMOVE_ALL_ORDERLINES = gql`
   }
 `;
 
+export const UPDATE_CHANNEL = gql`
+  mutation UpdateChannel($input: UpdateChannelInput!) {
+    updateChannel(input: $input) {
+      ... on Channel {
+        id
+      }
+    }
+  }
+`;
+
 export const GET_PRICING = gql`
   query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
     stripeSubscriptionPricing(input: $input) {
@@ -91,6 +101,8 @@ export const GET_PRICING_FOR_PRODUCT = gql`
 export const GET_ORDER_WITH_PRICING = gql`
   query getOrderWithPricing {
     activeOrder {
+      id
+      code
       lines {
         subscriptionPricing {
           downpayment

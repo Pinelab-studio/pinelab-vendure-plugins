@@ -10,16 +10,19 @@ import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
+import { DefaultOrderItemPriceCalculationStrategy } from '@vendure/core/dist/config/order/default-order-item-price-calculation-strategy';
 
 let subcriptionService: StripeSubscriptionService | undefined;
 
 export class SubscriptionOrderItemCalculation
+  extends DefaultOrderItemPriceCalculationStrategy
   implements OrderItemPriceCalculationStrategy
 {
   init(injector: Injector): void | Promise<void> {
     subcriptionService = injector.get(StripeSubscriptionService);
   }
 
+  // @ts-ignore - Our strategy takes more arguments, so TS complains that it doesnt match the super.calculateUnitPrice
   async calculateUnitPrice(
     ctx: RequestContext,
     productVariant: VariantWithSubscriptionFields,
@@ -37,13 +40,10 @@ export class SubscriptionOrderItemCalculation
       );
       return {
         price: pricing.amountDueNow,
-        priceIncludesTax: false,
+        priceIncludesTax: true,
       };
     } else {
-      return {
-        price: productVariant.listPrice,
-        priceIncludesTax: productVariant.listPriceIncludesTax,
-      };
+      return super.calculateUnitPrice(ctx, productVariant);
     }
   }
 }

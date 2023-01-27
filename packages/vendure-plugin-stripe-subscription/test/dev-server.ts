@@ -16,6 +16,7 @@ import {
   CREATE_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   setShipping,
+  UPDATE_CHANNEL,
   UPDATE_VARIANT,
 } from './helpers';
 
@@ -70,6 +71,17 @@ export let clientSecret = 'test';
     },
     productsCsvPath: `${__dirname}/subscriptions.csv`,
   });
+  // Set channel prices to include tax
+  await adminClient.asSuperAdmin();
+  const {
+    updateChannel: { id },
+  } = await adminClient.query(UPDATE_CHANNEL, {
+    input: {
+      id: 'T_1',
+      pricesIncludeTax: true,
+    },
+  });
+  console.log('Update channel prices to include tax');
   // Create stripe payment method
   await adminClient.asSuperAdmin();
   await adminClient.query(CREATE_PAYMENT_METHOD, {
@@ -93,13 +105,13 @@ export let clientSecret = 'test';
   console.log(`Created paymentMethod stripe-subscription`);
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
-      name: '6 months, billed monthly, 199 downpayment',
-      downpayment: 19900,
+      name: '6 months, paid in full',
+      downpayment: 0,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 6,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
       billingInterval: SubscriptionInterval.Month,
-      billingCount: 1,
+      billingCount: 6,
     },
   });
   await adminClient.query(UPSERT_SCHEDULES, {
@@ -107,9 +119,9 @@ export let clientSecret = 'test';
       name: '6 months, billed monthly, 199 downpayment',
       downpayment: 19900,
       durationInterval: SubscriptionInterval.Month,
-      durationCount: 6,
+      durationCount: 3,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
-      billingInterval: SubscriptionInterval.Month,
+      billingInterval: SubscriptionInterval.Week,
       billingCount: 1,
     },
   });
@@ -124,19 +136,41 @@ export let clientSecret = 'test';
       },
     ],
   });
-  console.log(`Added schedule to variant`);
+  await adminClient.query(UPDATE_VARIANT, {
+    input: [
+      {
+        id: 2,
+        customFields: {
+          subscriptionScheduleId: 2,
+        },
+      },
+    ],
+  });
+  console.log(`Added schedule to both variants`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  const in3Days = new Date();
-  in3Days.setDate(in3Days.getDate() + 3);
   // Add paid in full
-  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+  await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,
     customFields: {
       // downpayment: 40000,
-      startDate: in3Days,
+      // startDate: in3Days,
     },
+  });
+  // Add recurring product
+  await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '2',
+    quantity: 1,
+    customFields: {
+      // downpayment: 40000,
+      // startDate: in3Days,
+    },
+  });
+  // Add non-sub product
+  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '3',
+    quantity: 1,
   });
   await setShipping(shopClient);
   console.log(`Prepared order ${order.code}`);

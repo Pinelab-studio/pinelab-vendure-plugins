@@ -115,7 +115,6 @@ export class StripeSubscriptionService {
     }
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
-      applyProductVariantPrices: true,
     });
     if (!order.lines?.length) {
       throw new UserInputError('Cannot create payment intent for empty order');
@@ -147,29 +146,48 @@ export class StripeSubscriptionService {
         )
       );
     let totalAmountDueNow = 0;
-    for (const line of order.lines) {
-      const pricing = await this.getPricing(
-        ctx,
-        {
-          downpayment: line.customFields.downpayment,
-          startDate: line.customFields.startDate,
-        },
-        line.productVariant
-      );
-      Logger.info(
-        `Added ${printMoney(pricing.amountDueNow)} to payment intent for ${
-          order.code
-        } for ${line.productVariant.name}:
+    await Promise.all(
+      order.lines.map(async (line) => {
+        if (!line.productVariant.customFields.subscriptionSchedule) {
+          // Add one time price to intent
+          totalAmountDueNow += line.proratedLinePriceWithTax;
+          Logger.info(
+            `Added ${printMoney(
+              line.proratedLinePriceWithTax
+            )} to payment intent for ${line.productVariant.name}`,
+            loggerCtx
+          );
+        } else {
+          // Add subscription price to intent
+          // Refetch variant to get its price. There is a bug with hydrating all variants at once
+          const variant = await this.variantService.findOne(
+            ctx,
+            line.productVariant.id
+          );
+          const pricing = await this.getPricing(
+            ctx,
+            {
+              downpayment: line.customFields.downpayment,
+              startDate: line.customFields.startDate,
+            },
+            variant
+          );
+          Logger.info(
+            `Added ${printMoney(pricing.amountDueNow)} to payment intent for ${
+              order.code
+            } for ${line.productVariant.name}:
                 ${printMoney(pricing.recurringPrice)} every ${
-          pricing.intervalCount
-        } ${pricing.interval}(s),
+              pricing.intervalCount
+            } ${pricing.interval}(s),
                 ${printMoney(pricing.downpayment)} downpayment,
                 ${printMoney(pricing.totalProratedAmount)} prorated amount,
                 `,
-        loggerCtx
-      );
-      totalAmountDueNow += pricing.amountDueNow;
-    }
+            loggerCtx
+          );
+          totalAmountDueNow += pricing.amountDueNow;
+        }
+      })
+    );
     const intent = await stripeClient.paymentIntents.create({
       customer: stripeCustomer.id,
       payment_method_types: ['card'], // TODO make configurable per channel
@@ -209,9 +227,9 @@ export class StripeSubscriptionService {
         `No variant found with id ${input!.productVariantId}`
       );
     }
-    if (!variant.price) {
+    if (!variant.priceWithTax) {
       throw Error(
-        `Variant "${variant.name}" has price ${variant.price}, can not calculate subscription pricing without variant price`
+        `Variant "${variant.name}" has price ${variant.priceWithTax}, can not calculate subscription pricing without variant price`
       );
     }
     const schedule = variant.customFields.subscriptionSchedule;
@@ -237,7 +255,7 @@ export class StripeSubscriptionService {
       );
     }
     const totalSubscriptionPrice =
-      variant.price * billingsPerDuration + schedule.downpayment;
+      variant.priceWithTax * billingsPerDuration + schedule.downpayment;
     if (downpayment > totalSubscriptionPrice) {
       throw new UserInputError(
         `Downpayment can not be higher than the total subscription value, which is (${printMoney(
@@ -283,8 +301,8 @@ export class StripeSubscriptionService {
     );
     if (schedule.paidUpFront) {
       // User pays for the full membership now
-      amountDueNow = variant.price + totalProratedAmount;
-      recurringPrice = variant.price;
+      amountDueNow = variant.priceWithTax + totalProratedAmount;
+      recurringPrice = variant.priceWithTax;
     }
     return {
       variantId: variant.id as string,
