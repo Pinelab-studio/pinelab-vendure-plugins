@@ -149,6 +149,11 @@ describe('SendCloud', () => {
       body?.parcel.parcel_items.find((i) => i.hs_code === 'test hs')
     ).toBeDefined();
     expect(authHeader?.[0]).toContain('Basic');
+    expect(body?.parcel.shipping_method_checkout_name).toContain(
+      'test-shipping-method'
+    );
+    expect(body?.parcel.telephone).toContain('029 1203 1336');
+    expect(body?.parcel.email).toContain('hayden.zieme12@hotmail.com');
   });
 
   it('Updates order via webhook', async () => {

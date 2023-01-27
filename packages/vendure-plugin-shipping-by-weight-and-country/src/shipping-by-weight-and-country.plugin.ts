@@ -39,6 +39,23 @@ export interface ShippingByWeightAndCountryOptions {
       nullable: true,
       type: 'int',
     });
+    config.customFields.ProductVariant.push({
+      name: 'weight',
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: `Weight in ${ShippingByWeightAndCountryPlugin.options?.weightUnit}`,
+        },
+      ],
+      ui: {
+        component: 'number-form-input',
+        tab: ShippingByWeightAndCountryPlugin.options?.customFieldsTab,
+        options: { min: 0 },
+      },
+      public: true,
+      nullable: true,
+      type: 'int',
+    });
     return config;
   },
 })

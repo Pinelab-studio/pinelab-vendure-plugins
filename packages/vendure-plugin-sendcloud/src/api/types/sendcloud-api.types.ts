@@ -12,6 +12,7 @@ export interface ParcelInput {
   order_number?: string;
   parcel_items: ParcelInputItem[];
   weight: string;
+  shipping_method_checkout_name?: string;
 }
 
 export interface ParcelInputItem {

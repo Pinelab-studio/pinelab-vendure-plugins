@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.9.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.8.0...v4.9.0) (2023-01-27)
+
+### Features
+
+- **shipping:** variant weight overrides ([dbc2f98](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/dbc2f98cc51af91b7dd2138d40e4d61af8e24c20))
+
 ## [4.3.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
 
 ### Bug Fixes

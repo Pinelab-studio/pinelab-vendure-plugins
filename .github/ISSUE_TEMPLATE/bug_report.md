@@ -30,6 +30,7 @@ If applicable, add screenshots to help explain your problem.
 
 - Vendure version: [e.g. 1.7.1]
 - Plugin version [e.g. 3.1.1]
+- Database [e.g. MySQL]
 
 **Additional context**
 Add any other context about the problem here.
