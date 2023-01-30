@@ -30,14 +30,11 @@ export class SubscriptionOrderItemCalculation
     order: Order
   ): Promise<PriceCalculationResult> {
     if (productVariant.customFields.subscriptionSchedule) {
-      const pricing = await subcriptionService!.getPricing(
-        ctx,
-        {
-          downpayment: orderLineCustomFields.downpayment,
-          startDate: orderLineCustomFields.startDate,
-        },
-        productVariant
-      );
+      const pricing = await subcriptionService!.getPricing(ctx, {
+        downpaymentWithTax: orderLineCustomFields.downpayment,
+        startDate: orderLineCustomFields.startDate,
+        productVariantId: productVariant.id as string,
+      });
       return {
         price: pricing.amountDueNow,
         priceIncludesTax: true,

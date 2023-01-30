@@ -22,7 +22,7 @@ const sharedTypes = gql`
     createdAt: DateTime
     updatedAt: DateTime
     name: String!
-    downpayment: Int!
+    downpaymentWithTax: Int!
     durationInterval: SubscriptionInterval!
     durationCount: Int!
     startMoment: SubscriptionStartMoment!
@@ -33,7 +33,7 @@ const sharedTypes = gql`
   input UpsertStripeSubscriptionScheduleInput {
     id: ID
     name: String
-    downpayment: Int
+    downpaymentWithTax: Int
     durationInterval: SubscriptionInterval
     durationCount: Int
     startMoment: SubscriptionStartMoment
@@ -51,11 +51,11 @@ export const shopSchemaExtensions = gql`
 
   type StripeSubscriptionPricing {
     variantId: String!
-    downpayment: Int!
-    totalProratedAmount: Int!
+    downpaymentWithTax: Int!
+    totalProratedAmountWithTax: Int!
     proratedDays: Int!
-    dayRate: Int!
-    recurringPrice: Int!
+    dayRateWithTax: Int!
+    recurringPriceWithTax: Int!
     interval: SubscriptionInterval!
     intervalCount: Int!
     amountDueNow: Int!
@@ -65,11 +65,11 @@ export const shopSchemaExtensions = gql`
   input StripeSubscriptionPricingInput {
     productVariantId: ID!
     startDate: DateTime
-    downpayment: Int
+    downpaymentWithTax: Int
   }
   extend type Query {
     """
-    Preview the pricing model of a given subscription. Prices are excluding tax!
+    Preview the pricing model of a given subscription.
     Start date and downpayment are optional: if not supplied, the subscriptions default will be used.
     """
     stripeSubscriptionPricing(

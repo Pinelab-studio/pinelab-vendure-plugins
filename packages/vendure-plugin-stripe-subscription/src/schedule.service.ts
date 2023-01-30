@@ -1,4 +1,7 @@
-import { UpsertStripeSubscriptionScheduleInput } from './ui/generated/graphql';
+import {
+  UpsertStripeSubscriptionScheduleInput,
+  StripeSubscriptionSchedule,
+} from './ui/generated/graphql';
 import { Schedule } from './schedule.entity';
 import { Injectable } from '@nestjs/common';
 import { RequestContext, TransactionalConnection } from '@vendure/core';
@@ -21,9 +24,9 @@ export class ScheduleService {
       id: input.id || undefined,
       channelId: String(ctx.channelId),
       name: input.name || undefined,
-      downpayment:
-        input.downpayment || input.downpayment === 0
-          ? input.downpayment
+      downpaymentWithTax:
+        input.downpaymentWithTax || input.downpaymentWithTax === 0
+          ? input.downpaymentWithTax
           : undefined,
       durationInterval: input.durationInterval || undefined,
       durationCount: input.durationCount || undefined,

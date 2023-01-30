@@ -38,7 +38,7 @@ import {
 import nock from 'nock';
 // @ts-ignore
 import { getOrder } from '../../test/src/admin-utils';
-import { UPSERT_SCHEDULES } from '../src/ui/queries';
+import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
 
 jest.setTimeout(20000);
 
@@ -245,7 +245,7 @@ describe('Order export plugin', function () {
       await adminClient.query(UPSERT_SCHEDULES, {
         input: {
           name: '6 months, paid in full',
-          downpayment: 0,
+          downpaymentWithTax: 0,
           durationInterval: SubscriptionInterval.Month,
           durationCount: 6,
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -268,7 +268,7 @@ describe('Order export plugin', function () {
     expect(schedule.id).toBeDefined();
     expect(schedule.createdAt).toBeDefined();
     expect(schedule.name).toBe('6 months, paid in full');
-    expect(schedule.downpayment).toBe(0);
+    expect(schedule.downpaymentWithTax).toBe(0);
     expect(schedule.paidUpFront).toBe(true);
     expect(schedule.durationInterval).toBe(schedule.billingInterval); // duration and billing should be equal for paid up front subs
     expect(schedule.durationCount).toBe(schedule.billingCount);
@@ -285,12 +285,14 @@ describe('Order export plugin', function () {
       },
     });
     const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-    expect(pricing.downpayment).toBe(0);
-    expect(pricing.recurringPrice).toBe(54000);
+    expect(pricing.downpaymentWithTax).toBe(0);
+    expect(pricing.recurringPriceWithTax).toBe(54000);
     expect(pricing.interval).toBe('month');
     expect(pricing.intervalCount).toBe(6);
-    expect(pricing.dayRate).toBe(296);
-    expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 54000);
+    expect(pricing.dayRateWithTax).toBe(296);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmountWithTax + 54000
+    );
   });
 
   it('Creates a 3 month, billed weekly subscription for variant 2 ($90)', async () => {
@@ -298,7 +300,7 @@ describe('Order export plugin', function () {
       await adminClient.query(UPSERT_SCHEDULES, {
         input: {
           name: '6 months, billed monthly, 199 downpayment',
-          downpayment: 19900,
+          downpaymentWithTax: 19900,
           durationInterval: SubscriptionInterval.Month,
           durationCount: 3,
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -321,7 +323,7 @@ describe('Order export plugin', function () {
     expect(schedule.id).toBeDefined();
     expect(schedule.createdAt).toBeDefined();
     expect(schedule.name).toBe('6 months, billed monthly, 199 downpayment');
-    expect(schedule.downpayment).toBe(19900);
+    expect(schedule.downpaymentWithTax).toBe(19900);
     expect(schedule.durationInterval).toBe(SubscriptionInterval.Month);
     expect(schedule.durationCount).toBe(3);
     expect(schedule.billingInterval).toBe(SubscriptionInterval.Week);
@@ -340,12 +342,14 @@ describe('Order export plugin', function () {
       },
     });
     const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-    expect(pricing.downpayment).toBe(19900);
-    expect(pricing.recurringPrice).toBe(9000);
+    expect(pricing.downpaymentWithTax).toBe(19900);
+    expect(pricing.recurringPriceWithTax).toBe(9000);
     expect(pricing.interval).toBe('week');
     expect(pricing.intervalCount).toBe(1);
-    expect(pricing.dayRate).toBe(1402);
-    expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 19900);
+    expect(pricing.dayRateWithTax).toBe(1402);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmountWithTax + 19900
+    );
     expect(pricing.schedule.name).toBe(
       '6 months, billed monthly, 199 downpayment'
     );
@@ -355,18 +359,20 @@ describe('Order export plugin', function () {
     const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
       input: {
         productVariantId: 2,
-        downpayment: 40000,
+        downpaymentWithTax: 40000,
       },
     });
     // Default price is $90 a month with a downpayment of $199
     // With a downpayment of $400, the price should be ($400 - $199) / 12 = $16.75 lower, so $73,25
     const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-    expect(pricing.downpayment).toBe(40000);
-    expect(pricing.recurringPrice).toBe(7325);
+    expect(pricing.downpaymentWithTax).toBe(40000);
+    expect(pricing.recurringPriceWithTax).toBe(7325);
     expect(pricing.interval).toBe('week');
     expect(pricing.intervalCount).toBe(1);
-    expect(pricing.dayRate).toBe(1402);
-    expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 40000);
+    expect(pricing.dayRateWithTax).toBe(1402);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmountWithTax + 40000
+    );
   });
 
   it('Should throw an error when downpayment is below the schedules default', async () => {
@@ -375,7 +381,7 @@ describe('Order export plugin', function () {
       .query(GET_PRICING, {
         input: {
           productVariantId: 2,
-          downpayment: 0,
+          downpaymentWithTax: 0,
         },
       })
       .catch((e) => (error = e.message));
@@ -388,7 +394,7 @@ describe('Order export plugin', function () {
       .query(GET_PRICING, {
         input: {
           productVariantId: 2,
-          downpayment: 990000, // max is 1080 + 199 = 1279
+          downpaymentWithTax: 990000, // max is 1080 + 199 = 1279
         },
       })
       .catch((e) => (error = e.message));
@@ -401,7 +407,7 @@ describe('Order export plugin', function () {
       .query(GET_PRICING, {
         input: {
           productVariantId: 1,
-          downpayment: 19900, // max is 540 + 199 = 739
+          downpaymentWithTax: 19900, // max is 540 + 199 = 739
         },
       })
       .catch((e) => (error = e.message));
@@ -417,40 +423,42 @@ describe('Order export plugin', function () {
     const { stripeSubscriptionPricing } = await shopClient.query(GET_PRICING, {
       input: {
         productVariantId: 2,
-        downpayment: 40000,
+        downpaymentWithTax: 40000,
         startDate: in3Days.toISOString(),
       },
     });
     const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-    expect(pricing.downpayment).toBe(40000);
-    expect(pricing.recurringPrice).toBe(7325);
+    expect(pricing.downpaymentWithTax).toBe(40000);
+    expect(pricing.recurringPriceWithTax).toBe(7325);
     expect(pricing.interval).toBe('week');
     expect(pricing.intervalCount).toBe(1);
-    expect(pricing.dayRate).toBe(1402);
-    expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 40000);
+    expect(pricing.dayRateWithTax).toBe(1402);
+    expect(pricing.amountDueNow).toBe(
+      pricing.totalProratedAmountWithTax + 40000
+    );
+  });
+
+  it('Should calculate pricing for each variant of product', async () => {
+    const { stripeSubscriptionPricingForProduct } = await shopClient.query(
+      GET_PRICING_FOR_PRODUCT,
+      {
+        productId: 1,
+      }
+    );
+    const pricing: StripeSubscriptionPricing[] =
+      stripeSubscriptionPricingForProduct;
+    expect(pricing[1].downpaymentWithTax).toBe(19900);
+    expect(pricing[1].recurringPriceWithTax).toBe(9000);
+    expect(pricing[1].interval).toBe('week');
+    expect(pricing[1].intervalCount).toBe(1);
+    expect(pricing[1].dayRateWithTax).toBe(1402);
+    expect(pricing[1].amountDueNow).toBe(
+      pricing[1].totalProratedAmountWithTax + pricing[1].downpaymentWithTax
+    );
+    expect(pricing.length).toBe(2);
   });
 
   describe('Subscription order placement', () => {
-    it('Should calculate pricing for each variant of product', async () => {
-      const { stripeSubscriptionPricingForProduct } = await shopClient.query(
-        GET_PRICING_FOR_PRODUCT,
-        {
-          productId: 1,
-        }
-      );
-      const pricing: StripeSubscriptionPricing[] =
-        stripeSubscriptionPricingForProduct;
-      expect(pricing[1].downpayment).toBe(19900);
-      expect(pricing[1].recurringPrice).toBe(9000);
-      expect(pricing[1].interval).toBe('week');
-      expect(pricing[1].intervalCount).toBe(1);
-      expect(pricing[1].dayRate).toBe(1402);
-      expect(pricing[1].amountDueNow).toBe(
-        pricing[1].totalProratedAmount + pricing[1].downpayment
-      );
-      expect(pricing.length).toBe(2);
-    });
-
     it('Should create payment intent for order with 2 subscriptions', async () => {
       // Mock API
       let paymentIntentInput: any = {};
@@ -505,7 +513,7 @@ describe('Order export plugin', function () {
       expect(line.subscriptionPricing).toBeDefined();
       expect(line.subscriptionPricing?.schedule).toBeDefined();
       expect(line.subscriptionPricing?.schedule.name).toBeDefined();
-      expect(line.subscriptionPricing?.schedule.downpayment).toBe(19900);
+      expect(line.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
       expect(line.subscriptionPricing?.schedule.durationInterval).toBe('month');
       expect(line.subscriptionPricing?.schedule.durationCount).toBe(3);
       expect(line.subscriptionPricing?.schedule.billingInterval).toBe('week');
@@ -513,10 +521,9 @@ describe('Order export plugin', function () {
       expect(line.subscriptionPricing?.schedule.paidUpFront).toBe(false);
     });
 
+    let createdSubscriptions: any[] = [];
     it('Should create subscriptions on webhook succeed', async () => {
       // Mock API
-      let subscriptionBody: any;
-      let downpaymentBody: any;
       nock('https://api.stripe.com')
         .get(/customers.*/)
         .reply(200, { data: [{ id: 'customer-test-id' }] });
@@ -524,32 +531,25 @@ describe('Order export plugin', function () {
         .post(/products.*/)
         .reply(200, {
           id: 'test-product',
-        });
+        })
+        .persist(true);
       nock('https://api.stripe.com')
         .post(/subscriptions.*/, (body) => {
-          subscriptionBody = body;
+          createdSubscriptions.push(body);
           return true;
         })
         .reply(200, {
-          id: 'mock-recurring-sub',
+          id: 'mock-sub',
           status: 'active',
-        });
-      nock('https://api.stripe.com')
-        .post(/subscriptions.*/, (body) => {
-          downpaymentBody = body;
-          return true;
         })
-        .reply(200, {
-          id: 'mock-downpayment-sub',
-          status: 'active',
-        });
+        .persist(true);
       let adminOrder = await getOrder(adminClient as any, order!.id as string);
       await adminClient.fetch(
         'http://localhost:3050/stripe-subscriptions/webhook',
         {
           method: 'POST',
           body: JSON.stringify({
-            type: 'setup_intent.succeeded',
+            type: 'payment_intent.succeeded',
             data: {
               object: {
                 customer: 'mock',
@@ -564,35 +564,79 @@ describe('Order export plugin', function () {
           } as IncomingStripeWebhook),
         }
       );
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 2000));
       adminOrder = await getOrder(adminClient as any, order!.id as string);
       expect(adminOrder?.state).toBe('PaymentSettled');
-      // Recurring subscription
-      expect(subscriptionBody?.customer).toBe('mock');
-      expect(subscriptionBody?.billing_cycle_anchor).toBeDefined();
-      expect(subscriptionBody?.proration_behavior).toBe('create_prorations');
-      expect(subscriptionBody?.['items[0][price_data][unit_amount]']).toBe(
-        '5683'
+      // Expect 3 subs: paidInFull, weekly and downpayment
+      expect(createdSubscriptions.length).toBe(3);
+    });
+
+    it('Created paid in full subscription', async () => {
+      const paidInFull = createdSubscriptions.find(
+        (s) =>
+          s.description ===
+          'Adult karate 6 months, paid in full, no downpayment'
+      );
+      expect(paidInFull?.customer).toBe('mock');
+      expect(paidInFull?.proration_behavior).toBe('none');
+      expect(paidInFull?.['items[0][price_data][unit_amount]']).toBe('54000');
+      expect(paidInFull?.['items[0][price_data][recurring][interval]']).toBe(
+        'month'
       );
       expect(
-        subscriptionBody?.['items[0][price_data][recurring][interval]']
-      ).toBe('month');
+        paidInFull?.['items[0][price_data][recurring][interval_count]']
+      ).toBe('6');
+      const in6months = new Date();
+      in6months.setMonth(in6months.getMonth() + 6);
+      // Trial-end should be after atleast 6 months
+      expect(parseInt(paidInFull?.trial_end)).toBeGreaterThan(
+        in6months.getTime() / 1000
+      );
+    });
+
+    it('Created weekly subscription', async () => {
+      const weeklySub = createdSubscriptions.find(
+        (s) =>
+          s.description ===
+          'Adult karate 6 months, billed weekly, 199 downpayment'
+      );
+      expect(weeklySub?.customer).toBe('mock');
+      expect(weeklySub?.proration_behavior).toBe('none');
+      expect(weeklySub?.['items[0][price_data][unit_amount]']).toBe('9000');
+      expect(weeklySub?.['items[0][price_data][recurring][interval]']).toBe(
+        'week'
+      );
       expect(
-        subscriptionBody?.['items[0][price_data][recurring][interval_count]']
+        weeklySub?.['items[0][price_data][recurring][interval_count]']
       ).toBe('1');
-      // Downpayment subscription
-      expect(downpaymentBody?.customer).toBe('mock');
-      expect(downpaymentBody?.billing_cycle_anchor).toBeDefined();
-      expect(downpaymentBody?.proration_behavior).toBe('none');
-      expect(downpaymentBody?.['items[0][price_data][unit_amount]']).toBe(
+      const in7days = new Date();
+      in7days.setDate(in7days.getDate() + 7);
+      // Trial-end (startDate) should somewhere within the next 7 days
+      expect(parseInt(weeklySub?.trial_end)).toBeLessThan(
+        in7days.getTime() / 1000
+      );
+    });
+    it('Created downpayment subscription that renews 3 months from now', async () => {
+      const downpaymentRequest = createdSubscriptions.find(
+        (s) => s.description === 'Downpayment'
+      );
+      expect(downpaymentRequest?.customer).toBe('mock');
+      expect(downpaymentRequest?.proration_behavior).toBe('none');
+      expect(downpaymentRequest?.['items[0][price_data][unit_amount]']).toBe(
         '19900'
       );
       expect(
-        downpaymentBody?.['items[0][price_data][recurring][interval]']
+        downpaymentRequest?.['items[0][price_data][recurring][interval]']
       ).toBe('month');
       expect(
-        downpaymentBody?.['items[0][price_data][recurring][interval_count]']
-      ).toBe('6');
+        downpaymentRequest?.['items[0][price_data][recurring][interval_count]']
+      ).toBe('3');
+      const in3Months = new Date();
+      in3Months.setMonth(in3Months.getMonth() + 3);
+      // Downpayment should renew after duration (3 months)
+      expect(parseInt(downpaymentRequest?.trial_end)).toBeGreaterThan(
+        in3Months.getTime() / 1000
+      );
     });
   });
 
@@ -605,19 +649,26 @@ describe('Order export plugin', function () {
       expect(schedules[0].id).toBeDefined();
     });
 
-    // TODO
-    /*
-           it('Can create Schedules', async () => {
-              expect(true).toBe(false);
-            });
-
-            it('Can update Schedules', async () => {
-              expect(true).toBe(false);
-            });
-
-
-            it('Can delete Schedules', async () => {
-              expect(true).toBe(false);
-            });*/
+    it('Can delete Schedules', async () => {
+      await adminClient.asSuperAdmin();
+      const { upsertStripeSubscriptionSchedule: toBeDeleted } =
+        await adminClient.query(UPSERT_SCHEDULES, {
+          input: {
+            name: '6 months, paid in full',
+            downpaymentWithTax: 0,
+            durationInterval: SubscriptionInterval.Month,
+            durationCount: 6,
+            startMoment: SubscriptionStartMoment.StartOfBillingInterval,
+            billingInterval: SubscriptionInterval.Month,
+            billingCount: 6,
+          },
+        });
+      await adminClient.query(DELETE_SCHEDULE, { scheduleId: toBeDeleted.id });
+      const { stripeSubscriptionSchedules: schedules } =
+        await adminClient.query(GET_SCHEDULES);
+      expect(
+        schedules.find((s: any) => s.id == toBeDeleted.id)
+      ).toBeUndefined();
+    });
   });
 });

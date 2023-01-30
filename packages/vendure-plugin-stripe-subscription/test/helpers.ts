@@ -47,11 +47,11 @@ export const UPDATE_CHANNEL = gql`
 export const GET_PRICING = gql`
   query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
     stripeSubscriptionPricing(input: $input) {
-      downpayment
-      totalProratedAmount
+      downpaymentWithTax
+      totalProratedAmountWithTax
       proratedDays
-      dayRate
-      recurringPrice
+      dayRateWithTax
+      recurringPriceWithTax
       interval
       intervalCount
       amountDueNow
@@ -59,7 +59,7 @@ export const GET_PRICING = gql`
       schedule {
         id
         name
-        downpayment
+        downpaymentWithTax
         durationInterval
         durationCount
         startMoment
@@ -74,11 +74,11 @@ export const GET_PRICING = gql`
 export const GET_PRICING_FOR_PRODUCT = gql`
   query stripeSubscriptionPricingForProduct($productId: ID!) {
     stripeSubscriptionPricingForProduct(productId: $productId) {
-      downpayment
-      totalProratedAmount
+      downpaymentWithTax
+      totalProratedAmountWithTax
       proratedDays
-      dayRate
-      recurringPrice
+      dayRateWithTax
+      recurringPriceWithTax
       interval
       intervalCount
       amountDueNow
@@ -86,7 +86,7 @@ export const GET_PRICING_FOR_PRODUCT = gql`
       schedule {
         id
         name
-        downpayment
+        downpaymentWithTax
         durationInterval
         durationCount
         startMoment
@@ -105,11 +105,11 @@ export const GET_ORDER_WITH_PRICING = gql`
       code
       lines {
         subscriptionPricing {
-          downpayment
-          totalProratedAmount
+          downpaymentWithTax
+          totalProratedAmountWithTax
           proratedDays
-          dayRate
-          recurringPrice
+          dayRateWithTax
+          recurringPriceWithTax
           interval
           intervalCount
           amountDueNow
@@ -117,7 +117,7 @@ export const GET_ORDER_WITH_PRICING = gql`
           schedule {
             id
             name
-            downpayment
+            downpaymentWithTax
             durationInterval
             durationCount
             startMoment
@@ -191,7 +191,7 @@ export const GET_SCHEDULES = gql`
       createdAt
       updatedAt
       name
-      downpayment
+      downpaymentWithTax
       durationInterval
       durationCount
       startMoment

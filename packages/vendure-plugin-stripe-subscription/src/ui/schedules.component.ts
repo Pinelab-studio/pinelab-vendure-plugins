@@ -280,7 +280,7 @@ export class SchedulesComponent implements OnInit {
     }
     this.form.controls['name'].setValue(this.selectedSchedule.name);
     this.form.controls['downpayment'].setValue(
-      this.selectedSchedule.downpayment
+      this.selectedSchedule.downpaymentWithTax
     );
     this.form.controls['durationInterval'].setValue(
       this.selectedSchedule.durationInterval
@@ -302,7 +302,7 @@ export class SchedulesComponent implements OnInit {
   newSchedule(): void {
     this.selectedSchedule = {
       name: 'New schedule',
-      downpayment: 0,
+      downpaymentWithTax: 0,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 6,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -311,7 +311,7 @@ export class SchedulesComponent implements OnInit {
     } as StripeSubscriptionSchedule;
     this.form.controls['name'].setValue(this.selectedSchedule.name);
     this.form.controls['downpayment'].setValue(
-      this.selectedSchedule.downpayment
+      this.selectedSchedule.downpaymentWithTax
     );
     this.form.controls['durationInterval'].setValue(
       this.selectedSchedule.durationInterval
@@ -346,7 +346,7 @@ export class SchedulesComponent implements OnInit {
             input: {
               id: this.selectedSchedule?.id,
               name: formValue.name,
-              downpayment: formValue.downpayment,
+              downpaymentWithTax: formValue.downpayment,
               durationInterval: formValue.durationInterval,
               durationCount: formValue.durationCount,
               startMoment: formValue.startMoment,

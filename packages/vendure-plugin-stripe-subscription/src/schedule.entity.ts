@@ -18,7 +18,7 @@ export class Schedule extends VendureEntity {
   channelId!: string;
 
   @Column({ type: 'integer', nullable: false })
-  downpayment!: number;
+  downpaymentWithTax!: number;
 
   @Column({ nullable: false })
   durationInterval!: SubscriptionInterval;

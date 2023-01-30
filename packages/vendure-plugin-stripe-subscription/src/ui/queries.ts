@@ -7,7 +7,7 @@ export const GET_SCHEDULES = gql`
       createdAt
       updatedAt
       name
-      downpayment
+      downpaymentWithTax
       durationInterval
       durationCount
       startMoment
@@ -26,7 +26,7 @@ export const UPSERT_SCHEDULES = gql`
       createdAt
       updatedAt
       name
-      downpayment
+      downpaymentWithTax
       durationInterval
       durationCount
       startMoment

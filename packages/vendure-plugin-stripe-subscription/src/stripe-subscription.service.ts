@@ -159,28 +159,22 @@ export class StripeSubscriptionService {
           );
         } else {
           // Add subscription price to intent
-          // Refetch variant to get its price. There is a bug with hydrating all variants at once
-          const variant = await this.variantService.findOne(
-            ctx,
-            line.productVariant.id
-          );
-          const pricing = await this.getPricing(
-            ctx,
-            {
-              downpayment: line.customFields.downpayment,
-              startDate: line.customFields.startDate,
-            },
-            variant
-          );
+          const pricing = await this.getPricing(ctx, {
+            downpaymentWithTax: line.customFields.downpayment,
+            startDate: line.customFields.startDate,
+            productVariantId: line.productVariant.id as string,
+          });
           Logger.info(
             `Added ${printMoney(pricing.amountDueNow)} to payment intent for ${
               order.code
             } for ${line.productVariant.name}:
-                ${printMoney(pricing.recurringPrice)} every ${
+                ${printMoney(pricing.recurringPriceWithTax)} every ${
               pricing.intervalCount
             } ${pricing.interval}(s),
-                ${printMoney(pricing.downpayment)} downpayment,
-                ${printMoney(pricing.totalProratedAmount)} prorated amount,
+                ${printMoney(pricing.downpaymentWithTax)} downpayment,
+                ${printMoney(
+                  pricing.totalProratedAmountWithTax
+                )} prorated amount,
                 `,
             loggerCtx
           );
@@ -208,20 +202,12 @@ export class StripeSubscriptionService {
    */
   async getPricing(
     ctx: RequestContext,
-    input?: Partial<StripeSubscriptionPricingInput>,
-    variant?: VariantWithSubscriptionFields
+    input: Partial<StripeSubscriptionPricingInput>
   ): Promise<StripeSubscriptionPricing> {
-    if (!variant && !input?.productVariantId) {
-      throw Error(
-        `Either variant or input.productvariantId is needed to calculate pricing!`
-      );
-    }
-    if (!variant) {
-      variant = (await this.variantService.findOne(
-        ctx,
-        input!.productVariantId!
-      )) as VariantWithSubscriptionFields;
-    }
+    const variant = (await this.variantService.findOne(
+      ctx,
+      input.productVariantId!
+    )) as VariantWithSubscriptionFields;
     if (!variant || !variant?.enabled) {
       throw new UserInputError(
         `No variant found with id ${input!.productVariantId}`
@@ -239,11 +225,11 @@ export class StripeSubscriptionService {
       );
     }
     const billingsPerDuration = getBillingsPerDuration(schedule);
-    let downpayment = schedule.downpayment;
-    if (input?.downpayment || input?.downpayment === 0) {
-      downpayment = input.downpayment;
+    let downpayment = schedule.downpaymentWithTax;
+    if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
+      downpayment = input.downpaymentWithTax;
     }
-    if (schedule.paidUpFront && schedule.downpayment) {
+    if (schedule.paidUpFront && schedule.downpaymentWithTax) {
       // Paid-up-front subscriptions cant have downpayments
       throw new UserInputError(
         `Paid-up-front subscriptions can not have downpayments!`
@@ -255,7 +241,7 @@ export class StripeSubscriptionService {
       );
     }
     const totalSubscriptionPrice =
-      variant.priceWithTax * billingsPerDuration + schedule.downpayment;
+      variant.priceWithTax * billingsPerDuration + schedule.downpaymentWithTax;
     if (downpayment > totalSubscriptionPrice) {
       throw new UserInputError(
         `Downpayment can not be higher than the total subscription value, which is (${printMoney(
@@ -263,10 +249,10 @@ export class StripeSubscriptionService {
         )})`
       );
     }
-    if (downpayment < schedule.downpayment) {
+    if (downpayment < schedule.downpaymentWithTax) {
       throw new UserInputError(
         `Downpayment can not be lower than schedules default downpayment, which is (${printMoney(
-          schedule.downpayment
+          schedule.downpaymentWithTax
         )})`
       );
     }
@@ -306,16 +292,20 @@ export class StripeSubscriptionService {
     }
     return {
       variantId: variant.id as string,
-      downpayment,
-      totalProratedAmount: totalProratedAmount,
+      downpaymentWithTax: downpayment,
+      totalProratedAmountWithTax: totalProratedAmount,
       proratedDays: daysUntilStart,
-      dayRate,
-      recurringPrice: recurringPrice,
+      dayRateWithTax: dayRate,
+      recurringPriceWithTax: recurringPrice,
       interval: schedule.billingInterval,
       intervalCount: schedule.billingCount,
       amountDueNow,
       subscriptionStartDate,
-      schedule: schedule as StripeSubscriptionSchedule,
+      schedule: {
+        ...schedule,
+        id: String(schedule.id),
+        paidUpFront: schedule.paidUpFront,
+      },
     };
   }
 
@@ -438,14 +428,11 @@ export class StripeSubscriptionService {
       );
     }
     for (const orderLine of order.lines) {
-      const pricing = await this.getPricing(
-        ctx,
-        {
-          startDate: orderLine.customFields.startDate,
-          downpayment: orderLine.customFields.downpayment,
-        },
-        orderLine.productVariant
-      );
+      const pricing = await this.getPricing(ctx, {
+        startDate: orderLine.customFields.startDate,
+        downpaymentWithTax: orderLine.customFields.downpayment,
+        productVariantId: orderLine.productVariant.id as string,
+      });
       Logger.info(
         `Creating subscriptions with pricing ${JSON.stringify(pricing)}`,
         loggerCtx
@@ -458,7 +445,7 @@ export class StripeSubscriptionService {
           customerId: stripeCustomerId,
           productId: product.id,
           currencyCode: order.currencyCode,
-          amount: pricing.recurringPrice,
+          amount: pricing.recurringPriceWithTax,
           interval: pricing.interval,
           intervalCount: pricing.intervalCount,
           paymentMethodId: stripePaymentMethodId,
@@ -472,7 +459,7 @@ export class StripeSubscriptionService {
           await this.logOrderHistory(ctx, order.id, message);
         } else {
           const message = `Created subscription ${recurring.id}: ${printMoney(
-            pricing.recurringPrice
+            pricing.recurringPriceWithTax
           )} every ${pricing.intervalCount} ${
             pricing.interval
           }(s) with startDate ${pricing.subscriptionStartDate} for order ${
@@ -481,7 +468,7 @@ export class StripeSubscriptionService {
           Logger.info(message, loggerCtx);
           await this.logOrderHistory(ctx, order.id, message);
         }
-        if (pricing.downpayment) {
+        if (pricing.downpaymentWithTax) {
           // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
           const downpaymentProduct = await stripeClient.products.create({
             name: `${order.code} - ${order.customer.emailAddress} - ${orderLine.productVariant.name} - Downpayment`,
@@ -495,15 +482,21 @@ export class StripeSubscriptionService {
           }
           const downpaymentInterval = schedule.durationInterval;
           const downpaymentIntervalCount = schedule.durationCount;
+          const nextDownpaymentDate = getNextCyclesStartDate(
+            new Date(),
+            schedule.startMoment,
+            schedule.durationInterval,
+            schedule.durationCount
+          );
           const downpayment = await stripeClient.createOffSessionSubscription({
             customerId: stripeCustomerId,
             productId: downpaymentProduct.id,
             currencyCode: order.currencyCode,
-            amount: pricing.downpayment,
+            amount: pricing.downpaymentWithTax,
             interval: downpaymentInterval,
             intervalCount: downpaymentIntervalCount,
             paymentMethodId: stripePaymentMethodId,
-            startDate: pricing.subscriptionStartDate,
+            startDate: nextDownpaymentDate,
             proration: false, // no proration for downpayments
             description: `Downpayment`,
           });
@@ -518,7 +511,7 @@ export class StripeSubscriptionService {
             const message = `Created downpayment subscription ${
               downpayment.id
             }: ${printMoney(
-              pricing.downpayment
+              pricing.downpaymentWithTax
             )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
               pricing.subscriptionStartDate
             } for order ${order.code}`;

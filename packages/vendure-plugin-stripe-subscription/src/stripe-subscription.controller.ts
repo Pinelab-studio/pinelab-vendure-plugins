@@ -42,8 +42,7 @@ export class ShopResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
     private orderService: OrderService,
-    private productService: ProductService,
-    private hydrator: EntityHydrator
+    private productService: ProductService
   ) {}
 
   @Mutation()
@@ -67,21 +66,21 @@ export class ShopResolver {
     @Ctx() ctx: RequestContext,
     @Args('productId') productId: ID
   ): Promise<StripeSubscriptionPricing[]> {
-    const product = await this.productService.findOne(ctx, productId);
+    const product = await this.productService.findOne(ctx, productId, [
+      'variants',
+    ]);
     if (!product) {
       throw new UserInputError(`No product with id '${productId}' found`);
     }
-    await this.hydrator.hydrate(ctx, product, {
-      relations: ['variants'],
-      applyProductVariantPrices: true,
-    });
     const subscriptionVariants = product.variants.filter(
       (v: VariantWithSubscriptionFields) =>
         !!v.customFields.subscriptionSchedule && v.enabled
     );
     return await Promise.all(
       subscriptionVariants.map((variant) =>
-        this.stripeSubscriptionService.getPricing(ctx, undefined, variant)
+        this.stripeSubscriptionService.getPricing(ctx, {
+          productVariantId: variant.id as string,
+        })
       )
     );
   }
@@ -97,15 +96,11 @@ export class ShopOrderLinePricingResolver {
     @Parent() orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing | undefined> {
     if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
-      const pricing = await this.subscriptionService.getPricing(
-        ctx,
-        {
-          downpayment: orderLine.customFields.downpayment,
-          startDate: orderLine.customFields.startDate,
-        },
-        orderLine.productVariant
-      );
-      return pricing;
+      return await this.subscriptionService.getPricing(ctx, {
+        downpaymentWithTax: orderLine.customFields.downpayment,
+        startDate: orderLine.customFields.startDate,
+        productVariantId: orderLine.productVariant.id as string,
+      });
     }
     return;
   }
@@ -131,6 +126,7 @@ export class AdminResolver {
   ): Promise<Schedule> {
     return this.scheduleService.upsert(ctx, input);
   }
+
   @Allow(Permission.UpdateSettings)
   @Mutation()
   async deleteStripeSubscriptionSchedule(
