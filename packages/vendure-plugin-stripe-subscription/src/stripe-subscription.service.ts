@@ -145,38 +145,13 @@ export class StripeSubscriptionService {
     let totalAmountDueNow = 0;
     await Promise.all(
       order.lines.map(async (line) => {
-        if (!line.productVariant.customFields.subscriptionSchedule) {
-          // Add one time price to intent
-          totalAmountDueNow += line.proratedLinePriceWithTax;
-          Logger.info(
-            `Added ${printMoney(
-              line.proratedLinePriceWithTax
-            )} to payment intent for ${line.productVariant.name}`,
-            loggerCtx
-          );
-        } else {
-          // Add subscription price to intent
-          const pricing = await this.getPricing(ctx, {
-            downpaymentWithTax: line.customFields.downpayment,
-            startDate: line.customFields.startDate,
-            productVariantId: line.productVariant.id as string,
-          });
-          Logger.info(
-            `Added ${printMoney(pricing.amountDueNow)} to payment intent for ${
-              order.code
-            } for ${line.productVariant.name}:
-                ${printMoney(pricing.recurringPriceWithTax)} every ${
-              pricing.intervalCount
-            } ${pricing.interval}(s),
-                ${printMoney(pricing.downpaymentWithTax)} downpayment,
-                ${printMoney(
-                  pricing.totalProratedAmountWithTax
-                )} prorated amount,
-                `,
-            loggerCtx
-          );
-          totalAmountDueNow += pricing.amountDueNow;
-        }
+        totalAmountDueNow += line.proratedLinePriceWithTax;
+        Logger.info(
+          `Added ${printMoney(
+            line.proratedLinePriceWithTax // Prorated line price has subscriptionPrice because of our custom strategy
+          )} to payment intent for ${line.productVariant.name}`,
+          loggerCtx
+        );
       })
     );
     const intent = await stripeClient.paymentIntents.create({
