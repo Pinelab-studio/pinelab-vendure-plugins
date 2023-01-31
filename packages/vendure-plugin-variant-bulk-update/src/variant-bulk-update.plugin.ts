@@ -5,6 +5,8 @@ import {
   PluginCommonModule,
   ProductEvent,
   ProductVariant,
+  ProductVariantEvent,
+  ProductVariantPrice,
   ProductVariantService,
   TransactionalConnection,
   Type,
@@ -12,6 +14,7 @@ import {
 } from '@vendure/core';
 import { OnModuleInit } from '@nestjs/common';
 import { filter } from 'rxjs/operators';
+import { In } from 'typeorm';
 
 type ProductEventWithCustomFields = ProductEvent & {
   product: {
@@ -72,16 +75,24 @@ export class VariantBulkUpdatePlugin implements OnModuleInit {
             .select(['variant.id'])
             .where('variant.productId = :productId', { productId: product.id })
             .getMany();
-          await this.variantService.update(
-            ctx,
-            variants.map((v) => ({
-              id: v.id,
+          const variantIds = variants.map((v) => v.id);
+          const res = await this.connection
+            .getRepository(ctx, ProductVariantPrice)
+            .createQueryBuilder('price')
+            .update({
               price: product.customFields.price,
-            }))
-          );
+            })
+            .where({
+              variant: In(variantIds),
+              channelId: ctx.channelId,
+            })
+            .execute();
           Logger.info(
-            `Updated prices of ${variants.length} variants of product ${product.id} to ${product.customFields.price}`,
+            `Updated prices of ${res.affected} variants of product ${product.id} to ${product.customFields.price}`,
             loggerCtx
+          );
+          this.eventBus.publish(
+            new ProductVariantEvent(ctx, variants, 'updated')
           );
         }
       });
