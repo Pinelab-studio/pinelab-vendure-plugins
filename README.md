@@ -18,7 +18,13 @@ Check out the plugins in this repository:
 - [GoedGepickt order picking integration](packages/vendure-plugin-goedgepickt/README.md)
 - [MyParcel shipping integration](packages/vendure-plugin-myparcel/README.md)
 - [Order export plugin](packages/vendure-plugin-order-export/README.md)
-- [Shipping by weight and country](packages/vendure-plugin-shipping-by-weight-and-country/README.md)
+- [Shipping eligibility checker by weight and country](packages/vendure-plugin-shipping-by-weight-and-country/README.md)
+- [Monitor stocklevels and get notified](packages/vendure-plugin-stock-monitoring/README.md)
+- [Stripe subscription](packages/vendure-plugin-stripe-subscription/README.md)
+- [Update all variants of a product in bulk](packages/vendure-plugin-variant-bulk-update/README.md)
+- [Sendcloud integration](packages/vendure-plugin-sendcloud/README.md)
+- [Limit amount of variants per order](packages/vendure-plugin-limit-variant-per-order/README.md)
+- [Extendible metrics](packages/vendure-plugin-metrics/README.md)
 
 # Development
 

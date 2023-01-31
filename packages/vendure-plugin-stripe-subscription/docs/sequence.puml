@@ -1,0 +1,17 @@
+@startuml
+
+' use this text to generate a sequence diagram via https://www.planttext.com/
+
+Storefront->Vendure:Add subscription product to order
+Storefront->Vendure:createPaymentIntent()
+Vendure->Stripe:createPaymentIntent()
+Vendure<--Stripe: Payment secret
+Storefront<--Stripe: Payment secret
+Storefront->Stripe: Customer pays for non-subscription products, \n prorated amount and downpayment
+Vendure<--Stripe:payment_intent.succeeded
+Vendure->Vendure: Settle order
+Storefront<-Vendure: Order flow finished for customer
+Vendure->Stripe: Vendure creates recurring subscription(s) \n AFTER the payment succeeded
+
+
+@enduml

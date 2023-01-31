@@ -297,6 +297,9 @@ export class SchedulesComponent implements OnInit {
     this.form.controls['billingCount'].setValue(
       this.selectedSchedule.billingCount
     );
+    this.form.controls['isPaidUpFront'].setValue(
+      this.selectedSchedule.paidUpFront
+    );
   }
 
   newSchedule(): void {

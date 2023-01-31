@@ -55,11 +55,11 @@ export let clientSecret = 'test';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [StripeSubscriptionPlugin.ui],
           devMode: true,
-        }),*/
+        }),
       }),
     ],
   });
@@ -106,7 +106,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: '6 months, paid in full',
-      downpayment: 0,
+      downpaymentWithTax: 0,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 6,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -117,7 +117,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: '6 months, billed monthly, 199 downpayment',
-      downpayment: 19900,
+      downpaymentWithTax: 19900,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 3,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,

@@ -2,34 +2,44 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-stripe-subscription/dev/@vendure/core)
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-stripe-subscription)
+A channel aware plugin that allows you to sell subscription based services or memberships through Vendure. Also support
+non-subscription payments. This plugin was made in collaboration with the great people
+at [isoutfitters.com](https://isoutfitters.com/).
 
-This plugin allows you to sell subscription based services or memberships through Vendure. This plugin was made in
-collaboration with the great people at [isoutfitters.com](https://isoutfitters.com/)
-
-## Getting started
+## How it works
 
 A few things you should know before getting started:
 
 - Subscriptions are defined by `Schedules`. A schedule is a blueprint for a subscription and can be reused on multiple
   subscriptions. An example of a schedule is
   `Billed every first of the month, for 6 months`.
-- Schedules have a fixed duration. They can be configured to auto-renew after that duration.
+- Schedules have a fixed duration. Currently, they do autorenew after this duration. The duration is used to calculate
+  proration downpaymend deductions. Read more on this under [Advanced features](#advanced-features)
 - By connecting a `Schedule` to a ProductVariant, you turn the variant into a subscription. The price of the variant is
   the price a customer pays **per interval**.
+
+![](docs/schedule-weekly.png)
+_Managing schedules in the Admin UI_
+
+![](docs/sub-product.png)
+_Connecting a schedule to a product variant_
+
+![](docs/sequence.png)
+_Subscriptions are created in the background, after a customer has finished the checkout_
 
 ### Examples
 
 A variant with price $30,- and schedule `Duration of 6 months, billed montly` is a subscription where the customer is
-billed $30,- per month for 6 months. After which is auto-renews.
+billed $30,- per month for 6 months.
 
 A variant with price $300 and a schedule of `Duration of 12 months, billed every 2 months` is a subscription where the
-customer is billed $300 every 2 months, for a duration of 12 months. After which is auto-renews.
+customer is billed $300 every 2 months, for a duration of 12 months.
+
+## Getting started
 
 ### Setup Stripe webhook
 
-1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook` (
-   Use something like localtunnel or ngrok for local development)
+1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook`
 2. Select `setup_intent.succeeded` as event for the webhook.
 
 ## Vendure setup
@@ -79,23 +89,79 @@ future: https://stripe.com/docs/payments/setup-intents#mandates
 
 # Advanced features
 
-## Paid in full
+## Paid up front
 
-// TODO. No downpayments! examples
+Schedules can be defined as 'Paid up front'. This means the customer will have to pay the total value of the
+subscription during the checkout. Paid-up-front subscriptions can not have downpayments, because it's already one big
+downpayment.
+
+Example:
+![](docs/schedule-paid-up-front.png)
+When we connect the schedule above to a variant with price $540,-, the user will be prompted to pay $540,- during the
+checkout. The schedules start date is **first of the month**, so a subscription is created to renew the $540,- in 6
+months from the first of the month. E.g. the customer buys this subscription on Januari 15 and pays $540,- during
+checkout. The subscription's start date is Februari 1, because that's the first of the next month.
+
+The customer will be billed $540 again automatically on July 1, because that's 6 months (the duration) from the start
+date of the subscription.
 
 ## Prorations
 
-All subscriptions have a fixed start moment, for example "Every first of the month". This is also when billing will
-occur. If a customer orders a subscription now, but the subscription starts in 5 days, a prorated amount for the
+In the example above, the customer will also be billed for the remaining 15 days from Januari 15 to Februari 1, this is
+called proration. customer orders a subscription now, but the subscription starts in 5 days, a prorated amount for the
 remaining 5 days will be billed to the customer.
+
+Proration is calculated on a yearly basis. E.g, in the example above: $540 is for a duration of 6 months, that means
+$1080 for the full year. The day rate of that subscription will then be 1080 / 365 = $2,96. When the customer buys the
+subscription on Januari 15, he will be billed $44,40 proration for the remaining 15 days.
 
 ### Customer chosen start dates
 
-// TODO
+A customer can decide to start the subscription on January 17, to pay less proration, because there are now only 13 days
+left until the first of Februari. This can be done in the storefront with the following query:
+
+```graphql
+mutation {
+  addItemToOrder(
+    productVariantId: 1
+    quantity: 1
+    customFields: { startDate: "2023-01-31T09:18:28.533Z" }
+  ) {
+    ... on Order {
+      id
+    }
+  }
+}
+```
 
 ### Customer chosen downpayments
 
-// TODO
+A customer can also choose to pay a higher downpayment, to lower the recurring costs of a subscription.
+
+Example:
+A customer buys a subscription that has a duration of 6 months, and costs $90 per month. The customer can choose to pay
+a downpayment of $270,- during checkout to lower to monthly price. The $270 downpayment will be deducted from the
+monthly price: 270 / 6 months = $45. With the downpayment of $270, customer will now be billed 90 - 45 = $45,- per month
+for the next 6 months.
+
+Downpayments can be added via a custom field on the order line:
+
+```graphql
+mutation {
+  addItemToOrder(
+    productVariantId: 1
+    quantity: 1
+    customFields: { downpayment: 27000 }
+  ) {
+    ... on Order {
+      id
+    }
+  }
+}
+```
+
+Downpayments can never be lower that the amount set in the schedule, and never higher than the total value of a
+subscription.
 
 ### Preview pricing calculations
 
@@ -106,7 +172,9 @@ You can preview the pricing model of a subscription without adding it to cart wi
   getStripeSubscriptionPricing(
     input: {
       productVariantId: 1
+      # Optional dynamic start date
       startDate: "2022-12-25T00:00:00.000Z"
+      # Optional dynamic downpayment
       downpayment: 1200
     }
   ) {
@@ -117,11 +185,23 @@ You can preview the pricing model of a subscription without adding it to cart wi
     interval
     intervalCount
     amountDueNow
+    subscriptionStartDate
+    schedule {
+      id
+      name
+      downpaymentWithTax
+      durationInterval
+      durationCount
+      startMoment
+      paidUpFront
+      billingCount
+      billingInterval
+    }
   }
 }
 ```
 
-`Downpayment` and `startDate` are optional parameters. Without them, the subscriptions default will be used.
+`Downpayment` and `startDate` are optional parameters. Without them, the defaults defined by the schedule will be used.
 
 ## Caveats
 
