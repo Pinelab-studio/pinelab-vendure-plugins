@@ -26,7 +26,7 @@ _Connecting a schedule to a product variant_
 
 ### Examples of schedules
 
-A variant with price $30,- and schedule `Duration of 6 months, billed montly` is a subscription where the customer is
+A variant with price $30,- and schedule `Duration of 6 months, billed monthly` is a subscription where the customer is
 billed $30,- per month for 6 months.
 
 A variant with price $300 and a schedule of `Duration of 12 months, billed every 2 months` is a subscription where the
@@ -106,25 +106,25 @@ Example:
 ![](docs/schedule-paid-up-front.png)
 When we connect the schedule above to a variant with price $540,-, the user will be prompted to pay $540,- during
 checkout. The schedules start date is **first of the month**, so a subscription is created to renew the $540,- in 6
-months from the first of the month. E.g. the customer buys this subscription on Januari 15 and pays $540,- during
-checkout. The subscription's start date is Februari 1, because that's the first of the next month.
+months from the first of the month. E.g. the customer buys this subscription on January 15 and pays $540,- during
+checkout. The subscription's start date is February 1, because that's the first of the next month.
 
 The customer will be billed $540 again automatically on July 1, because that's 6 months (the duration) from the start
 date of the subscription.
 
 ## Prorations
 
-In the example above, the customer will also be billed for the remaining 15 days from Januari 15 to Februari 1, this is
+In the example above, the customer will also be billed for the remaining 15 days from January 15 to February 1, this is
 called proration.
 
 Proration is calculated on a yearly basis. E.g, in the example above: $540 is for a duration of 6 months, that means
-$1080 for the full year. The day rate of that subscription will then be 1080 / 365 = $2,96 a day. When the customer buys the
-subscription on Januari 15, he will be billed $44,40 proration for the remaining 15 days.
+$1080 for the full year. The day rate of that subscription will then be 1080 / 365 = $2,96 a day. When the customer buys
+the subscription on January 15, he will be billed $44,40 proration for the remaining 15 days.
 
 ## Storefront defined start dates
 
 A customer can decide to start the subscription on January 17, to pay less proration, because there are now only 13 days
-left until the first of Februari. This can be done in the storefront with the following query:
+left until the first of February. This can be done in the storefront with the following query:
 
 ```graphql
 mutation {
@@ -208,6 +208,41 @@ You can preview the pricing model of a subscription without adding it to cart wi
 ```
 
 `Downpayment` and `startDate` are optional parameters. Without them, the defaults defined by the schedule will be used.
+
+### Get subscription pricing details per order line
+
+You can also get the subscription and Schedule pricing details per order line with the following query:
+
+```graphql
+{
+    activeOrder {
+        id
+        code
+        lines {
+            subscriptionPricing {
+                downpaymentWithTax
+                totalProratedAmountWithTax
+                proratedDays
+                dayRateWithTax
+                recurringPriceWithTax
+                interval
+                intervalCount
+                amountDueNow
+                subscriptionStartDate
+                schedule {
+                    id
+                    name
+                    downpaymentWithTax
+                    durationInterval
+                    durationCount
+                    startMoment
+                    paidUpFront
+                    billingCount
+                    billingInterval
+                }
+            }
+        }
+```
 
 ## Caveats
 
