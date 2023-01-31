@@ -27,7 +27,7 @@ _Connecting a schedule to a product variant_
 ![](docs/sequence.png)  
 _Subscriptions are created in the background, after a customer has finished the checkout_
 
-### Examples
+### Examples of schedules
 
 A variant with price $30,- and schedule `Duration of 6 months, billed montly` is a subscription where the customer is
 billed $30,- per month for 6 months.
