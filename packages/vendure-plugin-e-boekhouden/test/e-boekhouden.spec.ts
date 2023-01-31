@@ -6,7 +6,13 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { DefaultLogger, LogLevel, mergeConfig, TaxRate } from '@vendure/core';
+import {
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  RequestContext,
+  TaxRateService,
+} from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
   EBoekhoudenConfig,
@@ -22,7 +28,6 @@ import {
 import nock from 'nock';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { Connection } from 'typeorm';
 
 jest.setTimeout(20000);
 
@@ -69,15 +74,18 @@ describe('E-boekhouden plugin', function () {
       customerCount: 2,
     });
     serverStarted = true;
-    await server.app
-      .get(Connection)
-      .getRepository(TaxRate)
-      .update({ id: 2 }, { value: 21 }); // Set europe to 21
     await adminClient.asSuperAdmin();
   }, 60000);
 
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
+  });
+
+  it('Should have 21% tax', async () => {
+    const { value } = await server.app
+      .get(TaxRateService)
+      .update(RequestContext.empty(), { id: 2, value: 21 });
+    expect(value).toBe(21);
   });
 
   it('Should get null', async () => {

@@ -9,10 +9,10 @@
   "scripts": {
     "postinstall": "yarn husky install",
     "build": "yarn && yarn prettier:write && yarn lerna exec --concurrency 1 -- yarn && yarn lerna run build --concurrency 1",
-    "lerna:publish": "yarn build && git stash && yarn lerna publish --conventional-commits --changelog-preset conventionalcommits",
+    "lerna:publish": "yarn build && git stash && yarn lerna publish --changelog-preset conventionalcommits",
     "prettier:write": "prettier --write .",
     "prettier:check": "prettier --check .",
-    "upgrade:vendure": "yarn lerna exec \"yarn upgrade --pattern @vendure --latest\"",
+    "upgrade:vendure": "yarn lerna exec --concurrency 1 \"yarn upgrade --pattern @vendure --latest\"",
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
