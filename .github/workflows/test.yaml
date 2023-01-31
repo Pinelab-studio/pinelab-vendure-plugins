@@ -45,6 +45,7 @@ jobs:
             'vendure-plugin-metrics',
             'vendure-plugin-limit-variant-per-order',
             'vendure-plugin-variant-bulk-update',
+            'vendure-plugin-stripe-subscription',
           ]
     steps:
       - name: Checkout code

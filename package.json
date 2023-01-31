@@ -46,6 +46,7 @@
           "stock-monitoring",
           "sendcloud",
           "metrics",
+          "stripe-subscription",
           "limit-variant",
           "variant-bulk-update",
           "all-plugins"
