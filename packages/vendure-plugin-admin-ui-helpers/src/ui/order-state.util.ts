@@ -86,7 +86,7 @@ export async function refund(
       reason: 'Manual refund',
       paymentId: order.payments![0].id,
       adjustment: 0,
-      shipping: order.shipping,
+      shipping: order.shippingWithTax,
     })
     .toPromise();
   const errorResult = refundOrder as RefundOrderStateError;
