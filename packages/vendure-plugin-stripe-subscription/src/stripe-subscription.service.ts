@@ -49,8 +49,6 @@ export interface StripeHandlerConfig {
   paymentMethodCode: string;
   stripeClient: StripeClient;
   webhookSecret: string;
-  downpaymentLabel?: string;
-  prorationLabel?: string;
 }
 
 export interface JobData {
@@ -191,7 +189,7 @@ export class StripeSubscriptionService {
       metadata: {
         orderCode: order.code,
         channelToken: ctx.channel.token,
-        amount: order.totalWithTax,
+        amount: totalAmountDueNow,
       },
     });
     return intent.client_secret!;
@@ -609,12 +607,6 @@ export class StripeSubscriptionService {
         apiVersion: null as any, // Null uses accounts default version
       }),
       webhookSecret,
-      downpaymentLabel: paymentMethod.handler.args.find(
-        (arg) => arg.name === 'downpaymentLabel'
-      )?.value,
-      prorationLabel: paymentMethod.handler.args.find(
-        (arg) => arg.name === 'prorationLabel'
-      )?.value,
     };
   }
 }

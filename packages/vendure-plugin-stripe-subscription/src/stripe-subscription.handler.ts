@@ -38,40 +38,6 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
         },
       ],
     },
-    downpaymentLabel: {
-      type: 'string',
-      defaultValue: 'Downpayment',
-      label: [
-        {
-          languageCode: LanguageCode.en,
-          value: 'Stripe downpayment label',
-        },
-      ],
-      description: [
-        {
-          languageCode: LanguageCode.en,
-          value:
-            'The label that is displayed for the downpayment on the Stripe checkout page',
-        },
-      ],
-    },
-    prorationLabel: {
-      type: 'string',
-      defaultValue: 'Pro-rated amount',
-      label: [
-        {
-          languageCode: LanguageCode.en,
-          value: 'Stripe proration label',
-        },
-      ],
-      description: [
-        {
-          languageCode: LanguageCode.en,
-          value:
-            'The label that is displayed for the prorated amount on the Stripe checkout page',
-        },
-      ],
-    },
   },
 
   init(injector: Injector) {},
