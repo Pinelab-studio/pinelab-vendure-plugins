@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [4.9.2](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.9.1...v4.9.2) (2023-01-31)
+
+### Bug Fixes
+
+- **admin-ui-helpers:** refund shipping with tax ([f98256b](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/f98256bb6ea6f590eae4bcc52ff2004e53854ae3))
+
 ## [4.3.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
 
 ### Features
