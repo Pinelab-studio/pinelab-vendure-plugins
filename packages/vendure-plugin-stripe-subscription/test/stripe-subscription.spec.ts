@@ -631,11 +631,11 @@ describe('Order export plugin', function () {
       expect(
         downpaymentRequest?.['items[0][price_data][recurring][interval_count]']
       ).toBe('3');
-      const in3Months = new Date();
-      in3Months.setMonth(in3Months.getMonth() + 3);
-      // Downpayment should renew after duration (3 months)
+      const in2Months = new Date();
+      in2Months.setMonth(in2Months.getMonth() + 2); // Atleast 2 months in between (can also be 2 months and 29 days)
+      // Downpayment should renew after duration (At least 2 months)
       expect(parseInt(downpaymentRequest?.trial_end)).toBeGreaterThan(
-        in3Months.getTime() / 1000
+        in2Months.getTime() / 1000
       );
     });
   });
