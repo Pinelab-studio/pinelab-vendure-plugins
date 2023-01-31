@@ -24,9 +24,6 @@ _Managing schedules in the Admin UI_
 ![](docs/sub-product.png)  
 _Connecting a schedule to a product variant_
 
-![](docs/sequence.png)  
-_Subscriptions are created in the background, after a customer has finished the checkout_
-
 ### Examples of schedules
 
 A variant with price $30,- and schedule `Duration of 6 months, billed montly` is a subscription where the customer is
@@ -35,12 +32,15 @@ billed $30,- per month for 6 months.
 A variant with price $300 and a schedule of `Duration of 12 months, billed every 2 months` is a subscription where the
 customer is billed $300 every 2 months, for a duration of 12 months.
 
+Currently, subscriptions auto-renew after their duration: After 12 months, the customer is again billed $300 per 2
+momnths for 12 months.
+
 ## Getting started
 
 ### Setup Stripe webhook
 
 1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook`
-2. Select `setup_intent.succeeded` as event for the webhook.
+2. Select `payment_intent.succeeded` as event for the webhook.
 
 ## Vendure setup
 
@@ -67,19 +67,20 @@ plugins: [
 7. Create a variant and select a schedule in the variant detail screen in the admin UI.
 8. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. **
    Your payment method MUST have 'stripe-subscription' in the code field**
-9. Set your API key from Stripe.
+9. Set your API key from Stripe in the apiKey field.
 10. Get the webhook secret from you Stripe dashboard and save it on the payment method.
 
 ## Storefront usage
 
-1. From your storefront, add the created variant to your order
-2. Add a shippingaddress and a shippingmethod to the order (mandatory for all orders).
+1. From your storefront, add the subscription variant to your order
+2. Add a shipping address and a shipping method to the order (mandatory for all orders).
 3. Call the graphql mutation `createStripeSubscriptionIntent` to receive the Payment intent token.
 4. Use this token to display the Stripe form on your storefront. See
    the [Stripe docs](https://stripe.com/docs/payments/accept-a-payment?platform=web&ui=elements#set-up-stripe.js) on how
    to accomplish that.
 5. During the checkout the user is only charged any potential downpayment or proration (
-   see [Advanced features](#advanced-features)). The recurring charges will occur on the start of the schedule.
+   see [Advanced features](#advanced-features)). The recurring charges will occur on the start of the schedule. For
+   paid-up-front schedules the customer pays the full amount during checkout
 6. Have the customer fill out his payment details.
 7. Vendure will create the subscriptions after the intent has successfully been completed by the customer.
 8. The order will be settled by Vendure when the subscriptions are created.
@@ -87,7 +88,12 @@ plugins: [
 It's important to inform your customers what you will be billing them in the
 future: https://stripe.com/docs/payments/setup-intents#mandates
 
+![](docs/sequence.png)  
+_Subscriptions are created in the background, after a customer has finished the checkout_
+
 # Advanced features
+
+Features you can use, but don't have to!
 
 ## Paid up front
 
@@ -97,7 +103,7 @@ downpayment.
 
 Example:
 ![](docs/schedule-paid-up-front.png)
-When we connect the schedule above to a variant with price $540,-, the user will be prompted to pay $540,- during the
+When we connect the schedule above to a variant with price $540,-, the user will be prompted to pay $540,- during
 checkout. The schedules start date is **first of the month**, so a subscription is created to renew the $540,- in 6
 months from the first of the month. E.g. the customer buys this subscription on Januari 15 and pays $540,- during
 checkout. The subscription's start date is Februari 1, because that's the first of the next month.
@@ -108,14 +114,13 @@ date of the subscription.
 ## Prorations
 
 In the example above, the customer will also be billed for the remaining 15 days from Januari 15 to Februari 1, this is
-called proration. customer orders a subscription now, but the subscription starts in 5 days, a prorated amount for the
-remaining 5 days will be billed to the customer.
+called proration.
 
 Proration is calculated on a yearly basis. E.g, in the example above: $540 is for a duration of 6 months, that means
-$1080 for the full year. The day rate of that subscription will then be 1080 / 365 = $2,96. When the customer buys the
+$1080 for the full year. The day rate of that subscription will then be 1080 / 365 = $2,96 a day. When the customer buys the
 subscription on Januari 15, he will be billed $44,40 proration for the remaining 15 days.
 
-### Customer chosen start dates
+## Storefront defined start dates
 
 A customer can decide to start the subscription on January 17, to pay less proration, because there are now only 13 days
 left until the first of Februari. This can be done in the storefront with the following query:
@@ -134,7 +139,7 @@ mutation {
 }
 ```
 
-### Customer chosen downpayments
+## Storefront defined downpayments
 
 A customer can also choose to pay a higher downpayment, to lower the recurring costs of a subscription.
 
