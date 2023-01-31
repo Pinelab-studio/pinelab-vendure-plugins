@@ -14,17 +14,17 @@ A few things you should know before getting started:
   subscriptions. An example of a schedule is
   `Billed every first of the month, for 6 months`.
 - Schedules have a fixed duration. Currently, they do autorenew after this duration. The duration is used to calculate
-  proration downpaymend deductions. Read more on this under [Advanced features](#advanced-features)
+  prorations and downpayment deductions. Read more on this under [Advanced features](#advanced-features)
 - By connecting a `Schedule` to a ProductVariant, you turn the variant into a subscription. The price of the variant is
   the price a customer pays **per interval**.
 
-![](docs/schedule-weekly.png)
+![](docs/schedule-weekly.png)  
 _Managing schedules in the Admin UI_
 
-![](docs/sub-product.png)
+![](docs/sub-product.png)  
 _Connecting a schedule to a product variant_
 
-![](docs/sequence.png)
+![](docs/sequence.png)  
 _Subscriptions are created in the background, after a customer has finished the checkout_
 
 ### Examples
