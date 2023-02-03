@@ -54,7 +54,7 @@ export const GET_PRICING = gql`
       recurringPriceWithTax
       interval
       intervalCount
-      amountDueNow
+      amountDueNowWithTax
       subscriptionStartDate
       schedule {
         id
@@ -81,7 +81,7 @@ export const GET_PRICING_FOR_PRODUCT = gql`
       recurringPriceWithTax
       interval
       intervalCount
-      amountDueNow
+      amountDueNowWithTax
       subscriptionStartDate
       schedule {
         id
@@ -112,7 +112,7 @@ export const GET_ORDER_WITH_PRICING = gql`
           recurringPriceWithTax
           interval
           intervalCount
-          amountDueNow
+          amountDueNowWithTax
           subscriptionStartDate
           schedule {
             id

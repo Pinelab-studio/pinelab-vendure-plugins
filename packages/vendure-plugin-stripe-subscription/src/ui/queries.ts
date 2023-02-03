@@ -13,6 +13,7 @@ export const SCHEDULE_FRAGMENT = gql`
     billingInterval
     billingCount
     paidUpFront
+    fixedStartDate
   }
 `;
 

@@ -19,6 +19,7 @@ import {
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
 } from './helpers';
+import { getOrder } from '../../test/src/admin-utils';
 
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
@@ -150,16 +151,16 @@ export let clientSecret = 'test';
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   // Add paid in full
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
+  /*  await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,
     customFields: {
       // downpayment: 40000,
       // startDate: in3Days,
     },
-  });
+  });*/
   // Add recurring product
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
+  let { addItemToOrder } = await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '2',
     quantity: 1,
     customFields: {
@@ -168,12 +169,13 @@ export let clientSecret = 'test';
     },
   });
   // Add non-sub product
-  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+  /*  await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '3',
     quantity: 1,
-  });
+  });*/
+  const order = await getOrder(adminClient, addItemToOrder.id);
   await setShipping(shopClient);
-  console.log(`Prepared order ${order.code}`);
+  console.log(`Prepared order ${order?.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(
     CREATE_PAYMENT_LINK
   );

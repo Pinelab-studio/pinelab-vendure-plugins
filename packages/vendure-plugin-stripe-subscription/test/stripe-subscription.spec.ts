@@ -290,7 +290,7 @@ describe('Order export plugin', function () {
     expect(pricing.interval).toBe('month');
     expect(pricing.intervalCount).toBe(6);
     expect(pricing.dayRateWithTax).toBe(296);
-    expect(pricing.amountDueNow).toBe(
+    expect(pricing.amountDueNowWithTax).toBe(
       pricing.totalProratedAmountWithTax + 54000
     );
   });
@@ -347,7 +347,7 @@ describe('Order export plugin', function () {
     expect(pricing.interval).toBe('week');
     expect(pricing.intervalCount).toBe(1);
     expect(pricing.dayRateWithTax).toBe(1402);
-    expect(pricing.amountDueNow).toBe(
+    expect(pricing.amountDueNowWithTax).toBe(
       pricing.totalProratedAmountWithTax + 19900
     );
     expect(pricing.schedule.name).toBe(
@@ -370,7 +370,7 @@ describe('Order export plugin', function () {
     expect(pricing.interval).toBe('week');
     expect(pricing.intervalCount).toBe(1);
     expect(pricing.dayRateWithTax).toBe(1402);
-    expect(pricing.amountDueNow).toBe(
+    expect(pricing.amountDueNowWithTax).toBe(
       pricing.totalProratedAmountWithTax + 40000
     );
   });
@@ -433,7 +433,7 @@ describe('Order export plugin', function () {
     expect(pricing.interval).toBe('week');
     expect(pricing.intervalCount).toBe(1);
     expect(pricing.dayRateWithTax).toBe(1402);
-    expect(pricing.amountDueNow).toBe(
+    expect(pricing.amountDueNowWithTax).toBe(
       pricing.totalProratedAmountWithTax + 40000
     );
   });
@@ -452,7 +452,7 @@ describe('Order export plugin', function () {
     expect(pricing[1].interval).toBe('week');
     expect(pricing[1].intervalCount).toBe(1);
     expect(pricing[1].dayRateWithTax).toBe(1402);
-    expect(pricing[1].amountDueNow).toBe(
+    expect(pricing[1].amountDueNowWithTax).toBe(
       pricing[1].totalProratedAmountWithTax + pricing[1].downpaymentWithTax
     );
     expect(pricing.length).toBe(2);

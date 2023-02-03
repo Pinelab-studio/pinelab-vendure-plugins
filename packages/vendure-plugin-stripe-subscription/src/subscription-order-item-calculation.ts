@@ -36,7 +36,7 @@ export class SubscriptionOrderItemCalculation
         productVariantId: productVariant.id as string,
       });
       return {
-        price: pricing.amountDueNow,
+        price: pricing.amountDueNowWithTax,
         priceIncludesTax: true,
       };
     } else {

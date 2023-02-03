@@ -4,7 +4,11 @@ import {
 } from './ui/generated/graphql';
 import { Schedule } from './schedule.entity';
 import { Injectable } from '@nestjs/common';
-import { RequestContext, TransactionalConnection } from '@vendure/core';
+import {
+  RequestContext,
+  TransactionalConnection,
+  UserInputError,
+} from '@vendure/core';
 
 @Injectable()
 export class ScheduleService {
@@ -47,5 +51,17 @@ export class ScheduleService {
         },
       });
     await this.connection.getRepository(ctx, Schedule).delete({ id });
+  }
+
+  validate(input: UpsertStripeSubscriptionScheduleInput): void {
+    if (
+      input.billingInterval === input.durationInterval &&
+      input.billingCount === input.durationCount &&
+      input.downpaymentWithTax
+    ) {
+      throw new UserInputError(
+        `Paid up front schedules can not have downpayments. When duration and billing intervals are the same your schedule is a paid-up-front schedule.`
+      );
+    }
   }
 }

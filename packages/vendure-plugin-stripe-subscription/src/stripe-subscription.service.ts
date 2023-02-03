@@ -271,7 +271,7 @@ export class StripeSubscriptionService {
       recurringPriceWithTax: recurringPrice,
       interval: schedule.billingInterval,
       intervalCount: schedule.billingCount,
-      amountDueNow,
+      amountDueNowWithTax: amountDueNow,
       subscriptionStartDate,
       schedule: {
         ...schedule,

@@ -16,6 +16,7 @@ const sharedTypes = gql`
     start_of_billing_interval
     end_of_billing_interval
     time_of_purchase
+    fixed_startdate
   }
   type StripeSubscriptionSchedule {
     id: ID!
@@ -29,6 +30,7 @@ const sharedTypes = gql`
     paidUpFront: Boolean!
     billingInterval: SubscriptionInterval!
     billingCount: Int!
+    fixedStartDate: DateTime
   }
   input UpsertStripeSubscriptionScheduleInput {
     id: ID
@@ -39,6 +41,7 @@ const sharedTypes = gql`
     startMoment: SubscriptionStartMoment
     billingInterval: SubscriptionInterval
     billingCount: Int
+    fixedStartDate: DateTime
   }
 `;
 
@@ -58,7 +61,7 @@ export const shopSchemaExtensions = gql`
     recurringPriceWithTax: Int!
     interval: SubscriptionInterval!
     intervalCount: Int!
-    amountDueNow: Int!
+    amountDueNowWithTax: Int!
     subscriptionStartDate: DateTime!
     schedule: StripeSubscriptionSchedule!
   }
