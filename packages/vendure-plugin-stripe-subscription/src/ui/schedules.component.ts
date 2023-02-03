@@ -182,7 +182,7 @@ import {
             >
               <vdr-datetime-picker
                 [min]="now"
-                formControlName="startsAt"
+                formControlName="fixedStartDate"
               ></vdr-datetime-picker>
             </vdr-form-field>
             <!-- Downpayment -->
@@ -254,6 +254,7 @@ export class SchedulesComponent implements OnInit {
       startMoment: ['startMoment', Validators.required],
       billingInterval: ['billingInterval', Validators.required],
       billingCount: ['billingCount', Validators.required],
+      fixedStartDate: ['fixedStartDate', Validators.required],
     });
   }
   get now() {
@@ -301,6 +302,9 @@ export class SchedulesComponent implements OnInit {
     );
     this.form.controls['isPaidUpFront'].setValue(
       this.selectedSchedule.paidUpFront
+    );
+    this.form.controls['fixedStartDate'].setValue(
+      this.selectedSchedule.fixedStartDate
     );
   }
 
@@ -357,6 +361,7 @@ export class SchedulesComponent implements OnInit {
               startMoment: formValue.startMoment,
               billingInterval: formValue.billingInterval,
               billingCount: formValue.billingCount,
+              fixedStartDate: formValue.fixedStartDate,
             },
           })
           .toPromise();

@@ -1,6 +1,6 @@
 import {
+  SubscriptionStartMoment,
   UpsertStripeSubscriptionScheduleInput,
-  StripeSubscriptionSchedule,
 } from './ui/generated/graphql';
 import { Schedule } from './schedule.entity';
 import { Injectable } from '@nestjs/common';
@@ -24,6 +24,7 @@ export class ScheduleService {
     ctx: RequestContext,
     input: UpsertStripeSubscriptionScheduleInput
   ): Promise<Schedule> {
+    this.validate(input);
     const { id } = await this.connection.getRepository(ctx, Schedule).save({
       id: input.id || undefined,
       channelId: String(ctx.channelId),
@@ -61,6 +62,14 @@ export class ScheduleService {
     ) {
       throw new UserInputError(
         `Paid up front schedules can not have downpayments. When duration and billing intervals are the same your schedule is a paid-up-front schedule.`
+      );
+    }
+    if (
+      input.startMoment === SubscriptionStartMoment.FixedStartdate &&
+      !input.fixedStartDate
+    ) {
+      throw new UserInputError(
+        `Schedules with 'Fixed start date' require a selected startDate`
       );
     }
   }

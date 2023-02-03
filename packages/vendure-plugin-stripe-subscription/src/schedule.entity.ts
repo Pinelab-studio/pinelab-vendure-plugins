@@ -35,6 +35,9 @@ export class Schedule extends VendureEntity {
   @Column({ type: 'integer', nullable: false })
   billingCount!: number;
 
+  @Column({ type: 'datetime', nullable: true })
+  fixedStartDate?: Date;
+
   /**
    * When billing and duration cycles are the same, this is a paid-up-front schedule
    * and the user pays the total amount of a subscription up front
