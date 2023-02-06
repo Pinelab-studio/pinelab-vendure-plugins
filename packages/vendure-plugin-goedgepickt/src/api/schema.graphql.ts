@@ -1,6 +1,10 @@
 import gql from 'graphql-tag';
 
 export const schema = gql`
+  extend enum HistoryEntryType {
+    GOEDGEPICKT_NOTIFICATION
+  }
+
   input GoedgepicktConfigInput {
     enabled: Boolean
     apiKey: String
@@ -29,6 +33,7 @@ export const schema = gql`
     ): GoedgepicktConfigUpdateResult
     # Push products and pull stocklevels
     runGoedgepicktFullSync: Boolean
+    syncOrderToGoedgepickt(orderCode: String!): Boolean
   }
 
   extend type Query {

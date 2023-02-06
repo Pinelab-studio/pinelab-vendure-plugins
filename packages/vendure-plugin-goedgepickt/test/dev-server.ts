@@ -19,13 +19,11 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktConfigEntity } from '../src/api/goedgepickt-config.entity';
-import localtunnel from 'localtunnel';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const tunnel = await localtunnel({ port: 3050 });
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     apiOptions: {
@@ -37,7 +35,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     },
     plugins: [
       GoedgepicktPlugin.init({
-        vendureHost: tunnel.url,
+        vendureHost: process.env.WEBHOOK_ENDPOINT!,
         endpointSecret: 'test',
         setWebhook: true,
       }),

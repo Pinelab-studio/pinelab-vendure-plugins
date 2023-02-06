@@ -1,8 +1,14 @@
 import { NgModule } from '@angular/core';
-import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
+import {
+  addNavMenuItem,
+  registerHistoryEntryComponent,
+  SharedModule,
+} from '@vendure/admin-ui/core';
+import { HistoryEntryComponent } from './history-entry.component';
 
 @NgModule({
   imports: [SharedModule],
+  declarations: [HistoryEntryComponent],
   providers: [
     addNavMenuItem(
       {
@@ -14,6 +20,10 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
       },
       'settings'
     ),
+    registerHistoryEntryComponent({
+      type: 'SENDCLOUD_NOTIFICATION',
+      component: HistoryEntryComponent,
+    }),
   ],
 })
 export class SendcloudNavModule {}

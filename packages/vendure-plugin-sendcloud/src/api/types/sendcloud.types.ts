@@ -188,6 +188,12 @@ export interface SendcloudPluginOptions {
    * also on your packaging slip in SendCloud
    */
   additionalParcelItemsFn?: AdditionalParcelInputFn;
+  /**
+   * Programatically disable the plugin. For example, when running in a test-env:
+   * @example
+   * disabled: !!process.env.TEST
+   */
+  disabled?: boolean;
 }
 
 export type AdditionalParcelInputFn = (
