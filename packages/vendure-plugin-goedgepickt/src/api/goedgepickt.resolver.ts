@@ -1,9 +1,17 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  OrderService,
+  Permission,
+  RequestContext,
+  UserInputError,
+} from '@vendure/core';
 import {
   GoedgepicktConfig,
   goedgepicktPermission,
   GoedgepicktPluginConfig,
+  MutationSyncOrderToGoedgepicktArgs,
 } from '../index';
 import { GoedgepicktService } from './goedgepickt.service';
 import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
@@ -14,6 +22,7 @@ import { Inject } from '@nestjs/common';
 export class GoedgepicktResolver {
   constructor(
     private service: GoedgepicktService,
+    private orderService: OrderService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
   ) {}
 
@@ -53,6 +62,16 @@ export class GoedgepicktResolver {
     if (this.config.setWebhook) {
       await this.service.setWebhooks(ctx);
     }
+    return true;
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateOrder)
+  async syncOrderToGoedgepickt(
+    @Ctx() ctx: RequestContext,
+    @Args() input: MutationSyncOrderToGoedgepicktArgs
+  ): Promise<boolean> {
+    await this.service.syncOrder(ctx, input.orderCode);
     return true;
   }
 

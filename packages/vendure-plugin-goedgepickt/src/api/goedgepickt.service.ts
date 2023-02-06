@@ -10,6 +10,7 @@ import {
   ConfigService,
   EntityHydrator,
   EventBus,
+  HistoryService,
   ID,
   JobQueue,
   JobQueueService,
@@ -109,7 +110,8 @@ export class GoedgepicktService
     private entityHydrator: EntityHydrator,
     private listQueryBuilder: ListQueryBuilder,
     private eventBus: EventBus,
-    private productPriceApplicator: ProductPriceApplicator
+    private productPriceApplicator: ProductPriceApplicator,
+    private historyService: HistoryService
   ) {
     this.queryLimit = configService.apiOptions.adminListQueryLimit;
   }
@@ -268,85 +270,95 @@ export class GoedgepicktService
    * Create order in GoedGepickt
    * Needs an order including lines, items and variants
    */
-  async createOrder(ctx: RequestContext, order: Order): Promise<GgOrder> {
-    const orderItems: OrderItemInput[] = order.lines.map((orderLine) => ({
-      sku: orderLine.productVariant.sku,
-      productName: orderLine.productVariant.name,
-      productQuantity: orderLine.quantity,
-      taxRate: orderLine.taxRate,
-    }));
-    const client = await this.getClientForChannel(ctx);
-    if (
-      !order.shippingAddress.streetLine2 ||
-      !order.shippingAddress.streetLine1 ||
-      !order.orderPlacedAt
-    ) {
-      throw Error(
-        `Missing required order fields streetLine1, streetLine2 or order.orderPlacedAt. Cannot push order to GoedGepickt`
-      );
-    }
-    const { houseNumber, addition } =
-      GoedgepicktService.splitHouseNumberAndAddition(
-        order.shippingAddress.streetLine2
-      );
-    const billingAddress =
-      order.billingAddress && order.billingAddress.streetLine1
-        ? order.billingAddress
-        : order.shippingAddress;
-    const { houseNumber: billingHouseNumber, addition: billingAddition } =
-      GoedgepicktService.splitHouseNumberAndAddition(
-        order.shippingAddress.streetLine2
-      );
-    const orderInput: OrderInput = {
-      orderId: order.code,
-      orderDisplayId: order.code,
-      createDate: GoedgepicktService.toLocalTime(order.orderPlacedAt)!,
-      orderStatus: 'open',
-      orderItems,
-      shippingFirstName: order.customer?.firstName,
-      shippingLastName: order.customer?.lastName,
-      shippingCompany: order.shippingAddress.company,
-      shippingAddress: order.shippingAddress.streetLine1,
-      shippingHouseNumber: houseNumber,
-      shippingHouseNumberAddition: addition,
-      shippingZipcode: order.shippingAddress.postalCode,
-      shippingCity: order.shippingAddress.city,
-      shippingCountry: order.shippingAddress.countryCode?.toUpperCase(),
-      billingFirstName: order.customer?.firstName,
-      billingLastName: order.customer?.lastName,
-      billingCompany: billingAddress.company,
-      billingHouseNumber: billingHouseNumber,
-      billingHouseNumberAddition: billingAddition,
-      billingZipcode: billingAddress.postalCode,
-      billingCity: billingAddress.city,
-      billingCountry: billingAddress.countryCode?.toUpperCase(),
-      billingEmail: order.customer?.emailAddress,
-      billingPhone: order.customer?.phoneNumber,
-      paymentMethod: order.payments?.[0]?.method,
-      ignoreUnknownProductWarnings: true,
-      shippingMethod: order.shippingLines
-        .map((line) => line.shippingMethod?.name)
-        .join(','),
-    };
-    const customFields = order.customFields as
-      | PickupPointCustomFields
-      | undefined;
-    if (
-      customFields?.pickupLocationNumber ||
-      customFields?.pickupLocationName
-    ) {
-      orderInput.pickupLocationData = {
-        locationNumber: customFields.pickupLocationNumber,
-        location: customFields.pickupLocationName,
-        carrier: customFields.pickupLocationCarrier,
-        street: customFields.pickupLocationStreet,
-        houseNumber: customFields.pickupLocationHouseNumber,
-        zipcode: customFields.pickupLocationZipcode,
-        city: customFields.pickupLocationCity,
-        country: customFields.pickupLocationCountry?.toUpperCase(),
+  private async createOrder(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<GgOrder> {
+    try {
+      const orderItems: OrderItemInput[] = order.lines.map((orderLine) => ({
+        sku: orderLine.productVariant.sku,
+        productName: orderLine.productVariant.name,
+        productQuantity: orderLine.quantity,
+        taxRate: orderLine.taxRate,
+      }));
+      const client = await this.getClientForChannel(ctx);
+      if (
+        !order.shippingAddress.streetLine2 ||
+        !order.shippingAddress.streetLine1 ||
+        !order.orderPlacedAt
+      ) {
+        throw Error(
+          `Missing required order fields streetLine1, streetLine2 or order.orderPlacedAt. Cannot push order to GoedGepickt`
+        );
+      }
+      const { houseNumber, addition } =
+        GoedgepicktService.splitHouseNumberAndAddition(
+          order.shippingAddress.streetLine2
+        );
+      const billingAddress =
+        order.billingAddress && order.billingAddress.streetLine1
+          ? order.billingAddress
+          : order.shippingAddress;
+      const { houseNumber: billingHouseNumber, addition: billingAddition } =
+        GoedgepicktService.splitHouseNumberAndAddition(
+          order.shippingAddress.streetLine2
+        );
+      const orderInput: OrderInput = {
+        orderId: order.code,
+        orderDisplayId: order.code,
+        createDate: GoedgepicktService.toLocalTime(order.orderPlacedAt)!,
+        orderStatus: 'open',
+        orderItems,
+        shippingFirstName: order.customer?.firstName,
+        shippingLastName: order.customer?.lastName,
+        shippingCompany: order.shippingAddress.company,
+        shippingAddress: order.shippingAddress.streetLine1,
+        shippingHouseNumber: houseNumber,
+        shippingHouseNumberAddition: addition,
+        shippingZipcode: order.shippingAddress.postalCode,
+        shippingCity: order.shippingAddress.city,
+        shippingCountry: order.shippingAddress.countryCode?.toUpperCase(),
+        billingFirstName: order.customer?.firstName,
+        billingLastName: order.customer?.lastName,
+        billingCompany: billingAddress.company,
+        billingHouseNumber: billingHouseNumber,
+        billingHouseNumberAddition: billingAddition,
+        billingZipcode: billingAddress.postalCode,
+        billingCity: billingAddress.city,
+        billingCountry: billingAddress.countryCode?.toUpperCase(),
+        billingEmail: order.customer?.emailAddress,
+        billingPhone: order.customer?.phoneNumber,
+        paymentMethod: order.payments?.[0]?.method,
+        ignoreUnknownProductWarnings: true,
+        shippingMethod: order.shippingLines
+          .map((line) => line.shippingMethod?.name)
+          .join(','),
       };
+      const customFields = order.customFields as
+        | PickupPointCustomFields
+        | undefined;
+      if (
+        customFields?.pickupLocationNumber ||
+        customFields?.pickupLocationName
+      ) {
+        orderInput.pickupLocationData = {
+          locationNumber: customFields.pickupLocationNumber,
+          location: customFields.pickupLocationName,
+          carrier: customFields.pickupLocationCarrier,
+          street: customFields.pickupLocationStreet,
+          houseNumber: customFields.pickupLocationHouseNumber,
+          zipcode: customFields.pickupLocationZipcode,
+          city: customFields.pickupLocationCity,
+          country: customFields.pickupLocationCountry?.toUpperCase(),
+        };
+      }
+      const ggOrder = await client.createOrder(orderInput);
+      await this.logHistoryEntry(ctx, order.id);
+      return ggOrder;
+    } catch (error: unknown) {
+      await this.logHistoryEntry(ctx, order.id, error);
+      throw error;
     }
-    return client.createOrder(orderInput);
   }
 
   /**
@@ -549,6 +561,29 @@ export class GoedgepicktService
     );
   }
 
+  async logHistoryEntry(
+    ctx: RequestContext,
+    orderId: ID,
+    error?: unknown
+  ): Promise<void> {
+    let prettifiedError = error
+      ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
+      : undefined; // Make sure its serializable
+    await this.historyService.createHistoryEntryForOrder(
+      {
+        ctx,
+        orderId,
+        type: 'GOEDGEPICKT_NOTIFICATION' as any,
+        data: {
+          name: 'GoedGepickt',
+          valid: !error,
+          error: prettifiedError,
+        },
+      },
+      false
+    );
+  }
+
   /**
    * Create batched jobs for updating variant stock
    */
@@ -686,10 +721,7 @@ export class GoedgepicktService
   /**
    * Sync order to Goedgepickt platform
    */
-  private async syncOrder(
-    ctx: RequestContext,
-    orderCode: string
-  ): Promise<void> {
+  async syncOrder(ctx: RequestContext, orderCode: string): Promise<void> {
     const config = await this.getConfig(ctx);
     if (!config?.enabled) {
       return;
