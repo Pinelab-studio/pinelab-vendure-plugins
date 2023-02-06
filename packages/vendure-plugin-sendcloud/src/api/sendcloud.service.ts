@@ -296,10 +296,12 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       loggerCtx
     );
     const result = await this.createOrderInSendcloud(ctx, order);
-    Logger.info(
-      `Order ${order.code} synced to SendCloud: ${result.id}`,
-      loggerCtx
-    );
+    if (result) {
+      Logger.info(
+        `Order ${order.code} synced to SendCloud: ${result.id}`,
+        loggerCtx
+      );
+    }
   }
 
   async logHistoryEntry(
