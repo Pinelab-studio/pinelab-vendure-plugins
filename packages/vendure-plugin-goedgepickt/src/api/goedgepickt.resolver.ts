@@ -1,12 +1,5 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import {
-  Allow,
-  Ctx,
-  OrderService,
-  Permission,
-  RequestContext,
-  UserInputError,
-} from '@vendure/core';
+import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
 import {
   GoedgepicktConfig,
   goedgepicktPermission,
@@ -22,7 +15,6 @@ import { Inject } from '@nestjs/common';
 export class GoedgepicktResolver {
   constructor(
     private service: GoedgepicktService,
-    private orderService: OrderService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
   ) {}
 
