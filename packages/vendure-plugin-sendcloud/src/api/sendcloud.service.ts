@@ -122,7 +122,9 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       }
       const parcelInput = toParcelInput(order, this.options);
       parcelInput.parcel_items.unshift(...additionalParcelItems);
-      const parcel = (await this.getClient(ctx)).createParcel(parcelInput);
+      const parcel = await (
+        await this.getClient(ctx)
+      ).createParcel(parcelInput);
       await this.logHistoryEntry(ctx, order.id);
       return parcel;
     } catch (err: unknown) {
