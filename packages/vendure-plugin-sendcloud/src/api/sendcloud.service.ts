@@ -9,7 +9,7 @@ import {
   ChannelService,
   EntityHydrator,
   EventBus,
-  FulfillmentStateTransitionError,
+  HistoryService,
   ID,
   Injector,
   JobQueue,
@@ -54,7 +54,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     private jobQueueService: JobQueueService,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
+    private historyService: HistoryService
   ) {}
 
   async onModuleInit() {
@@ -92,28 +93,44 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   async createOrderInSendcloud(
     userCtx: RequestContext,
     order: Order
-  ): Promise<Parcel> {
-    const ctx = await this.createContext(userCtx.channel.token); // Recreate a ctx with the channel's default language
-    await this.entityHydrator.hydrate(ctx, order, {
-      relations: [
-        'customer',
-        'lines.productVariant.product',
-        'shippingLines.shippingMethod',
-      ],
-    });
-    const additionalParcelItems: ParcelInputItem[] = [];
-    if (this.options.additionalParcelItemsFn) {
-      additionalParcelItems.push(
-        ...(await this.options.additionalParcelItemsFn(
-          ctx,
-          new Injector(this.moduleRef),
-          order
-        ))
+  ): Promise<Parcel | undefined> {
+    if (this.options.disabled) {
+      Logger.info(
+        `Plugin is disabled, not syncing order ${order.code}`,
+        loggerCtx
       );
+      return;
     }
-    const parcelInput = toParcelInput(order, this.options);
-    parcelInput.parcel_items.unshift(...additionalParcelItems);
-    return (await this.getClient(ctx)).createParcel(parcelInput);
+    const ctx = await this.createContext(userCtx.channel.token); // Recreate a ctx with the channel's default language
+    try {
+      await this.entityHydrator.hydrate(ctx, order, {
+        relations: [
+          'customer',
+          'lines.productVariant.product',
+          'shippingLines.shippingMethod',
+        ],
+      });
+      const additionalParcelItems: ParcelInputItem[] = [];
+      if (this.options.additionalParcelItemsFn) {
+        additionalParcelItems.push(
+          ...(await this.options.additionalParcelItemsFn(
+            ctx,
+            new Injector(this.moduleRef),
+            order
+          ))
+        );
+      }
+      const parcelInput = toParcelInput(order, this.options);
+      parcelInput.parcel_items.unshift(...additionalParcelItems);
+      const parcel = await (
+        await this.getClient(ctx)
+      ).createParcel(parcelInput);
+      await this.logHistoryEntry(ctx, order.id);
+      return parcel;
+    } catch (err: unknown) {
+      await this.logHistoryEntry(ctx, order.id, err);
+      throw err;
+    }
   }
 
   /**
@@ -281,9 +298,34 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       loggerCtx
     );
     const result = await this.createOrderInSendcloud(ctx, order);
-    Logger.info(
-      `Order ${order.code} synced to SendCloud: ${result.id}`,
-      loggerCtx
+    if (result) {
+      Logger.info(
+        `Order ${order.code} synced to SendCloud: ${result.id}`,
+        loggerCtx
+      );
+    }
+  }
+
+  async logHistoryEntry(
+    ctx: RequestContext,
+    orderId: ID,
+    error?: unknown
+  ): Promise<void> {
+    let prettifiedError = error
+      ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
+      : undefined; // Make sure its serializable
+    await this.historyService.createHistoryEntryForOrder(
+      {
+        ctx,
+        orderId,
+        type: 'SENDCLOUD_NOTIFICATION' as any,
+        data: {
+          name: 'SendCloud',
+          valid: !error,
+          error: prettifiedError,
+        },
+      },
+      false
     );
   }
 }

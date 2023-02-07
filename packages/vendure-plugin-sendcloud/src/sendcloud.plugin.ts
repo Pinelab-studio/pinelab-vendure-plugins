@@ -1,13 +1,8 @@
-import { Middleware, PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { gql } from 'apollo-server-core';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import bodyParser from 'body-parser';
-import {
-  AdditionalParcelInputFn,
-  CustomFieldFn,
-  SendcloudPluginOptions,
-} from './api/types/sendcloud.types';
+import { SendcloudPluginOptions } from './api/types/sendcloud.types';
 import { SendcloudResolver } from './api/sendcloud.resolver';
 import { SendcloudService } from './api/sendcloud.service';
 import { PLUGIN_OPTIONS } from './api/constants';
@@ -20,6 +15,9 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 @VendurePlugin({
   adminApiExtensions: {
     schema: gql`
+      extend enum HistoryEntryType {
+        SENDCLOUD_NOTIFICATION
+      }
       type SendCloudConfig {
         id: ID!
         secret: String
