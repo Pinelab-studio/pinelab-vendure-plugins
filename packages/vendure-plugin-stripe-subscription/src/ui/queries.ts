@@ -14,6 +14,8 @@ export const SCHEDULE_FRAGMENT = gql`
     billingCount
     paidUpFront
     fixedStartDate
+    useProration
+    autoRenew
   }
 `;
 

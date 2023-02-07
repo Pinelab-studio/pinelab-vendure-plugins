@@ -32,6 +32,7 @@ const sharedTypes = gql`
     billingCount: Int!
     fixedStartDate: DateTime
     useProration: Boolean
+    autoRenew: Boolean
   }
   input UpsertStripeSubscriptionScheduleInput {
     id: ID
@@ -44,6 +45,7 @@ const sharedTypes = gql`
     billingCount: Int!
     fixedStartDate: DateTime
     useProration: Boolean
+    autoRenew: Boolean
   }
 `;
 
@@ -65,6 +67,7 @@ export const shopSchemaExtensions = gql`
     intervalCount: Int!
     amountDueNowWithTax: Int!
     subscriptionStartDate: DateTime!
+    subscriptionEndDate: DateTime
     schedule: StripeSubscriptionSchedule!
   }
   input StripeSubscriptionPricingInput {
@@ -91,6 +94,11 @@ export const shopSchemaExtensions = gql`
 
 export const adminSchemaExtensions = gql`
   ${sharedTypes}
+
+  extend enum HistoryEntryType {
+    STRIPE_SUBSCRIPTION_NOTIFICATION
+  }
+
   extend type Query {
     stripeSubscriptionSchedules: [StripeSubscriptionSchedule!]!
   }

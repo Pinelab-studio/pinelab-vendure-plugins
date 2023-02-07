@@ -26,20 +26,9 @@ export class ScheduleService {
   ): Promise<Schedule> {
     this.validate(input);
     const { id } = await this.connection.getRepository(ctx, Schedule).save({
-      id: input.id || undefined,
+      ...input,
       channelId: String(ctx.channelId),
-      name: input.name || undefined,
-      downpaymentWithTax:
-        input.downpaymentWithTax || input.downpaymentWithTax === 0
-          ? input.downpaymentWithTax
-          : undefined,
-      durationInterval: input.durationInterval || undefined,
-      durationCount: input.durationCount || undefined,
-      startMoment: input.startMoment || undefined,
-      billingInterval: input.billingInterval || undefined,
-      billingCount: input.billingCount || undefined,
-      fixedStartDate: input.fixedStartDate || undefined,
-    });
+    } as Schedule);
     return this.connection.getRepository(ctx, Schedule).findOneOrFail({ id });
   }
 

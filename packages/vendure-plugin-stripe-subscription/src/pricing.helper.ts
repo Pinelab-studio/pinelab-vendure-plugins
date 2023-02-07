@@ -44,7 +44,6 @@ export function calculateSubscriptionPricing(
       `Variant ${variant.id} doesn't have a schedule attached`
     );
   }
-  const billingsPerDuration = getBillingsPerDuration(schedule);
   let downpayment = schedule.downpaymentWithTax;
   if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
     downpayment = input.downpaymentWithTax;
@@ -60,20 +59,29 @@ export function calculateSubscriptionPricing(
       `You can not use downpayments with Paid-up-front subscriptions`
     );
   }
+  const billingsPerDuration = getBillingsPerDuration(schedule);
   const totalSubscriptionPrice =
     variant.priceWithTax * billingsPerDuration + schedule.downpaymentWithTax;
   if (downpayment > totalSubscriptionPrice) {
     throw new UserInputError(
-      `Downpayment can not be higher than the total subscription value, which is (${printMoney(
+      `Downpayment cannot be higher than the total subscription value, which is (${printMoney(
         totalSubscriptionPrice
       )})`
     );
   }
   if (downpayment < schedule.downpaymentWithTax) {
     throw new UserInputError(
-      `Downpayment can not be lower than schedules default downpayment, which is (${printMoney(
+      `Downpayment cannot be lower than schedules default downpayment, which is (${printMoney(
         schedule.downpaymentWithTax
       )})`
+    );
+  }
+  if (
+    schedule.startMoment === SubscriptionStartMoment.FixedStartdate &&
+    input?.startDate
+  ) {
+    throw new UserInputError(
+      'You cannot choose a custom startDate for schedules with a fixed start date'
     );
   }
   const dayRate = getDayRate(
@@ -88,20 +96,25 @@ export function calculateSubscriptionPricing(
     schedule.startMoment,
     schedule.fixedStartDate
   );
-  const daysUntilStart = getDaysUntilNextStartDate(
-    input?.startDate || now,
-    subscriptionStartDate
-  );
-  if (schedule.paidUpFront) {
-    // If paid up front, move the startDate to next cycle. This needs to happen AFTER proration calculation
-    subscriptionStartDate = getNextCyclesStartDate(
-      new Date(),
+  let subscriptionEndDate = undefined;
+  if (!schedule.autoRenew) {
+    // Without autorenewal we need an endDate
+    subscriptionEndDate = getEndDate(
+      subscriptionStartDate,
       schedule.startMoment,
       schedule.durationInterval,
       schedule.durationCount
     );
   }
-  const totalProratedAmount = daysUntilStart * dayRate;
+  let proratedDays = 0;
+  let totalProratedAmount = 0;
+  if (schedule.useProration) {
+    proratedDays = getDaysUntilNextStartDate(
+      input?.startDate || now,
+      subscriptionStartDate
+    );
+    totalProratedAmount = proratedDays * dayRate;
+  }
   let amountDueNow = downpayment + totalProratedAmount;
   let recurringPrice = Math.floor(
     (totalSubscriptionPrice - downpayment) / billingsPerDuration
@@ -110,18 +123,26 @@ export function calculateSubscriptionPricing(
     // User pays for the full membership now
     amountDueNow = variant.priceWithTax + totalProratedAmount;
     recurringPrice = variant.priceWithTax;
+    // If paid up front, move the startDate to next cycle, because the first cycle has been paid up front. This needs to happen AFTER proration calculation
+    subscriptionStartDate = getNextCyclesStartDate(
+      new Date(),
+      schedule.startMoment,
+      schedule.durationInterval,
+      schedule.durationCount
+    );
   }
   return {
     variantId: variant.id as string,
     downpaymentWithTax: downpayment,
     totalProratedAmountWithTax: totalProratedAmount,
-    proratedDays: daysUntilStart,
+    proratedDays: proratedDays,
     dayRateWithTax: dayRate,
     recurringPriceWithTax: recurringPrice,
     interval: schedule.billingInterval,
     intervalCount: schedule.billingCount,
     amountDueNowWithTax: amountDueNow,
     subscriptionStartDate,
+    subscriptionEndDate,
     schedule: {
       ...schedule,
       id: String(schedule.id),
@@ -214,19 +235,27 @@ export function getNextCyclesStartDate(
   intervalCount: number,
   fixedStartDate?: Date
 ): Date {
-  let oneCycleFromNow = new Date(now);
+  const endDate = getEndDate(now, startMoment, interval, intervalCount);
+  return getNextStartDate(endDate, interval, startMoment, fixedStartDate);
+}
+
+/**
+ * Get the endDate of a subscription based on the duration
+ */
+export function getEndDate(
+  startDate: Date,
+  startMoment: SubscriptionStartMoment,
+  interval: SubscriptionInterval,
+  intervalCount: number
+): Date {
+  let endDate = new Date(startDate);
   if (interval === SubscriptionInterval.Month) {
-    oneCycleFromNow = addMonths(oneCycleFromNow, intervalCount);
+    endDate = addMonths(endDate, intervalCount);
   } else {
     // Week
-    oneCycleFromNow = addWeeks(oneCycleFromNow, intervalCount);
+    endDate = addWeeks(endDate, intervalCount);
   }
-  return getNextStartDate(
-    oneCycleFromNow,
-    interval,
-    startMoment,
-    fixedStartDate
-  );
+  return endDate;
 }
 
 /**

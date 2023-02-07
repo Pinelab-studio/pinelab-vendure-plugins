@@ -38,6 +38,12 @@ export class Schedule extends VendureEntity {
   @Column({ type: Date, nullable: true })
   fixedStartDate?: Date;
 
+  @Column({ type: 'boolean', nullable: true })
+  useProration?: boolean;
+
+  @Column({ type: 'boolean', nullable: true })
+  autoRenew?: boolean;
+
   /**
    * When billing and duration cycles are the same, this is a paid-up-front schedule
    * and the user pays the total amount of a subscription up front

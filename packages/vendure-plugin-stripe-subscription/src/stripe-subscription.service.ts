@@ -23,7 +23,6 @@ import {
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { StripeSubscriptionPluginOptions } from './stripe-subscription.plugin';
 import { IncomingStripeWebhook } from './stripe.types';
-import { HistoryEntryType } from '@vendure/common/lib/generated-types';
 import {
   OrderWithSubscriptions,
   VariantWithSubscriptionFields,
@@ -36,9 +35,9 @@ import {
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import { Request } from 'express';
 import {
+  calculateSubscriptionPricing,
   getNextCyclesStartDate,
   printMoney,
-  calculateSubscriptionPricing,
 } from './pricing.helper';
 
 export interface StripeHandlerConfig {
@@ -217,9 +216,10 @@ export class StripeSubscriptionService {
       throw Error(`Cannot find order with code ${orderCode}`);
     }
     if (!eventData.customer) {
-      await this.logOrderHistory(
+      await this.logHistoryEntry(
         ctx,
         order.id,
+        '',
         `No customer ID found in incoming webhook. Can not create subscriptions for this order.`
       );
       throw Error(`No customer found in webhook data for order ${order.code}`);
@@ -313,6 +313,9 @@ export class StripeSubscriptionService {
         `Creating subscriptions with pricing ${JSON.stringify(pricing)}`,
         loggerCtx
       );
+
+      // TODO set endDate if given
+
       try {
         const product = await stripeClient.products.create({
           name: `${order.code} - ${order.customer.emailAddress} - ${orderLine.productVariant.name}`,
@@ -330,19 +333,37 @@ export class StripeSubscriptionService {
           description: orderLine.productVariant.name,
         });
         if (recurring.status !== 'active' && recurring.status !== 'trialing') {
-          const message = `Failed to create active subscription ${recurring.id} for order ${order.code}! It is still in status '${recurring.status}'`;
-          Logger.error(message, loggerCtx);
-          await this.logOrderHistory(ctx, order.id, message);
+          Logger.error(
+            `Failed to create active subscription ${recurring.id} for order ${order.code}! It is still in status '${recurring.status}'`,
+            loggerCtx
+          );
+          await this.logHistoryEntry(
+            ctx,
+            order.id,
+            'recurring',
+            `Subscription status is ${recurring.status}`,
+            pricing,
+            recurring.id
+          );
         } else {
-          const message = `Created subscription ${recurring.id}: ${printMoney(
-            pricing.recurringPriceWithTax
-          )} every ${pricing.intervalCount} ${
-            pricing.interval
-          }(s) with startDate ${pricing.subscriptionStartDate} for order ${
-            order.code
-          }`;
-          Logger.info(message, loggerCtx);
-          await this.logOrderHistory(ctx, order.id, message);
+          Logger.info(
+            `Created subscription ${recurring.id}: ${printMoney(
+              pricing.recurringPriceWithTax
+            )} every ${pricing.intervalCount} ${
+              pricing.interval
+            }(s) with startDate ${pricing.subscriptionStartDate} for order ${
+              order.code
+            }`,
+            loggerCtx
+          );
+          await this.logHistoryEntry(
+            ctx,
+            order.id,
+            'recurring',
+            undefined,
+            pricing,
+            recurring.id
+          );
         }
         if (pricing.downpaymentWithTax) {
           // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
@@ -379,31 +400,41 @@ export class StripeSubscriptionService {
           });
           if (
             downpayment.status !== 'active' &&
-            recurring.status !== 'trialing'
+            downpayment.status !== 'trialing'
           ) {
-            const message = `Failed to create active subscription ${recurring.id} for order ${order.code}! It is still in status '${recurring.status}'`;
-            Logger.error(message, loggerCtx);
-            await this.logOrderHistory(ctx, order.id, message);
-          } else {
-            const message = `Created downpayment subscription ${
+            Logger.error(
+              `Failed to create active subscription ${downpayment.id} for order ${order.code}! It is still in status '${downpayment.status}'`,
+              loggerCtx
+            );
+            await this.logHistoryEntry(
+              ctx,
+              order.id,
+              'downpayment',
+              'Failed to create active subscription',
+              undefined,
               downpayment.id
-            }: ${printMoney(
-              pricing.downpaymentWithTax
-            )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
-              pricing.subscriptionStartDate
-            } for order ${order.code}`;
-            Logger.info(message, loggerCtx);
-            await this.logOrderHistory(ctx, order.id, message);
+            );
+          } else {
+            Logger.info(
+              `Created downpayment subscription ${downpayment.id}: ${printMoney(
+                pricing.downpaymentWithTax
+              )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
+                pricing.subscriptionStartDate
+              } for order ${order.code}`,
+              loggerCtx
+            );
+            await this.logHistoryEntry(
+              ctx,
+              order.id,
+              'downpayment',
+              undefined,
+              pricing,
+              downpayment.id
+            );
           }
         }
       } catch (e: unknown) {
-        await this.logOrderHistory(
-          ctx,
-          order.id,
-          `Failed to create subscriptions! Check your Stripe dashboard: ${
-            (e as Error).message
-          }`
-        );
+        await this.logHistoryEntry(ctx, order.id, '', e);
         throw e;
       }
     }
@@ -422,24 +453,6 @@ export class StripeSubscriptionService {
       languageCode: LanguageCode.en,
       req,
     });
-  }
-
-  async logOrderHistory(
-    ctx: RequestContext,
-    orderId: ID,
-    message: string
-  ): Promise<void> {
-    await this.historyService.createHistoryEntryForOrder(
-      {
-        ctx,
-        orderId,
-        type: HistoryEntryType.ORDER_NOTE,
-        data: {
-          note: message,
-        },
-      },
-      false
-    );
   }
 
   /**
@@ -491,5 +504,45 @@ export class StripeSubscriptionService {
       }),
       webhookSecret,
     };
+  }
+
+  async logHistoryEntry(
+    ctx: RequestContext,
+    orderId: ID,
+    name: string,
+    error?: unknown,
+    pricing?: StripeSubscriptionPricing,
+    subscriptionId?: string
+  ): Promise<void> {
+    let prettifiedError = error
+      ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
+      : undefined; // Make sure its serializable
+    let prettifierPricing = pricing
+      ? {
+          ...pricing,
+          totalProratedAmountWithTax: printMoney(
+            pricing.totalProratedAmountWithTax
+          ),
+          downpaymentWithTax: printMoney(pricing.downpaymentWithTax),
+          recurringPriceWithTax: printMoney(pricing.recurringPriceWithTax),
+          amountDueNowWithTax: printMoney(pricing.amountDueNowWithTax),
+          dayRateWithTax: printMoney(pricing.dayRateWithTax),
+        }
+      : undefined;
+    await this.historyService.createHistoryEntryForOrder(
+      {
+        ctx,
+        orderId,
+        type: 'STRIPE_SUBSCRIPTION_NOTIFICATION' as any,
+        data: {
+          name,
+          valid: !error,
+          error: prettifiedError,
+          subscriptionId,
+          pricing: prettifierPricing,
+        },
+      },
+      false
+    );
   }
 }

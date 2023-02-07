@@ -427,7 +427,7 @@ describe('Order export plugin', function () {
           },
         })
         .catch((e) => (error = e.message));
-      expect(error).toContain('Downpayment can not be lower than');
+      expect(error).toContain('Downpayment cannot be lower than');
     });
 
     it('Should throw an error when downpayment is higher than the total subscription value', async () => {
@@ -440,7 +440,7 @@ describe('Order export plugin', function () {
           },
         })
         .catch((e) => (error = e.message));
-      expect(error).toContain('Downpayment can not be higher than');
+      expect(error).toContain('Downpayment cannot be higher than');
     });
 
     it('Should throw error when trying to use a downpayment for paid up front', async () => {
@@ -538,6 +538,8 @@ describe('Order export plugin', function () {
             startMoment: SubscriptionStartMoment.FixedStartdate,
             fixedStartDate: future,
             downpaymentWithTax: 6000,
+            useProration: false,
+            autoRenew: false,
           }),
         },
       };
@@ -548,6 +550,7 @@ describe('Order export plugin', function () {
       expect(pricing.amountDueNowWithTax).toBe(6000);
       expect(pricing.proratedDays).toBe(0);
       expect(pricing.totalProratedAmountWithTax).toBe(0);
+      expect(pricing.subscriptionEndDate).toBeDefined();
     });
 
     // TODO calculate fixed start date

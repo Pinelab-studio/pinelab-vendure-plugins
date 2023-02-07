@@ -19,7 +19,6 @@ import {
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
 } from './helpers';
-import { getOrder } from '../../test/src/admin-utils';
 
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
@@ -56,11 +55,11 @@ export let clientSecret = 'test';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [StripeSubscriptionPlugin.ui],
           devMode: true,
-        }),*/
+        }),
       }),
     ],
   });
