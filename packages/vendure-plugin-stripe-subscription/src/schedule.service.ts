@@ -38,6 +38,7 @@ export class ScheduleService {
       startMoment: input.startMoment || undefined,
       billingInterval: input.billingInterval || undefined,
       billingCount: input.billingCount || undefined,
+      fixedStartDate: input.fixedStartDate || undefined,
     });
     return this.connection.getRepository(ctx, Schedule).findOneOrFail({ id });
   }
@@ -69,7 +70,15 @@ export class ScheduleService {
       !input.fixedStartDate
     ) {
       throw new UserInputError(
-        `Schedules with 'Fixed start date' require a selected startDate`
+        `Schedules with a fixed start date require a selected startDate`
+      );
+    }
+    if (
+      input.startMoment === SubscriptionStartMoment.FixedStartdate &&
+      input.useProration
+    ) {
+      throw new UserInputError(
+        `Schedules with a fixed start date cannot use proration`
       );
     }
   }

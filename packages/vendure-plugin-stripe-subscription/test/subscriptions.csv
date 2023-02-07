@@ -1,4 +1,4 @@
-name               ,slug               ,description,assets,facets,optionGroups,optionValues                              ,sku           ,price,taxCategory,stockOnHand,trackInventory,variantAssets,variantFacets
-"Adult karate"     ,adult-karate       ,""         ,      ,      ,"Schedule"  ,"6 months, paid in full, no downpayment"  ,adult-6-full  ,540  ,standard   ,100        ,false         ,             ,
-                   ,                   ,           ,      ,      ,            ,"6 months, billed weekly, 199 downpayment",adult-6-weekly,90   ,standard   ,100        ,false         ,             ,
-"A non-sub product","non-scubscription",           ,      ,      ,            ,                                          ,non-sub-prod  ,123  ,standard   ,100        ,false         ,             ,
+name               ,slug               ,description,assets,facets,optionGroups,optionValues  ,sku            ,price,taxCategory,stockOnHand,trackInventory,variantAssets,variantFacets
+"Adult karate"     ,adult-karate       ,""         ,      ,      ,"Schedule"  ,"Paid in full",adult-full     ,540  ,standard   ,100        ,false         ,             ,
+                   ,                   ,           ,      ,      ,            ,"Recurring"   ,adult-recurring,90   ,standard   ,100        ,false         ,             ,
+"A non-sub product","non-scubscription",           ,      ,      ,            ,              ,non-sub-prod   ,123  ,standard   ,100        ,false         ,             ,

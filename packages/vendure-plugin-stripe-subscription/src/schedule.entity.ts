@@ -35,7 +35,7 @@ export class Schedule extends VendureEntity {
   @Column({ type: 'integer', nullable: false })
   billingCount!: number;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: Date, nullable: true })
   fixedStartDate?: Date;
 
   /**

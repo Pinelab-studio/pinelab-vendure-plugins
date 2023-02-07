@@ -2,7 +2,6 @@ import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
 import {
   Allow,
   Ctx,
-  EntityHydrator,
   ID,
   Logger,
   OrderService,
@@ -152,7 +151,8 @@ export class StripeSubscriptionController {
       await this.stripeSubscriptionService.handlePaymentCompleteEvent(
         body,
         signature,
-        request.rawBody
+        request.rawBody,
+        request
       );
     } catch (error) {
       Logger.error(

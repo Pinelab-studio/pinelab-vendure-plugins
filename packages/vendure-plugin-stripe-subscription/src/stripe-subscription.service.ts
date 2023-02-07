@@ -30,19 +30,16 @@ import {
 } from './subscription-custom-fields';
 import { StripeClient } from './stripe.client';
 import {
-  getBillingsPerDuration,
-  getDayRate,
-  getDaysUntilNextStartDate,
-  getNextCyclesStartDate,
-  getNextStartDate,
-  printMoney,
-} from './util';
-import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
 } from './ui/generated/graphql';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
-import { ScheduleService } from './schedule.service';
+import { Request } from 'express';
+import {
+  getNextCyclesStartDate,
+  printMoney,
+  calculateSubscriptionPricing,
+} from './pricing.helper';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -72,8 +69,7 @@ export class StripeSubscriptionService {
     private options: StripeSubscriptionPluginOptions,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
-    private customerService: CustomerService,
-    private scheduleService: ScheduleService
+    private customerService: CustomerService
   ) {}
 
   private jobQueue!: JobQueue<JobData>;
@@ -174,7 +170,7 @@ export class StripeSubscriptionService {
    */
   async getPricing(
     ctx: RequestContext,
-    input: Partial<StripeSubscriptionPricingInput>
+    input: StripeSubscriptionPricingInput
   ): Promise<StripeSubscriptionPricing> {
     const variant = (await this.variantService.findOne(
       ctx,
@@ -185,106 +181,14 @@ export class StripeSubscriptionService {
         `No variant found with id ${input!.productVariantId}`
       );
     }
-    if (!variant.priceWithTax) {
-      throw Error(
-        `Variant "${variant.name}" has price ${variant.priceWithTax}, can not calculate subscription pricing without variant price`
-      );
-    }
-    const schedule = variant.customFields.subscriptionSchedule;
-    if (!schedule) {
-      throw new UserInputError(
-        `Variant ${variant.id} doesn't have a schedule attached`
-      );
-    }
-    const billingsPerDuration = getBillingsPerDuration(schedule);
-    let downpayment = schedule.downpaymentWithTax;
-    if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
-      downpayment = input.downpaymentWithTax;
-    }
-    if (schedule.paidUpFront && schedule.downpaymentWithTax) {
-      // Paid-up-front subscriptions cant have downpayments
-      throw new UserInputError(
-        `Paid-up-front subscriptions can not have downpayments!`
-      );
-    }
-    if (schedule.paidUpFront && downpayment) {
-      throw new UserInputError(
-        `You can not use downpayments with Paid-up-front subscriptions`
-      );
-    }
-    const totalSubscriptionPrice =
-      variant.priceWithTax * billingsPerDuration + schedule.downpaymentWithTax;
-    if (downpayment > totalSubscriptionPrice) {
-      throw new UserInputError(
-        `Downpayment can not be higher than the total subscription value, which is (${printMoney(
-          totalSubscriptionPrice
-        )})`
-      );
-    }
-    if (downpayment < schedule.downpaymentWithTax) {
-      throw new UserInputError(
-        `Downpayment can not be lower than schedules default downpayment, which is (${printMoney(
-          schedule.downpaymentWithTax
-        )})`
-      );
-    }
-    const dayRate = getDayRate(
-      totalSubscriptionPrice,
-      schedule.durationInterval!,
-      schedule.durationCount!
-    );
-    const now = new Date();
-    let subscriptionStartDate = getNextStartDate(
-      now,
-      schedule.billingInterval,
-      schedule.startMoment
-    );
-    const daysUntilStart = getDaysUntilNextStartDate(
-      input?.startDate || now,
-      subscriptionStartDate
-    );
-    if (schedule.paidUpFront) {
-      // If paid up front, move the startDate to next cycle. This needs to happen AFTER proration calculation
-      subscriptionStartDate = getNextCyclesStartDate(
-        new Date(),
-        schedule.startMoment,
-        schedule.durationInterval,
-        schedule.durationCount
-      );
-    }
-    const totalProratedAmount = daysUntilStart * dayRate;
-    let amountDueNow = downpayment + totalProratedAmount;
-    let recurringPrice = Math.floor(
-      (totalSubscriptionPrice - downpayment) / billingsPerDuration
-    );
-    if (schedule.paidUpFront) {
-      // User pays for the full membership now
-      amountDueNow = variant.priceWithTax + totalProratedAmount;
-      recurringPrice = variant.priceWithTax;
-    }
-    return {
-      variantId: variant.id as string,
-      downpaymentWithTax: downpayment,
-      totalProratedAmountWithTax: totalProratedAmount,
-      proratedDays: daysUntilStart,
-      dayRateWithTax: dayRate,
-      recurringPriceWithTax: recurringPrice,
-      interval: schedule.billingInterval,
-      intervalCount: schedule.billingCount,
-      amountDueNowWithTax: amountDueNow,
-      subscriptionStartDate,
-      schedule: {
-        ...schedule,
-        id: String(schedule.id),
-        paidUpFront: schedule.paidUpFront,
-      },
-    };
+    return calculateSubscriptionPricing(variant, input);
   }
 
   async handlePaymentCompleteEvent(
     { type, data: { object: eventData } }: IncomingStripeWebhook,
     signature: string | undefined,
-    rawBodyPayload: Buffer
+    rawBodyPayload: Buffer,
+    req: Request
   ): Promise<void> {
     if (type !== 'payment_intent.succeeded') {
       Logger.info(
@@ -307,7 +211,7 @@ export class StripeSubscriptionService {
         loggerCtx
       );
     }
-    const ctx = await this.createContext(channelToken);
+    const ctx = await this.createContext(channelToken, req);
     const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       throw Error(`Cannot find order with code ${orderCode}`);
@@ -458,7 +362,8 @@ export class StripeSubscriptionService {
             new Date(),
             schedule.startMoment,
             schedule.durationInterval,
-            schedule.durationCount
+            schedule.durationCount,
+            schedule.fixedStartDate
           );
           const downpayment = await stripeClient.createOffSessionSubscription({
             customerId: stripeCustomerId,
@@ -504,7 +409,10 @@ export class StripeSubscriptionService {
     }
   }
 
-  async createContext(channelToken: string): Promise<RequestContext> {
+  async createContext(
+    channelToken: string,
+    req: Request
+  ): Promise<RequestContext> {
     const channel = await this.channelService.getChannelFromToken(channelToken);
     return new RequestContext({
       apiType: 'admin',
@@ -512,6 +420,7 @@ export class StripeSubscriptionService {
       authorizedAsOwnerOnly: false,
       channel,
       languageCode: LanguageCode.en,
+      req,
     });
   }
 

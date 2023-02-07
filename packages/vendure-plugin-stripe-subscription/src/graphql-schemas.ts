@@ -31,17 +31,19 @@ const sharedTypes = gql`
     billingInterval: SubscriptionInterval!
     billingCount: Int!
     fixedStartDate: DateTime
+    useProration: Boolean
   }
   input UpsertStripeSubscriptionScheduleInput {
     id: ID
-    name: String
-    downpaymentWithTax: Int
-    durationInterval: SubscriptionInterval
-    durationCount: Int
-    startMoment: SubscriptionStartMoment
-    billingInterval: SubscriptionInterval
-    billingCount: Int
+    name: String!
+    downpaymentWithTax: Int!
+    durationInterval: SubscriptionInterval!
+    durationCount: Int!
+    startMoment: SubscriptionStartMoment!
+    billingInterval: SubscriptionInterval!
+    billingCount: Int!
     fixedStartDate: DateTime
+    useProration: Boolean
   }
 `;
 
