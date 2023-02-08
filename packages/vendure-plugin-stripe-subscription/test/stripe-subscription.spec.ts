@@ -303,6 +303,7 @@ describe('Order export plugin', function () {
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
           billingInterval: SubscriptionInterval.Month,
           billingCount: 6,
+          useProration: true,
           autoRenew: true,
         },
       });
@@ -328,6 +329,8 @@ describe('Order export plugin', function () {
     expect(schedule.startMoment).toBe(
       SubscriptionStartMoment.StartOfBillingInterval
     );
+    expect(schedule.useProration).toBe(true);
+    expect(schedule.useProration).toBe(true);
     expect(variant.id).toBe(schedule.id);
   });
 
