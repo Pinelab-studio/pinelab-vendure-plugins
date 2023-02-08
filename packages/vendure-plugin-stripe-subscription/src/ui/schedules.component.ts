@@ -198,6 +198,35 @@ import {
                 formControlName="downpayment"
               ></vdr-currency-input>
             </vdr-form-field>
+            <!-- Proration ------->
+            <vdr-form-field
+              *ngIf="form.value.startMoment !== 'fixed_startdate'"
+              label="Use proration"
+              for="useProration"
+              tooltip="Charge a customer proration when the subscription start date is in the future"
+            >
+              <clr-checkbox-wrapper>
+                <input
+                  type="checkbox"
+                  clrCheckbox
+                  formControlName="useProration"
+                />
+              </clr-checkbox-wrapper>
+            </vdr-form-field>
+            <!-- Autorenew ------->
+            <vdr-form-field
+              label="Auto-renew"
+              for="autoRenew"
+              tooltip="Automatically renew the subscription after the duration"
+            >
+              <clr-checkbox-wrapper>
+                <input
+                  type="checkbox"
+                  clrCheckbox
+                  formControlName="autoRenew"
+                />
+              </clr-checkbox-wrapper>
+            </vdr-form-field>
             <button
               class="btn btn-primary"
               (click)="save()"
@@ -254,7 +283,9 @@ export class SchedulesComponent implements OnInit {
       startMoment: ['startMoment', Validators.required],
       billingInterval: ['billingInterval', Validators.required],
       billingCount: ['billingCount', Validators.required],
-      fixedStartDate: ['fixedStartDate', Validators.required],
+      fixedStartDate: ['fixedStartDate'],
+      useProration: [false],
+      autoRenew: [true],
     });
   }
   get now() {
@@ -306,6 +337,10 @@ export class SchedulesComponent implements OnInit {
     this.form.controls['fixedStartDate'].setValue(
       this.selectedSchedule.fixedStartDate
     );
+    this.form.controls['useProration'].setValue(
+      this.selectedSchedule.useProration
+    );
+    this.form.controls['autoRenew'].setValue(this.selectedSchedule.autoRenew);
   }
 
   newSchedule(): void {
@@ -337,18 +372,24 @@ export class SchedulesComponent implements OnInit {
     this.form.controls['billingCount'].setValue(
       this.selectedSchedule.billingCount
     );
+    this.form.controls['billingCount'].setValue(
+      this.selectedSchedule.billingCount
+    );
+    this.form.controls['fixedStartDate'].setValue(undefined);
   }
 
   async save(): Promise<void> {
     try {
       if (this.form.dirty) {
         const formValue = this.form.value;
-
         if (formValue.isPaidUpFront) {
           formValue.downpayment = 0;
           // For paid up front duration and billing cycles are the same
           formValue.billingInterval = formValue.durationInterval;
           formValue.billingCount = formValue.durationCount;
+        }
+        if (formValue.startMoment === SubscriptionStartMoment.FixedStartdate) {
+          formValue.useProration = false;
         }
         await this.dataService
           .mutate(UPSERT_SCHEDULES, {
@@ -362,6 +403,8 @@ export class SchedulesComponent implements OnInit {
               billingInterval: formValue.billingInterval,
               billingCount: formValue.billingCount,
               fixedStartDate: formValue.fixedStartDate,
+              useProration: formValue.useProration,
+              autoRenew: formValue.autoRenew,
             },
           })
           .toPromise();
