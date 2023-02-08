@@ -330,6 +330,7 @@ export class GoedgepicktService
         billingPhone: order.customer?.phoneNumber,
         paymentMethod: order.payments?.[0]?.method,
         ignoreUnknownProductWarnings: true,
+        customerNote: (order.customFields as any)?.customerNote,
         shippingMethod: order.shippingLines
           .map((line) => line.shippingMethod?.name)
           .join(','),

@@ -85,7 +85,9 @@ export async function transitionToDelivered(
 function throwIfTransitionFailed(result: any): void {
   const stateError = result as FulfillmentStateTransitionError;
   if (stateError.transitionError) {
-    console.error(stateError);
+    if (stateError.fromState === stateError.toState) {
+      return; // If already 'Shipped', don't count this as an error
+    }
     throw Error(
       `${stateError.message} - from ${stateError.fromState} to ${stateError.toState} - ${stateError.transitionError}`
     );
@@ -93,7 +95,6 @@ function throwIfTransitionFailed(result: any): void {
   // It's not a stateTransition error
   const error = result as ErrorResult;
   if (error.errorCode) {
-    console.error(error);
     throw Error(`${error.errorCode}: ${error.message}`);
   }
 }
