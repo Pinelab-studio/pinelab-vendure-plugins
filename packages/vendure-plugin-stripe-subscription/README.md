@@ -89,6 +89,9 @@ plugins: [
 It's important to inform your customers what you will be billing them in the
 future: https://stripe.com/docs/payments/setup-intents#mandates
 
+![](docs/subscription-events.png)  
+_After order settlement you can view the subscription details on the order history_
+
 ![](docs/sequence.png)  
 _Subscriptions are created in the background, after a customer has finished the checkout_
 
