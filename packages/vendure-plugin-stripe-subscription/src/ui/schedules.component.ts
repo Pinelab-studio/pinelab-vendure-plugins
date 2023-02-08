@@ -78,7 +78,11 @@ import {
             <vdr-form-field label="Name" for="name">
               <input id="name" type="text" formControlName="name" />
             </vdr-form-field>
-            <vdr-form-field label="The duration is" for="durationCount">
+            <vdr-form-field
+              label="Duration"
+              for="durationCount"
+              tooltip="The duration of your subscription. This is used to calculate the day rate and downpayment deduction."
+            >
               <input
                 class="count"
                 id="durationCount"
@@ -112,97 +116,117 @@ import {
               </clr-checkbox-wrapper>
             </vdr-form-field>
             <!-- Billing ------------------->
-            <div *ngIf="!form.value.isPaidUpFront">
-              <vdr-form-field
-                label="Billing will occur every "
-                for="billingInterval"
+            <vdr-form-field
+              *ngIf="!form.value.isPaidUpFront"
+              label="Billing"
+              for="billingInterval"
+            >
+              <span>every</span>
+              <input
+                class="count"
+                id="billingCount"
+                type="number"
+                formControlName="billingCount"
+                min="1"
+              />
+              <select
+                clrSelect
+                name="options"
+                formControlName="billingInterval"
+                required
               >
+                <option *ngFor="let interval of intervals" [value]="interval">
+                  {{ interval }}{{ form.value.billingCount > 1 ? 's' : '' }}
+                </option>
+              </select>
+            </vdr-form-field>
+            <!-- StartDate -->
+            <vdr-form-field
+              label="Start date"
+              for="Start date"
+              tooltip="This will be the start of your subscription and billing cycle"
+            >
+              <select
+                clrSelect
+                name="options"
+                formControlName="startMoment"
+                required
+              >
+                <option *ngFor="let moment of moments" [value]="moment.value">
+                  {{ moment.name }}
+                </option>
+              </select>
+              <span
+                *ngIf="
+                  form.value.startMoment === 'time_of_purchase' ||
+                    form.value.startMoment === 'fixed_startdate';
+                  else showInterval
+                "
+              ></span>
+              <ng-template #showInterval>
+                <span>
+                  of the
+                  {{
+                    form.value.isPaidUpFront
+                      ? form.value.durationInterval
+                      : form.value.billingInterval
+                  }}</span
+                >
+              </ng-template>
+            </vdr-form-field>
+            <!-- Fixed start date picker -->
+            <vdr-form-field
+              *ngIf="form.value.startMoment === 'fixed_startdate'"
+              label="Start date"
+              for="start date"
+            >
+              <vdr-datetime-picker
+                [min]="now"
+                formControlName="fixedStartDate"
+              ></vdr-datetime-picker>
+            </vdr-form-field>
+            <!-- Downpayment -->
+            <vdr-form-field
+              *ngIf="!form.value.isPaidUpFront"
+              label="Downpayment"
+              for="billingInterval"
+              tooltip="A downpayment requires a customer to pay an amount up front."
+            >
+              <vdr-currency-input
+                clrInput
+                [currencyCode]="currencyCode"
+                formControlName="downpayment"
+              ></vdr-currency-input>
+            </vdr-form-field>
+            <!-- Proration ------->
+            <vdr-form-field
+              *ngIf="form.value.startMoment !== 'fixed_startdate'"
+              label="Use proration"
+              for="useProration"
+              tooltip="Charge a customer proration when the subscription start date is in the future"
+            >
+              <clr-checkbox-wrapper>
                 <input
-                  class="count"
-                  id="billingCount"
-                  type="number"
-                  formControlName="billingCount"
-                  min="1"
+                  type="checkbox"
+                  clrCheckbox
+                  formControlName="useProration"
                 />
-                <select
-                  clrSelect
-                  name="options"
-                  formControlName="billingInterval"
-                  required
-                >
-                  <option *ngFor="let interval of intervals" [value]="interval">
-                    {{ interval }}{{ form.value.billingCount > 1 ? 's' : '' }}
-                  </option>
-                </select>
-                <span>on the</span>
-                <select
-                  clrSelect
-                  name="options"
-                  formControlName="startMoment"
-                  required
-                >
-                  <option *ngFor="let moment of moments" [value]="moment.value">
-                    {{ moment.name }}
-                  </option>
-                </select>
-                <span
-                  *ngIf="
-                    form.value.startMoment === 'time_of_purchase';
-                    else showWeek
-                  "
-                ></span>
-                <span
-                  #showWeek
-                  *ngIf="form.value.billingInterval === 'week'; else showMonth"
-                  >day of the week</span
-                >
-                <span #showMonth *ngIf="form.value.billingInterval === 'month'"
-                  >of the month</span
-                >
-              </vdr-form-field>
-              <vdr-form-field
-                label="Downpayment"
-                for="billingInterval"
-                tooltip="A downpayment requires a customer to pay an amount up front."
-              >
-                <vdr-currency-input
-                  clrInput
-                  [currencyCode]="currencyCode"
-                  formControlName="downpayment"
-                ></vdr-currency-input>
-              </vdr-form-field>
-            </div>
-            <div *ngIf="form.value.isPaidUpFront">
-              <vdr-form-field
-                label="Start of subscription"
-                for="billingInterval"
-              >
-                <select
-                  clrSelect
-                  name="options"
-                  formControlName="startMoment"
-                  required
-                >
-                  <option *ngFor="let moment of moments" [value]="moment.value">
-                    {{ moment.name }}
-                  </option>
-                </select>
-                <span
-                  *ngIf="
-                    form.value.startMoment === 'time_of_purchase';
-                    else showWeek
-                  "
-                ></span>
-                <span
-                  #showWeek
-                  *ngIf="form.value.durationInterval === 'week'; else showMonth"
-                  >day of the week</span
-                >
-                <span #showMonth *ngIf="form.value.durationInterval === 'month'"
-                  >of the month</span
-                >
-              </vdr-form-field>
-            </div>
+              </clr-checkbox-wrapper>
+            </vdr-form-field>
+            <!-- Autorenew ------->
+            <vdr-form-field
+              label="Auto-renew"
+              for="autoRenew"
+              tooltip="Automatically renew the subscription after the duration"
+            >
+              <clr-checkbox-wrapper>
+                <input
+                  type="checkbox"
+                  clrCheckbox
+                  formControlName="autoRenew"
+                />
+              </clr-checkbox-wrapper>
+            </vdr-form-field>
             <button
               class="btn btn-primary"
               (click)="save()"
@@ -226,16 +250,20 @@ export class SchedulesComponent implements OnInit {
   intervals = [SubscriptionInterval.Week, SubscriptionInterval.Month];
   moments = [
     {
-      name: 'first',
+      name: 'First',
       value: SubscriptionStartMoment.StartOfBillingInterval,
     },
     {
-      name: 'last',
+      name: 'Last',
       value: SubscriptionStartMoment.EndOfBillingInterval,
     },
     {
-      name: 'time of purchase',
+      name: 'Time of purchase',
       value: SubscriptionStartMoment.TimeOfPurchase,
+    },
+    {
+      name: 'Fixed date',
+      value: SubscriptionStartMoment.FixedStartdate,
     },
   ];
 
@@ -255,7 +283,13 @@ export class SchedulesComponent implements OnInit {
       startMoment: ['startMoment', Validators.required],
       billingInterval: ['billingInterval', Validators.required],
       billingCount: ['billingCount', Validators.required],
+      fixedStartDate: ['fixedStartDate'],
+      useProration: [false],
+      autoRenew: [true],
     });
+  }
+  get now() {
+    return new Date().toISOString();
   }
 
   async ngOnInit(): Promise<void> {
@@ -300,6 +334,13 @@ export class SchedulesComponent implements OnInit {
     this.form.controls['isPaidUpFront'].setValue(
       this.selectedSchedule.paidUpFront
     );
+    this.form.controls['fixedStartDate'].setValue(
+      this.selectedSchedule.fixedStartDate
+    );
+    this.form.controls['useProration'].setValue(
+      this.selectedSchedule.useProration
+    );
+    this.form.controls['autoRenew'].setValue(this.selectedSchedule.autoRenew);
   }
 
   newSchedule(): void {
@@ -331,18 +372,24 @@ export class SchedulesComponent implements OnInit {
     this.form.controls['billingCount'].setValue(
       this.selectedSchedule.billingCount
     );
+    this.form.controls['billingCount'].setValue(
+      this.selectedSchedule.billingCount
+    );
+    this.form.controls['fixedStartDate'].setValue(undefined);
   }
 
   async save(): Promise<void> {
     try {
       if (this.form.dirty) {
         const formValue = this.form.value;
-
         if (formValue.isPaidUpFront) {
           formValue.downpayment = 0;
           // For paid up front duration and billing cycles are the same
           formValue.billingInterval = formValue.durationInterval;
           formValue.billingCount = formValue.durationCount;
+        }
+        if (formValue.startMoment === SubscriptionStartMoment.FixedStartdate) {
+          formValue.useProration = false;
         }
         await this.dataService
           .mutate(UPSERT_SCHEDULES, {
@@ -355,6 +402,9 @@ export class SchedulesComponent implements OnInit {
               startMoment: formValue.startMoment,
               billingInterval: formValue.billingInterval,
               billingCount: formValue.billingCount,
+              fixedStartDate: formValue.fixedStartDate,
+              useProration: formValue.useProration,
+              autoRenew: formValue.autoRenew,
             },
           })
           .toPromise();

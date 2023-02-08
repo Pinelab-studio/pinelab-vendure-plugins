@@ -1,5 +1,6 @@
 import { gql } from 'graphql-tag';
 import { SimpleGraphQLClient } from '@vendure/testing';
+import { SCHEDULE_FRAGMENT } from '../src/ui/queries';
 
 export const ADD_ITEM_TO_ORDER = gql`
   mutation AddItemToOrder(
@@ -45,6 +46,7 @@ export const UPDATE_CHANNEL = gql`
 `;
 
 export const GET_PRICING = gql`
+  ${SCHEDULE_FRAGMENT}
   query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
     stripeSubscriptionPricing(input: $input) {
       downpaymentWithTax
@@ -54,24 +56,17 @@ export const GET_PRICING = gql`
       recurringPriceWithTax
       interval
       intervalCount
-      amountDueNow
+      amountDueNowWithTax
       subscriptionStartDate
       schedule {
-        id
-        name
-        downpaymentWithTax
-        durationInterval
-        durationCount
-        startMoment
-        paidUpFront
-        billingCount
-        billingInterval
+        ...ScheduleFields
       }
     }
   }
 `;
 
 export const GET_PRICING_FOR_PRODUCT = gql`
+  ${SCHEDULE_FRAGMENT}
   query stripeSubscriptionPricingForProduct($productId: ID!) {
     stripeSubscriptionPricingForProduct(productId: $productId) {
       downpaymentWithTax
@@ -81,24 +76,17 @@ export const GET_PRICING_FOR_PRODUCT = gql`
       recurringPriceWithTax
       interval
       intervalCount
-      amountDueNow
+      amountDueNowWithTax
       subscriptionStartDate
       schedule {
-        id
-        name
-        downpaymentWithTax
-        durationInterval
-        durationCount
-        startMoment
-        paidUpFront
-        billingCount
-        billingInterval
+        ...ScheduleFields
       }
     }
   }
 `;
 
 export const GET_ORDER_WITH_PRICING = gql`
+  ${SCHEDULE_FRAGMENT}
   query getOrderWithPricing {
     activeOrder {
       id
@@ -112,18 +100,10 @@ export const GET_ORDER_WITH_PRICING = gql`
           recurringPriceWithTax
           interval
           intervalCount
-          amountDueNow
+          amountDueNowWithTax
           subscriptionStartDate
           schedule {
-            id
-            name
-            downpaymentWithTax
-            durationInterval
-            durationCount
-            startMoment
-            paidUpFront
-            billingCount
-            billingInterval
+            ...ScheduleFields
           }
         }
       }

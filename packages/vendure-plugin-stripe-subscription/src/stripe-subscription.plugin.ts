@@ -80,8 +80,8 @@ export class StripeSubscriptionPlugin {
       },
       {
         type: 'shared',
-        ngModuleFileName: 'schedules-shared.module.ts',
-        ngModuleName: 'SchedulesSharedModule',
+        ngModuleFileName: 'stripe-subscription-shared.module.ts',
+        ngModuleName: 'StripeSubscriptionSharedModule',
       },
     ],
   };

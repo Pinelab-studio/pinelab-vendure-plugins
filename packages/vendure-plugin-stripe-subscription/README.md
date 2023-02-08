@@ -89,6 +89,9 @@ plugins: [
 It's important to inform your customers what you will be billing them in the
 future: https://stripe.com/docs/payments/setup-intents#mandates
 
+![](docs/subscription-events.png)  
+_After order settlement you can view the subscription details on the order history_
+
 ![](docs/sequence.png)  
 _Subscriptions are created in the background, after a customer has finished the checkout_
 
@@ -116,6 +119,8 @@ date of the subscription.
 
 In the example above, the customer will also be billed for the remaining 15 days from January 15 to February 1, this is
 called proration.
+
+Proration can be configured on a schedule. With `useProration=false` a customer isn't charged for the remaining days during checkout.
 
 Proration is calculated on a yearly basis. E.g, in the example above: $540 is for a duration of 6 months, that means
 $1080 for the full year. The day rate of that subscription will then be 1080 / 365 = $2,96 a day. When the customer buys

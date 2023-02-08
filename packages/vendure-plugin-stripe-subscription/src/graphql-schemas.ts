@@ -16,6 +16,7 @@ const sharedTypes = gql`
     start_of_billing_interval
     end_of_billing_interval
     time_of_purchase
+    fixed_startdate
   }
   type StripeSubscriptionSchedule {
     id: ID!
@@ -29,16 +30,22 @@ const sharedTypes = gql`
     paidUpFront: Boolean!
     billingInterval: SubscriptionInterval!
     billingCount: Int!
+    fixedStartDate: DateTime
+    useProration: Boolean
+    autoRenew: Boolean
   }
   input UpsertStripeSubscriptionScheduleInput {
     id: ID
-    name: String
-    downpaymentWithTax: Int
-    durationInterval: SubscriptionInterval
-    durationCount: Int
-    startMoment: SubscriptionStartMoment
-    billingInterval: SubscriptionInterval
-    billingCount: Int
+    name: String!
+    downpaymentWithTax: Int!
+    durationInterval: SubscriptionInterval!
+    durationCount: Int!
+    startMoment: SubscriptionStartMoment!
+    billingInterval: SubscriptionInterval!
+    billingCount: Int!
+    fixedStartDate: DateTime
+    useProration: Boolean
+    autoRenew: Boolean
   }
 `;
 
@@ -58,8 +65,9 @@ export const shopSchemaExtensions = gql`
     recurringPriceWithTax: Int!
     interval: SubscriptionInterval!
     intervalCount: Int!
-    amountDueNow: Int!
+    amountDueNowWithTax: Int!
     subscriptionStartDate: DateTime!
+    subscriptionEndDate: DateTime
     schedule: StripeSubscriptionSchedule!
   }
   input StripeSubscriptionPricingInput {
@@ -86,6 +94,11 @@ export const shopSchemaExtensions = gql`
 
 export const adminSchemaExtensions = gql`
   ${sharedTypes}
+
+  extend enum HistoryEntryType {
+    STRIPE_SUBSCRIPTION_NOTIFICATION
+  }
+
   extend type Query {
     stripeSubscriptionSchedules: [StripeSubscriptionSchedule!]!
   }

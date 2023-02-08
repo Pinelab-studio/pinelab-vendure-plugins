@@ -116,7 +116,7 @@ export let clientSecret = 'test';
   });
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
-      name: '6 months, billed monthly, 199 downpayment',
+      name: '3 months, billed monthly, 199 downpayment',
       downpaymentWithTax: 19900,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 3,
@@ -125,32 +125,36 @@ export let clientSecret = 'test';
       billingCount: 1,
     },
   });
-  console.log(`Created subscription schedule`);
+  const future = new Date('01-01-2024');
+  await adminClient.query(UPSERT_SCHEDULES, {
+    input: {
+      name: 'Fixed start date, 6 months, billed monthly, 60 downpayment',
+      downpaymentWithTax: 6000,
+      durationInterval: SubscriptionInterval.Month,
+      durationCount: 6,
+      startMoment: SubscriptionStartMoment.FixedStartdate,
+      billingInterval: SubscriptionInterval.Week,
+      billingCount: 1,
+      fixedStartDate: future,
+    },
+  });
+  console.log(`Created subscription schedules`);
   await adminClient.query(UPDATE_VARIANT, {
     input: [
       {
         id: 1,
         customFields: {
-          subscriptionScheduleId: 1,
+          subscriptionScheduleId: 3,
         },
       },
     ],
   });
-  await adminClient.query(UPDATE_VARIANT, {
-    input: [
-      {
-        id: 2,
-        customFields: {
-          subscriptionScheduleId: 2,
-        },
-      },
-    ],
-  });
-  console.log(`Added schedule to both variants`);
+  console.log(`Added schedule variant`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  // Add paid in full
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
+
+  // This is the variant for checkout
+  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,
     customFields: {
@@ -158,22 +162,8 @@ export let clientSecret = 'test';
       // startDate: in3Days,
     },
   });
-  // Add recurring product
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '2',
-    quantity: 1,
-    customFields: {
-      // downpayment: 40000,
-      // startDate: in3Days,
-    },
-  });
-  // Add non-sub product
-  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '3',
-    quantity: 1,
-  });
   await setShipping(shopClient);
-  console.log(`Prepared order ${order.code}`);
+  console.log(`Prepared order ${order?.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(
     CREATE_PAYMENT_LINK
   );
