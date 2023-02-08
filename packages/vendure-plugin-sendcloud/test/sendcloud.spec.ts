@@ -156,7 +156,35 @@ describe('SendCloud', () => {
     expect(body?.parcel.email).toContain('hayden.zieme12@hotmail.com');
   });
 
-  it('Updates order via webhook', async () => {
+  it('Updates order to Shipped via webhook', async () => {
+    const body: DeepPartial<IncomingWebhookBody> = {
+      action: 'parcel_status_changed',
+      parcel: {
+        order_number: orderCode,
+        tracking_number: 'test-tracking',
+        status: {
+          id: 62990,
+          message: 'At sorting centre',
+        },
+      },
+    };
+    const signature = crypto
+      .createHmac('sha256', 'test-secret')
+      .update(JSON.stringify(body))
+      .digest('hex');
+    await adminClient.fetch(
+      'http://localhost:3050/sendcloud/webhook/e2e-default-channel',
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: { [SendcloudClient.signatureHeader]: signature },
+      }
+    );
+    const order = await getOrder(adminClient, String(orderId));
+    expect(order?.state).toBe('Shipped');
+  });
+
+  it('Updates order to Delivered via webhook', async () => {
     const body: DeepPartial<IncomingWebhookBody> = {
       action: 'parcel_status_changed',
       parcel: {
