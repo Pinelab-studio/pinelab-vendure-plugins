@@ -57,6 +57,6 @@ export class HistoryEntryComponent implements OrderHistoryEntryComponent {
   }
 
   getIconShape(entry: TimelineHistoryEntry) {
-    return entry.data.valid ? 'check-circle' : 'exclamation-circle';
+    return entry.data.valid ? undefined : 'exclamation-circle';
   }
 }

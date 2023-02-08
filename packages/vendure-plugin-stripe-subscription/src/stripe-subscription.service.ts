@@ -138,6 +138,9 @@ export class StripeSubscriptionService {
         )
       );
     let totalAmountDueNow = 0;
+    const hasSubscriptionProducts = order.lines.some(
+      (l) => l.productVariant.customFields.subscriptionSchedule
+    );
     await Promise.all(
       order.lines.map(async (line) => {
         totalAmountDueNow += line.proratedLinePriceWithTax;
@@ -152,7 +155,9 @@ export class StripeSubscriptionService {
     const intent = await stripeClient.paymentIntents.create({
       customer: stripeCustomer.id,
       payment_method_types: ['card'], // TODO make configurable per channel
-      setup_future_usage: 'off_session',
+      setup_future_usage: hasSubscriptionProducts
+        ? 'off_session'
+        : 'on_session',
       amount: totalAmountDueNow,
       currency: order.currencyCode,
       metadata: {
@@ -309,16 +314,16 @@ export class StripeSubscriptionService {
         downpaymentWithTax: orderLine.customFields.downpayment,
         productVariantId: orderLine.productVariant.id as string,
       });
+      if (pricing.schedule.paidUpFront && !pricing.schedule.autoRenew) {
+        continue; // Paid up front without autoRenew doesn't need a subscription
+      }
       Logger.info(
         `Creating subscriptions with pricing ${JSON.stringify(pricing)}`,
         loggerCtx
       );
-
-      // TODO set endDate if given
-
       try {
         const product = await stripeClient.products.create({
-          name: `${order.code} - ${order.customer.emailAddress} - ${orderLine.productVariant.name}`,
+          name: `${orderLine.productVariant.name} (${order.code})`,
         });
         const recurring = await stripeClient.createOffSessionSubscription({
           customerId: stripeCustomerId,
@@ -329,7 +334,7 @@ export class StripeSubscriptionService {
           intervalCount: pricing.intervalCount,
           paymentMethodId: stripePaymentMethodId,
           startDate: pricing.subscriptionStartDate,
-          proration: false, // Proration is paid during checkout
+          endDate: pricing.subscriptionEndDate || undefined,
           description: orderLine.productVariant.name,
         });
         if (recurring.status !== 'active' && recurring.status !== 'trialing') {
@@ -368,7 +373,7 @@ export class StripeSubscriptionService {
         if (pricing.downpaymentWithTax) {
           // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
           const downpaymentProduct = await stripeClient.products.create({
-            name: `${order.code} - ${order.customer.emailAddress} - ${orderLine.productVariant.name} - Downpayment`,
+            name: `${orderLine.productVariant.name} - Downpayment (${order.code})`,
           });
           const schedule =
             orderLine.productVariant.customFields.subscriptionSchedule;
@@ -395,7 +400,7 @@ export class StripeSubscriptionService {
             intervalCount: downpaymentIntervalCount,
             paymentMethodId: stripePaymentMethodId,
             startDate: nextDownpaymentDate,
-            proration: false, // no proration for downpayments
+            endDate: pricing.subscriptionEndDate || undefined,
             description: `Downpayment`,
           });
           if (

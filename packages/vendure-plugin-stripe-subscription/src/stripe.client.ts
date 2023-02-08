@@ -11,7 +11,7 @@ interface SubscriptionInput {
   intervalCount: number;
   paymentMethodId: string;
   startDate: Date;
-  proration: boolean;
+  endDate?: Date;
   description?: string;
 }
 
@@ -72,14 +72,15 @@ export class StripeClient extends Stripe {
     intervalCount,
     paymentMethodId,
     startDate,
-    proration,
+    endDate,
     description,
   }: SubscriptionInput): Promise<Stripe.Subscription> {
     return this.subscriptions.create({
       customer: customerId,
       // billing_cycle_anchor: this.toStripeTimeStamp(startDate),
+      cancel_at: endDate ? this.toStripeTimeStamp(endDate) : undefined,
       trial_end: this.toStripeTimeStamp(startDate),
-      proration_behavior: proration ? 'create_prorations' : 'none',
+      proration_behavior: 'none',
       description: description,
       items: [
         {

@@ -303,6 +303,7 @@ describe('Order export plugin', function () {
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
           billingInterval: SubscriptionInterval.Month,
           billingCount: 6,
+          autoRenew: true,
         },
       });
     const {
@@ -341,6 +342,7 @@ describe('Order export plugin', function () {
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
           billingInterval: SubscriptionInterval.Week,
           billingCount: 1,
+          autoRenew: false,
         },
       });
     const {
@@ -553,8 +555,6 @@ describe('Order export plugin', function () {
       expect(pricing.subscriptionEndDate).toBeDefined();
     });
 
-    // TODO calculate fixed start date
-
     // TODO calculate time of purchase
   });
 
@@ -711,7 +711,14 @@ describe('Order export plugin', function () {
       expect(parseInt(weeklySub?.trial_end)).toBeLessThan(
         in7days.getTime() / 1000
       );
+      const in3Months = new Date();
+      in3Months.setMonth(in3Months.getMonth() + 3);
+      // No autorenew, so cancel_at should be in ~3 months
+      expect(parseInt(weeklySub?.cancel_at)).toBeGreaterThan(
+        in3Months.getTime() / 1000
+      );
     });
+
     it('Created downpayment subscription that renews 3 months from now', async () => {
       const downpaymentRequest = createdSubscriptions.find(
         (s) => s.description === 'Downpayment'
