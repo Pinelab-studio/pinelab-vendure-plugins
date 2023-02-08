@@ -555,7 +555,36 @@ describe('Order export plugin', function () {
       expect(pricing.subscriptionEndDate).toBeDefined();
     });
 
-    // TODO calculate time of purchase
+    it('Should calculate pricing for time_of_purchase', async () => {
+      const variant: VariantForCalculation = {
+        id: 'fixed',
+        priceWithTax: 6000,
+        customFields: {
+          subscriptionSchedule: new Schedule({
+            name: 'Monthly, fixed start date',
+            durationInterval: SubscriptionInterval.Month,
+            durationCount: 6,
+            billingInterval: SubscriptionInterval.Month,
+            billingCount: 1,
+            startMoment: SubscriptionStartMoment.TimeOfPurchase,
+            downpaymentWithTax: 6000,
+            useProration: true,
+          }),
+        },
+      };
+      const pricing = calculateSubscriptionPricing(variant);
+      const now = new Date().toISOString().split('T')[0];
+      const subscriptionStartDate = pricing.subscriptionStartDate
+        .toISOString()
+        .split('T')[0];
+      // compare dates without time
+      expect(subscriptionStartDate).toBe(now);
+      expect(pricing.recurringPriceWithTax).toBe(6000);
+      expect(pricing.dayRateWithTax).toBe(230);
+      expect(pricing.amountDueNowWithTax).toBe(6000);
+      expect(pricing.proratedDays).toBe(0);
+      expect(pricing.totalProratedAmountWithTax).toBe(0);
+    });
   });
 
   describe('Subscription order placement', () => {

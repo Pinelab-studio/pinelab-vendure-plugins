@@ -129,7 +129,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: 'Fixed start date, 6 months, billed monthly, 60 downpayment',
-      downpaymentWithTax: 60,
+      downpaymentWithTax: 6000,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 6,
       startMoment: SubscriptionStartMoment.FixedStartdate,
