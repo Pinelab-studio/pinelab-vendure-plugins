@@ -39,5 +39,6 @@
     "ts-jest": "^27.1.3",
     "ts-node": "^10.7.0",
     "wsdl-tsclient": "^1.3.1"
-  }
+  },
+  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
 }

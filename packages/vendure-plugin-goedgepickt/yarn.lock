@@ -2926,13 +2926,6 @@
     "@types/koa-compose" "*"
     "@types/node" "*"
 
-"@types/localtunnel@^2.0.1":
-  version "2.0.1"
-  resolved "https://registry.yarnpkg.com/@types/localtunnel/-/localtunnel-2.0.1.tgz#c28a067de1da81b0b4730a9fc2f98e067f973996"
-  integrity sha512-0h/ggh+tp9uKHc2eEOLdMgWW0cNwsQfn6iEE1Y44FszNB4BQyL5N6xvd5BnChZksB0YgVqa5MKxJt0dFoOKRxw==
-  dependencies:
-    "@types/node" "*"
-
 "@types/long@^4.0.0":
   version "4.0.2"
   resolved "https://registry.yarnpkg.com/@types/long/-/long-4.0.2.tgz#b74129719fc8d11c01868010082d483b7545591a"

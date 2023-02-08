@@ -41,5 +41,6 @@
   "dependencies": {
     "date-fns": "^2.29.3",
     "stripe": "^11.1.0"
-  }
+  },
+  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
 }

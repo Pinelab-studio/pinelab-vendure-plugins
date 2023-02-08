@@ -31,5 +31,6 @@
     "nodemon": "^2.0.15",
     "ts-jest": "^27.1.3",
     "ts-node": "^10.7.0"
-  }
+  },
+  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
 }
