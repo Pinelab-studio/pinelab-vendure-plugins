@@ -79,6 +79,7 @@ export interface OrderInput {
   billingCountry?: string;
   billingEmail?: string;
   billingPhone?: string;
+  customerNote?: string;
   pickupLocationData?: {
     locationNumber?: string;
     carrier?: string;
