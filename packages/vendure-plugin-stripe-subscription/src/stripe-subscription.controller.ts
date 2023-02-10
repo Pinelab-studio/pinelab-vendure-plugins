@@ -155,10 +155,10 @@ export class StripeSubscriptionController {
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
     // Validate if metadata present
     const orderCode =
-      body.data.object.metadata.orderCode ||
+      body.data.object.metadata?.orderCode ||
       body.data.object.lines?.data[0]?.metadata.orderCode;
     const channelToken =
-      body.data.object.metadata.channelToken ||
+      body.data.object.metadata?.channelToken ||
       body.data.object.lines?.data[0]?.metadata.channelToken;
     if (!orderCode) {
       return Logger.error(
