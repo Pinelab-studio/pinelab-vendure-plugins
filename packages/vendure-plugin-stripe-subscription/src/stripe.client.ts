@@ -11,6 +11,8 @@ interface SubscriptionInput {
   intervalCount: number;
   paymentMethodId: string;
   startDate: Date;
+  orderCode: string;
+  channelToken: string;
   endDate?: Date;
   description?: string;
 }
@@ -74,6 +76,8 @@ export class StripeClient extends Stripe {
     startDate,
     endDate,
     description,
+    orderCode,
+    channelToken,
   }: SubscriptionInput): Promise<Stripe.Subscription> {
     return this.subscriptions.create({
       customer: customerId,
@@ -98,6 +102,10 @@ export class StripeClient extends Stripe {
       off_session: true,
       default_payment_method: paymentMethodId,
       payment_behavior: 'allow_incomplete',
+      metadata: {
+        orderCode,
+        channelToken,
+      },
     });
   }
 

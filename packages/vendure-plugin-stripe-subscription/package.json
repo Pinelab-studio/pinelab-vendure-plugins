@@ -16,7 +16,8 @@
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-stripe-subscription/src/",
     "test": "jest --preset=\"ts-jest\" --forceExit",
-    "start": "yarn ts-node test/dev-server.ts",
+    "start": "COMPILE_ADMIN=true yarn ts-node test/dev-server.ts",
+    "start:no-admin": "yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen"
   },
   "devDependencies": {

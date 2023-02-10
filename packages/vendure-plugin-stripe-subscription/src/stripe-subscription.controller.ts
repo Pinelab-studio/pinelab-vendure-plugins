@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Post, Req } from '@nestjs/common';
+import { Body, Controller, Headers, Inject, Post, Req } from '@nestjs/common';
 import {
   Allow,
   Ctx,
@@ -19,7 +19,7 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
-import { loggerCtx } from './constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
   StripeSubscriptionPricing,
@@ -33,6 +33,7 @@ import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
+import { StripeSubscriptionPluginOptions } from './stripe-subscription.plugin';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -138,7 +139,12 @@ export class AdminResolver {
 
 @Controller('stripe-subscriptions')
 export class StripeSubscriptionController {
-  constructor(private stripeSubscriptionService: StripeSubscriptionService) {}
+  constructor(
+    private stripeSubscriptionService: StripeSubscriptionService,
+    private orderService: OrderService,
+    @Inject(PLUGIN_INIT_OPTIONS)
+    private options: StripeSubscriptionPluginOptions
+  ) {}
 
   @Post('webhook')
   async webhook(
@@ -147,14 +153,68 @@ export class StripeSubscriptionController {
     @Body() body: IncomingStripeWebhook
   ): Promise<void> {
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
+    // Validate if metadata present
+    const orderCode =
+      body.data.object.metadata?.orderCode ||
+      body.data.object.lines?.data[0]?.metadata.orderCode;
+    const channelToken =
+      body.data.object.metadata?.channelToken ||
+      body.data.object.lines?.data[0]?.metadata.channelToken;
+    if (!orderCode) {
+      return Logger.error(
+        `Incoming webhook is missing metadata.orderCode, cannot process this event`,
+        loggerCtx
+      );
+    }
+    if (!channelToken) {
+      return Logger.error(
+        `Incoming webhook is missing metadata.channelToken, cannot process this event`,
+        loggerCtx
+      );
+    }
     try {
-      await this.stripeSubscriptionService.handlePaymentCompleteEvent(
-        body,
-        signature,
-        request.rawBody,
+      const ctx = await this.stripeSubscriptionService.createContext(
+        channelToken,
         request
       );
+      const order = await this.orderService.findOneByCode(ctx, orderCode);
+      if (!order) {
+        throw Error(`Cannot find order with code ${orderCode}`); // Throw inside catch block, so Stripe will retry
+      }
+      // Validate signature
+      const { stripeClient } =
+        await this.stripeSubscriptionService.getStripeHandler(ctx, order.id);
+      if (!this.options?.disableWebhookSignatureChecking) {
+        stripeClient.validateWebhookSignature(request.rawBody, signature);
+      }
+      if (body.type === 'payment_intent.succeeded') {
+        await this.stripeSubscriptionService.handlePaymentIntentSucceeded(
+          ctx,
+          body,
+          order
+        );
+      } else if (body.type === 'invoice.payment_succeeded') {
+        await this.stripeSubscriptionService.handleInvoicePaymentSucceeded(
+          ctx,
+          body,
+          order
+        );
+      } else if (body.type === 'invoice.payment_failed') {
+        await this.stripeSubscriptionService.handleInvoicePaymentFailed(
+          ctx,
+          body,
+          order
+        );
+      } else {
+        Logger.info(
+          `Received incoming '${body.type}' webhook, not processing this event.`,
+          loggerCtx
+        );
+        return;
+      }
+      Logger.info(`Successfully handled webhook ${body.type}`, loggerCtx);
     } catch (error) {
+      // Catch all for logging purposes
       Logger.error(
         `Failed to process incoming webhook ${body.type} (${body.id}): ${
           (error as Error)?.message

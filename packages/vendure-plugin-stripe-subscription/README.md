@@ -40,7 +40,7 @@ momnths for 12 months.
 ### Setup Stripe webhook
 
 1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook`
-2. Select `payment_intent.succeeded` as event for the webhook.
+2. Select the following events for the webhook: `payment_intent.succeeded`, `invoice.payment_succeeded` and `invoice.payment_failed`
 
 ## Vendure setup
 

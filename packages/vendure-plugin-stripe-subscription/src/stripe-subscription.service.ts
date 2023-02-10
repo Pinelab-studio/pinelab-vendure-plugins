@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   ActiveOrderService,
   ChannelService,
@@ -12,6 +12,7 @@ import {
   JobQueueService,
   LanguageCode,
   Logger,
+  Order,
   OrderService,
   OrderStateTransitionError,
   PaymentMethodService,
@@ -20,8 +21,7 @@ import {
   SerializedRequestContext,
   UserInputError,
 } from '@vendure/core';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
-import { StripeSubscriptionPluginOptions } from './stripe-subscription.plugin';
+import { loggerCtx } from './constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
   OrderWithSubscriptions,
@@ -64,8 +64,6 @@ export class StripeSubscriptionService {
     private channelService: ChannelService,
     private orderService: OrderService,
     private historyService: HistoryService,
-    @Inject(PLUGIN_INIT_OPTIONS)
-    private options: StripeSubscriptionPluginOptions,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
     private customerService: CustomerService
@@ -188,38 +186,60 @@ export class StripeSubscriptionService {
     return calculateSubscriptionPricing(variant, input);
   }
 
-  async handlePaymentCompleteEvent(
-    { type, data: { object: eventData } }: IncomingStripeWebhook,
-    signature: string | undefined,
-    rawBodyPayload: Buffer,
-    req: Request
+  /**
+   * Handle future subscription payments that come in after the initial payment intent
+   */
+  async handleInvoicePaymentSucceeded(
+    ctx: RequestContext,
+    { data: { object } }: IncomingStripeWebhook,
+    order: Order
   ): Promise<void> {
-    if (type !== 'payment_intent.succeeded') {
-      Logger.info(
-        `Received incoming '${type}' webhook, not processing this event.`,
-        loggerCtx
-      );
-      return;
-    }
-    const orderCode = eventData.metadata.orderCode;
-    const channelToken = eventData.metadata.channelToken;
-    if (!orderCode) {
-      return Logger.warn(
-        `Incoming webhook is missing metadata.orderCode, cannot process this event`,
-        loggerCtx
-      );
-    }
-    if (!channelToken) {
-      return Logger.warn(
-        `Incoming webhook is missing metadata.channelToken, cannot process this event`,
-        loggerCtx
-      );
-    }
-    const ctx = await this.createContext(channelToken, req);
-    const order = await this.orderService.findOneByCode(ctx, orderCode);
-    if (!order) {
-      throw Error(`Cannot find order with code ${orderCode}`);
-    }
+    const amount = object.lines?.data?.[0]?.plan?.amount;
+    const message = amount
+      ? `Received subscription payment of ${printMoney(amount)}`
+      : 'Received subscription payment';
+    await this.logHistoryEntry(
+      ctx,
+      order.id,
+      message,
+      undefined,
+      undefined,
+      object.subscription
+    );
+  }
+
+  /**
+   * Handle failed subscription payments that come in after the initial payment intent
+   */
+  async handleInvoicePaymentFailed(
+    ctx: RequestContext,
+    { data: { object } }: IncomingStripeWebhook,
+    order: Order
+  ): Promise<void> {
+    const amount = object.lines?.data[0]?.plan?.amount;
+    const message = amount
+      ? `Subscription payment of ${printMoney(amount)} failed`
+      : 'Subscription payment failed';
+    await this.logHistoryEntry(
+      ctx,
+      order.id,
+      message,
+      `${message} - ${object.id}`,
+      undefined,
+      object.subscription
+    );
+  }
+
+  /**
+   * Handle the initial payment Intent succeeded.
+   * Creates subscriptions in Stripe for customer attached to this order
+   */
+  async handlePaymentIntentSucceeded(
+    ctx: RequestContext,
+    { data: { object: eventData } }: IncomingStripeWebhook,
+    order: Order
+  ): Promise<void> {
+    const { paymentMethodCode } = await this.getStripeHandler(ctx, order.id);
     if (!eventData.customer) {
       await this.logHistoryEntry(
         ctx,
@@ -230,13 +250,6 @@ export class StripeSubscriptionService {
       throw Error(`No customer found in webhook data for order ${order.code}`);
     }
     // Create subscriptions for customer
-    const { stripeClient, paymentMethodCode } = await this.getStripeHandler(
-      ctx,
-      order.id
-    );
-    if (!this.options?.disableWebhookSignatureChecking) {
-      stripeClient.validateWebhookSignature(rawBodyPayload, signature);
-    }
     await this.jobQueue.add(
       {
         action: 'createSubscriptionsForOrder',
@@ -279,7 +292,7 @@ export class StripeSubscriptionService {
       );
     }
     Logger.info(
-      `Successfully settled payment for order ${order.code} for channel ${channelToken}`,
+      `Successfully settled payment for order ${order.code} for channel ${ctx.channel.token}`,
       loggerCtx
     );
   }
@@ -336,6 +349,8 @@ export class StripeSubscriptionService {
           startDate: pricing.subscriptionStartDate,
           endDate: pricing.subscriptionEndDate || undefined,
           description: orderLine.productVariant.name,
+          orderCode: order.code,
+          channelToken: ctx.channel.token,
         });
         if (recurring.status !== 'active' && recurring.status !== 'trialing') {
           Logger.error(
@@ -345,7 +360,7 @@ export class StripeSubscriptionService {
           await this.logHistoryEntry(
             ctx,
             order.id,
-            'recurring',
+            'Failed to create subscription',
             `Subscription status is ${recurring.status}`,
             pricing,
             recurring.id
@@ -364,7 +379,7 @@ export class StripeSubscriptionService {
           await this.logHistoryEntry(
             ctx,
             order.id,
-            'recurring',
+            'Created subscription',
             undefined,
             pricing,
             recurring.id
@@ -402,6 +417,8 @@ export class StripeSubscriptionService {
             startDate: nextDownpaymentDate,
             endDate: pricing.subscriptionEndDate || undefined,
             description: `Downpayment`,
+            orderCode: order.code,
+            channelToken: ctx.channel.token,
           });
           if (
             downpayment.status !== 'active' &&
@@ -414,7 +431,7 @@ export class StripeSubscriptionService {
             await this.logHistoryEntry(
               ctx,
               order.id,
-              'downpayment',
+              'Failed to create downpayment subscription',
               'Failed to create active subscription',
               undefined,
               downpayment.id
@@ -431,7 +448,7 @@ export class StripeSubscriptionService {
             await this.logHistoryEntry(
               ctx,
               order.id,
-              'downpayment',
+              'Created downpayment subscription',
               undefined,
               pricing,
               downpayment.id
@@ -463,7 +480,7 @@ export class StripeSubscriptionService {
   /**
    * Get the paymentMethod with the stripe handler, should be only 1!
    */
-  private async getStripeHandler(
+  async getStripeHandler(
     ctx: RequestContext,
     orderId: ID
   ): Promise<StripeHandlerConfig> {
@@ -514,7 +531,7 @@ export class StripeSubscriptionService {
   async logHistoryEntry(
     ctx: RequestContext,
     orderId: ID,
-    name: string,
+    message: string,
     error?: unknown,
     pricing?: StripeSubscriptionPricing,
     subscriptionId?: string
@@ -540,7 +557,7 @@ export class StripeSubscriptionService {
         orderId,
         type: 'STRIPE_SUBSCRIPTION_NOTIFICATION' as any,
         data: {
-          name,
+          message,
           valid: !error,
           error: prettifiedError,
           subscriptionId,

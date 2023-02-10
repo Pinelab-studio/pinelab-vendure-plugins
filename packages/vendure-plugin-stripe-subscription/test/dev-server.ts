@@ -55,11 +55,16 @@ export let clientSecret = 'test';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [StripeSubscriptionPlugin.ui],
-          devMode: true,
-        }),
+        app: process.env.COMPILE_ADMIN
+          ? compileUiExtensions({
+              outputPath: path.join(__dirname, '__admin-ui'),
+              extensions: [StripeSubscriptionPlugin.ui],
+              devMode: true,
+            })
+          : // otherwise used precompiled files. Might need to run once using devMode: false
+            {
+              path: path.join(__dirname, '__admin-ui/dist'),
+            },
       }),
     ],
   });

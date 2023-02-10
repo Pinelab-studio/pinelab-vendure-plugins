@@ -10,11 +10,13 @@ import {
   ChannelService,
   DefaultLogger,
   EventBus,
+  HistoryService,
   LogLevel,
   mergeConfig,
   Order,
   OrderPlacedEvent,
   OrderStateTransitionEvent,
+  RequestContext,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
@@ -772,6 +774,48 @@ describe('Order export plugin', function () {
       expect(parseInt(downpaymentRequest?.trial_end)).toBeGreaterThan(
         in2Months.getTime() / 1000
       );
+    });
+
+    it('Logs payments to order history', async () => {
+      await adminClient.fetch(
+        'http://localhost:3050/stripe-subscriptions/webhook',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            type: 'invoice.payment_failed',
+            data: {
+              object: {
+                customer: 'mock',
+                lines: {
+                  data: [
+                    {
+                      metadata: {
+                        orderCode: order!.code,
+                        channelToken: 'e2e-default-channel',
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          } as IncomingStripeWebhook),
+        }
+      );
+      const channel = await server.app.get(ChannelService).getDefaultChannel();
+      const ctx = new RequestContext({
+        apiType: 'admin',
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        channel,
+      });
+      const history = await server.app
+        .get(HistoryService)
+        .getHistoryForOrder(ctx, 1, false);
+      expect(
+        history.items.find(
+          (item) => item.data.message === 'Subscription payment failed'
+        )
+      ).toBeDefined();
     });
 
     it(`All OrderEvents have ctx.req`, () => {

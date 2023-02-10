@@ -11,6 +11,15 @@ export interface Object {
   customer: string;
   payment_method: string;
   metadata: Metadata;
+  subscription: string;
+  lines?: {
+    data: {
+      metadata: Metadata;
+      plan: {
+        amount: number;
+      };
+    }[];
+  };
 }
 
 export interface Data {
