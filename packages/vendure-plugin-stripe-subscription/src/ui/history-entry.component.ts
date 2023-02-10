@@ -1,23 +1,15 @@
 import { Component } from '@angular/core';
 import {
-  DataService,
-  NotificationService,
   OrderDetailFragment,
   OrderHistoryEntryComponent,
   TimelineDisplayType,
   TimelineHistoryEntry,
 } from '@vendure/admin-ui/core';
-import gql from 'graphql-tag';
 
 @Component({
   selector: 'stripe-subscription-notification-component',
   template: `
-    <span *ngIf="entry.data.valid">
-      Created {{ entry.data.name }} subscription</span
-    >
-    <span *ngIf="!entry.data.valid">
-      Failed to create {{ entry.data.name }} subscription
-    </span>
+    <span *ngIf="entry.data.valid">{{ entry.data.message }}</span>
     <a
       *ngIf="entry.data.subscriptionId"
       [href]="
