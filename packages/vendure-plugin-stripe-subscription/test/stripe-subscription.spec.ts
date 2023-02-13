@@ -15,6 +15,7 @@ import {
   mergeConfig,
   Order,
   OrderPlacedEvent,
+  OrderService,
   OrderStateTransitionEvent,
   RequestContext,
 } from '@vendure/core';
@@ -44,6 +45,7 @@ import {
   GET_PRICING,
   GET_PRICING_FOR_PRODUCT,
   GET_SCHEDULES,
+  getDefaultCtx,
   setShipping,
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
@@ -703,6 +705,16 @@ describe('Order export plugin', function () {
       expect(adminOrder?.state).toBe('PaymentSettled');
       // Expect 3 subs: paidInFull, weekly and downpayment
       expect(createdSubscriptions.length).toBe(3);
+      const ctx = await getDefaultCtx(server);
+      const internalOrder = await server.app.get(OrderService).findOne(ctx, 1);
+      const subscriptionIds: string[] = [];
+      internalOrder?.lines.forEach((line: OrderLineWithSubscriptionFields) => {
+        if (line.customFields.subscriptionIds) {
+          subscriptionIds.push(...line.customFields.subscriptionIds);
+        }
+      });
+      // Expect 3 saved stripe ID's
+      expect(subscriptionIds.length).toBe(3);
     });
 
     it('Created paid in full subscription', async () => {
@@ -801,13 +813,7 @@ describe('Order export plugin', function () {
           } as IncomingStripeWebhook),
         }
       );
-      const channel = await server.app.get(ChannelService).getDefaultChannel();
-      const ctx = new RequestContext({
-        apiType: 'admin',
-        isAuthorized: true,
-        authorizedAsOwnerOnly: false,
-        channel,
-      });
+      const ctx = await getDefaultCtx(server);
       const history = await server.app
         .get(HistoryService)
         .getHistoryForOrder(ctx, 1, false);

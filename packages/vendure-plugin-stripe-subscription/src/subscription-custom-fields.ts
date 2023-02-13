@@ -30,6 +30,7 @@ export interface OrderLineWithSubscriptionFields extends OrderLine {
   customFields: {
     downpayment?: number;
     startDate?: Date;
+    subscriptionIds?: string[];
   };
   productVariant: VariantWithSubscriptionFields;
 }
@@ -106,5 +107,21 @@ export const orderLineCustomFields: CustomFieldConfig[] = [
     public: true,
     nullable: true,
     ui: { tab: 'Subscription' },
+  },
+  {
+    name: 'subscriptionIds',
+    label: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Downpayment',
+      },
+    ],
+    type: 'string',
+    list: true,
+    public: false,
+    readonly: true,
+    internal: true,
+    nullable: true,
+    ui: { tab: 'Subscription', component: 'currency-form-input' },
   },
 ];

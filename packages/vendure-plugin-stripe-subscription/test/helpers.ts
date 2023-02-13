@@ -1,6 +1,8 @@
 import { gql } from 'graphql-tag';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import { SCHEDULE_FRAGMENT } from '../src/ui/queries';
+import { ChannelService, RequestContext } from '@vendure/core';
+import { TestServer } from '@vendure/testing/lib/test-server';
 
 export const ADD_ITEM_TO_ORDER = gql`
   mutation AddItemToOrder(
@@ -214,5 +216,15 @@ export async function setShipping(
   //@ts-ignore
   await shopClient.query(SET_SHIPPING_METHOD, {
     id: 1,
+  });
+}
+
+export async function getDefaultCtx(server: TestServer) {
+  const channel = await server.app.get(ChannelService).getDefaultChannel();
+  return new RequestContext({
+    apiType: 'admin',
+    isAuthorized: true,
+    authorizedAsOwnerOnly: false,
+    channel,
   });
 }
