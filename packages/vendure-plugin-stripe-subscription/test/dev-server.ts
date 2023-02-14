@@ -154,11 +154,29 @@ export let clientSecret = 'test';
       },
     ],
   });
-  console.log(`Added schedule variant`);
+  await adminClient.query(UPDATE_VARIANT, {
+    input: [
+      {
+        id: 2,
+        customFields: {
+          subscriptionScheduleId: 3,
+        },
+      },
+    ],
+  });
+  console.log(`Added schedule to variants`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
 
   // This is the variant for checkout
+  await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '2',
+    quantity: 1,
+    customFields: {
+      // downpayment: 40000,
+      // startDate: in3Days,
+    },
+  });
   let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,

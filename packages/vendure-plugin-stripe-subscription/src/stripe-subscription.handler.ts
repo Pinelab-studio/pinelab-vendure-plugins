@@ -6,6 +6,12 @@ import {
   PaymentMethodHandler,
   SettlePaymentResult,
 } from '@vendure/core';
+import { RequestContext } from '@vendure/core/dist/api/common/request-context';
+import { Order, Payment, PaymentMethod } from '@vendure/core/dist/entity';
+import {
+  CancelPaymentErrorResult,
+  CancelPaymentResult,
+} from '@vendure/core/dist/config/payment/payment-method-handler';
 
 export const stripeSubscriptionHandler = new PaymentMethodHandler({
   code: 'stripe-subscription',
@@ -77,6 +83,7 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     payment,
     args
   ): Promise<CreateRefundResult> {
+    console.log();
     throw Error(`Stripe subscriptions can not be refunded via Vendure`);
   },
 });

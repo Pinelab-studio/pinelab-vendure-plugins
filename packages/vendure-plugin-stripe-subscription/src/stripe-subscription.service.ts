@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService,
   ChannelService,
@@ -20,12 +21,14 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockMovementEvent,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from './constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
+  OrderLineWithSubscriptionFields,
   OrderWithSubscriptions,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
@@ -36,11 +39,14 @@ import {
 } from './ui/generated/graphql';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import { Request } from 'express';
+import { filter } from 'rxjs/operators';
 import {
   calculateSubscriptionPricing,
   getNextCyclesStartDate,
   printMoney,
 } from './pricing.helper';
+import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
+import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -79,8 +85,12 @@ export class StripeSubscriptionService {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'stripe-subscription',
       process: async ({ data, id }) => {
+        const ctx = RequestContext.deserialize(data.ctx);
+        const order = await this.orderService.findOneByCode(
+          ctx,
+          data.orderCode
+        );
         try {
-          const ctx = RequestContext.deserialize(data.ctx);
           await this.createSubscriptions(
             ctx,
             data.orderCode,
@@ -92,10 +102,65 @@ export class StripeSubscriptionService {
             `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
             loggerCtx
           );
+          if (order) {
+            await this.logHistoryEntry(
+              ctx,
+              order.id,
+              'Failed to create subscription',
+              error
+            );
+          }
           throw error;
         }
       },
     });
+    // Listen for stock cancellation or release events
+    this.eventBus
+      .ofType(StockMovementEvent)
+      .pipe(
+        filter(
+          (event) =>
+            event.type === StockMovementType.RELEASE ||
+            event.type === StockMovementType.CANCELLATION
+        )
+      )
+      .subscribe(async (event) => {
+        await Promise.all(
+          event.stockMovements.map((stockMovement) =>
+            this.cancelSubscriptionForOrderLine(event.ctx, stockMovement)
+          )
+        );
+      });
+  }
+
+  // TODO do in worker, because lots of async stuff
+  async cancelSubscriptionForOrderLine(
+    ctx: RequestContext,
+    stockMovement: StockMovement
+  ): Promise<void> {
+    if (!(stockMovement as Cancellation).orderItem) {
+      return Logger.warn(
+        `Can not cancel subscriptions of StockMovementEvent ${stockMovement.type}, because it has no orderItem`,
+        loggerCtx
+      );
+    }
+    const line = (stockMovement as Cancellation).orderItem
+      .line as OrderLineWithSubscriptionFields;
+    if (!line.customFields.subscriptionIds?.length) {
+      return Logger.info(
+        `OrderLine ${line.id} of ${line.order.code} has no subscriptionIds. Not cancelling anything... `,
+        loggerCtx
+      );
+    }
+    await this.entityHydrator.hydrate(ctx, line, { relations: ['order'] });
+    const { stripeClient } = await this.getStripeHandler(ctx, line.order.id);
+    for (const subscriptionId of line.customFields.subscriptionIds) {
+      await stripeClient.subscriptions.update(subscriptionId, {
+        cancel_at_period_end: true,
+      });
+      Logger.info(`Cancelled subscription ${subscriptionId}`);
+    }
+    // TODO log history event
   }
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
@@ -474,14 +539,6 @@ export class StripeSubscriptionService {
         throw e;
       }
     }
-  }
-
-  async cancelSubscriptionsForOrder(
-    ctx: RequestContext,
-    orderId: ID
-  ): Promise<number> {
-    Logger.info(`TODO delete subs for order ${orderId}`);
-    return 0;
   }
 
   async saveSubscriptionIds(
