@@ -22,10 +22,12 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
         id: ID!
         secret: String
         publicKey: String
+        defaultPhoneNr: String
       }
       input SendCloudConfigInput {
         secret: String
         publicKey: String
+        defaultPhoneNr: String
       }
       extend type Mutation {
         sendToSendCloud(orderId: ID!): Boolean!

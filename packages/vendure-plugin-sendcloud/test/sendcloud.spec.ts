@@ -117,16 +117,27 @@ describe('SendCloud', () => {
   it('Fails to update SendCloud config without permission', async () => {
     await adminClient.asAnonymousUser();
     await expect(
-      updateSendCloudConfig(adminClient, 'test-secret', 'test-public')
+      updateSendCloudConfig(
+        adminClient,
+        'test-secret',
+        'test-public',
+        '06123456789'
+      )
     ).rejects.toThrow('authorized');
   });
 
   it('Updates SendCloudConfig as superadmin', async () => {
     await adminClient.asSuperAdmin();
-    await updateSendCloudConfig(adminClient, 'test-secret', 'test-public');
+    await updateSendCloudConfig(
+      adminClient,
+      'test-secret',
+      'test-public',
+      '06123456789'
+    );
     const config = await getSendCloudConfig(adminClient);
     expect(config.secret).toBe('test-secret');
     expect(config.publicKey).toBe('test-public');
+    expect(config.defaultPhoneNr).toBe('06123456789');
     expect(config.id).toBeDefined();
   });
 

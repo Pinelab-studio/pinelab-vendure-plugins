@@ -40,6 +40,8 @@ AdminUiPlugin.init({
 8. Make sure you have the permission `SetSendCloudConfig`
 9. Go to `Settings > SendCloud`
 10. You can fill in your SendCloud `secret` and `public key` here and click save.
+11. Additionally, you can set a fallback phone number, for when a customer hasn't filled out one. A phone number is
+    required by Sendcloud in some cases.
 
 Now, when an order is placed, it will be automatically fulfilled and send to SendCloud.
 

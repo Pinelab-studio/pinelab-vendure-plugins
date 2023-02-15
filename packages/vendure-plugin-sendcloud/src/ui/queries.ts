@@ -6,6 +6,7 @@ export const UPDATE_SENDCLOUD_CONFIG = gql`
       id
       secret
       publicKey
+      defaultPhoneNr
     }
   }
 `;
@@ -16,6 +17,7 @@ export const GET_SENDCLOUD_CONFIG = gql`
       id
       secret
       publicKey
+      defaultPhoneNr
     }
   }
 `;

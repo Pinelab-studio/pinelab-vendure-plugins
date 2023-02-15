@@ -8,12 +8,13 @@ import { SendcloudConfigEntity } from '../src/api/sendcloud-config.entity';
 export async function updateSendCloudConfig(
   adminClient: SimpleGraphQLClient,
   secret: string,
-  publicKey: string
+  publicKey: string,
+  defaultPhoneNr: string
 ): Promise<SendcloudConfigEntity> {
   const { updateSendCloudConfig } = await adminClient.query(
     UPDATE_SENDCLOUD_CONFIG,
     {
-      input: { secret, publicKey },
+      input: { secret, publicKey, defaultPhoneNr },
     }
   );
   return updateSendCloudConfig;

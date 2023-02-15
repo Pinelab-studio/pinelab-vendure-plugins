@@ -215,6 +215,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     config: {
       secret: string;
       publicKey: string;
+      defaultPhoneNr: string;
     }
   ): Promise<SendcloudConfigEntity> {
     const repo = this.connection.getRepository(ctx, SendcloudConfigEntity);
@@ -223,12 +224,14 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       await repo.update(existing.id, {
         secret: config.secret,
         publicKey: config.publicKey,
+        defaultPhoneNr: config.defaultPhoneNr,
       });
     } else {
       await repo.insert({
         channelId: String(ctx.channelId),
         secret: config.secret,
         publicKey: config.publicKey,
+        defaultPhoneNr: config.defaultPhoneNr,
       });
     }
     return repo.findOneOrFail({ channelId: String(ctx.channelId) });
