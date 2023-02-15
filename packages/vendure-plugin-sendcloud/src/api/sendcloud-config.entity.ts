@@ -10,9 +10,12 @@ export class SendcloudConfigEntity extends VendureEntity {
   @Column({ unique: true })
   channelId!: string;
 
-  @Column()
+  @Column({ nullable: true })
   secret?: string;
 
-  @Column()
+  @Column({ nullable: true })
   publicKey?: string;
+
+  @Column({ nullable: true })
+  defaultPhoneNr?: string;
 }

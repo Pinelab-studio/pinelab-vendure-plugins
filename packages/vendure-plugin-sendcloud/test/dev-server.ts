@@ -83,7 +83,8 @@ require('dotenv').config();
   await updateSendCloudConfig(
     adminClient,
     process.env.SECRET!,
-    process.env.PUBLIC!
+    process.env.PUBLIC!,
+    '058123456789'
   );
   await createSettledOrder(shopClient, 1);
   console.log('created test order');

@@ -16,6 +16,17 @@ import { GET_SENDCLOUD_CONFIG, UPDATE_SENDCLOUD_CONFIG } from './queries';
             <vdr-form-field label="SendCloud public key" for="publicKey">
               <input id="publicKey" type="text" formControlName="publicKey" />
             </vdr-form-field>
+            <vdr-form-field
+              label="Fallback phone nr."
+              for="defaultPhoneNr"
+              tooltip="Used when a customer hasn't entered a phone number. Phone number is required in some cases by Sendcloud"
+            >
+              <input
+                id="defaultPhoneNr"
+                type="text"
+                formControlName="defaultPhoneNr"
+              />
+            </vdr-form-field>
             <button
               class="btn btn-primary"
               (click)="save()"
@@ -41,6 +52,7 @@ export class SendcloudComponent implements OnInit {
     this.form = this.formBuilder.group({
       secret: ['your-secret'],
       publicKey: ['your-public-key'],
+      defaultPhoneNr: ['your-phone-number'],
     });
   }
 
@@ -51,6 +63,7 @@ export class SendcloudComponent implements OnInit {
       .subscribe((config) => {
         this.form.controls['secret'].setValue(config.secret);
         this.form.controls['publicKey'].setValue(config.publicKey);
+        this.form.controls['defaultPhoneNr'].setValue(config.defaultPhoneNr);
       });
   }
 
@@ -60,7 +73,11 @@ export class SendcloudComponent implements OnInit {
         const formValue = this.form.value;
         await this.dataService
           .mutate(UPDATE_SENDCLOUD_CONFIG, {
-            input: { secret: formValue.secret, publicKey: formValue.publicKey },
+            input: {
+              secret: formValue.secret,
+              publicKey: formValue.publicKey,
+              defaultPhoneNr: formValue.defaultPhoneNr,
+            },
           })
           .toPromise();
       }

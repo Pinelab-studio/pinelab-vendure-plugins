@@ -9,7 +9,8 @@ import { SendcloudPluginOptions } from './types/sendcloud.types';
  */
 export function toParcelInput(
   order: Order,
-  options: SendcloudPluginOptions
+  options: SendcloudPluginOptions,
+  defaultPhoneNr?: string
 ): ParcelInput {
   const items = order.lines
     .filter((line) => line.quantity >= 1)
@@ -22,7 +23,7 @@ export function toParcelInput(
     city: order.shippingAddress.city!,
     postal_code: order.shippingAddress.postalCode!,
     country: order.shippingAddress.countryCode!.toUpperCase(),
-    telephone: order.customer?.phoneNumber,
+    telephone: order.customer?.phoneNumber || defaultPhoneNr,
     request_label: false,
     email: order.customer?.emailAddress,
     order_number: order.code,

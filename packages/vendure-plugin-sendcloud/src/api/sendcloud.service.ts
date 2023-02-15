@@ -120,11 +120,10 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
           ))
         );
       }
-      const parcelInput = toParcelInput(order, this.options);
+      const { client, defaultPhoneNr } = await this.getClient(ctx);
+      const parcelInput = toParcelInput(order, this.options, defaultPhoneNr);
       parcelInput.parcel_items.unshift(...additionalParcelItems);
-      const parcel = await (
-        await this.getClient(ctx)
-      ).createParcel(parcelInput);
+      const parcel = await client.createParcel(parcelInput);
       await this.logHistoryEntry(ctx, order.id);
       return parcel;
     } catch (err: unknown) {
@@ -215,6 +214,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     config: {
       secret: string;
       publicKey: string;
+      defaultPhoneNr: string;
     }
   ): Promise<SendcloudConfigEntity> {
     const repo = this.connection.getRepository(ctx, SendcloudConfigEntity);
@@ -223,12 +223,14 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       await repo.update(existing.id, {
         secret: config.secret,
         publicKey: config.publicKey,
+        defaultPhoneNr: config.defaultPhoneNr,
       });
     } else {
       await repo.insert({
         channelId: String(ctx.channelId),
         secret: config.secret,
         publicKey: config.publicKey,
+        defaultPhoneNr: config.defaultPhoneNr,
       });
     }
     return repo.findOneOrFail({ channelId: String(ctx.channelId) });
@@ -242,12 +244,17 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       .findOne({ channelId: String(ctx.channelId) });
   }
 
-  async getClient(ctx: RequestContext): Promise<SendcloudClient> {
+  async getClient(
+    ctx: RequestContext
+  ): Promise<{ client: SendcloudClient; defaultPhoneNr?: string }> {
     const config = await this.getConfig(ctx);
     if (!config || !config?.secret || !config.publicKey) {
       throw Error(`Incomplete config found for channel ${ctx.channel.token}`);
     }
-    return new SendcloudClient(config.publicKey, config.secret);
+    return {
+      client: new SendcloudClient(config.publicKey, config.secret),
+      defaultPhoneNr: config.defaultPhoneNr,
+    };
   }
 
   async createContext(channelToken: string): Promise<RequestContext> {

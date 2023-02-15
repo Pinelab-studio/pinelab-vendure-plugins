@@ -47,7 +47,8 @@ export class SendcloudResolver {
   @Allow(sendcloudPermission.Permission)
   async updateSendCloudConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: { secret: string; publicKey: string }
+    @Args('input')
+    input: { secret: string; publicKey: string; defaultPhoneNr: string }
   ): Promise<SendcloudConfigEntity> {
     return this.service.upsertConfig(ctx, input);
   }
