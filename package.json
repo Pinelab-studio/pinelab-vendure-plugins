@@ -50,6 +50,7 @@
           "limit-variant",
           "variant-bulk-update",
           "template",
+          "sort-by-popularity",
           "all-plugins"
         ]
       ]

@@ -14,7 +14,7 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler/';
-import { ExamplePlugin } from '../src';
+import { SortByPopularityPlugin } from '../src';
 
 require('dotenv').config();
 
@@ -23,19 +23,18 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      ExamplePlugin,
+      SortByPopularityPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*      TODO: uncomment this block to start the admin ui in dev mode
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, "__admin-ui"),
-          extensions: [
-            // TODO Add your plugin's UI here
-          ],
-          devMode: true
-        })*/
+        /*                app: compileUiExtensions({
+                    outputPath: path.join(__dirname, "__admin-ui"),
+                    extensions: [
+                        // TODO Add your plugin's UI here
+                    ],
+                    devMode: true
+                })*/
       }),
     ],
     apiOptions: {
