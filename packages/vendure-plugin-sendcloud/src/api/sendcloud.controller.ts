@@ -20,7 +20,7 @@ export class SendcloudController {
   ): Promise<unknown> {
     const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
     const ctx = await this.sendcloudService.createContext(channelToken);
-    const client = await this.sendcloudService.getClient(ctx);
+    const { client } = await this.sendcloudService.getClient(ctx);
     if (!client.isValidWebhook(rawBody, signature)) {
       Logger.warn(
         `Ignoring incoming webhook for channel ${channelToken}, because it has an invalid signature`,
