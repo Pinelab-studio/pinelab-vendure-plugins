@@ -149,7 +149,7 @@ export let clientSecret = 'test';
       {
         id: 1,
         customFields: {
-          subscriptionScheduleId: 3,
+          subscriptionScheduleId: 1,
         },
       },
     ],
@@ -158,6 +158,16 @@ export let clientSecret = 'test';
     input: [
       {
         id: 2,
+        customFields: {
+          subscriptionScheduleId: 2,
+        },
+      },
+    ],
+  });
+  await adminClient.query(UPDATE_VARIANT, {
+    input: [
+      {
+        id: 3,
         customFields: {
           subscriptionScheduleId: 3,
         },
@@ -169,16 +179,16 @@ export let clientSecret = 'test';
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
 
   // This is the variant for checkout
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
+  /*   await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '2',
     quantity: 1,
     customFields: {
       // downpayment: 40000,
       // startDate: in3Days,
     },
-  });
+  }); */
   let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '1',
+    productVariantId: '2',
     quantity: 1,
     customFields: {
       // downpayment: 40000,

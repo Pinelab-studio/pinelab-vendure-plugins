@@ -46,7 +46,7 @@ import {
   printMoney,
 } from './pricing.helper';
 import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
-import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
+import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -54,13 +54,21 @@ export interface StripeHandlerConfig {
   webhookSecret: string;
 }
 
-export interface JobData {
+interface CreateSubscriptionsJob {
   action: 'createSubscriptionsForOrder';
   ctx: SerializedRequestContext;
   orderCode: string;
   stripeCustomerId: string;
   stripePaymentMethodId: string;
 }
+
+interface CancelSubscriptionsJob {
+  action: 'cancelSubscriptionsForOrderline';
+  ctx: SerializedRequestContext;
+  orderLineId: ID;
+}
+
+export type JobData = CreateSubscriptionsJob | CancelSubscriptionsJob;
 
 @Injectable()
 export class StripeSubscriptionService {
@@ -86,31 +94,36 @@ export class StripeSubscriptionService {
       name: 'stripe-subscription',
       process: async ({ data, id }) => {
         const ctx = RequestContext.deserialize(data.ctx);
-        const order = await this.orderService.findOneByCode(
-          ctx,
-          data.orderCode
-        );
-        try {
-          await this.createSubscriptions(
+        if (data.action === 'cancelSubscriptionsForOrderline') {
+          this.cancelSubscriptionForOrderLine(ctx, data.orderLineId);
+        } else if (data.action === 'createSubscriptionsForOrder') {
+          const order = await this.orderService.findOneByCode(
             ctx,
             data.orderCode,
-            data.stripeCustomerId,
-            data.stripePaymentMethodId
+            []
           );
-        } catch (error) {
-          Logger.warn(
-            `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
-            loggerCtx
-          );
-          if (order) {
-            await this.logHistoryEntry(
+          try {
+            await this.createSubscriptions(
               ctx,
-              order.id,
-              'Failed to create subscription',
-              error
+              data.orderCode,
+              data.stripeCustomerId,
+              data.stripePaymentMethodId
             );
+          } catch (error) {
+            Logger.warn(
+              `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
+              loggerCtx
+            );
+            if (order) {
+              await this.logHistoryEntry(
+                ctx,
+                order.id,
+                'Failed to create subscription',
+                error
+              );
+            }
+            throw error;
           }
-          throw error;
         }
       },
     });
@@ -118,6 +131,7 @@ export class StripeSubscriptionService {
     this.eventBus
       .ofType(StockMovementEvent)
       .pipe(
+        // Filter by event type
         filter(
           (event) =>
             event.type === StockMovementType.RELEASE ||
@@ -125,42 +139,78 @@ export class StripeSubscriptionService {
         )
       )
       .subscribe(async (event) => {
+        const orderLinesWithSubscriptions = (
+          event.stockMovements as (Cancellation | Release)[]
+        )
+          .map(
+            (stockMovement) =>
+              stockMovement.orderItem.line as OrderLineWithSubscriptionFields
+          )
+          // Filter out non-sub orderlines
+          .filter((orderLine) => orderLine.customFields.subscriptionIds);
         await Promise.all(
-          event.stockMovements.map((stockMovement) =>
-            this.cancelSubscriptionForOrderLine(event.ctx, stockMovement)
+          // Push jobs
+          orderLinesWithSubscriptions.map((line) =>
+            this.jobQueue.add({
+              ctx: event.ctx.serialize(),
+              action: 'cancelSubscriptionsForOrderline',
+              orderLineId: line.id,
+            })
           )
         );
       });
   }
 
-  // TODO do in worker, because lots of async stuff
   async cancelSubscriptionForOrderLine(
     ctx: RequestContext,
-    stockMovement: StockMovement
+    orderLineId: ID
   ): Promise<void> {
-    if (!(stockMovement as Cancellation).orderItem) {
-      return Logger.warn(
-        `Can not cancel subscriptions of StockMovementEvent ${stockMovement.type}, because it has no orderItem`,
-        loggerCtx
-      );
+    const order = (await this.orderService.findOneByOrderLineId(
+      ctx,
+      orderLineId,
+      ['lines']
+    )) as OrderWithSubscriptions | undefined;
+    if (!order) {
+      throw Error(`Order for OrderLine ${orderLineId} not found`);
     }
-    const line = (stockMovement as Cancellation).orderItem
-      .line as OrderLineWithSubscriptionFields;
-    if (!line.customFields.subscriptionIds?.length) {
+    const line = order?.lines.find((l) => l.id == orderLineId);
+    if (!line?.customFields.subscriptionIds?.length) {
       return Logger.info(
-        `OrderLine ${line.id} of ${line.order.code} has no subscriptionIds. Not cancelling anything... `,
+        `OrderLine ${orderLineId} of ${orderLineId} has no subscriptionIds. Not cancelling anything... `,
         loggerCtx
       );
     }
     await this.entityHydrator.hydrate(ctx, line, { relations: ['order'] });
     const { stripeClient } = await this.getStripeHandler(ctx, line.order.id);
     for (const subscriptionId of line.customFields.subscriptionIds) {
-      await stripeClient.subscriptions.update(subscriptionId, {
-        cancel_at_period_end: true,
-      });
-      Logger.info(`Cancelled subscription ${subscriptionId}`);
+      try {
+        await stripeClient.subscriptions.update(subscriptionId, {
+          cancel_at_period_end: true,
+        });
+        Logger.info(`Cancelled subscription ${subscriptionId}`);
+        await this.logHistoryEntry(
+          ctx,
+          order!.id,
+          'Cancelled subscription',
+          undefined,
+          undefined,
+          subscriptionId
+        );
+      } catch (e: unknown) {
+        Logger.error(
+          `Failed to cancel subscription ${subscriptionId}`,
+          loggerCtx
+        );
+        await this.logHistoryEntry(
+          ctx,
+          order.id,
+          'Failed to cancel subscription',
+          e,
+          undefined,
+          subscriptionId
+        );
+      }
     }
-    // TODO log history event
   }
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {

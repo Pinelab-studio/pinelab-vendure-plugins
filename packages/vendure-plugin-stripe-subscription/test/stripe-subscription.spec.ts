@@ -49,6 +49,7 @@ import {
   setShipping,
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
+  REMOVE_ORDERLINE,
 } from './helpers';
 // @ts-ignore
 import nock from 'nock';
@@ -674,11 +675,11 @@ describe('Order export plugin', function () {
           createdSubscriptions.push(body);
           return true;
         })
+        .times(3)
         .reply(200, {
           id: 'mock-sub',
           status: 'active',
-        })
-        .persist(true);
+        });
       let adminOrder = await getOrder(adminClient as any, order!.id as string);
       await adminClient.fetch(
         'http://localhost:3050/stripe-subscriptions/webhook',
@@ -822,6 +823,33 @@ describe('Order export plugin', function () {
           (item) => item.data.message === 'Subscription payment failed'
         )
       ).toBeDefined();
+    });
+
+    it('Should cancel subscription', async () => {
+      // Mock API
+      let subscriptionBody: any[] = [];
+      nock('https://api.stripe.com')
+        .post(/subscriptions*/, (body) => {
+          subscriptionBody.push(body);
+          return true;
+        })
+        .reply(200, {});
+      await adminClient.query(REMOVE_ORDERLINE, {
+        input: {
+          lines: [
+            {
+              orderLineId: 'T_1',
+              quantity: 1,
+            },
+          ],
+          orderId: 'T_1',
+          reason: 'Customer request',
+          cancelShipping: false,
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 4000)); // Await worker processing
+      console.log(subscriptionBody);
+      expect(subscriptionBody[0].cancel_at_period_end).toBe('true');
     });
 
     it(`All OrderEvents have ctx.req`, () => {

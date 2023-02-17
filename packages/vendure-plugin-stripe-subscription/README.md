@@ -95,6 +95,10 @@ _After order settlement you can view the subscription details on the order histo
 ![](docs/sequence.png)  
 _Subscriptions are created in the background, after a customer has finished the checkout_
 
+## Canceling subscriptions
+
+You can cancel a subscription by canceling the corresponding order line of an order. The subscription will be canceled before the next billing cycle using Stripe's `cancel_at_period_end` parameter.
+
 # Advanced features
 
 Features you can use, but don't have to!

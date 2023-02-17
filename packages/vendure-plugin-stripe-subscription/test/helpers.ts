@@ -27,6 +27,14 @@ export const ADD_ITEM_TO_ORDER = gql`
   }
 `;
 
+export const REMOVE_ORDERLINE = gql`
+  mutation CancelOrder($input: CancelOrderInput!) {
+    cancelOrder(input: $input) {
+      __typename
+    }
+  }
+`;
+
 export const REMOVE_ALL_ORDERLINES = gql`
   mutation {
     removeAllOrderLines {
