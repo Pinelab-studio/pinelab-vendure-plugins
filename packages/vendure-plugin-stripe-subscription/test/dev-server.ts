@@ -195,6 +195,22 @@ export let clientSecret = 'test';
       // startDate: in3Days,
     },
   });
+  await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '2',
+    quantity: 1,
+    customFields: {
+      // downpayment: 40000,
+      // startDate: in3Days,
+    },
+  });
+  /*     await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '1',
+    quantity: 1,
+    customFields: {
+      // downpayment: 40000,
+      // startDate: in3Days,
+    },
+  }); */
   await setShipping(shopClient);
   console.log(`Prepared order ${order?.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(

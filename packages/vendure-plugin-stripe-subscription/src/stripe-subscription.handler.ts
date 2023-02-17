@@ -5,6 +5,7 @@ import {
   LanguageCode,
   PaymentMethodHandler,
   SettlePaymentResult,
+  UserInputError,
 } from '@vendure/core';
 import { RequestContext } from '@vendure/core/dist/api/common/request-context';
 import { Order, Payment, PaymentMethod } from '@vendure/core/dist/entity';
@@ -12,7 +13,13 @@ import {
   CancelPaymentErrorResult,
   CancelPaymentResult,
 } from '@vendure/core/dist/config/payment/payment-method-handler';
+import {
+  OrderLineWithSubscriptionFields,
+  OrderWithSubscriptions,
+} from './subscription-custom-fields';
+import { StripeSubscriptionService } from './stripe-subscription.service';
 
+let service: StripeSubscriptionService;
 export const stripeSubscriptionHandler = new PaymentMethodHandler({
   code: 'stripe-subscription',
 
@@ -67,7 +74,6 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
       metadata,
     };
   },
-
   settlePayment(): SettlePaymentResult {
     // Payments will be settled via webhook
     return {
@@ -83,7 +89,37 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     payment,
     args
   ): Promise<CreateRefundResult> {
-    console.log();
+    console.log(input, amount, payment, args);
+    const subscriptionLines: OrderLineWithSubscriptionFields[] = [];
+    let nonSubscriptionLines: OrderLineWithSubscriptionFields[] = [];
+
+    for (const inputLine of input.lines) {
+      const orderLine = order.lines.find(
+        (line) => line.id === inputLine.orderLineId
+      ) as OrderLineWithSubscriptionFields | undefined;
+      if (
+        orderLine?.customFields.subscriptionIds &&
+        orderLine.quantity !== inputLine.quantity
+      ) {
+        throw new UserInputError(
+          `Can not refund a subset of the quantity of an order line with a subscription`
+        );
+      } else if (orderLine?.customFields.subscriptionIds) {
+        subscriptionLines.push(orderLine);
+        continue;
+      } else if (orderLine) {
+        nonSubscriptionLines.push(orderLine);
+      }
+    }
+    if (!subscriptionLines.length && !nonSubscriptionLines.length) {
+      throw new UserInputError(
+        `No order lines with subscriptions found for refund`
+      );
+    }
+
+    // TODO check if subscriptions already have multiple payments done
+    // TODO refund non
+
     throw Error(`Stripe subscriptions can not be refunded via Vendure`);
   },
 });

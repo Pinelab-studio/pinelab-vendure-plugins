@@ -99,6 +99,12 @@ _Subscriptions are created in the background, after a customer has finished the 
 
 You can cancel a subscription by canceling the corresponding order line of an order. The subscription will be canceled before the next billing cycle using Stripe's `cancel_at_period_end` parameter.
 
+## Refunding subscriptions
+
+By default, you can only refund subscriptions BEFORE any recurring charges have been made, so after the initial payment intent and before the first billing cycle. After the first billing occured, refunding will throw an error.
+
+When a subscription order line has a quantity higher than 1, and only 1 of multiple subscriptions should be refunded, the plugin throws an error. This is because there is no way of knowing which subscription to refund cancel.
+
 # Advanced features
 
 Features you can use, but don't have to!
