@@ -15,6 +15,7 @@ import {
   Logger,
   Order,
   OrderLine,
+  OrderLineEvent,
   OrderService,
   OrderStateTransitionError,
   PaymentMethodService,
@@ -47,6 +48,7 @@ import {
 } from './pricing.helper';
 import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
+import { randomUUID } from 'crypto';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -127,6 +129,21 @@ export class StripeSubscriptionService {
         }
       },
     });
+    // Add unique hash for subscriptions, so Vendure creates a new order line
+    this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
+      const orderLine = event.orderLine as OrderLineWithSubscriptionFields;
+      if (
+        event.type === 'created' &&
+        orderLine.productVariant.customFields.subscriptionSchedule
+      ) {
+        await this.connection
+          .getRepository(event.ctx, OrderLine)
+          .update(
+            { id: event.orderLine.id },
+            { customFields: { subscriptionHash: randomUUID() } }
+          );
+      }
+    });
     // Listen for stock cancellation or release events
     this.eventBus
       .ofType(StockMovementEvent)
@@ -191,7 +208,7 @@ export class StripeSubscriptionService {
         await this.logHistoryEntry(
           ctx,
           order!.id,
-          'Cancelled subscription',
+          `Cancelled subscription ${subscriptionId}`,
           undefined,
           undefined,
           subscriptionId
@@ -204,7 +221,7 @@ export class StripeSubscriptionService {
         await this.logHistoryEntry(
           ctx,
           order.id,
-          'Failed to cancel subscription',
+          `Failed to cancel ${subscriptionId}`,
           e,
           undefined,
           subscriptionId
@@ -439,7 +456,9 @@ export class StripeSubscriptionService {
         `Failed to create subscription for ${stripeCustomerId} because the customer doesn't exist in Stripe`
       );
     }
+    let orderLineCount = 0;
     for (const orderLine of order.lines) {
+      orderLineCount++; // Start with 1
       const createdSubscriptions: string[] = [];
       const pricing = await this.getPricing(ctx, {
         startDate: orderLine.customFields.startDate,
@@ -449,10 +468,7 @@ export class StripeSubscriptionService {
       if (pricing.schedule.paidUpFront && !pricing.schedule.autoRenew) {
         continue; // Paid up front without autoRenew doesn't need a subscription
       }
-      Logger.info(
-        `Creating subscriptions with pricing ${JSON.stringify(pricing)}`,
-        loggerCtx
-      );
+      Logger.info(`Creating subscriptions for ${orderCode}`, loggerCtx);
       try {
         const product = await stripeClient.products.create({
           name: `${orderLine.productVariant.name} (${order.code})`,
@@ -503,7 +519,7 @@ export class StripeSubscriptionService {
           await this.logHistoryEntry(
             ctx,
             order.id,
-            'Created subscription',
+            `Created subscription for line ${orderLineCount}`,
             undefined,
             pricing,
             recurringSubscription.id
@@ -576,7 +592,7 @@ export class StripeSubscriptionService {
             await this.logHistoryEntry(
               ctx,
               order.id,
-              'Created downpayment subscription',
+              `Created downpayment subscription for line ${orderLineCount}`,
               undefined,
               pricing,
               downpaymentSubscription.id

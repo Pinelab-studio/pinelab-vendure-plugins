@@ -3,6 +3,7 @@ import {
   CreateRefundResult,
   Injector,
   LanguageCode,
+  Logger,
   PaymentMethodHandler,
   SettlePaymentResult,
   UserInputError,
@@ -18,6 +19,9 @@ import {
   OrderWithSubscriptions,
 } from './subscription-custom-fields';
 import { StripeSubscriptionService } from './stripe-subscription.service';
+import { StripeClient } from './stripe.client';
+import { loggerCtx } from './constants';
+import { printMoney } from './pricing.helper';
 
 let service: StripeSubscriptionService;
 export const stripeSubscriptionHandler = new PaymentMethodHandler({
@@ -53,7 +57,9 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     },
   },
 
-  init(injector: Injector) {},
+  init(injector: Injector) {
+    service = injector.get(StripeSubscriptionService);
+  },
 
   async createPayment(
     ctx,
@@ -70,7 +76,7 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     return {
       amount: metadata.amount,
       state: 'Settled',
-      transactionId: metadata.subscriptionId,
+      transactionId: metadata.setupIntentId,
       metadata,
     };
   },
@@ -89,37 +95,25 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     payment,
     args
   ): Promise<CreateRefundResult> {
-    console.log(input, amount, payment, args);
-    const subscriptionLines: OrderLineWithSubscriptionFields[] = [];
-    let nonSubscriptionLines: OrderLineWithSubscriptionFields[] = [];
-
-    for (const inputLine of input.lines) {
-      const orderLine = order.lines.find(
-        (line) => line.id === inputLine.orderLineId
-      ) as OrderLineWithSubscriptionFields | undefined;
-      if (
-        orderLine?.customFields.subscriptionIds &&
-        orderLine.quantity !== inputLine.quantity
-      ) {
-        throw new UserInputError(
-          `Can not refund a subset of the quantity of an order line with a subscription`
-        );
-      } else if (orderLine?.customFields.subscriptionIds) {
-        subscriptionLines.push(orderLine);
-        continue;
-      } else if (orderLine) {
-        nonSubscriptionLines.push(orderLine);
-      }
-    }
-    if (!subscriptionLines.length && !nonSubscriptionLines.length) {
-      throw new UserInputError(
-        `No order lines with subscriptions found for refund`
-      );
-    }
-
-    // TODO check if subscriptions already have multiple payments done
-    // TODO refund non
-
-    throw Error(`Stripe subscriptions can not be refunded via Vendure`);
+    const { stripeClient } = await service.getStripeHandler(ctx, order.id);
+    const refund = await stripeClient.refunds.create({
+      payment_intent: payment.transactionId,
+      amount,
+    });
+    Logger.info(
+      `Refund of ${printMoney(amount)} created for payment ${
+        payment.transactionId
+      } for order ${order.id}`,
+      loggerCtx
+    );
+    await service.logHistoryEntry(
+      ctx,
+      order.id,
+      `Created refund of ${printMoney(amount)}`
+    );
+    return {
+      state: 'Settled',
+      metadata: refund,
+    };
   },
 });

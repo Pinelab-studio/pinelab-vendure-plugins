@@ -101,9 +101,7 @@ You can cancel a subscription by canceling the corresponding order line of an or
 
 ## Refunding subscriptions
 
-By default, you can only refund subscriptions BEFORE any recurring charges have been made, so after the initial payment intent and before the first billing cycle. After the first billing occured, refunding will throw an error.
-
-When a subscription order line has a quantity higher than 1, and only 1 of multiple subscriptions should be refunded, the plugin throws an error. This is because there is no way of knowing which subscription to refund cancel.
+Only initial payments of subscriptions can be refunded. Any future payments should be refunded via the Stripe dashboard.
 
 # Advanced features
 

@@ -35,6 +35,14 @@ export const REMOVE_ORDERLINE = gql`
   }
 `;
 
+export const REFUND_ORDER = gql`
+  mutation RefundOrder($input: RefundOrderInput!) {
+    refundOrder(input: $input) {
+      __typename
+    }
+  }
+`;
+
 export const REMOVE_ALL_ORDERLINES = gql`
   mutation {
     removeAllOrderLines {

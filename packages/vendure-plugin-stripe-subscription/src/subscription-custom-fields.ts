@@ -31,6 +31,7 @@ export interface OrderLineWithSubscriptionFields extends OrderLine {
     downpayment?: number;
     startDate?: Date;
     subscriptionIds?: string[];
+    subscriptionHash?: string;
   };
   productVariant: VariantWithSubscriptionFields;
 }
@@ -122,6 +123,26 @@ export const orderLineCustomFields: CustomFieldConfig[] = [
     readonly: true,
     internal: true,
     nullable: true,
-    ui: { tab: 'Subscription', component: 'currency-form-input' },
+  },
+  {
+    name: 'subscriptionHash',
+    label: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Subscription hash',
+      },
+    ],
+    description: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Unique hash to separate order lines',
+      },
+    ],
+    type: 'string',
+    list: true,
+    public: false,
+    readonly: true,
+    internal: true,
+    nullable: true,
   },
 ];

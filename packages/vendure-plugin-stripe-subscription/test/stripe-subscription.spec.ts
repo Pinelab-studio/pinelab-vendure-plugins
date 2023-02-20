@@ -50,6 +50,7 @@ import {
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
   REMOVE_ORDERLINE,
+  REFUND_ORDER,
 } from './helpers';
 // @ts-ignore
 import nock from 'nock';
@@ -827,10 +828,10 @@ describe('Order export plugin', function () {
 
     it('Should cancel subscription', async () => {
       // Mock API
-      let subscriptionBody: any[] = [];
+      let subscriptionRequests: any[] = [];
       nock('https://api.stripe.com')
         .post(/subscriptions*/, (body) => {
-          subscriptionBody.push(body);
+          subscriptionRequests.push(body);
           return true;
         })
         .reply(200, {});
@@ -848,8 +849,33 @@ describe('Order export plugin', function () {
         },
       });
       await new Promise((resolve) => setTimeout(resolve, 4000)); // Await worker processing
-      console.log(subscriptionBody);
-      expect(subscriptionBody[0].cancel_at_period_end).toBe('true');
+      expect(subscriptionRequests[0].cancel_at_period_end).toBe('true');
+    });
+
+    it('Should refund subscription', async () => {
+      // Mock API
+      let refundRequests: any = [];
+      nock('https://api.stripe.com')
+        .post(/refunds*/, (body) => {
+          refundRequests.push(body);
+          return true;
+        })
+        .reply(200, {});
+      await adminClient.query(REFUND_ORDER, {
+        input: {
+          lines: [
+            {
+              orderLineId: 'T_1',
+              quantity: 1,
+            },
+          ],
+          reason: 'Customer request',
+          shipping: 0,
+          adjustment: 0,
+          paymentId: 'T_1',
+        },
+      });
+      expect(refundRequests[0].amount).toBeDefined();
     });
 
     it(`All OrderEvents have ctx.req`, () => {
