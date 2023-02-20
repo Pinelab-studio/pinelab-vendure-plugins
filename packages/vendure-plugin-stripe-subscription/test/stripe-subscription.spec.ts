@@ -848,7 +848,7 @@ describe('Order export plugin', function () {
           cancelShipping: false,
         },
       });
-      await new Promise((resolve) => setTimeout(resolve, 4000)); // Await worker processing
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Await worker processing
       expect(subscriptionRequests[0].cancel_at_period_end).toBe('true');
     });
 
