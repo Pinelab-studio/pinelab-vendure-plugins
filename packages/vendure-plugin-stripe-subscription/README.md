@@ -14,7 +14,7 @@ A few things you should know before getting started:
   subscriptions. An example of a schedule is
   `Billed every first of the month, for 6 months`.
 - Schedules have a fixed duration. Currently, they do autorenew after this duration. The duration is used to calculate
-  prorations and downpayment deductions. Read more on this under [Advanced features](#advanced-features)
+  prorations and down payment deductions. Read more on this under [Advanced features](#advanced-features)
 - By connecting a `Schedule` to a ProductVariant, you turn the variant into a subscription. The price of the variant is
   the price a customer pays **per interval**.
 
@@ -79,7 +79,7 @@ plugins: [
 4. Use this token to display the Stripe form on your storefront. See
    the [Stripe docs](https://stripe.com/docs/payments/accept-a-payment?platform=web&ui=elements#set-up-stripe.js) on how
    to accomplish that.
-5. During the checkout the user is only charged any potential downpayment or proration (
+5. During the checkout the user is only charged any potential down payment or proration (
    see [Advanced features](#advanced-features)). The recurring charges will occur on the start of the schedule. For
    paid-up-front schedules the customer pays the full amount during checkout
 6. Have the customer fill out his payment details.
@@ -107,11 +107,22 @@ Only initial payments of subscriptions can be refunded. Any future payments shou
 
 Features you can use, but don't have to!
 
+## Down payments
+
+You can define down payments to a schedule, to have a customer pay a certain amount up front. The paid amount is then deducted from the recurring charges.
+
+Example:
+We have a schedule + variant where the customer normally pays $90 a month for 6 months. We set a down payment of $180, so the customer pays $180 during checkout.
+The customer will now be billed $60 a month, because he already paid $180 up front: $180 / 6 months = $30, so we deduct the $30 from every month.
+
+A down payment is created as separate subscription in Stripe. In the example above, a subscription will be created that charges the customer $180 every 6 months,
+because the down payment needs to be paid again after renewal
+
 ## Paid up front
 
 Schedules can be defined as 'Paid up front'. This means the customer will have to pay the total value of the
-subscription during the checkout. Paid-up-front subscriptions can not have downpayments, because it's already one big
-downpayment.
+subscription during the checkout. Paid-up-front subscriptions can not have down payments, because it's already one big
+down payment.
 
 Example:
 ![](docs/schedule-paid-up-front.png)
@@ -153,24 +164,24 @@ mutation {
 }
 ```
 
-## Storefront defined downpayments
+## Storefront defined down payments
 
-A customer can also choose to pay a higher downpayment, to lower the recurring costs of a subscription.
+A customer can also choose to pay a higher down payment, to lower the recurring costs of a subscription.
 
 Example:
 A customer buys a subscription that has a duration of 6 months, and costs $90 per month. The customer can choose to pay
-a downpayment of $270,- during checkout to lower to monthly price. The $270 downpayment will be deducted from the
-monthly price: 270 / 6 months = $45. With the downpayment of $270, customer will now be billed 90 - 45 = $45,- per month
+a down payment of $270,- during checkout to lower to monthly price. The $270 down payment will be deducted from the
+monthly price: 270 / 6 months = $45. With the down payment of $270, customer will now be billed 90 - 45 = $45,- per month
 for the next 6 months.
 
-Downpayments can be added via a custom field on the order line:
+Down payments can be added via a custom field on the order line:
 
 ```graphql
 mutation {
   addItemToOrder(
     productVariantId: 1
     quantity: 1
-    customFields: { downpayment: 27000 }
+    customFields: { down payment: 27000 }
   ) {
     ... on Order {
       id
@@ -179,7 +190,7 @@ mutation {
 }
 ```
 
-Downpayments can never be lower that the amount set in the schedule, and never higher than the total value of a
+Down payments can never be lower that the amount set in the schedule, and never higher than the total value of a
 subscription.
 
 ### Preview pricing calculations
@@ -193,7 +204,7 @@ You can preview the pricing model of a subscription without adding it to cart wi
       productVariantId: 1
       # Optional dynamic start date
       startDate: "2022-12-25T00:00:00.000Z"
-      # Optional dynamic downpayment
+      # Optional dynamic down payment
       downpayment: 1200
     }
   ) {
