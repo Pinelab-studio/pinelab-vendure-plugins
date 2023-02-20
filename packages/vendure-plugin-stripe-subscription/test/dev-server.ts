@@ -149,24 +149,68 @@ export let clientSecret = 'test';
       {
         id: 1,
         customFields: {
+          subscriptionScheduleId: 1,
+        },
+      },
+    ],
+  });
+  await adminClient.query(UPDATE_VARIANT, {
+    input: [
+      {
+        id: 2,
+        customFields: {
+          subscriptionScheduleId: 2,
+        },
+      },
+    ],
+  });
+  await adminClient.query(UPDATE_VARIANT, {
+    input: [
+      {
+        id: 3,
+        customFields: {
           subscriptionScheduleId: 3,
         },
       },
     ],
   });
-  console.log(`Added schedule variant`);
+  console.log(`Added schedule to variants`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
 
   // This is the variant for checkout
+  /*   await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '2',
+    quantity: 1,
+    customFields: {
+      // downpayment: 40000,
+      // startDate: in3Days,
+    },
+  }); */
   let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '1',
+    productVariantId: '2',
     quantity: 1,
     customFields: {
       // downpayment: 40000,
       // startDate: in3Days,
     },
   });
+  await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '2',
+    quantity: 1,
+    customFields: {
+      // downpayment: 40000,
+      // startDate: in3Days,
+    },
+  });
+  /*     await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '1',
+    quantity: 1,
+    customFields: {
+      // downpayment: 40000,
+      // startDate: in3Days,
+    },
+  }); */
   await setShipping(shopClient);
   console.log(`Prepared order ${order?.code}`);
   const { createStripeSubscriptionIntent: secret } = await shopClient.query(
