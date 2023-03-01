@@ -15,6 +15,7 @@ import {
   mergeConfig,
   Order,
   OrderPlacedEvent,
+  OrderService,
   OrderStateTransitionEvent,
   RequestContext,
 } from '@vendure/core';
@@ -44,9 +45,12 @@ import {
   GET_PRICING,
   GET_PRICING_FOR_PRODUCT,
   GET_SCHEDULES,
+  getDefaultCtx,
   setShipping,
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
+  REMOVE_ORDERLINE,
+  REFUND_ORDER,
 } from './helpers';
 // @ts-ignore
 import nock from 'nock';
@@ -672,11 +676,11 @@ describe('Order export plugin', function () {
           createdSubscriptions.push(body);
           return true;
         })
+        .times(3)
         .reply(200, {
           id: 'mock-sub',
           status: 'active',
-        })
-        .persist(true);
+        });
       let adminOrder = await getOrder(adminClient as any, order!.id as string);
       await adminClient.fetch(
         'http://localhost:3050/stripe-subscriptions/webhook',
@@ -703,6 +707,16 @@ describe('Order export plugin', function () {
       expect(adminOrder?.state).toBe('PaymentSettled');
       // Expect 3 subs: paidInFull, weekly and downpayment
       expect(createdSubscriptions.length).toBe(3);
+      const ctx = await getDefaultCtx(server);
+      const internalOrder = await server.app.get(OrderService).findOne(ctx, 1);
+      const subscriptionIds: string[] = [];
+      internalOrder?.lines.forEach((line: OrderLineWithSubscriptionFields) => {
+        if (line.customFields.subscriptionIds) {
+          subscriptionIds.push(...line.customFields.subscriptionIds);
+        }
+      });
+      // Expect 3 saved stripe ID's
+      expect(subscriptionIds.length).toBe(3);
     });
 
     it('Created paid in full subscription', async () => {
@@ -801,13 +815,7 @@ describe('Order export plugin', function () {
           } as IncomingStripeWebhook),
         }
       );
-      const channel = await server.app.get(ChannelService).getDefaultChannel();
-      const ctx = new RequestContext({
-        apiType: 'admin',
-        isAuthorized: true,
-        authorizedAsOwnerOnly: false,
-        channel,
-      });
+      const ctx = await getDefaultCtx(server);
       const history = await server.app
         .get(HistoryService)
         .getHistoryForOrder(ctx, 1, false);
@@ -816,6 +824,58 @@ describe('Order export plugin', function () {
           (item) => item.data.message === 'Subscription payment failed'
         )
       ).toBeDefined();
+    });
+
+    it('Should cancel subscription', async () => {
+      // Mock API
+      let subscriptionRequests: any[] = [];
+      nock('https://api.stripe.com')
+        .post(/subscriptions*/, (body) => {
+          subscriptionRequests.push(body);
+          return true;
+        })
+        .reply(200, {});
+      await adminClient.query(REMOVE_ORDERLINE, {
+        input: {
+          lines: [
+            {
+              orderLineId: 'T_1',
+              quantity: 1,
+            },
+          ],
+          orderId: 'T_1',
+          reason: 'Customer request',
+          cancelShipping: false,
+        },
+      });
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Await worker processing
+      expect(subscriptionRequests[0].cancel_at_period_end).toBe('true');
+    });
+
+    it('Should refund subscription', async () => {
+      // Mock API
+      let refundRequests: any = [];
+      nock('https://api.stripe.com')
+        .post(/refunds*/, (body) => {
+          refundRequests.push(body);
+          return true;
+        })
+        .reply(200, {});
+      await adminClient.query(REFUND_ORDER, {
+        input: {
+          lines: [
+            {
+              orderLineId: 'T_1',
+              quantity: 1,
+            },
+          ],
+          reason: 'Customer request',
+          shipping: 0,
+          adjustment: 0,
+          paymentId: 'T_1',
+        },
+      });
+      expect(refundRequests[0].amount).toBeDefined();
     });
 
     it(`All OrderEvents have ctx.req`, () => {

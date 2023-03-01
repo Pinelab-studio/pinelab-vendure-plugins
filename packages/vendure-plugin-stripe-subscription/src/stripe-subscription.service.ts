@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService,
   ChannelService,
@@ -13,17 +14,22 @@ import {
   LanguageCode,
   Logger,
   Order,
+  OrderLine,
+  OrderLineEvent,
   OrderService,
   OrderStateTransitionError,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockMovementEvent,
+  TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from './constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
+  OrderLineWithSubscriptionFields,
   OrderWithSubscriptions,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
@@ -34,11 +40,15 @@ import {
 } from './ui/generated/graphql';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import { Request } from 'express';
+import { filter } from 'rxjs/operators';
 import {
   calculateSubscriptionPricing,
   getNextCyclesStartDate,
   printMoney,
 } from './pricing.helper';
+import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
+import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
+import { randomUUID } from 'crypto';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -46,13 +56,21 @@ export interface StripeHandlerConfig {
   webhookSecret: string;
 }
 
-export interface JobData {
+interface CreateSubscriptionsJob {
   action: 'createSubscriptionsForOrder';
   ctx: SerializedRequestContext;
   orderCode: string;
   stripeCustomerId: string;
   stripePaymentMethodId: string;
 }
+
+interface CancelSubscriptionsJob {
+  action: 'cancelSubscriptionsForOrderline';
+  ctx: SerializedRequestContext;
+  orderLineId: ID;
+}
+
+export type JobData = CreateSubscriptionsJob | CancelSubscriptionsJob;
 
 @Injectable()
 export class StripeSubscriptionService {
@@ -66,7 +84,8 @@ export class StripeSubscriptionService {
     private historyService: HistoryService,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
-    private customerService: CustomerService
+    private customerService: CustomerService,
+    private connection: TransactionalConnection
   ) {}
 
   private jobQueue!: JobQueue<JobData>;
@@ -76,23 +95,139 @@ export class StripeSubscriptionService {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'stripe-subscription',
       process: async ({ data, id }) => {
-        try {
-          const ctx = RequestContext.deserialize(data.ctx);
-          await this.createSubscriptions(
+        const ctx = RequestContext.deserialize(data.ctx);
+        if (data.action === 'cancelSubscriptionsForOrderline') {
+          this.cancelSubscriptionForOrderLine(ctx, data.orderLineId);
+        } else if (data.action === 'createSubscriptionsForOrder') {
+          const order = await this.orderService.findOneByCode(
             ctx,
             data.orderCode,
-            data.stripeCustomerId,
-            data.stripePaymentMethodId
+            []
           );
-        } catch (error) {
-          Logger.warn(
-            `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
-            loggerCtx
-          );
-          throw error;
+          try {
+            await this.createSubscriptions(
+              ctx,
+              data.orderCode,
+              data.stripeCustomerId,
+              data.stripePaymentMethodId
+            );
+          } catch (error) {
+            Logger.warn(
+              `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
+              loggerCtx
+            );
+            if (order) {
+              await this.logHistoryEntry(
+                ctx,
+                order.id,
+                'Failed to create subscription',
+                error
+              );
+            }
+            throw error;
+          }
         }
       },
     });
+    // Add unique hash for subscriptions, so Vendure creates a new order line
+    this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
+      const orderLine = event.orderLine as OrderLineWithSubscriptionFields;
+      if (
+        event.type === 'created' &&
+        orderLine.productVariant.customFields.subscriptionSchedule
+      ) {
+        await this.connection
+          .getRepository(event.ctx, OrderLine)
+          .update(
+            { id: event.orderLine.id },
+            { customFields: { subscriptionHash: randomUUID() } }
+          );
+      }
+    });
+    // Listen for stock cancellation or release events
+    this.eventBus
+      .ofType(StockMovementEvent)
+      .pipe(
+        // Filter by event type
+        filter(
+          (event) =>
+            event.type === StockMovementType.RELEASE ||
+            event.type === StockMovementType.CANCELLATION
+        )
+      )
+      .subscribe(async (event) => {
+        const orderLinesWithSubscriptions = (
+          event.stockMovements as (Cancellation | Release)[]
+        )
+          .map(
+            (stockMovement) =>
+              stockMovement.orderItem.line as OrderLineWithSubscriptionFields
+          )
+          // Filter out non-sub orderlines
+          .filter((orderLine) => orderLine.customFields.subscriptionIds);
+        await Promise.all(
+          // Push jobs
+          orderLinesWithSubscriptions.map((line) =>
+            this.jobQueue.add({
+              ctx: event.ctx.serialize(),
+              action: 'cancelSubscriptionsForOrderline',
+              orderLineId: line.id,
+            })
+          )
+        );
+      });
+  }
+
+  async cancelSubscriptionForOrderLine(
+    ctx: RequestContext,
+    orderLineId: ID
+  ): Promise<void> {
+    const order = (await this.orderService.findOneByOrderLineId(
+      ctx,
+      orderLineId,
+      ['lines']
+    )) as OrderWithSubscriptions | undefined;
+    if (!order) {
+      throw Error(`Order for OrderLine ${orderLineId} not found`);
+    }
+    const line = order?.lines.find((l) => l.id == orderLineId);
+    if (!line?.customFields.subscriptionIds?.length) {
+      return Logger.info(
+        `OrderLine ${orderLineId} of ${orderLineId} has no subscriptionIds. Not cancelling anything... `,
+        loggerCtx
+      );
+    }
+    await this.entityHydrator.hydrate(ctx, line, { relations: ['order'] });
+    const { stripeClient } = await this.getStripeHandler(ctx, line.order.id);
+    for (const subscriptionId of line.customFields.subscriptionIds) {
+      try {
+        await stripeClient.subscriptions.update(subscriptionId, {
+          cancel_at_period_end: true,
+        });
+        Logger.info(`Cancelled subscription ${subscriptionId}`);
+        await this.logHistoryEntry(
+          ctx,
+          order!.id,
+          `Cancelled subscription ${subscriptionId}`,
+          undefined,
+          undefined,
+          subscriptionId
+        );
+      } catch (e: unknown) {
+        Logger.error(
+          `Failed to cancel subscription ${subscriptionId}`,
+          loggerCtx
+        );
+        await this.logHistoryEntry(
+          ctx,
+          order.id,
+          `Failed to cancel ${subscriptionId}`,
+          e,
+          undefined,
+          subscriptionId
+        );
+      }
+    }
   }
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
@@ -321,7 +456,10 @@ export class StripeSubscriptionService {
         `Failed to create subscription for ${stripeCustomerId} because the customer doesn't exist in Stripe`
       );
     }
+    let orderLineCount = 0;
     for (const orderLine of order.lines) {
+      orderLineCount++; // Start with 1
+      const createdSubscriptions: string[] = [];
       const pricing = await this.getPricing(ctx, {
         startDate: orderLine.customFields.startDate,
         downpaymentWithTax: orderLine.customFields.downpayment,
@@ -330,44 +468,46 @@ export class StripeSubscriptionService {
       if (pricing.schedule.paidUpFront && !pricing.schedule.autoRenew) {
         continue; // Paid up front without autoRenew doesn't need a subscription
       }
-      Logger.info(
-        `Creating subscriptions with pricing ${JSON.stringify(pricing)}`,
-        loggerCtx
-      );
+      Logger.info(`Creating subscriptions for ${orderCode}`, loggerCtx);
       try {
         const product = await stripeClient.products.create({
           name: `${orderLine.productVariant.name} (${order.code})`,
         });
-        const recurring = await stripeClient.createOffSessionSubscription({
-          customerId: stripeCustomerId,
-          productId: product.id,
-          currencyCode: order.currencyCode,
-          amount: pricing.recurringPriceWithTax,
-          interval: pricing.interval,
-          intervalCount: pricing.intervalCount,
-          paymentMethodId: stripePaymentMethodId,
-          startDate: pricing.subscriptionStartDate,
-          endDate: pricing.subscriptionEndDate || undefined,
-          description: orderLine.productVariant.name,
-          orderCode: order.code,
-          channelToken: ctx.channel.token,
-        });
-        if (recurring.status !== 'active' && recurring.status !== 'trialing') {
+        const recurringSubscription =
+          await stripeClient.createOffSessionSubscription({
+            customerId: stripeCustomerId,
+            productId: product.id,
+            currencyCode: order.currencyCode,
+            amount: pricing.recurringPriceWithTax,
+            interval: pricing.interval,
+            intervalCount: pricing.intervalCount,
+            paymentMethodId: stripePaymentMethodId,
+            startDate: pricing.subscriptionStartDate,
+            endDate: pricing.subscriptionEndDate || undefined,
+            description: orderLine.productVariant.name,
+            orderCode: order.code,
+            channelToken: ctx.channel.token,
+          });
+        createdSubscriptions.push(recurringSubscription.id);
+        if (
+          recurringSubscription.status !== 'active' &&
+          recurringSubscription.status !== 'trialing'
+        ) {
           Logger.error(
-            `Failed to create active subscription ${recurring.id} for order ${order.code}! It is still in status '${recurring.status}'`,
+            `Failed to create active subscription ${recurringSubscription.id} for order ${order.code}! It is still in status '${recurringSubscription.status}'`,
             loggerCtx
           );
           await this.logHistoryEntry(
             ctx,
             order.id,
             'Failed to create subscription',
-            `Subscription status is ${recurring.status}`,
+            `Subscription status is ${recurringSubscription.status}`,
             pricing,
-            recurring.id
+            recurringSubscription.id
           );
         } else {
           Logger.info(
-            `Created subscription ${recurring.id}: ${printMoney(
+            `Created subscription ${recurringSubscription.id}: ${printMoney(
               pricing.recurringPriceWithTax
             )} every ${pricing.intervalCount} ${
               pricing.interval
@@ -379,10 +519,10 @@ export class StripeSubscriptionService {
           await this.logHistoryEntry(
             ctx,
             order.id,
-            'Created subscription',
+            `Created subscription for line ${orderLineCount}`,
             undefined,
             pricing,
-            recurring.id
+            recurringSubscription.id
           );
         }
         if (pricing.downpaymentWithTax) {
@@ -406,26 +546,28 @@ export class StripeSubscriptionService {
             schedule.durationCount,
             schedule.fixedStartDate
           );
-          const downpayment = await stripeClient.createOffSessionSubscription({
-            customerId: stripeCustomerId,
-            productId: downpaymentProduct.id,
-            currencyCode: order.currencyCode,
-            amount: pricing.downpaymentWithTax,
-            interval: downpaymentInterval,
-            intervalCount: downpaymentIntervalCount,
-            paymentMethodId: stripePaymentMethodId,
-            startDate: nextDownpaymentDate,
-            endDate: pricing.subscriptionEndDate || undefined,
-            description: `Downpayment`,
-            orderCode: order.code,
-            channelToken: ctx.channel.token,
-          });
+          const downpaymentSubscription =
+            await stripeClient.createOffSessionSubscription({
+              customerId: stripeCustomerId,
+              productId: downpaymentProduct.id,
+              currencyCode: order.currencyCode,
+              amount: pricing.downpaymentWithTax,
+              interval: downpaymentInterval,
+              intervalCount: downpaymentIntervalCount,
+              paymentMethodId: stripePaymentMethodId,
+              startDate: nextDownpaymentDate,
+              endDate: pricing.subscriptionEndDate || undefined,
+              description: `Downpayment`,
+              orderCode: order.code,
+              channelToken: ctx.channel.token,
+            });
+          createdSubscriptions.push(recurringSubscription.id);
           if (
-            downpayment.status !== 'active' &&
-            downpayment.status !== 'trialing'
+            downpaymentSubscription.status !== 'active' &&
+            downpaymentSubscription.status !== 'trialing'
           ) {
             Logger.error(
-              `Failed to create active subscription ${downpayment.id} for order ${order.code}! It is still in status '${downpayment.status}'`,
+              `Failed to create active subscription ${downpaymentSubscription.id} for order ${order.code}! It is still in status '${downpaymentSubscription.status}'`,
               loggerCtx
             );
             await this.logHistoryEntry(
@@ -434,11 +576,13 @@ export class StripeSubscriptionService {
               'Failed to create downpayment subscription',
               'Failed to create active subscription',
               undefined,
-              downpayment.id
+              downpaymentSubscription.id
             );
           } else {
             Logger.info(
-              `Created downpayment subscription ${downpayment.id}: ${printMoney(
+              `Created downpayment subscription ${
+                downpaymentSubscription.id
+              }: ${printMoney(
                 pricing.downpaymentWithTax
               )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
                 pricing.subscriptionStartDate
@@ -448,18 +592,29 @@ export class StripeSubscriptionService {
             await this.logHistoryEntry(
               ctx,
               order.id,
-              'Created downpayment subscription',
+              `Created downpayment subscription for line ${orderLineCount}`,
               undefined,
               pricing,
-              downpayment.id
+              downpaymentSubscription.id
             );
           }
         }
+        await this.saveSubscriptionIds(ctx, orderLine.id, createdSubscriptions);
       } catch (e: unknown) {
         await this.logHistoryEntry(ctx, order.id, '', e);
         throw e;
       }
     }
+  }
+
+  async saveSubscriptionIds(
+    ctx: RequestContext,
+    orderLineId: ID,
+    subscriptionIds: string[]
+  ) {
+    await this.connection
+      .getRepository(ctx, OrderLine)
+      .update({ id: orderLineId }, { customFields: { subscriptionIds } });
   }
 
   async createContext(

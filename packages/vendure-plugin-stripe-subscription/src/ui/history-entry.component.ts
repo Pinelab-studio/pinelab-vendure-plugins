@@ -9,7 +9,7 @@ import {
 @Component({
   selector: 'stripe-subscription-notification-component',
   template: `
-    <span *ngIf="entry.data.valid">{{ entry.data.message }}</span>
+    <span>{{ entry.data.message }}</span>
     <a
       *ngIf="entry.data.subscriptionId"
       [href]="

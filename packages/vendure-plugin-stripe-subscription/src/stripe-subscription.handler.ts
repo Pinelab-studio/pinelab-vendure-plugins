@@ -3,10 +3,27 @@ import {
   CreateRefundResult,
   Injector,
   LanguageCode,
+  Logger,
   PaymentMethodHandler,
   SettlePaymentResult,
+  UserInputError,
 } from '@vendure/core';
+import { RequestContext } from '@vendure/core/dist/api/common/request-context';
+import { Order, Payment, PaymentMethod } from '@vendure/core/dist/entity';
+import {
+  CancelPaymentErrorResult,
+  CancelPaymentResult,
+} from '@vendure/core/dist/config/payment/payment-method-handler';
+import {
+  OrderLineWithSubscriptionFields,
+  OrderWithSubscriptions,
+} from './subscription-custom-fields';
+import { StripeSubscriptionService } from './stripe-subscription.service';
+import { StripeClient } from './stripe.client';
+import { loggerCtx } from './constants';
+import { printMoney } from './pricing.helper';
 
+let service: StripeSubscriptionService;
 export const stripeSubscriptionHandler = new PaymentMethodHandler({
   code: 'stripe-subscription',
 
@@ -40,7 +57,9 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     },
   },
 
-  init(injector: Injector) {},
+  init(injector: Injector) {
+    service = injector.get(StripeSubscriptionService);
+  },
 
   async createPayment(
     ctx,
@@ -57,11 +76,10 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     return {
       amount: metadata.amount,
       state: 'Settled',
-      transactionId: metadata.subscriptionId,
+      transactionId: metadata.setupIntentId,
       metadata,
     };
   },
-
   settlePayment(): SettlePaymentResult {
     // Payments will be settled via webhook
     return {
@@ -77,6 +95,25 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     payment,
     args
   ): Promise<CreateRefundResult> {
-    throw Error(`Stripe subscriptions can not be refunded via Vendure`);
+    const { stripeClient } = await service.getStripeHandler(ctx, order.id);
+    const refund = await stripeClient.refunds.create({
+      payment_intent: payment.transactionId,
+      amount,
+    });
+    Logger.info(
+      `Refund of ${printMoney(amount)} created for payment ${
+        payment.transactionId
+      } for order ${order.id}`,
+      loggerCtx
+    );
+    await service.logHistoryEntry(
+      ctx,
+      order.id,
+      `Created refund of ${printMoney(amount)}`
+    );
+    return {
+      state: 'Settled',
+      metadata: refund,
+    };
   },
 });
