@@ -15,6 +15,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler/';
 import { SortByPopularityPlugin } from '../src';
+import { SortService } from '../src/sort.service';
 
 require('dotenv').config();
 
