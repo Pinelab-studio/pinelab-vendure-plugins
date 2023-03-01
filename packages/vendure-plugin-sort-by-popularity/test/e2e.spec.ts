@@ -1,4 +1,4 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig, Product } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -8,7 +8,12 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
-import { SortByPopularityPlugin } from '../src/example.plugin';
+import { SortByPopularityPlugin } from '../src/index';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { getAllOrders } from '../../test/src/admin-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+
+jest.setTimeout(10000);
 
 describe('Limit variants per order plugin', function () {
   let server: TestServer;
@@ -24,12 +29,21 @@ describe('Limit variants per order plugin', function () {
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [SortByPopularityPlugin],
+      paymentOptions: {
+        paymentMethodHandlers: [testPaymentMethod],
+      },
     });
 
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData: {
         ...initialData,
+        paymentMethods: [
+          {
+            name: testPaymentMethod.code,
+            handler: { code: testPaymentMethod.code, arguments: [] },
+          },
+        ],
       },
       productsCsvPath: '../test/src/products-import.csv',
       customerCount: 2,
@@ -39,7 +53,42 @@ describe('Limit variants per order plugin', function () {
   }, 60000);
 
   it('Should start successfully', async () => {
-    await expect(serverStarted).toBe(true);
+    expect(serverStarted).toBe(true);
+  });
+
+  it('Should place orders', async () => {
+    for (let i = 0; i < 5; i++) {
+      await createSettledOrder(shopClient, 1);
+    }
+    const orders = await getAllOrders(adminClient);
+    expect(orders.length).toBe(5);
+    // Expect all orders to be from the same product
+    expect(
+      orders.every((order) =>
+        order.lines.every((line) => line.productVariant.product.id === 'T_1')
+      )
+    ).toBe(true);
+  });
+
+  let products: Product[];
+  let collections: Product[];
+
+  it('Calls cron webhook to calculate popularity', async () => {
+    expect(false).toBe(true);
+  });
+
+  it('Calculated popularity per product', async () => {
+    // TODO fetch via shop-api
+    expect(false).toBe(true);
+  });
+
+  it('Calculated popularity per collection', async () => {
+    // TODO fetch via shop-api
+    expect(false).toBe(true);
+  });
+
+  it('Calculated popularity for parent collections', async () => {
+    expect(false).toBe(true);
   });
 
   afterAll(() => {

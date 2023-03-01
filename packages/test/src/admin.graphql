@@ -41,6 +41,24 @@ query order($id: ID!) {
   }
 }
 
+query orders {
+  orders {
+    items {
+      id
+      code
+      lines {
+        id
+        quantity
+        productVariant {
+          product {
+            id
+          }
+        }
+      }
+    }
+  }
+}
+
 mutation createPaymentMethod($input: CreatePaymentMethodInput!) {
   createPaymentMethod(input: $input) {
     id

@@ -9,7 +9,9 @@ import {
   CreateFulfillment,
   CreateShippingMethod,
   Order as OrderGraphql,
+  Orders as OrdersGraphql,
   OrderQuery,
+  OrdersQuery,
 } from './generated/admin-graphql';
 
 export async function addShippingMethod(
@@ -79,4 +81,11 @@ export async function getOrder(
 ): Promise<OrderQuery['order']> {
   const { order } = await adminClient.query(OrderGraphql, { id: orderId });
   return order;
+}
+
+export async function getAllOrders(
+  adminClient: SimpleGraphQLClient
+): Promise<OrdersQuery['orders']['items']> {
+  const { orders } = await adminClient.query(OrdersGraphql);
+  return orders.items;
 }
