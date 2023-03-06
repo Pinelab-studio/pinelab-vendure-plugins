@@ -49,6 +49,7 @@
           "stripe-subscription",
           "limit-variant",
           "variant-bulk-update",
+          "customer-managed-groups",
           "all-plugins"
         ]
       ]
