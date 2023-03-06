@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": ["es2017"],
+    "module": "CommonJS",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "target": "es2017",
+    "strict": true,
+    "sourceMap": false,
+    "skipLibCheck": true,
+    "types": ["jest", "node"],
+    "declaration": true,
+    "strictPropertyInitialization": false,
+    "outDir": "dist"
+  },
+  "include": ["src/"]
+}

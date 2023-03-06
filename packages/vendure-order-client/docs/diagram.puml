@@ -1,0 +1,6 @@
+@startuml
+skinparam linetype ortho
+[Client side / Browser] <-- [Middleware - SSR/SSG] : products/collections
+[Middleware - SSR/SSG] <-- [Vendure shop-api] : products/collections
+[Client side / Browser] --> [Vendure shop-api] : active order management
+@enduml

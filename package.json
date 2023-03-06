@@ -49,6 +49,7 @@
           "stripe-subscription",
           "limit-variant",
           "variant-bulk-update",
+          "vendure-order-client",
           "all-plugins"
         ]
       ]
