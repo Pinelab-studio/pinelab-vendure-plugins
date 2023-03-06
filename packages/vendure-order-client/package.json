@@ -5,7 +5,7 @@
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
-  "private": false,
+  "private": true,
   "engines": {
     "node": ">=16.0.0"
   },
