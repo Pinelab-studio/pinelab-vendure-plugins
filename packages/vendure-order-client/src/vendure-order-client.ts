@@ -12,6 +12,7 @@ export type Order<T> = ActiveOrderFieldsFragment & T;
  *      'channel-token',
  * );
  */
+export class VendureOrderClient<A = {}> {
   queries: GraphqlQueries;
   client: GraphQLClient;
   activeOrder: WritableAtom<Order<A> | undefined>;
