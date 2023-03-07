@@ -9,7 +9,8 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { CustomerGroupExtensionsPlugin } from '../src';
+import { CustomerManagedGroupsPlugin } from '../src';
+import { addCustomerToGroupMutation } from './test-helpers';
 
 describe('Example plugin e2e', function () {
   let server: TestServer;
@@ -21,7 +22,7 @@ describe('Example plugin e2e', function () {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [CustomerGroupExtensionsPlugin],
+      plugins: [CustomerManagedGroupsPlugin],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -39,46 +40,99 @@ describe('Example plugin e2e', function () {
         ],
       },
       productsCsvPath: '../test/src/products-import.csv',
-      customerCount: 2,
+      customerCount: 5,
     });
   }, 60000);
 
   it('Should start successfully', async () => {
-    await expect(server.app.getHttpServer).toBeDefined;
+    expect(server.app.getHttpServer).toBeDefined;
+  });
+
+  it('Fails for unauthenticated calls', async () => {
+    expect.assertions(1);
+    try {
+      await shopClient.query(addCustomerToGroupMutation, {
+        emailAddress: 'marques.sawayn@hotmail.com',
+      });
+    } catch (e) {
+      expect(e.response.errors[0].message).toBe(
+        'You are not currently authorized to perform this action'
+      );
+    }
   });
 
   it('Adds a customer to my group', async () => {
-    // TODO should now be admin
-    await expect(true).toBe(false);
+    // FIXME this is actually authenticating as 'trevor_donnelly96@hotmail.com' due to a bug
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const { addCustomerToMyCustomerManagedGroup: group } =
+      await shopClient.query(addCustomerToGroupMutation, {
+        emailAddress: 'marques.sawayn@hotmail.com',
+      });
+    expect(group.name).toBe("Donnelly's Group");
+    expect(group.administrators[0].emailAddress).toBe(
+      'trevor_donnelly96@hotmail.com'
+    );
+    expect(group.administrators[1]).toBeUndefined();
+    expect(group.participants[0].emailAddress).toBe(
+      'marques.sawayn@hotmail.com'
+    );
+    expect(group.participants[1]).toBeUndefined();
   });
 
-  it('Disallows the participant to create another group', async () => {
-    await expect(true).toBe(false);
+  it('Adds another customer to my group', async () => {
+    const { addCustomerToMyCustomerManagedGroup: group } =
+      await shopClient.query(addCustomerToGroupMutation, {
+        emailAddress: 'stewart.lindgren@gmail.com',
+      });
+    expect(group.participants[0].emailAddress).toBe(
+      'marques.sawayn@hotmail.com'
+    );
+    expect(group.participants[1].emailAddress).toBe(
+      'stewart.lindgren@gmail.com'
+    );
   });
 
-  it('Appoints a group admin as administrator', async () => {
-    await expect(true).toBe(false);
+  it('Fails when a participant tries to add customers', async () => {
+    expect.assertions(1);
+    // FIXME this is actually authenticating as 'stewart.lindgren@gmail.com' due to a bug
+    await shopClient.asUserWithCredentials('eliezer56@yahoo.com', 'test');
+    try {
+      await shopClient.query(addCustomerToGroupMutation, {
+        emailAddress: 'marques.sawayn@hotmail.com',
+      });
+    } catch (e) {
+      expect(e.response.errors[0].message).toBe(
+        'Customer stewart.lindgren@gmail.com is not group administrator'
+      );
+    }
+  });
+
+  it('Adds a group admin as administrator', async () => {
+    // TODO
   });
 
   it('Removes an admin from the group ', async () => {
     // Should also remove the admin relation
-    await expect(true).toBe(false);
+    // TODO
   });
 
   it('Places an order for the group participant', async () => {
-    await expect(true).toBe(false);
+    expect(true).toBe(false);
   });
 
   it('Places an order for the group admin', async () => {
-    await expect(true).toBe(false);
+    expect(true).toBe(false);
   });
 
   it('Fetches 2 orders for the group admin', async () => {
-    await expect(true).toBe(false);
+    expect(true).toBe(false);
   });
 
   it('Fetches 1 orders for the group participant', async () => {
-    await expect(true).toBe(false);
+    expect(true).toBe(false);
   });
 
   afterAll(() => {

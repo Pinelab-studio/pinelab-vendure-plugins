@@ -1,22 +1,21 @@
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
 import path from 'path';
-import { CustomerGroupExtensionsPlugin } from '../src';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { CustomerManagedGroupsPlugin } from '../src';
 
 require('dotenv').config();
 
@@ -29,7 +28,7 @@ require('dotenv').config();
         assetUploadDir: path.join(__dirname, '__data__/assets'),
         route: 'assets',
       }),
-      CustomerGroupExtensionsPlugin,
+      CustomerManagedGroupsPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -63,6 +62,6 @@ require('dotenv').config();
       ],
     },
     productsCsvPath: '../test/src/products-import.csv',
-    customerCount: 2,
+    customerCount: 5,
   });
 })();
