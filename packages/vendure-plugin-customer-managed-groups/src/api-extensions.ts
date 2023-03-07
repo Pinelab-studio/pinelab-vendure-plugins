@@ -1,14 +1,13 @@
-import { Query, Resolver, Args, Mutation } from '@nestjs/graphql';
-import { OrderList } from '@vendure/common/lib/generated-types';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
   ForbiddenError,
+  Order,
+  PaginatedList,
   Permission,
   RequestContext,
   Transaction,
-  UnauthorizedError,
-  UserInputError,
 } from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { CustomerManagedGroupsService } from './customer-managed-groups.service';
@@ -58,15 +57,14 @@ export class CustomerManagedGroupsResolver {
   constructor(private service: CustomerManagedGroupsService) {}
 
   @Query()
-  @Allow(Permission.Public)
+  @Allow(Permission.Authenticated)
   async ordersForMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext
-  ): Promise<OrderList> {
-    await this.service.getOrdersForCustomer(ctx);
-    return {
-      items: [],
-      totalItems: 0,
-    };
+  ): Promise<PaginatedList<Order>> {
+    if (!ctx.activeUserId) {
+      throw new ForbiddenError();
+    }
+    return this.service.getOrdersForCustomer(ctx, ctx.activeUserId);
   }
 
   @Transaction()

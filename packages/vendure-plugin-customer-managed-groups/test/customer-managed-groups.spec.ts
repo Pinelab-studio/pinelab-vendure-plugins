@@ -10,9 +10,13 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { CustomerManagedGroupsPlugin } from '../src';
-import { addCustomerToGroupMutation } from './test-helpers';
+import {
+  addCustomerToGroupMutation,
+  getOrdersForMyCustomerManagedGroup,
+} from './test-helpers';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
-describe('Example plugin e2e', function () {
+describe('Customer managed groups', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -44,6 +48,19 @@ describe('Example plugin e2e', function () {
     });
   }, 60000);
 
+  async function authorizeAsGroupAdmin(): Promise<void> {
+    // FIXME this is actually authenticating as 'trevor_donnelly96@hotmail.com' due to a bug
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+  }
+
+  async function authorizeAsGroupParticipant(): Promise<void> {
+    // FIXME this is actually authenticating as 'stewart.lindgren@gmail.com' due to a bug
+    await shopClient.asUserWithCredentials('eliezer56@yahoo.com', 'test');
+  }
+
   it('Should start successfully', async () => {
     expect(server.app.getHttpServer).toBeDefined;
   });
@@ -55,18 +72,14 @@ describe('Example plugin e2e', function () {
         emailAddress: 'marques.sawayn@hotmail.com',
       });
     } catch (e) {
-      expect(e.response.errors[0].message).toBe(
+      expect((e as any).response.errors[0].message).toBe(
         'You are not currently authorized to perform this action'
       );
     }
   });
 
   it('Adds a customer to my group', async () => {
-    // FIXME this is actually authenticating as 'trevor_donnelly96@hotmail.com' due to a bug
-    await shopClient.asUserWithCredentials(
-      'hayden.zieme12@hotmail.com',
-      'test'
-    );
+    await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
       await shopClient.query(addCustomerToGroupMutation, {
         emailAddress: 'marques.sawayn@hotmail.com',
@@ -97,41 +110,70 @@ describe('Example plugin e2e', function () {
 
   it('Fails when a participant tries to add customers', async () => {
     expect.assertions(1);
-    // FIXME this is actually authenticating as 'stewart.lindgren@gmail.com' due to a bug
-    await shopClient.asUserWithCredentials('eliezer56@yahoo.com', 'test');
+    await authorizeAsGroupParticipant();
     try {
       await shopClient.query(addCustomerToGroupMutation, {
         emailAddress: 'marques.sawayn@hotmail.com',
       });
     } catch (e) {
-      expect(e.response.errors[0].message).toBe(
-        'Customer stewart.lindgren@gmail.com is not group administrator'
+      expect((e as any).response.errors[0].message).toBe(
+        'You are not administrator of your group'
       );
     }
   });
 
-  it('Adds a group admin as administrator', async () => {
+  it.skip('Adds a group admin as administrator', async () => {
     // TODO
   });
 
-  it('Removes an admin from the group ', async () => {
+  it.skip('Removes an admin from the group ', async () => {
     // Should also remove the admin relation
     // TODO
   });
 
   it('Places an order for the group participant', async () => {
-    expect(true).toBe(false);
+    await authorizeAsGroupParticipant();
+    const order = await createSettledOrder(shopClient, 1, false);
+    expect(order.code).toBeDefined();
   });
 
   it('Places an order for the group admin', async () => {
-    expect(true).toBe(false);
+    await authorizeAsGroupAdmin();
+    const order = await createSettledOrder(shopClient, 1, false);
+    expect(order.code).toBeDefined();
+  });
+
+  it('Fails to fetch orders when unauthenticated', async () => {
+    expect.assertions(1);
+    await shopClient.asAnonymousUser();
+    try {
+      await shopClient.query(getOrdersForMyCustomerManagedGroup);
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        'You are not currently authorized to perform this action'
+      );
+    }
+  });
+
+  it('Fails to fetch orders for participants', async () => {
+    expect.assertions(1);
+    await authorizeAsGroupParticipant();
+    try {
+      await shopClient.query(getOrdersForMyCustomerManagedGroup);
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        'You are not administrator of your group'
+      );
+    }
   });
 
   it('Fetches 2 orders for the group admin', async () => {
-    expect(true).toBe(false);
+    await authorizeAsGroupAdmin();
+    const orders = await shopClient.query(getOrdersForMyCustomerManagedGroup);
+    expect(orders.ordersForMyCustomerManagedGroup.totalItems).toBe(2);
   });
 
-  it('Fetches 1 orders for the group participant', async () => {
+  it.skip('Fetches 1 orders for the group participant', async () => {
     expect(true).toBe(false);
   });
 

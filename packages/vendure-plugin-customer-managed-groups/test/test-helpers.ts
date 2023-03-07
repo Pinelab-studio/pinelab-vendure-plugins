@@ -31,3 +31,14 @@ export const addCustomerToGroupMutation = gql`
     }
   }
 `;
+
+export const getOrdersForMyCustomerManagedGroup = gql`
+  query {
+    ordersForMyCustomerManagedGroup {
+      items {
+        id
+      }
+      totalItems
+    }
+  }
+`;

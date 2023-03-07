@@ -91,9 +91,15 @@ export async function addItem(
 
 export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
-  shippingMethodId: string | number
+  shippingMethodId: string | number,
+  authorizeFirst = true
 ): Promise<Order> {
-  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  if (authorizeFirst) {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+  }
   await addItem(shopClient, 'T_1', 1);
   await addItem(shopClient, 'T_2', 2);
   const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { OrderList } from '@vendure/common/lib/generated-types';
 import {
   CustomerGroup,
   CustomerGroupService,
@@ -6,16 +7,19 @@ import {
   EntityHydrator,
   ID,
   Logger,
+  Order,
   OrderService,
+  PaginatedList,
   RequestContext,
+  User,
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from './constants';
-import { CustomerManagedGroup } from './generated/graphql';
 import {
   CustomerGroupWithCustomFields,
   CustomerWithCustomFields,
 } from './custom-fields';
+import { CustomerManagedGroup } from './generated/graphql';
 
 @Injectable()
 export class CustomerManagedGroupsService {
@@ -26,17 +30,51 @@ export class CustomerManagedGroupsService {
     private hydrator: EntityHydrator
   ) {}
 
-  async getOrdersForCustomer(ctx: RequestContext) {
-    return;
+  async getOrdersForCustomer(
+    ctx: RequestContext,
+    userId: ID
+  ): Promise<PaginatedList<Order>> {
+    const customer = await this.getOrThrowCustomer(ctx, userId);
+    const customerManagedGroup = this.getCustomerManagedGroup(customer);
+    if (!customerManagedGroup) {
+      throw new UserInputError(`You are not in a customer managed group`);
+    }
+    this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
+    const orders: Order[] = [];
+    await this.hydrator.hydrate(ctx, customerManagedGroup, {
+      relations: ['customers'],
+    });
+    const dinges = await this.orderService.findAll(ctx);
+    console.log('ORDESRS', dinges.items);
+    for (const customer of customerManagedGroup.customers) {
+      const ordersForCustomer = await this.orderService.findByCustomerId(
+        ctx,
+        customer.id
+      );
+      Logger.info(
+        `Found ${ordersForCustomer.items.length} orders for customer ${customer.emailAddress}`,
+        loggerCtx
+      );
+      orders.push(...ordersForCustomer.items);
+      if (ordersForCustomer.totalItems > ordersForCustomer.items.length) {
+        throw Error(
+          `Too many orders for customer ${customer.emailAddress}, pagination is not implemented yet.`
+        );
+      }
+    }
+    return {
+      items: orders,
+      totalItems: orders.length,
+    };
   }
 
   async addToGroup(
     ctx: RequestContext,
-    groupOwnerUserId: ID,
+    userId: ID,
     inviteeEmailAddress: string
   ): Promise<CustomerManagedGroup> {
-    const [owner, invitees] = await Promise.all([
-      this.customerService.findOne(ctx, groupOwnerUserId, ['groups']),
+    const [user, invitees] = await Promise.all([
+      this.getOrThrowCustomer(ctx, userId),
       this.customerService.findAll(
         ctx,
         {
@@ -49,36 +87,24 @@ export class CustomerManagedGroupsService {
         ['groups']
       ),
     ]);
-    if (!owner) {
-      throw new UserInputError(
-        `No customer found for user with id ${groupOwnerUserId}`
-      );
-    }
     if (!invitees.items[0]) {
       throw new UserInputError(
         `No customer found for email adress ${inviteeEmailAddress}`
       );
     }
     const invitee = invitees.items[0];
-    let customerManagedGroup = (owner as CustomerWithCustomFields).groups.find(
-      (group) => group.customFields.isCustomerManaged
-    );
-    const isOwnerAdmin = customerManagedGroup?.customFields.groupAdmins?.find(
-      (admin) => admin.id === owner.id
-    );
-    if (customerManagedGroup && !isOwnerAdmin) {
-      throw new UserInputError(
-        `Customer ${owner.emailAddress} is not group administrator`
-      );
+    let customerManagedGroup = this.getCustomerManagedGroup(user);
+    if (customerManagedGroup) {
+      this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
     }
     if (!customerManagedGroup) {
       Logger.info(
-        `Creating new group with owner ${owner.emailAddress} and invitee ${invitee.emailAddress}`,
+        `Creating new group with owner ${user.emailAddress} and invitee ${invitee.emailAddress}`,
         loggerCtx
       );
       customerManagedGroup = await this.customerGroupService.create(ctx, {
-        name: `${owner.lastName}'s Group`,
-        customerIds: [owner.id, invitee.id],
+        name: `${user.lastName}'s Group`,
+        customerIds: [user.id, invitee.id],
         customFields: {
           isCustomerManaged: true,
         },
@@ -86,7 +112,7 @@ export class CustomerManagedGroupsService {
     }
     if (
       !customerManagedGroup.customFields.groupAdmins?.find(
-        (admin) => admin.id === owner.id
+        (admin) => admin.id === user.id
       )
     ) {
       // Add owner as group admin
@@ -98,7 +124,7 @@ export class CustomerManagedGroupsService {
         customFields: {
           groupAdmins: [
             {
-              id: owner.id,
+              id: user.id,
               ...existingAdmins,
             },
           ],
@@ -123,6 +149,44 @@ export class CustomerManagedGroupsService {
       relations: ['customers'],
     });
     return this.mapToCustomerManagedGroup(customerManagedGroup);
+  }
+
+  async getOrThrowCustomer(
+    ctx: RequestContext,
+    userId: ID
+  ): Promise<CustomerWithCustomFields> {
+    const customer = await this.customerService.findOne(ctx, userId, [
+      'groups',
+    ]);
+    if (!customer) {
+      throw new UserInputError(`No customer found for user with id ${userId}`);
+    }
+    return customer;
+  }
+
+  throwIfNotAdministratorOfGroup(
+    userId: ID,
+    group: CustomerGroupWithCustomFields
+  ): void {
+    const isAdmin = !!group.customFields.groupAdmins?.find(
+      (admin) => admin.id == userId
+    );
+    if (!isAdmin) {
+      throw new UserInputError('You are not administrator of your group');
+    }
+  }
+
+  getCustomerManagedGroup(
+    customer: CustomerWithCustomFields
+  ): CustomerGroupWithCustomFields | undefined {
+    if (!customer.groups) {
+      throw Error(
+        `Make sure to include groups in the customer query. Can not find customer managed group for customer ${customer.emailAddress}`
+      );
+    }
+    return customer.groups.find(
+      (group) => group.customFields.isCustomerManaged
+    );
   }
 
   mapToCustomerManagedGroup(
