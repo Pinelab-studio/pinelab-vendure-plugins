@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
-    "lib": ["es2017"],
-    "module": "CommonJS",
+    "lib": ["es2017", "DOM"],
+    "module": "commonjs",
+    "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,
@@ -15,5 +16,5 @@
     "strictPropertyInitialization": false,
     "outDir": "dist"
   },
-  "include": ["src/"]
+  "include": ["src/", "test"]
 }

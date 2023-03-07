@@ -1,1 +1,1 @@
-export * from './example.plugin';
+export * from './vendure-order-client';
