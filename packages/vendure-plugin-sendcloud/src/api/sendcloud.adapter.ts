@@ -49,7 +49,7 @@ export function toParcelInputItem(
     quantity: line.quantity,
     weight: weightPerUnit.toFixed(3),
     sku: variant.sku,
-    value: (variant.priceWithTax / 100).toFixed(2),
+    value: (line.unitPriceWithTax / 100).toFixed(2),
   };
   const originCountry = options.originCountryFn?.(line);
   if (originCountry) {
