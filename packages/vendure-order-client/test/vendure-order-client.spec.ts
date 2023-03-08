@@ -38,108 +38,109 @@ describe('Vendure order client', () => {
 
   it('Creates a client', async () => {
     client = new VendureOrderClient(
-      'http://localhost:3000/shop-api',
+      'http://localhost:3050/shop-api',
       'channel-token'
     );
     expect(client).toBeInstanceOf(VendureOrderClient);
+    expect(client.activeOrder).toBeUndefined();
   });
 
   describe('Cart management', () => {
-    it('Adds an item to order', async () => {
+    it.skip('Adds an item to order', async () => {
       expect(false).toBe(true);
     });
 
-    it('Emits "item-added" event, with quantity 1', async () => {
+    it.skip('Emits "item-added" event, with quantity 1', async () => {
       expect(false).toBe(true);
     });
 
-    it('Increases quantity to 3', async () => {
+    it.skip('Increases quantity to 3', async () => {
       expect(false).toBe(true);
     });
 
-    it('Emits "item-added" event, with quantity 2', async () => {
+    it.skip('Emits "item-added" event, with quantity 2', async () => {
       expect(false).toBe(true);
     });
 
-    it('Removes the order line', async () => {
+    it.skip('Removes the order line', async () => {
       expect(false).toBe(true);
     });
 
-    it('Emits "item-removed" event, with quantity 3', async () => {
+    it.skip('Emits "item-removed" event, with quantity 3', async () => {
       expect(false).toBe(true);
     });
 
-    it('Adds an item to order #2', async () => {
+    it.skip('Adds an item to order #2', async () => {
       expect(false).toBe(true);
     });
 
-    it('Removes all order lines', async () => {
+    it.skip('Removes all order lines', async () => {
       expect(false).toBe(true);
     });
 
-    it('Emits "item-removed" event, with quantity 1', async () => {
+    it.skip('Emits "item-removed" event, with quantity 1', async () => {
       expect(false).toBe(true);
     });
 
-    it('Adds an item to order #3', async () => {
+    it.skip('Adds an item to order #3', async () => {
       expect(false).toBe(true);
     });
 
-    it('Decreases quantity to 0', async () => {
+    it.skip('Decreases quantity to 0', async () => {
       expect(false).toBe(true);
     });
 
-    it('Emits "item-removed" event, with quantity 1', async () => {
+    it.skip('Emits "item-removed" event, with quantity 1', async () => {
       expect(false).toBe(true);
     });
 
-    it('Adds an item to order #4', async () => {
+    it.skip('Adds an item to order #4', async () => {
       expect(false).toBe(true);
     });
   });
 
   describe('Checkout', () => {
-    it('Applies invalid coupon', async () => {
+    it.skip('Applies invalid coupon', async () => {
       expect(false).toBe(true);
     });
 
-    it('Applies valid coupon', async () => {
+    it.skip('Applies valid coupon', async () => {
       expect(false).toBe(true);
     });
 
-    it('Emits "coupon-code-applied" event', async () => {
+    it.skip('Emits "coupon-code-applied" event', async () => {
       expect(false).toBe(true);
     });
 
-    it('Removes coupon', async () => {
+    it.skip('Removes coupon', async () => {
       expect(false).toBe(true);
     });
 
-    it('Emits "coupon-code-removed" event', async () => {
+    it.skip('Emits "coupon-code-removed" event', async () => {
       expect(false).toBe(true);
     });
 
-    it('Adds customer', async () => {
+    it.skip('Adds customer', async () => {
       expect(false).toBe(true);
     });
 
-    it('Adds shipping address', async () => {
+    it.skip('Adds shipping address', async () => {
       expect(false).toBe(true);
     });
 
-    it('Adds billing address', async () => {
+    it.skip('Adds billing address', async () => {
       expect(false).toBe(true);
     });
 
-    it('Sets shipping method', async () => {
+    it.skip('Sets shipping method', async () => {
       expect(false).toBe(true);
     });
 
-    it('Adds payment', async () => {
+    it.skip('Adds payment', async () => {
       expect(false).toBe(true);
     });
 
-    it('Gets order by code', async () => {
+    it.skip('Gets order by code', async () => {
       expect(false).toBe(true);
     });
   });

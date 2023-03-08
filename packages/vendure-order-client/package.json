@@ -18,14 +18,17 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc -p tsconfig.build.json",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest jest .",
+    "test": "jest",
     "generate": "graphql-codegen",
     "dev-server": "ts-node ./test/dev-server.ts"
   },
   "jest": {
     "preset": "ts-jest",
+    "transform": {
+      "^.+\\.(t|j)sx?$": "ts-jest"
+    },
     "transformIgnorePatterns": [
-      "//node_modules"
+      "node_modules/(?!(nanostores))"
     ]
   },
   "devDependencies": {

@@ -15,7 +15,18 @@ export type Order<T> = ActiveOrderFieldsFragment & T;
 export class VendureOrderClient<A = {}> {
   queries: GraphqlQueries;
   client: GraphQLClient;
-  activeOrder: WritableAtom<Order<A> | undefined>;
+  /**
+   * The nanostore object that holds the active order.
+   * For getting/setting the actual activeOrder, use `client.activeOrder`
+   */
+  activeOrderStore: WritableAtom<Order<A> | undefined>;
+
+  get activeOrder(): Order<A> | undefined {
+    return this.activeOrderStore.get();
+  }
+  set activeOrder(order: Order<A> | undefined) {
+    this.activeOrderStore.set(order);
+  }
 
   constructor(
     public url: string,
@@ -26,15 +37,15 @@ export class VendureOrderClient<A = {}> {
       headers: { 'vendure-token': channelToken },
     });
     this.queries = new GraphqlQueries(additionalOrderFields);
-    this.activeOrder = atom<Order<A> | undefined>(undefined);
+    this.activeOrderStore = atom<Order<A> | undefined>(undefined);
   }
 
   async getActiveOrder(): Promise<Order<A> | undefined> {
     const { activeOrder } = await this.request<ActiveOrderQuery>(
       this.queries.GET_ACTIVE_ORDER
     );
-    this.activeOrder.set(activeOrder as Order<A>);
-    return this.activeOrder.get();
+    this.activeOrder = activeOrder as Order<A>;
+    return this.activeOrder;
   }
 
   async request<T = void, I extends Variables | undefined = undefined>(

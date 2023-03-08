@@ -14,7 +14,8 @@
     "types": ["jest", "node"],
     "declaration": true,
     "strictPropertyInitialization": false,
-    "outDir": "dist"
+    "outDir": "dist",
+    "allowJs": true
   },
   "include": ["src/", "test"]
 }
