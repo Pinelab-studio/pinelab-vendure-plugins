@@ -9,7 +9,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import path from 'path';
 import { initialData } from './initial-data';
-import { VendureOrderClient } from '../src/';
+import { VendureOrderClient } from '../lib/';
 
 describe('Vendure order client', () => {
   let server: TestServer;
@@ -35,6 +35,7 @@ describe('Vendure order client', () => {
   });
 
   let client: VendureOrderClient;
+  let latestEmittedEvent: any;
 
   it('Creates a client', async () => {
     client = new VendureOrderClient(
@@ -43,15 +44,22 @@ describe('Vendure order client', () => {
     );
     expect(client).toBeInstanceOf(VendureOrderClient);
     expect(client.activeOrder).toBeUndefined();
+    expect(client.eventBus).toBeDefined();
+    client.eventBus.on('*', (type, e) => (latestEmittedEvent = e));
   });
 
   describe('Cart management', () => {
-    it.skip('Adds an item to order', async () => {
+    it('Adds an item to order', async () => {
+      await client.addItemToOrder('T_1', 1);
+      // TODO check active order
       expect(false).toBe(true);
     });
 
-    it.skip('Emits "item-added" event, with quantity 1', async () => {
-      expect(false).toBe(true);
+    it('Emits "item-added" event, with quantity 1', async () => {
+      expect(latestEmittedEvent).toEqual({
+        productVariantId: 'T_1',
+        quantity: 1,
+      });
     });
 
     it.skip('Increases quantity to 3', async () => {

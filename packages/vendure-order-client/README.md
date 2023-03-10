@@ -26,3 +26,14 @@ Handling catalog data, like fetching products and collections, should be handled
 ### Hooking into events
 
 // TODO: product quantity added, product quantity removed, customer added,
+
+```ts
+function logEvent(_type, e) {
+  console.log(e);
+}
+
+// Subscribe
+client.eventBus.on('item-added', logEvent);
+// Unsubscribe
+client.eventBus.off('item-added', logEvent);
+```

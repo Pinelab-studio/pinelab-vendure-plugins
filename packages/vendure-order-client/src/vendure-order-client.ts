@@ -2,8 +2,10 @@ import { GraphqlQueries } from './queries';
 import { GraphQLClient, Variables } from 'graphql-request';
 import { atom, WritableAtom } from 'nanostores';
 import { ActiveOrderFieldsFragment, ActiveOrderQuery } from './graphql-types';
+import mitt from 'mitt';
+import { Id, VendureOrderEvents } from './events';
 
-export type Order<T> = ActiveOrderFieldsFragment & T;
+export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
 
 /**
  * @example
@@ -15,16 +17,17 @@ export type Order<T> = ActiveOrderFieldsFragment & T;
 export class VendureOrderClient<A = {}> {
   queries: GraphqlQueries;
   client: GraphQLClient;
+  eventBus = mitt<VendureOrderEvents>();
   /**
    * The nanostore object that holds the active order.
    * For getting/setting the actual activeOrder, use `client.activeOrder`
    */
-  activeOrderStore: WritableAtom<Order<A> | undefined>;
+  activeOrderStore: WritableAtom<ActiveOrder<A> | undefined>;
 
-  get activeOrder(): Order<A> | undefined {
+  get activeOrder(): ActiveOrder<A> | undefined {
     return this.activeOrderStore.get();
   }
-  set activeOrder(order: Order<A> | undefined) {
+  set activeOrder(order: ActiveOrder<A> | undefined) {
     this.activeOrderStore.set(order);
   }
 
@@ -37,15 +40,24 @@ export class VendureOrderClient<A = {}> {
       headers: { 'vendure-token': channelToken },
     });
     this.queries = new GraphqlQueries(additionalOrderFields);
-    this.activeOrderStore = atom<Order<A> | undefined>(undefined);
+    this.activeOrderStore = atom<ActiveOrder<A> | undefined>(undefined);
   }
 
-  async getActiveOrder(): Promise<Order<A> | undefined> {
+  async getActiveOrder(): Promise<ActiveOrder<A> | undefined> {
     const { activeOrder } = await this.request<ActiveOrderQuery>(
       this.queries.GET_ACTIVE_ORDER
     );
-    this.activeOrder = activeOrder as Order<A>;
+    this.activeOrder = activeOrder as ActiveOrder<A>;
     return this.activeOrder;
+  }
+
+  async addItemToOrder(
+    productVariantId: Id,
+    quantity: number
+  ): Promise<ActiveOrder<A> | undefined> {
+    this.eventBus.emit('item-added', { productVariantId, quantity });
+    // TODO implement
+    return undefined;
   }
 
   async request<T = void, I extends Variables | undefined = undefined>(

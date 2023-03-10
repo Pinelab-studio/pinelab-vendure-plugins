@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "lib": ["es2017", "DOM"],
-    "module": "commonjs",
+    "module": "esnext",
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
@@ -14,8 +14,8 @@
     "types": ["jest", "node"],
     "declaration": true,
     "strictPropertyInitialization": false,
-    "outDir": "dist",
+    "outDir": "lib",
     "allowJs": true
   },
-  "include": ["src/", "test"]
+  "include": ["src/"]
 }
