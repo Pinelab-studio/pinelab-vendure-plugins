@@ -44,7 +44,7 @@ export class VendureOrderClient<A = {}> {
   }
 
   async getActiveOrder(): Promise<ActiveOrder<A> | undefined> {
-    const { activeOrder } = await this.request<ActiveOrderQuery>(
+    const { activeOrder } = await this.rawRequest<ActiveOrderQuery>(
       this.queries.GET_ACTIVE_ORDER
     );
     this.activeOrder = activeOrder as ActiveOrder<A>;
@@ -60,7 +60,10 @@ export class VendureOrderClient<A = {}> {
     return undefined;
   }
 
-  async request<T = void, I extends Variables | undefined = undefined>(
+  /**
+   * Execute a GraphQL query or mutation
+   */
+  async rawRequest<T = void, I extends Variables | undefined = undefined>(
     document: string,
     variables?: I
   ): Promise<T> {
