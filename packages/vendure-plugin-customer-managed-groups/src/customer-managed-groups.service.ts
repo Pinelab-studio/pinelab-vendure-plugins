@@ -44,8 +44,6 @@ export class CustomerManagedGroupsService {
     await this.hydrator.hydrate(ctx, customerManagedGroup, {
       relations: ['customers'],
     });
-    const dinges = await this.orderService.findAll(ctx);
-    console.log('ORDESRS', dinges.items);
     for (const customer of customerManagedGroup.customers) {
       const ordersForCustomer = await this.orderService.findByCustomerId(
         ctx,
