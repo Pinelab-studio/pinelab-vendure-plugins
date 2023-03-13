@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-customer-managed-groups",
-  "version": "1.0.1-beta.2",
+  "version": "1.0.1-beta.3",
   "description": "This plugin allows customer groups to have 'Group admins', that are allowed to fetch placed orders for everyone in the group.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "repository": "https://github.com/vendure-ecommerce/plugin-template",
