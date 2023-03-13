@@ -3,6 +3,7 @@ import {
   Allow,
   Ctx,
   ForbiddenError,
+  ID,
   Order,
   PaginatedList,
   Permission,
@@ -67,7 +68,6 @@ export class CustomerManagedGroupsResolver {
     return this.service.getOrdersForCustomer(ctx, ctx.activeUserId);
   }
 
-  @Transaction()
   @Mutation()
   @Allow(Permission.Authenticated)
   async addCustomerToMyCustomerManagedGroup(
@@ -78,5 +78,17 @@ export class CustomerManagedGroupsResolver {
       throw new ForbiddenError();
     }
     return this.service.addToGroup(ctx, ctx.activeUserId, emailAddress);
+  }
+
+  @Mutation()
+  @Allow(Permission.Authenticated)
+  async removeCustomerFromMyCustomerManagedGroup(
+    @Ctx() ctx: RequestContext,
+    @Args('customerId') customerId: ID
+  ): Promise<CustomerManagedGroup> {
+    if (!ctx.activeUserId) {
+      throw new ForbiddenError();
+    }
+    return this.service.removeFromGroup(ctx, ctx.activeUserId, customerId);
   }
 }

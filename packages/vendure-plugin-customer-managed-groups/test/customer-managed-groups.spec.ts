@@ -13,6 +13,7 @@ import { CustomerManagedGroupsPlugin } from '../src';
 import {
   addCustomerToGroupMutation,
   getOrdersForMyCustomerManagedGroup,
+  removeCustomerFromGroupMutation,
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
 
@@ -123,11 +124,19 @@ describe('Customer managed groups', function () {
     // TODO
   });
 
-  it.skip('Removes an admin from the group ', async () => {
-    // Should also remove the admin relation
-    // TODO
+  it('Fails to remove as group participant', async () => {
+    expect.assertions(1);
+    await authorizeAsGroupParticipant();
+    try {
+      await shopClient.query(removeCustomerFromGroupMutation, {
+        customerId: '2',
+      });
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        'You are not administrator of your group'
+      );
+    }
   });
-
   it('Places an order for the group participant', async () => {
     await authorizeAsGroupParticipant();
     const order = await createSettledOrder(shopClient, 1, false);
@@ -152,26 +161,23 @@ describe('Customer managed groups', function () {
     }
   });
 
-  it('Fails to fetch orders for participants', async () => {
-    expect.assertions(1);
-    await authorizeAsGroupParticipant();
-    try {
-      await shopClient.query(getOrdersForMyCustomerManagedGroup);
-    } catch (e) {
-      expect((e as any).response.errors[0].message).toBe(
-        'You are not administrator of your group'
-      );
-    }
-  });
-
   it('Fetches 2 orders for the group admin', async () => {
     await authorizeAsGroupAdmin();
     const orders = await shopClient.query(getOrdersForMyCustomerManagedGroup);
     expect(orders.ordersForMyCustomerManagedGroup.totalItems).toBe(2);
+    expect(orders.ordersForMyCustomerManagedGroup.items[0].code).toBeDefined();
+    expect(orders.ordersForMyCustomerManagedGroup.items[1].code).toBeDefined();
   });
 
-  it.skip('Fetches 1 orders for the group participant', async () => {
-    expect(true).toBe(false);
+  it('Fetches 1 order for the group participant', async () => {
+    await authorizeAsGroupParticipant();
+    const orders = await shopClient.query(getOrdersForMyCustomerManagedGroup);
+    expect(orders.ordersForMyCustomerManagedGroup.totalItems).toBe(1);
+  });
+
+  it.skip('Removes an admin from the group', async () => {
+    // Should also remove the admin relation
+    // TODO
   });
 
   afterAll(() => {

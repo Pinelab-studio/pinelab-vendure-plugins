@@ -39,12 +39,14 @@ export class CustomerManagedGroupsService {
     if (!customerManagedGroup) {
       throw new UserInputError(`You are not in a customer managed group`);
     }
-    this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
+    const isAdmin = this.isAdministratorOfGroup(userId, customerManagedGroup);
     const orders: Order[] = [];
     await this.hydrator.hydrate(ctx, customerManagedGroup, {
       relations: ['customers'],
     });
-    for (const customer of customerManagedGroup.customers) {
+    // If not admin, only fetch orders for the current user
+    const customers = isAdmin ? customerManagedGroup.customers : [customer];
+    for (const customer of customers) {
       const ordersForCustomer = await this.orderService.findByCustomerId(
         ctx,
         customer.id
@@ -71,7 +73,7 @@ export class CustomerManagedGroupsService {
     userId: ID,
     inviteeEmailAddress: string
   ): Promise<CustomerManagedGroup> {
-    const [user, invitees] = await Promise.all([
+    const [customer, invitees] = await Promise.all([
       this.getOrThrowCustomerByUserId(ctx, userId),
       this.customerService.findAll(
         ctx,
@@ -91,18 +93,18 @@ export class CustomerManagedGroupsService {
       );
     }
     const invitee = invitees.items[0];
-    let customerManagedGroup = this.getCustomerManagedGroup(user);
+    let customerManagedGroup = this.getCustomerManagedGroup(customer);
     if (customerManagedGroup) {
       this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
     }
     if (!customerManagedGroup) {
       Logger.info(
-        `Creating new group with owner ${user.emailAddress} and invitee ${invitee.emailAddress}`,
+        `Creating new group with owner ${customer.emailAddress} and invitee ${invitee.emailAddress}`,
         loggerCtx
       );
       customerManagedGroup = await this.customerGroupService.create(ctx, {
-        name: `${user.lastName}'s Group`,
-        customerIds: [user.id, invitee.id],
+        name: `${customer.lastName}'s Group`,
+        customerIds: [customer.id, invitee.id],
         customFields: {
           isCustomerManaged: true,
         },
@@ -110,7 +112,7 @@ export class CustomerManagedGroupsService {
     }
     if (
       !customerManagedGroup.customFields.groupAdmins?.find(
-        (admin) => admin.id === user.id
+        (admin) => admin.id === customer.id
       )
     ) {
       // Add owner as group admin
@@ -122,7 +124,7 @@ export class CustomerManagedGroupsService {
         customFields: {
           groupAdmins: [
             {
-              id: user.id,
+              id: customer.id,
               ...existingAdmins,
             },
           ],
@@ -149,6 +151,37 @@ export class CustomerManagedGroupsService {
     return this.mapToCustomerManagedGroup(customerManagedGroup);
   }
 
+  async removeFromGroup(
+    ctx: RequestContext,
+    userId: ID,
+    customerIdToRemove: ID
+  ): Promise<CustomerManagedGroup> {
+    let customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    let customerManagedGroup = this.getCustomerManagedGroup(customer);
+    if (!customerManagedGroup) {
+      throw new UserInputError(`You are not in a customer managed group`);
+    }
+    this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
+    if (
+      customerManagedGroup.customers.find((c) => c.id !== customerIdToRemove)
+    ) {
+      throw new UserInputError(
+        `Customer '${customerIdToRemove}' is not it your group`
+      );
+    }
+    if (customer.id === customerIdToRemove) {
+      throw new UserInputError(`You cannot remove yourself from your group`);
+    }
+    await this.customerGroupService.removeCustomersFromGroup(ctx, {
+      customerGroupId: customerManagedGroup.id,
+      customerIds: [customerIdToRemove],
+    });
+    // Refetch customer and group
+    (customer = await this.getOrThrowCustomerByUserId(ctx, userId)),
+      (customerManagedGroup = this.getCustomerManagedGroup(customer));
+    return this.mapToCustomerManagedGroup(customerManagedGroup!);
+  }
+
   async getOrThrowCustomerByUserId(
     ctx: RequestContext,
     userId: ID
@@ -165,12 +198,19 @@ export class CustomerManagedGroupsService {
     userId: ID,
     group: CustomerGroupWithCustomFields
   ): void {
-    const isAdmin = !!group.customFields.groupAdmins?.find(
-      (admin) => admin.user!.id == userId
-    );
+    const isAdmin = this.isAdministratorOfGroup(userId, group);
     if (!isAdmin) {
       throw new UserInputError('You are not administrator of your group');
     }
+  }
+
+  isAdministratorOfGroup(
+    userId: ID,
+    group: CustomerGroupWithCustomFields
+  ): boolean {
+    return !!group.customFields.groupAdmins?.find(
+      (admin) => admin.user!.id == userId
+    );
   }
 
   getCustomerManagedGroup(

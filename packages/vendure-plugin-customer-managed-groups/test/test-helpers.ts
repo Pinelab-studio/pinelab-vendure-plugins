@@ -32,11 +32,24 @@ export const addCustomerToGroupMutation = gql`
   }
 `;
 
+export const removeCustomerFromGroupMutation = gql`
+  ${customerManagedGroupFragment}
+  mutation RemoveCustomerFromGroup($customerId: ID!) {
+    removeCustomerFromMyCustomerManagedGroup(customerId: $customerId) {
+      ...CustomerManagedGroupFragment
+    }
+  }
+`;
+
 export const getOrdersForMyCustomerManagedGroup = gql`
   query {
     ordersForMyCustomerManagedGroup {
       items {
         id
+        code
+        customer {
+          emailAddress
+        }
       }
       totalItems
     }
