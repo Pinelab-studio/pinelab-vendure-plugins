@@ -1,9 +1,9 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { CustomerManagedGroupsResolver, shopSchema } from './api-extensions';
-import { CustomerManagedGroupsService } from './customer-managed-groups.service';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
+import { CustomerManagedGroupsResolver, shopSchema } from './api-extensions';
 import { customFields } from './custom-fields';
+import { CustomerManagedGroupsService } from './customer-managed-groups.service';
 
 export interface ExampleOptions {
   enabled: boolean;

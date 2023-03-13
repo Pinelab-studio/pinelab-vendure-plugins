@@ -34,7 +34,7 @@ export class CustomerManagedGroupsService {
     ctx: RequestContext,
     userId: ID
   ): Promise<PaginatedList<Order>> {
-    const customer = await this.getOrThrowCustomer(ctx, userId);
+    const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
     const customerManagedGroup = this.getCustomerManagedGroup(customer);
     if (!customerManagedGroup) {
       throw new UserInputError(`You are not in a customer managed group`);
@@ -72,7 +72,7 @@ export class CustomerManagedGroupsService {
     inviteeEmailAddress: string
   ): Promise<CustomerManagedGroup> {
     const [user, invitees] = await Promise.all([
-      this.getOrThrowCustomer(ctx, userId),
+      this.getOrThrowCustomerByUserId(ctx, userId),
       this.customerService.findAll(
         ctx,
         {
@@ -149,16 +149,15 @@ export class CustomerManagedGroupsService {
     return this.mapToCustomerManagedGroup(customerManagedGroup);
   }
 
-  async getOrThrowCustomer(
+  async getOrThrowCustomerByUserId(
     ctx: RequestContext,
     userId: ID
   ): Promise<CustomerWithCustomFields> {
-    const customer = await this.customerService.findOne(ctx, userId, [
-      'groups',
-    ]);
+    const customer = await this.customerService.findOneByUserId(ctx, userId);
     if (!customer) {
       throw new UserInputError(`No customer found for user with id ${userId}`);
     }
+    await this.hydrator.hydrate(ctx, customer, { relations: ['groups'] });
     return customer;
   }
 
@@ -167,7 +166,7 @@ export class CustomerManagedGroupsService {
     group: CustomerGroupWithCustomFields
   ): void {
     const isAdmin = !!group.customFields.groupAdmins?.find(
-      (admin) => admin.id == userId
+      (admin) => admin.user!.id == userId
     );
     if (!isAdmin) {
       throw new UserInputError('You are not administrator of your group');

@@ -49,7 +49,6 @@ describe('Customer managed groups', function () {
   }, 60000);
 
   async function authorizeAsGroupAdmin(): Promise<void> {
-    // FIXME this is actually authenticating as 'trevor_donnelly96@hotmail.com' due to a bug
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
@@ -57,7 +56,6 @@ describe('Customer managed groups', function () {
   }
 
   async function authorizeAsGroupParticipant(): Promise<void> {
-    // FIXME this is actually authenticating as 'stewart.lindgren@gmail.com' due to a bug
     await shopClient.asUserWithCredentials('eliezer56@yahoo.com', 'test');
   }
 
@@ -84,9 +82,9 @@ describe('Customer managed groups', function () {
       await shopClient.query(addCustomerToGroupMutation, {
         emailAddress: 'marques.sawayn@hotmail.com',
       });
-    expect(group.name).toBe("Donnelly's Group");
+    expect(group.name).toBe("Zieme's Group");
     expect(group.administrators[0].emailAddress).toBe(
-      'trevor_donnelly96@hotmail.com'
+      'hayden.zieme12@hotmail.com'
     );
     expect(group.administrators[1]).toBeUndefined();
     expect(group.participants[0].emailAddress).toBe(
@@ -96,16 +94,15 @@ describe('Customer managed groups', function () {
   });
 
   it('Adds another customer to my group', async () => {
+    await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
       await shopClient.query(addCustomerToGroupMutation, {
-        emailAddress: 'stewart.lindgren@gmail.com',
+        emailAddress: 'eliezer56@yahoo.com',
       });
     expect(group.participants[0].emailAddress).toBe(
       'marques.sawayn@hotmail.com'
     );
-    expect(group.participants[1].emailAddress).toBe(
-      'stewart.lindgren@gmail.com'
-    );
+    expect(group.participants[1].emailAddress).toBe('eliezer56@yahoo.com');
   });
 
   it('Fails when a participant tries to add customers', async () => {

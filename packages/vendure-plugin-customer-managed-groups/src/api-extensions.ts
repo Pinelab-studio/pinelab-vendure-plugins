@@ -69,7 +69,7 @@ export class CustomerManagedGroupsResolver {
 
   @Transaction()
   @Mutation()
-  @Allow(Permission.Owner)
+  @Allow(Permission.Authenticated)
   async addCustomerToMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
     @Args('emailAddress') emailAddress: string
