@@ -9,7 +9,9 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import path from 'path';
 import { initialData } from './initial-data';
-import { VendureOrderClient } from '../lib/';
+import { VendureOrderClient, VendureOrderEvents } from '../lib/';
+
+VendureOrderEvents['item-added'];
 
 describe('Vendure order client', () => {
   let server: TestServer;
