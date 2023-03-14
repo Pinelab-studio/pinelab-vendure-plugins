@@ -296,7 +296,8 @@ export class StripeSubscriptionService {
       },
     });
     Logger.info(
-      `Created payment intent '${intent.id}' for order ${order.code}`
+      `Created payment intent '${intent.id}' for order ${order.code}`,
+      loggerCtx
     );
     return intent.client_secret!;
   }
