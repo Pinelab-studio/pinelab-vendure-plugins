@@ -160,6 +160,17 @@ export class StripeSubscriptionController {
     const channelToken =
       body.data.object.metadata?.channelToken ||
       body.data.object.lines?.data[0]?.metadata.channelToken;
+    if (
+      body.type !== 'payment_intent.succeeded' &&
+      body.type !== 'invoice.payment_failed' &&
+      body.type !== 'invoice.payment_succeeded'
+    ) {
+      Logger.info(
+        `Received incoming '${body.type}' webhook, not processing this event.`,
+        loggerCtx
+      );
+      return;
+    }
     if (!orderCode) {
       return Logger.error(
         `Incoming webhook is missing metadata.orderCode, cannot process this event`,
@@ -205,12 +216,6 @@ export class StripeSubscriptionController {
           body,
           order
         );
-      } else {
-        Logger.info(
-          `Received incoming '${body.type}' webhook, not processing this event.`,
-          loggerCtx
-        );
-        return;
       }
       Logger.info(`Successfully handled webhook ${body.type}`, loggerCtx);
     } catch (error) {
