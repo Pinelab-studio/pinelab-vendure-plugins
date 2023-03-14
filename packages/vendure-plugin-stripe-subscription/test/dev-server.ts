@@ -122,7 +122,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: '3 months, billed monthly, 199 downpayment',
-      downpaymentWithTax: 19900,
+      downpaymentWithTax: 0,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 3,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -195,14 +195,14 @@ export let clientSecret = 'test';
       // startDate: in3Days,
     },
   });
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '2',
-    quantity: 1,
-    customFields: {
-      // downpayment: 40000,
-      // startDate: in3Days,
-    },
-  });
+  // await shopClient.query(ADD_ITEM_TO_ORDER, {
+  //   productVariantId: '2',
+  //   quantity: 1,
+  //   customFields: {
+  //     // downpayment: 40000,
+  //     // startDate: in3Days,
+  //   },
+  // });
   /*     await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,

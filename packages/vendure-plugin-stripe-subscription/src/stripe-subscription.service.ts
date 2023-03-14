@@ -231,12 +231,20 @@ export class StripeSubscriptionService {
   }
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
-    const order = (await this.activeOrderService.getActiveOrder(
+    let order = (await this.activeOrderService.getActiveOrder(
       ctx,
       undefined
     )) as OrderWithSubscriptions;
     if (!order) {
       throw new UserInputError('No active order for session');
+    }
+    if (!order.totalWithTax) {
+      // Add a verification fee to the order to support orders that are actually $0
+      order = (await this.orderService.addSurchargeToOrder(ctx, order.id, {
+        description: 'Verification fee',
+        listPrice: 100,
+        listPriceIncludesTax: true,
+      })) as OrderWithSubscriptions;
     }
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
@@ -270,20 +278,8 @@ export class StripeSubscriptionService {
           err
         )
       );
-    let totalAmountDueNow = 0;
     const hasSubscriptionProducts = order.lines.some(
       (l) => l.productVariant.customFields.subscriptionSchedule
-    );
-    await Promise.all(
-      order.lines.map(async (line) => {
-        totalAmountDueNow += line.proratedLinePriceWithTax;
-        Logger.info(
-          `Added ${printMoney(
-            line.proratedLinePriceWithTax // Prorated line price has subscriptionPrice because of our custom strategy
-          )} to payment intent for ${line.productVariant.name}`,
-          loggerCtx
-        );
-      })
     );
     const intent = await stripeClient.paymentIntents.create({
       customer: stripeCustomer.id,
@@ -291,14 +287,18 @@ export class StripeSubscriptionService {
       setup_future_usage: hasSubscriptionProducts
         ? 'off_session'
         : 'on_session',
-      amount: totalAmountDueNow,
+      amount: order.totalWithTax,
       currency: order.currencyCode,
       metadata: {
         orderCode: order.code,
         channelToken: ctx.channel.token,
-        amount: totalAmountDueNow,
+        amount: order.totalWithTax,
       },
     });
+    Logger.info(
+      `Created payment intent '${intent.id}' for order ${order.code}`,
+      loggerCtx
+    );
     return intent.client_secret!;
   }
 

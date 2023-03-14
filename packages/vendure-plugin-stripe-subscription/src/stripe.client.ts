@@ -1,6 +1,5 @@
 import Stripe from 'stripe';
 import { CustomerWithSubscriptionFields } from './subscription-custom-fields';
-import { ID } from '@vendure/core';
 
 interface SubscriptionInput {
   customerId: string;
