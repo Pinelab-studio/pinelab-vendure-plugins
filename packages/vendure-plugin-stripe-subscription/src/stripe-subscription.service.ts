@@ -239,6 +239,7 @@ export class StripeSubscriptionService {
       throw new UserInputError('No active order for session');
     }
     if (!order.totalWithTax) {
+      // Add a verification fee to the order to support orders that are actually $0
       order = (await this.orderService.addSurchargeToOrder(ctx, order.id, {
         description: 'Verification fee',
         listPrice: 100,
