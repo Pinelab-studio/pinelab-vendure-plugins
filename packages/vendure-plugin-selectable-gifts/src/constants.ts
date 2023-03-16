@@ -1,0 +1,2 @@
+export const loggerCtx = 'SelectableGiftsPlugin';
+export const PLUGIN_INIT_OPTIONS = Symbol('PLUGIN_INIT_OPTIONS');
