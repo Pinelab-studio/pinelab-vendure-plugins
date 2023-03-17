@@ -45,7 +45,7 @@ export const customFields: CustomFields = {
       label: [
         {
           languageCode: LanguageCode.en,
-          value: 'Flag to determine if this group is customer managed',
+          value: 'Is customer managed',
         },
       ],
     },

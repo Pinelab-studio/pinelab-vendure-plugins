@@ -15,7 +15,9 @@ import {
 import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { CustomerManagedGroupsPlugin } from '../src';
+
+// import { CustomerManagedGroupsPlugin } from '../src';
+import { CustomerManagedGroupsPlugin } from 'vendure-plugin-customer-managed-groups';
 
 require('dotenv').config();
 
@@ -45,6 +47,9 @@ require('dotenv').config();
     apiOptions: {
       shopApiPlayground: true,
       adminApiPlayground: true,
+    },
+    authOptions: {
+      tokenMethod: 'bearer',
     },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
