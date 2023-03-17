@@ -8,11 +8,13 @@ import {
   PaginatedList,
   Permission,
   RequestContext,
-  Transaction,
 } from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { CustomerManagedGroupsService } from './customer-managed-groups.service';
-import { CustomerManagedGroup } from './generated/graphql';
+import {
+  AddCustomerToMyCustomerManagedGroupInput,
+  CustomerManagedGroup,
+} from './generated/graphql';
 
 // This is just to enable static codegen, without starting a server
 const scalars = gql`
@@ -21,12 +23,18 @@ const scalars = gql`
 `;
 
 export const shopSchema = gql`
+  input AddCustomerToMyCustomerManagedGroupInput {
+    emailAddress: String!
+    isGroupAdmin: Boolean
+  }
+
   type CustomerManagedGroupMember {
-    id: ID!
+    customerId: ID!
     title: String
     firstName: String!
     lastName: String!
     emailAddress: String!
+    isGroupAdministrator: Boolean!
   }
 
   type CustomerManagedGroup {
@@ -34,13 +42,12 @@ export const shopSchema = gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     name: String!
-    administrators: [CustomerManagedGroupMember!]!
-    participants: [CustomerManagedGroupMember!]!
+    customers: [CustomerManagedGroupMember!]!
   }
 
   extend type Mutation {
     addCustomerToMyCustomerManagedGroup(
-      emailAddress: String!
+      input: AddCustomerToMyCustomerManagedGroupInput
     ): CustomerManagedGroup!
     removeCustomerFromMyCustomerManagedGroup(
       customerId: ID!
@@ -62,22 +69,16 @@ export class CustomerManagedGroupsResolver {
   async ordersForMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext
   ): Promise<PaginatedList<Order>> {
-    if (!ctx.activeUserId) {
-      throw new ForbiddenError();
-    }
-    return this.service.getOrdersForCustomer(ctx, ctx.activeUserId);
+    return this.service.getOrdersForCustomer(ctx);
   }
 
   @Mutation()
   @Allow(Permission.Authenticated)
   async addCustomerToMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args('emailAddress') emailAddress: string
+    @Args('input') input: AddCustomerToMyCustomerManagedGroupInput
   ): Promise<CustomerManagedGroup> {
-    if (!ctx.activeUserId) {
-      throw new ForbiddenError();
-    }
-    return this.service.addToGroup(ctx, ctx.activeUserId, emailAddress);
+    return this.service.addToGroup(ctx, input);
   }
 
   @Mutation()
@@ -86,9 +87,6 @@ export class CustomerManagedGroupsResolver {
     @Ctx() ctx: RequestContext,
     @Args('customerId') customerId: ID
   ): Promise<CustomerManagedGroup> {
-    if (!ctx.activeUserId) {
-      throw new ForbiddenError();
-    }
-    return this.service.removeFromGroup(ctx, ctx.activeUserId, customerId);
+    return this.service.removeFromGroup(ctx, customerId);
   }
 }

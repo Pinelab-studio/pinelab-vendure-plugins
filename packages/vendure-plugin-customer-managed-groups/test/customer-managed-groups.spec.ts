@@ -1,4 +1,9 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  examplePaymentHandler,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -16,6 +21,8 @@ import {
   removeCustomerFromGroupMutation,
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
+
+jest.setTimeout(10000);
 
 describe('Customer managed groups', function () {
   let server: TestServer;
@@ -68,7 +75,9 @@ describe('Customer managed groups', function () {
     expect.assertions(1);
     try {
       await shopClient.query(addCustomerToGroupMutation, {
-        emailAddress: 'marques.sawayn@hotmail.com',
+        input: {
+          emailAddress: 'marques.sawayn@hotmail.com',
+        },
       });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
@@ -81,29 +90,37 @@ describe('Customer managed groups', function () {
     await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
       await shopClient.query(addCustomerToGroupMutation, {
-        emailAddress: 'marques.sawayn@hotmail.com',
+        input: {
+          emailAddress: 'marques.sawayn@hotmail.com',
+        },
       });
+    const hayden = group.customers.find(
+      (c: any) => c.emailAddress === 'hayden.zieme12@hotmail.com'
+    );
+    const marques = group.customers.find(
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+    );
     expect(group.name).toBe("Zieme's Group");
-    expect(group.administrators[0].emailAddress).toBe(
-      'hayden.zieme12@hotmail.com'
-    );
-    expect(group.administrators[1]).toBeUndefined();
-    expect(group.participants[0].emailAddress).toBe(
-      'marques.sawayn@hotmail.com'
-    );
-    expect(group.participants[1]).toBeUndefined();
+    expect(hayden.isGroupAdministrator).toBe(true);
+    expect(marques.isGroupAdministrator).toBe(false);
   });
 
   it('Adds another customer to my group', async () => {
     await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
       await shopClient.query(addCustomerToGroupMutation, {
-        emailAddress: 'eliezer56@yahoo.com',
+        input: {
+          emailAddress: 'eliezer56@yahoo.com',
+        },
       });
-    expect(group.participants[0].emailAddress).toBe(
-      'marques.sawayn@hotmail.com'
+    const marques = group.customers.find(
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
     );
-    expect(group.participants[1].emailAddress).toBe('eliezer56@yahoo.com');
+    const eliezer = group.customers.find(
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+    );
+    expect(marques.isGroupAdministrator).toBe(false);
+    expect(eliezer.isGroupAdministrator).toBe(false);
   });
 
   it('Fails when a participant tries to add customers', async () => {
@@ -111,7 +128,9 @@ describe('Customer managed groups', function () {
     await authorizeAsGroupParticipant();
     try {
       await shopClient.query(addCustomerToGroupMutation, {
-        emailAddress: 'marques.sawayn@hotmail.com',
+        input: {
+          emailAddress: 'marques.sawayn@hotmail.com',
+        },
       });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
@@ -120,23 +139,6 @@ describe('Customer managed groups', function () {
     }
   });
 
-  it.skip('Adds a group admin as administrator', async () => {
-    // TODO
-  });
-
-  it('Fails to remove as group participant', async () => {
-    expect.assertions(1);
-    await authorizeAsGroupParticipant();
-    try {
-      await shopClient.query(removeCustomerFromGroupMutation, {
-        customerId: '2',
-      });
-    } catch (e) {
-      expect((e as any).response.errors[0].message).toBe(
-        'You are not administrator of your group'
-      );
-    }
-  });
   it('Places an order for the group participant', async () => {
     await authorizeAsGroupParticipant();
     const order = await createSettledOrder(shopClient, 1, false);
@@ -175,12 +177,60 @@ describe('Customer managed groups', function () {
     expect(orders.ordersForMyCustomerManagedGroup.totalItems).toBe(1);
   });
 
-  it.skip('Removes an admin from the group', async () => {
-    // Should also remove the admin relation
-    // TODO
+  it('Fails to remove as group participant', async () => {
+    expect.assertions(1);
+    await authorizeAsGroupParticipant();
+    try {
+      await shopClient.query(removeCustomerFromGroupMutation, {
+        customerId: '3', // marques.sawayn@hotmail.com
+      });
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        'You are not administrator of your group'
+      );
+    }
   });
 
-  afterAll(() => {
-    return server.destroy();
+  it('Removes customer ', async () => {
+    await authorizeAsGroupAdmin();
+    const { removeCustomerFromMyCustomerManagedGroup: group } =
+      await shopClient.query(removeCustomerFromGroupMutation, {
+        customerId: '3', // marques.sawayn@hotmail.com
+      });
+    const marques = group.customers.find(
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+    );
+    expect(marques).toBeUndefined();
+  });
+
+  it('Adds another group admin to my group', async () => {
+    await authorizeAsGroupAdmin();
+    const { addCustomerToMyCustomerManagedGroup: group } =
+      await shopClient.query(addCustomerToGroupMutation, {
+        input: {
+          emailAddress: 'marques.sawayn@hotmail.com',
+          isGroupAdmin: true,
+        },
+      });
+    const marques = group.customers.find(
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+    );
+    expect(marques.isGroupAdministrator).toBe(true);
+  });
+
+  it('Removes an admin from the group', async () => {
+    await authorizeAsGroupAdmin();
+    const { removeCustomerFromMyCustomerManagedGroup: group } =
+      await shopClient.query(removeCustomerFromGroupMutation, {
+        customerId: '3', // marques.sawayn@hotmail.com
+      });
+    const marques = group.customers.find(
+      (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
+    );
+    expect(marques).toBeUndefined();
+  });
+
+  afterAll(async () => {
+    await server.destroy();
   });
 });

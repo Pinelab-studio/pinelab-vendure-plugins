@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { OrderList } from '@vendure/common/lib/generated-types';
 import {
+  Customer,
   CustomerGroup,
   CustomerGroupService,
   CustomerService,
   EntityHydrator,
+  ForbiddenError,
   ID,
   Logger,
   Order,
@@ -19,7 +21,11 @@ import {
   CustomerGroupWithCustomFields,
   CustomerWithCustomFields,
 } from './custom-fields';
-import { CustomerManagedGroup } from './generated/graphql';
+import {
+  AddCustomerToMyCustomerManagedGroupInput,
+  CustomerManagedGroup,
+  CustomerManagedGroupMember,
+} from './generated/graphql';
 
 @Injectable()
 export class CustomerManagedGroupsService {
@@ -31,9 +37,9 @@ export class CustomerManagedGroupsService {
   ) {}
 
   async getOrdersForCustomer(
-    ctx: RequestContext,
-    userId: ID
+    ctx: RequestContext
   ): Promise<PaginatedList<Order>> {
+    const userId = this.getOrThrowUserId(ctx);
     const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
     const customerManagedGroup = this.getCustomerManagedGroup(customer);
     if (!customerManagedGroup) {
@@ -41,9 +47,6 @@ export class CustomerManagedGroupsService {
     }
     const isAdmin = this.isAdministratorOfGroup(userId, customerManagedGroup);
     const orders: Order[] = [];
-    await this.hydrator.hydrate(ctx, customerManagedGroup, {
-      relations: ['customers'],
-    });
     // If not admin, only fetch orders for the current user
     const customers = isAdmin ? customerManagedGroup.customers : [customer];
     for (const customer of customers) {
@@ -70,115 +73,132 @@ export class CustomerManagedGroupsService {
 
   async addToGroup(
     ctx: RequestContext,
-    userId: ID,
-    inviteeEmailAddress: string
+    {
+      emailAddress: inviteeEmailAddress,
+      isGroupAdmin: inviteeIsAdmin,
+    }: AddCustomerToMyCustomerManagedGroupInput
   ): Promise<CustomerManagedGroup> {
-    const [customer, invitees] = await Promise.all([
+    const userId = this.getOrThrowUserId(ctx);
+    let [currentCustomer, invitee] = await Promise.all([
       this.getOrThrowCustomerByUserId(ctx, userId),
-      this.customerService.findAll(
-        ctx,
-        {
-          filter: {
-            emailAddress: {
-              eq: inviteeEmailAddress,
-            },
-          },
-        },
-        ['groups']
-      ),
+      this.getOrThrowCustomerByEmail(ctx, inviteeEmailAddress),
     ]);
-    if (!invitees.items[0]) {
-      throw new UserInputError(
-        `No customer found for email adress ${inviteeEmailAddress}`
-      );
-    }
-    const invitee = invitees.items[0];
-    let customerManagedGroup = this.getCustomerManagedGroup(customer);
+    let customerManagedGroup = this.getCustomerManagedGroup(currentCustomer);
     if (customerManagedGroup) {
       this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
     }
     if (!customerManagedGroup) {
       Logger.info(
-        `Creating new group with owner ${customer.emailAddress} and invitee ${invitee.emailAddress}`,
+        `Creating new group "${currentCustomer.lastName}'s Group"`,
         loggerCtx
       );
       customerManagedGroup = await this.customerGroupService.create(ctx, {
-        name: `${customer.lastName}'s Group`,
-        customerIds: [customer.id, invitee.id],
+        name: `${currentCustomer.lastName}'s Group`,
+        customerIds: [currentCustomer.id, invitee.id],
         customFields: {
           isCustomerManaged: true,
         },
       });
     }
-    if (
-      !customerManagedGroup.customFields.groupAdmins?.find(
-        (admin) => admin.id === customer.id
-      )
-    ) {
-      // Add owner as group admin
-      const existingAdmins = (
-        customerManagedGroup.customFields.groupAdmins || []
-      ).map((admin) => ({ id: admin.id }));
-      customerManagedGroup = await this.customerGroupService.update(ctx, {
-        id: customerManagedGroup.id,
-        customFields: {
-          groupAdmins: [
-            {
-              id: customer.id,
-              ...existingAdmins,
-            },
-          ],
-        },
-      });
+    const existingAdminIds = (
+      customerManagedGroup.customFields.groupAdmins || []
+    ).map((admin) => admin.id);
+    // Add current customer as admin
+    const adminIds = [currentCustomer.id, ...existingAdminIds];
+    Logger.info(
+      `Adding ${currentCustomer.emailAddress} as administrator of group`,
+      loggerCtx
+    );
+    if (inviteeIsAdmin) {
+      // Add invitee as admin
+      adminIds.push(invitee.id);
+      Logger.info(
+        `Adding ${invitee.emailAddress} as administrator of group`,
+        loggerCtx
+      );
     }
+    // Set group admins
+    customerManagedGroup = await this.customerGroupService.update(ctx, {
+      id: customerManagedGroup.id,
+      customFields: {
+        groupAdmins: adminIds.map((id) => ({ id })),
+      },
+    });
     await this.hydrator.hydrate(ctx, customerManagedGroup, {
       relations: ['customers'],
     });
     const existingCustomersIds = customerManagedGroup.customers.map(
       (customer) => customer.id
     );
-    // Add invitee to group
-    customerManagedGroup = await this.customerGroupService.addCustomersToGroup(
-      ctx,
-      {
-        customerGroupId: customerManagedGroup.id,
-        customerIds: [invitee.id, ...existingCustomersIds],
-      }
-    );
-    await this.hydrator.hydrate(ctx, customerManagedGroup, {
-      relations: ['customers'],
-    });
+    if (!existingCustomersIds.includes(invitee.id)) {
+      // Add invitee to group
+      customerManagedGroup =
+        await this.customerGroupService.addCustomersToGroup(ctx, {
+          customerGroupId: customerManagedGroup.id,
+          customerIds: [invitee.id, ...existingCustomersIds],
+        });
+      Logger.info(
+        `Added ${invitee.emailAddress} as participants of group`,
+        loggerCtx
+      );
+    }
+    // Refetch customer and group
+    currentCustomer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    customerManagedGroup = this.getCustomerManagedGroup(currentCustomer)!;
     return this.mapToCustomerManagedGroup(customerManagedGroup);
   }
 
   async removeFromGroup(
     ctx: RequestContext,
-    userId: ID,
     customerIdToRemove: ID
   ): Promise<CustomerManagedGroup> {
+    const userId = this.getOrThrowUserId(ctx);
     let customer = await this.getOrThrowCustomerByUserId(ctx, userId);
     let customerManagedGroup = this.getCustomerManagedGroup(customer);
     if (!customerManagedGroup) {
       throw new UserInputError(`You are not in a customer managed group`);
     }
     this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
-    if (
-      customerManagedGroup.customers.find((c) => c.id !== customerIdToRemove)
-    ) {
+    const customerToRemove = customerManagedGroup.customers.find(
+      (c) => c.id == customerIdToRemove
+    );
+    if (!customerToRemove) {
       throw new UserInputError(
-        `Customer '${customerIdToRemove}' is not it your group`
+        `Customer '${customerIdToRemove}' is not in your group`
       );
     }
     if (customer.id === customerIdToRemove) {
       throw new UserInputError(`You cannot remove yourself from your group`);
     }
-    await this.customerGroupService.removeCustomersFromGroup(ctx, {
-      customerGroupId: customerManagedGroup.id,
-      customerIds: [customerIdToRemove],
-    });
+    customerManagedGroup =
+      await this.customerGroupService.removeCustomersFromGroup(ctx, {
+        customerGroupId: customerManagedGroup.id,
+        customerIds: [customerIdToRemove],
+      });
+    Logger.info(
+      `Removed customer ${customerToRemove.emailAddress} from group`,
+      loggerCtx
+    );
+    const existingAdminIds =
+      customerManagedGroup.customFields.groupAdmins?.map((a) => a.id) || [];
+    if (existingAdminIds.includes(customerToRemove.id)) {
+      const newAdminIds = existingAdminIds.filter(
+        (id) => id != customerToRemove.id
+      );
+      customerManagedGroup = await this.customerGroupService.update(ctx, {
+        id: customerManagedGroup.id,
+        customFields: {
+          groupAdmins: newAdminIds.map((id) => ({ id })),
+        },
+      });
+      Logger.info(
+        `Removed ${customerToRemove.emailAddress} as group administrator`,
+        loggerCtx
+      );
+    }
     // Refetch customer and group
-    (customer = await this.getOrThrowCustomerByUserId(ctx, userId)),
-      (customerManagedGroup = this.getCustomerManagedGroup(customer));
+    customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    customerManagedGroup = this.getCustomerManagedGroup(customer);
     return this.mapToCustomerManagedGroup(customerManagedGroup!);
   }
 
@@ -190,16 +210,46 @@ export class CustomerManagedGroupsService {
     if (!customer) {
       throw new UserInputError(`No customer found for user with id ${userId}`);
     }
-    await this.hydrator.hydrate(ctx, customer, { relations: ['groups'] });
+    await this.hydrator.hydrate(ctx, customer, {
+      relations: ['groups', 'groups.customers'],
+    });
     return customer;
+  }
+
+  async getOrThrowCustomerByEmail(
+    ctx: RequestContext,
+    emailAddress: string
+  ): Promise<Customer> {
+    const customers = await this.customerService.findAll(ctx, {
+      filter: {
+        emailAddress: {
+          eq: emailAddress,
+        },
+      },
+    });
+    if (!customers.items[0]) {
+      throw new UserInputError(
+        `No customer found for email adress ${emailAddress}`
+      );
+    }
+    return customers.items[0];
+  }
+
+  /**
+   * Get userId from RequestContext or throw a ForbiddenError if not logged in
+   */
+  getOrThrowUserId(ctx: RequestContext): ID {
+    if (!ctx.activeUserId) {
+      throw new ForbiddenError();
+    }
+    return ctx.activeUserId;
   }
 
   throwIfNotAdministratorOfGroup(
     userId: ID,
     group: CustomerGroupWithCustomFields
   ): void {
-    const isAdmin = this.isAdministratorOfGroup(userId, group);
-    if (!isAdmin) {
+    if (!this.isAdministratorOfGroup(userId, group)) {
       throw new UserInputError('You are not administrator of your group');
     }
   }
@@ -231,13 +281,27 @@ export class CustomerManagedGroupsService {
   ): CustomerManagedGroup {
     const adminIds =
       group.customFields.groupAdmins?.map((admin) => admin.id) || [];
-    const participants = group.customers.filter(
-      (customer) => !adminIds.includes(customer.id)
+    // Filter out group administrators
+    const participants = group.customers
+      .filter((customer) => !adminIds.includes(customer.id))
+      .map((c) => this.mapToCustomerManagedGroupMember(c, false));
+    const administrators = (group.customFields.groupAdmins || []).map((a) =>
+      this.mapToCustomerManagedGroupMember(a, true)
     );
     return {
       ...group,
-      administrators: group.customFields.groupAdmins || [],
-      participants,
+      customers: [...administrators, ...participants],
+    };
+  }
+
+  mapToCustomerManagedGroupMember(
+    customer: Customer,
+    isGroupAdministrator: boolean
+  ): CustomerManagedGroupMember {
+    return {
+      ...customer,
+      customerId: customer.id,
+      isGroupAdministrator,
     };
   }
 }

@@ -6,27 +6,23 @@ export const customerManagedGroupFragment = gql`
     createdAt
     updatedAt
     name
-    administrators {
-      id
+    customers {
+      customerId
       title
       firstName
       lastName
       emailAddress
-    }
-    participants {
-      id
-      title
-      firstName
-      lastName
-      emailAddress
+      isGroupAdministrator
     }
   }
 `;
 
 export const addCustomerToGroupMutation = gql`
   ${customerManagedGroupFragment}
-  mutation AddCustomerToGroup($emailAddress: String!) {
-    addCustomerToMyCustomerManagedGroup(emailAddress: $emailAddress) {
+  mutation AddCustomerToGroup(
+    $input: AddCustomerToMyCustomerManagedGroupInput!
+  ) {
+    addCustomerToMyCustomerManagedGroup(input: $input) {
       ...CustomerManagedGroupFragment
     }
   }
