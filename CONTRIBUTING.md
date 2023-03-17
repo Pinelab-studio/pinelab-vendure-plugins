@@ -7,7 +7,10 @@ Below you can find our opinionated guide on how to contribute to this repository
 1. [Create a fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) of [this repository](https://github.com/Pinelab-studio/pinelab-vendure-plugins)
 2. Checkout the `master` branch and make sure it's up to date with `git pull upstream master`
 3. Create a feature branch `git checkout -b feat/gifts-plugin`
-4. Define testcases first. Just the text, don't implement them yet. This helps you think about what the functionality of the code should be. Example:
+4. `yarn` in the root of the project.
+5. `cd packages/vendure-plugin-gifts` and `yarn` again to install it's dependencies
+6. Commit using the commandline, to automatically format `git commit -a -m 'feat(gifts): implemented gift selection'`
+7. Define testcases first. Just the text, don't implement them yet. This helps you think about what the functionality of the code should be. Example:
 
 ```ts
 it('Allows administrators to define free gifts', async () => {});
