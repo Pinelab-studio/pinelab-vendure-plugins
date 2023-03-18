@@ -276,6 +276,15 @@ export class CustomerManagedGroupsService {
     );
   }
 
+  async myCustomerManagagedGroup(
+    ctx: RequestContext
+  ): Promise<CustomerManagedGroup> {
+    const userId = this.getOrThrowUserId(ctx);
+    const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    const customerManagedGroup = this.getCustomerManagedGroup(customer);
+    return this.mapToCustomerManagedGroup(customerManagedGroup!);
+  }
+
   mapToCustomerManagedGroup(
     group: CustomerGroupWithCustomFields
   ): CustomerManagedGroup {
