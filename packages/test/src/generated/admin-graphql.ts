@@ -6039,3 +6039,11 @@ export const GET_COLLECTION_ADMIN = gql`
     }
   }
 `;
+
+export const CREATE_COLLECTION = gql`
+  mutation CreateCollection($input: CreateCollectionInput!) {
+    createCollection(input: $input) {
+      ...Collection
+    }
+  }
+`;

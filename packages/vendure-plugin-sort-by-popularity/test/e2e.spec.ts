@@ -13,12 +13,20 @@ import {
   createSettledOrder,
   getProductWithId,
 } from '../../test/src/shop-utils';
-import { getAllOrders } from '../../test/src/admin-utils';
+import {
+  createCollectionContainingProduct,
+  getAllOrders,
+} from '../../test/src/admin-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import {
+  Collection,
+  GET_COLLECTION_ADMIN,
+  QueryCollectionArgs,
+} from '../../test/src/generated/admin-graphql';
 
 jest.setTimeout(10000);
 
-describe('Limit variants per order plugin', function () {
+describe('Sort by Popularity Plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -74,7 +82,42 @@ describe('Limit variants per order plugin', function () {
   });
 
   let products: Product[];
-  let collections: Product[];
+  let collections: Collection[];
+
+  it('Creates collection containing product ', async () => {
+    const parentCollection = await createCollectionContainingProduct(
+      adminClient,
+      'T_1',
+      {
+        name: 'Parent Collection',
+        description: 'This is a parent collection',
+        slug: 'parent-collection',
+      }
+    );
+    const childCollection1 = await createCollectionContainingProduct(
+      adminClient,
+      'T_1',
+      {
+        name: 'Child Collection',
+        description: 'This is a child collection',
+        slug: 'child-collection',
+      },
+      parentCollection.id
+    );
+    const childCollection2 = await createCollectionContainingProduct(
+      adminClient,
+      'T_2',
+      {
+        name: 'Child Collection',
+        description: 'This is a child collection',
+        slug: 'child-collection',
+      },
+      parentCollection.id
+    );
+    collections.push(parentCollection);
+    collections.push(childCollection1);
+    collections.push(childCollection2);
+  });
 
   it('Calls webhook to calculate popularity', async () => {
     // TODO Verify that the api call to order-by-popularity/calculate-scores was successfull.
@@ -93,11 +136,24 @@ describe('Limit variants per order plugin', function () {
 
   it('Calculated popularity per collection', async () => {
     // TODO Popularity score is publicly available via the Shop GraphQL api
-    expect(false).toBe(true);
+    const childCollection1 = await adminClient.query<
+      Collection,
+      QueryCollectionArgs
+    >(GET_COLLECTION_ADMIN, { id: collections[1].id });
+    const childCollection2 = await adminClient.query<
+      Collection,
+      QueryCollectionArgs
+    >(GET_COLLECTION_ADMIN, { id: collections[1].id });
+    expect(childCollection1.customFields.popularityScore).toBe(1000);
+    expect(childCollection2.customFields.popularityScore).toBe(0);
   });
 
   it('Calculated popularity for parent collections', async () => {
-    expect(false).toBe(true);
+    const parentCollection = await adminClient.query<
+      Collection,
+      QueryCollectionArgs
+    >(GET_COLLECTION_ADMIN, { id: collections[0].id });
+    expect(parentCollection.customFields.popularityScore).toBe(1000);
   });
 
   afterAll(() => {

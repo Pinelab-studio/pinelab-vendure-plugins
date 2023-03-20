@@ -1,8 +1,6 @@
 import {
-  Collection,
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
-  LanguageCode,
 } from '@vendure/core';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import { SimpleGraphQLClient } from '@vendure/testing';
@@ -19,6 +17,12 @@ import {
   MutationUpdateCollectionArgs,
   ConfigArg,
   ConfigurableOperation,
+  CreateCollectionInput,
+  MutationCreateCollectionArgs,
+  CREATE_COLLECTION,
+  LanguageCode,
+  Collection,
+  CreateCollectionTranslationInput,
 } from './generated/admin-graphql';
 import { productIdCollectionFilter } from '@vendure/core';
 
@@ -55,7 +59,7 @@ export async function addShippingMethod(
         ],
       },
       translations: [
-        { languageCode: LanguageCode.en, name: 'test method', description: '' },
+        { languageCode: LanguageCode.En, name: 'test method', description: '' },
       ],
     },
   });
@@ -160,4 +164,36 @@ export async function assignProductToCollection(
       }),
     },
   };
+}
+
+export async function createCollectionContainingProduct(
+  adminClient: SimpleGraphQLClient,
+  productId: string,
+  translationFields: Omit<
+    CreateCollectionTranslationInput,
+    'customFields' | 'languageCode'
+  >,
+  parentId?: string
+): Promise<Collection> {
+  const input: CreateCollectionInput = {
+    filters: [
+      {
+        code: productIdCollectionFilter.code,
+        arguments: [{ name: 'productIds', value: productId }],
+      },
+    ],
+    translations: [
+      {
+        description: translationFields.description,
+        languageCode: LanguageCode.En,
+        name: translationFields.name,
+        slug: translationFields.slug,
+      },
+    ],
+    parentId,
+  };
+  return await adminClient.query<Collection, MutationCreateCollectionArgs>(
+    CREATE_COLLECTION,
+    { input }
+  );
 }
