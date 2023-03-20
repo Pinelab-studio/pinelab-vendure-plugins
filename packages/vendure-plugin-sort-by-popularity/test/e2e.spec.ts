@@ -73,17 +73,19 @@ describe('Limit variants per order plugin', function () {
   let products: Product[];
   let collections: Product[];
 
-  it('Calls cron webhook to calculate popularity', async () => {
+  it('Calls webhook to calculate popularity', async () => {
+    // TODO Verify that the api call to order-by-popularity/calculate-scores was successfull.
     expect(false).toBe(true);
   });
 
   it('Calculated popularity per product', async () => {
-    // TODO fetch via shop-api
+    // TODO Popularity score is publicly available via the Shop GraphQL api
+    // You might have to apply a delay here, because we will be doing the calculation in the worker
     expect(false).toBe(true);
   });
 
   it('Calculated popularity per collection', async () => {
-    // TODO fetch via shop-api
+    // TODO Popularity score is publicly available via the Shop GraphQL api
     expect(false).toBe(true);
   });
 

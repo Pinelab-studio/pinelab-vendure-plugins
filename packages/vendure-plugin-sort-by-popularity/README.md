@@ -10,7 +10,7 @@ This plugin periodically scores products and categories based on the amount of t
 
 ## How it works
 
-This plugin exposes an endpoint that can be periodically called: `/order-by-popularity/calculate`. This will push a job named `calculate-popularity` to the worker. The worker will handle this message and do the following:
+This plugin exposes an endpoint that can be periodically called: `/order-by-popularity/calculate-scores`. This will push a job named `calculate-popularity` to the worker. The worker will handle this message and do the following:
 
 1. Get all orders from the past 12 months. The amount of months should be configurable.
 2. Calculate the amount of times each Variant has been sold.
