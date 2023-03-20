@@ -3643,3 +3643,15 @@ export const AddPaymentToOrder = gql`
     }
   }
 `;
+
+export const GET_PRODUCT_SIMPLE = gql`
+  query GetProductSimple($id: ID!) {
+    product(id: $id) {
+      id
+      name
+      customfields {
+        popularityScore
+      }
+    }
+  }
+`;

@@ -1,4 +1,5 @@
 import {
+  Collection,
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
   LanguageCode,
@@ -12,7 +13,14 @@ import {
   Orders as OrdersGraphql,
   OrderQuery,
   OrdersQuery,
+  UpdateCollectionInput,
+  GET_COLLECTION_ADMIN,
+  QueryCollectionArgs,
+  MutationUpdateCollectionArgs,
+  ConfigArg,
+  ConfigurableOperation,
 } from './generated/admin-graphql';
+import { productIdCollectionFilter } from '@vendure/core';
 
 export async function addShippingMethod(
   adminClient: SimpleGraphQLClient,
@@ -88,4 +96,68 @@ export async function getAllOrders(
 ): Promise<OrdersQuery['orders']['items']> {
   const { orders } = await adminClient.query(OrdersGraphql);
   return orders.items;
+}
+
+export async function assignProductToCollection(
+  adminClient: SimpleGraphQLClient,
+  productId: string,
+  collectionId: string
+): Promise<void> {
+  const collection = await adminClient.query<Collection, QueryCollectionArgs>(
+    GET_COLLECTION_ADMIN,
+    { id: collectionId }
+  );
+  const productIdConfigurableOperation: ConfigurableOperation | undefined =
+    collection.filters.find((f) => f.code === productIdCollectionFilter.code);
+  let updatedCollectionFilter: ConfigurableOperation[];
+  if (productIdConfigurableOperation) {
+    if (
+      productIdConfigurableOperation.args.find((a) => a.value === productId)
+    ) {
+      return;
+    }
+    const updatedproductIdCollectionFilterArgs = [
+      ...(productIdConfigurableOperation.args as ConfigArg[]),
+      {
+        name: 'productIds',
+        value: productId,
+      },
+    ];
+    updatedCollectionFilter = [
+      ...collection.filters.filter(
+        (f) => f.code !== productIdCollectionFilter.code
+      ),
+      {
+        code: productIdCollectionFilter.code,
+        args: updatedproductIdCollectionFilterArgs,
+      },
+    ];
+  } else {
+    const updatedproductIdCollectionFilterArgs = [
+      {
+        name: 'productIds',
+        value: productId,
+      },
+    ];
+    updatedCollectionFilter = [
+      ...collection.filters.filter(
+        (f) => f.code !== productIdCollectionFilter.code
+      ),
+      {
+        code: productIdCollectionFilter.code,
+        args: updatedproductIdCollectionFilterArgs,
+      },
+    ];
+  }
+  const updateCollectionInput: MutationUpdateCollectionArgs = {
+    input: {
+      id: collectionId,
+      filters: updatedCollectionFilter.map((f) => {
+        return {
+          code: f.code,
+          arguments: f.args,
+        };
+      }),
+    },
+  };
 }

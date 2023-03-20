@@ -9,7 +9,10 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import { SortByPopularityPlugin } from '../src/index';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import {
+  createSettledOrder,
+  getProductWithId,
+} from '../../test/src/shop-utils';
 import { getAllOrders } from '../../test/src/admin-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
@@ -75,13 +78,17 @@ describe('Limit variants per order plugin', function () {
 
   it('Calls webhook to calculate popularity', async () => {
     // TODO Verify that the api call to order-by-popularity/calculate-scores was successfull.
-    expect(false).toBe(true);
+    const res = await adminClient.fetch(
+      `http://localhost:3106/order-by-popularity/calculate-scores`
+    );
+    expect(res.status).toBe(201);
   });
 
   it('Calculated popularity per product', async () => {
     // TODO Popularity score is publicly available via the Shop GraphQL api
     // You might have to apply a delay here, because we will be doing the calculation in the worker
-    expect(false).toBe(true);
+    const product = await getProductWithId(shopClient, 'T_1');
+    expect(product.customFields.popularityScore).toBe(1000);
   });
 
   it('Calculated popularity per collection', async () => {
@@ -97,3 +104,13 @@ describe('Limit variants per order plugin', function () {
     return server.destroy();
   });
 });
+
+async function calculatePopularity(
+  adminClient: SimpleGraphQLClient,
+  port: number
+) {
+  const res = await adminClient.fetch(
+    `http://localhost:${port}/order-by-popularity/calculate-scores`
+  );
+  expect(res.status).toBe(201);
+}
