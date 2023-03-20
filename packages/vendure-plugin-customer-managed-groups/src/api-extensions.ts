@@ -72,6 +72,14 @@ export class CustomerManagedGroupsResolver {
     return this.service.getOrdersForCustomer(ctx);
   }
 
+  @Query()
+  @Allow(Permission.Authenticated)
+  async myCustomerManagedGroup(
+    @Ctx() ctx: RequestContext
+  ): Promise<PaginatedList<Order>> {
+    return this.service.myCustomerManagedGroup(ctx);
+  }
+
   @Mutation()
   @Allow(Permission.Authenticated)
   async addCustomerToMyCustomerManagedGroup(
