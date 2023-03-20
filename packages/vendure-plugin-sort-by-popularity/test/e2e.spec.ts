@@ -56,7 +56,7 @@ describe('Limit variants per order plugin', function () {
     expect(serverStarted).toBe(true);
   });
 
-  it('Should place orders', async () => {
+  it('Should place test orders', async () => {
     for (let i = 0; i < 5; i++) {
       await createSettledOrder(shopClient, 1);
     }
