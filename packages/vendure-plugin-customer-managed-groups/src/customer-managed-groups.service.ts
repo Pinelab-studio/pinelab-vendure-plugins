@@ -276,7 +276,7 @@ export class CustomerManagedGroupsService {
     );
   }
 
-  async myCustomerManagagedGroup(
+  async myCustomerManagedGroup(
     ctx: RequestContext
   ): Promise<CustomerManagedGroup> {
     const userId = this.getOrThrowUserId(ctx);
