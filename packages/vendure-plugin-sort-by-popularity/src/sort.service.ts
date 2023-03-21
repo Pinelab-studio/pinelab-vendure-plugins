@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   OrderLine,
+  Product,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
@@ -12,30 +13,31 @@ export class SortService {
     const groupedOrderLines = await this.connection
       .getRepository(ctx, OrderLine)
       .createQueryBuilder('orderLine')
-      // .addSelect(['count(product.id) as count'])
-      .innerJoin('orderLine.productVariant', 'productVariant')
-      .addSelect([
-        'productVariant.deletedAt,productVariant.enabled,productVariant.product',
-      ])
-      .innerJoin('orderLine.order', 'order')
-      .addSelect(['order.orderPlacedAt,order.channels'])
-      .innerJoin('productVariant.product', 'product')
-      .addSelect([
-        'product.deletedAt,product.enabled,product.id,count(product.id) as count',
-      ])
-      // .leftJoin('order.channels','order_channel',)
-      // .andWhere(`
-      //     order.orderPlacedAt is NOT NULL
-      // `)
+      .addSelect(['count(product.id) as count'])
+      .innerJoinAndSelect('orderLine.productVariant', 'productVariant')
+      .innerJoinAndSelect('orderLine.order', '`order`')
+      .innerJoinAndSelect('productVariant.product', 'product')
+      .innerJoinAndSelect('`order`.channels', 'order_channel')
+      .andWhere('`order`.orderPlacedAt is NOT NULL')
       .andWhere('product.deletedAt IS NULL')
       .andWhere('productVariant.deletedAt IS NULL')
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
-      // .andWhere(`order_channel.id=${ctx.channelId}`)
+      .andWhere(`order_channel.id=${ctx.channelId}`)
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
-    console.log(groupedOrderLines);
+    const maxCount = groupedOrderLines[0].count;
+    const maxValue = 1000;
+    const productRepositoty =
+      this.connection.rawConnection.getRepository(Product);
+    for (const groupLines of groupedOrderLines) {
+      await productRepositoty.update(groupLines.product.id, {
+        customFields: {
+          popularityScore: (groupLines.count * maxValue) / maxCount,
+        },
+      });
+    }
     return { success: true };
   }
 
