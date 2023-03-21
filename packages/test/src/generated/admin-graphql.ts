@@ -5997,3 +5997,53 @@ export const CreatePaymentMethod = gql`
     }
   }
 `;
+
+export const GET_COLLECTION_ADMIN = gql`
+  query GetCollectionAdmin($id: ID, $slug: String) {
+    collection(id: $id, slug: $slug) {
+      id
+      name
+      slug
+      isPrivate
+      filters {
+        code
+        args {
+          name
+          value
+        }
+      }
+      assets {
+        ...Asset
+      }
+      customFields {
+        popularityScore
+      }
+      featuredAsset {
+        ...Asset
+      }
+      parent {
+        id
+        name
+      }
+      children {
+        id
+        name
+      }
+      translations {
+        id
+        languageCode
+        name
+        slug
+        description
+      }
+    }
+  }
+`;
+
+export const CREATE_COLLECTION = gql`
+  mutation CreateCollection($input: CreateCollectionInput!) {
+    createCollection(input: $input) {
+      ...Collection
+    }
+  }
+`;
