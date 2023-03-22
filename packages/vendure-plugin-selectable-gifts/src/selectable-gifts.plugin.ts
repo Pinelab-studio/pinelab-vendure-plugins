@@ -17,6 +17,13 @@ export interface GiftPluginOptions {
   configuration: (config) => {
     // Add our custom promotion actions and conditions
     config.promotionOptions.promotionActions.push(freeGiftPromotionAction);
+    config.customFields.OrderLine.push({
+      name: 'isSelectedAsGift',
+      type: 'boolean',
+      readonly: false,
+      public: true,
+      internal: true,
+    });
     return config;
   },
 })

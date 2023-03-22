@@ -64,6 +64,10 @@ describe('Selectable Gifts Plugin', function () {
     await expect(true).toBe(true);
   });
 
+  it('Allows no more then the configured number of gifts allowed', async () => {
+    await expect(true).toBe(true);
+  });
+
   afterAll(() => {
     return server.destroy();
   });

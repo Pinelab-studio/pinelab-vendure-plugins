@@ -22,6 +22,6 @@ export class GiftResolver {
   @Query()
   @Allow(Permission.Public)
   async eligibleGifts(@Ctx() ctx: RequestContext): Promise<ProductVariant[]> {
-    return this.service.getEligibleGifts(ctx);
+    return this.service.getEligibleGiftsForActiveOrder(ctx);
   }
 }

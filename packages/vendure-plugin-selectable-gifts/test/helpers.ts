@@ -28,11 +28,7 @@ export async function createPromotion(adminClient: SimpleGraphQLClient) {
           code: 'free_gifts',
           arguments: [
             {
-              name: 'amountOfGiftsAllowed',
-              value: '1',
-            },
-            {
-              name: 'facets',
+              name: 'variants',
               value: '["T_1"]',
             },
           ],
@@ -61,3 +57,26 @@ export async function createPromotion(adminClient: SimpleGraphQLClient) {
     input
   );
 }
+
+export const ADD_ITEM_TO_ORDER = gql`
+  mutation AddItemToOrder(
+    $productVariantId: ID!
+    $quantity: Int!
+    $customFields: OrderLineCustomFieldsInput
+  ) {
+    addItemToOrder(
+      productVariantId: $productVariantId
+      quantity: $quantity
+      customFields: $customFields
+    ) {
+      ... on Order {
+        id
+        code
+      }
+      ... on ErrorResult {
+        errorCode
+        message
+      }
+    }
+  }
+`;

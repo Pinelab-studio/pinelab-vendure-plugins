@@ -1,78 +1,66 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ConfigurableOperation } from '@vendure/common/lib/generated-types';
 import {
-  VendureConfig,
+  ConfigArgService,
+  ForbiddenError,
+  ID,
+  OrderService,
   ProductVariant,
   ProductVariantService,
   Promotion,
   PromotionService,
   RequestContext,
-  SearchService,
   TransactionalConnection,
-  FacetValueService,
-  EntityHydrator,
+  UserInputError,
 } from '@vendure/core';
 import { freeGiftPromotionAction } from './free-gift.promotion-action';
-import { ConfigurableOperation } from '../../test/src/generated/admin-graphql';
 
 @Injectable()
 export class GiftService {
   constructor(
     private promotionService: PromotionService,
-    private config: VendureConfig,
-    private variantService: ProductVariantService,
-    private facetValueService: FacetValueService,
-    private entityHydrator: EntityHydrator
+    private orderService: OrderService,
+    private connection: TransactionalConnection,
+    private variantService: ProductVariantService
   ) {}
 
-  async getEligibleGifts(ctx: RequestContext): Promise<ProductVariant[]> {
-    const promotions = await this.getAllEnabledPromotions(ctx);
-    const freeGiftPromotions = this.getFreeGiftPromotions(promotions);
-    // Get variants based on the actions of the free gift promotions
-    const freeGiftActions = this.getFreeGiftActions(freeGiftPromotions);
-    const variants: ProductVariant[] = [];
-    await Promise.all(
-      freeGiftActions.map(async (action) => {
-        const facetIds =
-          action.args.find((arg) => arg.name === 'facets')?.value || [];
-        if (!facetIds) {
-          return;
-        }
-
-        // Get the variants that have the facets
-      })
+  async getEligibleGiftsForActiveOrder(
+    ctx: RequestContext
+  ): Promise<ProductVariant[]> {
+    if (!ctx.activeUserId) {
+      throw new ForbiddenError();
+    }
+    const order = await this.orderService.getActiveOrderForUser(
+      ctx,
+      ctx.activeUserId
     );
-    console.log(JSON.stringify(freeGiftActions));
-
-    throw Error();
+    if (!order) {
+      throw new UserInputError('No active order found');
+    }
+    return this.getEligibleGiftsForOrder(ctx, order.id);
   }
 
-  async getVariantsWithFacets(
+  async getEligibleGiftsForOrder(
     ctx: RequestContext,
-    facetIds: string[]
+    orderId: ID
   ): Promise<ProductVariant[]> {
-    // TODO find all variants with facetValue
-    const facetValues = await this.facetValueService.findAllList(
-      ctx,
-      {
-        filter: {
-          id: {
-            in: facetIds,
-          },
-        },
-      },
-      ['variants']
-    );
-    this.entityHydrator.hydrate(ctx, facetValues, {
-      languageCode: ctx.languageCode,
-    });
-
-    return [];
+    const appliedPromotions =
+      await this.promotionService.getActivePromotionsOnOrder(ctx, orderId);
+    const freeGiftPromotions = this.findFreeGiftPromotions(appliedPromotions);
+    if (!freeGiftPromotions.length) {
+      return [];
+    }
+    const variantIds = this.getVariantIds(freeGiftPromotions);
+    if (!variantIds.length) {
+      return [];
+    }
+    return await this.variantService.findByIds(ctx, variantIds);
   }
 
   /**
    * Only return promotions that have a free gift action configured
    */
-  getFreeGiftPromotions(promotions: Promotion[]): Promotion[] {
+  findFreeGiftPromotions(promotions: Promotion[]): Promotion[] {
     return promotions.filter((promotion) =>
       promotion.actions.some(
         (action) => action.code === freeGiftPromotionAction.code
@@ -80,7 +68,10 @@ export class GiftService {
     );
   }
 
-  getFreeGiftActions(promotions: Promotion[]): ConfigurableOperation[] {
+  /**
+   * Get the configured variant ID's from the free gift promotion actions
+   */
+  getVariantIds(promotions: Promotion[]): ID[] {
     const actions: ConfigurableOperation[] = [];
     promotions.forEach((promotion) => {
       promotion.actions.forEach((action) => {
@@ -89,28 +80,27 @@ export class GiftService {
         }
       });
     });
-    return actions;
+    const allVariantIds: ID[] = [];
+    actions.forEach(async (action) => {
+      const variantsArg = action.args.find(
+        (arg) => arg.name === 'variants'
+      )?.value;
+      if (!variantsArg) {
+        return [];
+      }
+      const variantIds = this.parseConfigArg(variantsArg);
+      if (!variantIds.length) {
+        return [];
+      }
+      allVariantIds.push(...variantIds);
+    });
+    return allVariantIds;
   }
 
-  async getAllEnabledPromotions(ctx: RequestContext): Promise<Promotion[]> {
-    const promotions: Promotion[] = [];
-    let skip = 0;
-    const take = 100;
-    let hasMore = true;
-    while (hasMore) {
-      const promoList = await this.promotionService.findAll(ctx, {
-        filter: {
-          enabled: {
-            eq: true,
-          },
-        },
-        skip,
-        take,
-      });
-      promotions.push(...promoList.items);
-      hasMore = promotions.length < promoList.totalItems;
-      skip += take;
-    }
-    return promotions;
+  /**
+   * Turns the string '[1,2]' into an actual array of ID's
+   */
+  parseConfigArg(facetValueIdsArg: string): ID[] {
+    return JSON.parse(facetValueIdsArg);
   }
 }

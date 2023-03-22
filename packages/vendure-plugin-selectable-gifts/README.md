@@ -1,11 +1,11 @@
 # Vendure Selectable Gifts Plugin
 
-Vendure plugin to enable free customer selected goodies:
+Vendure plugin to enable free customer selected gifts:
 
-- Administrators can determine which variants are eligible as goodies by applying a facet to the variants
-- Administrators can create Promotions that determine what goodies are eligible under what conditions
-- Customers can view which goodies apply to them or their order during checkout, and select their prefered goodie, and add it to cart
-- The selected goodie is added to the order for free.
+- Administrators can use a custom Promotion to select variants that are applicable as gift.
+- Administrators can use Promotion Conditions that determine when gifts are eligible for an order
+- Customers can view which gifts apply to their order during checkout, and select their prefered gift, and add it to cart
+- The selected gift is added to the order for free.
 
 ## Getting started
 
@@ -13,18 +13,17 @@ Vendure plugin to enable free customer selected goodies:
 
 ### Admin UI
 
-1. Create a facet `gifts` with facet values `level-1`, `level-2` and `level-3`
-2. Attach these facet values to variants you'd like to make selectable as goodies.
-3. Create a Promotion and select Condition `If customer placed more than { amount } orders`, and fill out the number you'd like, e.g. 'placed more than 5 orders'.
-4. Attach the Action `Allow products with facets as free gift` to the Promotion.
+1. Create a Promotion and select Condition `If customer placed more than { amount } orders`, and fill out the number you'd like, e.g. 'placed more than 5 orders'.
+2. Attach the Action `Allow selected products as free gift` to the Promotion and select which variants should be selectable as gift.
 
 You can use different conditions for the free gifts, but the promotion **needs to have the free-gifts action**, in order for the `eligibleGifts` query to work.
 
 ### Storefront usage
 
-4. On your storefront, call `eligibleGoodies` to show a list of eligible goodies to your customer
-5. Add the desired Goodie to the order with `addItemToOrder`
-6. The order should now include the Goodie, with a price of €0,-
+4. On your storefront, call `eligibleGifts` to show a list of eligible gifts to your customer
+5. Add the desired Gift to the order with `addItemToOrder` and with the custom field `isSelectedAsGift=true`
+6. // TODO example
+7. The order should now include the Gift, with a price of €0,-
 
 ### !! Remove this section before plublishing the plugin
 
