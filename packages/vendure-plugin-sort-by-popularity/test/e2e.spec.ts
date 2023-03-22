@@ -93,33 +93,29 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Calculated popularity per product', async () => {
-    // TODO Popularity score is publicly available via the Shop GraphQL api
-    // You might have to apply a delay here, because we will be doing the calculation in the worker
-    const product = await getProductWithId(shopClient, 'T_1');
-    console.log(product);
-    expect((product.customFields as any)!.popularityScore).toBe(1000);
+    const data: any = await getProductWithId(shopClient, 'T_1');
+    expect(data.product.customFields.popularityScore).toBe(1000);
   });
 
   it('Calculated popularity per collection', async () => {
-    // TODO Popularity score is publicly available via the Shop GraphQL api
-    const refetchedParent = await adminClient.query<
-      Collection,
-      QueryCollectionArgs
-    >(GET_COLLECTION_ADMIN, { id: 'T_1' });
-    const refetchedChild = await adminClient.query<
-      Collection,
-      QueryCollectionArgs
-    >(GET_COLLECTION_ADMIN, { id: 'T_2' });
-    expect((refetchedParent.customFields as any).popularityScore).toBe(1000);
-    expect((refetchedChild.customFields as any).popularityScore).toBe(0);
+    const refetchedParentData: any = await adminClient.query(
+      GET_COLLECTION_ADMIN,
+      { id: 'T_2' }
+    );
+    const refetchedChildData: any = await adminClient.query(
+      GET_COLLECTION_ADMIN,
+      { id: 'T_3' }
+    );
+    expect(refetchedParentData.collection.customFields.popularityScore).toBe(
+      1000
+    );
+    expect(refetchedChildData.collection.customFields.popularityScore).toBe(
+      1000
+    );
   });
 
   it('Calculated popularity for parent collections', async () => {
-    const parentCollection = await adminClient.query<
-      Collection,
-      QueryCollectionArgs
-    >(GET_COLLECTION_ADMIN, { id: collections[0].id });
-    expect(parentCollection.customFields.popularityScore).toBe(1000);
+    expect(false).toBe(true);
   });
 
   afterAll(() => {

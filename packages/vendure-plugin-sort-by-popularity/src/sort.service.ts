@@ -42,9 +42,11 @@ export class SortService {
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
       .andWhere(`order_channel.id=${ctx.channelId}`)
+      .addGroupBy('collection.id')
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
+    console.log(groupedOrderLines, '  groupedOrderLines');
     const maxCount = groupedOrderLines[0].count;
     const maxValue = 1000;
     const productRepositoty =
@@ -63,7 +65,7 @@ export class SortService {
       const collectionIndex = uniqueCollectioIds.findIndex(
         (s) => s == groupLines.collection_id
       );
-      if (collectionIndex != -1) {
+      if (collectionIndex == -1) {
         uniqueCollectioIds.push(groupLines.collection_id);
         collectionScoreValues.push(score);
       } else {
@@ -71,7 +73,7 @@ export class SortService {
           collectionScoreValues[collectionIndex] + score;
       }
     }
-
+    // console.log(uniqueCollectioIds,collectionScoreValues);
     for (const collectionIdIndex in uniqueCollectioIds) {
       await collectionRepositoty.update(uniqueCollectioIds[collectionIdIndex], {
         customFields: {
