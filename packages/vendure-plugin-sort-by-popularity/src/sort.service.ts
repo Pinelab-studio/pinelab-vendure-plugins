@@ -1,23 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import {
+  Collection,
+  CollectionService,
   OrderLine,
   Product,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import { Success } from '../../test/src/generated/admin-graphql';
+import { CollectionTreeNode } from './helpers';
 @Injectable()
 export class SortService {
-  constructor(private connection: TransactionalConnection) {}
+  constructor(
+    private connection: TransactionalConnection,
+    private collectionService: CollectionService
+  ) {}
   async setProductPopularity(ctx: RequestContext): Promise<Success> {
     const groupedOrderLines = await this.connection
       .getRepository(ctx, OrderLine)
       .createQueryBuilder('orderLine')
-      .addSelect(['count(product.id) as count'])
-      .innerJoinAndSelect('orderLine.productVariant', 'productVariant')
-      .innerJoinAndSelect('orderLine.order', '`order`')
-      .innerJoinAndSelect('productVariant.product', 'product')
-      .innerJoinAndSelect('`order`.channels', 'order_channel')
+      .select([
+        'count(product.id) as count',
+        'orderLine.productVariant',
+        'orderLine.order',
+      ])
+      .innerJoin('orderLine.productVariant', 'productVariant')
+      .addSelect([
+        'productVariant.deletedAt',
+        'productVariant.enabled',
+        'productVariant.id',
+      ])
+      .innerJoin('orderLine.order', '`order`')
+      .innerJoin('productVariant.product', 'product')
+      .addSelect(['product.deletedAt', 'product.enabled', 'product.id'])
+      .innerJoin('productVariant.collections', 'collection')
+      .addSelect(['collection.id'])
+      .innerJoin('`order`.channels', 'order_channel')
       .andWhere('`order`.orderPlacedAt is NOT NULL')
       .andWhere('product.deletedAt IS NULL')
       .andWhere('productVariant.deletedAt IS NULL')
@@ -31,10 +49,33 @@ export class SortService {
     const maxValue = 1000;
     const productRepositoty =
       this.connection.rawConnection.getRepository(Product);
+    const collectionRepositoty =
+      this.connection.rawConnection.getRepository(Collection);
+    const uniqueCollectioIds: string[] = [];
+    const collectionScoreValues: number[] = [];
     for (const groupLines of groupedOrderLines) {
-      await productRepositoty.update(groupLines.product.id, {
+      const score = (groupLines.count * maxValue) / maxCount;
+      await productRepositoty.update(groupLines.product_id, {
         customFields: {
-          popularityScore: (groupLines.count * maxValue) / maxCount,
+          popularityScore: score,
+        },
+      });
+      const collectionIndex = uniqueCollectioIds.findIndex(
+        (s) => s == groupLines.collection_id
+      );
+      if (collectionIndex != -1) {
+        uniqueCollectioIds.push(groupLines.collection_id);
+        collectionScoreValues.push(score);
+      } else {
+        collectionScoreValues[collectionIndex] =
+          collectionScoreValues[collectionIndex] + score;
+      }
+    }
+
+    for (const collectionIdIndex in uniqueCollectioIds) {
+      await collectionRepositoty.update(uniqueCollectioIds[collectionIdIndex], {
+        customFields: {
+          popularityScore: collectionScoreValues[collectionIdIndex],
         },
       });
     }

@@ -11,10 +11,15 @@ import {
   TransitionToState,
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
+  CreateAddressInput,
+  MutationSetOrderBillingAddressArgs,
+  ActiveOrderResult,
+  SET_ORDER_BILLING_ADDRESS,
 } from './generated/shop-graphql';
-import { ErrorResult, ID, Order, Product } from '@vendure/core';
+import { ErrorResult, ID, Order } from '@vendure/core';
 import { testPaymentMethod } from './test-payment-method';
 import {
+  Product,
   ProductList,
   QueryProductArgs,
   QueryProductsArgs,

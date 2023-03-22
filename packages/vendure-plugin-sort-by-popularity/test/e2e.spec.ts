@@ -84,68 +84,34 @@ describe('Sort by Popularity Plugin', function () {
   let products: Product[];
   let collections: Collection[];
 
-  it('Creates collection containing product ', async () => {
-    const parentCollection = await createCollectionContainingProduct(
-      adminClient,
-      'T_1',
-      {
-        name: 'Parent Collection',
-        description: 'This is a parent collection',
-        slug: 'parent-collection',
-      }
-    );
-    const childCollection1 = await createCollectionContainingProduct(
-      adminClient,
-      'T_1',
-      {
-        name: 'Child Collection',
-        description: 'This is a child collection',
-        slug: 'child-collection',
-      },
-      parentCollection.id
-    );
-    const childCollection2 = await createCollectionContainingProduct(
-      adminClient,
-      'T_2',
-      {
-        name: 'Child Collection',
-        description: 'This is a child collection',
-        slug: 'child-collection',
-      },
-      parentCollection.id
-    );
-    collections.push(parentCollection);
-    collections.push(childCollection1);
-    collections.push(childCollection2);
-  });
-
   it('Calls webhook to calculate popularity', async () => {
     // TODO Verify that the api call to order-by-popularity/calculate-scores was successfull.
     const res = await adminClient.fetch(
       `http://localhost:3106/order-by-popularity/calculate-scores`
     );
-    expect(res.status).toBe(201);
+    expect(res.status).toBe(200);
   });
 
   it('Calculated popularity per product', async () => {
     // TODO Popularity score is publicly available via the Shop GraphQL api
     // You might have to apply a delay here, because we will be doing the calculation in the worker
     const product = await getProductWithId(shopClient, 'T_1');
-    expect(product.customFields.popularityScore).toBe(1000);
+    console.log(product);
+    expect((product.customFields as any)!.popularityScore).toBe(1000);
   });
 
   it('Calculated popularity per collection', async () => {
     // TODO Popularity score is publicly available via the Shop GraphQL api
-    const childCollection1 = await adminClient.query<
+    const refetchedParent = await adminClient.query<
       Collection,
       QueryCollectionArgs
-    >(GET_COLLECTION_ADMIN, { id: collections[1].id });
-    const childCollection2 = await adminClient.query<
+    >(GET_COLLECTION_ADMIN, { id: 'T_1' });
+    const refetchedChild = await adminClient.query<
       Collection,
       QueryCollectionArgs
-    >(GET_COLLECTION_ADMIN, { id: collections[1].id });
-    expect(childCollection1.customFields.popularityScore).toBe(1000);
-    expect(childCollection2.customFields.popularityScore).toBe(0);
+    >(GET_COLLECTION_ADMIN, { id: 'T_2' });
+    expect((refetchedParent.customFields as any).popularityScore).toBe(1000);
+    expect((refetchedChild.customFields as any).popularityScore).toBe(0);
   });
 
   it('Calculated popularity for parent collections', async () => {
@@ -160,13 +126,3 @@ describe('Sort by Popularity Plugin', function () {
     return server.destroy();
   });
 });
-
-async function calculatePopularity(
-  adminClient: SimpleGraphQLClient,
-  port: number
-) {
-  const res = await adminClient.fetch(
-    `http://localhost:${port}/order-by-popularity/calculate-scores`
-  );
-  expect(res.status).toBe(201);
-}

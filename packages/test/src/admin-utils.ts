@@ -168,11 +168,11 @@ export async function assignProductToCollection(
 
 export async function createCollectionContainingProduct(
   adminClient: SimpleGraphQLClient,
-  productId: string,
   translationFields: Omit<
     CreateCollectionTranslationInput,
     'customFields' | 'languageCode'
   >,
+  productId: string,
   parentId?: string
 ): Promise<Collection> {
   const input: CreateCollectionInput = {
