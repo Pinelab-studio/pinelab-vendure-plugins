@@ -127,7 +127,7 @@ export async function createSettledOrder(
 export async function getProductWithId(
   shopClient: SimpleGraphQLClient,
   id: string
-) {
+): Promise<Product> {
   return await shopClient.query<Product, QueryProductArgs>(GET_PRODUCT_SIMPLE, {
     id: id,
   });

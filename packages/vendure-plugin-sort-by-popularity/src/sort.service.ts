@@ -42,11 +42,9 @@ export class SortService {
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
       .andWhere(`order_channel.id=${ctx.channelId}`)
-      .addGroupBy('collection.id')
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
-    console.log(groupedOrderLines, '  groupedOrderLines');
     const maxCount = groupedOrderLines[0].count;
     const maxValue = 1000;
     const productRepositoty =
@@ -73,7 +71,6 @@ export class SortService {
           collectionScoreValues[collectionIndex] + score;
       }
     }
-    // console.log(uniqueCollectioIds,collectionScoreValues);
     for (const collectionIdIndex in uniqueCollectioIds) {
       await collectionRepositoty.update(uniqueCollectioIds[collectionIdIndex], {
         customFields: {
@@ -81,10 +78,6 @@ export class SortService {
         },
       });
     }
-    return { success: true };
-  }
-
-  async assignPopularityToCollections(ctx: RequestContext): Promise<Success> {
     return { success: true };
   }
 }
