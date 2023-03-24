@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   Collection,
   CollectionService,
+  OrderItem,
   OrderLine,
   Product,
   RequestContext,
@@ -17,10 +18,12 @@ export class SortService {
   ) {}
   async setProductPopularity(ctx: RequestContext): Promise<Success> {
     const groupedOrderLines = await this.connection
-      .getRepository(ctx, OrderLine)
-      .createQueryBuilder('orderLine')
+      .getRepository(ctx, OrderItem)
+      .createQueryBuilder('orderItem')
+      .innerJoin('orderItem.line', 'orderLine')
       .select([
         'count(product.id) as count',
+        'orderItem.line',
         'orderLine.productVariant',
         'orderLine.order',
       ])
@@ -33,8 +36,6 @@ export class SortService {
       .innerJoin('orderLine.order', '`order`')
       .innerJoin('productVariant.product', 'product')
       .addSelect(['product.deletedAt', 'product.enabled', 'product.id'])
-      .innerJoin('productVariant.collections', 'collection')
-      .addSelect(['collection.id'])
       .innerJoin('`order`.channels', 'order_channel')
       .andWhere('`order`.orderPlacedAt is NOT NULL')
       .andWhere('product.deletedAt IS NULL')
@@ -45,39 +46,78 @@ export class SortService {
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
+    console.log(groupedOrderLines);
     const maxCount = groupedOrderLines[0].count;
     const maxValue = 1000;
     const productRepositoty =
       this.connection.rawConnection.getRepository(Product);
-    const collectionRepositoty =
+    await productRepositoty.save(
+      groupedOrderLines.map((l) => {
+        return {
+          id: l.product_id,
+          customFields: {
+            popularityScore: (l.count * maxValue) / maxCount,
+          },
+        };
+      })
+    );
+    await this.assignScoreValuesToCollections(ctx);
+    return { success: true };
+  }
+
+  async assignScoreValuesToCollections(ctx: RequestContext) {
+    const allCollections = await this.getAllCollections(ctx);
+    console.log(allCollections);
+    this.convertIntoTreeNodesAndAssignKnownValues(allCollections);
+  }
+
+  async getAllCollections(ctx: RequestContext): Promise<Collection[]> {
+    const collectionsRepo =
       this.connection.rawConnection.getRepository(Collection);
-    const uniqueCollectioIds: string[] = [];
-    const collectionScoreValues: number[] = [];
-    for (const groupLines of groupedOrderLines) {
-      const score = (groupLines.count * maxValue) / maxCount;
-      await productRepositoty.update(groupLines.product_id, {
-        customFields: {
-          popularityScore: score,
-        },
-      });
-      const collectionIndex = uniqueCollectioIds.findIndex(
-        (s) => s == groupLines.collection_id
-      );
-      if (collectionIndex == -1) {
-        uniqueCollectioIds.push(groupLines.collection_id);
-        collectionScoreValues.push(score);
+    return await collectionsRepo
+      .createQueryBuilder('collection')
+      .leftJoin('collection.productVariants', 'productVariant')
+      .addSelect(['productVariant.product'])
+      // .leftJoin('productVariant.product','product')
+      .leftJoin(
+        (qb) =>
+          qb
+            .select(['customFieldsPopularityscore', 'id'])
+            .from(Product, 'p')
+            .groupBy('p.id'),
+        'uniqueProduct',
+        'uniqueProduct.id = productVariant.productId'
+      )
+      // .addSelect(['count(distinct product.id) as uniqueProductCount'])
+      .addSelect(['SUM(uniqueProduct.customFieldsPopularityscore) as score'])
+      .addGroupBy('collection.id')
+      .orderBy('collection.isRoot', 'DESC')
+      .addOrderBy('collection.parentId', 'DESC')
+      .addOrderBy('collection.position', 'ASC')
+      .getRawMany();
+  }
+
+  convertIntoTreeNodesAndAssignKnownValues(input: any[]): CollectionTreeNode[] {
+    const nodes: CollectionTreeNode[] = [];
+    //since the first collection is gonna be the root collection, we should start by assigning it
+    const rootNode = new CollectionTreeNode();
+    rootNode.id = input[0].collection_id;
+    nodes.push(rootNode);
+    for (
+      var collectionIndex = 1;
+      collectionIndex < input.length;
+      collectionIndex++
+    ) {
+      if (input[collectionIndex].parentId != nodes[nodes.length - 1].id) {
+        //new node has come up
+        const newNode = new CollectionTreeNode();
+        newNode.id = input[collectionIndex].collection_id;
       } else {
-        collectionScoreValues[collectionIndex] =
-          collectionScoreValues[collectionIndex] + score;
+        //update the child nodes of the existing node
+        nodes[nodes.length - 1].children.push(input[collectionIndex]);
       }
     }
-    for (const collectionIdIndex in uniqueCollectioIds) {
-      await collectionRepositoty.update(uniqueCollectioIds[collectionIdIndex], {
-        customFields: {
-          popularityScore: collectionScoreValues[collectionIdIndex],
-        },
-      });
-    }
-    return { success: true };
+    console.log(nodes);
+    return nodes;
   }
 }
