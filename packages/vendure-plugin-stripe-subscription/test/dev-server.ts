@@ -95,6 +95,10 @@ export let clientSecret = 'test';
       name: 'Stripe test payment',
       description: 'This is a Stripe payment method',
       enabled: true,
+      checker: {
+        code: 'has-stripe-subscription-products-checker',
+        arguments: [],
+      },
       handler: {
         code: 'stripe-subscription',
         arguments: [

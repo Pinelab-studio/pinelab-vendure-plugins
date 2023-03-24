@@ -26,18 +26,18 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { loggerCtx } from './constants';
+import { loggerCtx } from '../constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
   OrderLineWithSubscriptionFields,
-  OrderWithSubscriptions,
+  OrderWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
 import { StripeClient } from './stripe.client';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
-} from './ui/generated/graphql';
+} from '../ui/generated/graphql';
 import { stripeSubscriptionHandler } from './stripe-subscription.handler';
 import { Request } from 'express';
 import { filter } from 'rxjs/operators';
@@ -186,7 +186,7 @@ export class StripeSubscriptionService {
       ctx,
       orderLineId,
       ['lines']
-    )) as OrderWithSubscriptions | undefined;
+    )) as OrderWithSubscriptionFields | undefined;
     if (!order) {
       throw Error(`Order for OrderLine ${orderLineId} not found`);
     }
@@ -234,7 +234,7 @@ export class StripeSubscriptionService {
     let order = (await this.activeOrderService.getActiveOrder(
       ctx,
       undefined
-    )) as OrderWithSubscriptions;
+    )) as OrderWithSubscriptionFields;
     if (!order) {
       throw new UserInputError('No active order for session');
     }
@@ -244,7 +244,7 @@ export class StripeSubscriptionService {
         description: 'Verification fee',
         listPrice: 100,
         listPriceIncludesTax: true,
-      })) as OrderWithSubscriptions;
+      })) as OrderWithSubscriptionFields;
     }
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
@@ -445,7 +445,7 @@ export class StripeSubscriptionService {
       'customer',
       'lines',
       'lines.productVariant',
-    ])) as OrderWithSubscriptions;
+    ])) as OrderWithSubscriptionFields;
     if (!order) {
       throw Error(`Cannot find order with code ${orderCode}`);
     }
@@ -641,11 +641,13 @@ export class StripeSubscriptionService {
   ): Promise<StripeHandlerConfig> {
     const paymentMethodQuotes =
       await this.orderService.getEligiblePaymentMethods(ctx, orderId);
-    const paymentMethodQuote = paymentMethodQuotes.find(
-      (pm) => pm.code.indexOf('stripe-subscription') > -1
-    );
+    const paymentMethodQuote = paymentMethodQuotes
+      .filter((quote) => quote.isEligible)
+      .find((pm) => pm.code.indexOf('stripe-subscription') > -1);
     if (!paymentMethodQuote) {
-      throw Error(`No payment method found with code 'stripe-subscription'`);
+      throw new UserInputError(
+        `No eligible payment method found with code 'stripe-subscription'`
+      );
     }
     const paymentMethod = await this.paymentMethodService.findOne(
       ctx,
@@ -655,7 +657,7 @@ export class StripeSubscriptionService {
       !paymentMethod ||
       paymentMethod.handler.code !== stripeSubscriptionHandler.code
     ) {
-      throw Error(
+      throw new UserInputError(
         `Payment method '${paymentMethodQuote.code}' doesn't have handler '${stripeSubscriptionHandler.code}' configured.`
       );
     }

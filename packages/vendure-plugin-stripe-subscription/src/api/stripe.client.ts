@@ -31,9 +31,9 @@ export class StripeClient extends Stripe {
   async getOrCreateClient(
     customer: CustomerWithSubscriptionFields
   ): Promise<Stripe.Customer> {
-    if (customer.customFields?.stripeCustomerId) {
+    if (customer.customFields?.stripeSubscriptionCustomerId) {
       const stripeCustomer = await this.customers.retrieve(
-        customer.customFields.stripeCustomerId
+        customer.customFields.stripeSubscriptionCustomerId
       );
       if (stripeCustomer && !stripeCustomer.deleted) {
         return stripeCustomer as Stripe.Customer;
