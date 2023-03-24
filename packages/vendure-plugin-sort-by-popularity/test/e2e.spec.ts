@@ -23,7 +23,6 @@ import {
   GET_COLLECTION_ADMIN,
   QueryCollectionArgs,
 } from '../../test/src/generated/admin-graphql';
-
 jest.setTimeout(10000);
 
 describe('Sort by Popularity Plugin', function () {
@@ -87,12 +86,13 @@ describe('Sort by Popularity Plugin', function () {
   it('Calls webhook to calculate popularity', async () => {
     // TODO Verify that the api call to order-by-popularity/calculate-scores was successfull.
     const res = await adminClient.fetch(
-      `http://localhost:3106/order-by-popularity/calculate-scores`
+      `http://localhost:3106/order-by-popularity/calculate-scores/e2e-default-channel`
     );
     expect(res.status).toBe(200);
   });
 
   it('Calculated popularity per product', async () => {
+    await new Promise((r) => setTimeout(r, 1000));
     const data: any = await getProductWithId(shopClient, 'T_1');
     expect(data.product.customFields.popularityScore).toBe(1000);
   });

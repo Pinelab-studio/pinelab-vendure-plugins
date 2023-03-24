@@ -17,14 +17,14 @@ import { SortService } from './sort.service';
   configuration: (config) => {
     config.customFields.Product.push({
       name: 'popularityScore',
-      type: 'float',
-      defaultValue: 0.0,
+      type: 'int',
+      defaultValue: 0,
       readonly: true,
     });
     config.customFields.Collection.push({
       name: 'popularityScore',
-      type: 'float',
-      defaultValue: 0.0,
+      type: 'int',
+      defaultValue: 0,
       readonly: true,
     });
     return config;

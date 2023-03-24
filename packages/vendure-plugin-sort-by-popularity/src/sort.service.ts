@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import {
+  ChannelService,
   Collection,
   CollectionService,
+  JobQueue,
+  JobQueueService,
   OrderItem,
   OrderLine,
   Product,
@@ -11,13 +14,33 @@ import {
 import { Success } from '../../test/src/generated/admin-graphql';
 import { CollectionTreeNode } from './helpers';
 @Injectable()
-export class SortService {
+export class SortService implements OnModuleInit {
+  private jobQueue: JobQueue<{ channelToken: string }>;
   constructor(
     private connection: TransactionalConnection,
-    private collectionService: CollectionService
+    private jobQueueService: JobQueueService,
+    private channelService: ChannelService
   ) {}
+  async onModuleInit() {
+    this.jobQueue = await this.jobQueueService.createQueue({
+      name: 'calculate-scores',
+      process: async (job) => {
+        const channel = await this.channelService.getChannelFromToken(
+          job.data.channelToken
+        );
+        const ctx = new RequestContext({
+          apiType: 'admin',
+          isAuthorized: true,
+          authorizedAsOwnerOnly: false,
+          channel,
+        });
+        this.setProductPopularity(ctx);
+      },
+    });
+  }
+
   async setProductPopularity(ctx: RequestContext): Promise<Success> {
-    const groupedOrderLines = await this.connection
+    const groupedOrderItems = await this.connection
       .getRepository(ctx, OrderItem)
       .createQueryBuilder('orderItem')
       .innerJoin('orderItem.line', 'orderLine')
@@ -33,30 +56,30 @@ export class SortService {
         'productVariant.enabled',
         'productVariant.id',
       ])
-      .innerJoin('orderLine.order', '`order`')
+      .innerJoin('orderLine.order', 'order')
       .innerJoin('productVariant.product', 'product')
       .addSelect(['product.deletedAt', 'product.enabled', 'product.id'])
-      .innerJoin('`order`.channels', 'order_channel')
-      .andWhere('`order`.orderPlacedAt is NOT NULL')
+      .innerJoin('productVariant.collections', 'collection')
+      .addSelect(['collection.id'])
+      .innerJoin('order.channels', 'order_channel')
+      .andWhere('order.orderPlacedAt is NOT NULL')
       .andWhere('product.deletedAt IS NULL')
       .andWhere('productVariant.deletedAt IS NULL')
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
-      .andWhere(`order_channel.id=${ctx.channelId}`)
+      .andWhere('order_channel.id = :id', { id: ctx.channelId })
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
-    console.log(groupedOrderLines);
-    const maxCount = groupedOrderLines[0].count;
+    const maxCount = groupedOrderItems[0].count;
     const maxValue = 1000;
-    const productRepositoty =
-      this.connection.rawConnection.getRepository(Product);
-    await productRepositoty.save(
-      groupedOrderLines.map((l) => {
+    const productRepository = this.connection.getRepository(ctx, Product);
+    await productRepository.save(
+      groupedOrderItems.map((gols) => {
         return {
-          id: l.product_id,
+          id: gols.product_id,
           customFields: {
-            popularityScore: (l.count * maxValue) / maxCount,
+            popularityScore: Math.round((gols.count / maxCount) * maxValue),
           },
         };
       })
@@ -66,9 +89,10 @@ export class SortService {
   }
 
   async assignScoreValuesToCollections(ctx: RequestContext) {
-    const allCollections = await this.getAllCollections(ctx);
-    console.log(allCollections);
-    this.convertIntoTreeNodesAndAssignKnownValues(allCollections);
+    // const allCollections = await this.getAllCollections(ctx);
+    // console.log(allCollections);
+    // this.convertIntoTreeNodesAndAssignKnownValues(allCollections);
+    this.differentApproach(ctx);
   }
 
   async getAllCollections(ctx: RequestContext): Promise<Collection[]> {
@@ -97,6 +121,19 @@ export class SortService {
       .getRawMany();
   }
 
+  async differentApproach(ctx: RequestContext) {
+    const productRepository = this.connection.getRepository(ctx, Product);
+    const mergedOrderLines = await productRepository
+      .createQueryBuilder('product')
+      .leftJoin('product.variants', 'variant')
+      .addSelect(['variant.id'])
+      .leftJoin('variant.collections', 'collection')
+      .addSelect(['SUM(product.customFieldsPopularityscore) as count'])
+      .groupBy('collection.id')
+      .getRawMany();
+    console.log(mergedOrderLines);
+  }
+
   convertIntoTreeNodesAndAssignKnownValues(input: any[]): CollectionTreeNode[] {
     const nodes: CollectionTreeNode[] = [];
     //since the first collection is gonna be the root collection, we should start by assigning it
@@ -119,5 +156,9 @@ export class SortService {
     }
     console.log(nodes);
     return nodes;
+  }
+
+  addScoreCalculatingJobToQueue(channelToken: string) {
+    return this.jobQueue.add({ channelToken }, { retries: 5 });
   }
 }
