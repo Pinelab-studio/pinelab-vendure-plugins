@@ -19,13 +19,13 @@ import {
   Resolver,
 } from '@nestjs/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
   UpsertStripeSubscriptionScheduleInput,
-} from './ui/generated/graphql';
+} from '../ui/generated/graphql';
 import { Request } from 'express';
 import { ScheduleService } from './schedule.service';
 import { Schedule } from './schedule.entity';
@@ -33,7 +33,7 @@ import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
-import { StripeSubscriptionPluginOptions } from './stripe-subscription.plugin';
+import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 

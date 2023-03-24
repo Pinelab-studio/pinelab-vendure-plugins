@@ -1,25 +1,29 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { stripeSubscriptionHandler } from './stripe-subscription.handler';
-import { StripeSubscriptionService } from './stripe-subscription.service';
-import {
-  StripeSubscriptionController,
-  ShopResolver,
-  AdminResolver,
-  ShopOrderLinePricingResolver,
-} from './stripe-subscription.controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import {
   customerCustomFields,
   orderLineCustomFields,
   productVariantCustomFields,
-} from './subscription-custom-fields';
+} from './api/subscription-custom-fields';
 import { createRawBodyMiddleWare } from '../../util/src/raw-body';
-import { SubscriptionOrderItemCalculation } from './subscription-order-item-calculation';
-import { Schedule } from './schedule.entity';
-import { ScheduleService } from './schedule.service';
+import { SubscriptionOrderItemCalculation } from './api/subscription-order-item-calculation';
+import { Schedule } from './api/schedule.entity';
+import { ScheduleService } from './api/schedule.service';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import { adminSchemaExtensions, shopSchemaExtensions } from './graphql-schemas';
+import {
+  adminSchemaExtensions,
+  shopSchemaExtensions,
+} from './api/graphql-schemas';
+import {
+  AdminResolver,
+  ShopOrderLinePricingResolver,
+  ShopResolver,
+  StripeSubscriptionController,
+} from './api/stripe-subscription.controller';
+import { StripeSubscriptionService } from './api/stripe-subscription.service';
+import { stripeSubscriptionHandler } from './api/stripe-subscription.handler';
+import { hasStripeSubscriptionProductsPaymentChecker } from './api/has-stripe-subscription-products-payment-checker';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -50,6 +54,10 @@ export interface StripeSubscriptionPluginOptions {
   ],
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);
+    config.paymentOptions.paymentMethodEligibilityCheckers = [
+      ...(config.paymentOptions.paymentMethodEligibilityCheckers ?? []),
+      hasStripeSubscriptionProductsPaymentChecker,
+    ];
     config.apiOptions.middleware.push(
       createRawBodyMiddleWare('/stripe-subscription*')
     );

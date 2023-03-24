@@ -1,7 +1,7 @@
 import {
   SubscriptionStartMoment,
   UpsertStripeSubscriptionScheduleInput,
-} from './ui/generated/graphql';
+} from '../ui/generated/graphql';
 import { Schedule } from './schedule.entity';
 import { Injectable } from '@nestjs/common';
 import {
