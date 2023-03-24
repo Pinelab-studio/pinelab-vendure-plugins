@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-invoices",
-  "version": "5.0.1",
+  "version": "5.4.0",
   "description": "Vendure plugin for invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
