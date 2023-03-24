@@ -95,10 +95,6 @@ export let clientSecret = 'test';
       name: 'Stripe test payment',
       description: 'This is a Stripe payment method',
       enabled: true,
-      checker: {
-        code: 'has-stripe-subscription-products-checker',
-        arguments: [],
-      },
       handler: {
         code: 'stripe-subscription',
         arguments: [
@@ -168,16 +164,16 @@ export let clientSecret = 'test';
       },
     ],
   });
-  await adminClient.query(UPDATE_VARIANT, {
-    input: [
-      {
-        id: 3,
-        customFields: {
-          subscriptionScheduleId: 3,
-        },
-      },
-    ],
-  });
+  // await adminClient.query(UPDATE_VARIANT, {
+  //   input: [
+  //     {
+  //       id: 3,
+  //       customFields: {
+  //         subscriptionScheduleId: 3,
+  //       },
+  //     },
+  //   ],
+  // });
   console.log(`Added schedule to variants`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
@@ -192,7 +188,7 @@ export let clientSecret = 'test';
     },
   }); */
   let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '2',
+    productVariantId: '3',
     quantity: 1,
     customFields: {
       // downpayment: 40000,

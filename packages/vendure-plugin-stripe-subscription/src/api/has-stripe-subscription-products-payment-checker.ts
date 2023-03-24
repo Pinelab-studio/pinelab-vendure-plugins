@@ -1,5 +1,15 @@
-import { LanguageCode, PaymentMethodEligibilityChecker } from '@vendure/core';
+import {
+  LanguageCode,
+  Order,
+  PaymentMethodEligibilityChecker,
+} from '@vendure/core';
 import { OrderWithSubscriptionFields } from './subscription-custom-fields';
+
+export function hasSubscriptions(order: Order): boolean {
+  return (order as OrderWithSubscriptionFields).lines.some(
+    (line) => line.productVariant.customFields.subscriptionSchedule
+  );
+}
 
 export const hasStripeSubscriptionProductsPaymentChecker =
   new PaymentMethodEligibilityChecker({
@@ -12,11 +22,7 @@ export const hasStripeSubscriptionProductsPaymentChecker =
     ],
     args: {},
     check: (ctx, order, args) => {
-      if (
-        (order as OrderWithSubscriptionFields).lines.some(
-          (line) => line.productVariant.customFields.subscriptionSchedule
-        )
-      ) {
+      if (hasSubscriptions(order)) {
         return true;
       }
       return false;

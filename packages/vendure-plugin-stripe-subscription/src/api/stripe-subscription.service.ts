@@ -49,6 +49,7 @@ import {
 import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
 import { randomUUID } from 'crypto';
+import { hasSubscriptions } from './has-stripe-subscription-products-payment-checker';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -449,6 +450,11 @@ export class StripeSubscriptionService {
     if (!order) {
       throw Error(`Cannot find order with code ${orderCode}`);
     }
+    if (!hasSubscriptions(order)) {
+      return Logger.info(
+        `Not creating subscriptions for order ${order.code}, because it doesn't have any subscription products`
+      );
+    }
     const { stripeClient } = await this.getStripeHandler(ctx, order.id);
     const customer = await stripeClient.customers.retrieve(stripeCustomerId);
     if (!customer) {
@@ -457,7 +463,10 @@ export class StripeSubscriptionService {
       );
     }
     let orderLineCount = 0;
-    for (const orderLine of order.lines) {
+    const subscriptionOrderLines = order.lines.filter(
+      (line) => line.productVariant.customFields.subscriptionSchedule
+    );
+    for (const orderLine of subscriptionOrderLines) {
       orderLineCount++; // Start with 1
       const createdSubscriptions: string[] = [];
       const pricing = await this.getPricing(ctx, {
