@@ -386,16 +386,23 @@ export class StripeSubscriptionService {
       throw Error(`No customer found in webhook data for order ${order.code}`);
     }
     // Create subscriptions for customer
-    await this.jobQueue.add(
-      {
-        action: 'createSubscriptionsForOrder',
-        ctx: ctx.serialize(),
-        orderCode: order.code,
-        stripePaymentMethodId: eventData.payment_method,
-        stripeCustomerId: eventData.customer,
-      },
-      { retries: 0 }
-    ); // Only 1 try, because subscription creation isn't transaction-proof
+    this.jobQueue
+      .add(
+        {
+          action: 'createSubscriptionsForOrder',
+          ctx: ctx.serialize(),
+          orderCode: order.code,
+          stripePaymentMethodId: eventData.payment_method,
+          stripeCustomerId: eventData.customer,
+        },
+        { retries: 0 } // Only 1 try, because subscription creation isn't transaction-proof
+      )
+      .catch((e) =>
+        Logger.error(
+          `Failed to add subscription-creation job to queue`,
+          loggerCtx
+        )
+      );
     // Status is complete, we can settle payment
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
