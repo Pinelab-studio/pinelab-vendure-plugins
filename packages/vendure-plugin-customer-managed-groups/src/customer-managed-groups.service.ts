@@ -276,6 +276,15 @@ export class CustomerManagedGroupsService {
     );
   }
 
+  async activeCustomerManagedGroupAdministrator(
+    ctx: RequestContext
+  ): Promise<Boolean> {
+    const userId = this.getOrThrowUserId(ctx);
+    const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    const customerManagedGroup = this.getCustomerManagedGroup(customer);
+    return this.isAdministratorOfGroup(userId!, customerManagedGroup!);
+  }
+
   async myCustomerManagagedGroup(
     ctx: RequestContext
   ): Promise<CustomerManagedGroup> {
