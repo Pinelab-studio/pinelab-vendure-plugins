@@ -1,24 +1,47 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import {
-  Collection,
+  ChannelService,
   CollectionService,
+  JobQueue,
+  JobQueueService,
+  OrderItem,
   OrderLine,
   Product,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import { Success } from '../../test/src/generated/admin-graphql';
-import { CollectionTreeNode } from './helpers';
 @Injectable()
-export class SortService {
+export class SortService implements OnModuleInit {
+  private jobQueue: JobQueue<{ channelToken: string }>;
   constructor(
     private connection: TransactionalConnection,
-    private collectionService: CollectionService
+    private jobQueueService: JobQueueService,
+    private channelService: ChannelService
   ) {}
+  async onModuleInit() {
+    this.jobQueue = await this.jobQueueService.createQueue({
+      name: 'calculate-scores',
+      process: async (job) => {
+        const channel = await this.channelService.getChannelFromToken(
+          job.data.channelToken
+        );
+        const ctx = new RequestContext({
+          apiType: 'admin',
+          isAuthorized: true,
+          authorizedAsOwnerOnly: false,
+          channel,
+        });
+        this.setProductPopularity(ctx);
+      },
+    });
+  }
+
   async setProductPopularity(ctx: RequestContext): Promise<Success> {
-    const groupedOrderLines = await this.connection
-      .getRepository(ctx, OrderLine)
-      .createQueryBuilder('orderLine')
+    const groupedOrderItems = await this.connection
+      .getRepository(ctx, OrderItem)
+      .createQueryBuilder('orderItem')
+      .innerJoin('orderItem.line', 'orderLine')
       .select([
         'count(product.id) as count',
         'orderLine.productVariant',
@@ -30,54 +53,38 @@ export class SortService {
         'productVariant.enabled',
         'productVariant.id',
       ])
-      .innerJoin('orderLine.order', '`order`')
+      .innerJoin('orderLine.order', 'order')
       .innerJoin('productVariant.product', 'product')
       .addSelect(['product.deletedAt', 'product.enabled', 'product.id'])
       .innerJoin('productVariant.collections', 'collection')
       .addSelect(['collection.id'])
-      .innerJoin('`order`.channels', 'order_channel')
-      .andWhere('`order`.orderPlacedAt is NOT NULL')
+      .innerJoin('order.channels', 'order_channel')
+      .andWhere('order.orderPlacedAt is NOT NULL')
       .andWhere('product.deletedAt IS NULL')
       .andWhere('productVariant.deletedAt IS NULL')
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
-      .andWhere(`order_channel.id=${ctx.channelId}`)
+      .andWhere('order_channel.id = :id', { id: ctx.channelId })
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
-    const maxCount = groupedOrderLines[0].count;
+    const maxCount = groupedOrderItems[0].count;
     const maxValue = 1000;
-    const productRepositoty =
-      this.connection.rawConnection.getRepository(Product);
-    const collectionRepositoty =
-      this.connection.rawConnection.getRepository(Collection);
-    const uniqueCollectioIds: string[] = [];
-    const collectionScoreValues: number[] = [];
-    for (const groupLines of groupedOrderLines) {
-      const score = (groupLines.count * maxValue) / maxCount;
-      await productRepositoty.update(groupLines.product_id, {
-        customFields: {
-          popularityScore: score,
-        },
-      });
-      const collectionIndex = uniqueCollectioIds.findIndex(
-        (s) => s == groupLines.collection_id
-      );
-      if (collectionIndex == -1) {
-        uniqueCollectioIds.push(groupLines.collection_id);
-        collectionScoreValues.push(score);
-      } else {
-        collectionScoreValues[collectionIndex] =
-          collectionScoreValues[collectionIndex] + score;
-      }
-    }
-    for (const collectionIdIndex in uniqueCollectioIds) {
-      await collectionRepositoty.update(uniqueCollectioIds[collectionIdIndex], {
-        customFields: {
-          popularityScore: collectionScoreValues[collectionIdIndex],
-        },
-      });
-    }
+    const productRepository = this.connection.getRepository(ctx, Product);
+    await productRepository.save(
+      groupedOrderItems.map((gols) => {
+        return {
+          id: gols.product_id,
+          customFields: {
+            popularityScore: Math.round((gols.count / maxCount) * maxValue),
+          },
+        };
+      })
+    );
     return { success: true };
+  }
+
+  addScoreCalculatingJobToQueue(channelToken: string) {
+    return this.jobQueue.add({ channelToken }, { retries: 5 });
   }
 }
