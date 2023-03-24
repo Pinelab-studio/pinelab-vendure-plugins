@@ -19,8 +19,8 @@
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
-    "@vendure/core": "1.9.2",
-    "@vendure/testing": "1.9.2",
+    "@vendure/core": "1.9.5",
+    "@vendure/testing": "1.9.5",
     "jest": "^27.5.1",
     "rimraf": "^3.0.2",
     "ts-jest": "^27.1.3",
