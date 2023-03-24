@@ -6,20 +6,19 @@ import {
   JobQueue,
   JobQueueService,
   OrderItem,
-  OrderLine,
   Product,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import { Success } from '../../test/src/generated/admin-graphql';
-import { CollectionTreeNode } from './helpers';
 @Injectable()
 export class SortService implements OnModuleInit {
   private jobQueue: JobQueue<{ channelToken: string }>;
   constructor(
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
-    private channelService: ChannelService
+    private channelService: ChannelService,
+    private collectionService: CollectionService
   ) {}
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
@@ -89,73 +88,52 @@ export class SortService implements OnModuleInit {
   }
 
   async assignScoreValuesToCollections(ctx: RequestContext) {
-    // const allCollections = await this.getAllCollections(ctx);
-    // console.log(allCollections);
-    // this.convertIntoTreeNodesAndAssignKnownValues(allCollections);
-    this.differentApproach(ctx);
+    const allCollections = await this.saveEachCollectionScore(ctx);
+    await this.addUpTheTreeAndSave(allCollections, ctx);
   }
 
-  async getAllCollections(ctx: RequestContext): Promise<Collection[]> {
-    const collectionsRepo =
-      this.connection.rawConnection.getRepository(Collection);
-    return await collectionsRepo
+  async saveEachCollectionScore(ctx: RequestContext): Promise<any[]> {
+    const collectionsRepo = this.connection.getRepository(ctx, Collection);
+    const allCollections = await collectionsRepo
       .createQueryBuilder('collection')
       .leftJoin('collection.productVariants', 'productVariant')
+      .addGroupBy('productVariant.productId')
       .addSelect(['productVariant.product'])
-      // .leftJoin('productVariant.product','product')
-      .leftJoin(
-        (qb) =>
-          qb
-            .select(['customFieldsPopularityscore', 'id'])
-            .from(Product, 'p')
-            .groupBy('p.id'),
-        'uniqueProduct',
-        'uniqueProduct.id = productVariant.productId'
-      )
-      // .addSelect(['count(distinct product.id) as uniqueProductCount'])
-      .addSelect(['SUM(uniqueProduct.customFieldsPopularityscore) as score'])
+      .leftJoin('productVariant.product', 'product')
+      .addSelect(['SUM(distinct product.customFieldsPopularityscore) as score'])
       .addGroupBy('collection.id')
-      .orderBy('collection.isRoot', 'DESC')
-      .addOrderBy('collection.parentId', 'DESC')
-      .addOrderBy('collection.position', 'ASC')
+      .orderBy('collection.isRoot', 'ASC')
+      .addOrderBy('collection.parentId', 'ASC')
+      .addOrderBy('collection.position', 'DESC')
       .getRawMany();
+    await collectionsRepo.save(
+      allCollections.map((collection) => {
+        return {
+          id: collection.collection_id,
+          customFields: {
+            popularityScore: collection.score ?? 0,
+          },
+        };
+      })
+    );
+    return allCollections;
   }
 
-  async differentApproach(ctx: RequestContext) {
-    const productRepository = this.connection.getRepository(ctx, Product);
-    const mergedOrderLines = await productRepository
-      .createQueryBuilder('product')
-      .leftJoin('product.variants', 'variant')
-      .addSelect(['variant.id'])
-      .leftJoin('variant.collections', 'collection')
-      .addSelect(['SUM(product.customFieldsPopularityscore) as count'])
-      .groupBy('collection.id')
-      .getRawMany();
-    console.log(mergedOrderLines);
-  }
-
-  convertIntoTreeNodesAndAssignKnownValues(input: any[]): CollectionTreeNode[] {
-    const nodes: CollectionTreeNode[] = [];
-    //since the first collection is gonna be the root collection, we should start by assigning it
-    const rootNode = new CollectionTreeNode();
-    rootNode.id = input[0].collection_id;
-    nodes.push(rootNode);
-    for (
-      var collectionIndex = 1;
-      collectionIndex < input.length;
-      collectionIndex++
-    ) {
-      if (input[collectionIndex].parentId != nodes[nodes.length - 1].id) {
-        //new node has come up
-        const newNode = new CollectionTreeNode();
-        newNode.id = input[collectionIndex].collection_id;
-      } else {
-        //update the child nodes of the existing node
-        nodes[nodes.length - 1].children.push(input[collectionIndex]);
-      }
+  async addUpTheTreeAndSave(input: any[], ctx: RequestContext) {
+    const collectionsRepo = this.connection.getRepository(ctx, Collection);
+    for (const col of input) {
+      const desc: number = (
+        await this.collectionService.getDescendants(ctx, col.collection_id)
+      )
+        .map((d) => (d.customFields as any).popularityScore)
+        .reduce((partialSum: number, a: number) => partialSum + a, 0);
+      await collectionsRepo.save({
+        id: col.collection_id,
+        customFields: {
+          popularityScore: col.score ?? 0 + desc ?? 0,
+        },
+      });
     }
-    console.log(nodes);
-    return nodes;
   }
 
   addScoreCalculatingJobToQueue(channelToken: string) {

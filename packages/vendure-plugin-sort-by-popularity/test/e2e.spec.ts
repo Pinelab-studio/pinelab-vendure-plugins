@@ -115,7 +115,13 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Calculated popularity for parent collections', async () => {
-    expect(false).toBe(true);
+    const refetchedRootData: any = await adminClient.query(
+      GET_COLLECTION_ADMIN,
+      { id: 'T_1' }
+    );
+    expect(refetchedRootData.collection.customFields.popularityScore).toBe(
+      2000
+    );
   });
 
   afterAll(() => {
