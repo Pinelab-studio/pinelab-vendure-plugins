@@ -97,7 +97,7 @@ _Subscriptions are created in the background, after a customer has finished the 
 
 ## Order with a total of €0
 
-With subscription product, it can be that your order totals to €0, because, for example, you start charging your customer starting next month.
+With subscriptions, it can be that your order totals to €0, because, for example, you start charging your customer starting next month.
 In case of an order being €0, a verification fee of €1 is added, because payment_intents with €0 are not allowed by Stripe.
 
 ## Canceling subscriptions
@@ -115,6 +115,8 @@ Features you can use, but don't have to!
 ## Payment eligibility checker
 
 You can use the payment eligibility checker `has-stripe-subscription-products-checker` if you want customers that don't have subscription products in their order to use a different payment method. The `has-stripe-subscription-products-checker` makes your payment method not eligible if it does not contain any subscription products.
+
+The checker is added automatically, you can just select it via the Admin UI when creating or updating a payment method.
 
 ## Down payments
 
