@@ -147,19 +147,24 @@ export class SortService implements OnModuleInit {
     ctx: RequestContext
   ) {
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
-    for (const col of input) {
+    for (const colIndex in input) {
       const desc: number = (
-        await this.collectionService.getDescendants(ctx, col.id)
+        await this.collectionService.getDescendants(ctx, input[colIndex].id)
       )
         .map((d) => (d.customFields as any).popularityScore)
         .reduce((partialSum: number, a: number) => partialSum + a, 0);
-      await collectionsRepo.save({
-        id: col.id,
-        customFields: {
-          popularityScore: col.score ?? 0 + desc ?? 0,
-        },
-      });
+      input[colIndex].score += desc;
     }
+    await collectionsRepo.save(
+      input.map((collection) => {
+        return {
+          id: collection.id,
+          customFields: {
+            popularityScore: collection.score ?? 0,
+          },
+        };
+      })
+    );
   }
 
   addScoreCalculatingJobToQueue(channelToken: string) {
