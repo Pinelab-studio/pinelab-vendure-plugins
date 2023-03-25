@@ -88,47 +88,73 @@ export class SortService implements OnModuleInit {
   }
 
   async assignScoreValuesToCollections(ctx: RequestContext) {
-    const allCollections = await this.saveEachCollectionScore(ctx);
-    await this.addUpTheTreeAndSave(allCollections, ctx);
+    const allCollectionsScores = await this.getEachCollectionsScore(ctx);
+    await this.addUpTheTreeAndSave(allCollectionsScores, ctx);
   }
 
-  async saveEachCollectionScore(ctx: RequestContext): Promise<any[]> {
+  async getEachCollectionsScore(
+    ctx: RequestContext
+  ): Promise<{ id: string; score: number }[]> {
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
-    const allCollections = await collectionsRepo
+    const productsRepo = this.connection.getRepository(ctx, Product);
+    const allCollectionIds = await collectionsRepo
       .createQueryBuilder('collection')
-      .leftJoin('collection.productVariants', 'productVariant')
-      .addGroupBy('productVariant.productId')
-      .addSelect(['productVariant.product'])
-      .leftJoin('productVariant.product', 'product')
-      .addSelect(['SUM(distinct product.customFieldsPopularityscore) as score'])
-      .addGroupBy('collection.id')
-      .orderBy('collection.isRoot', 'ASC')
-      .addOrderBy('collection.parentId', 'ASC')
-      .addOrderBy('collection.position', 'DESC')
+      .select('id')
       .getRawMany();
+    const productScoreSums: { id: string; score: number }[] = [];
+    const variantsPartialInfoQuery = collectionsRepo
+      .createQueryBuilder('collection')
+      .select('collection.id')
+      .leftJoin('collection.productVariants', 'productVariant')
+      .addSelect('productVariant.productId');
+    const productSummingQuery = productsRepo
+      .createQueryBuilder('product')
+      .select('SUM(product.customFieldsPopularityscore) AS productScoreSum');
+    for (const col of allCollectionIds) {
+      const variantsPartialInfo = await variantsPartialInfoQuery
+        .where('collection.id= :id', { id: col.id })
+        .getRawMany();
+
+      const productIds = variantsPartialInfo
+        .filter((i) => i.productVariant_productId != null)
+        .map((i) => i.productVariant_productId);
+
+      const uniqueProductIds = [...new Set(productIds)];
+
+      const summedProductsValue = await productSummingQuery
+        .where('product.id IN (:...ids)', { ids: uniqueProductIds })
+        .getRawOne();
+      productScoreSums.push({
+        id: col.id,
+        score: summedProductsValue.productScoreSum,
+      });
+    }
     await collectionsRepo.save(
-      allCollections.map((collection) => {
+      productScoreSums.map((collection) => {
         return {
-          id: collection.collection_id,
+          id: collection.id,
           customFields: {
             popularityScore: collection.score ?? 0,
           },
         };
       })
     );
-    return allCollections;
+    return productScoreSums;
   }
 
-  async addUpTheTreeAndSave(input: any[], ctx: RequestContext) {
+  async addUpTheTreeAndSave(
+    input: { id: string; score: number }[],
+    ctx: RequestContext
+  ) {
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
     for (const col of input) {
       const desc: number = (
-        await this.collectionService.getDescendants(ctx, col.collection_id)
+        await this.collectionService.getDescendants(ctx, col.id)
       )
         .map((d) => (d.customFields as any).popularityScore)
         .reduce((partialSum: number, a: number) => partialSum + a, 0);
       await collectionsRepo.save({
-        id: col.collection_id,
+        id: col.id,
         customFields: {
           popularityScore: col.score ?? 0 + desc ?? 0,
         },
