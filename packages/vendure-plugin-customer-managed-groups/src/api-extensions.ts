@@ -56,6 +56,7 @@ export const shopSchema = gql`
 
   extend type Query {
     ordersForMyCustomerManagedGroup: OrderList!
+    activeCustomerManagedGroupAdministrator: Boolean!
     myCustomerManagedGroup: CustomerManagedGroup
   }
 `;
@@ -70,6 +71,14 @@ export class CustomerManagedGroupsResolver {
     @Ctx() ctx: RequestContext
   ): Promise<PaginatedList<Order>> {
     return this.service.getOrdersForCustomer(ctx);
+  }
+
+  @Query()
+  @Allow(Permission.Authenticated)
+  async activeCustomerManagedGroupAdministrator(
+    @Ctx() ctx: RequestContext
+  ): Promise<Boolean> {
+    return this.service.activeCustomerManagedGroupAdministrator(ctx);
   }
 
   @Query()
