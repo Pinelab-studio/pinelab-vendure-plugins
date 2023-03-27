@@ -17,6 +17,13 @@ export interface PicqerOptions {
    * importFieldsFromPicqer: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
   importFieldsFromPicqer?: (product: PicqerProduct) => Partial<ProductVariant>;
+  /**
+   * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
+   * @example
+   * // Store `variant.customFields.EAN` from Vendure as `product.barcode` in Picqer
+   * importFieldsToPicqer: (variant) => ({ barcoe: variant.customFields.EAN }})
+   */
+  importFieldsToPicqer?: (variant: ProductVariant) => Partial<PicqerProduct>;
 }
 
 @VendurePlugin({

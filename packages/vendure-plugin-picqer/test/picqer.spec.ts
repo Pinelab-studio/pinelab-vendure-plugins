@@ -39,6 +39,23 @@ describe('Example plugin e2e', function () {
     await expect(server.app.getHttpServer).toBeDefined;
   });
 
+  it('Should push all products to Picqeron full sync', async () => {
+    // Asset, description,
+    await expect(true).tobe(false);
+  });
+
+  it('Should push custom fields to Picqer based on "importFieldsToPicqer" function', async () => {
+    await expect(true).tobe(false);
+  });
+
+  it('Should create product in Picqer when product is created in Vendure', async () => {
+    await expect(true).tobe(false);
+  });
+
+  it('Should updated product in Picqer when product is updated in Vendure', async () => {
+    await expect(true).tobe(false);
+  });
+
   afterAll(() => {
     return server.destroy();
   });
