@@ -1,7 +1,7 @@
 schema: 'src/**/*.graphql.ts'
 documents: 'src/**/*.graphql.ts'
 generates:
-  ./src/generated/graphql.ts:
+  ./src/ui/generated/graphql.ts:
     plugins:
       - typescript
       - typescript-operations
