@@ -275,7 +275,8 @@ export class CustomerManagedGroupsService {
       (group) => group.customFields.isCustomerManaged
     );
   }
-
+  
+  
   async activeCustomerManagedGroupAdministrator(
     ctx: RequestContext
   ): Promise<Boolean> {
@@ -285,7 +286,7 @@ export class CustomerManagedGroupsService {
     return this.isAdministratorOfGroup(userId!, customerManagedGroup!);
   }
 
-  async myCustomerManagagedGroup(
+  async myCustomerManagedGroup(
     ctx: RequestContext
   ): Promise<CustomerManagedGroup> {
     const userId = this.getOrThrowUserId(ctx);

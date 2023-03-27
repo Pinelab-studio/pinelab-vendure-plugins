@@ -20,7 +20,7 @@ declare module 'astro:content' {
 declare module 'astro:content' {
   export { z } from 'astro/zod';
   export type CollectionEntry<C extends keyof typeof entryMap> =
-    (typeof entryMap)[C][keyof (typeof entryMap)[C]];
+    typeof entryMap[C][keyof typeof entryMap[C]];
 
   export const image: () => import('astro/zod').ZodObject<{
     src: import('astro/zod').ZodString;
@@ -62,7 +62,7 @@ declare module 'astro:content' {
   type EntryMapKeys = keyof typeof entryMap;
   type AllValuesOf<T> = T extends any ? T[keyof T] : never;
   type ValidEntrySlug<C extends EntryMapKeys> = AllValuesOf<
-    (typeof entryMap)[C]
+    typeof entryMap[C]
   >['slug'];
 
   export function getEntryBySlug<
