@@ -5998,9 +5998,7 @@ export const CreatePaymentMethod = gql`
   }
 `;
 
-export const GET_COLLECTION_ADMIN = gql`
-  query GetCollectionAdmin($id: ID, $slug: String) {
-    collection(id: $id, slug: $slug) {
+const COLLECTION_FRAGMENT = `
       id
       name
       slug
@@ -6012,14 +6010,8 @@ export const GET_COLLECTION_ADMIN = gql`
           value
         }
       }
-      assets {
-        ...Asset
-      }
       customFields {
         popularityScore
-      }
-      featuredAsset {
-        ...Asset
       }
       parent {
         id
@@ -6036,6 +6028,12 @@ export const GET_COLLECTION_ADMIN = gql`
         slug
         description
       }
+`;
+
+export const GET_COLLECTION_ADMIN = gql`
+  query GetCollectionAdmin($id: ID, $slug: String) {
+    collection(id: $id, slug: $slug) {
+      ${COLLECTION_FRAGMENT}
     }
   }
 `;
@@ -6043,7 +6041,7 @@ export const GET_COLLECTION_ADMIN = gql`
 export const CREATE_COLLECTION = gql`
   mutation CreateCollection($input: CreateCollectionInput!) {
     createCollection(input: $input) {
-      ...Collection
+      ${COLLECTION_FRAGMENT}
     }
   }
 `;

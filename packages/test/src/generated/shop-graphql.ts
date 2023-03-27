@@ -3649,8 +3649,44 @@ export const GET_PRODUCT_SIMPLE = gql`
     product(id: $id) {
       id
       name
-      customfields {
+      customFields {
         popularityScore
+      }
+    }
+  }
+`;
+
+export const SET_ORDER_BILLING_ADDRESS = gql`
+  mutation SetActiveOrderBillingAddress(
+    $streetLine1: String
+    $countryCode: String
+  ) {
+    setOrderBillingAddress(
+      input: { streetLine1: $streetLine1, countryCode: $countryCode }
+    ) {
+      ... on Order {
+        ...Order
+      }
+      ... on NoActiveOrderError {
+        message
+      }
+    }
+  }
+`;
+
+export const SET_ORDER_SHIPMENT_ADDRESS = gql`
+  mutation SetActiveOrderShippingAddress(
+    $streetLine1: String
+    $countryCode: String
+  ) {
+    setOrderShippingAddress(
+      input: { streetLine1: $streetLine1, countryCode: $countryCode }
+    ) {
+      ... on Order {
+        ...Order
+      }
+      ... on NoActiveOrderError {
+        message
       }
     }
   }
