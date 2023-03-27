@@ -275,8 +275,7 @@ export class CustomerManagedGroupsService {
       (group) => group.customFields.isCustomerManaged
     );
   }
-  
-  
+
   async activeCustomerManagedGroupAdministrator(
     ctx: RequestContext
   ): Promise<Boolean> {
