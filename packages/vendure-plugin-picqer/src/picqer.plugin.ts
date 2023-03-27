@@ -3,7 +3,7 @@ import {
   ProductVariant,
   VendurePlugin,
 } from '@vendure/core';
-import { PicqerResolver, shopSchema } from './api/api-extensions';
+import { PicqerResolver, adminSchema } from './api-extensions';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { PicqerProduct } from './types';
 
@@ -36,7 +36,7 @@ export interface PicqerOptions {
   ],
   shopApiExtensions: {
     resolvers: [PicqerResolver],
-    schema: shopSchema,
+    schema: adminSchema,
   },
 })
 export class PicqerPlugin {
