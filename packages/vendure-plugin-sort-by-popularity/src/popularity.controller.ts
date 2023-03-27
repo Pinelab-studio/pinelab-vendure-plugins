@@ -9,6 +9,6 @@ export class OrderByPopularityController {
     @Ctx() ctx: RequestContext,
     @Param('mychanneltoken') token: string
   ) {
-    this.sortService.addScoreCalculatingJobToQueue(token, ctx);
+    await this.sortService.addScoreCalculatingJobToQueue(token, ctx);
   }
 }
