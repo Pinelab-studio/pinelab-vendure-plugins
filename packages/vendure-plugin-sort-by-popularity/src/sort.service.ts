@@ -13,6 +13,7 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import { Success } from '../../test/src/generated/admin-graphql';
+import { Logger } from '@vendure/core';
 @Injectable()
 export class SortService implements OnModuleInit {
   private jobQueue: JobQueue<{
@@ -27,7 +28,7 @@ export class SortService implements OnModuleInit {
   ) {}
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
-      name: 'calculate-scores',
+      name: 'calculate-popularity-scores',
       process: async (job) => {
         const channel = await this.channelService.getChannelFromToken(
           job.data.channelToken
@@ -42,8 +43,8 @@ export class SortService implements OnModuleInit {
 
   async setProductPopularity(
     ctx: RequestContext,
-    channleId: ID
-  ): Promise<Success> {
+    channelId: ID
+  ): Promise<void> {
     const groupedOrderItems = await this.connection
       .getRepository(ctx, OrderItem)
       .createQueryBuilder('orderItem')
@@ -71,7 +72,7 @@ export class SortService implements OnModuleInit {
       .andWhere('productVariant.deletedAt IS NULL')
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
-      .andWhere('order_channel.id = :id', { id: channleId })
+      .andWhere('order_channel.id = :id', { id: channelId })
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
@@ -89,13 +90,22 @@ export class SortService implements OnModuleInit {
       })
     );
     await this.assignScoreValuesToCollections(ctx);
-    return { success: true };
+    Logger.info(
+      `Finished calculating popularity scores`,
+      'SortByPopularityPlugin'
+    );
   }
   async assignScoreValuesToCollections(ctx: RequestContext) {
     const allCollectionsScores = await this.getEachCollectionsScore(ctx);
     await this.addUpTheTreeAndSave(allCollectionsScores, ctx);
   }
 
+  /**
+   * This calculates the score of a collection based on its products.
+   * Does not include scores of subcollections yet
+   * @param ctx
+   * @returns Array of collection ids and their corresponding popularity scores not including subcollections
+   */
   async getEachCollectionsScore(
     ctx: RequestContext
   ): Promise<{ id: string; score: number }[]> {
@@ -103,7 +113,9 @@ export class SortService implements OnModuleInit {
     const productsRepo = this.connection.getRepository(ctx, Product);
     const allCollectionIds = await collectionsRepo
       .createQueryBuilder('collection')
-      .select('id')
+      .select(['collection.id'])
+      .innerJoin('collection.channels', 'collection_channel')
+      .andWhere('collection_channel.id = :id', { id: ctx.channelId })
       .getRawMany();
     const productScoreSums: { id: string; score: number }[] = [];
     const variantsPartialInfoQuery = collectionsRepo
@@ -113,7 +125,7 @@ export class SortService implements OnModuleInit {
       .addSelect('productVariant.productId');
     const productSummingQuery = productsRepo
       .createQueryBuilder('product')
-      .select('SUM(product.customFieldsPopularityscore) AS productScoreSum');
+      .select('SUM(product.customFields.popularityScore) AS productScoreSum');
     for (const col of allCollectionIds) {
       const variantsPartialInfo = await variantsPartialInfoQuery
         .where('collection.id= :id', { id: col.id })
@@ -146,6 +158,11 @@ export class SortService implements OnModuleInit {
     return productScoreSums;
   }
 
+  /**
+   *
+   * @param input Array of collection ids and their corresponding popularity scores not including subcollections
+   * @param ctx The current RequestContext
+   */
   async addUpTheTreeAndSave(
     input: { id: string; score: number }[],
     ctx: RequestContext
