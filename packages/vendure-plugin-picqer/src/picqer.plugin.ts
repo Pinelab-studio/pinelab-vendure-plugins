@@ -14,7 +14,7 @@ export interface PicqerOptions {
    * thus making Picqer responsible for the value of fields.
    * @example
    * // Store weight in grams from Picqer as weight in KG in Vendure
-   * importFieldsFromPicqer: (product) => ({ weight: product.weight / 1000 })
+   * importFieldsFromPicqer: (product) => ({ 'customFields.weight: product.weight / 1000 })
    */
   importFieldsFromPicqer?: (product: PicqerProduct) => Partial<ProductVariant>;
 }
