@@ -2,18 +2,23 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import {
   ChannelService,
   CollectionService,
+  ID,
   JobQueue,
   JobQueueService,
   OrderItem,
   OrderLine,
   Product,
   RequestContext,
+  SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import { Success } from '../../test/src/generated/admin-graphql';
 @Injectable()
 export class SortService implements OnModuleInit {
-  private jobQueue: JobQueue<{ channelToken: string }>;
+  private jobQueue: JobQueue<{
+    channelToken: string;
+    ctx: SerializedRequestContext;
+  }>;
   constructor(
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
@@ -26,18 +31,18 @@ export class SortService implements OnModuleInit {
         const channel = await this.channelService.getChannelFromToken(
           job.data.channelToken
         );
-        const ctx = new RequestContext({
-          apiType: 'admin',
-          isAuthorized: true,
-          authorizedAsOwnerOnly: false,
-          channel,
-        });
-        this.setProductPopularity(ctx);
+        this.setProductPopularity(
+          RequestContext.deserialize(job.data.ctx),
+          channel.id
+        );
       },
     });
   }
 
-  async setProductPopularity(ctx: RequestContext): Promise<Success> {
+  async setProductPopularity(
+    ctx: RequestContext,
+    channleId: ID
+  ): Promise<Success> {
     const groupedOrderItems = await this.connection
       .getRepository(ctx, OrderItem)
       .createQueryBuilder('orderItem')
@@ -64,7 +69,7 @@ export class SortService implements OnModuleInit {
       .andWhere('productVariant.deletedAt IS NULL')
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
-      .andWhere('order_channel.id = :id', { id: ctx.channelId })
+      .andWhere('order_channel.id = :id', { id: channleId })
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
@@ -84,7 +89,10 @@ export class SortService implements OnModuleInit {
     return { success: true };
   }
 
-  addScoreCalculatingJobToQueue(channelToken: string) {
-    return this.jobQueue.add({ channelToken }, { retries: 5 });
+  addScoreCalculatingJobToQueue(channelToken: string, ctx: RequestContext) {
+    return this.jobQueue.add(
+      { channelToken, ctx: ctx.serialize() },
+      { retries: 5 }
+    );
   }
 }
