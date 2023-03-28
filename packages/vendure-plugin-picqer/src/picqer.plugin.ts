@@ -3,9 +3,14 @@ import {
   ProductVariant,
   VendurePlugin,
 } from '@vendure/core';
-import { PicqerResolver, adminSchema } from './api-extensions';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { PicqerProduct } from './types';
+import { PicqerProduct } from './api/types';
+import { adminSchema, PicqerResolver } from './api/api-extensions';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
+import { permission } from '.';
+import { PicqerConfigEntity } from './api/picqer-config.entity';
+import { PicqerService } from './api/picqer.service';
 
 export interface PicqerOptions {
   enabled: boolean;
@@ -33,10 +38,17 @@ export interface PicqerOptions {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => PicqerPlugin.options,
     },
+    PicqerService,
   ],
-  shopApiExtensions: {
+  adminApiExtensions: {
     resolvers: [PicqerResolver],
     schema: adminSchema,
+  },
+  entities: [PicqerConfigEntity],
+  configuration: (config) => {
+    // config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
+    config.authOptions.customPermissions.push(permission);
+    return config;
   },
 })
 export class PicqerPlugin {
@@ -46,4 +58,24 @@ export class PicqerPlugin {
     this.options = options;
     return PicqerPlugin;
   }
+
+  /**
+   * Admin UI configuration needed to register the Picqer UI modules
+   */
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    ngModules: [
+      {
+        type: 'lazy',
+        route: 'picqer',
+        ngModuleFileName: 'picqer-modules.ts',
+        ngModuleName: 'PicqerLazyModule',
+      },
+      {
+        type: 'shared',
+        ngModuleFileName: 'picqer-modules.ts',
+        ngModuleName: 'PicqerSharedModule',
+      },
+    ],
+  };
 }

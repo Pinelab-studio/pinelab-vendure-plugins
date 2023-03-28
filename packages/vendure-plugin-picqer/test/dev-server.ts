@@ -1,4 +1,5 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -12,6 +13,8 @@ import {
 } from '@vendure/testing';
 import { PicqerPlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
+import path from 'path';
+import { UPSERT_CONFIG } from '../src/ui/queries';
 
 (async () => {
   require('dotenv').config();
@@ -31,11 +34,11 @@ import { initialData } from '../../test/src/initial-data';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*         app: compileUiExtensions({
-                      outputPath: path.join(__dirname, '__admin-ui'),
-                      extensions: [StripeSubscriptionPlugin.ui],
-                      devMode: true,
-                    }) */
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [PicqerPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
   });
@@ -43,5 +46,15 @@ import { initialData } from '../../test/src/initial-data';
   await server.init({
     initialData,
     productsCsvPath: '../test/src/products-import.csv',
+  });
+  await adminClient.asSuperAdmin();
+  await adminClient.query(UPSERT_CONFIG, {
+    input: {
+      enabled: true,
+      apiKey: process.env.APIKEY,
+      apiEndpoint: process.env.ENDPOINT,
+      storefrontUrl: 'mystore.io',
+      supportEmail: 'support@mystore.io',
+    },
   });
 })();

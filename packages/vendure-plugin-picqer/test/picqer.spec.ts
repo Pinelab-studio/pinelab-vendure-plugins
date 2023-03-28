@@ -10,6 +10,7 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
+import { GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 
 describe('Example plugin e2e', function () {
   let server: TestServer;
@@ -39,12 +40,47 @@ describe('Example plugin e2e', function () {
     await expect(server.app.getHttpServer).toBeDefined;
   });
 
-  it('Should push all products to Picqeron full sync', async () => {
+  it('Should update Picqer config via admin api', async () => {
+    await adminClient.asSuperAdmin();
+    const { upsertPicqerConfig: config } = await adminClient.query(
+      UPSERT_CONFIG,
+      {
+        input: {
+          enabled: true,
+          apiKey: 'test-api-key',
+          apiEndpoint: 'https://test-picqer.io/api/v1/',
+          storefrontUrl: 'mystore.io',
+          supportEmail: 'support@mystore.io',
+        },
+      }
+    );
+    await expect(config.enabled).toBe(true);
+    await expect(config.apiKey).toBe('test-api-key');
+    await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
+    await expect(config.storefrontUrl).toBe('mystore.io');
+    await expect(config.supportEmail).toBe('support@mystore.io');
+  });
+
+  it('Should get Picqer config after upsert', async () => {
+    await adminClient.asSuperAdmin();
+    const { upsertPicqerConfig: config } = await adminClient.query(GET_CONFIG);
+    await expect(config.enabled).toBe(true);
+    await expect(config.apiKey).toBe('test-api-key');
+    await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
+    await expect(config.storefrontUrl).toBe('mystore.io');
+    await expect(config.supportEmail).toBe('support@mystore.io');
+  });
+
+  it('Should push all products to Picqer on full sync', async () => {
     // Asset, description,
     await expect(true).toBe(false);
   });
 
   it('Should push custom fields to Picqer based on "importFieldsToPicqer" function', async () => {
+    await expect(true).toBe(false);
+  });
+
+  it('Should pull custom fields from Picqer based on "importFieldsFromPicqer" function', async () => {
     await expect(true).toBe(false);
   });
 
