@@ -291,7 +291,11 @@ export class CustomerManagedGroupsService {
   ): Promise<CustomerManagedGroup> {
     const userId = this.getOrThrowUserId(ctx);
     const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
-    const customerManagedGroup = this.getCustomerManagedGroup(customer);
+    let customerManagedGroup = this.getCustomerManagedGroup(customer);
+    if(!customerManagedGroup) {
+      this.addToGroup(ctx, customer);
+      customerManagedGroup = this.getCustomerManagedGroup(customer);
+    }
     return this.mapToCustomerManagedGroup(customerManagedGroup!);
   }
 
