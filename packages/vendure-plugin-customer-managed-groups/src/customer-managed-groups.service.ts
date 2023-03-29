@@ -293,7 +293,7 @@ export class CustomerManagedGroupsService {
     const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
     let customerManagedGroup = this.getCustomerManagedGroup(customer);
     if(!customerManagedGroup) {
-      this.addToGroup(ctx, customer);
+      this.addToGroup(ctx, { emailAddress: customer.emailAddress, isGroupAdmin: true });
       customerManagedGroup = this.getCustomerManagedGroup(customer);
     }
     return this.mapToCustomerManagedGroup(customerManagedGroup!);
