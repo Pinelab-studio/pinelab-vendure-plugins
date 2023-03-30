@@ -124,6 +124,31 @@ export async function createSettledOrder(
   return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
 }
 
+export async function createSettledOrderForVariants(
+  shopClient: SimpleGraphQLClient,
+  variants: { id: string; quantity: number }[],
+  shippingMethodId: string | number
+): Promise<Order> {
+  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  for (const v of variants) {
+    await addItem(shopClient, v.id, v.quantity);
+  }
+  const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
+    input: {
+      fullName: 'Martinho Pinelabio',
+      streetLine1: 'Verzetsstraat',
+      streetLine2: '12a',
+      city: 'Liwwa',
+      postalCode: '8923CP',
+      countryCode: 'NL',
+    },
+  });
+  if ((res as ErrorResult)?.errorCode) {
+    console.error(JSON.stringify(res));
+    throw Error((res as ErrorResult).errorCode);
+  }
+  return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
+}
 export async function getProductWithId(
   shopClient: SimpleGraphQLClient,
   id: string

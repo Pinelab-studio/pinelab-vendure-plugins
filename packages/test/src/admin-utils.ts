@@ -1,6 +1,11 @@
 import {
+  // Collection,
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
+  variantIdCollectionFilter,
+  // ProductOption,
+  // ProductOptionGroup,
+  // Product
 } from '@vendure/core';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import { SimpleGraphQLClient } from '@vendure/testing';
@@ -11,6 +16,8 @@ import {
   Orders as OrdersGraphql,
   OrderQuery,
   OrdersQuery,
+  ProductOption,
+  ProductOptionGroup,
   UpdateCollectionInput,
   GET_COLLECTION_ADMIN,
   QueryCollectionArgs,
@@ -23,6 +30,24 @@ import {
   LanguageCode,
   Collection,
   CreateCollectionTranslationInput,
+  Product,
+  MutationCreateProductArgs,
+  ProductTranslationInput,
+  CreateProductOptionGroupInput,
+  MutationCreateProductOptionGroupArgs,
+  MutationCreateProductOptionArgs,
+  CREATE_PRODUCT_OPTION_GROUP,
+  CREATE_PRODUCT_OPTION,
+  ADD_OPTION_GROUP_TO_PRODUCT,
+  MutationAddOptionGroupToProductArgs,
+  ProductVariant,
+  MutationCreateProductVariantsArgs,
+  CREATE_PRODUCT_VARIANTS,
+  CreateProductVariantInput,
+  ProductVariantTranslationInput,
+  CREATE_PRODUCT,
+  GlobalFlag,
+  GET_ALL_COLLECTIONS,
 } from './generated/admin-graphql';
 import { productIdCollectionFilter } from '@vendure/core';
 
@@ -166,20 +191,27 @@ export async function assignProductToCollection(
   };
 }
 
-export async function createCollectionContainingProduct(
+export async function createCollectionContainingVariants(
   adminClient: SimpleGraphQLClient,
   translationFields: Omit<
     CreateCollectionTranslationInput,
     'customFields' | 'languageCode'
   >,
-  productId: string,
+  variants: ProductVariant[],
   parentId?: string
 ): Promise<Collection> {
+  // console.log(JSON.stringify(variants.map((v)=>v.id)));
   const input: CreateCollectionInput = {
     filters: [
       {
-        code: productIdCollectionFilter.code,
-        arguments: [{ name: 'productIds', value: productId }],
+        code: variantIdCollectionFilter.code,
+        arguments: [
+          {
+            name: 'variantIds',
+            value: JSON.stringify(variants.map((v) => v.id)),
+          },
+          { name: 'combineWithAnd', value: 'true' },
+        ],
       },
     ],
     translations: [
@@ -192,8 +224,144 @@ export async function createCollectionContainingProduct(
     ],
     parentId,
   };
-  return await adminClient.query<Collection, MutationCreateCollectionArgs>(
-    CREATE_COLLECTION,
-    { input }
+  return (
+    (await adminClient.query<Collection, MutationCreateCollectionArgs>(
+      CREATE_COLLECTION,
+      { input }
+    )) as any
+  ).createCollection;
+}
+
+export async function createProduct(
+  adminClient: SimpleGraphQLClient,
+  translationFields: Omit<
+    ProductTranslationInput,
+    'customFields' | 'languageCode'
+  >
+) {
+  return (
+    (await adminClient.query<Product, MutationCreateProductArgs>(
+      CREATE_PRODUCT,
+      {
+        input: {
+          translations: [
+            {
+              languageCode: LanguageCode.En,
+              description: translationFields.description,
+              name: translationFields.name,
+              slug: translationFields.slug,
+            },
+          ],
+        },
+      }
+    )) as any
+  ).createProduct;
+}
+
+export async function assignOptionGroupsToProduct(
+  adminClient: SimpleGraphQLClient,
+  product: Product,
+  optionGroups: CreateProductOptionGroupInput[]
+): Promise<Product> {
+  const createdOptionGroups: any[] = await Promise.all(
+    optionGroups.map(async (g) => {
+      return (
+        (await adminClient.query<
+          ProductOptionGroup,
+          MutationCreateProductOptionGroupArgs
+        >(CREATE_PRODUCT_OPTION_GROUP, {
+          input: {
+            code: g.code,
+            options: g.options,
+            translations: [
+              {
+                languageCode: LanguageCode.En,
+                name: g.translations[0].name,
+              },
+            ],
+          },
+        })) as any
+      ).createProductOptionGroup;
+    })
   );
+  // for(const optionIndex in createdOptionGroups){
+  //   createdOptionGroups[optionIndex].options=[...(
+  //     await Promise.all(await optionGroups.map(async(o)=>{
+  //       return (await adminClient.query<ProductOption, MutationCreateProductOptionArgs>(
+  //       CREATE_PRODUCT_OPTION,
+  //       { input:{
+  //         productOptionGroupId: createdOptionGroups[optionIndex].createProductOptionGroup.id,
+  //         code: o.code,
+  //         translations:[
+  //           {
+  //             languageCode: LanguageCode.En,
+  //             name: o.translations[0].name
+  //           }
+  //         ]
+  //       } }
+  //     ) as any).createProductOption}))
+  //   )]
+  // }
+  let newProduct = product;
+  for (const optionGroup of createdOptionGroups) {
+    newProduct = (
+      (await adminClient.query<Product, MutationAddOptionGroupToProductArgs>(
+        ADD_OPTION_GROUP_TO_PRODUCT,
+        {
+          optionGroupId: optionGroup.id as string,
+          productId: newProduct.id,
+        }
+      )) as any
+    ).addOptionGroupToProduct;
+  }
+  return newProduct;
+}
+
+export async function createProductVariants(
+  adminClient: SimpleGraphQLClient,
+  product: Product
+): Promise<ProductVariant[]> {
+  const crossJoinedOptions = cartesian(
+    product.optionGroups[0].options,
+    product.optionGroups[1].options
+  );
+  const variants = await adminClient.query<
+    ProductVariant[],
+    MutationCreateProductVariantsArgs
+  >(CREATE_PRODUCT_VARIANTS, {
+    input: crossJoinedOptions.map((i: ProductOption[]) => {
+      return {
+        // optionGroups: product.optionGroups,
+        productId: product.id,
+        price: 10000,
+        stockOnHand: 100,
+        sku: i.map((o) => o.code).join(' '),
+        trackInventory: GlobalFlag.True,
+        optionIds: i.map((o) => o.id),
+        translations: [
+          {
+            languageCode: LanguageCode.En,
+            name: `${product.translations[0].name} ${i
+              .map((o) => o.code)
+              .join(' ')}`,
+          },
+        ],
+      };
+    }),
+  });
+  return (variants as any).createProductVariants;
+}
+
+function cartesian(one: ProductOption[], two: ProductOption[]) {
+  const crossJoined = [];
+  for (const a of one) {
+    for (const b of two) {
+      crossJoined.push([a, b]);
+    }
+  }
+  return crossJoined;
+}
+
+export async function getAllCollections(adminClient: SimpleGraphQLClient) {
+  return adminClient.query(GET_ALL_COLLECTIONS);
 }
