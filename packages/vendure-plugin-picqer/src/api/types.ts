@@ -1,4 +1,6 @@
-export interface PicqerProduct {
-  sku: string;
-  barcode: string;
+export interface PicqerProductInput {
+  name: string;
+  idvatgroup: number;
+  productcode: string;
+  price: number;
 }

@@ -1,4 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
+import { PicqerProductInput } from './types';
 
 export interface PicqerClientInput {
   apiEndpoint: string;
@@ -6,10 +7,6 @@ export interface PicqerClientInput {
   storefrontUrl: string;
   supportEmail: string;
 }
-axios.interceptors.request.use((request) => {
-  console.log('Starting Request', JSON.stringify(request, null, 2));
-  return request;
-});
 
 export class PicqerClient {
   readonly instance: AxiosInstance;
@@ -25,12 +22,18 @@ export class PicqerClient {
       timeout: 5000,
       headers: {
         Authorization: `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,
-        'User-Agent': `MyPicqerClient (${storefrontUrl} - ${supportEmail})`,
+        'User-Agent': `VendurePicqerPlugin (${storefrontUrl} - ${supportEmail})`,
       },
     });
   }
 
   async getStats(): Promise<any> {
     return this.instance.get('stats');
+  }
+
+  // TODO handle errors: data.error_message
+
+  async createProduct(input: PicqerProductInput): Promise<any> {
+    return this.instance.post('/products', input);
   }
 }

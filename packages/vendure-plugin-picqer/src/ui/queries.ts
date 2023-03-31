@@ -19,6 +19,12 @@ export const UPSERT_CONFIG = gql`
   }
 `;
 
+export const FULL_SYNC = gql`
+  mutation triggerPicqerFullSync {
+    triggerPicqerFullSync
+  }
+`;
+
 export const TEST = gql`
   query isPicqerConfigValid($input: TestPicqerInput!) {
     isPicqerConfigValid(input: $input)

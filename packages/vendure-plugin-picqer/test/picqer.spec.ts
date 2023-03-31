@@ -10,7 +10,7 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
-import { GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
+import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 
 describe('Example plugin e2e', function () {
   let server: TestServer;
@@ -72,8 +72,8 @@ describe('Example plugin e2e', function () {
   });
 
   it('Should push all products to Picqer on full sync', async () => {
-    // Asset, description,
-    await expect(true).toBe(false);
+    const { triggerPicqerFullSync } = await adminClient.query(FULL_SYNC);
+    await expect(triggerPicqerFullSync).toBe(true);
   });
 
   it('Should push custom fields to Picqer based on "importFieldsToPicqer" function', async () => {

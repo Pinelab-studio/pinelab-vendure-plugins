@@ -64,10 +64,9 @@ export class PicqerResolver {
   ) {}
 
   @Mutation()
-  @Allow(picqerPermission.Permission)
+  // @Allow(picqerPermission.Permission)
   async triggerPicqerFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
-    // TODO
-    return true;
+    return this.service.triggerFullSync(ctx);
   }
 
   @Mutation()
@@ -88,7 +87,7 @@ export class PicqerResolver {
   }
 
   @Query()
-  // FIXME @Allow(picqerPermission.Permission)
+  @Allow(picqerPermission.Permission)
   async isPicqerConfigValid(
     @Ctx() ctx: RequestContext,
     @Args('input') input: TestPicqerInput
