@@ -37,6 +37,15 @@ export const removeCustomerFromGroupMutation = gql`
   }
 `;
 
+export const createCustomerManagedGroupMutation = gql`
+  ${customerManagedGroupFragment}
+  mutation createCustomerManagedGroup {
+    createCustomerManagedGroup {
+      ...CustomerManagedGroupFragment
+    }
+  }
+`;
+
 export const getOrdersForMyCustomerManagedGroup = gql`
   query {
     ordersForMyCustomerManagedGroup {

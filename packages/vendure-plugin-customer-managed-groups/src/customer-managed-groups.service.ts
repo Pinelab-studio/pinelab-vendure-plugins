@@ -287,13 +287,24 @@ export class CustomerManagedGroupsService {
 
   async myCustomerManagedGroup(
     ctx: RequestContext
+  ): Promise<CustomerManagedGroup | undefined> {
+    const userId = this.getOrThrowUserId(ctx);
+    const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    let customerManagedGroup = this.getCustomerManagedGroup(customer);
+    if (!customerManagedGroup) {
+      return undefined;
+    }
+    return this.mapToCustomerManagedGroup(customerManagedGroup);
+  }
+
+  async createCustomerManagedGroup(
+    ctx: RequestContext
   ): Promise<CustomerManagedGroup> {
     const userId = this.getOrThrowUserId(ctx);
     const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
     let customerManagedGroup = this.getCustomerManagedGroup(customer);
-    if(!customerManagedGroup) {
-      this.addToGroup(ctx, { emailAddress: customer.emailAddress, isGroupAdmin: true });
-      customerManagedGroup = this.getCustomerManagedGroup(customer);
+    if (customerManagedGroup) {
+      throw new UserInputError(`You are already in a customer managed group`);
     }
     return this.mapToCustomerManagedGroup(customerManagedGroup!);
   }

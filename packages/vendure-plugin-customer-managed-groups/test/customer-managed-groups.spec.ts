@@ -17,6 +17,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { CustomerManagedGroupsPlugin } from '../src';
 import {
   addCustomerToGroupMutation,
+  createCustomerManagedGroupMutation,
   getOrdersForMyCustomerManagedGroup,
   removeCustomerFromGroupMutation,
 } from './test-helpers';
@@ -121,6 +122,18 @@ describe('Customer managed groups', function () {
     );
     expect(marques.isGroupAdministrator).toBe(false);
     expect(eliezer.isGroupAdministrator).toBe(false);
+  });
+
+  it('Fails to create a group if user is already in a group', async () => {
+    expect.assertions(1);
+    await authorizeAsGroupAdmin();
+    try {
+      await shopClient.query(createCustomerManagedGroupMutation);
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        'You are already in a customer managed group'
+      );
+    }
   });
 
   it('Fails when a participant tries to add customers', async () => {

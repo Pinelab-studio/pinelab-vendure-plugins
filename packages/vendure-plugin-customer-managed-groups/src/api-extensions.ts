@@ -49,6 +49,10 @@ export const shopSchema = gql`
     addCustomerToMyCustomerManagedGroup(
       input: AddCustomerToMyCustomerManagedGroupInput
     ): CustomerManagedGroup!
+    """
+    Create an empty customer managed group for the current user
+    """
+    createCustomerManagedGroup: CustomerManagedGroup!
     removeCustomerFromMyCustomerManagedGroup(
       customerId: ID!
     ): CustomerManagedGroup!
@@ -85,8 +89,16 @@ export class CustomerManagedGroupsResolver {
   @Allow(Permission.Authenticated)
   async myCustomerManagedGroup(
     @Ctx() ctx: RequestContext
-  ): Promise<CustomerManagedGroup> {
+  ): Promise<CustomerManagedGroup | undefined> {
     return this.service.myCustomerManagedGroup(ctx);
+  }
+
+  @Mutation()
+  @Allow(Permission.Authenticated)
+  async createCustomerManagedGroup(
+    @Ctx() ctx: RequestContext
+  ): Promise<CustomerManagedGroup | undefined> {
+    return this.service.createCustomerManagedGroup(ctx);
   }
 
   @Mutation()
