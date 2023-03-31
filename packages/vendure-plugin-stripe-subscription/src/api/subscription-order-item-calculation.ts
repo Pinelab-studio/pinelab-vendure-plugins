@@ -5,7 +5,7 @@ import {
   PriceCalculationResult,
   RequestContext,
 } from '@vendure/core';
-import { StripeSubscriptionService } from './stripe-subscription.service';
+import { StripeSubscriptionService } from '../api/stripe-subscription.service';
 import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,

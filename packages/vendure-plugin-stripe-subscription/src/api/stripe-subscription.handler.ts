@@ -16,11 +16,11 @@ import {
 } from '@vendure/core/dist/config/payment/payment-method-handler';
 import {
   OrderLineWithSubscriptionFields,
-  OrderWithSubscriptions,
+  OrderWithSubscriptionFields,
 } from './subscription-custom-fields';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { StripeClient } from './stripe.client';
-import { loggerCtx } from './constants';
+import { loggerCtx } from '../constants';
 import { printMoney } from './pricing.helper';
 
 let service: StripeSubscriptionService;

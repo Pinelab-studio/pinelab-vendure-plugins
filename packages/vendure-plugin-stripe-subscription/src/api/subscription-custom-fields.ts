@@ -7,7 +7,7 @@ import {
   ProductVariant,
 } from '@vendure/core';
 import { Schedule } from './schedule.entity';
-import { StripeSubscriptionPricing } from './ui/generated/graphql';
+import { StripeSubscriptionPricing } from '../ui/generated/graphql';
 
 /**
  * Custom fields for managing subscriptions.
@@ -21,7 +21,7 @@ export interface VariantWithSubscriptionFields extends ProductVariant {
 
 export interface CustomerWithSubscriptionFields extends Customer {
   customFields: {
-    stripeCustomerId?: string;
+    stripeSubscriptionCustomerId?: string;
   };
 }
 
@@ -39,7 +39,7 @@ export interface OrderLineWithSubscriptionFields extends OrderLine {
 /**
  * An order that can have subscriptions in it
  */
-export interface OrderWithSubscriptions extends Order {
+export interface OrderWithSubscriptionFields extends Order {
   lines: (OrderLineWithSubscriptionFields & {
     productVariant: VariantWithSubscriptionFields;
   })[];
@@ -68,7 +68,7 @@ export const productVariantCustomFields: CustomFieldConfig[] = [
 export const customerCustomFields: CustomFieldConfig[] = [
   /* ------------ Stripe customer ID -------------------------- */
   {
-    name: 'stripeCustomerId',
+    name: 'stripeSubscriptionCustomerId',
     label: [
       {
         languageCode: LanguageCode.en,

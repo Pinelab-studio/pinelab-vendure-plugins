@@ -77,9 +77,6 @@ describe('Order export plugin', function () {
           disableWebhookSignatureChecking: true,
         }),
       ],
-      paymentOptions: {
-        paymentMethodHandlers: [stripeSubscriptionHandler],
-      },
     });
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
@@ -129,6 +126,10 @@ describe('Order export plugin', function () {
         name: 'Stripe test payment',
         description: 'This is a Stripe payment method',
         enabled: true,
+        checker: {
+          code: 'has-stripe-subscription-products-checker',
+          arguments: [],
+        },
         handler: {
           code: 'stripe-subscription',
           arguments: [
@@ -883,6 +884,24 @@ describe('Order export plugin', function () {
       orderEvents.forEach((event) => {
         expect(event.ctx.req).toBeDefined();
       });
+    });
+
+    it('Should fail to create payment intent for ineligible order', async () => {
+      await shopClient.asUserWithCredentials(
+        'trevor_donnelly96@hotmail.com',
+        'test'
+      );
+      // Variant 3 is not a subscription product, so the eligiblity checker should not allow intent creation
+      await shopClient.query(ADD_ITEM_TO_ORDER, {
+        productVariantId: '3',
+        quantity: 1,
+      });
+      await setShipping(shopClient);
+      let error: any;
+      await shopClient.query(CREATE_PAYMENT_LINK).catch((e) => (error = e));
+      expect(error?.message).toBe(
+        `No eligible payment method found with code 'stripe-subscription'`
+      );
     });
   });
 
