@@ -88,17 +88,9 @@ export class CustomerManagedGroupsService {
       this.throwIfNotAdministratorOfGroup(userId, customerManagedGroup);
     }
     if (!customerManagedGroup) {
-      Logger.info(
-        `Creating new group "${currentCustomer.lastName}'s Group"`,
-        loggerCtx
-      );
-      customerManagedGroup = await this.customerGroupService.create(ctx, {
-        name: `${currentCustomer.lastName}'s Group`,
-        customerIds: [currentCustomer.id, invitee.id],
-        customFields: {
-          isCustomerManaged: true,
-        },
-      });
+      customerManagedGroup = await this.createGroup(ctx, currentCustomer, [
+        invitee.id,
+      ]);
     }
     const existingAdminIds = (
       customerManagedGroup.customFields.groupAdmins || []
@@ -301,12 +293,37 @@ export class CustomerManagedGroupsService {
     ctx: RequestContext
   ): Promise<CustomerManagedGroup> {
     const userId = this.getOrThrowUserId(ctx);
-    const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
-    let customerManagedGroup = this.getCustomerManagedGroup(customer);
+    const currentCustomer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    let customerManagedGroup = this.getCustomerManagedGroup(currentCustomer);
     if (customerManagedGroup) {
       throw new UserInputError(`You are already in a customer managed group`);
     }
-    return this.mapToCustomerManagedGroup(customerManagedGroup!);
+    customerManagedGroup = await this.createGroup(ctx, currentCustomer);
+    return this.mapToCustomerManagedGroup(customerManagedGroup);
+  }
+
+  /**
+   *
+   * @param ctx Internal function to create a customer managed group based
+   * @param groupAdmin
+   * @param additionalMembers add addtional members to the group. Group admin is already added as member
+   */
+  private createGroup(
+    ctx: RequestContext,
+    groupAdmin: Customer,
+    additionalMembers?: ID[]
+  ): Promise<CustomerGroupWithCustomFields> {
+    const members = [groupAdmin.id];
+    if (additionalMembers) {
+      members.push(...additionalMembers);
+    }
+    return this.customerGroupService.create(ctx, {
+      name: `${groupAdmin.lastName}'s Group`,
+      customerIds: members,
+      customFields: {
+        isCustomerManaged: true,
+      },
+    });
   }
 
   mapToCustomerManagedGroup(
