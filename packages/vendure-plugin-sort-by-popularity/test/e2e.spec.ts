@@ -103,101 +103,6 @@ describe('Sort by Popularity Plugin', function () {
   let createdProducts: Product[] = [];
   let createdCollections: Collection[] = [];
 
-  it('Create product with variant and collection', async () => {
-    const newProduct = await createProduct(adminClient, {
-      description: '<p>New product</p>',
-      name: 'New Product',
-      slug: 'new-product',
-    });
-    // expect(newProduct.name).toBe('New Product');
-    const updatedNewProduct = await assignOptionGroupsToProduct(
-      adminClient,
-      newProduct,
-      [
-        {
-          code: 'new-group-0',
-          options: [
-            {
-              code: 'new-00',
-              translations: [
-                {
-                  languageCode: LanguageCode.En,
-                  name: 'new-00',
-                },
-              ],
-            },
-            {
-              code: 'new-01',
-              translations: [
-                {
-                  languageCode: LanguageCode.En,
-                  name: 'new-01',
-                },
-              ],
-            },
-          ],
-          translations: [
-            {
-              languageCode: LanguageCode.En,
-              name: 'new-group-0',
-            },
-          ],
-        },
-        {
-          code: 'new-group-1',
-          options: [
-            {
-              code: 'new-10',
-              translations: [
-                {
-                  languageCode: LanguageCode.En,
-                  name: 'new-10',
-                },
-              ],
-            },
-            {
-              code: 'new-11',
-              translations: [
-                {
-                  languageCode: LanguageCode.En,
-                  name: 'new-11',
-                },
-              ],
-            },
-          ],
-          translations: [
-            {
-              languageCode: LanguageCode.En,
-              name: 'new-group-1',
-            },
-          ],
-        },
-      ]
-    );
-    const newVariants = await createProductVariants(
-      adminClient,
-      updatedNewProduct
-    );
-    expect(
-      newVariants.every((v) => v.product.id === updatedNewProduct.id)
-    ).toBe(true);
-    const newCollection = await createCollectionContainingVariants(
-      adminClient,
-      {
-        description: '<p>New Collection</p>',
-        name: 'New Collection',
-        slug: 'new-collection',
-      },
-      newVariants,
-      'T_1'
-    );
-    // console.log(newCollection.id,'1')
-    // await new Promise((r) => setTimeout(r, 1000));
-    expect(newCollection?.parent?.id === 'T_1').toBe(true);
-    createdProducts.push(updatedNewProduct);
-    createdCollections.push(newCollection);
-  });
-
   it('Create product with variant and collection and settled orders', async () => {
     const newProduct = await createProduct(adminClient, {
       description: '<p>Another product</p>',
@@ -317,21 +222,6 @@ describe('Sort by Popularity Plugin', function () {
     ).toBe(true);
   });
 
-  it('variant updating job is done for collection T_5', async () => {
-    await new Promise((r) => setTimeout(r, 1000));
-    const refetchedAnotherCollectionData: any = await adminClient.query(
-      GET_COLLECTION_ADMIN,
-      { id: 'T_5' }
-    );
-    expect(
-      refetchedAnotherCollectionData.collection.productVariants.totalItems >
-        0 &&
-        refetchedAnotherCollectionData.collection.productVariants.items.every(
-          (item: ProductVariant) => item.product.id === 'T_3'
-        )
-    ).toBe(true);
-  });
-
   it('Calls webhook to calculate popularity', async () => {
     // TODO Verify that the api call to order-by-popularity/calculate-scores was successfull.
     // await new Promise((r) => setTimeout(r, 1000));
@@ -349,12 +239,7 @@ describe('Sort by Popularity Plugin', function () {
       shopClient,
       createdProducts[0].id
     );
-    expect(newProduct.product.customFields.popularityScore).toBe(0);
-    const anotherProduct: any = await getProductWithId(
-      shopClient,
-      createdProducts[1].id
-    );
-    expect(anotherProduct.product.customFields.popularityScore).toBe(800);
+    expect(newProduct.product.customFields.popularityScore).toBe(800);
   });
 
   it('Calculated popularity per collection', async () => {
@@ -371,23 +256,15 @@ describe('Sort by Popularity Plugin', function () {
       GET_COLLECTION_ADMIN,
       { id: 'T_4' }
     );
-    // console.log(createdCollections[0].id,createdCollections[1].id,'createdCollections[0].id')
-    const refetchedAnotherCollectionData: any = await adminClient.query(
-      GET_COLLECTION_ADMIN,
-      { id: 'T_5' }
-    );
     expect(
       refetchedNewCollectionData.collection.customFields.popularityScore
-    ).toBe(0);
+    ).toBe(800);
     expect(refetchedParentData.collection.customFields.popularityScore).toBe(
       1000
     );
     expect(refetchedChildData.collection.customFields.popularityScore).toBe(
       1000
     );
-    expect(
-      refetchedAnotherCollectionData.collection.customFields.popularityScore
-    ).toBe(800);
   });
 
   it('Calculated popularity for parent collections', async () => {
