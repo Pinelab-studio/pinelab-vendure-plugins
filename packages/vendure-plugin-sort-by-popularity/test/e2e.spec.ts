@@ -11,14 +11,13 @@ import { initialData } from '../../test/src/initial-data';
 import { SortByPopularityPlugin } from '../src/index';
 import {
   createSettledOrder,
-  createSettledOrderForVariants,
   getProductWithId,
 } from '../../test/src/shop-utils';
 import {
   assignOptionGroupsToProduct,
   createCollectionContainingVariants,
   createProduct,
-  createProductVariants,
+  createVariantsForProductOptions,
   getAllCollections,
   getAllOrders,
 } from '../../test/src/admin-utils';
@@ -31,7 +30,6 @@ import {
   ProductVariant,
   QueryCollectionArgs,
 } from '../../test/src/generated/admin-graphql';
-import { BullMQJobQueuePlugin } from '@vendure/job-queue-plugin/package/bullmq';
 jest.setTimeout(10000);
 
 describe('Sort by Popularity Plugin', function () {
@@ -84,11 +82,7 @@ describe('Sort by Popularity Plugin', function () {
 
   it('Should place test orders', async () => {
     for (let i = 0; i < 5; i++) {
-      await createSettledOrderForVariants(
-        shopClient,
-        [{ id: 'T_2', quantity: 2 }],
-        1
-      );
+      await createSettledOrder(shopClient, 1, [{ id: 'T_2', quantity: 2 }]);
     }
     const orders = await getAllOrders(adminClient);
     expect(orders.length).toBe(5);
@@ -173,7 +167,7 @@ describe('Sort by Popularity Plugin', function () {
         },
       ]
     );
-    const newProductVariants = await createProductVariants(
+    const newProductVariants = await createVariantsForProductOptions(
       adminClient,
       updatedAnotherProduct
     );
@@ -181,12 +175,12 @@ describe('Sort by Popularity Plugin', function () {
       newProductVariants.every((v) => v.product.id === updatedAnotherProduct.id)
     ).toBe(true);
     // console.log(newProductVariants,'updatedAnotherProduct');
-    const order = await createSettledOrderForVariants(
+    const order = await createSettledOrder(
       shopClient,
+      1,
       newProductVariants.map((v) => {
         return { id: v.id, quantity: 2 };
-      }),
-      1
+      })
     );
     expect(
       order.lines.every(
@@ -200,7 +194,7 @@ describe('Sort by Popularity Plugin', function () {
         name: 'Another Collection',
         slug: 'another-collection',
       },
-      newProductVariants
+      newProductVariants.map((v) => v.id)
     );
     expect(anotherCollection.parent!.id === 'T_1').toBe(true);
     createdCollections.push(anotherCollection);

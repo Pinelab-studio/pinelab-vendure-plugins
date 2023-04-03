@@ -1,11 +1,7 @@
 import {
-  // Collection,
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
   variantIdCollectionFilter,
-  // ProductOption,
-  // ProductOptionGroup,
-  // Product
 } from '@vendure/core';
 import { Fulfillment } from '@vendure/common/lib/generated-types';
 import { SimpleGraphQLClient } from '@vendure/testing';
@@ -18,7 +14,6 @@ import {
   OrdersQuery,
   ProductOption,
   ProductOptionGroup,
-  UpdateCollectionInput,
   GET_COLLECTION_ADMIN,
   QueryCollectionArgs,
   MutationUpdateCollectionArgs,
@@ -35,16 +30,12 @@ import {
   ProductTranslationInput,
   CreateProductOptionGroupInput,
   MutationCreateProductOptionGroupArgs,
-  MutationCreateProductOptionArgs,
   CREATE_PRODUCT_OPTION_GROUP,
-  CREATE_PRODUCT_OPTION,
   ADD_OPTION_GROUP_TO_PRODUCT,
   MutationAddOptionGroupToProductArgs,
   ProductVariant,
   MutationCreateProductVariantsArgs,
   CREATE_PRODUCT_VARIANTS,
-  CreateProductVariantInput,
-  ProductVariantTranslationInput,
   CREATE_PRODUCT,
   GlobalFlag,
   GET_ALL_COLLECTIONS,
@@ -197,10 +188,9 @@ export async function createCollectionContainingVariants(
     CreateCollectionTranslationInput,
     'customFields' | 'languageCode'
   >,
-  variants: ProductVariant[],
+  variantIds: string[],
   parentId?: string
 ): Promise<Collection> {
-  // console.log(JSON.stringify(variants.map((v)=>v.id)));
   const input: CreateCollectionInput = {
     filters: [
       {
@@ -208,7 +198,7 @@ export async function createCollectionContainingVariants(
         arguments: [
           {
             name: 'variantIds',
-            value: JSON.stringify(variants.map((v) => v.id)),
+            value: JSON.stringify(variantIds),
           },
           { name: 'combineWithAnd', value: 'true' },
         ],
@@ -284,24 +274,6 @@ export async function assignOptionGroupsToProduct(
       ).createProductOptionGroup;
     })
   );
-  // for(const optionIndex in createdOptionGroups){
-  //   createdOptionGroups[optionIndex].options=[...(
-  //     await Promise.all(await optionGroups.map(async(o)=>{
-  //       return (await adminClient.query<ProductOption, MutationCreateProductOptionArgs>(
-  //       CREATE_PRODUCT_OPTION,
-  //       { input:{
-  //         productOptionGroupId: createdOptionGroups[optionIndex].createProductOptionGroup.id,
-  //         code: o.code,
-  //         translations:[
-  //           {
-  //             languageCode: LanguageCode.En,
-  //             name: o.translations[0].name
-  //           }
-  //         ]
-  //       } }
-  //     ) as any).createProductOption}))
-  //   )]
-  // }
   let newProduct = product;
   for (const optionGroup of createdOptionGroups) {
     newProduct = (
@@ -317,11 +289,11 @@ export async function assignOptionGroupsToProduct(
   return newProduct;
 }
 
-export async function createProductVariants(
+export async function createVariantsForProductOptions(
   adminClient: SimpleGraphQLClient,
   product: Product
 ): Promise<ProductVariant[]> {
-  const crossJoinedOptions = cartesian(
+  const crossJoinedOptions = combineProductOptions(
     product.optionGroups[0].options,
     product.optionGroups[1].options
   );
@@ -331,7 +303,6 @@ export async function createProductVariants(
   >(CREATE_PRODUCT_VARIANTS, {
     input: crossJoinedOptions.map((i: ProductOption[]) => {
       return {
-        // optionGroups: product.optionGroups,
         productId: product.id,
         price: 10000,
         stockOnHand: 100,
@@ -352,8 +323,14 @@ export async function createProductVariants(
   return (variants as any).createProductVariants;
 }
 
-function cartesian(one: ProductOption[], two: ProductOption[]) {
-  const crossJoined = [];
+/**
+ *
+ * @param one The first product option group's option values
+ * @param two The second product option group's option values
+ * @returns
+ */
+function combineProductOptions(one: ProductOption[], two: ProductOption[]) {
+  const crossJoined: ProductOption[][] = [];
   for (const a of one) {
     for (const b of two) {
       crossJoined.push([a, b]);

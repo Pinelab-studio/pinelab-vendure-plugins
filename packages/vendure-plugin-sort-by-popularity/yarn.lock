@@ -2770,11 +2770,6 @@
     rxjs "^6.6.3"
     typeorm "0.2.45"
 
-"@vendure/job-queue-plugin@^1.9.5":
-  version "1.9.5"
-  resolved "https://registry.yarnpkg.com/@vendure/job-queue-plugin/-/job-queue-plugin-1.9.5.tgz#ea224ed3e115558f30fb1cbae2b2129f4d0cbbee"
-  integrity sha512-xIE3OCMzV9+eqDhNSqW4y7spl2zWhLn8K6mnL9TiCY9+xPi/NNlvHL9ybBEZEG9nZXwte0P7t8BeAhZupc5QaA==
-
 "@vendure/testing@1.9.2":
   version "1.9.2"
   resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-1.9.2.tgz#a2665456acb86d99596751f3d17df3ae2b25a16a"
