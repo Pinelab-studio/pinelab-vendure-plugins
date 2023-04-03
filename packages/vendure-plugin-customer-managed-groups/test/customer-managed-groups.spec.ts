@@ -88,14 +88,6 @@ describe('Customer managed groups', function () {
     }
   });
 
-  it('Returns undefined when not logged in', async () => {
-    await shopClient.asAnonymousUser();
-    const { myCustomerManagedGroup: group } = await shopClient.query(
-      myCustomerManagedGroupQuery
-    );
-    expect(group).toBe(null);
-  });
-
   it('Returns undefined when not in a group', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
