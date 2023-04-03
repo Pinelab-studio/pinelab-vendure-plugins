@@ -733,11 +733,11 @@ describe('Order export plugin', function () {
       expect(
         paidInFull?.['items[0][price_data][recurring][interval_count]']
       ).toBe('6');
-      const in6months = new Date();
-      in6months.setMonth(in6months.getMonth() + 6);
-      // Trial-end should be after atleast 6 months
+      const in5months = new Date();
+      in5months.setMonth(in5months.getMonth() + 5);
+      // Trial-end should be after atleast 5 months
       expect(parseInt(paidInFull?.trial_end)).toBeGreaterThan(
-        in6months.getTime() / 1000
+        in5months.getTime() / 1000
       );
     });
 

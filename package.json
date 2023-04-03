@@ -50,6 +50,7 @@
           "limit-variant",
           "variant-bulk-update",
           "picqer",
+          "customer-managed-groups",
           "all-plugins"
         ]
       ]
