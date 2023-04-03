@@ -83,7 +83,6 @@ export class SortService implements OnModuleInit {
     const maxCount = groupedOrderItems[0].count;
     const maxValue = 1000;
     const productRepository = this.connection.getRepository(ctx, Product);
-    // console.log(groupedOrderItems,'groupedOrderItems')
     await productRepository.save(
       groupedOrderItems.map((gols) => {
         return {
@@ -94,7 +93,6 @@ export class SortService implements OnModuleInit {
         };
       })
     );
-    // console.log(groupedOrderItems,'groupedOrderItems')
     await this.assignScoreValuesToCollections(ctx);
     Logger.info(
       `Finished calculating popularity scores`,
@@ -103,7 +101,6 @@ export class SortService implements OnModuleInit {
   }
   async assignScoreValuesToCollections(ctx: RequestContext) {
     const allCollectionsScores = await this.getEachCollectionsScore(ctx);
-    // console.log(allCollectionsScores,'in terms of product')
     await this.addUpTheTreeAndSave(allCollectionsScores, ctx);
   }
 
@@ -120,17 +117,15 @@ export class SortService implements OnModuleInit {
     const productsRepo = this.connection.getRepository(ctx, Product);
     const allCollectionIds = await collectionsRepo
       .createQueryBuilder('collection')
-      // .select(['collection.id'])
-      .innerJoinAndSelect('collection.channels', 'collection_channel')
+      .innerJoin('collection.channels', 'collection_channel')
       .andWhere('collection_channel.id = :id', { id: ctx.channelId })
       .getRawMany();
     const productScoreSums: { id: string; score: number }[] = [];
     const variantsPartialInfoQuery = collectionsRepo
       .createQueryBuilder('collection')
-      // .select(['collection.id'])
-      .leftJoinAndSelect('collection.productVariants', 'productVariant')
-      .innerJoinAndSelect('productVariant.product', 'product');
-    // .addSelect('productVariant.productId');
+      .leftJoin('collection.productVariants', 'productVariant')
+      .innerJoin('productVariant.product', 'product')
+      .addSelect(['product.customFields.popularityScore', 'product.id']);
     const productSummingQuery = productsRepo
       .createQueryBuilder('product')
       .select('SUM(product.customFields.popularityScore) AS productScoreSum');
@@ -138,7 +133,6 @@ export class SortService implements OnModuleInit {
       const variantsPartialInfo = await variantsPartialInfoQuery
         .andWhere('collection.id= :id', { id: col.collection_id })
         .getRawMany();
-      // console.log(variantsPartialInfo.length,col.collection_id);
 
       const productIds = variantsPartialInfo
         .filter((i) => i.product_id != null)
@@ -149,13 +143,11 @@ export class SortService implements OnModuleInit {
       const summedProductsValue = await productSummingQuery
         .andWhere('product.id IN (:...ids)', { ids: uniqueProductIds })
         .getRawOne();
-      // console.log(variantsPartialInfo.length, col.collection_id,uniqueProductIds)
       productScoreSums.push({
         id: col.collection_id,
         score: summedProductsValue.productScoreSum,
       });
     }
-    // console.log(productScoreSums,'productScoreSums')
     await collectionsRepo.save(
       productScoreSums.map((collection) => {
         return {
@@ -166,7 +158,6 @@ export class SortService implements OnModuleInit {
         };
       })
     );
-    // console.log('allCollectionIds end')
     return productScoreSums;
   }
 
@@ -179,7 +170,6 @@ export class SortService implements OnModuleInit {
     input: { id: string; score: number }[],
     ctx: RequestContext
   ) {
-    // console.log(input,'before')
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
     for (const colIndex in input) {
       const desc: number = (
@@ -189,7 +179,6 @@ export class SortService implements OnModuleInit {
         .reduce((partialSum: number, a: number) => partialSum + a, 0);
       input[colIndex].score += desc;
     }
-    // console.log(input,'after')
     await collectionsRepo.save(
       input.map((collection) => {
         return {

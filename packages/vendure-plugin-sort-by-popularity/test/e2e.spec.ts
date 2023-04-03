@@ -45,14 +45,7 @@ describe('Sort by Popularity Plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [
-        SortByPopularityPlugin,
-        // BullMQJobQueuePlugin.init({
-        //   connection: {
-        //     port: 6379
-        //   }
-        // }),
-      ],
+      plugins: [SortByPopularityPlugin],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -174,7 +167,6 @@ describe('Sort by Popularity Plugin', function () {
     expect(
       newProductVariants.every((v) => v.product.id === updatedAnotherProduct.id)
     ).toBe(true);
-    // console.log(newProductVariants,'updatedAnotherProduct');
     const order = await createSettledOrder(
       shopClient,
       1,
@@ -207,7 +199,6 @@ describe('Sort by Popularity Plugin', function () {
       GET_COLLECTION_ADMIN,
       { id: 'T_4' }
     );
-    // console.log(createdCollections[0].id,createdCollections[1].id,'createdCollections[0].id')
     expect(
       refetchedNewCollectionData.collection.productVariants.totalItems > 0 &&
         refetchedNewCollectionData.collection.productVariants.items.every(
@@ -217,8 +208,6 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Calls webhook to calculate popularity', async () => {
-    // TODO Verify that the api call to order-by-popularity/calculate-scores was successfull.
-    // await new Promise((r) => setTimeout(r, 1000));
     const res = await adminClient.fetch(
       `http://localhost:3106/order-by-popularity/calculate-scores/e2e-default-channel`
     );
@@ -237,7 +226,6 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Calculated popularity per collection', async () => {
-    // await new Promise((r) => setTimeout(r,5000));
     const refetchedParentData: any = await adminClient.query(
       GET_COLLECTION_ADMIN,
       { id: 'T_2' }
@@ -272,8 +260,6 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   afterAll(async () => {
-    //  const all= await getAllCollections(adminClient);
-    // console.log(all.collections.items.map((c:any)=> `${c.id} | ${c.productVariants.items.map((v:any)=> v.product.id)}`));
     return server.destroy();
   });
 });
