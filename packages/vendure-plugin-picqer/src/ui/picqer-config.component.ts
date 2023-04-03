@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DataService, NotificationService } from '@vendure/admin-ui/core';
-import { GET_CONFIG, TEST, UPSERT_CONFIG } from './queries';
+import { FULL_SYNC, GET_CONFIG, TEST, UPSERT_CONFIG } from './queries';
 
 /**
  * Component for updating Picqer configuration.
@@ -11,6 +11,11 @@ import { GET_CONFIG, TEST, UPSERT_CONFIG } from './queries';
   template: `
     <h1>Picqer configuration</h1>
 
+    <button class="btn btn-warning-outline" [disabled]="isSaving" (click)="fullSync()">
+        Run full sync
+      </button>
+      <br/>
+      <br/>
     <section class="form-block">
       <vdr-form-field label="Enabled">
         <input type="checkbox" clrCheckbox [(ngModel)]="enabled" />
@@ -20,7 +25,7 @@ import { GET_CONFIG, TEST, UPSERT_CONFIG } from './queries';
       </vdr-form-field>
       <vdr-form-field
         label="API endpoint"
-        tooltip="Your Picqer domain, including the '/api/v1/' path "
+        tooltip="Your Picqer domain, without the '/api/v1/' path "
       >
         <input type="text" [(ngModel)]="apiEndpoint" />
       </vdr-form-field>
@@ -68,7 +73,7 @@ export class PicqerConfigComponent implements OnInit {
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
     private notificationService: NotificationService
-  ) {}
+  ) { }
 
   async ngOnInit(): Promise<void> {
     await this.dataService
@@ -110,7 +115,13 @@ export class PicqerConfigComponent implements OnInit {
     }
   }
 
-  async fullSync(): Promise<void> {}
+  async fullSync(): Promise<void> {
+    await this.tryAndNotify(
+      this.dataService.mutate(FULL_SYNC).toPromise(),
+      'Full sync started, this might take a while',
+      'Failed to start sync'
+    );
+  }
 
   async test(): Promise<void> {
     this.isValid = undefined;

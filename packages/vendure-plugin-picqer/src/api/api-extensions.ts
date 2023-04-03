@@ -64,7 +64,7 @@ export class PicqerResolver {
   ) {}
 
   @Mutation()
-  // @Allow(picqerPermission.Permission)
+  @Allow(picqerPermission.Permission)
   async triggerPicqerFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
     return this.service.triggerFullSync(ctx);
   }

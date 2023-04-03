@@ -1,20 +1,20 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   EventBus,
-  JobQueueService,
   ID,
-  SerializedRequestContext,
-  OrderPlacedEvent,
-  ProductVariantEvent,
   JobQueue,
-  RequestContext,
-  TransactionalConnection,
+  JobQueueService,
   Logger,
-  ProductVariantService,
-  ProductVariant,
+  OrderPlacedEvent,
   Product,
+  ProductVariant,
+  ProductVariantEvent,
+  ProductVariantService,
+  RequestContext,
+  SerializedRequestContext,
+  TransactionalConnection
 } from '@vendure/core';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
   PicqerConfig,
@@ -22,8 +22,8 @@ import {
   TestPicqerInput,
 } from '../ui/generated/graphql';
 import { PicqerConfigEntity } from './picqer-config.entity';
-import { Repository } from 'typeorm';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
+import { ProductInput } from './types';
 
 interface PushVariantsJob {
   action: 'push-variants';
@@ -43,7 +43,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private connection: TransactionalConnection,
     private variantService: ProductVariantService
-  ) {}
+  ) { }
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -129,34 +129,48 @@ export class PicqerService implements OnApplicationBootstrap {
     ctx: RequestContext,
     variantIds: ID[]
   ): Promise<void> {
-    try {
-      const client = await this.getClient(ctx);
-      if (!client) {
-        return;
-      }
-      const variants = await this.variantService.findByIds(ctx, variantIds);
-      await Promise.all(
-        variants.map(async (variant) => {
-          return client.createProduct({
-            idvatgroup: 17526,
-            name: variant.name,
-            price: variant.price,
-            productcode: variant.sku,
-          });
-        })
-      );
-      Logger.info(
-        `Pushed ${variantIds.length} to Picqer for channel ${ctx.channel.token}`,
-        loggerCtx
-      );
-    } catch (e: any) {
-      console.log(e);
-      Logger.error(
-        `Error pushing variants to Picqer: ${e?.message}`,
-        loggerCtx
-      );
-      throw e;
+    const client = await this.getClient(ctx);
+    if (!client) {
+      return;
     }
+    const vatGroups = await client.getVatGroups();
+    const variants = await this.variantService.findByIds(ctx, variantIds);
+    await Promise.all(
+      variants.map(async (variant) => {
+        const vatGroup = vatGroups.find(vg => vg.percentage === variant.taxRateApplied.value);
+        if (!vatGroup) {
+          Logger.error(
+            `Could not find vatGroup for taxRate ${variant.taxRateApplied.value} for variant ${variant.sku}. Not pushing this variant to Picqer`,
+            loggerCtx
+          );
+          return;
+        }
+        try {
+          const existing = await client.getProductByCode(variant.sku);
+          const productInput = this.mapToProductInput(variant, vatGroup.idvatgroup)  ;
+          if (existing?.idproduct) {
+            await client.updateProduct(existing.idproduct, productInput);
+            return Logger.info(
+              `Updated variant ${variant.sku} in Picqer (Picqer id: ${existing.idproduct}) for channel ${ctx.channel.token}`,
+              loggerCtx
+            );
+          }
+          // Create new variant if no product exists in Picqer
+          const created = await client.createProduct(productInput);
+          Logger.info(
+            `Created  variant ${variant.sku} in Picqer (Picqer id: ${created.idproduct}) for channel ${ctx.channel.token}`,
+            loggerCtx
+          );
+        } catch (e: any) {
+          // Only log a warning, because this is a background function that will be retried by the JobQueue
+          Logger.warn(
+            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`,
+            loggerCtx
+          );
+          throw e;
+        }
+      })
+    );
   }
 
   async upsertConfig(
@@ -222,5 +236,15 @@ export class PicqerService implements OnApplicationBootstrap {
     } catch (e) {
       return false;
     }
+  }
+
+  private mapToProductInput(variant: ProductVariant, vatGroupId: number): ProductInput {
+    return {
+      idvatgroup: vatGroupId,
+      name: variant.name,
+      price: variant.price,
+      productcode: variant.sku,
+    }
+
   }
 }

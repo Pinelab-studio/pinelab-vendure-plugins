@@ -4,7 +4,7 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { PicqerProductInput } from './api/types';
+import { ProductInput } from './api/types';
 import { adminSchema, PicqerResolver } from './api/api-extensions';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
@@ -22,7 +22,7 @@ export interface PicqerOptions {
    * importFieldsFromPicqer: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
   importFieldsFromPicqer?: (
-    product: PicqerProductInput
+    product: ProductInput
   ) => Partial<ProductVariant>;
   /**
    * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
@@ -32,7 +32,7 @@ export interface PicqerOptions {
    */
   importFieldsToPicqer?: (
     variant: ProductVariant
-  ) => Partial<PicqerProductInput>;
+  ) => Partial<ProductInput>;
 }
 
 @VendurePlugin({

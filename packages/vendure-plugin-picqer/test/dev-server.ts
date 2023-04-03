@@ -14,7 +14,7 @@ import {
 import { PicqerPlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
 import path from 'path';
-import { UPSERT_CONFIG } from '../src/ui/queries';
+import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
 
 (async () => {
   require('dotenv').config();
@@ -34,11 +34,11 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [PicqerPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [PicqerPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
   });
@@ -57,4 +57,5 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
       supportEmail: 'support@mystore.io',
     },
   });
+  await adminClient.query(FULL_SYNC);
 })();

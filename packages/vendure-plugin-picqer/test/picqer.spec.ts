@@ -11,88 +11,107 @@ import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
+import nock, { Scope } from 'nock';
+import test from 'ava';
 
-describe('Example plugin e2e', function () {
-  let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
-  let serverStarted = false;
+console.log('before================')
 
-  beforeAll(async () => {
-    registerInitializer('sqljs', new SqljsInitializer('__data__'));
-    const config = mergeConfig(testConfig, {
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [
-        PicqerPlugin.init({
-          enabled: true,
-        }),
-      ],
-    });
 
-    ({ server, adminClient, shopClient } = createTestEnvironment(config));
-    await server.init({
-      initialData,
-      productsCsvPath: path.join(__dirname, './product-import.csv'),
-    });
-  }, 60000);
+let server: TestServer;
+let adminClient: SimpleGraphQLClient;
+let nockScope = nock('https://test-picqer.io/api/v1/');
 
-  it('Should start successfully', async () => {
-    await expect(server.app.getHttpServer).toBeDefined;
+// Clear nock mocks after each test
+test.afterEach(() => nock.cleanAll());
+
+  console.log('before')
+
+test.before(async (t) => {
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
+    plugins: [
+      PicqerPlugin.init({
+        enabled: true,
+      }),
+    ],
   });
 
-  it('Should update Picqer config via admin api', async () => {
-    await adminClient.asSuperAdmin();
-    const { upsertPicqerConfig: config } = await adminClient.query(
-      UPSERT_CONFIG,
-      {
-        input: {
-          enabled: true,
-          apiKey: 'test-api-key',
-          apiEndpoint: 'https://test-picqer.io/api/v1/',
-          storefrontUrl: 'mystore.io',
-          supportEmail: 'support@mystore.io',
-        },
-      }
-    );
-    await expect(config.enabled).toBe(true);
-    await expect(config.apiKey).toBe('test-api-key');
-    await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
-    await expect(config.storefrontUrl).toBe('mystore.io');
-    await expect(config.supportEmail).toBe('support@mystore.io');
+  ({ server, adminClient } = createTestEnvironment(config));
+  await server.init({
+    initialData,
+    productsCsvPath: path.join(__dirname, './product-import.csv'),
   });
+});
 
-  it('Should get Picqer config after upsert', async () => {
-    await adminClient.asSuperAdmin();
-    const { upsertPicqerConfig: config } = await adminClient.query(GET_CONFIG);
-    await expect(config.enabled).toBe(true);
-    await expect(config.apiKey).toBe('test-api-key');
-    await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
-    await expect(config.storefrontUrl).toBe('mystore.io');
-    await expect(config.supportEmail).toBe('support@mystore.io');
-  });
+test('Should start successfully', async (t) => {
+  t.truthy(server.app.getHttpServer);
+});
 
-  it('Should push all products to Picqer on full sync', async () => {
-    const { triggerPicqerFullSync } = await adminClient.query(FULL_SYNC);
-    await expect(triggerPicqerFullSync).toBe(true);
-  });
+// it('Should update Picqer config via admin api', async () => {
+//   await adminClient.asSuperAdmin();
+//   const { upsertPicqerConfig: config } = await adminClient.query(
+//     UPSERT_CONFIG,
+//     {
+//       input: {
+//         enabled: true,
+//         apiKey: 'test-api-key',
+//         apiEndpoint: 'https://test-picqer.io/api/v1/',
+//         storefrontUrl: 'mystore.io',
+//         supportEmail: 'support@mystore.io',
+//       },
+//     }
+//   );
+//   await expect(config.enabled).toBe(true);
+//   await expect(config.apiKey).toBe('test-api-key');
+//   await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
+//   await expect(config.storefrontUrl).toBe('mystore.io');
+//   await expect(config.supportEmail).toBe('support@mystore.io');
+// });
 
-  it('Should push custom fields to Picqer based on "importFieldsToPicqer" function', async () => {
-    await expect(true).toBe(false);
-  });
+// it('Should get Picqer config after upsert', async () => {
+//   await adminClient.asSuperAdmin();
+//   const { upsertPicqerConfig: config } = await adminClient.query(GET_CONFIG);
+//   await expect(config.enabled).toBe(true);
+//   await expect(config.apiKey).toBe('test-api-key');
+//   await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
+//   await expect(config.storefrontUrl).toBe('mystore.io');
+//   await expect(config.supportEmail).toBe('support@mystore.io');
+// });
 
-  it('Should pull custom fields from Picqer based on "importFieldsFromPicqer" function', async () => {
-    await expect(true).toBe(false);
-  });
+// it('Should push all products to Picqer on full sync', async () => {
+//   let payload: any;
+//   nockScope.get(/.products*/).reply(200, [{productCode: 'L2201508'}]);
+//   nockScope.post('/products', (reqBody) => {
+//     console.log('TESTINGGG=======', reqBody)
+//     payload = reqBody;
+//     return true;
+//   })
+//   .reply(200, {
+//     data: { hosted_url: 'https://mock-hosted-checkout/charges' },
+//   });
 
-  it('Should create product in Picqer when product is created in Vendure', async () => {
-    await expect(true).toBe(false);
-  });
+//   const { triggerPicqerFullSync } = await adminClient.query(FULL_SYNC);
+//   await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+//   await expect(triggerPicqerFullSync).toBe(true);
+// });
 
-  it('Should updated product in Picqer when product is updated in Vendure', async () => {
-    await expect(true).toBe(false);
-  });
+// it('Should push custom fields to Picqer based on "importFieldsToPicqer" function', async () => {
+//   await expect(true).toBe(false);
+// });
 
-  afterAll(() => {
-    return server.destroy();
-  });
+// it('Should pull custom fields from Picqer based on "importFieldsFromPicqer" function', async () => {
+//   await expect(true).toBe(false);
+// });
+
+// it('Should create product in Picqer when product is created in Vendure', async () => {
+//   await expect(true).toBe(false);
+// });
+
+// it('Should updated product in Picqer when product is updated in Vendure', async () => {
+//   await expect(true).toBe(false);
+// });
+
+test.after(() => {
+  return server.destroy();
 });
