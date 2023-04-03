@@ -11,11 +11,15 @@ import { FULL_SYNC, GET_CONFIG, TEST, UPSERT_CONFIG } from './queries';
   template: `
     <h1>Picqer configuration</h1>
 
-    <button class="btn btn-warning-outline" [disabled]="isSaving" (click)="fullSync()">
-        Run full sync
-      </button>
-      <br/>
-      <br/>
+    <button
+      class="btn btn-warning-outline"
+      [disabled]="isSaving"
+      (click)="fullSync()"
+    >
+      Run full sync
+    </button>
+    <br />
+    <br />
     <section class="form-block">
       <vdr-form-field label="Enabled">
         <input type="checkbox" clrCheckbox [(ngModel)]="enabled" />
@@ -73,7 +77,7 @@ export class PicqerConfigComponent implements OnInit {
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
     private notificationService: NotificationService
-  ) { }
+  ) {}
 
   async ngOnInit(): Promise<void> {
     await this.dataService

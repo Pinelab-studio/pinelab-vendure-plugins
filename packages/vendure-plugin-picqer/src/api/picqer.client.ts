@@ -13,7 +13,7 @@ export interface PicqerClientInput {
 export class PicqerClient {
   readonly instance: AxiosInstance;
   /**
-   * This is the default limit for lists in the Picqer API. 
+   * This is the default limit for lists in the Picqer API.
    * Resultsets greater than this will require pagination.
    */
   readonly responseLimit = 100;
@@ -41,15 +41,25 @@ export class PicqerClient {
   async getVatGroups(): Promise<VatGroup[]> {
     const result = await this.rawRequest('get', '/vatgroups');
     if (result.length > this.responseLimit) {
-      Logger.error(`Picqer response limit exceeded for getVatGroups(). Pagination is required, but this is not implemented yet.`, loggerCtx);
+      Logger.error(
+        `Picqer response limit exceeded for getVatGroups(). Pagination is required, but this is not implemented yet.`,
+        loggerCtx
+      );
     }
     return result;
   }
 
-  async getProductByCode(productCode: string): Promise<ProductResponse | undefined> {
-    const result = await this.rawRequest('get', `/products?productcode=${productCode}`);
+  async getProductByCode(
+    productCode: string
+  ): Promise<ProductResponse | undefined> {
+    const result = await this.rawRequest(
+      'get',
+      `/products?productcode=${productCode}`
+    );
     if (result.length > 1) {
-      throw Error(`Picqer returned multiple products for product code ${productCode}`);
+      throw Error(
+        `Picqer returned multiple products for product code ${productCode}`
+      );
     }
     return result?.[0];
   }
@@ -58,15 +68,26 @@ export class PicqerClient {
     return this.rawRequest('post', '/products', input);
   }
 
-  async updateProduct(productId: string | number, input: ProductInput): Promise<ProductResponse> {
+  async updateProduct(
+    productId: string | number,
+    input: ProductInput
+  ): Promise<ProductResponse> {
     return this.rawRequest('put', `/products/${productId}`, input);
   }
 
   /**
    * Request wrapper with Picqer specific error handling
    */
-  async rawRequest(method: 'post' | 'get' | 'put', url: string, data?: any): Promise<any> {
-    return (await this.instance({ method, url, data }).catch((e: any) => this.handleError(e, url)))?.data;
+  async rawRequest(
+    method: 'post' | 'get' | 'put',
+    url: string,
+    data?: any
+  ): Promise<any> {
+    return (
+      await this.instance({ method, url, data }).catch((e: any) =>
+        this.handleError(e, url)
+      )
+    )?.data;
   }
   /**
    * Throw Picqer specific error messages
@@ -78,5 +99,4 @@ export class PicqerClient {
       throw e;
     }
   }
-
 }

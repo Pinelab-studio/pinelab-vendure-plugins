@@ -12,7 +12,7 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
-  TransactionalConnection
+  TransactionalConnection,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
@@ -43,7 +43,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private connection: TransactionalConnection,
     private variantService: ProductVariantService
-  ) { }
+  ) {}
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -137,7 +137,9 @@ export class PicqerService implements OnApplicationBootstrap {
     const variants = await this.variantService.findByIds(ctx, variantIds);
     await Promise.all(
       variants.map(async (variant) => {
-        const vatGroup = vatGroups.find(vg => vg.percentage === variant.taxRateApplied.value);
+        const vatGroup = vatGroups.find(
+          (vg) => vg.percentage === variant.taxRateApplied.value
+        );
         if (!vatGroup) {
           Logger.error(
             `Could not find vatGroup for taxRate ${variant.taxRateApplied.value} for variant ${variant.sku}. Not pushing this variant to Picqer`,
@@ -147,7 +149,10 @@ export class PicqerService implements OnApplicationBootstrap {
         }
         try {
           const existing = await client.getProductByCode(variant.sku);
-          const productInput = this.mapToProductInput(variant, vatGroup.idvatgroup)  ;
+          const productInput = this.mapToProductInput(
+            variant,
+            vatGroup.idvatgroup
+          );
           if (existing?.idproduct) {
             await client.updateProduct(existing.idproduct, productInput);
             return Logger.info(
@@ -238,13 +243,15 @@ export class PicqerService implements OnApplicationBootstrap {
     }
   }
 
-  private mapToProductInput(variant: ProductVariant, vatGroupId: number): ProductInput {
+  private mapToProductInput(
+    variant: ProductVariant,
+    vatGroupId: number
+  ): ProductInput {
     return {
       idvatgroup: vatGroupId,
       name: variant.name,
       price: variant.price,
       productcode: variant.sku,
-    }
-
+    };
   }
 }
