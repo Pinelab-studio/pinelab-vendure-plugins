@@ -4,6 +4,7 @@ export interface ProductInput {
   productcode: string;
   price: number;
   description?: string;
+  barcode?: string;
 }
 
 export interface ProductResponse {

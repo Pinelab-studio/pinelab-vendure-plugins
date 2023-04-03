@@ -1,18 +1,17 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
-  createTestEnvironment,
-  registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
+  createTestEnvironment,
+  registerInitializer,
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import path from 'path';
+import nock from 'nock';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
-import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
-import nock, { Scope } from 'nock';
 import { VatGroup } from '../src/api/types';
+import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -29,6 +28,7 @@ describe('Order export plugin', function () {
       plugins: [
         PicqerPlugin.init({
           enabled: true,
+          pushFieldsToPicqer: (variant) => ({ barcode: variant.sku }),
         }),
       ],
     });
@@ -75,8 +75,9 @@ describe('Order export plugin', function () {
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
 
+  let pushProductPayloads: any[] = [];
+
   it('Should push all products to Picqer on full sync', async () => {
-    let payloads: any[] = [];
     // Mock vatgroups GET
     nock(apiUrl)
       .get('/vatgroups')
@@ -89,7 +90,7 @@ describe('Order export plugin', function () {
     // Mock product POST multiple times
     nock(apiUrl)
       .post(/.*/, (reqBody) => {
-        payloads.push(reqBody);
+        pushProductPayloads.push(reqBody);
         return true;
       })
       .reply(200, {
@@ -98,16 +99,16 @@ describe('Order export plugin', function () {
       .persist();
     const { triggerPicqerFullSync } = await adminClient.query(FULL_SYNC);
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
-    expect(payloads.length).toBe(4);
+    expect(pushProductPayloads.length).toBe(4);
     expect(triggerPicqerFullSync).toBe(true);
   });
 
-  it.skip('Should push custom fields to Picqer based on "importFieldsToPicqer" function', async () => {
-    expect(true).toBe(false);
-  });
-
-  it.skip('Should pull custom fields from Picqer based on "importFieldsFromPicqer" function', async () => {
-    expect(true).toBe(false);
+  it('Should push custom fields to Picqer based on configured plugin strategy', async () => {
+    const pushedProduct = pushProductPayloads.find(
+      (p) => p.productcode === 'L2201516'
+    );
+    // Expect the barcode to be the same as SKU, because thats what we configure in the plugin.init()
+    expect(pushedProduct?.barcode).toBe('L2201516');
   });
 
   it.skip('Should create product in Picqer when product is created in Vendure', async () => {
@@ -115,6 +116,14 @@ describe('Order export plugin', function () {
   });
 
   it.skip('Should updated product in Picqer when product is updated in Vendure', async () => {
+    expect(true).toBe(false);
+  });
+
+  it.skip('Should pull custom fields from Picqer based on configured plugin strategy', async () => {
+    expect(true).toBe(false);
+  });
+
+  it.skip('Should pull custom fields from Picqer based on "importFieldsFromPicqer" function', async () => {
     expect(true).toBe(false);
   });
 

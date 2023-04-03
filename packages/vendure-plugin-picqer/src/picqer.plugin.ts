@@ -15,20 +15,20 @@ import { PicqerService } from './api/picqer.service';
 export interface PicqerOptions {
   enabled: boolean;
   /**
-   * Implement this function if you'd like to sync additional fields from Picqer to Vendure,
+   * Implement this function if you'd like to pull additional fields from Picqer to Vendure,
    * thus making Picqer responsible for the value of fields.
    * @example
    * // Store weight in grams from Picqer as weight in KG in Vendure
-   * importFieldsFromPicqer: (product) => ({ customFields: { weight: product.weight / 1000 }})
+   * pullFieldsFromPicqer: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
-  importFieldsFromPicqer?: (product: ProductInput) => Partial<ProductVariant>;
+  pullFieldsFromPicqer?: (product: ProductInput) => Partial<ProductVariant>;
   /**
    * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
    * @example
    * // Store `variant.customFields.EAN` from Vendure as `product.barcode` in Picqer
-   * importFieldsToPicqer: (variant) => ({ barcoe: variant.customFields.EAN }})
+   * pushFieldsToPicqer: (variant) => ({ barcode: variant.customFields.EAN }})
    */
-  importFieldsToPicqer?: (variant: ProductVariant) => Partial<ProductInput>;
+  pushFieldsToPicqer?: (variant: ProductVariant) => Partial<ProductInput>;
 }
 
 @VendurePlugin({
@@ -46,7 +46,7 @@ export interface PicqerOptions {
   },
   entities: [PicqerConfigEntity],
   configuration: (config) => {
-    // config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
+    // TODO config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     config.authOptions.customPermissions.push(permission);
     return config;
   },
@@ -55,6 +55,10 @@ export class PicqerPlugin {
   static options: PicqerOptions;
 
   static init(options: PicqerOptions) {
+    if (options.enabled !== false) {
+      // Only disable if explicitly set to false
+      options.enabled = true;
+    }
     this.options = options;
     return PicqerPlugin;
   }

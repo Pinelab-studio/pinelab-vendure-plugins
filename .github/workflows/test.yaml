@@ -47,6 +47,7 @@ jobs:
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-customer-managed-groups',
+            'vendure-plugin-picqer',
           ]
     steps:
       - name: Checkout code

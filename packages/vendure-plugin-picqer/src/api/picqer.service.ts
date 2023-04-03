@@ -247,7 +247,9 @@ export class PicqerService implements OnApplicationBootstrap {
     variant: ProductVariant,
     vatGroupId: number
   ): ProductInput {
+    const additionalFields = this.options.pushFieldsToPicqer?.(variant) || {};
     return {
+      ...additionalFields,
       idvatgroup: vatGroupId,
       name: variant.name,
       price: variant.price,
