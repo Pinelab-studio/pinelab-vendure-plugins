@@ -1,15 +1,21 @@
+import { Fulfillment } from '@vendure/common/lib/generated-types';
 import {
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
   LanguageCode,
 } from '@vendure/core';
-import { Fulfillment } from '@vendure/common/lib/generated-types';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   CreateFulfillment,
   CreateShippingMethod,
   Order as OrderGraphql,
   OrderQuery,
+  UpdateProduct,
+  UpdateProductInput,
+  UpdateProductMutation,
+  UpdateProductVariantInput,
+  UpdateProductVariants,
+  UpdateProductVariantsMutation,
 } from './generated/admin-graphql';
 
 export async function addShippingMethod(
@@ -79,4 +85,25 @@ export async function getOrder(
 ): Promise<OrderQuery['order']> {
   const { order } = await adminClient.query(OrderGraphql, { id: orderId });
   return order;
+}
+
+export async function updateVariants(
+  adminClient: SimpleGraphQLClient,
+  input: UpdateProductVariantInput[]
+): Promise<UpdateProductVariantsMutation['updateProductVariants']> {
+  const { updateProductVariants } = await adminClient.query(
+    UpdateProductVariants,
+    { input }
+  );
+  return updateProductVariants;
+}
+
+export async function updateProduct(
+  adminClient: SimpleGraphQLClient,
+  input: UpdateProductInput
+): Promise<UpdateProductMutation['updateProduct']> {
+  const { updateProduct } = await adminClient.query(UpdateProduct, {
+    input,
+  });
+  return updateProduct;
 }
