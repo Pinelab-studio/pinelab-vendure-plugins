@@ -83,11 +83,10 @@ export class PicqerClient {
     url: string,
     data?: any
   ): Promise<any> {
-    return (
-      await this.instance({ method, url, data }).catch((e: any) =>
-        this.handleError(e, url)
-      )
-    )?.data;
+    const result = await this.instance({ method, url, data }).catch((e: any) =>
+      this.handleError(e, url)
+    );
+    return result?.data;
   }
   /**
    * Throw Picqer specific error messages

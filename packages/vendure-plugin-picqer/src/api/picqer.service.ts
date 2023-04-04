@@ -14,6 +14,7 @@ import {
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
+import currency from 'currency.js';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
@@ -63,18 +64,14 @@ export class PicqerService implements OnApplicationBootstrap {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       // TODO push order sync
     });
-    // Listen for Variant changes
+    // Listen for Variant creation or update
     this.eventBus
       .ofType(ProductVariantEvent)
       .subscribe(async ({ ctx, entity, type }) => {
         if (type === 'created' || type === 'updated') {
-          await this.jobQueue.add(
-            {
-              action: 'push-variants',
-              ctx: ctx.serialize(),
-              variantIds: entity.map((v) => v.id),
-            },
-            { retries: 10 }
+          await this.addPushVariantsJob(
+            ctx,
+            entity.map((v) => v.id)
           );
         }
       });
@@ -109,20 +106,30 @@ export class PicqerService implements OnApplicationBootstrap {
     const totalVariants = variantIds.length;
     // Create batches of 10
     while (variantIds.length) {
-      await this.jobQueue.add(
-        {
-          action: 'push-variants',
-          ctx: ctx.serialize(),
-          variantIds: variantIds.splice(0, 10),
-        },
-        { retries: 5 }
-      );
+      await this.addPushVariantsJob(ctx, variantIds.splice(0, 10));
     }
     Logger.info(
       `Pushed ${totalVariants} variants to the job queue for channel ${ctx.channel.token} by user ${ctx.activeUserId}`,
       loggerCtx
     );
     return true;
+  }
+
+  /**
+   * Add a job to the queue to push variants to Picqer
+   */
+  async addPushVariantsJob(
+    ctx: RequestContext,
+    variantIds: ID[]
+  ): Promise<void> {
+    await this.jobQueue.add(
+      {
+        action: 'push-variants',
+        ctx: ctx.serialize(),
+        variantIds,
+      },
+      { retries: 5 }
+    );
   }
 
   async pushVariantsToPicqer(
@@ -227,11 +234,17 @@ export class PicqerService implements OnApplicationBootstrap {
     return new PicqerClient(config as PicqerClientInput);
   }
 
+  /**
+   * Get the Picqer config for the current channel based on given context
+   */
   async getConfig(ctx: RequestContext): Promise<PicqerConfig | undefined> {
     const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
     return repository.findOne({ channelId: String(ctx.channelId) });
   }
 
+  /**
+   * Validate Picqer credentials by requesting `stats` from Picqer
+   */
   async testRequest(input: TestPicqerInput): Promise<boolean> {
     const client = new PicqerClient(input);
     // If getStatus() doesn't throw, the request is valid
@@ -252,7 +265,7 @@ export class PicqerService implements OnApplicationBootstrap {
       ...additionalFields,
       idvatgroup: vatGroupId,
       name: variant.name,
-      price: variant.price,
+      price: currency(variant.price / 100).value, // Convert to float with 2 decimals
       productcode: variant.sku,
     };
   }

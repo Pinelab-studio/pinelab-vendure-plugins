@@ -8,6 +8,7 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
+import { updateVariants } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
 import { VatGroup } from '../src/api/types';
@@ -93,14 +94,16 @@ describe('Order export plugin', function () {
         pushProductPayloads.push(reqBody);
         return true;
       })
-      .reply(200, {
-        data: { idproduct: 'mockId' },
-      })
+      .reply(200, { idproduct: 'mockId' })
       .persist();
     const { triggerPicqerFullSync } = await adminClient.query(FULL_SYNC);
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     expect(pushProductPayloads.length).toBe(4);
     expect(triggerPicqerFullSync).toBe(true);
+  });
+
+  it('Uploads images to Picqer', async () => {
+    expect(true).toBe(false);
   });
 
   it('Should push custom fields to Picqer based on configured plugin strategy', async () => {
@@ -111,11 +114,34 @@ describe('Order export plugin', function () {
     expect(pushedProduct?.barcode).toBe('L2201516');
   });
 
-  it.skip('Should create product in Picqer when product is created in Vendure', async () => {
-    expect(true).toBe(false);
+  it('Should push product to Picqer when updated in Vendure', async () => {
+    let updatedProduct: any;
+    // Mock vatgroups GET
+    nock(apiUrl)
+      .get('/vatgroups')
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
+    // Mock products GET multiple times
+    nock(apiUrl)
+      .get(/.products*/)
+      .reply(200, [])
+      .persist();
+    // Mock product POST multiple times
+    nock(apiUrl)
+      .post(/.*/, (reqBody) => {
+        updatedProduct = reqBody;
+        return true;
+      })
+      .reply(200, { idproduct: 'mockId' })
+      .persist();
+    const [variant] = await updateVariants(adminClient, [
+      { id: 'T_1', price: 12345 },
+    ]);
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    expect(variant?.price).toBe(12345);
+    expect(updatedProduct!.price).toBe(123.45);
   });
 
-  it.skip('Should updated product in Picqer when product is updated in Vendure', async () => {
+  it('Disables a product in Picqer when disabled in Vendure', async () => {
     expect(true).toBe(false);
   });
 

@@ -50,3 +50,21 @@ mutation createPaymentMethod($input: CreatePaymentMethodInput!) {
     enabled
   }
 }
+
+mutation UpdateProductVariants($input: [UpdateProductVariantInput!]!) {
+  updateProductVariants(input: $input) {
+    id
+    createdAt
+    updatedAt
+    enabled
+    languageCode
+    name
+    sku
+    price
+    currencyCode
+    priceWithTax
+    stockOnHand
+    stockAllocated
+    __typename
+  }
+}

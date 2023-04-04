@@ -5,12 +5,13 @@ import {
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ProductInput } from './api/types';
-import { adminSchema, PicqerResolver } from './api/api-extensions';
+import { adminSchema } from './api/api-extensions';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { permission } from '.';
 import { PicqerConfigEntity } from './api/picqer-config.entity';
 import { PicqerService } from './api/picqer.service';
+import { PicqerResolver } from './api/picqer.resolvers';
 
 export interface PicqerOptions {
   enabled: boolean;
