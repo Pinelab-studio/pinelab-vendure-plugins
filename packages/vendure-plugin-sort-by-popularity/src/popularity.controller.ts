@@ -1,4 +1,5 @@
 import { Controller, Get, Param } from '@nestjs/common';
+import { Mutation } from '@nestjs/graphql';
 import { Ctx, RequestContext } from '@vendure/core';
 import { SortService } from './sort.service';
 @Controller('/order-by-popularity')

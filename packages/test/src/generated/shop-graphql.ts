@@ -3635,6 +3635,13 @@ export const AddPaymentToOrder = gql`
         code
         state
         shippingWithTax
+        lines {
+          productVariant {
+            product {
+              id
+            }
+          }
+        }
       }
       ... on ErrorResult {
         errorCode

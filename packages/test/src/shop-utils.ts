@@ -102,11 +102,16 @@ export async function addItem(
 
 export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
-  shippingMethodId: string | number
+  shippingMethodId: string | number,
+  variants: { id: string; quantity: number }[] = [
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_2', quantity: 2 },
+  ]
 ): Promise<Order> {
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  await addItem(shopClient, 'T_1', 1);
-  await addItem(shopClient, 'T_2', 2);
+  for (const v of variants) {
+    await addItem(shopClient, v.id, v.quantity);
+  }
   const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
     input: {
       fullName: 'Martinho Pinelabio',
@@ -123,7 +128,6 @@ export async function createSettledOrder(
   }
   return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
 }
-
 export async function getProductWithId(
   shopClient: SimpleGraphQLClient,
   id: string

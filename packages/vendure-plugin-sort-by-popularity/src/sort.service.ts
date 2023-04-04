@@ -45,8 +45,12 @@ export class SortService implements OnModuleInit {
     ctx: RequestContext,
     channelId: ID
   ): Promise<void> {
-    const groupedOrderItems = await this.connection
-      .getRepository(ctx, OrderItem)
+    Logger.info(
+      `Started calculating popularity scores`,
+      'SortByPopularityPlugin'
+    );
+    const orderItemRepo = this.connection.getRepository(ctx, OrderItem);
+    const groupedOrderItems = await orderItemRepo
       .createQueryBuilder('orderItem')
       .innerJoin('orderItem.line', 'orderLine')
       .select([
@@ -64,7 +68,7 @@ export class SortService implements OnModuleInit {
       .innerJoin('orderLine.order', 'order')
       .innerJoin('productVariant.product', 'product')
       .addSelect(['product.deletedAt', 'product.enabled', 'product.id'])
-      .innerJoin('productVariant.collections', 'collection')
+      .leftJoin('productVariant.collections', 'collection')
       .addSelect(['collection.id'])
       .innerJoin('order.channels', 'order_channel')
       .andWhere('order.orderPlacedAt is NOT NULL')
@@ -113,35 +117,34 @@ export class SortService implements OnModuleInit {
     const productsRepo = this.connection.getRepository(ctx, Product);
     const allCollectionIds = await collectionsRepo
       .createQueryBuilder('collection')
-      .select(['collection.id'])
       .innerJoin('collection.channels', 'collection_channel')
       .andWhere('collection_channel.id = :id', { id: ctx.channelId })
       .getRawMany();
     const productScoreSums: { id: string; score: number }[] = [];
     const variantsPartialInfoQuery = collectionsRepo
       .createQueryBuilder('collection')
-      .select('collection.id')
       .leftJoin('collection.productVariants', 'productVariant')
-      .addSelect('productVariant.productId');
+      .innerJoin('productVariant.product', 'product')
+      .addSelect(['product.customFields.popularityScore', 'product.id']);
     const productSummingQuery = productsRepo
       .createQueryBuilder('product')
       .select('SUM(product.customFields.popularityScore) AS productScoreSum');
     for (const col of allCollectionIds) {
       const variantsPartialInfo = await variantsPartialInfoQuery
-        .where('collection.id= :id', { id: col.id })
+        .andWhere('collection.id= :id', { id: col.collection_id })
         .getRawMany();
 
       const productIds = variantsPartialInfo
-        .filter((i) => i.productVariant_productId != null)
-        .map((i) => i.productVariant_productId);
+        .filter((i) => i.product_id != null)
+        .map((i) => i.product_id);
 
       const uniqueProductIds = [...new Set(productIds)];
 
       const summedProductsValue = await productSummingQuery
-        .where('product.id IN (:...ids)', { ids: uniqueProductIds })
+        .andWhere('product.id IN (:...ids)', { ids: uniqueProductIds })
         .getRawOne();
       productScoreSums.push({
-        id: col.id,
+        id: col.collection_id,
         score: summedProductsValue.productScoreSum,
       });
     }
