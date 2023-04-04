@@ -139,7 +139,6 @@ export class PicqerService implements OnApplicationBootstrap {
       }
       skip += take;
     }
-    const totalVariants = variantIds.length;
     // Create batches of 10
     while (variantIds.length) {
       await this.addPushVariantsJob(ctx, variantIds.splice(0, 10));
