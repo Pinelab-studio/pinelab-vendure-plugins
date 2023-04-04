@@ -37,6 +37,7 @@
     "@types/localtunnel": "^2.0.1",
     "@types/nock": "^11.1.0",
     "@vendure/admin-ui-plugin": "1.9.5",
+    "@vendure/asset-server-plugin": "^1.9.5",
     "@vendure/core": "1.9.5",
     "@vendure/testing": "1.9.5",
     "@vendure/ui-devkit": "1.9.5",

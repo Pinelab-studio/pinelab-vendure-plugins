@@ -75,11 +75,33 @@ export class PicqerClient {
     return this.rawRequest('put', `/products/${productId}`, input);
   }
 
+  async activateProduct(productId: string | number): Promise<ProductResponse> {
+    return this.rawRequest('post', `/products/${productId}/activate`);
+  }
+
+  async inactivateProduct(
+    productId: string | number
+  ): Promise<ProductResponse> {
+    return this.rawRequest('post', `/products/${productId}/inactivate`);
+  }
+
+  /**
+   * Add an image to a product
+   */
+  async addImage(
+    productId: string | number,
+    base64EncodedImage: string
+  ): Promise<ProductResponse> {
+    return this.rawRequest('post', `/products/${productId}/images`, {
+      image: base64EncodedImage,
+    });
+  }
+
   /**
    * Request wrapper with Picqer specific error handling
    */
   async rawRequest(
-    method: 'post' | 'get' | 'put',
+    method: 'post' | 'get' | 'put' | 'delete',
     url: string,
     data?: any
   ): Promise<any> {

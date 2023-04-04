@@ -46,3 +46,7 @@ plugins: [
 ]
 
 ```
+
+## Caveats
+
+- Due to limitation with the Picqer API, the plugin only uploads images if no images exist for the product in Picqer.

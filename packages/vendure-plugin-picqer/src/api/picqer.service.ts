@@ -1,5 +1,8 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
+  AssetService,
+  ConfigService,
+  EntityHydrator,
   EventBus,
   ID,
   JobQueue,
@@ -24,7 +27,7 @@ import {
 } from '../ui/generated/graphql';
 import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
-import { ProductInput } from './types';
+import { ProductInput, ProductResponse } from './types';
 
 interface PushVariantsJob {
   action: 'push-variants';
@@ -43,7 +46,10 @@ export class PicqerService implements OnApplicationBootstrap {
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
     private connection: TransactionalConnection,
-    private variantService: ProductVariantService
+    private variantService: ProductVariantService,
+    private assetService: AssetService,
+    private configService: ConfigService,
+    private entityHydrator: EntityHydrator
   ) {}
 
   async onApplicationBootstrap() {
@@ -132,6 +138,11 @@ export class PicqerService implements OnApplicationBootstrap {
     );
   }
 
+  /**
+   * Creates or updates products in Picqer based on the given variantIds.
+   * Checks for existance of SKU in Picqer and updates if found.
+   * If not found, creates a new product.
+   */
   async pushVariantsToPicqer(
     ctx: RequestContext,
     variantIds: ID[]
@@ -160,19 +171,41 @@ export class PicqerService implements OnApplicationBootstrap {
             variant,
             vatGroup.idvatgroup
           );
+          let picqerProduct: ProductResponse | undefined;
           if (existing?.idproduct) {
-            await client.updateProduct(existing.idproduct, productInput);
-            return Logger.info(
+            // Update existing Picqer product
+            picqerProduct = await client.updateProduct(
+              existing.idproduct,
+              productInput
+            );
+            Logger.info(
               `Updated variant ${variant.sku} in Picqer (Picqer id: ${existing.idproduct}) for channel ${ctx.channel.token}`,
               loggerCtx
             );
+          } else {
+            // Create new variant if no product exists in Picqer
+            picqerProduct = await client.createProduct(productInput);
+            Logger.info(
+              `Created variant ${variant.sku} in Picqer (Picqer id: ${picqerProduct.idproduct}) for channel ${ctx.channel.token}`,
+              loggerCtx
+            );
           }
-          // Create new variant if no product exists in Picqer
-          const created = await client.createProduct(productInput);
-          Logger.info(
-            `Created  variant ${variant.sku} in Picqer (Picqer id: ${created.idproduct}) for channel ${ctx.channel.token}`,
-            loggerCtx
+          // Update imags
+          const shouldUpdateImages = !picqerProduct.images?.length;
+          if (!shouldUpdateImages) {
+            return;
+          }
+          const featuredImage = await this.getFeaturedImageAsBase64(
+            ctx,
+            variant
           );
+          if (featuredImage) {
+            await client.addImage(picqerProduct.idproduct, featuredImage);
+            Logger.info(
+              `Added image for variant ${variant.sku} in Picqer for channel ${ctx.channel.token}`,
+              loggerCtx
+            );
+          }
         } catch (e: any) {
           // Only log a warning, because this is a background function that will be retried by the JobQueue
           Logger.warn(
@@ -235,6 +268,45 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   /**
+   * Get featured asset as base64 string, but only when the asset is a png or jpeg.
+   * If variant has no featured asset, it checks if the parent product has a featured asset.
+   */
+  async getFeaturedImageAsBase64(
+    ctx: RequestContext,
+    variant: ProductVariant
+  ): Promise<string | undefined> {
+    let asset = await this.assetService.getFeaturedAsset(ctx, variant);
+    if (!asset?.preview) {
+      // No featured asset on variant, try the parent product
+      await this.entityHydrator.hydrate(ctx, variant, {
+        relations: ['product'],
+      });
+      asset = await this.assetService.getFeaturedAsset(ctx, variant.product);
+    }
+    if (!asset?.preview) {
+      // Still no asset, return undefined
+      return;
+    }
+    const image = asset.preview;
+    const hasAllowedExtension = ['png', 'jpg', 'jpeg'].some((extension) =>
+      image.endsWith(extension)
+    );
+    if (!hasAllowedExtension) {
+      // Only png, jpg and jpeg are supported by Picqer
+      Logger.info(
+        `featured asset for variant ${variant.sku} is not a png or jpeg, skipping`,
+        loggerCtx
+      );
+      return;
+    }
+    const buffer =
+      await this.configService.assetOptions.assetStorageStrategy.readFileToBuffer(
+        image
+      );
+    return buffer.toString('base64');
+  }
+
+  /**
    * Get the Picqer config for the current channel based on given context
    */
   async getConfig(ctx: RequestContext): Promise<PicqerConfig | undefined> {
@@ -267,6 +339,7 @@ export class PicqerService implements OnApplicationBootstrap {
       name: variant.name,
       price: currency(variant.price / 100).value, // Convert to float with 2 decimals
       productcode: variant.sku,
+      inactive: !variant.enabled,
     };
   }
 }

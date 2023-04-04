@@ -1,4 +1,11 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  ChannelService,
+  ConfigService,
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  RequestContext,
+} from '@vendure/core';
 import {
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -90,7 +97,7 @@ describe('Order export plugin', function () {
       .persist();
     // Mock product POST multiple times
     nock(apiUrl)
-      .post(/.*/, (reqBody) => {
+      .post(/.products*/, (reqBody) => {
         pushProductPayloads.push(reqBody);
         return true;
       })
@@ -100,10 +107,6 @@ describe('Order export plugin', function () {
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     expect(pushProductPayloads.length).toBe(4);
     expect(triggerPicqerFullSync).toBe(true);
-  });
-
-  it('Uploads images to Picqer', async () => {
-    expect(true).toBe(false);
   });
 
   it('Should push custom fields to Picqer based on configured plugin strategy', async () => {
@@ -125,14 +128,13 @@ describe('Order export plugin', function () {
       .get(/.products*/)
       .reply(200, [])
       .persist();
-    // Mock product POST multiple times
+    // Mock product POST once
     nock(apiUrl)
-      .post(/.*/, (reqBody) => {
+      .post(/.products*/, (reqBody) => {
         updatedProduct = reqBody;
         return true;
       })
-      .reply(200, { idproduct: 'mockId' })
-      .persist();
+      .reply(200, { idproduct: 'mockId' });
     const [variant] = await updateVariants(adminClient, [
       { id: 'T_1', price: 12345 },
     ]);
@@ -142,7 +144,29 @@ describe('Order export plugin', function () {
   });
 
   it('Disables a product in Picqer when disabled in Vendure', async () => {
-    expect(true).toBe(false);
+    let updatedProduct: any;
+    // Mock vatgroups GET
+    nock(apiUrl)
+      .get('/vatgroups')
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
+    // Mock products GET multiple times
+    nock(apiUrl)
+      .get(/.products*/)
+      .reply(200, [])
+      .persist();
+    // Mock product POST once
+    nock(apiUrl)
+      .post(/.products*/, (reqBody) => {
+        updatedProduct = reqBody;
+        return true;
+      })
+      .reply(200, { idproduct: 'mockId' });
+    const [variant] = await updateVariants(adminClient, [
+      { id: 'T_1', enabled: false },
+    ]);
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    expect(variant?.enabled).toBe(false);
+    expect(updatedProduct.inactive).toBe(true);
   });
 
   it.skip('Should pull custom fields from Picqer based on configured plugin strategy', async () => {

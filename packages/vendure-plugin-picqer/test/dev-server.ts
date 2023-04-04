@@ -6,6 +6,7 @@ import {
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -29,6 +30,10 @@ import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
     plugins: [
       PicqerPlugin.init({
         enabled: true,
+      }),
+      AssetServerPlugin.init({
+        assetUploadDir: path.join(__dirname, '__data__/assets'),
+        route: 'assets',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

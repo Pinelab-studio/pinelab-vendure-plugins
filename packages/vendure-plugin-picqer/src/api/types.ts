@@ -5,6 +5,7 @@ export interface ProductInput {
   price: number;
   description?: string;
   barcode?: string;
+  inactive?: boolean;
 }
 
 export interface ProductResponse {
@@ -24,7 +25,8 @@ export interface ProductResponse {
   length: any;
   width: any;
   height: any;
-  stock: any[];
+  stock?: any[];
+  images?: any[];
 }
 
 export interface VatGroup {
