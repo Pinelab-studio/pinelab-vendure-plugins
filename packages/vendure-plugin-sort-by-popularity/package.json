@@ -20,7 +20,6 @@
   },
   "devDependencies": {
     "@types/jest": "27.4.1",
-    "@vendure/ui-devkit": "1.9.2",
     "@vendure/admin-ui-plugin": "1.9.2",
     "@vendure/core": "1.9.2",
     "@vendure/testing": "1.9.2",

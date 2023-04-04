@@ -1,6 +1,6 @@
 import { Controller, Get, Param } from '@nestjs/common';
+import { Mutation } from '@nestjs/graphql';
 import { Ctx, RequestContext } from '@vendure/core';
-import { Success } from '../../test/src/generated/admin-graphql';
 import { SortService } from './sort.service';
 @Controller('/order-by-popularity')
 export class OrderByPopularityController {
@@ -10,6 +10,6 @@ export class OrderByPopularityController {
     @Ctx() ctx: RequestContext,
     @Param('mychanneltoken') token: string
   ) {
-    this.sortService.addScoreCalculatingJobToQueue(token, ctx);
+    await this.sortService.addScoreCalculatingJobToQueue(token, ctx);
   }
 }
