@@ -40,12 +40,7 @@ export class PicqerClient {
 
   async getVatGroups(): Promise<VatGroup[]> {
     const result = await this.rawRequest('get', '/vatgroups');
-    if (result.length > this.responseLimit) {
-      Logger.error(
-        `Picqer response limit exceeded for getVatGroups(). Pagination is required, but this is not implemented yet.`,
-        loggerCtx
-      );
-    }
+    this.logIfLimitExceeded(result, '/vatgroups');
     return result;
   }
 
@@ -79,16 +74,6 @@ export class PicqerClient {
     return this.rawRequest('put', `/products/${productId}`, input);
   }
 
-  async activateProduct(productId: string | number): Promise<ProductResponse> {
-    return this.rawRequest('post', `/products/${productId}/activate`);
-  }
-
-  async inactivateProduct(
-    productId: string | number
-  ): Promise<ProductResponse> {
-    return this.rawRequest('post', `/products/${productId}/inactivate`);
-  }
-
   /**
    * Add an image to a product
    */
@@ -114,6 +99,7 @@ export class PicqerClient {
     );
     return result?.data;
   }
+
   /**
    * Throw Picqer specific error messages
    */
@@ -122,6 +108,15 @@ export class PicqerClient {
       throw new Error(`${url}: ${e.response.data.error_message}`);
     } else {
       throw e;
+    }
+  }
+
+  private logIfLimitExceeded(results: unknown[], path: string): void {
+    if (results.length > this.responseLimit) {
+      Logger.error(
+        `Picqer response limit exceeded for "${path}". Pagination is required, but this is not implemented yet.`,
+        loggerCtx
+      );
     }
   }
 }
