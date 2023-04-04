@@ -6,5 +6,7 @@ export const permission = new PermissionDefinition({
 });
 
 export * from './picqer.plugin';
-
-//TODO export
+export * from './api/types';
+export * from './api/picqer.client';
+export * from './api/picqer.resolvers';
+export * from './api/picqer.service';
