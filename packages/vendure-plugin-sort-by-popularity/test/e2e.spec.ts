@@ -7,29 +7,27 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { initialData } from '../../test/src/initial-data';
-import { SortByPopularityPlugin } from '../src/index';
-import {
-  createSettledOrder,
-  getProductWithId,
-} from '../../test/src/shop-utils';
 import {
   assignOptionGroupsToProduct,
   createCollectionContainingVariants,
   createProduct,
   createVariantsForProductOptions,
-  getAllCollections,
   getAllOrders,
 } from '../../test/src/admin-utils';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   Collection,
   GET_COLLECTION_ADMIN,
   LanguageCode,
   Product,
   ProductVariant,
-  QueryCollectionArgs,
 } from '../../test/src/generated/admin-graphql';
+import { initialData } from '../../test/src/initial-data';
+import {
+  createSettledOrder,
+  getProductWithId,
+} from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { SortByPopularityPlugin } from '../src/index';
 jest.setTimeout(10000);
 
 describe('Sort by Popularity Plugin', function () {
