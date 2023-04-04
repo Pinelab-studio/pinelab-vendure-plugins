@@ -3,7 +3,7 @@ import {
   StripeSubscriptionPricingInput,
   SubscriptionInterval,
   SubscriptionStartMoment,
-} from './ui/generated/graphql';
+} from '../ui/generated/graphql';
 import { UserInputError } from '@vendure/core';
 import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 import {

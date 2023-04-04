@@ -122,7 +122,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: '3 months, billed monthly, 199 downpayment',
-      downpaymentWithTax: 19900,
+      downpaymentWithTax: 0,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 3,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -164,16 +164,16 @@ export let clientSecret = 'test';
       },
     ],
   });
-  await adminClient.query(UPDATE_VARIANT, {
-    input: [
-      {
-        id: 3,
-        customFields: {
-          subscriptionScheduleId: 3,
-        },
-      },
-    ],
-  });
+  // await adminClient.query(UPDATE_VARIANT, {
+  //   input: [
+  //     {
+  //       id: 3,
+  //       customFields: {
+  //         subscriptionScheduleId: 3,
+  //       },
+  //     },
+  //   ],
+  // });
   console.log(`Added schedule to variants`);
   // Prepare order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
@@ -188,21 +188,21 @@ export let clientSecret = 'test';
     },
   }); */
   let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '2',
+    productVariantId: '3',
     quantity: 1,
     customFields: {
       // downpayment: 40000,
       // startDate: in3Days,
     },
   });
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '2',
-    quantity: 1,
-    customFields: {
-      // downpayment: 40000,
-      // startDate: in3Days,
-    },
-  });
+  // await shopClient.query(ADD_ITEM_TO_ORDER, {
+  //   productVariantId: '2',
+  //   quantity: 1,
+  //   customFields: {
+  //     // downpayment: 40000,
+  //     // startDate: in3Days,
+  //   },
+  // });
   /*     await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,

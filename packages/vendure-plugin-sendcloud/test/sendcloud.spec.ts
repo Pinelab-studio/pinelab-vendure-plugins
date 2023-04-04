@@ -159,6 +159,12 @@ describe('SendCloud', () => {
     expect(
       body?.parcel.parcel_items.find((i) => i.hs_code === 'test hs')
     ).toBeDefined();
+    expect(
+      body?.parcel.parcel_items.find((item) => item.sku === 'L2201308')?.value
+    ).toBe('1558.80');
+    expect(
+      body?.parcel.parcel_items.find((item) => item.sku === 'L2201508')?.value
+    ).toBe('1678.80');
     expect(authHeader?.[0]).toContain('Basic');
     expect(body?.parcel.shipping_method_checkout_name).toContain(
       'test-shipping-method'

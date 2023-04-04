@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-coinbase",
-  "version": "5.0.1",
+  "version": "5.5.0",
   "description": "Vendure plugin for Coinbase payments",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
@@ -24,10 +24,10 @@
   "devDependencies": {
     "@nestjs/cli": "^8.2.4",
     "@types/jest": "^27.0.1",
-    "@vendure/admin-ui-plugin": "1.9.2",
-    "@vendure/core": "1.9.2",
-    "@vendure/testing": "1.9.2",
-    "@vendure/ui-devkit": "1.9.2",
+    "@vendure/admin-ui-plugin": "1.9.5",
+    "@vendure/core": "1.9.5",
+    "@vendure/testing": "1.9.5",
+    "@vendure/ui-devkit": "1.9.5",
     "jest": "^27.2.0",
     "nock": "^13.2.4",
     "ts-jest": "^27.1.3",

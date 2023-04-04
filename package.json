@@ -50,7 +50,7 @@
           "stripe-subscription",
           "limit-variant",
           "variant-bulk-update",
-          "template",
+          "customer-managed-groups",
           "sort-by-popularity",
           "all-plugins"
         ]

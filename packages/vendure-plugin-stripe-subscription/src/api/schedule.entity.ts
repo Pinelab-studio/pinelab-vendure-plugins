@@ -2,7 +2,7 @@ import { DeepPartial, VendureEntity } from '@vendure/core';
 import {
   SubscriptionInterval,
   SubscriptionStartMoment,
-} from './ui/generated/graphql';
+} from '../ui/generated/graphql';
 import { Column, Entity } from 'typeorm';
 
 @Entity()
