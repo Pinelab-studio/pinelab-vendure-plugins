@@ -102,8 +102,8 @@ export async function updateProduct(
   adminClient: SimpleGraphQLClient,
   input: UpdateProductInput
 ): Promise<UpdateProductMutation['updateProduct']> {
-  const { UpdateProductInput } = await adminClient.query(UpdateProduct, {
+  const { updateProduct } = await adminClient.query(UpdateProduct, {
     input,
   });
-  return UpdateProductInput;
+  return updateProduct;
 }

@@ -146,7 +146,7 @@ describe('Order export plugin', function () {
   });
 
   it('Disables a product in Picqer when disabled in Vendure', async () => {
-    let pushProductPayloads: any[];
+    let pushProductPayloads: any[] = [];
     // Mock vatgroups GET
     nock(apiUrl)
       .get('/vatgroups')
@@ -170,7 +170,8 @@ describe('Order export plugin', function () {
     });
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     expect(product?.enabled).toBe(false);
-    expect(pushProductPayloads!.every((p) => p.inactive === true)).toBe(true);
+    // expect every variant to be disabled (active=false)
+    expect(pushProductPayloads!.every((p) => p.active === false)).toBe(true);
   });
 
   it.skip('Should pull custom fields from Picqer based on configured plugin strategy', async () => {

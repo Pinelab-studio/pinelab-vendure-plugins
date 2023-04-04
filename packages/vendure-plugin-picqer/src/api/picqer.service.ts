@@ -144,10 +144,6 @@ export class PicqerService implements OnApplicationBootstrap {
     while (variantIds.length) {
       await this.addPushVariantsJob(ctx, variantIds.splice(0, 10));
     }
-    Logger.info(
-      `Pushed ${totalVariants} variants to the job queue for channel ${ctx.channel.token} by user ${ctx.activeUserId}`,
-      loggerCtx
-    );
     return true;
   }
 
@@ -168,6 +164,17 @@ export class PicqerService implements OnApplicationBootstrap {
       },
       { retries: 5 }
     );
+    if (variantIds) {
+      Logger.info(
+        `Pushed ${variantIds.length} variants to the 'push-variants' queue for channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+    } else {
+      Logger.info(
+        `Pushed product ${productId} to the 'push-variants' queue for channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+    }
   }
 
   /**
@@ -225,7 +232,6 @@ export class PicqerService implements OnApplicationBootstrap {
         }
         try {
           const existing = await client.getProductByCode(variant.sku);
-          console.log('=============', existing);
           const productInput = this.mapToProductInput(
             variant,
             vatGroup.idvatgroup
@@ -249,7 +255,7 @@ export class PicqerService implements OnApplicationBootstrap {
               loggerCtx
             );
           }
-          // Update imags
+          // Update images
           const shouldUpdateImages = !picqerProduct.images?.length;
           if (!shouldUpdateImages) {
             return;
