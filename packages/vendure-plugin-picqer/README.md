@@ -2,6 +2,8 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-picqer/dev/@vendure/core)
 
+!! This plugin is still being developed and it's still incomplete!
+
 Vendure plugin to sync orders, stock and catalogue with Picqer.com order pick platform.
 
 - Sync placed orders to Picqer
