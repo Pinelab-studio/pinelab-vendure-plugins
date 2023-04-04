@@ -29,6 +29,7 @@ import {
 import { loggerCtx } from '../constants';
 import { IncomingStripeWebhook } from './stripe.types';
 import {
+  CustomerWithSubscriptionFields,
   OrderLineWithSubscriptionFields,
   OrderWithSubscriptionFields,
   VariantWithSubscriptionFields,
@@ -269,7 +270,7 @@ export class StripeSubscriptionService {
       .update(ctx, {
         id: order.customer.id,
         customFields: {
-          stripeCustomerId: stripeCustomer.id,
+          stripeSubscriptionCustomerId: stripeCustomer.id,
         },
       })
       .catch((err) =>

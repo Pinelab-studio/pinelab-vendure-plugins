@@ -19,6 +19,7 @@ import {
   addCustomerToGroupMutation,
   createCustomerManagedGroupMutation,
   getOrdersForMyCustomerManagedGroup,
+  myCustomerManagedGroupQuery,
   removeCustomerFromGroupMutation,
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -87,6 +88,14 @@ describe('Customer managed groups', function () {
     }
   });
 
+  it('Returns undefined when not in a group', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    expect(group).toBe(null);
+  });
+
   it('Adds a customer to my group', async () => {
     await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
@@ -104,6 +113,14 @@ describe('Customer managed groups', function () {
     expect(group.name).toBe("Zieme's Group");
     expect(hayden.isGroupAdministrator).toBe(true);
     expect(marques.isGroupAdministrator).toBe(false);
+  });
+
+  it('Returns my group', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    expect(group.name).toBe("Zieme's Group");
   });
 
   it('Adds another customer to my group', async () => {
