@@ -52,10 +52,7 @@ export class PicqerClient {
   async getProductByCode(
     productCode: string
   ): Promise<ProductResponse | undefined> {
-    const result = await this.rawRequest(
-      'get',
-      `/products?productcode=${productCode}`
-    );
+    const result = await this.rawRequest('get', `/products?inactive`);
     if (result.length > 1) {
       throw Error(
         `Picqer returned multiple products for product code ${productCode}`

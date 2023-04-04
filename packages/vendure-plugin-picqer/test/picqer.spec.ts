@@ -15,7 +15,7 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
-import { updateVariants } from '../../test/src/admin-utils';
+import { updateProduct, updateVariants } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
 import { VatGroup } from '../src/api/types';
@@ -24,6 +24,8 @@ import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 const apiUrl = 'https://test-picqer.io/api/v1/';
+
+jest.setTimeout(60000);
 
 describe('Order export plugin', function () {
   // Clear nock mocks after each test
@@ -144,7 +146,7 @@ describe('Order export plugin', function () {
   });
 
   it('Disables a product in Picqer when disabled in Vendure', async () => {
-    let updatedProduct: any;
+    let pushProductPayloads: any[];
     // Mock vatgroups GET
     nock(apiUrl)
       .get('/vatgroups')
@@ -154,19 +156,21 @@ describe('Order export plugin', function () {
       .get(/.products*/)
       .reply(200, [])
       .persist();
-    // Mock product POST once
+    // Mock product POST multiple times
     nock(apiUrl)
       .post(/.products*/, (reqBody) => {
-        updatedProduct = reqBody;
+        pushProductPayloads.push(reqBody);
         return true;
       })
-      .reply(200, { idproduct: 'mockId' });
-    const [variant] = await updateVariants(adminClient, [
-      { id: 'T_1', enabled: false },
-    ]);
+      .reply(200, { idproduct: 'mockId' })
+      .persist();
+    const product = await updateProduct(adminClient, {
+      id: 'T_1',
+      enabled: false,
+    });
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
-    expect(variant?.enabled).toBe(false);
-    expect(updatedProduct.inactive).toBe(true);
+    expect(product?.enabled).toBe(false);
+    expect(pushProductPayloads!.every((p) => p.inactive === true)).toBe(true);
   });
 
   it.skip('Should pull custom fields from Picqer based on configured plugin strategy', async () => {

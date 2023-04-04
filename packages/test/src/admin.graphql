@@ -68,3 +68,11 @@ mutation UpdateProductVariants($input: [UpdateProductVariantInput!]!) {
     __typename
   }
 }
+
+mutation UpdateProduct($input: UpdateProductInput!) {
+  updateProduct(input: $input) {
+    id
+    enabled
+    __typename
+  }
+}

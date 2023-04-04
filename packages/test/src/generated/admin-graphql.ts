@@ -5931,6 +5931,15 @@ export type UpdateProductVariantsMutation = {
   } | null>;
 };
 
+export type UpdateProductMutationVariables = Exact<{
+  input: UpdateProductInput;
+}>;
+
+export type UpdateProductMutation = {
+  __typename?: 'Mutation';
+  updateProduct: { __typename: 'Product'; id: string; enabled: boolean };
+};
+
 export const CreateShippingMethod = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
     createShippingMethod(input: $input) {
@@ -5993,6 +6002,15 @@ export const UpdateProductVariants = gql`
       priceWithTax
       stockOnHand
       stockAllocated
+      __typename
+    }
+  }
+`;
+export const UpdateProduct = gql`
+  mutation UpdateProduct($input: UpdateProductInput!) {
+    updateProduct(input: $input) {
+      id
+      enabled
       __typename
     }
   }

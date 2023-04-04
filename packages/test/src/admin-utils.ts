@@ -10,6 +10,9 @@ import {
   CreateShippingMethod,
   Order as OrderGraphql,
   OrderQuery,
+  UpdateProduct,
+  UpdateProductInput,
+  UpdateProductMutation,
   UpdateProductVariantInput,
   UpdateProductVariants,
   UpdateProductVariantsMutation,
@@ -93,4 +96,14 @@ export async function updateVariants(
     { input }
   );
   return updateProductVariants;
+}
+
+export async function updateProduct(
+  adminClient: SimpleGraphQLClient,
+  input: UpdateProductInput
+): Promise<UpdateProductMutation['updateProduct']> {
+  const { UpdateProductInput } = await adminClient.query(UpdateProduct, {
+    input,
+  });
+  return UpdateProductInput;
 }

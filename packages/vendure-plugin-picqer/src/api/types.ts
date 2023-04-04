@@ -5,7 +5,7 @@ export interface ProductInput {
   price: number;
   description?: string;
   barcode?: string;
-  inactive?: boolean;
+  active?: boolean;
 }
 
 export interface ProductResponse {

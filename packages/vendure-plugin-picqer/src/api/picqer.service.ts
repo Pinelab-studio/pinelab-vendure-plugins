@@ -1,4 +1,5 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { UpdateProductInput } from '@vendure/common/lib/generated-types';
 import {
   AssetService,
   ConfigService,
@@ -9,7 +10,8 @@ import {
   JobQueueService,
   Logger,
   OrderPlacedEvent,
-  Product,
+  ProductEvent,
+  ProductService,
   ProductVariant,
   ProductVariantEvent,
   ProductVariantService,
@@ -18,7 +20,7 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import currency from 'currency.js';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
   PicqerConfig,
@@ -32,7 +34,8 @@ import { ProductInput, ProductResponse } from './types';
 interface PushVariantsJob {
   action: 'push-variants';
   ctx: SerializedRequestContext;
-  variantIds: ID[];
+  variantIds?: ID[];
+  productId?: ID;
 }
 
 type JobData = PushVariantsJob; // TODO | PullStockLevelsJob | PushOrderJob
@@ -47,6 +50,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private connection: TransactionalConnection,
     private variantService: ProductVariantService,
+    private productService: ProductService,
     private assetService: AssetService,
     private configService: ConfigService,
     private entityHydrator: EntityHydrator
@@ -58,14 +62,27 @@ export class PicqerService implements OnApplicationBootstrap {
       name: 'picqer-sync',
       process: async ({ data, id }) => {
         const ctx = RequestContext.deserialize(data.ctx);
-        if (data.action === 'push-variants') {
-          await this.pushVariantsToPicqer(ctx, data.variantIds);
-        } else {
-          Logger.error(`Invalid job action: ${data.action}`, loggerCtx);
+        try {
+          if (data.action === 'push-variants') {
+            await this.pushVariantsToPicqer(
+              ctx,
+              data.variantIds,
+              data.productId
+            );
+          } else {
+            Logger.error(`Invalid job action: ${data.action}`, loggerCtx);
+          }
+        } catch (e: unknown) {
+          if (e instanceof Error) {
+            Logger.error(
+              `Failed to handle job '${data.action}': ${e?.message}`,
+              loggerCtx
+            );
+          }
+          throw e;
         }
       },
     });
-
     // Listen for placed orders
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       // TODO push order sync
@@ -81,6 +98,18 @@ export class PicqerService implements OnApplicationBootstrap {
           );
         }
       });
+    // Listen for Product events
+    this.eventBus
+      .ofType(ProductEvent)
+      .subscribe(async ({ ctx, entity, type, input }) => {
+        // Only push if `enabled` is updated
+        if (
+          type === 'updated' &&
+          (input as UpdateProductInput).enabled !== undefined
+        ) {
+          await this.addPushVariantsJob(ctx, undefined, entity.id);
+        }
+      });
   }
 
   async triggerFullSync(ctx: RequestContext): Promise<boolean> {
@@ -89,6 +118,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const take = 1000;
     let hasMore = true;
     while (hasMore) {
+      // Only fetch IDs, not the whole entities
       const [variants, count] = await this.connection
         .getRepository(ctx, ProductVariant)
         .createQueryBuilder('variant')
@@ -126,13 +156,15 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async addPushVariantsJob(
     ctx: RequestContext,
-    variantIds: ID[]
+    variantIds?: ID[],
+    productId?: ID
   ): Promise<void> {
     await this.jobQueue.add(
       {
         action: 'push-variants',
         ctx: ctx.serialize(),
         variantIds,
+        productId,
       },
       { retries: 5 }
     );
@@ -145,14 +177,40 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async pushVariantsToPicqer(
     ctx: RequestContext,
-    variantIds: ID[]
+    variantIds?: ID[],
+    productId?: ID
   ): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
       return;
     }
+    // Get variants by ID or by ProductId
+    let variants: ProductVariant[] | undefined;
+    if (variantIds) {
+      variants = await this.variantService.findByIds(ctx, variantIds);
+    } else if (productId) {
+      const product = await this.productService.findOne(ctx, productId);
+      if (!product) {
+        Logger.warn(
+          `Could not find product with id ${productId} for push-variants job`,
+          loggerCtx
+        );
+        return;
+      }
+      // Separate hydration is needed for taxRateApplied and variant prices
+      await this.entityHydrator.hydrate(ctx, product, {
+        relations: ['variants'],
+        applyProductVariantPrices: true,
+      });
+      variants = product.variants;
+      if (!product.enabled) {
+        // Disable all variants if the product is disabled
+        variants.forEach((v) => (v.enabled = false));
+      }
+    } else {
+      throw Error('No variantIds or productId provided');
+    }
     const vatGroups = await client.getVatGroups();
-    const variants = await this.variantService.findByIds(ctx, variantIds);
     await Promise.all(
       variants.map(async (variant) => {
         const vatGroup = vatGroups.find(
@@ -167,6 +225,7 @@ export class PicqerService implements OnApplicationBootstrap {
         }
         try {
           const existing = await client.getProductByCode(variant.sku);
+          console.log('=============', existing);
           const productInput = this.mapToProductInput(
             variant,
             vatGroup.idvatgroup
@@ -276,7 +335,7 @@ export class PicqerService implements OnApplicationBootstrap {
     variant: ProductVariant
   ): Promise<string | undefined> {
     let asset = await this.assetService.getFeaturedAsset(ctx, variant);
-    if (!asset?.preview) {
+    if (!asset?.preview && variant.product) {
       // No featured asset on variant, try the parent product
       await this.entityHydrator.hydrate(ctx, variant, {
         relations: ['product'],
@@ -339,7 +398,7 @@ export class PicqerService implements OnApplicationBootstrap {
       name: variant.name,
       price: currency(variant.price / 100).value, // Convert to float with 2 decimals
       productcode: variant.sku,
-      inactive: !variant.enabled,
+      active: variant.enabled,
     };
   }
 }
