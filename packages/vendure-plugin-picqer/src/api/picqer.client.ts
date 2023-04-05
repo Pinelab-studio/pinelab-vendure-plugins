@@ -24,8 +24,9 @@ export class PicqerClient {
     storefrontUrl,
     supportEmail,
   }: PicqerClientInput) {
+    apiEndpoint = apiEndpoint.replace(/\/$/, ''); // Remove trailing slash
     this.instance = axios.create({
-      baseURL: apiEndpoint,
+      baseURL: `${apiEndpoint}/api/v1/`,
       timeout: 5000,
       headers: {
         Authorization: `Basic ${Buffer.from(apiKey + ':').toString('base64')}`,

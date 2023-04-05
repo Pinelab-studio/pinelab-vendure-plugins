@@ -182,10 +182,11 @@ export class PicqerService implements OnApplicationBootstrap {
    * If not found, creates a new product.
    */
   async pushVariantsToPicqer(
-    ctx: RequestContext,
+    userCtx: RequestContext,
     variantIds?: ID[],
     productId?: ID
   ): Promise<void> {
+    const ctx = this.createDefaultLanguageContext(userCtx);
     const client = await this.getClient(ctx);
     if (!client) {
       return;
@@ -302,6 +303,19 @@ export class PicqerService implements OnApplicationBootstrap {
       loggerCtx
     );
     return repository.findOneOrFail({ channelId: String(ctx.channelId) });
+  }
+
+  /**
+   * Create a new RequestContext with the default language of the current channel.
+   */
+  createDefaultLanguageContext(ctx: RequestContext): RequestContext {
+    return new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      languageCode: ctx.channel.defaultLanguageCode,
+      channel: ctx.channel,
+    });
   }
 
   /**

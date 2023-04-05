@@ -268,13 +268,23 @@ export class CustomerManagedGroupsService {
     );
   }
 
-  async activeCustomerManagedGroupAdministrator(
+  /**
+   * Get current logged in member, or undefined if not in a group
+   */
+  async getActiveMember(
     ctx: RequestContext
-  ): Promise<Boolean> {
+  ): Promise<CustomerManagedGroupMember | undefined> {
     const userId = this.getOrThrowUserId(ctx);
     const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
     const customerManagedGroup = this.getCustomerManagedGroup(customer);
-    return this.isAdministratorOfGroup(userId!, customerManagedGroup!);
+    if (!customerManagedGroup) {
+      return;
+    }
+    const isAdministrator = this.isAdministratorOfGroup(
+      userId,
+      customerManagedGroup
+    );
+    return this.mapToCustomerManagedGroupMember(customer, isAdministrator);
   }
 
   async myCustomerManagedGroup(

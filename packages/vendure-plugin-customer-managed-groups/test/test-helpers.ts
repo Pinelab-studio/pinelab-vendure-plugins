@@ -37,6 +37,19 @@ export const myCustomerManagedGroupQuery = gql`
   }
 `;
 
+export const activeCustomerManagedGroupMemberQuery = gql`
+  query activeCustomerManagedGroupMember {
+    activeCustomerManagedGroupMember {
+      customerId
+      title
+      firstName
+      lastName
+      emailAddress
+      isGroupAdministrator
+    }
+  }
+`;
+
 export const removeCustomerFromGroupMutation = gql`
   ${customerManagedGroupFragment}
   mutation RemoveCustomerFromGroup($customerId: ID!) {
