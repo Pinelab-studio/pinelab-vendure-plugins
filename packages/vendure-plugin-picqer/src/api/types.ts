@@ -34,3 +34,8 @@ export interface VatGroup {
   name: string;
   percentage: number;
 }
+
+export interface StockUpdateInput {
+  sku: string;
+  freeStock: number;
+}

@@ -8,7 +8,7 @@ Vendure plugin to sync orders, stock and catalogue with Picqer.com order pick pl
 
 - Sync placed orders to Picqer
 - Sync all products to Picqer
-- Pull stocklevels from Picqer into Vendure
+- Pull stock levels from Picqer into Vendure
 
 The plugin follows these principles:
 
@@ -52,3 +52,10 @@ plugins: [
 ## Caveats
 
 - Due to limitation of the Picqer API, the plugin only uploads images if no images exist for the product in Picqer.
+
+## Stock levels
+
+Stock levels are updated in Vendure on
+
+1. Full sync via the Admin UI
+2. Or, on incoming webhook from Picqer
