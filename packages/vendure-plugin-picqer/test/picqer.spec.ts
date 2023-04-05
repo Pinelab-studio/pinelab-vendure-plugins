@@ -23,7 +23,7 @@ import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
-const apiUrl = 'https://test-picqer.io/api/v1/';
+const nockBaseUrl = 'https://test-picqer.io/api/v1/';
 
 jest.setTimeout(60000);
 
@@ -62,7 +62,7 @@ describe('Order export plugin', function () {
         input: {
           enabled: true,
           apiKey: 'test-api-key',
-          apiEndpoint: 'https://test-picqer.io/api/v1/',
+          apiEndpoint: 'https://test-picqer.io/',
           storefrontUrl: 'mystore.io',
           supportEmail: 'support@mystore.io',
         },
@@ -70,7 +70,7 @@ describe('Order export plugin', function () {
     );
     await expect(config.enabled).toBe(true);
     await expect(config.apiKey).toBe('test-api-key');
-    await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
+    await expect(config.apiEndpoint).toBe('https://test-picqer.io/');
     await expect(config.storefrontUrl).toBe('mystore.io');
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
@@ -80,7 +80,7 @@ describe('Order export plugin', function () {
     const { picqerConfig: config } = await adminClient.query(GET_CONFIG);
     await expect(config.enabled).toBe(true);
     await expect(config.apiKey).toBe('test-api-key');
-    await expect(config.apiEndpoint).toBe('https://test-picqer.io/api/v1/');
+    await expect(config.apiEndpoint).toBe('https://test-picqer.io/');
     await expect(config.storefrontUrl).toBe('mystore.io');
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
@@ -89,16 +89,16 @@ describe('Order export plugin', function () {
 
   it('Should push all products to Picqer on full sync', async () => {
     // Mock vatgroups GET
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .get('/vatgroups')
       .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
     // Mock products GET multiple times
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .get(/.products*/)
       .reply(200, [])
       .persist();
     // Mock product POST multiple times
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .post(/.products*/, (reqBody) => {
         pushProductPayloads.push(reqBody);
         return true;
@@ -122,16 +122,16 @@ describe('Order export plugin', function () {
   it('Should push product to Picqer when updated in Vendure', async () => {
     let updatedProduct: any;
     // Mock vatgroups GET
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .get('/vatgroups')
       .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
     // Mock products GET multiple times
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .get(/.products*/)
       .reply(200, [])
       .persist();
     // Mock product POST once
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .post(/.products*/, (reqBody) => {
         updatedProduct = reqBody;
         return true;
@@ -148,16 +148,16 @@ describe('Order export plugin', function () {
   it('Disables a product in Picqer when disabled in Vendure', async () => {
     let pushProductPayloads: any[] = [];
     // Mock vatgroups GET
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .get('/vatgroups')
       .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
     // Mock products GET multiple times
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .get(/.products*/)
       .reply(200, [])
       .persist();
     // Mock product POST multiple times
-    nock(apiUrl)
+    nock(nockBaseUrl)
       .post(/.products*/, (reqBody) => {
         pushProductPayloads.push(reqBody);
         return true;
