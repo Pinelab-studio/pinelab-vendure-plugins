@@ -14,6 +14,7 @@ import { CustomerManagedGroupsService } from './customer-managed-groups.service'
 import {
   AddCustomerToMyCustomerManagedGroupInput,
   CustomerManagedGroup,
+  CustomerManagedGroupMember,
 } from './generated/graphql';
 
 // This is just to enable static codegen, without starting a server
@@ -60,7 +61,7 @@ export const shopSchema = gql`
 
   extend type Query {
     ordersForMyCustomerManagedGroup: OrderList!
-    activeCustomerManagedGroupAdministrator: Boolean!
+    activeCustomerManagedGroupMember: CustomerManagedGroupMember
     myCustomerManagedGroup: CustomerManagedGroup
   }
 `;
@@ -79,10 +80,10 @@ export class CustomerManagedGroupsResolver {
 
   @Query()
   @Allow(Permission.Authenticated)
-  async activeCustomerManagedGroupAdministrator(
+  async activeCustomerManagedGroupMember(
     @Ctx() ctx: RequestContext
-  ): Promise<Boolean> {
-    return this.service.activeCustomerManagedGroupAdministrator(ctx);
+  ): Promise<CustomerManagedGroupMember | undefined> {
+    return this.service.getActiveMember(ctx);
   }
 
   @Query()
