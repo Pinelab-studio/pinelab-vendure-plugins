@@ -47,21 +47,32 @@ export const shopSchema = gql`
   }
 
   extend type Mutation {
+    """
+    Creates a group with the current logged in user as administrator of the group
+    """
     addCustomerToMyCustomerManagedGroup(
       input: AddCustomerToMyCustomerManagedGroupInput
     ): CustomerManagedGroup!
     """
-    Create an empty customer managed group for the current user
+    Create an empty group with the current user as Administrator
     """
     createCustomerManagedGroup: CustomerManagedGroup!
+
     removeCustomerFromMyCustomerManagedGroup(
       customerId: ID!
     ): CustomerManagedGroup!
   }
 
   extend type Query {
+    """
+    Fetch placed orders for each member of the group
+    """
     ordersForMyCustomerManagedGroup: OrderList!
+    """
+    Fetch the current logged in group member
+    """
     activeCustomerManagedGroupMember: CustomerManagedGroupMember
+
     myCustomerManagedGroup: CustomerManagedGroup
   }
 `;
