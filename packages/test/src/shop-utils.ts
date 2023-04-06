@@ -1,29 +1,18 @@
+import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
+import { Product, QueryProductArgs } from './generated/admin-graphql';
 import {
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
-  ErrorCode,
-  GET_PRODUCT_SIMPLE,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
   TransitionToState,
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
-  CreateAddressInput,
-  MutationSetOrderBillingAddressArgs,
-  ActiveOrderResult,
-  SET_ORDER_BILLING_ADDRESS,
 } from './generated/shop-graphql';
-import { ErrorResult, ID, Order } from '@vendure/core';
 import { testPaymentMethod } from './test-payment-method';
-import {
-  Product,
-  ProductList,
-  QueryProductArgs,
-  QueryProductsArgs,
-} from './generated/admin-graphql';
 
 /**
  * Set active order to have an address and a shippingmethod
@@ -127,12 +116,4 @@ export async function createSettledOrder(
     throw Error((res as ErrorResult).errorCode);
   }
   return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
-}
-export async function getProductWithId(
-  shopClient: SimpleGraphQLClient,
-  id: string
-): Promise<Product> {
-  return await shopClient.query<Product, QueryProductArgs>(GET_PRODUCT_SIMPLE, {
-    id: id,
-  });
 }

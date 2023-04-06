@@ -3635,64 +3635,9 @@ export const AddPaymentToOrder = gql`
         code
         state
         shippingWithTax
-        lines {
-          productVariant {
-            product {
-              id
-            }
-          }
-        }
       }
       ... on ErrorResult {
         errorCode
-        message
-      }
-    }
-  }
-`;
-
-export const GET_PRODUCT_SIMPLE = gql`
-  query GetProductSimple($id: ID!) {
-    product(id: $id) {
-      id
-      name
-      customFields {
-        popularityScore
-      }
-    }
-  }
-`;
-
-export const SET_ORDER_BILLING_ADDRESS = gql`
-  mutation SetActiveOrderBillingAddress(
-    $streetLine1: String
-    $countryCode: String
-  ) {
-    setOrderBillingAddress(
-      input: { streetLine1: $streetLine1, countryCode: $countryCode }
-    ) {
-      ... on Order {
-        ...Order
-      }
-      ... on NoActiveOrderError {
-        message
-      }
-    }
-  }
-`;
-
-export const SET_ORDER_SHIPMENT_ADDRESS = gql`
-  mutation SetActiveOrderShippingAddress(
-    $streetLine1: String
-    $countryCode: String
-  ) {
-    setOrderShippingAddress(
-      input: { streetLine1: $streetLine1, countryCode: $countryCode }
-    ) {
-      ... on Order {
-        ...Order
-      }
-      ... on NoActiveOrderError {
         message
       }
     }

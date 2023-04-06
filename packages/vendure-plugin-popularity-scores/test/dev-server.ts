@@ -1,21 +1,18 @@
-import { initialData } from '../../test/src/initial-data';
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler/';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
+import { initialData } from '../../test/src/initial-data';
 import { SortByPopularityPlugin } from '../src';
-import { SortService } from '../src/sort.service';
 
 require('dotenv').config();
 

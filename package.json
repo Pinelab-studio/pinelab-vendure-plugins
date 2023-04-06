@@ -50,8 +50,9 @@
           "stripe-subscription",
           "limit-variant",
           "variant-bulk-update",
+          "picqer",
           "customer-managed-groups",
-          "sort-by-popularity",
+          "popularity-scores",
           "all-plugins"
         ]
       ]

@@ -5868,6 +5868,22 @@ export type CreateFulfillmentMutation = {
     | { __typename?: 'ItemsAlreadyFulfilledError' };
 };
 
+export type CreateCollectionMutationVariables = Exact<{
+  input: CreateCollectionInput;
+}>;
+
+export type CreateCollectionMutation = {
+  __typename?: 'Mutation';
+  createCollection: {
+    __typename?: 'Collection';
+    id: string;
+    createdAt: any;
+    updatedAt: any;
+    name: string;
+    slug: string;
+  };
+};
+
 export type OrderQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
@@ -5931,6 +5947,38 @@ export type CreatePaymentMethodMutation = {
   };
 };
 
+export type UpdateProductVariantsMutationVariables = Exact<{
+  input: Array<UpdateProductVariantInput> | UpdateProductVariantInput;
+}>;
+
+export type UpdateProductVariantsMutation = {
+  __typename?: 'Mutation';
+  updateProductVariants: Array<{
+    __typename: 'ProductVariant';
+    id: string;
+    createdAt: any;
+    updatedAt: any;
+    enabled: boolean;
+    languageCode: LanguageCode;
+    name: string;
+    sku: string;
+    price: number;
+    currencyCode: CurrencyCode;
+    priceWithTax: number;
+    stockOnHand: number;
+    stockAllocated: number;
+  } | null>;
+};
+
+export type UpdateProductMutationVariables = Exact<{
+  input: UpdateProductInput;
+}>;
+
+export type UpdateProductMutation = {
+  __typename?: 'Mutation';
+  updateProduct: { __typename: 'Product'; id: string; enabled: boolean };
+};
+
 export const CreateShippingMethod = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
     createShippingMethod(input: $input) {
@@ -5946,6 +5994,17 @@ export const CreateFulfillment = gql`
         state
         method
       }
+    }
+  }
+`;
+export const CreateCollection = gql`
+  mutation CreateCollection($input: CreateCollectionInput!) {
+    createCollection(input: $input) {
+      id
+      createdAt
+      updatedAt
+      name
+      slug
     }
   }
 `;
@@ -5997,248 +6056,31 @@ export const CreatePaymentMethod = gql`
     }
   }
 `;
-
-const COLLECTION_FRAGMENT = `
-      id
-      name
-      slug
-      isPrivate
-      position
-      filters {
-        code
-        args {
-          name
-          value
-        }
-      }
-      customFields {
-        popularityScore
-      }
-      parent {
-        id
-        name
-      }
-      productVariants{
-        items{
-          name
-          id
-          product{
-            id
-          }
-        }
-        totalItems
-      }
-      children {
-        id
-        name
-      }
-      translations {
-        id
-        languageCode
-        name
-        slug
-        description
-      }
-`;
-
-export const GET_COLLECTION_ADMIN = gql`
-  query GetCollectionAdmin($id: ID, $slug: String) {
-    collection(id: $id, slug: $slug) {
-      ${COLLECTION_FRAGMENT}
-    }
-  }
-`;
-
-export const CREATE_COLLECTION = gql`
-  mutation CreateCollection($input: CreateCollectionInput!) {
-    createCollection(input: $input) {
-      ${COLLECTION_FRAGMENT}
-    }
-  }
-`;
-
-export const GET_ALL_COLLECTIONS = gql`
-query GetCollectionAdmin{
-  collections {
-    items{
-      ${COLLECTION_FRAGMENT}
-    }
-    totalItems
-  }
-}
-`;
-
-export const CREATE_PRODUCT = gql`
-  mutation CreateProduct($input: CreateProductInput!) {
-    createProduct(input: $input) {
-      id
-      name
-      translations {
-        languageCode
-        name
-        slug
-        description
-      }
-    }
-  }
-`;
-
-export const ADD_OPTION_GROUP_TO_PRODUCT = gql`
-  mutation AddOptionGroupToProduct($productId: ID!, $optionGroupId: ID!) {
-    addOptionGroupToProduct(
-      productId: $productId
-      optionGroupId: $optionGroupId
-    ) {
+export const UpdateProductVariants = gql`
+  mutation UpdateProductVariants($input: [UpdateProductVariantInput!]!) {
+    updateProductVariants(input: $input) {
       id
       createdAt
       updatedAt
-      translations {
-        languageCode
-        name
-        slug
-        description
-      }
-      optionGroups {
-        id
-        createdAt
-        updatedAt
-        code
-        options {
-          id
-          createdAt
-          updatedAt
-          code
-        }
-      }
-    }
-  }
-`;
-
-export const PRODUCT_OPTION_GROUP_WITH_OPTIONS_FRAGMENT = gql`
-  fragment ProductOptionGroupWithOptions on ProductOptionGroup {
-    id
-    createdAt
-    updatedAt
-    languageCode
-    code
-    name
-    translations {
-      id
-      name
-    }
-    options {
-      id
+      enabled
       languageCode
       name
-      code
-      translations {
-        name
-      }
+      sku
+      price
+      currencyCode
+      priceWithTax
+      stockOnHand
+      stockAllocated
+      __typename
     }
   }
 `;
-
-export const CREATE_PRODUCT_OPTION_GROUP = gql`
-  mutation CreateProductOptionGroup($input: CreateProductOptionGroupInput!) {
-    createProductOptionGroup(input: $input) {
-      ...ProductOptionGroupWithOptions
+export const UpdateProduct = gql`
+  mutation UpdateProduct($input: UpdateProductInput!) {
+    updateProduct(input: $input) {
+      id
+      enabled
+      __typename
     }
   }
-  ${PRODUCT_OPTION_GROUP_WITH_OPTIONS_FRAGMENT}
-`;
-
-export const CREATE_PRODUCT_OPTION = gql`
-  mutation CreateProductOption($input: CreateProductOptionInput!) {
-    createProductOption(input: $input) {
-      id
-      code
-      name
-      groupId
-      translations {
-        id
-        languageCode
-        name
-      }
-    }
-  }
-`;
-
-export const PRODUCT_OPTION_FRAGMENT = gql`
-  fragment ProductOption on ProductOption {
-    id
-    createdAt
-    updatedAt
-    code
-    languageCode
-    name
-    groupId
-    translations {
-      id
-      languageCode
-      name
-    }
-  }
-`;
-
-export const PRODUCT_VARIANT_FRAGMENT = gql`
-  fragment ProductVariant on ProductVariant {
-    id
-    createdAt
-    updatedAt
-    enabled
-    languageCode
-    name
-    price
-    currencyCode
-    priceWithTax
-    stockOnHand
-    stockAllocated
-    trackInventory
-    outOfStockThreshold
-    useGlobalOutOfStockThreshold
-    taxRateApplied {
-      id
-      name
-      value
-    }
-    taxCategory {
-      id
-      name
-    }
-    sku
-    options {
-      ...ProductOption
-    }
-    facetValues {
-      id
-      code
-      name
-      facet {
-        id
-        name
-      }
-    }
-    product {
-      id
-    }
-    translations {
-      id
-      languageCode
-      name
-    }
-    channels {
-      id
-      code
-    }
-  }
-  ${PRODUCT_OPTION_FRAGMENT}
-`;
-
-export const CREATE_PRODUCT_VARIANTS = gql`
-  mutation CreateProductVariants($input: [CreateProductVariantInput!]!) {
-    createProductVariants(input: $input) {
-      ...ProductVariant
-    }
-  }
-  ${PRODUCT_VARIANT_FRAGMENT}
 `;

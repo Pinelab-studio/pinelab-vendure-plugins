@@ -16,6 +16,7 @@ import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { CustomerManagedGroupsPlugin } from '../src';
 import {
+  activeCustomerManagedGroupMemberQuery,
   addCustomerToGroupMutation,
   createCustomerManagedGroupMutation,
   getOrdersForMyCustomerManagedGroup,
@@ -88,12 +89,20 @@ describe('Customer managed groups', function () {
     }
   });
 
-  it('Returns undefined when not in a group', async () => {
+  it('Returns undefined for myCustomerManagedGroup when not in a group', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
       myCustomerManagedGroupQuery
     );
     expect(group).toBe(null);
+  });
+
+  it('Returns undefined for activeCustomerManagedGroupMember when not in a group', async () => {
+    await authorizeAsGroupAdmin();
+    const { activeCustomerManagedGroupMember: member } = await shopClient.query(
+      activeCustomerManagedGroupMemberQuery
+    );
+    expect(member).toBe(null);
   });
 
   it('Adds a customer to my group', async () => {
@@ -113,6 +122,14 @@ describe('Customer managed groups', function () {
     expect(group.name).toBe("Zieme's Group");
     expect(hayden.isGroupAdministrator).toBe(true);
     expect(marques.isGroupAdministrator).toBe(false);
+  });
+
+  it('Returns active member when in a group', async () => {
+    await authorizeAsGroupAdmin();
+    const { activeCustomerManagedGroupMember: member } = await shopClient.query(
+      activeCustomerManagedGroupMemberQuery
+    );
+    expect(member.isGroupAdministrator).toBe(true);
   });
 
   it('Returns my group', async () => {

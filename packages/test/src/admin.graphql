@@ -24,6 +24,16 @@ mutation CreateFulfillment($input: FulfillOrderInput!) {
   }
 }
 
+mutation CreateCollection($input: CreateCollectionInput!) {
+  createCollection(input: $input) {
+    id
+    createdAt
+    updatedAt
+    name
+    slug
+  }
+}
+
 query order($id: ID!) {
   order(id: $id) {
     id
@@ -66,5 +76,31 @@ mutation createPaymentMethod($input: CreatePaymentMethodInput!) {
     name
     description
     enabled
+  }
+}
+
+mutation UpdateProductVariants($input: [UpdateProductVariantInput!]!) {
+  updateProductVariants(input: $input) {
+    id
+    createdAt
+    updatedAt
+    enabled
+    languageCode
+    name
+    sku
+    price
+    currencyCode
+    priceWithTax
+    stockOnHand
+    stockAllocated
+    __typename
+  }
+}
+
+mutation UpdateProduct($input: UpdateProductInput!) {
+  updateProduct(input: $input) {
+    id
+    enabled
+    __typename
   }
 }

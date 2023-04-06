@@ -1,5 +1,5 @@
 {
-  "name": "vendure-plugin-sort-by-popularity",
+  "name": "vendure-plugin-popularity-scores",
   "version": "5.0.1",
   "description": "Sort products and category by popularity based on previously placed orders",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
