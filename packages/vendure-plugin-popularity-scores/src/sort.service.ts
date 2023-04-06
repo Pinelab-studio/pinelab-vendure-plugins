@@ -33,7 +33,13 @@ export class SortService implements OnModuleInit {
         await this.setProductPopularity(
           RequestContext.deserialize(job.data.ctx),
           job.data.channelToken
-        );
+        ).catch((e) => {
+          Logger.warn(
+            `Failed to handle popularity calculation job: ${e?.message}`,
+            loggerCtx
+          );
+          throw e;
+        });
       },
     });
   }
@@ -45,6 +51,8 @@ export class SortService implements OnModuleInit {
     Logger.info(`Started calculating popularity scores`, loggerCtx);
     const channel = await this.channelService.getChannelFromToken(channelToken);
     const orderItemRepo = this.connection.getRepository(ctx, OrderItem);
+    const ordersAfter = new Date();
+    ordersAfter.setMonth(ordersAfter.getMonth() - 12);
     const groupedOrderItems = await orderItemRepo
       .createQueryBuilder('orderItem')
       .innerJoin('orderItem.line', 'orderLine')
@@ -66,7 +74,9 @@ export class SortService implements OnModuleInit {
       .leftJoin('productVariant.collections', 'collection')
       .addSelect(['collection.id'])
       .innerJoin('order.channels', 'order_channel')
-      .andWhere('order.orderPlacedAt is NOT NULL')
+      .andWhere('order.orderPlacedAt > :ordersAfter', {
+        ordersAfter: ordersAfter.toISOString(),
+      })
       .andWhere('product.deletedAt IS NULL')
       .andWhere('productVariant.deletedAt IS NULL')
       .andWhere('product.enabled')
