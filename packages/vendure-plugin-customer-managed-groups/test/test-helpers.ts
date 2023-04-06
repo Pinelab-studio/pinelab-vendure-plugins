@@ -86,7 +86,7 @@ export const getOrdersForMyCustomerManagedGroup = gql`
 export const updateCustomerManagedGroupMemberMutation = gql`
   ${customerManagedGroupFragment}
   mutation updateCustomerManagedGroupMember(
-    $input: UpdateCustomerManagedGroupMemberInput
+    $input: UpdateCustomerManagedGroupMemberInput!
   ) {
     updateCustomerManagedGroupMember(input: $input) {
       ...CustomerManagedGroupFragment
@@ -94,10 +94,16 @@ export const updateCustomerManagedGroupMemberMutation = gql`
   }
 `;
 
-export const makeCustomerAdminOfGroupMutation = gql`
+export const makeCustomerAdminOfCustomerManagedGroupMutation = gql`
   ${customerManagedGroupFragment}
-  mutation makeCustomerAdminOfGroup($groupId: ID!, $customerId: ID!) {
-    makeCustomerAdminOfGroup(groupId: $groupId, customerId: $customerId) {
+  mutation makeCustomerAdminOfCustomerManagedGroup(
+    $groupId: ID!
+    $customerId: ID!
+  ) {
+    makeCustomerAdminOfCustomerManagedGroup(
+      groupId: $groupId
+      customerId: $customerId
+    ) {
       ...CustomerManagedGroupFragment
     }
   }

@@ -20,7 +20,7 @@ import {
   addCustomerToGroupMutation,
   createCustomerManagedGroupMutation,
   getOrdersForMyCustomerManagedGroup,
-  makeCustomerAdminOfGroupMutation,
+  makeCustomerAdminOfCustomerManagedGroupMutation,
   myCustomerManagedGroupQuery,
   removeCustomerFromGroupMutation,
   updateCustomerManagedGroupMemberMutation,
@@ -383,7 +383,7 @@ describe('Customer managed groups', function () {
       'stewart.lindgren@gmail.com',
       'test'
     );
-    const groupData = await shopClient.query(
+    const { createCustomerManagedGroup: groupData } = await shopClient.query(
       createCustomerManagedGroupMutation
     );
     try {
@@ -396,7 +396,9 @@ describe('Customer managed groups', function () {
         });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        `You are not currently authorized to perform this action`
+        `no customer with id ${1} exists in '${
+          groupData.name
+        }' customer managed group`
       );
     }
   });
@@ -406,13 +408,11 @@ describe('Customer managed groups', function () {
     const { myCustomerManagedGroup: group } = await shopClient.query(
       myCustomerManagedGroupQuery
     );
-    const { makeCustomerAdminOfGroup: updatedGroup } = await shopClient.query(
-      makeCustomerAdminOfGroupMutation,
-      {
+    const { makeCustomerAdminOfCustomerManagedGroup: updatedGroup } =
+      await shopClient.query(makeCustomerAdminOfCustomerManagedGroupMutation, {
         groupId: group.id,
         customerId: 4,
-      }
-    );
+      });
     const updatedCustomer = updatedGroup.customers.find(
       (c: any) => c.customerId === 'T_4'
     );

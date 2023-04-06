@@ -75,9 +75,9 @@ export const shopSchema = gql`
     Update a member of one's group
     """
     updateCustomerManagedGroupMember(
-      input: UpdateCustomerManagedGroupMemberInput
+      input: UpdateCustomerManagedGroupMemberInput!
     ): CustomerManagedGroup
-    makeCustomerAdminOfGroup(
+    makeCustomerAdminOfCustomerManagedGroup(
       groupId: ID!
       customerId: ID!
     ): CustomerManagedGroup
@@ -135,11 +135,11 @@ export class CustomerManagedGroupsResolver {
 
   @Mutation()
   @Allow(Permission.Authenticated)
-  async makeCustomerAdminOfGroup(
+  async makeCustomerAdminOfCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
     @Args('groupId') groupId: ID,
     @Args('customerId') customerId: ID
-  ): Promise<CustomerManagedGroup | undefined> {
+  ): Promise<CustomerManagedGroup> {
     return this.service.makeAdminOfGroup(ctx, groupId, customerId);
   }
 
@@ -157,7 +157,7 @@ export class CustomerManagedGroupsResolver {
   async updateCustomerManagedGroupMember(
     @Ctx() ctx: RequestContext,
     @Args('input') input: UpdateCustomerManagedGroupMemberInput
-  ): Promise<CustomerManagedGroup | undefined> {
+  ): Promise<CustomerManagedGroup> {
     return this.service.updateGroupMember(ctx, input);
   }
 

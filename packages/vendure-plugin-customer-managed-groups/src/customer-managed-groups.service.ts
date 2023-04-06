@@ -375,14 +375,14 @@ export class CustomerManagedGroupsService {
   async updateGroupMember(
     ctx: RequestContext,
     input: UpdateCustomerManagedGroupMemberInput
-  ) {
+  ): Promise<CustomerManagedGroup> {
     if (
       !input.title &&
       !input.firstName &&
       !input.lastName &&
       !input.emailAddress
     ) {
-      return;
+      throw new UserInputError(`empty body`);
     }
     const myGroup = await this.myCustomerManagedGroup(ctx);
     if (myGroup) {
@@ -434,10 +434,17 @@ export class CustomerManagedGroupsService {
             ...(input.emailAddress ? { emailAddress: input.emailAddress } : []),
           };
           await this.customerService.update(ctx, updateUserData);
+          const newGroupData = await this.myCustomerManagedGroup(ctx);
+          return newGroupData!;
         }
       }
-      const newGroupData = await this.myCustomerManagedGroup(ctx);
-      return newGroupData;
+      throw new UserInputError(
+        `no customer with id ${input.customerId} exists in '${myGroup.name}' customer managed group`
+      );
+    } else {
+      throw new UserInputError(
+        `no customer managed group exists for authenticated customer`
+      );
     }
   }
 
@@ -445,7 +452,7 @@ export class CustomerManagedGroupsService {
     ctx: RequestContext,
     groupId: ID,
     customerId: ID
-  ): Promise<CustomerManagedGroup | undefined> {
+  ): Promise<CustomerManagedGroup> {
     const customerGroup = await this.customerGroupService.findOne(
       ctx,
       groupId,
