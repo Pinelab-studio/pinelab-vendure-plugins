@@ -12,7 +12,7 @@ import { LanguageCode } from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { SortByPopularityPlugin } from '../src/index';
+import { PopularityScoresPlugin } from '../src';
 import {
   GET_COLLECTIONS_WITH_POPULARITY_SCORE,
   GET_PRODUCTS_WITH_POPULARITY_SCORES,
@@ -33,7 +33,11 @@ describe('Sort by Popularity Plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [SortByPopularityPlugin],
+      plugins: [
+        PopularityScoresPlugin.init({
+          endpointSecret: 'test-secret',
+        }),
+      ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -86,9 +90,16 @@ describe('Sort by Popularity Plugin', function () {
     ).toBe(true);
   });
 
-  it('Calls webhook to calculate popularity', async () => {
+  it('Fails for unauthenticated calls to calculate popularity endpoint', async () => {
     const res = await adminClient.fetch(
-      `http://localhost:3106/order-by-popularity/calculate-scores/e2e-default-channel`
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/invalid-secreet`
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it('Calls endpoint to calculate popularity', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`
     );
     expect(res.status).toBe(200);
   });

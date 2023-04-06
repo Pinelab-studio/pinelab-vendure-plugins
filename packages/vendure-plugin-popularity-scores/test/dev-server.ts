@@ -12,7 +12,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
-import { SortByPopularityPlugin } from '../src';
+import { PopularityScoresPlugin } from '../src';
 
 require('dotenv').config();
 
@@ -21,18 +21,13 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      SortByPopularityPlugin,
+      PopularityScoresPlugin.init({
+        endpointSecret: 'test',
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*                app: compileUiExtensions({
-                    outputPath: path.join(__dirname, "__admin-ui"),
-                    extensions: [
-                        // TODO Add your plugin's UI here
-                    ],
-                    devMode: true
-                })*/
       }),
     ],
     apiOptions: {

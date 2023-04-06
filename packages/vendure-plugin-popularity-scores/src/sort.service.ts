@@ -6,14 +6,14 @@ import {
   ID,
   JobQueue,
   JobQueueService,
+  Logger,
   OrderItem,
   Product,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { Success } from '../../test/src/generated/admin-graphql';
-import { Logger } from '@vendure/core';
+import { loggerCtx } from './constants';
 @Injectable()
 export class SortService implements OnModuleInit {
   private jobQueue: JobQueue<{
@@ -30,12 +30,9 @@ export class SortService implements OnModuleInit {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'calculate-popularity-scores',
       process: async (job) => {
-        const channel = await this.channelService.getChannelFromToken(
-          job.data.channelToken
-        );
-        this.setProductPopularity(
+        await this.setProductPopularity(
           RequestContext.deserialize(job.data.ctx),
-          channel.id
+          job.data.channelToken
         );
       },
     });
@@ -43,12 +40,10 @@ export class SortService implements OnModuleInit {
 
   async setProductPopularity(
     ctx: RequestContext,
-    channelId: ID
+    channelToken: string
   ): Promise<void> {
-    Logger.info(
-      `Started calculating popularity scores`,
-      'SortByPopularityPlugin'
-    );
+    Logger.info(`Started calculating popularity scores`, loggerCtx);
+    const channel = await this.channelService.getChannelFromToken(channelToken);
     const orderItemRepo = this.connection.getRepository(ctx, OrderItem);
     const groupedOrderItems = await orderItemRepo
       .createQueryBuilder('orderItem')
@@ -76,11 +71,18 @@ export class SortService implements OnModuleInit {
       .andWhere('productVariant.deletedAt IS NULL')
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
-      .andWhere('order_channel.id = :id', { id: channelId })
+      .andWhere('order_channel.id = :id', { id: channel.id })
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
-    const maxCount = groupedOrderItems[0].count;
+    const maxCount = groupedOrderItems?.[0]?.count;
+    if (!maxCount) {
+      Logger.warn(
+        `No orders found for channel ${channel.code}, not calculating popularity scores`,
+        loggerCtx
+      );
+      return;
+    }
     const maxValue = 1000;
     const productRepository = this.connection.getRepository(ctx, Product);
     await productRepository.save(
@@ -94,10 +96,7 @@ export class SortService implements OnModuleInit {
       })
     );
     await this.assignScoreValuesToCollections(ctx);
-    Logger.info(
-      `Finished calculating popularity scores`,
-      'SortByPopularityPlugin'
-    );
+    Logger.info(`Finished calculating popularity scores`, loggerCtx);
   }
   async assignScoreValuesToCollections(ctx: RequestContext) {
     const allCollectionsScores = await this.getEachCollectionsScore(ctx);
