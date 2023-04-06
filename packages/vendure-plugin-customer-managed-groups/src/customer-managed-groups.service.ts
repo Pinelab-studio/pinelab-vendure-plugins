@@ -15,6 +15,7 @@ import {
   RequestContext,
   User,
   UserInputError,
+  UserService,
 } from '@vendure/core';
 import { loggerCtx } from './constants';
 import {
@@ -25,7 +26,9 @@ import {
   AddCustomerToMyCustomerManagedGroupInput,
   CustomerManagedGroup,
   CustomerManagedGroupMember,
+  UpdateCustomerManagedGroupMemberInput,
 } from './generated/graphql';
+import { getRepository } from 'typeorm';
 
 @Injectable()
 export class CustomerManagedGroupsService {
@@ -309,6 +312,9 @@ export class CustomerManagedGroupsService {
       throw new UserInputError(`You are already in a customer managed group`);
     }
     customerManagedGroup = await this.createGroup(ctx, currentCustomer);
+    await this.hydrator.hydrate(ctx, customerManagedGroup, {
+      relations: ['customers'],
+    });
     return this.mapToCustomerManagedGroup(customerManagedGroup);
   }
 
@@ -332,6 +338,7 @@ export class CustomerManagedGroupsService {
       customerIds: members,
       customFields: {
         isCustomerManaged: true,
+        groupAdmins: [groupAdmin],
       },
     });
   }
@@ -363,5 +370,135 @@ export class CustomerManagedGroupsService {
       customerId: customer.id,
       isGroupAdministrator,
     };
+  }
+
+  async updateGroupMember(
+    ctx: RequestContext,
+    input: UpdateCustomerManagedGroupMemberInput
+  ) {
+    if (
+      !input.title &&
+      !input.firstName &&
+      !input.lastName &&
+      !input.emailAddress
+    ) {
+      return;
+    }
+    const myGroup = await this.myCustomerManagedGroup(ctx);
+    if (myGroup) {
+      const groupAdmin = myGroup.customers.find((c) => c.isGroupAdministrator);
+      if (!groupAdmin) {
+        throw new UserInputError('group has no admin');
+      }
+      const groupAdminCustomer = await this.customerService.findOne(
+        ctx,
+        groupAdmin?.customerId,
+        ['user']
+      );
+      for (let member of myGroup.customers) {
+        if (member.customerId === input.customerId) {
+          const userRepo = getRepository(User);
+          const customer = await this.customerService.findOne(
+            ctx,
+            member.customerId,
+            ['user']
+          );
+          if (!customer || !customer.user) {
+            throw new UserInputError(
+              `no customer with id ${input.customerId} exists`
+            );
+          }
+          if (
+            groupAdminCustomer?.user?.id != ctx.activeUserId &&
+            customer.user.id != ctx.activeUserId
+          ) {
+            throw new UserInputError(
+              `You are not allowed to update other member's details`
+            );
+          }
+          if (input.emailAddress) {
+            if (
+              await userRepo.count({
+                where: { identifier: input.emailAddress },
+              })
+            ) {
+              throw new UserInputError('user with this email already exists');
+            }
+            //  await userRepo.save(updateUserData);
+          }
+          const updateUserData = {
+            id: customer.id,
+            ...(input.title ? { title: input.title } : []),
+            ...(input.firstName ? { firstName: input.firstName } : []),
+            ...(input.lastName ? { lastName: input.lastName } : []),
+            ...(input.emailAddress ? { emailAddress: input.emailAddress } : []),
+          };
+          await this.customerService.update(ctx, updateUserData);
+        }
+      }
+      const newGroupData = await this.myCustomerManagedGroup(ctx);
+      return newGroupData;
+    }
+  }
+
+  async makeAdminOfGroup(
+    ctx: RequestContext,
+    groupId: ID,
+    customerId: ID
+  ): Promise<CustomerManagedGroup | undefined> {
+    const customerGroup = await this.customerGroupService.findOne(
+      ctx,
+      groupId,
+      ['customers', 'customers.user']
+    );
+    if (
+      !customerGroup ||
+      !customerGroup.customFields ||
+      !(customerGroup.customFields as any).isCustomerManaged
+    ) {
+      throw new UserInputError(
+        `no customer managed group with id ${groupId} exists`
+      );
+    }
+    if (
+      !(customerGroup.customFields as any).groupAdmins.find(
+        (admin: Customer) => admin.user?.id === ctx.activeUserId
+      )
+    ) {
+      throw new UserInputError(
+        `You are not admin of this customer managed group`
+      );
+    }
+    const customerInQuestion = await customerGroup.customers.find(
+      (c) => c.id === customerId
+    );
+    if (!customerInQuestion) {
+      throw new UserInputError(
+        `customer with id ${customerId} is not part of this customer managed group`
+      );
+    }
+    if (
+      (customerGroup.customFields as any).groupAdmins.find(
+        (admin: Customer) => admin.id === customerId
+      )
+    ) {
+      throw new UserInputError(
+        'customer is already admin of this customer managed group'
+      );
+    }
+    const customerGroupRepo = getRepository(CustomerGroup);
+    const partialValue = {
+      id: customerGroup.id,
+      customFields: {
+        groupAdmins: [
+          ...(customerGroup.customFields as any).groupAdmins,
+          customerInQuestion,
+        ],
+      },
+    };
+    const reponse = await customerGroupRepo.save(partialValue);
+    return this.mapToCustomerManagedGroup(
+      (await this.customerGroupService.findOne(ctx, groupId, ['customers']))!
+    );
   }
 }

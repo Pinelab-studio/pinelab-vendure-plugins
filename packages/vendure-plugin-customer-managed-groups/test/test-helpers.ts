@@ -82,3 +82,23 @@ export const getOrdersForMyCustomerManagedGroup = gql`
     }
   }
 `;
+
+export const updateCustomerManagedGroupMemberMutation = gql`
+  ${customerManagedGroupFragment}
+  mutation updateCustomerManagedGroupMember(
+    $input: UpdateCustomerManagedGroupMemberInput
+  ) {
+    updateCustomerManagedGroupMember(input: $input) {
+      ...CustomerManagedGroupFragment
+    }
+  }
+`;
+
+export const makeCustomerAdminOfGroupMutation = gql`
+  ${customerManagedGroupFragment}
+  mutation makeCustomerAdminOfGroup($groupId: ID!, $customerId: ID!) {
+    makeCustomerAdminOfGroup(groupId: $groupId, customerId: $customerId) {
+      ...CustomerManagedGroupFragment
+    }
+  }
+`;

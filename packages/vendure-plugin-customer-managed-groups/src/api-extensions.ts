@@ -15,6 +15,7 @@ import {
   AddCustomerToMyCustomerManagedGroupInput,
   CustomerManagedGroup,
   CustomerManagedGroupMember,
+  UpdateCustomerManagedGroupMemberInput,
 } from './generated/graphql';
 
 // This is just to enable static codegen, without starting a server
@@ -27,6 +28,14 @@ export const shopSchema = gql`
   input AddCustomerToMyCustomerManagedGroupInput {
     emailAddress: String!
     isGroupAdmin: Boolean
+  }
+
+  input UpdateCustomerManagedGroupMemberInput {
+    title: String
+    firstName: String
+    lastName: String
+    emailAddress: String
+    customerId: ID!
   }
 
   type CustomerManagedGroupMember {
@@ -61,6 +70,17 @@ export const shopSchema = gql`
     removeCustomerFromMyCustomerManagedGroup(
       customerId: ID!
     ): CustomerManagedGroup!
+
+    """
+    Update a member of one's group
+    """
+    updateCustomerManagedGroupMember(
+      input: UpdateCustomerManagedGroupMemberInput
+    ): CustomerManagedGroup
+    makeCustomerAdminOfGroup(
+      groupId: ID!
+      customerId: ID!
+    ): CustomerManagedGroup
   }
 
   extend type Query {
@@ -115,11 +135,30 @@ export class CustomerManagedGroupsResolver {
 
   @Mutation()
   @Allow(Permission.Authenticated)
+  async makeCustomerAdminOfGroup(
+    @Ctx() ctx: RequestContext,
+    @Args('groupId') groupId: ID,
+    @Args('customerId') customerId: ID
+  ): Promise<CustomerManagedGroup | undefined> {
+    return this.service.makeAdminOfGroup(ctx, groupId, customerId);
+  }
+
+  @Mutation()
+  @Allow(Permission.Authenticated)
   async addCustomerToMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
     @Args('input') input: AddCustomerToMyCustomerManagedGroupInput
   ): Promise<CustomerManagedGroup> {
     return this.service.addToGroup(ctx, input);
+  }
+
+  @Mutation()
+  @Allow(Permission.Authenticated)
+  async updateCustomerManagedGroupMember(
+    @Ctx() ctx: RequestContext,
+    @Args('input') input: UpdateCustomerManagedGroupMemberInput
+  ): Promise<CustomerManagedGroup | undefined> {
+    return this.service.updateGroupMember(ctx, input);
   }
 
   @Mutation()

@@ -20,10 +20,13 @@ import {
   addCustomerToGroupMutation,
   createCustomerManagedGroupMutation,
   getOrdersForMyCustomerManagedGroup,
+  makeCustomerAdminOfGroupMutation,
   myCustomerManagedGroupQuery,
   removeCustomerFromGroupMutation,
+  updateCustomerManagedGroupMemberMutation,
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { OrderExportComponent } from '../../vendure-plugin-order-export/dist/ui/order-export.component';
 
 jest.setTimeout(10000);
 
@@ -188,13 +191,13 @@ describe('Customer managed groups', function () {
 
   it('Places an order for the group participant', async () => {
     await authorizeAsGroupParticipant();
-    const order = await createSettledOrder(shopClient, 1, false);
+    const order = await createSettledOrder(shopClient as any, 1, false);
     expect(order.code).toBeDefined();
   });
 
   it('Places an order for the group admin', async () => {
     await authorizeAsGroupAdmin();
-    const order = await createSettledOrder(shopClient, 1, false);
+    const order = await createSettledOrder(shopClient as any, 1, false);
     expect(order.code).toBeDefined();
   });
 
@@ -275,6 +278,168 @@ describe('Customer managed groups', function () {
       (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
     );
     expect(marques).toBeUndefined();
+  });
+
+  it('Members can update their own profiles with this query', async () => {
+    await authorizeAsGroupParticipant();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const authorizedCustomer = group.customers.find(
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+    );
+    const { updateCustomerManagedGroupMember: newGroup } =
+      await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+        input: {
+          lastName: 'Teklu',
+          customerId: authorizedCustomer.customerId,
+        },
+      });
+    const authorizedCustomerUpdated = newGroup.customers.find(
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+    );
+    expect(authorizedCustomerUpdated.lastName).toBe('Teklu');
+  });
+
+  it('Members can not update any other profiles ', async () => {
+    await authorizeAsGroupParticipant();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const unAuthorizedCustomer = group.customers.find(
+      (c: any) => c.emailAddress === 'hayden.zieme12@hotmail.com'
+    );
+    try {
+      const { updateCustomerManagedGroupMember: newGroup } =
+        await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+          input: {
+            lastName: 'Teklu',
+            customerId: unAuthorizedCustomer.customerId,
+          },
+        });
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        `You are not allowed to update other member's details`
+      );
+    }
+  });
+  it('Unauthenticated users can not update any profiles', async () => {
+    try {
+      const { updateCustomerManagedGroupMember: newGroup } =
+        await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+          input: {
+            lastName: 'Teklu',
+            customerId: 1,
+          },
+        });
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        `You are not allowed to update other member's details`
+      );
+    }
+  });
+
+  it('Administrators can update their own profiles ', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
+    const { updateCustomerManagedGroupMember: newGroup } =
+      await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+        input: {
+          firstName: 'Semahegn',
+          customerId: groupAdmin.customerId,
+        },
+      });
+    const authorizedCustomerUpdated = newGroup.customers.find(
+      (c: any) => c.isGroupAdministrator
+    );
+    expect(authorizedCustomerUpdated.firstName).toBe('Semahegn');
+  });
+
+  it('Administrators can update members of their group ', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const groupMember = group.customers.find(
+      (c: any) => c.emailAddress === 'eliezer56@yahoo.com'
+    );
+    const { updateCustomerManagedGroupMember: newGroup } =
+      await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+        input: {
+          emailAddress: 'mohammed.salah@gmail.com',
+          customerId: groupMember.customerId,
+        },
+      });
+    const updatedGroupMember = newGroup.customers.find(
+      (c: any) => c.customerId === groupMember.customerId
+    );
+    expect(updatedGroupMember.emailAddress).toBe('mohammed.salah@gmail.com');
+  });
+
+  it('Administrators can not update members of other groups ', async () => {
+    await shopClient.asUserWithCredentials(
+      'stewart.lindgren@gmail.com',
+      'test'
+    );
+    const groupData = await shopClient.query(
+      createCustomerManagedGroupMutation
+    );
+    try {
+      const { updateCustomerManagedGroupMember: newGroup } =
+        await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+          input: {
+            lastName: 'Teklu',
+            customerId: 1,
+          },
+        });
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        `You are not currently authorized to perform this action`
+      );
+    }
+  });
+
+  it('Administrators can assign other members as administrators ', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const { makeCustomerAdminOfGroup: updatedGroup } = await shopClient.query(
+      makeCustomerAdminOfGroupMutation,
+      {
+        groupId: group.id,
+        customerId: 4,
+      }
+    );
+    const updatedCustomer = updatedGroup.customers.find(
+      (c: any) => c.customerId === 'T_4'
+    );
+    expect(updatedCustomer.isGroupAdministrator).toBe(true);
+  });
+
+  it('Administrators can also update other administrators in their group ', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const updatedCustomer = group.customers.find(
+      (c: any) => c.customerId === 'T_4'
+    );
+    expect(updatedCustomer.isGroupAdministrator).toBe(true);
+    const { updateCustomerManagedGroupMember: newGroup } =
+      await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+        input: {
+          emailAddress: 'selam.lalem@gmail.com',
+          customerId: updatedCustomer.customerId,
+        },
+      });
+    const updatedGroupMember = newGroup.customers.find(
+      (c: any) => c.customerId === updatedCustomer.customerId
+    );
+    expect(updatedGroupMember.emailAddress).toBe('selam.lalem@gmail.com');
   });
 
   afterAll(async () => {
