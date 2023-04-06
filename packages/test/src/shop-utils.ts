@@ -92,12 +92,18 @@ export async function addItem(
 export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
+  authorizeFirst = true,
   variants: { id: string; quantity: number }[] = [
     { id: 'T_1', quantity: 1 },
     { id: 'T_2', quantity: 2 },
   ]
 ): Promise<Order> {
-  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  if (authorizeFirst) {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+  }
   for (const v of variants) {
     await addItem(shopClient, v.id, v.quantity);
   }

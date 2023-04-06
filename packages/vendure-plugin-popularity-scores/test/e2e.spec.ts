@@ -82,7 +82,7 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Should place a test orders', async () => {
-    await createSettledOrder(shopClient, 1, [{ id: 'T_2', quantity: 2 }]);
+    await createSettledOrder(shopClient, 1, true, [{ id: 'T_2', quantity: 2 }]);
     const orders = await getAllOrders(adminClient);
     expect(orders.length).toBe(1);
     expect(
