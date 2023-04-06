@@ -6,7 +6,17 @@ This plugin periodically scores products and categories based on the amount of t
 
 ## Getting started
 
-// TODO
+```ts
+import { PopularityScoresPlugin } from 'vendure-plugin-popularity-scores'
+
+...
+plugins: [
+   PopularityScoresPlugin.init({
+     endpointSecret: 'test',
+   }),
+   ...
+];
+```
 
 ## How it works
 
