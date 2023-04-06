@@ -26,7 +26,6 @@ import {
   updateCustomerManagedGroupMemberMutation,
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { OrderExportComponent } from '../../vendure-plugin-order-export/dist/ui/order-export.component';
 
 jest.setTimeout(10000);
 
