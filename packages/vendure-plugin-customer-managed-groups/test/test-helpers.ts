@@ -1,6 +1,48 @@
 import { gql } from 'graphql-tag';
 
+// export const countryFragment=gql`
+//   fragment CountryFragment on Country{
+//     id: ID!
+//     createdAt: DateTime!
+//     updatedAt: DateTime!
+//     languageCode: LanguageCode!
+//     code: String!
+//     name: String!
+//     enabled: Boolean!
+//     translations: [CountryTranslation!]!
+//   }
+
+//   type CountryTranslation {
+//     id: ID!
+//     createdAt: DateTime!
+//     updatedAt: DateTime!
+//     languageCode: LanguageCode!
+//     name: String!
+// }
+// `;
+export const addressFragment = gql`
+  fragment AddressFragment on Address {
+    id
+    createdAt
+    updatedAt
+    fullName
+    company
+    streetLine1
+    streetLine2
+    city
+    province
+    postalCode
+    country {
+      code
+    }
+    phoneNumber
+    defaultShippingAddress
+    defaultBillingAddress
+  }
+`;
+
 export const customerManagedGroupFragment = gql`
+  ${addressFragment}
   fragment CustomerManagedGroupFragment on CustomerManagedGroup {
     id
     createdAt
@@ -12,6 +54,9 @@ export const customerManagedGroupFragment = gql`
       firstName
       lastName
       emailAddress
+      addresses {
+        ...AddressFragment
+      }
       isGroupAdministrator
     }
   }

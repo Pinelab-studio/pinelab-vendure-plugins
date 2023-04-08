@@ -26,6 +26,7 @@ import {
   updateCustomerManagedGroupMemberMutation,
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { Address } from '../../test/src/generated/shop-graphql';
 
 jest.setTimeout(10000);
 
@@ -439,6 +440,80 @@ describe('Customer managed groups', function () {
       (c: any) => c.customerId === updatedCustomer.customerId
     );
     expect(updatedGroupMember.emailAddress).toBe('selam.lalem@gmail.com');
+  });
+
+  it('Administrators can create new addresses for themselves', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
+    const { updateCustomerManagedGroupMember: newGroup } =
+      await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+        input: {
+          addresses: [
+            {
+              streetLine1: 'Selam Street',
+              countryCode: 'US',
+            },
+          ],
+          customerId: groupAdmin.customerId,
+        },
+      });
+    const authorizedCustomerUpdated = newGroup.customers.find(
+      (c: any) => c.isGroupAdministrator
+    );
+    expect(authorizedCustomerUpdated.addresses).not.toBe(null);
+    expect(
+      authorizedCustomerUpdated.addresses.find(
+        (a: Address) =>
+          a.streetLine1 === 'Selam Street' && a.country.code === 'US'
+      )
+    ).toBeDefined();
+  });
+
+  it('Administrators can update  their addresses', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
+    const addressTobeUpdated: Address = groupAdmin.addresses[0];
+    const { updateCustomerManagedGroupMember: newGroup } =
+      await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+        input: {
+          addresses: [
+            {
+              id: addressTobeUpdated.id,
+              streetLine2: 'Melkam Menged',
+              phoneNumber: '+251963215487',
+            },
+          ],
+          customerId: groupAdmin.customerId,
+        },
+      });
+    const authorizedCustomerUpdated = newGroup.customers.find(
+      (c: any) => c.isGroupAdministrator
+    );
+    expect(authorizedCustomerUpdated.addresses).not.toBe(null);
+    expect(authorizedCustomerUpdated.addresses.length).toBe(2);
+    expect(
+      authorizedCustomerUpdated.addresses.find(
+        (a: Address) =>
+          a.id === addressTobeUpdated.id &&
+          a.streetLine2 === 'Melkam Menged' &&
+          a.phoneNumber === '+251963215487' &&
+          a.fullName === addressTobeUpdated.fullName &&
+          a.company === addressTobeUpdated.company &&
+          a.streetLine1 === addressTobeUpdated.streetLine1 &&
+          a.city === addressTobeUpdated.city &&
+          a.province === addressTobeUpdated.province &&
+          a.postalCode === addressTobeUpdated.postalCode &&
+          a.defaultBillingAddress ===
+            addressTobeUpdated.defaultBillingAddress &&
+          a.defaultShippingAddress === addressTobeUpdated.defaultShippingAddress
+      )
+    ).toBeDefined();
   });
 
   afterAll(async () => {

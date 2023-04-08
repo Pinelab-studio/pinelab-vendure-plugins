@@ -22,6 +22,7 @@ import {
 const scalars = gql`
   scalar DateTime
   scalar OrderList
+  scalar LanguageCode
 `;
 
 export const shopSchema = gql`
@@ -35,12 +36,29 @@ export const shopSchema = gql`
     firstName: String
     lastName: String
     emailAddress: String
+    addresses: [AddressInput]
     customerId: ID!
+  }
+
+  input AddressInput {
+    id: ID
+    fullName: String
+    company: String
+    streetLine1: String
+    streetLine2: String
+    city: String
+    province: String
+    postalCode: String
+    countryCode: String
+    phoneNumber: String
+    defaultShippingAddress: Boolean
+    defaultBillingAddress: Boolean
   }
 
   type CustomerManagedGroupMember {
     customerId: ID!
     title: String
+    addresses: [Address!]
     firstName: String!
     lastName: String!
     emailAddress: String!
