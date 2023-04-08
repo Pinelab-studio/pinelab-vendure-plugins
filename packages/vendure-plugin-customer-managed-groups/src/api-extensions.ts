@@ -58,11 +58,44 @@ export const shopSchema = gql`
   type CustomerManagedGroupMember {
     customerId: ID!
     title: String
-    addresses: [Address!]
+    addresses: [CustomAddress!]
     firstName: String!
     lastName: String!
     emailAddress: String!
     isGroupAdministrator: Boolean!
+  }
+
+  type CustomAddress {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    fullName: String
+    company: String
+    streetLine1: String!
+    streetLine2: String
+    city: String
+    province: String
+    postalCode: String
+    country: CustomCountry!
+    phoneNumber: String
+    defaultShippingAddress: Boolean
+    defaultBillingAddress: Boolean
+  }
+
+  type CustomCountry {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    code: String!
+    name: String!
+    enabled: Boolean!
+    translations: [CustomCountryTranslation!]!
+  }
+
+  type CustomCountryTranslation {
+    id: ID!
+    languageCode: LanguageCode!
+    name: String!
   }
 
   type CustomerManagedGroup {

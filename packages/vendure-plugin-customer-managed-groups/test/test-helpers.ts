@@ -21,7 +21,7 @@ import { gql } from 'graphql-tag';
 // }
 // `;
 export const addressFragment = gql`
-  fragment AddressFragment on Address {
+  fragment AddressFragment on CustomAddress {
     id
     createdAt
     updatedAt
