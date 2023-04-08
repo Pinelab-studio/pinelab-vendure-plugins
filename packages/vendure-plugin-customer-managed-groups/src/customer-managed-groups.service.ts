@@ -239,7 +239,6 @@ export class CustomerManagedGroupsService {
       .leftJoinAndSelect('addresses.country', 'country')
       .where('customer.id = :id', { id: customer.id })
       .getOne();
-    // console.log(customerWithGroupsData?.groups.length);
     return customerWithGroupsData!;
   }
 
@@ -397,7 +396,6 @@ export class CustomerManagedGroupsService {
     customer: Customer,
     isGroupAdministrator: boolean
   ): CustomerManagedGroupMember {
-    // console.log(customer.emailAddress,customer.addresses);
     return {
       ...customer,
       addresses: customer.addresses,
@@ -476,12 +474,11 @@ export class CustomerManagedGroupsService {
                   addressInput as UpdateAddressInput
                 );
               } else {
-                const reply = await this.customerService.createAddress(
+                await this.customerService.createAddress(
                   ctx,
                   customer.id,
                   addressInput as CreateAddressInput
                 );
-                // console.log(reply,'--------------------------------------');
               }
             }
           }
