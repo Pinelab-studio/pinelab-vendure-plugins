@@ -16,8 +16,8 @@ import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
-// import { CustomerManagedGroupsPlugin } from '../src';
-import { CustomerManagedGroupsPlugin } from 'vendure-plugin-customer-managed-groups';
+import { CustomerManagedGroupsPlugin } from '../src';
+// import { CustomerManagedGroupsPlugin } from 'vendure-plugin-customer-managed-groups';
 
 require('dotenv').config();
 
