@@ -127,11 +127,11 @@ export const shopSchema = gql`
     """
     updateCustomerManagedGroupMember(
       input: UpdateCustomerManagedGroupMemberInput!
-    ): CustomerManagedGroup
+    ): CustomerManagedGroup!
     makeCustomerAdminOfCustomerManagedGroup(
       groupId: ID!
       customerId: ID!
-    ): CustomerManagedGroup
+    ): CustomerManagedGroup!
   }
 
   extend type Query {

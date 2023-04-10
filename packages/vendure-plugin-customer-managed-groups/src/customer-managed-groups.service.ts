@@ -415,85 +415,85 @@ export class CustomerManagedGroupsService {
       !input.emailAddress &&
       !(input.addresses && input.addresses.length)
     ) {
-      throw new UserInputError(`empty body`);
+      throw new UserInputError(`Make sure to include fields to be updated`);
     }
     const myGroup = await this.myCustomerManagedGroup(ctx);
     if (myGroup) {
       const groupAdmin = myGroup.customers.find((c) => c.isGroupAdministrator);
       if (!groupAdmin) {
-        throw new UserInputError('group has no admin');
+        throw new UserInputError('Group has no admin');
       }
       const groupAdminCustomer = await this.customerService.findOne(
         ctx,
         groupAdmin?.customerId,
         ['user']
       );
-      for (let member of myGroup.customers) {
-        if (member.customerId === input.customerId) {
-          const userRepo = getRepository(User);
-          const customer = await this.customerService.findOne(
-            ctx,
-            member.customerId,
-            ['user']
+      const member = myGroup.customers.find(
+        (customer) => customer.customerId === input.customerId
+      );
+      if (member) {
+        const userRepo = getRepository(User);
+        const customer = await this.customerService.findOne(
+          ctx,
+          member.customerId,
+          ['user']
+        );
+        if (!customer || !customer.user) {
+          throw new UserInputError(
+            `No customer with id ${input.customerId} exists`
           );
-          if (!customer || !customer.user) {
-            throw new UserInputError(
-              `no customer with id ${input.customerId} exists`
-            );
-          }
-          if (
-            groupAdminCustomer?.user?.id != ctx.activeUserId &&
-            customer.user.id != ctx.activeUserId
-          ) {
-            throw new UserInputError(
-              `You are not allowed to update other member's details`
-            );
-          }
-          if (input.emailAddress) {
-            if (
-              await userRepo.count({
-                where: { identifier: input.emailAddress },
-              })
-            ) {
-              throw new UserInputError('user with this email already exists');
-            }
-          }
-          const updateCustomerData = {
-            id: customer.id,
-            ...(input.title ? { title: input.title } : []),
-            ...(input.firstName ? { firstName: input.firstName } : []),
-            ...(input.lastName ? { lastName: input.lastName } : []),
-            ...(input.emailAddress ? { emailAddress: input.emailAddress } : []),
-          };
-          await this.customerService.update(ctx, updateCustomerData);
-          if (input.addresses && input.addresses.length) {
-            for (let addressInput of input.addresses) {
-              if (addressInput && (addressInput as any).id) {
-                await this.customerService.updateAddress(
-                  ctx,
-                  addressInput as UpdateAddressInput
-                );
-              } else {
-                await this.customerService.createAddress(
-                  ctx,
-                  customer.id,
-                  addressInput as CreateAddressInput
-                );
-              }
-            }
-          }
-          const newGroupData = await this.myCustomerManagedGroup(ctx);
-          return newGroupData!;
         }
+        if (
+          groupAdminCustomer?.user?.id != ctx.activeUserId &&
+          customer.user.id != ctx.activeUserId
+        ) {
+          throw new UserInputError(
+            `You are not allowed to update other member's details`
+          );
+        }
+        if (input.emailAddress) {
+          if (
+            await userRepo.count({
+              where: { identifier: input.emailAddress },
+            })
+          ) {
+            throw new UserInputError('User with this email already exists');
+          }
+        }
+        const updateCustomerData = {
+          id: customer.id,
+          ...(input.title ? { title: input.title } : []),
+          ...(input.firstName ? { firstName: input.firstName } : []),
+          ...(input.lastName ? { lastName: input.lastName } : []),
+          ...(input.emailAddress ? { emailAddress: input.emailAddress } : []),
+        };
+        await this.customerService.update(ctx, updateCustomerData);
+        if (input.addresses && input.addresses.length) {
+          for (let addressInput of input.addresses) {
+            if (addressInput && (addressInput as any).id) {
+              await this.customerService.updateAddress(
+                ctx,
+                addressInput as UpdateAddressInput
+              );
+            } else {
+              await this.customerService.createAddress(
+                ctx,
+                customer.id,
+                addressInput as CreateAddressInput
+              );
+            }
+          }
+        }
+        const newGroupData = await this.myCustomerManagedGroup(ctx);
+        return newGroupData!;
       }
       throw new UserInputError(
-        `no customer with id ${input.customerId} exists in '${myGroup.name}' customer managed group`
-      );
-    } else {
-      throw new UserInputError(
-        `no customer managed group exists for authenticated customer`
+        `No customer with id ${input.customerId} exists in '${myGroup.name}' customer managed group`
       );
     }
+    throw new UserInputError(
+      `No customer managed group exists for the authenticated customer`
+    );
   }
 
   async makeAdminOfGroup(
@@ -512,7 +512,7 @@ export class CustomerManagedGroupsService {
       !(customerGroup.customFields as any).isCustomerManaged
     ) {
       throw new UserInputError(
-        `no customer managed group with id ${groupId} exists`
+        `No customer managed group with id ${groupId} exists`
       );
     }
     if (
@@ -529,7 +529,7 @@ export class CustomerManagedGroupsService {
     );
     if (!customerInQuestion) {
       throw new UserInputError(
-        `customer with id ${customerId} is not part of this customer managed group`
+        `Customer with id ${customerId} is not part of this customer managed group`
       );
     }
     if (
@@ -538,7 +538,7 @@ export class CustomerManagedGroupsService {
       )
     ) {
       throw new UserInputError(
-        'customer is already admin of this customer managed group'
+        'Customer is already admin of this customer managed group'
       );
     }
     const customerGroupRepo = getRepository(CustomerGroup);

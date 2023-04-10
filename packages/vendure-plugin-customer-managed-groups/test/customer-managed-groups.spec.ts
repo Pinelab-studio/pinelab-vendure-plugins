@@ -191,13 +191,13 @@ describe('Customer managed groups', function () {
 
   it('Places an order for the group participant', async () => {
     await authorizeAsGroupParticipant();
-    const order = await createSettledOrder(shopClient as any, 1, false);
+    const order = await createSettledOrder(shopClient, 1, false);
     expect(order.code).toBeDefined();
   });
 
   it('Places an order for the group admin', async () => {
     await authorizeAsGroupAdmin();
-    const order = await createSettledOrder(shopClient as any, 1, false);
+    const order = await createSettledOrder(shopClient, 1, false);
     expect(order.code).toBeDefined();
   });
 
@@ -324,6 +324,7 @@ describe('Customer managed groups', function () {
     }
   });
   it('Unauthenticated users can not update any profiles', async () => {
+    await shopClient.asAnonymousUser();
     try {
       const { updateCustomerManagedGroupMember: newGroup } =
         await shopClient.query(updateCustomerManagedGroupMemberMutation, {
@@ -334,7 +335,7 @@ describe('Customer managed groups', function () {
         });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        `You are not allowed to update other member's details`
+        `You are not currently authorized to perform this action`
       );
     }
   });
@@ -397,9 +398,7 @@ describe('Customer managed groups', function () {
         });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        `no customer with id ${1} exists in '${
-          groupData.name
-        }' customer managed group`
+        `No customer with id 1 exists in '${groupData.name}' customer managed group`
       );
     }
   });
