@@ -404,10 +404,6 @@ export class CustomerManagedGroupsService {
         `No customer managed group exists for the authenticated customer`
       );
     }
-    // const groupAdmin = myGroup.customers.find((c) => c.isGroupAdministrator);
-    // if (!groupAdmin) {
-    //   throw new UserInputError('Group has no admin');
-    // }
     const member = myGroup.customers.find(
       (customer) => customer.id === input.customerId
     );
