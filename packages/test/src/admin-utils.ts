@@ -11,6 +11,8 @@ import {
   CreateCollectionMutationVariables,
   CreateFulfillment,
   CreateShippingMethod,
+  GetVariants,
+  GetVariantsQuery,
   LanguageCode,
   Order as OrderGraphql,
   OrderQuery,
@@ -132,4 +134,13 @@ export async function getAllOrders(
 ): Promise<OrdersQuery['orders']['items']> {
   const { orders } = await adminClient.query(OrdersGraphql);
   return orders.items;
+}
+
+export async function getAllVariants(
+  adminClient: SimpleGraphQLClient
+): Promise<GetVariantsQuery['productVariants']['items']> {
+  const { productVariants } = await adminClient.query<GetVariantsQuery>(
+    GetVariants
+  );
+  return productVariants.items;
 }

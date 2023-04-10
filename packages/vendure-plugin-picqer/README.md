@@ -2,11 +2,13 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-picqer/dev/@vendure/core)
 
+!! This plugin is still being developed and it's still incomplete!
+
 Vendure plugin to sync orders, stock and catalogue with Picqer.com order pick platform.
 
 - Sync placed orders to Picqer
 - Sync all products to Picqer
-- Pull stocklevels from Picqer into Vendure
+- Pull stock levels from Picqer into Vendure
 
 The plugin follows these principles:
 
@@ -47,6 +49,14 @@ plugins: [
 
 ```
 
+## Stock levels
+
+Stock levels are updated in Vendure on
+
+1. Full sync via the Admin UI
+2. Or, on incoming webhook from Picqer
+
 ## Caveats
 
 - Due to limitation of the Picqer API, the plugin only uploads images if no images exist for the product in Picqer.
+- Stock is updated directly using the database layer, so no `ProductVariantEvents` or `StockMovementEvents` are emitted by Vendure when variants are updated in Vendure by the full sync.

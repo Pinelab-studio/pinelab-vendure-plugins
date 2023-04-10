@@ -104,3 +104,14 @@ mutation UpdateProduct($input: UpdateProductInput!) {
     __typename
   }
 }
+
+query GetVariants {
+  productVariants {
+    items {
+      id
+      sku
+      stockOnHand
+    }
+    totalItems
+  }
+}

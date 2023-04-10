@@ -15,7 +15,11 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
-import { updateProduct, updateVariants } from '../../test/src/admin-utils';
+import {
+  getAllVariants,
+  updateProduct,
+  updateVariants,
+} from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
 import { VatGroup } from '../src/api/types';
@@ -85,6 +89,9 @@ describe('Order export plugin', function () {
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
 
+  /**
+   * Requestbodies of products that have been created or updated in Picqer
+   */
   let pushProductPayloads: any[] = [];
 
   it('Should push all products to Picqer on full sync', async () => {
@@ -95,11 +102,17 @@ describe('Order export plugin', function () {
     // Mock products GET multiple times
     nock(nockBaseUrl)
       .get(/.products*/)
-      .reply(200, [])
+      .reply(200, [
+        {
+          idproduct: 'mockId',
+          productcode: 'L2201308',
+          stock: [{ freestock: 8 }],
+        },
+      ])
       .persist();
-    // Mock product POST multiple times
+    // Mock product PUT's
     nock(nockBaseUrl)
-      .post(/.products*/, (reqBody) => {
+      .put('/products/mockId', (reqBody) => {
         pushProductPayloads.push(reqBody);
         return true;
       })
@@ -109,6 +122,14 @@ describe('Order export plugin', function () {
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     expect(pushProductPayloads.length).toBe(4);
     expect(triggerPicqerFullSync).toBe(true);
+  });
+
+  it('Should have pulled stock levels from Picqer after full sync', async () => {
+    // Relies on previous trigger of full sync
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    const variants = await getAllVariants(adminClient);
+    const updatedVariant = variants.find((v) => v.sku === 'L2201308');
+    expect(updatedVariant?.stockOnHand).toBe(8);
   });
 
   it('Should push custom fields to Picqer based on configured plugin strategy', async () => {
@@ -178,7 +199,7 @@ describe('Order export plugin', function () {
     expect(true).toBe(false);
   });
 
-  it.skip('Should pull custom fields from Picqer based on "importFieldsFromPicqer" function', async () => {
+  it.skip('Should update stockLevels on incoming webhook', async () => {
     expect(true).toBe(false);
   });
 
