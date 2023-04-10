@@ -5979,6 +5979,22 @@ export type UpdateProductMutation = {
   updateProduct: { __typename: 'Product'; id: string; enabled: boolean };
 };
 
+export type GetVariantsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetVariantsQuery = {
+  __typename?: 'Query';
+  productVariants: {
+    __typename?: 'ProductVariantList';
+    totalItems: number;
+    items: Array<{
+      __typename?: 'ProductVariant';
+      id: string;
+      sku: string;
+      stockOnHand: number;
+    }>;
+  };
+};
+
 export const CreateShippingMethod = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
     createShippingMethod(input: $input) {
@@ -6081,6 +6097,18 @@ export const UpdateProduct = gql`
       id
       enabled
       __typename
+    }
+  }
+`;
+export const GetVariants = gql`
+  query GetVariants {
+    productVariants {
+      items {
+        id
+        sku
+        stockOnHand
+      }
+      totalItems
     }
   }
 `;

@@ -57,8 +57,8 @@ export class PicqerClient {
     ]);
     const result = [...activeProducts, ...inactiveProducts];
     if (result.length > 1) {
-      throw Error(
-        `Picqer returned multiple products for product code ${productCode}`
+      Logger.warn(
+        `Picqer returned multiple products for product code ${productCode}, using the first result (${result[0].idproduct})`
       );
     }
     return result?.[0];

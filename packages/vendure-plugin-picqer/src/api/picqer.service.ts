@@ -20,7 +20,6 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import currency from 'currency.js';
-import { In } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
@@ -30,7 +29,7 @@ import {
 } from '../ui/generated/graphql';
 import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
-import { ProductInput, ProductResponse, StockUpdateInput } from './types';
+import { ProductInput, ProductResponse, VariantWithStock } from './types';
 
 /**
  * Job to push variants from Vendure to Picqer
@@ -160,7 +159,7 @@ export class PicqerService implements OnApplicationBootstrap {
       skip += take;
     }
     // Create batches
-    const batchSize = 1;
+    const batchSize = 10;
     while (variantIds.length) {
       await this.addPushVariantsJob(ctx, variantIds.splice(0, batchSize));
     }
@@ -215,31 +214,94 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client) {
       return;
     }
-    const products = await client.getAllActiveProducts();
-
-    // TODO update stock levels by SKU
-
-    Logger.info(`Updated stock levels`, loggerCtx);
+    const picqerProducts = await client.getAllActiveProducts();
+    await this.updateStockBySkus(ctx, picqerProducts);
+    Logger.info(`Successfully pulled stock levels from Picqer`, loggerCtx);
   }
 
   /**
-   * Find variants by SKU's and update their stock levels
+   * Update variant stocks based on given Picqer products
    */
   async updateStockBySkus(
     ctx: RequestContext,
-    stockInputs: StockUpdateInput[]
+    picqerProducts: ProductResponse[]
   ): Promise<void> {
-    const skus = stockInputs.map((s) => s.sku);
-    // Find all
-    const variants = await this.connection
-      .getRepository(ctx, ProductVariant)
-      .find({
-        select: ['id', 'sku'],
-        where: { sku: In(skus) },
+    const vendureVariants = await this.findAllVariantsBySku(
+      ctx,
+      picqerProducts.map((p) => p.productcode)
+    );
+    const updateVariantsInput: { id: ID; stockOnHand: number }[] = [];
+    // Determine new stock level per variant
+    vendureVariants.forEach((variant) => {
+      const picqerProduct = picqerProducts.find(
+        (p) => p.productcode === variant.sku
+      );
+      if (!picqerProduct) {
+        return; // Should never happen
+      }
+      const picqerStockLevel = picqerProduct?.stock?.[0]?.freestock;
+      if (!picqerStockLevel) {
+        Logger.info(
+          `Picqer product ${picqerProduct.idproduct} (sku ${picqerProduct.productcode}) has no stock set, not updating variant in Vendure`,
+          loggerCtx
+        );
+      }
+      const newStockOnHand = variant.stockAllocated + (picqerStockLevel || 0);
+      updateVariantsInput.push({
+        id: variant.id,
+        stockOnHand: newStockOnHand,
       });
-    // Todo map variants to given stockInputs
-    // Log warnings for missing SKU's
-    // Update free stock in batch
+    });
+    // Use raw connection for better performance
+    await Promise.all(
+      updateVariantsInput.map(async (v) =>
+        this.connection
+          .getRepository(ctx, ProductVariant)
+          .update({ id: v.id }, v)
+      )
+    );
+    Logger.info(
+      `Updated stock levels of ${updateVariantsInput.length} variants`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Find all variants by SKUS via raw connection for better performance
+   */
+  async findAllVariantsBySku(
+    ctx: RequestContext,
+    skus: string[]
+  ): Promise<VariantWithStock[]> {
+    let skip = 0;
+    const take = 1000;
+    let hasMore = true;
+    const allVariants: VariantWithStock[] = [];
+    while (hasMore) {
+      // Only select minimal fields, not the whole entities
+      const [variants, count] = await this.connection
+        .getRepository(ctx, ProductVariant)
+        .createQueryBuilder('variant')
+        .select([
+          'variant.id',
+          'variant.sku',
+          'variant.stockOnHand',
+          'variant.stockAllocated',
+        ])
+        .leftJoin('variant.channels', 'channel')
+        .where('channel.id = :channelId', { channelId: ctx.channelId })
+        .andWhere('variant.sku IN(:...skus)', { skus })
+        .andWhere('variant.deletedAt IS NULL')
+        .skip(skip)
+        .take(take)
+        .getManyAndCount();
+      allVariants.push(...variants);
+      if (allVariants.length >= count) {
+        hasMore = false;
+      }
+      skip += take;
+    }
+    return allVariants;
   }
 
   /**

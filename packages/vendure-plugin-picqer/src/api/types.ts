@@ -1,3 +1,5 @@
+import { ProductVariant } from '@vendure/core';
+
 export interface ProductInput {
   name: string;
   idvatgroup: number;
@@ -35,7 +37,7 @@ export interface VatGroup {
   percentage: number;
 }
 
-export interface StockUpdateInput {
-  sku: string;
-  freeStock: number;
-}
+export type VariantWithStock = Pick<
+  ProductVariant,
+  'id' | 'sku' | 'stockAllocated' | 'stockOnHand'
+>;
