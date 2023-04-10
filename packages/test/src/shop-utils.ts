@@ -1,9 +1,10 @@
+import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
+import { Product, QueryProductArgs } from './generated/admin-graphql';
 import {
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
-  ErrorCode,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
@@ -11,7 +12,6 @@ import {
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
 } from './generated/shop-graphql';
-import { ErrorResult, Order } from '@vendure/core';
 import { testPaymentMethod } from './test-payment-method';
 
 /**
@@ -92,7 +92,11 @@ export async function addItem(
 export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
-  authorizeFirst = true
+  authorizeFirst = true,
+  variants: { id: string; quantity: number }[] = [
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_2', quantity: 2 },
+  ]
 ): Promise<Order> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
@@ -100,8 +104,9 @@ export async function createSettledOrder(
       'test'
     );
   }
-  await addItem(shopClient, 'T_1', 1);
-  await addItem(shopClient, 'T_2', 2);
+  for (const v of variants) {
+    await addItem(shopClient, v.id, v.quantity);
+  }
   const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
     input: {
       fullName: 'Martinho Pinelabio',
