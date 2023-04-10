@@ -293,13 +293,24 @@ export class CustomerManagedGroupsService {
   async myCustomerManagedGroup(
     ctx: RequestContext
   ): Promise<CustomerManagedGroup | undefined> {
+    let customerManagedGroup =
+      await this.myCustomerManagedGroupWithCustomFields(ctx);
+    if (!customerManagedGroup) {
+      return undefined;
+    }
+    return this.mapToCustomerManagedGroup(customerManagedGroup);
+  }
+
+  async myCustomerManagedGroupWithCustomFields(
+    ctx: RequestContext
+  ): Promise<CustomerGroupWithCustomFields | undefined> {
     const userId = this.getOrThrowUserId(ctx);
     const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
     let customerManagedGroup = this.getCustomerManagedGroup(customer);
     if (!customerManagedGroup) {
       return undefined;
     }
-    return this.mapToCustomerManagedGroup(customerManagedGroup);
+    return customerManagedGroup;
   }
 
   async createCustomerManagedGroup(
@@ -387,41 +398,48 @@ export class CustomerManagedGroupsService {
     if (!ctx.activeUserId) {
       throw new ForbiddenError();
     }
-    const myGroup = await this.myCustomerManagedGroup(ctx);
+    const myGroup = await this.myCustomerManagedGroupWithCustomFields(ctx);
     if (!myGroup) {
       throw new UserInputError(
         `No customer managed group exists for the authenticated customer`
       );
     }
-    const groupAdmin = myGroup.customers.find((c) => c.isGroupAdministrator);
-    if (!groupAdmin) {
-      throw new UserInputError('Group has no admin');
-    }
-    if (!this.isAdministratorOfGroup(ctx.activeUserId, myGroup) && input.customerId.user.id !== ctx.activeUserId) {
-      throw new UserInputError(
-        `You are not allowed to update other member's details`
-      );
-    }
+    // const groupAdmin = myGroup.customers.find((c) => c.isGroupAdministrator);
+    // if (!groupAdmin) {
+    //   throw new UserInputError('Group has no admin');
+    // }
     const member = myGroup.customers.find(
-      (customer) => customer.customerId === input.customerId
+      (customer) => customer.id === input.customerId
     );
     if (!member) {
-      throw new UserInputError(`Your group doesn't have a member with customerId ${input.customerId}`);
+      throw new UserInputError(
+        `No customer with id ${input.customerId} exists in '${myGroup.name}' customer managed group`
+      );
     }
-    const customer = await this.customerService.findOne(
-      ctx,
-      member.customerId,
-      ['user']
-    );
+    const customer = await this.customerService.findOne(ctx, member.id, [
+      'user',
+    ]);
     if (!customer || !customer.user) {
       throw new UserInputError(
         `No customer with id ${input.customerId} exists`
       );
     }
+    if (
+      !this.isAdministratorOfGroup(ctx.activeUserId, myGroup) &&
+      customer.user.id !== ctx.activeUserId
+    ) {
+      throw new UserInputError(
+        `You are not allowed to update other member's details`
+      );
+    }
+
     const userRepo = getRepository(User);
-    if (input.emailAddress && await userRepo.count({
-      where: { identifier: input.emailAddress },
-    })) {
+    if (
+      input.emailAddress &&
+      (await userRepo.count({
+        where: { identifier: input.emailAddress },
+      }))
+    ) {
       throw new UserInputError('User with this email already exists');
     }
     const updateUserData = {
