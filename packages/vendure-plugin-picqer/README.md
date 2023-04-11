@@ -61,5 +61,4 @@ Stock levels are updated in Vendure on
 
 - Due to limitation of the Picqer API, the plugin only uploads images if no images exist for the product in Picqer.
 - Stock is updated directly using the database layer, so no `ProductVariantEvents` or `StockMovementEvents` are emitted by Vendure when variants are updated in Vendure by the full sync.
-- This plugin automatically creates webhooks, but never deletes them, because webhooks could belong to other integrations. New webhooks are created when your url or API key changes, so you could end up with old webhooks in Picqer that you have to delete manually.
-- Webhooks are created or updated when you save your config, not on every application startup.
+- Whenever your API key changes, you need to manually delete the webhooks in Picqer

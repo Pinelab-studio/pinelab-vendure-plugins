@@ -155,30 +155,28 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     // Use the hashed apiKey as webhook secret, so we don't have to configure another secret
     const webhookSecret = this.createShortHash(client.apiKey);
-    // Hash again, so that the webhook name doesn't contain the secret
-    const secretHash = this.createShortHash(webhookSecret);
-    const webhookName = `Update stock levels in Vendure - ${secretHash}`;
+    const webhookName = `Update stock levels in Vendure`;
     const webhooks = await client.getWebhooks();
     const stockHook = webhooks.find(
       (hook) =>
         hook.event === 'products.free_stock_changed' &&
-        hook.name === webhookName &&
         hook.address === hookUrl &&
         hook.secret === true
     );
-    if (!stockHook) {
-      const webhook = await client.createWebhook({
-        name: `Update stock levels in Vendure ${webhookSecret}`,
-        address: hookUrl,
-        event: 'products.free_stock_changed',
-        secret: webhookSecret,
-      });
-      Logger.info(
-        `Registered new hook (id: ${webhook.idhook}) for event "product.free_stock_changed" and url "${hookUrl}"`,
-        loggerCtx
-      );
-    } else {
-    }
+    // if (!stockHook) {
+    const webhook = await client.createWebhook({
+      name: `Update stock levels in Vendure ${webhookSecret}`,
+      address: hookUrl,
+      event: 'products.free_stock_changed',
+      secret: webhookSecret,
+    });
+    Logger.info(
+      `Registered new hook (id: ${webhook.idhook}) for event "product.free_stock_changed" and url "${hookUrl}"`,
+      loggerCtx
+    );
+    // } else {
+
+    // }
     Logger.info(
       `Registered webhooks for channel ${ctx.channel.token}`,
       loggerCtx
