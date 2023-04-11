@@ -1,5 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
-import { ProductInput, ProductResponse, VatGroup } from './types';
+import {
+  ProductInput,
+  ProductResponse,
+  VatGroup,
+  Webhook,
+  WebhookInput,
+} from './types';
 import { loggerCtx } from '../constants';
 import { Logger } from '@vendure/core';
 
@@ -18,6 +24,8 @@ export class PicqerClient {
    */
   readonly responseLimit = 100;
 
+  readonly apiKey: string;
+
   constructor({
     apiEndpoint,
     apiKey,
@@ -33,6 +41,7 @@ export class PicqerClient {
         'User-Agent': `VendurePicqerPlugin (${storefrontUrl} - ${supportEmail})`,
       },
     });
+    this.apiKey = apiKey;
   }
 
   async getStats(): Promise<any> {
@@ -110,6 +119,20 @@ export class PicqerClient {
     return this.rawRequest('post', `/products/${productId}/images`, {
       image: base64EncodedImage,
     });
+  }
+
+  /**
+   * Get all registered webhooks
+   */
+  async getWebhooks(): Promise<Webhook[]> {
+    return this.rawRequest('get', `/hooks`);
+  }
+
+  /**
+   * Create new webhook
+   */
+  async createWebhook(input: WebhookInput): Promise<Webhook> {
+    return this.rawRequest('post', `/hooks`, input);
   }
 
   /**

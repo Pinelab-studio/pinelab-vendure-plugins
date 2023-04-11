@@ -29,7 +29,13 @@ import {
 } from '../ui/generated/graphql';
 import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
-import { ProductInput, ProductResponse, VariantWithStock } from './types';
+import {
+  ProductInput,
+  ProductResponse,
+  VariantWithStock,
+  Webhook,
+} from './types';
+import crypto from 'crypto';
 
 /**
  * Job to push variants from Vendure to Picqer
@@ -129,6 +135,54 @@ export class PicqerService implements OnApplicationBootstrap {
           await this.addPushVariantsJob(ctx, undefined, entity.id);
         }
       });
+  }
+
+  /**
+   * Checks if webhooks for events exist in Picqer, if not, register new webhooks.
+   * When hooks exist, but url or secret is different, it will create new hooks.
+   * The plugin never deletes hooks, because they could belong to other integrations.
+   *
+   * Registers hooks for: products.free_stock_changed and orders.completed
+   */
+  async registerWebhooks(
+    ctx: RequestContext,
+    config: PicqerConfig
+  ): Promise<void> {
+    const hookUrl = `${this.options.vendureHost}/picqer/webhook/${ctx.channel.token}`;
+    const client = await this.getClient(ctx, config);
+    if (!client) {
+      return;
+    }
+    // Use the hashed apiKey as webhook secret, so we don't have to configure another secret
+    const webhookSecret = this.createShortHash(client.apiKey);
+    // Hash again, so that the webhook name doesn't contain the secret
+    const secretHash = this.createShortHash(webhookSecret);
+    const webhookName = `Update stock levels in Vendure - ${secretHash}`;
+    const webhooks = await client.getWebhooks();
+    const stockHook = webhooks.find(
+      (hook) =>
+        hook.event === 'products.free_stock_changed' &&
+        hook.name === webhookName &&
+        hook.address === hookUrl &&
+        hook.secret === true
+    );
+    if (!stockHook) {
+      const webhook = await client.createWebhook({
+        name: `Update stock levels in Vendure ${webhookSecret}`,
+        address: hookUrl,
+        event: 'products.free_stock_changed',
+        secret: webhookSecret,
+      });
+      Logger.info(
+        `Registered new hook (id: ${webhook.idhook}) for event "product.free_stock_changed" and url "${hookUrl}"`,
+        loggerCtx
+      );
+    } else {
+    }
+    Logger.info(
+      `Registered webhooks for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
   }
 
   async triggerFullSync(ctx: RequestContext): Promise<boolean> {
@@ -408,6 +462,9 @@ export class PicqerService implements OnApplicationBootstrap {
     );
   }
 
+  /**
+   * Create or update config for the current channel and register webhooks after saving.
+   */
   async upsertConfig(
     ctx: RequestContext,
     input: PicqerConfigInput
@@ -427,7 +484,16 @@ export class PicqerService implements OnApplicationBootstrap {
       `Picqer config updated for channel ${ctx.channel.token} by user ${ctx.activeUserId}`,
       loggerCtx
     );
-    return repository.findOneOrFail({ channelId: String(ctx.channelId) });
+    const config = await repository.findOneOrFail({
+      channelId: String(ctx.channelId),
+    });
+    await this.registerWebhooks(ctx, config).catch((e) =>
+      Logger.error(
+        `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
+        loggerCtx
+      )
+    );
+    return config;
   }
 
   /**
@@ -446,8 +512,13 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Get a Picqer client for the current channel if the config is complete and enabled.
    */
-  async getClient(ctx: RequestContext): Promise<PicqerClient | undefined> {
-    const config = await this.getConfig(ctx);
+  async getClient(
+    ctx: RequestContext,
+    config?: PicqerConfig
+  ): Promise<PicqerClient | undefined> {
+    if (!config) {
+      config = await this.getConfig(ctx);
+    }
     if (!config || !config.enabled) {
       Logger.info(
         `Picqer is not enabled for channel ${ctx.channel.token}`,
@@ -544,5 +615,15 @@ export class PicqerService implements OnApplicationBootstrap {
       productcode: variant.sku,
       active: variant.enabled,
     };
+  }
+
+  /**
+   * Generate a short hash
+   */
+  private createShortHash(apiKey: string): string {
+    return crypto
+      .createHash('shake256', { outputLength: 10 })
+      .update(apiKey)
+      .digest('hex');
   }
 }

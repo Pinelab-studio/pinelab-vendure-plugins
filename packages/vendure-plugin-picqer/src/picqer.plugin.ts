@@ -16,6 +16,11 @@ import { PicqerResolver } from './api/picqer.resolvers';
 export interface PicqerOptions {
   enabled: boolean;
   /**
+   * The URL of your Vendure instance, e.g. "https://my-vendure-instance.io"
+   * Used to register webhooks in Picqer
+   */
+  vendureHost: string;
+  /**
    * Implement this function if you'd like to pull additional fields from Picqer to Vendure,
    * thus making Picqer responsible for the value of fields.
    * @example

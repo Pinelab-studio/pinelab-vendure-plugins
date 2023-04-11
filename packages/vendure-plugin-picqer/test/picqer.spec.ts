@@ -42,6 +42,7 @@ describe('Order export plugin', function () {
       plugins: [
         PicqerPlugin.init({
           enabled: true,
+          vendureHost: 'https://example-vendure.io',
           pushFieldsToPicqer: (variant) => ({ barcode: variant.sku }),
         }),
       ],
