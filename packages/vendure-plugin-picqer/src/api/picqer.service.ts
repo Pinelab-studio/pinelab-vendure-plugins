@@ -155,28 +155,38 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     // Use the hashed apiKey as webhook secret, so we don't have to configure another secret
     const webhookSecret = this.createShortHash(client.apiKey);
-    const webhookName = `Update stock levels in Vendure`;
+    // Hash again, so that the webhook name doesn't contain the secret
+    const secretHash = this.createShortHash(webhookSecret);
+
+    // FIXME loop over events to create hooks: for event in [event1, event2]
+
+    const webhookName = `Vendure stock levels ${secretHash}`;
     const webhooks = await client.getWebhooks();
-    const stockHook = webhooks.find(
+    let stockHook = webhooks.find(
       (hook) =>
         hook.event === 'products.free_stock_changed' &&
         hook.address === hookUrl &&
-        hook.secret === true
+        hook.active === true
     );
-    // if (!stockHook) {
-    const webhook = await client.createWebhook({
-      name: `Update stock levels in Vendure ${webhookSecret}`,
-      address: hookUrl,
-      event: 'products.free_stock_changed',
-      secret: webhookSecret,
-    });
-    Logger.info(
-      `Registered new hook (id: ${webhook.idhook}) for event "product.free_stock_changed" and url "${hookUrl}"`,
-      loggerCtx
-    );
-    // } else {
-
-    // }
+    console.log(stockHook?.name, webhookName);
+    if (stockHook && stockHook.name !== webhookName) {
+      // A hook exists, but the name is different, that means the secret changed. We need to create a new hook
+      Logger.info(`Deactivating outdated hook "${stockHook.name}"`);
+      await client.deactivateHook(stockHook.idhook);
+      stockHook = undefined; // Set as undefined, because its deactivated
+    }
+    if (!stockHook) {
+      const webhook = await client.createWebhook({
+        name: webhookName,
+        address: hookUrl,
+        event: 'products.free_stock_changed',
+        secret: webhookSecret,
+      });
+      Logger.info(
+        `Registered hook (id: ${webhook.idhook}) for event "product.free_stock_changed" and url "${hookUrl}"`,
+        loggerCtx
+      );
+    }
     Logger.info(
       `Registered webhooks for channel ${ctx.channel.token}`,
       loggerCtx

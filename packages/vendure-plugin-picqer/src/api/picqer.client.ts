@@ -135,6 +135,10 @@ export class PicqerClient {
     return this.rawRequest('post', `/hooks`, input);
   }
 
+  async deactivateHook(id: number): Promise<void> {
+    await this.rawRequest('delete', `/hooks/${id}`);
+  }
+
   /**
    * Request wrapper with Picqer specific error handling
    */
