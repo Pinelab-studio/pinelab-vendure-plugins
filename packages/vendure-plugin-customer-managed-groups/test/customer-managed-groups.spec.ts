@@ -43,6 +43,17 @@ describe('Customer managed groups', function () {
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
+      // Test if we can retrieve custom fields on an order
+      customFields: {
+        Order: [
+          {
+            name: 'testing',
+            type: 'string',
+            defaultValue: 'just a test',
+            public: true,
+          },
+        ],
+      },
     });
 
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
@@ -218,6 +229,15 @@ describe('Customer managed groups', function () {
     expect(orders.ordersForMyCustomerManagedGroup.totalItems).toBe(2);
     expect(orders.ordersForMyCustomerManagedGroup.items[0].code).toBeDefined();
     expect(orders.ordersForMyCustomerManagedGroup.items[1].code).toBeDefined();
+    expect(
+      orders.ordersForMyCustomerManagedGroup.items[1].lines.length
+    ).toBeGreaterThan(0);
+    expect(
+      orders.ordersForMyCustomerManagedGroup.items[1].payments.length
+    ).toBeGreaterThan(0);
+    expect(
+      orders.ordersForMyCustomerManagedGroup.items[1].customFields.testing
+    ).toBe('just a test');
   });
 
   it('Fetches 1 order for the group participant', async () => {
