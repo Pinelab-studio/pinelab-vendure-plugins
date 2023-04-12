@@ -29,8 +29,11 @@ import {
 } from '../ui/generated/graphql';
 import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
-import { ProductInput, ProductResponse } from './types';
+import { ProductInput, ProductResponse, VariantWithStock } from './types';
 
+/**
+ * Job to push variants from Vendure to Picqer
+ */
 interface PushVariantsJob {
   action: 'push-variants';
   ctx: SerializedRequestContext;
@@ -38,7 +41,17 @@ interface PushVariantsJob {
   productId?: ID;
 }
 
-type JobData = PushVariantsJob; // TODO | PullStockLevelsJob | PushOrderJob
+/**
+ * Job to pull stocklevels from Picqer into Vendure
+ */
+interface PullStockLevelsJob {
+  action: 'pull-stock-levels';
+  ctx: SerializedRequestContext;
+  variantIds?: ID[];
+  productId?: ID;
+}
+
+type JobData = PushVariantsJob | PullStockLevelsJob;
 
 @Injectable()
 export class PicqerService implements OnApplicationBootstrap {
@@ -60,7 +73,7 @@ export class PicqerService implements OnApplicationBootstrap {
     // Create JobQueue and handlers
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'picqer-sync',
-      process: async ({ data, id }) => {
+      process: async ({ data }) => {
         const ctx = RequestContext.deserialize(data.ctx);
         try {
           if (data.action === 'push-variants') {
@@ -69,12 +82,18 @@ export class PicqerService implements OnApplicationBootstrap {
               data.variantIds,
               data.productId
             );
+          } else if (data.action === 'pull-stock-levels') {
+            await this.pullStockLevels(ctx);
           } else {
-            Logger.error(`Invalid job action: ${data.action}`, loggerCtx);
+            Logger.error(
+              `Invalid job action: ${(data as any).action}`,
+              loggerCtx
+            );
           }
         } catch (e: unknown) {
           if (e instanceof Error) {
-            Logger.error(
+            // Only log a warning, because this is a background function that will be retried by the JobQueue
+            Logger.warn(
               `Failed to handle job '${data.action}': ${e?.message}`,
               loggerCtx
             );
@@ -139,10 +158,19 @@ export class PicqerService implements OnApplicationBootstrap {
       }
       skip += take;
     }
-    // Create batches of 10
+    // Create batches
+    const batchSize = 10;
     while (variantIds.length) {
-      await this.addPushVariantsJob(ctx, variantIds.splice(0, 10));
+      await this.addPushVariantsJob(ctx, variantIds.splice(0, batchSize));
     }
+    await this.jobQueue.add(
+      {
+        action: 'pull-stock-levels',
+        ctx: ctx.serialize(),
+      },
+      { retries: 10 }
+    );
+    Logger.info(`Added pull-stock-levels job to queue`, loggerCtx);
     return true;
   }
 
@@ -161,7 +189,7 @@ export class PicqerService implements OnApplicationBootstrap {
         variantIds,
         productId,
       },
-      { retries: 5 }
+      { retries: 10 }
     );
     if (variantIds) {
       Logger.info(
@@ -174,6 +202,106 @@ export class PicqerService implements OnApplicationBootstrap {
         loggerCtx
       );
     }
+  }
+
+  /**
+   * Pulls all products from Picqer and updates the stock levels in Vendure
+   * based on the stock levels from Picqer products
+   */
+  async pullStockLevels(userCtx: RequestContext): Promise<void> {
+    const ctx = this.createDefaultLanguageContext(userCtx);
+    const client = await this.getClient(ctx);
+    if (!client) {
+      return;
+    }
+    const picqerProducts = await client.getAllActiveProducts();
+    await this.updateStockBySkus(ctx, picqerProducts);
+    Logger.info(`Successfully pulled stock levels from Picqer`, loggerCtx);
+  }
+
+  /**
+   * Update variant stocks based on given Picqer products
+   */
+  async updateStockBySkus(
+    ctx: RequestContext,
+    picqerProducts: ProductResponse[]
+  ): Promise<void> {
+    const vendureVariants = await this.findAllVariantsBySku(
+      ctx,
+      picqerProducts.map((p) => p.productcode)
+    );
+    const updateVariantsInput: { id: ID; stockOnHand: number }[] = [];
+    // Determine new stock level per variant
+    vendureVariants.forEach((variant) => {
+      const picqerProduct = picqerProducts.find(
+        (p) => p.productcode === variant.sku
+      );
+      if (!picqerProduct) {
+        return; // Should never happen
+      }
+      const picqerStockLevel = picqerProduct?.stock?.[0]?.freestock;
+      if (!picqerStockLevel) {
+        Logger.info(
+          `Picqer product ${picqerProduct.idproduct} (sku ${picqerProduct.productcode}) has no stock set, not updating variant in Vendure`,
+          loggerCtx
+        );
+      }
+      const newStockOnHand = variant.stockAllocated + (picqerStockLevel || 0);
+      updateVariantsInput.push({
+        id: variant.id,
+        stockOnHand: newStockOnHand,
+      });
+    });
+    // Use raw connection for better performance
+    await Promise.all(
+      updateVariantsInput.map(async (v) =>
+        this.connection
+          .getRepository(ctx, ProductVariant)
+          .update({ id: v.id }, v)
+      )
+    );
+    Logger.info(
+      `Updated stock levels of ${updateVariantsInput.length} variants`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Find all variants by SKUS via raw connection for better performance
+   */
+  async findAllVariantsBySku(
+    ctx: RequestContext,
+    skus: string[]
+  ): Promise<VariantWithStock[]> {
+    let skip = 0;
+    const take = 1000;
+    let hasMore = true;
+    const allVariants: VariantWithStock[] = [];
+    while (hasMore) {
+      // Only select minimal fields, not the whole entities
+      const [variants, count] = await this.connection
+        .getRepository(ctx, ProductVariant)
+        .createQueryBuilder('variant')
+        .select([
+          'variant.id',
+          'variant.sku',
+          'variant.stockOnHand',
+          'variant.stockAllocated',
+        ])
+        .leftJoin('variant.channels', 'channel')
+        .where('channel.id = :channelId', { channelId: ctx.channelId })
+        .andWhere('variant.sku IN(:...skus)', { skus })
+        .andWhere('variant.deletedAt IS NULL')
+        .skip(skip)
+        .take(take)
+        .getManyAndCount();
+      allVariants.push(...variants);
+      if (allVariants.length >= count) {
+        hasMore = false;
+      }
+      skip += take;
+    }
+    return allVariants;
   }
 
   /**
@@ -272,12 +400,9 @@ export class PicqerService implements OnApplicationBootstrap {
             );
           }
         } catch (e: any) {
-          // Only log a warning, because this is a background function that will be retried by the JobQueue
-          Logger.warn(
-            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`,
-            loggerCtx
+          throw new Error(
+            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`
           );
-          throw e;
         }
       })
     );
@@ -354,7 +479,7 @@ export class PicqerService implements OnApplicationBootstrap {
     variant: ProductVariant
   ): Promise<string | undefined> {
     let asset = await this.assetService.getFeaturedAsset(ctx, variant);
-    if (!asset?.preview && variant.product) {
+    if (!asset?.preview) {
       // No featured asset on variant, try the parent product
       await this.entityHydrator.hydrate(ctx, variant, {
         relations: ['product'],
@@ -414,7 +539,7 @@ export class PicqerService implements OnApplicationBootstrap {
     return {
       ...additionalFields,
       idvatgroup: vatGroupId,
-      name: variant.name,
+      name: variant.name || variant.sku, // use SKU if no name set
       price: currency(variant.price / 100).value, // Convert to float with 2 decimals
       productcode: variant.sku,
       active: variant.enabled,

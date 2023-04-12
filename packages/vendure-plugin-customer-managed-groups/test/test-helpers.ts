@@ -102,6 +102,20 @@ export const getOrdersForMyCustomerManagedGroup = gql`
         customer {
           emailAddress
         }
+        payments {
+          id
+          transactionId
+          state
+          errorMessage
+        }
+        lines {
+          id
+          unitPriceWithTax
+          linePriceWithTax
+        }
+        customFields {
+          testing
+        }
       }
       totalItems
     }

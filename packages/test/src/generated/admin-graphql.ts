@@ -5868,6 +5868,22 @@ export type CreateFulfillmentMutation = {
     | { __typename?: 'ItemsAlreadyFulfilledError' };
 };
 
+export type CreateCollectionMutationVariables = Exact<{
+  input: CreateCollectionInput;
+}>;
+
+export type CreateCollectionMutation = {
+  __typename?: 'Mutation';
+  createCollection: {
+    __typename?: 'Collection';
+    id: string;
+    createdAt: any;
+    updatedAt: any;
+    name: string;
+    slug: string;
+  };
+};
+
 export type OrderQueryVariables = Exact<{
   id: Scalars['ID'];
 }>;
@@ -5890,6 +5906,29 @@ export type OrderQuery = {
       customFields?: any | null;
     }> | null;
   } | null;
+};
+
+export type OrdersQueryVariables = Exact<{ [key: string]: never }>;
+
+export type OrdersQuery = {
+  __typename?: 'Query';
+  orders: {
+    __typename?: 'OrderList';
+    items: Array<{
+      __typename?: 'Order';
+      id: string;
+      code: string;
+      lines: Array<{
+        __typename?: 'OrderLine';
+        id: string;
+        quantity: number;
+        productVariant: {
+          __typename?: 'ProductVariant';
+          product: { __typename?: 'Product'; id: string };
+        };
+      }>;
+    }>;
+  };
 };
 
 export type CreatePaymentMethodMutationVariables = Exact<{
@@ -5940,6 +5979,22 @@ export type UpdateProductMutation = {
   updateProduct: { __typename: 'Product'; id: string; enabled: boolean };
 };
 
+export type GetVariantsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetVariantsQuery = {
+  __typename?: 'Query';
+  productVariants: {
+    __typename?: 'ProductVariantList';
+    totalItems: number;
+    items: Array<{
+      __typename?: 'ProductVariant';
+      id: string;
+      sku: string;
+      stockOnHand: number;
+    }>;
+  };
+};
+
 export const CreateShippingMethod = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
     createShippingMethod(input: $input) {
@@ -5958,6 +6013,17 @@ export const CreateFulfillment = gql`
     }
   }
 `;
+export const CreateCollection = gql`
+  mutation CreateCollection($input: CreateCollectionInput!) {
+    createCollection(input: $input) {
+      id
+      createdAt
+      updatedAt
+      name
+      slug
+    }
+  }
+`;
 export const Order = gql`
   query order($id: ID!) {
     order(id: $id) {
@@ -5972,6 +6038,25 @@ export const Order = gql`
         method
         trackingCode
         customFields
+      }
+    }
+  }
+`;
+export const Orders = gql`
+  query orders {
+    orders {
+      items {
+        id
+        code
+        lines {
+          id
+          quantity
+          productVariant {
+            product {
+              id
+            }
+          }
+        }
       }
     }
   }
@@ -6012,6 +6097,18 @@ export const UpdateProduct = gql`
       id
       enabled
       __typename
+    }
+  }
+`;
+export const GetVariants = gql`
+  query GetVariants {
+    productVariants {
+      items {
+        id
+        sku
+        stockOnHand
+      }
+      totalItems
     }
   }
 `;

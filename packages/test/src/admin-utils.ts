@@ -2,14 +2,22 @@ import { Fulfillment } from '@vendure/common/lib/generated-types';
 import {
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
-  LanguageCode,
 } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
+  CreateCollection,
+  CreateCollectionInput,
+  CreateCollectionMutation,
+  CreateCollectionMutationVariables,
   CreateFulfillment,
   CreateShippingMethod,
+  GetVariants,
+  GetVariantsQuery,
+  LanguageCode,
   Order as OrderGraphql,
   OrderQuery,
+  Orders as OrdersGraphql,
+  OrdersQuery,
   UpdateProduct,
   UpdateProductInput,
   UpdateProductMutation,
@@ -51,7 +59,7 @@ export async function addShippingMethod(
         ],
       },
       translations: [
-        { languageCode: LanguageCode.en, name: 'test method', description: '' },
+        { languageCode: LanguageCode.En, name: 'test method', description: '' },
       ],
     },
   });
@@ -106,4 +114,33 @@ export async function updateProduct(
     input,
   });
   return updateProduct;
+}
+
+export async function createCollection(
+  adminClient: SimpleGraphQLClient,
+  input: CreateCollectionInput
+): Promise<CreateCollectionMutation['createCollection']> {
+  const { createCollection } = await adminClient.query<
+    CreateCollectionMutation,
+    CreateCollectionMutationVariables
+  >(CreateCollection, {
+    input,
+  });
+  return createCollection;
+}
+
+export async function getAllOrders(
+  adminClient: SimpleGraphQLClient
+): Promise<OrdersQuery['orders']['items']> {
+  const { orders } = await adminClient.query(OrdersGraphql);
+  return orders.items;
+}
+
+export async function getAllVariants(
+  adminClient: SimpleGraphQLClient
+): Promise<GetVariantsQuery['productVariants']['items']> {
+  const { productVariants } = await adminClient.query<GetVariantsQuery>(
+    GetVariants
+  );
+  return productVariants.items;
 }

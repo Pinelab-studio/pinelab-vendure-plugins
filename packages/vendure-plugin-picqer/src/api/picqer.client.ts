@@ -57,11 +57,36 @@ export class PicqerClient {
     ]);
     const result = [...activeProducts, ...inactiveProducts];
     if (result.length > 1) {
-      throw Error(
-        `Picqer returned multiple products for product code ${productCode}`
+      Logger.warn(
+        `Picqer returned multiple products for product code ${productCode}, using the first result (${result[0].idproduct})`
       );
     }
     return result?.[0];
+  }
+
+  /**
+   * Fetches all active products
+   */
+  async getAllActiveProducts(): Promise<ProductResponse[]> {
+    const allProducts: ProductResponse[] = [];
+    let hasMore = true;
+    let offset = 0;
+    while (hasMore) {
+      const products = await this.rawRequest(
+        'get',
+        `/products?offset=${offset}`
+      );
+      Logger.info(`Fetched ${products.length} products`, loggerCtx);
+      allProducts.push(...products);
+      if (products.length < this.responseLimit) {
+        hasMore = false;
+      } else {
+        Logger.info(`Fetching more...`, loggerCtx);
+      }
+      offset += this.responseLimit;
+    }
+    Logger.info(`Fetched a total of ${allProducts.length} products`, loggerCtx);
+    return allProducts;
   }
 
   async createProduct(input: ProductInput): Promise<ProductResponse> {

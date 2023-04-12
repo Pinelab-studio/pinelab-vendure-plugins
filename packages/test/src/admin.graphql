@@ -24,6 +24,16 @@ mutation CreateFulfillment($input: FulfillOrderInput!) {
   }
 }
 
+mutation CreateCollection($input: CreateCollectionInput!) {
+  createCollection(input: $input) {
+    id
+    createdAt
+    updatedAt
+    name
+    slug
+  }
+}
+
 query order($id: ID!) {
   order(id: $id) {
     id
@@ -37,6 +47,24 @@ query order($id: ID!) {
       method
       trackingCode
       customFields
+    }
+  }
+}
+
+query orders {
+  orders {
+    items {
+      id
+      code
+      lines {
+        id
+        quantity
+        productVariant {
+          product {
+            id
+          }
+        }
+      }
     }
   }
 }
@@ -74,5 +102,16 @@ mutation UpdateProduct($input: UpdateProductInput!) {
     id
     enabled
     __typename
+  }
+}
+
+query GetVariants {
+  productVariants {
+    items {
+      id
+      sku
+      stockOnHand
+    }
+    totalItems
   }
 }
