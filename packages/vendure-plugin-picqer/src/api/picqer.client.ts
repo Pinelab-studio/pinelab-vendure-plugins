@@ -1,13 +1,14 @@
 import axios, { AxiosInstance } from 'axios';
 import {
   ProductInput,
-  ProductResponse,
+  ProductData,
   VatGroup,
   Webhook,
   WebhookInput,
 } from './types';
 import { loggerCtx } from '../constants';
 import { Logger } from '@vendure/core';
+import crypto from 'crypto';
 
 export interface PicqerClientInput {
   apiEndpoint: string;
@@ -59,7 +60,7 @@ export class PicqerClient {
    */
   async getProductByCode(
     productCode: string
-  ): Promise<ProductResponse | undefined> {
+  ): Promise<ProductData | undefined> {
     const [activeProducts, inactiveProducts] = await Promise.all([
       this.rawRequest('get', `/products?productcode=${productCode}`),
       this.rawRequest('get', `/products?productcode=${productCode}&inactive`),
@@ -76,8 +77,8 @@ export class PicqerClient {
   /**
    * Fetches all active products
    */
-  async getAllActiveProducts(): Promise<ProductResponse[]> {
-    const allProducts: ProductResponse[] = [];
+  async getAllActiveProducts(): Promise<ProductData[]> {
+    const allProducts: ProductData[] = [];
     let hasMore = true;
     let offset = 0;
     while (hasMore) {
@@ -98,14 +99,14 @@ export class PicqerClient {
     return allProducts;
   }
 
-  async createProduct(input: ProductInput): Promise<ProductResponse> {
+  async createProduct(input: ProductInput): Promise<ProductData> {
     return this.rawRequest('post', '/products', input);
   }
 
   async updateProduct(
     productId: string | number,
     input: ProductInput
-  ): Promise<ProductResponse> {
+  ): Promise<ProductData> {
     return this.rawRequest('put', `/products/${productId}`, input);
   }
 
@@ -115,7 +116,7 @@ export class PicqerClient {
   async addImage(
     productId: string | number,
     base64EncodedImage: string
-  ): Promise<ProductResponse> {
+  ): Promise<ProductData> {
     return this.rawRequest('post', `/products/${productId}/images`, {
       image: base64EncodedImage,
     });
@@ -151,6 +152,24 @@ export class PicqerClient {
       this.handleError(e, url)
     );
     return result?.data;
+  }
+
+  isSignatureValid(data: string, incomingSignature: string): boolean {
+    const computedSignature = crypto
+      .createHmac('sha256', this.webhookSecret)
+      .update(data)
+      .digest('base64');
+    return computedSignature === incomingSignature;
+  }
+
+  /**
+   * Use apiKey to generate a short hash that we use as webhook secret
+   */
+  get webhookSecret(): string {
+    return crypto
+      .createHash('shake256', { outputLength: 10 })
+      .update(this.apiKey)
+      .digest('hex');
   }
 
   /**

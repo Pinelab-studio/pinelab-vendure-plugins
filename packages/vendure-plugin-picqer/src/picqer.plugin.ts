@@ -12,6 +12,8 @@ import { permission } from '.';
 import { PicqerConfigEntity } from './api/picqer-config.entity';
 import { PicqerService } from './api/picqer.service';
 import { PicqerResolver } from './api/picqer.resolvers';
+import { PicqerController } from './api/picqer.controller';
+import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 
 export interface PicqerOptions {
   enabled: boolean;
@@ -39,6 +41,7 @@ export interface PicqerOptions {
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  controllers: [PicqerController],
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,
@@ -52,7 +55,7 @@ export interface PicqerOptions {
   },
   entities: [PicqerConfigEntity],
   configuration: (config) => {
-    // TODO config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
+    config.apiOptions.middleware.push(createRawBodyMiddleWare('/picqer*'));
     config.authOptions.customPermissions.push(permission);
     return config;
   },

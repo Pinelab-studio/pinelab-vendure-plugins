@@ -10,27 +10,6 @@ export interface ProductInput {
   active?: boolean;
 }
 
-export interface ProductResponse {
-  idproduct: number;
-  idvatgroup: number;
-  idsupplier: any;
-  productcode: string;
-  name: string;
-  price: number;
-  fixedstockprice: number;
-  productcode_supplier: string;
-  deliverytime: any;
-  description: any;
-  barcode: any;
-  unlimitedstock: boolean;
-  weight: any;
-  length: any;
-  width: any;
-  height: any;
-  stock?: any[];
-  images?: any[];
-}
-
 export interface VatGroup {
   idvatgroup: number;
   name: string;
@@ -58,15 +37,17 @@ export interface WebhookInput {
   secret: string;
 }
 
+export type IncomingWebhook = IncomingProductWebhook; // TODO | IncomingOrderWebhook;
+
 export interface IncomingProductWebhook {
   idhook: number;
   name: string;
   event: string;
   event_triggered_at: string;
-  data: ProductWebhookData;
+  data: ProductData;
 }
 
-export interface ProductWebhookData {
+export interface ProductData {
   idproduct: number;
   idvatgroup: number;
   idsupplier: any;
