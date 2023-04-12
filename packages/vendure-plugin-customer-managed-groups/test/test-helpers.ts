@@ -1,7 +1,7 @@
 import { gql } from 'graphql-tag';
 
 export const addressFragment = gql`
-  fragment AddressFragment on CustomAddress {
+  fragment AddressFragment on CustomerManagedGroupAddress {
     id
     createdAt
     updatedAt

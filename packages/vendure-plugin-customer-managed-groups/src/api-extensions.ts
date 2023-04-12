@@ -36,11 +36,11 @@ export const shopSchema = gql`
     firstName: String
     lastName: String
     emailAddress: String
-    addresses: [AddressInput]
+    addresses: [CustomerManagedGroupAddressInput]
     customerId: ID!
   }
 
-  input AddressInput {
+  input CustomerManagedGroupAddressInput {
     id: ID
     fullName: String
     company: String
@@ -58,14 +58,14 @@ export const shopSchema = gql`
   type CustomerManagedGroupMember {
     customerId: ID!
     title: String
-    addresses: [CustomAddress!]
+    addresses: [CustomerManagedGroupAddress!]
     firstName: String!
     lastName: String!
     emailAddress: String!
     isGroupAdministrator: Boolean!
   }
 
-  type CustomAddress {
+  type CustomerManagedGroupAddress {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -76,23 +76,23 @@ export const shopSchema = gql`
     city: String
     province: String
     postalCode: String
-    country: CustomCountry!
+    country: CustomerManagedGroupCountry!
     phoneNumber: String
     defaultShippingAddress: Boolean
     defaultBillingAddress: Boolean
   }
 
-  type CustomCountry {
+  type CustomerManagedGroupCountry {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
     code: String!
     name: String!
     enabled: Boolean!
-    translations: [CustomCountryTranslation!]!
+    translations: [CustomerManagedGroupCountryTranslation!]!
   }
 
-  type CustomCountryTranslation {
+  type CustomerManagedGroupCountryTranslation {
     id: ID!
     languageCode: LanguageCode!
     name: String!
