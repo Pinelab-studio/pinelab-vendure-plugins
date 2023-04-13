@@ -410,7 +410,7 @@ export class CustomerManagedGroupsService {
       !input.firstName &&
       !input.lastName &&
       !input.emailAddress &&
-      !(input.addresses && input.addresses.length)
+      !input.addresses?.length
     ) {
       throw new UserInputError(`Make sure to include fields to be updated`);
     }
@@ -465,9 +465,9 @@ export class CustomerManagedGroupsService {
       ...(input.emailAddress ? { emailAddress: input.emailAddress } : []),
     };
     await this.customerService.update(ctx, updateUserData);
-    if (input.addresses && input.addresses.length) {
+    if (input.addresses?.length) {
       for (let addressInput of input.addresses) {
-        if (addressInput && (addressInput as any).id) {
+        if (addressInput?.id) {
           await this.customerService.updateAddress(
             ctx,
             addressInput as UpdateAddressInput

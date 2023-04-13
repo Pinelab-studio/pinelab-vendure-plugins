@@ -36,10 +36,13 @@ export const shopSchema = gql`
     firstName: String
     lastName: String
     emailAddress: String
-    addresses: [CustomerManagedGroupAddressInput]
+    addresses: [CustomerManagedGroupAddressInput!]
     customerId: ID!
   }
 
+  """
+  When no ID is given, a new address will be created
+  """
   input CustomerManagedGroupAddressInput {
     id: ID
     fullName: String
