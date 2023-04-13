@@ -482,7 +482,7 @@ describe('Customer managed groups', function () {
     const authorizedCustomerUpdated = newGroup.customers.find(
       (c: any) => c.isGroupAdministrator
     );
-    expect(authorizedCustomerUpdated.addresses).not.toBe(null);
+    expect(authorizedCustomerUpdated.addresses).toBeUndefined();
     expect(
       authorizedCustomerUpdated.addresses.find(
         (a: Address) =>
