@@ -11,17 +11,27 @@
     "install-deps": "yarn lerna exec --concurrency 1 yarn",
     "build": "yarn && yarn prettier:write && yarn install-deps && yarn lerna run build --concurrency 1",
     "lerna:publish": "yarn build && git stash && yarn lerna publish --concurrency 1 --changelog-preset conventionalcommits",
-    "prettier:write": "prettier --write .",
-    "prettier:check": "prettier --check .",
+    "lint": "DEBUG=eslint:cli-engine NODE_OPTIONS=\"--max-old-space-size=8192\" yarn eslint",
+    "lint:check": "yarn prettier --check . &&  yarn lint .",
+    "lint:fix": "yarn prettier --write . && yarn lint . --fix",
     "upgrade:vendure": "yarn lerna exec --concurrency 1 \"yarn upgrade --pattern @vendure --latest\"",
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.2.0",
     "@commitlint/config-conventional": "^17.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.43.0",
+    "eslint": "^8.0.1",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-config-standard-with-typescript": "^34.0.1",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-progress": "taskworld/eslint-plugin-progress",
+    "eslint-plugin-promise": "^6.0.0",
     "husky": "^8.0.2",
     "lerna": "^6.0.3",
-    "prettier": "^2.7.1"
+    "prettier": "^2.8.7",
+    "typescript": "*"
   },
   "commitlint": {
     "extends": [
