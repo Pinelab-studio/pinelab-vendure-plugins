@@ -206,26 +206,30 @@ export class CustomerManagedGroupsService {
     ctx: RequestContext,
     userId: ID
   ): Promise<CustomerWithCustomFields> {
-    const customer = await this.customerService.findOneByUserId(ctx, userId);
-    if (!customer) {
-      throw new UserInputError(`No customer found for user with id ${userId}`);
-    }
     const customerRepo = getRepository(Customer);
     const customerWithGroupsData = await customerRepo
       .createQueryBuilder('customer')
+      .leftJoin('customer.channels', 'customer_channel')
+      .leftJoin('customer.user', 'user')
       .leftJoinAndSelect('customer.addresses', 'customerAddress')
       .leftJoinAndSelect('customerAddress.country', 'customerCountry')
       .leftJoinAndSelect('customer.groups', 'groups')
       .leftJoinAndSelect('groups.customers', 'customers')
       .leftJoinAndSelect('groups.customFields.groupAdmins', 'groupAdmins')
-      .leftJoinAndSelect('groupAdmins.user', 'user')
+      .leftJoinAndSelect('groupAdmins.user', 'groupAdminsUser')
       .leftJoinAndSelect('groupAdmins.addresses', 'groupAdminAddresses')
       .leftJoinAndSelect('groupAdminAddresses.country', 'groupAdminCountries')
       .leftJoinAndSelect('customers.addresses', 'addresses')
       .leftJoinAndSelect('addresses.country', 'country')
-      .where('customer.id = :id', { id: customer.id })
+      .where('user.id = :userId', { userId: userId })
+      .andWhere('customer_channel.id = :customerChannelId', {
+        customerChannelId: ctx.channelId,
+      })
       .getOne();
-    return customerWithGroupsData!;
+    if (!customerWithGroupsData) {
+      throw new UserInputError(`No customer found for user with id ${userId}`);
+    }
+    return customerWithGroupsData;
   }
 
   async getOrThrowCustomerByEmail(
@@ -336,6 +340,7 @@ export class CustomerManagedGroupsService {
     const userId = this.getOrThrowUserId(ctx);
     const currentCustomer = await this.getOrThrowCustomerByUserId(ctx, userId);
     let customerManagedGroup = this.getCustomerManagedGroup(currentCustomer);
+    console.log(currentCustomer, ctx.activeUserId);
     if (customerManagedGroup) {
       throw new UserInputError(`You are already in a customer managed group`);
     }
@@ -439,6 +444,10 @@ export class CustomerManagedGroupsService {
         `No customer with id ${input.customerId} exists`
       );
     }
+    // if(input.lastName==='Teklu'){
+    //   console.log(myGroup.customFields.groupAdmins,ctx.activeUserId)
+    //   // console.log(this.isAdministratorOfGroup(ctx.activeUserId, myGroup),'this.isAdministratorOfGroup(ctx.activeUserId, myGroup)')
+    // }
     if (
       !this.isAdministratorOfGroup(ctx.activeUserId, myGroup) &&
       customer.user.id !== ctx.activeUserId
