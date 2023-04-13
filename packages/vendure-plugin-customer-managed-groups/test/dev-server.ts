@@ -16,7 +16,6 @@ import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
-
 import { CustomerManagedGroupsPlugin } from '../src';
 
 require('dotenv').config();

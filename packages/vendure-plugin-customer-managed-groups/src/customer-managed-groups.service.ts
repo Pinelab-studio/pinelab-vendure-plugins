@@ -210,20 +210,6 @@ export class CustomerManagedGroupsService {
     if (!customer) {
       throw new UserInputError(`No customer found for user with id ${userId}`);
     }
-    // await this.hydrator.hydrate(ctx, customer, {
-    //   relations: ['groups', 'groups.customers','addresses','addresses.country'],
-    // });
-    // for(const g of customer.groups){
-    //   await this.hydrator.hydrate(ctx, g, {
-    //     relations: ['customers','customers.addresses'],
-    //   });
-    //   for(const c of g.customers){
-    //     await this.hydrator.hydrate(ctx, c, {
-    //       relations: ['addresses','addresses.country'],
-    //     });
-    //   }
-    // }
-    // return customer;
     const customerRepo = getRepository(Customer);
     const customerWithGroupsData = await customerRepo
       .createQueryBuilder('customer')
