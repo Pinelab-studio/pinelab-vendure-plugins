@@ -80,7 +80,7 @@ export async function fulfill(
       lines,
       handler: {
         code: handlerCode,
-        arguments: args != null || {},
+        arguments: args ?? {},
       },
     },
   });
