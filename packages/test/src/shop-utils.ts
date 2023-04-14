@@ -1,15 +1,15 @@
-import { type ErrorResult, type Order } from '@vendure/core';
-import { type SimpleGraphQLClient } from '@vendure/testing';
+import { ErrorResult, Order } from '@vendure/core';
+import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   AddItemToOrder,
   AddPaymentToOrder,
-  type AddPaymentToOrderMutation,
+  AddPaymentToOrderMutation,
   SetShippingAddress,
-  type SetShippingAddressMutationVariables,
+  SetShippingAddressMutationVariables,
   SetShippingMethod,
   TransitionToState,
-  type TransitionToStateMutation,
-  type TransitionToStateMutationVariables,
+  TransitionToStateMutation,
+  TransitionToStateMutationVariables,
 } from './generated/shop-graphql';
 import { testPaymentMethod } from './test-payment-method';
 

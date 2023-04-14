@@ -13,7 +13,8 @@
   },
   "plugins": [],
   "rules": {
-    "@typescript-eslint/strict-boolean-expressions": "off"
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "@typescript-eslint/consistent-type-imports": "off"
   },
   "ignorePatterns": [
     "migration.ts",

@@ -1,29 +1,29 @@
-import { type Fulfillment } from '@vendure/common/lib/generated-types';
+import { Fulfillment } from '@vendure/common/lib/generated-types';
 import {
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
 } from '@vendure/core';
-import { type SimpleGraphQLClient } from '@vendure/testing';
+import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   CreateCollection,
-  type CreateCollectionInput,
-  type CreateCollectionMutation,
-  type CreateCollectionMutationVariables,
+  CreateCollectionInput,
+  CreateCollectionMutation,
+  CreateCollectionMutationVariables,
   CreateFulfillment,
   CreateShippingMethod,
   GetVariants,
-  type GetVariantsQuery,
+  GetVariantsQuery,
   LanguageCode,
   Order as OrderGraphql,
-  type OrderQuery,
+  OrderQuery,
   Orders as OrdersGraphql,
-  type OrdersQuery,
+  OrdersQuery,
   UpdateProduct,
-  type UpdateProductInput,
-  type UpdateProductMutation,
-  type UpdateProductVariantInput,
+  UpdateProductInput,
+  UpdateProductMutation,
+  UpdateProductVariantInput,
   UpdateProductVariants,
-  type UpdateProductVariantsMutation,
+  UpdateProductVariantsMutation,
 } from './generated/admin-graphql';
 
 export async function addShippingMethod(
