@@ -16,7 +16,7 @@ jobs:
           node-version: '16'
       - name: Yarn root
         run: yarn
-      - name: Prettier
+      - name: Is formatted and linted
         run: yarn lint:check
   test:
     name: ${{ matrix.package }}
