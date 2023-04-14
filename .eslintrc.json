@@ -4,16 +4,17 @@
     "es2021": true,
     "node": true
   },
-  "extends": "standard-with-typescript",
+  "extends": ["standard-with-typescript", "prettier"],
   "overrides": [],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
     "project": ["./packages/*/tsconfig.json"]
   },
-  "plugins": [
-  ],
+  "plugins": [],
   "rules": {
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "@typescript-eslint/consistent-type-imports": "off"
   },
   "ignorePatterns": [
     "migration.ts",

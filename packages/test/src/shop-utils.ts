@@ -1,6 +1,5 @@
 import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
-import { Product, QueryProductArgs } from './generated/admin-graphql';
 import {
   AddItemToOrder,
   AddPaymentToOrder,
@@ -21,7 +20,7 @@ export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   address?: SetShippingAddressMutationVariables
-) {
+): Promise<void> {
   await shopClient.query(
     SetShippingAddress,
     address ?? {
@@ -47,7 +46,7 @@ export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   address?: SetShippingAddressMutationVariables
-) {
+): Promise<TransitionToStateMutation['transitionOrderToState']> {
   await setAddressAndShipping(shopClient, shippingMethodId, address);
   const result = await shopClient.query<
     TransitionToStateMutation,
@@ -93,7 +92,7 @@ export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   authorizeFirst = true,
-  variants: { id: string; quantity: number }[] = [
+  variants: Array<{ id: string; quantity: number }> = [
     { id: 'T_1', quantity: 1 },
     { id: 'T_2', quantity: 2 },
   ]

@@ -11,9 +11,10 @@
     "install-deps": "yarn lerna exec --concurrency 1 yarn",
     "build": "yarn && yarn prettier:write && yarn install-deps && yarn lerna run build --concurrency 1",
     "lerna:publish": "yarn build && git stash && yarn lerna publish --concurrency 1 --changelog-preset conventionalcommits",
-    "lint": "DEBUG=eslint:cli-engine NODE_OPTIONS=\"--max-old-space-size=8192\" yarn eslint",
+    "loading-message": "echo \"\\033[0;36mLinting... This might take a minute\\033[0m\"",
+    "lint": "yarn loading-message && NODE_OPTIONS=\"--max-old-space-size=8192\" yarn eslint",
     "lint:check": "yarn prettier --check . &&  yarn lint .",
-    "lint:fix": "yarn prettier --write . && yarn lint . --fix",
+    "lint:fix": "yarn prettier --write . && yarn lint --fix .",
     "upgrade:vendure": "yarn lerna exec --concurrency 1 \"yarn upgrade --pattern @vendure --latest\"",
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
   },

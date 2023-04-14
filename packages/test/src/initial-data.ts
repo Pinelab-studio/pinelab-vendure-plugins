@@ -49,5 +49,5 @@ export const initialData: InitialData = {
       name: testPaymentMethod.code,
       handler: { code: testPaymentMethod.code, arguments: [] },
     },
-  ],*/
+  ], */
 };

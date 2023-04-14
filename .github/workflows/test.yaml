@@ -14,10 +14,10 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - name: Yarn root
+      - name: Install root dependencies
         run: yarn
-      - name: Prettier
-        run: yarn prettier:check
+      - name: Is formatted and linted
+        run: yarn lint:check
   test:
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
