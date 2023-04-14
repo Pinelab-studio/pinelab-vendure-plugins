@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { OrderList } from '@vendure/common/lib/generated-types';
 import {
+  assertFound,
   Customer,
   CustomerGroup,
   CustomerGroupService,
@@ -17,6 +18,10 @@ import {
   UserInputError,
   UserService,
 } from '@vendure/core';
+import {
+  UpdateAddressInput,
+  CreateAddressInput,
+} from '@vendure/common/lib/generated-types';
 import { loggerCtx } from './constants';
 import {
   CustomerGroupWithCustomFields,
@@ -201,14 +206,30 @@ export class CustomerManagedGroupsService {
     ctx: RequestContext,
     userId: ID
   ): Promise<CustomerWithCustomFields> {
-    const customer = await this.customerService.findOneByUserId(ctx, userId);
-    if (!customer) {
+    const customerRepo = getRepository(Customer);
+    const customerWithGroupsData = await customerRepo
+      .createQueryBuilder('customer')
+      .leftJoin('customer.channels', 'customer_channel')
+      .leftJoin('customer.user', 'user')
+      .leftJoinAndSelect('customer.addresses', 'customerAddress')
+      .leftJoinAndSelect('customerAddress.country', 'customerCountry')
+      .leftJoinAndSelect('customer.groups', 'groups')
+      .leftJoinAndSelect('groups.customers', 'customers')
+      .leftJoinAndSelect('groups.customFields.groupAdmins', 'groupAdmins')
+      .leftJoinAndSelect('groupAdmins.user', 'groupAdminsUser')
+      .leftJoinAndSelect('groupAdmins.addresses', 'groupAdminAddresses')
+      .leftJoinAndSelect('groupAdminAddresses.country', 'groupAdminCountries')
+      .leftJoinAndSelect('customers.addresses', 'addresses')
+      .leftJoinAndSelect('addresses.country', 'country')
+      .where('user.id = :userId', { userId: userId })
+      .andWhere('customer_channel.id = :customerChannelId', {
+        customerChannelId: ctx.channelId,
+      })
+      .getOne();
+    if (!customerWithGroupsData) {
       throw new UserInputError(`No customer found for user with id ${userId}`);
     }
-    await this.hydrator.hydrate(ctx, customer, {
-      relations: ['groups', 'groups.customers'],
-    });
-    return customer;
+    return customerWithGroupsData;
   }
 
   async getOrThrowCustomerByEmail(
@@ -319,6 +340,7 @@ export class CustomerManagedGroupsService {
     const userId = this.getOrThrowUserId(ctx);
     const currentCustomer = await this.getOrThrowCustomerByUserId(ctx, userId);
     let customerManagedGroup = this.getCustomerManagedGroup(currentCustomer);
+    console.log(currentCustomer, ctx.activeUserId);
     if (customerManagedGroup) {
       throw new UserInputError(`You are already in a customer managed group`);
     }
@@ -378,6 +400,7 @@ export class CustomerManagedGroupsService {
   ): CustomerManagedGroupMember {
     return {
       ...customer,
+      addresses: customer.addresses,
       customerId: customer.id,
       isGroupAdministrator,
     };
@@ -391,7 +414,8 @@ export class CustomerManagedGroupsService {
       !input.title &&
       !input.firstName &&
       !input.lastName &&
-      !input.emailAddress
+      !input.emailAddress &&
+      !input.addresses?.length
     ) {
       throw new UserInputError(`Make sure to include fields to be updated`);
     }
@@ -446,6 +470,22 @@ export class CustomerManagedGroupsService {
       ...(input.emailAddress ? { emailAddress: input.emailAddress } : []),
     };
     await this.customerService.update(ctx, updateUserData);
+    if (input.addresses?.length) {
+      for (let addressInput of input.addresses) {
+        if (addressInput?.id) {
+          await this.customerService.updateAddress(
+            ctx,
+            addressInput as UpdateAddressInput
+          );
+        } else {
+          await this.customerService.createAddress(
+            ctx,
+            customer.id,
+            addressInput as CreateAddressInput
+          );
+        }
+      }
+    }
     const newGroupData = await this.myCustomerManagedGroup(ctx);
     if (!newGroupData) {
       throw Error(`Group with id ${myGroup.id} not found`); // Should never happen
@@ -508,7 +548,7 @@ export class CustomerManagedGroupsService {
         ],
       },
     };
-    const reponse = await customerGroupRepo.save(partialValue);
+    await customerGroupRepo.save(partialValue);
     return this.mapToCustomerManagedGroup(
       (await this.customerGroupService.findOne(ctx, groupId, ['customers']))!
     );

@@ -22,6 +22,7 @@ import {
 const scalars = gql`
   scalar DateTime
   scalar OrderList
+  scalar LanguageCode
 `;
 
 export const shopSchema = gql`
@@ -35,16 +36,69 @@ export const shopSchema = gql`
     firstName: String
     lastName: String
     emailAddress: String
+    addresses: [CustomerManagedGroupAddressInput!]
     customerId: ID!
+  }
+
+  """
+  When no ID is given, a new address will be created
+  """
+  input CustomerManagedGroupAddressInput {
+    id: ID
+    fullName: String
+    company: String
+    streetLine1: String
+    streetLine2: String
+    city: String
+    province: String
+    postalCode: String
+    countryCode: String
+    phoneNumber: String
+    defaultShippingAddress: Boolean
+    defaultBillingAddress: Boolean
   }
 
   type CustomerManagedGroupMember {
     customerId: ID!
     title: String
+    addresses: [CustomerManagedGroupAddress!]
     firstName: String!
     lastName: String!
     emailAddress: String!
     isGroupAdministrator: Boolean!
+  }
+
+  type CustomerManagedGroupAddress {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    fullName: String
+    company: String
+    streetLine1: String!
+    streetLine2: String
+    city: String
+    province: String
+    postalCode: String
+    country: CustomerManagedGroupCountry!
+    phoneNumber: String
+    defaultShippingAddress: Boolean
+    defaultBillingAddress: Boolean
+  }
+
+  type CustomerManagedGroupCountry {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    code: String!
+    name: String!
+    enabled: Boolean!
+    translations: [CustomerManagedGroupCountryTranslation!]!
+  }
+
+  type CustomerManagedGroupCountryTranslation {
+    id: ID!
+    languageCode: LanguageCode!
+    name: String!
   }
 
   type CustomerManagedGroup {
