@@ -17,7 +17,7 @@ jobs:
       - name: Yarn root
         run: yarn
       - name: Prettier
-        run: yarn prettier:check
+        run: yarn lint:check
   test:
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
