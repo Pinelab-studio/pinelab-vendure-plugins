@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - name: Yarn root
+      - name: Install root dependencies
         run: yarn
       - name: Is formatted and linted
         run: yarn lint:check
