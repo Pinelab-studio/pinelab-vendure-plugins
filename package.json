@@ -9,7 +9,7 @@
   "scripts": {
     "postinstall": "yarn husky install",
     "install-deps": "yarn lerna exec --concurrency 1 yarn",
-    "build": "yarn && yarn prettier:write && yarn install-deps && yarn lerna run build --concurrency 1",
+    "build": "yarn && yarn install-deps && yarn lerna run build --concurrency 1",
     "lerna:publish": "yarn build && git stash && yarn lerna publish --concurrency 1 --changelog-preset conventionalcommits",
     "loading-message": "echo \"\\033[0;36mLinting... This might take a minute\\033[0m\"",
     "lint": "yarn loading-message && NODE_OPTIONS=\"--max-old-space-size=8192\" yarn eslint",
