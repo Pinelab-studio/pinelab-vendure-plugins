@@ -444,10 +444,6 @@ export class CustomerManagedGroupsService {
         `No customer with id ${input.customerId} exists`
       );
     }
-    // if(input.lastName==='Teklu'){
-    //   console.log(myGroup.customFields.groupAdmins,ctx.activeUserId)
-    //   // console.log(this.isAdministratorOfGroup(ctx.activeUserId, myGroup),'this.isAdministratorOfGroup(ctx.activeUserId, myGroup)')
-    // }
     if (
       !this.isAdministratorOfGroup(ctx.activeUserId, myGroup) &&
       customer.user.id !== ctx.activeUserId
