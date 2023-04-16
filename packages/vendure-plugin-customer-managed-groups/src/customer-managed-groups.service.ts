@@ -340,7 +340,6 @@ export class CustomerManagedGroupsService {
     const userId = this.getOrThrowUserId(ctx);
     const currentCustomer = await this.getOrThrowCustomerByUserId(ctx, userId);
     let customerManagedGroup = this.getCustomerManagedGroup(currentCustomer);
-    console.log(currentCustomer, ctx.activeUserId);
     if (customerManagedGroup) {
       throw new UserInputError(`You are already in a customer managed group`);
     }
@@ -401,6 +400,7 @@ export class CustomerManagedGroupsService {
     return {
       ...customer,
       addresses: customer.addresses,
+      customFields: customer.customFields,
       customerId: customer.id,
       isGroupAdministrator,
     };
@@ -415,7 +415,8 @@ export class CustomerManagedGroupsService {
       !input.firstName &&
       !input.lastName &&
       !input.emailAddress &&
-      !input.addresses?.length
+      !input.addresses?.length &&
+      !input.customFields
     ) {
       throw new UserInputError(`Make sure to include fields to be updated`);
     }
@@ -462,14 +463,15 @@ export class CustomerManagedGroupsService {
     ) {
       throw new UserInputError('User with this email already exists');
     }
-    const updateUserData = {
+    const updateCustomerData = {
       id: customer.id,
       ...(input.title ? { title: input.title } : []),
       ...(input.firstName ? { firstName: input.firstName } : []),
       ...(input.lastName ? { lastName: input.lastName } : []),
       ...(input.emailAddress ? { emailAddress: input.emailAddress } : []),
+      ...(input.customFields ? { customFields: input.customFields } : []),
     };
-    await this.customerService.update(ctx, updateUserData);
+    await this.customerService.update(ctx, updateCustomerData);
     if (input.addresses?.length) {
       for (let addressInput of input.addresses) {
         if (addressInput?.id) {

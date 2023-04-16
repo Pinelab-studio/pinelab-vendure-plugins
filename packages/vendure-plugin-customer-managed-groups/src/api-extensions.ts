@@ -23,6 +23,7 @@ const scalars = gql`
   scalar DateTime
   scalar OrderList
   scalar LanguageCode
+  scalar JSON
 `;
 
 export const shopSchema = gql`
@@ -38,6 +39,7 @@ export const shopSchema = gql`
     emailAddress: String
     addresses: [CustomerManagedGroupAddressInput!]
     customerId: ID!
+    customFields: JSON
   }
 
   """
@@ -66,6 +68,7 @@ export const shopSchema = gql`
     lastName: String!
     emailAddress: String!
     isGroupAdministrator: Boolean!
+    customFields: JSON
   }
 
   type CustomerManagedGroupAddress {

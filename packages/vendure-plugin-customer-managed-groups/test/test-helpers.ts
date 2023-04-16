@@ -34,6 +34,7 @@ export const customerManagedGroupFragment = gql`
       firstName
       lastName
       emailAddress
+      customFields
       addresses {
         ...AddressFragment
       }
