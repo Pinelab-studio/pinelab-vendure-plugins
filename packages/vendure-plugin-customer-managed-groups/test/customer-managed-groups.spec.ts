@@ -54,6 +54,14 @@ describe('Customer managed groups', function () {
             public: true,
           },
         ],
+        Customer: [
+          {
+            name: 'birthday',
+            type: 'string',
+            defaultValue: '',
+            public: false,
+          },
+        ],
       },
     });
 
@@ -532,6 +540,27 @@ describe('Customer managed groups', function () {
           a.defaultShippingAddress === addressTobeUpdated.defaultShippingAddress
       )
     ).toBeDefined();
+  });
+  it('Administrators can update custom fields', async () => {
+    await authorizeAsGroupAdmin();
+    const { myCustomerManagedGroup: group } = await shopClient.query(
+      myCustomerManagedGroupQuery
+    );
+    const groupAdmin = group.customers.find((c: any) => c.isGroupAdministrator);
+    const adminBirthDay = new Date().toISOString();
+    const { updateCustomerManagedGroupMember: newGroup } =
+      await shopClient.query(updateCustomerManagedGroupMemberMutation, {
+        input: {
+          customerId: groupAdmin.customerId,
+          customFields: {
+            birthday: adminBirthDay,
+          },
+        },
+      });
+    const authorizedCustomerUpdated = newGroup.customers.find(
+      (c: any) => c.isGroupAdministrator
+    );
+    expect(authorizedCustomerUpdated.customFields.birthday).toBe(adminBirthDay);
   });
 
   afterAll(async () => {
