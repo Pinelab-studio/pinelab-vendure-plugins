@@ -24,9 +24,10 @@ import {
 } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
-import { VatGroup } from '../src/api/types';
+import { IncomingProductWebhook, VatGroup } from '../src/api/types';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { GetVariantsQuery } from '../../test/src/generated/admin-graphql';
+import { createSignature } from './test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -242,7 +243,45 @@ describe('Order export plugin', function () {
     expect(pushProductPayloads!.every((p) => p.active === false)).toBe(true);
   });
 
-  it.skip('Should update stockLevels on incoming webhook', async () => {
+  it('Should update stock level on incoming webhook', async () => {
+    const body = {
+      event: 'products.free_stock_changed',
+      data: {
+        productcode: 'L2201308',
+        stock: [{ freestock: 543 }],
+      }
+    };
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
+    , {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'X-Picqer-Signature': createSignature(body, 'test-api-key'),
+      },
+    });
+    // Use 'update' to fetch variant. Please fixme
+    const [variant] = await updateVariants(adminClient, [
+      { id: 'T_1'},
+    ]);
+    expect(res.ok).toBe(true);
+    expect(variant?.stockOnHand).toBe(543);
+  });
+  
+  it('Should fail with invalid signature', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
+    , {
+      method: 'POST',
+      body: JSON.stringify({}),
+      headers: {
+        'X-Picqer-Signature': 'invalid signature'
+      },
+    });
+    expect(res.status).toBe(403);
+  });
+  
+  it('Should push order to Picqer on order placement', async () => {
     expect(true).toBe(false);
   });
 

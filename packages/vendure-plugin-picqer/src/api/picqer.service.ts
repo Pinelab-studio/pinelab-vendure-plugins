@@ -9,10 +9,12 @@ import {
   ConfigService,
   EntityHydrator,
   EventBus,
+  ForbiddenError,
   ID,
   JobQueue,
   JobQueueService,
   Logger,
+  Order,
   OrderPlacedEvent,
   ProductEvent,
   ProductService,
@@ -51,7 +53,7 @@ interface PushVariantsJob {
 }
 
 /**
- * Job to pull stocklevels from Picqer into Vendure
+ * Job to pull stock levels from Picqer into Vendure
  */
 interface PullStockLevelsJob {
   action: 'pull-stock-levels';
@@ -60,7 +62,16 @@ interface PullStockLevelsJob {
   productId?: ID;
 }
 
-type JobData = PushVariantsJob | PullStockLevelsJob;
+/**
+ * Job to push orders to Picqer
+ */
+interface PushOrderJob {
+  action: 'push-order';
+  ctx: SerializedRequestContext;
+  orderId: ID;
+}
+
+type JobData = PushVariantsJob | PullStockLevelsJob | PushOrderJob;
 
 @Injectable()
 export class PicqerService implements OnApplicationBootstrap {
@@ -77,7 +88,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private configService: ConfigService,
     private entityHydrator: EntityHydrator,
     private channelService: ChannelService
-  ) {}
+  ) { }
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -87,13 +98,15 @@ export class PicqerService implements OnApplicationBootstrap {
         const ctx = RequestContext.deserialize(data.ctx);
         try {
           if (data.action === 'push-variants') {
-            await this.pushVariantsToPicqer(
+            await this.handlePushVariantsJob(
               ctx,
               data.variantIds,
               data.productId
             );
           } else if (data.action === 'pull-stock-levels') {
-            await this.pullStockLevels(ctx);
+            await this.handlePullStockLevelsJob(ctx);
+          } else if (data.action === 'push-order') {
+            await this.handlePushOrderJob(ctx, data.orderId);
           } else {
             Logger.error(
               `Invalid job action: ${(data as any).action}`,
@@ -112,10 +125,6 @@ export class PicqerService implements OnApplicationBootstrap {
         }
       },
     });
-    // Listen for placed orders
-    this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      // TODO push order sync
-    });
     // Listen for Variant creation or update
     this.eventBus
       .ofType(ProductVariantEvent)
@@ -127,7 +136,7 @@ export class PicqerService implements OnApplicationBootstrap {
           );
         }
       });
-    // Listen for Product events
+    // Listen for Product events. Only push variants when product is enabled/disabled. Other changes are handled by the variant events.
     this.eventBus
       .ofType(ProductEvent)
       .subscribe(async ({ ctx, entity, type, input }) => {
@@ -138,6 +147,13 @@ export class PicqerService implements OnApplicationBootstrap {
         ) {
           await this.addPushVariantsJob(ctx, undefined, entity.id);
         }
+      });
+    // Listen for Order placed events
+    this.eventBus
+      .ofType(OrderPlacedEvent)
+      .subscribe(async ({ ctx, order }) => {
+        // Only push if `enabled` is updated
+        await this.addPushOrderJob(ctx, order);
       });
   }
 
@@ -194,6 +210,9 @@ export class PicqerService implements OnApplicationBootstrap {
     );
   }
 
+  /**
+   * Handle incoming webhooks
+   */
   async handleHook(input: {
     channelToken: string;
     body: IncomingWebhook;
@@ -216,7 +235,7 @@ export class PicqerService implements OnApplicationBootstrap {
         `Invalid signature for incoming webhook "${input.body.event}" channel ${input.channelToken}`,
         loggerCtx
       );
-      return;
+      throw new ForbiddenError();
     }
     if (input.body.event === 'products.free_stock_changed') {
       const picqerProduct = input.body.data;
@@ -270,7 +289,7 @@ export class PicqerService implements OnApplicationBootstrap {
       },
       { retries: 10 }
     );
-    Logger.info(`Added pull-stock-levels job to queue`, loggerCtx);
+    Logger.info(`Added 'pull-stock-levels' job to queue`, loggerCtx);
     return true;
   }
 
@@ -293,22 +312,43 @@ export class PicqerService implements OnApplicationBootstrap {
     );
     if (variantIds) {
       Logger.info(
-        `Pushed ${variantIds.length} variants to the 'push-variants' queue for channel ${ctx.channel.token}`,
+        `Added job to the 'push-variants' queue for ${variantIds.length} variants for channel ${ctx.channel.token}`,
         loggerCtx
       );
     } else {
       Logger.info(
-        `Pushed product ${productId} to the 'push-variants' queue for channel ${ctx.channel.token}`,
+        `Added job to the 'push-variants' queue for product ${productId} and channel ${ctx.channel.token}`,
         loggerCtx
       );
     }
   }
 
   /**
+   * Add a job to the queue to push orders to Picqer
+   */
+  async addPushOrderJob(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<void> {
+    await this.jobQueue.add(
+      {
+        action: 'push-order',
+        ctx: ctx.serialize(),
+        orderId: order.id,
+      },
+      { retries: 10 }
+    );
+    Logger.info(
+      `Added job to the 'push-order' queue for order ${order.code}`,
+      loggerCtx
+    );
+  }
+
+  /**
    * Pulls all products from Picqer and updates the stock levels in Vendure
    * based on the stock levels from Picqer products
    */
-  async pullStockLevels(userCtx: RequestContext): Promise<void> {
+  async handlePullStockLevelsJob(userCtx: RequestContext): Promise<void> {
     const ctx = this.createDefaultLanguageContext(userCtx);
     const client = await this.getClient(ctx);
     if (!client) {
@@ -379,6 +419,13 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   /**
+   * Fetch order with relations and push it as order to Picqer
+   */
+  async handlePushOrderJob(ctx: RequestContext, orderId: ID): Promise<void> {
+    
+  }
+
+  /**
    * Find all variants by SKUS via raw connection for better performance
    */
   async findAllVariantsBySku(
@@ -421,7 +468,7 @@ export class PicqerService implements OnApplicationBootstrap {
    * Checks for existance of SKU in Picqer and updates if found.
    * If not found, creates a new product.
    */
-  async pushVariantsToPicqer(
+  async handlePushVariantsJob(
     userCtx: RequestContext,
     variantIds?: ID[],
     productId?: ID
