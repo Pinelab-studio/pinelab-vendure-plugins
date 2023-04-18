@@ -30,6 +30,7 @@ import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
     plugins: [
       PicqerPlugin.init({
         enabled: true,
+        vendureHost: process.env.HOST!,
       }),
       AssetServerPlugin.init({
         assetUploadDir: path.join(__dirname, '__data__/assets'),

@@ -108,9 +108,13 @@ mutation UpdateProduct($input: UpdateProductInput!) {
 query GetVariants {
   productVariants {
     items {
+      name
       id
       sku
       stockOnHand
+      price
+      priceWithTax
+      outOfStockThreshold
     }
     totalItems
   }

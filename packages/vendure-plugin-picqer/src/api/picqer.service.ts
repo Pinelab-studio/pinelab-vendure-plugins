@@ -1,7 +1,11 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { UpdateProductInput } from '@vendure/common/lib/generated-types';
+import {
+  UpdateProductInput,
+  UpdateProductVariantInput,
+} from '@vendure/common/lib/generated-types';
 import {
   AssetService,
+  ChannelService,
   ConfigService,
   EntityHydrator,
   EventBus,
@@ -29,7 +33,12 @@ import {
 } from '../ui/generated/graphql';
 import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
-import { ProductInput, ProductResponse, VariantWithStock } from './types';
+import {
+  IncomingWebhook,
+  ProductData,
+  ProductInput,
+  VariantWithStock,
+} from './types';
 
 /**
  * Job to push variants from Vendure to Picqer
@@ -66,7 +75,8 @@ export class PicqerService implements OnApplicationBootstrap {
     private productService: ProductService,
     private assetService: AssetService,
     private configService: ConfigService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
+    private channelService: ChannelService
   ) {}
 
   async onApplicationBootstrap() {
@@ -129,6 +139,96 @@ export class PicqerService implements OnApplicationBootstrap {
           await this.addPushVariantsJob(ctx, undefined, entity.id);
         }
       });
+  }
+
+  /**
+   * Checks if webhooks for events exist in Picqer, if not, register new webhooks.
+   * When hooks exist, but url or secret is different, it will create new hooks.
+   *
+   * Registers hooks for: products.free_stock_changed and orders.completed
+   */
+  async registerWebhooks(
+    ctx: RequestContext,
+    config: PicqerConfig
+  ): Promise<void> {
+    const hookUrl = `${this.options.vendureHost}/picqer/hooks/${ctx.channel.token}`;
+    const client = await this.getClient(ctx, config);
+    if (!client) {
+      return;
+    }
+    for (const hookEvent of ['products.free_stock_changed' as const]) {
+      // TODO add order hook
+      // Use first 4 digits of webhook secret as name, so we can identify the hook
+      const webhookName = `Vendure ${hookEvent} ${client.webhookSecret.slice(
+        0,
+        4
+      )}`;
+      const webhooks = await client.getWebhooks();
+      let hook = webhooks.find(
+        (h) =>
+          h.event === hookEvent && h.address === hookUrl && h.active === true
+      );
+      if (hook && hook.name !== webhookName) {
+        // A hook exists, but the name is different, that means the secret changed. We need to create a new hook
+        // The combination of hook address and hook event must be unique in picqer
+        Logger.info(`Deactivating outdated hook "${hook.name}"`);
+        await client.deactivateHook(hook.idhook);
+        hook = undefined; // Set as undefined, because we deactivated the previous one
+      }
+      if (!hook) {
+        const webhook = await client.createWebhook({
+          name: webhookName,
+          address: hookUrl,
+          event: hookEvent,
+          secret: client.webhookSecret,
+        });
+        Logger.info(
+          `Registered hook (id: ${webhook.idhook}) for event "${hookEvent}" and url "${hookUrl}"`,
+          loggerCtx
+        );
+      }
+    }
+    Logger.info(
+      `Registered webhooks for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
+  }
+
+  async handleHook(input: {
+    channelToken: string;
+    body: IncomingWebhook;
+    rawBody: string;
+    signature: string;
+  }): Promise<void> {
+    // Get client for channelToken
+    const ctx = await this.getCtxForChannel(input.channelToken);
+    const client = await this.getClient(ctx);
+    if (!client) {
+      Logger.error(
+        `No client found for channel ${input.channelToken}`,
+        loggerCtx
+      );
+      return;
+    }
+    // Verify signature
+    if (!client.isSignatureValid(input.rawBody, input.signature)) {
+      Logger.error(
+        `Invalid signature for incoming webhook "${input.body.event}" channel ${input.channelToken}`,
+        loggerCtx
+      );
+      return;
+    }
+    if (input.body.event === 'products.free_stock_changed') {
+      const picqerProduct = input.body.data;
+      await this.updateStockBySkus(ctx, [picqerProduct]);
+    } else {
+      Logger.warn(
+        `Invalid event "${input.body.event}" for incoming webhook for channel ${input.channelToken}`,
+        loggerCtx
+      );
+      return;
+    }
+    Logger.info(`Successfully handled hook ${input.body.event}`, loggerCtx);
   }
 
   async triggerFullSync(ctx: RequestContext): Promise<boolean> {
@@ -224,13 +324,13 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async updateStockBySkus(
     ctx: RequestContext,
-    picqerProducts: ProductResponse[]
+    picqerProducts: ProductData[]
   ): Promise<void> {
     const vendureVariants = await this.findAllVariantsBySku(
       ctx,
       picqerProducts.map((p) => p.productcode)
     );
-    const updateVariantsInput: { id: ID; stockOnHand: number }[] = [];
+    const updateVariantsInput: UpdateProductVariantInput[] = [];
     // Determine new stock level per variant
     vendureVariants.forEach((variant) => {
       const picqerProduct = picqerProducts.find(
@@ -247,7 +347,19 @@ export class PicqerService implements OnApplicationBootstrap {
         );
       }
       const newStockOnHand = variant.stockAllocated + (picqerStockLevel || 0);
+      // Fields from picqer that should be added to the variant
+      let additionalVariantFields = {};
+      try {
+        additionalVariantFields =
+          this.options.pullFieldsFromPicqer?.(picqerProduct) || {};
+      } catch (e: any) {
+        Logger.error(
+          `Failed to get additional fields from the configured "pullFieldsFromPicqer" function: ${e?.message}`,
+          loggerCtx
+        );
+      }
       updateVariantsInput.push({
+        ...additionalVariantFields,
         id: variant.id,
         stockOnHand: newStockOnHand,
       });
@@ -364,7 +476,7 @@ export class PicqerService implements OnApplicationBootstrap {
             variant,
             vatGroup.idvatgroup
           );
-          let picqerProduct: ProductResponse | undefined;
+          let picqerProduct: ProductData | undefined;
           if (existing?.idproduct) {
             // Update existing Picqer product
             picqerProduct = await client.updateProduct(
@@ -408,6 +520,9 @@ export class PicqerService implements OnApplicationBootstrap {
     );
   }
 
+  /**
+   * Create or update config for the current channel and register webhooks after saving.
+   */
   async upsertConfig(
     ctx: RequestContext,
     input: PicqerConfigInput
@@ -427,7 +542,16 @@ export class PicqerService implements OnApplicationBootstrap {
       `Picqer config updated for channel ${ctx.channel.token} by user ${ctx.activeUserId}`,
       loggerCtx
     );
-    return repository.findOneOrFail({ channelId: String(ctx.channelId) });
+    const config = await repository.findOneOrFail({
+      channelId: String(ctx.channelId),
+    });
+    await this.registerWebhooks(ctx, config).catch((e) =>
+      Logger.error(
+        `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
+        loggerCtx
+      )
+    );
+    return config;
   }
 
   /**
@@ -446,8 +570,13 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Get a Picqer client for the current channel if the config is complete and enabled.
    */
-  async getClient(ctx: RequestContext): Promise<PicqerClient | undefined> {
-    const config = await this.getConfig(ctx);
+  async getClient(
+    ctx: RequestContext,
+    config?: PicqerConfig
+  ): Promise<PicqerClient | undefined> {
+    if (!config) {
+      config = await this.getConfig(ctx);
+    }
     if (!config || !config.enabled) {
       Logger.info(
         `Picqer is not enabled for channel ${ctx.channel.token}`,
@@ -529,6 +658,19 @@ export class PicqerService implements OnApplicationBootstrap {
     } catch (e) {
       return false;
     }
+  }
+
+  /**
+   * Creates admin context for channel
+   */
+  async getCtxForChannel(channelToken: string): Promise<RequestContext> {
+    const channel = await this.channelService.getChannelFromToken(channelToken);
+    return new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel,
+    });
   }
 
   private mapToProductInput(
