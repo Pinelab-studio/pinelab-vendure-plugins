@@ -144,7 +144,6 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Checks if webhooks for events exist in Picqer, if not, register new webhooks.
    * When hooks exist, but url or secret is different, it will create new hooks.
-   * The plugin never deletes hooks, because they could belong to other integrations.
    *
    * Registers hooks for: products.free_stock_changed and orders.completed
    */
