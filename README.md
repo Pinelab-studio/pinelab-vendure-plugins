@@ -7,7 +7,7 @@
 
 # Development
 
-Contributions welcome!
+Contributions welcome! [Check out our Contribution guidelines](./CONTRIBUTING.md)
 
 ## Upgrading Vendure version
 

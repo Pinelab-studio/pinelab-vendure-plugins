@@ -12933,11 +12933,6 @@ vary@^1, vary@~1.1.2:
   resolved "https://registry.yarnpkg.com/vary/-/vary-1.1.2.tgz#2299f02c6ded30d4a5961b0b9f74524a18f634fc"
   integrity sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==
 
-vendure-plugin-customer-managed-groups@^5.6.2:
-  version "5.6.2"
-  resolved "https://registry.yarnpkg.com/vendure-plugin-customer-managed-groups/-/vendure-plugin-customer-managed-groups-5.6.2.tgz#56adcd34fb2615df16ba507c0870d3171e6ab442"
-  integrity sha512-ZgWAMleN1vca819yaZ3EetX8Mwwzri0EF0vC3IFQiN4U1EZTBrod/vjsDqMdDbB1VVCsJrcZWM2ECte/KOiKgw==
-
 w3c-keyname@^2.2.0:
   version "2.2.6"
   resolved "https://registry.yarnpkg.com/w3c-keyname/-/w3c-keyname-2.2.6.tgz#8412046116bc16c5d73d4e612053ea10a189c85f"

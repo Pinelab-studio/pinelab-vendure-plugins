@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-e-boekhouden",
-  "version": "5.5.0",
+  "version": "5.6.7",
   "description": "Vendure plugin for integration with the e-boekhouden accounting platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",

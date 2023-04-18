@@ -6,22 +6,13 @@ Below you can find our opinionated guide on how to contribute to this repository
 
 1. [Create a fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) of [this repository](https://github.com/Pinelab-studio/pinelab-vendure-plugins)
 2. Checkout the `master` branch and make sure it's up to date with `git pull upstream master`
-3. Create a feature branch `git checkout -b feat/gifts-plugin`
+3. Create a feature branch `git checkout -b feat/example-feature`
 4. `yarn` in the root of the project.
-5. `cd packages/vendure-plugin-gifts` and `yarn` again to install it's dependencies
-6. Commit using the commandline, to automatically format `git commit -a -m 'feat(gifts): implemented gift selection'`
-7. Define testcases first. Just the text, don't implement them yet. This helps you think about what the functionality of the code should be. Example:
+5. `cd packages/vendure-plugin-example` and `yarn` again to install it's dependencies
+6. Commit using the commandline, so that the eslint autocheck is executed `git commit -a -m 'feat(feat/example-plugin): implemented example stuff'`
 
-```ts
-it('Allows administrators to define free gifts', async () => {});
+## Helpfull commands
 
-it('Allows customers to select gifts', async () => {});
-```
-
-5. Implement your testcases before you do any work on the implementation. This helps you come up with logical GraphQL queries and mutations, and you want to see your testcases fail before they succeed, to prevent false positives.
-6. Now, you can run your tests with `yarn test`. Every test should fail, that's ok for now.
-7. Implement the code needed for your testcases one by one. Making each test succeed one at a time.
-8. Now, when all your tests succeed, [create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) against the `master` branch
-9. The pull request should automatically run formatter and linter checks, as wel as automated e2e tests.
-10. Make sure to review your own pull request before asking a maintainer to review it.
-11. That's it, thanks for your contribution!
+- `yarn lint:check` to check if all files are formatted and linted correctly.
+- `yarn lint:fix` Fix formatting and linting IN ALL PACKAGES. To just run in the package you've been working in use:
+- `yarn lint --fix ./packages/test`

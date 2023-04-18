@@ -1,6 +1,28 @@
 import { gql } from 'graphql-tag';
 
+export const addressFragment = gql`
+  fragment AddressFragment on CustomerManagedGroupAddress {
+    id
+    createdAt
+    updatedAt
+    fullName
+    company
+    streetLine1
+    streetLine2
+    city
+    province
+    postalCode
+    country {
+      code
+    }
+    phoneNumber
+    defaultShippingAddress
+    defaultBillingAddress
+  }
+`;
+
 export const customerManagedGroupFragment = gql`
+  ${addressFragment}
   fragment CustomerManagedGroupFragment on CustomerManagedGroup {
     id
     createdAt
@@ -12,6 +34,10 @@ export const customerManagedGroupFragment = gql`
       firstName
       lastName
       emailAddress
+      customFields
+      addresses {
+        ...AddressFragment
+      }
       isGroupAdministrator
     }
   }
@@ -76,6 +102,20 @@ export const getOrdersForMyCustomerManagedGroup = gql`
         code
         customer {
           emailAddress
+        }
+        payments {
+          id
+          transactionId
+          state
+          errorMessage
+        }
+        lines {
+          id
+          unitPriceWithTax
+          linePriceWithTax
+        }
+        customFields {
+          testing
         }
       }
       totalItems

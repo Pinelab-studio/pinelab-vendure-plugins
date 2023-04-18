@@ -1,0 +1,53 @@
+{
+  "env": {
+    "browser": true,
+    "es2021": true,
+    "node": true
+  },
+  "extends": ["standard-with-typescript", "prettier"],
+  "overrides": [],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module",
+    "project": ["./packages/*/tsconfig.json"]
+  },
+  "plugins": [],
+  "rules": {
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "@typescript-eslint/consistent-type-imports": "off"
+  },
+  "ignorePatterns": [
+    "migration.ts",
+    "dist",
+    "node_modules",
+    "lib",
+    "__admin-ui",
+    "*.min.js",
+    ".temp",
+    "generated/",
+
+    "packages/util",
+    "packages/vendure-plugin-admin-ui-helpers/",
+    "packages/vendure-plugin-coinbase/",
+    "packages/vendure-plugin-customer-managed-groups/",
+    "packages/vendure-plugin-dutch-postalcode/",
+    "packages/vendure-plugin-e-boekhouden/",
+    "packages/vendure-plugin-goedgepickt/",
+    "packages/vendure-plugin-google-cloud-tasks/",
+    "packages/vendure-plugin-google-storage-assets/",
+    "packages/vendure-plugin-invoices/",
+    "packages/vendure-plugin-limit-variant-per-order/",
+    "packages/vendure-plugin-metrics/",
+    "packages/vendure-plugin-myparcel/",
+    "packages/vendure-plugin-order-export/",
+    "packages/vendure-plugin-picqer/",
+    "packages/vendure-plugin-popularity-scores/",
+    "packages/vendure-plugin-selectable-gifts/",
+    "packages/vendure-plugin-sendcloud/",
+    "packages/vendure-plugin-shipping-by-weight-and-country/",
+    "packages/vendure-plugin-stock-monitoring/",
+    "packages/vendure-plugin-stripe-subscription/",
+    "packages/vendure-plugin-variant-bulk-update/",
+    "packages/vendure-plugin-webhook/"
+  ]
+}
