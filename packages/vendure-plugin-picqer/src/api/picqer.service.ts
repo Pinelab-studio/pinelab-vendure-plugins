@@ -156,7 +156,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client) {
       return;
     }
-    for (const hookEvent of ['products.free_stock_changed']) {
+    for (const hookEvent of ['products.free_stock_changed' as const]) {
       // TODO add order hook
       // Use first 4 digits of webhook secret as name, so we can identify the hook
       const webhookName = `Vendure ${hookEvent} ${client.webhookSecret.slice(
@@ -179,7 +179,7 @@ export class PicqerService implements OnApplicationBootstrap {
         const webhook = await client.createWebhook({
           name: webhookName,
           address: hookUrl,
-          event: 'products.free_stock_changed',
+          event: hookEvent,
           secret: client.webhookSecret,
         });
         Logger.info(
