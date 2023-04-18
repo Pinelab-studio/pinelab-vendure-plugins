@@ -1,5 +1,8 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
-import { UpdateProductInput } from '@vendure/common/lib/generated-types';
+import {
+  UpdateProductInput,
+  UpdateProductVariantInput,
+} from '@vendure/common/lib/generated-types';
 import {
   AssetService,
   ChannelService,
@@ -166,7 +169,6 @@ export class PicqerService implements OnApplicationBootstrap {
         (h) =>
           h.event === hookEvent && h.address === hookUrl && h.active === true
       );
-      console.log(hook?.name, webhookName);
       if (hook && hook.name !== webhookName) {
         // A hook exists, but the name is different, that means the secret changed. We need to create a new hook
         // The combination of hook address and hook event must be unique in picqer
@@ -329,7 +331,7 @@ export class PicqerService implements OnApplicationBootstrap {
       ctx,
       picqerProducts.map((p) => p.productcode)
     );
-    const updateVariantsInput: { id: ID; stockOnHand: number }[] = [];
+    const updateVariantsInput: UpdateProductVariantInput[] = [];
     // Determine new stock level per variant
     vendureVariants.forEach((variant) => {
       const picqerProduct = picqerProducts.find(

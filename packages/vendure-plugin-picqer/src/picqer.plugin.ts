@@ -14,6 +14,7 @@ import { PicqerService } from './api/picqer.service';
 import { PicqerResolver } from './api/picqer.resolvers';
 import { PicqerController } from './api/picqer.controller';
 import { createRawBodyMiddleWare } from '../../util/src/raw-body';
+import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 
 export interface PicqerOptions {
   enabled: boolean;
@@ -29,7 +30,9 @@ export interface PicqerOptions {
    * // Store weight in grams from Picqer as weight in KG in Vendure
    * pullFieldsFromPicqer: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
-  pullFieldsFromPicqer?: (product: ProductInput) => Partial<ProductVariant>;
+  pullFieldsFromPicqer?: (
+    product: ProductInput
+  ) => Partial<UpdateProductVariantInput>;
   /**
    * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
    * @example

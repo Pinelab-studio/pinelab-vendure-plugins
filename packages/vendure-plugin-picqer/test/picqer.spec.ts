@@ -2,11 +2,13 @@ import {
   ChannelService,
   ConfigService,
   DefaultLogger,
+  LanguageCode,
   LogLevel,
   mergeConfig,
   RequestContext,
 } from '@vendure/core';
 import {
+  E2E_DEFAULT_CHANNEL_TOKEN,
   SimpleGraphQLClient,
   SqljsInitializer,
   createTestEnvironment,
@@ -24,6 +26,7 @@ import { initialData } from '../../test/src/initial-data';
 import { PicqerPlugin } from '../src';
 import { VatGroup } from '../src/api/types';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
+import { GetVariantsQuery } from '../../test/src/generated/admin-graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -44,8 +47,19 @@ describe('Order export plugin', function () {
           enabled: true,
           vendureHost: 'https://example-vendure.io',
           pushFieldsToPicqer: (variant) => ({ barcode: variant.sku }),
+          // Update for testing purposes
+          pullFieldsFromPicqer: (picqerProd) => ({ outOfStockThreshold: 123 }),
         }),
       ],
+      customFields: {
+        ProductVariant: [
+          {
+            name: 'height',
+            type: 'int',
+            public: true,
+          },
+        ],
+      },
     });
 
     ({ server, adminClient } = createTestEnvironment(config));
@@ -59,7 +73,18 @@ describe('Order export plugin', function () {
     expect(server.app.getHttpServer).toBeDefined();
   });
 
+  const createdHooks: any[] = [];
+
   it('Should update Picqer config via admin api', async () => {
+    // Mock hooks GET, because webhooks are updated on config save
+    nock(nockBaseUrl).get('/hooks').reply(200, []);
+    nock(nockBaseUrl)
+      .post('/hooks', (reqBody) => {
+        createdHooks.push(reqBody);
+        return true;
+      })
+      .reply(200, { idhook: 'mockHookId' })
+      .persist();
     await adminClient.asSuperAdmin();
     const { upsertPicqerConfig: config } = await adminClient.query(
       UPSERT_CONFIG,
@@ -78,6 +103,17 @@ describe('Order export plugin', function () {
     await expect(config.apiEndpoint).toBe('https://test-picqer.io/');
     await expect(config.storefrontUrl).toBe('mystore.io');
     await expect(config.supportEmail).toBe('support@mystore.io');
+  });
+
+  it('Should have created hooks when config was updated', async () => {
+    // Expect 1 created hook: stock change
+    await expect(createdHooks.length).toBe(1);
+    await expect(createdHooks[0].event).toBe('products.free_stock_changed');
+    await expect(createdHooks[0].address).toBe(
+      `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
+    );
+    await expect(createdHooks[0].secret).toBeDefined();
+    await expect(createdHooks[0].name).toBeDefined();
   });
 
   it('Should get Picqer config after upsert', async () => {
@@ -125,15 +161,25 @@ describe('Order export plugin', function () {
     expect(triggerPicqerFullSync).toBe(true);
   });
 
+  // Variant that should have been updated after full sync
+  let updatedVariant:
+    | GetVariantsQuery['productVariants']['items'][0]
+    | undefined;
+
   it('Should have pulled stock levels from Picqer after full sync', async () => {
     // Relies on previous trigger of full sync
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     const variants = await getAllVariants(adminClient);
-    const updatedVariant = variants.find((v) => v.sku === 'L2201308');
+    updatedVariant = variants.find((v) => v.sku === 'L2201308');
     expect(updatedVariant?.stockOnHand).toBe(8);
   });
 
-  it('Should push custom fields to Picqer based on configured plugin strategy', async () => {
+  it('Should have pulled custom fields from Picqer based on configured "pullFieldsFromPicqer()"', async () => {
+    // We configured the plugin to always set height to 123 for testing purposes
+    expect(updatedVariant?.outOfStockThreshold).toBe(123);
+  });
+
+  it('Should push custom fields to Picqer based on configured "pushFieldsToPicqer()"', async () => {
     const pushedProduct = pushProductPayloads.find(
       (p) => p.productcode === 'L2201516'
     );
@@ -194,10 +240,6 @@ describe('Order export plugin', function () {
     expect(product?.enabled).toBe(false);
     // expect every variant to be disabled (active=false)
     expect(pushProductPayloads!.every((p) => p.active === false)).toBe(true);
-  });
-
-  it.skip('Should pull custom fields from Picqer based on configured plugin strategy', async () => {
-    expect(true).toBe(false);
   });
 
   it.skip('Should update stockLevels on incoming webhook', async () => {
