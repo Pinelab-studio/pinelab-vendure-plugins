@@ -5,6 +5,10 @@ import {
   VatGroup,
   Webhook,
   WebhookInput,
+  CustomerInput,
+  CustomerData,
+  OrderInput,
+  OrderData,
 } from './types';
 import { loggerCtx } from '../constants';
 import { Logger } from '@vendure/core';
@@ -138,6 +142,77 @@ export class PicqerClient {
 
   async deactivateHook(id: number): Promise<void> {
     await this.rawRequest('delete', `/hooks/${id}`);
+  }
+
+  async createOrder(input: OrderInput): Promise<OrderData> {
+    return this.rawRequest('post', `/orders/`, input);
+  }
+
+  async getCustomer(emailAddress: string): Promise<CustomerData[]> {
+    return this.rawRequest('get', `/customers?search=${emailAddress}`);
+  }
+
+  async createCustomer(input: CustomerInput): Promise<CustomerData> {
+    return this.rawRequest('post', `/customers/`, input);
+  }
+
+  async updateCustomer(
+    id: number,
+    input: CustomerInput
+  ): Promise<CustomerData> {
+    return this.rawRequest('put', `/customers/${id}`, input);
+  }
+
+  /**
+   * Update existing customer or create new customer if not found
+   */
+  async createOrUpdateCustomer(
+    emailAddress: string,
+    input: CustomerInput
+  ): Promise<CustomerData> {
+    const customers = await this.getCustomer(emailAddress);
+    if (!customers.length) {
+      Logger.info(
+        `Customer '${emailAddress}' not found, creating new customer`,
+        loggerCtx
+      );
+      return this.createCustomer(input);
+    }
+    const customerId = customers[0].idcustomer;
+    if (customers.length > 1) {
+      Logger.warn(
+        `Picqer returned multiple customers for email address ${emailAddress}, using the first result (${customerId})`,
+        loggerCtx
+      );
+    }
+    Logger.info(
+      `Existing customer '${emailAddress}' found, updating customer ${customerId}`,
+      loggerCtx
+    );
+    return this.updateCustomer(customerId, input);
+  }
+
+  /**
+   * Update existing product or create new product if not found
+   */
+  async createOrUpdateProduct(
+    sku: string,
+    input: ProductInput
+  ): Promise<ProductData> {
+    const product = await this.getProductByCode(sku);
+    if (!product) {
+      Logger.info(
+        `Product '${sku}' not found, creating new product`,
+        loggerCtx
+      );
+      return this.createProduct(input);
+    }
+    const productId = product.idproduct;
+    Logger.info(
+      `Existing product '${productId}' found, updating product ${productId}`,
+      loggerCtx
+    );
+    return this.updateProduct(productId, input);
   }
 
   /**

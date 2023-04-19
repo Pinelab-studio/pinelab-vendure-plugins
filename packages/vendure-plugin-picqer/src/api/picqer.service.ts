@@ -4,9 +4,11 @@ import {
   UpdateProductVariantInput,
 } from '@vendure/common/lib/generated-types';
 import {
+  Address,
   AssetService,
   ChannelService,
   ConfigService,
+  Customer,
   EntityHydrator,
   EventBus,
   ForbiddenError,
@@ -16,6 +18,7 @@ import {
   Logger,
   Order,
   OrderPlacedEvent,
+  OrderService,
   ProductEvent,
   ProductService,
   ProductVariant,
@@ -36,7 +39,11 @@ import {
 import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
 import {
+  AddressInput,
+  CustomerInput,
   IncomingWebhook,
+  OrderInput,
+  OrderProductInput,
   ProductData,
   ProductInput,
   VariantWithStock,
@@ -87,8 +94,9 @@ export class PicqerService implements OnApplicationBootstrap {
     private assetService: AssetService,
     private configService: ConfigService,
     private entityHydrator: EntityHydrator,
-    private channelService: ChannelService
-  ) { }
+    private channelService: ChannelService,
+    private orderService: OrderService
+  ) {}
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -149,12 +157,10 @@ export class PicqerService implements OnApplicationBootstrap {
         }
       });
     // Listen for Order placed events
-    this.eventBus
-      .ofType(OrderPlacedEvent)
-      .subscribe(async ({ ctx, order }) => {
-        // Only push if `enabled` is updated
-        await this.addPushOrderJob(ctx, order);
-      });
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
+      // Only push if `enabled` is updated
+      await this.addPushOrderJob(ctx, order);
+    });
   }
 
   /**
@@ -187,7 +193,7 @@ export class PicqerService implements OnApplicationBootstrap {
       if (hook && hook.name !== webhookName) {
         // A hook exists, but the name is different, that means the secret changed. We need to create a new hook
         // The combination of hook address and hook event must be unique in picqer
-        Logger.info(`Deactivating outdated hook "${hook.name}"`);
+        Logger.info(`Deactivating outdated hook ${hook.name}`);
         await client.deactivateHook(hook.idhook);
         hook = undefined; // Set as undefined, because we deactivated the previous one
       }
@@ -199,7 +205,7 @@ export class PicqerService implements OnApplicationBootstrap {
           secret: client.webhookSecret,
         });
         Logger.info(
-          `Registered hook (id: ${webhook.idhook}) for event "${hookEvent}" and url "${hookUrl}"`,
+          `Registered hook (id: ${webhook.idhook}) for event ${hookEvent} and url ${hookUrl}`,
           loggerCtx
         );
       }
@@ -232,7 +238,7 @@ export class PicqerService implements OnApplicationBootstrap {
     // Verify signature
     if (!client.isSignatureValid(input.rawBody, input.signature)) {
       Logger.error(
-        `Invalid signature for incoming webhook "${input.body.event}" channel ${input.channelToken}`,
+        `Invalid signature for incoming webhook ${input.body.event} channel ${input.channelToken}`,
         loggerCtx
       );
       throw new ForbiddenError();
@@ -242,7 +248,7 @@ export class PicqerService implements OnApplicationBootstrap {
       await this.updateStockBySkus(ctx, [picqerProduct]);
     } else {
       Logger.warn(
-        `Invalid event "${input.body.event}" for incoming webhook for channel ${input.channelToken}`,
+        `Invalid event ${input.body.event} for incoming webhook for channel ${input.channelToken}`,
         loggerCtx
       );
       return;
@@ -326,10 +332,7 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Add a job to the queue to push orders to Picqer
    */
-  async addPushOrderJob(
-    ctx: RequestContext,
-    order: Order
-  ): Promise<void> {
+  async addPushOrderJob(ctx: RequestContext, order: Order): Promise<void> {
     await this.jobQueue.add(
       {
         action: 'push-order',
@@ -360,7 +363,7 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   /**
-   * Update variant stocks based on given Picqer products
+   * Update variant stocks in Vendure based on given Picqer products
    */
   async updateStockBySkus(
     ctx: RequestContext,
@@ -394,7 +397,7 @@ export class PicqerService implements OnApplicationBootstrap {
           this.options.pullFieldsFromPicqer?.(picqerProduct) || {};
       } catch (e: any) {
         Logger.error(
-          `Failed to get additional fields from the configured "pullFieldsFromPicqer" function: ${e?.message}`,
+          `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
           loggerCtx
         );
       }
@@ -422,7 +425,67 @@ export class PicqerService implements OnApplicationBootstrap {
    * Fetch order with relations and push it as order to Picqer
    */
   async handlePushOrderJob(ctx: RequestContext, orderId: ID): Promise<void> {
-    
+    const client = await this.getClient(ctx);
+    if (!client) {
+      // This means Picqer is not configured, so ignore this job
+      return;
+    }
+    const order = await this.orderService.findOne(ctx, orderId, [
+      'lines',
+      'lines.productVariant',
+      'lines.productVariant.taxCategory',
+      'customer',
+      'customer.addresses',
+      'shippingLines',
+      'shippingLines.shippingMethod',
+    ]);
+    if (!order) {
+      Logger.error(
+        `Order with id ${orderId} not found, ignoring this order...`,
+        loggerCtx
+      );
+      return;
+    }
+    Logger.info(`Pushing order ${order.code} to Picqer...`, loggerCtx);
+    if (!order.customer) {
+      Logger.error(
+        `Order ${order.code} doesn't have a customer, ignoring this order...`,
+        loggerCtx
+      );
+      return;
+    }
+    const picqerCustomer = await client.createOrUpdateCustomer(
+      order.customer?.emailAddress,
+      this.mapToCustomerInput(order.customer)
+    );
+    const vatGroups = await client.getVatGroups();
+    // Create or update each product of order
+    const productInputs: OrderProductInput[] = [];
+    for (const line of order.lines) {
+      const vatGroup = vatGroups.find(
+        (vg) => vg.percentage === line.productVariant.taxRateApplied.value
+      );
+      if (!vatGroup) {
+        throw Error(
+          `Can not find vat group ${line.productVariant.taxRateApplied.value}% for variant ${line.productVariant.sku}. Can not create order in Picqer`
+        );
+      }
+      const picqerProduct = await client.createOrUpdateProduct(
+        line.productVariant.sku,
+        this.mapToProductInput(line.productVariant, vatGroup.idvatgroup)
+      );
+      productInputs.push({
+        idproduct: picqerProduct.idproduct,
+        amount: line.quantity,
+      });
+    }
+    const createdorder = await client.createOrder(
+      this.mapToOrderInput(order, picqerCustomer.idcustomer, productInputs)
+    );
+    Logger.info(
+      `Created order "${order.code}" in Picqer with id ${createdorder.idorder}`,
+      loggerCtx
+    );
   }
 
   /**
@@ -523,25 +586,10 @@ export class PicqerService implements OnApplicationBootstrap {
             variant,
             vatGroup.idvatgroup
           );
-          let picqerProduct: ProductData | undefined;
-          if (existing?.idproduct) {
-            // Update existing Picqer product
-            picqerProduct = await client.updateProduct(
-              existing.idproduct,
-              productInput
-            );
-            Logger.info(
-              `Updated variant ${variant.sku} in Picqer (Picqer id: ${existing.idproduct}) for channel ${ctx.channel.token}`,
-              loggerCtx
-            );
-          } else {
-            // Create new variant if no product exists in Picqer
-            picqerProduct = await client.createProduct(productInput);
-            Logger.info(
-              `Created variant ${variant.sku} in Picqer (Picqer id: ${picqerProduct.idproduct}) for channel ${ctx.channel.token}`,
-              loggerCtx
-            );
-          }
+          const picqerProduct = await client.createOrUpdateProduct(
+            variant.sku,
+            productInput
+          );
           // Update images
           const shouldUpdateImages = !picqerProduct.images?.length;
           if (!shouldUpdateImages) {
@@ -720,11 +768,34 @@ export class PicqerService implements OnApplicationBootstrap {
     });
   }
 
-  private mapToProductInput(
-    variant: ProductVariant,
-    vatGroupId: number
-  ): ProductInput {
+  mapToCustomerInput(customer: Customer, companyName?: string): CustomerInput {
+    const customerName = `${customer.firstName} ${customer.lastName}`;
+    return {
+      name: companyName || customerName,
+      contactname: customerName,
+      emailaddress: customer.emailAddress,
+      telephone: customer.phoneNumber,
+      addresses: customer.addresses.map(this.mapToAddressInput),
+    };
+  }
+
+  mapToAddressInput(address: Address): AddressInput {
+    return {
+      name: address.fullName,
+      address: `${address.streetLine1} ${address.streetLine2}`,
+      zipcode: address.postalCode,
+      city: address.city,
+      country: address.country?.code.toUpperCase(),
+      defaultdelivery: address.defaultShippingAddress,
+      defaultinvoice: address.defaultBillingAddress,
+    };
+  }
+
+  mapToProductInput(variant: ProductVariant, vatGroupId: number): ProductInput {
     const additionalFields = this.options.pushFieldsToPicqer?.(variant) || {};
+    if (!variant.sku) {
+      throw Error(`Variant with ID ${variant.id} has no SKU`);
+    }
     return {
       ...additionalFields,
       idvatgroup: vatGroupId,
@@ -732,6 +803,31 @@ export class PicqerService implements OnApplicationBootstrap {
       price: currency(variant.price / 100).value, // Convert to float with 2 decimals
       productcode: variant.sku,
       active: variant.enabled,
+    };
+  }
+
+  mapToOrderInput(
+    order: Order,
+    customerId: number,
+    products: OrderProductInput[]
+  ): OrderInput {
+    const shippingAddress = order.shippingAddress;
+    const billingAddress = order.billingAddress || order.shippingAddress;
+    return {
+      idcustomer: customerId,
+      reference: order.code,
+      deliveryname: shippingAddress.company || shippingAddress.fullName,
+      deliverycontactname: shippingAddress.fullName,
+      deliveryaddress: `${shippingAddress.streetLine1} ${shippingAddress.streetLine2}`,
+      deliveryzipcode: shippingAddress.postalCode,
+      deliverycountry: shippingAddress.country?.toUpperCase(),
+      invoicename: billingAddress.company || billingAddress.fullName,
+      invoicecontactname: billingAddress.fullName,
+      invoiceaddress: `${shippingAddress.streetLine1} ${shippingAddress.streetLine2}`,
+      invoicezipcode: shippingAddress.postalCode,
+      invoicecity: shippingAddress.city,
+      invoicecountry: shippingAddress.country?.toUpperCase(),
+      products,
     };
   }
 }

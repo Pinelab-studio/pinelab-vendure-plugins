@@ -16,6 +16,8 @@ import { PicqerPlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
 import path from 'path';
 import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 (async () => {
   require('dotenv').config();
@@ -27,13 +29,16 @@ import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
     plugins: [
       PicqerPlugin.init({
         enabled: true,
         vendureHost: process.env.HOST!,
       }),
       AssetServerPlugin.init({
-        assetUploadDir: path.join(__dirname, '__data__/assets'),
+        assetUploadDir: path.join(__dirname, '../__data__/assets'),
         route: 'assets',
       }),
       DefaultSearchPlugin,
@@ -50,7 +55,15 @@ import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
   await adminClient.asSuperAdmin();
@@ -63,5 +76,6 @@ import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
       supportEmail: 'support@mystore.io',
     },
   });
-  await adminClient.query(FULL_SYNC);
+  // await adminClient.query(FULL_SYNC);
+  const order = await createSettledOrder(shopClient, 1);
 })();

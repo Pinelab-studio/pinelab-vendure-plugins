@@ -1,18 +1,10 @@
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
-  ChannelService,
-  ConfigService,
-  DefaultLogger,
-  LanguageCode,
-  LogLevel,
-  mergeConfig,
-  RequestContext,
-} from '@vendure/core';
-import {
+  createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
+  registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  createTestEnvironment,
-  registerInitializer,
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
@@ -22,15 +14,17 @@ import {
   updateProduct,
   updateVariants,
 } from '../../test/src/admin-utils';
-import { initialData } from '../../test/src/initial-data';
-import { PicqerPlugin } from '../src';
-import { IncomingProductWebhook, VatGroup } from '../src/api/types';
-import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { GetVariantsQuery } from '../../test/src/generated/admin-graphql';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { PicqerPlugin } from '../src';
+import { VatGroup } from '../src/api/types';
+import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
+let shopClient: SimpleGraphQLClient;
 const nockBaseUrl = 'https://test-picqer.io/api/v1/';
 
 jest.setTimeout(60000);
@@ -63,7 +57,7 @@ describe('Order export plugin', function () {
       },
     });
 
-    ({ server, adminClient } = createTestEnvironment(config));
+    ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: '../test/src/products-import.csv',
@@ -249,39 +243,43 @@ describe('Order export plugin', function () {
       data: {
         productcode: 'L2201308',
         stock: [{ freestock: 543 }],
-      }
+      },
     };
     const res = await adminClient.fetch(
-      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
-    , {
-      method: 'POST',
-      body: JSON.stringify(body),
-      headers: {
-        'X-Picqer-Signature': createSignature(body, 'test-api-key'),
-      },
-    });
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'X-Picqer-Signature': createSignature(body, 'test-api-key'),
+        },
+      }
+    );
     // Use 'update' to fetch variant. Please fixme
-    const [variant] = await updateVariants(adminClient, [
-      { id: 'T_1'},
-    ]);
+    const [variant] = await updateVariants(adminClient, [{ id: 'T_1' }]);
     expect(res.ok).toBe(true);
     expect(variant?.stockOnHand).toBe(543);
   });
-  
+
   it('Should fail with invalid signature', async () => {
     const res = await adminClient.fetch(
-      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
-    , {
-      method: 'POST',
-      body: JSON.stringify({}),
-      headers: {
-        'X-Picqer-Signature': 'invalid signature'
-      },
-    });
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: {
+          'X-Picqer-Signature': 'invalid signature',
+        },
+      }
+    );
     expect(res.status).toBe(403);
   });
-  
-  it('Should push order to Picqer on order placement', async () => {
+
+  it.skip('Should push order to Picqer on order placement', async () => {
+    const order = await createSettledOrder(shopClient, 1);
+    // TODO check if customer was created
+    // TODO check if order was created
+    // TODO handle incoming order status check
     expect(true).toBe(false);
   });
 
