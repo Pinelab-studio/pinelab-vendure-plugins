@@ -27,6 +27,7 @@
     "generated/",
 
     "packages/util",
+    "packages/vendure-plugin-active-to-draft/",
     "packages/vendure-plugin-admin-ui-helpers/",
     "packages/vendure-plugin-coinbase/",
     "packages/vendure-plugin-customer-managed-groups/",
