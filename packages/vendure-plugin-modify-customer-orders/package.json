@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-active-to-draft",
-  "version": "5.6.7",
+  "version": "5.8.0",
   "description": "Vendure plugin for converting Active order to Draft",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
@@ -21,8 +21,8 @@
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
-    "@vendure/admin-ui-plugin": "1.9.5",
     "@vendure/admin-ui": "1.9.5",
+    "@vendure/admin-ui-plugin": "1.9.5",
     "@vendure/core": "1.9.5",
     "@vendure/testing": "1.9.5",
     "@vendure/ui-devkit": "1.9.5",
