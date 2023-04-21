@@ -64,6 +64,7 @@
           "picqer",
           "customer-managed-groups",
           "popularity-scores",
+          "modify-customer-orders",
           "all-plugins"
         ]
       ]
