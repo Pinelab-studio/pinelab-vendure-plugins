@@ -7,6 +7,12 @@ mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
       active
       total
       totalWithTax
+      customer {
+        emailAddress
+      }
+      shippingAddress {
+        fullName
+      }
       lines {
         id
         quantity

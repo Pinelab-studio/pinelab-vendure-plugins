@@ -17,8 +17,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import path from 'path';
-import { convertToDraftButton } from '../src/ui';
-import { ActiveToDraftPlugin } from '../src/active-to-draft.plugin';
+import { ModifyCustomerOrdersPlugin } from '../src';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -33,13 +32,15 @@ import { ActiveToDraftPlugin } from '../src/active-to-draft.plugin';
     },
     plugins: [
       DefaultSearchPlugin,
-      ActiveToDraftPlugin,
+      ModifyCustomerOrdersPlugin.init({
+        autoAssignDraftOrdersToCustomer: true,
+      }),
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
         app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [convertToDraftButton],
+          extensions: [ModifyCustomerOrdersPlugin.ui],
           devMode: true,
         }),
       }),
@@ -58,6 +59,7 @@ import { ActiveToDraftPlugin } from '../src/active-to-draft.plugin';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  await addItem(shopClient, 'T_1', 1);
   await createSettledOrder(shopClient, 1);
+  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  await addItem(shopClient, 'T_1', 1);
 })();

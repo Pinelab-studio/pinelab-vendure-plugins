@@ -27,7 +27,6 @@
     "generated/",
 
     "packages/util",
-    "packages/vendure-plugin-active-to-draft/",
     "packages/vendure-plugin-admin-ui-helpers/",
     "packages/vendure-plugin-coinbase/",
     "packages/vendure-plugin-customer-managed-groups/",
@@ -49,6 +48,7 @@
     "packages/vendure-plugin-stock-monitoring/",
     "packages/vendure-plugin-stripe-subscription/",
     "packages/vendure-plugin-variant-bulk-update/",
-    "packages/vendure-plugin-webhook/"
+    "packages/vendure-plugin-webhook/",
+    "packages/vendure-plugin-modify-customer-orders/"
   ]
 }

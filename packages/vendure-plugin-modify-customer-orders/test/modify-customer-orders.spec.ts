@@ -10,21 +10,20 @@ import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { ActiveToDraftPlugin } from '../src/active-to-draft.plugin';
 import { convertToDraftMutation } from './test-helper';
+import { ModifyCustomerOrdersPlugin } from '../src';
 jest.setTimeout(10000);
 
 describe('Customer managed groups', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
-  let serverStarted = false;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [ActiveToDraftPlugin],
+      plugins: [ModifyCustomerOrdersPlugin],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -52,14 +51,17 @@ describe('Customer managed groups', function () {
   });
 
   it('Should change active order to draft order', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
     const testActiveOrder = await addItem(shopClient, 'T_1', 1);
-    const { convertToDraft: draftOrder } = await adminClient.query(
+    const { convertOrderToDraft: draftOrder } = await adminClient.query(
       convertToDraftMutation,
       {
         id: testActiveOrder.id,
       }
     );
-    console.log(draftOrder);
     expect(draftOrder.state).toBe('Draft');
     expect(draftOrder.lines.length).toBe(testActiveOrder.lines.length);
     for (let line of testActiveOrder.lines) {
@@ -69,11 +71,18 @@ describe('Customer managed groups', function () {
         )
       ).toBe(true);
     }
+    expect(draftOrder.shippingAddress.fullName).toBe(
+      testActiveOrder.shippingAddress.fullName
+    );
+    expect(draftOrder.customer.emailAddress).toBe(
+      testActiveOrder.customer?.emailAddress
+    );
   });
+
   it('Should not change non active order to draft order', async () => {
     const testNonActiveOrder = await createSettledOrder(shopClient, 1);
     try {
-      const { convertToDraft: draftOrder } = await adminClient.query(
+      const { convertOrderToDraft: draftOrder } = await adminClient.query(
         convertToDraftMutation,
         {
           id: testNonActiveOrder.id,

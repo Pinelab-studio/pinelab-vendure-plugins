@@ -12,18 +12,19 @@ import {
   Order,
   assertFound,
   EntityRelationPaths,
+  Logger,
 } from '@vendure/core';
+import { loggerCtx } from '../constants';
 @Resolver()
 export class AdminApiResolver {
   constructor(
     private readonly orderService: OrderService,
-    private readonly conn: TransactionalConnection,
-    private readonly customerService: CustomerService
+    private readonly conn: TransactionalConnection
   ) {}
 
   @Mutation()
   @Allow(Permission.CreateOrder)
-  async convertToDraft(
+  async convertOrderToDraft(
     @Ctx() ctx: RequestContext,
     @Args('id') id: ID
   ): Promise<Order> {
@@ -59,11 +60,19 @@ export class AdminApiResolver {
         line.quantity
       );
     }
+    Logger.info(
+      `Copied ${existingOrder.lines.length} lines to new draft`,
+      loggerCtx
+    );
     if (existingOrder.customer) {
       await this.orderService.addCustomerToOrder(
         ctx,
         newDraft.id,
         existingOrder.customer
+      );
+      Logger.info(
+        `Copied customer ${existingOrder.customer.emailAddress} to new draft`,
+        loggerCtx
       );
     }
     if (existingOrder.shippingAddress) {
@@ -73,6 +82,10 @@ export class AdminApiResolver {
         .set({ shippingAddress: existingOrder.shippingAddress })
         .where('id = :id', { id: newDraft.id })
         .execute();
+      Logger.info(
+        `Copied shipping address ${existingOrder.shippingAddress.fullName} to new draft`,
+        loggerCtx
+      );
     }
     if (existingOrder.billingAddress) {
       await orderRepo
@@ -81,6 +94,10 @@ export class AdminApiResolver {
         .set({ billingAddress: existingOrder.billingAddress })
         .where('id = :id', { id: newDraft.id })
         .execute();
+      Logger.info(
+        `Copied billing address ${existingOrder.billingAddress.fullName} to new draft`,
+        loggerCtx
+      );
     }
     if (existingOrder.shippingLines[0]?.shippingMethod) {
       await this.orderService.setShippingMethod(
@@ -88,14 +105,14 @@ export class AdminApiResolver {
         newDraft.id,
         existingOrder.shippingLines[0]?.shippingMethod.id
       );
-    }
-
-    for (const promo of existingOrder.promotions) {
-      await this.orderService.applyCouponCode(
-        ctx,
-        newDraft.id,
-        promo.couponCode
+      Logger.info(
+        `Copied shipping ${existingOrder.shippingLines[0].shippingMethod.code} to new draft`,
+        loggerCtx
       );
+    }
+    for (const couponCode of existingOrder.couponCodes) {
+      await this.orderService.applyCouponCode(ctx, newDraft.id, couponCode);
+      Logger.info(`Copied coupon ${couponCode} to new draft`, loggerCtx);
     }
 
     return await assertFound(

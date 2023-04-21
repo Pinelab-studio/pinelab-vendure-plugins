@@ -49,6 +49,7 @@ jobs:
             'vendure-plugin-customer-managed-groups',
             'vendure-plugin-picqer',
             'vendure-plugin-popularity-scores',
+            'vendure-plugin-modify-customer-orders',
           ]
     steps:
       - name: Checkout code

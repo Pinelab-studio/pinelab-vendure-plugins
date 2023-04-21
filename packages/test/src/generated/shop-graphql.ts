@@ -3429,6 +3429,12 @@ export const AddItemToOrder = gql`
       active
       total
       totalWithTax
+      customer {
+        emailAddress
+      }
+      shippingAddress {
+        fullName
+      }
       lines {
         id
         quantity
