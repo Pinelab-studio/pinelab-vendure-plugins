@@ -1,0 +1,32 @@
+{
+  "name": "vendure-plugin-popularity-scores",
+  "version": "5.6.7",
+  "description": "Sort products and category by popularity based on previously placed orders",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab.studio",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "yarn ts-node test/dev-server.ts",
+    "build": "rimraf dist && tsc",
+    "test": "jest --preset=\"ts-jest\""
+  },
+  "devDependencies": {
+    "@types/jest": "27.4.1",
+    "@vendure/admin-ui-plugin": "1.9.5",
+    "@vendure/core": "1.9.5",
+    "@vendure/testing": "1.9.5",
+    "jest": "27.2.0",
+    "nodemon": "2.0.15",
+    "ts-jest": "27.0.5",
+    "ts-node": "10.7.0",
+    "typescript": "4.3.5"
+  }
+}

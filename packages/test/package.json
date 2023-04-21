@@ -1,6 +1,6 @@
 {
   "name": "pinelab-test-utils",
-  "version": "5.0.0",
+  "version": "5.8.0",
   "main": "index.ts",
   "license": "MIT",
   "private": true,
@@ -9,8 +9,8 @@
     "@graphql-codegen/typescript": "2.4.8",
     "@graphql-codegen/typescript-document-nodes": "2.2.8",
     "@graphql-codegen/typescript-operations": "2.3.5",
-    "@vendure/core": "1.9.2",
-    "@vendure/testing": "1.9.2",
+    "@vendure/core": "1.9.5",
+    "@vendure/testing": "1.9.5",
     "graphql-tag": "^2.12.6"
   },
   "scripts": {

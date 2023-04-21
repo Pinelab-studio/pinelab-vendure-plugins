@@ -14,10 +14,10 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '16'
-      - name: Yarn root
+      - name: Install root dependencies
         run: yarn
-      - name: Prettier
-        run: yarn prettier:check
+      - name: Is formatted and linted
+        run: yarn lint:check
   test:
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
@@ -46,6 +46,10 @@ jobs:
             'vendure-plugin-limit-variant-per-order',
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-stripe-subscription',
+            'vendure-plugin-customer-managed-groups',
+            'vendure-plugin-picqer',
+            'vendure-plugin-popularity-scores',
+            'vendure-plugin-modify-customer-orders',
           ]
     steps:
       - name: Checkout code

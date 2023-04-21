@@ -1,9 +1,9 @@
+import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
-  ErrorCode,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
@@ -11,7 +11,6 @@ import {
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
 } from './generated/shop-graphql';
-import { ErrorResult, Order } from '@vendure/core';
 import { testPaymentMethod } from './test-payment-method';
 
 /**
@@ -21,7 +20,7 @@ export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   address?: SetShippingAddressMutationVariables
-) {
+): Promise<void> {
   await shopClient.query(
     SetShippingAddress,
     address ?? {
@@ -47,7 +46,7 @@ export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   address?: SetShippingAddressMutationVariables
-) {
+): Promise<TransitionToStateMutation['transitionOrderToState']> {
   await setAddressAndShipping(shopClient, shippingMethodId, address);
   const result = await shopClient.query<
     TransitionToStateMutation,
@@ -91,11 +90,22 @@ export async function addItem(
 
 export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
-  shippingMethodId: string | number
+  shippingMethodId: string | number,
+  authorizeFirst = true,
+  variants: Array<{ id: string; quantity: number }> = [
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_2', quantity: 2 },
+  ]
 ): Promise<Order> {
-  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  await addItem(shopClient, 'T_1', 1);
-  await addItem(shopClient, 'T_2', 2);
+  if (authorizeFirst) {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+  }
+  for (const v of variants) {
+    await addItem(shopClient, v.id, v.quantity);
+  }
   const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
     input: {
       fullName: 'Martinho Pinelabio',
