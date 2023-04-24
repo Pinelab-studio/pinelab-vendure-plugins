@@ -148,8 +148,20 @@ export class PicqerClient {
     return this.rawRequest('post', `/orders/`, input);
   }
 
-  async getCustomer(emailAddress: string): Promise<CustomerData[]> {
-    return this.rawRequest('get', `/customers?search=${emailAddress}`);
+  async getCustomer(emailAddress: string): Promise<CustomerData | undefined> {
+    const customers: CustomerData[] = await this.rawRequest('get', `/customers?search=${encodeURIComponent(emailAddress)}`);
+    if (!customers.length) {
+      return undefined;
+    }
+    if (customers.length === 1) {
+      return customers[0];
+    }
+    const customer = customers[0];
+    Logger.warn(
+      `Picqer returned multiple customers for email address ${emailAddress}, using the first result (${customer.idcustomer})`,
+      loggerCtx
+    );
+    return customer;
   }
 
   async createCustomer(input: CustomerInput): Promise<CustomerData> {
@@ -170,26 +182,39 @@ export class PicqerClient {
     emailAddress: string,
     input: CustomerInput
   ): Promise<CustomerData> {
-    const customers = await this.getCustomer(emailAddress);
-    if (!customers.length) {
+    const existingCustomer = await this.getCustomer(emailAddress);
+    if (!existingCustomer) {
       Logger.info(
         `Customer '${emailAddress}' not found, creating new customer`,
         loggerCtx
       );
       return this.createCustomer(input);
     }
-    const customerId = customers[0].idcustomer;
-    if (customers.length > 1) {
-      Logger.warn(
-        `Picqer returned multiple customers for email address ${emailAddress}, using the first result (${customerId})`,
-        loggerCtx
-      );
-    }
     Logger.info(
-      `Existing customer '${emailAddress}' found, updating customer ${customerId}`,
+      `Existing customer '${emailAddress}' found, updating customer ${existingCustomer.idcustomer}`,
       loggerCtx
     );
-    return this.updateCustomer(customerId, input);
+    return this.updateCustomer(existingCustomer.idcustomer, input);
+  }
+
+  /**
+   * Get or create a customer based on EmailAddress. 
+   * If the customer is not found, a new minimal customer is created with 
+   * only an email address and a name.
+   */
+  async getOrCreateMinimalCustomer(
+    emailAddress: string,
+    name: string
+  ): Promise<CustomerData> {
+    const existingCustomer = await this.getCustomer(emailAddress);
+    if (existingCustomer) {
+      return existingCustomer;
+    }
+    Logger.info(
+      `Customer '${emailAddress}' not found, creating new customer`,
+      loggerCtx
+    );
+    return this.createCustomer({ emailaddress: emailAddress, name });
   }
 
   /**

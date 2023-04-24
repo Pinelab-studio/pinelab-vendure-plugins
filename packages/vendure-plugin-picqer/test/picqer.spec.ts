@@ -1,4 +1,4 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { DefaultLogger, DefaultSearchPlugin, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -21,6 +21,7 @@ import { PicqerPlugin } from '../src';
 import { VatGroup } from '../src/api/types';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -38,6 +39,7 @@ describe('Order export plugin', function () {
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
+        DefaultSearchPlugin,
         PicqerPlugin.init({
           enabled: true,
           vendureHost: 'https://example-vendure.io',
@@ -46,6 +48,9 @@ describe('Order export plugin', function () {
           pullFieldsFromPicqer: (picqerProd) => ({ outOfStockThreshold: 123 }),
         }),
       ],
+      paymentOptions: {
+        paymentMethodHandlers: [testPaymentMethod],
+      },
       customFields: {
         ProductVariant: [
           {
@@ -59,7 +64,13 @@ describe('Order export plugin', function () {
 
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
-      initialData,
+      initialData: {
+        ...initialData,
+        paymentMethods: [{
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        }],
+      },
       productsCsvPath: '../test/src/products-import.csv',
     });
   }, 60000);
@@ -121,6 +132,41 @@ describe('Order export plugin', function () {
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
 
+
+  let createdOrder: any;
+
+  it('Should push order to Picqer on order placement', async () => {
+    nock(nockBaseUrl)
+      .get('/vatgroups') // Mock vatgroups, because it will try to update products
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[])
+    nock(nockBaseUrl)
+      .get(/.products*/) // Mock products, because it will try to update products
+      .reply(200, [{ idproduct: 'mockProductId' }])
+      .persist();
+    nock(nockBaseUrl)
+      .get(/.customers*/) // Mock customer, to connect the order to a customer
+      .reply(200, [{ idcustomer: 'mockCustomerId' }])
+    nock(nockBaseUrl)
+      .put('/products/mockProductId') // Mock product update, because it will try to update products
+      .reply(200, { idproduct: 'mockId' })
+      .persist();
+    nock(nockBaseUrl)
+      .post(/.orders*/, (reqBody) => {
+        createdOrder = reqBody;
+        return true;
+      })
+      .reply(200, { idordder: 'mockOrderId' });
+    const order = await createSettledOrder(shopClient, 1); // Creates an order with 2 order lines
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    expect(createdOrder.reference).toBe(order.code);
+    expect(createdOrder.deliveryname).toBeDefined();
+    expect(createdOrder.deliverycontactname).toBeDefined();
+    expect(createdOrder.deliveryaddress).toBeDefined();
+    expect(createdOrder.deliveryzipcode).toBeDefined();
+    expect(createdOrder.deliverycountry).toBeDefined();
+    expect(createdOrder.products.length).toBe(2);
+  });
+
   /**
    * Requestbodies of products that have been created or updated in Picqer
    */
@@ -130,7 +176,7 @@ describe('Order export plugin', function () {
     // Mock vatgroups GET
     nock(nockBaseUrl)
       .get('/vatgroups')
-      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[])
     // Mock products GET multiple times
     nock(nockBaseUrl)
       .get(/.products*/)
@@ -255,8 +301,8 @@ describe('Order export plugin', function () {
         },
       }
     );
-    // Use 'update' to fetch variant. Please fixme
-    const [variant] = await updateVariants(adminClient, [{ id: 'T_1' }]);
+    const variants = await getAllVariants(adminClient);
+    const variant = variants.find((v) => v.sku === 'L2201308');
     expect(res.ok).toBe(true);
     expect(variant?.stockOnHand).toBe(543);
   });
@@ -273,14 +319,6 @@ describe('Order export plugin', function () {
       }
     );
     expect(res.status).toBe(403);
-  });
-
-  it.skip('Should push order to Picqer on order placement', async () => {
-    const order = await createSettledOrder(shopClient, 1);
-    // TODO check if customer was created
-    // TODO check if order was created
-    // TODO handle incoming order status check
-    expect(true).toBe(false);
   });
 
   afterAll(() => {

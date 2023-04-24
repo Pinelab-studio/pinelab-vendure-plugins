@@ -27,6 +27,7 @@ import {
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
+  VendureEntity,
 } from '@vendure/core';
 import currency from 'currency.js';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
@@ -40,13 +41,13 @@ import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
 import {
   AddressInput,
+  CustomerData,
   CustomerInput,
   IncomingWebhook,
   OrderInput,
   OrderProductInput,
   ProductData,
   ProductInput,
-  VariantWithStock,
 } from './types';
 
 /**
@@ -96,7 +97,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private entityHydrator: EntityHydrator,
     private channelService: ChannelService,
     private orderService: OrderService
-  ) {}
+  ) { }
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -136,13 +137,21 @@ export class PicqerService implements OnApplicationBootstrap {
     // Listen for Variant creation or update
     this.eventBus
       .ofType(ProductVariantEvent)
-      .subscribe(async ({ ctx, entity, type }) => {
-        if (type === 'created' || type === 'updated') {
-          await this.addPushVariantsJob(
-            ctx,
-            entity.map((v) => v.id)
-          );
+      .subscribe(async ({ ctx, entity: entities, type, input }) => {
+        if (type !== 'created' && type !== 'updated') {
+          // Ignore anything other than creation or update
+          return;
         }
+        // Only update in Picqer if one of these fields was updated
+        const shouldUpdate = (input as UpdateProductVariantInput[])?.some(v => v.enabled ?? v.translations ?? v.price ?? v.taxCategoryId)
+        if (!shouldUpdate) {
+          Logger.info(`No relevant changes to variants ${entities.map(v =>v.sku)}, not pushing to Picqer`, loggerCtx);
+          return;
+        }
+        await this.addPushVariantsJob(
+          ctx,
+          entities.map((v) => v.id)
+        );
       });
     // Listen for Product events. Only push variants when product is enabled/disabled. Other changes are handled by the variant events.
     this.eventBus
@@ -409,12 +418,15 @@ export class PicqerService implements OnApplicationBootstrap {
     });
     // Use raw connection for better performance
     await Promise.all(
-      updateVariantsInput.map(async (v) =>
-        this.connection
+      updateVariantsInput.map(async (v) => {
+        const variant = await this.connection
           .getRepository(ctx, ProductVariant)
-          .update({ id: v.id }, v)
-      )
+          .update({ id: v.id }, v);
+      })
     );
+    // TODO fire event variant
+    await this.eventBus.publish(new ProductVariantEvent(ctx, vendureVariants, 'updated'));
+
     Logger.info(
       `Updated stock levels of ${updateVariantsInput.length} variants`,
       loggerCtx
@@ -449,15 +461,19 @@ export class PicqerService implements OnApplicationBootstrap {
     Logger.info(`Pushing order ${order.code} to Picqer...`, loggerCtx);
     if (!order.customer) {
       Logger.error(
-        `Order ${order.code} doesn't have a customer, ignoring this order...`,
+        `Order ${order.code} doesn't have a customer. So, something is wrong, ignoring this order...`,
         loggerCtx
       );
       return;
     }
-    const picqerCustomer = await client.createOrUpdateCustomer(
-      order.customer?.emailAddress,
-      this.mapToCustomerInput(order.customer)
-    );
+    let picqerCustomer: CustomerData | undefined = undefined;
+    if (order.customer.user) {
+      // This means customer is registered, not a guest
+      const name = order.shippingAddress.company ??
+        order.shippingAddress.fullName ??
+        `${order.customer.firstName} ${order.customer.lastName}`;
+      picqerCustomer = await client.getOrCreateMinimalCustomer(order.customer.emailAddress, name);
+    }
     const vatGroups = await client.getVatGroups();
     // Create or update each product of order
     const productInputs: OrderProductInput[] = [];
@@ -479,11 +495,10 @@ export class PicqerService implements OnApplicationBootstrap {
         amount: line.quantity,
       });
     }
-    const createdorder = await client.createOrder(
-      this.mapToOrderInput(order, picqerCustomer.idcustomer, productInputs)
-    );
+    const orderInput = this.mapToOrderInput(order, productInputs, picqerCustomer?.idcustomer);
+    const createdOrder = await client.createOrder(orderInput);
     Logger.info(
-      `Created order "${order.code}" in Picqer with id ${createdorder.idorder}`,
+      `Created order "${order.code}" in Picqer with id ${createdOrder.idorder}`,
       loggerCtx
     );
   }
@@ -494,22 +509,15 @@ export class PicqerService implements OnApplicationBootstrap {
   async findAllVariantsBySku(
     ctx: RequestContext,
     skus: string[]
-  ): Promise<VariantWithStock[]> {
+  ): Promise<ProductVariant[]> {
     let skip = 0;
     const take = 1000;
     let hasMore = true;
-    const allVariants: VariantWithStock[] = [];
+    const allVariants: ProductVariant[] = [];
     while (hasMore) {
-      // Only select minimal fields, not the whole entities
       const [variants, count] = await this.connection
         .getRepository(ctx, ProductVariant)
         .createQueryBuilder('variant')
-        .select([
-          'variant.id',
-          'variant.sku',
-          'variant.stockOnHand',
-          'variant.stockAllocated',
-        ])
         .leftJoin('variant.channels', 'channel')
         .where('channel.id = :channelId', { channelId: ctx.channelId })
         .andWhere('variant.sku IN(:...skus)', { skus })
@@ -581,7 +589,6 @@ export class PicqerService implements OnApplicationBootstrap {
           return;
         }
         try {
-          const existing = await client.getProductByCode(variant.sku);
           const productInput = this.mapToProductInput(
             variant,
             vatGroup.idvatgroup
@@ -808,13 +815,14 @@ export class PicqerService implements OnApplicationBootstrap {
 
   mapToOrderInput(
     order: Order,
-    customerId: number,
-    products: OrderProductInput[]
+    products: OrderProductInput[],
+    customerId?: number,
   ): OrderInput {
     const shippingAddress = order.shippingAddress;
-    const billingAddress = order.billingAddress || order.shippingAddress;
+    // Check billing address existance based on PostalCode
+    const billingAddress = order.billingAddress.postalCode ? order.billingAddress : order.shippingAddress;
     return {
-      idcustomer: customerId,
+      idcustomer: customerId, // If none given, this creates a guest order
       reference: order.code,
       deliveryname: shippingAddress.company || shippingAddress.fullName,
       deliverycontactname: shippingAddress.fullName,

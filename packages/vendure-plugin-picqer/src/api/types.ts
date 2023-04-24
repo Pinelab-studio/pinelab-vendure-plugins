@@ -16,11 +16,6 @@ export interface VatGroup {
   percentage: number;
 }
 
-export type VariantWithStock = Pick<
-  ProductVariant,
-  'id' | 'sku' | 'stockAllocated' | 'stockOnHand'
->;
-
 export interface Webhook {
   idhook: number;
   name: string;
@@ -199,7 +194,7 @@ export interface Product {
 }
 
 export interface OrderInput {
-  idcustomer: number;
+  idcustomer?: number;
   reference: string;
   deliveryname?: string;
   deliverycontactname?: string;
