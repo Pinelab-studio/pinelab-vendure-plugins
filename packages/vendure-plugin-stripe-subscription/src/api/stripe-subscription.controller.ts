@@ -100,6 +100,7 @@ export class ShopOrderLinePricingResolver {
         downpaymentWithTax: orderLine.customFields.downpayment,
         startDate: orderLine.customFields.startDate,
         productVariantId: orderLine.productVariant.id as string,
+        orderId: orderLine.order.id as string,
       });
     }
     return;

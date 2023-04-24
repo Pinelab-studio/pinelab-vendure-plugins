@@ -25,6 +25,7 @@ import {
   StockMovementEvent,
   TransactionalConnection,
   UserInputError,
+  assertFound,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { IncomingStripeWebhook } from './stripe.types';
@@ -319,6 +320,17 @@ export class StripeSubscriptionService {
       throw new UserInputError(
         `No variant found with id ${input!.productVariantId}`
       );
+    }
+    if (input.orderId) {
+      const order = await this.orderService.findOne(ctx, input.orderId, [
+        'promotions',
+      ]);
+      if (!order) {
+        throw new UserInputError(`No order found with id ${input.orderId}`);
+      }
+      // TODO Check if our custom promotion "discount_future_subscription_payments" is applied
+      // order.promotions[0].actions
+      // TODO Get the discount percentage from the configured promotion and pass that to the calculateSubscriptionPricing function
     }
     return calculateSubscriptionPricing(variant, input);
   }

@@ -74,6 +74,10 @@ export const shopSchemaExtensions = gql`
     productVariantId: ID!
     startDate: DateTime
     downpaymentWithTax: Int
+    """
+    If orderId is supplied, any promotions applied to the order will be taken into account
+    """
+    orderId: ID
   }
   extend type Query {
     """
