@@ -148,8 +148,18 @@ export class PicqerClient {
     return this.rawRequest('post', `/orders/`, input);
   }
 
+  /**
+   * Update the order to 'processing' in Picqer
+   */
+  async processOrder(id: number): Promise<OrderData> {
+    return this.rawRequest('post', `/orders/${id}/process`);
+  }
+
   async getCustomer(emailAddress: string): Promise<CustomerData | undefined> {
-    const customers: CustomerData[] = await this.rawRequest('get', `/customers?search=${encodeURIComponent(emailAddress)}`);
+    const customers: CustomerData[] = await this.rawRequest(
+      'get',
+      `/customers?search=${encodeURIComponent(emailAddress)}`
+    );
     if (!customers.length) {
       return undefined;
     }
@@ -198,8 +208,8 @@ export class PicqerClient {
   }
 
   /**
-   * Get or create a customer based on EmailAddress. 
-   * If the customer is not found, a new minimal customer is created with 
+   * Get or create a customer based on EmailAddress.
+   * If the customer is not found, a new minimal customer is created with
    * only an email address and a name.
    */
   async getOrCreateMinimalCustomer(

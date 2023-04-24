@@ -1,4 +1,9 @@
-import { DefaultLogger, DefaultSearchPlugin, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  DefaultSearchPlugin,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -66,10 +71,12 @@ describe('Order export plugin', function () {
     await server.init({
       initialData: {
         ...initialData,
-        paymentMethods: [{
-          name: testPaymentMethod.code,
-          handler: { code: testPaymentMethod.code, arguments: [] },
-        }],
+        paymentMethods: [
+          {
+            name: testPaymentMethod.code,
+            handler: { code: testPaymentMethod.code, arguments: [] },
+          },
+        ],
       },
       productsCsvPath: '../test/src/products-import.csv',
     });
@@ -132,27 +139,33 @@ describe('Order export plugin', function () {
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
 
-
   let createdOrder: any;
 
   it('Should push order to Picqer on order placement', async () => {
+    let isOrderInProcessing = false;
     nock(nockBaseUrl)
       .get('/vatgroups') // Mock vatgroups, because it will try to update products
-      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[])
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
     nock(nockBaseUrl)
       .get(/.products*/) // Mock products, because it will try to update products
       .reply(200, [{ idproduct: 'mockProductId' }])
       .persist();
     nock(nockBaseUrl)
       .get(/.customers*/) // Mock customer, to connect the order to a customer
-      .reply(200, [{ idcustomer: 'mockCustomerId' }])
+      .reply(200, [{ idcustomer: 'mockCustomerId' }]);
     nock(nockBaseUrl)
       .put('/products/mockProductId') // Mock product update, because it will try to update products
       .reply(200, { idproduct: 'mockId' })
       .persist();
     nock(nockBaseUrl)
-      .post(/.orders*/, (reqBody) => {
+      .post('/orders/', (reqBody) => {
         createdOrder = reqBody;
+        return true;
+      })
+      .reply(200, { idorder: 'mockOrderId' });
+    nock(nockBaseUrl)
+      .post('/orders/mockOrderId/process', (reqBody) => {
+        isOrderInProcessing = true;
         return true;
       })
       .reply(200, { idordder: 'mockOrderId' });
@@ -165,6 +178,7 @@ describe('Order export plugin', function () {
     expect(createdOrder.deliveryzipcode).toBeDefined();
     expect(createdOrder.deliverycountry).toBeDefined();
     expect(createdOrder.products.length).toBe(2);
+    expect(isOrderInProcessing).toBe(true);
   });
 
   /**
@@ -176,7 +190,7 @@ describe('Order export plugin', function () {
     // Mock vatgroups GET
     nock(nockBaseUrl)
       .get('/vatgroups')
-      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[])
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
     // Mock products GET multiple times
     nock(nockBaseUrl)
       .get(/.products*/)

@@ -97,7 +97,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private entityHydrator: EntityHydrator,
     private channelService: ChannelService,
     private orderService: OrderService
-  ) { }
+  ) {}
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -143,9 +143,16 @@ export class PicqerService implements OnApplicationBootstrap {
           return;
         }
         // Only update in Picqer if one of these fields was updated
-        const shouldUpdate = (input as UpdateProductVariantInput[])?.some(v => v.enabled ?? v.translations ?? v.price ?? v.taxCategoryId)
+        const shouldUpdate = (input as UpdateProductVariantInput[])?.some(
+          (v) => v.enabled ?? v.translations ?? v.price ?? v.taxCategoryId
+        );
         if (!shouldUpdate) {
-          Logger.info(`No relevant changes to variants ${entities.map(v =>v.sku)}, not pushing to Picqer`, loggerCtx);
+          Logger.info(
+            `No relevant changes to variants ${entities.map(
+              (v) => v.sku
+            )}, not pushing to Picqer`,
+            loggerCtx
+          );
           return;
         }
         await this.addPushVariantsJob(
@@ -425,7 +432,9 @@ export class PicqerService implements OnApplicationBootstrap {
       })
     );
     // TODO fire event variant
-    await this.eventBus.publish(new ProductVariantEvent(ctx, vendureVariants, 'updated'));
+    await this.eventBus.publish(
+      new ProductVariantEvent(ctx, vendureVariants, 'updated')
+    );
 
     Logger.info(
       `Updated stock levels of ${updateVariantsInput.length} variants`,
@@ -469,10 +478,14 @@ export class PicqerService implements OnApplicationBootstrap {
     let picqerCustomer: CustomerData | undefined = undefined;
     if (order.customer.user) {
       // This means customer is registered, not a guest
-      const name = order.shippingAddress.company ??
+      const name =
+        order.shippingAddress.company ??
         order.shippingAddress.fullName ??
         `${order.customer.firstName} ${order.customer.lastName}`;
-      picqerCustomer = await client.getOrCreateMinimalCustomer(order.customer.emailAddress, name);
+      picqerCustomer = await client.getOrCreateMinimalCustomer(
+        order.customer.emailAddress,
+        name
+      );
     }
     const vatGroups = await client.getVatGroups();
     // Create or update each product of order
@@ -495,10 +508,15 @@ export class PicqerService implements OnApplicationBootstrap {
         amount: line.quantity,
       });
     }
-    const orderInput = this.mapToOrderInput(order, productInputs, picqerCustomer?.idcustomer);
+    const orderInput = this.mapToOrderInput(
+      order,
+      productInputs,
+      picqerCustomer?.idcustomer
+    );
     const createdOrder = await client.createOrder(orderInput);
+    await client.processOrder(createdOrder.idorder);
     Logger.info(
-      `Created order "${order.code}" in Picqer with id ${createdOrder.idorder}`,
+      `Created order "${order.code}" in status "processing" in Picqer with id ${createdOrder.idorder}`,
       loggerCtx
     );
   }
@@ -816,11 +834,13 @@ export class PicqerService implements OnApplicationBootstrap {
   mapToOrderInput(
     order: Order,
     products: OrderProductInput[],
-    customerId?: number,
+    customerId?: number
   ): OrderInput {
     const shippingAddress = order.shippingAddress;
     // Check billing address existance based on PostalCode
-    const billingAddress = order.billingAddress.postalCode ? order.billingAddress : order.shippingAddress;
+    const billingAddress = order.billingAddress.postalCode
+      ? order.billingAddress
+      : order.shippingAddress;
     return {
       idcustomer: customerId, // If none given, this creates a guest order
       reference: order.code,
