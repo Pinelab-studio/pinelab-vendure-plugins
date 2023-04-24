@@ -42,6 +42,7 @@
     "packages/vendure-plugin-order-export/",
     "packages/vendure-plugin-picqer/",
     "packages/vendure-plugin-popularity-scores/",
+    "packages/vendure-plugin-sales-per-variant",
     "packages/vendure-plugin-selectable-gifts/",
     "packages/vendure-plugin-sendcloud/",
     "packages/vendure-plugin-shipping-by-weight-and-country/",
