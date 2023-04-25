@@ -6,6 +6,7 @@ import {
   RequestContext,
 } from '@vendure/core';
 import {
+  AddFulfillmentToOrderResult,
   ConfigurableOperationInput,
   ItemsAlreadyFulfilledError,
 } from '@vendure/common/lib/generated-types';
@@ -82,7 +83,15 @@ export async function transitionToDelivered(
   return result as Fulfillment;
 }
 
-function throwIfTransitionFailed(result: any): void {
+/**
+ * Throw an error if the transition failed
+ */
+export function throwIfTransitionFailed(
+  result:
+    | FulfillmentStateTransitionError
+    | Fulfillment
+    | AddFulfillmentToOrderResult
+): void {
   const stateError = result as FulfillmentStateTransitionError;
   if (stateError.transitionError) {
     if (stateError.fromState === stateError.toState) {

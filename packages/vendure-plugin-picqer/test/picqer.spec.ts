@@ -44,13 +44,15 @@ describe('Order export plugin', function () {
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
-        DefaultSearchPlugin,
         PicqerPlugin.init({
           enabled: true,
           vendureHost: 'https://example-vendure.io',
-          pushFieldsToPicqer: (variant) => ({ barcode: variant.sku }),
-          // Update for testing purposes
-          pullFieldsFromPicqer: (picqerProd) => ({ outOfStockThreshold: 123 }),
+          // Dummy data for testing purposes
+          pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
+          pullPicqerProductFields: (picqerProd) => ({
+            outOfStockThreshold: 123,
+          }),
+          addPicqerOrderNote: (order) => 'test note',
         }),
       ],
       paymentOptions: {
@@ -80,6 +82,7 @@ describe('Order export plugin', function () {
       },
       productsCsvPath: '../test/src/products-import.csv',
     });
+    // TODO set variants to track stock
   }, 60000);
 
   it('Should start successfully', async () => {
@@ -90,7 +93,7 @@ describe('Order export plugin', function () {
 
   it('Should update Picqer config via admin api', async () => {
     // Mock hooks GET, because webhooks are updated on config save
-    nock(nockBaseUrl).get('/hooks').reply(200, []);
+    nock(nockBaseUrl).get('/hooks').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
         createdHooks.push(reqBody);
@@ -120,13 +123,14 @@ describe('Order export plugin', function () {
 
   it('Should have created hooks when config was updated', async () => {
     // Expect 1 created hook: stock change
-    await expect(createdHooks.length).toBe(1);
+    await expect(createdHooks.length).toBe(2);
     await expect(createdHooks[0].event).toBe('products.free_stock_changed');
     await expect(createdHooks[0].address).toBe(
       `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
     );
     await expect(createdHooks[0].secret).toBeDefined();
     await expect(createdHooks[0].name).toBeDefined();
+    await expect(createdHooks[1].event).toBe('picklists.closed');
   });
 
   it('Should get Picqer config after upsert', async () => {
@@ -143,6 +147,7 @@ describe('Order export plugin', function () {
 
   it('Should push order to Picqer on order placement', async () => {
     let isOrderInProcessing = false;
+    let createdOrderNote = undefined;
     nock(nockBaseUrl)
       .get('/vatgroups') // Mock vatgroups, because it will try to update products
       .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
@@ -169,16 +174,34 @@ describe('Order export plugin', function () {
         return true;
       })
       .reply(200, { idordder: 'mockOrderId' });
-    const order = await createSettledOrder(shopClient, 1); // Creates an order with 2 order lines
+    nock(nockBaseUrl)
+      .post('/orders/mockOrderId/notes', (reqBody) => {
+        createdOrderNote = reqBody.note;
+        return true;
+      })
+      .reply(200, { idordder: 'mockOrderId' });
+    const order = await createSettledOrder(shopClient, 1, true, [
+      { id: 'T_1', quantity: 3 },
+    ]);
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    const variant = (await getAllVariants(adminClient)).find(
+      (v) => v.id === 'T_1'
+    );
+    // TODO check if allocated stock is correct
     expect(createdOrder.reference).toBe(order.code);
     expect(createdOrder.deliveryname).toBeDefined();
     expect(createdOrder.deliverycontactname).toBeDefined();
     expect(createdOrder.deliveryaddress).toBeDefined();
     expect(createdOrder.deliveryzipcode).toBeDefined();
     expect(createdOrder.deliverycountry).toBeDefined();
-    expect(createdOrder.products.length).toBe(2);
+    expect(createdOrder.products.length).toBe(1);
+    expect(createdOrder.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);
+    expect(createdOrderNote).toBe('test note');
+  });
+
+  it('Should update to "Delivered" on incoming webhook', async () => {
+    // TODO check if allocated stock and stockOnHand is correct after Delivery
   });
 
   /**

@@ -12,6 +12,7 @@ import {
   EntityHydrator,
   EventBus,
   ForbiddenError,
+  Fulfillment,
   ID,
   JobQueue,
   JobQueueService,
@@ -26,11 +27,13 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockMovementEvent,
   TransactionalConnection,
-  VendureEntity,
+  assertFound,
 } from '@vendure/core';
+import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
 import currency from 'currency.js';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
   PicqerConfig,
@@ -46,9 +49,14 @@ import {
   IncomingWebhook,
   OrderInput,
   OrderProductInput,
+  PickListWebhookData,
   ProductData,
   ProductInput,
+  WebhookInput,
 } from './types';
+import { OrderLineInput } from '@vendure/common/lib/generated-types';
+import { picqerHandler } from './picqer.handler';
+import { throwIfTransitionFailed } from '../../../util/src';
 
 /**
  * Job to push variants from Vendure to Picqer
@@ -194,8 +202,11 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client) {
       return;
     }
-    for (const hookEvent of ['products.free_stock_changed' as const]) {
-      // TODO add order hook
+    const eventsToRegister: WebhookInput['event'][] = [
+      'products.free_stock_changed',
+      'picklists.closed',
+    ];
+    for (const hookEvent of eventsToRegister) {
       // Use first 4 digits of webhook secret as name, so we can identify the hook
       const webhookName = `Vendure ${hookEvent} ${client.webhookSecret.slice(
         0,
@@ -260,11 +271,16 @@ export class PicqerService implements OnApplicationBootstrap {
       throw new ForbiddenError();
     }
     if (input.body.event === 'products.free_stock_changed') {
-      const picqerProduct = input.body.data;
-      await this.updateStockBySkus(ctx, [picqerProduct]);
+      await this.updateStockBySkus(ctx, [input.body.data]);
+    } else if (input.body.event === 'picklists.closed') {
+      await this.handlePicklistClosed(ctx, input.body.data);
     } else {
       Logger.warn(
-        `Invalid event ${input.body.event} for incoming webhook for channel ${input.channelToken}`,
+        `Unknown event ${
+          (input.body as any).event
+        } for incoming webhook for channel ${
+          input.channelToken
+        }. Not handling this webhook...`,
         loggerCtx
       );
       return;
@@ -313,6 +329,85 @@ export class PicqerService implements OnApplicationBootstrap {
     );
     Logger.info(`Added 'pull-stock-levels' job to queue`, loggerCtx);
     return true;
+  }
+
+  /**
+   * When a picklist is closed, a fulfillment for the picked variants is created
+   * This results in a PartiallyShipped or Shipped order state
+   */
+  async handlePicklistClosed(ctx: RequestContext, data: PickListWebhookData) {
+    const order = await this.orderService.findOneByCode(ctx, data.reference, [
+      'lines',
+      'lines.productVariant',
+    ]);
+    if (!order) {
+      throw new Error(`No order found for code ${data.reference}`);
+    }
+    const orderLinesToFulfill: OrderLineInput[] = [];
+
+    data.products.forEach((pickListProduct) => {
+      const orderLine = order.lines.find(
+        (l) => l.productVariant.sku === pickListProduct.productcode
+      );
+      if (orderLine) {
+        orderLinesToFulfill.push({
+          orderLineId: orderLine.id,
+          quantity: pickListProduct.amountpicked,
+        });
+      } else {
+        Logger.error(
+          `Trying to fulfill order ${order.code}, but no variant was found with SKU ${pickListProduct.productcode}`,
+          loggerCtx
+        );
+      }
+    });
+    const fulfillmentResult = await this.orderService.createFulfillment(ctx, {
+      handler: {
+        code: picqerHandler.code,
+        arguments: [],
+      },
+      lines: orderLinesToFulfill,
+    });
+    throwIfTransitionFailed(fulfillmentResult);
+    let updatedOrder = await assertFound(
+      this.orderService.findOne(ctx, order.id, [])
+    );
+    Logger.info(
+      `Fulfilled order ${updatedOrder.code}. Order is now "${updatedOrder.state}"`,
+      loggerCtx
+    );
+    // Transition to Shipped
+    const fulfillment = fulfillmentResult as Fulfillment; // This is safe, because we checked for errors
+    const transitionToShippedResult =
+      await this.orderService.transitionFulfillmentToState(
+        ctx,
+        fulfillment.id,
+        'Shipped'
+      );
+    throwIfTransitionFailed(transitionToShippedResult);
+    updatedOrder = await assertFound(
+      this.orderService.findOne(ctx, order.id, [])
+    );
+    Logger.info(
+      `Marked fulfilment ${fulfillment.id} for order ${updatedOrder.code} as "Shipped". Order is now "${updatedOrder.state}"`,
+      loggerCtx
+    );
+    // Transition to Delivered.
+    // We automatically mark fulfillment as Delivered, because we don't have a way to track delivery in Picqer yet
+    const transitionToDeliveredResult =
+      await this.orderService.transitionFulfillmentToState(
+        ctx,
+        fulfillment.id,
+        'Delivered'
+      );
+    throwIfTransitionFailed(transitionToDeliveredResult);
+    updatedOrder = await assertFound(
+      this.orderService.findOne(ctx, order.id, [])
+    );
+    Logger.info(
+      `Marked fulfilment ${fulfillment.id} for order ${updatedOrder.code} as "Delivered". Order is now "${updatedOrder.state}"`,
+      loggerCtx
+    );
   }
 
   /**
@@ -389,57 +484,56 @@ export class PicqerService implements OnApplicationBootstrap {
       ctx,
       picqerProducts.map((p) => p.productcode)
     );
-    const updateVariantsInput: UpdateProductVariantInput[] = [];
-    // Determine new stock level per variant
-    vendureVariants.forEach((variant) => {
-      const picqerProduct = picqerProducts.find(
-        (p) => p.productcode === variant.sku
-      );
-      if (!picqerProduct) {
-        return; // Should never happen
-      }
-      const picqerStockLevel = picqerProduct?.stock?.[0]?.freestock;
-      if (!picqerStockLevel) {
-        Logger.info(
-          `Picqer product ${picqerProduct.idproduct} (sku ${picqerProduct.productcode}) has no stock set, not updating variant in Vendure`,
-          loggerCtx
-        );
-      }
-      const newStockOnHand = variant.stockAllocated + (picqerStockLevel || 0);
-      // Fields from picqer that should be added to the variant
-      let additionalVariantFields = {};
-      try {
-        additionalVariantFields =
-          this.options.pullFieldsFromPicqer?.(picqerProduct) || {};
-      } catch (e: any) {
-        Logger.error(
-          `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
-          loggerCtx
-        );
-      }
-      updateVariantsInput.push({
-        ...additionalVariantFields,
-        id: variant.id,
-        stockOnHand: newStockOnHand,
-      });
-    });
-    // Use raw connection for better performance
+    const stockAdjustments: StockAdjustment[] = [];
+    let updateCount = 0; // Nr of variants that were updated
+    // Loop over variants to determine new stock level per variant and update in DB
     await Promise.all(
-      updateVariantsInput.map(async (v) => {
-        const variant = await this.connection
-          .getRepository(ctx, ProductVariant)
-          .update({ id: v.id }, v);
+      vendureVariants.map(async (variant) => {
+        const picqerProduct = picqerProducts.find(
+          (p) => p.productcode === variant.sku
+        );
+        if (!picqerProduct) {
+          return; // Should never happen
+        }
+        const picqerStockLevel = picqerProduct?.stock?.[0]?.freestock;
+        if (!picqerStockLevel) {
+          Logger.info(
+            `Picqer product ${picqerProduct.idproduct} (sku ${picqerProduct.productcode}) has no stock set, not updating variant in Vendure`,
+            loggerCtx
+          );
+        }
+        const newStockOnHand = variant.stockAllocated + (picqerStockLevel || 0);
+        // Fields from picqer that should be added to the variant
+        let additionalVariantFields = {};
+        try {
+          additionalVariantFields =
+            this.options.pullPicqerProductFields?.(picqerProduct) || {};
+        } catch (e: any) {
+          Logger.error(
+            `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
+            loggerCtx
+          );
+        }
+        // Update the actual variant in Vendure, with raw connection for better performance
+        await this.connection.getRepository(ctx, ProductVariant).update(
+          { id: variant.id },
+          {
+            ...additionalVariantFields,
+            stockOnHand: newStockOnHand,
+          }
+        );
+        // Add stock adjustment
+        stockAdjustments.push(
+          new StockAdjustment({
+            quantity: newStockOnHand - variant.stockOnHand, // Delta
+            productVariant: { id: variant.id },
+          })
+        );
+        updateCount++;
       })
     );
-    // TODO fire event variant
-    await this.eventBus.publish(
-      new ProductVariantEvent(ctx, vendureVariants, 'updated')
-    );
-
-    Logger.info(
-      `Updated stock levels of ${updateVariantsInput.length} variants`,
-      loggerCtx
-    );
+    await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
+    Logger.info(`Updated stock levels of ${updateCount} variants`, loggerCtx);
   }
 
   /**
@@ -519,6 +613,11 @@ export class PicqerService implements OnApplicationBootstrap {
       `Created order "${order.code}" in status "processing" in Picqer with id ${createdOrder.idorder}`,
       loggerCtx
     );
+    if (this.options.addPicqerOrderNote) {
+      const note = this.options.addPicqerOrderNote(order);
+      await client.addOrderNote(createdOrder.idorder, note);
+      Logger.info(`Added custom note to order ${order.code}`, loggerCtx);
+    }
   }
 
   /**
@@ -817,7 +916,8 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   mapToProductInput(variant: ProductVariant, vatGroupId: number): ProductInput {
-    const additionalFields = this.options.pushFieldsToPicqer?.(variant) || {};
+    const additionalFields =
+      this.options.pushProductVariantFields?.(variant) || {};
     if (!variant.sku) {
       throw Error(`Variant with ID ${variant.id} has no SKU`);
     }

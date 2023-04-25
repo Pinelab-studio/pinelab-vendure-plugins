@@ -50,12 +50,20 @@ plugins: [
 
 ```
 
+Start the server and set the fulfillment handler to `picqer: Fulfill with Picqer` for all shipping methods that should be handled via Picqer.
+
 ## Stock levels
 
 Stock levels are updated in Vendure on
 
 1. Full sync via the Admin UI
 2. Or, on incoming webhook from Picqer
+
+## Orders
+
+1. Orders are pushed to Picqer with status `processing` when an order is placed in Vendure. The Vendure order will remain in `Payment Settled` and no fulfillments are created.
+2. Products are fulfilled in Vendure based on the products in the incoming `picklist.closed` events from Picqer. This can result in the order being `Shipped` or `PartiallyShipped`
+3. Currently, when the order is `Shipped` it will automatically transition to `Delivered`, because we do not receive delivery events from Picqer.
 
 ## Caveats
 

@@ -16,10 +16,12 @@ export interface VatGroup {
   percentage: number;
 }
 
-export interface Webhook {
+export type WebhookEvent = 'products.free_stock_changed' | 'picklists.closed';
+
+export interface WebhookData {
   idhook: number;
   name: string;
-  event: 'products.free_stock_changed' | 'orders.completed';
+  event: WebhookEvent;
   address: string;
   active: boolean;
   secret: boolean | string;
@@ -27,17 +29,25 @@ export interface Webhook {
 
 export interface WebhookInput {
   name: string;
-  event: 'products.free_stock_changed' | 'orders.completed';
+  event: WebhookEvent;
   address: string;
   secret: string;
 }
 
-export type IncomingWebhook = IncomingProductWebhook; // TODO | IncomingOrderWebhook;
+export type IncomingWebhook = IncomingProductWebhook | IncomingPicklistWebhook;
+
+export interface IncomingPicklistWebhook {
+  idhook: number;
+  name: string;
+  event: 'picklists.closed';
+  event_triggered_at: string;
+  data: PickListWebhookData;
+}
 
 export interface IncomingProductWebhook {
   idhook: number;
   name: string;
-  event: string;
+  event: 'products.free_stock_changed';
   event_triggered_at: string;
   data: ProductData;
 }
@@ -217,5 +227,68 @@ export interface OrderInput {
 
 export interface OrderProductInput {
   idproduct: number;
+  amount: number;
+}
+
+export interface PickListWebhookData {
+  idpicklist: number;
+  picklistid: string;
+  idcustomer: number;
+  idorder: number;
+  idreturn: any;
+  idwarehouse: number;
+  idtemplate: number;
+  idshippingprovider_profile: any;
+  deliveryname: string;
+  deliverycontact: string;
+  deliveryaddress: string;
+  deliveryaddress2: any;
+  deliveryzipcode: string;
+  deliverycity: any;
+  deliveryregion: any;
+  deliverycountry: string;
+  telephone: string;
+  emailaddress: string;
+  reference: string;
+  assigned_to_iduser: any;
+  invoiced: boolean;
+  urgent: boolean;
+  preferred_delivery_date: any;
+  status: string;
+  totalproducts: number;
+  totalpicked: number;
+  snoozed_until: any;
+  closed_by_iduser: number;
+  closed_at: string;
+  created: string;
+  updated: string;
+  products: PickListProductData[];
+  comment_count: number;
+}
+
+export interface PickListProductData {
+  idpicklist_product: number;
+  idproduct: number;
+  idorder_product: number;
+  idreturn_product_replacement: any;
+  idvatgroup: number;
+  productcode: string;
+  name: string;
+  remarks: any;
+  amount: number;
+  amountpicked: number;
+  amount_picked: number;
+  price: number;
+  weight: number;
+  stocklocation: string;
+  stock_location: string;
+  partof_idpicklist_product: any;
+  has_parts: boolean;
+  pick_locations: PickLocation[];
+}
+
+export interface PickLocation {
+  idlocation: number;
+  name: string;
   amount: number;
 }

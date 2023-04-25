@@ -1,18 +1,18 @@
-import axios, { AxiosInstance } from 'axios';
-import {
-  ProductInput,
-  ProductData,
-  VatGroup,
-  Webhook,
-  WebhookInput,
-  CustomerInput,
-  CustomerData,
-  OrderInput,
-  OrderData,
-} from './types';
-import { loggerCtx } from '../constants';
 import { Logger } from '@vendure/core';
+import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';
+import { loggerCtx } from '../constants';
+import {
+  CustomerData,
+  CustomerInput,
+  OrderData,
+  OrderInput,
+  ProductData,
+  ProductInput,
+  VatGroup,
+  WebhookData,
+  WebhookInput,
+} from './types';
 
 export interface PicqerClientInput {
   apiEndpoint: string;
@@ -66,8 +66,14 @@ export class PicqerClient {
     productCode: string
   ): Promise<ProductData | undefined> {
     const [activeProducts, inactiveProducts] = await Promise.all([
-      this.rawRequest('get', `/products?productcode=${productCode}`),
-      this.rawRequest('get', `/products?productcode=${productCode}&inactive`),
+      this.rawRequest(
+        'get',
+        `/products?productcode=${encodeURIComponent(productCode)}`
+      ),
+      this.rawRequest(
+        'get',
+        `/products?productcode=${encodeURIComponent(productCode)}&inactive`
+      ),
     ]);
     const result = [...activeProducts, ...inactiveProducts];
     if (result.length > 1) {
@@ -114,6 +120,13 @@ export class PicqerClient {
     return this.rawRequest('put', `/products/${productId}`, input);
   }
 
+  async addOrderNote(
+    orderId: string | number,
+    note: string
+  ): Promise<ProductData> {
+    return this.rawRequest('post', `/orders/${orderId}/notes`, { note });
+  }
+
   /**
    * Add an image to a product
    */
@@ -129,14 +142,14 @@ export class PicqerClient {
   /**
    * Get all registered webhooks
    */
-  async getWebhooks(): Promise<Webhook[]> {
+  async getWebhooks(): Promise<WebhookData[]> {
     return this.rawRequest('get', `/hooks`);
   }
 
   /**
    * Create new webhook
    */
-  async createWebhook(input: WebhookInput): Promise<Webhook> {
+  async createWebhook(input: WebhookInput): Promise<WebhookData> {
     return this.rawRequest('post', `/hooks`, input);
   }
 

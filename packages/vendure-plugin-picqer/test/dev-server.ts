@@ -36,6 +36,9 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       PicqerPlugin.init({
         enabled: true,
         vendureHost: process.env.HOST!,
+        pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
+        pullPicqerProductFields: (picqerProd) => ({ outOfStockThreshold: 123 }),
+        addPicqerOrderNote: (order) => 'test note',
       }),
       AssetServerPlugin.init({
         assetUploadDir: path.join(__dirname, '../__data__/assets'),
