@@ -346,6 +346,13 @@ export class PicqerService implements OnApplicationBootstrap {
     const orderLinesToFulfill: OrderLineInput[] = [];
 
     data.products.forEach((pickListProduct) => {
+      if (!pickListProduct.amountpicked) {
+        Logger.warn(
+          `Incoming webhook has no "amountpicked" set for product ${pickListProduct.productcode}, not fulfilling this product`,
+          loggerCtx
+        );
+        return;
+      }
       const orderLine = order.lines.find(
         (l) => l.productVariant.sku === pickListProduct.productcode
       );

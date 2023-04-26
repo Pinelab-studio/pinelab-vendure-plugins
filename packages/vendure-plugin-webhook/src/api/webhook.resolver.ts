@@ -8,8 +8,7 @@ import { webhookPermission } from '../index';
  */
 @Resolver()
 export class WebhookResolver {
-  constructor(private webhookService: WebhookService) {
-  }
+  constructor(private webhookService: WebhookService) {}
 
   @Query()
   @Allow(webhookPermission.Permission)

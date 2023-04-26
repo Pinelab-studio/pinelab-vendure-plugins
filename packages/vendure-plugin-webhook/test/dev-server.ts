@@ -36,12 +36,14 @@ import * as path from 'path';
       requestTransformers: [
         {
           name: 'My transformer 1',
-          transform: async (event, injector) => ({ body: "my custom body 1" })
+          transform: async (event, injector) => ({ body: 'my custom body 1' }),
         },
         {
           name: 'My other request Transformer',
-          transform: async (event, injector) => ({ body: "my transformer body 2" })
-        }
+          transform: async (event, injector) => ({
+            body: 'my transformer body 2',
+          }),
+        },
       ],
     })
   );

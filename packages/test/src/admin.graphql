@@ -117,6 +117,8 @@ query GetVariants {
       price
       priceWithTax
       outOfStockThreshold
+      trackInventory
+      stockAllocated
     }
     totalItems
   }

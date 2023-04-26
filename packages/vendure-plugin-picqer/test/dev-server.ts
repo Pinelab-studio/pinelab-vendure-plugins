@@ -1,23 +1,24 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
+  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
-  SqljsInitializer,
 } from '@vendure/testing';
-import { PicqerPlugin } from '../src';
-import { initialData } from '../../test/src/initial-data';
 import path from 'path';
-import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
+import { updateVariants } from '../../test/src/admin-utils';
+import { GlobalFlag } from '../../test/src/generated/admin-graphql';
+import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { PicqerPlugin } from '../src';
+import { UPSERT_CONFIG } from '../src/ui/queries';
 
 (async () => {
   require('dotenv').config();
@@ -80,5 +81,11 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     },
   });
   // await adminClient.query(FULL_SYNC);
+  const variants = await updateVariants(adminClient, [
+    { id: 'T_1', trackInventory: GlobalFlag.True },
+    { id: 'T_2', trackInventory: GlobalFlag.True },
+    { id: 'T_3', trackInventory: GlobalFlag.True },
+    { id: 'T_4', trackInventory: GlobalFlag.True },
+  ]);
   const order = await createSettledOrder(shopClient, 1);
 })();
