@@ -1,12 +1,4 @@
-import {
-  ChannelService,
-  ConfigService,
-  DefaultLogger,
-  LanguageCode,
-  LogLevel,
-  mergeConfig,
-  RequestContext,
-} from '@vendure/core';
+import { DefaultLogger, ID, LogLevel, mergeConfig } from '@vendure/core';
 import {
   E2E_DEFAULT_CHANNEL_TOKEN,
   SimpleGraphQLClient,
@@ -18,23 +10,34 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
 import {
+  addShippingMethod,
   getAllVariants,
+  getOrder,
   updateProduct,
   updateVariants,
 } from '../../test/src/admin-utils';
+import {
+  GetVariantsQuery,
+  GlobalFlag,
+} from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
-import { VatGroup } from '../src/api/types';
+import { IncomingPicklistWebhook, VatGroup } from '../src/api/types';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
-import { GetVariantsQuery } from '../../test/src/generated/admin-graphql';
+import { createSignature } from './test-helpers';
+import { Order } from '@vendure/core';
+import { picqerHandler } from '../src/api/picqer.handler';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
+let shopClient: SimpleGraphQLClient;
 const nockBaseUrl = 'https://test-picqer.io/api/v1/';
 
 jest.setTimeout(60000);
 
-describe('Order export plugin', function () {
+describe('Picqer plugin', function () {
   // Clear nock mocks after each test
   afterEach(() => nock.cleanAll());
 
@@ -46,11 +49,17 @@ describe('Order export plugin', function () {
         PicqerPlugin.init({
           enabled: true,
           vendureHost: 'https://example-vendure.io',
-          pushFieldsToPicqer: (variant) => ({ barcode: variant.sku }),
-          // Update for testing purposes
-          pullFieldsFromPicqer: (picqerProd) => ({ outOfStockThreshold: 123 }),
+          // Dummy data for testing purposes
+          pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
+          pullPicqerProductFields: (picqerProd) => ({
+            outOfStockThreshold: 123,
+          }),
+          addPicqerOrderNote: (order) => 'test note',
         }),
       ],
+      paymentOptions: {
+        paymentMethodHandlers: [testPaymentMethod],
+      },
       customFields: {
         ProductVariant: [
           {
@@ -62,9 +71,17 @@ describe('Order export plugin', function () {
       },
     });
 
-    ({ server, adminClient } = createTestEnvironment(config));
+    ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
-      initialData,
+      initialData: {
+        ...initialData,
+        paymentMethods: [
+          {
+            name: testPaymentMethod.code,
+            handler: { code: testPaymentMethod.code, arguments: [] },
+          },
+        ],
+      },
       productsCsvPath: '../test/src/products-import.csv',
     });
   }, 60000);
@@ -73,11 +90,25 @@ describe('Order export plugin', function () {
     expect(server.app.getHttpServer).toBeDefined();
   });
 
+  it('Should track inventory of all variants', async () => {
+    await adminClient.asSuperAdmin();
+    const variants = await updateVariants(adminClient, [
+      { id: 'T_1', trackInventory: GlobalFlag.True },
+      { id: 'T_2', trackInventory: GlobalFlag.True },
+      { id: 'T_3', trackInventory: GlobalFlag.True },
+      { id: 'T_4', trackInventory: GlobalFlag.True },
+    ]);
+    const everyVariantHasStockTracking = variants.every(
+      (v) => v!.trackInventory === GlobalFlag.True
+    );
+    expect(everyVariantHasStockTracking).toBe(true);
+  });
+
   const createdHooks: any[] = [];
 
   it('Should update Picqer config via admin api', async () => {
     // Mock hooks GET, because webhooks are updated on config save
-    nock(nockBaseUrl).get('/hooks').reply(200, []);
+    nock(nockBaseUrl).get('/hooks').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
         createdHooks.push(reqBody);
@@ -107,13 +138,14 @@ describe('Order export plugin', function () {
 
   it('Should have created hooks when config was updated', async () => {
     // Expect 1 created hook: stock change
-    await expect(createdHooks.length).toBe(1);
+    await expect(createdHooks.length).toBe(2);
     await expect(createdHooks[0].event).toBe('products.free_stock_changed');
     await expect(createdHooks[0].address).toBe(
       `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
     );
     await expect(createdHooks[0].secret).toBeDefined();
     await expect(createdHooks[0].name).toBeDefined();
+    await expect(createdHooks[1].event).toBe('picklists.closed');
   });
 
   it('Should get Picqer config after upsert', async () => {
@@ -126,8 +158,142 @@ describe('Order export plugin', function () {
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
 
+  it('Should create a shipping method with Picqer handler', async () => {
+    await addShippingMethod(adminClient, picqerHandler.code, '500');
+  });
+
+  let createdOrder: Order;
+
+  it('Should push order to Picqer on order placement', async () => {
+    let isOrderInProcessing = false;
+    let createdOrderNote = undefined;
+    let picqerOrderRequest: any;
+    nock(nockBaseUrl)
+      .get('/vatgroups') // Mock vatgroups, because it will try to update products
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
+    nock(nockBaseUrl)
+      .get(/.products*/) // Mock products, because it will try to update products
+      .reply(200, [{ idproduct: 'mockProductId' }])
+      .persist();
+    nock(nockBaseUrl)
+      .get(/.customers*/) // Mock customer, to connect the order to a customer
+      .reply(200, [{ idcustomer: 'mockCustomerId' }]);
+    nock(nockBaseUrl)
+      .put('/products/mockProductId') // Mock product update, because it will try to update products
+      .reply(200, { idproduct: 'mockId' })
+      .persist();
+    nock(nockBaseUrl)
+      .post('/orders/', (reqBody) => {
+        picqerOrderRequest = reqBody;
+        return true;
+      })
+      .reply(200, { idorder: 'mockOrderId' });
+    nock(nockBaseUrl)
+      .post('/orders/mockOrderId/process', (reqBody) => {
+        isOrderInProcessing = true;
+        return true;
+      })
+      .reply(200, { idordder: 'mockOrderId' });
+    nock(nockBaseUrl)
+      .post('/orders/mockOrderId/notes', (reqBody) => {
+        createdOrderNote = reqBody.note;
+        return true;
+      })
+      .reply(200, { idordder: 'mockOrderId' });
+    // Shipping method 3 should be our created Picqer handler method
+    createdOrder = await createSettledOrder(shopClient, 3, true, [
+      { id: 'T_1', quantity: 3 },
+    ]);
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    const variant = (await getAllVariants(adminClient)).find(
+      (v) => v.id === 'T_1'
+    );
+    expect(variant!.stockOnHand).toBe(100);
+    expect(variant!.stockAllocated).toBe(3);
+    expect(picqerOrderRequest.reference).toBe(createdOrder.code);
+    expect(picqerOrderRequest.deliveryname).toBeDefined();
+    expect(picqerOrderRequest.deliverycontactname).toBeDefined();
+    expect(picqerOrderRequest.deliveryaddress).toBeDefined();
+    expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
+    expect(picqerOrderRequest.deliverycountry).toBeDefined();
+    expect(picqerOrderRequest.products.length).toBe(1);
+    expect(picqerOrderRequest.products[0].amount).toBe(3);
+    expect(isOrderInProcessing).toBe(true);
+    expect(createdOrderNote).toBe('test note');
+  });
+
+  it('Should update to "PartiallyDelivered" when 2 of 3 items are shipped', async () => {
+    const mockIncomingWebhook = {
+      event: 'picklists.closed',
+      data: {
+        reference: createdOrder.code,
+        products: [
+          { productcode: 'L2201308', amountpicked: 2 }, // Only 2 of 3 are picked
+        ],
+      },
+    } as Partial<IncomingPicklistWebhook>;
+    await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockIncomingWebhook),
+        headers: {
+          'X-Picqer-Signature': createSignature(
+            mockIncomingWebhook,
+            'test-api-key'
+          ),
+        },
+      }
+    );
+    const order = await getOrder(adminClient, createdOrder.id as string);
+    expect(order!.state).toBe('PartiallyDelivered');
+  });
+
+  it('Should have updated stock after 1 item was shipped', async () => {
+    const variant = (await getAllVariants(adminClient)).find(
+      (v) => v.id === 'T_1'
+    );
+    expect(variant!.stockOnHand).toBe(98);
+    expect(variant!.stockAllocated).toBe(1);
+  });
+
+  it('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
+    const mockIncomingWebhook = {
+      event: 'picklists.closed',
+      data: {
+        reference: createdOrder.code,
+        products: [
+          { productcode: 'L2201308', amountpicked: 1 }, // last one to complete the order
+        ],
+      },
+    } as Partial<IncomingPicklistWebhook>;
+    await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockIncomingWebhook),
+        headers: {
+          'X-Picqer-Signature': createSignature(
+            mockIncomingWebhook,
+            'test-api-key'
+          ),
+        },
+      }
+    );
+    const order = await getOrder(adminClient, createdOrder.id as string);
+    expect(order!.state).toBe('Delivered');
+  });
+
+  it('Should have updated stock after all items are shipped', async () => {
+    const variant = (await getAllVariants(adminClient)).find(
+      (v) => v.id === 'T_1'
+    );
+    expect(variant!.stockOnHand).toBe(97);
+    expect(variant!.stockAllocated).toBe(0);
+  });
+
   /**
-   * Requestbodies of products that have been created or updated in Picqer
+   * Request payloads of products that have been created or updated in Picqer
    */
   let pushProductPayloads: any[] = [];
 
@@ -242,8 +408,42 @@ describe('Order export plugin', function () {
     expect(pushProductPayloads!.every((p) => p.active === false)).toBe(true);
   });
 
-  it.skip('Should update stockLevels on incoming webhook', async () => {
-    expect(true).toBe(false);
+  it('Should update stock level on incoming webhook', async () => {
+    const body = {
+      event: 'products.free_stock_changed',
+      data: {
+        productcode: 'L2201308',
+        stock: [{ freestock: 543 }],
+      },
+    };
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'X-Picqer-Signature': createSignature(body, 'test-api-key'),
+        },
+      }
+    );
+    const variants = await getAllVariants(adminClient);
+    const variant = variants.find((v) => v.sku === 'L2201308');
+    expect(res.ok).toBe(true);
+    expect(variant?.stockOnHand).toBe(543);
+  });
+
+  it('Should fail with invalid signature', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({}),
+        headers: {
+          'X-Picqer-Signature': 'invalid signature',
+        },
+      }
+    );
+    expect(res.status).toBe(403);
   });
 
   afterAll(() => {

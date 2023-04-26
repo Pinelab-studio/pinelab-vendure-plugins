@@ -1,10 +1,11 @@
 import {
+  Order,
   PluginCommonModule,
   ProductVariant,
   VendurePlugin,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { ProductInput } from './api/types';
+import { OrderInput, ProductInput } from './api/types';
 import { adminSchema } from './api/api-extensions';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
@@ -15,6 +16,7 @@ import { PicqerResolver } from './api/picqer.resolvers';
 import { PicqerController } from './api/picqer.controller';
 import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
+import { picqerHandler } from './api/picqer.handler';
 
 export interface PicqerOptions {
   enabled: boolean;
@@ -28,18 +30,25 @@ export interface PicqerOptions {
    * thus making Picqer responsible for the value of fields.
    * @example
    * // Store weight in grams from Picqer as weight in KG in Vendure
-   * pullFieldsFromPicqer: (product) => ({ customFields: { weight: product.weight / 1000 }})
+   * pullPicqerProductFields: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
-  pullFieldsFromPicqer?: (
+  pullPicqerProductFields?: (
     product: ProductInput
   ) => Partial<UpdateProductVariantInput>;
   /**
    * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
    * @example
    * // Store `variant.customFields.EAN` from Vendure as `product.barcode` in Picqer
-   * pushFieldsToPicqer: (variant) => ({ barcode: variant.customFields.EAN }})
+   * pushProductVariantFields: (variant) => ({ barcode: variant.customFields.EAN }})
    */
-  pushFieldsToPicqer?: (variant: ProductVariant) => Partial<ProductInput>;
+  pushProductVariantFields?: (variant: ProductVariant) => Partial<ProductInput>;
+  /**
+   * Add a note to order in Picqer
+   * @example
+   * // Push `order.customFields.customerNote` to Picqer
+   * addPicqerOrderNote: (order) => `This is note from Vendure ${order.customFields.customerNote}`)
+   */
+  addPicqerOrderNote?: (order: Order) => string;
 }
 
 @VendurePlugin({
@@ -60,6 +69,7 @@ export interface PicqerOptions {
   configuration: (config) => {
     config.apiOptions.middleware.push(createRawBodyMiddleWare('/picqer*'));
     config.authOptions.customPermissions.push(permission);
+    config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
   },
 })
