@@ -182,7 +182,6 @@ export class PicqerService implements OnApplicationBootstrap {
       });
     // Listen for Order placed events
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      // Only push if `enabled` is updated
       await this.addPushOrderJob(ctx, order);
     });
   }
