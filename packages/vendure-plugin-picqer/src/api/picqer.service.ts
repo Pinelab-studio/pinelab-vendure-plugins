@@ -568,6 +568,16 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
+    const hasPicqerHandler = order.shippingLines.some(
+      (s) => s.shippingMethod?.fulfillmentHandlerCode === picqerHandler.code
+    );
+    if (!hasPicqerHandler) {
+      Logger.info(
+        `Order ${order.code} doesn't have the Picqer handler set in shipping lines, ignoring this order...`,
+        loggerCtx
+      );
+      return;
+    }
     Logger.info(`Pushing order ${order.code} to Picqer...`, loggerCtx);
     if (!order.customer) {
       Logger.error(

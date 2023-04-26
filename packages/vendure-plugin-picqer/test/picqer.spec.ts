@@ -10,6 +10,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
 import {
+  addShippingMethod,
   getAllVariants,
   getOrder,
   updateProduct,
@@ -27,6 +28,7 @@ import { IncomingPicklistWebhook, VatGroup } from '../src/api/types';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
+import { picqerHandler } from '../src/api/picqer.handler';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -156,6 +158,10 @@ describe('Picqer plugin', function () {
     await expect(config.supportEmail).toBe('support@mystore.io');
   });
 
+  it('Should create a shipping method with Picqer handler', async () => {
+    await addShippingMethod(adminClient, picqerHandler.code, '500');
+  });
+
   let createdOrder: Order;
 
   it('Should push order to Picqer on order placement', async () => {
@@ -194,7 +200,8 @@ describe('Picqer plugin', function () {
         return true;
       })
       .reply(200, { idordder: 'mockOrderId' });
-    createdOrder = await createSettledOrder(shopClient, 1, true, [
+    // Shipping method 3 should be our created Picqer handler method
+    createdOrder = await createSettledOrder(shopClient, 3, true, [
       { id: 'T_1', quantity: 3 },
     ]);
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
