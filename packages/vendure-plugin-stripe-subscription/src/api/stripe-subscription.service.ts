@@ -20,6 +20,7 @@ import {
   OrderStateTransitionError,
   PaymentMethodService,
   ProductVariantService,
+  Promotion,
   RequestContext,
   SerializedRequestContext,
   StockMovementEvent,
@@ -328,9 +329,17 @@ export class StripeSubscriptionService {
       if (!order) {
         throw new UserInputError(`No order found with id ${input.orderId}`);
       }
-      // TODO Check if our custom promotion "discount_future_subscription_payments" is applied
-      // order.promotions[0].actions
-      // TODO Get the discount percentage from the configured promotion and pass that to the calculateSubscriptionPricing function
+      // Check if any promotions are applied and pass them to the calculateSubscriptionPricing function
+      if (
+        order.promotions.length > 0 &&
+        order.promotions.actions.find(
+          (action) => action.code === 'discount_subscription_payments'
+        )
+      ) {
+        let adjustedInput = input;
+        adjustedInput.discount_action = action;
+        return calculateSubscriptionPricing(variant, adjustedInput);
+      }
     }
     return calculateSubscriptionPricing(variant, input);
   }
@@ -508,6 +517,7 @@ export class StripeSubscriptionService {
             productId: product.id,
             currencyCode: order.currencyCode,
             amount: pricing.recurringPriceWithTax,
+            coupon: order.couponCodes.toString(),
             interval: pricing.interval,
             intervalCount: pricing.intervalCount,
             paymentMethodId: stripePaymentMethodId,
@@ -581,6 +591,7 @@ export class StripeSubscriptionService {
               productId: downpaymentProduct.id,
               currencyCode: order.currencyCode,
               amount: pricing.downpaymentWithTax,
+              coupon: order.couponCodes.toString(),
               interval: downpaymentInterval,
               intervalCount: downpaymentIntervalCount,
               paymentMethodId: stripePaymentMethodId,

@@ -30,7 +30,7 @@ export function calculateSubscriptionPricing(
   variant: VariantForCalculation,
   input?: Pick<
     StripeSubscriptionPricingInput,
-    'downpaymentWithTax' | 'startDate'
+    'downpaymentWithTax' | 'startDate' | 'discount_action'
   >
 ): StripeSubscriptionPricing {
   if (!variant.priceWithTax) {
@@ -107,6 +107,7 @@ export function calculateSubscriptionPricing(
     );
   }
   let proratedDays = 0;
+  let discounts = [];
   let totalProratedAmount = 0;
   if (schedule.useProration) {
     proratedDays = getDaysUntilNextStartDate(
@@ -119,6 +120,24 @@ export function calculateSubscriptionPricing(
   let recurringPrice = Math.floor(
     (totalSubscriptionPrice - downpayment) / billingsPerDuration
   );
+  let discountAmount = 0;
+  let discountPercent = 0;
+  let discountedRecurringPrice = 0;
+  if (
+    input?.discount_action &&
+    input.discount_action.args &&
+    input.discount_action.args.length > 0
+  ) {
+    const action = input?.discount_action;
+    switch (action.code) {
+      case 'discount_future_subscription_payments':
+      case 'order_percentage_discount':
+        discountPercent -= action.value;
+        discountAmount = recurringPrice * (discountPercent / 100);
+        discountedRecurringPrice = recurringPrice - discountAmount;
+        break;
+    }
+  }
   if (schedule.paidUpFront) {
     // User pays for the full membership now
     amountDueNow = variant.priceWithTax + totalProratedAmount;
@@ -143,6 +162,9 @@ export function calculateSubscriptionPricing(
     amountDueNowWithTax: amountDueNow,
     subscriptionStartDate,
     subscriptionEndDate,
+    discountPercent,
+    discountAmount,
+    discountedRecurringPriceWithTax: discountedRecurringPrice,
     schedule: {
       ...schedule,
       id: String(schedule.id),

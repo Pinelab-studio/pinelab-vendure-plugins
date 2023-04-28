@@ -6,6 +6,7 @@ interface SubscriptionInput {
   productId: string;
   currencyCode: string;
   amount: number;
+  coupon: string;
   interval: Stripe.SubscriptionCreateParams.Item.PriceData.Recurring.Interval;
   intervalCount: number;
   paymentMethodId: string;
@@ -69,6 +70,7 @@ export class StripeClient extends Stripe {
     productId,
     currencyCode,
     amount,
+    coupon,
     interval,
     intervalCount,
     paymentMethodId,
@@ -98,6 +100,7 @@ export class StripeClient extends Stripe {
           },
         },
       ],
+      coupon: coupon,
       off_session: true,
       default_payment_method: paymentMethodId,
       payment_behavior: 'allow_incomplete',
