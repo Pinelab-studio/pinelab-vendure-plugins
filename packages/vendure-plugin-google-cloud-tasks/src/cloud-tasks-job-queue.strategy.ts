@@ -1,5 +1,4 @@
-import { CloudTasksClient, Tasks } from '@google-cloud/tasks';
-import ITask from '@google-cloud/tasks';
+import { CloudTasksClient } from '@google-cloud/tasks';
 import { Job, JobData, JobQueueStrategy, Logger } from '@vendure/core';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { CloudTaskMessage, CloudTaskOptions } from './types';
@@ -44,7 +43,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       },
     };
     const request = { parent, task };
-    let retries = 0;
+    let currentAttempt = 0;
     while (true) {
       try {
         await this.client.createTask(request, {
@@ -65,13 +64,13 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
           retries: job.retries,
         });
       } catch (e) {
-        retries += 1;
+        currentAttempt += 1;
         Logger.error(
           `Failed to add task to queue ${queueName}: ${e?.message}`,
           CloudTasksPlugin.loggerCtx,
           e
         );
-        if (retries === (this.options.createTaskRetries ?? 5)) {
+        if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
           throw e;
         }
       }

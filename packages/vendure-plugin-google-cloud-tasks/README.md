@@ -30,6 +30,7 @@ plugins: [
     queueSuffix: 'plugin-test',
     // Default amount of retries when no job.retries is given
     defaultJobRetries: 15,
+    // The amount of retries when a job fails to be pushed to the queue
     createTaskRetries: 3,
   }),
 ];
