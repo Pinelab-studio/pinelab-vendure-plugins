@@ -14,7 +14,11 @@ export interface CloudTaskOptions {
   /**
    * Default nr of retries a job should attempt if no job.retries is given
    */
-  defaultRetries?: number;
+  defaultJobRetries?: number;
+  /**
+   *
+   */
+  createTaskRetries?: number;
 }
 
 export interface CloudTaskMessage {

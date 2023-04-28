@@ -29,7 +29,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       queueName: queueName,
       data: job.data,
       createdAt: new Date(),
-      maxRetries: job.retries || this.options.defaultRetries || 3,
+      maxRetries: job.retries || this.options.defaultJobRetries || 3,
     };
     const parent = this.getQueuePath(queueName);
     const task = {
@@ -44,6 +44,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
       },
     };
     const request = { parent, task };
+    let retries = 0;
     while (true) {
       try {
         await this.client.createTask(request, {
@@ -64,11 +65,15 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
           retries: job.retries,
         });
       } catch (e) {
+        retries += 1;
         Logger.error(
           `Failed to add task to queue ${queueName}: ${e?.message}`,
           CloudTasksPlugin.loggerCtx,
           e
         );
+        if (retries === (this.options.createTaskRetries ?? 5)) {
+          throw e;
+        }
       }
     }
   }
