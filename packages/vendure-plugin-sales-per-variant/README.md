@@ -1,8 +1,6 @@
 # Vendure Sales Per Variant plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-metrics/dev/@vendure/core)
-
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-metrics)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-sales-per-variant/dev/@vendure/core)
 
 A plugin to measure and visualize your shop's conversion rate (CRV), average order value (AOV) and number of orders per
 month or per week, for the past 12 months (or weeks) per variants.
@@ -12,7 +10,7 @@ month or per week, for the past 12 months (or weeks) per variants.
 1. Configure the plugin in `vendure-config.ts`:
 
 ```ts
-import { MetricsPlugin } from "vendure-plugin-sales-per-variant";
+import { SalesPerVariantPlugin } from "vendure-plugin-sales-per-variant";
 
 plugins: [
   ...
@@ -30,7 +28,7 @@ plugins: [
 ```
 
 2. Start your Vendure server and login as administrator
-3. You should now be able to select `metrics` when you click on the button `add widget`
+3. You should now be able to select `product metrics` when you click on the button `add widget`
 
 Metric results are cached in memory to prevent heavy database queries everytime a user opens its dashboard.
 

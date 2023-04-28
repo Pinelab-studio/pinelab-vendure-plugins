@@ -13,17 +13,3 @@ export const GET_METRICS = gql`
     }
   }
 `;
-
-export const ITEMS = gql`
-  {
-    products {
-      items {
-        name
-        variants {
-          id
-          name
-        }
-      }
-    }
-  }
-`;

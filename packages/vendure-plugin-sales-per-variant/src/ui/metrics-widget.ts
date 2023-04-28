@@ -1,5 +1,10 @@
-import { Component, NgModule, OnInit } from '@angular/core';
-import { DataService, SharedModule } from '@vendure/admin-ui/core';
+import { Component, NgModule, OnInit, ChangeDetectorRef } from '@angular/core';
+import {
+  DataService,
+  SharedModule,
+  ModalService,
+  ProductMultiSelectorDialogComponent,
+} from '@vendure/admin-ui/core';
 import {
   MetricInterval,
   MetricSummary,
@@ -7,9 +12,10 @@ import {
   MetricSummaryQueryVariables,
 } from './generated/graphql';
 import Chart from 'chart.js/auto';
-import { GET_METRICS, ITEMS } from './queries.graphql';
+import { GET_METRICS } from './queries.graphql';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
+import { ID } from '@vendure/core';
 
 @Component({
   selector: 'metrics-widget',
@@ -36,7 +42,16 @@ import { switchMap } from 'rxjs/operators';
     <br />
     <br />
     <div>
-      <clr-dropdown>
+      <button
+        (click)="openProductSelectionDialog()"
+        class="btn btn-sm btn-secondary"
+      >
+        {{
+          'common.items-selected-count'
+            | translate : { count: selectedVariantIds?.length ?? 0 }
+        }}...
+      </button>
+      <!--<clr-dropdown>
         <button class="btn btn-outline-primary" clrDropdownTrigger>
           <cds-icon shape="angle" direction="down"></cds-icon>
           {{ dropDownName }}
@@ -48,14 +63,14 @@ import { switchMap } from 'rxjs/operators';
               <button
                 *ngFor="let variant of product.variants"
                 clrDropdownItem
-                (click)="onItemClick(variant.id, variant.name)"
+                (click)="onDropdownItemClick(variant.id, variant.name)"
               >
                 {{ variant.name }}
               </button>
             </clr-dropdown-menu>
           </clr-dropdown>
         </clr-dropdown-menu>
-      </clr-dropdown>
+      </clr-dropdown>-->
     </div>
     <div *ngFor="let metric of metrics$ | async" class="chart-container">
       <canvas [id]="metric.code"></canvas>
@@ -73,8 +88,9 @@ export class MetricsWidgetComponent implements OnInit {
   dropDownName = 'Select Variant';
   selection: MetricInterval = MetricInterval.Monthly;
   selection$ = new BehaviorSubject<MetricInterval>(MetricInterval.Monthly);
-  items$: Observable<any>;
+  // items$: Observable<any>;
   nrOfOrdersChart?: any;
+  selectedVariantIds: string[];
   // Config for all charts
   config = {
     x: {
@@ -93,29 +109,51 @@ export class MetricsWidgetComponent implements OnInit {
     },
   };
 
-  constructor(private dataService: DataService) {}
+  constructor(
+    private dataService: DataService,
+    private changeDetectorRef: ChangeDetectorRef,
+    private modalService: ModalService
+  ) {}
 
   async ngOnInit() {
     //this.observe();
     this.loadChartData();
-    this.items$ = this.dataService
-      .query(ITEMS)
-      .mapSingle((productList) => (productList as any).products.items);
   }
 
-  onItemClick(variantId: string, variantName: string) {
-    this.loadChartData(variantId);
+  onDropdownItemClick(variantId: string, variantName: string) {
+    this.loadChartData();
     this.dropDownName = variantName;
   }
 
-  loadChartData(variantId?: string) {
+  openProductSelectionDialog() {
+    this.modalService
+      .fromComponent(ProductMultiSelectorDialogComponent, {
+        size: 'xl',
+        locals: {
+          mode: 'variant',
+
+          initialSelectionIds: this.selectedVariantIds ?? [],
+        },
+      })
+      .subscribe((selection) => {
+        if (selection) {
+          this.selectedVariantIds = [
+            ...selection.map((s) => s.productVariantId),
+          ];
+          this.changeDetectorRef.detectChanges();
+          this.loadChartData();
+        }
+      });
+  }
+
+  loadChartData() {
     this.metrics$ = this.selection$.pipe(
       switchMap((selection) => {
         return this.dataService
           .query<MetricSummaryQuery, MetricSummaryQueryVariables>(GET_METRICS, {
             input: {
               interval: selection,
-              variantId,
+              variantIds: this.selectedVariantIds,
             },
           })
           .refetchOnChannelChange()

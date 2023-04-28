@@ -109,7 +109,7 @@ describe('Metrics', () => {
     await adminClient.asSuperAdmin();
     const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
       GET_METRICS,
-      { input: { interval: 'WEEKLY', variantId: 3 } }
+      { input: { interval: 'WEEKLY', variantIds: [3] } }
     );
     // console.log(metricSummary);
     expect(metricSummary.length).toEqual(3);
@@ -127,7 +127,7 @@ describe('Metrics', () => {
     await adminClient.asSuperAdmin();
     const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
       GET_METRICS,
-      { input: { interval: 'MONTHLY', variantId: 3 } }
+      { input: { interval: 'MONTHLY', variantIds: [3] } }
     );
     expect(metricSummary.length).toEqual(3);
     const aov = metricSummary.find((m) => m.code === 'aov')!;
@@ -144,7 +144,7 @@ describe('Metrics', () => {
     await adminClient.asSuperAdmin();
     const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
       GET_METRICS,
-      { input: { interval: 'WEEKLY', variantId: 1 } }
+      { input: { interval: 'WEEKLY', variantIds: [1] } }
     );
     expect(metricSummary.length).toEqual(3);
     const aov = metricSummary.find((m) => m.code === 'aov')!;
@@ -161,7 +161,7 @@ describe('Metrics', () => {
     await adminClient.asSuperAdmin();
     const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
       GET_METRICS,
-      { input: { interval: 'MONTHLY', variantId: 1 } }
+      { input: { interval: 'MONTHLY', variantIds: [1] } }
     );
     expect(metricSummary.length).toEqual(3);
     const aov = metricSummary.find((m) => m.code === 'aov')!;

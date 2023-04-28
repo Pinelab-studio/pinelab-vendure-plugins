@@ -9,7 +9,7 @@ import { MetricsWidgetModule } from './metrics-widget';
   imports: [MetricsWidgetModule],
   declarations: [],
   providers: [
-    registerDashboardWidget('metrics', {
+    registerDashboardWidget('product metrics', {
       title: 'Metrics',
       supportedWidths: [4, 6, 8, 12],
       loadComponent: () =>

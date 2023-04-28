@@ -46,7 +46,7 @@ export class MetricsService {
 
   async getMetrics(
     ctx: RequestContext,
-    { interval, variantId }: MetricSummaryInput
+    { interval, variantIds }: MetricSummaryInput
   ): Promise<MetricSummary[]> {
     // Set 23:59:59.999 as endDate
     const endDate = endOfDay(new Date());
@@ -55,7 +55,7 @@ export class MetricsService {
       endDate,
       interval,
       channel: ctx.channel.token,
-      variantId,
+      variantIds,
     };
     const cachedMetricList = this.cache.get(cacheKey);
     if (cachedMetricList) {
@@ -70,13 +70,18 @@ export class MetricsService {
       `No cache hit, calculating ${interval} metrics until ${endDate.toISOString()} for channel ${
         ctx.channel.token
       } for ${
-        variantId
-          ? `for order containing product variant with id ${variantId}`
+        variantIds?.length
+          ? `for order containing product variants with ids ${variantIds}`
           : 'all orders'
       }`,
       loggerCtx
     );
-    const data = await this.loadData(ctx, interval, endDate, variantId!);
+    const data = await this.loadData(
+      ctx,
+      interval,
+      endDate,
+      variantIds as string[]
+    );
     const metrics: MetricSummary[] = [];
     this.options.metrics.forEach((metric) => {
       // Calculate entry (month or week)
@@ -102,7 +107,7 @@ export class MetricsService {
     ctx: RequestContext,
     interval: MetricInterval,
     endDate: Date,
-    variantId?: ID
+    variantIds?: ID[]
   ): Promise<Map<number, MetricData>> {
     let nrOfEntries: number;
     let backInTimeAmount: Duration;
@@ -137,8 +142,10 @@ export class MetricsService {
         .leftJoin('orderLine.items', 'orderItems')
         .leftJoin('order.channels', 'orderChannel')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId });
-      if (variantId) {
-        query = query.andWhere(`productVariant.id=:variantId`, { variantId });
+      if (variantIds?.length) {
+        query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
+          variantIds,
+        });
       }
       const [items, nrOfOrders] = await query.getManyAndCount();
       orders.push(...items);
