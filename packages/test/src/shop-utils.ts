@@ -95,7 +95,7 @@ export async function applyCouponCode(
   couponCode: string
 ): Promise<OrderFieldsFragment> {
   const { applyCouponCode } = await shopClient.query(ApplyCouponCode, {
-    couponCode
+    couponCode,
   });
   return applyCouponCode;
 }

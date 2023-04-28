@@ -279,6 +279,14 @@ You can also get the subscription and Schedule pricing details per order line wi
         }
 ```
 
+### Discount future payments
+
+You can discount future subscription payments when the custom promotion action `discount_future_subscription_payments` has been applied to an order.
+Example:
+
+- We have a subscription that will cost $30 a month, but has the promotion `Discount future subscription payments by 10%` applied
+- The actual monthly price of the subscription will be $27, forever.
+
 ## Caveats
 
 1. This plugin overrides any set OrderItemCalculationStrategies. The strategy in this plugin is used for calculating the

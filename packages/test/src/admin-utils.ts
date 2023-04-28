@@ -5,6 +5,7 @@ import {
 } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
+  ConfigArgInput,
   CreateCollection,
   CreateCollectionInput,
   CreateCollectionMutation,
@@ -149,15 +150,16 @@ export async function getAllVariants(
   return productVariants.items;
 }
 
-/**
- * Creates a "Discount order by X %" promotion
- */
-export async function createOrderPercentagePromotion(
+export async function createPromotion(
   adminClient: SimpleGraphQLClient,
   couponCode: string,
-  percentage: number
+  promotionActionCode: string,
+  args: ConfigArgInput[]
 ): Promise<Promotion> {
-    const { createPromotion } = await adminClient.query<CreatePromotionMutation, CreatePromotionMutationVariables>(CreatePromotion, {
+  const { createPromotion } = await adminClient.query<
+    CreatePromotionMutation,
+    CreatePromotionMutationVariables
+  >(CreatePromotion, {
     input: {
       name: couponCode,
       enabled: true,
@@ -165,17 +167,12 @@ export async function createOrderPercentagePromotion(
       conditions: [],
       actions: [
         {
-          code: 'order_percentage_discount',
-          arguments: [
-            {
-              name: 'discount',
-              value: String(percentage)
-            }
-          ]
-        }
+          code: promotionActionCode,
+          arguments: args,
+        },
       ],
-      customFields: {}
-    }
+      customFields: {},
+    },
   });
   return createPromotion as Promotion;
 }

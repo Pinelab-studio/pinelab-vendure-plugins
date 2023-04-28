@@ -328,23 +328,30 @@ export class StripeSubscriptionService {
         `Variant ${variant.id} doesn't have a schedule attached`
       );
     }
-    const result = calculateSubscriptionPricing(variant.priceWithTax, variant.customFields.subscriptionSchedule, input);
+    const result = calculateSubscriptionPricing(
+      variant.priceWithTax,
+      variant.customFields.subscriptionSchedule,
+      input
+    );
     return {
       ...result,
       variantId: variant.id as string,
     };
   }
-  
+
   /**
-   * 
-   * Calculate subscription pricing based on an orderLine. 
+   *
+   * Calculate subscription pricing based on an orderLine.
    * This differs from a variant, because orderLines can have discounts applied
    */
   async getPricingForOrderLine(
     ctx: RequestContext,
     orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing> {
-    this.entityHydrator.hydrate(ctx, orderLine, {relations: ['productVariant'], applyProductVariantPrices: true});
+    this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant'],
+      applyProductVariantPrices: true,
+    });
     if (!orderLine.productVariant?.enabled) {
       throw new UserInputError(
         `Variant ${orderLine.productVariant.sku} is not enabled`
@@ -355,16 +362,20 @@ export class StripeSubscriptionService {
         `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
       );
     }
-    console.log('==========orderline, variant', orderLine.proratedUnitPriceWithTax, orderLine.productVariant.priceWithTax)
-    console.log('==========var', JSON.stringify(orderLine));
+    // TODO
+    // This is where we should get applied promotions on our order,
+    // find our promotion "discount_future_subscription_payments"
+    // And get the discount % and pass that to calculateSubscriptionPricing.
+    // Something like calculateSubscriptionPricing(input, 10), where '10' will be the discount %.
+    // We should handle the actual discount % calculation in the "calculateSubscriptionPricing" function
     const result = calculateSubscriptionPricing(
-      orderLine.productVariant.priceWithTax, 
+      orderLine.productVariant.priceWithTax,
       orderLine.productVariant.customFields.subscriptionSchedule,
       {
         downpaymentWithTax: orderLine.customFields.downpayment,
         startDate: orderLine.customFields.startDate,
       }
-      );
+    );
     return {
       ...result,
       variantId: orderLine.productVariant.id as string,

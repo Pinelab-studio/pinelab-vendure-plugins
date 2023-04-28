@@ -96,7 +96,10 @@ export class ShopOrderLinePricingResolver {
     @Parent() orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing | undefined> {
     if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
-      return await this.subscriptionService.getPricingForOrderLine(ctx, orderLine);
+      return await this.subscriptionService.getPricingForOrderLine(
+        ctx,
+        orderLine
+      );
     }
     return;
   }

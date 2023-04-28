@@ -126,7 +126,7 @@ query GetVariants {
 
 mutation CreatePromotion($input: CreatePromotionInput!) {
   createPromotion(input: $input) {
-    ...on Promotion {
+    ... on Promotion {
       id
       name
       couponCode

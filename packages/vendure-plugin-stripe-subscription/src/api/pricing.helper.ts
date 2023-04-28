@@ -25,11 +25,11 @@ export type VariantForCalculation = Pick<
 
 /**
  * Calculate subscription pricing based on variants, schedules and optional input
- * 
+ *
  * @param rawSubscriptionPriceWithTax This should be the priceWithTax of the variant, or the orderLine.proratedUnitPriceWithTax for orderLines
  * @param schedule The schedule that should be used for the Subscription
- * @param input 
- * @returns 
+ * @param input
+ * @returns
  */
 export function calculateSubscriptionPricing(
   rawSubscriptionPriceWithTax: number,
@@ -56,7 +56,8 @@ export function calculateSubscriptionPricing(
   }
   const billingsPerDuration = getBillingsPerDuration(schedule);
   const totalSubscriptionPrice =
-    rawSubscriptionPriceWithTax * billingsPerDuration + schedule.downpaymentWithTax;
+    rawSubscriptionPriceWithTax * billingsPerDuration +
+    schedule.downpaymentWithTax;
   if (downpayment > totalSubscriptionPrice) {
     throw new UserInputError(
       `Downpayment cannot be higher than the total subscription value, which is (${printMoney(
