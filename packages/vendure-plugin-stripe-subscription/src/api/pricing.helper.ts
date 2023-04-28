@@ -107,7 +107,6 @@ export function calculateSubscriptionPricing(
     );
   }
   let proratedDays = 0;
-  let discounts = [];
   let totalProratedAmount = 0;
   if (schedule.useProration) {
     proratedDays = getDaysUntilNextStartDate(
