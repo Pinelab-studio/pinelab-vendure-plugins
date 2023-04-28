@@ -33,22 +33,12 @@ export type VariantForCalculation = Pick<
  */
 export function calculateSubscriptionPricing(
   rawSubscriptionPriceWithTax: number,
-  schedule?: Schedule,
+  schedule: Schedule,
   input?: Pick<
     StripeSubscriptionPricingInput,
     'downpaymentWithTax' | 'startDate'
   >
-): StripeSubscriptionPricing {
-  if (!rawSubscriptionPriceWithTax) {
-    throw Error(
-      `Variant "${variant.id}" has price ${variant.priceWithTax}, can not calculate subscription pricing without variant price`
-    );
-  }
-  if (!schedule) {
-    throw new UserInputError(
-      `Variant ${variant.id} doesn't have a schedule attached`
-    );
-  }
+): Omit<StripeSubscriptionPricing, 'variantId'> {
   let downpayment = schedule.downpaymentWithTax;
   if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
     downpayment = input.downpaymentWithTax;
@@ -137,7 +127,6 @@ export function calculateSubscriptionPricing(
     );
   }
   return {
-    variantId: variant.id as string,
     downpaymentWithTax: downpayment,
     totalProratedAmountWithTax: totalProratedAmount,
     proratedDays: proratedDays,

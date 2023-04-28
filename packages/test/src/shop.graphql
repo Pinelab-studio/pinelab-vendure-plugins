@@ -1,7 +1,5 @@
-mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
-  addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
-    ... on Order {
-      id
+fragment OrderFields on Order {
+   id
       code
       state
       active
@@ -27,6 +25,24 @@ mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
           type
         }
       }
+}
+
+mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
+  addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
+    ... on Order {
+     ...OrderFields
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+
+mutation ApplyCouponCode($couponCode: String!) {
+  applyCouponCode(couponCode: $couponCode) {
+    ... on Order {
+     ...OrderFields
     }
     ... on ErrorResult {
       errorCode

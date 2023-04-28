@@ -55,7 +55,8 @@ import {
 // @ts-ignore
 import nock from 'nock';
 // @ts-ignore
-import { getOrder } from '../../test/src/admin-utils';
+import { createOrderPercentagePromotion, getOrder } from '../../test/src/admin-utils';
+import { applyCouponCode } from '../../test/src/shop-utils';
 import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
 
 jest.setTimeout(20000);
@@ -555,7 +556,7 @@ describe('Order export plugin', function () {
           }),
         },
       };
-      const pricing = calculateSubscriptionPricing(variant);
+      const pricing = calculateSubscriptionPricing(variant.priceWithTax, variant.customFields.subscriptionSchedule!);
       expect(pricing.subscriptionStartDate).toBe(future);
       expect(pricing.recurringPriceWithTax).toBe(6000);
       expect(pricing.dayRateWithTax).toBe(230);
@@ -582,7 +583,7 @@ describe('Order export plugin', function () {
           }),
         },
       };
-      const pricing = calculateSubscriptionPricing(variant);
+      const pricing = calculateSubscriptionPricing(variant.priceWithTax, variant.customFields.subscriptionSchedule!);
       const now = new Date().toISOString().split('T')[0];
       const subscriptionStartDate = pricing.subscriptionStartDate
         .toISOString()
@@ -598,6 +599,14 @@ describe('Order export plugin', function () {
   });
 
   describe('Subscription order placement', () => {
+
+    it('Should create a promotion', async () => {
+      await adminClient.asSuperAdmin();
+      const promotion = await createOrderPercentagePromotion(adminClient, 'gimme10', 10);
+      expect(promotion.name).toBe('gimme10');
+      expect(promotion.couponCode).toBe('gimme10');
+    });
+
     it('Should create payment intent for order with 2 subscriptions', async () => {
       // Mock API
       let paymentIntentInput: any = {};
@@ -640,16 +649,15 @@ describe('Order export plugin', function () {
       const weeklyDownpayment = 19900;
       const paidInFullTotal = 54000;
       const nonSubPrice = 12300;
+      const minimumPrice = paidInFullTotal + weeklyDownpayment + nonSubPrice;
       // Should be greater then or equal, because we can have proration, which is dynamic
-      expect(parseInt(paymentIntentInput.amount)).toBeGreaterThanOrEqual(
-        paidInFullTotal + weeklyDownpayment + nonSubPrice
-      );
+      expect(parseInt(paymentIntentInput.amount)).toBeGreaterThanOrEqual(minimumPrice);
     });
 
     it('Should have pricing and schedule on order line', async () => {
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
       const line: OrderLineWithSubscriptionFields = activeOrder.lines[1];
-      expect(line.subscriptionPricing).toBeDefined();
+      expect(line.subscriptionPricing?.recurringPriceWithTax).toBe(9000);
       expect(line.subscriptionPricing?.schedule).toBeDefined();
       expect(line.subscriptionPricing?.schedule.name).toBeDefined();
       expect(line.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
@@ -658,6 +666,17 @@ describe('Order export plugin', function () {
       expect(line.subscriptionPricing?.schedule.billingInterval).toBe('week');
       expect(line.subscriptionPricing?.schedule.billingCount).toBe(1);
       expect(line.subscriptionPricing?.schedule.paidUpFront).toBe(false);
+    });
+    
+    it('Should have discounted pricing after applying coupon', async () => {
+      await applyCouponCode(shopClient, 'gimme10');
+      const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
+      const line1: OrderLineWithSubscriptionFields = activeOrder.lines[1];
+      const line2: OrderLineWithSubscriptionFields = activeOrder.lines[2];
+      expect(line1.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
+      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(8100);
+      expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
+      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(8100);
     });
 
     let createdSubscriptions: any[] = [];
@@ -988,3 +1007,4 @@ describe('Order export plugin', function () {
     });
   });
 });
+

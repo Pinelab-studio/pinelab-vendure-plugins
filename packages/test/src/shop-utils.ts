@@ -4,6 +4,8 @@ import {
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
+  ApplyCouponCode,
+  OrderFieldsFragment,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
@@ -86,6 +88,16 @@ export async function addItem(
     quantity,
   });
   return addItemToOrder;
+}
+
+export async function applyCouponCode(
+  shopClient: SimpleGraphQLClient,
+  couponCode: string
+): Promise<OrderFieldsFragment> {
+  const { applyCouponCode } = await shopClient.query(ApplyCouponCode, {
+    couponCode
+  });
+  return applyCouponCode;
 }
 
 export async function createSettledOrder(

@@ -58,7 +58,7 @@ export class ShopResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: StripeSubscriptionPricingInput
   ): Promise<StripeSubscriptionPricing> {
-    return this.stripeSubscriptionService.getPricing(ctx, input);
+    return this.stripeSubscriptionService.getPricingForVariant(ctx, input);
   }
 
   @Query()
@@ -78,7 +78,7 @@ export class ShopResolver {
     );
     return await Promise.all(
       subscriptionVariants.map((variant) =>
-        this.stripeSubscriptionService.getPricing(ctx, {
+        this.stripeSubscriptionService.getPricingForVariant(ctx, {
           productVariantId: variant.id as string,
         })
       )
@@ -96,11 +96,7 @@ export class ShopOrderLinePricingResolver {
     @Parent() orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing | undefined> {
     if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
-      return await this.subscriptionService.getPricing(ctx, {
-        downpaymentWithTax: orderLine.customFields.downpayment,
-        startDate: orderLine.customFields.startDate,
-        productVariantId: orderLine.productVariant.id as string,
-      });
+      return await this.subscriptionService.getPricingForOrderLine(ctx, orderLine);
     }
     return;
   }

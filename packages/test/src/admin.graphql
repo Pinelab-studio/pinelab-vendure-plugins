@@ -123,3 +123,13 @@ query GetVariants {
     totalItems
   }
 }
+
+mutation CreatePromotion($input: CreatePromotionInput!) {
+  createPromotion(input: $input) {
+    ...on Promotion {
+      id
+      name
+      couponCode
+    }
+  }
+}

@@ -10,6 +10,9 @@ import {
   CreateCollectionMutation,
   CreateCollectionMutationVariables,
   CreateFulfillment,
+  CreatePromotion,
+  CreatePromotionMutation,
+  CreatePromotionMutationVariables,
   CreateShippingMethod,
   GetVariants,
   GetVariantsQuery,
@@ -18,6 +21,7 @@ import {
   OrderQuery,
   Orders as OrdersGraphql,
   OrdersQuery,
+  Promotion,
   UpdateProduct,
   UpdateProductInput,
   UpdateProductMutation,
@@ -143,4 +147,35 @@ export async function getAllVariants(
     GetVariants
   );
   return productVariants.items;
+}
+
+/**
+ * Creates a "Discount order by X %" promotion
+ */
+export async function createOrderPercentagePromotion(
+  adminClient: SimpleGraphQLClient,
+  couponCode: string,
+  percentage: number
+): Promise<Promotion> {
+    const { createPromotion } = await adminClient.query<CreatePromotionMutation, CreatePromotionMutationVariables>(CreatePromotion, {
+    input: {
+      name: couponCode,
+      enabled: true,
+      couponCode,
+      conditions: [],
+      actions: [
+        {
+          code: 'order_percentage_discount',
+          arguments: [
+            {
+              name: 'discount',
+              value: String(percentage)
+            }
+          ]
+        }
+      ],
+      customFields: {}
+    }
+  });
+  return createPromotion as Promotion;
 }
