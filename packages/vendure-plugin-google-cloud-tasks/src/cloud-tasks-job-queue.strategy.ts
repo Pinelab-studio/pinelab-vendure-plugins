@@ -1,4 +1,5 @@
-import { CloudTasksClient } from '@google-cloud/tasks';
+import { CloudTasksClient, Tasks } from '@google-cloud/tasks';
+import ITask from '@google-cloud/tasks';
 import { Job, JobData, JobQueueStrategy, Logger } from '@vendure/core';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { CloudTaskMessage, CloudTaskOptions } from './types';
@@ -46,9 +47,13 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
         },
       };
       const request = { parent, task };
-      await this.client.createTask(request, {
-        maxRetries: cloudTaskMessage.maxRetries,
-      });
+      let reply = null;
+      while (!reply) {
+        reply = await this.client.createTask(request, {
+          maxRetries: cloudTaskMessage.maxRetries,
+        });
+        console.log(reply);
+      }
       Logger.debug(
         `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
         CloudTasksPlugin.loggerCtx
