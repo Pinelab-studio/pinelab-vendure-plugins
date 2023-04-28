@@ -25,20 +25,25 @@ export type VariantForCalculation = Pick<
 
 /**
  * Calculate subscription pricing based on variants, schedules and optional input
+ * 
+ * @param rawSubscriptionPriceWithTax This should be the priceWithTax of the variant, or the orderLine.proratedUnitPriceWithTax for orderLines
+ * @param schedule The schedule that should be used for the Subscription
+ * @param input 
+ * @returns 
  */
 export function calculateSubscriptionPricing(
-  variant: VariantForCalculation,
+  rawSubscriptionPriceWithTax: number,
+  schedule?: Schedule,
   input?: Pick<
     StripeSubscriptionPricingInput,
     'downpaymentWithTax' | 'startDate'
   >
 ): StripeSubscriptionPricing {
-  if (!variant.priceWithTax) {
+  if (!rawSubscriptionPriceWithTax) {
     throw Error(
       `Variant "${variant.id}" has price ${variant.priceWithTax}, can not calculate subscription pricing without variant price`
     );
   }
-  const schedule = variant.customFields.subscriptionSchedule;
   if (!schedule) {
     throw new UserInputError(
       `Variant ${variant.id} doesn't have a schedule attached`
@@ -61,7 +66,7 @@ export function calculateSubscriptionPricing(
   }
   const billingsPerDuration = getBillingsPerDuration(schedule);
   const totalSubscriptionPrice =
-    variant.priceWithTax * billingsPerDuration + schedule.downpaymentWithTax;
+    rawSubscriptionPriceWithTax * billingsPerDuration + schedule.downpaymentWithTax;
   if (downpayment > totalSubscriptionPrice) {
     throw new UserInputError(
       `Downpayment cannot be higher than the total subscription value, which is (${printMoney(
@@ -121,8 +126,8 @@ export function calculateSubscriptionPricing(
   );
   if (schedule.paidUpFront) {
     // User pays for the full membership now
-    amountDueNow = variant.priceWithTax + totalProratedAmount;
-    recurringPrice = variant.priceWithTax;
+    amountDueNow = rawSubscriptionPriceWithTax + totalProratedAmount;
+    recurringPrice = rawSubscriptionPriceWithTax;
     // If paid up front, move the startDate to next cycle, because the first cycle has been paid up front. This needs to happen AFTER proration calculation
     subscriptionStartDate = getNextCyclesStartDate(
       new Date(),
