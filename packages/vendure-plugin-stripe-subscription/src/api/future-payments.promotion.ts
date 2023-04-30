@@ -42,10 +42,7 @@ export const discountFutureSubscriptionPayments = new FuturePaymentsPromotionOrd
     },
   },
   executeOnSubscription(ctx, currentSubscriptionPrice, args) {
-    console.log('======', args);
-    Logger.info(`Price before promotion: ${currentSubscriptionPrice}`,loggerCtx);
     const discount = currentSubscriptionPrice * (args.discount / 100);
-    Logger.info(`Discounting subscription with ${discount}}`, loggerCtx);
     return discount;
   }
 });

@@ -4,7 +4,7 @@ import {
   SubscriptionInterval,
   SubscriptionStartMoment,
 } from '../ui/generated/graphql';
-import { Logger, Promotion, RequestContext, UserInputError } from '@vendure/core';
+import { Logger, Promotion, PromotionAction, RequestContext, UserInputError } from '@vendure/core';
 import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 import {
   addMonths,
@@ -133,14 +133,16 @@ export function calculateSubscriptionPricing(
   }
   // Execute promotions on recurringPrice
   let discountedRecurringPrice = recurringPrice;
-
-  // TODO find out why this is not working
   for (const promotion of promotions || []) {
     for (const action of promotion.actions) {
-      if (action instanceof FuturePaymentsPromotionOrderAction) {
-        const discount = action.executeOnSubscription(ctx, discountedRecurringPrice, action.args);
+      const promotionAction = (promotion as any).allActions[action.code] as PromotionAction; // FIXME dirty hack to access private allActions
+      if (promotionAction instanceof FuturePaymentsPromotionOrderAction) {
+        // FIXME map config arg strings to actual values. E.g. int '10', to 10
+        const actionArgs: Record<string,number> = {};
+        action.args.forEach(arg => actionArgs[arg.name] = parseInt(arg.value));
+        const discount = promotionAction.executeOnSubscription(ctx, discountedRecurringPrice, actionArgs);
         const newDiscountedPrice = discountedRecurringPrice - discount;
-        Logger.info(`Discounted recurring price from ${newDiscountedPrice} to ${discountedRecurringPrice} for promotion ${promotion.name}`, loggerCtx)
+        Logger.info(`Discounted recurring price from ${discountedRecurringPrice} to ${newDiscountedPrice} for promotion ${promotion.name}`, loggerCtx)
         discountedRecurringPrice = newDiscountedPrice;
       }
     }
@@ -150,7 +152,7 @@ export function calculateSubscriptionPricing(
     totalProratedAmountWithTax: totalProratedAmount,
     proratedDays: proratedDays,
     dayRateWithTax: dayRate,
-    recurringPriceWithTax: recurringPrice,
+    recurringPriceWithTax: discountedRecurringPrice,
     interval: schedule.billingInterval,
     intervalCount: schedule.billingCount,
     amountDueNowWithTax: amountDueNow,

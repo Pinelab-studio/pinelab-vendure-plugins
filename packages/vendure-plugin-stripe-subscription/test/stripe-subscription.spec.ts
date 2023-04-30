@@ -673,30 +673,29 @@ describe('Order export plugin', function () {
 
     it('Should have pricing and schedule on order line', async () => {
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
-      const line: OrderLineWithSubscriptionFields = activeOrder.lines[1];
-      expect(line.subscriptionPricing?.recurringPriceWithTax).toBe(9000);
-      expect(line.subscriptionPricing?.schedule).toBeDefined();
-      expect(line.subscriptionPricing?.schedule.name).toBeDefined();
-      expect(line.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
-      expect(line.subscriptionPricing?.schedule.durationInterval).toBe('month');
-      expect(line.subscriptionPricing?.schedule.durationCount).toBe(3);
-      expect(line.subscriptionPricing?.schedule.billingInterval).toBe('week');
-      expect(line.subscriptionPricing?.schedule.billingCount).toBe(1);
-      expect(line.subscriptionPricing?.schedule.paidUpFront).toBe(false);
+      const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
+      const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
+      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(9000);
+      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(54000);
+      expect(line2.subscriptionPricing?.schedule).toBeDefined();
+      expect(line2.subscriptionPricing?.schedule.name).toBeDefined();
+      expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
+      expect(line2.subscriptionPricing?.schedule.durationInterval).toBe('month');
+      expect(line2.subscriptionPricing?.schedule.durationCount).toBe(3);
+      expect(line2.subscriptionPricing?.schedule.billingInterval).toBe('week');
+      expect(line2.subscriptionPricing?.schedule.billingCount).toBe(1);
+      expect(line2.subscriptionPricing?.schedule.paidUpFront).toBe(false);
     });
 
-    it('Should have discounted pricing after applying coupon', async () => {
+    it('Should have discounted pricing on all order lines after applying coupon', async () => {
+      const { activeOrder: order } = await shopClient.query(GET_ORDER_WITH_PRICING);
+      console.log(JSON.stringify(order))
       await applyCouponCode(shopClient, 'gimme10');
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
-      const line1: OrderLineWithSubscriptionFields = activeOrder.lines[1];
-      const line2: OrderLineWithSubscriptionFields = activeOrder.lines[2];
-      expect(line1.subscriptionPricing?.schedule.downpaymentWithTax).toBe(
-        19900
-      );
-      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(8100);
-      expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(
-        19900
-      );
+      console.log(JSON.stringify(activeOrder))
+      const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
+      const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
+      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(48600);
       expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(8100);
     });
 
