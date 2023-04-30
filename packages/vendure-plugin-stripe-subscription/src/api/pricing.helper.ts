@@ -4,7 +4,7 @@ import {
   SubscriptionInterval,
   SubscriptionStartMoment,
 } from '../ui/generated/graphql';
-import { UserInputError } from '@vendure/core';
+import { Logger, Promotion, RequestContext, UserInputError } from '@vendure/core';
 import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 import {
   addMonths,
@@ -17,6 +17,8 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { Schedule } from './schedule.entity';
+import { FuturePaymentsPromotionOrderAction } from './future-payments.promotion';
+import { loggerCtx } from '../constants';
 
 export type VariantForCalculation = Pick<
   VariantWithSubscriptionFields,
@@ -32,12 +34,14 @@ export type VariantForCalculation = Pick<
  * @returns
  */
 export function calculateSubscriptionPricing(
+  ctx: RequestContext,
   rawSubscriptionPriceWithTax: number,
   schedule: Schedule,
   input?: Pick<
     StripeSubscriptionPricingInput,
     'downpaymentWithTax' | 'startDate'
-  >
+  >,
+  promotions?: Promotion[]
 ): Omit<StripeSubscriptionPricing, 'variantId'> {
   let downpayment = schedule.downpaymentWithTax;
   if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
@@ -126,6 +130,20 @@ export function calculateSubscriptionPricing(
       schedule.durationInterval,
       schedule.durationCount
     );
+  }
+  // Execute promotions on recurringPrice
+  let discountedRecurringPrice = recurringPrice;
+
+  // TODO find out why this is not working
+  for (const promotion of promotions || []) {
+    for (const action of promotion.actions) {
+      if (action instanceof FuturePaymentsPromotionOrderAction) {
+        const discount = action.executeOnSubscription(ctx, discountedRecurringPrice, action.args);
+        const newDiscountedPrice = discountedRecurringPrice - discount;
+        Logger.info(`Discounted recurring price from ${newDiscountedPrice} to ${discountedRecurringPrice} for promotion ${promotion.name}`, loggerCtx)
+        discountedRecurringPrice = newDiscountedPrice;
+      }
+    }
   }
   return {
     downpaymentWithTax: downpayment,

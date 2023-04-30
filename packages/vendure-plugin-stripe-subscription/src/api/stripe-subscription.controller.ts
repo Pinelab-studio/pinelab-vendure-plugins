@@ -98,7 +98,7 @@ export class ShopOrderLinePricingResolver {
     if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
       return await this.subscriptionService.getPricingForOrderLine(
         ctx,
-        orderLine
+        orderLine,
       );
     }
     return;

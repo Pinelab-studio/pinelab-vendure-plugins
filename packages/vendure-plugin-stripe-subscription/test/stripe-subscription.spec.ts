@@ -20,6 +20,7 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import {
   calculateSubscriptionPricing,
+  discountFutureSubscriptionPayments,
   getBillingsPerDuration,
   getDayRate,
   getDaysUntilNextStartDate,
@@ -54,7 +55,6 @@ import nock from 'nock';
 // @ts-ignore
 import { createPromotion, getOrder } from '../../test/src/admin-utils';
 import { applyCouponCode } from '../../test/src/shop-utils';
-import { discountFutureSubscriptionPayments } from '../src/api/discount-future-payments.promotion';
 import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
 
 jest.setTimeout(20000);
@@ -555,6 +555,7 @@ describe('Order export plugin', function () {
         },
       };
       const pricing = calculateSubscriptionPricing(
+        {} as any,
         variant.priceWithTax,
         variant.customFields.subscriptionSchedule!
       );
@@ -585,6 +586,7 @@ describe('Order export plugin', function () {
         },
       };
       const pricing = calculateSubscriptionPricing(
+        {} as any,
         variant.priceWithTax,
         variant.customFields.subscriptionSchedule!
       );

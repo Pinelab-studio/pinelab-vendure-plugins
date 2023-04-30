@@ -329,9 +329,10 @@ export class StripeSubscriptionService {
       );
     }
     const result = calculateSubscriptionPricing(
+      ctx,
       variant.priceWithTax,
       variant.customFields.subscriptionSchedule,
-      input
+      input,
     );
     return {
       ...result,
@@ -346,10 +347,10 @@ export class StripeSubscriptionService {
    */
   async getPricingForOrderLine(
     ctx: RequestContext,
-    orderLine: OrderLineWithSubscriptionFields
+    orderLine: OrderLineWithSubscriptionFields,
   ): Promise<StripeSubscriptionPricing> {
-    this.entityHydrator.hydrate(ctx, orderLine, {
-      relations: ['productVariant'],
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant', 'order', 'order.promotions'],
       applyProductVariantPrices: true,
     });
     if (!orderLine.productVariant?.enabled) {
@@ -362,19 +363,15 @@ export class StripeSubscriptionService {
         `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
       );
     }
-    // TODO
-    // This is where we should get applied promotions on our order,
-    // find our promotion "discount_future_subscription_payments"
-    // And get the discount % and pass that to calculateSubscriptionPricing.
-    // Something like calculateSubscriptionPricing(input, 10), where '10' will be the discount %.
-    // We should handle the actual discount % calculation in the "calculateSubscriptionPricing" function
     const result = calculateSubscriptionPricing(
+      ctx,
       orderLine.productVariant.priceWithTax,
       orderLine.productVariant.customFields.subscriptionSchedule,
       {
         downpaymentWithTax: orderLine.customFields.downpayment,
         startDate: orderLine.customFields.startDate,
-      }
+      },
+      orderLine.order.promotions
     );
     return {
       ...result,
