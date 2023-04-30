@@ -24,7 +24,7 @@ import {
 import { StripeSubscriptionService } from './api/stripe-subscription.service';
 import { stripeSubscriptionHandler } from './api/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api/has-stripe-subscription-products-payment-checker';
-import { discountFutureSubscriptionPayments } from './api/discount-future-payments.promotion';
+import { discountFutureSubscriptionPayments } from './api/future-payments.promotion';
 
 export interface StripeSubscriptionPluginOptions {
   /**
