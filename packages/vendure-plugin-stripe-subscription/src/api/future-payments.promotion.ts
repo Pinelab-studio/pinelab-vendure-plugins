@@ -13,6 +13,7 @@ import {
   ConfigArgs,
 } from '@vendure/core/dist/common/configurable-operation';
 import { loggerCtx } from '../constants';
+import { ConfigArg } from '@vendure/common/lib/generated-types';
 
 type ExecuteOnSubscriptionFn<T extends ConfigArgs> = (
   ctx: RequestContext,
@@ -27,7 +28,7 @@ export class FuturePaymentsPromotionOrderAction<
   U extends Array<PromotionCondition<any>>,
   T extends ConfigArgs = ConfigArgs
 > extends PromotionOrderAction<T, U> {
-  public executeOnSubscription: ExecuteOnSubscriptionFn<T>;
+  public executeOnSubscriptionFn: ExecuteOnSubscriptionFn<T>;
   constructor(
     config: Omit<PromotionOrderActionConfig<T, U>, 'execute'> & {
       executeOnSubscription: ExecuteOnSubscriptionFn<T>;
@@ -37,7 +38,19 @@ export class FuturePaymentsPromotionOrderAction<
       ...config,
       execute: () => 0, // No discounts on actual order prices
     });
-    this.executeOnSubscription = config.executeOnSubscription;
+    this.executeOnSubscriptionFn = config.executeOnSubscription;
+  }
+
+  executeOnSubscription(
+    ctx: RequestContext,
+    currentSubscriptionPrice: number,
+    args: ConfigArg[]
+  ): number {
+    return this.executeOnSubscriptionFn(
+      ctx,
+      currentSubscriptionPrice,
+      this.argsArrayToHash(args)
+    );
   }
 }
 

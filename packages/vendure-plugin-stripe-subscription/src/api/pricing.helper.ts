@@ -11,6 +11,7 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
+import { getConfig } from '@vendure/core/dist/config/config-helpers';
 import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 import {
   addMonths,
@@ -138,38 +139,17 @@ export function calculateSubscriptionPricing(
     );
   }
   // Execute promotions on recurringPrice
-  let discountedRecurringPrice = recurringPrice;
-  for (const promotion of promotions || []) {
-    for (const action of promotion.actions) {
-      const promotionAction = (promotion as any).allActions[
-        action.code
-      ] as PromotionAction; // FIXME dirty hack to access private allActions
-      if (promotionAction instanceof FuturePaymentsPromotionOrderAction) {
-        // FIXME map config arg strings to actual values. E.g. int '10', to 10
-        const actionArgs: Record<string, number> = {};
-        action.args.forEach(
-          (arg) => (actionArgs[arg.name] = parseInt(arg.value))
-        );
-        const discount = promotionAction.executeOnSubscription(
-          ctx,
-          discountedRecurringPrice,
-          actionArgs
-        );
-        const newDiscountedPrice = discountedRecurringPrice - discount;
-        Logger.info(
-          `Discounted recurring price from ${discountedRecurringPrice} to ${newDiscountedPrice} for promotion ${promotion.name}`,
-          loggerCtx
-        );
-        discountedRecurringPrice = newDiscountedPrice;
-      }
-    }
-  }
+  const discountedRecurringPrice = getDiscountedRecurringPrice(
+    ctx,
+    recurringPrice,
+    promotions || []
+  );
   return {
     downpaymentWithTax: downpayment,
     totalProratedAmountWithTax: totalProratedAmount,
     proratedDays: proratedDays,
     dayRateWithTax: dayRate,
-    recurringPriceWithTax: parseInt(discountedRecurringPrice),
+    recurringPriceWithTax: Math.round(discountedRecurringPrice),
     originalRecurringPriceWithTax: recurringPrice,
     interval: schedule.billingInterval,
     intervalCount: schedule.billingCount,
@@ -182,6 +162,37 @@ export function calculateSubscriptionPricing(
       paidUpFront: schedule.paidUpFront,
     },
   };
+}
+
+/**
+ * Calculate the discounted recurring price based on given promotions
+ */
+export function getDiscountedRecurringPrice(
+  ctx: RequestContext,
+  recurringPrice: number,
+  promotions: Promotion[]
+): number {
+  let discountedRecurringPrice = recurringPrice;
+  const allActions = getConfig().promotionOptions.promotionActions || [];
+  for (const promotion of promotions) {
+    for (const action of promotion.actions) {
+      const promotionAction = allActions.find((a) => a.code === action.code);
+      if (promotionAction instanceof FuturePaymentsPromotionOrderAction) {
+        const discount = promotionAction.executeOnSubscription(
+          ctx,
+          discountedRecurringPrice,
+          action.args
+        );
+        const newDiscountedPrice = discountedRecurringPrice - discount;
+        Logger.info(
+          `Discounted recurring price from ${discountedRecurringPrice} to ${newDiscountedPrice} for promotion ${promotion.name}`,
+          loggerCtx
+        );
+        discountedRecurringPrice = newDiscountedPrice;
+      }
+    }
+  }
+  return discountedRecurringPrice;
 }
 
 /**
