@@ -1,19 +1,15 @@
+import { ConfigArg } from '@vendure/common/lib/generated-types';
 import {
-  ExecutePromotionOrderActionFn,
-  Logger,
   LanguageCode,
   PromotionCondition,
-  PromotionItemActionConfig,
   PromotionOrderAction,
   PromotionOrderActionConfig,
-  RequestContext,
+  RequestContext
 } from '@vendure/core';
 import {
   ConfigArgValues,
   ConfigArgs,
 } from '@vendure/core/dist/common/configurable-operation';
-import { loggerCtx } from '../constants';
-import { ConfigArg } from '@vendure/common/lib/generated-types';
 
 type ExecuteOnSubscriptionFn<T extends ConfigArgs> = (
   ctx: RequestContext,
