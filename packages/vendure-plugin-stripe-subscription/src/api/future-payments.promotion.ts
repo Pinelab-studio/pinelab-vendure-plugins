@@ -4,7 +4,7 @@ import {
   PromotionCondition,
   PromotionOrderAction,
   PromotionOrderActionConfig,
-  RequestContext
+  RequestContext,
 } from '@vendure/core';
 import {
   ConfigArgValues,
