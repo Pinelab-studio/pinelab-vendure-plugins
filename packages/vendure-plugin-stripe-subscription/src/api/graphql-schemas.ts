@@ -62,7 +62,14 @@ export const shopSchemaExtensions = gql`
     totalProratedAmountWithTax: Int!
     proratedDays: Int!
     dayRateWithTax: Int!
+    """
+    The recurring price of the subscription, including discounts and tax.
+    """
     recurringPriceWithTax: Int!
+    """
+    The original recurring price of the subscription, including tax, without discounts applied.
+    """
+    originalRecurringPriceWithTax: Int!
     interval: SubscriptionInterval!
     intervalCount: Int!
     amountDueNowWithTax: Int!

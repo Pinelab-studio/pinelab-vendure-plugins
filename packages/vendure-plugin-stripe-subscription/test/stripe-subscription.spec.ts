@@ -1,13 +1,4 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import {
-  ChannelService,
   DefaultLogger,
   EventBus,
   HistoryService,
@@ -17,11 +8,19 @@ import {
   OrderPlacedEvent,
   OrderService,
   OrderStateTransitionEvent,
-  RequestContext,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { initialData } from '../../test/src/initial-data';
 import {
   calculateSubscriptionPricing,
+  discountFutureSubscriptionPayments,
   getBillingsPerDuration,
   getDayRate,
   getDaysUntilNextStartDate,
@@ -29,13 +28,12 @@ import {
   getNextStartDate,
   IncomingStripeWebhook,
   OrderLineWithSubscriptionFields,
-  stripeSubscriptionHandler,
+  Schedule,
   StripeSubscriptionPlugin,
   StripeSubscriptionPricing,
   SubscriptionInterval,
   SubscriptionStartMoment,
   VariantForCalculation,
-  Schedule,
 } from '../src';
 import {
   ADD_ITEM_TO_ORDER,
@@ -46,16 +44,17 @@ import {
   GET_PRICING_FOR_PRODUCT,
   GET_SCHEDULES,
   getDefaultCtx,
+  REFUND_ORDER,
+  REMOVE_ORDERLINE,
   setShipping,
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
-  REMOVE_ORDERLINE,
-  REFUND_ORDER,
 } from './helpers';
 // @ts-ignore
 import nock from 'nock';
 // @ts-ignore
-import { getOrder } from '../../test/src/admin-utils';
+import { createPromotion, getOrder } from '../../test/src/admin-utils';
+import { applyCouponCode } from '../../test/src/shop-utils';
 import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
 
 jest.setTimeout(20000);
@@ -555,7 +554,11 @@ describe('Order export plugin', function () {
           }),
         },
       };
-      const pricing = calculateSubscriptionPricing(variant);
+      const pricing = calculateSubscriptionPricing(
+        {} as any,
+        variant.priceWithTax,
+        variant.customFields.subscriptionSchedule!
+      );
       expect(pricing.subscriptionStartDate).toBe(future);
       expect(pricing.recurringPriceWithTax).toBe(6000);
       expect(pricing.dayRateWithTax).toBe(230);
@@ -582,7 +585,11 @@ describe('Order export plugin', function () {
           }),
         },
       };
-      const pricing = calculateSubscriptionPricing(variant);
+      const pricing = calculateSubscriptionPricing(
+        {} as any,
+        variant.priceWithTax,
+        variant.customFields.subscriptionSchedule!
+      );
       const now = new Date().toISOString().split('T')[0];
       const subscriptionStartDate = pricing.subscriptionStartDate
         .toISOString()
@@ -598,6 +605,23 @@ describe('Order export plugin', function () {
   });
 
   describe('Subscription order placement', () => {
+    it('Should create 10% "discount_future_subscription_payments" promotion', async () => {
+      await adminClient.asSuperAdmin();
+      const promotion = await createPromotion(
+        adminClient,
+        'gimme10',
+        discountFutureSubscriptionPayments.code,
+        [
+          {
+            name: 'discount',
+            value: '10',
+          },
+        ]
+      );
+      expect(promotion.name).toBe('gimme10');
+      expect(promotion.couponCode).toBe('gimme10');
+    });
+
     it('Should create payment intent for order with 2 subscriptions', async () => {
       // Mock API
       let paymentIntentInput: any = {};
@@ -640,24 +664,52 @@ describe('Order export plugin', function () {
       const weeklyDownpayment = 19900;
       const paidInFullTotal = 54000;
       const nonSubPrice = 12300;
+      const minimumPrice = paidInFullTotal + weeklyDownpayment + nonSubPrice;
       // Should be greater then or equal, because we can have proration, which is dynamic
       expect(parseInt(paymentIntentInput.amount)).toBeGreaterThanOrEqual(
-        paidInFullTotal + weeklyDownpayment + nonSubPrice
+        minimumPrice
       );
     });
 
     it('Should have pricing and schedule on order line', async () => {
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
-      const line: OrderLineWithSubscriptionFields = activeOrder.lines[1];
-      expect(line.subscriptionPricing).toBeDefined();
-      expect(line.subscriptionPricing?.schedule).toBeDefined();
-      expect(line.subscriptionPricing?.schedule.name).toBeDefined();
-      expect(line.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
-      expect(line.subscriptionPricing?.schedule.durationInterval).toBe('month');
-      expect(line.subscriptionPricing?.schedule.durationCount).toBe(3);
-      expect(line.subscriptionPricing?.schedule.billingInterval).toBe('week');
-      expect(line.subscriptionPricing?.schedule.billingCount).toBe(1);
-      expect(line.subscriptionPricing?.schedule.paidUpFront).toBe(false);
+      const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
+      const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
+      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(54000);
+      expect(line1.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        54000
+      );
+      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(9000);
+      expect(line2.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        9000
+      );
+      expect(line2.subscriptionPricing?.schedule).toBeDefined();
+      expect(line2.subscriptionPricing?.schedule.name).toBeDefined();
+      expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(
+        19900
+      );
+      expect(line2.subscriptionPricing?.schedule.durationInterval).toBe(
+        'month'
+      );
+      expect(line2.subscriptionPricing?.schedule.durationCount).toBe(3);
+      expect(line2.subscriptionPricing?.schedule.billingInterval).toBe('week');
+      expect(line2.subscriptionPricing?.schedule.billingCount).toBe(1);
+      expect(line2.subscriptionPricing?.schedule.paidUpFront).toBe(false);
+    });
+
+    it('Should have discounted pricing on all order lines after applying coupon', async () => {
+      await applyCouponCode(shopClient, 'gimme10');
+      const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
+      const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
+      const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
+      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(48600);
+      expect(line1.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        54000
+      );
+      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(8100);
+      expect(line2.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        9000
+      );
     });
 
     let createdSubscriptions: any[] = [];
@@ -726,7 +778,7 @@ describe('Order export plugin', function () {
       );
       expect(paidInFull?.customer).toBe('mock');
       expect(paidInFull?.proration_behavior).toBe('none');
-      expect(paidInFull?.['items[0][price_data][unit_amount]']).toBe('54000');
+      expect(paidInFull?.['items[0][price_data][unit_amount]']).toBe('48600'); // discounted price
       expect(paidInFull?.['items[0][price_data][recurring][interval]']).toBe(
         'month'
       );
@@ -747,7 +799,7 @@ describe('Order export plugin', function () {
       );
       expect(weeklySub?.customer).toBe('mock');
       expect(weeklySub?.proration_behavior).toBe('none');
-      expect(weeklySub?.['items[0][price_data][unit_amount]']).toBe('9000');
+      expect(weeklySub?.['items[0][price_data][unit_amount]']).toBe('8100'); // Discounted price
       expect(weeklySub?.['items[0][price_data][recurring][interval]']).toBe(
         'week'
       );

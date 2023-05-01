@@ -222,7 +222,8 @@ You can preview the pricing model of a subscription without adding it to cart wi
     downpayment
     totalProratedAmount
     proratedDays
-    recurringPrice
+    recurringPriceWithTax
+    originalRecurringPriceWithTax
     interval
     intervalCount
     amountDueNow
@@ -277,6 +278,52 @@ You can also get the subscription and Schedule pricing details per order line wi
                 }
             }
         }
+```
+
+### Discount future payments
+
+You can discount future subscription payments when the custom promotion action `discount_future_subscription_payments` has been applied to an order.
+Example:
+
+- We have a subscription that will cost $30 a month, but has the promotion `Discount future subscription payments by 10%` applied
+- The actual monthly price of the subscription will be $27, forever.
+
+`StripeSubscriptionPricing.originalRecurringPriceWithTax` will have the non-discounted subscription price, while `StripeSubscriptionPricing.recurringPriceWithTax` will have the final discounted price.
+
+### Custom future payments promotions
+
+You can implement your own custom discounts that will apply to future payments. These promotions **do not** affect the actual order price, only future payments (the actual subscription price)!
+
+The `FuturePaymentsPromotionOrderAction` will discount all subscriptions in an order.
+
+```ts
+// Example fixed discount promotion
+import { FuturePaymentsPromotionOrderAction } from 'vendure-plugin-stripe-subscription';
+
+export const discountFutureSubscriptionPayments =
+  new FuturePaymentsPromotionOrderAction({
+    code: 'discount_future_subscription_payments_fixed_amount',
+    description: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Discount future subscription payments by fixed amount',
+      },
+    ],
+    args: {
+      amount: {
+        type: 'int',
+        ui: {
+          component: 'currency-form-input',
+        },
+      },
+    },
+    /**
+     * This function should return the amount to be discounted on the future subscription price
+     */
+    executeOnSubscriptions(ctx, order, args) {
+      return args.amount;
+    },
+  });
 ```
 
 ## Caveats

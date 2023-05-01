@@ -1,32 +1,48 @@
+fragment OrderFields on Order {
+  id
+  code
+  state
+  active
+  total
+  totalWithTax
+  customer {
+    emailAddress
+  }
+  shippingAddress {
+    fullName
+  }
+  lines {
+    id
+    quantity
+    productVariant {
+      id
+    }
+    discounts {
+      adjustmentSource
+      amount
+      amountWithTax
+      description
+      type
+    }
+  }
+}
+
 mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
   addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
     ... on Order {
-      id
-      code
-      state
-      active
-      total
-      totalWithTax
-      customer {
-        emailAddress
-      }
-      shippingAddress {
-        fullName
-      }
-      lines {
-        id
-        quantity
-        productVariant {
-          id
-        }
-        discounts {
-          adjustmentSource
-          amount
-          amountWithTax
-          description
-          type
-        }
-      }
+      ...OrderFields
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+
+mutation ApplyCouponCode($couponCode: String!) {
+  applyCouponCode(couponCode: $couponCode) {
+    ... on Order {
+      ...OrderFields
     }
     ... on ErrorResult {
       errorCode

@@ -307,7 +307,7 @@ export class StripeSubscriptionService {
   /**
    * Used for previewing the prices including VAT of a subscription
    */
-  async getPricing(
+  async getPricingForVariant(
     ctx: RequestContext,
     input: StripeSubscriptionPricingInput
   ): Promise<StripeSubscriptionPricing> {
@@ -320,7 +320,63 @@ export class StripeSubscriptionService {
         `No variant found with id ${input!.productVariantId}`
       );
     }
-    return calculateSubscriptionPricing(variant, input);
+    if (!variant.priceWithTax) {
+      throw new UserInputError(`Variant ${variant.id} has no priceWithTax`);
+    }
+    if (!variant.customFields.subscriptionSchedule) {
+      throw new UserInputError(
+        `Variant ${variant.id} doesn't have a schedule attached`
+      );
+    }
+    const result = calculateSubscriptionPricing(
+      ctx,
+      variant.priceWithTax,
+      variant.customFields.subscriptionSchedule,
+      input
+    );
+    return {
+      ...result,
+      variantId: variant.id as string,
+    };
+  }
+
+  /**
+   *
+   * Calculate subscription pricing based on an orderLine.
+   * This differs from a variant, because orderLines can have discounts applied
+   */
+  async getPricingForOrderLine(
+    ctx: RequestContext,
+    orderLine: OrderLineWithSubscriptionFields
+  ): Promise<StripeSubscriptionPricing> {
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant', 'order', 'order.promotions'],
+      applyProductVariantPrices: true,
+    });
+    if (!orderLine.productVariant?.enabled) {
+      throw new UserInputError(
+        `Variant ${orderLine.productVariant.sku} is not enabled`
+      );
+    }
+    if (!orderLine.productVariant.customFields.subscriptionSchedule) {
+      throw new UserInputError(
+        `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
+      );
+    }
+    const result = calculateSubscriptionPricing(
+      ctx,
+      orderLine.productVariant.priceWithTax,
+      orderLine.productVariant.customFields.subscriptionSchedule,
+      {
+        downpaymentWithTax: orderLine.customFields.downpayment,
+        startDate: orderLine.customFields.startDate,
+      },
+      orderLine.order.promotions
+    );
+    return {
+      ...result,
+      variantId: orderLine.productVariant.id as string,
+    };
   }
 
   /**
@@ -477,11 +533,7 @@ export class StripeSubscriptionService {
     for (const orderLine of subscriptionOrderLines) {
       orderLineCount++; // Start with 1
       const createdSubscriptions: string[] = [];
-      const pricing = await this.getPricing(ctx, {
-        startDate: orderLine.customFields.startDate,
-        downpaymentWithTax: orderLine.customFields.downpayment,
-        productVariantId: orderLine.productVariant.id as string,
-      });
+      const pricing = await this.getPricingForOrderLine(ctx, orderLine);
       if (pricing.schedule.paidUpFront && !pricing.schedule.autoRenew) {
         continue; // Paid up front without autoRenew doesn't need a subscription
       }

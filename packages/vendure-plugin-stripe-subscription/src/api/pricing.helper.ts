@@ -4,7 +4,14 @@ import {
   SubscriptionInterval,
   SubscriptionStartMoment,
 } from '../ui/generated/graphql';
-import { UserInputError } from '@vendure/core';
+import {
+  Logger,
+  Promotion,
+  PromotionAction,
+  RequestContext,
+  UserInputError,
+} from '@vendure/core';
+import { getConfig } from '@vendure/core/dist/config/config-helpers';
 import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 import {
   addMonths,
@@ -17,6 +24,8 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { Schedule } from './schedule.entity';
+import { FuturePaymentsPromotionOrderAction } from './future-payments.promotion';
+import { loggerCtx } from '../constants';
 
 export type VariantForCalculation = Pick<
   VariantWithSubscriptionFields,
@@ -25,25 +34,22 @@ export type VariantForCalculation = Pick<
 
 /**
  * Calculate subscription pricing based on variants, schedules and optional input
+ *
+ * @param rawSubscriptionPriceWithTax This should be the priceWithTax of the variant, or the orderLine.proratedUnitPriceWithTax for orderLines
+ * @param schedule The schedule that should be used for the Subscription
+ * @param input
+ * @returns
  */
 export function calculateSubscriptionPricing(
-  variant: VariantForCalculation,
+  ctx: RequestContext,
+  rawSubscriptionPriceWithTax: number,
+  schedule: Schedule,
   input?: Pick<
     StripeSubscriptionPricingInput,
     'downpaymentWithTax' | 'startDate'
-  >
-): StripeSubscriptionPricing {
-  if (!variant.priceWithTax) {
-    throw Error(
-      `Variant "${variant.id}" has price ${variant.priceWithTax}, can not calculate subscription pricing without variant price`
-    );
-  }
-  const schedule = variant.customFields.subscriptionSchedule;
-  if (!schedule) {
-    throw new UserInputError(
-      `Variant ${variant.id} doesn't have a schedule attached`
-    );
-  }
+  >,
+  promotions?: Promotion[]
+): Omit<StripeSubscriptionPricing, 'variantId'> {
   let downpayment = schedule.downpaymentWithTax;
   if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
     downpayment = input.downpaymentWithTax;
@@ -61,7 +67,8 @@ export function calculateSubscriptionPricing(
   }
   const billingsPerDuration = getBillingsPerDuration(schedule);
   const totalSubscriptionPrice =
-    variant.priceWithTax * billingsPerDuration + schedule.downpaymentWithTax;
+    rawSubscriptionPriceWithTax * billingsPerDuration +
+    schedule.downpaymentWithTax;
   if (downpayment > totalSubscriptionPrice) {
     throw new UserInputError(
       `Downpayment cannot be higher than the total subscription value, which is (${printMoney(
@@ -121,8 +128,8 @@ export function calculateSubscriptionPricing(
   );
   if (schedule.paidUpFront) {
     // User pays for the full membership now
-    amountDueNow = variant.priceWithTax + totalProratedAmount;
-    recurringPrice = variant.priceWithTax;
+    amountDueNow = rawSubscriptionPriceWithTax + totalProratedAmount;
+    recurringPrice = rawSubscriptionPriceWithTax;
     // If paid up front, move the startDate to next cycle, because the first cycle has been paid up front. This needs to happen AFTER proration calculation
     subscriptionStartDate = getNextCyclesStartDate(
       new Date(),
@@ -131,13 +138,19 @@ export function calculateSubscriptionPricing(
       schedule.durationCount
     );
   }
+  // Execute promotions on recurringPrice
+  const discountedRecurringPrice = getDiscountedRecurringPrice(
+    ctx,
+    recurringPrice,
+    promotions || []
+  );
   return {
-    variantId: variant.id as string,
     downpaymentWithTax: downpayment,
     totalProratedAmountWithTax: totalProratedAmount,
     proratedDays: proratedDays,
     dayRateWithTax: dayRate,
-    recurringPriceWithTax: recurringPrice,
+    recurringPriceWithTax: Math.round(discountedRecurringPrice),
+    originalRecurringPriceWithTax: recurringPrice,
     interval: schedule.billingInterval,
     intervalCount: schedule.billingCount,
     amountDueNowWithTax: amountDueNow,
@@ -149,6 +162,37 @@ export function calculateSubscriptionPricing(
       paidUpFront: schedule.paidUpFront,
     },
   };
+}
+
+/**
+ * Calculate the discounted recurring price based on given promotions
+ */
+export function getDiscountedRecurringPrice(
+  ctx: RequestContext,
+  recurringPrice: number,
+  promotions: Promotion[]
+): number {
+  let discountedRecurringPrice = recurringPrice;
+  const allActions = getConfig().promotionOptions.promotionActions || [];
+  for (const promotion of promotions) {
+    for (const action of promotion.actions) {
+      const promotionAction = allActions.find((a) => a.code === action.code);
+      if (promotionAction instanceof FuturePaymentsPromotionOrderAction) {
+        const discount = promotionAction.executeOnSubscription(
+          ctx,
+          discountedRecurringPrice,
+          action.args
+        );
+        const newDiscountedPrice = discountedRecurringPrice - discount;
+        Logger.info(
+          `Discounted recurring price from ${discountedRecurringPrice} to ${newDiscountedPrice} for promotion ${promotion.name}`,
+          loggerCtx
+        );
+        discountedRecurringPrice = newDiscountedPrice;
+      }
+    }
+  }
+  return discountedRecurringPrice;
 }
 
 /**

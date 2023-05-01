@@ -6001,6 +6001,13 @@ export type GetVariantsQueryVariables = Exact<{ [key: string]: never; }>;
 
 export type GetVariantsQuery = { __typename?: 'Query', productVariants: { __typename?: 'ProductVariantList', totalItems: number, items: Array<{ __typename?: 'ProductVariant', name: string, id: string, sku: string, stockOnHand: number, price: number, priceWithTax: number, outOfStockThreshold: number, trackInventory: GlobalFlag, stockAllocated: number }> } };
 
+export type CreatePromotionMutationVariables = Exact<{
+  input: CreatePromotionInput;
+}>;
+
+
+export type CreatePromotionMutation = { __typename?: 'Mutation', createPromotion: { __typename?: 'MissingConditionsError' } | { __typename?: 'Promotion', id: string, name: string, couponCode?: string | null } };
+
 
 export const CreateShippingMethod = gql`
     mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
@@ -6124,6 +6131,17 @@ export const GetVariants = gql`
       stockAllocated
     }
     totalItems
+  }
+}
+    `;
+export const CreatePromotion = gql`
+    mutation CreatePromotion($input: CreatePromotionInput!) {
+  createPromotion(input: $input) {
+    ... on Promotion {
+      id
+      name
+      couponCode
+    }
   }
 }
     `;

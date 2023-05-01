@@ -31,6 +31,9 @@ export interface OrderLineWithSubscriptionFields extends OrderLine {
     downpayment?: number;
     startDate?: Date;
     subscriptionIds?: string[];
+    /**
+     * Unique hash to separate order lines
+     */
     subscriptionHash?: string;
   };
   productVariant: VariantWithSubscriptionFields;
