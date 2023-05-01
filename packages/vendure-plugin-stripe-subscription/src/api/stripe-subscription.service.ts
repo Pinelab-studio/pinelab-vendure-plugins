@@ -332,7 +332,7 @@ export class StripeSubscriptionService {
       ctx,
       variant.priceWithTax,
       variant.customFields.subscriptionSchedule,
-      input,
+      input
     );
     return {
       ...result,
@@ -347,7 +347,7 @@ export class StripeSubscriptionService {
    */
   async getPricingForOrderLine(
     ctx: RequestContext,
-    orderLine: OrderLineWithSubscriptionFields,
+    orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing> {
     await this.entityHydrator.hydrate(ctx, orderLine, {
       relations: ['productVariant', 'order', 'order.promotions'],

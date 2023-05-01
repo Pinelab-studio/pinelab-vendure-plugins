@@ -288,37 +288,39 @@ Example:
 - The actual monthly price of the subscription will be $27, forever.
 
 ### Custom future payments promotions
+
 You can implement your own custom discounts that will apply to future payments. These promotions **do not** affect the actual order price, only future payments (the actual subscription price)!
 
 The `FuturePaymentsPromotionOrderAction` will discount all subscriptions in an order.
 
 ```ts
 // Example fixed discount promotion
-import { FuturePaymentsPromotionOrderAction } from 'vendure-plugin-stripe-subscription'
+import { FuturePaymentsPromotionOrderAction } from 'vendure-plugin-stripe-subscription';
 
-export const discountFutureSubscriptionPayments = new FuturePaymentsPromotionOrderAction({
-  code: 'discount_future_subscription_payments_fixed_amount',
-  description: [
-    {
-      languageCode: LanguageCode.en,
-      value: 'Discount future subscription payments by fixed amount',
-    },
-  ],
-  args: {
-    amount: {
-      type: 'int',
-      ui: {
-        component: 'currency-form-input',
+export const discountFutureSubscriptionPayments =
+  new FuturePaymentsPromotionOrderAction({
+    code: 'discount_future_subscription_payments_fixed_amount',
+    description: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Discount future subscription payments by fixed amount',
+      },
+    ],
+    args: {
+      amount: {
+        type: 'int',
+        ui: {
+          component: 'currency-form-input',
+        },
       },
     },
-  },
-  /**
-   * This function should return the amount to be discounted on the future subscription price
-   */
-  executeOnSubscriptions(ctx, order, args) {
-    return args.amount;
-  }
-});
+    /**
+     * This function should return the amount to be discounted on the future subscription price
+     */
+    executeOnSubscriptions(ctx, order, args) {
+      return args.amount;
+    },
+  });
 ```
 
 ## Caveats

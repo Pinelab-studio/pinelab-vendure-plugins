@@ -679,8 +679,12 @@ describe('Order export plugin', function () {
       expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(54000);
       expect(line2.subscriptionPricing?.schedule).toBeDefined();
       expect(line2.subscriptionPricing?.schedule.name).toBeDefined();
-      expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(19900);
-      expect(line2.subscriptionPricing?.schedule.durationInterval).toBe('month');
+      expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(
+        19900
+      );
+      expect(line2.subscriptionPricing?.schedule.durationInterval).toBe(
+        'month'
+      );
       expect(line2.subscriptionPricing?.schedule.durationCount).toBe(3);
       expect(line2.subscriptionPricing?.schedule.billingInterval).toBe('week');
       expect(line2.subscriptionPricing?.schedule.billingCount).toBe(1);
@@ -688,11 +692,8 @@ describe('Order export plugin', function () {
     });
 
     it('Should have discounted pricing on all order lines after applying coupon', async () => {
-      const { activeOrder: order } = await shopClient.query(GET_ORDER_WITH_PRICING);
-      console.log(JSON.stringify(order))
       await applyCouponCode(shopClient, 'gimme10');
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
-      console.log(JSON.stringify(activeOrder))
       const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
       const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
       expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(48600);
@@ -765,7 +766,7 @@ describe('Order export plugin', function () {
       );
       expect(paidInFull?.customer).toBe('mock');
       expect(paidInFull?.proration_behavior).toBe('none');
-      expect(paidInFull?.['items[0][price_data][unit_amount]']).toBe('54000');
+      expect(paidInFull?.['items[0][price_data][unit_amount]']).toBe('48600'); // discounted price
       expect(paidInFull?.['items[0][price_data][recurring][interval]']).toBe(
         'month'
       );
@@ -786,7 +787,7 @@ describe('Order export plugin', function () {
       );
       expect(weeklySub?.customer).toBe('mock');
       expect(weeklySub?.proration_behavior).toBe('none');
-      expect(weeklySub?.['items[0][price_data][unit_amount]']).toBe('9000');
+      expect(weeklySub?.['items[0][price_data][unit_amount]']).toBe('8100'); // Discounted price
       expect(weeklySub?.['items[0][price_data][recurring][interval]']).toBe(
         'week'
       );
