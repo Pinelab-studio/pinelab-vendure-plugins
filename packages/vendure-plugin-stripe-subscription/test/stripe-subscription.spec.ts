@@ -675,8 +675,14 @@ describe('Order export plugin', function () {
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
       const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
       const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
-      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(9000);
       expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(54000);
+      expect(line1.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        54000
+      );
+      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(9000);
+      expect(line2.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        9000
+      );
       expect(line2.subscriptionPricing?.schedule).toBeDefined();
       expect(line2.subscriptionPricing?.schedule.name).toBeDefined();
       expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(
@@ -697,7 +703,13 @@ describe('Order export plugin', function () {
       const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
       const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
       expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(48600);
+      expect(line1.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        54000
+      );
       expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(8100);
+      expect(line2.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
+        9000
+      );
     });
 
     let createdSubscriptions: any[] = [];

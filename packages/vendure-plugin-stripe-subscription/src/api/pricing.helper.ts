@@ -170,6 +170,7 @@ export function calculateSubscriptionPricing(
     proratedDays: proratedDays,
     dayRateWithTax: dayRate,
     recurringPriceWithTax: discountedRecurringPrice,
+    originalRecurringPriceWithTax: recurringPrice,
     interval: schedule.billingInterval,
     intervalCount: schedule.billingCount,
     amountDueNowWithTax: amountDueNow,

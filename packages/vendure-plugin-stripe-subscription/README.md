@@ -222,7 +222,8 @@ You can preview the pricing model of a subscription without adding it to cart wi
     downpayment
     totalProratedAmount
     proratedDays
-    recurringPrice
+    recurringPriceWithTax
+    originalRecurringPriceWithTax
     interval
     intervalCount
     amountDueNow
@@ -286,6 +287,8 @@ Example:
 
 - We have a subscription that will cost $30 a month, but has the promotion `Discount future subscription payments by 10%` applied
 - The actual monthly price of the subscription will be $27, forever.
+
+`StripeSubscriptionPricing.originalRecurringPriceWithTax` will have the non-discounted subscription price, while `StripeSubscriptionPricing.recurringPriceWithTax` will have the final discounted price.
 
 ### Custom future payments promotions
 
