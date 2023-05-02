@@ -1,5 +1,6 @@
 {
   "extends": "../../tsconfig.json",
+  "moduleResolution": "node16",
   "compilerOptions": {
     "declaration": true,
     "outDir": "dist"

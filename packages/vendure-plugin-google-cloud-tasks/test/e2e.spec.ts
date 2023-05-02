@@ -4,7 +4,7 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import gql from 'graphql-tag';
+import {gql} from 'graphql-tag';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -13,7 +13,6 @@ import {
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
-import fetch from 'node-fetch';
 
 let task: { url: string; body: string };
 const mockClient = {
@@ -97,7 +96,7 @@ describe('CloudTasks job queue e2e', () => {
 
   it('Should fail unauthorized webhook', async () => {
     const buff = new Buffer(task.body, 'base64');
-    const res = await fetch(`http://localhost:3103/cloud-tasks/handler`, {
+    const res = await adminClient.fetch(`http://localhost:3103/cloud-tasks/handler`, {
       method: 'post',
       body: buff.toString(),
       headers: {
@@ -110,7 +109,7 @@ describe('CloudTasks job queue e2e', () => {
 
   it('Should handle incoming task', async () => {
     const buff = new Buffer(task.body, 'base64');
-    const res = await fetch(`http://localhost:3103/cloud-tasks/handler`, {
+    const res = await adminClient.fetch(`http://localhost:3103/cloud-tasks/handler`, {
       method: 'post',
       body: buff.toString(),
       headers: {

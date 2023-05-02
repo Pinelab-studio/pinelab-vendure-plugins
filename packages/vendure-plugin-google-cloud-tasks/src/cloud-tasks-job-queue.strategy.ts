@@ -64,11 +64,18 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
         retries: job.retries,
       });
     } catch (e) {
-      Logger.error(
-        `Failed to add task to queue ${queueName}: ${e?.message}`,
-        CloudTasksPlugin.loggerCtx,
-        e
-      );
+      if (e instanceof Error) {
+        Logger.error(
+          `Failed to add task to queue ${queueName}: ${e?.message}`,
+          CloudTasksPlugin.loggerCtx,
+          e.stack
+        );
+      } else {
+        Logger.error(
+          `Failed to add task to queue ${queueName}: ${e}`,
+          CloudTasksPlugin.loggerCtx
+        );
+      }
       throw e;
     }
   }
