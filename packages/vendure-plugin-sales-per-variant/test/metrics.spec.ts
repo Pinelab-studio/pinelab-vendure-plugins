@@ -107,7 +107,6 @@ describe('Metrics', () => {
       GET_METRICS,
       { input: { interval: 'WEEKLY', variantIds: [3] } }
     );
-    // console.log(metricSummary);
     expect(metricSummary.length).toEqual(2);
     const aov = metricSummary.find((m) => m.code === 'aov')!;
     const nrOfOrders = metricSummary.find(

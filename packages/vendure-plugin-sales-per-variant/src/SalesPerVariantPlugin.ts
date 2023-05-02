@@ -4,24 +4,6 @@ import path from 'path';
 import { schema } from './api/schema.graphql';
 import { MetricsResolver } from './api/metrics.resolver';
 import { MetricsService } from './api/metrics.service';
-// import {
-//   AverageOrderValueMetric,
-//   ConversionRateMetric,
-//   MetricCalculation,
-//   NrOfOrdersMetric,
-// } from './api/strategies';
-// import { PLUGIN_INIT_OPTIONS } from './constants';
-
-// export interface SalesPerVariantPluginOptions {
-//   metrics: MetricCalculation[];
-//   /**
-//    * Relations to fetch for orders.
-//    * Getting many orders with many relation can be heavy on the DB,
-//    * so handle with care
-//    */
-//   orderRelations?: string[];
-// }
-
 @VendurePlugin({
   imports: [PluginCommonModule],
   adminApiExtensions: {
