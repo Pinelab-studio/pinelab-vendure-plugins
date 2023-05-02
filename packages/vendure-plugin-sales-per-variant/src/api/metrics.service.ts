@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   MetricInterval,
   MetricSummary,
@@ -8,11 +8,9 @@ import {
 import {
   ConfigService,
   ID,
-  ListQueryBuilder,
   Logger,
   Order,
   RequestContext,
-  Session,
   TransactionalConnection,
 } from '@vendure/core';
 import {
@@ -23,14 +21,17 @@ import {
   startOfDay,
   sub,
 } from 'date-fns';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { SalesPerVariantPluginOptions } from '../SalesPerVariantPlugin';
+import { loggerCtx } from '../constants';
 import { Cache } from './cache';
-import { Between } from 'typeorm';
+import {
+  AverageOrderValueMetric,
+  NrOfItemsSoldMetric,
+  MetricCalculation,
+  NrOfOrdersMetric,
+} from './strategies';
 
 export type MetricData = {
   orders: Order[];
-  sessions: Session[];
 };
 
 @Injectable()
@@ -38,8 +39,6 @@ export class MetricsService {
   cache = new Cache<MetricSummary[]>();
 
   constructor(
-    @Inject(PLUGIN_INIT_OPTIONS) private options: SalesPerVariantPluginOptions,
-    private listBuilder: ListQueryBuilder,
     private connection: TransactionalConnection,
     private configService: ConfigService
   ) {}
@@ -83,7 +82,15 @@ export class MetricsService {
       variantIds as string[]
     );
     const metrics: MetricSummary[] = [];
-    this.options.metrics.forEach((metric) => {
+    let metricsCalculation: MetricCalculation[] = [
+      new AverageOrderValueMetric(),
+    ];
+    if (variantIds) {
+      metricsCalculation.push(new NrOfItemsSoldMetric());
+    } else {
+      metricsCalculation.push(new NrOfOrdersMetric());
+    }
+    metricsCalculation.forEach((metric) => {
       // Calculate entry (month or week)
       const entries: MetricSummaryEntry[] = [];
       data.forEach((dataPerTick, weekOrMonthNr) => {
@@ -137,9 +144,9 @@ export class MetricsService {
     while (hasMoreOrders) {
       let query = orderRepo
         .createQueryBuilder('order')
-        .leftJoin('order.lines', 'orderLine')
+        .leftJoinAndSelect('order.lines', 'orderLine')
         .leftJoin('orderLine.productVariant', 'productVariant')
-        .leftJoin('orderLine.items', 'orderItems')
+        .leftJoinAndSelect('orderLine.items', 'orderItems')
         .leftJoin('order.channels', 'orderChannel')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId });
       if (variantIds?.length) {
@@ -154,26 +161,6 @@ export class MetricsService {
         hasMoreOrders = false;
       }
     }
-    // Get sessions created or update in given time
-    const sessions: Session[] = [];
-    skip = 0;
-    let hasMoreSessions = true;
-    while (hasMoreSessions) {
-      const [items, nrOfSessions] = await this.connection.rawConnection
-        .getRepository(Session)
-        .findAndCount({
-          select: ['updatedAt'],
-          where: {
-            updatedAt: Between(startDate.toISOString(), endDate.toISOString()),
-          },
-        });
-      sessions.push(...items);
-      skip += items.length;
-      if (sessions.length >= nrOfSessions) {
-        hasMoreSessions = false;
-      }
-    }
-    // Get ticks (weeks or months depending on the interval)
     const dataPerInterval = new Map<number, MetricData>();
     const ticks = [];
     for (let i = 1; i <= nrOfEntries; i++) {
@@ -188,12 +175,8 @@ export class MetricsService {
       const ordersInCurrentTick = orders.filter(
         (order) => getTickNrFn(order.orderPlacedAt!) === tick
       );
-      const sessionsInCurrentTick = sessions.filter(
-        (session) => getTickNrFn(session.updatedAt) === tick
-      );
       dataPerInterval.set(tick, {
         orders: ordersInCurrentTick,
-        sessions: sessionsInCurrentTick,
       });
     });
     return dataPerInterval;
