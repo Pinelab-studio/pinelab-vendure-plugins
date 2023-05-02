@@ -9,24 +9,13 @@ import { MetricsWidgetModule } from './metrics-widget.module';
   imports: [MetricsWidgetModule],
   declarations: [],
   providers: [
-    registerDashboardWidget('product-metrics', {
-      title: 'Product Metrics',
+    registerDashboardWidget('metrics', {
+      title: 'Metrics',
       supportedWidths: [4, 6, 8, 12],
       loadComponent: () =>
-        import('./product-metrics-widget').then(
-          (m) => m.ProductMetricsWidgetComponent
-        ),
+        import('./metrics-widget').then((m) => m.MetricsWidgetComponent),
     }),
-    registerDashboardWidget('order-metrics', {
-      title: 'Order Metrics',
-      supportedWidths: [4, 6, 8, 12],
-      loadComponent: () =>
-        import('./order-metrics-widget').then(
-          (m) => m.OrderMetricsWidgetComponent
-        ),
-    }),
-    setDashboardWidgetLayout([{ id: 'product-metrics', width: 12 }]),
-    setDashboardWidgetLayout([{ id: 'order-metrics', width: 12 }]),
+    setDashboardWidgetLayout([{ id: 'metrics', width: 12 }]),
   ],
 })
 export class MetricsWidgetSharedModule {}

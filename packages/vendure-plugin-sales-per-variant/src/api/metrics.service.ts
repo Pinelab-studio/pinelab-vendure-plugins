@@ -25,7 +25,7 @@ import { loggerCtx } from '../constants';
 import { Cache } from './cache';
 import {
   AverageOrderValueMetric,
-  NrOfItemsSoldMetric,
+  NrOfTimesSoldMetric,
   MetricCalculation,
   NrOfOrdersMetric,
 } from './strategies';
@@ -37,11 +37,17 @@ export type MetricData = {
 @Injectable()
 export class MetricsService {
   cache = new Cache<MetricSummary[]>();
-
+  metricsCalculation: MetricCalculation[];
   constructor(
     private connection: TransactionalConnection,
     private configService: ConfigService
-  ) {}
+  ) {
+    this.metricsCalculation = [
+      new AverageOrderValueMetric(),
+      new NrOfTimesSoldMetric(),
+      new NrOfOrdersMetric(),
+    ];
+  }
 
   async getMetrics(
     ctx: RequestContext,
@@ -82,15 +88,7 @@ export class MetricsService {
       variantIds as string[]
     );
     const metrics: MetricSummary[] = [];
-    let metricsCalculation: MetricCalculation[] = [
-      new AverageOrderValueMetric(),
-    ];
-    if (variantIds) {
-      metricsCalculation.push(new NrOfItemsSoldMetric());
-    } else {
-      metricsCalculation.push(new NrOfOrdersMetric());
-    }
-    metricsCalculation.forEach((metric) => {
+    this.metricsCalculation.forEach((metric) => {
       // Calculate entry (month or week)
       const entries: MetricSummaryEntry[] = [];
       data.forEach((dataPerTick, weekOrMonthNr) => {

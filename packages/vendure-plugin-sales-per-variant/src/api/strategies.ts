@@ -102,11 +102,11 @@ export class NrOfOrdersMetric implements MetricCalculation {
   }
 }
 
-export class NrOfItemsSoldMetric implements MetricCalculation {
-  readonly code = 'nr-of-times-sold';
+export class NrOfTimesSoldMetric implements MetricCalculation {
+  readonly code = 'nr-of-items-sold';
 
   getTitle(ctx: RequestContext): string {
-    return `Nr. of times sold`;
+    return `Nr. of items sold`;
   }
 
   calculateEntry(

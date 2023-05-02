@@ -78,7 +78,7 @@ import { MetircsUiService } from './metrics-ui.service';
     `,
   ],
 })
-export class ProductMetricsWidgetComponent implements OnInit {
+export class MetricsWidgetComponent implements OnInit {
   metrics$: Observable<MetricSummary[]> | undefined;
   charts: any[] = [];
   variantName: string;

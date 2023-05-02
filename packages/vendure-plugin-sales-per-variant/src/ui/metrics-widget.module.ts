@@ -1,9 +1,8 @@
-import { ProductMetricsWidgetComponent } from './product-metrics-widget';
+import { MetricsWidgetComponent } from './metrics-widget';
 import { SharedModule } from '@vendure/admin-ui/core';
 import { NgModule } from '@angular/core';
-import { OrderMetricsWidgetComponent } from './order-metrics-widget';
 @NgModule({
   imports: [SharedModule],
-  declarations: [ProductMetricsWidgetComponent, OrderMetricsWidgetComponent],
+  declarations: [MetricsWidgetComponent],
 })
 export class MetricsWidgetModule {}
