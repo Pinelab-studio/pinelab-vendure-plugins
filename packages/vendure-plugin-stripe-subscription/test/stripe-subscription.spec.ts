@@ -20,7 +20,7 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import {
   calculateSubscriptionPricing,
-  discountFutureSubscriptionPayments,
+  discountAllSubscriptionsByPercentage,
   getBillingsPerDuration,
   getDayRate,
   getDaysUntilNextStartDate,
@@ -605,12 +605,12 @@ describe('Order export plugin', function () {
   });
 
   describe('Subscription order placement', () => {
-    it('Should create 10% "discount_future_subscription_payments" promotion', async () => {
+    it('Should create "10% on all subscriptions" promotion', async () => {
       await adminClient.asSuperAdmin();
       const promotion = await createPromotion(
         adminClient,
         'gimme10',
-        discountFutureSubscriptionPayments.code,
+        discountAllSubscriptionsByPercentage.code,
         [
           {
             name: 'discount',

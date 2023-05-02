@@ -1,18 +1,10 @@
 import {
-  StripeSubscriptionPricing,
-  StripeSubscriptionPricingInput,
-  SubscriptionInterval,
-  SubscriptionStartMoment,
-} from '../ui/generated/graphql';
-import {
   Logger,
   Promotion,
-  PromotionAction,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
 import { getConfig } from '@vendure/core/dist/config/config-helpers';
-import { VariantWithSubscriptionFields } from './subscription-custom-fields';
 import {
   addMonths,
   addWeeks,
@@ -23,9 +15,19 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { Schedule } from './schedule.entity';
-import { FuturePaymentsPromotionOrderAction } from './future-payments.promotion';
 import { loggerCtx } from '../constants';
+import {
+  StripeSubscriptionPricing,
+  StripeSubscriptionPricingInput,
+  SubscriptionInterval,
+  SubscriptionStartMoment,
+} from '../ui/generated/graphql';
+import { Schedule } from './schedule.entity';
+import {
+  OrderLineWithSubscriptionFields,
+  VariantWithSubscriptionFields,
+} from './subscription-custom-fields';
+import { SubscriptionPromotionAction } from './subscription.promotion';
 
 export type VariantForCalculation = Pick<
   VariantWithSubscriptionFields,
@@ -34,6 +36,7 @@ export type VariantForCalculation = Pick<
 
 /**
  * Calculate subscription pricing based on variants, schedules and optional input
+ * Doesn't apply discounts yet!
  *
  * @param rawSubscriptionPriceWithTax This should be the priceWithTax of the variant, or the orderLine.proratedUnitPriceWithTax for orderLines
  * @param schedule The schedule that should be used for the Subscription
@@ -47,9 +50,11 @@ export function calculateSubscriptionPricing(
   input?: Pick<
     StripeSubscriptionPricingInput,
     'downpaymentWithTax' | 'startDate'
-  >,
-  promotions?: Promotion[]
-): Omit<StripeSubscriptionPricing, 'variantId'> {
+  >
+): Omit<
+  StripeSubscriptionPricing,
+  'variantId' | 'originalRecurringPriceWithTax'
+> {
   let downpayment = schedule.downpaymentWithTax;
   if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
     downpayment = input.downpaymentWithTax;
@@ -138,19 +143,12 @@ export function calculateSubscriptionPricing(
       schedule.durationCount
     );
   }
-  // Execute promotions on recurringPrice
-  const discountedRecurringPrice = getDiscountedRecurringPrice(
-    ctx,
-    recurringPrice,
-    promotions || []
-  );
   return {
     downpaymentWithTax: downpayment,
     totalProratedAmountWithTax: totalProratedAmount,
     proratedDays: proratedDays,
     dayRateWithTax: dayRate,
-    recurringPriceWithTax: Math.round(discountedRecurringPrice),
-    originalRecurringPriceWithTax: recurringPrice,
+    recurringPriceWithTax: recurringPrice,
     interval: schedule.billingInterval,
     intervalCount: schedule.billingCount,
     amountDueNowWithTax: amountDueNow,
@@ -167,20 +165,22 @@ export function calculateSubscriptionPricing(
 /**
  * Calculate the discounted recurring price based on given promotions
  */
-export function getDiscountedRecurringPrice(
+export async function getDiscountedRecurringPrice(
   ctx: RequestContext,
   recurringPrice: number,
+  orderLine: OrderLineWithSubscriptionFields,
   promotions: Promotion[]
-): number {
+): Promise<number> {
   let discountedRecurringPrice = recurringPrice;
   const allActions = getConfig().promotionOptions.promotionActions || [];
   for (const promotion of promotions) {
     for (const action of promotion.actions) {
       const promotionAction = allActions.find((a) => a.code === action.code);
-      if (promotionAction instanceof FuturePaymentsPromotionOrderAction) {
-        const discount = promotionAction.executeOnSubscription(
+      if (promotionAction instanceof SubscriptionPromotionAction) {
+        const discount = await promotionAction.executeOnSubscription(
           ctx,
           discountedRecurringPrice,
+          orderLine,
           action.args
         );
         const newDiscountedPrice = discountedRecurringPrice - discount;
