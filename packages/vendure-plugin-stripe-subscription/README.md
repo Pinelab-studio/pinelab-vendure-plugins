@@ -287,10 +287,7 @@ Example of a discount on subscription payments:
 - We have a subscription that will cost $30 a month, but has the promotion `Discount future subscription payments by 10%` applied
 - The actual monthly price of the subscription will be $27, forever.
 
-There are some built in discounts that work on future payments of a subscription:
-
-- `discount_all_subscription_payments_by_percentage` discounts all subscriptions by { discount }%
-- `discount_subscriptions_with_facets_by_percentage` discounts all subscriptions by { discount }%
+There are some built in discounts that work on future payments of a subscription. You can select the under Promotion Actions in the Admin UI.
 
 `StripeSubscriptionPricing.originalRecurringPriceWithTax` will have the non-discounted subscription price, while `StripeSubscriptionPricing.recurringPriceWithTax` will have the final discounted price.
 
