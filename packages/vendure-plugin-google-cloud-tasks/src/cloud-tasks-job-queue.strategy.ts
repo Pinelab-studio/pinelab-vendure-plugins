@@ -23,60 +23,57 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
     if (!LIVE_QUEUES.has(queueName)) {
       await this.createQueue(queueName);
     }
-    try {
-      const cloudTaskMessage: CloudTaskMessage = {
-        id: `${queueName}-${Date.now()}`,
-        queueName: queueName,
-        data: job.data,
-        createdAt: new Date(),
-        maxRetries: job.retries || this.options.defaultRetries || 3,
-      };
-      const parent = this.getQueuePath(queueName);
-      const task = {
-        httpRequest: {
-          httpMethod: 'POST' as const,
-          headers: {
-            'Content-type': 'application/json',
-            Authorization: `Bearer ${this.options.authSecret}`,
-          },
-          url: `${this.options.taskHandlerHost}/cloud-tasks/handler`,
-          body: Buffer.from(JSON.stringify(cloudTaskMessage)).toString(
-            'base64'
-          ),
+    const cloudTaskMessage: CloudTaskMessage = {
+      id: `${queueName}-${Date.now()}`,
+      queueName: queueName,
+      data: job.data,
+      createdAt: new Date(),
+      maxRetries: job.retries || this.options.defaultJobRetries || 3,
+    };
+    const parent = this.getQueuePath(queueName);
+    const task = {
+      httpRequest: {
+        httpMethod: 'POST' as const,
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: `Bearer ${this.options.authSecret}`,
         },
-      };
-      const request = { parent, task };
-      await this.client.createTask(request, {
-        maxRetries: cloudTaskMessage.maxRetries,
-      });
-      Logger.debug(
-        `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
-        CloudTasksPlugin.loggerCtx
-      );
-      return new Job({
-        id: cloudTaskMessage.id,
-        queueName: job.queueName,
-        data: job.data,
-        attempts: job.attempts,
-        state: JobState.RUNNING,
-        startedAt: job.startedAt,
-        createdAt: job.createdAt,
-        retries: job.retries,
-      });
-    } catch (e) {
-      if (e instanceof Error) {
+        url: `${this.options.taskHandlerHost}/cloud-tasks/handler`,
+        body: Buffer.from(JSON.stringify(cloudTaskMessage)).toString('base64'),
+      },
+    };
+    const request = { parent, task };
+    let currentAttempt = 0;
+    while (true) {
+      try {
+        await this.client.createTask(request, {
+          maxRetries: cloudTaskMessage.maxRetries,
+        });
+        Logger.debug(
+          `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
+          CloudTasksPlugin.loggerCtx
+        );
+        return new Job({
+          id: cloudTaskMessage.id,
+          queueName: job.queueName,
+          data: job.data,
+          attempts: job.attempts,
+          state: JobState.RUNNING,
+          startedAt: job.startedAt,
+          createdAt: job.createdAt,
+          retries: job.retries,
+        });
+      } catch (e) {
+        currentAttempt += 1;
         Logger.error(
           `Failed to add task to queue ${queueName}: ${e?.message}`,
           CloudTasksPlugin.loggerCtx,
-          e.stack
+          e
         );
-      } else {
-        Logger.error(
-          `Failed to add task to queue ${queueName}: ${e}`,
-          CloudTasksPlugin.loggerCtx
-        );
+        if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
+          throw e;
+        }
       }
-      throw e;
     }
   }
 
