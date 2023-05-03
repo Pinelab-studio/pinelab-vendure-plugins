@@ -44,6 +44,7 @@ import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import {
   calculateSubscriptionPricing,
+  getDiscountedRecurringPrice,
   getNextCyclesStartDate,
   printMoney,
 } from './pricing.helper';
@@ -328,15 +329,17 @@ export class StripeSubscriptionService {
         `Variant ${variant.id} doesn't have a schedule attached`
       );
     }
-    const result = calculateSubscriptionPricing(
+    const subscriptionPricing = calculateSubscriptionPricing(
       ctx,
       variant.priceWithTax,
       variant.customFields.subscriptionSchedule,
       input
     );
     return {
-      ...result,
+      ...subscriptionPricing,
       variantId: variant.id as string,
+      // original price is the same as the recurring price without discounts
+      originalRecurringPriceWithTax: subscriptionPricing.recurringPriceWithTax,
     };
   }
 
@@ -363,19 +366,27 @@ export class StripeSubscriptionService {
         `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
       );
     }
-    const result = calculateSubscriptionPricing(
+    const subscriptionPricing = calculateSubscriptionPricing(
       ctx,
       orderLine.productVariant.priceWithTax,
       orderLine.productVariant.customFields.subscriptionSchedule,
       {
         downpaymentWithTax: orderLine.customFields.downpayment,
         startDate: orderLine.customFields.startDate,
-      },
-      orderLine.order.promotions
+      }
+    );
+    // Execute promotions on recurringPrice
+    const discountedRecurringPrice = await getDiscountedRecurringPrice(
+      ctx,
+      subscriptionPricing.recurringPriceWithTax,
+      orderLine,
+      orderLine.order.promotions || []
     );
     return {
-      ...result,
+      ...subscriptionPricing,
       variantId: orderLine.productVariant.id as string,
+      originalRecurringPriceWithTax: subscriptionPricing.recurringPriceWithTax,
+      recurringPriceWithTax: Math.round(discountedRecurringPrice),
     };
   }
 
