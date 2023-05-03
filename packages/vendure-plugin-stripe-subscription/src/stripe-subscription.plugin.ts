@@ -24,10 +24,7 @@ import {
 import { StripeSubscriptionService } from './api/stripe-subscription.service';
 import { stripeSubscriptionHandler } from './api/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api/has-stripe-subscription-products-payment-checker';
-import {
-  discountAllSubscriptionsByPercentage,
-  discountSubscriptionsWithFacets,
-} from './api/subscription.promotion';
+import { subscriptionPromotions } from './api/subscription.promotion';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -70,12 +67,7 @@ export interface StripeSubscriptionPluginOptions {
     config.customFields.ProductVariant.push(...productVariantCustomFields);
     config.customFields.Customer.push(...customerCustomFields);
     config.customFields.OrderLine.push(...orderLineCustomFields);
-    config.promotionOptions.promotionActions.push(
-      discountAllSubscriptionsByPercentage
-    );
-    config.promotionOptions.promotionActions.push(
-      discountSubscriptionsWithFacets
-    );
+    config.promotionOptions.promotionActions.push(...subscriptionPromotions);
     return config;
   },
 })

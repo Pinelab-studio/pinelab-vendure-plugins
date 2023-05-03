@@ -19,8 +19,8 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import {
+  allByPercentage,
   calculateSubscriptionPricing,
-  discountAllSubscriptionsByPercentage,
   getBillingsPerDuration,
   getDayRate,
   getDaysUntilNextStartDate,
@@ -610,7 +610,7 @@ describe('Order export plugin', function () {
       const promotion = await createPromotion(
         adminClient,
         'gimme10',
-        discountAllSubscriptionsByPercentage.code,
+        allByPercentage.code,
         [
           {
             name: 'discount',
