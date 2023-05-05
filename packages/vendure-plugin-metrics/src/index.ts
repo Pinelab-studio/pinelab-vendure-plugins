@@ -1,4 +1,4 @@
-export * from './MetricsPlugin';
+export * from './SalesPerVariantPlugin';
 export * from './api/strategies';
 export * from './api/metrics.service';
 export * from './api/metrics.resolver';
