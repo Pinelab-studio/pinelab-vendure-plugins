@@ -49,6 +49,9 @@ import { MetricsUiService } from './metrics-ui.service';
       >
         <clr-icon shape="times"></clr-icon>
       </button>
+      <small *ngIf="selectedVariantNames.length">
+        {{ selectedVariantNames.join(' + ') }}
+      </small>
     </div>
     <div *ngFor="let metric of metrics$ | async" class="chart-container">
       <canvas id="{{ metric.code }}-{{ widgetId }}"></canvas>
@@ -88,6 +91,7 @@ export class MetricsWidgetComponent implements OnInit {
   selection$ = new BehaviorSubject<MetricInterval>(MetricInterval.Monthly);
   nrOfOrdersChart?: any;
   selectedVariantIds: string[] = [];
+  selectedVariantNames: string[] = [];
 
   constructor(
     private dataService: DataService,
@@ -117,10 +121,12 @@ export class MetricsWidgetComponent implements OnInit {
       })
       .subscribe((selection) => {
         if (selection) {
-          this.selectedVariantIds = [
-            ...selection.map((s) => s.productVariantId),
-          ];
-          this.changeDetectorRef.detectChanges();
+          console.log(selection);
+          this.selectedVariantNames = selection.map(
+            (s) => s.productVariantName
+          );
+          (this.selectedVariantIds = selection.map((s) => s.productVariantId)),
+            this.changeDetectorRef.detectChanges();
           this.loadChartData();
         }
       });
@@ -128,6 +134,7 @@ export class MetricsWidgetComponent implements OnInit {
 
   clearProductVariantSelection() {
     this.selectedVariantIds = [];
+    this.selectedVariantNames = [];
     this.changeDetectorRef.detectChanges();
     this.loadChartData();
   }
