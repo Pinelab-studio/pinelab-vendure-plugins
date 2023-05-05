@@ -2,8 +2,8 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-sales-per-variant/dev/@vendure/core)
 
-A plugin to measure and visualize your shop's conversion rate (CRV), average order value (AOV) and number of orders per
-month or per week, for the past 12 months (or weeks) per variants.
+A plugin to measure and visualize your shop's average order value (AOV),number of orders per
+month or per week and number of items per product variant for the past 12 months (or weeks) per variants.
 
 ## Getting started
 
@@ -32,92 +32,30 @@ plugins: [
 
 Metric results are cached in memory to prevent heavy database queries everytime a user opens its dashboard.
 
-### Default metrics
+### Metrics
 
 1. Conversion Rate (CVR): this is the conversion rate of active sessions that converted to placed orders per week/month.
 2. Average Order Value (AOV): The average of `order.totalWithTax` of the orders per week/month
 3. Nr of orders: The number of order per week/month
 
-### Custom metrics
+# Breaking changes since 5.x
 
-You can implement your own metrics by implementing the `MetricCalculation` interface. If you need any order relations
-you can specify them on plugin initialisation.
+For simplicity and performance reasons, we decided it makes more sense to display our 3 metrics of choice, and not have metrics extensible with custom Metrics for now. This is what changes in your `vendure-config`:
 
-#### Example: Average amount of items per order
-
-Let's say we want to show the average amount of items per order, per week/month.
-
-1. Implement the `MetricCalculation` interface:
-
-```ts
-import {
-  MetricCalculation,
-  MetricInterval,
-  MetricData,
-  getMonthName,
-  MetricSummaryEntry,
-} from 'vendure-plugin-metrics';
-import { RequestContext } from '@vendure/core';
-
-export class AmountOfItemsMetric implements MetricCalculation {
-  readonly code = 'item-amounts';
-
-  getTitle(ctx: RequestContext): string {
-    return `Average items per order`;
-  }
-
-  calculateEntry(
-    ctx: RequestContext,
-    interval: MetricInterval,
-    weekOrMonthNr: number,
-    data: MetricData
-  ): MetricSummaryEntry {
-    // Creates labels like 'Jan' or 'Week 32'
-    const label =
-      interval === MetricInterval.Monthly
-        ? getMonthName(weekOrMonthNr)
-        : `Week ${weekOrMonthNr}`;
-    // No orders equals 0 products
-    if (!data.orders.length) {
-      return {
-        label,
-        value: 0,
-      };
-    }
-    // Sum up all orderLines
-    let productCounter = 0;
-    data.orders.forEach((order) =>
-      order.lines.forEach((line) => (productCounter += line.quantity))
-    );
-    // Calculate average per order
-    const average = Math.round(productCounter / data.orders.length);
-    return {
-      label,
-      value: average,
-    };
-  }
-}
+```diff
+- plugins: [
+-   MetricsPlugin.init({
+-     metrics: [
+-       new NrOfOrdersMetric(),
+-       new AverageOrderValueMetric(),
+-       new ConversionRateMetric(),
+-       new RevenueMetric(),
+-     ],
+-  }),
+- ]
++ plugins: [
++     MetricsPlugin,
++ ]
 ```
 
-2. Pass your new metric to the MetricPlugin in your `vendure-config.ts`:
-
-```ts
-import {
-  MetricsPlugin,
-  ConversionRateMetric,
-} from 'vendure-plugin-plugin-sales-per';
-
-const vendureConfig = {
-  pugins: [
-    MetricsPlugin.init({
-      // Tell the plugin to also fetch order.lines for our new metric
-      orderRelations: ['lines'],
-      // This will only show CVR and the new Item amount metrics
-      metrics: [new ConversionRateMetric(), new MetricSummaryEntry()],
-    }),
-  ],
-  // You don't need to rebuild your admin ui!
-};
-```
-
-3. Start your server, and see your new metric on the dashboard!
+You can now also view metrics per variant(s) if you'd like.

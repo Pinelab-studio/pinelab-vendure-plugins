@@ -3,13 +3,13 @@ import {
   registerDashboardWidget,
   setDashboardWidgetLayout,
 } from '@vendure/admin-ui/core';
-import { MetricsWidgetModule } from './metrics-widget';
+import { MetricsWidgetModule } from './metrics-widget.module';
 
 @NgModule({
   imports: [MetricsWidgetModule],
   declarations: [],
   providers: [
-    registerDashboardWidget('product metrics', {
+    registerDashboardWidget('metrics', {
       title: 'Metrics',
       supportedWidths: [4, 6, 8, 12],
       loadComponent: () =>
