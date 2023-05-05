@@ -1,4 +1,4 @@
-# Vendure Sales Per Variant plugin
+# Vendure Metrics plugin
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-sales-per-variant/dev/@vendure/core)
 
@@ -10,11 +10,11 @@ month or per week and number of items per product variant for the past 12 months
 1. Configure the plugin in `vendure-config.ts`:
 
 ```ts
-import { SalesPerVariantPlugin } from "vendure-plugin-sales-per-variant";
+import { MetricsPlugin } from "vendure-plugin-metrics";
 
 plugins: [
   ...
-    SalesPerVariantPlugin,
+    MetricsPlugin,
     AdminUiPlugin.init({
       port: 3002,
       route: 'admin',
@@ -28,14 +28,14 @@ plugins: [
 ```
 
 2. Start your Vendure server and login as administrator
-3. You should now be able to select `product metrics` when you click on the button `add widget`
+3. You should now be able to select `metrics` when you click on the button `add widget`
 
-Metric results are cached in memory to prevent heavy database queries everytime a user opens its dashboard.
+Metric results are cached in memory to prevent heavy database queries every time a user opens its dashboard.
 
 ### Metrics
 
-1. Conversion Rate (CVR): this is the conversion rate of active sessions that converted to placed orders per week/month.
-2. Average Order Value (AOV): The average of `order.totalWithTax` of the orders per week/month
+1. Average Order Value (AOV): The average of `order.totalWithTax` of the orders per week/month
+2. Nr of items: The number of items sold. When no variants are selected, this metric counts the total nr of items in an order.
 3. Nr of orders: The number of order per week/month
 
 # Breaking changes since 5.x
