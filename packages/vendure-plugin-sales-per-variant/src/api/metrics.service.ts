@@ -37,12 +37,12 @@ export type MetricData = {
 @Injectable()
 export class MetricsService {
   cache = new Cache<MetricSummary[]>();
-  metricsCalculation: MetricCalculation[];
+  metricsCalculations: MetricCalculation[];
   constructor(
     private connection: TransactionalConnection,
     private configService: ConfigService
   ) {
-    this.metricsCalculation = [
+    this.metricsCalculations = [
       new AverageOrderValueMetric(),
       new NrOfTimesSoldMetric(),
       new NrOfOrdersMetric(),
@@ -88,7 +88,7 @@ export class MetricsService {
       variantIds as string[]
     );
     const metrics: MetricSummary[] = [];
-    this.metricsCalculation.forEach((metric) => {
+    this.metricsCalculations.forEach((metric) => {
       // Calculate entry (month or week)
       const entries: MetricSummaryEntry[] = [];
       data.forEach((dataPerTick, weekOrMonthNr) => {

@@ -17,7 +17,7 @@ export const schema = gql`
   }
   input MetricSummaryInput {
     interval: MetricInterval!
-    variantIds: [ID]
+    variantIds: [ID!]
   }
   extend type Query {
     """

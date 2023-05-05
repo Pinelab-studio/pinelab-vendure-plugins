@@ -6,7 +6,7 @@ import {
 } from '@vendure/admin-ui/core';
 import { MetricInterval, MetricSummary } from './generated/graphql';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { MetircsUiService } from './metrics-ui.service';
+import { MetricsUiService } from './metrics-ui.service';
 
 @Component({
   selector: 'product-metrics-widget',
@@ -93,7 +93,7 @@ export class MetricsWidgetComponent implements OnInit {
     private dataService: DataService,
     private changeDetectorRef: ChangeDetectorRef,
     private modalService: ModalService,
-    private metricsService: MetircsUiService
+    private metricsService: MetricsUiService
   ) {}
 
   async ngOnInit() {

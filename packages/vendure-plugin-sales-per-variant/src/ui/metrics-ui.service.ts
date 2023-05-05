@@ -13,7 +13,7 @@ import { Chart, registerables } from 'chart.js';
 @Injectable({
   providedIn: 'root',
 })
-export class MetircsUiService {
+export class MetricsUiService {
   config = {
     x: {
       grid: {

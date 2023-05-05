@@ -16,7 +16,8 @@
   "scripts": {
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "jest --preset=\"ts-jest\" --forceExit",
-    "start": "yarn ts-node test/dev-server.ts"
+    "start": "yarn ts-node test/dev-server.ts",
+    "generate": "graphql-codegen"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^2.4.0",
