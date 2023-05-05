@@ -5987,7 +5987,7 @@ export type UpdateProductVariantsMutationVariables = Exact<{
 }>;
 
 
-export type UpdateProductVariantsMutation = { __typename?: 'Mutation', updateProductVariants: Array<{ __typename: 'ProductVariant', id: string, createdAt: any, updatedAt: any, enabled: boolean, languageCode: LanguageCode, name: string, sku: string, price: number, currencyCode: CurrencyCode, priceWithTax: number, stockOnHand: number, stockAllocated: number } | null> };
+export type UpdateProductVariantsMutation = { __typename?: 'Mutation', updateProductVariants: Array<{ __typename: 'ProductVariant', id: string, createdAt: any, updatedAt: any, enabled: boolean, languageCode: LanguageCode, name: string, sku: string, price: number, currencyCode: CurrencyCode, priceWithTax: number, stockAllocated: number, stockOnHand: number, trackInventory: GlobalFlag, outOfStockThreshold: number } | null> };
 
 export type UpdateProductMutationVariables = Exact<{
   input: UpdateProductInput;
@@ -5999,7 +5999,14 @@ export type UpdateProductMutation = { __typename?: 'Mutation', updateProduct: { 
 export type GetVariantsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetVariantsQuery = { __typename?: 'Query', productVariants: { __typename?: 'ProductVariantList', totalItems: number, items: Array<{ __typename?: 'ProductVariant', name: string, id: string, sku: string, stockOnHand: number, price: number, priceWithTax: number, outOfStockThreshold: number }> } };
+export type GetVariantsQuery = { __typename?: 'Query', productVariants: { __typename?: 'ProductVariantList', totalItems: number, items: Array<{ __typename?: 'ProductVariant', name: string, id: string, sku: string, stockOnHand: number, price: number, priceWithTax: number, outOfStockThreshold: number, trackInventory: GlobalFlag, stockAllocated: number }> } };
+
+export type CreatePromotionMutationVariables = Exact<{
+  input: CreatePromotionInput;
+}>;
+
+
+export type CreatePromotionMutation = { __typename?: 'Mutation', createPromotion: { __typename?: 'MissingConditionsError' } | { __typename?: 'Promotion', id: string, name: string, couponCode?: string | null } };
 
 
 export const CreateShippingMethod = gql`
@@ -6092,8 +6099,10 @@ export const UpdateProductVariants = gql`
     price
     currencyCode
     priceWithTax
-    stockOnHand
     stockAllocated
+    stockOnHand
+    trackInventory
+    outOfStockThreshold
     __typename
   }
 }
@@ -6118,8 +6127,21 @@ export const GetVariants = gql`
       price
       priceWithTax
       outOfStockThreshold
+      trackInventory
+      stockAllocated
     }
     totalItems
+  }
+}
+    `;
+export const CreatePromotion = gql`
+    mutation CreatePromotion($input: CreatePromotionInput!) {
+  createPromotion(input: $input) {
+    ... on Promotion {
+      id
+      name
+      couponCode
+    }
   }
 }
     `;

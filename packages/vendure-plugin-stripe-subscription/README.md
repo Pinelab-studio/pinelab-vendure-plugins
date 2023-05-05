@@ -222,7 +222,8 @@ You can preview the pricing model of a subscription without adding it to cart wi
     downpayment
     totalProratedAmount
     proratedDays
-    recurringPrice
+    recurringPriceWithTax
+    originalRecurringPriceWithTax
     interval
     intervalCount
     amountDueNow
@@ -277,6 +278,60 @@ You can also get the subscription and Schedule pricing details per order line wi
                 }
             }
         }
+```
+
+### Discount subscription payments
+
+Example of a discount on subscription payments:
+
+- We have a subscription that will cost $30 a month, but has the promotion `Discount future subscription payments by 10%` applied
+- The actual monthly price of the subscription will be $27, forever.
+
+There are some built in discounts that work on future payments of a subscription. You can select the under Promotion Actions in the Admin UI.
+
+`StripeSubscriptionPricing.originalRecurringPriceWithTax` will have the non-discounted subscription price, while `StripeSubscriptionPricing.recurringPriceWithTax` will have the final discounted price.
+
+### Custom future payments promotions
+
+You can implement your own custom discounts that will apply to future payments. These promotions **do not** affect the actual order price, only future payments (the actual subscription price)!
+
+The `SubscriptionPromotionAction` will discount all subscriptions in an order.
+
+```ts
+// Example fixed discount promotion
+import { SubscriptionPromotionAction } from 'vendure-plugin-stripe-subscription';
+
+/**
+ * Discount all subscription payments by a percentage.
+ */
+export const discountAllSubscriptionsByPercentage =
+  new SubscriptionPromotionAction({
+    code: 'discount_all_subscription_payments_example',
+    description: [
+      {
+        languageCode: LanguageCode.en,
+        value: 'Discount future subscription payments by { discount } %',
+      },
+    ],
+    args: {
+      discount: {
+        type: 'int',
+        ui: {
+          component: 'number-form-input',
+          suffix: '%',
+        },
+      },
+    },
+    async executeOnSubscription(
+      ctx,
+      currentSubscriptionPrice,
+      orderLine,
+      args
+    ) {
+      const discount = currentSubscriptionPrice * (args.discount / 100);
+      return discount;
+    },
+  });
 ```
 
 ## Caveats

@@ -5,11 +5,15 @@ import {
 } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
+  ConfigArgInput,
   CreateCollection,
   CreateCollectionInput,
   CreateCollectionMutation,
   CreateCollectionMutationVariables,
   CreateFulfillment,
+  CreatePromotion,
+  CreatePromotionMutation,
+  CreatePromotionMutationVariables,
   CreateShippingMethod,
   GetVariants,
   GetVariantsQuery,
@@ -18,6 +22,7 @@ import {
   OrderQuery,
   Orders as OrdersGraphql,
   OrdersQuery,
+  Promotion,
   UpdateProduct,
   UpdateProductInput,
   UpdateProductMutation,
@@ -143,4 +148,31 @@ export async function getAllVariants(
     GetVariants
   );
   return productVariants.items;
+}
+
+export async function createPromotion(
+  adminClient: SimpleGraphQLClient,
+  couponCode: string,
+  promotionActionCode: string,
+  args: ConfigArgInput[]
+): Promise<Promotion> {
+  const { createPromotion } = await adminClient.query<
+    CreatePromotionMutation,
+    CreatePromotionMutationVariables
+  >(CreatePromotion, {
+    input: {
+      name: couponCode,
+      enabled: true,
+      couponCode,
+      conditions: [],
+      actions: [
+        {
+          code: promotionActionCode,
+          arguments: args,
+        },
+      ],
+      customFields: {},
+    },
+  });
+  return createPromotion as Promotion;
 }

@@ -116,6 +116,7 @@ export const GET_ORDER_WITH_PRICING = gql`
           proratedDays
           dayRateWithTax
           recurringPriceWithTax
+          originalRecurringPriceWithTax
           interval
           intervalCount
           amountDueNowWithTax

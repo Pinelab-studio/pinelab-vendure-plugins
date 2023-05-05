@@ -38,7 +38,7 @@ describe('CloudTasks job queue e2e', () => {
       location: 'europe-west1',
       authSecret: 'some-secret',
       queueSuffix: 'plugin-test',
-      defaultRetries: 50,
+      defaultJobRetries: 50,
     }),
     DefaultSearchPlugin
   );
