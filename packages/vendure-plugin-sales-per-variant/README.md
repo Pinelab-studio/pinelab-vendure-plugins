@@ -32,8 +32,30 @@ plugins: [
 
 Metric results are cached in memory to prevent heavy database queries everytime a user opens its dashboard.
 
-### Default metrics
+### Metrics
 
 1. Conversion Rate (CVR): this is the conversion rate of active sessions that converted to placed orders per week/month.
 2. Average Order Value (AOV): The average of `order.totalWithTax` of the orders per week/month
 3. Nr of orders: The number of order per week/month
+
+# Breaking changes since 5.x
+
+For simplicity and performance reasons, we decided it makes more sense to display our 3 metrics of choice, and not have metrics extensible with custom Metrics for now. This is what changes in your `vendure-config`:
+
+```diff
+- plugins: [
+-   MetricsPlugin.init({
+-     metrics: [
+-       new NrOfOrdersMetric(),
+-       new AverageOrderValueMetric(),
+-       new ConversionRateMetric(),
+-       new RevenueMetric(),
+-     ],
+-  }),
+- ]
++ plugins: [
++     MetricsPlugin,
++ ]
+```
+
+You can now also view metrics per variant(s) if you'd like.
