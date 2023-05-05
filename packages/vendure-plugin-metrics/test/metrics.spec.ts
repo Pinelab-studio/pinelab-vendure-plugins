@@ -9,7 +9,7 @@ import {
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
-import { SalesPerVariantPlugin } from '../src';
+import { MetricsPlugin } from '../src';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { GET_METRICS } from '../dist/ui/queries.graphql';
 import {
@@ -30,7 +30,7 @@ describe('Metrics', () => {
         port: 3050,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [SalesPerVariantPlugin],
+      plugins: [MetricsPlugin],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },

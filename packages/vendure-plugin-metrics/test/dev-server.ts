@@ -13,7 +13,7 @@ import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { SalesPerVariantPlugin } from '../src/';
+import { MetricsPlugin } from '../src/';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
@@ -31,14 +31,14 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       paymentMethodHandlers: [testPaymentMethod],
     },
     plugins: [
-      SalesPerVariantPlugin,
+      MetricsPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
         app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [SalesPerVariantPlugin.ui],
+          extensions: [MetricsPlugin.ui],
           devMode: true,
         }),
       }),
