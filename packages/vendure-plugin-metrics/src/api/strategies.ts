@@ -75,48 +75,6 @@ export class AverageOrderValueMetric implements MetricCalculation {
     };
   }
 }
-
-/**
- * Calculates the conversion of sessions to orders per month/week
- */
-export class ConversionRateMetric implements MetricCalculation {
-  readonly code = 'cvr';
-
-  getTitle(ctx: RequestContext): string {
-    return `Sessions to order conversion in %`;
-  }
-
-  calculateEntry(
-    ctx: RequestContext,
-    interval: MetricInterval,
-    weekOrMonthNr: number,
-    data: MetricData
-  ): MetricSummaryEntry {
-    const label =
-      interval === MetricInterval.Monthly
-        ? getMonthName(weekOrMonthNr)
-        : `Week ${weekOrMonthNr}`;
-    const nrOfSessions = data.sessions.length;
-    const nrOfOrders = data.orders.length;
-    if (!nrOfOrders) {
-      return {
-        label,
-        value: 0,
-      };
-    } else if (!nrOfSessions) {
-      return {
-        label,
-        value: 100,
-      };
-    }
-    const rate = Math.round((nrOfOrders / nrOfSessions) * 100 * 10) / 10;
-    return {
-      label,
-      value: rate > 100 ? 100 : rate,
-    };
-  }
-}
-
 /**
  * Calculates the conversion of sessions to orders per month/week
  */
@@ -140,6 +98,38 @@ export class NrOfOrdersMetric implements MetricCalculation {
     return {
       label,
       value: data.orders.length,
+    };
+  }
+}
+
+export class NrOfTimesSoldMetric implements MetricCalculation {
+  readonly code = 'nr-of-items-sold';
+
+  getTitle(ctx: RequestContext): string {
+    return `Nr. of items sold`;
+  }
+
+  calculateEntry(
+    ctx: RequestContext,
+    interval: MetricInterval,
+    weekOrMonthNr: number,
+    data: MetricData
+  ): MetricSummaryEntry {
+    const label =
+      interval === MetricInterval.Monthly
+        ? getMonthName(weekOrMonthNr)
+        : `Week ${weekOrMonthNr}`;
+    return {
+      label,
+      value: data.orders.reduce(
+        (mainPartialSum, order) =>
+          mainPartialSum +
+          order.lines.reduce(
+            (subPartialSum, line) => subPartialSum + line.quantity,
+            0
+          ),
+        0
+      ),
     };
   }
 }

@@ -12,7 +12,7 @@ import { MetricsService } from './api/metrics.service';
   },
   providers: [MetricsService],
 })
-export class SalesPerVariantPlugin {
+export class MetricsPlugin {
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
     ngModules: [
