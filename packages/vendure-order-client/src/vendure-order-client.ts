@@ -1,7 +1,15 @@
 import { GraphqlQueries } from './queries';
 import { GraphQLClient, Variables } from 'graphql-request';
 import { atom, WritableAtom } from 'nanostores';
-import { ActiveOrderFieldsFragment, ActiveOrderQuery } from './graphql-types';
+import {
+  ActiveOrderFieldsFragment,
+  ActiveOrderQuery,
+  AdditemToOrderMutation,
+  AdditemToOrderMutationVariables,
+  AdjustOrderLineMutation,
+  AdjustOrderLineMutationVariables,
+  ErrorResult,
+} from './graphql-types';
 import mitt from 'mitt';
 import { Id, VendureOrderEvents } from './events';
 
@@ -23,6 +31,7 @@ export class VendureOrderClient<A = {}> {
    * For getting/setting the actual activeOrder, use `client.activeOrder`
    */
   activeOrderStore: WritableAtom<ActiveOrder<A> | undefined>;
+  readonly tokenName = 'vendure-auth-token';
 
   get activeOrder(): ActiveOrder<A> | undefined {
     return this.activeOrderStore.get();
@@ -55,9 +64,34 @@ export class VendureOrderClient<A = {}> {
     productVariantId: Id,
     quantity: number
   ): Promise<ActiveOrder<A> | undefined> {
+    const { addItemToOrder } = await this.rawRequest<
+      AdditemToOrderMutation,
+      AdditemToOrderMutationVariables
+    >(this.queries.ADD_ITEM_TO_ORDER, {
+      productVariantId,
+      quantity,
+    });
+    this.activeOrder = addItemToOrder as ActiveOrder<A>;
     this.eventBus.emit('item-added', { productVariantId, quantity });
-    // TODO implement
-    return undefined;
+    return this.activeOrder;
+  }
+
+  async adjustOrderLine(
+    orderLineId: Id,
+    quantity: number
+  ): Promise<ActiveOrder<A> | undefined> {
+    // TODO get current quantity from orderLine/activeOrder;
+    const { adjustOrderLine } = await this.rawRequest<
+      AdjustOrderLineMutation,
+      AdjustOrderLineMutationVariables
+    >(this.queries.ADJUST_ORDERLINE, {
+      orderLineId,
+      quantity,
+    });
+    this.activeOrder = adjustOrderLine as ActiveOrder<A>;
+    // FIXME emit item-added or removed event
+    // this.eventBus.emit('item-removed', { productVariantId, quantity });
+    return this.activeOrder;
   }
 
   /**
@@ -67,10 +101,9 @@ export class VendureOrderClient<A = {}> {
     document: string,
     variables?: I
   ): Promise<T> {
-    const tokenName = 'vendure-auth-token';
     if (window?.localStorage) {
       // Make sure we send auth token in request
-      const token = window.localStorage.getItem(tokenName);
+      const token = window.localStorage.getItem(this.tokenName);
       if (token) {
         this.client.setHeader('Authorization', `Bearer ${token}`);
       }
@@ -82,19 +115,36 @@ export class VendureOrderClient<A = {}> {
         document,
         variables
       )) as any;
-      const token = headers.get(tokenName);
+      const token = headers.get(this.tokenName);
       if (token && window?.localStorage) {
         // Make sure we save received tokens
-        window.localStorage.setItem(tokenName, token);
+        window.localStorage.setItem(this.tokenName, token);
       }
       return data;
     } catch (e) {
-      const error = (e as any).response?.errors?.[0];
-      if (error) {
-        console.error(e);
-        // FIXME
-      }
+      console.error(e);
       throw e;
     }
+  }
+
+  /**
+   * Throws if result contains an error, if not, returns the non-error type
+   */
+  async validateResult<T>(result: T | ErrorResult): Promise<T> {
+    if (result && (result as ErrorResult).errorCode) {
+      const error = result as ErrorResult;
+      if (
+        error.errorCode === 'ORDER_MODIFICATION_ERROR' ||
+        error.errorCode === 'ORDER_PAYMENT_STATE_ERROR'
+      ) {
+        window.localStorage.removeItem(this.tokenName); // These are unrecoverable states, so remove activeOrder
+      }
+      if (error.errorCode === 'INSUFFICIENT_STOCK_ERROR') {
+        // Fetch activeOrder to view amount of items added after insufficient stock error
+        await this.getActiveOrder();
+      }
+      throw error;
+    }
+    return result as T;
   }
 }

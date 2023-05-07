@@ -8,7 +8,7 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import path from 'path';
-import { initialData } from './initial-data';
+import { initialData } from './initial-data.js';
 
 (async () => {
   let server: TestServer;
@@ -28,6 +28,6 @@ import { initialData } from './initial-data';
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
   await server.init({
     initialData,
-    productsCsvPath: path.join(__dirname, './product-import.csv'),
+    productsCsvPath: path.join('../test/product-import.csv'),
   });
 })();

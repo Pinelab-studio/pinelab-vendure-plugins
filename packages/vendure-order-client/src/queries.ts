@@ -106,6 +106,21 @@ export class GraphqlQueries {
     }
   `;
 
+  ADJUST_ORDERLINE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation adjustOrderLine($orderLineId: ID!, $quantity: Int!) {
+      adjustOrderLine(orderLineId: $orderLineId, quantity: $quantity) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
   GET_ACTIVE_ORDER = gql`
     ${this.ACTIVE_ORDER_FIELDS}
     query activeOrder {

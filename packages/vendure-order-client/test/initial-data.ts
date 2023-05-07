@@ -1,4 +1,4 @@
-import { LanguageCode } from '@vendure/common/lib/generated-types';
+import { LanguageCode } from '@vendure/common/lib/generated-types.js';
 import { InitialData } from '@vendure/core';
 
 export const initialData: InitialData = {

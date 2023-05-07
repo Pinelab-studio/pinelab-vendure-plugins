@@ -6,6 +6,8 @@ config:
   resolverValidationOptions:
     requireResolversForResolveType: false
   avoidOptionals: false
+  scalars:
+    ID: number | string
 
 generates:
   src/graphql-types.ts:

@@ -9,9 +9,18 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import path from 'path';
 import { initialData } from './initial-data';
-import { VendureOrderClient, VendureOrderEvents } from '../lib/';
+import { VendureOrderClient } from '../src/';
+import { describe, beforeAll, it, expect, afterAll, vi } from 'vitest';
 
-VendureOrderEvents['item-added'];
+const storage: any = {};
+const window = {
+  localStorage: {
+    getItem: (key: string) => storage[key],
+    setItem: (key: string, data: any) => (storage[key] = data),
+    removeItem: (key: string) => (storage[key] = undefined),
+  },
+};
+vi.stubGlobal('window', window);
 
 describe('Vendure order client', () => {
   let server: TestServer;
@@ -52,9 +61,9 @@ describe('Vendure order client', () => {
 
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
-      await client.addItemToOrder('T_1', 1);
-      // TODO check active order
-      expect(false).toBe(true);
+      const order = await client.addItemToOrder('T_1', 1);
+      expect(order?.lines[0].quantity).toBe(1);
+      expect(order?.lines[0].productVariant.id).toBe('T_1');
     });
 
     it('Emits "item-added" event, with quantity 1', async () => {
@@ -62,6 +71,12 @@ describe('Vendure order client', () => {
         productVariantId: 'T_1',
         quantity: 1,
       });
+    });
+
+    it('Retrieves active order', async () => {
+      const order = await client.getActiveOrder();
+      expect(order?.lines[0].quantity).toBe(1);
+      expect(order?.lines[0].productVariant.id).toBe('T_1');
     });
 
     it.skip('Increases quantity to 3', async () => {

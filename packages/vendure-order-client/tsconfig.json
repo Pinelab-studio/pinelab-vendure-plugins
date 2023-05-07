@@ -11,7 +11,7 @@
     "strict": true,
     "sourceMap": false,
     "skipLibCheck": true,
-    "types": ["jest", "node"],
+    "types": ["node"],
     "declaration": true,
     "strictPropertyInitialization": false,
     "outDir": "lib",

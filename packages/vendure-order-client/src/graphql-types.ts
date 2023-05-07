@@ -10,7 +10,7 @@ export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
 };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: string;
+  ID: number | string;
   String: string;
   Boolean: boolean;
   Int: number;
@@ -3298,6 +3298,32 @@ export type AdditemToOrderMutationVariables = Exact<{
 
 export type AdditemToOrderMutation = { __typename?: 'Mutation' } & {
   addItemToOrder:
+    | ({ __typename?: 'Order' } & ActiveOrderFieldsFragment)
+    | ({ __typename?: 'OrderModificationError' } & Pick<
+        OrderModificationError,
+        'errorCode' | 'message'
+      >)
+    | ({ __typename?: 'OrderLimitError' } & Pick<
+        OrderLimitError,
+        'errorCode' | 'message'
+      >)
+    | ({ __typename?: 'NegativeQuantityError' } & Pick<
+        NegativeQuantityError,
+        'errorCode' | 'message'
+      >)
+    | ({ __typename?: 'InsufficientStockError' } & Pick<
+        InsufficientStockError,
+        'errorCode' | 'message'
+      >);
+};
+
+export type AdjustOrderLineMutationVariables = Exact<{
+  orderLineId: Scalars['ID'];
+  quantity: Scalars['Int'];
+}>;
+
+export type AdjustOrderLineMutation = { __typename?: 'Mutation' } & {
+  adjustOrderLine:
     | ({ __typename?: 'Order' } & ActiveOrderFieldsFragment)
     | ({ __typename?: 'OrderModificationError' } & Pick<
         OrderModificationError,
