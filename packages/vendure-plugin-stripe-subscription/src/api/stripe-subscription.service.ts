@@ -241,7 +241,7 @@ export class StripeSubscriptionService {
     if (!order) {
       throw new UserInputError('No active order for session');
     }
-    if (!order.totalWithTax) {
+    if (!order.total) {
       // Add a verification fee to the order to support orders that are actually $0
       order = (await this.orderService.addSurchargeToOrder(ctx, order.id, {
         description: 'Verification fee',
@@ -290,12 +290,12 @@ export class StripeSubscriptionService {
       setup_future_usage: hasSubscriptionProducts
         ? 'off_session'
         : 'on_session',
-      amount: order.totalWithTax,
+      amount: order.total,
       currency: order.currencyCode,
       metadata: {
         orderCode: order.code,
         channelToken: ctx.channel.token,
-        amount: order.totalWithTax,
+        amount: order.total,
       },
     });
     Logger.info(
@@ -321,8 +321,8 @@ export class StripeSubscriptionService {
         `No variant found with id ${input!.productVariantId}`
       );
     }
-    if (!variant.priceWithTax) {
-      throw new UserInputError(`Variant ${variant.id} has no priceWithTax`);
+    if (!variant.price) {
+      throw new UserInputError(`Variant ${variant.id} has no price`);
     }
     if (!variant.customFields.subscriptionSchedule) {
       throw new UserInputError(
@@ -331,7 +331,7 @@ export class StripeSubscriptionService {
     }
     const subscriptionPricing = calculateSubscriptionPricing(
       ctx,
-      variant.priceWithTax,
+      variant.listPrice,
       variant.customFields.subscriptionSchedule,
       input
     );
@@ -339,7 +339,7 @@ export class StripeSubscriptionService {
       ...subscriptionPricing,
       variantId: variant.id as string,
       // original price is the same as the recurring price without discounts
-      originalRecurringPriceWithTax: subscriptionPricing.recurringPriceWithTax,
+      originalRecurringPrice: subscriptionPricing.recurringPrice,
     };
   }
 
@@ -368,25 +368,25 @@ export class StripeSubscriptionService {
     }
     const subscriptionPricing = calculateSubscriptionPricing(
       ctx,
-      orderLine.productVariant.priceWithTax,
+      orderLine.productVariant.listPrice,
       orderLine.productVariant.customFields.subscriptionSchedule,
       {
-        downpaymentWithTax: orderLine.customFields.downpayment,
+        downpayment: orderLine.customFields.downpayment,
         startDate: orderLine.customFields.startDate,
       }
     );
     // Execute promotions on recurringPrice
     const discountedRecurringPrice = await getDiscountedRecurringPrice(
       ctx,
-      subscriptionPricing.recurringPriceWithTax,
+      subscriptionPricing.recurringPrice,
       orderLine,
       orderLine.order.promotions || []
     );
     return {
       ...subscriptionPricing,
       variantId: orderLine.productVariant.id as string,
-      originalRecurringPriceWithTax: subscriptionPricing.recurringPriceWithTax,
-      recurringPriceWithTax: Math.round(discountedRecurringPrice),
+      originalRecurringPrice: subscriptionPricing.recurringPrice,
+      recurringPrice: Math.round(discountedRecurringPrice),
     };
   }
 
@@ -558,7 +558,7 @@ export class StripeSubscriptionService {
             customerId: stripeCustomerId,
             productId: product.id,
             currencyCode: order.currencyCode,
-            amount: pricing.recurringPriceWithTax,
+            amount: pricing.recurringPrice,
             interval: pricing.interval,
             intervalCount: pricing.intervalCount,
             paymentMethodId: stripePaymentMethodId,
@@ -588,7 +588,7 @@ export class StripeSubscriptionService {
         } else {
           Logger.info(
             `Created subscription ${recurringSubscription.id}: ${printMoney(
-              pricing.recurringPriceWithTax
+              pricing.recurringPrice
             )} every ${pricing.intervalCount} ${
               pricing.interval
             }(s) with startDate ${pricing.subscriptionStartDate} for order ${
@@ -605,7 +605,7 @@ export class StripeSubscriptionService {
             recurringSubscription.id
           );
         }
-        if (pricing.downpaymentWithTax) {
+        if (pricing.downpayment) {
           // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
           const downpaymentProduct = await stripeClient.products.create({
             name: `${orderLine.productVariant.name} - Downpayment (${order.code})`,
@@ -631,7 +631,7 @@ export class StripeSubscriptionService {
               customerId: stripeCustomerId,
               productId: downpaymentProduct.id,
               currencyCode: order.currencyCode,
-              amount: pricing.downpaymentWithTax,
+              amount: pricing.downpayment,
               interval: downpaymentInterval,
               intervalCount: downpaymentIntervalCount,
               paymentMethodId: stripePaymentMethodId,
@@ -663,7 +663,7 @@ export class StripeSubscriptionService {
               `Created downpayment subscription ${
                 downpaymentSubscription.id
               }: ${printMoney(
-                pricing.downpaymentWithTax
+                pricing.downpayment
               )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
                 pricing.subscriptionStartDate
               } for order ${order.code}`,
@@ -779,13 +779,11 @@ export class StripeSubscriptionService {
     let prettifierPricing = pricing
       ? {
           ...pricing,
-          totalProratedAmountWithTax: printMoney(
-            pricing.totalProratedAmountWithTax
-          ),
-          downpaymentWithTax: printMoney(pricing.downpaymentWithTax),
-          recurringPriceWithTax: printMoney(pricing.recurringPriceWithTax),
-          amountDueNowWithTax: printMoney(pricing.amountDueNowWithTax),
-          dayRateWithTax: printMoney(pricing.dayRateWithTax),
+          totalProratedAmount: printMoney(pricing.totalProratedAmount),
+          downpayment: printMoney(pricing.downpayment),
+          recurringPrice: printMoney(pricing.recurringPrice),
+          amountDueNow: printMoney(pricing.amountDueNow),
+          dayRate: printMoney(pricing.dayRate),
         }
       : undefined;
     await this.historyService.createHistoryEntryForOrder(

@@ -67,14 +67,14 @@ export const GET_PRICING = gql`
   ${SCHEDULE_FRAGMENT}
   query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
     stripeSubscriptionPricing(input: $input) {
-      downpaymentWithTax
-      totalProratedAmountWithTax
+      downpayment
+      totalProratedAmount
       proratedDays
-      dayRateWithTax
-      recurringPriceWithTax
+      dayRate
+      recurringPrice
       interval
       intervalCount
-      amountDueNowWithTax
+      amountDueNow
       subscriptionStartDate
       schedule {
         ...ScheduleFields
@@ -87,14 +87,14 @@ export const GET_PRICING_FOR_PRODUCT = gql`
   ${SCHEDULE_FRAGMENT}
   query stripeSubscriptionPricingForProduct($productId: ID!) {
     stripeSubscriptionPricingForProduct(productId: $productId) {
-      downpaymentWithTax
-      totalProratedAmountWithTax
+      downpayment
+      totalProratedAmount
       proratedDays
-      dayRateWithTax
-      recurringPriceWithTax
+      dayRate
+      recurringPrice
       interval
       intervalCount
-      amountDueNowWithTax
+      amountDueNow
       subscriptionStartDate
       schedule {
         ...ScheduleFields
@@ -111,15 +111,15 @@ export const GET_ORDER_WITH_PRICING = gql`
       code
       lines {
         subscriptionPricing {
-          downpaymentWithTax
-          totalProratedAmountWithTax
+          downpayment
+          totalProratedAmount
           proratedDays
-          dayRateWithTax
-          recurringPriceWithTax
-          originalRecurringPriceWithTax
+          dayRate
+          recurringPrice
+          originalrecurringPrice
           interval
           intervalCount
-          amountDueNowWithTax
+          amountDueNow
           subscriptionStartDate
           schedule {
             ...ScheduleFields
@@ -190,7 +190,7 @@ export const GET_SCHEDULES = gql`
       createdAt
       updatedAt
       name
-      downpaymentWithTax
+      downpayment
       durationInterval
       durationCount
       startMoment

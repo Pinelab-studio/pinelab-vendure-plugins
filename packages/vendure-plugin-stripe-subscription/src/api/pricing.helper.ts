@@ -31,35 +31,30 @@ import { SubscriptionPromotionAction } from './subscription.promotion';
 
 export type VariantForCalculation = Pick<
   VariantWithSubscriptionFields,
-  'id' | 'priceWithTax' | 'customFields'
+  'id' | 'listPrice' | 'customFields'
 >;
 
 /**
  * Calculate subscription pricing based on variants, schedules and optional input
  * Doesn't apply discounts yet!
  *
- * @param rawSubscriptionPriceWithTax This should be the priceWithTax of the variant, or the orderLine.proratedUnitPriceWithTax for orderLines
+ * @param ctx
+ * @param rawSubscriptionPrice
  * @param schedule The schedule that should be used for the Subscription
  * @param input
  * @returns
  */
 export function calculateSubscriptionPricing(
   ctx: RequestContext,
-  rawSubscriptionPriceWithTax: number,
+  rawSubscriptionPrice: number,
   schedule: Schedule,
-  input?: Pick<
-    StripeSubscriptionPricingInput,
-    'downpaymentWithTax' | 'startDate'
-  >
-): Omit<
-  StripeSubscriptionPricing,
-  'variantId' | 'originalRecurringPriceWithTax'
-> {
-  let downpayment = schedule.downpaymentWithTax;
-  if (input?.downpaymentWithTax || input?.downpaymentWithTax === 0) {
-    downpayment = input.downpaymentWithTax;
+  input?: Pick<StripeSubscriptionPricingInput, 'downpayment' | 'startDate'>
+): Omit<StripeSubscriptionPricing, 'variantId' | 'originalRecurringPrice'> {
+  let downpayment = schedule.downpayment;
+  if (input?.downpayment || input?.downpayment === 0) {
+    downpayment = input.downpayment;
   }
-  if (schedule.paidUpFront && schedule.downpaymentWithTax) {
+  if (schedule.paidUpFront && schedule.downpayment) {
     // Paid-up-front subscriptions cant have downpayments
     throw new UserInputError(
       `Paid-up-front subscriptions can not have downpayments!`
@@ -72,8 +67,7 @@ export function calculateSubscriptionPricing(
   }
   const billingsPerDuration = getBillingsPerDuration(schedule);
   const totalSubscriptionPrice =
-    rawSubscriptionPriceWithTax * billingsPerDuration +
-    schedule.downpaymentWithTax;
+    rawSubscriptionPrice * billingsPerDuration + schedule.downpayment;
   if (downpayment > totalSubscriptionPrice) {
     throw new UserInputError(
       `Downpayment cannot be higher than the total subscription value, which is (${printMoney(
@@ -81,10 +75,10 @@ export function calculateSubscriptionPricing(
       )})`
     );
   }
-  if (downpayment < schedule.downpaymentWithTax) {
+  if (downpayment < schedule.downpayment) {
     throw new UserInputError(
       `Downpayment cannot be lower than schedules default downpayment, which is (${printMoney(
-        schedule.downpaymentWithTax
+        schedule.downpayment
       )})`
     );
   }
@@ -133,8 +127,8 @@ export function calculateSubscriptionPricing(
   );
   if (schedule.paidUpFront) {
     // User pays for the full membership now
-    amountDueNow = rawSubscriptionPriceWithTax + totalProratedAmount;
-    recurringPrice = rawSubscriptionPriceWithTax;
+    amountDueNow = rawSubscriptionPrice + totalProratedAmount;
+    recurringPrice = rawSubscriptionPrice;
     // If paid up front, move the startDate to next cycle, because the first cycle has been paid up front. This needs to happen AFTER proration calculation
     subscriptionStartDate = getNextCyclesStartDate(
       new Date(),
@@ -144,21 +138,18 @@ export function calculateSubscriptionPricing(
     );
   }
   return {
-    downpaymentWithTax: downpayment,
-    totalProratedAmountWithTax: totalProratedAmount,
+    downpayment: downpayment,
+    totalProratedAmount: totalProratedAmount,
     proratedDays: proratedDays,
-    dayRateWithTax: dayRate,
-    recurringPriceWithTax: recurringPrice,
+    dayRate,
+    pricesIncludeTax: ctx.channel.pricesIncludeTax,
+    recurringPrice: recurringPrice,
     interval: schedule.billingInterval,
     intervalCount: schedule.billingCount,
-    amountDueNowWithTax: amountDueNow,
+    amountDueNow,
     subscriptionStartDate,
     subscriptionEndDate,
-    schedule: {
-      ...schedule,
-      id: String(schedule.id),
-      paidUpFront: schedule.paidUpFront,
-    },
+    schedule: cloneSchedule(ctx, schedule),
   };
 }
 
@@ -347,4 +338,10 @@ export function getBillingsPerDuration(
  */
 export function printMoney(amount: number): string {
   return (amount / 100).toFixed(2);
+}
+
+export function cloneSchedule(ctx: RequestContext, schedule: Schedule) {
+  return Object.assign(schedule, {
+    pricesIncludeTax: ctx.channel.pricesIncludeTax,
+  });
 }
