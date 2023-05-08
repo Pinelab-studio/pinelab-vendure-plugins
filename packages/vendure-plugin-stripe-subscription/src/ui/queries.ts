@@ -6,7 +6,7 @@ export const SCHEDULE_FRAGMENT = gql`
     createdAt
     updatedAt
     name
-    downpaymentWithTax
+    downpayment
     durationInterval
     durationCount
     startMoment
