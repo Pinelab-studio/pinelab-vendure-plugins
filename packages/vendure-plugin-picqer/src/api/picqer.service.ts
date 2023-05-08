@@ -27,6 +27,7 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockLevelService,
   StockMovementEvent,
   TransactionalConnection,
   assertFound,
@@ -374,7 +375,7 @@ export class PicqerService implements OnApplicationBootstrap {
       },
       lines: orderLinesToFulfill,
     });
-    throwIfTransitionFailed(fulfillmentResult);
+    // FIXME V2 throwIfTransitionFailed(fulfillmentResult);
     let updatedOrder = await assertFound(
       this.orderService.findOne(ctx, order.id, [])
     );
@@ -390,7 +391,7 @@ export class PicqerService implements OnApplicationBootstrap {
         fulfillment.id,
         'Shipped'
       );
-    throwIfTransitionFailed(transitionToShippedResult);
+    // FIXME V2 throwIfTransitionFailed(transitionToShippedResult);
     updatedOrder = await assertFound(
       this.orderService.findOne(ctx, order.id, [])
     );
@@ -406,7 +407,7 @@ export class PicqerService implements OnApplicationBootstrap {
         fulfillment.id,
         'Delivered'
       );
-    throwIfTransitionFailed(transitionToDeliveredResult);
+    // FIXME V2 throwIfTransitionFailed(transitionToDeliveredResult);
     updatedOrder = await assertFound(
       this.orderService.findOne(ctx, order.id, [])
     );
@@ -501,6 +502,7 @@ export class PicqerService implements OnApplicationBootstrap {
         if (!picqerProduct) {
           return; // Should never happen
         }
+        // FIXME get ava
         const picqerStockLevel = picqerProduct?.stock?.[0]?.freestock;
         if (!picqerStockLevel) {
           Logger.info(
