@@ -220,6 +220,7 @@ You can preview the pricing model of a subscription without adding it to cart wi
     }
   ) {
     downpayment
+    pricesIncludeTax
     totalProratedAmount
     proratedDays
     recurringPrice
@@ -232,6 +233,7 @@ You can preview the pricing model of a subscription without adding it to cart wi
       id
       name
       downpayment
+      pricesIncludeTax
       durationInterval
       durationCount
       startMoment
