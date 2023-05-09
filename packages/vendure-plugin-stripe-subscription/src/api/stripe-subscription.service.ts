@@ -366,9 +366,6 @@ export class StripeSubscriptionService {
         `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
       );
     }
-    
-    console.log('==================LIST', orderLine.productVariant.price, orderLine.productVariant.listPrice, orderLine.productVariant.priceWithTax,  orderLine.productVariant.listPriceIncludesTax)
-
     const subscriptionPricing = calculateSubscriptionPricing(
       ctx,
       orderLine.productVariant.listPrice,
