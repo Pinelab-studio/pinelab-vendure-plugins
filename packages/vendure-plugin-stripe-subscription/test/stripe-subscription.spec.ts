@@ -59,7 +59,7 @@ import {
 
 jest.setTimeout(20000);
 
-describe('Order export plugin', function () {
+describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -103,6 +103,8 @@ describe('Order export plugin', function () {
         orderEvents.push(event);
       });
   });
+
+  const ctx = {channel: {pricesIncludeTax: true}};
 
   it("Sets channel settings to 'prices are including tax'", async () => {
     await adminClient.asSuperAdmin();
@@ -547,7 +549,7 @@ describe('Order export plugin', function () {
         },
       };
       const pricing = calculateSubscriptionPricing(
-        {} as any,
+        ctx as any,
         variant.listPrice,
         variant.customFields.subscriptionSchedule!
       );
@@ -578,7 +580,7 @@ describe('Order export plugin', function () {
         },
       };
       const pricing = calculateSubscriptionPricing(
-        {} as any,
+        ctx as any,
         variant.listPrice,
         variant.customFields.subscriptionSchedule!
       );

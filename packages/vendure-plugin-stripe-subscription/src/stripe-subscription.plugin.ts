@@ -16,6 +16,7 @@ import {
   shopSchemaExtensions,
 } from './api/graphql-schemas';
 import {
+  AdminPriceIncludesTaxResolver,
   AdminResolver,
   ShopOrderLinePricingResolver,
   ShopResolver,
@@ -42,7 +43,7 @@ export interface StripeSubscriptionPluginOptions {
   },
   adminApiExtensions: {
     schema: adminSchemaExtensions,
-    resolvers: [AdminResolver],
+    resolvers: [AdminResolver, AdminPriceIncludesTaxResolver],
   },
   controllers: [StripeSubscriptionController],
   providers: [

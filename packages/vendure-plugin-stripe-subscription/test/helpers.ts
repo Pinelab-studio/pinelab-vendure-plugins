@@ -116,7 +116,7 @@ export const GET_ORDER_WITH_PRICING = gql`
           proratedDays
           dayRate
           recurringPrice
-          originalrecurringPrice
+          originalRecurringPrice
           interval
           intervalCount
           amountDueNow

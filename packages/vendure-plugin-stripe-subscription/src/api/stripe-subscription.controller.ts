@@ -105,6 +105,19 @@ export class ShopOrderLinePricingResolver {
   }
 }
 
+// This is needed to resolve schedule.pricesIncludeTax in the Admin UI
+@Resolver('StripeSubscriptionSchedule')
+export class AdminPriceIncludesTaxResolver {
+
+  @ResolveField()
+  pricesIncludeTax(
+    @Ctx() ctx: RequestContext,
+    @Parent() orderLine: OrderLineWithSubscriptionFields
+  ): boolean {
+    return ctx.channel.pricesIncludeTax;
+  }
+}
+
 @Resolver()
 export class AdminResolver {
   constructor(private scheduleService: ScheduleService) {}
