@@ -220,10 +220,11 @@ You can preview the pricing model of a subscription without adding it to cart wi
     }
   ) {
     downpayment
+    pricesIncludeTax
     totalProratedAmount
     proratedDays
-    recurringPriceWithTax
-    originalRecurringPriceWithTax
+    recurringPrice
+    originalRecurringPrice
     interval
     intervalCount
     amountDueNow
@@ -231,7 +232,8 @@ You can preview the pricing model of a subscription without adding it to cart wi
     schedule {
       id
       name
-      downpaymentWithTax
+      downpayment
+      pricesIncludeTax
       durationInterval
       durationCount
       startMoment
@@ -256,11 +258,11 @@ You can also get the subscription and Schedule pricing details per order line wi
         code
         lines {
             subscriptionPricing {
-                downpaymentWithTax
-                totalProratedAmountWithTax
+                downpayment
+                totalProratedAmount
                 proratedDays
-                dayRateWithTax
-                recurringPriceWithTax
+                dayRate
+                recurringPrice
                 interval
                 intervalCount
                 amountDueNow
@@ -268,7 +270,7 @@ You can also get the subscription and Schedule pricing details per order line wi
                 schedule {
                     id
                     name
-                    downpaymentWithTax
+                    downpayment
                     durationInterval
                     durationCount
                     startMoment
@@ -289,7 +291,7 @@ Example of a discount on subscription payments:
 
 There are some built in discounts that work on future payments of a subscription. You can select the under Promotion Actions in the Admin UI.
 
-`StripeSubscriptionPricing.originalRecurringPriceWithTax` will have the non-discounted subscription price, while `StripeSubscriptionPricing.recurringPriceWithTax` will have the final discounted price.
+`StripeSubscriptionPricing.originalrecurringPrice` will have the non-discounted subscription price, while `StripeSubscriptionPricing.recurringPrice` will have the final discounted price.
 
 ### Custom future payments promotions
 

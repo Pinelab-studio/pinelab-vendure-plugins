@@ -111,7 +111,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: '6 months, paid in full',
-      downpaymentWithTax: 0,
+      downpayment: 0,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 6,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -122,7 +122,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: '3 months, billed monthly, 199 downpayment',
-      downpaymentWithTax: 0,
+      downpayment: 0,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 3,
       startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -134,7 +134,7 @@ export let clientSecret = 'test';
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: 'Fixed start date, 6 months, billed monthly, 60 downpayment',
-      downpaymentWithTax: 6000,
+      downpayment: 6000,
       durationInterval: SubscriptionInterval.Month,
       durationCount: 6,
       startMoment: SubscriptionStartMoment.FixedStartdate,
