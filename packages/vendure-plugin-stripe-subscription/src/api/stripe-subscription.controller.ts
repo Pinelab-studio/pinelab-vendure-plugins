@@ -108,7 +108,6 @@ export class ShopOrderLinePricingResolver {
 // This is needed to resolve schedule.pricesIncludeTax in the Admin UI
 @Resolver('StripeSubscriptionSchedule')
 export class AdminPriceIncludesTaxResolver {
-
   @ResolveField()
   pricesIncludeTax(
     @Ctx() ctx: RequestContext,

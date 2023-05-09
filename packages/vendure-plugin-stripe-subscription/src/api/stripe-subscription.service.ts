@@ -290,12 +290,12 @@ export class StripeSubscriptionService {
       setup_future_usage: hasSubscriptionProducts
         ? 'off_session'
         : 'on_session',
-      amount: order.total,
+      amount: order.totalWithTax,
       currency: order.currencyCode,
       metadata: {
         orderCode: order.code,
         channelToken: ctx.channel.token,
-        amount: order.total,
+        amount: order.totalWithTax,
       },
     });
     Logger.info(

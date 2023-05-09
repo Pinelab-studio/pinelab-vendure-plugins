@@ -104,7 +104,7 @@ describe('Stripe Subscription Plugin', function () {
       });
   });
 
-  const ctx = {channel: {pricesIncludeTax: true}};
+  const ctx = { channel: { pricesIncludeTax: true } };
 
   it("Sets channel settings to 'prices are including tax'", async () => {
     await adminClient.asSuperAdmin();
