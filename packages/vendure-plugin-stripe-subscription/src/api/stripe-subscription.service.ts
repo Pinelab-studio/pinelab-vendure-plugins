@@ -44,7 +44,7 @@ import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import {
   calculateSubscriptionPricing,
-  getDiscountedRecurringPrice,
+  applySubscriptionPromotions,
   getNextCyclesStartDate,
   printMoney,
 } from './pricing.helper';
@@ -376,7 +376,7 @@ export class StripeSubscriptionService {
       }
     );
     // Execute promotions on recurringPrice
-    const discountedRecurringPrice = await getDiscountedRecurringPrice(
+    const discountedRecurringPrice = await applySubscriptionPromotions(
       ctx,
       subscriptionPricing.recurringPrice,
       orderLine,
