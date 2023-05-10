@@ -156,7 +156,7 @@ export function calculateSubscriptionPricing(
 /**
  * Calculate the discounted recurring price based on given promotions
  */
-export async function getDiscountedRecurringPrice(
+export async function applySubscriptionPromotions(
   ctx: RequestContext,
   recurringPrice: number,
   orderLine: OrderLineWithSubscriptionFields,
@@ -174,7 +174,7 @@ export async function getDiscountedRecurringPrice(
           orderLine,
           action.args
         );
-        const newDiscountedPrice = discountedRecurringPrice - discount;
+        const newDiscountedPrice = discountedRecurringPrice + discount;
         Logger.info(
           `Discounted recurring price from ${discountedRecurringPrice} to ${newDiscountedPrice} for promotion ${promotion.name}`,
           loggerCtx
