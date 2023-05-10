@@ -37,6 +37,8 @@ const nockBaseUrl = 'https://test-picqer.io/api/v1/';
 
 jest.setTimeout(60000);
 
+// You shouldn't be allowed to merge this
+
 describe('Picqer plugin', function () {
   // Clear nock mocks after each test
   afterEach(() => nock.cleanAll());
