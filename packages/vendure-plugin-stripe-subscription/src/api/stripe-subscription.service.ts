@@ -355,7 +355,7 @@ export class StripeSubscriptionService {
     orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing> {
     await this.entityHydrator.hydrate(ctx, orderLine, {
-      relations: ['productVariant', 'order', 'order.promotions'],
+      relations: ['productVariant.taxCategory', 'order', 'order.promotions'],
       applyProductVariantPrices: true,
     });
     if (!orderLine.productVariant?.enabled) {
