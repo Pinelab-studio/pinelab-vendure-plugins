@@ -45,13 +45,13 @@ export class ScheduleService {
     return cloneSchedule(ctx, schedule);
   }
 
-  async delete(ctx: RequestContext, scheduleId: ID): Promise<void> {
+  async delete(ctx: RequestContext, scheduleId: string): Promise<void> {
     const { id } = await this.connection.rawConnection
       .getRepository(Schedule)
       .findOneOrFail({
         where: {
           id: scheduleId,
-          channelId: ctx.channelId!,
+          channelId: ctx.channelId as string,
         },
       });
     await this.connection.getRepository(ctx, Schedule).delete({ id });
