@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  ID,
   RequestContext,
   TransactionalConnection,
   UserInputError,
@@ -39,18 +40,18 @@ export class ScheduleService {
     } as Schedule);
     const schedule = await this.connection
       .getRepository(ctx, Schedule)
-      .findOneOrFail({ id });
+      .findOneOrFail({ where: { id } });
 
     return cloneSchedule(ctx, schedule);
   }
 
-  async delete(ctx: RequestContext, scheduleId: string): Promise<void> {
+  async delete(ctx: RequestContext, scheduleId: ID): Promise<void> {
     const { id } = await this.connection.rawConnection
       .getRepository(Schedule)
       .findOneOrFail({
         where: {
           id: scheduleId,
-          channelId: ctx.channelId,
+          channelId: ctx.channelId!,
         },
       });
     await this.connection.getRepository(ctx, Schedule).delete({ id });
