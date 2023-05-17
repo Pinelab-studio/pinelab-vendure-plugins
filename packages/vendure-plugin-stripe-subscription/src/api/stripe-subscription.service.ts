@@ -98,7 +98,6 @@ export class StripeSubscriptionService {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'stripe-subscription',
       process: async ({ data, id }) => {
-        console.log('job in queue is running');
         const ctx = RequestContext.deserialize(data.ctx);
         if (data.action === 'cancelSubscriptionsForOrderline') {
           this.cancelSubscriptionForOrderLine(ctx, data.orderLineId);
@@ -133,7 +132,6 @@ export class StripeSubscriptionService {
         }
       },
     });
-    console.log('done initing job queue');
     // Add unique hash for subscriptions, so Vendure creates a new order line
     this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
       const orderLine = event.orderLine as OrderLineWithSubscriptionFields;
