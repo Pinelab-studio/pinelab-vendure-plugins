@@ -11,25 +11,25 @@ export class Schedule extends VendureEntity {
     super(input);
   }
 
-  @Column({ nullable: false })
+  @Column('varchar', { nullable: false })
   name!: string;
 
-  @Column({ nullable: false })
+  @Column('varchar', { nullable: false })
   channelId!: string;
 
   @Column({ type: 'integer', nullable: false })
   downpayment!: number;
 
-  @Column({ nullable: false })
+  @Column('simple-enum', { nullable: false, enum: SubscriptionInterval })
   durationInterval!: SubscriptionInterval;
 
   @Column({ type: 'integer', nullable: false })
   durationCount!: number;
 
-  @Column({ nullable: false })
+  @Column('simple-enum', { nullable: false, enum: SubscriptionStartMoment })
   startMoment!: SubscriptionStartMoment;
 
-  @Column({ nullable: false })
+  @Column('simple-enum', { nullable: false, enum: SubscriptionInterval })
   billingInterval!: SubscriptionInterval;
 
   @Column({ type: 'integer', nullable: false })
