@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, OnApplicationBootstrap, Inject } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
@@ -11,18 +11,18 @@ import {
 import { Webhook } from './webhook.entity';
 import fetch from 'node-fetch';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
-import { EventWithContext } from './request-transformer';
+import { EventWithContext, RequestTransformer } from './request-transformer';
 import { WebhookPluginOptions } from '../webhook.plugin';
+import { WebhookInput } from '../generated/graphql-types';
 
 /**
  * Service for updating and retrieving webhooks from db
  */
 @Injectable()
 export class WebhookService implements OnApplicationBootstrap {
-
   /**
-   * A queue of unique webhooks to call. This is used to prevent 
-   * multiple calls to the same webhook for the same 
+   * A queue of unique webhooks to call. This is used to prevent
+   * multiple calls to the same webhook for the same
    * event within the configured `delay` time
    */
   webhookQueue = new Map<ID, Webhook>();
@@ -31,9 +31,8 @@ export class WebhookService implements OnApplicationBootstrap {
     private eventBus: EventBus,
     private connection: TransactionalConnection,
     private moduleRef: ModuleRef,
-    @Injectable(PLUGIN_INIT_OPTIONS) private options: WebhookPluginOptions
-  ) { }
-
+    @Inject(PLUGIN_INIT_OPTIONS) private options: WebhookPluginOptions
+  ) {}
 
   /**
    * Subscribe to events specified in config
@@ -45,7 +44,10 @@ export class WebhookService implements OnApplicationBootstrap {
       );
     }
     if (this.options.disabled) {
-      Logger.info(`Webhook plugin disabled,not listening for events`, loggerCtx);
+      Logger.info(
+        `Webhook plugin disabled,not listening for events`,
+        loggerCtx
+      );
       return;
     }
     // Subscribe to all configured events
@@ -53,42 +55,40 @@ export class WebhookService implements OnApplicationBootstrap {
       this.eventBus.ofType(configuredEvent).subscribe(async (event) => {
         try {
           await this.addWebhookToQueue(event);
-          // Start processing after the given delay, because 
+          // Start processing after the given delay, because
           // we might get multiple of the same events within the specified delay
-          await new Promise((resolve) => setTimeout(resolve, this.options.delay));
-          await this.processQueue();
+          await new Promise((resolve) =>
+            setTimeout(resolve, this.options.delay)
+          );
+          await this.processQueue(event);
         } catch (e: unknown) {
           Logger.error(
             `Failed to call webhook for event ${event.constructor.name} for channel ${event.ctx.channelId}: ${e}`,
-            loggerCtx,
-          )
+            loggerCtx
+          );
         }
       });
     });
   }
 
   /**
-   * Get the plugins configured events. 
-   * This is needed to display the selectable events in the admin ui
+   * Get the plugin's configured Events.
    */
-  async getAvailableEvents(): Promise<string[]> {
+  getAvailableEvents(): string[] {
     return this.options.events.map((event) => event.constructor.name);
   }
 
   /**
-   * Get the plugins configured events. 
-   * This is needed to display the selectable events in the admin ui
+   * Get the plugin's configured Request Transformers.
    */
-  async getAvailableTransformers(): Promise<string[]> {
-    return (this.options.requestTransformers || []).map((transformer) => transformer.name);
+  getAvailableTransformers(): RequestTransformer<any>[] {
+    return this.options.requestTransformers || [];
   }
 
   /**
    * Get all configured webhooks for current channel
    */
-  async getAllWebhooks(
-    ctx: RequestContext
-  ): Promise<Webhook[]> {
+  async getAllWebhooks(ctx: RequestContext): Promise<Webhook[]> {
     return this.connection
       .getRepository(ctx, Webhook)
       .find({ channelId: String(ctx.channelId) });
@@ -107,34 +107,24 @@ export class WebhookService implements OnApplicationBootstrap {
   }
 
   /**
-   * Create or update a webhook configuration
+   * Save set of webhooks for current channel.
+   * Overrides any previously set hooks
    */
-  async saveWebhook(
+  async saveWebhooks(
     ctx: RequestContext,
-    webhookUrl: string,
-    event: string,
-    transformerName?: string
+    inputs: WebhookInput[]
   ): Promise<Webhook[]> {
-    // Check if any configs already exist based on channel, event and transformer
-    const existingConfiguration = await this.connection
-      .getRepository(ctx, Webhook)
-      .findOne({
-        channelId: String(ctx.channelId),
-        event,
-        transformerName
-      });
-    const newConfiguration: Partial<Webhook> = {
+    const repository = this.connection.getRepository(ctx, Webhook);
+    // Delete all current hooks
+    await repository.delete({ channelId: String(ctx.channelId) });
+    // Recreate all hooks
+    const webhooks: Partial<Webhook>[] = inputs.map((input) => ({
       channelId: String(ctx.channelId),
-      url: webhookUrl,
-      event,
-      transformerName
-    }
-    if (existingConfiguration) {
-      await this.connection.getRepository(ctx, Webhook).update({ id: existingConfiguration.id }, newConfiguration);
-
-    } else {
-      await this.connection.getRepository(ctx, Webhook).save(newConfiguration);
-    }
+      url: input.url,
+      event: input.event,
+      transformerName: input.transformerName ?? undefined,
+    }));
+    await repository.save(webhooks);
     return this.getAllWebhooks(ctx);
   }
 
@@ -147,13 +137,16 @@ export class WebhookService implements OnApplicationBootstrap {
     webhooks.map((webhook) => {
       this.webhookQueue.set(webhook.id, webhook);
     });
-    Logger.info(`Added ${webhooks.length} to the webhook queue for event ${event.constructor.name}`, loggerCtx);
+    Logger.info(
+      `Added ${webhooks.length} webhooks to the webhook queue for ${event.constructor.name}`,
+      loggerCtx
+    );
   }
 
   /**
-   * Handle all webhooks currently in the queue
+   * Process all webhooks currently in the queue
    */
-  async processQueue(): Promise<void> {
+  async processQueue(event: EventWithContext): Promise<void> {
     // Check if queue already handled
     if (this.webhookQueue.size === 0) {
       return;
@@ -166,40 +159,49 @@ export class WebhookService implements OnApplicationBootstrap {
     await Promise.all(
       webhooks.map(async (webhook) => {
         try {
-          if (!webhook.transformerName) {
-            // No transformer, just call webhook
-            await fetch(webhook.url, { method: 'POST' });
-          } else {
-            // Have the configured transformer construct the request
-            const transformer = this.options.requestTransformers?.find((transformer) => transformer.constructor.name === webhook.transformerName);
-            if (!transformer) {
-              throw Error(`Could not find transformer ${webhook.transformerName}`);
-            }
-            const request = transformer.
-            // Call the webhook with the constructed request
-          }
-            const transformer = this.options.requestTransformers?.find((transformer) => transformer.constructor.name === webhook.transformerName);
-            const request = await this.options.requestTransformers?.(
-              event,
-              new Injector(this.moduleRef)
-            );
-            await fetch(url, {
-              method: 'POST',
-              headers: request?.headers,
-              body: request?.body,
-            });
-            Logger.info(
-              `Successfully triggered webhook for channel ${channel}`,
-              loggerCtx
-            );
-          } catch (e) {
-            Logger.error(
-              `Failed to call webhook for event ${webhook.event} channel ${webhook.channelId}: ${e}`,
-              loggerCtx,
-            );
-          }
-        })
+          await this.callWebhook(webhook, event);
+        } catch (e) {
+          Logger.error(
+            `Failed to call webhook for event ${webhook.event} channel ${webhook.channelId}: ${e}`,
+            loggerCtx
+          );
+        }
+      })
     );
   }
 
+  /**
+   * Call the actual webhook with the configured Transformer for given Event
+   */
+  async callWebhook(webhook: Webhook, event: EventWithContext): Promise<void> {
+    if (!webhook.transformerName) {
+      // No transformer, just call webhook without body
+      await fetch(webhook.url, { method: 'POST' });
+      return Logger.info(
+        `Successfully triggered webhook for event ${webhook.event} for channel ${webhook.channelId} without transformer`,
+        loggerCtx
+      );
+    }
+    // Have the configured transformer construct the request
+    const transformer = this.getAvailableTransformers().find(
+      (transformer) => transformer.name === webhook.transformerName
+    );
+    if (!transformer) {
+      throw Error(`Could not find transformer ${webhook.transformerName}`);
+    }
+    const request = await transformer.transform(
+      event,
+      new Injector(this.moduleRef)
+    );
+    // Call the webhook with the constructed request
+    await fetch(webhook.url, {
+      method: 'POST',
+      headers: request.headers,
+      body: request.body,
+    });
+    Logger.info(
+      `Successfully triggered webhook for event ${webhook.event} for channel ${webhook.channelId} without transformer`,
+      loggerCtx
+    );
+  }
 }

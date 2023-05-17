@@ -2,7 +2,7 @@ import { Column, Entity } from 'typeorm';
 import { DeepPartial, VendureEntity } from '@vendure/core';
 
 /**
- * Each `Webhook` entity represents 1 webhook call for the specified 
+ * Each `Webhook` entity represents 1 webhook call for the specified
  * Event with the specified Url and Transformer
  */
 @Entity()
@@ -11,15 +11,15 @@ export class Webhook extends VendureEntity {
     super(input);
   }
 
-  @Column({ unique: true })
+  @Column()
   channelId!: string;
 
   @Column()
   url!: string;
-  
+
   @Column()
   event!: string;
-  
-  @Column()
-  transformerName: string | undefined;
+
+  @Column({ nullable: true })
+  transformerName?: string;
 }

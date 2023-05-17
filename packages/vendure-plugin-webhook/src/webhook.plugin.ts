@@ -1,13 +1,24 @@
-import { PluginCommonModule, Type, VendureEvent, VendurePlugin } from '@vendure/core';
+import {
+  PluginCommonModule,
+  Type,
+  VendureEvent,
+  VendurePlugin,
+} from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { WebhookConfiguration } from './api/webhook.entity';
-import { schema } from './api/schema';
-import { WebhookResolver } from './api/webhook.resolver';
+import { adminSchema } from './api/api-extension';
+import {
+  WebhookRequestTransformerResolver,
+  WebhookResolver,
+} from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
 import { webhookPermission } from './index';
-import { EventWithContext, RequestTransformer } from './api/request-transformer';
+import {
+  EventWithContext,
+  RequestTransformer,
+} from './api/request-transformer';
 import { PLUGIN_INIT_OPTIONS } from './constants';
+import { Webhook } from './api/webhook.entity';
 
 export interface WebhookPluginOptions {
   /**
@@ -20,9 +31,9 @@ export interface WebhookPluginOptions {
   requestTransformers?: Array<RequestTransformer<Type<EventWithContext>[]>>;
   /**
    * Wait for more of the same events before calling webhook, and only call the configured webhook once.
-   * E.g: With `delay: 100` only 1 call to your webhook will be done, 
+   * E.g: With `delay: 100` only 1 call to your webhook will be done,
    * even if 10 of the same events are fired within 100ms.
-   * 
+   *
    * Delay is in ms
    */
   delay?: number;
@@ -32,21 +43,20 @@ export interface WebhookPluginOptions {
   disabled?: boolean;
 }
 
-
 /**
  * Calls a configurable webhook when configured events arise.
  * 1 webhook per channel is configurable
  */
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [WebhookConfiguration],
+  entities: [Webhook],
   providers: [
     WebhookService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => WebhookPlugin.options },
   ],
   adminApiExtensions: {
-    schema,
-    resolvers: [WebhookResolver],
+    schema: adminSchema,
+    resolvers: [WebhookResolver, WebhookRequestTransformerResolver],
   },
   configuration: (config) => {
     config.authOptions.customPermissions.push(webhookPermission);
@@ -57,11 +67,9 @@ export class WebhookPlugin {
   static options: WebhookPluginOptions = {
     events: [],
     delay: 0,
-  }
+  };
 
-  static init(
-    options: WebhookPluginOptions
-  ): typeof WebhookPlugin {
+  static init(options: WebhookPluginOptions): typeof WebhookPlugin {
     this.options = {
       ...this.options,
       ...options,
