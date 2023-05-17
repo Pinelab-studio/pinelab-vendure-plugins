@@ -13,7 +13,7 @@ export class WebhookResolver {
   @Query()
   @Allow(webhookPermission.Permission)
   async webhook(@Ctx() ctx: RequestContext): Promise<string | undefined> {
-    const webhook = await this.webhookService.getWebhook(
+    const webhook = await this.webhookService.getWebhookConfiguration(
       ctx.channelId as string
     );
     return webhook?.url;

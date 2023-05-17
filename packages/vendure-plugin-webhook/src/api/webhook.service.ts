@@ -2,145 +2,204 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
+  ID,
   Injector,
   Logger,
+  RequestContext,
   TransactionalConnection,
-  VendureEvent,
 } from '@vendure/core';
-import { WebhookPerChannelEntity } from './webhook-per-channel.entity';
-import { WebhookPlugin } from '../webhook.plugin';
+import { Webhook } from './webhook.entity';
 import fetch from 'node-fetch';
-import { loggerCtx } from '../constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { EventWithContext } from './request-transformer';
+import { WebhookPluginOptions } from '../webhook.plugin';
 
 /**
  * Service for updating and retrieving webhooks from db
  */
 @Injectable()
 export class WebhookService implements OnApplicationBootstrap {
-  static queue = new Set<string>();
+
+  /**
+   * A queue of unique webhooks to call. This is used to prevent 
+   * multiple calls to the same webhook for the same 
+   * event within the configured `delay` time
+   */
+  webhookQueue = new Map<ID, Webhook>();
 
   constructor(
     private eventBus: EventBus,
     private connection: TransactionalConnection,
-    private moduleRef: ModuleRef
-  ) {}
+    private moduleRef: ModuleRef,
+    @Injectable(PLUGIN_INIT_OPTIONS) private options: WebhookPluginOptions
+  ) { }
 
-  async getWebhook(
-    channelId: string
-  ): Promise<WebhookPerChannelEntity | undefined> {
-    return this.connection
-      .getRepository(WebhookPerChannelEntity)
-      .findOne({ channelId });
-  }
-
-  async saveWebhook(
-    webhookUrl: string,
-    channelId: string
-  ): Promise<WebhookPerChannelEntity | undefined> {
-    const existing = await this.connection
-      .getRepository(WebhookPerChannelEntity)
-      .findOne({ channelId });
-    if (existing) {
-      await this.connection.getRepository(WebhookPerChannelEntity).update(
-        { id: existing.id },
-        {
-          channelId,
-          url: webhookUrl,
-        }
-      );
-    } else {
-      await this.connection
-        .getRepository(WebhookPerChannelEntity)
-        .save({ channelId, url: webhookUrl });
-    }
-    return this.getWebhook(channelId);
-  }
 
   /**
    * Subscribe to events specified in config
    */
   async onApplicationBootstrap(): Promise<void> {
-    if (!WebhookPlugin.options || !WebhookPlugin.options.events) {
+    if (!this.options.events || this.options.events.length === 0) {
       throw Error(
-        `Please specify VendureEvents with Webhook.init() in your Vendure config.`
+        `Please specify VendureEvents with Webhook.init() to use this plugin.`
       );
     }
-    if (WebhookPlugin.options.disabled) {
-      Logger.info(`Webhook plugin disabled`, loggerCtx);
+    if (this.options.disabled) {
+      Logger.info(`Webhook plugin disabled,not listening for events`, loggerCtx);
       return;
     }
-    WebhookPlugin.options.events!.forEach((configuredEvent) => {
-      this.eventBus.ofType(configuredEvent).subscribe((event) => {
-        const channelId = (event as any)?.ctx?.channelId;
-        if (!channelId) {
+    // Subscribe to all configured events
+    this.options.events.forEach((configuredEvent) => {
+      this.eventBus.ofType(configuredEvent).subscribe(async (event) => {
+        try {
+          await this.addWebhookToQueue(event);
+          // Start processing after the given delay, because 
+          // we might get multiple of the same events within the specified delay
+          await new Promise((resolve) => setTimeout(resolve, this.options.delay));
+          await this.processQueue();
+        } catch (e: unknown) {
           Logger.error(
-            `Cannot trigger webhook for event ${event.constructor.name}, because there is no channelId in event.ctx`,
-            loggerCtx
-          );
-          return;
+            `Failed to call webhook for event ${event.constructor.name} for channel ${event.ctx.channelId}: ${e}`,
+            loggerCtx,
+          )
         }
-        this.addToQueue(channelId as string, event) // Async, because we dont want failures in Vendure if a webhook fails
-          .catch((e) =>
-            Logger.error(
-              `Failed to call webhook for event ${event.constructor.name} for channel ${channelId}`,
-              loggerCtx,
-              e
-            )
-          );
       });
     });
   }
 
   /**
-   * Call webhook for channel. Saves up events in batches if a delay is defined
-   * If multiple events arise within 1s, the webhook will only be called once
+   * Get the plugins configured events. 
+   * This is needed to display the selectable events in the admin ui
    */
-  async addToQueue(channelId: string, event: VendureEvent): Promise<void> {
-    const webhookPerChannel = await this.getWebhook(channelId);
-    if (!webhookPerChannel || !webhookPerChannel.url) {
-      Logger.info(`No webhook defined for channel ${channelId}`, loggerCtx);
-      return;
-    }
-    WebhookService.queue.add(webhookPerChannel.url);
-    if (WebhookPlugin.options.delay) {
-      setTimeout(() => this.doWebhook(event), WebhookPlugin.options.delay);
-    } else {
-      await this.doWebhook(event);
-    }
+  async getAvailableEvents(): Promise<string[]> {
+    return this.options.events.map((event) => event.constructor.name);
   }
 
-  async doWebhook(event: VendureEvent): Promise<void> {
+  /**
+   * Get the plugins configured events. 
+   * This is needed to display the selectable events in the admin ui
+   */
+  async getAvailableTransformers(): Promise<string[]> {
+    return (this.options.requestTransformers || []).map((transformer) => transformer.name);
+  }
+
+  /**
+   * Get all configured webhooks for current channel
+   */
+  async getAllWebhooks(
+    ctx: RequestContext
+  ): Promise<Webhook[]> {
+    return this.connection
+      .getRepository(ctx, Webhook)
+      .find({ channelId: String(ctx.channelId) });
+  }
+
+  /**
+   * Get configured webhooks for given Event
+   */
+  async getWebhooksForEvent<T extends EventWithContext>(
+    event: T
+  ): Promise<Webhook[]> {
+    const eventName = event.constructor.name;
+    return this.connection
+      .getRepository(event.ctx, Webhook)
+      .find({ channelId: String(event.ctx.channelId), event: eventName });
+  }
+
+  /**
+   * Create or update a webhook configuration
+   */
+  async saveWebhook(
+    ctx: RequestContext,
+    webhookUrl: string,
+    event: string,
+    transformerName?: string
+  ): Promise<Webhook[]> {
+    // Check if any configs already exist based on channel, event and transformer
+    const existingConfiguration = await this.connection
+      .getRepository(ctx, Webhook)
+      .findOne({
+        channelId: String(ctx.channelId),
+        event,
+        transformerName
+      });
+    const newConfiguration: Partial<Webhook> = {
+      channelId: String(ctx.channelId),
+      url: webhookUrl,
+      event,
+      transformerName
+    }
+    if (existingConfiguration) {
+      await this.connection.getRepository(ctx, Webhook).update({ id: existingConfiguration.id }, newConfiguration);
+
+    } else {
+      await this.connection.getRepository(ctx, Webhook).save(newConfiguration);
+    }
+    return this.getAllWebhooks(ctx);
+  }
+
+  /**
+   * Push the webhooks for the given Event to the queue,
+   * so they can be processed in batch
+   */
+  async addWebhookToQueue(event: EventWithContext): Promise<void> {
+    const webhooks = await this.getWebhooksForEvent(event);
+    webhooks.map((webhook) => {
+      this.webhookQueue.set(webhook.id, webhook);
+    });
+    Logger.info(`Added ${webhooks.length} to the webhook queue for event ${event.constructor.name}`, loggerCtx);
+  }
+
+  /**
+   * Handle all webhooks currently in the queue
+   */
+  async processQueue(): Promise<void> {
     // Check if queue already handled
-    if (WebhookService.queue.size === 0) {
+    if (this.webhookQueue.size === 0) {
       return;
     }
     // Copy queue, and empty original
-    const channels = Array.from(WebhookService.queue);
-    WebhookService.queue.clear();
+    const webhooks: Webhook[] = [];
+    this.webhookQueue.forEach((webhook) => webhooks.push(webhook));
+    this.webhookQueue.clear();
+    // Start calling the webhooks
     await Promise.all(
-      channels.map(async (channel) => {
+      webhooks.map(async (webhook) => {
         try {
-          const request = await WebhookPlugin.options.requestFn?.(
-            event,
-            new Injector(this.moduleRef)
-          );
-          await fetch(channel!, {
-            method: WebhookPlugin.options.httpMethod,
-            headers: request?.headers,
-            body: request?.body,
-          });
-          Logger.info(
-            `Successfully triggered webhook for channel ${channel}`,
-            loggerCtx
-          );
-        } catch (e) {
-          Logger.error(
-            `Failed to call webhook for channel ${channel}`,
-            loggerCtx,
-            e
-          );
-        }
-      })
+          if (!webhook.transformerName) {
+            // No transformer, just call webhook
+            await fetch(webhook.url, { method: 'POST' });
+          } else {
+            // Have the configured transformer construct the request
+            const transformer = this.options.requestTransformers?.find((transformer) => transformer.constructor.name === webhook.transformerName);
+            if (!transformer) {
+              throw Error(`Could not find transformer ${webhook.transformerName}`);
+            }
+            const request = transformer.
+            // Call the webhook with the constructed request
+          }
+            const transformer = this.options.requestTransformers?.find((transformer) => transformer.constructor.name === webhook.transformerName);
+            const request = await this.options.requestTransformers?.(
+              event,
+              new Injector(this.moduleRef)
+            );
+            await fetch(url, {
+              method: 'POST',
+              headers: request?.headers,
+              body: request?.body,
+            });
+            Logger.info(
+              `Successfully triggered webhook for channel ${channel}`,
+              loggerCtx
+            );
+          } catch (e) {
+            Logger.error(
+              `Failed to call webhook for event ${webhook.event} channel ${webhook.channelId}: ${e}`,
+              loggerCtx,
+            );
+          }
+        })
     );
   }
+
 }
