@@ -136,7 +136,7 @@ export class MetricsService {
     const startTick = getTickNrFn(startDate);
     // Get orders in a loop until we have all
     let skip = 0;
-    const take = this.configService.apiOptions.adminListQueryLimit;
+    const take = 1000;
     let hasMoreOrders = true;
     const orders: Order[] = [];
     while (hasMoreOrders) {
@@ -146,7 +146,9 @@ export class MetricsService {
         .leftJoin('orderLine.productVariant', 'productVariant')
         .leftJoinAndSelect('orderLine.items', 'orderItems')
         .leftJoin('order.channels', 'orderChannel')
-        .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId });
+        .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
+        .skip(skip)
+        .take(take);
       if (variantIds?.length) {
         query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
           variantIds,
@@ -154,6 +156,12 @@ export class MetricsService {
       }
       const [items, nrOfOrders] = await query.getManyAndCount();
       orders.push(...items);
+      Logger.info(
+        `Fetched orders ${skip}-${skip + take} for channel ${
+          ctx.channel.token
+        } for ${interval} metrics`,
+        loggerCtx
+      );
       skip += items.length;
       if (orders.length >= nrOfOrders) {
         hasMoreOrders = false;
