@@ -1,5 +1,5 @@
 import { GraphqlQueries } from './queries';
-import { GraphQLClient, Variables } from 'graphql-request';
+import { GraphQLClient, Variables, gql } from 'graphql-request';
 import { atom, WritableAtom } from 'nanostores';
 import {
   ActiveOrderFieldsFragment,
@@ -9,11 +9,26 @@ import {
   AdjustOrderLineMutation,
   AdjustOrderLineMutationVariables,
   ErrorResult,
+  RemoveAllOrderLinesMutation,
+  RemoveAllOrderLinesMutationVariables,
 } from './graphql-types';
 import mitt from 'mitt';
 import { Id, VendureOrderEvents } from './events';
 
+/**
+ * Used when no additional fields are given
+ */
+const dummyFragment = gql`
+  fragment AdditionalOrderFields on Order {
+    id
+  }
+`;
+
 export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
+/**
+ * OrderResult can be ActiveOrder or any extension of ErrorResult
+ */
+export type OrderResult<T> = ActiveOrder<T> | ErrorResult;
 
 /**
  * @example
@@ -21,6 +36,7 @@ export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
  *      'http://localhost:3050/shop-api',
  *      'channel-token',
  * );
+ * Generic type A is the type of the additional fields that can be added to the order.
  */
 export class VendureOrderClient<A = {}> {
   queries: GraphqlQueries;
@@ -48,7 +64,7 @@ export class VendureOrderClient<A = {}> {
     this.client = new GraphQLClient(url, {
       headers: { 'vendure-token': channelToken },
     });
-    this.queries = new GraphqlQueries(additionalOrderFields);
+    this.queries = new GraphqlQueries(additionalOrderFields ?? dummyFragment);
     this.activeOrderStore = atom<ActiveOrder<A> | undefined>(undefined);
   }
 
@@ -57,6 +73,7 @@ export class VendureOrderClient<A = {}> {
       this.queries.GET_ACTIVE_ORDER
     );
     this.activeOrder = activeOrder as ActiveOrder<A>;
+    this.activeOrder = await this.validateOrder(activeOrder);
     return this.activeOrder;
   }
 
@@ -71,8 +88,11 @@ export class VendureOrderClient<A = {}> {
       productVariantId,
       quantity,
     });
-    this.activeOrder = addItemToOrder as ActiveOrder<A>;
-    this.eventBus.emit('item-added', { productVariantId, quantity });
+    this.activeOrder = await this.validateOrder(addItemToOrder);
+    this.eventBus.emit('item-added', {
+      productVariantIds: [productVariantId],
+      quantity,
+    });
     return this.activeOrder;
   }
 
@@ -80,7 +100,10 @@ export class VendureOrderClient<A = {}> {
     orderLineId: Id,
     quantity: number
   ): Promise<ActiveOrder<A> | undefined> {
-    // TODO get current quantity from orderLine/activeOrder;
+    const currentOrderLine = this.activeOrder?.lines.find(
+      (line) => line.id === orderLineId
+    );
+    const currentQuantity = currentOrderLine?.quantity ?? 0;
     const { adjustOrderLine } = await this.rawRequest<
       AdjustOrderLineMutation,
       AdjustOrderLineMutationVariables
@@ -88,9 +111,46 @@ export class VendureOrderClient<A = {}> {
       orderLineId,
       quantity,
     });
-    this.activeOrder = adjustOrderLine as ActiveOrder<A>;
-    // FIXME emit item-added or removed event
-    // this.eventBus.emit('item-removed', { productVariantId, quantity });
+    this.activeOrder = await this.validateOrder(adjustOrderLine);
+    const adjustedOrderLine = this.activeOrder?.lines.find(
+      (line) => line.id === orderLineId
+    );
+    const newQuantity = adjustedOrderLine?.quantity ?? 0;
+    const adjustment = newQuantity - currentQuantity;
+    // We assume either the current or the adjusted order line has a variant id
+    const variantId = (currentOrderLine?.productVariant.id ||
+      adjustedOrderLine?.productVariant.id)!;
+    if (adjustment > 0) {
+      this.eventBus.emit('item-added', {
+        productVariantIds: [variantId],
+        quantity: adjustment,
+      });
+    } else {
+      this.eventBus.emit('item-removed', {
+        productVariantIds: [variantId],
+        quantity: -adjustment,
+      });
+    }
+    return this.activeOrder;
+  }
+
+  async removeOrderLine(orderLineId: Id): Promise<ActiveOrder<A> | undefined> {
+    return this.adjustOrderLine(orderLineId, 0);
+  }
+
+  async removeAllOrderLines(): Promise<ActiveOrder<A> | undefined> {
+    const totalQuantity = this.activeOrder?.totalQuantity || 0;
+    const productVariantIds =
+      this.activeOrder?.lines.map((line) => line.productVariant.id) ?? [];
+    const { removeAllOrderLines } = await this.rawRequest<
+      RemoveAllOrderLinesMutation,
+      RemoveAllOrderLinesMutationVariables
+    >(this.queries.REMOVE_ALL_ORDERLINES);
+    this.activeOrder = await this.validateOrder(removeAllOrderLines);
+    this.eventBus.emit('item-removed', {
+      productVariantIds,
+      quantity: totalQuantity,
+    });
     return this.activeOrder;
   }
 
@@ -128,9 +188,14 @@ export class VendureOrderClient<A = {}> {
   }
 
   /**
-   * Throws if result contains an error, if not, returns the non-error type
+   * Throws if order result contains an error, if not, returns the active order
    */
-  async validateResult<T>(result: T | ErrorResult): Promise<T> {
+  async validateOrder(
+    result?: ActiveOrderFieldsFragment | ErrorResult
+  ): Promise<ActiveOrder<A> | undefined> {
+    if (!result) {
+      return;
+    }
     if (result && (result as ErrorResult).errorCode) {
       const error = result as ErrorResult;
       if (
@@ -140,11 +205,12 @@ export class VendureOrderClient<A = {}> {
         window.localStorage.removeItem(this.tokenName); // These are unrecoverable states, so remove activeOrder
       }
       if (error.errorCode === 'INSUFFICIENT_STOCK_ERROR') {
-        // Fetch activeOrder to view amount of items added after insufficient stock error
+        // Fetch activeOrder to get the current right amount of items per orderLine
         await this.getActiveOrder();
       }
       throw error;
     }
-    return result as T;
+    // We've verified that result is not an error, so we can safely cast it
+    return result as ActiveOrder<A>;
   }
 }

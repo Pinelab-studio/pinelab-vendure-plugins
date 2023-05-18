@@ -3215,6 +3215,7 @@ export type ActiveOrderFieldsFragment = { __typename?: 'Order' } & Pick<
   | 'totalWithTax'
   | 'subTotalWithTax'
   | 'shippingWithTax'
+  | 'totalQuantity'
   | 'couponCodes'
 > & {
     customer?: Maybe<
@@ -3339,6 +3340,19 @@ export type AdjustOrderLineMutation = { __typename?: 'Mutation' } & {
       >)
     | ({ __typename?: 'InsufficientStockError' } & Pick<
         InsufficientStockError,
+        'errorCode' | 'message'
+      >);
+};
+
+export type RemoveAllOrderLinesMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type RemoveAllOrderLinesMutation = { __typename?: 'Mutation' } & {
+  removeAllOrderLines:
+    | ({ __typename?: 'Order' } & ActiveOrderFieldsFragment)
+    | ({ __typename?: 'OrderModificationError' } & Pick<
+        OrderModificationError,
         'errorCode' | 'message'
       >);
 };

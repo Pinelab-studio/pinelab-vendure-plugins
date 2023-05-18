@@ -1,16 +1,16 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
+  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { gql } from 'graphql-request';
 import path from 'path';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { VendureOrderClient, VendureOrderEvent } from '../src/';
 import { initialData } from './initial-data';
-import { VendureOrderClient } from '../src/';
-import { describe, beforeAll, it, expect, afterAll, vi } from 'vitest';
 
 const storage: any = {};
 const window = {
@@ -22,11 +22,25 @@ const window = {
 };
 vi.stubGlobal('window', window);
 
+// order.history is not included by default, so we use it to test additionalOrderFields
+const additionalOrderFields = gql`
+  fragment AdditionalOrderFields on Order {
+    history {
+      totalItems
+    }
+  }
+`;
+type AdditionalOrderFields = { history: { totalItems: number } };
+
+let client: VendureOrderClient<AdditionalOrderFields>;
+let latestEmittedEvent: [string, VendureOrderEvent];
+
+/**
+ * T_2 is used as test product variant
+ * T_1 is used as test order line
+ */
 describe('Vendure order client', () => {
   let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
-  let serverStarted = false;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -34,7 +48,7 @@ describe('Vendure order client', () => {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
     });
 
-    ({ server, adminClient, shopClient } = createTestEnvironment(config));
+    ({ server } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: path.join(__dirname, './product-import.csv'),
@@ -45,86 +59,100 @@ describe('Vendure order client', () => {
     expect(server.app.getHttpServer).toBeDefined;
   });
 
-  let client: VendureOrderClient;
-  let latestEmittedEvent: any;
-
   it('Creates a client', async () => {
-    client = new VendureOrderClient(
+    client = new VendureOrderClient<AdditionalOrderFields>(
       'http://localhost:3050/shop-api',
-      'channel-token'
+      'channel-token',
+      additionalOrderFields
     );
     expect(client).toBeInstanceOf(VendureOrderClient);
     expect(client.activeOrder).toBeUndefined();
     expect(client.eventBus).toBeDefined();
-    client.eventBus.on('*', (type, e) => (latestEmittedEvent = e));
+    client.eventBus.on(
+      '*',
+      (eventType, e) => (latestEmittedEvent = [eventType, e])
+    );
   });
 
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
-      const order = await client.addItemToOrder('T_1', 1);
+      const order = await client.addItemToOrder('T_2', 1);
       expect(order?.lines[0].quantity).toBe(1);
-      expect(order?.lines[0].productVariant.id).toBe('T_1');
+      expect(order?.lines[0].productVariant.id).toBe('T_2');
     });
 
     it('Emits "item-added" event, with quantity 1', async () => {
-      expect(latestEmittedEvent).toEqual({
-        productVariantId: 'T_1',
+      const [eventType, event] = latestEmittedEvent;
+      expect(eventType).toEqual('item-added');
+      expect(event).toEqual({
+        productVariantIds: ['T_2'],
         quantity: 1,
       });
     });
 
-    it('Retrieves active order', async () => {
+    it('Retrieves active order with specified additional fields', async () => {
       const order = await client.getActiveOrder();
       expect(order?.lines[0].quantity).toBe(1);
-      expect(order?.lines[0].productVariant.id).toBe('T_1');
+      expect(order?.lines[0].productVariant.id).toBe('T_2');
+      expect(order?.history.totalItems).toBe(1);
     });
 
-    it.skip('Increases quantity to 3', async () => {
-      expect(false).toBe(true);
+    it('Increases quantity from 1 to 3', async () => {
+      const order = await client.adjustOrderLine('T_1', 3);
+      expect(order?.lines[0].quantity).toBe(3);
     });
 
-    it.skip('Emits "item-added" event, with quantity 2', async () => {
-      expect(false).toBe(true);
+    it('Emits "item-added" event, with quantity 2', async () => {
+      const [eventType, event] = latestEmittedEvent;
+      expect(eventType).toEqual('item-added');
+      expect(event).toEqual({
+        productVariantIds: ['T_2'],
+        quantity: 2,
+      });
     });
 
-    it.skip('Removes the order line', async () => {
-      expect(false).toBe(true);
+    it('Removes the order line', async () => {
+      const order = await client.removeOrderLine('T_1');
+      expect(order?.lines.length).toBe(0);
     });
 
-    it.skip('Emits "item-removed" event, with quantity 3', async () => {
-      expect(false).toBe(true);
+    it('Emits "item-removed" event, with quantity 3', async () => {
+      const [eventType, event] = latestEmittedEvent;
+      expect(eventType).toEqual('item-removed');
+      expect(event).toEqual({
+        productVariantIds: ['T_2'],
+        quantity: 3,
+      });
     });
 
-    it.skip('Adds an item to order #2', async () => {
-      expect(false).toBe(true);
+    it('Adds an item to order for the second time', async () => {
+      const order = await client.addItemToOrder('T_2', 1);
+      expect(order?.lines[0].quantity).toBe(1);
+      expect(order?.lines[0].productVariant.id).toBe('T_2');
     });
 
-    it.skip('Removes all order lines', async () => {
-      expect(false).toBe(true);
+    it('Removes all order lines', async () => {
+      const order = await client.removeAllOrderLines();
+      expect(order?.lines.length).toBe(0);
     });
 
-    it.skip('Emits "item-removed" event, with quantity 1', async () => {
-      expect(false).toBe(true);
-    });
-
-    it.skip('Adds an item to order #3', async () => {
-      expect(false).toBe(true);
-    });
-
-    it.skip('Decreases quantity to 0', async () => {
-      expect(false).toBe(true);
-    });
-
-    it.skip('Emits "item-removed" event, with quantity 1', async () => {
-      expect(false).toBe(true);
-    });
-
-    it.skip('Adds an item to order #4', async () => {
-      expect(false).toBe(true);
+    it('Emits "item-removed" event, with quantity 1', async () => {
+      const [eventType, event] = latestEmittedEvent;
+      expect(eventType).toEqual('item-removed');
+      expect(event).toEqual({
+        productVariantIds: ['T_2'],
+        quantity: 1,
+      });
     });
   });
 
-  describe('Checkout', () => {
+  describe('Guest checkout', () => {
+    it.skip('Adds an item to order', async () => {
+      const order = await client.addItemToOrder('T_2', 1);
+      expect(order?.lines[0].quantity).toBe(1);
+      expect(order?.lines[0].productVariant.id).toBe('T_2');
+    });
+
     it.skip('Applies invalid coupon', async () => {
       expect(false).toBe(true);
     });
@@ -166,6 +194,26 @@ describe('Vendure order client', () => {
     });
 
     it.skip('Gets order by code', async () => {
+      expect(false).toBe(true);
+    });
+  });
+
+  describe('Registered customer checkout', () => {
+    it.skip('Register as customer', async () => {
+      expect(false).toBe(true);
+    });
+
+    it.skip('Login as customer', async () => {
+      expect(false).toBe(true);
+    });
+
+    // TODO dont add shipping address etc
+  });
+
+  describe('Account management', () => {
+    // TODO: reset password, update profile
+
+    it.skip('Placeholder', async () => {
       expect(false).toBe(true);
     });
   });

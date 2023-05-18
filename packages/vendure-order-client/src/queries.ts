@@ -1,17 +1,11 @@
 import { GraphQLClient, gql } from 'graphql-request';
 
 export class GraphqlQueries {
-  constructor(additionalOrderFields?: string) {
-    if (additionalOrderFields) {
-      this.ADDITIONAL_ORDER_FIELDS = additionalOrderFields;
-    }
+  constructor(private ADDITIONAL_ORDER_FIELDS: string) {
+    // if (additionalOrderFields) {
+    //   this.ADDITIONAL_ORDER_FIELDS = additionalOrderFields;
+    // }
   }
-
-  ADDITIONAL_ORDER_FIELDS = gql`
-    fragment AdditionalOrderFields on Order {
-      id
-    }
-  `;
 
   ACTIVE_ORDER_FIELDS = gql`
     ${this.ADDITIONAL_ORDER_FIELDS}
@@ -24,6 +18,7 @@ export class GraphqlQueries {
       totalWithTax
       subTotalWithTax
       shippingWithTax
+      totalQuantity
       customer {
         id
         firstName
@@ -110,6 +105,21 @@ export class GraphqlQueries {
     ${this.ACTIVE_ORDER_FIELDS}
     mutation adjustOrderLine($orderLineId: ID!, $quantity: Int!) {
       adjustOrderLine(orderLineId: $orderLineId, quantity: $quantity) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  REMOVE_ALL_ORDERLINES = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation removeAllOrderLines {
+      removeAllOrderLines {
         ... on Order {
           ...ActiveOrderFields
         }

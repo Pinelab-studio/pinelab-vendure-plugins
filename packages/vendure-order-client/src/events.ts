@@ -1,7 +1,9 @@
 export type Id = string | number;
 
+export type VendureOrderEvent = ItemEvent; // TODO | PaymentEvent | FulfillmentEvent etc
+
 export interface ItemEvent {
-  productVariantId: Id;
+  productVariantIds: Id[];
   quantity: number;
 }
 
