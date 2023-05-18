@@ -155,8 +155,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       );
     }
     if (order.state === sendcloudStatus.orderState) {
-      return Logger.debug(
-        `Cannot update order with code ${orderCode}: Order already has state ${order.state}`,
+      return Logger.info(
+        `Not updating order with code ${orderCode}: Order already has state ${order.state}`,
         loggerCtx
       );
     }
