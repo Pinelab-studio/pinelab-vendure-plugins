@@ -1,11 +1,11 @@
 # Vendure Client
 
-A tiny, framework agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
+A typed, extensible, framework-agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
 
 - Sensible, but extendable default GraphQL fields.
 - Active order state management.
-- Customer session management
-- Emit events based on order mutations like `item-added`, `customer-aded`. See [Events](###Events) for more
+- Customer session management.
+- Emit typed events based on order mutations like `item-added`, `customer-added`. See [Events](###Events) for more
 
 It uses the framework agnostic, and very tiny packages
 
@@ -60,6 +60,7 @@ const client = new VendureOrderClient<OrderWithReferralCode>(
 );
 
 await client.addItemToOrder('some-id', 1);
+// Typescript will now know you also have `referralCode` available
 const referralCode = client.activeOrder.referralCode;
 ```
 
@@ -86,8 +87,7 @@ client.eventBus.off('item-added', showNotification);
 
 ### List of events
 
-- `item-added`
-- `item-removed`
-- `shipping-method-added`
-- `shipping-method-removed`
-- // TODO add all events
+```ts
+// Checkout VendureOrderEvents for all available events
+import { VendureOrderEvents } from 'vendure-order-client';
+```

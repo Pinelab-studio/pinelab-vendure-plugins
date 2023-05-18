@@ -1,3 +1,3 @@
 export * from './vendure-order-client';
-export * from './events';
+export * from './vendure-order-events';
 export * from './graphql-types';

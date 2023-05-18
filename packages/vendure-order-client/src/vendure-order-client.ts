@@ -13,7 +13,7 @@ import {
   RemoveAllOrderLinesMutationVariables,
 } from './graphql-types';
 import mitt from 'mitt';
-import { Id, VendureOrderEvents } from './events';
+import { Id, VendureOrderEvents } from './vendure-order-events';
 
 /**
  * Used when no additional fields are given
