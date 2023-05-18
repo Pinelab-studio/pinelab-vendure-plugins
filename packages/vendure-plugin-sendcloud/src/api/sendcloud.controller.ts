@@ -43,13 +43,13 @@ export class SendcloudController {
     );
     if (!status) {
       return Logger.warn(
-        `Status is ${body.action}, but no matching SendCloud status was found for ${body.parcel?.status}`,
+        `Unknown SendCloud status "${body.parcel?.status?.message}", not handling this webhook.`,
         loggerCtx
       );
     }
     if (!status.orderState) {
       return Logger.info(
-        `No corresponding Vendure order state for SendCloud status ${body.parcel?.status}. Ignoring this webhook.`,
+        `Ignoring incoming webhook status "${body.parcel?.status?.message}", because we don't update Vendure order status for this sendcloud status.`,
         loggerCtx
       );
     }
