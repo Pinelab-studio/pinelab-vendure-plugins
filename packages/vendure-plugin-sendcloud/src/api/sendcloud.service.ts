@@ -188,6 +188,8 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
         loggerCtx
       );
     }
+    // Fall through, means unhandled state
+    Logger.info(`Not handling state ${sendcloudStatus.orderState}`, loggerCtx);
   }
 
   /**

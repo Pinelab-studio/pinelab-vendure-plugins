@@ -80,13 +80,6 @@ export class AllocateStockOnSettlementStrategy
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
-    authOptions: {
-      tokenMethod: 'bearer',
-    },
-    // Test allocation
-    orderOptions: {
-      stockAllocationStrategy: new AllocateStockOnSettlementStrategy(),
-    }
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
@@ -112,7 +105,7 @@ export class AllocateStockOnSettlementStrategy
     '058123456789'
   );
   updateVariants(adminClient, [{ id: 'T_1', trackInventory: GlobalFlag.True }]);
-  await new Promise((resolve) => setTimeout(resolve, 20000));
-  await createSettledOrder(shopClient, 1, true, [{ id: 'T_1', quantity: 1}]);
+  await new Promise((resolve) => setTimeout(resolve, 20000)); // Gives us time to check stock in admin before order placement
+  await createSettledOrder(shopClient, 1, true, [{ id: 'T_1', quantity: 1 }]);
   console.log('created test order');
 })();
