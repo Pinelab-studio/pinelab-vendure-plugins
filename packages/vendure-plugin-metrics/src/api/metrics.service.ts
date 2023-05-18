@@ -147,6 +147,9 @@ export class MetricsService {
         .leftJoinAndSelect('orderLine.items', 'orderItems')
         .leftJoin('order.channels', 'orderChannel')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
+        .andWhere(`order.orderPlacedAt >= :startDate`, {
+          startDate: startDate.toISOString(),
+        })
         .skip(skip)
         .take(take);
       if (variantIds?.length) {
@@ -167,6 +170,10 @@ export class MetricsService {
         hasMoreOrders = false;
       }
     }
+    Logger.info(
+      `Finished fetching all ${orders.length} orders for channel ${ctx.channel.token} for ${interval} metrics`,
+      loggerCtx
+    );
     const dataPerInterval = new Map<number, MetricData>();
     const ticks = [];
     for (let i = 1; i <= nrOfEntries; i++) {
