@@ -10,7 +10,11 @@ platforms when orders are placed by subscribing to OrderPlacedEvents!
 
 ## Breaking changes since v7.x
 
-:warning: V7 of this plugin allows you to create multiple webhooks per channel for multiple different events. You have to manually recreate your webhooks after migration! (Don't forget your DB migration)
+:warning: V7 of this plugin allows you to create multiple webhooks per channel for multiple different events. You have to manually recreate your webhooks after migration! (Don't forget your DB migration):
+
+- Check what URL is triggered for what event in your current environment, and note it down somewhere.
+- Install the new version, migrate, start the server, and go to `Settings > Webhook` in the Admin UI.
+- Create the hook. You can leave the `Transformer` field blank: the plugin will send an empty post without a transfomer.
 
 ## Getting started
 
