@@ -1,5 +1,5 @@
 import {
-  AttemptedLoginEvent,
+  AccountRegistrationEvent,
   ChannelService,
   DefaultLogger,
   EventBus,
@@ -21,10 +21,18 @@ import nock from 'nock';
 import { initialData } from '../../test/src/initial-data';
 import { WebhookPlugin } from '../src';
 import {
+  AvailableWebhookEventsQuery,
+  AvailableWebhookRequestTransformersQuery,
   SetWebhooksMutation,
   SetWebhooksMutationVariables,
+  WebhooksQuery,
 } from '../src/generated/graphql-types';
-import { setWebhooksMutation } from '../src/ui/queries';
+import {
+  getAvailableWebhookEventsQuery,
+  getAvailableWebhookRequestTransformersQuery,
+  getWebhooksQuery,
+  setWebhooksMutation,
+} from '../src/ui/queries';
 import { stringifyProductTransformer } from './test-helpers';
 
 jest.setTimeout(20000);
@@ -35,7 +43,7 @@ describe('Webhook plugin', function () {
   let serverStarted = false;
   let ctx: RequestContext;
   const testProductWebhookUrl = 'https://rebuild-static-site.io';
-  const testAttemptedLoginUrl = 'https://my-security-logger.io';
+  const testRegistrationUrl = 'https://my-security-logger.io';
 
   function publishMockProductEvent() {
     server.app
@@ -43,8 +51,10 @@ describe('Webhook plugin', function () {
       .publish(new ProductEvent(ctx, undefined as any, 'created'));
   }
 
-  function publishMockAttemptedLoginEvent() {
-    server.app.get(EventBus).publish(new AttemptedLoginEvent(ctx, 'native'));
+  function publishMockRegistrationEvent() {
+    server.app
+      .get(EventBus)
+      .publish(new AccountRegistrationEvent(ctx, {} as any));
   }
 
   beforeAll(async () => {
@@ -57,7 +67,7 @@ describe('Webhook plugin', function () {
       plugins: [
         WebhookPlugin.init({
           delay: 200,
-          events: [ProductEvent, AttemptedLoginEvent],
+          events: [ProductEvent, AccountRegistrationEvent],
           requestTransformers: [stringifyProductTransformer],
         }),
       ],
@@ -83,7 +93,7 @@ describe('Webhook plugin', function () {
     await expect(serverStarted).toBe(true);
   });
 
-  it.only('Should set webhooks for channel', async () => {
+  it('Should set webhooks for channel', async () => {
     await adminClient.asSuperAdmin();
     const { setWebhooks } = await adminClient.query<
       SetWebhooksMutation,
@@ -96,30 +106,68 @@ describe('Webhook plugin', function () {
           url: testProductWebhookUrl,
           transformerName: stringifyProductTransformer.name,
         },
-        // AttemptedLoginEvent webhook with default transformer
+        // AccountRegistrationEvent webhook with default transformer
         {
-          event: 'AttemptedLoginEvent',
-          url: testAttemptedLoginUrl,
+          event: 'AccountRegistrationEvent',
+          url: testRegistrationUrl,
         },
       ],
     });
-    console.log('asdfasdfasfasdfafds=================', setWebhooks);
-    await expect(setWebhooks[0]).toBe(true);
+    await expect(setWebhooks[0].event).toBe('ProductEvent');
+    await expect(setWebhooks[0].url).toBe(testProductWebhookUrl);
+    await expect(setWebhooks[0].requestTransformer?.supportedEvents[0]).toBe(
+      'ProductEvent'
+    );
+    await expect(setWebhooks[0].requestTransformer?.name).toBeDefined();
+    await expect(setWebhooks[1].event).toBe('AccountRegistrationEvent');
+    await expect(setWebhooks[1].url).toBe(testRegistrationUrl);
+    await expect(setWebhooks[1].requestTransformer).toBe(null);
   });
 
-  it('Should get all webhooks', async () => {
-    await expect(false).toBe(true);
+  it('Should get all webhooks for current channel', async () => {
+    const { webhooks } = await adminClient.query<WebhooksQuery>(
+      getWebhooksQuery
+    );
+    await expect(webhooks.length).toBe(2);
+    await expect(webhooks[0].event).toBe('ProductEvent');
+    await expect(webhooks[0].url).toBe(testProductWebhookUrl);
+    await expect(webhooks[0].requestTransformer?.supportedEvents[0]).toBe(
+      'ProductEvent'
+    );
+    await expect(webhooks[0].requestTransformer?.name).toBeDefined();
   });
 
   it('Should get available events', async () => {
-    await expect(false).toBe(true);
+    const { availableWebhookEvents } =
+      await adminClient.query<AvailableWebhookEventsQuery>(
+        getAvailableWebhookEventsQuery
+      );
+    const hasRegistrationEvent = availableWebhookEvents.some(
+      (event) => event === 'AccountRegistrationEvent'
+    );
+    const hasProductEvent = availableWebhookEvents.some(
+      (event) => event === 'ProductEvent'
+    );
+    await expect(availableWebhookEvents.length).toBe(2);
+    await expect(hasRegistrationEvent).toBe(true);
+    await expect(hasProductEvent).toBe(true);
   });
 
   it('Should get available request tranformers', async () => {
-    await expect(false).toBe(true);
+    const { availableWebhookRequestTransformers } =
+      await adminClient.query<AvailableWebhookRequestTransformersQuery>(
+        getAvailableWebhookRequestTransformersQuery
+      );
+    expect(availableWebhookRequestTransformers.length).toBe(1);
+    expect(availableWebhookRequestTransformers[0].name).toBe(
+      'Stringify Product events'
+    );
+    expect(availableWebhookRequestTransformers[0].supportedEvents[0]).toBe(
+      'ProductEvent'
+    );
   });
 
-  it('Should call webhook on ProductEvent', async () => {
+  it('Should call webhook on ProductEvent with custom body and headers', async () => {
     const receivedPayloads: any[] = [];
     let receivedHeaders: any;
     nock(testProductWebhookUrl)
@@ -131,37 +179,33 @@ describe('Webhook plugin', function () {
         receivedHeaders = this.req.headers;
       });
     publishMockProductEvent();
-    await new Promise((resolve) => setTimeout(resolve, 300)); // Await async eventBus processing
-    console.log(receivedPayloads);
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     expect(receivedPayloads.length).toBe(1);
+    expect(receivedPayloads[0].type).toBe('created');
     expect(receivedPayloads[0].createdAt).toBeDefined();
-    expect(receivedPayloads[0].channelId).toBeDefined();
+    expect(receivedPayloads[0].ctx).toBeDefined();
     // See test-helpers.ts to see where these values are coming from
-    expect(receivedHeaders['X-custom-header']).toBe('stringify-custom-header');
+    expect(receivedHeaders['x-custom-header']).toEqual([
+      'stringify-custom-header',
+    ]);
   });
 
-  it('Should call a different webhook on AttemptedLoginEvent', async () => {
+  it('Should call webhook on AccountRegistrationEvent with empty body', async () => {
     const receivedPayloads: any[] = [];
-    let receivedHeaders: any;
-    nock(testAttemptedLoginUrl)
+    nock(testRegistrationUrl)
       .post(/.*/, (body) => {
         receivedPayloads.push(body);
         return true;
       })
-      .reply(200, function () {
-        receivedHeaders = this.req.headers;
-      });
-    publishMockAttemptedLoginEvent();
-    await new Promise((resolve) => setTimeout(resolve, 300)); // Await async eventBus processing
-    console.log(receivedPayloads);
+      .reply(200);
+    publishMockRegistrationEvent();
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     expect(receivedPayloads.length).toBe(1);
-    expect(receivedPayloads[0].createdAt).toBeDefined();
-    expect(receivedPayloads[0].channelId).toBeDefined();
   });
 
   it('Should call webhook once with multiple events within the "delay" time', async () => {
     let received: any[] = [];
-    nock('https://testing')
+    nock(testProductWebhookUrl)
       .post(/.*/, (body) => !!received.push(body))
       .reply(200, {})
       .persist();
@@ -169,14 +213,14 @@ describe('Webhook plugin', function () {
     publishMockProductEvent();
     publishMockProductEvent();
     publishMockProductEvent();
-    await new Promise((resolve) => setTimeout(resolve, 300)); // Await async eventBus processing
-    // Plugin should have batched all events fired within 300ms
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
+    // Plugin should have batched all events fired within 200ms
     expect(received.length).toBe(1);
   });
 
-  it('Should call webhook twice when events occur over more than the set "delay" timeframe', async () => {
+  it('Should call webhook twice when events are apart more than 200ms', async () => {
     let received: any[] = [];
-    nock('https://testing')
+    nock(testProductWebhookUrl)
       .persist()
       .post(/.*/, (body) => !!received.push(body))
       .reply(200, {})
@@ -184,7 +228,7 @@ describe('Webhook plugin', function () {
     publishMockProductEvent();
     await new Promise((resolve) => setTimeout(resolve, 300));
     publishMockProductEvent();
-    await new Promise((resolve) => setTimeout(resolve, 300)); // Await async eventBus processing
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     expect(received.length).toBe(2);
   });
 

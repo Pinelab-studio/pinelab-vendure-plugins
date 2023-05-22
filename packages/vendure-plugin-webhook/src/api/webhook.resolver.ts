@@ -6,7 +6,7 @@ import {
   ResolveField,
   Parent,
 } from '@nestjs/graphql';
-import { Allow, Ctx, RequestContext } from '@vendure/core';
+import { Allow, Ctx, ProductEvent, RequestContext } from '@vendure/core';
 import { WebhookService } from './webhook.service';
 import { webhookPermission } from '../index';
 import {
@@ -87,7 +87,7 @@ export function mapToGraphqlTransformer(
   return {
     name: transformer.name,
     supportedEvents: transformer.supportedEvents.map(
-      (event: any) => event.constructor.name
+      (event: any) => event.name
     ),
   };
 }

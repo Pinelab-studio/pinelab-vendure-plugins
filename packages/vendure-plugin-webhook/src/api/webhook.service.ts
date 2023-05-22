@@ -68,6 +68,7 @@ export class WebhookService implements OnApplicationBootstrap {
           );
         }
       });
+      Logger.info(`Listening for ${configuredEvent.name}`, loggerCtx);
     });
   }
 
@@ -75,7 +76,7 @@ export class WebhookService implements OnApplicationBootstrap {
    * Get the plugin's configured Events.
    */
   getAvailableEvents(): string[] {
-    return this.options.events.map((event) => event.constructor.name);
+    return this.options.events.map((eventType) => eventType.name);
   }
 
   /**
@@ -200,7 +201,7 @@ export class WebhookService implements OnApplicationBootstrap {
       body: request.body,
     });
     Logger.info(
-      `Successfully triggered webhook for event ${webhook.event} for channel ${webhook.channelId} without transformer`,
+      `Successfully triggered webhook for event ${event.constructor.name} for channel ${webhook.channelId} with transformer "${webhook.transformerName}"`,
       loggerCtx
     );
   }
