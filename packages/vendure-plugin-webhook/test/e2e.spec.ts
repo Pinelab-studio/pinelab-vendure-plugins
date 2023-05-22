@@ -203,13 +203,13 @@ describe('Webhook plugin', function () {
     expect(receivedPayloads.length).toBe(1);
   });
 
-  it('Should call webhook once with multiple events within the "delay" time', async () => {
+  it('Should call webhook once with multiple events within 200ms', async () => {
     let received: any[] = [];
     nock(testProductWebhookUrl)
       .post(/.*/, (body) => !!received.push(body))
       .reply(200, {})
       .persist();
-    // Publish 3 events within ~50ms
+    // Publish 3 events shortly after each other
     publishMockProductEvent();
     publishMockProductEvent();
     publishMockProductEvent();
