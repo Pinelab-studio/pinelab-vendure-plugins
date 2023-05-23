@@ -88,5 +88,5 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
     { id: 'T_3', trackInventory: GlobalFlag.True },
     { id: 'T_4', trackInventory: GlobalFlag.True },
   ]);
-  const order = await createSettledOrder(shopClient, 1);
+  const order = await createSettledOrder(shopClient, 1, true, [{ id: 'T_1', quantity: 3 }]);
 })();

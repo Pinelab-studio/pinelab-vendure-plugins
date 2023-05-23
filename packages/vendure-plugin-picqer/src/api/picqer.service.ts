@@ -5,6 +5,7 @@ import {
 } from '@vendure/common/lib/generated-types';
 import {
   Address,
+  Allocation,
   AssetService,
   ChannelService,
   ConfigService,
@@ -27,7 +28,10 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockLevel,
   StockLevelService,
+  StockLocation,
+  StockLocationService,
   StockMovementEvent,
   TransactionalConnection,
   assertFound,
@@ -53,11 +57,12 @@ import {
   PickListWebhookData,
   ProductData,
   ProductInput,
+  Stock as PicqerStockLocation,
   WebhookInput,
 } from './types';
 import { OrderLineInput } from '@vendure/common/lib/generated-types';
 import { picqerHandler } from './picqer.handler';
-import { throwIfTransitionFailed } from '../../../util/src';
+import { throwIfTransitionFailed } from '../../../util/src/order-state-util'
 
 /**
  * Job to push variants from Vendure to Picqer
@@ -90,6 +95,8 @@ interface PushOrderJob {
 
 type JobData = PushVariantsJob | PullStockLevelsJob | PushOrderJob;
 
+const STOCK_LOCATION_PREFIX = 'Picqer Warehouse';
+
 @Injectable()
 export class PicqerService implements OnApplicationBootstrap {
   private jobQueue!: JobQueue<JobData>;
@@ -105,8 +112,10 @@ export class PicqerService implements OnApplicationBootstrap {
     private configService: ConfigService,
     private entityHydrator: EntityHydrator,
     private channelService: ChannelService,
-    private orderService: OrderService
-  ) {}
+    private orderService: OrderService,
+    private stockLocationService: StockLocationService,
+    private stockLevelService: StockLevelService,
+  ) { }
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -276,10 +285,8 @@ export class PicqerService implements OnApplicationBootstrap {
       await this.handlePicklistClosed(ctx, input.body.data);
     } else {
       Logger.warn(
-        `Unknown event ${
-          (input.body as any).event
-        } for incoming webhook for channel ${
-          input.channelToken
+        `Unknown event ${(input.body as any).event
+        } for incoming webhook for channel ${input.channelToken
         }. Not handling this webhook...`,
         loggerCtx
       );
@@ -344,7 +351,6 @@ export class PicqerService implements OnApplicationBootstrap {
       throw new Error(`No order found for code ${data.reference}`);
     }
     const orderLinesToFulfill: OrderLineInput[] = [];
-
     data.products.forEach((pickListProduct) => {
       if (!pickListProduct.amountpicked) {
         Logger.warn(
@@ -375,7 +381,7 @@ export class PicqerService implements OnApplicationBootstrap {
       },
       lines: orderLinesToFulfill,
     });
-    // FIXME V2 throwIfTransitionFailed(fulfillmentResult);
+    throwIfTransitionFailed(fulfillmentResult);
     let updatedOrder = await assertFound(
       this.orderService.findOne(ctx, order.id, [])
     );
@@ -391,7 +397,7 @@ export class PicqerService implements OnApplicationBootstrap {
         fulfillment.id,
         'Shipped'
       );
-    // FIXME V2 throwIfTransitionFailed(transitionToShippedResult);
+    throwIfTransitionFailed(transitionToShippedResult!);
     updatedOrder = await assertFound(
       this.orderService.findOne(ctx, order.id, [])
     );
@@ -407,7 +413,7 @@ export class PicqerService implements OnApplicationBootstrap {
         fulfillment.id,
         'Delivered'
       );
-    // FIXME V2 throwIfTransitionFailed(transitionToDeliveredResult);
+    throwIfTransitionFailed(transitionToDeliveredResult);
     updatedOrder = await assertFound(
       this.orderService.findOne(ctx, order.id, [])
     );
@@ -481,16 +487,19 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   /**
-   * Update variant stocks in Vendure based on given Picqer products
+   * Update variant stock in Vendure based on given Picqer products
    */
   async updateStockBySkus(
     ctx: RequestContext,
     picqerProducts: ProductData[]
   ): Promise<void> {
-    const vendureVariants = await this.findAllVariantsBySku(
-      ctx,
-      picqerProducts.map((p) => p.productcode)
-    );
+    const [vendureVariants] = await Promise.all([
+      this.findAllVariantsBySku(
+        ctx,
+        picqerProducts.map((p) => p.productcode)
+      ),
+      this.removeNonPicqerStockLocations(ctx),
+    ]);
     const stockAdjustments: StockAdjustment[] = [];
     let updateCount = 0; // Nr of variants that were updated
     // Loop over variants to determine new stock level per variant and update in DB
@@ -498,50 +507,62 @@ export class PicqerService implements OnApplicationBootstrap {
       vendureVariants.map(async (variant) => {
         const picqerProduct = picqerProducts.find(
           (p) => p.productcode === variant.sku
-        );
-        if (!picqerProduct) {
-          return; // Should never happen
-        }
-        // FIXME get ava
-        const picqerStockLevel = picqerProduct?.stock?.[0]?.freestock;
-        if (!picqerStockLevel) {
-          Logger.info(
-            `Picqer product ${picqerProduct.idproduct} (sku ${picqerProduct.productcode}) has no stock set, not updating variant in Vendure`,
-            loggerCtx
+        )!; // safe non-null assertion, because we fetched variants based on the Picqer skus
+        // Write stock level per location per variant
+        for (const picqerStock of picqerProduct.stock) {
+          const location = await this.getOrCreateStockLocation(ctx, picqerStock.idwarehouse);
+          const { stockAllocated, stockOnHand } = await this.stockLevelService.getAvailableStock(ctx, variant.id);
+          // stockLevelService.update() requires a delta instead of the absolute value
+          let delta = picqerStock.freestock - stockOnHand;
+          // Account for the current allocated stock
+          delta += stockAllocated;
+          await this.stockLevelService.updateStockAllocatedForLocation(ctx, variant.id, location.id, delta);
+          // Add stock adjustment
+          stockAdjustments.push(
+            new StockAdjustment({
+              quantity: delta,
+              productVariant: { id: variant.id },
+            })
           );
-        }
-        const newStockOnHand = variant.stockAllocated + (picqerStockLevel || 0);
-        // Fields from picqer that should be added to the variant
-        let additionalVariantFields = {};
-        try {
-          additionalVariantFields =
-            this.options.pullPicqerProductFields?.(picqerProduct) || {};
-        } catch (e: any) {
-          Logger.error(
-            `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
-            loggerCtx
-          );
-        }
-        // Update the actual variant in Vendure, with raw connection for better performance
-        await this.connection.getRepository(ctx, ProductVariant).update(
-          { id: variant.id },
-          {
-            ...additionalVariantFields,
-            stockOnHand: newStockOnHand,
-          }
-        );
-        // Add stock adjustment
-        stockAdjustments.push(
-          new StockAdjustment({
-            quantity: newStockOnHand - variant.stockOnHand, // Delta
-            productVariant: { id: variant.id },
-          })
-        );
-        updateCount++;
+          updateCount++;
+        };
       })
     );
     await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
     Logger.info(`Updated stock levels of ${updateCount} variants`, loggerCtx);
+  }
+
+  /**
+   * Get or create stock locations based on the stock locations we receive from Picqer
+   * @returns The Vendure stock locations that mirror Picqers stock locations
+   */
+  async getOrCreateStockLocation(ctx: RequestContext, picqerLocationId: number): Promise<StockLocation> {
+    const name = `${STOCK_LOCATION_PREFIX} ${picqerLocationId}`;
+    const existingLocations = await this.stockLocationService.findAll(ctx, { filter: { name: { eq: name } }, take: 1 });
+    if (existingLocations.totalItems > 1) {
+      Logger.error(`Found multiple stock locations with name "${name}", only 1 mirrored location should exist!`, loggerCtx);
+    }
+    if (existingLocations.items[0]) {
+      return existingLocations.items[0];
+    }
+    return this.stockLocationService.create(ctx, {
+      name,
+      description: `Mirrored location from Picqer warehouse with id ${picqerLocationId}`
+    });
+  }
+
+  /**
+ * Removes any stock locations that are not Picqer warehouses for given variant
+ * This is determined by the "Picqer" preview in the name
+ */
+  async removeNonPicqerStockLocations(ctx: RequestContext): Promise<void> {
+    const locations = await this.stockLocationService.findAll(ctx);
+    await Promise.all(locations.items.map(async (location) => {
+      if (!location.name.startsWith(STOCK_LOCATION_PREFIX)) {
+        await this.stockLocationService.delete(ctx, { id: location.id });
+        Logger.warn(`Removed stock location ${location.name}, because it's not a Picqer managed location`, loggerCtx)
+      }
+    }));
   }
 
   /**
@@ -640,11 +661,12 @@ export class PicqerService implements OnApplicationBootstrap {
 
   /**
    * Find all variants by SKUS via raw connection for better performance
+   * Only selects id and sku of variants
    */
   async findAllVariantsBySku(
     ctx: RequestContext,
     skus: string[]
-  ): Promise<ProductVariant[]> {
+  ): Promise<Pick<ProductVariant, 'id' | 'sku'>[]> {
     let skip = 0;
     const take = 1000;
     let hasMore = true;
@@ -653,6 +675,7 @@ export class PicqerService implements OnApplicationBootstrap {
       const [variants, count] = await this.connection
         .getRepository(ctx, ProductVariant)
         .createQueryBuilder('variant')
+        .select(['id', 'sku'])
         .leftJoin('variant.channels', 'channel')
         .where('channel.id = :channelId', { channelId: ctx.channelId })
         .andWhere('variant.sku IN(:...skus)', { skus })
@@ -766,7 +789,9 @@ export class PicqerService implements OnApplicationBootstrap {
   ): Promise<PicqerConfig> {
     const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
     const existing = await repository.findOne({
-      channelId: String(ctx.channelId),
+      where: {
+        channelId: String(ctx.channelId),
+      }
     });
     if (existing) {
       (input as Partial<PicqerConfigEntity>).id = existing.id;
@@ -780,7 +805,9 @@ export class PicqerService implements OnApplicationBootstrap {
       loggerCtx
     );
     const config = await repository.findOneOrFail({
-      channelId: String(ctx.channelId),
+      where: {
+        channelId: String(ctx.channelId),
+      }
     });
     await this.registerWebhooks(ctx, config).catch((e) =>
       Logger.error(
@@ -812,7 +839,7 @@ export class PicqerService implements OnApplicationBootstrap {
     config?: PicqerConfig
   ): Promise<PicqerClient | undefined> {
     if (!config) {
-      config = await this.getConfig(ctx);
+      config = (await this.getConfig(ctx)) ?? undefined;
     }
     if (!config || !config.enabled) {
       Logger.info(
@@ -833,7 +860,7 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
-    return new PicqerClient(config as PicqerClientInput);
+    return new PicqerClient(config as PicqerClientInput); // Safe, because we checked for undefined values
   }
 
   /**
@@ -878,9 +905,9 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Get the Picqer config for the current channel based on given context
    */
-  async getConfig(ctx: RequestContext): Promise<PicqerConfig | undefined> {
+  async getConfig(ctx: RequestContext): Promise<PicqerConfig | null> {
     const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
-    return repository.findOne({ channelId: String(ctx.channelId) });
+    return repository.findOne({ where: { channelId: String(ctx.channelId) } });
   }
 
   /**

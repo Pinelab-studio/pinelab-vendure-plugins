@@ -9,7 +9,7 @@ import { OrderInput, ProductInput } from './api/types';
 import { adminSchema } from './api/api-extensions';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { permission } from '.';
+import { picqerPermission } from '.';
 import { PicqerConfigEntity } from './api/picqer-config.entity';
 import { PicqerService } from './api/picqer.service';
 import { PicqerResolver } from './api/picqer.resolvers';
@@ -68,7 +68,7 @@ export interface PicqerOptions {
   entities: [PicqerConfigEntity],
   configuration: (config) => {
     config.apiOptions.middleware.push(createRawBodyMiddleWare('/picqer*'));
-    config.authOptions.customPermissions.push(permission);
+    config.authOptions.customPermissions.push(picqerPermission);
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
   },

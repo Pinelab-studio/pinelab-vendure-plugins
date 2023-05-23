@@ -19,7 +19,7 @@ import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   require('dotenv').config();
-  process.env.PUBLIC_VENDURE_URL = await ngrok.connect(3050);
+  // process.env.PUBLIC_VENDURE_URL = await ngrok.connect(3050);
   testConfig.plugins.push(
     CloudTasksPlugin.init({
       taskHandlerHost: process.env.PUBLIC_VENDURE_URL!,
