@@ -37,7 +37,7 @@ export async function setAddressAndShipping(
     }
   );
   await shopClient.query(SetShippingMethod, {
-    id: shippingMethodId,
+    ids: [shippingMethodId],
   });
 }
 
