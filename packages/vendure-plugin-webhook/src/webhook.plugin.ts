@@ -10,6 +10,7 @@ import {
 import { WebhookResolver } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
 import { webhookPermission } from './index';
+import { PLUGIN_INIT_OPTIONS } from './constants';
 
 /**
  * Calls a configurable webhook when configured events arise.
@@ -18,7 +19,10 @@ import { webhookPermission } from './index';
 @VendurePlugin({
   imports: [PluginCommonModule],
   entities: [WebhookPerChannelEntity],
-  providers: [WebhookService],
+  providers: [
+    WebhookService,
+    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => WebhookPlugin.options }
+  ],
   adminApiExtensions: {
     schema,
     resolvers: [WebhookResolver],
@@ -28,7 +32,7 @@ import { webhookPermission } from './index';
     return config;
   },
 })
-export class WebhookPlugin {
+export class WebhookPlugin {``
   static options: WebhookPluginOptions<any>;
 
   static init<T extends VendureEvent>(

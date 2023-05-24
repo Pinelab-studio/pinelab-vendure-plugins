@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Injectable, Inject, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
@@ -8,7 +8,8 @@ import {
   VendureEvent,
 } from '@vendure/core';
 import { WebhookPerChannelEntity } from './webhook-per-channel.entity';
-import { WebhookPlugin } from '../webhook.plugin';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { WebhookPluginOptions } from './webhook-plugin-options';
 import fetch from 'node-fetch';
 import { loggerCtx } from '../constants';
 
@@ -22,7 +23,8 @@ export class WebhookService implements OnApplicationBootstrap {
   constructor(
     private eventBus: EventBus,
     private connection: TransactionalConnection,
-    private moduleRef: ModuleRef
+    private moduleRef: ModuleRef,
+    @Inject(PLUGIN_INIT_OPTIONS) private options: WebhookPluginOptions<any>,
   ) {}
 
   async getWebhook(
