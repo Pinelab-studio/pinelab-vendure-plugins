@@ -32,7 +32,7 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
     return config;
   },
 })
-export class WebhookPlugin {``
+export class WebhookPlugin {
   static options: WebhookPluginOptions<any>;
 
   static init<T extends VendureEvent>(
