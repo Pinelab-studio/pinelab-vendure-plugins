@@ -113,9 +113,11 @@ export class MyparcelService implements OnApplicationBootstrap {
   ): Promise<MyparcelDropOffPoint[]> {
     const config = await this.getConfig(String(ctx.channelId));
     if (!config || !config?.apiKey) {
-      throw new MyParcelError(
-        `No apiKey found for channel ${ctx.channel.token}`
+      Logger.info(
+        `MyParcel is not enabled for channel ${ctx.channel.token}`,
+        loggerCtx
       );
+      return [];
     }
     const searchParams = new URLSearchParams({
       postal_code: input.postalCode,
