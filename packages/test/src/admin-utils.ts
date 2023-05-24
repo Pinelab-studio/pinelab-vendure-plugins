@@ -161,7 +161,12 @@ export async function createPromotion(
     CreatePromotionMutationVariables
   >(CreatePromotion, {
     input: {
-      name: couponCode,
+      translations: [
+        {
+          languageCode: LanguageCode.En,
+          name: couponCode,
+        },
+      ],
       enabled: true,
       couponCode,
       conditions: [],

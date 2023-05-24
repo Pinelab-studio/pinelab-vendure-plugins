@@ -16,7 +16,7 @@ import {
 import { loggerCtx } from './constants';
 @Injectable()
 export class SortService implements OnModuleInit {
-  private jobQueue: JobQueue<{
+  private jobQueue!: JobQueue<{
     channelToken: string;
     ctx: SerializedRequestContext;
   }>;
