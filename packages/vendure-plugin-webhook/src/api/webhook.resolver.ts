@@ -1,7 +1,12 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, RequestContext } from '@vendure/core';
 import { WebhookService } from './webhook.service';
-import { webhookPermission } from '../index';
+import { PermissionDefinition } from '@vendure/core';
+
+export const webhookPermission = new PermissionDefinition({
+  name: 'SetWebhook',
+  description: 'Allows setting a webhook URL',
+});
 
 /**
  * Graphql resolvers for retrieving and updating webhook for channel
