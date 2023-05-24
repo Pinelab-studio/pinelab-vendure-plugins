@@ -114,7 +114,7 @@ export class MyparcelService implements OnApplicationBootstrap {
     const config = await this.getConfig(String(ctx.channelId));
     if (!config || !config?.apiKey) {
       Logger.info(
-        `MyParcel is not enabled for channel ${ctx.channel.token}`,
+        `MyParcel is not enabled for channel ${ctx.channel.token}, can not fetch dropoff points`,
         loggerCtx
       );
       return [];
