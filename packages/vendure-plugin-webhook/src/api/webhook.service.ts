@@ -62,16 +62,16 @@ export class WebhookService implements OnApplicationBootstrap {
    * Subscribe to events specified in config
    */
   async onApplicationBootstrap(): Promise<void> {
-    if (!WebhookPlugin.options || !WebhookPlugin.options.events) {
+    if (!this.options || !this.options.events) {
       throw Error(
         `Please specify VendureEvents with Webhook.init() in your Vendure config.`
       );
     }
-    if (WebhookPlugin.options.disabled) {
+    if (this.options.disabled) {
       Logger.info(`Webhook plugin disabled`, loggerCtx);
       return;
     }
-    WebhookPlugin.options.events!.forEach((configuredEvent) => {
+    this.options.events!.forEach((configuredEvent) => {
       this.eventBus.ofType(configuredEvent).subscribe((event) => {
         const channelId = (event as any)?.ctx?.channelId;
         if (!channelId) {
@@ -104,8 +104,8 @@ export class WebhookService implements OnApplicationBootstrap {
       return;
     }
     WebhookService.queue.add(webhookPerChannel.url);
-    if (WebhookPlugin.options.delay) {
-      setTimeout(() => this.doWebhook(event), WebhookPlugin.options.delay);
+    if (this.options.delay) {
+      setTimeout(() => this.doWebhook(event), this.options.delay);
     } else {
       await this.doWebhook(event);
     }
@@ -122,12 +122,12 @@ export class WebhookService implements OnApplicationBootstrap {
     await Promise.all(
       channels.map(async (channel) => {
         try {
-          const request = await WebhookPlugin.options.requestFn?.(
+          const request = await this.options.requestFn?.(
             event,
             new Injector(this.moduleRef)
           );
           await fetch(channel!, {
-            method: WebhookPlugin.options.httpMethod,
+            method: this.options.httpMethod,
             headers: request?.headers,
             body: request?.body,
           });
