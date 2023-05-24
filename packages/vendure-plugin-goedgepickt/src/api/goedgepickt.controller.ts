@@ -66,6 +66,9 @@ export class GoedgepicktController {
     try {
       const ctx = await this.service.getCtxForChannel(channelToken);
       const client = await this.service.getClientForChannel(ctx);
+      if (!client) {
+        return;
+      }
       const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
       switch (body.event) {
         case 'orderStatusChanged':
