@@ -34,11 +34,11 @@ import { stringifyProductTransformer } from './test-helpers';
     AdminUiPlugin.init({
       route: 'admin',
       port: 3002,
-      // app: compileUiExtensions({
-      //   outputPath: path.join(__dirname, '__admin-ui'),
-      //   extensions: [WebhookPlugin.ui],
-      //   devMode: true,
-      // }),
+      app: compileUiExtensions({
+        outputPath: path.join(__dirname, '__admin-ui'),
+        extensions: [WebhookPlugin.ui],
+        devMode: true,
+      }),
     })
   );
   testConfig.apiOptions.shopApiPlayground = {};
