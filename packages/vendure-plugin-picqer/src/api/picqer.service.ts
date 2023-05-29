@@ -62,7 +62,7 @@ import {
 } from './types';
 import { OrderLineInput } from '@vendure/common/lib/generated-types';
 import { picqerHandler } from './picqer.handler';
-import { throwIfTransitionFailed } from '../../../util/src/order-state-util'
+import { throwIfTransitionFailed } from '../../../util/src/order-state-util';
 
 /**
  * Job to push variants from Vendure to Picqer
@@ -114,8 +114,8 @@ export class PicqerService implements OnApplicationBootstrap {
     private channelService: ChannelService,
     private orderService: OrderService,
     private stockLocationService: StockLocationService,
-    private stockLevelService: StockLevelService,
-  ) { }
+    private stockLevelService: StockLevelService
+  ) {}
 
   async onApplicationBootstrap() {
     // Create JobQueue and handlers
@@ -285,8 +285,10 @@ export class PicqerService implements OnApplicationBootstrap {
       await this.handlePicklistClosed(ctx, input.body.data);
     } else {
       Logger.warn(
-        `Unknown event ${(input.body as any).event
-        } for incoming webhook for channel ${input.channelToken
+        `Unknown event ${
+          (input.body as any).event
+        } for incoming webhook for channel ${
+          input.channelToken
         }. Not handling this webhook...`,
         loggerCtx
       );
@@ -510,13 +512,22 @@ export class PicqerService implements OnApplicationBootstrap {
         )!; // safe non-null assertion, because we fetched variants based on the Picqer skus
         // Write stock level per location per variant
         for (const picqerStock of picqerProduct.stock) {
-          const location = await this.getOrCreateStockLocation(ctx, picqerStock.idwarehouse);
-          const { stockAllocated, stockOnHand } = await this.stockLevelService.getAvailableStock(ctx, variant.id);
+          const location = await this.getOrCreateStockLocation(
+            ctx,
+            picqerStock.idwarehouse
+          );
+          const { stockAllocated, stockOnHand } =
+            await this.stockLevelService.getAvailableStock(ctx, variant.id);
           // stockLevelService.update() requires a delta instead of the absolute value
           let delta = picqerStock.freestock - stockOnHand;
           // Account for the current allocated stock
           delta += stockAllocated;
-          await this.stockLevelService.updateStockAllocatedForLocation(ctx, variant.id, location.id, delta);
+          await this.stockLevelService.updateStockAllocatedForLocation(
+            ctx,
+            variant.id,
+            location.id,
+            delta
+          );
           // Add stock adjustment
           stockAdjustments.push(
             new StockAdjustment({
@@ -525,7 +536,7 @@ export class PicqerService implements OnApplicationBootstrap {
             })
           );
           updateCount++;
-        };
+        }
       })
     );
     await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
@@ -536,33 +547,47 @@ export class PicqerService implements OnApplicationBootstrap {
    * Get or create stock locations based on the stock locations we receive from Picqer
    * @returns The Vendure stock locations that mirror Picqers stock locations
    */
-  async getOrCreateStockLocation(ctx: RequestContext, picqerLocationId: number): Promise<StockLocation> {
+  async getOrCreateStockLocation(
+    ctx: RequestContext,
+    picqerLocationId: number
+  ): Promise<StockLocation> {
     const name = `${STOCK_LOCATION_PREFIX} ${picqerLocationId}`;
-    const existingLocations = await this.stockLocationService.findAll(ctx, { filter: { name: { eq: name } }, take: 1 });
+    const existingLocations = await this.stockLocationService.findAll(ctx, {
+      filter: { name: { eq: name } },
+      take: 1,
+    });
     if (existingLocations.totalItems > 1) {
-      Logger.error(`Found multiple stock locations with name "${name}", only 1 mirrored location should exist!`, loggerCtx);
+      Logger.error(
+        `Found multiple stock locations with name "${name}", only 1 mirrored location should exist!`,
+        loggerCtx
+      );
     }
     if (existingLocations.items[0]) {
       return existingLocations.items[0];
     }
     return this.stockLocationService.create(ctx, {
       name,
-      description: `Mirrored location from Picqer warehouse with id ${picqerLocationId}`
+      description: `Mirrored location from Picqer warehouse with id ${picqerLocationId}`,
     });
   }
 
   /**
- * Removes any stock locations that are not Picqer warehouses for given variant
- * This is determined by the "Picqer" preview in the name
- */
+   * Removes any stock locations that are not Picqer warehouses for given variant
+   * This is determined by the "Picqer" preview in the name
+   */
   async removeNonPicqerStockLocations(ctx: RequestContext): Promise<void> {
     const locations = await this.stockLocationService.findAll(ctx);
-    await Promise.all(locations.items.map(async (location) => {
-      if (!location.name.startsWith(STOCK_LOCATION_PREFIX)) {
-        await this.stockLocationService.delete(ctx, { id: location.id });
-        Logger.warn(`Removed stock location ${location.name}, because it's not a Picqer managed location`, loggerCtx)
-      }
-    }));
+    await Promise.all(
+      locations.items.map(async (location) => {
+        if (!location.name.startsWith(STOCK_LOCATION_PREFIX)) {
+          await this.stockLocationService.delete(ctx, { id: location.id });
+          Logger.warn(
+            `Removed stock location ${location.name}, because it's not a Picqer managed location`,
+            loggerCtx
+          );
+        }
+      })
+    );
   }
 
   /**
@@ -791,7 +816,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const existing = await repository.findOne({
       where: {
         channelId: String(ctx.channelId),
-      }
+      },
     });
     if (existing) {
       (input as Partial<PicqerConfigEntity>).id = existing.id;
@@ -807,7 +832,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const config = await repository.findOneOrFail({
       where: {
         channelId: String(ctx.channelId),
-      }
+      },
     });
     await this.registerWebhooks(ctx, config).catch((e) =>
       Logger.error(

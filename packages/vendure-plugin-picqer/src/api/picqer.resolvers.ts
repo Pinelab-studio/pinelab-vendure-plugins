@@ -1,6 +1,11 @@
 import { Inject } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, PermissionDefinition, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  PermissionDefinition,
+  RequestContext,
+} from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
@@ -39,9 +44,7 @@ export class PicqerResolver {
 
   @Query()
   @Allow(picqerPermission.Permission)
-  async picqerConfig(
-    @Ctx() ctx: RequestContext
-  ): Promise<PicqerConfig | null> {
+  async picqerConfig(@Ctx() ctx: RequestContext): Promise<PicqerConfig | null> {
     return this.service.getConfig(ctx);
   }
 

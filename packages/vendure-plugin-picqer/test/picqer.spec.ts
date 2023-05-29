@@ -29,14 +29,12 @@ import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
 import { picqerHandler } from '../src/api/picqer.handler';
-import {describe, afterEach, beforeAll, it, expect, afterAll} from 'vitest';
-
+import { describe, afterEach, beforeAll, it, expect, afterAll } from 'vitest';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 const nockBaseUrl = 'https://test-picqer.io/api/v1/';
-
 
 describe('Picqer plugin', function () {
   // Clear nock mocks after each test
