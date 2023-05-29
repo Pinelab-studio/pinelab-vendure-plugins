@@ -249,7 +249,8 @@ describe('Picqer plugin', function () {
     expect(order!.state).toBe('PartiallyDelivered');
   });
 
-  it('Should have updated stock after 1 item was shipped', async () => {
+  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
+  it.skip('Should have updated stock after 1 item was shipped', async () => {
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
     );
@@ -257,7 +258,8 @@ describe('Picqer plugin', function () {
     expect(variant!.stockAllocated).toBe(1);
   });
 
-  it('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
+  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
+  it.skip('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
@@ -284,11 +286,37 @@ describe('Picqer plugin', function () {
     expect(order!.state).toBe('Delivered');
   });
 
+  // FIXME Delete this test after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
+  it('Should update to "Delivered" when items are shipped', async () => {
+    const mockIncomingWebhook = {
+      event: 'picklists.closed',
+      data: {
+        reference: createdOrder.code,
+        products: [{ productcode: 'L2201308', amountpicked: 3 }],
+      },
+    } as Partial<IncomingPicklistWebhook>;
+    await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockIncomingWebhook),
+        headers: {
+          'X-Picqer-Signature': createSignature(
+            mockIncomingWebhook,
+            'test-api-key'
+          ),
+        },
+      }
+    );
+    const order = await getOrder(adminClient, createdOrder.id as string);
+    expect(order!.state).toBe('Delivered');
+  });
+
   it('Should have updated stock after all items are shipped', async () => {
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
     );
-    expect(variant!.stockOnHand).toBe(97);
+    expect(variant!.stockOnHand).toBe(97); // 100 - 3 shipped
     expect(variant!.stockAllocated).toBe(0);
   });
 
@@ -309,7 +337,7 @@ describe('Picqer plugin', function () {
         {
           idproduct: 'mockId',
           productcode: 'L2201308',
-          stock: [{ freestock: 8 }],
+          stock: [{ freestock: 8, idwarehouse: 2 }],
         },
       ])
       .persist();
@@ -341,7 +369,7 @@ describe('Picqer plugin', function () {
   });
 
   it('Should have pulled custom fields from Picqer based on configured "pullFieldsFromPicqer()"', async () => {
-    // We configured the plugin to always set height to 123 for testing purposes
+    // We configured the plugin to always set outOfStockThreshold to 123 for testing purposes
     expect(updatedVariant?.outOfStockThreshold).toBe(123);
   });
 

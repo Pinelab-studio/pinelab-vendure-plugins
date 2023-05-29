@@ -63,7 +63,7 @@ import {
 import { OrderLineInput } from '@vendure/common/lib/generated-types';
 import { picqerHandler } from './picqer.handler';
 import { throwIfTransitionFailed } from '../../../util/src/order-state-util';
-
+import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 /**
  * Job to push variants from Vendure to Picqer
  */
@@ -510,6 +510,21 @@ export class PicqerService implements OnApplicationBootstrap {
         const picqerProduct = picqerProducts.find(
           (p) => p.productcode === variant.sku
         )!; // safe non-null assertion, because we fetched variants based on the Picqer skus
+        // Fields from picqer that should be added to the variant
+        let additionalVariantFields = {};
+        try {
+          additionalVariantFields =
+            this.options.pullPicqerProductFields?.(picqerProduct) || {};
+        } catch (e: any) {
+          Logger.error(
+            `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
+            loggerCtx
+          );
+        }
+        // Update the actual variant in Vendure, with raw connection for better performance
+        await this.connection
+          .getRepository(ctx, ProductVariant)
+          .update({ id: variant.id }, additionalVariantFields);
         // Write stock level per location per variant
         for (const picqerStock of picqerProduct.stock) {
           const location = await this.getOrCreateStockLocation(
@@ -522,7 +537,7 @@ export class PicqerService implements OnApplicationBootstrap {
           let delta = picqerStock.freestock - stockOnHand;
           // Account for the current allocated stock
           delta += stockAllocated;
-          await this.stockLevelService.updateStockAllocatedForLocation(
+          await this.stockLevelService.updateStockOnHandForLocation(
             ctx,
             variant.id,
             location.id,
@@ -580,6 +595,11 @@ export class PicqerService implements OnApplicationBootstrap {
     await Promise.all(
       locations.items.map(async (location) => {
         if (!location.name.startsWith(STOCK_LOCATION_PREFIX)) {
+          // Delete stock movements first, because of foreign key constraint
+          await this.connection
+            .getRepository(ctx, StockMovement)
+            .delete({ stockLocationId: location.id });
+          // Delete stock location
           await this.stockLocationService.delete(ctx, { id: location.id });
           Logger.warn(
             `Removed stock location ${location.name}, because it's not a Picqer managed location`,
@@ -700,7 +720,7 @@ export class PicqerService implements OnApplicationBootstrap {
       const [variants, count] = await this.connection
         .getRepository(ctx, ProductVariant)
         .createQueryBuilder('variant')
-        .select(['id', 'sku'])
+        .select(['variant.id', 'variant.sku'])
         .leftJoin('variant.channels', 'channel')
         .where('channel.id = :channelId', { channelId: ctx.channelId })
         .andWhere('variant.sku IN(:...skus)', { skus })
