@@ -102,11 +102,9 @@ export class WebhookService implements OnApplicationBootstrap {
     event: T
   ): Promise<Webhook[]> {
     const eventName = event.constructor.name;
-    return this.connection
-      .getRepository(event.ctx, Webhook)
-      .find({
-        where: { channelId: String(event.ctx.channelId), event: eventName },
-      });
+    return this.connection.getRepository(event.ctx, Webhook).find({
+      where: { channelId: String(event.ctx.channelId), event: eventName },
+    });
   }
 
   /**
