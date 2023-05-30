@@ -10,9 +10,9 @@ import { adminSchema } from './api/api-extension';
 import {
   WebhookRequestTransformerResolver,
   WebhookResolver,
+  webhookPermission,
 } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
-import { webhookPermission } from './index';
 import {
   EventWithContext,
   RequestTransformer,

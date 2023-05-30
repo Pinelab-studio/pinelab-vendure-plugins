@@ -16,28 +16,25 @@
   "scripts": {
     "build": "yarn graphql-codegen && rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "start": "yarn ts-node test/dev-server.ts",
-    "test": "jest --preset=\"ts-jest\""
-  },
-  "config": {
-    "vendure": "1.4.3"
+    "test": "vitest run"
   },
   "devDependencies": {
     "@graphql-codegen/cli": "^3.3.1",
     "@graphql-codegen/typescript": "^3.0.4",
     "@graphql-codegen/typescript-document-nodes": "^3.0.4",
     "@graphql-codegen/typescript-operations": "^3.0.4",
-    "@types/jest": "^27.4.1",
-    "@vendure/admin-ui-plugin": "1.9.5",
-    "@vendure/core": "1.9.5",
-    "@vendure/testing": "1.9.5",
-    "@vendure/ui-devkit": "1.9.5",
+    "@swc/core": "^1.3.61",
+    "@vendure/admin-ui-plugin": "2.0.0-beta.2",
+    "@vendure/core": "2.0.0-beta.2",
+    "@vendure/testing": "2.0.0-beta.2",
+    "@vendure/ui-devkit": "2.0.0-beta.2",
     "copyfiles": "^2.4.1",
-    "jest": "^27.5.1",
     "nock": "^13.2.9",
     "rimraf": "^3.0.2",
-    "ts-jest": "^27.1.3",
     "ts-node": "^10.7.0",
-    "typescript": "4.3.5"
+    "typescript": "4.9.5",
+    "unplugin-swc": "^1.3.2",
+    "vitest": "^0.31.1"
   },
   "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
 }

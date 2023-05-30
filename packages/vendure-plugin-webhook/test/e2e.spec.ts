@@ -34,8 +34,7 @@ import {
   setWebhooksMutation,
 } from '../src/ui/queries';
 import { stringifyProductTransformer } from './test-helpers';
-
-jest.setTimeout(20000);
+import { describe, beforeAll, it, expect, afterEach, afterAll } from 'vitest';
 
 describe('Webhook plugin', function () {
   let server: TestServer;
