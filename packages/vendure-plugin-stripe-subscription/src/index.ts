@@ -8,4 +8,4 @@ export * from './api/stripe-subscription.service';
 export * from './api/stripe.types';
 export * from './api/stripe-subscription.controller';
 export * from './api/schedule.entity';
-export * from './api/future-payments.promotion';
+export * from './api/subscription.promotion';

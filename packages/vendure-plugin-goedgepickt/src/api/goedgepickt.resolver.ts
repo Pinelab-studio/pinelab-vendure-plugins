@@ -15,7 +15,7 @@ import { Inject } from '@nestjs/common';
 export class GoedgepicktResolver {
   constructor(
     private service: GoedgepicktService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private pluginConfig: GoedgepicktPluginConfig
   ) {}
 
   @Query()
@@ -35,10 +35,12 @@ export class GoedgepicktResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: { apiKey: string; webshopUuid: string }
   ): Promise<GoedgepicktConfig | undefined> {
-    let config = await this.service.upsertConfig(ctx, input);
-    if (this.config.setWebhook) {
-      config = await this.service.setWebhooks(ctx);
+    await this.service.upsertConfig(ctx, input);
+    if (this.pluginConfig.setWebhook) {
+      await this.service.setWebhooks(ctx);
     }
+    // Refetch config, because it now contains webhook secrets
+    const config = await this.service.getConfig(ctx);
     return this.toGraphqlObject(ctx.channel.token, config);
   }
 
@@ -51,7 +53,7 @@ export class GoedgepicktResolver {
       throw Error(`No GoedGepickt apiKey set for channel ${channelToken}`);
     }
     await this.service.createFullsyncJobs(channelToken);
-    if (this.config.setWebhook) {
+    if (this.pluginConfig.setWebhook) {
       await this.service.setWebhooks(ctx);
     }
     return true;
