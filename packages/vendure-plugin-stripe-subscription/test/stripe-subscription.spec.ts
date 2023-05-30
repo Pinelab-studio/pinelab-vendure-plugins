@@ -17,10 +17,15 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+// @ts-ignore
+import nock from 'nock';
+// @ts-ignore
+import { createPromotion, getOrder } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
+import { applyCouponCode } from '../../test/src/shop-utils';
 import {
+  allByPercentage,
   calculateSubscriptionPricing,
-  discountFutureSubscriptionPayments,
   getBillingsPerDuration,
   getDayRate,
   getDaysUntilNextStartDate,
@@ -35,6 +40,7 @@ import {
   SubscriptionStartMoment,
   VariantForCalculation,
 } from '../src';
+import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
@@ -50,16 +56,10 @@ import {
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
 } from './helpers';
-// @ts-ignore
-import nock from 'nock';
-// @ts-ignore
-import { createPromotion, getOrder } from '../../test/src/admin-utils';
-import { applyCouponCode } from '../../test/src/shop-utils';
-import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
 
 jest.setTimeout(20000);
 
-describe('Order export plugin', function () {
+describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -103,6 +103,8 @@ describe('Order export plugin', function () {
         orderEvents.push(event);
       });
   });
+
+  const ctx = { channel: { pricesIncludeTax: true } };
 
   it("Sets channel settings to 'prices are including tax'", async () => {
     await adminClient.asSuperAdmin();
@@ -303,7 +305,7 @@ describe('Order export plugin', function () {
       await adminClient.query(UPSERT_SCHEDULES, {
         input: {
           name: '6 months, paid in full',
-          downpaymentWithTax: 0,
+          downpayment: 0,
           durationInterval: SubscriptionInterval.Month,
           durationCount: 6,
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -328,7 +330,7 @@ describe('Order export plugin', function () {
     expect(schedule.id).toBeDefined();
     expect(schedule.createdAt).toBeDefined();
     expect(schedule.name).toBe('6 months, paid in full');
-    expect(schedule.downpaymentWithTax).toBe(0);
+    expect(schedule.downpayment).toBe(0);
     expect(schedule.paidUpFront).toBe(true);
     expect(schedule.durationInterval).toBe(schedule.billingInterval); // duration and billing should be equal for paid up front subs
     expect(schedule.durationCount).toBe(schedule.billingCount);
@@ -345,7 +347,7 @@ describe('Order export plugin', function () {
       await adminClient.query(UPSERT_SCHEDULES, {
         input: {
           name: '6 months, billed monthly, 199 downpayment',
-          downpaymentWithTax: 19900,
+          downpayment: 19900,
           durationInterval: SubscriptionInterval.Month,
           durationCount: 3,
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -369,7 +371,7 @@ describe('Order export plugin', function () {
     expect(schedule.id).toBeDefined();
     expect(schedule.createdAt).toBeDefined();
     expect(schedule.name).toBe('6 months, billed monthly, 199 downpayment');
-    expect(schedule.downpaymentWithTax).toBe(19900);
+    expect(schedule.downpayment).toBe(19900);
     expect(schedule.durationInterval).toBe(SubscriptionInterval.Month);
     expect(schedule.durationCount).toBe(3);
     expect(schedule.billingInterval).toBe(SubscriptionInterval.Week);
@@ -392,14 +394,12 @@ describe('Order export plugin', function () {
         }
       );
       const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-      expect(pricing.downpaymentWithTax).toBe(19900);
-      expect(pricing.recurringPriceWithTax).toBe(9000);
+      expect(pricing.downpayment).toBe(19900);
+      expect(pricing.recurringPrice).toBe(9000);
       expect(pricing.interval).toBe('week');
       expect(pricing.intervalCount).toBe(1);
-      expect(pricing.dayRateWithTax).toBe(1402);
-      expect(pricing.amountDueNowWithTax).toBe(
-        pricing.totalProratedAmountWithTax + 19900
-      );
+      expect(pricing.dayRate).toBe(1402);
+      expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 19900);
       expect(pricing.schedule.name).toBe(
         '6 months, billed monthly, 199 downpayment'
       );
@@ -411,21 +411,19 @@ describe('Order export plugin', function () {
         {
           input: {
             productVariantId: 2,
-            downpaymentWithTax: 40000,
+            downpayment: 40000,
           },
         }
       );
       // Default price is $90 a month with a downpayment of $199
       // With a downpayment of $400, the price should be ($400 - $199) / 12 = $16.75 lower, so $73,25
       const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-      expect(pricing.downpaymentWithTax).toBe(40000);
-      expect(pricing.recurringPriceWithTax).toBe(7325);
+      expect(pricing.downpayment).toBe(40000);
+      expect(pricing.recurringPrice).toBe(7325);
       expect(pricing.interval).toBe('week');
       expect(pricing.intervalCount).toBe(1);
-      expect(pricing.dayRateWithTax).toBe(1402);
-      expect(pricing.amountDueNowWithTax).toBe(
-        pricing.totalProratedAmountWithTax + 40000
-      );
+      expect(pricing.dayRate).toBe(1402);
+      expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 40000);
     });
 
     it('Should throw an error when downpayment is below the schedules default', async () => {
@@ -434,7 +432,7 @@ describe('Order export plugin', function () {
         .query(GET_PRICING, {
           input: {
             productVariantId: 2,
-            downpaymentWithTax: 0,
+            downpayment: 0,
           },
         })
         .catch((e) => (error = e.message));
@@ -447,7 +445,7 @@ describe('Order export plugin', function () {
         .query(GET_PRICING, {
           input: {
             productVariantId: 2,
-            downpaymentWithTax: 990000, // max is 1080 + 199 = 1279
+            downpayment: 990000, // max is 1080 + 199 = 1279
           },
         })
         .catch((e) => (error = e.message));
@@ -460,7 +458,7 @@ describe('Order export plugin', function () {
         .query(GET_PRICING, {
           input: {
             productVariantId: 1,
-            downpaymentWithTax: 19900, // max is 540 + 199 = 739
+            downpayment: 19900, // max is 540 + 199 = 739
           },
         })
         .catch((e) => (error = e.message));
@@ -478,20 +476,18 @@ describe('Order export plugin', function () {
         {
           input: {
             productVariantId: 2,
-            downpaymentWithTax: 40000,
+            downpayment: 40000,
             startDate: in3Days.toISOString(),
           },
         }
       );
       const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-      expect(pricing.downpaymentWithTax).toBe(40000);
-      expect(pricing.recurringPriceWithTax).toBe(7325);
+      expect(pricing.downpayment).toBe(40000);
+      expect(pricing.recurringPrice).toBe(7325);
       expect(pricing.interval).toBe('week');
       expect(pricing.intervalCount).toBe(1);
-      expect(pricing.dayRateWithTax).toBe(1402);
-      expect(pricing.amountDueNowWithTax).toBe(
-        pricing.totalProratedAmountWithTax + 40000
-      );
+      expect(pricing.dayRate).toBe(1402);
+      expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 40000);
     });
 
     it('Should calculate pricing for each variant of product', async () => {
@@ -503,13 +499,13 @@ describe('Order export plugin', function () {
       );
       const pricing: StripeSubscriptionPricing[] =
         stripeSubscriptionPricingForProduct;
-      expect(pricing[1].downpaymentWithTax).toBe(19900);
-      expect(pricing[1].recurringPriceWithTax).toBe(9000);
+      expect(pricing[1].downpayment).toBe(19900);
+      expect(pricing[1].recurringPrice).toBe(9000);
       expect(pricing[1].interval).toBe('week');
       expect(pricing[1].intervalCount).toBe(1);
-      expect(pricing[1].dayRateWithTax).toBe(1402);
-      expect(pricing[1].amountDueNowWithTax).toBe(
-        pricing[1].totalProratedAmountWithTax + pricing[1].downpaymentWithTax
+      expect(pricing[1].dayRate).toBe(1402);
+      expect(pricing[1].amountDueNow).toBe(
+        pricing[1].totalProratedAmount + pricing[1].downpayment
       );
       expect(pricing.length).toBe(2);
     });
@@ -524,21 +520,19 @@ describe('Order export plugin', function () {
         }
       );
       const pricing: StripeSubscriptionPricing = stripeSubscriptionPricing;
-      expect(pricing.downpaymentWithTax).toBe(0);
-      expect(pricing.recurringPriceWithTax).toBe(54000);
+      expect(pricing.downpayment).toBe(0);
+      expect(pricing.recurringPrice).toBe(54000);
       expect(pricing.interval).toBe('month');
       expect(pricing.intervalCount).toBe(6);
-      expect(pricing.dayRateWithTax).toBe(296);
-      expect(pricing.amountDueNowWithTax).toBe(
-        pricing.totalProratedAmountWithTax + 54000
-      );
+      expect(pricing.dayRate).toBe(296);
+      expect(pricing.amountDueNow).toBe(pricing.totalProratedAmount + 54000);
     });
 
     it('Should calculate pricing for fixed start date', async () => {
       const future = new Date('01-01-2099');
       const variant: VariantForCalculation = {
         id: 'fixed',
-        priceWithTax: 6000,
+        listPrice: 6000,
         customFields: {
           subscriptionSchedule: new Schedule({
             name: 'Monthly, fixed start date',
@@ -548,30 +542,30 @@ describe('Order export plugin', function () {
             billingCount: 1,
             startMoment: SubscriptionStartMoment.FixedStartdate,
             fixedStartDate: future,
-            downpaymentWithTax: 6000,
+            downpayment: 6000,
             useProration: false,
             autoRenew: false,
           }),
         },
       };
       const pricing = calculateSubscriptionPricing(
-        {} as any,
-        variant.priceWithTax,
+        ctx as any,
+        variant.listPrice,
         variant.customFields.subscriptionSchedule!
       );
       expect(pricing.subscriptionStartDate).toBe(future);
-      expect(pricing.recurringPriceWithTax).toBe(6000);
-      expect(pricing.dayRateWithTax).toBe(230);
-      expect(pricing.amountDueNowWithTax).toBe(6000);
+      expect(pricing.recurringPrice).toBe(6000);
+      expect(pricing.dayRate).toBe(230);
+      expect(pricing.amountDueNow).toBe(6000);
       expect(pricing.proratedDays).toBe(0);
-      expect(pricing.totalProratedAmountWithTax).toBe(0);
+      expect(pricing.totalProratedAmount).toBe(0);
       expect(pricing.subscriptionEndDate).toBeDefined();
     });
 
     it('Should calculate pricing for time_of_purchase', async () => {
       const variant: VariantForCalculation = {
         id: 'fixed',
-        priceWithTax: 6000,
+        listPrice: 6000,
         customFields: {
           subscriptionSchedule: new Schedule({
             name: 'Monthly, fixed start date',
@@ -580,14 +574,14 @@ describe('Order export plugin', function () {
             billingInterval: SubscriptionInterval.Month,
             billingCount: 1,
             startMoment: SubscriptionStartMoment.TimeOfPurchase,
-            downpaymentWithTax: 6000,
+            downpayment: 6000,
             useProration: true,
           }),
         },
       };
       const pricing = calculateSubscriptionPricing(
-        {} as any,
-        variant.priceWithTax,
+        ctx as any,
+        variant.listPrice,
         variant.customFields.subscriptionSchedule!
       );
       const now = new Date().toISOString().split('T')[0];
@@ -596,21 +590,21 @@ describe('Order export plugin', function () {
         .split('T')[0];
       // compare dates without time
       expect(subscriptionStartDate).toBe(now);
-      expect(pricing.recurringPriceWithTax).toBe(6000);
-      expect(pricing.dayRateWithTax).toBe(230);
-      expect(pricing.amountDueNowWithTax).toBe(6000);
+      expect(pricing.recurringPrice).toBe(6000);
+      expect(pricing.dayRate).toBe(230);
+      expect(pricing.amountDueNow).toBe(6000);
       expect(pricing.proratedDays).toBe(0);
-      expect(pricing.totalProratedAmountWithTax).toBe(0);
+      expect(pricing.totalProratedAmount).toBe(0);
     });
   });
 
   describe('Subscription order placement', () => {
-    it('Should create 10% "discount_future_subscription_payments" promotion', async () => {
+    it('Should create "10% on all subscriptions" promotion', async () => {
       await adminClient.asSuperAdmin();
       const promotion = await createPromotion(
         adminClient,
         'gimme10',
-        discountFutureSubscriptionPayments.code,
+        allByPercentage.code,
         [
           {
             name: 'discount',
@@ -675,19 +669,13 @@ describe('Order export plugin', function () {
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
       const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
       const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
-      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(54000);
-      expect(line1.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
-        54000
-      );
-      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(9000);
-      expect(line2.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
-        9000
-      );
+      expect(line1.subscriptionPricing?.recurringPrice).toBe(54000);
+      expect(line1.subscriptionPricing?.originalRecurringPrice).toBe(54000);
+      expect(line2.subscriptionPricing?.recurringPrice).toBe(9000);
+      expect(line2.subscriptionPricing?.originalRecurringPrice).toBe(9000);
       expect(line2.subscriptionPricing?.schedule).toBeDefined();
       expect(line2.subscriptionPricing?.schedule.name).toBeDefined();
-      expect(line2.subscriptionPricing?.schedule.downpaymentWithTax).toBe(
-        19900
-      );
+      expect(line2.subscriptionPricing?.schedule.downpayment).toBe(19900);
       expect(line2.subscriptionPricing?.schedule.durationInterval).toBe(
         'month'
       );
@@ -702,14 +690,10 @@ describe('Order export plugin', function () {
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
       const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
       const line2: OrderLineWithSubscriptionFields = activeOrder.lines[1];
-      expect(line1.subscriptionPricing?.recurringPriceWithTax).toBe(48600);
-      expect(line1.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
-        54000
-      );
-      expect(line2.subscriptionPricing?.recurringPriceWithTax).toBe(8100);
-      expect(line2.subscriptionPricing?.originalRecurringPriceWithTax).toBe(
-        9000
-      );
+      expect(line1.subscriptionPricing?.recurringPrice).toBe(48600);
+      expect(line1.subscriptionPricing?.originalRecurringPrice).toBe(54000);
+      expect(line2.subscriptionPricing?.recurringPrice).toBe(8100);
+      expect(line2.subscriptionPricing?.originalRecurringPrice).toBe(9000);
     });
 
     let createdSubscriptions: any[] = [];
@@ -964,7 +948,7 @@ describe('Order export plugin', function () {
         await adminClient.query(UPSERT_SCHEDULES, {
           input: {
             name: '3 months, billed weekly, fixed date',
-            downpaymentWithTax: 0,
+            downpayment: 0,
             durationInterval: SubscriptionInterval.Month,
             durationCount: 3,
             startMoment: SubscriptionStartMoment.FixedStartdate,
@@ -991,7 +975,7 @@ describe('Order export plugin', function () {
         await adminClient.query(UPSERT_SCHEDULES, {
           input: {
             name: '6 months, paid in full',
-            downpaymentWithTax: 0,
+            downpayment: 0,
             durationInterval: SubscriptionInterval.Month,
             durationCount: 6,
             startMoment: SubscriptionStartMoment.StartOfBillingInterval,
@@ -1012,7 +996,7 @@ describe('Order export plugin', function () {
       const promise = adminClient.query(UPSERT_SCHEDULES, {
         input: {
           name: '3 months, billed weekly, fixed date',
-          downpaymentWithTax: 0,
+          downpayment: 0,
           durationInterval: SubscriptionInterval.Month,
           durationCount: 3,
           startMoment: SubscriptionStartMoment.FixedStartdate,
@@ -1028,7 +1012,7 @@ describe('Order export plugin', function () {
       const promise = adminClient.query(UPSERT_SCHEDULES, {
         input: {
           name: 'Paid up front, $199 downpayment',
-          downpaymentWithTax: 19900,
+          downpayment: 19900,
           durationInterval: SubscriptionInterval.Month,
           durationCount: 6,
           startMoment: SubscriptionStartMoment.StartOfBillingInterval,

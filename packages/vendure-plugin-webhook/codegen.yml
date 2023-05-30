@@ -1,0 +1,22 @@
+overwrite: true
+generates:
+  src/generated/graphql-types.ts:
+    documents: 'src/ui/queries.ts'
+    schema: 'src/api/api-extension.ts'
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-document-nodes'
+    config:
+      scalars:
+        ID: number | string
+  src/ui/graphql-types.ts:
+    documents: 'src/ui/queries.ts'
+    schema: 'src/api/api-extension.ts'
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typescript-document-nodes'
+    config:
+      scalars:
+        ID: number | string

@@ -5,12 +5,12 @@ import {
   PriceCalculationResult,
   RequestContext,
 } from '@vendure/core';
+import { DefaultOrderItemPriceCalculationStrategy } from '@vendure/core/dist/config/order/default-order-item-price-calculation-strategy';
 import { StripeSubscriptionService } from '../api/stripe-subscription.service';
 import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
-import { DefaultOrderItemPriceCalculationStrategy } from '@vendure/core/dist/config/order/default-order-item-price-calculation-strategy';
 
 let subcriptionService: StripeSubscriptionService | undefined;
 
@@ -31,13 +31,13 @@ export class SubscriptionOrderItemCalculation
   ): Promise<PriceCalculationResult> {
     if (productVariant.customFields.subscriptionSchedule) {
       const pricing = await subcriptionService!.getPricingForVariant(ctx, {
-        downpaymentWithTax: orderLineCustomFields.downpayment,
+        downpayment: orderLineCustomFields.downpayment,
         startDate: orderLineCustomFields.startDate,
         productVariantId: productVariant.id as string,
       });
       return {
-        price: pricing.amountDueNowWithTax,
-        priceIncludesTax: true,
+        price: pricing.amountDueNow,
+        priceIncludesTax: productVariant.listPriceIncludesTax,
       };
     } else {
       return super.calculateUnitPrice(ctx, productVariant);
