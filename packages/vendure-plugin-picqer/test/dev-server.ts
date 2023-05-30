@@ -19,6 +19,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
 import { UPSERT_CONFIG } from '../src/ui/queries';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 (async () => {
   require('dotenv').config();
@@ -50,11 +51,11 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [PicqerPlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [PicqerPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
   });
