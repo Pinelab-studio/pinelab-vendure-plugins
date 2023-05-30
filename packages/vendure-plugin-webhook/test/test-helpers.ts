@@ -8,7 +8,7 @@ export const stringifyProductTransformer = new RequestTransformer({
   transform: (event, injector) => {
     if (event instanceof ProductEvent) {
       return {
-        body: util.inspect(event),
+        body: JSON.stringify({ type: event.type, ctx: event.ctx.serialize() }),
         headers: {
           'x-custom-header': 'stringify-custom-header',
           'content-type': 'application/json',

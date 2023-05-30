@@ -182,7 +182,6 @@ describe('Webhook plugin', function () {
     await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');
-    expect(receivedPayloads[0].createdAt).toBeDefined();
     expect(receivedPayloads[0].ctx).toBeDefined();
     // See test-helpers.ts to see where these values are coming from
     expect(receivedHeaders['x-custom-header']).toEqual([
