@@ -1,7 +1,21 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, RequestContext } from '@vendure/core';
+import {
+  Args,
+  Mutation,
+  Query,
+  Resolver,
+  ResolveField,
+  Parent,
+} from '@nestjs/graphql';
+import { Allow, Ctx, ProductEvent, RequestContext } from '@vendure/core';
 import { WebhookService } from './webhook.service';
 import { webhookPermission } from '../index';
+import {
+  Webhook,
+  WebhookInput,
+  WebhookRequestTransformer,
+} from '../generated/graphql-types';
+import { Webhook as WebhookEntity } from './webhook.entity';
+import { RequestTransformer } from './request-transformer';
 
 /**
  * Graphql resolvers for retrieving and updating webhook for channel
@@ -10,25 +24,70 @@ import { webhookPermission } from '../index';
 export class WebhookResolver {
   constructor(private webhookService: WebhookService) {}
 
-  @Query()
-  @Allow(webhookPermission.Permission)
-  async webhook(@Ctx() ctx: RequestContext): Promise<string | undefined> {
-    const webhook = await this.webhookService.getWebhook(
-      ctx.channelId as string
-    );
-    return webhook?.url;
-  }
-
   @Mutation()
   @Allow(webhookPermission.Permission)
-  async updateWebhook(
+  async setWebhooks(
     @Ctx() ctx: RequestContext,
-    @Args('url') url: string
-  ): Promise<string | undefined> {
-    const webhook = await this.webhookService.saveWebhook(
-      url,
-      ctx.channelId as string
-    );
-    return webhook?.url;
+    @Args('webhooks') webhooks: WebhookInput[]
+  ): Promise<Webhook[]> {
+    return this.webhookService.saveWebhooks(ctx, webhooks);
   }
+
+  @Query()
+  @Allow(webhookPermission.Permission)
+  async webhooks(@Ctx() ctx: RequestContext): Promise<Webhook[]> {
+    return this.webhookService.getAllWebhooks(ctx);
+  }
+
+  @Query()
+  @Allow(webhookPermission.Permission)
+  async availableWebhookEvents(): Promise<string[]> {
+    return this.webhookService.getAvailableEvents();
+  }
+
+  @Query()
+  @Allow(webhookPermission.Permission)
+  async availableWebhookRequestTransformers(): Promise<
+    WebhookRequestTransformer[]
+  > {
+    const transformers = this.webhookService.getAvailableTransformers();
+    return transformers.map(mapToGraphqlTransformer);
+  }
+}
+
+@Resolver('Webhook')
+export class WebhookRequestTransformerResolver {
+  constructor(private webhookService: WebhookService) {}
+
+  /**
+   * Resolve `webhook.transformerName` to the actual RequestTransformer object
+   */
+  @ResolveField()
+  async requestTransformer(
+    @Ctx() ctx: RequestContext,
+    @Parent() webhook: WebhookEntity
+  ): Promise<WebhookRequestTransformer | undefined> {
+    if (!webhook.transformerName) {
+      return;
+    }
+    const transformers = this.webhookService.getAvailableTransformers();
+    const transformer = transformers.find(
+      (t) => t.name === webhook.transformerName
+    );
+    if (!transformer) {
+      return;
+    }
+    return mapToGraphqlTransformer(transformer);
+  }
+}
+
+export function mapToGraphqlTransformer(
+  transformer: RequestTransformer<any>
+): WebhookRequestTransformer {
+  return {
+    name: transformer.name,
+    supportedEvents: transformer.supportedEvents.map(
+      (event: any) => event.name
+    ),
+  };
 }

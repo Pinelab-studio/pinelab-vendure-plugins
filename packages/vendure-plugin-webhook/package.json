@@ -14,7 +14,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "yarn graphql-codegen && rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "start": "yarn ts-node test/dev-server.ts",
     "test": "jest --preset=\"ts-jest\""
   },
@@ -22,6 +22,10 @@
     "vendure": "1.4.3"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^3.3.1",
+    "@graphql-codegen/typescript": "^3.0.4",
+    "@graphql-codegen/typescript-document-nodes": "^3.0.4",
+    "@graphql-codegen/typescript-operations": "^3.0.4",
     "@types/jest": "^27.4.1",
     "@vendure/admin-ui-plugin": "1.9.5",
     "@vendure/core": "1.9.5",
