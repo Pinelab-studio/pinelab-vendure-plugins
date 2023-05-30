@@ -138,10 +138,12 @@ export class WebhookService implements OnApplicationBootstrap {
     webhooks.map((webhook) => {
       this.webhookQueue.set(webhook.id, webhook);
     });
-    Logger.info(
-      `Added ${webhooks.length} webhooks to the webhook queue for ${event.constructor.name}`,
-      loggerCtx
-    );
+    if (webhooks.length > 0) {
+      Logger.info(
+        `Added ${webhooks.length} webhooks to the webhook queue for ${event.constructor.name}`,
+        loggerCtx
+      );
+    }
   }
 
   /**

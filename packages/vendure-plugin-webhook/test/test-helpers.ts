@@ -1,5 +1,6 @@
 import { Logger, ProductEvent } from '@vendure/core';
 import { RequestTransformer } from '../src/api/request-transformer';
+import util from 'util';
 
 export const stringifyProductTransformer = new RequestTransformer({
   name: 'Stringify Product events',
@@ -7,7 +8,7 @@ export const stringifyProductTransformer = new RequestTransformer({
   transform: (event, injector) => {
     if (event instanceof ProductEvent) {
       return {
-        body: JSON.stringify(event),
+        body: util.inspect(event),
         headers: {
           'x-custom-header': 'stringify-custom-header',
           'content-type': 'application/json',
