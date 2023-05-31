@@ -32,7 +32,7 @@ jobs:
             # 'vendure-plugin-e-boekhouden',
             # 'vendure-plugin-goedgepickt',
             'vendure-plugin-google-cloud-tasks',
-            # 'vendure-plugin-google-storage-assets',
+            'vendure-plugin-google-storage-assets',
             # 'vendure-plugin-invoices',
             # 'vendure-plugin-myparcel',
             'vendure-plugin-webhook',
