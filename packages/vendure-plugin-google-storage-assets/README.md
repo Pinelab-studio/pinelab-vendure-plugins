@@ -43,7 +43,16 @@ plugins: [
 
 ### Local development
 
-For local development, use `gcloud auth application-default login` to authorize for your Gcloud project.  
+1. Run `gcloud auth application-default login`
+2. Create a .env file with the following contents:
+
+```env
+GCLOUD_PROJECT=your-project-id
+BUCKET=your-bucket
+```
+
+3. Run `yarn start` and go to https://localhost:3050/admin to test asset uploads
+
 Internally this plugin uses `new Storage();` to instantiate the Storage client, which uses ENV variables to
 authenticate:
 
