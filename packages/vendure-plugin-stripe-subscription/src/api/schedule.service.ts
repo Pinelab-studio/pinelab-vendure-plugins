@@ -1,35 +1,47 @@
-import {
-  SubscriptionStartMoment,
-  UpsertStripeSubscriptionScheduleInput,
-} from '../ui/generated/graphql';
-import { Schedule } from './schedule.entity';
 import { Injectable } from '@nestjs/common';
 import {
   RequestContext,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
+import {
+  StripeSubscriptionSchedule,
+  SubscriptionStartMoment,
+  UpsertStripeSubscriptionScheduleInput,
+} from '../ui/generated/graphql';
+import { cloneSchedule } from './pricing.helper';
+import { Schedule } from './schedule.entity';
 
 @Injectable()
 export class ScheduleService {
   constructor(private connection: TransactionalConnection) {}
 
-  async getSchedules(ctx: RequestContext): Promise<Schedule[]> {
-    return this.connection
+  async getSchedules(
+    ctx: RequestContext
+  ): Promise<StripeSubscriptionSchedule[]> {
+    const schedules = await this.connection
       .getRepository(ctx, Schedule)
       .find({ where: { channelId: String(ctx.channelId) } });
+
+    return schedules.map((schedule) => {
+      return cloneSchedule(ctx, schedule);
+    });
   }
 
   async upsert(
     ctx: RequestContext,
     input: UpsertStripeSubscriptionScheduleInput
-  ): Promise<Schedule> {
+  ): Promise<StripeSubscriptionSchedule> {
     this.validate(input);
     const { id } = await this.connection.getRepository(ctx, Schedule).save({
       ...input,
       channelId: String(ctx.channelId),
     } as Schedule);
-    return this.connection.getRepository(ctx, Schedule).findOneOrFail({ id });
+    const schedule = await this.connection
+      .getRepository(ctx, Schedule)
+      .findOneOrFail({ id });
+
+    return cloneSchedule(ctx, schedule);
   }
 
   async delete(ctx: RequestContext, scheduleId: string): Promise<void> {
@@ -48,7 +60,7 @@ export class ScheduleService {
     if (
       input.billingInterval === input.durationInterval &&
       input.billingCount === input.durationCount &&
-      input.downpaymentWithTax
+      input.downpayment
     ) {
       throw new UserInputError(
         `Paid up front schedules can not have downpayments. When duration and billing intervals are the same your schedule is a paid-up-front schedule.`

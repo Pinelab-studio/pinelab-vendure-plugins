@@ -44,6 +44,7 @@ import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import {
   calculateSubscriptionPricing,
+  applySubscriptionPromotions,
   getNextCyclesStartDate,
   printMoney,
 } from './pricing.helper';
@@ -320,23 +321,27 @@ export class StripeSubscriptionService {
         `No variant found with id ${input!.productVariantId}`
       );
     }
-    if (!variant.priceWithTax) {
-      throw new UserInputError(`Variant ${variant.id} has no priceWithTax`);
+    if (!variant.listPrice) {
+      throw new UserInputError(
+        `Variant ${variant.id} doesn't have a "listPrice". Variant.listPrice is needed to calculate subscription pricing`
+      );
     }
     if (!variant.customFields.subscriptionSchedule) {
       throw new UserInputError(
         `Variant ${variant.id} doesn't have a schedule attached`
       );
     }
-    const result = calculateSubscriptionPricing(
+    const subscriptionPricing = calculateSubscriptionPricing(
       ctx,
-      variant.priceWithTax,
+      variant.listPrice,
       variant.customFields.subscriptionSchedule,
       input
     );
     return {
-      ...result,
+      ...subscriptionPricing,
       variantId: variant.id as string,
+      // original price is the same as the recurring price without discounts
+      originalRecurringPrice: subscriptionPricing.recurringPrice,
     };
   }
 
@@ -350,7 +355,7 @@ export class StripeSubscriptionService {
     orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing> {
     await this.entityHydrator.hydrate(ctx, orderLine, {
-      relations: ['productVariant', 'order', 'order.promotions'],
+      relations: ['productVariant.taxCategory', 'order', 'order.promotions'],
       applyProductVariantPrices: true,
     });
     if (!orderLine.productVariant?.enabled) {
@@ -363,19 +368,27 @@ export class StripeSubscriptionService {
         `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
       );
     }
-    const result = calculateSubscriptionPricing(
+    const subscriptionPricing = calculateSubscriptionPricing(
       ctx,
-      orderLine.productVariant.priceWithTax,
+      orderLine.productVariant.listPrice,
       orderLine.productVariant.customFields.subscriptionSchedule,
       {
-        downpaymentWithTax: orderLine.customFields.downpayment,
+        downpayment: orderLine.customFields.downpayment,
         startDate: orderLine.customFields.startDate,
-      },
-      orderLine.order.promotions
+      }
+    );
+    // Execute promotions on recurringPrice
+    const discountedRecurringPrice = await applySubscriptionPromotions(
+      ctx,
+      subscriptionPricing.recurringPrice,
+      orderLine,
+      orderLine.order.promotions || []
     );
     return {
-      ...result,
+      ...subscriptionPricing,
       variantId: orderLine.productVariant.id as string,
+      originalRecurringPrice: subscriptionPricing.recurringPrice,
+      recurringPrice: Math.round(discountedRecurringPrice),
     };
   }
 
@@ -547,7 +560,7 @@ export class StripeSubscriptionService {
             customerId: stripeCustomerId,
             productId: product.id,
             currencyCode: order.currencyCode,
-            amount: pricing.recurringPriceWithTax,
+            amount: pricing.recurringPrice,
             interval: pricing.interval,
             intervalCount: pricing.intervalCount,
             paymentMethodId: stripePaymentMethodId,
@@ -577,7 +590,7 @@ export class StripeSubscriptionService {
         } else {
           Logger.info(
             `Created subscription ${recurringSubscription.id}: ${printMoney(
-              pricing.recurringPriceWithTax
+              pricing.recurringPrice
             )} every ${pricing.intervalCount} ${
               pricing.interval
             }(s) with startDate ${pricing.subscriptionStartDate} for order ${
@@ -594,7 +607,7 @@ export class StripeSubscriptionService {
             recurringSubscription.id
           );
         }
-        if (pricing.downpaymentWithTax) {
+        if (pricing.downpayment) {
           // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
           const downpaymentProduct = await stripeClient.products.create({
             name: `${orderLine.productVariant.name} - Downpayment (${order.code})`,
@@ -620,7 +633,7 @@ export class StripeSubscriptionService {
               customerId: stripeCustomerId,
               productId: downpaymentProduct.id,
               currencyCode: order.currencyCode,
-              amount: pricing.downpaymentWithTax,
+              amount: pricing.downpayment,
               interval: downpaymentInterval,
               intervalCount: downpaymentIntervalCount,
               paymentMethodId: stripePaymentMethodId,
@@ -652,7 +665,7 @@ export class StripeSubscriptionService {
               `Created downpayment subscription ${
                 downpaymentSubscription.id
               }: ${printMoney(
-                pricing.downpaymentWithTax
+                pricing.downpayment
               )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
                 pricing.subscriptionStartDate
               } for order ${order.code}`,
@@ -768,13 +781,11 @@ export class StripeSubscriptionService {
     let prettifierPricing = pricing
       ? {
           ...pricing,
-          totalProratedAmountWithTax: printMoney(
-            pricing.totalProratedAmountWithTax
-          ),
-          downpaymentWithTax: printMoney(pricing.downpaymentWithTax),
-          recurringPriceWithTax: printMoney(pricing.recurringPriceWithTax),
-          amountDueNowWithTax: printMoney(pricing.amountDueNowWithTax),
-          dayRateWithTax: printMoney(pricing.dayRateWithTax),
+          totalProratedAmount: printMoney(pricing.totalProratedAmount),
+          downpayment: printMoney(pricing.downpayment),
+          recurringPrice: printMoney(pricing.recurringPrice),
+          amountDueNow: printMoney(pricing.amountDueNow),
+          dayRate: printMoney(pricing.dayRate),
         }
       : undefined;
     await this.historyService.createHistoryEntryForOrder(

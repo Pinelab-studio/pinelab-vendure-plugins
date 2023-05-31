@@ -1,5 +1,13 @@
 import { Body, Controller, Headers, Inject, Post, Req } from '@nestjs/common';
 import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
+import {
   Allow,
   Ctx,
   ID,
@@ -10,30 +18,22 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
-import {
-  Args,
-  Mutation,
-  Parent,
-  Query,
-  ResolveField,
-  Resolver,
-} from '@nestjs/graphql';
-import { StripeSubscriptionService } from './stripe-subscription.service';
+import { Request } from 'express';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { IncomingStripeWebhook } from './stripe.types';
+import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import {
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
+  StripeSubscriptionSchedule,
   UpsertStripeSubscriptionScheduleInput,
 } from '../ui/generated/graphql';
-import { Request } from 'express';
 import { ScheduleService } from './schedule.service';
-import { Schedule } from './schedule.entity';
+import { StripeSubscriptionService } from './stripe-subscription.service';
+import { IncomingStripeWebhook } from './stripe.types';
 import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
-import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -105,6 +105,18 @@ export class ShopOrderLinePricingResolver {
   }
 }
 
+// This is needed to resolve schedule.pricesIncludeTax in the Admin UI
+@Resolver('StripeSubscriptionSchedule')
+export class AdminPriceIncludesTaxResolver {
+  @ResolveField()
+  pricesIncludeTax(
+    @Ctx() ctx: RequestContext,
+    @Parent() orderLine: OrderLineWithSubscriptionFields
+  ): boolean {
+    return ctx.channel.pricesIncludeTax;
+  }
+}
+
 @Resolver()
 export class AdminResolver {
   constructor(private scheduleService: ScheduleService) {}
@@ -113,7 +125,7 @@ export class AdminResolver {
   @Query()
   async stripeSubscriptionSchedules(
     @Ctx() ctx: RequestContext
-  ): Promise<Schedule[]> {
+  ): Promise<StripeSubscriptionSchedule[]> {
     return this.scheduleService.getSchedules(ctx);
   }
 
@@ -122,7 +134,7 @@ export class AdminResolver {
   async upsertStripeSubscriptionSchedule(
     @Ctx() ctx: RequestContext,
     @Args('input') input: UpsertStripeSubscriptionScheduleInput
-  ): Promise<Schedule> {
+  ): Promise<StripeSubscriptionSchedule> {
     return this.scheduleService.upsert(ctx, input);
   }
 
