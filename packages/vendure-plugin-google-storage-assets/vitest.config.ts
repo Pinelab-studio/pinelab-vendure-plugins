@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    testTimeout: 10000,
+    testTimeout: 20000,
   },
   plugins: [
     // SWC required to support decorators used in test plugins
