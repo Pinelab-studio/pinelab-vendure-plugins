@@ -63,7 +63,7 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
           createdAt: job.createdAt,
           retries: job.retries,
         });
-      } catch (e) {
+      } catch (e: any) {
         currentAttempt += 1;
         Logger.error(
           `Failed to add task to queue ${queueName}: ${e?.message}`,

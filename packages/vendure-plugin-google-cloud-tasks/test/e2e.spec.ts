@@ -120,4 +120,9 @@ describe('CloudTasks job queue e2e', () => {
     });
     expect(res.status).toBe(200);
   });
+
+  it('Should have successful job in database', async () => {
+    // TODO check if getJobs query returns completed job
+    expect(true).toBe(false);
+  });
 });

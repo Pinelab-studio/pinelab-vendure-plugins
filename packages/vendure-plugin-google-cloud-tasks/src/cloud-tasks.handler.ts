@@ -1,14 +1,22 @@
 import { Request, Response } from 'express';
 import { Controller, Post, Req, Res, HttpException } from '@nestjs/common';
-import { Job, JsonCompatible, Logger } from '@vendure/core';
+import {
+  Job,
+  JsonCompatible,
+  Logger,
+  TransactionalConnection,
+} from '@vendure/core';
 import { JobState } from '@vendure/common/lib/generated-types';
 import { CloudTaskMessage, ROUTE } from './types';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { PROCESS_MAP } from './cloud-tasks-job-queue.strategy';
 import { loggerCtx } from '@vendure/core/dist/job-queue/constants';
+import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
 @Controller(ROUTE)
 export class CloudTasksHandler {
+  constructor(private readonly connection: TransactionalConnection) {}
+
   @Post('handler')
   async handler(@Req() req: Request, @Res() res: Response): Promise<void> {
     if (
@@ -58,6 +66,7 @@ export class CloudTasksHandler {
         `Successfully handled ${message.id} after ${attempts} attempts`,
         CloudTasksPlugin.loggerCtx
       );
+      await this.logJob(job);
       res.sendStatus(200);
       return;
     } catch (error: any) {
@@ -66,6 +75,7 @@ export class CloudTasksHandler {
           `Failed to handle message ${message.id} after final attempt (${attempts} attempts made). Marking with status 200 to prevent retries: ${error}`,
           CloudTasksPlugin.loggerCtx
         );
+        await this.logJob(job, error);
         res.sendStatus(200);
         return;
       } else {
@@ -76,6 +86,37 @@ export class CloudTasksHandler {
         res.sendStatus(500);
         return;
       }
+    }
+  }
+
+  /**
+   * Log a job to the database. Will never through, just log an error
+   */
+  async logJob(job: Job, error?: any): Promise<void> {
+    try {
+      const now = new Date();
+      const record = new JobRecord({
+        // id: job.id,
+        queueName: job.queueName,
+        //data: job.data,
+        state: job.state,
+        progress: job.progress,
+        //result: job.result,
+        // error: error?.message ?? error,
+        //startedAt: job.startedAt,
+        //settledAt: now,
+        isSettled: error ? false : true,
+        retries: job.retries,
+        attempts: job.attempts,
+      });
+      console.log('jobb', typeof record.createdAt);
+      console.log('jobb settl', typeof record.settledAt);
+      const result = await this.connection.rawConnection
+        .getRepository(JobRecord)
+        .save(record);
+      console.log('STORED', result);
+    } catch (e: any) {
+      Logger.error(`Failed to log job to database: ${e}`, loggerCtx);
     }
   }
 }

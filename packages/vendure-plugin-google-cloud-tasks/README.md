@@ -2,9 +2,7 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-cloud-tasks/dev/@vendure/core)
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-google-cloud-tasks)
-
-Plugin for using Vendure worker with Google Cloud Tasks
+Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show successful and failed jobs in the admin UI under `sytem/jobs`, but not running jobs.
 
 ## Getting started
 
