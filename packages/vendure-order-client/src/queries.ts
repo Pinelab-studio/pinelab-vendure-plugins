@@ -139,4 +139,28 @@ export class GraphqlQueries {
       }
     }
   `;
+
+  APPLY_COUPON_CODE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation ApplyCounpnCodeMutation($couponCode: String!) {
+      applyCouponCode(couponCode: $couponCode) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  REMOVE_COUPON_CODE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation RemoveCouponCode($couponCode: String!) {
+      removeCouponCode(couponCode: $couponCode) {
+        ...ActiveOrderFields
+      }
+    }
+  `;
 }

@@ -1,5 +1,6 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
+  SimpleGraphQLClient,
   SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
@@ -11,6 +12,10 @@ import path from 'path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { VendureOrderClient, VendureOrderEvent } from '../src/';
 import { initialData } from './initial-data';
+import { createPromotionMutation } from './test-utils';
+import { createPromotion, getOrder } from '../../test/src/admin-utils';
+
+// import {Ad} from '@vendure/testing';
 
 const storage: any = {};
 const window = {
@@ -41,6 +46,8 @@ let latestEmittedEvent: [string, VendureOrderEvent];
  */
 describe('Vendure order client', () => {
   let server: TestServer;
+  let adminClient: SimpleGraphQLClient;
+  let couponCodeName = 'couponCodeName';
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -48,7 +55,7 @@ describe('Vendure order client', () => {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
     });
 
-    ({ server } = createTestEnvironment(config));
+    ({ server, adminClient } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: path.join(__dirname, './product-import.csv'),
@@ -57,6 +64,23 @@ describe('Vendure order client', () => {
 
   it('Starts the server successfully', async () => {
     expect(server.app.getHttpServer).toBeDefined;
+  });
+
+  it('Create a promotion', async () => {
+    await adminClient.asSuperAdmin();
+    const promotion = await createPromotion(
+      adminClient as any,
+      couponCodeName,
+      'order_fixed_discount',
+      [
+        {
+          name: 'discount',
+          value: '10',
+        },
+      ]
+    );
+    expect(promotion.name).toBe(couponCodeName);
+    expect(promotion.couponCode).toBe(couponCodeName);
   });
 
   it('Creates a client', async () => {
@@ -147,30 +171,41 @@ describe('Vendure order client', () => {
   });
 
   describe('Guest checkout', () => {
-    it.skip('Adds an item to order', async () => {
+    it('Adds an item to order', async () => {
       const order = await client.addItemToOrder('T_2', 1);
       expect(order?.lines[0].quantity).toBe(1);
       expect(order?.lines[0].productVariant.id).toBe('T_2');
     });
 
-    it.skip('Applies invalid coupon', async () => {
-      expect(false).toBe(true);
+    it('Applies invalid coupon', async () => {
+      const order = await client.applyCouponCode('fghj');
+      expect(order?.couponCodes?.length).toEqual(0);
     });
 
-    it.skip('Applies valid coupon', async () => {
-      expect(false).toBe(true);
+    it('Applies valid coupon', async () => {
+      const order = await client.applyCouponCode(couponCodeName);
+      expect(order?.couponCodes?.length).toEqual(1);
     });
 
-    it.skip('Emits "coupon-code-applied" event', async () => {
-      expect(false).toBe(true);
+    it('Emits "coupon-code-applied" event', async () => {
+      const [eventType, event] = latestEmittedEvent;
+      expect(eventType).toEqual('coupon-code-applied');
+      expect(event).toEqual({
+        couponCode: couponCodeName,
+      });
     });
 
-    it.skip('Removes coupon', async () => {
-      expect(false).toBe(true);
+    it('Removes coupon', async () => {
+      const order = await client.removeCouponCode(couponCodeName);
+      expect(order?.couponCodes?.length).toEqual(0);
     });
 
-    it.skip('Emits "coupon-code-removed" event', async () => {
-      expect(false).toBe(true);
+    it('Emits "coupon-code-removed" event', async () => {
+      const [eventType, event] = latestEmittedEvent;
+      expect(eventType).toEqual('coupon-code-removed');
+      expect(event).toEqual({
+        couponCode: couponCodeName,
+      });
     });
 
     it.skip('Adds customer', async () => {

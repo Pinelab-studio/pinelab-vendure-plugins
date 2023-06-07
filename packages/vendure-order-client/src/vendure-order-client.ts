@@ -8,7 +8,10 @@ import {
   AdditemToOrderMutationVariables,
   AdjustOrderLineMutation,
   AdjustOrderLineMutationVariables,
+  ApplyCouponCodeResult,
   ErrorResult,
+  MutationApplyCouponCodeArgs,
+  MutationRemoveCouponCodeArgs,
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
 } from './graphql-types';
@@ -204,13 +207,51 @@ export class VendureOrderClient<A = {}> {
       ) {
         window.localStorage.removeItem(this.tokenName); // These are unrecoverable states, so remove activeOrder
       }
-      if (error.errorCode === 'INSUFFICIENT_STOCK_ERROR') {
+      if (
+        error.errorCode === 'INSUFFICIENT_STOCK_ERROR' ||
+        error.errorCode === 'COUPON_CODE_INVALID_ERROR'
+      ) {
         // Fetch activeOrder to get the current right amount of items per orderLine
         await this.getActiveOrder();
       }
+      console.log(error, '---------------');
       throw error;
     }
     // We've verified that result is not an error, so we can safely cast it
     return result as ActiveOrder<A>;
+  }
+
+  async applyCouponCode(
+    couponCode: string
+  ): Promise<ActiveOrder<A> | undefined> {
+    try {
+      const { applyCouponCode } = await this.rawRequest<
+        any,
+        MutationApplyCouponCodeArgs
+      >(this.queries.APPLY_COUPON_CODE, { couponCode });
+      this.activeOrder = await this.validateOrder(applyCouponCode);
+      this.eventBus.emit('coupon-code-applied', {
+        couponCode,
+      });
+      return this.activeOrder;
+    } catch (e) {
+      return this.activeOrder;
+    }
+  }
+
+  async removeCouponCode(couponCode: string) {
+    try {
+      const { removeCouponCode } = await this.rawRequest<
+        any,
+        MutationRemoveCouponCodeArgs
+      >(this.queries.REMOVE_COUPON_CODE, { couponCode });
+      this.activeOrder = await this.validateOrder(removeCouponCode);
+      this.eventBus.emit('coupon-code-removed', {
+        couponCode,
+      });
+      return this.activeOrder;
+    } catch (e) {
+      return this.activeOrder;
+    }
   }
 }
