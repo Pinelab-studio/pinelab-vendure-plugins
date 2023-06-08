@@ -79,6 +79,7 @@ export class GraphqlQueries {
         state
         errorMessage
         metadata
+        method
       }
       discounts {
         description
@@ -215,6 +216,36 @@ export class GraphqlQueries {
     ${this.ACTIVE_ORDER_FIELDS}
     mutation SetOrderShippingMethod($shippingMethodId: ID!) {
       setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  ADD_PAYMENT_TO_ORDER = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation AddPaymentToOrder($input: PaymentInput!) {
+      addPaymentToOrder(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  TRANSITION_ORDER_TO_STATE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation TransitionOrderToState($state: String!) {
+      transitionOrderToState(state: $state) {
         ... on Order {
           ...ActiveOrderFields
         }

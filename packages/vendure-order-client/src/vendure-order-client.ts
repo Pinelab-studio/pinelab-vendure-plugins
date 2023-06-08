@@ -19,11 +19,14 @@ import {
   MutationSetOrderBillingAddressArgs,
   MutationSetOrderShippingAddressArgs,
   MutationSetOrderShippingMethodArgs,
+  MutationTransitionOrderToStateArgs,
+  PaymentInput,
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
 } from './graphql-types';
 import mitt from 'mitt';
 import { Id, VendureOrderEvents } from './vendure-order-events';
+import { MutationAddPaymentToOrderArgs } from './graphql-types';
 
 /**
  * Used when no additional fields are given
@@ -297,5 +300,23 @@ export class VendureOrderClient<A = {}> {
     >(this.queries.SET_ORDER_SHIPPING_METHOD, { shippingMethodId });
     this.activeOrder = await this.validateOrder(setOrderShippingMethod);
     return setOrderShippingMethod.shippingLines[0]?.shippingMethod;
+  }
+
+  async addPayment(input: PaymentInput) {
+    const { addPaymentToOrder } = await this.rawRequest<
+      any,
+      MutationAddPaymentToOrderArgs
+    >(this.queries.ADD_PAYMENT_TO_ORDER, { input });
+    this.activeOrder = await this.validateOrder(addPaymentToOrder);
+    return addPaymentToOrder.payments;
+  }
+
+  async transitionOrderToState(state: string) {
+    const { transitionOrderToState } = await this.rawRequest<
+      any,
+      MutationTransitionOrderToStateArgs
+    >(this.queries.TRANSITION_ORDER_TO_STATE, { state });
+    this.activeOrder = await this.validateOrder(transitionOrderToState);
+    return transitionOrderToState;
   }
 }

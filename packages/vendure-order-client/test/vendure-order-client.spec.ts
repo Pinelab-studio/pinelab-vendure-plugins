@@ -6,7 +6,11 @@ import {
   registerInitializer,
   testConfig,
 } from '@vendure/testing';
-import { CreateAddressInput, Customer } from '../src/graphql-types';
+import {
+  CreateAddressInput,
+  Customer,
+  PaymentInput,
+} from '../src/graphql-types';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { gql } from 'graphql-request';
 import path from 'path';
@@ -277,8 +281,24 @@ describe('Vendure order client', () => {
       expect(shippingMethodAdded.id).toEqual(shippingMethod.id);
     });
 
-    it.skip('Adds payment', async () => {
-      expect(false).toBe(true);
+    it('Transitions order to arranging payment state', async () => {
+      const order = await client.transitionOrderToState('ArrangingPayment');
+      expect(order.state).toBe('ArrangingPayment');
+    });
+
+    it('Adds payment', async () => {
+      const addPaymentInput: PaymentInput = {
+        method: 'standard-payment',
+        metadata: {
+          id: 0,
+        },
+      };
+      const paymentMethods = await client.addPayment(addPaymentInput);
+      expect(paymentMethods?.length).toBeGreaterThan(0);
+      const testPayment = paymentMethods.find(
+        (p) => p.method === addPaymentInput.method
+      );
+      expect(testPayment.metadata.id).toEqual(addPaymentInput.metadata.id);
     });
 
     it.skip('Gets order by code', async () => {
