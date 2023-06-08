@@ -8,8 +8,10 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
+  ActiveOrderFieldsFragment,
   CreateAddressInput,
   Customer,
+  ErrorResult,
   PaymentInput,
 } from '../src/graphql-types';
 import { TestServer } from '@vendure/testing/lib/test-server';
@@ -240,13 +242,15 @@ describe('Vendure order client', () => {
     });
 
     it('Applies invalid coupon', async () => {
-      const order = await client.applyCouponCode('fghj');
-      expect(order?.couponCodes?.length).toEqual(0);
+      const result = await client.applyCouponCode('fghj');
+      expect((result as ErrorResult).errorCode).toBeDefined();
     });
 
     it('Applies valid coupon', async () => {
       const order = await client.applyCouponCode(couponCodeName);
-      expect(order?.couponCodes?.length).toEqual(1);
+      expect((order as ActiveOrderFieldsFragment)?.couponCodes?.length).toEqual(
+        1
+      );
     });
 
     it('Emits "coupon-code-applied" event', async () => {
@@ -276,10 +280,16 @@ describe('Vendure order client', () => {
         firstName: 'Mein',
         lastName: 'Zohn',
       };
-      const { customer } = await client.createCustomer(createCustomerInput);
-      expect(customer!.emailAddress).toEqual(createCustomerInput.emailAddress);
-      expect(customer!.firstName).toEqual(createCustomerInput.firstName);
-      expect(customer!.lastName).toEqual(createCustomerInput.lastName);
+      const result = await client.setCustomerForOrder(createCustomerInput);
+      expect(
+        (result as ActiveOrderFieldsFragment).customer!.emailAddress
+      ).toEqual(createCustomerInput.emailAddress);
+      expect((result as ActiveOrderFieldsFragment).customer!.firstName).toEqual(
+        createCustomerInput.firstName
+      );
+      expect((result as ActiveOrderFieldsFragment).customer!.lastName).toEqual(
+        createCustomerInput.lastName
+      );
     });
 
     it('Adds shipping address', async () => {
@@ -287,15 +297,15 @@ describe('Vendure order client', () => {
         streetLine1: ' Stree Line in Ethiopia',
         countryCode: 'GB',
       };
-      const { shippingAddress } = await client.addShippingAddress(
+      const result = await client.setOrderShippingAddress(
         addShippingAddressInput
       );
-      expect(shippingAddress!.country).toEqual(
-        regionNames.of(addShippingAddressInput.countryCode)
-      );
-      expect(shippingAddress!.streetLine1).toEqual(
-        addShippingAddressInput.streetLine1
-      );
+      expect(
+        (result as ActiveOrderFieldsFragment).shippingAddress!.country
+      ).toEqual(regionNames.of(addShippingAddressInput.countryCode));
+      expect(
+        (result as ActiveOrderFieldsFragment).shippingAddress!.streetLine1
+      ).toEqual(addShippingAddressInput.streetLine1);
     });
 
     it('Adds billing address', async () => {
@@ -303,30 +313,32 @@ describe('Vendure order client', () => {
         streetLine1: 'ANother Stree Line in Ethiopia',
         countryCode: 'GB',
       };
-      const { billingAddress } = await client.addBillingAddress(
-        addBillingAddressInput
-      );
-      expect(billingAddress!.country).toEqual(
-        regionNames.of(addBillingAddressInput.countryCode)
-      );
-      expect(billingAddress!.streetLine1).toEqual(
-        addBillingAddressInput.streetLine1
-      );
+      const result = await client.addBillingAddress(addBillingAddressInput);
+      expect(
+        (result as ActiveOrderFieldsFragment).billingAddress!.country
+      ).toEqual(regionNames.of(addBillingAddressInput.countryCode));
+      expect(
+        (result as ActiveOrderFieldsFragment).billingAddress!.streetLine1
+      ).toEqual(addBillingAddressInput.streetLine1);
     });
 
     it('Sets shipping method', async () => {
-      const { shippingLines } = await client.setOrderShippingMethod(
-        shippingMethod.id
-      );
-      expect(shippingLines?.length).toEqual(1);
+      const result = await client.setOrderShippingMethod(shippingMethod.id);
       expect(
-        shippingLines?.find((s) => s.shippingMethod?.id === shippingMethod.id)
+        (result as ActiveOrderFieldsFragment).shippingLines?.length
+      ).toEqual(1);
+      expect(
+        (result as ActiveOrderFieldsFragment).shippingLines?.find(
+          (s) => s.shippingMethod?.id === shippingMethod.id
+        )
       ).toBeDefined();
     });
 
     it('Transitions order to arranging payment state', async () => {
-      const order = await client.transitionOrderToState('ArrangingPayment');
-      expect(order.state).toBe('ArrangingPayment');
+      const result = await client.transitionOrderToState('ArrangingPayment');
+      expect((result as ActiveOrderFieldsFragment).state).toBe(
+        'ArrangingPayment'
+      );
     });
 
     it('Adds payment', async () => {
@@ -336,9 +348,11 @@ describe('Vendure order client', () => {
           id: 0,
         },
       };
-      const { payments } = await client.addPayment(addPaymentInput);
-      expect(payments?.length).toBeGreaterThan(0);
-      const testPayment = payments?.find(
+      const result = await client.addPayment(addPaymentInput);
+      expect(
+        (result as ActiveOrderFieldsFragment).payments?.length
+      ).toBeGreaterThan(0);
+      const testPayment = (result as ActiveOrderFieldsFragment).payments?.find(
         (p) => p.method === addPaymentInput.method
       );
       expect(testPayment?.metadata.public.id).toEqual(
@@ -347,8 +361,10 @@ describe('Vendure order client', () => {
     });
 
     it('Gets order by code', async () => {
-      const { orderByCode } = await client.getOrderByCode(activeOrderCode);
-      expect(activeOrderCode).toEqual(orderByCode.code);
+      const result = await client.getOrderByCode(activeOrderCode);
+      expect(activeOrderCode).toEqual(
+        (result as ActiveOrderFieldsFragment).code
+      );
     });
   });
 

@@ -233,7 +233,7 @@ export class VendureOrderClient<A = {}> {
 
   async applyCouponCode(
     couponCode: string
-  ): Promise<ActiveOrder<A> | undefined> {
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     try {
       const { applyCouponCode } = await this.rawRequest<
         any,
@@ -243,74 +243,84 @@ export class VendureOrderClient<A = {}> {
       this.eventBus.emit('coupon-code-applied', {
         couponCode,
       });
-      return this.activeOrder;
-    } catch (e) {
-      return this.activeOrder;
+      return applyCouponCode;
+    } catch (e: any) {
+      return e;
     }
   }
 
-  async removeCouponCode(couponCode: string) {
-    try {
-      const { removeCouponCode } = await this.rawRequest<
-        any,
-        MutationRemoveCouponCodeArgs
-      >(this.queries.REMOVE_COUPON_CODE, { couponCode });
-      this.activeOrder = await this.validateOrder(removeCouponCode);
-      this.eventBus.emit('coupon-code-removed', {
-        couponCode,
-      });
-      return this.activeOrder;
-    } catch (e) {
-      return this.activeOrder;
-    }
+  async removeCouponCode(
+    couponCode: string
+  ): Promise<ActiveOrderFieldsFragment> {
+    const { removeCouponCode } = await this.rawRequest<
+      any,
+      MutationRemoveCouponCodeArgs
+    >(this.queries.REMOVE_COUPON_CODE, { couponCode });
+    this.activeOrder = await this.validateOrder(removeCouponCode);
+    this.eventBus.emit('coupon-code-removed', {
+      couponCode,
+    });
+    return removeCouponCode;
   }
 
-  async createCustomer(input: CreateCustomerInput): Promise<ActiveOrder<A>> {
+  async setCustomerForOrder(
+    input: CreateCustomerInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     const { setCustomerForOrder } = await this.rawRequest<
       any,
       MutationSetCustomerForOrderArgs
     >(this.queries.SET_CUSTOMER_FOR_ORDER, { input });
     this.activeOrder = await this.validateOrder(setCustomerForOrder);
-    return this.activeOrder!;
+    return setCustomerForOrder;
   }
 
-  async addShippingAddress(input: CreateAddressInput): Promise<ActiveOrder<A>> {
+  async setOrderShippingAddress(
+    input: CreateAddressInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     const { setOrderShippingAddress } = await this.rawRequest<
       any,
       MutationSetOrderShippingAddressArgs
     >(this.queries.SET_ORDER_SHIPPING_ADDRESS, { input });
     this.activeOrder = await this.validateOrder(setOrderShippingAddress);
-    return this.activeOrder!;
+    return setOrderShippingAddress;
   }
 
-  async addBillingAddress(input: CreateAddressInput): Promise<ActiveOrder<A>> {
+  async addBillingAddress(
+    input: CreateAddressInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     const { setOrderBillingAddress } = await this.rawRequest<
       any,
       MutationSetOrderBillingAddressArgs
     >(this.queries.SET_ORDER_BILLING_ADDRESS, { input });
     this.activeOrder = await this.validateOrder(setOrderBillingAddress);
-    return this.activeOrder!;
+    return setOrderBillingAddress;
   }
 
-  async setOrderShippingMethod(shippingMethodId: Id): Promise<ActiveOrder<A>> {
+  async setOrderShippingMethod(
+    shippingMethodId: Id
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     const { setOrderShippingMethod } = await this.rawRequest<
       any,
       MutationSetOrderShippingMethodArgs
     >(this.queries.SET_ORDER_SHIPPING_METHOD, { shippingMethodId });
     this.activeOrder = await this.validateOrder(setOrderShippingMethod);
-    return this.activeOrder!;
+    return setOrderShippingMethod;
   }
 
-  async addPayment(input: PaymentInput): Promise<ActiveOrder<A>> {
+  async addPayment(
+    input: PaymentInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     const { addPaymentToOrder } = await this.rawRequest<
       any,
       MutationAddPaymentToOrderArgs
     >(this.queries.ADD_PAYMENT_TO_ORDER, { input });
     this.activeOrder = await this.validateOrder(addPaymentToOrder);
-    return this.activeOrder!;
+    return addPaymentToOrder;
   }
 
-  async transitionOrderToState(state: string) {
+  async transitionOrderToState(
+    state: string
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     const { transitionOrderToState } = await this.rawRequest<
       any,
       MutationTransitionOrderToStateArgs
@@ -319,10 +329,11 @@ export class VendureOrderClient<A = {}> {
     return transitionOrderToState;
   }
 
-  async getOrderByCode(code: string) {
-    return await this.rawRequest<any, QueryOrderByCodeArgs>(
+  async getOrderByCode(code: string): Promise<ActiveOrderFieldsFragment> {
+    const { orderByCode } = await this.rawRequest<any, QueryOrderByCodeArgs>(
       this.queries.GET_ORDER_BY_CODE,
       { code }
     );
+    return orderByCode;
   }
 }
