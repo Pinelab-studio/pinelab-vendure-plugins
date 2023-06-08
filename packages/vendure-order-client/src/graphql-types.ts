@@ -3280,7 +3280,7 @@ export type ActiveOrderFieldsFragment = { __typename?: 'Order' } & Pick<
       Array<
         { __typename?: 'Payment' } & Pick<
           Payment,
-          'id' | 'state' | 'errorMessage' | 'metadata'
+          'id' | 'state' | 'errorMessage' | 'metadata' | 'method'
         >
       >
     >;

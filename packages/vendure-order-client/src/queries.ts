@@ -256,4 +256,13 @@ export class GraphqlQueries {
       }
     }
   `;
+
+  GET_ORDER_BY_CODE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    query GetOrderByCode($code: String!) {
+      orderByCode(code: $code) {
+        ...ActiveOrderFields
+      }
+    }
+  `;
 }

@@ -21,6 +21,7 @@ import {
   MutationSetOrderShippingMethodArgs,
   MutationTransitionOrderToStateArgs,
   PaymentInput,
+  QueryOrderByCodeArgs,
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
 } from './graphql-types';
@@ -264,51 +265,49 @@ export class VendureOrderClient<A = {}> {
     }
   }
 
-  async createCustomer(
-    input: CreateCustomerInput
-  ): Promise<Customer | undefined> {
+  async createCustomer(input: CreateCustomerInput): Promise<ActiveOrder<A>> {
     const { setCustomerForOrder } = await this.rawRequest<
       any,
       MutationSetCustomerForOrderArgs
     >(this.queries.SET_CUSTOMER_FOR_ORDER, { input });
     this.activeOrder = await this.validateOrder(setCustomerForOrder);
-    return setCustomerForOrder.customer;
+    return this.activeOrder!;
   }
 
-  async addShippingAddress(input: CreateAddressInput) {
+  async addShippingAddress(input: CreateAddressInput): Promise<ActiveOrder<A>> {
     const { setOrderShippingAddress } = await this.rawRequest<
       any,
       MutationSetOrderShippingAddressArgs
     >(this.queries.SET_ORDER_SHIPPING_ADDRESS, { input });
     this.activeOrder = await this.validateOrder(setOrderShippingAddress);
-    return setOrderShippingAddress.shippingAddress;
+    return this.activeOrder!;
   }
 
-  async addBillingAddress(input: CreateAddressInput) {
+  async addBillingAddress(input: CreateAddressInput): Promise<ActiveOrder<A>> {
     const { setOrderBillingAddress } = await this.rawRequest<
       any,
       MutationSetOrderBillingAddressArgs
     >(this.queries.SET_ORDER_BILLING_ADDRESS, { input });
     this.activeOrder = await this.validateOrder(setOrderBillingAddress);
-    return setOrderBillingAddress.billingAddress;
+    return this.activeOrder!;
   }
 
-  async setOrderShippingMethod(shippingMethodId: Id) {
+  async setOrderShippingMethod(shippingMethodId: Id): Promise<ActiveOrder<A>> {
     const { setOrderShippingMethod } = await this.rawRequest<
       any,
       MutationSetOrderShippingMethodArgs
     >(this.queries.SET_ORDER_SHIPPING_METHOD, { shippingMethodId });
     this.activeOrder = await this.validateOrder(setOrderShippingMethod);
-    return setOrderShippingMethod.shippingLines[0]?.shippingMethod;
+    return this.activeOrder!;
   }
 
-  async addPayment(input: PaymentInput) {
+  async addPayment(input: PaymentInput): Promise<ActiveOrder<A>> {
     const { addPaymentToOrder } = await this.rawRequest<
       any,
       MutationAddPaymentToOrderArgs
     >(this.queries.ADD_PAYMENT_TO_ORDER, { input });
     this.activeOrder = await this.validateOrder(addPaymentToOrder);
-    return addPaymentToOrder.payments;
+    return this.activeOrder!;
   }
 
   async transitionOrderToState(state: string) {
@@ -318,5 +317,12 @@ export class VendureOrderClient<A = {}> {
     >(this.queries.TRANSITION_ORDER_TO_STATE, { state });
     this.activeOrder = await this.validateOrder(transitionOrderToState);
     return transitionOrderToState;
+  }
+
+  async getOrderByCode(code: string) {
+    return await this.rawRequest<any, QueryOrderByCodeArgs>(
+      this.queries.GET_ORDER_BY_CODE,
+      { code }
+    );
   }
 }

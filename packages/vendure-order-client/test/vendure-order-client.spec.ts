@@ -1,4 +1,5 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { gql } from 'graphql-tag';
 import {
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -12,7 +13,7 @@ import {
   PaymentInput,
 } from '../src/graphql-types';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { gql } from 'graphql-request';
+// import { gql } from 'graphql-request';
 import path from 'path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
@@ -23,7 +24,8 @@ import {
 import { initialData } from './initial-data';
 import { createPromotionMutation } from './test-utils';
 import { addShippingMethod, createPromotion } from '../../test/src/admin-utils';
-
+import { CreatePaymentMethodInput } from '../../test/src/generated/admin-graphql';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 // import {Ad} from '@vendure/testing';
 
 const storage: any = {};
@@ -37,7 +39,7 @@ const window = {
 vi.stubGlobal('window', window);
 
 // order.history is not included by default, so we use it to test additionalOrderFields
-const additionalOrderFields = gql`
+const additionalOrderFields = `
   fragment AdditionalOrderFields on Order {
     history {
       totalItems
@@ -57,11 +59,17 @@ describe('Vendure order client', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let couponCodeName = 'couponCodeName';
-  let shippingMethod;
+  let shippingMethod: any;
+  let paymentMethod: any;
+  let activeOrderCode;
+  const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
+      paymentOptions: {
+        paymentMethodHandlers: [testPaymentMethod],
+      },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
     });
 
@@ -93,7 +101,7 @@ describe('Vendure order client', () => {
     expect(promotion.couponCode).toBe(couponCodeName);
   });
 
-  it('Creates shippingmethod', async () => {
+  it('Creates Shipping Method', async () => {
     await adminClient.asSuperAdmin();
     shippingMethod = await addShippingMethod(
       adminClient as any,
@@ -101,6 +109,39 @@ describe('Vendure order client', () => {
       '100'
     );
     expect(shippingMethod.code).toBeDefined();
+  });
+
+  it('Creates a Payment Method', async () => {
+    await adminClient.asSuperAdmin();
+    const paymentMethodInput: CreatePaymentMethodInput = {
+      code: 'test-cash',
+      enabled: true,
+      handler: {
+        code: testPaymentMethod.code,
+        arguments: [],
+      },
+      name: 'Testing Payment method',
+    };
+    const { createPaymentMethod } = await adminClient.query(
+      gql`
+        mutation CreatePaymentMethodMutation(
+          $input: CreatePaymentMethodInput!
+        ) {
+          createPaymentMethod(input: $input) {
+            id
+            code
+            name
+            description
+            enabled
+          }
+        }
+      `,
+      { input: { ...paymentMethodInput } }
+    );
+    expect(createPaymentMethod.code).toEqual(paymentMethodInput.code);
+    expect(createPaymentMethod.name).toEqual(paymentMethodInput.name);
+    expect(createPaymentMethod.enabled).toEqual(paymentMethodInput.enabled);
+    paymentMethod = createPaymentMethod;
   });
 
   it('Creates a client', async () => {
@@ -121,6 +162,7 @@ describe('Vendure order client', () => {
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
       const order = await client.addItemToOrder('T_2', 1);
+      activeOrderCode = order?.code;
       expect(order?.lines[0].quantity).toBe(1);
       expect(order?.lines[0].productVariant.id).toBe('T_2');
     });
@@ -234,24 +276,22 @@ describe('Vendure order client', () => {
         firstName: 'Mein',
         lastName: 'Zohn',
       };
-      const newCustomer = await client.createCustomer(createCustomerInput);
-      expect(newCustomer!.emailAddress).toEqual(
-        createCustomerInput.emailAddress
-      );
-      expect(newCustomer!.firstName).toEqual(createCustomerInput.firstName);
-      expect(newCustomer!.lastName).toEqual(createCustomerInput.lastName);
+      const { customer } = await client.createCustomer(createCustomerInput);
+      expect(customer!.emailAddress).toEqual(createCustomerInput.emailAddress);
+      expect(customer!.firstName).toEqual(createCustomerInput.firstName);
+      expect(customer!.lastName).toEqual(createCustomerInput.lastName);
     });
 
     it('Adds shipping address', async () => {
       const addShippingAddressInput: CreateAddressInput = {
         streetLine1: ' Stree Line in Ethiopia',
-        countryCode: 'US',
+        countryCode: 'GB',
       };
-      const shippingAddress = await client.addShippingAddress(
+      const { shippingAddress } = await client.addShippingAddress(
         addShippingAddressInput
       );
-      expect(shippingAddress!.countryCode).toEqual(
-        addShippingAddressInput.countryCode
+      expect(shippingAddress!.country).toEqual(
+        regionNames.of(addShippingAddressInput.countryCode)
       );
       expect(shippingAddress!.streetLine1).toEqual(
         addShippingAddressInput.streetLine1
@@ -261,13 +301,13 @@ describe('Vendure order client', () => {
     it('Adds billing address', async () => {
       const addBillingAddressInput: CreateAddressInput = {
         streetLine1: 'ANother Stree Line in Ethiopia',
-        countryCode: 'US',
+        countryCode: 'GB',
       };
-      const billingAddress = await client.addBillingAddress(
+      const { billingAddress } = await client.addBillingAddress(
         addBillingAddressInput
       );
-      expect(billingAddress!.countryCode).toEqual(
-        addBillingAddressInput.countryCode
+      expect(billingAddress!.country).toEqual(
+        regionNames.of(addBillingAddressInput.countryCode)
       );
       expect(billingAddress!.streetLine1).toEqual(
         addBillingAddressInput.streetLine1
@@ -275,10 +315,13 @@ describe('Vendure order client', () => {
     });
 
     it('Sets shipping method', async () => {
-      const shippingMethodAdded = await client.setOrderShippingMethod(
+      const { shippingLines } = await client.setOrderShippingMethod(
         shippingMethod.id
       );
-      expect(shippingMethodAdded.id).toEqual(shippingMethod.id);
+      expect(shippingLines?.length).toEqual(1);
+      expect(
+        shippingLines?.find((s) => s.shippingMethod?.id === shippingMethod.id)
+      ).toBeDefined();
     });
 
     it('Transitions order to arranging payment state', async () => {
@@ -288,21 +331,24 @@ describe('Vendure order client', () => {
 
     it('Adds payment', async () => {
       const addPaymentInput: PaymentInput = {
-        method: 'standard-payment',
+        method: paymentMethod.code,
         metadata: {
           id: 0,
         },
       };
-      const paymentMethods = await client.addPayment(addPaymentInput);
-      expect(paymentMethods?.length).toBeGreaterThan(0);
-      const testPayment = paymentMethods.find(
+      const { payments } = await client.addPayment(addPaymentInput);
+      expect(payments?.length).toBeGreaterThan(0);
+      const testPayment = payments?.find(
         (p) => p.method === addPaymentInput.method
       );
-      expect(testPayment.metadata.id).toEqual(addPaymentInput.metadata.id);
+      expect(testPayment?.metadata.public.id).toEqual(
+        addPaymentInput.metadata.id
+      );
     });
 
-    it.skip('Gets order by code', async () => {
-      expect(false).toBe(true);
+    it('Gets order by code', async () => {
+      const { orderByCode } = await client.getOrderByCode(activeOrderCode);
+      expect(activeOrderCode).toEqual(orderByCode.code);
     });
   });
 
