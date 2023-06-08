@@ -34,6 +34,7 @@ export class GraphqlQueries {
         city
         postalCode
         country
+        countryCode
       }
       billingAddress {
         fullName
@@ -43,6 +44,7 @@ export class GraphqlQueries {
         city
         postalCode
         country
+        countryCode
       }
       shippingLines {
         shippingMethod {
@@ -160,6 +162,66 @@ export class GraphqlQueries {
     mutation RemoveCouponCode($couponCode: String!) {
       removeCouponCode(couponCode: $couponCode) {
         ...ActiveOrderFields
+      }
+    }
+  `;
+
+  SET_CUSTOMER_FOR_ORDER = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetCustomerForOrder($input: CreateCustomerInput!) {
+      setCustomerForOrder(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  SET_ORDER_SHIPPING_ADDRESS = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetOrderShippingAddress($input: CreateAddressInput!) {
+      setOrderShippingAddress(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  SET_ORDER_BILLING_ADDRESS = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetOrderBillingAddress($input: CreateAddressInput!) {
+      setOrderBillingAddress(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  SET_ORDER_SHIPPING_METHOD = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetOrderShippingMethod($shippingMethodId: ID!) {
+      setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
       }
     }
   `;

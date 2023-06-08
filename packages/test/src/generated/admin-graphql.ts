@@ -6013,6 +6013,7 @@ export const CreateShippingMethod = gql`
     mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
   createShippingMethod(input: $input) {
     id
+    code
   }
 }
     `;

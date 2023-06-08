@@ -9,9 +9,16 @@ import {
   AdjustOrderLineMutation,
   AdjustOrderLineMutationVariables,
   ApplyCouponCodeResult,
+  CreateAddressInput,
+  CreateCustomerInput,
+  Customer,
   ErrorResult,
   MutationApplyCouponCodeArgs,
   MutationRemoveCouponCodeArgs,
+  MutationSetCustomerForOrderArgs,
+  MutationSetOrderBillingAddressArgs,
+  MutationSetOrderShippingAddressArgs,
+  MutationSetOrderShippingMethodArgs,
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
 } from './graphql-types';
@@ -214,7 +221,6 @@ export class VendureOrderClient<A = {}> {
         // Fetch activeOrder to get the current right amount of items per orderLine
         await this.getActiveOrder();
       }
-      console.log(error, '---------------');
       throw error;
     }
     // We've verified that result is not an error, so we can safely cast it
@@ -253,5 +259,43 @@ export class VendureOrderClient<A = {}> {
     } catch (e) {
       return this.activeOrder;
     }
+  }
+
+  async createCustomer(
+    input: CreateCustomerInput
+  ): Promise<Customer | undefined> {
+    const { setCustomerForOrder } = await this.rawRequest<
+      any,
+      MutationSetCustomerForOrderArgs
+    >(this.queries.SET_CUSTOMER_FOR_ORDER, { input });
+    this.activeOrder = await this.validateOrder(setCustomerForOrder);
+    return setCustomerForOrder.customer;
+  }
+
+  async addShippingAddress(input: CreateAddressInput) {
+    const { setOrderShippingAddress } = await this.rawRequest<
+      any,
+      MutationSetOrderShippingAddressArgs
+    >(this.queries.SET_ORDER_SHIPPING_ADDRESS, { input });
+    this.activeOrder = await this.validateOrder(setOrderShippingAddress);
+    return setOrderShippingAddress.shippingAddress;
+  }
+
+  async addBillingAddress(input: CreateAddressInput) {
+    const { setOrderBillingAddress } = await this.rawRequest<
+      any,
+      MutationSetOrderBillingAddressArgs
+    >(this.queries.SET_ORDER_BILLING_ADDRESS, { input });
+    this.activeOrder = await this.validateOrder(setOrderBillingAddress);
+    return setOrderBillingAddress.billingAddress;
+  }
+
+  async setOrderShippingMethod(shippingMethodId: Id) {
+    const { setOrderShippingMethod } = await this.rawRequest<
+      any,
+      MutationSetOrderShippingMethodArgs
+    >(this.queries.SET_ORDER_SHIPPING_METHOD, { shippingMethodId });
+    this.activeOrder = await this.validateOrder(setOrderShippingMethod);
+    return setOrderShippingMethod.shippingLines[0]?.shippingMethod;
   }
 }

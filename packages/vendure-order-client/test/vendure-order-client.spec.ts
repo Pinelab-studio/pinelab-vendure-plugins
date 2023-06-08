@@ -6,14 +6,19 @@ import {
   registerInitializer,
   testConfig,
 } from '@vendure/testing';
+import { CreateAddressInput, Customer } from '../src/graphql-types';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { gql } from 'graphql-request';
 import path from 'path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { VendureOrderClient, VendureOrderEvent } from '../src/';
+import {
+  CreateCustomerInput,
+  VendureOrderClient,
+  VendureOrderEvent,
+} from '../src/';
 import { initialData } from './initial-data';
 import { createPromotionMutation } from './test-utils';
-import { createPromotion, getOrder } from '../../test/src/admin-utils';
+import { addShippingMethod, createPromotion } from '../../test/src/admin-utils';
 
 // import {Ad} from '@vendure/testing';
 
@@ -48,6 +53,7 @@ describe('Vendure order client', () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let couponCodeName = 'couponCodeName';
+  let shippingMethod;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -81,6 +87,16 @@ describe('Vendure order client', () => {
     );
     expect(promotion.name).toBe(couponCodeName);
     expect(promotion.couponCode).toBe(couponCodeName);
+  });
+
+  it('Creates shippingmethod', async () => {
+    await adminClient.asSuperAdmin();
+    shippingMethod = await addShippingMethod(
+      adminClient as any,
+      'manual-fulfillment',
+      '100'
+    );
+    expect(shippingMethod.code).toBeDefined();
   });
 
   it('Creates a client', async () => {
@@ -208,20 +224,57 @@ describe('Vendure order client', () => {
       });
     });
 
-    it.skip('Adds customer', async () => {
-      expect(false).toBe(true);
+    it('Adds customer', async () => {
+      const createCustomerInput: CreateCustomerInput = {
+        emailAddress: 'example@gmail.com',
+        firstName: 'Mein',
+        lastName: 'Zohn',
+      };
+      const newCustomer = await client.createCustomer(createCustomerInput);
+      expect(newCustomer!.emailAddress).toEqual(
+        createCustomerInput.emailAddress
+      );
+      expect(newCustomer!.firstName).toEqual(createCustomerInput.firstName);
+      expect(newCustomer!.lastName).toEqual(createCustomerInput.lastName);
     });
 
-    it.skip('Adds shipping address', async () => {
-      expect(false).toBe(true);
+    it('Adds shipping address', async () => {
+      const addShippingAddressInput: CreateAddressInput = {
+        streetLine1: ' Stree Line in Ethiopia',
+        countryCode: 'US',
+      };
+      const shippingAddress = await client.addShippingAddress(
+        addShippingAddressInput
+      );
+      expect(shippingAddress!.countryCode).toEqual(
+        addShippingAddressInput.countryCode
+      );
+      expect(shippingAddress!.streetLine1).toEqual(
+        addShippingAddressInput.streetLine1
+      );
     });
 
-    it.skip('Adds billing address', async () => {
-      expect(false).toBe(true);
+    it('Adds billing address', async () => {
+      const addBillingAddressInput: CreateAddressInput = {
+        streetLine1: 'ANother Stree Line in Ethiopia',
+        countryCode: 'US',
+      };
+      const billingAddress = await client.addBillingAddress(
+        addBillingAddressInput
+      );
+      expect(billingAddress!.countryCode).toEqual(
+        addBillingAddressInput.countryCode
+      );
+      expect(billingAddress!.streetLine1).toEqual(
+        addBillingAddressInput.streetLine1
+      );
     });
 
-    it.skip('Sets shipping method', async () => {
-      expect(false).toBe(true);
+    it('Sets shipping method', async () => {
+      const shippingMethodAdded = await client.setOrderShippingMethod(
+        shippingMethod.id
+      );
+      expect(shippingMethodAdded.id).toEqual(shippingMethod.id);
     });
 
     it.skip('Adds payment', async () => {
