@@ -123,9 +123,14 @@ describe('Stripe Subscription Plugin', function () {
     await adminClient.asSuperAdmin();
     await adminClient.query(CREATE_PAYMENT_METHOD, {
       input: {
+        translations: [
+          {
+            languageCode: 'en',
+            name: 'Stripe test payment',
+            description: 'This is a Stripe payment method',
+          },
+        ],
         code: 'stripe-subscription-method',
-        name: 'Stripe test payment',
-        description: 'This is a Stripe payment method',
         enabled: true,
         checker: {
           code: 'has-stripe-subscription-products-checker',
