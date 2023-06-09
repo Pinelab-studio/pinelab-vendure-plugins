@@ -62,6 +62,7 @@ describe('Vendure order client', () => {
   let server: TestServer;
   let couponCodeName = 'couponCodeName';
   let activeOrderCode;
+  let adminClient: any;
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
   beforeAll(async () => {
@@ -73,7 +74,7 @@ describe('Vendure order client', () => {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
     });
 
-    ({ server } = createTestEnvironment(config));
+    ({ server, adminClient } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: path.join(__dirname, './product-import.csv'),
@@ -84,7 +85,7 @@ describe('Vendure order client', () => {
     expect(server.app.getHttpServer).toBeDefined;
   });
 
-  it('Create a promotion', async () => {
+  it('Creates a promotion', async () => {
     await adminClient.asSuperAdmin();
     const promotion = await createPromotion(
       adminClient as any,
