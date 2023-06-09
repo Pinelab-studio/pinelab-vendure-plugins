@@ -1,5 +1,7 @@
 import { LanguageCode } from '@vendure/common/lib/generated-types.js';
 import { InitialData } from '@vendure/core';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { testPaymentMethodHandler } from './test-payment-method-handler';
 
 export const initialData: InitialData = {
   defaultLanguage: LanguageCode.en,
@@ -34,5 +36,10 @@ export const initialData: InitialData = {
       ],
     },
   ],
-  paymentMethods: [],
+  paymentMethods: [
+    {
+      handler: { code: testPaymentMethodHandler.code, arguments: [] },
+      name: 'Test payment',
+    },
+  ],
 };

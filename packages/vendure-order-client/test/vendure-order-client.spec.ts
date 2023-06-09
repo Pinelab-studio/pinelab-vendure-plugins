@@ -28,6 +28,7 @@ import { createPromotionMutation } from './test-utils';
 import { addShippingMethod, createPromotion } from '../../test/src/admin-utils';
 import { CreatePaymentMethodInput } from '../../test/src/generated/admin-graphql';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { testPaymentMethodHandler } from './test-payment-method-handler';
 // import {Ad} from '@vendure/testing';
 
 const storage: any = {};
@@ -59,10 +60,7 @@ let latestEmittedEvent: [string, VendureOrderEvent];
  */
 describe('Vendure order client', () => {
   let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
   let couponCodeName = 'couponCodeName';
-  let shippingMethod: any;
-  let paymentMethod: any;
   let activeOrderCode;
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
@@ -70,12 +68,12 @@ describe('Vendure order client', () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       paymentOptions: {
-        paymentMethodHandlers: [testPaymentMethod],
+        paymentMethodHandlers: [testPaymentMethodHandler],
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
     });
 
-    ({ server, adminClient } = createTestEnvironment(config));
+    ({ server } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: path.join(__dirname, './product-import.csv'),
@@ -101,49 +99,6 @@ describe('Vendure order client', () => {
     );
     expect(promotion.name).toBe(couponCodeName);
     expect(promotion.couponCode).toBe(couponCodeName);
-  });
-
-  it('Creates Shipping Method', async () => {
-    await adminClient.asSuperAdmin();
-    shippingMethod = await addShippingMethod(
-      adminClient as any,
-      'manual-fulfillment',
-      '100'
-    );
-    expect(shippingMethod.code).toBeDefined();
-  });
-
-  it('Creates a Payment Method', async () => {
-    await adminClient.asSuperAdmin();
-    const paymentMethodInput: CreatePaymentMethodInput = {
-      code: 'test-cash',
-      enabled: true,
-      handler: {
-        code: testPaymentMethod.code,
-        arguments: [],
-      },
-      name: 'Testing Payment method',
-    };
-    const { createPaymentMethod } = await adminClient.query(
-      gql`
-        mutation CreatePaymentMethodMutation(
-          $input: CreatePaymentMethodInput!
-        ) {
-          createPaymentMethod(input: $input) {
-            id
-            code
-            name
-            description
-            enabled
-          }
-        }
-      `,
-      { input: { ...paymentMethodInput } }
-    );
-    expect(createPaymentMethod.code).toEqual(paymentMethodInput.code);
-    expect(createPaymentMethod.name).toEqual(paymentMethodInput.name);
-    expect(createPaymentMethod.enabled).toEqual(paymentMethodInput.enabled);
-    paymentMethod = createPaymentMethod;
   });
 
   it('Creates a client', async () => {
@@ -323,13 +278,13 @@ describe('Vendure order client', () => {
     });
 
     it('Sets shipping method', async () => {
-      const result = await client.setOrderShippingMethod(shippingMethod.id);
+      const result = await client.setOrderShippingMethod('T_1');
       expect(
         (result as ActiveOrderFieldsFragment).shippingLines?.length
       ).toEqual(1);
       expect(
         (result as ActiveOrderFieldsFragment).shippingLines?.find(
-          (s) => s.shippingMethod?.id === shippingMethod.id
+          (s) => s.shippingMethod?.id === 'T_1'
         )
       ).toBeDefined();
     });
@@ -343,7 +298,7 @@ describe('Vendure order client', () => {
 
     it('Adds payment', async () => {
       const addPaymentInput: PaymentInput = {
-        method: paymentMethod.code,
+        method: 'test-payment',
         metadata: {
           id: 0,
         },
