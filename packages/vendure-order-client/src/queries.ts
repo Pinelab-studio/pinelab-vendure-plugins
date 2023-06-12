@@ -34,6 +34,7 @@ export class GraphqlQueries {
         city
         postalCode
         country
+        countryCode
       }
       billingAddress {
         fullName
@@ -43,6 +44,7 @@ export class GraphqlQueries {
         city
         postalCode
         country
+        countryCode
       }
       shippingLines {
         shippingMethod {
@@ -77,6 +79,7 @@ export class GraphqlQueries {
         state
         errorMessage
         metadata
+        method
       }
       discounts {
         description
@@ -135,6 +138,129 @@ export class GraphqlQueries {
     ${this.ACTIVE_ORDER_FIELDS}
     query activeOrder {
       activeOrder {
+        ...ActiveOrderFields
+      }
+    }
+  `;
+
+  APPLY_COUPON_CODE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation ApplyCounpnCodeMutation($couponCode: String!) {
+      applyCouponCode(couponCode: $couponCode) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  REMOVE_COUPON_CODE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation RemoveCouponCode($couponCode: String!) {
+      removeCouponCode(couponCode: $couponCode) {
+        ...ActiveOrderFields
+      }
+    }
+  `;
+
+  SET_CUSTOMER_FOR_ORDER = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetCustomerForOrder($input: CreateCustomerInput!) {
+      setCustomerForOrder(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  SET_ORDER_SHIPPING_ADDRESS = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetOrderShippingAddress($input: CreateAddressInput!) {
+      setOrderShippingAddress(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  SET_ORDER_BILLING_ADDRESS = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetOrderBillingAddress($input: CreateAddressInput!) {
+      setOrderBillingAddress(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  SET_ORDER_SHIPPING_METHOD = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation SetOrderShippingMethod($shippingMethodId: ID!) {
+      setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  ADD_PAYMENT_TO_ORDER = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation AddPaymentToOrder($input: PaymentInput!) {
+      addPaymentToOrder(input: $input) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  TRANSITION_ORDER_TO_STATE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    mutation TransitionOrderToState($state: String!) {
+      transitionOrderToState(state: $state) {
+        ... on Order {
+          ...ActiveOrderFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  GET_ORDER_BY_CODE = gql`
+    ${this.ACTIVE_ORDER_FIELDS}
+    query GetOrderByCode($code: String!) {
+      orderByCode(code: $code) {
         ...ActiveOrderFields
       }
     }

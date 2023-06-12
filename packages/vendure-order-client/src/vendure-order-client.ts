@@ -8,12 +8,26 @@ import {
   AdditemToOrderMutationVariables,
   AdjustOrderLineMutation,
   AdjustOrderLineMutationVariables,
+  ApplyCouponCodeResult,
+  CreateAddressInput,
+  CreateCustomerInput,
+  Customer,
   ErrorResult,
+  MutationApplyCouponCodeArgs,
+  MutationRemoveCouponCodeArgs,
+  MutationSetCustomerForOrderArgs,
+  MutationSetOrderBillingAddressArgs,
+  MutationSetOrderShippingAddressArgs,
+  MutationSetOrderShippingMethodArgs,
+  MutationTransitionOrderToStateArgs,
+  PaymentInput,
+  QueryOrderByCodeArgs,
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
 } from './graphql-types';
 import mitt from 'mitt';
 import { Id, VendureOrderEvents } from './vendure-order-events';
+import { MutationAddPaymentToOrderArgs } from './graphql-types';
 
 /**
  * Used when no additional fields are given
@@ -204,7 +218,10 @@ export class VendureOrderClient<A = {}> {
       ) {
         window.localStorage.removeItem(this.tokenName); // These are unrecoverable states, so remove activeOrder
       }
-      if (error.errorCode === 'INSUFFICIENT_STOCK_ERROR') {
+      if (
+        error.errorCode === 'INSUFFICIENT_STOCK_ERROR' ||
+        error.errorCode === 'COUPON_CODE_INVALID_ERROR'
+      ) {
         // Fetch activeOrder to get the current right amount of items per orderLine
         await this.getActiveOrder();
       }
@@ -212,5 +229,111 @@ export class VendureOrderClient<A = {}> {
     }
     // We've verified that result is not an error, so we can safely cast it
     return result as ActiveOrder<A>;
+  }
+
+  async applyCouponCode(
+    couponCode: string
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
+    try {
+      const { applyCouponCode } = await this.rawRequest<
+        any,
+        MutationApplyCouponCodeArgs
+      >(this.queries.APPLY_COUPON_CODE, { couponCode });
+      this.activeOrder = await this.validateOrder(applyCouponCode);
+      this.eventBus.emit('coupon-code-applied', {
+        couponCode,
+      });
+      return applyCouponCode;
+    } catch (e: any) {
+      return e;
+    }
+  }
+
+  async removeCouponCode(
+    couponCode: string
+  ): Promise<ActiveOrderFieldsFragment> {
+    const { removeCouponCode } = await this.rawRequest<
+      any,
+      MutationRemoveCouponCodeArgs
+    >(this.queries.REMOVE_COUPON_CODE, { couponCode });
+    this.activeOrder = await this.validateOrder(removeCouponCode);
+    this.eventBus.emit('coupon-code-removed', {
+      couponCode,
+    });
+    return removeCouponCode;
+  }
+
+  async setCustomerForOrder(
+    input: CreateCustomerInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
+    const { setCustomerForOrder } = await this.rawRequest<
+      any,
+      MutationSetCustomerForOrderArgs
+    >(this.queries.SET_CUSTOMER_FOR_ORDER, { input });
+    this.activeOrder = await this.validateOrder(setCustomerForOrder);
+    return setCustomerForOrder;
+  }
+
+  async setOrderShippingAddress(
+    input: CreateAddressInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
+    const { setOrderShippingAddress } = await this.rawRequest<
+      any,
+      MutationSetOrderShippingAddressArgs
+    >(this.queries.SET_ORDER_SHIPPING_ADDRESS, { input });
+    this.activeOrder = await this.validateOrder(setOrderShippingAddress);
+    return setOrderShippingAddress;
+  }
+
+  async addBillingAddress(
+    input: CreateAddressInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
+    const { setOrderBillingAddress } = await this.rawRequest<
+      any,
+      MutationSetOrderBillingAddressArgs
+    >(this.queries.SET_ORDER_BILLING_ADDRESS, { input });
+    this.activeOrder = await this.validateOrder(setOrderBillingAddress);
+    return setOrderBillingAddress;
+  }
+
+  async setOrderShippingMethod(
+    shippingMethodId: Id
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
+    const { setOrderShippingMethod } = await this.rawRequest<
+      any,
+      MutationSetOrderShippingMethodArgs
+    >(this.queries.SET_ORDER_SHIPPING_METHOD, { shippingMethodId });
+    this.activeOrder = await this.validateOrder(setOrderShippingMethod);
+    return setOrderShippingMethod;
+  }
+
+  async addPayment(
+    input: PaymentInput
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
+    const { addPaymentToOrder } = await this.rawRequest<
+      any,
+      MutationAddPaymentToOrderArgs
+    >(this.queries.ADD_PAYMENT_TO_ORDER, { input });
+    this.activeOrder = await this.validateOrder(addPaymentToOrder);
+    return addPaymentToOrder;
+  }
+
+  async transitionOrderToState(
+    state: string
+  ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
+    const { transitionOrderToState } = await this.rawRequest<
+      any,
+      MutationTransitionOrderToStateArgs
+    >(this.queries.TRANSITION_ORDER_TO_STATE, { state });
+    this.activeOrder = await this.validateOrder(transitionOrderToState);
+    return transitionOrderToState;
+  }
+
+  async getOrderByCode(code: string): Promise<ActiveOrderFieldsFragment> {
+    const { orderByCode } = await this.rawRequest<any, QueryOrderByCodeArgs>(
+      this.queries.GET_ORDER_BY_CODE,
+      { code }
+    );
+    return orderByCode;
   }
 }
