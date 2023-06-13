@@ -80,7 +80,7 @@ export const allByPercentage = new SubscriptionPromotionAction({
   },
   async executeOnSubscription(ctx, currentSubscriptionPrice, orderLine, args) {
     const discount = currentSubscriptionPrice * (args.discount / 100);
-    return discount;
+    return -discount;
   },
 });
 
@@ -116,7 +116,7 @@ export const withFacetsByPercentage = new SubscriptionPromotionAction({
   async executeOnSubscription(ctx, currentSubscriptionPrice, orderLine, args) {
     if (await facetValueChecker.hasFacetValues(orderLine, args.facets, ctx)) {
       const discount = currentSubscriptionPrice * (args.discount / 100);
-      return discount;
+      return -discount;
     }
     return 0;
   },
@@ -192,8 +192,8 @@ export const selectedProductsByPercentage = new SubscriptionPromotionAction({
   },
   async executeOnSubscription(ctx, currentSubscriptionPrice, orderLine, args) {
     if (lineContainsIds(args.productVariantIds, orderLine)) {
-      const discount = -currentSubscriptionPrice * (args.discount / 100);
-      return discount;
+      const discount = currentSubscriptionPrice * (args.discount / 100);
+      return -discount;
     }
     return 0;
   },

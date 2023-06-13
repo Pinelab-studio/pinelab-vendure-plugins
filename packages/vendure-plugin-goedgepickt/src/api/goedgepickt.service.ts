@@ -220,8 +220,11 @@ export class GoedgepicktService
   /**
    * Set webhook and update secrets in DB
    */
-  async setWebhooks(ctx: RequestContext): Promise<GoedgepicktConfigEntity> {
+  async setWebhooks(ctx: RequestContext): Promise<undefined> {
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     const webhookTarget = this.getWebhookUrl(ctx.channel.token);
     // Check if webhooks already present
     const webhooks = await client.getWebhooks();
@@ -260,7 +263,7 @@ export class GoedgepicktService
     } else {
       Logger.info(`StockWebhook already present`, loggerCtx);
     }
-    return await this.upsertConfig(ctx, {
+    await this.upsertConfig(ctx, {
       orderWebhookKey: orderSecret,
       stockWebhookKey: stockSecret,
     });
@@ -273,15 +276,18 @@ export class GoedgepicktService
   private async createOrder(
     ctx: RequestContext,
     order: Order
-  ): Promise<GgOrder> {
+  ): Promise<GgOrder | undefined> {
     try {
+      const client = await this.getClientForChannel(ctx);
+      if (!client) {
+        return undefined;
+      }
       const orderItems: OrderItemInput[] = order.lines.map((orderLine) => ({
         sku: orderLine.productVariant.sku,
         productName: orderLine.productVariant.name,
         productQuantity: orderLine.quantity,
         taxRate: orderLine.taxRate,
       }));
-      const client = await this.getClientForChannel(ctx);
       if (
         !order.shippingAddress.streetLine2 ||
         !order.shippingAddress.streetLine1 ||
@@ -423,10 +429,20 @@ export class GoedgepicktService
     );
   }
 
-  async getClientForChannel(ctx: RequestContext): Promise<GoedgepicktClient> {
+  /**
+   * Returns undefined if plugin is disabled
+   */
+  async getClientForChannel(
+    ctx: RequestContext
+  ): Promise<GoedgepicktClient | undefined> {
     const config = await this.getConfig(ctx);
-    if (!config || !config?.apiKey || !config.webshopUuid) {
-      throw Error(`Incomplete config found for channel ${ctx.channel.token}`);
+    if (!config?.enabled) {
+      return undefined;
+    }
+    if (!config?.apiKey || !config.webshopUuid) {
+      throw Error(
+        `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`
+      );
     }
     return new GoedgepicktClient({
       webshopUuid: config.webshopUuid,
@@ -460,9 +476,12 @@ export class GoedgepicktService
   /**
    * Creates 2 types of jobs: jobs for pushing products and jobs for updating stocklevels
    */
-  async createFullsyncJobs(channelToken: string) {
+  async createFullsyncJobs(channelToken: string): Promise<void> {
     const ctx = await this.getCtxForChannel(channelToken);
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     const [ggProducts, variants] = await Promise.all([
       client.getAllProducts(),
       this.getAllVariants(ctx),
@@ -510,6 +529,9 @@ export class GoedgepicktService
     { products }: PushProductJobData
   ): Promise<void> {
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     for (const product of products) {
       if (product.uuid) {
         await client.updateProduct(product.uuid, product);
@@ -536,13 +558,16 @@ export class GoedgepicktService
 
   /**
    * Create or update products in Goedgepickt based on given Vendure variants
-   * Waits for 1 minute every 30 products, because of Goedgepickts rate limit
+   * Waits for 1 minute every 30 products, because of Goedgepickt's rate limit
    */
   async handlePushByVariantsJob(
     ctx: RequestContext,
     { variants }: PushProductByVariantsJobData
   ): Promise<void> {
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     for (const variant of variants) {
       const existing = await client.findProductBySku(variant.sku);
       const product = this.mapToProductInput(

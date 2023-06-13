@@ -44,7 +44,7 @@ import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import {
   calculateSubscriptionPricing,
-  getDiscountedRecurringPrice,
+  applySubscriptionPromotions,
   getNextCyclesStartDate,
   printMoney,
 } from './pricing.helper';
@@ -241,7 +241,7 @@ export class StripeSubscriptionService {
     if (!order) {
       throw new UserInputError('No active order for session');
     }
-    if (!order.total) {
+    if (!order.totalWithTax) {
       // Add a verification fee to the order to support orders that are actually $0
       order = (await this.orderService.addSurchargeToOrder(ctx, order.id, {
         description: 'Verification fee',
@@ -321,8 +321,10 @@ export class StripeSubscriptionService {
         `No variant found with id ${input!.productVariantId}`
       );
     }
-    if (!variant.price) {
-      throw new UserInputError(`Variant ${variant.id} has no price`);
+    if (!variant.listPrice) {
+      throw new UserInputError(
+        `Variant ${variant.id} doesn't have a "listPrice". Variant.listPrice is needed to calculate subscription pricing`
+      );
     }
     if (!variant.customFields.subscriptionSchedule) {
       throw new UserInputError(
@@ -353,7 +355,7 @@ export class StripeSubscriptionService {
     orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing> {
     await this.entityHydrator.hydrate(ctx, orderLine, {
-      relations: ['productVariant', 'order', 'order.promotions'],
+      relations: ['productVariant.taxCategory', 'order', 'order.promotions'],
       applyProductVariantPrices: true,
     });
     if (!orderLine.productVariant?.enabled) {
@@ -376,7 +378,7 @@ export class StripeSubscriptionService {
       }
     );
     // Execute promotions on recurringPrice
-    const discountedRecurringPrice = await getDiscountedRecurringPrice(
+    const discountedRecurringPrice = await applySubscriptionPromotions(
       ctx,
       subscriptionPricing.recurringPrice,
       orderLine,
