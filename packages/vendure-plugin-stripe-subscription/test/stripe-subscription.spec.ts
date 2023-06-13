@@ -56,8 +56,7 @@ import {
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
 } from './helpers';
-
-jest.setTimeout(20000);
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
@@ -123,9 +122,14 @@ describe('Stripe Subscription Plugin', function () {
     await adminClient.asSuperAdmin();
     await adminClient.query(CREATE_PAYMENT_METHOD, {
       input: {
+        translations: [
+          {
+            languageCode: 'en',
+            name: 'Stripe test payment',
+            description: 'This is a Stripe payment method',
+          },
+        ],
         code: 'stripe-subscription-method',
-        name: 'Stripe test payment',
-        description: 'This is a Stripe payment method',
         enabled: true,
         checker: {
           code: 'has-stripe-subscription-products-checker',
