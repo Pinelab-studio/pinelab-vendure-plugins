@@ -57,7 +57,6 @@ import {
   UPDATE_VARIANT,
 } from './helpers';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-// jest.setTimeout(20000);
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
