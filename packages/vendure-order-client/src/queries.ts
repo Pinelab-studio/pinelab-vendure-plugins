@@ -214,7 +214,7 @@ export class GraphqlQueries {
 
   SET_ORDER_SHIPPING_METHOD = gql`
     ${this.ACTIVE_ORDER_FIELDS}
-    mutation SetOrderShippingMethod($shippingMethodId: ID!) {
+    mutation SetOrderShippingMethod($shippingMethodId: [ID!]!) {
       setOrderShippingMethod(shippingMethodId: $shippingMethodId) {
         ... on Order {
           ...ActiveOrderFields

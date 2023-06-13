@@ -24,7 +24,7 @@ import {
   QueryOrderByCodeArgs,
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
-} from './graphql-types';
+} from './graphql-types.v2';
 import mitt from 'mitt';
 import { Id, VendureOrderEvents } from './vendure-order-events';
 import { MutationAddPaymentToOrderArgs } from './graphql-types';
@@ -297,7 +297,7 @@ export class VendureOrderClient<A = {}> {
   }
 
   async setOrderShippingMethod(
-    shippingMethodId: Id
+    shippingMethodId: Id[]
   ): Promise<ActiveOrderFieldsFragment | ErrorResult> {
     const { setOrderShippingMethod } = await this.rawRequest<
       any,

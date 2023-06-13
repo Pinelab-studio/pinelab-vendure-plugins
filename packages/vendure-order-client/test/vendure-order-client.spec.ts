@@ -13,7 +13,7 @@ import {
   Customer,
   ErrorResult,
   PaymentInput,
-} from '../src/graphql-types';
+} from '../src/graphql-types.v2';
 import { TestServer } from '@vendure/testing/lib/test-server';
 // import { gql } from 'graphql-request';
 import path from 'path';
@@ -87,19 +87,38 @@ describe('Vendure order client', () => {
 
   it('Creates a promotion', async () => {
     await adminClient.asSuperAdmin();
-    const promotion = await createPromotion(
-      adminClient as any,
-      couponCodeName,
-      'order_fixed_discount',
-      [
-        {
-          name: 'discount',
-          value: '10',
-        },
-      ]
+    const { createPromotion } = await adminClient.query(
+      gql`
+        mutation CreatePromotionMutation($name: String!) {
+          createPromotion(
+            input: {
+              enabled: true
+              couponCode: $name
+              translations: [{ languageCode: en, name: $name }]
+              conditions: []
+              actions: [
+                {
+                  code: "order_fixed_discount"
+                  arguments: [{ name: "discount", value: "10" }]
+                }
+              ]
+            }
+          ) {
+            ... on Promotion {
+              id
+              name
+              couponCode
+            }
+            ... on ErrorResult {
+              errorCode
+            }
+          }
+        }
+      `,
+      { name: couponCodeName }
     );
-    expect(promotion.name).toBe(couponCodeName);
-    expect(promotion.couponCode).toBe(couponCodeName);
+    expect(createPromotion.name).toBe(couponCodeName);
+    expect(createPromotion.couponCode).toBe(couponCodeName);
   });
 
   it('Creates a client', async () => {
@@ -279,7 +298,7 @@ describe('Vendure order client', () => {
     });
 
     it('Sets shipping method', async () => {
-      const result = await client.setOrderShippingMethod('T_1');
+      const result = await client.setOrderShippingMethod(['T_1']);
       expect(
         (result as ActiveOrderFieldsFragment).shippingLines?.length
       ).toEqual(1);
