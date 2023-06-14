@@ -2,8 +2,8 @@ name: Test packages
 on: ['pull_request']
 
 jobs:
-  prettier:
-    name: Prettier
+  lint:
+    name: Prettier formatting and linting check
     runs-on: ubuntu-latest
     defaults:
       run:
