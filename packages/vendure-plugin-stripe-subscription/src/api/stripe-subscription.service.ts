@@ -164,7 +164,7 @@ export class StripeSubscriptionService {
         )
           .map(
             (stockMovement) =>
-              stockMovement.orderItem.line as OrderLineWithSubscriptionFields
+              stockMovement.orderLine as OrderLineWithSubscriptionFields
           )
           // Filter out non-sub orderlines
           .filter((orderLine) => orderLine.customFields.subscriptionIds);

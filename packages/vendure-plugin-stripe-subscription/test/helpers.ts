@@ -163,7 +163,7 @@ export const SET_SHIPPING_ADDRESS = gql`
 `;
 
 export const SET_SHIPPING_METHOD = gql`
-  mutation SetShippingMethod($id: ID!) {
+  mutation SetShippingMethod($id: [ID!]!) {
     setOrderShippingMethod(shippingMethodId: $id) {
       ... on Order {
         id
@@ -232,7 +232,7 @@ export async function setShipping(
   });
   //@ts-ignore
   await shopClient.query(SET_SHIPPING_METHOD, {
-    id: 1,
+    id: [1],
   });
 }
 

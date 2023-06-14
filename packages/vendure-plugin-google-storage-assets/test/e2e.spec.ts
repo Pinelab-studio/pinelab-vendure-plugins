@@ -14,12 +14,12 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import { GoogleStoragePlugin, GoogleStorageStrategy } from '../src';
+import { describe, it, expect, afterAll, beforeAll } from 'vitest';
 
-jest.setTimeout(60000);
 describe('Google Storage Assets plugin', () => {
-  let testServer: TestServer;
+  let server: TestServer;
 
-  it('Server should start', async () => {
+  beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       apiOptions: {
@@ -38,16 +38,18 @@ describe('Google Storage Assets plugin', () => {
         GoogleStoragePlugin,
       ],
     });
-    const { server } = createTestEnvironment(config);
-    testServer = server;
-    const serverStart = server.init({
+    ({ server } = createTestEnvironment(config));
+    await server.init({
       initialData: initialData as InitialData,
       productsCsvPath: '../test/src/products-import.csv',
     });
-    await expect(serverStart).resolves.toEqual(undefined);
+  }, 20000);
+
+  it('Should start server', async () => {
+    await expect(server.app.getHttpServer).toBeDefined();
   });
 
   afterAll(() => {
-    return testServer.destroy();
-  });
+    return server.destroy();
+  }, 20000);
 });
