@@ -6,6 +6,7 @@ export async function createPromotionMutation(
   name: string,
   adminClient: SimpleGraphQLClient
 ): Promise<any> {
+  // eslint-disable-next-line @typescript-eslint/return-await
   return await adminClient.query(CREATE_PROMOTION, {
     input: {
       enabled: true,
