@@ -65,6 +65,7 @@
           "customer-managed-groups",
           "popularity-scores",
           "modify-customer-orders",
+          "vendure-order-client",
           "all-plugins"
         ]
       ]
