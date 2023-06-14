@@ -8,10 +8,12 @@ import {
 } from '@vendure/core';
 import {
   createTestEnvironment,
+  MysqlInitializer,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -22,6 +24,7 @@ require('dotenv').config();
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  // registerInitializer('mysql', new MysqlInitializer());
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
@@ -34,13 +37,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*         app: compileUiExtensions({
-          outputPath: path.join(__dirname, "__admin-ui"),
-          extensions: [
-            CustomerGroupExtensionsPlugin.ui,
-          ],
-          devMode: true
-        }) */
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [CustomerManagedGroupsPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
     apiOptions: {
@@ -53,6 +54,19 @@ require('dotenv').config();
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
+    // dbConnectionOptions:{
+    //   type: 'mysql',
+    //   // See the README.md "Migrations" section for an explanation of
+    //   // the `synchronize` and `migrations` options.
+    //   synchronize: false,
+    //   migrations: [],
+    //   logging: false,
+    //   database: 'vendure_test',
+    //   host: 'http://localhost',
+    //   port: 3306,
+    //   username: 'pinelab',
+    //   password: 'password',
+    // }
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({

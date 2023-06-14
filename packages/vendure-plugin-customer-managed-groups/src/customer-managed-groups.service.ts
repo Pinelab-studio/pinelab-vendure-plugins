@@ -33,15 +33,15 @@ import {
   CustomerManagedGroupMember,
   UpdateCustomerManagedGroupMemberInput,
 } from './generated/graphql';
-import { getRepository } from 'typeorm';
-
+import { DataSource } from 'typeorm';
 @Injectable()
 export class CustomerManagedGroupsService {
   constructor(
     private orderService: OrderService,
     private customerService: CustomerService,
     private customerGroupService: CustomerGroupService,
-    private hydrator: EntityHydrator
+    private hydrator: EntityHydrator,
+    private dataSource: DataSource
   ) {}
 
   async getOrdersForCustomer(
@@ -206,7 +206,7 @@ export class CustomerManagedGroupsService {
     ctx: RequestContext,
     userId: ID
   ): Promise<CustomerWithCustomFields> {
-    const customerRepo = getRepository(Customer);
+    const customerRepo = this.dataSource.getRepository(Customer);
     const customerWithGroupsData = await customerRepo
       .createQueryBuilder('customer')
       .leftJoin('customer.channels', 'customer_channel')
@@ -454,7 +454,7 @@ export class CustomerManagedGroupsService {
       );
     }
 
-    const userRepo = getRepository(User);
+    const userRepo = this.dataSource.getRepository(User);
     if (
       input.emailAddress &&
       (await userRepo.count({
@@ -540,7 +540,7 @@ export class CustomerManagedGroupsService {
         'Customer is already admin of this customer managed group'
       );
     }
-    const customerGroupRepo = getRepository(CustomerGroup);
+    const customerGroupRepo = this.dataSource.getRepository(CustomerGroup);
     const partialValue = {
       id: customerGroup.id,
       customFields: {
