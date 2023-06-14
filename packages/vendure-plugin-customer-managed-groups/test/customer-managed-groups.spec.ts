@@ -1,9 +1,4 @@
-import {
-  DefaultLogger,
-  examplePaymentHandler,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,

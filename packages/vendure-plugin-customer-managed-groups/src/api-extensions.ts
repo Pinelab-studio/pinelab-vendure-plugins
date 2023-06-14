@@ -2,7 +2,6 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
-  ForbiddenError,
   ID,
   Order,
   PaginatedList,
