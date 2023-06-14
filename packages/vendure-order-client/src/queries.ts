@@ -1,11 +1,7 @@
-import { GraphQLClient, gql } from 'graphql-request';
+import { gql } from 'graphql-request';
 
 export class GraphqlQueries {
-  constructor(private ADDITIONAL_ORDER_FIELDS: string) {
-    // if (additionalOrderFields) {
-    //   this.ADDITIONAL_ORDER_FIELDS = additionalOrderFields;
-    // }
-  }
+  constructor(private readonly ADDITIONAL_ORDER_FIELDS: string) {}
 
   ACTIVE_ORDER_FIELDS = gql`
     ${this.ADDITIONAL_ORDER_FIELDS}

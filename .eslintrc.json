@@ -9,7 +9,10 @@
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module",
-    "project": ["./packages/*/tsconfig.json"]
+    "project": [
+      "./packages/vendure-order-client/test/tsconfig.json",
+      "./packages/*/tsconfig.json"
+    ]
   },
   "plugins": [],
   "rules": {
@@ -50,7 +53,6 @@
     "packages/vendure-plugin-stripe-subscription/",
     "packages/vendure-plugin-variant-bulk-update/",
     "packages/vendure-plugin-webhook/",
-    "packages/vendure-plugin-modify-customer-orders/",
-    "packages/vendure-order-client/"
+    "packages/vendure-plugin-modify-customer-orders/"
   ]
 }

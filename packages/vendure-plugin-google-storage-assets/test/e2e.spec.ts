@@ -43,7 +43,7 @@ describe('Google Storage Assets plugin', () => {
       initialData: initialData as InitialData,
       productsCsvPath: '../test/src/products-import.csv',
     });
-  });
+  }, 20000);
 
   it('Should start server', async () => {
     await expect(server.app.getHttpServer).toBeDefined();
@@ -51,5 +51,5 @@ describe('Google Storage Assets plugin', () => {
 
   afterAll(() => {
     return server.destroy();
-  });
+  }, 20000);
 });

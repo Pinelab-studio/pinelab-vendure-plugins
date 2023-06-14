@@ -11,9 +11,9 @@ export interface CouponEvent {
   couponCode: string;
 }
 
-export type VendureOrderEvents = {
+export interface VendureOrderEvents {
   'item-added': ItemEvent;
   'item-removed': ItemEvent;
   'coupon-code-applied': CouponEvent;
   'coupon-code-removed': CouponEvent;
-};
+}

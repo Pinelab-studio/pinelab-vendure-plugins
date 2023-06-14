@@ -1,5 +1,4 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
-import { gql } from 'graphql-tag';
 import {
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -7,14 +6,14 @@ import {
   registerInitializer,
   testConfig,
 } from '@vendure/testing';
+import { TestServer } from '@vendure/testing/lib/test-server';
+import { gql } from 'graphql-tag';
 import {
   ActiveOrderFieldsFragment,
   CreateAddressInput,
-  Customer,
   ErrorResult,
   PaymentInput,
 } from '../src/graphql-types.v2';
-import { TestServer } from '@vendure/testing/lib/test-server';
 // import { gql } from 'graphql-request';
 import path from 'path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -24,10 +23,6 @@ import {
   VendureOrderEvent,
 } from '../src/';
 import { initialData } from './initial-data';
-import { createPromotionMutation } from './test-utils';
-import { addShippingMethod, createPromotion } from '../../test/src/admin-utils';
-import { CreatePaymentMethodInput } from '../../test/src/generated/admin-graphql';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
 // import {Ad} from '@vendure/testing';
 
@@ -49,7 +44,9 @@ const additionalOrderFields = `
     }
   }
 `;
-type AdditionalOrderFields = { history: { totalItems: number } };
+interface AdditionalOrderFields {
+  history: { totalItems: number };
+}
 
 let client: VendureOrderClient<AdditionalOrderFields>;
 let latestEmittedEvent: [string, VendureOrderEvent];
@@ -60,9 +57,9 @@ let latestEmittedEvent: [string, VendureOrderEvent];
  */
 describe('Vendure order client', () => {
   let server: TestServer;
-  let couponCodeName = 'couponCodeName';
-  let activeOrderCode;
-  let adminClient: any;
+  const couponCodeName = 'couponCodeName';
+  let activeOrderCode: string | undefined;
+  let adminClient: SimpleGraphQLClient;
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
   beforeAll(async () => {
@@ -82,7 +79,7 @@ describe('Vendure order client', () => {
   }, 60000);
 
   it('Starts the server successfully', async () => {
-    expect(server.app.getHttpServer).toBeDefined;
+    expect(server.app.getHttpServer).toBeDefined();
   });
 
   it('Creates a promotion', async () => {
@@ -256,15 +253,13 @@ describe('Vendure order client', () => {
         lastName: 'Zohn',
       };
       const result = await client.setCustomerForOrder(createCustomerInput);
-      expect(
-        (result as ActiveOrderFieldsFragment).customer!.emailAddress
-      ).toEqual(createCustomerInput.emailAddress);
-      expect((result as ActiveOrderFieldsFragment).customer!.firstName).toEqual(
-        createCustomerInput.firstName
-      );
-      expect((result as ActiveOrderFieldsFragment).customer!.lastName).toEqual(
-        createCustomerInput.lastName
-      );
+      const customer = (result as ActiveOrderFieldsFragment).customer;
+      if (!customer) {
+        throw Error('Failed to create customer');
+      }
+      expect(customer.emailAddress).toEqual(createCustomerInput.emailAddress);
+      expect(customer.firstName).toEqual(createCustomerInput.firstName);
+      expect(customer.lastName).toEqual(createCustomerInput.lastName);
     });
 
     it('Adds shipping address', async () => {
@@ -275,12 +270,17 @@ describe('Vendure order client', () => {
       const result = await client.setOrderShippingAddress(
         addShippingAddressInput
       );
-      expect(
-        (result as ActiveOrderFieldsFragment).shippingAddress!.country
-      ).toEqual(regionNames.of(addShippingAddressInput.countryCode));
-      expect(
-        (result as ActiveOrderFieldsFragment).shippingAddress!.streetLine1
-      ).toEqual(addShippingAddressInput.streetLine1);
+      const shippingAddress = (result as ActiveOrderFieldsFragment)
+        .shippingAddress;
+      if (!shippingAddress) {
+        throw Error('Failed to set shipping address');
+      }
+      expect(shippingAddress.country).toEqual(
+        regionNames.of(addShippingAddressInput.countryCode)
+      );
+      expect(shippingAddress.streetLine1).toEqual(
+        addShippingAddressInput.streetLine1
+      );
     });
 
     it('Adds billing address', async () => {
@@ -289,12 +289,17 @@ describe('Vendure order client', () => {
         countryCode: 'GB',
       };
       const result = await client.addBillingAddress(addBillingAddressInput);
-      expect(
-        (result as ActiveOrderFieldsFragment).billingAddress!.country
-      ).toEqual(regionNames.of(addBillingAddressInput.countryCode));
-      expect(
-        (result as ActiveOrderFieldsFragment).billingAddress!.streetLine1
-      ).toEqual(addBillingAddressInput.streetLine1);
+      const billingAddress = (result as ActiveOrderFieldsFragment)
+        .billingAddress;
+      if (!billingAddress) {
+        throw Error('Failed to set billing address');
+      }
+      expect(billingAddress.country).toEqual(
+        regionNames.of(addBillingAddressInput.countryCode)
+      );
+      expect(billingAddress.streetLine1).toEqual(
+        addBillingAddressInput.streetLine1
+      );
     });
 
     it('Sets shipping method', async () => {
@@ -337,9 +342,7 @@ describe('Vendure order client', () => {
 
     it('Gets order by code', async () => {
       const result = await client.getOrderByCode(activeOrderCode);
-      expect(activeOrderCode).toEqual(
-        (result as ActiveOrderFieldsFragment).code
-      );
+      expect(activeOrderCode).toEqual(result.code);
     });
   });
 
@@ -363,7 +366,7 @@ describe('Vendure order client', () => {
     });
   });
 
-  afterAll(() => {
-    return server.destroy();
+  afterAll(async () => {
+    await server.destroy();
   });
 });

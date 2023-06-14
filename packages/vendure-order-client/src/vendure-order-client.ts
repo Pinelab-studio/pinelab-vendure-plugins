@@ -1,6 +1,7 @@
-import { GraphqlQueries } from './queries';
 import { GraphQLClient, Variables, gql } from 'graphql-request';
-import { atom, WritableAtom } from 'nanostores';
+import mitt from 'mitt';
+import { WritableAtom, atom } from 'nanostores';
+import { MutationAddPaymentToOrderArgs } from './graphql-types';
 import {
   ActiveOrderFieldsFragment,
   ActiveOrderQuery,
@@ -8,10 +9,8 @@ import {
   AdditemToOrderMutationVariables,
   AdjustOrderLineMutation,
   AdjustOrderLineMutationVariables,
-  ApplyCouponCodeResult,
   CreateAddressInput,
   CreateCustomerInput,
-  Customer,
   ErrorResult,
   MutationApplyCouponCodeArgs,
   MutationRemoveCouponCodeArgs,
@@ -25,9 +24,8 @@ import {
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
 } from './graphql-types.v2';
-import mitt from 'mitt';
+import { GraphqlQueries } from './queries';
 import { Id, VendureOrderEvents } from './vendure-order-events';
-import { MutationAddPaymentToOrderArgs } from './graphql-types';
 
 /**
  * Used when no additional fields are given
@@ -52,7 +50,7 @@ export type OrderResult<T> = ActiveOrder<T> | ErrorResult;
  * );
  * Generic type A is the type of the additional fields that can be added to the order.
  */
-export class VendureOrderClient<A = {}> {
+export class VendureOrderClient<A = unknown> {
   queries: GraphqlQueries;
   client: GraphQLClient;
   eventBus = mitt<VendureOrderEvents>();
@@ -66,6 +64,7 @@ export class VendureOrderClient<A = {}> {
   get activeOrder(): ActiveOrder<A> | undefined {
     return this.activeOrderStore.get();
   }
+
   set activeOrder(order: ActiveOrder<A> | undefined) {
     this.activeOrderStore.set(order);
   }
@@ -131,30 +130,30 @@ export class VendureOrderClient<A = {}> {
     );
     const newQuantity = adjustedOrderLine?.quantity ?? 0;
     const adjustment = newQuantity - currentQuantity;
-    // We assume either the current or the adjusted order line has a variant id
-    const variantId = (currentOrderLine?.productVariant.id ||
-      adjustedOrderLine?.productVariant.id)!;
+    const variantId =
+      currentOrderLine?.productVariant.id ??
+      adjustedOrderLine?.productVariant.id;
     if (adjustment > 0) {
       this.eventBus.emit('item-added', {
-        productVariantIds: [variantId],
+        productVariantIds: variantId ? [variantId] : [],
         quantity: adjustment,
       });
     } else {
       this.eventBus.emit('item-removed', {
-        productVariantIds: [variantId],
-        quantity: -adjustment,
+        productVariantIds: variantId ? [variantId] : [],
+        quantity: -adjustment, // adjustment is negative, so invert it
       });
     }
     return this.activeOrder;
   }
 
   async removeOrderLine(orderLineId: Id): Promise<ActiveOrder<A> | undefined> {
-    return this.adjustOrderLine(orderLineId, 0);
+    return await this.adjustOrderLine(orderLineId, 0);
   }
 
   async removeAllOrderLines(): Promise<ActiveOrder<A> | undefined> {
-    const totalQuantity = this.activeOrder?.totalQuantity || 0;
-    const productVariantIds =
+    const totalQuantity = this.activeOrder?.totalQuantity ?? 0;
+    const allVariantIds =
       this.activeOrder?.lines.map((line) => line.productVariant.id) ?? [];
     const { removeAllOrderLines } = await this.rawRequest<
       RemoveAllOrderLinesMutation,
@@ -162,7 +161,7 @@ export class VendureOrderClient<A = {}> {
     >(this.queries.REMOVE_ALL_ORDERLINES);
     this.activeOrder = await this.validateOrder(removeAllOrderLines);
     this.eventBus.emit('item-removed', {
-      productVariantIds,
+      productVariantIds: allVariantIds,
       quantity: totalQuantity,
     });
     return this.activeOrder;
@@ -213,18 +212,19 @@ export class VendureOrderClient<A = {}> {
     if (result && (result as ErrorResult).errorCode) {
       const error = result as ErrorResult;
       if (
-        error.errorCode === 'ORDER_MODIFICATION_ERROR' ||
+        error.errorCode === 'ORDER_MODIFICATION_ERROR' ??
         error.errorCode === 'ORDER_PAYMENT_STATE_ERROR'
       ) {
         window.localStorage.removeItem(this.tokenName); // These are unrecoverable states, so remove activeOrder
       }
       if (
-        error.errorCode === 'INSUFFICIENT_STOCK_ERROR' ||
+        error.errorCode === 'INSUFFICIENT_STOCK_ERROR' ??
         error.errorCode === 'COUPON_CODE_INVALID_ERROR'
       ) {
         // Fetch activeOrder to get the current right amount of items per orderLine
         await this.getActiveOrder();
       }
+      // eslint-disable-next-line @typescript-eslint/no-throw-literal
       throw error;
     }
     // We've verified that result is not an error, so we can safely cast it

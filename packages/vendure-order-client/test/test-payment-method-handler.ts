@@ -1,8 +1,4 @@
-import {
-  LanguageCode,
-  PaymentMethod,
-  PaymentMethodHandler,
-} from '@vendure/core';
+import { LanguageCode, PaymentMethodHandler } from '@vendure/core';
 
 export const testPaymentMethodHandler = new PaymentMethodHandler({
   code: 'test-payment-method',

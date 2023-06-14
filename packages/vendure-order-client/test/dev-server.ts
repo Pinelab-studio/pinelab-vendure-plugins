@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -14,7 +15,7 @@ import { initialData } from './initial-data.js';
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
-  let serverStarted = false;
+  const serverStarted = false;
 
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
@@ -30,4 +31,6 @@ import { initialData } from './initial-data.js';
     initialData,
     productsCsvPath: path.join('../test/product-import.csv'),
   });
-})();
+})().catch((err) => {
+  console.error(err);
+});

@@ -5,7 +5,7 @@ import { LanguageCode } from '@vendure/core';
 export async function createPromotionMutation(
   name: string,
   adminClient: SimpleGraphQLClient
-) {
+): Promise<any> {
   return await adminClient.query(CREATE_PROMOTION, {
     input: {
       enabled: true,
