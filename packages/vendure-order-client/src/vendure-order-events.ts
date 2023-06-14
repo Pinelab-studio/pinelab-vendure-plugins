@@ -11,9 +11,10 @@ export interface CouponEvent {
   couponCode: string;
 }
 
-export interface VendureOrderEvents {
+// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
+export type VendureOrderEvents = {
   'item-added': ItemEvent;
   'item-removed': ItemEvent;
   'coupon-code-applied': CouponEvent;
   'coupon-code-removed': CouponEvent;
-}
+};

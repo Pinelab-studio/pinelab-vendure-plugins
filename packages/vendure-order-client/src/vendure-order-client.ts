@@ -1,5 +1,5 @@
 import { GraphQLClient, Variables, gql } from 'graphql-request';
-import mitt from 'mitt';
+import mitt, { Emitter } from 'mitt';
 import { WritableAtom, atom } from 'nanostores';
 import { MutationAddPaymentToOrderArgs } from './graphql-types';
 import {
@@ -53,7 +53,7 @@ export type OrderResult<T> = ActiveOrder<T> | ErrorResult;
 export class VendureOrderClient<A = unknown> {
   queries: GraphqlQueries;
   client: GraphQLClient;
-  eventBus = mitt<VendureOrderEvents>();
+  eventBus: Emitter<VendureOrderEvents> = mitt<VendureOrderEvents>();
   /**
    * The nanostore object that holds the active order.
    * For getting/setting the actual activeOrder, use `client.activeOrder`
@@ -170,7 +170,7 @@ export class VendureOrderClient<A = unknown> {
   /**
    * Execute a GraphQL query or mutation
    */
-  async rawRequest<T = void, I extends Variables | undefined = undefined>(
+  async rawRequest<T = void, I = undefined>(
     document: string,
     variables?: I
   ): Promise<T> {
@@ -186,7 +186,7 @@ export class VendureOrderClient<A = unknown> {
     try {
       const { data, headers } = (await this.client.rawRequest(
         document,
-        variables
+        variables as Variables // Needed because of TS bug https://github.com/microsoft/TypeScript/issues/42825
       )) as any;
       const token = headers.get(this.tokenName);
       if (token && window?.localStorage) {

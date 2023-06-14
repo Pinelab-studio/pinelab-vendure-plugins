@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "start": "ts-node --esm ./test/dev-server.ts",
-    "build": "rimraf lib && rollup -c rollup.config.js",
+    "build": "yarn tsc && rimraf lib && rollup -c rollup.config.js",
     "test": "vitest run",
     "generate": "graphql-codegen"
   },
