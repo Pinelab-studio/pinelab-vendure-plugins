@@ -15,7 +15,7 @@ interface GoogleInvoiceConfig {
 }
 
 export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
-  private storage: import('@google-cloud/storage').Storage;
+  private storage!: import('@google-cloud/storage').Storage;
   private bucketName: string;
 
   constructor(private config: GoogleInvoiceConfig) {

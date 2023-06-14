@@ -5,46 +5,28 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
-  CollectionModificationEvent,
+  AttemptedLoginEvent,
   DefaultLogger,
   DefaultSearchPlugin,
   InitialData,
   LogLevel,
   ProductEvent,
-  ProductVariantChannelEvent,
-  ProductVariantEvent,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { WebhookPlugin } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
+import { stringifyProductTransformer } from './test-helpers';
 
 (async () => {
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   testConfig.plugins.push(
     WebhookPlugin.init({
-      httpMethod: 'POST',
       delay: 3000,
-      events: [
-        ProductEvent,
-        ProductVariantChannelEvent,
-        ProductVariantEvent,
-        CollectionModificationEvent,
-      ],
-      requestTransformers: [
-        {
-          name: 'My transformer 1',
-          transform: async (event, injector) => ({ body: 'my custom body 1' }),
-        },
-        {
-          name: 'My other request Transformer',
-          transform: async (event, injector) => ({
-            body: 'my transformer body 2',
-          }),
-        },
-      ],
+      events: [ProductEvent, AttemptedLoginEvent],
+      requestTransformers: [stringifyProductTransformer],
     })
   );
   testConfig.plugins.push(DefaultSearchPlugin);

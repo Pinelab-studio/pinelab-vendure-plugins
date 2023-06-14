@@ -26,6 +26,9 @@ export const goedgepicktHandler = new FulfillmentHandler({
     if (args.goedGepicktOrderUUID) {
       try {
         const client = await service.getClientForChannel(ctx);
+        if (!client) {
+          throw Error(`GoedGepickt plugin is not enabled for this channel`);
+        }
         const order = await client.getOrder(args.goedGepicktOrderUUID);
         order.shipments?.forEach((shipment) => {
           if (shipment?.trackTraceCode) {
