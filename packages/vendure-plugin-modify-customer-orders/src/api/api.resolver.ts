@@ -5,7 +5,6 @@ import {
   RequestContext,
   Permission,
   OrderService,
-  CustomerService,
   ID,
   UserInputError,
   TransactionalConnection,
