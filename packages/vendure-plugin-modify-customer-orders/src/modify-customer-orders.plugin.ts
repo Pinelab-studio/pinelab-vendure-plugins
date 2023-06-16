@@ -18,7 +18,7 @@ export interface ModifyCustomerOrdersPluginOptions {
   imports: [PluginCommonModule],
   adminApiExtensions: {
     resolvers: [AdminApiResolver],
-    schema: adminApiExtension,
+    schema: adminApiExtension as any,
   },
   providers: [
     OrderTransitionListenerService,
