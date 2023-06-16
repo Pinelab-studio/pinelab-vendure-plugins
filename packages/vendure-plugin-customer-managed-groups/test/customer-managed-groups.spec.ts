@@ -1,9 +1,4 @@
-import {
-  DefaultLogger,
-  examplePaymentHandler,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -27,8 +22,7 @@ import {
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { Address } from '../../test/src/generated/shop-graphql';
-
-jest.setTimeout(10000);
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 describe('Customer managed groups', function () {
   let server: TestServer;
