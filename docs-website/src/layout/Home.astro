@@ -1,0 +1,46 @@
+---
+import { Card } from '@astrojs/starlight/components';
+import { readdir, readFile } from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const packagesDirRelativeLocation = '../../../packages';
+const getDirectories = async (source: string) =>
+  (await readdir(path.join(__dirname, source), { withFileTypes: true }))
+    .filter((dirent) => dirent.isDirectory())
+    .map((dirent) => dirent.name);
+const response = await getDirectories(packagesDirRelativeLocation);
+const allPackageDotJsonPaths = response.map((r) =>
+  path.join(__dirname, packagesDirRelativeLocation, r, 'package.json')
+);
+const packageDefinitions = await Promise.all(
+  allPackageDotJsonPaths
+    .map(async (p) => {
+      try {
+        return JSON.parse(await readFile(p, 'utf8'));
+      } catch (e) {
+        return undefined;
+      }
+    })
+    .filter((v) => v !== undefined)
+);
+---
+
+<div style="display:flex;flex-direction: column;column-gap: 1vh;row-gap: 1vw;">
+  {
+    packageDefinitions.map((j) => (
+      <Card title={j?.name} icon="document">
+        <div style="display:flex; flex-direction: row;width: 80vw;column-gap: 3vh;row-gap: 3vw;">
+          <div style="background-color: red; width: 10vw; height: 20vh;"></div>
+          <div style="display: flex;flex-direction: column;">
+            {j?.description}
+            <div>
+              <a href={'/plugin/' + (j?.name ?? '')}>READ MORE</a>
+            </div>
+          </div>
+        </div>
+      </Card>
+    ))
+  }
+</div>
