@@ -18,6 +18,7 @@ export interface ModifyCustomerOrdersPluginOptions {
   imports: [PluginCommonModule],
   adminApiExtensions: {
     resolvers: [AdminApiResolver],
+    // FIXME
     schema: adminApiExtension as any,
   },
   providers: [
