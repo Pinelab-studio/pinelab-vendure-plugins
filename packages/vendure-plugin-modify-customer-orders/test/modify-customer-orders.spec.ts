@@ -12,12 +12,12 @@ import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { convertToDraftMutation } from './test-helper';
 import { ModifyCustomerOrdersPlugin } from '../src';
-jest.setTimeout(10000);
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 describe('Customer managed groups', function () {
   let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
+  let adminClient: any;
+  let shopClient: any;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));

@@ -5,7 +5,6 @@ import {
   RequestContext,
   Permission,
   OrderService,
-  CustomerService,
   ID,
   UserInputError,
   TransactionalConnection,
@@ -33,7 +32,6 @@ export class AdminApiResolver {
       'lines',
       'lines.productVariant',
       'shippingLines',
-      'lines.items',
       'promotions',
       'customer',
       'shippingLines.shippingMethod',
@@ -100,11 +98,9 @@ export class AdminApiResolver {
       );
     }
     if (existingOrder.shippingLines[0]?.shippingMethod) {
-      await this.orderService.setShippingMethod(
-        ctx,
-        newDraft.id,
-        existingOrder.shippingLines[0]?.shippingMethod.id
-      );
+      await this.orderService.setShippingMethod(ctx, newDraft.id, [
+        existingOrder.shippingLines[0]?.shippingMethod.id,
+      ]);
       Logger.info(
         `Copied shipping ${existingOrder.shippingLines[0].shippingMethod.code} to new draft`,
         loggerCtx
