@@ -29,7 +29,7 @@ import { initialData } from './initial-data.js';
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
   await server.init({
     initialData,
-    productsCsvPath: path.join('../test/product-import.csv'),
+    productsCsvPath: 'test/product-import.csv',
   });
 })().catch((err) => {
   console.error(err);

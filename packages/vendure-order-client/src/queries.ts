@@ -1,5 +1,13 @@
 import { gql } from 'graphql-request';
 
+// Default fragment is always needed for codegen
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const dummyFragment = gql`
+  fragment AdditionalOrderFields on Order {
+    id
+  }
+`;
+
 export class GraphqlQueries {
   constructor(private readonly ADDITIONAL_ORDER_FIELDS: string) {}
 
@@ -11,7 +19,9 @@ export class GraphqlQueries {
       code
       state
       active
+      total
       totalWithTax
+      subTotal
       subTotalWithTax
       shippingWithTax
       totalQuantity
@@ -63,6 +73,11 @@ export class GraphqlQueries {
           sku
           name
           priceWithTax
+          product {
+            id
+            name
+            slug
+          }
         }
       }
       taxSummary {

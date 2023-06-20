@@ -1,6 +1,6 @@
 import { LanguageCode } from '@vendure/common/lib/generated-types.js';
 import { InitialData } from '@vendure/core';
-import { testPaymentMethodHandler } from './test-payment-method-handler';
+import { testPaymentMethodHandler } from './test-payment-method-handler.js';
 
 export const initialData: InitialData = {
   defaultLanguage: LanguageCode.en,
