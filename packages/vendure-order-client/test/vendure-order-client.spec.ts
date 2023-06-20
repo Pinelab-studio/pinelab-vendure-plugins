@@ -8,23 +8,19 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { gql } from 'graphql-tag';
+import path from 'path';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import {
+  VendureOrderClient,
+  VendureOrderEvent,
   ActiveOrderFieldsFragment,
   CreateAddressInput,
   ErrorResult,
   PaymentInput,
-} from '../src/graphql-types.v2';
-// import { gql } from 'graphql-request';
-import path from 'path';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import {
   CreateCustomerInput,
-  VendureOrderClient,
-  VendureOrderEvent,
 } from '../src/';
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
-// import {Ad} from '@vendure/testing';
 
 const storage: any = {};
 const window = {

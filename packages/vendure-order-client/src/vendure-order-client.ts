@@ -1,7 +1,6 @@
 import { GraphQLClient, Variables, gql } from 'graphql-request';
 import mitt, { Emitter } from 'mitt';
 import { WritableAtom, atom } from 'nanostores';
-import { MutationAddPaymentToOrderArgs } from './graphql-types';
 import {
   ActiveOrderFieldsFragment,
   ActiveOrderQuery,
@@ -23,7 +22,8 @@ import {
   QueryOrderByCodeArgs,
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
-} from './graphql-types.v2';
+  MutationAddPaymentToOrderArgs,
+} from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
 import { Id, VendureOrderEvents } from './vendure-order-events';
 

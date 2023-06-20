@@ -10,7 +10,7 @@ config:
     ID: number | string
 
 generates:
-  src/graphql-types.ts:
+  src/graphql-generated-types.ts:
     plugins:
       - 'typescript'
       - 'typescript-operations'

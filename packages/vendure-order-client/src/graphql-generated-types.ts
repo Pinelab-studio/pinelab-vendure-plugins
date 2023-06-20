@@ -9,9 +9,10 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
   [SubKey in K]: Maybe<T[SubKey]>;
 };
-export type MakeEmpty<T extends Record<string, unknown>, K extends keyof T> = {
-  [_ in K]?: never;
-};
+export type MakeEmpty<
+  T extends Record<string, unknown>,
+  K extends keyof T
+> = { [_ in K]?: never };
 export type Incremental<T> =
   | T
   | {
