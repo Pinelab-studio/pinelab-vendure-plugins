@@ -73,6 +73,11 @@ export class GraphqlQueries {
           sku
           name
           priceWithTax
+          product {
+            id
+            name
+            slug
+          }
         }
       }
       taxSummary {

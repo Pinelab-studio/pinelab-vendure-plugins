@@ -3403,6 +3403,12 @@ export interface ActiveOrderFieldsFragment {
       sku: string;
       name: string;
       priceWithTax: any;
+      product: {
+        __typename?: 'Product';
+        id: number | string;
+        name: string;
+        slug: string;
+      };
     };
   }>;
   taxSummary: Array<{
@@ -3519,6 +3525,12 @@ export interface AdditemToOrderMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -3642,6 +3654,12 @@ export interface AdjustOrderLineMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -3752,6 +3770,12 @@ export interface RemoveAllOrderLinesMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -3861,6 +3885,12 @@ export interface ActiveOrderQuery {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -3983,6 +4013,12 @@ export interface ApplyCounpnCodeMutationMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4089,6 +4125,12 @@ export interface RemoveCouponCodeMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4216,6 +4258,12 @@ export interface SetCustomerForOrderMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4327,6 +4375,12 @@ export interface SetOrderShippingAddressMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4438,6 +4492,12 @@ export interface SetOrderBillingAddressMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4554,6 +4614,12 @@ export interface SetOrderShippingMethodMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4675,6 +4741,12 @@ export interface AddPaymentToOrderMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4801,6 +4873,12 @@ export interface TransitionOrderToStateMutation {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
@@ -4913,6 +4991,12 @@ export interface GetOrderByCodeQuery {
             sku: string;
             name: string;
             priceWithTax: any;
+            product: {
+              __typename?: 'Product';
+              id: number | string;
+              name: string;
+              slug: string;
+            };
           };
         }>;
         taxSummary: Array<{
