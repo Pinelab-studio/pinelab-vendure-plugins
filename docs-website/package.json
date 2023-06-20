@@ -10,7 +10,9 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/prism": "^2.1.2",
     "@astrojs/starlight": "^0.2.0",
+    "@types/marked": "^5.0.0",
     "astro": "^2.5.0",
     "highlight.js": "^11.8.0",
     "marked": "^5.1.0",
