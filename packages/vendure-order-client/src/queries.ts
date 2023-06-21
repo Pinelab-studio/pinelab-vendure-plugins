@@ -52,6 +52,8 @@ export class GraphqlQueries {
         country
         countryCode
       }
+      shipping
+      shippingWithTax
       shippingLines {
         shippingMethod {
           id

@@ -9,9 +9,10 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
   [SubKey in K]: Maybe<T[SubKey]>;
 };
-export type MakeEmpty<T extends Record<string, unknown>, K extends keyof T> = {
-  [_ in K]?: never;
-};
+export type MakeEmpty<
+  T extends Record<string, unknown>,
+  K extends keyof T
+> = { [_ in K]?: never };
 export type Incremental<T> =
   | T
   | {
@@ -3341,6 +3342,7 @@ export interface ActiveOrderFieldsFragment {
   subTotalWithTax: any;
   shippingWithTax: any;
   totalQuantity: number;
+  shipping: any;
   couponCodes: string[];
   customer?:
     | {
@@ -3463,6 +3465,7 @@ export interface AdditemToOrderMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -3592,6 +3595,7 @@ export interface AdjustOrderLineMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -3708,6 +3712,7 @@ export interface RemoveAllOrderLinesMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -3823,6 +3828,7 @@ export interface ActiveOrderQuery {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -3951,6 +3957,7 @@ export interface ApplyCounpnCodeMutationMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4063,6 +4070,7 @@ export interface RemoveCouponCodeMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4196,6 +4204,7 @@ export interface SetCustomerForOrderMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4313,6 +4322,7 @@ export interface SetOrderShippingAddressMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4430,6 +4440,7 @@ export interface SetOrderBillingAddressMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4552,6 +4563,7 @@ export interface SetOrderShippingMethodMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4679,6 +4691,7 @@ export interface AddPaymentToOrderMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4811,6 +4824,7 @@ export interface TransitionOrderToStateMutation {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
@@ -4929,6 +4943,7 @@ export interface GetOrderByCodeQuery {
         subTotalWithTax: any;
         shippingWithTax: any;
         totalQuantity: number;
+        shipping: any;
         couponCodes: string[];
         customer?:
           | {
