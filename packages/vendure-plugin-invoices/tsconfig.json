@@ -2,8 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "dist",
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
-  "include": ["src/"],
+  "include": ["src/", "src/index.ts"],
   "exclude": ["src/ui"]
 }

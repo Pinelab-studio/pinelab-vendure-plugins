@@ -25,7 +25,7 @@ export class InvoiceResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: InvoiceConfigInput
   ): Promise<InvoiceConfigEntity> {
-    return this.service.upsertConfig(ctx.channelId as string, input);
+    return this.service.upsertConfig(input, ctx);
   }
 
   @Query()
@@ -33,7 +33,7 @@ export class InvoiceResolver {
   async invoiceConfig(
     @Ctx() ctx: RequestContext
   ): Promise<InvoiceConfigEntity | undefined> {
-    return this.service.getConfig(ctx.channelId as string);
+    return this.service.getConfig(ctx);
   }
 
   @Query()
@@ -42,7 +42,7 @@ export class InvoiceResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input?: InvoicesListInput
   ): Promise<InvoiceList> {
-    return this.service.getAllInvoices(ctx.channel, input);
+    return this.service.getAllInvoices(ctx, input);
   }
 
   @Query()

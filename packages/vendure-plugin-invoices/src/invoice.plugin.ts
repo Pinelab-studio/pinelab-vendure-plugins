@@ -44,10 +44,11 @@ export interface InvoicePluginConfig {
   ],
   controllers: [InvoiceController],
   adminApiExtensions: {
-    schema,
+    schema: schema as any,
     resolvers: [InvoiceResolver],
   },
-  configuration: (config) => InvoicePlugin.configure(config),
+  configuration: (config: RuntimeVendureConfig) =>
+    InvoicePlugin.configure(config),
 })
 export class InvoicePlugin {
   static config: InvoicePluginConfig;
@@ -55,7 +56,12 @@ export class InvoicePlugin {
   static init(
     config: Partial<InvoicePluginConfig> & { vendureHost: string }
   ): Type<InvoicePlugin> {
-    logIfInvalidLicense(Logger, PLUGIN_NAME, loggerCtx, config.licenseKey);
+    logIfInvalidLicense(
+      Logger as any,
+      PLUGIN_NAME,
+      loggerCtx,
+      config.licenseKey
+    );
     InvoicePlugin.config = {
       ...config,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
@@ -64,7 +70,9 @@ export class InvoicePlugin {
     return this;
   }
 
-  static async configure(config: RuntimeVendureConfig) {
+  static async configure(
+    config: RuntimeVendureConfig
+  ): Promise<RuntimeVendureConfig> {
     config.authOptions.customPermissions.push(invoicePermission);
     if (this.config.storageStrategy) {
       await this.config.storageStrategy.init();

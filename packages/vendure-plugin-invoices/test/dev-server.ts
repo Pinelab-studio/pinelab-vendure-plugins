@@ -19,7 +19,7 @@ import {
   InvoicePlugin,
   GoogleStorageInvoiceStrategy,
   InvoiceService,
-} from '../src';
+} from '..';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -45,11 +45,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [InvoicePlugin.ui],
-          devMode: true,
-        }),*/
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [InvoicePlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     paymentOptions: {
@@ -74,13 +74,13 @@ require('dotenv').config();
   const channel = await server.app.get(ChannelService).getDefaultChannel();
   await server.app
     .get(InvoiceService)
-    .upsertConfig(channel.id as string, { enabled: true });
+    .upsertConfig({ enabled: true }, undefined, channel.id as string);
   // Add a testorders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
-  await addShippingMethod(adminClient, 'manual-fulfillment');
+  await addShippingMethod(adminClient as any, 'manual-fulfillment');
   const orders = 3;
   for (let i = 1; i <= orders; i++) {
-    await createSettledOrder(shopClient, 3);
+    await createSettledOrder(shopClient as any, 3);
   }
   console.log(`Created ${orders} orders`);
 })();

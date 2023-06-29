@@ -18,7 +18,7 @@ import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { InvoicesQuery } from '../src/ui/generated/graphql';
-import { InvoicePlugin } from '../src';
+import { InvoicePlugin } from '..';
 import { defaultTemplate } from '../src/api/default-template';
 import { InvoiceService } from '../src/api/invoice.service';
 import {
@@ -34,16 +34,15 @@ import {
 } from '../src/ui/queries.graphql';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import gql from 'graphql-tag';
-
-jest.setTimeout(20000);
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 describe('Invoices plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
   let invoice: Invoice;
-  let order: Order;
+  //FIX ME
+  let order: any;
   let invoices: Invoice[] = [];
 
   beforeAll(async () => {
@@ -108,8 +107,9 @@ describe('Invoices plugin', function () {
   });
 
   it('Creates a placed order', async () => {
-    await addShippingMethod(adminClient, 'manual-fulfillment');
-    order = await createSettledOrder(shopClient, 3);
+    //FIX ME
+    await addShippingMethod(adminClient as any, 'manual-fulfillment');
+    order = await createSettledOrder(shopClient as any, 3);
     expect((order as any).id).toBeDefined();
   });
 
@@ -167,7 +167,7 @@ describe('Invoices plugin', function () {
   });
 
   it('Has incremental invoice number', async () => {
-    await createSettledOrder(shopClient, 3);
+    await createSettledOrder(shopClient as any, 3);
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
     const newInvoice = result.invoices.items[0];
