@@ -14,7 +14,7 @@ import {
 } from '@vendure/core';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { CloudTaskMessage, CloudTaskOptions } from './types';
-import { In, LessThan } from 'typeorm';
+import { In, LessThan, Repository } from 'typeorm';
 import { JobListOptions, JobState } from '@vendure/common/lib/generated-types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
@@ -27,10 +27,13 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   private client: CloudTasksClient;
   private connection: TransactionalConnection | undefined;
   private listQueryBuilder: ListQueryBuilder | undefined;
+  private jobRecordRepository!: Repository<JobRecord>;
 
   init(injector: Injector): void | Promise<void> {
     this.connection = injector.get(TransactionalConnection);
     this.listQueryBuilder = injector.get(ListQueryBuilder);
+    this.jobRecordRepository =
+      this.connection!.rawConnection.getRepository(JobRecord);
   }
 
   constructor(private options: CloudTaskOptions) {
@@ -41,9 +44,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     if (!this.connection) {
       throw new UserInputError('TransactionalConnection is not available');
     }
-    const jobRecord = await this.connection
-      .getRepository(JobRecord)
-      .findOne({ where: { id } });
+    const jobRecord = await this.jobRecordRepository.findOne({ where: { id } });
     if (!jobRecord) {
       throw new UserInputError(`no JobRecord with id ${id} exists`);
     }
@@ -69,8 +70,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     if (!this.connection) {
       throw new UserInputError('TransactionalConnection is not available');
     }
-    return this.connection
-      .getRepository(JobRecord)
+    return this.jobRecordRepository
       .find({ where: { id: In(ids) } })
       .then((records) => records.map(this.fromRecord));
   }
@@ -87,10 +87,10 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
       isSettled: true,
       settledAt: LessThan(olderThan || new Date()),
     };
-    const deleteCount = await this.connection
-      .getRepository(JobRecord)
-      .count({ where: findOptions });
-    await this.connection.getRepository(JobRecord).delete(findOptions);
+    const deleteCount = await this.jobRecordRepository.count({
+      where: findOptions,
+    });
+    await this.jobRecordRepository.delete(findOptions);
     return deleteCount;
   }
 
@@ -98,17 +98,15 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     if (!this.connection) {
       throw new UserInputError('TransactionalConnection is not available');
     }
-    const jobRecord = await this.connection
-      .getRepository(JobRecord)
-      .findOne({ where: { jobId } });
+    const jobRecord = await this.jobRecordRepository.findOne({
+      where: { jobId },
+    });
     if (!jobRecord) {
       throw new UserInputError(`no JobRecord with id ${jobId} exists`);
     }
     const job = new Job(jobRecord);
     job.cancel();
-    return new Job(
-      await this.connection.getRepository(JobRecord).save(new JobRecord(job))
-    );
+    return job;
   }
 
   destroy() {
@@ -134,10 +132,6 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
       createdAt: new Date(),
       maxRetries: job.retries || this.options.defaultJobRetries || 3,
     };
-    if (!this.connection) {
-      throw new UserInputError('TransactionalConnection is not available');
-    }
-    const jobRecordRepo = this.connection.getRepository(JobRecord);
     const parent = this.getQueuePath(queueName);
     const task = {
       httpRequest: {
@@ -161,32 +155,30 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
           `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
           CloudTasksPlugin.loggerCtx
         );
-        const successfullJob = new Job({
-          id: cloudTaskMessage.id,
-          queueName: job.queueName,
-          data: job.data,
-          attempts: job.attempts,
-          state: JobState.RUNNING,
-          startedAt: job.startedAt,
-          createdAt: job.createdAt,
-          retries: job.retries,
-          progress: 100,
-        });
-        await jobRecordRepo.save(
-          new JobRecord({
-            queueName: job.queueName,
-            data: job.data,
-            attempts: job.attempts,
-            state: JobState.RUNNING,
-            startedAt: job.startedAt,
-            createdAt: job.createdAt,
-            retries: job.retries,
-            isSettled: true,
-            settledAt: new Date(),
-            progress: 100,
-          })
-        );
-        return successfullJob;
+        // Store record saying that the task is RUNNING, because we don't distinguish between pending and running
+        await this.jobRecordRepository
+          .save(
+            new JobRecord({
+              id: job.id,
+              queueName: job.queueName,
+              data: job.data,
+              attempts: job.attempts,
+              state: JobState.RUNNING,
+              startedAt: job.startedAt,
+              createdAt: job.createdAt,
+              isSettled: false,
+              retries: job.retries,
+              progress: 1,
+            })
+          )
+          .catch((e) =>
+            Logger.error(
+              `Failed to save job record after adding job to queue: ${e}`,
+              CloudTasksPlugin.loggerCtx,
+              e.stack
+            )
+          );
+        return job;
       } catch (e: any) {
         currentAttempt += 1;
         Logger.error(
@@ -194,21 +186,6 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
           CloudTasksPlugin.loggerCtx,
           e
         );
-        if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
-          await jobRecordRepo.save(
-            new JobRecord({
-              queueName: job.queueName,
-              data: job.data,
-              attempts: job.attempts,
-              state: JobState.FAILED,
-              startedAt: job.startedAt,
-              createdAt: job.createdAt,
-              progress: 0,
-              retries: this.options.createTaskRetries ?? 5,
-            })
-          );
-          throw e;
-        }
       }
     }
   }

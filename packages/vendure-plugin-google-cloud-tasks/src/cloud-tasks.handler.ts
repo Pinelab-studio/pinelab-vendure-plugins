@@ -10,13 +10,20 @@ import {
 } from '@vendure/core';
 import { JobState } from '@vendure/common/lib/generated-types';
 import { CloudTaskMessage, ROUTE } from './types';
+import { Repository } from 'typeorm';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { PROCESS_MAP } from './cloud-tasks-job-queue.strategy';
 import { loggerCtx } from '@vendure/core/dist/job-queue/constants';
+import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
 @Controller(ROUTE)
 export class CloudTasksHandler {
-  constructor(private readonly connection: TransactionalConnection) {}
+  private jobRecordRepository: Repository<JobRecord>;
+
+  constructor(private readonly connection: TransactionalConnection) {
+    this.jobRecordRepository =
+      this.connection!.rawConnection.getRepository(JobRecord);
+  }
 
   @Post('handler')
   async handler(
@@ -71,6 +78,29 @@ export class CloudTasksHandler {
         `Successfully handled ${message.id} after ${attempts} attempts`,
         CloudTasksPlugin.loggerCtx
       );
+      await this.jobRecordRepository
+        .save(
+          new JobRecord({
+            id: job.id,
+            queueName: job.queueName,
+            data: job.data,
+            attempts: job.attempts,
+            state: JobState.COMPLETED,
+            startedAt: job.startedAt,
+            createdAt: job.createdAt,
+            retries: job.retries,
+            isSettled: true,
+            // settledAt: new Date(),
+            progress: 100,
+          })
+        )
+        .catch((e) =>
+          Logger.error(
+            `Failed to save job record after job completion: ${e}`,
+            CloudTasksPlugin.loggerCtx,
+            e.stack
+          )
+        );
       res.sendStatus(200);
       return;
     } catch (error: any) {
@@ -79,7 +109,30 @@ export class CloudTasksHandler {
           `Failed to handle message ${message.id} after final attempt (${attempts} attempts made). Marking with status 200 to prevent retries: ${error}`,
           CloudTasksPlugin.loggerCtx
         );
-        res.sendStatus(200);
+        await this.jobRecordRepository
+          .save(
+            new JobRecord({
+              queueName: job.queueName,
+              data: job.data,
+              attempts: job.attempts,
+              state: JobState.FAILED,
+              startedAt: job.startedAt,
+              createdAt: job.createdAt,
+              retries: job.retries,
+              isSettled: true,
+              // settledAt: new Date(), ?????
+              progress: 0,
+              result: error?.message ?? error.toString(),
+            })
+          )
+          .catch((e) =>
+            Logger.error(
+              `Failed to save job record after job failure: ${e}`,
+              CloudTasksPlugin.loggerCtx,
+              e.stack
+            )
+          );
+        res.sendStatus(200); // Return 200 to prevent more retries
         return;
       } else {
         Logger.warn(
