@@ -158,7 +158,7 @@ export class GraphqlQueries {
 
   APPLY_COUPON_CODE = gql`
     ${this.ACTIVE_ORDER_FIELDS}
-    mutation ApplyCounpnCodeMutation($couponCode: String!) {
+    mutation ApplyCouponCodeMutation($couponCode: String!) {
       applyCouponCode(couponCode: $couponCode) {
         ... on Order {
           ...ActiveOrderFields

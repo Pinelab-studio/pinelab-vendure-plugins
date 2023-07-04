@@ -9,9 +9,10 @@ export type MakeOptional<T, K extends keyof T> = Omit<T, K> & {
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
   [SubKey in K]: Maybe<T[SubKey]>;
 };
-export type MakeEmpty<T extends Record<string, unknown>, K extends keyof T> = {
-  [_ in K]?: never;
-};
+export type MakeEmpty<
+  T extends Record<string, unknown>,
+  K extends keyof T
+> = { [_ in K]?: never };
 export type Incremental<T> =
   | T
   | {
@@ -101,6 +102,7 @@ export type Asset = Node & {
   preview: Scalars['String']['output'];
   source: Scalars['String']['output'];
   tags: Tag[];
+  thumbnail: Scalars['String']['output'];
   type: AssetType;
   updatedAt: Scalars['DateTime']['output'];
   width: Scalars['Int']['output'];
@@ -320,6 +322,49 @@ export interface ConfigurableOperationDefinition {
 export interface ConfigurableOperationInput {
   arguments: ConfigArgInput[];
   code: Scalars['String']['input'];
+}
+
+export type ConfiguratorOptionGroup =
+  | ConfiguratorOptionGroupCheckBox
+  | ConfiguratorOptionGroupNumber
+  | ConfiguratorOptionGroupRadio;
+
+/**
+ * Configurator option group that allows selection of
+ * multiple options
+ */
+export interface ConfiguratorOptionGroupCheckBox {
+  __typename?: 'ConfiguratorOptionGroupCheckBox';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  options: ConfiguratorSelectableOption[];
+}
+
+/** Option group that allows the user to enter a number */
+export interface ConfiguratorOptionGroupNumber {
+  __typename?: 'ConfiguratorOptionGroupNumber';
+  id: Scalars['ID']['output'];
+  max: Scalars['Float']['output'];
+  min: Scalars['Float']['output'];
+  name: Scalars['String']['output'];
+}
+
+/**
+ * Configurator option group that only allows
+ * selection of one of its options
+ */
+export interface ConfiguratorOptionGroupRadio {
+  __typename?: 'ConfiguratorOptionGroupRadio';
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
+  options: ConfiguratorSelectableOption[];
+}
+
+export interface ConfiguratorSelectableOption {
+  __typename?: 'ConfiguratorSelectableOption';
+  customFields?: Maybe<Scalars['JSON']['output']>;
+  id: Scalars['ID']['output'];
+  name: Scalars['String']['output'];
 }
 
 export interface Coordinate {
@@ -1714,6 +1759,7 @@ export interface Mutation {
 }
 
 export interface MutationAddItemToOrderArgs {
+  customFields?: InputMaybe<OrderLineCustomFieldsInput>;
   productVariantId: Scalars['ID']['input'];
   quantity: Scalars['Int']['input'];
 }
@@ -1723,6 +1769,7 @@ export interface MutationAddPaymentToOrderArgs {
 }
 
 export interface MutationAdjustOrderLineArgs {
+  customFields?: InputMaybe<OrderLineCustomFieldsInput>;
   orderLineId: Scalars['ID']['input'];
   quantity: Scalars['Int']['input'];
 }
@@ -2003,7 +2050,7 @@ export type OrderLimitError = ErrorResult & {
 export type OrderLine = Node & {
   __typename?: 'OrderLine';
   createdAt: Scalars['DateTime']['output'];
-  customFields?: Maybe<Scalars['JSON']['output']>;
+  customFields?: Maybe<OrderLineCustomFields>;
   /** The price of the line including discounts, excluding tax */
   discountedLinePrice: Scalars['Money']['output'];
   /** The price of the line including discounts and tax */
@@ -2062,6 +2109,17 @@ export type OrderLine = Node & {
   unitPriceWithTaxChangeSinceAdded: Scalars['Money']['output'];
   updatedAt: Scalars['DateTime']['output'];
 };
+
+export interface OrderLineCustomFields {
+  __typename?: 'OrderLineCustomFields';
+  selectedConfiguratorOptions?: Maybe<Array<Scalars['String']['output']>>;
+}
+
+export interface OrderLineCustomFieldsInput {
+  selectedConfiguratorOptions?: InputMaybe<
+    Array<InputMaybe<Scalars['String']['input']>>
+  >;
+}
 
 export type OrderList = PaginatedList & {
   __typename?: 'OrderList';
@@ -2494,8 +2552,9 @@ export type Product = Node & {
   __typename?: 'Product';
   assets: Asset[];
   collections: Collection[];
+  configuratorOptionGroups?: Maybe<ConfiguratorOptionGroup[]>;
   createdAt: Scalars['DateTime']['output'];
-  customFields?: Maybe<Scalars['JSON']['output']>;
+  customFields?: Maybe<ProductCustomFields>;
   description: Scalars['String']['output'];
   facetValues: FacetValue[];
   featuredAsset?: Maybe<Asset>;
@@ -2516,7 +2575,15 @@ export interface ProductVariantListArgs {
   options?: InputMaybe<ProductVariantListOptions>;
 }
 
+export interface ProductCustomFields {
+  __typename?: 'ProductCustomFields';
+  configuratorCalculation?: Maybe<Scalars['String']['output']>;
+  configuratorOptionGroups?: Maybe<Scalars['String']['output']>;
+}
+
 export interface ProductFilterParameter {
+  configuratorCalculation?: InputMaybe<StringOperators>;
+  configuratorOptionGroups?: InputMaybe<StringOperators>;
   createdAt?: InputMaybe<DateOperators>;
   description?: InputMaybe<StringOperators>;
   id?: InputMaybe<IdOperators>;
@@ -2591,6 +2658,8 @@ export interface ProductOptionTranslation {
 }
 
 export interface ProductSortParameter {
+  configuratorCalculation?: InputMaybe<SortOrder>;
+  configuratorOptionGroups?: InputMaybe<SortOrder>;
   createdAt?: InputMaybe<SortOrder>;
   description?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
@@ -2759,6 +2828,11 @@ export interface Query {
   activeOrder?: Maybe<Order>;
   /** An array of supported Countries */
   availableCountries: Country[];
+  /**
+   * Calculate the price of a product variant with given selected options.
+   * Price is incl. tax or ex tax depending on the channel settings.
+   */
+  calculateConfiguratorPrice: Scalars['Int']['output'];
   /** Returns a Collection either by its id or slug. If neither 'id' nor 'slug' is specified, an error will result. */
   collection?: Maybe<Collection>;
   /** A list of Collections available to the shop */
@@ -2793,6 +2867,11 @@ export interface Query {
   products: ProductList;
   /** Search Products based on the criteria set by the `SearchInput` */
   search: SearchResponse;
+}
+
+export interface QueryCalculateConfiguratorPriceArgs {
+  selectedOptions: SelectedConfiguratorOption[];
+  variantId: Scalars['ID']['input'];
 }
 
 export interface QueryCollectionArgs {
@@ -3011,6 +3090,19 @@ export type SearchResultPrice = PriceRange | SinglePrice;
 export interface SearchResultSortParameter {
   name?: InputMaybe<SortOrder>;
   price?: InputMaybe<SortOrder>;
+}
+
+/**
+ * Selected option for a configurator option group
+ * Should either have an optionId for radio option groups,
+ * multiple optionId's for Checkbox option groups,
+ * or, a value for number option groups
+ */
+export interface SelectedConfiguratorOption {
+  optionGroupId: Scalars['String']['input'];
+  optionId?: InputMaybe<Scalars['String']['input']>;
+  optionIds?: InputMaybe<Array<Scalars['String']['input']>>;
+  value?: InputMaybe<Scalars['Float']['input']>;
 }
 
 export type Seller = Node & {
@@ -3922,11 +4014,11 @@ export interface ActiveOrderQuery {
     | undefined;
 }
 
-export type ApplyCounpnCodeMutationMutationVariables = Exact<{
+export type ApplyCouponCodeMutationMutationVariables = Exact<{
   couponCode: Scalars['String']['input'];
 }>;
 
-export interface ApplyCounpnCodeMutationMutation {
+export interface ApplyCouponCodeMutationMutation {
   __typename?: 'Mutation';
   applyCouponCode:
     | {
