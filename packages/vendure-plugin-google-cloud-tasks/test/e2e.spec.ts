@@ -120,4 +120,18 @@ describe('CloudTasks job queue e2e', () => {
     });
     expect(res.status).toBe(200);
   });
+
+  it('Should have successful jobs in database', async () => {
+    await adminClient.asSuperAdmin();
+    const data: any = await adminClient.query(
+      gql`
+        query {
+          jobs(options: { filter: { isSettled: { eq: true } } }) {
+            totalItems
+          }
+        }
+      `
+    );
+    expect(data.jobs?.totalItems).toBeGreaterThan(0);
+  });
 });

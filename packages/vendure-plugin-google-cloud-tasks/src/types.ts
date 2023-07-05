@@ -22,7 +22,7 @@ export interface CloudTaskOptions {
 }
 
 export interface CloudTaskMessage {
-  id: string;
+  id: string | number;
   data: unknown;
   queueName: string;
   createdAt: Date;

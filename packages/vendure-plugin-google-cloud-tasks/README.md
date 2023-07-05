@@ -2,9 +2,7 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-cloud-tasks/dev/@vendure/core)
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-google-cloud-tasks)
-
-Plugin for using Vendure worker with Google Cloud Tasks
+Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show ending, successful and failed jobs in the admin UI under `sytem/jobs`, but not running jobs. Only jobs of the past 7 days are kept in the DB.
 
 ## Getting started
 
@@ -38,3 +36,9 @@ plugins: [
 
 2. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
    via `Products > (cog icon) > reindex` to test the Cloud Tasks Plugin.
+
+# Overview
+
+![Alt text](sequence.png)
+
+(Use this to edit the diagram on plantuml.com: `//www.plantuml.com/plantuml/png/jL0zJyCm4DtzAzu8Kf2wi7H0HHsec4h9ZanyQGqN6tntLFdtEAb49If6Dkjz-DvxAr5Vr0PsRitPGklbNHxpwvEHqRCMhxGVSNE7X_NsvNC2bxWF0LK2pPWHzyDDmlCt6vy2KrbYQtB0MtLyHOzDssxTXUWFv_o8QO_UHwRGG38AQHbn5NjuLHe-LC3KQuEi1oh7A0JE9uSLWfSfx8wwNCBrvU5VtNQaLXBgAcg2syMYmJm5Zf4PbWALogM0g4X4uPIc9lpl4GXYNKSYlJ6FpLJntCkv5QLW0ty3`)
