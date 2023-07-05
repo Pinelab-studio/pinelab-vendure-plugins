@@ -2,7 +2,7 @@
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-cloud-tasks/dev/@vendure/core)
 
-Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show successful and failed jobs in the admin UI under `sytem/jobs`, but not running jobs.
+Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show ending, successful and failed jobs in the admin UI under `sytem/jobs`, but not running jobs. Only jobs of the past 7 days are kept in the DB.
 
 ## Getting started
 

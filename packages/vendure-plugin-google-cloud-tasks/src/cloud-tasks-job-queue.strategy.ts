@@ -10,6 +10,7 @@ import {
   Logger,
   PaginatedList,
   TransactionalConnection,
+  User,
   UserInputError,
 } from '@vendure/core';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
@@ -85,7 +86,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     const findOptions = {
       ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
       isSettled: true,
-      settledAt: LessThan(olderThan || new Date()),
+      settledAt: LessThan((olderThan || new Date()).toISOString()),
     };
     const deleteCount = await this.jobRecordRepository.count({
       where: findOptions,
@@ -95,18 +96,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   }
 
   async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
-    if (!this.connection) {
-      throw new UserInputError('TransactionalConnection is not available');
-    }
-    const jobRecord = await this.jobRecordRepository.findOne({
-      where: { jobId },
-    });
-    if (!jobRecord) {
-      throw new UserInputError(`no JobRecord with id ${jobId} exists`);
-    }
-    const job = new Job(jobRecord);
-    job.cancel();
-    return job;
+    throw new UserInputError('Google Cloud Tasks can not be canceled');
   }
 
   destroy() {
@@ -125,12 +115,26 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     if (!LIVE_QUEUES.has(queueName)) {
       await this.createQueue(queueName);
     }
+    // Store record saying that the task is PENDING, because we don't distinguish between pending and running
+    const jobRecord = await this.jobRecordRepository.save(
+      new JobRecord({
+        queueName: queueName,
+        data: job.data,
+        attempts: job.attempts,
+        state: JobState.PENDING,
+        startedAt: job.startedAt,
+        createdAt: job.createdAt,
+        isSettled: false,
+        retries: job.retries || this.options.defaultJobRetries || 3,
+        progress: 0,
+      })
+    );
     const cloudTaskMessage: CloudTaskMessage = {
-      id: `${queueName}-${Date.now()}`,
-      queueName: queueName,
-      data: job.data,
-      createdAt: new Date(),
-      maxRetries: job.retries || this.options.defaultJobRetries || 3,
+      id: jobRecord.id,
+      queueName: jobRecord.queueName,
+      data: jobRecord.data,
+      createdAt: jobRecord.createdAt,
+      maxRetries: jobRecord.retries,
     };
     const parent = this.getQueuePath(queueName);
     const task = {
@@ -155,30 +159,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
           `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
           CloudTasksPlugin.loggerCtx
         );
-        // Store record saying that the task is RUNNING, because we don't distinguish between pending and running
-        await this.jobRecordRepository
-          .save(
-            new JobRecord({
-              id: job.id,
-              queueName: job.queueName,
-              data: job.data,
-              attempts: job.attempts,
-              state: JobState.RUNNING,
-              startedAt: job.startedAt,
-              createdAt: job.createdAt,
-              isSettled: false,
-              retries: job.retries,
-              progress: 1,
-            })
-          )
-          .catch((e) =>
-            Logger.error(
-              `Failed to save job record after adding job to queue: ${e}`,
-              CloudTasksPlugin.loggerCtx,
-              e.stack
-            )
-          );
-        return job;
+        return new Job<any>(jobRecord);
       } catch (e: any) {
         currentAttempt += 1;
         Logger.error(
@@ -202,6 +183,10 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     const queueName = this.getQueueName(originalQueueName);
     PROCESS_MAP.set(queueName, process);
     Logger.info(`Started queue ${queueName}`, CloudTasksPlugin.loggerCtx);
+  }
+
+  getAllQueueNames(): string[] {
+    return Array.from(PROCESS_MAP.keys());
   }
 
   /**
