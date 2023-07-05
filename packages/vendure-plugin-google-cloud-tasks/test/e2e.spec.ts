@@ -44,7 +44,7 @@ describe('CloudTasks job queue e2e', () => {
   );
   testConfig.apiOptions.port = 3103;
   // Enable this line to see debug logs
-  // testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
+  testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
   const { server, adminClient } = createTestEnvironment(testConfig);
   let started = false;
 
@@ -126,5 +126,19 @@ describe('CloudTasks job queue e2e', () => {
       }
     );
     expect(res.status).toBe(200);
+  });
+
+  it('Should have successful jobs in database', async () => {
+    await adminClient.asSuperAdmin();
+    const data: any = await adminClient.query(
+      gql`
+        query {
+          jobs(options: { filter: { isSettled: { eq: true } } }) {
+            totalItems
+          }
+        }
+      `
+    );
+    expect(data.jobs?.totalItems).toBeGreaterThan(0);
   });
 });

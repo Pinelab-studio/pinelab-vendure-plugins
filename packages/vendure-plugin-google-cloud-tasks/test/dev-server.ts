@@ -12,18 +12,15 @@ import {
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-// @ts-ignore
-import ngrok from 'ngrok';
 import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   require('dotenv').config();
-  // process.env.PUBLIC_VENDURE_URL = await ngrok.connect(3050);
   testConfig.plugins.push(
     CloudTasksPlugin.init({
       taskHandlerHost: process.env.PUBLIC_VENDURE_URL!,
-      projectId: process.env.GOOGLE_CLOUD_PROJECT_ID!,
+      projectId: process.env.GCLOUD_PROJECT!,
       location: process.env.TASKQUEUE_LOCATION!,
       authSecret: 'some-secret-to-authenticate-cloud-tasks',
       queueSuffix: 'plugin-test2',
