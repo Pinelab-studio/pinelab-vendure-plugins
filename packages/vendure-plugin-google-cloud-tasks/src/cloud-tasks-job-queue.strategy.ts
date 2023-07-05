@@ -47,7 +47,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     }
     const jobRecord = await this.jobRecordRepository.findOne({ where: { id } });
     if (!jobRecord) {
-      throw new UserInputError(`no JobRecord with id ${id} exists`);
+      throw new UserInputError(`No JobRecord with id ${id} exists`);
     }
     return new Job(jobRecord);
   }
