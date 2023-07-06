@@ -2,6 +2,7 @@
 import { Card } from '@astrojs/starlight/components';
 import { readdir, readFile } from 'fs/promises';
 import path from 'path';
+import '../style/home.css';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,24 +24,24 @@ const packageDefinitions = await Promise.all(
         return undefined;
       }
     })
-    .filter((v) => v !== undefined)
+    .filter((v:any) => v !== undefined)
 );
 ---
 
 <div style="display:flex;flex-direction: column;column-gap: 1vh;row-gap: 1vw;">
   {
     packageDefinitions.map((j) => (
-      <Card title={j?.name} icon="document">
-        <div style="display:flex; flex-direction: row;width: 80vw;column-gap: 3vh;row-gap: 3vw;">
-          <div style="background-color: red; width: 10vw; height: 20vh;"></div>
-          <div style="display: flex;flex-direction: column;">
-            {j?.description}
+   ( j?.name && j?.description)?<a href={'/plugin/' + (j?.name ?? '')} class="card-tag">
+        <Card title={j?.name}>
+          <div style="display:flex; flex-direction: row;width: 80vw;column-gap: 3vh;row-gap: 3vw;">
+            <div style="background-image: url('/favicon.png'); width: 10vw; height: 20vh; background-size : cover;">
+            </div>
             <div>
-              <a href={'/plugin/' + (j?.name ?? '')}>READ MORE</a>
+              {j?.description}
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      </a>:<span></span>
     ))
   }
 </div>

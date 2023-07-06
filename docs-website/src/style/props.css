@@ -93,9 +93,9 @@
   --__sb-font-mono: var(--sl-font-mono, ''), var(--sl-font-system-mono);
 
   /** Key layout values */
-  --sl-nav-height: 3.5rem;
+  /* --sl-nav-height: 3.5rem; */
   --sl-nav-pad-x: 1rem;
-  --sl-nav-pad-y: 0.75rem;
+  /* --sl-nav-pad-y: 0.75rem; */
   --sl-title-min-width: 10rem;
   --sl-mobile-toc-height: 3rem;
   --sl-sidebar-width: 18.75rem;
@@ -169,7 +169,7 @@
 
 @media (min-width: 50em) {
   :root {
-    --sl-nav-height: 4rem;
+    /* --sl-nav-height: 4rem; */
     --sl-nav-pad-x: 1.5rem;
     --sl-text-h1: var(--sl-text-5xl);
     --sl-text-h2: var(--sl-text-4xl);

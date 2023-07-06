@@ -1,6 +1,4 @@
 ---
-// import type { CollectionEntry } from 'astro:content';
-// import zod from `astro`
 import { Image } from 'astro:assets';
 import CallToAction from './CallToAction.astro';
 
@@ -42,15 +40,15 @@ const imageAttrs = {
       <h1 id="_top" data-page-title set:html={title} />
       {tagline && <div class="tagline" set:html={tagline} />}
     </div>
-    <!-- {
+    {
       actions.length > 0 && (
         <div class="flex actions">
           {actions.map((data:any) => (
-            <CallToAction {...data.attrs as any} set:html={data.text} />
+            <CallToAction {...data as any} set:html={data.text} />
           ))}
         </div>
       )
-    } -->
+    }
   </div>
 </div>
 

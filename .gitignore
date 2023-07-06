@@ -43,3 +43,25 @@ __admin-ui/
 /packages/vendure-plugin-invoices/invoices/
 /packages/vendure-plugin-invoices/key.json
 /packages/vendure-plugin-stock-monitoring/test/test-emails/
+
+# build output
+/docs-website/dist/
+# generated types
+/docs-website/.astro/
+
+# dependencies
+/docs-website/node_modules/
+
+# logs
+/docs-website/npm-debug.log*
+/docs-website/yarn-debug.log*
+/docs-website/yarn-error.log*
+/docs-website/pnpm-debug.log*
+
+
+# environment variables
+/docs-website/.env
+/docs-website/.env.production
+
+# macOS-specific files
+/docs-website/.DS_Store
