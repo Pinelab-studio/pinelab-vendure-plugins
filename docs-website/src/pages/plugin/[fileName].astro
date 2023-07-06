@@ -1,10 +1,16 @@
 ---
 import { readdir, readFile } from 'fs/promises';
+import  Hero  from '../../components/Hero.astro';
+import  ContentPanel  from '../../components/ContentPanel.astro';
+import  MarkdownContent  from '../../components/MarkdownContent.astro';
+import  PageFrame  from '../../components/PageFrame.astro';
+import  ThemeProvider  from '../../components/ThemeProvider.astro';
+import  TwoColumnContent  from '../../components/TwoColumnContent.astro';
 import path from 'path';
-import { Prism } from '@astrojs/prism';
-import * as marked from 'marked';
-import {Content as Template} from './plugin-template.mdx';
+import {marked} from 'marked';
 import { fileURLToPath } from 'url';
+import '../../style/props.css';
+import '../../style/reset.css';
 export async function getStaticPaths() {
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -22,6 +28,27 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { fileName } = Astro.params;
 const packagesDirRelativeLocation = '../../../../packages';
+const hero={
+  title: 'Battle tested Vendure plugins',
+  tagline: 'Plugins for vendure, built by Pinelab, used for solving real life problems for our clients',
+  image: {
+    file: '../../public/silver-partner.svg',
+    alt: 'selam lalem'
+  },
+  actions:[
+    {
+      text: 'How it works',
+      link: '/guides/example/',
+      icon: 'right-arrow',
+      variant: 'primary'
+    },
+    {
+      text: 'Read the Starlight docs',
+      link: 'https://starlight.astro.build',
+      icon: 'external'
+    }
+  ]
+}
 let packageJsonFile;
 let parsedReadmeFile;
 if(fileName){
@@ -40,12 +67,50 @@ if(fileName){
 <head>
   <meta charset="utf-8"/>
   <title>{packageJsonFile.name}</title>
+  <head>
+    <style>
+      html:not([data-has-toc]) {
+        --sl-mobile-toc-height: 0rem;
+      }
+      html:not([data-has-sidebar]) {
+        --sl-content-width: 67.5rem;
+      }
+      /* Add scroll padding to ensure anchor headings aren't obscured by nav */
+      html {
+        /* Additional padding is needed to account for the mobile TOC */
+        scroll-padding-top: calc(
+          1.5rem + var(--sl-nav-height) + var(--sl-mobile-toc-height)
+        );
+      }
+      main {
+        padding-bottom: 3vh;
+      }
+      @media (min-width: 50em) {
+        [data-has-sidebar] {
+          --sl-content-inline-start: var(--sl-sidebar-width);
+        }
+      }
+      @media (min-width: 72em) {
+        html {
+          scroll-padding-top: calc(1.5rem + var(--sl-nav-height));
+        }
+      }
+    </style>
+  </head>
 </head>
 <body>
-  <Template/>
-  <!-- <highlightjs autodetect :code={parsedReadmeFile} /> -->
-  <!-- <Prism code={parsedReadmeFile} > -->
-    <div id="content" set:html={parsedReadmeFile}></div>
-  <!-- </Prism> -->
+  <ThemeProvider />
+  <PageFrame hasSidebar={false}>
+    <TwoColumnContent hasToC={false}>
+      <main>
+        <ContentPanel>
+          <Hero hero={hero} fallbackTitle={hero.title} />
+          <MarkdownContent>
+            <div set:html={parsedReadmeFile}></div>
+          </MarkdownContent>
+        </ContentPanel>
+      </main>
+    </TwoColumnContent>
+  </PageFrame>
 </body>
 </html>

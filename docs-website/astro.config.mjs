@@ -34,5 +34,5 @@ export default defineConfig({
     // Can be 'shiki' (default), 'prism' or false to disable highlighting
     syntaxHighlight: 'prism',
   },
-  output: 'hybrid',
+  // output: 'server',
 });
