@@ -13,7 +13,8 @@ This plugin allows customers to manage their own groups, called Customer Managed
 Add the plugin to your config:
 
 ```ts
-plugins: [...CustomerManagedGroupsPlugin];
+import { CustomerManagedGroupsPlugin } from 'vendure-plugin-customer-managed-group';
+plugins: [CustomerManagedGroupsPlugin];
 ```
 
 You can create your own group via the Shop API, if you are logged in as a customer, by inviting another customer by email:
