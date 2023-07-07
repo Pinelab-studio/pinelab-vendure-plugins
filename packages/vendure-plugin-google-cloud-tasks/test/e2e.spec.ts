@@ -1,19 +1,19 @@
 import {
+  DefaultLogger,
+  DefaultSearchPlugin,
+  InitialData,
+  LogLevel,
+} from '@vendure/core';
+import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import { gql } from 'graphql-tag';
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  InitialData,
-  LogLevel,
-} from '@vendure/core';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
-import { expect, describe, beforeAll, afterAll, it, vi } from 'vitest';
 
 let task: { url: string; body: string };
 const mockClient = {
@@ -39,12 +39,12 @@ describe('CloudTasks job queue e2e', () => {
       authSecret: 'some-secret',
       queueSuffix: 'plugin-test',
       defaultJobRetries: 50,
-    }),
-    DefaultSearchPlugin
+    })
   );
-  testConfig.apiOptions.port = 3103;
+  testConfig.plugins.push(DefaultSearchPlugin);
   // Enable this line to see debug logs
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
+  testConfig.apiOptions.port = 3103;
   const { server, adminClient } = createTestEnvironment(testConfig);
   let started = false;
 
