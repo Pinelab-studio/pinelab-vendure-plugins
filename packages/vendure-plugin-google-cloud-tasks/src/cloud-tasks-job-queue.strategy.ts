@@ -86,7 +86,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     const result = await this.jobRecordRepository.delete({
       ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
       isSettled: true,
-      settledAt: LessThan((olderThan || new Date()).toISOString() as any),
+      settledAt: LessThan(olderThan ?? new Date()),
     });
     return result.affected || 0;
   }
