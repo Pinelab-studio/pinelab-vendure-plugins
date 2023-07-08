@@ -1,13 +1,13 @@
 ---
 import { readdir, readFile } from 'fs/promises';
-import  Hero  from '../../components/Hero.astro';
-import  ContentPanel  from '../../components/ContentPanel.astro';
-import  MarkdownContent  from '../../components/MarkdownContent.astro';
-import  PageFrame  from '../../components/PageFrame.astro';
-import  ThemeProvider  from '../../components/ThemeProvider.astro';
-import  TwoColumnContent  from '../../components/TwoColumnContent.astro';
+import Hero from '../../components/Hero.astro';
+import ContentPanel from '../../components/ContentPanel.astro';
+import MarkdownContent from '../../components/MarkdownContent.astro';
+import PageFrame from '../../components/PageFrame.astro';
+import ThemeProvider from '../../components/ThemeProvider.astro';
+import TwoColumnContent from '../../components/TwoColumnContent.astro';
 import path from 'path';
-import {marked} from 'marked';
+import { marked } from 'marked';
 import { fileURLToPath } from 'url';
 import '../../style/props.css';
 import '../../style/reset.css';
@@ -34,39 +34,59 @@ const packagesDirRelativeLocation = '../../../../packages';
 let hero;
 let packageJsonFile;
 let parsedReadmeFile;
-if(fileName){
-  try{
-    packageJsonFile= JSON.parse(await readFile( path.join(__dirname, 
-     packagesDirRelativeLocation, fileName, 'package.json'),'utf-8'))
-     parsedReadmeFile= marked.parse(await readFile( path.join(__dirname, 
-   packagesDirRelativeLocation, fileName, 'README.md'),'utf-8'))
-   hero={
+if (fileName) {
+  try {
+    packageJsonFile = JSON.parse(
+      await readFile(
+        path.join(
+          __dirname,
+          packagesDirRelativeLocation,
+          fileName,
+          'package.json'
+        ),
+        'utf-8'
+      )
+    );
+    parsedReadmeFile = marked.parse(
+      await readFile(
+        path.join(
+          __dirname,
+          packagesDirRelativeLocation,
+          fileName,
+          'README.md'
+        ),
+        'utf-8'
+      )
+    );
+    hero = {
       title: 'How does it work?',
-      tagline: 'Paid plugins require a license key for commercial use. You receive a license key in your email after purchasing one on this website.',
+      tagline:
+        'Paid plugins require a license key for commercial use. You receive a license key in your email after purchasing one on this website.',
       image: {
         file: '../../public/silver-partner.svg',
-        alt: 'selam lalem'
+        alt: 'selam lalem',
       },
-      actions:[
+      actions: [
         {
           text: 'View on GitHub',
           link: packageJsonFile.repository,
-          icon: 'external'
+          icon: 'external',
         },
-      ]
-    }
-  }catch(e){
-    console.log(e)
+      ],
+    };
+  } catch (e) {
+    console.log(e);
   }
 }
 ---
-<!doctype html>
+
+<!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8"/>
-  <title>{packageJsonFile.name}</title>
   <head>
-    <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml">
+    <meta charset="utf-8" />
+    <title>{packageJsonFile.name}</title>
+
+    <link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml" />
     <style>
       html:not([data-has-toc]) {
         --sl-mobile-toc-height: 0rem;
@@ -96,7 +116,7 @@ if(fileName){
       }
     </style>
   </head>
-</head>
+</html>
 <body>
   <ThemeProvider />
   <PageFrame hasSidebar={false}>
@@ -105,11 +125,10 @@ if(fileName){
         <ContentPanel>
           <Hero hero={hero} fallbackTitle={hero?.title!} />
           <MarkdownContent>
-            <div set:html={parsedReadmeFile}></div>
+            <div set:html={parsedReadmeFile} />
           </MarkdownContent>
         </ContentPanel>
       </main>
     </TwoColumnContent>
   </PageFrame>
 </body>
-</html>

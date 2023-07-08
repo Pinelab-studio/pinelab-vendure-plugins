@@ -16,7 +16,7 @@ const { link, variant, icon } = Astro.props;
 
 <a class:list={['flex action', variant]} href={link}>
   <slot />
-  { <Icon name='external' size="1.5rem" />}
+  {(<Icon name="external" size="1.5rem" />)}
 </a>
 
 <style>

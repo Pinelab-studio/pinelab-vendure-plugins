@@ -43,8 +43,8 @@ const imageAttrs = {
     {
       actions.length > 0 && (
         <div class="flex actions">
-          {actions.map((data:any) => (
-            <CallToAction {...data as any} set:html={data.text} />
+          {actions.map((data: any) => (
+            <CallToAction {...(data as any)} set:html={data.text} />
           ))}
         </div>
       )

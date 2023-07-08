@@ -25,6 +25,7 @@
     "*.min.js",
     ".temp",
     "generated/",
+    "env.d.ts",
 
     "packages/util",
     "packages/vendure-plugin-admin-ui-helpers/",

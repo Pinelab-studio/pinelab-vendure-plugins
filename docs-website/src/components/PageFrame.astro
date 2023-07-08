@@ -3,7 +3,7 @@ import MobileMenuToggle from './MobileMenuToggle.astro';
 
 interface Props {
   hasSidebar: boolean;
-//   locale: string | undefined;
+  //   locale: string | undefined;
 }
 
 const { hasSidebar } = Astro.props;
@@ -15,7 +15,7 @@ const { hasSidebar } = Astro.props;
   {
     hasSidebar && (
       <nav class="sidebar" aria-label="Main">
-        <MobileMenuToggle/>
+        <MobileMenuToggle />
         <div id="starlight__sidebar" class="sidebar-pane">
           <div class="sidebar-content">
             <slot name="sidebar" />

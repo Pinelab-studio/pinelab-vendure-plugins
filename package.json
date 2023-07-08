@@ -32,6 +32,7 @@
     "husky": "^8.0.2",
     "lerna": "^6.0.3",
     "prettier": "^2.8.7",
+    "prettier-plugin-astro": "^0.10.0",
     "typescript": "*"
   },
   "commitlint": {
