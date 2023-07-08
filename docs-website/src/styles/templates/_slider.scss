@@ -1,0 +1,48 @@
+.banner {
+  position: relative;
+  overflow: hidden;
+  padding: 120px 0px;
+  @include mobile {
+    padding: 80px 0px;
+  }
+
+  .block {
+    /*      padding-top: 120px;
+      @include mobile {
+         padding-top: 100px;
+      }*/
+
+    h1 {
+      font-size: 70px;
+      line-height: 1.1;
+      font-weight: 700;
+      letter-spacing: -1.2px;
+    }
+  }
+}
+
+.letter-spacing {
+  letter-spacing: 2px;
+}
+
+.text-color {
+  color: $secondary-color;
+}
+
+@include tablet {
+  .banner .block h1 {
+    font-size: 56px;
+  }
+}
+
+@include mobile {
+  .banner .block h1 {
+    font-size: 38px;
+  }
+}
+
+@include mobile-xs {
+  .banner .block h1 {
+    font-size: 28px;
+  }
+}
