@@ -295,7 +295,7 @@ export class SchedulesComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.fetchSchedules();
     this.dataService.settings.getActiveChannel().single$.subscribe((data) => {
-      this.currencyCode = data.activeChannel.currencyCode;
+      this.currencyCode = data.activeChannel.defaultCurrencyCode;
     });
   }
 

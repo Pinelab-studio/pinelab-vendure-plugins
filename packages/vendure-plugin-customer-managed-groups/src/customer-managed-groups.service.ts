@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { OrderList } from '@vendure/common/lib/generated-types';
 import {
-  assertFound,
   Customer,
   CustomerGroup,
   CustomerGroupService,
@@ -14,9 +12,9 @@ import {
   OrderService,
   PaginatedList,
   RequestContext,
+  TransactionalConnection,
   User,
   UserInputError,
-  UserService,
 } from '@vendure/core';
 import {
   UpdateAddressInput,
@@ -33,15 +31,14 @@ import {
   CustomerManagedGroupMember,
   UpdateCustomerManagedGroupMemberInput,
 } from './generated/graphql';
-import { getRepository } from 'typeorm';
-
 @Injectable()
 export class CustomerManagedGroupsService {
   constructor(
     private orderService: OrderService,
     private customerService: CustomerService,
     private customerGroupService: CustomerGroupService,
-    private hydrator: EntityHydrator
+    private hydrator: EntityHydrator,
+    private transactionalConnection: TransactionalConnection
   ) {}
 
   async getOrdersForCustomer(
@@ -206,7 +203,10 @@ export class CustomerManagedGroupsService {
     ctx: RequestContext,
     userId: ID
   ): Promise<CustomerWithCustomFields> {
-    const customerRepo = getRepository(Customer);
+    const customerRepo = this.transactionalConnection.getRepository(
+      ctx,
+      Customer
+    );
     const customerWithGroupsData = await customerRepo
       .createQueryBuilder('customer')
       .leftJoin('customer.channels', 'customer_channel')
@@ -454,7 +454,7 @@ export class CustomerManagedGroupsService {
       );
     }
 
-    const userRepo = getRepository(User);
+    const userRepo = this.transactionalConnection.getRepository(ctx, User);
     if (
       input.emailAddress &&
       (await userRepo.count({
@@ -540,7 +540,10 @@ export class CustomerManagedGroupsService {
         'Customer is already admin of this customer managed group'
       );
     }
-    const customerGroupRepo = getRepository(CustomerGroup);
+    const customerGroupRepo = this.transactionalConnection.getRepository(
+      ctx,
+      CustomerGroup
+    );
     const partialValue = {
       id: customerGroup.id,
       customFields: {

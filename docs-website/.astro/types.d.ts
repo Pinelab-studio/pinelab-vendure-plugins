@@ -216,6 +216,13 @@ declare module 'astro:content' {
         collection: 'docs';
         data: InferEntrySchema<'docs'>;
       } & { render(): Render['.md'] };
+      'how-does-it-work.md': {
+        id: 'how-does-it-work.md';
+        slug: 'how-does-it-work';
+        body: string;
+        collection: 'docs';
+        data: InferEntrySchema<'docs'>;
+      } & { render(): Render['.md'] };
       'index.mdx': {
         id: 'index.mdx';
         slug: 'index';

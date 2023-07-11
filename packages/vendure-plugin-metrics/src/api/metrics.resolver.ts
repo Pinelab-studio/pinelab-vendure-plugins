@@ -9,7 +9,7 @@ export class MetricsResolver {
 
   @Query()
   @Allow(Permission.ReadOrder)
-  async metricSummary(
+  async pinelabMetricSummary(
     @Ctx() ctx: RequestContext,
     @Args('input') input: MetricSummaryInput
   ): Promise<MetricSummary[]> {

@@ -1,8 +1,8 @@
 import gql from 'graphql-tag';
 
 export const GET_METRICS = gql`
-  query metricSummary($input: MetricSummaryInput!) {
-    metricSummary(input: $input) {
+  query pinelabMetricSummary($input: PinelabMetricSummaryInput!) {
+    pinelabMetricSummary(input: $input) {
       interval
       code
       title

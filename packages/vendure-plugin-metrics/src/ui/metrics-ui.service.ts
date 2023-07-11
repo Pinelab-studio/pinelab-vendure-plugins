@@ -49,7 +49,7 @@ export class MetricsUiService {
           })
           .refetchOnChannelChange()
           .mapStream((metricSummary) => {
-            return metricSummary.metricSummary;
+            return metricSummary.pinelabMetricSummary;
           });
       })
     );

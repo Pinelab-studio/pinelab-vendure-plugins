@@ -10,13 +10,13 @@ import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
 import { MetricsPlugin } from '../src';
-import { createSettledOrder } from './util';
 import { GET_METRICS } from '../dist/ui/queries.graphql';
 import {
   MetricSummary,
   MetricSummaryQuery,
 } from '../dist/ui/generated/graphql';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 describe('Metrics', () => {
   //FIX ME
@@ -75,13 +75,15 @@ describe('Metrics', () => {
 
   it('Fetches MONTHLY metrics for all orders', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'MONTHLY' } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
+    const { pinelabMetricSummary } =
+      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+        input: { interval: 'MONTHLY' },
+      });
+    expect(pinelabMetricSummary.length).toEqual(3);
+    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = pinelabMetricSummary.find(
+      (m) => m.code === 'nr-of-orders'
+    )!;
     expect(aov.entries.length).toEqual(12);
     expect(nrOfOrders.entries.length).toEqual(12);
     expect(aov.entries[11].value).toEqual(4921.4);
@@ -90,13 +92,15 @@ describe('Metrics', () => {
 
   it('Fetches WEEKLY metrics for all orders', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'WEEKLY' } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
+    const { pinelabMetricSummary } =
+      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+        input: { interval: 'WEEKLY' },
+      });
+    expect(pinelabMetricSummary.length).toEqual(3);
+    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = pinelabMetricSummary.find(
+      (m) => m.code === 'nr-of-orders'
+    )!;
     expect(aov.entries.length).toEqual(26);
     expect(nrOfOrders.entries.length).toEqual(26);
     expect(aov.entries[25].value).toEqual(4921.4);
@@ -105,14 +109,16 @@ describe('Metrics', () => {
 
   it('Fetches WEEKLY metrics for variant with no order', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'WEEKLY', variantIds: [3] } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
-    const nrOfItemsSold = metricSummary.find(
+    const { pinelabMetricSummary } =
+      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+        input: { interval: 'WEEKLY', variantIds: [3] },
+      });
+    expect(pinelabMetricSummary.length).toEqual(3);
+    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = pinelabMetricSummary.find(
+      (m) => m.code === 'nr-of-orders'
+    )!;
+    const nrOfItemsSold = pinelabMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(aov.entries.length).toEqual(26);
@@ -123,14 +129,16 @@ describe('Metrics', () => {
 
   it('Fetches MONTHLY metrics for  variant with no order', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'MONTHLY', variantIds: [3] } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
-    const nrOfItemsSold = metricSummary.find(
+    const { pinelabMetricSummary } =
+      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+        input: { interval: 'MONTHLY', variantIds: [3] },
+      });
+    expect(pinelabMetricSummary.length).toEqual(3);
+    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = pinelabMetricSummary.find(
+      (m) => m.code === 'nr-of-orders'
+    )!;
+    const nrOfItemsSold = pinelabMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(nrOfOrders.entries.length).toEqual(12);
@@ -143,14 +151,16 @@ describe('Metrics', () => {
 
   it('Fetches WEEKLY metrics for variant with id 1', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'WEEKLY', variantIds: [1] } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
-    const nrOfItemsSold = metricSummary.find(
+    const { pinelabMetricSummary } =
+      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+        input: { interval: 'WEEKLY', variantIds: [1] },
+      });
+    expect(pinelabMetricSummary.length).toEqual(3);
+    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = pinelabMetricSummary.find(
+      (m) => m.code === 'nr-of-orders'
+    )!;
+    const nrOfItemsSold = pinelabMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(nrOfOrders.entries.length).toEqual(26);
@@ -163,14 +173,16 @@ describe('Metrics', () => {
 
   it('Fetches MONTHLY metrics for  variant with id 1', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'MONTHLY', variantIds: [1] } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
-    const nrOfItemsSold = metricSummary.find(
+    const { pinelabMetricSummary } =
+      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+        input: { interval: 'MONTHLY', variantIds: [1] },
+      });
+    expect(pinelabMetricSummary.length).toEqual(3);
+    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = pinelabMetricSummary.find(
+      (m) => m.code === 'nr-of-orders'
+    )!;
+    const nrOfItemsSold = pinelabMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(nrOfOrders.entries.length).toEqual(12);

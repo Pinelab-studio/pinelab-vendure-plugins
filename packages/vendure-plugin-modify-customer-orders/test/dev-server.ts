@@ -59,7 +59,8 @@ import { ModifyCustomerOrdersPlugin } from '../src';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  await createSettledOrder(shopClient, 1);
+  // FIXME
+  await createSettledOrder(shopClient as any, 1);
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  await addItem(shopClient, 'T_1', 1);
+  await addItem(shopClient as any, 'T_1', 1);
 })();

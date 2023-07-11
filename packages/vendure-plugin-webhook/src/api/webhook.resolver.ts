@@ -6,9 +6,14 @@ import {
   ResolveField,
   Parent,
 } from '@nestjs/graphql';
-import { Allow, Ctx, ProductEvent, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  PermissionDefinition,
+  ProductEvent,
+  RequestContext,
+} from '@vendure/core';
 import { WebhookService } from './webhook.service';
-import { webhookPermission } from '../index';
 import {
   Webhook,
   WebhookInput,
@@ -16,6 +21,12 @@ import {
 } from '../generated/graphql-types';
 import { Webhook as WebhookEntity } from './webhook.entity';
 import { RequestTransformer } from './request-transformer';
+
+// Permission needs to be defined first
+export const webhookPermission = new PermissionDefinition({
+  name: 'SetWebhook',
+  description: 'Allows setting a webhook URL',
+});
 
 /**
  * Graphql resolvers for retrieving and updating webhook for channel

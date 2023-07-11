@@ -1,9 +1,7 @@
 /* eslint no-use-before-define: 0 */
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
-  ConfigService,
   EventBus,
-  ID,
   Logger,
   Order,
   OrderService,
@@ -12,8 +10,6 @@ import {
   OrderStateTransitionEvent,
   ProcessContext,
   RequestContext,
-  Session,
-  SessionCacheStrategy,
   TransactionalConnection,
 } from '@vendure/core';
 import { filter } from 'rxjs/operators';
@@ -25,7 +21,6 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
   constructor(
     private readonly eventBus: EventBus,
     private readonly orderService: OrderService,
-    private readonly configService: ConfigService,
     private readonly connection: TransactionalConnection,
     private readonly processContext: ProcessContext,
     @Inject(PLUGIN_INIT_OPTIONS)

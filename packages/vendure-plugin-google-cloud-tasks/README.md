@@ -8,9 +8,12 @@ Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show e
 
 ## Plugin setup
 
-1. Remove `DefaultJobQueuePlugin` from your vendure-config. Add this plugin to your `vendure-config.ts`:
+1. `yarn add vendure-plugin-google-cloud-tasks`
+2. Remove `DefaultJobQueuePlugin` from your vendure-config. Add this plugin to your `vendure-config.ts`:
 
 ```ts
+import { CloudTasksPlugin } from 'vendure-plugin-google-cloud-tasks';
+
 plugins: [
   CloudTasksPlugin.init({
     // Must reachable by Google Cloud Task. Messages are pushed to this endpoint
