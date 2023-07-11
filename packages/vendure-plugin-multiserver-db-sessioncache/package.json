@@ -1,0 +1,33 @@
+{
+  "name": "vendure-plugin-multiserver-db-sessioncache",
+  "description": "a Vendure plugin for a session cache that serializes Sessions and store them in a new entity in the database.",
+  "version": "7.0.0",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab.studio",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "main": "index.ts",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@graphql-codegen/cli": "^2.4.0",
+    "@graphql-codegen/typescript": "^2.4.8",
+    "@graphql-codegen/typescript-operations": "^2.3.5",
+    "@swc/core": "^1.3.59",
+    "@types/localtunnel": "^2.0.1",
+    "@types/nock": "^11.1.0",
+    "@vendure/admin-ui-plugin": "2.0.3",
+    "@vendure/core": "2.0.3",
+    "@vendure/testing": "2.0.3",
+    "@vendure/ui-devkit": "2.0.3",
+    "copyfiles": "^2.4.1",
+    "nock": "^13.2.9",
+    "node-fetch": "^2.0.0",
+    "ts-node": "^10.9.1",
+    "typescript": "4.9.5",
+    "unplugin-swc": "^1.3.2",
+    "vitest": "^0.30.1"
+  }
+}
