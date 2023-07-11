@@ -46,7 +46,7 @@ export class AverageOrderValueMetric implements MetricCalculation {
   readonly code = 'aov';
 
   getTitle(ctx: RequestContext): string {
-    return `Average order value in ${ctx.channel.currencyCode}`;
+    return `Average order value in ${ctx.channel.defaultCurrencyCode}`;
   }
 
   calculateEntry(

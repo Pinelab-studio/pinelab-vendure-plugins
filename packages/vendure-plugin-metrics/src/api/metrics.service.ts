@@ -144,7 +144,6 @@ export class MetricsService {
         .createQueryBuilder('order')
         .leftJoinAndSelect('order.lines', 'orderLine')
         .leftJoin('orderLine.productVariant', 'productVariant')
-        .leftJoinAndSelect('orderLine.items', 'orderItems')
         .leftJoin('order.channels', 'orderChannel')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
         .andWhere(`order.orderPlacedAt >= :startDate`, {

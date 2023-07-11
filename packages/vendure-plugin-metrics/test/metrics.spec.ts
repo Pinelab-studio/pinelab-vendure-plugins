@@ -10,15 +10,17 @@ import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
 import { MetricsPlugin } from '../src';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import { createSettledOrder } from './util';
 import { GET_METRICS } from '../dist/ui/queries.graphql';
 import {
   MetricSummary,
   MetricSummaryQuery,
 } from '../dist/ui/generated/graphql';
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 describe('Metrics', () => {
-  let shopClient: SimpleGraphQLClient;
+  //FIX ME
+  let shopClient: any;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
   let metrics: MetricSummary[];
