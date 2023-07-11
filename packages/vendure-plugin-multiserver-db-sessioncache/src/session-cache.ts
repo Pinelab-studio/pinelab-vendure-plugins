@@ -7,8 +7,8 @@ export class MultiServerDbSessionCache extends VendureEntity {
     super(input);
   }
 
-  @Column('varchar', { nullable: false })
-  session!: string;
+  @Column('simple-json', { nullable: false })
+  session!: CachedSession;
 
   @Index()
   @Column('varchar', { nullable: false })

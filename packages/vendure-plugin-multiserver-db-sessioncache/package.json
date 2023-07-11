@@ -2,7 +2,7 @@
   "name": "vendure-plugin-multiserver-db-sessioncache",
   "description": "a Vendure plugin for a session cache that serializes Sessions and store them in a new entity in the database.",
   "version": "7.0.0",
-  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "main": "index.ts",

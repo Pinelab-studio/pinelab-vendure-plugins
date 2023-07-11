@@ -91,7 +91,7 @@ describe('Multi-Server Db Session Cache Plugin', function () {
       MultiServerDbSessionCache
     );
     const allSessions = await multiServerDbSessionCacheRepo.find();
-    const sessionData = JSON.parse(allSessions[0].session) as CachedSession;
+    const sessionData = allSessions[0].session;
     expect(allSessions.length).toBeGreaterThan(1);
     expect(activeUserId).toEqual(`T_${sessionData.user?.id}`);
   });

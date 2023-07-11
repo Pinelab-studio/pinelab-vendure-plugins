@@ -32,13 +32,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
         sessionToken,
       })
       .getOne();
-    if (retrieved) {
-      try {
-        return JSON.parse(retrieved.session);
-      } catch (e: any) {
-        Logger.error(`Could not parse cached session data: ${e.message}`);
-      }
-    }
+    return retrieved?.session;
   }
 
   async set(session: CachedSession) {
@@ -49,7 +43,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
     }
     const sessionData = new MultiServerDbSessionCache();
     sessionData.sessionToken = session.token;
-    sessionData.session = JSON.stringify(session);
+    sessionData.session = session;
     await this.multiServerDBSessionCache.save(sessionData);
   }
 
