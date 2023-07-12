@@ -1,47 +1,48 @@
 import { Injectable } from '@angular/core';
-import { DataService } from '@vendure/admin-ui/core';
+import { DataService, ChartFormatOptions } from '@vendure/admin-ui/core';
 import {
-  MetricInterval,
-  MetricSummary,
-  MetricSummaryQuery,
-  MetricSummaryQueryVariables,
+  AdvancedMetricInterval,
+  AdvancedMetricSummary,
+  AdvancedMetricSummaryQuery,
+  AdvancedMetricSummaryQueryVariables,
+  AdvancedMetricType,
 } from './generated/graphql';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { GET_METRICS } from './queries.graphql';
 import { switchMap } from 'rxjs/operators';
-import { Chart, registerables } from 'chart.js';
+export interface AdvancedChartEntry {
+  label: string;
+  value: number;
+  formatOptions: ChartFormatOptions;
+  code: string;
+}
 @Injectable({
   providedIn: 'root',
 })
 export class MetricsUiService {
-  config = {
-    x: {
-      grid: {
-        display: false,
-      },
-    },
-    y: {
-      ticks: {
-        display: true,
-      },
-      grid: {
-        display: false,
-        drawBorder: false,
-      },
-    },
-  };
+  currencyCode$: Observable<any>;
+  uiState$: Observable<any>;
   constructor(private dataService: DataService) {
-    Chart.register(...registerables);
+    this.currencyCode$ = this.dataService.settings
+      .getActiveChannel()
+      .refetchOnChannelChange()
+      .mapStream((data) => data.activeChannel.defaultCurrencyCode || undefined);
+    this.uiState$ = this.dataService.client
+      .uiState()
+      .mapStream((data) => data.uiState);
   }
 
   queryData(
-    selection$: BehaviorSubject<MetricInterval>,
+    selection$: BehaviorSubject<AdvancedMetricInterval>,
     selectedVariantIds?: string[]
   ) {
-    return selection$.pipe(
-      switchMap((selection) => {
-        return this.dataService
-          .query<MetricSummaryQuery, MetricSummaryQueryVariables>(GET_METRICS, {
+    return combineLatest(selection$, this.currencyCode$, this.uiState$).pipe(
+      switchMap(([selection, currencyCode, uiState]) =>
+        this.dataService
+          .query<
+            AdvancedMetricSummaryQuery,
+            AdvancedMetricSummaryQueryVariables
+          >(GET_METRICS, {
             input: {
               interval: selection,
               ...(selectedVariantIds ? { variantIds: selectedVariantIds } : []),
@@ -49,36 +50,36 @@ export class MetricsUiService {
           })
           .refetchOnChannelChange()
           .mapStream((metricSummary) => {
-            return metricSummary.metricSummary;
-          });
-      })
+            return this.toChartEntry(
+              metricSummary.advancedMetricSummary,
+              `${uiState.language}-${uiState.locale}`,
+              currencyCode
+            );
+          })
+      )
     );
   }
 
-  createChart(metric: MetricSummary, widgetId: string) {
-    const h = 196; // Vendure hue
-    const s = 100;
-    const l = Math.floor(Math.random() * (80 - 20 + 1)) + 20;
-    const color = h + ', ' + s + '%, ' + l + '%';
-    return new Chart(`${metric.code}-${widgetId}`, {
-      type: 'bar',
-      data: {
-        // values on X-Axis
-        labels: metric.entries.map((e) => e.label),
-        datasets: [
-          {
-            label: metric.title,
-            data: metric.entries.map((e) => e.value),
-            backgroundColor: `hsla(${color}, 0.4)`,
-            borderColor: `hsla(${color})`,
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        maintainAspectRatio: false,
-        scales: this.config,
-      },
+  toChartEntry(
+    input: AdvancedMetricSummary[],
+    locale: string,
+    currencyCode: string
+  ): AdvancedChartEntry[][] {
+    return input.map((r) => {
+      const formatValueAs: 'currency' | 'number' =
+        r.type === AdvancedMetricType.Number ? 'number' : 'currency';
+      const formatOptions: ChartFormatOptions = {
+        formatValueAs,
+        currencyCode,
+        locale,
+      };
+      return r.entries.map((e) => {
+        return {
+          code: r.code,
+          formatOptions,
+          ...e,
+        };
+      });
     });
   }
 }
