@@ -64,6 +64,31 @@ await client.addItemToOrder('some-id', 1);
 const referralCode = client.activeOrder.referralCode;
 ```
 
+## Extend the client
+
+You can easily add your own queries and mutations by extending this client:
+
+```ts
+import { Id, VendureOrderClient } from 'vendure-order-client';
+import { gql } from 'graphql-request';
+
+class MyOrderClient extends VendureOrderClient {
+  /**
+   * Some custom query
+   */
+  async myOwnQuery(): Promise<any> {
+    return await this.rawRequest<any>(gql`
+      query {
+        someCustomQuery {
+          id
+          name
+        }
+      }
+    `);
+  }
+}
+```
+
 ## Events
 
 This client uses a global eventbus, so that you can, for example, show a notification when an item is added to cart.

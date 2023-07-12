@@ -3,10 +3,11 @@ import {
   DataService,
   ModalService,
   ProductMultiSelectorDialogComponent,
+  // ChartEntry
 } from '@vendure/admin-ui/core';
-import { MetricInterval, MetricSummary } from './generated/graphql';
+import { AdvancedMetricInterval } from './generated/graphql';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { MetricsUiService } from './metrics-ui.service';
+import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
 
 @Component({
   selector: 'product-metrics-widget',
@@ -53,8 +54,16 @@ import { MetricsUiService } from './metrics-ui.service';
         {{ selectedVariantNames.join(' + ') }}
       </small>
     </div>
-    <div *ngFor="let metric of metrics$ | async" class="chart-container">
-      <canvas id="{{ metric.code }}-{{ widgetId }}"></canvas>
+    <vdr-chart [entries]="selectedMetrics" />
+    <div class="flex">
+      <button
+        *ngFor="let metric of metrics$ | async"
+        class="button-small"
+        (click)="selectedMetrics = metric"
+        [class.active]="selectedMetrics[0].code === metric[0].code"
+      >
+        {{ metric[0].code }}
+      </button>
     </div>
   `,
   styles: [
@@ -68,9 +77,12 @@ import { MetricsUiService } from './metrics-ui.service';
         min-height: 16px !important;
         border-radius: 50% !important;
         padding: 0px 0px !important;
-        margin-left: 2.55px !important;
+        margin-left: 10.55px !important;
+        margin-right: 10.55px !important;
         margin-bottom: 5px !important;
-        margin-top: 4.25px;
+        padding-top: 7.5px !important;
+        position: relative;
+        top: 4px;
       }
     `,
     `
@@ -79,16 +91,28 @@ import { MetricsUiService } from './metrics-ui.service';
         margin-left: 0.2px !important;
       }
     `,
+    `
+      .button-small.active {
+        background-color: var(--color-primary-200);
+        color: var(--color-primary-900);
+      }
+    `,
+    `
+      .flex {
+        gap: 0.5rem;
+      }
+    `,
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
-  metrics$: Observable<MetricSummary[]> | undefined;
-  charts: any[] = [];
+  metrics$: Observable<AdvancedChartEntry[][]> | undefined;
+  selectedMetrics: AdvancedChartEntry[] | undefined;
   variantName: string;
   dropDownName = 'Select Variant';
-  widgetId = 'product-metrics';
-  selection: MetricInterval = MetricInterval.Monthly;
-  selection$ = new BehaviorSubject<MetricInterval>(MetricInterval.Monthly);
+  selection: AdvancedMetricInterval = AdvancedMetricInterval.Monthly;
+  selection$ = new BehaviorSubject<AdvancedMetricInterval>(
+    AdvancedMetricInterval.Monthly
+  );
   nrOfOrdersChart?: any;
   selectedVariantIds: string[] = [];
   selectedVariantNames: string[] = [];
@@ -121,7 +145,6 @@ export class MetricsWidgetComponent implements OnInit {
       })
       .subscribe((selection) => {
         if (selection) {
-          console.log(selection);
           this.selectedVariantNames = selection.map(
             (s) => s.productVariantName
           );
@@ -144,16 +167,16 @@ export class MetricsWidgetComponent implements OnInit {
       this.selection$,
       this.selectedVariantIds
     );
+    this.changeDetectorRef.detectChanges();
     this.metrics$.subscribe(async (metrics) => {
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for Angular redraw
-      this.charts.forEach((chart) => chart.destroy());
-      metrics.forEach((chartData) =>
-        this.charts.push(this.createChart(chartData))
-      );
+      if (this.selectedMetrics?.length) {
+        this.selectedMetrics = metrics.find(
+          (e) => e[0].code == this.selectedMetrics![0].code
+        );
+      } else {
+        this.selectedMetrics = metrics[0];
+      }
+      this.changeDetectorRef.detectChanges();
     });
-  }
-
-  createChart(metric: MetricSummary) {
-    return this.metricsService.createChart(metric, this.widgetId);
   }
 }
