@@ -97,6 +97,11 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
         color: var(--color-primary-900);
       }
     `,
+    `
+      .flex {
+        gap: 0.5rem;
+      }
+    `,
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
