@@ -50,6 +50,7 @@
     "packages/vendure-plugin-stripe-subscription/",
     "packages/vendure-plugin-variant-bulk-update/",
     "packages/vendure-plugin-webhook/",
-    "packages/vendure-plugin-modify-customer-orders/"
+    "packages/vendure-plugin-modify-customer-orders/",
+    "packages/vendure-plugin-multiserver-db-sessioncache"
   ]
 }
