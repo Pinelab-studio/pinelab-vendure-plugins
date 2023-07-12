@@ -1,7 +1,10 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
 import { MetricsService } from './metrics.service';
-import { MetricSummary, MetricSummaryInput } from '../ui/generated/graphql';
+import {
+  AdvancedMetricSummary,
+  AdvancedMetricSummaryInput,
+} from '../ui/generated/graphql';
 
 @Resolver()
 export class MetricsResolver {
@@ -9,10 +12,10 @@ export class MetricsResolver {
 
   @Query()
   @Allow(Permission.ReadOrder)
-  async pinelabMetricSummary(
+  async advancedMetricSummary(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: MetricSummaryInput
-  ): Promise<MetricSummary[]> {
+    @Args('input') input: AdvancedMetricSummaryInput
+  ): Promise<AdvancedMetricSummary[]> {
     return this.service.getMetrics(ctx, input);
   }
 }

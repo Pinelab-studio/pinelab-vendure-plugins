@@ -9,12 +9,12 @@ import {
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
-import { MetricsPlugin } from '../src';
-import { GET_METRICS } from '../dist/ui/queries.graphql';
 import {
-  MetricSummary,
-  MetricSummaryQuery,
-} from '../dist/ui/generated/graphql';
+  AdvancedMetricSummary,
+  AdvancedMetricSummaryQuery,
+  MetricsPlugin,
+} from '../src';
+import { GET_METRICS } from '../dist/ui/queries.graphql';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import { createSettledOrder } from '../../test/src/shop-utils';
 
@@ -23,7 +23,7 @@ describe('Metrics', () => {
   let shopClient: any;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
-  let metrics: MetricSummary[];
+  let metrics: AdvancedMetricSummary[];
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -75,13 +75,13 @@ describe('Metrics', () => {
 
   it('Fetches MONTHLY metrics for all orders', async () => {
     await adminClient.asSuperAdmin();
-    const { pinelabMetricSummary } =
-      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+    const { advancedMetricSummary } =
+      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
         input: { interval: 'MONTHLY' },
       });
-    expect(pinelabMetricSummary.length).toEqual(3);
-    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = pinelabMetricSummary.find(
+    expect(advancedMetricSummary.length).toEqual(3);
+    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-orders'
     )!;
     expect(aov.entries.length).toEqual(12);
@@ -92,13 +92,13 @@ describe('Metrics', () => {
 
   it('Fetches WEEKLY metrics for all orders', async () => {
     await adminClient.asSuperAdmin();
-    const { pinelabMetricSummary } =
-      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+    const { advancedMetricSummary } =
+      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
         input: { interval: 'WEEKLY' },
       });
-    expect(pinelabMetricSummary.length).toEqual(3);
-    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = pinelabMetricSummary.find(
+    expect(advancedMetricSummary.length).toEqual(3);
+    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-orders'
     )!;
     expect(aov.entries.length).toEqual(26);
@@ -109,16 +109,16 @@ describe('Metrics', () => {
 
   it('Fetches WEEKLY metrics for variant with no order', async () => {
     await adminClient.asSuperAdmin();
-    const { pinelabMetricSummary } =
-      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+    const { advancedMetricSummary } =
+      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
         input: { interval: 'WEEKLY', variantIds: [3] },
       });
-    expect(pinelabMetricSummary.length).toEqual(3);
-    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = pinelabMetricSummary.find(
+    expect(advancedMetricSummary.length).toEqual(3);
+    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-orders'
     )!;
-    const nrOfItemsSold = pinelabMetricSummary.find(
+    const nrOfItemsSold = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(aov.entries.length).toEqual(26);
@@ -129,16 +129,16 @@ describe('Metrics', () => {
 
   it('Fetches MONTHLY metrics for  variant with no order', async () => {
     await adminClient.asSuperAdmin();
-    const { pinelabMetricSummary } =
-      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+    const { advancedMetricSummary } =
+      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
         input: { interval: 'MONTHLY', variantIds: [3] },
       });
-    expect(pinelabMetricSummary.length).toEqual(3);
-    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = pinelabMetricSummary.find(
+    expect(advancedMetricSummary.length).toEqual(3);
+    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-orders'
     )!;
-    const nrOfItemsSold = pinelabMetricSummary.find(
+    const nrOfItemsSold = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(nrOfOrders.entries.length).toEqual(12);
@@ -151,16 +151,16 @@ describe('Metrics', () => {
 
   it('Fetches WEEKLY metrics for variant with id 1', async () => {
     await adminClient.asSuperAdmin();
-    const { pinelabMetricSummary } =
-      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+    const { advancedMetricSummary } =
+      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
         input: { interval: 'WEEKLY', variantIds: [1] },
       });
-    expect(pinelabMetricSummary.length).toEqual(3);
-    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = pinelabMetricSummary.find(
+    expect(advancedMetricSummary.length).toEqual(3);
+    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-orders'
     )!;
-    const nrOfItemsSold = pinelabMetricSummary.find(
+    const nrOfItemsSold = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(nrOfOrders.entries.length).toEqual(26);
@@ -173,16 +173,16 @@ describe('Metrics', () => {
 
   it('Fetches MONTHLY metrics for  variant with id 1', async () => {
     await adminClient.asSuperAdmin();
-    const { pinelabMetricSummary } =
-      await adminClient.query<MetricSummaryQuery>(GET_METRICS, {
+    const { advancedMetricSummary } =
+      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
         input: { interval: 'MONTHLY', variantIds: [1] },
       });
-    expect(pinelabMetricSummary.length).toEqual(3);
-    const aov = pinelabMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = pinelabMetricSummary.find(
+    expect(advancedMetricSummary.length).toEqual(3);
+    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
+    const nrOfOrders = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-orders'
     )!;
-    const nrOfItemsSold = pinelabMetricSummary.find(
+    const nrOfItemsSold = advancedMetricSummary.find(
       (m) => m.code === 'nr-of-items-sold'
     )!;
     expect(nrOfOrders.entries.length).toEqual(12);

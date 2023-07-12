@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import {
-  MetricInterval,
-  MetricSummary,
-  MetricSummaryEntry,
-  MetricSummaryInput,
+  AdvancedMetricInterval,
+  AdvancedMetricSummary,
+  AdvancedMetricSummaryEntry,
+  AdvancedMetricSummaryInput,
 } from '../ui/generated/graphql';
 import {
   ConfigService,
@@ -36,7 +36,7 @@ export type MetricData = {
 
 @Injectable()
 export class MetricsService {
-  cache = new Cache<MetricSummary[]>();
+  cache = new Cache<AdvancedMetricSummary[]>();
   metricCalculations: MetricCalculation[];
   constructor(
     private connection: TransactionalConnection,
@@ -51,8 +51,8 @@ export class MetricsService {
 
   async getMetrics(
     ctx: RequestContext,
-    { interval, variantIds }: MetricSummaryInput
-  ): Promise<MetricSummary[]> {
+    { interval, variantIds }: AdvancedMetricSummaryInput
+  ): Promise<AdvancedMetricSummary[]> {
     // Set 23:59:59.999 as endDate
     const endDate = endOfDay(new Date());
     // Check if we have cached result
@@ -87,10 +87,10 @@ export class MetricsService {
       endDate,
       variantIds as string[]
     );
-    const metrics: MetricSummary[] = [];
+    const metrics: AdvancedMetricSummary[] = [];
     this.metricCalculations.forEach((metric) => {
       // Calculate entry (month or week)
-      const entries: MetricSummaryEntry[] = [];
+      const entries: AdvancedMetricSummaryEntry[] = [];
       data.forEach((dataPerTick, weekOrMonthNr) => {
         entries.push(
           metric.calculateEntry(ctx, interval, weekOrMonthNr, dataPerTick)
@@ -102,6 +102,7 @@ export class MetricsService {
         title: metric.getTitle(ctx),
         code: metric.code,
         entries,
+        type: metric.metricType,
       });
     });
     this.cache.set(cacheKey, metrics);
@@ -110,7 +111,7 @@ export class MetricsService {
 
   async loadData(
     ctx: RequestContext,
-    interval: MetricInterval,
+    interval: AdvancedMetricInterval,
     endDate: Date,
     variantIds?: ID[]
   ): Promise<Map<number, MetricData>> {
@@ -120,7 +121,7 @@ export class MetricsService {
     // What function to use to get the current Tick of a date (i.e. the week or month number)
     let getTickNrFn: typeof getMonth | typeof getISOWeek;
     let maxTick: number;
-    if (interval === MetricInterval.Monthly) {
+    if (interval === AdvancedMetricInterval.Monthly) {
       nrOfEntries = 12;
       backInTimeAmount = { months: nrOfEntries };
       getTickNrFn = getMonth;

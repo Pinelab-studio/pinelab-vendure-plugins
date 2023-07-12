@@ -1,22 +1,29 @@
 import gql from 'graphql-tag';
 
 export const schema = gql`
-  type PinelabMetricSummary {
-    interval: PinelabMetricInterval!
+  type AdvancedMetricSummary {
+    interval: AdvancedMetricInterval!
     code: String!
     title: String!
-    entries: [PinelabMetricSummaryEntry!]!
+    type: AdvancedMetricType!
+    entries: [AdvancedMetricSummaryEntry!]!
   }
-  enum PinelabMetricInterval {
+
+  enum AdvancedMetricType {
+    currency
+    number
+  }
+
+  enum AdvancedMetricInterval {
     WEEKLY
     MONTHLY
   }
-  type PinelabMetricSummaryEntry {
+  type AdvancedMetricSummaryEntry {
     label: String!
     value: Float!
   }
-  input PinelabMetricSummaryInput {
-    interval: PinelabMetricInterval!
+  input AdvancedMetricSummaryInput {
+    interval: AdvancedMetricInterval!
     variantIds: [ID!]
   }
   extend type Query {
@@ -24,8 +31,8 @@ export const schema = gql`
     Get metrics from X weeks/months ago to now.
     Preceding 26 weeks for WEEKLY and the preceding 12 months when given a MONTHLY interval
     """
-    pinelabMetricSummary(
-      input: PinelabMetricSummaryInput
-    ): [PinelabMetricSummary!]!
+    advancedMetricSummary(
+      input: AdvancedMetricSummaryInput
+    ): [AdvancedMetricSummary!]!
   }
 `;

@@ -25,6 +25,7 @@
     "@graphql-codegen/typescript-operations": "^2.3.5",
     "@types/jest": "^27.4.1",
     "@vendure/admin-ui-plugin": "^2.0.3",
+    "@vendure/admin-ui": "^2.0.3",
     "@vendure/core": "^2.0.3",
     "@vendure/testing": "^2.0.3",
     "@vendure/ui-devkit": "^2.0.3",
@@ -37,7 +38,6 @@
     "typescript": "4.9.5"
   },
   "dependencies": {
-    "chart.js": "^3.9.1",
     "date-fns": "^2.29.3"
   },
   "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"

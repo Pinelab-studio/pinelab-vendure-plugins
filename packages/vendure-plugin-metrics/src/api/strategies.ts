@@ -1,7 +1,10 @@
 import { RequestContext } from '@vendure/core';
-import { MetricInterval, MetricSummaryEntry } from '../ui/generated/graphql';
+import {
+  AdvancedMetricInterval,
+  AdvancedMetricSummaryEntry,
+  AdvancedMetricType,
+} from '../ui/generated/graphql';
 import { MetricData } from './metrics.service';
-
 /**
  * Calculate your metric data based on the given input.
  * Be careful with heavy queries and calculations,
@@ -10,15 +13,16 @@ import { MetricData } from './metrics.service';
  */
 export interface MetricCalculation {
   code: string;
+  metricType: AdvancedMetricType;
 
   getTitle(ctx: RequestContext): string;
 
   calculateEntry(
     ctx: RequestContext,
-    interval: MetricInterval,
+    interval: AdvancedMetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricSummaryEntry;
+  ): AdvancedMetricSummaryEntry;
 }
 
 export function getMonthName(monthNr: number): string {
@@ -43,6 +47,7 @@ export function getMonthName(monthNr: number): string {
  * Calculates the average order value per month/week
  */
 export class AverageOrderValueMetric implements MetricCalculation {
+  readonly metricType: AdvancedMetricType = AdvancedMetricType.Currency;
   readonly code = 'aov';
 
   getTitle(ctx: RequestContext): string {
@@ -51,12 +56,12 @@ export class AverageOrderValueMetric implements MetricCalculation {
 
   calculateEntry(
     ctx: RequestContext,
-    interval: MetricInterval,
+    interval: AdvancedMetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricSummaryEntry {
+  ): AdvancedMetricSummaryEntry {
     const label =
-      interval === MetricInterval.Monthly
+      interval === AdvancedMetricInterval.Monthly
         ? getMonthName(weekOrMonthNr)
         : `Week ${weekOrMonthNr}`;
     if (!data.orders.length) {
@@ -79,6 +84,8 @@ export class AverageOrderValueMetric implements MetricCalculation {
  * Calculates the conversion of sessions to orders per month/week
  */
 export class NrOfOrdersMetric implements MetricCalculation {
+  readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
+
   readonly code = 'nr-of-orders';
 
   getTitle(ctx: RequestContext): string {
@@ -87,12 +94,12 @@ export class NrOfOrdersMetric implements MetricCalculation {
 
   calculateEntry(
     ctx: RequestContext,
-    interval: MetricInterval,
+    interval: AdvancedMetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricSummaryEntry {
+  ): AdvancedMetricSummaryEntry {
     const label =
-      interval === MetricInterval.Monthly
+      interval === AdvancedMetricInterval.Monthly
         ? getMonthName(weekOrMonthNr)
         : `Week ${weekOrMonthNr}`;
     return {
@@ -104,6 +111,7 @@ export class NrOfOrdersMetric implements MetricCalculation {
 
 export class NrOfTimesSoldMetric implements MetricCalculation {
   readonly code = 'nr-of-items-sold';
+  readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
 
   getTitle(ctx: RequestContext): string {
     return `Nr. of items sold`;
@@ -111,12 +119,12 @@ export class NrOfTimesSoldMetric implements MetricCalculation {
 
   calculateEntry(
     ctx: RequestContext,
-    interval: MetricInterval,
+    interval: AdvancedMetricInterval,
     weekOrMonthNr: number,
     data: MetricData
-  ): MetricSummaryEntry {
+  ): AdvancedMetricSummaryEntry {
     const label =
-      interval === MetricInterval.Monthly
+      interval === AdvancedMetricInterval.Monthly
         ? getMonthName(weekOrMonthNr)
         : `Week ${weekOrMonthNr}`;
     return {
