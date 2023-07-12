@@ -5052,9 +5052,9 @@ ee-first@1.1.1:
   integrity sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==
 
 electron-to-chromium@^1.4.431:
-  version "1.4.456"
-  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.456.tgz#aab5f3b421a07a73cf646d28e63c41238fc45849"
-  integrity sha512-d+eSL4mT9m72cnDT/kfQj6Pv6Cid4pUVlLOl8esm2SZuXBgtXtUyvCfc9F++GHLWLoY4gMNqg+0IVAoQ3sosKA==
+  version "1.4.457"
+  resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.457.tgz#3fdc7b4f97d628ac6b51e8b4b385befb362fe343"
+  integrity sha512-/g3UyNDmDd6ebeWapmAoiyy+Sy2HyJ+/X8KyvNeHfKRFfHaA2W8oF5fxD5F3tjBDcjpwo0iek6YNgxNXDBoEtA==
 
 emoji-regex@^8.0.0:
   version "8.0.0"
@@ -6012,9 +6012,9 @@ i18next-icu@^2.3.0:
   integrity sha512-x+j7kd5nDJCfbU53uwsMfXD7ALPu5uv0bqjAMQ5nVvXRoj1L7gkmswKtM3XDWYo4YUHf1jznlhSdPyy0xEwU+Q==
 
 i18next@^23.2.6:
-  version "23.2.9"
-  resolved "https://registry.yarnpkg.com/i18next/-/i18next-23.2.9.tgz#77a3ce9261b757c35b001e96e94cb0b57848e8df"
-  integrity sha512-Fb5Bdj3NGQKMed9Z/kmaxYP9yVFm+rFwX+re3o98ooZc0gKXLU6Q8IOUarFIs47ajpSEM+s3kdNb57Nm2wm3FA==
+  version "23.2.10"
+  resolved "https://registry.yarnpkg.com/i18next/-/i18next-23.2.10.tgz#a9db1aaf84d8853da402888c837aeaf8fa7f71e2"
+  integrity sha512-oVFO06H/njXpvLfXDjlAX3LN8VMMhMn1I8wl+EzJqcMtRW0Glc6apy9mtmOq3AnA2QBPAFMvxIfkdlLFqGKKLw==
   dependencies:
     "@babel/runtime" "^7.22.5"
 
@@ -6067,9 +6067,9 @@ image-size@~0.5.0:
   integrity sha512-6TDAlDPZxUFCv+fuOkIoXT/V/f3Qbq8e37p+YOiYrUv3v9cc3/6x78VdfPgFVaB9dZYeLUfKgHRebpkm/oP2VQ==
 
 immutable@^4.0.0:
-  version "4.3.0"
-  resolved "https://registry.yarnpkg.com/immutable/-/immutable-4.3.0.tgz#eb1738f14ffb39fd068b1dbe1296117484dd34be"
-  integrity sha512-0AOCmOip+xgJwEVTQj1EfiDDOkPmuyllDuTuEX+DDXUgapLAsBIfkg3sxCYyCEA8mQqZrrxPUGjcOQ2JS3WLkg==
+  version "4.3.1"
+  resolved "https://registry.yarnpkg.com/immutable/-/immutable-4.3.1.tgz#17988b356097ab0719e2f741d56f3ec6c317f9dc"
+  integrity sha512-lj9cnmB/kVS0QHsJnYKD1uo3o39nrbKxszjnqS9Fr6NB7bZzW45U6WSGBPKXDL/CvDKqDNPA4r3DoDQ8GTxo2A==
 
 immutable@~3.7.6:
   version "3.7.6"
