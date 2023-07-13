@@ -18,7 +18,7 @@ import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { InvoicesQuery } from '../src/ui/generated/graphql';
-import { InvoicePlugin } from '..';
+import { InvoicePlugin } from '../src';
 import { defaultTemplate } from '../src/api/default-template';
 import { InvoiceService } from '../src/api/invoice.service';
 import {
