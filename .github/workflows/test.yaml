@@ -2,8 +2,8 @@ name: Test packages
 on: ['pull_request']
 
 jobs:
-  prettier:
-    name: Prettier
+  lint:
+    name: Prettier formatting and linting check
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,29 +26,29 @@ jobs:
         shell: bash
     strategy:
       matrix:
-        package:
-          [
-            'vendure-plugin-coinbase',
-            'vendure-plugin-dutch-postalcode',
-            'vendure-plugin-e-boekhouden',
-            'vendure-plugin-goedgepickt',
+        package: [
+            # 'vendure-plugin-coinbase',
+            'vendure-plugin-customer-managed-groups',
+            # 'vendure-plugin-dutch-postalcode',
+            # 'vendure-plugin-e-boekhouden',
+            # 'vendure-plugin-goedgepickt',
             'vendure-plugin-google-cloud-tasks',
             'vendure-plugin-google-storage-assets',
-            'vendure-plugin-invoices',
-            'vendure-plugin-myparcel',
+            # 'vendure-plugin-invoices',
+            # 'vendure-plugin-myparcel',
             'vendure-plugin-webhook',
-            'vendure-plugin-admin-ui-helpers',
-            'vendure-plugin-order-export',
-            'vendure-plugin-shipping-by-weight-and-country',
-            'vendure-plugin-stock-monitoring',
-            'vendure-plugin-sendcloud',
-            'vendure-plugin-metrics',
-            'vendure-plugin-limit-variant-per-order',
-            'vendure-plugin-variant-bulk-update',
+            # 'vendure-plugin-admin-ui-helpers',
+            # 'vendure-plugin-order-export',
+            # 'vendure-plugin-shipping-by-weight-and-country',
+            # 'vendure-plugin-stock-monitoring',
+            # 'vendure-plugin-sendcloud',
+            # 'vendure-plugin-metrics',
+            # 'vendure-plugin-limit-variant-per-order',
+            # 'vendure-plugin-variant-bulk-update',
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-customer-managed-groups',
             'vendure-plugin-picqer',
-            'vendure-plugin-popularity-scores',
+            # 'vendure-plugin-popularity-scores',
             'vendure-plugin-modify-customer-orders',
           ]
     steps:

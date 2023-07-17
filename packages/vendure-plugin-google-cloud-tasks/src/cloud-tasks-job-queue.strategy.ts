@@ -83,16 +83,12 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     if (!this.connection) {
       throw new UserInputError('TransactionalConnection is not available');
     }
-    const findOptions = {
+    const result = await this.jobRecordRepository.delete({
       ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
       isSettled: true,
-      settledAt: LessThan((olderThan || new Date()).toISOString()),
-    };
-    const deleteCount = await this.jobRecordRepository.count({
-      where: findOptions,
+      settledAt: LessThan(olderThan ?? new Date()),
     });
-    await this.jobRecordRepository.delete(findOptions);
-    return deleteCount;
+    return result.affected || 0;
   }
 
   async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
@@ -167,6 +163,9 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
           CloudTasksPlugin.loggerCtx,
           e
         );
+        if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
+          throw e;
+        }
       }
     }
   }

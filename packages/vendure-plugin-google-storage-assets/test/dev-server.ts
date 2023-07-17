@@ -15,15 +15,17 @@ import { GoogleStorageStrategy } from '../src';
 import { GoogleStoragePlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import dotenv from 'dotenv';
 
 (async () => {
+  dotenv.config(); // Needed for GCLOUD_PROJECT
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   testConfig.plugins.push(
     AssetServerPlugin.init({
       storageStrategyFactory: () =>
         new GoogleStorageStrategy({
-          bucketName: 'pinelab-testing',
+          bucketName: process.env.BUCKET!,
         }),
       route: 'assets',
       assetUploadDir: '/tmp/vendure/assets',

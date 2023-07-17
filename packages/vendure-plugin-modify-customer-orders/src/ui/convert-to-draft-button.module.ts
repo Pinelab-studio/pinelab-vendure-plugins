@@ -1,9 +1,7 @@
 import { addActionBarItem, SharedModule } from '@vendure/admin-ui/core';
 import { NgModule } from '@angular/core';
-import { Observable } from 'rxjs';
 import { createNewDraftOrder } from './order-state.util';
 import { RouterModule } from '@angular/router';
-import { take } from 'rxjs/operators';
 @NgModule({
   imports: [
     SharedModule,
