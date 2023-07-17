@@ -5,10 +5,12 @@
   "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab.studio",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
-  "main": "index.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "license": "MIT",
   "private": true,
   "scripts": {
+    "build": "rimraf dist && tsc",
     "test": "vitest run"
   },
   "devDependencies": {
