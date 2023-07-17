@@ -65,6 +65,7 @@
           "customer-managed-groups",
           "popularity-scores",
           "modify-customer-orders",
+          "multiserver-db-sessioncache",
           "all-plugins"
         ]
       ]

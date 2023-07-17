@@ -1,23 +1,21 @@
 import {
   CachedSession,
+  Injector,
   InternalServerError,
   Logger,
   SessionCacheStrategy,
-  TransactionalConnection,
-  UserInputError,
-  Injector,
 } from '@vendure/core';
 import { DataSource, Repository } from 'typeorm';
 import { MultiServerDbSessionCache } from './session-cache';
+
+const loggerCtx = `MutliServerDbSessionCacheStrategy`;
+
 export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
-  conn?: TransactionalConnection;
-  dataSource?: DataSource;
   multiServerDBSessionCache?: Repository<MultiServerDbSessionCache>;
   init(injector: Injector) {
-    this.dataSource = injector.get(DataSource);
-    this.multiServerDBSessionCache = this.dataSource.getRepository(
-      MultiServerDbSessionCache
-    );
+    this.multiServerDBSessionCache = injector
+      .get(DataSource)
+      .getRepository(MultiServerDbSessionCache);
   }
 
   async get(sessionToken: string): Promise<CachedSession | undefined> {
@@ -28,10 +26,16 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
     }
     const retrieved = await this.multiServerDBSessionCache
       .createQueryBuilder('multiServerDBSessionCache')
-      .where('multiServerDBSessionCache.sessionToken = :sessionToken ', {
-        sessionToken,
-      })
+      .where({ id: sessionToken })
       .getOne();
+    if (retrieved) {
+      Logger.debug(
+        `Cache hit for session '${sessionToken}' last updated at ${retrieved.updatedAt}`,
+        loggerCtx
+      );
+    } else {
+      Logger.debug(`No cache hit for session '${sessionToken}'`, loggerCtx);
+    }
     return retrieved?.session;
   }
 
@@ -42,7 +46,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
       );
     }
     const sessionData = new MultiServerDbSessionCache();
-    sessionData.sessionToken = session.token;
+    sessionData.id = session.token;
     sessionData.session = session;
     await this.multiServerDBSessionCache.save(sessionData);
   }
@@ -53,7 +57,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
         'MultiServerDbSessionCache repository not initialized'
       );
     }
-    await this.multiServerDBSessionCache.delete({ sessionToken });
+    await this.multiServerDBSessionCache.delete({ id: sessionToken });
   }
 
   async clear() {
