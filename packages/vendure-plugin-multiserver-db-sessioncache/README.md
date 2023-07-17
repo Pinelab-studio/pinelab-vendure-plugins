@@ -9,5 +9,5 @@ This plugin implements a multi-server proof session cache, using the existing da
 Add the plugin to your config:
 
 ```ts
-plugins: [...MultiServerDbSessionCachePlugin];
+plugins: [MultiServerDbSessionCachePlugin];
 ```
