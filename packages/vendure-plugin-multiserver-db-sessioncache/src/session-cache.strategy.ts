@@ -6,16 +6,16 @@ import {
   SessionCacheStrategy,
 } from '@vendure/core';
 import { DataSource, Repository } from 'typeorm';
-import { MultiServerDbSessionCache } from './session-cache';
+import { SessionCache } from './session-cache';
 
 const loggerCtx = `MutliServerDbSessionCacheStrategy`;
 
 export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
-  multiServerDBSessionCache?: Repository<MultiServerDbSessionCache>;
+  multiServerDBSessionCache?: Repository<SessionCache>;
   init(injector: Injector) {
     this.multiServerDBSessionCache = injector
       .get(DataSource)
-      .getRepository(MultiServerDbSessionCache);
+      .getRepository(SessionCache);
   }
 
   async get(sessionToken: string): Promise<CachedSession | undefined> {
@@ -45,7 +45,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
         'MultiServerDbSessionCache repository not initialized'
       );
     }
-    const sessionData = new MultiServerDbSessionCache();
+    const sessionData = new SessionCache();
     sessionData.id = session.token;
     sessionData.session = session;
     await this.multiServerDBSessionCache.save(sessionData);

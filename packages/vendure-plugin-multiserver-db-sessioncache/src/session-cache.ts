@@ -2,8 +2,8 @@ import { VendureEntity, DeepPartial, CachedSession } from '@vendure/core';
 import { Column, Entity, PrimaryColumn } from 'typeorm';
 
 @Entity()
-export class MultiServerDbSessionCache extends VendureEntity {
-  constructor(input?: DeepPartial<MultiServerDbSessionCache>) {
+export class SessionCache extends VendureEntity {
+  constructor(input?: DeepPartial<SessionCache>) {
     super(input);
   }
 

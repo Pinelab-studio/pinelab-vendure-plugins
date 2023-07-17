@@ -18,7 +18,7 @@ import { initialData } from '../../test/src/initial-data';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import { MultiServerDbSessionCachePlugin } from '../src/plugin';
 import { gql } from 'graphql-tag';
-import { MultiServerDbSessionCache } from '../src/session-cache';
+import { SessionCache } from '../src/session-cache';
 
 describe('Multi-Server Db Session Cache Plugin', function () {
   let server: TestServer;
@@ -87,9 +87,8 @@ describe('Multi-Server Db Session Cache Plugin', function () {
 
   it('Should have cached session id', async () => {
     const dataSource = server.app.get(DataSource);
-    const multiServerDbSessionCacheRepo = dataSource.getRepository(
-      MultiServerDbSessionCache
-    );
+    const multiServerDbSessionCacheRepo =
+      dataSource.getRepository(SessionCache);
     const allSessions = await multiServerDbSessionCacheRepo.find();
     const sessionData = allSessions[0].session;
     expect(allSessions.length).toBe(1);

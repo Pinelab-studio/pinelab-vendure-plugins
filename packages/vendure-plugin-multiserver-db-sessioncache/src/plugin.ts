@@ -1,9 +1,9 @@
 import { VendurePlugin } from '@vendure/core';
-import { MultiServerDbSessionCache } from './session-cache';
+import { SessionCache } from './session-cache';
 import { MultiServerDbSessionCacheStrategy } from './session-cache.strategy';
 
 @VendurePlugin({
-  entities: [MultiServerDbSessionCache],
+  entities: [SessionCache],
   configuration: (config) => {
     config.authOptions.sessionCacheStrategy =
       new MultiServerDbSessionCacheStrategy();
