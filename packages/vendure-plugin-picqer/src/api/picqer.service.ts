@@ -686,22 +686,29 @@ export class PicqerService implements OnApplicationBootstrap {
         amount: line.quantity,
       });
     }
-    const orderInput = this.mapToOrderInput(
+    let orderInput = this.mapToOrderInput(
       order,
       productInputs,
       picqerCustomer?.idcustomer
     );
+    if (this.options.pushPicqerOrderFields) {
+      const additionalFields = this.options.pushPicqerOrderFields(order);
+      orderInput = {
+        ...orderInput,
+        ...additionalFields,
+      };
+      Logger.info(
+        `Added custom order fields to order '${order.code}'`,
+        loggerCtx
+      );
+    }
+    console.log('===============', orderInput);
     const createdOrder = await client.createOrder(orderInput);
     await client.processOrder(createdOrder.idorder);
     Logger.info(
       `Created order "${order.code}" in status "processing" in Picqer with id ${createdOrder.idorder}`,
       loggerCtx
     );
-    if (this.options.addPicqerOrderNote) {
-      const note = this.options.addPicqerOrderNote(order);
-      await client.addOrderNote(createdOrder.idorder, note);
-      Logger.info(`Added custom note to order ${order.code}`, loggerCtx);
-    }
   }
 
   /**
