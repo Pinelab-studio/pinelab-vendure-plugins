@@ -43,12 +43,12 @@ export interface PicqerOptions {
    */
   pushProductVariantFields?: (variant: ProductVariant) => Partial<ProductInput>;
   /**
-   * Add a note to order in Picqer
+   * Map any Vendure fields to Order fields in Picqer.
+   * See https://picqer.com/en/api/orders#attributes for available Picqer fields
    * @example
-   * // Push `order.customFields.customerNote` to Picqer
-   * addPicqerOrderNote: (order) => `This is note from Vendure ${order.customFields.customerNote}`)
+   * pushPicqerOrderFields: (order) => {customer_remarks: 'Please don't package my order in plastic'})
    */
-  addPicqerOrderNote?: (order: Order) => string;
+  pushPicqerOrderFields?: (order: Order) => any;
 }
 
 @VendurePlugin({
