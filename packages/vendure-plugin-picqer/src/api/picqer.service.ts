@@ -702,7 +702,6 @@ export class PicqerService implements OnApplicationBootstrap {
         loggerCtx
       );
     }
-    console.log('===============', orderInput);
     const createdOrder = await client.createOrder(orderInput);
     await client.processOrder(createdOrder.idorder);
     Logger.info(

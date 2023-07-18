@@ -55,7 +55,10 @@ describe('Picqer plugin', function () {
           }),
           pushPicqerOrderFields: (order) => ({
             customer_remarks: 'test note',
-            pick,
+            pickup_point_data: {
+              carrier: 'dhl',
+              id: '901892834',
+            },
           }),
         }),
       ],
@@ -215,6 +218,10 @@ describe('Picqer plugin', function () {
     expect(picqerOrderRequest.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);
     expect(picqerOrderRequest.customer_remarks).toBe('test note');
+    expect(picqerOrderRequest.pickup_point_data).toEqual({
+      carrier: 'dhl',
+      id: '901892834',
+    });
   });
 
   // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
