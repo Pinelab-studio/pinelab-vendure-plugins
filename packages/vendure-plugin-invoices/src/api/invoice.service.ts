@@ -4,7 +4,7 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
-import { Repository, In } from 'typeorm';
+import { In } from 'typeorm';
 import {
   ChannelService,
   EventBus,
@@ -17,7 +17,6 @@ import {
   OrderService,
   RequestContext,
   TransactionalConnection,
-  UserInputError,
 } from '@vendure/core';
 
 import {
@@ -30,7 +29,7 @@ import * as pdf from 'pdf-creator-node';
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
 import { InvoicePluginConfig } from '../invoice.plugin';
-import { loggerCtx, PLUGIN_INIT_OPTIONS, PLUGIN_NAME } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { InvoiceData } from './strategies/data-strategy';
@@ -42,7 +41,6 @@ import {
 import { Response } from 'express';
 import { createTempFile } from './file.util';
 import { ModuleRef } from '@nestjs/core';
-import { logIfInvalidLicense } from '../../../util/src/license';
 
 interface DownloadInput {
   channelToken: string;
@@ -118,13 +116,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     });
-    //FIX ME
-    logIfInvalidLicense(
-      Logger as any,
-      PLUGIN_NAME,
-      loggerCtx,
-      this.config.licenseKey
-    );
   }
 
   /**
@@ -180,13 +171,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     templateString: string,
     order: Order
   ): Promise<{ tmpFileName: string } & InvoiceData> {
-    //FIX ME
-    logIfInvalidLicense(
-      Logger as any,
-      PLUGIN_NAME,
-      loggerCtx,
-      this.config.licenseKey
-    );
     const latestInvoiceNumber = await this.getLatestInvoiceNumber(ctx);
     const data = await this.config.dataStrategy.getData({
       ctx,
@@ -320,18 +304,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   async upsertConfig(
-    input: InvoiceConfigInput,
-    ctx?: RequestContext,
-    channelToken?: string
+    ctx: RequestContext,
+    input: InvoiceConfigInput
   ): Promise<InvoiceConfigEntity> {
-    if (!ctx && !channelToken) {
-      throw new UserInputError(
-        'either channelToken or RequestContext needs to be provided'
-      );
-    }
-    if (!ctx && channelToken) {
-      ctx = await this.createCtx(channelToken);
-    }
     const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
     const existing = await configRepo.findOne({
       where: { channelId: ctx!.channelId as string },

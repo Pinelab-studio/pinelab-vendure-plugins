@@ -3,7 +3,6 @@ import {
   DefaultLogger,
   LogLevel,
   mergeConfig,
-  Order,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -14,16 +13,18 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import fetch from 'node-fetch';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { InvoicesQuery } from '../src/ui/generated/graphql';
-import { InvoicePlugin } from '..';
+import { InvoicePlugin } from '../src';
 import { defaultTemplate } from '../src/api/default-template';
 import { InvoiceService } from '../src/api/invoice.service';
 import {
   Invoice,
   InvoiceConfigQuery,
+  InvoicesQuery,
   MutationUpsertInvoiceConfigArgs,
   UpsertInvoiceConfigMutation,
 } from '../src/ui/generated/graphql';
@@ -32,9 +33,7 @@ import {
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import gql from 'graphql-tag';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+
 describe('Invoices plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -54,7 +53,6 @@ describe('Invoices plugin', function () {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         InvoicePlugin.init({
-          licenseKey: 'test-licensekey',
           vendureHost: 'http://localhost:3106',
         }),
       ],
@@ -168,7 +166,7 @@ describe('Invoices plugin', function () {
 
   it('Has incremental invoice number', async () => {
     await createSettledOrder(shopClient as any, 3);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
     const newInvoice = result.invoices.items[0];
     const oldInvoice = result.invoices.items[1];
@@ -201,30 +199,6 @@ describe('Invoices plugin', function () {
       method: 'POST',
     });
     expect(res.status).toBe(403);
-  });
-
-  it('Returns license key', async () => {
-    await adminClient.asSuperAdmin();
-    const { isInvoicePluginLicenseValid } = await adminClient.query(
-      gql`
-        query {
-          isInvoicePluginLicenseValid
-        }
-      `
-    );
-    expect(isInvoicePluginLicenseValid).toBe(false);
-  });
-
-  it('Does not return license key for unauthorized', async () => {
-    await adminClient.asAnonymousUser();
-    const promise = adminClient.query(
-      gql`
-        query {
-          isInvoicePluginLicenseValid
-        }
-      `
-    );
-    await expect(promise).rejects.toThrow('authorized');
   });
 
   afterAll(() => {

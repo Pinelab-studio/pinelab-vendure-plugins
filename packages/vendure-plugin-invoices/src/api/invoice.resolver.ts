@@ -1,16 +1,25 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Inject } from '@nestjs/common';
-import { Allow, Ctx, RequestContext } from '@vendure/core';
-import { InvoiceService } from './invoice.service';
-import { invoicePermission, InvoicePluginConfig } from '../index';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Allow,
+  Ctx,
+  PermissionDefinition,
+  RequestContext,
+} from '@vendure/core';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
+import { InvoicePluginConfig } from '../index';
 import {
   InvoiceConfigInput,
   InvoiceList,
   InvoicesListInput,
 } from '../ui/generated/graphql';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
-import { PLUGIN_INIT_OPTIONS, PLUGIN_NAME } from '../constants';
-import { isValidForPlugin } from '../../../util/src/license';
+import { InvoiceService } from './invoice.service';
+
+export const invoicePermission = new PermissionDefinition({
+  name: 'AllowInvoicesPermission',
+  description: 'Allow this user to enable invoice generation',
+});
 
 @Resolver()
 export class InvoiceResolver {
@@ -25,7 +34,7 @@ export class InvoiceResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: InvoiceConfigInput
   ): Promise<InvoiceConfigEntity> {
-    return this.service.upsertConfig(input, ctx);
+    return this.service.upsertConfig(ctx, input);
   }
 
   @Query()
@@ -43,11 +52,5 @@ export class InvoiceResolver {
     @Args('input') input?: InvoicesListInput
   ): Promise<InvoiceList> {
     return this.service.getAllInvoices(ctx, input);
-  }
-
-  @Query()
-  @Allow(invoicePermission.Permission)
-  isInvoicePluginLicenseValid(): boolean {
-    return isValidForPlugin(this.config.licenseKey, PLUGIN_NAME);
   }
 }

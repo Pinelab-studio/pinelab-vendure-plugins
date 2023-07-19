@@ -14,7 +14,7 @@ import { Request, Response } from 'express';
 import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
-import { invoicePermission } from '../index';
+import { invoicePermission } from './invoice.resolver';
 
 @Controller('invoices')
 export class InvoiceController {

@@ -17,13 +17,13 @@ import { DataStrategy } from './api/strategies/data-strategy';
 import { DefaultDataStrategy } from './api/strategies/default-data-strategy';
 import { LocalFileStrategy } from './api/strategies/local-file-strategy';
 import { loggerCtx, PLUGIN_INIT_OPTIONS, PLUGIN_NAME } from './constants';
-import { invoicePermission, StorageStrategy } from './index';
-import { logIfInvalidLicense } from '../../util/src/license';
+import { StorageStrategy } from './index';
+import { invoicePermission } from './api/invoice.resolver';
 
 export interface InvoicePluginConfig {
   /**
-   * Licensekey for commercial use of this plugin.
-   * For more information visit https://pinelab-plugins.com/plugin/vendure-plugin-invoices/
+   * @deprecated We are moving this paid plugin to the Vendure Marketplace soon, so a licensekey won't be needed anymore.
+   * Existing customers will be migrated to the new system ofcourse.
    */
   licenseKey?: string;
   /**
@@ -56,12 +56,6 @@ export class InvoicePlugin {
   static init(
     config: Partial<InvoicePluginConfig> & { vendureHost: string }
   ): Type<InvoicePlugin> {
-    logIfInvalidLicense(
-      Logger as any,
-      PLUGIN_NAME,
-      loggerCtx,
-      config.licenseKey
-    );
     InvoicePlugin.config = {
       ...config,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
