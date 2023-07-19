@@ -280,7 +280,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
 
   async downloadMultiple(
     ctx: RequestContext,
-    // channelId: string,
     invoiceNumbers: string[],
     res: Response
   ): Promise<ReadStream> {
