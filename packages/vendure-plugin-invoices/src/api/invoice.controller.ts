@@ -34,7 +34,6 @@ export class InvoiceController {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const stream = await this.service.downloadMultiple(
       ctx,
-      // ctx.channelId as string,
       numbers.split(','),
       res
     );
