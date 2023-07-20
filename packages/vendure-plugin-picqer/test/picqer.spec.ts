@@ -53,7 +53,13 @@ describe('Picqer plugin', function () {
           pullPicqerProductFields: (picqerProd) => ({
             outOfStockThreshold: 123,
           }),
-          addPicqerOrderNote: (order) => 'test note',
+          pushPicqerOrderFields: (order) => ({
+            customer_remarks: 'test note',
+            pickup_point_data: {
+              carrier: 'dhl',
+              id: '901892834',
+            },
+          }),
         }),
       ],
       paymentOptions: {
@@ -165,7 +171,6 @@ describe('Picqer plugin', function () {
 
   it('Should push order to Picqer on order placement', async () => {
     let isOrderInProcessing = false;
-    let createdOrderNote = undefined;
     let picqerOrderRequest: any;
     nock(nockBaseUrl)
       .get('/vatgroups') // Mock vatgroups, because it will try to update products
@@ -193,12 +198,6 @@ describe('Picqer plugin', function () {
         return true;
       })
       .reply(200, { idordder: 'mockOrderId' });
-    nock(nockBaseUrl)
-      .post('/orders/mockOrderId/notes', (reqBody) => {
-        createdOrderNote = reqBody.note;
-        return true;
-      })
-      .reply(200, { idordder: 'mockOrderId' });
     // Shipping method 3 should be our created Picqer handler method
     createdOrder = await createSettledOrder(shopClient, 3, true, [
       { id: 'T_1', quantity: 3 },
@@ -218,7 +217,11 @@ describe('Picqer plugin', function () {
     expect(picqerOrderRequest.products.length).toBe(1);
     expect(picqerOrderRequest.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);
-    expect(createdOrderNote).toBe('test note');
+    expect(picqerOrderRequest.customer_remarks).toBe('test note');
+    expect(picqerOrderRequest.pickup_point_data).toEqual({
+      carrier: 'dhl',
+      id: '901892834',
+    });
   });
 
   // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191

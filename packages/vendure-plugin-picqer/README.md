@@ -27,13 +27,20 @@ import {PicqerPlugin} from 'vendure-plugin-picqer'
 ...
 plugins: [
   PicqerPlugin.init({
-    vendureHost: 'https://example-vendure.io'
-    /**
-     * Optional strategy to push additional fields to Picqer.
-     * This example pushes variant.sku as product.barcode to Picqer
-     */
-    pushFieldsToPicqer: (variant) => ({ barcode: variant.sku })
-  }),
+          enabled: true,
+          vendureHost: 'https://example-vendure.io',
+          pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
+          pullPicqerProductFields: (picqerProd) => ({
+            outOfStockThreshold: picqerProd.stockThreshold,
+          }),
+          pushPicqerOrderFields: (order) => ({
+            customer_remarks: order.customFields.customerNote,
+            pickup_point_data: {
+              carrier: 'dhl',
+              id: '901892834',
+            },
+          }),
+        }),
   AdminUiPlugin.init({
     port: 3002,
     route: 'admin',
