@@ -5,8 +5,8 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@vendure/common": "2.0.3",
-    "@vendure/core": "2.0.3",
+    "@vendure/common": "2.0.4",
+    "@vendure/core": "2.0.4",
     "ts-node": "^10.9.1"
   }
 }

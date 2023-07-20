@@ -1673,15 +1673,15 @@
   dependencies:
     "@types/node" "*"
 
-"@vendure/common@^2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.0.3.tgz#cdb210ff5e6d18e58e50477135f32a6339caf13b"
-  integrity sha512-sEfNfvmWgodAFYQgRsHpcEQ2zvqKpeA9EEnn9ax9gH1cyydu6b9hkSf/YF4sb8fCI/AtRFShqe4heb/q7p3eag==
+"@vendure/common@^2.0.4":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.0.4.tgz#60c3972ecedca920afb4867ccf6ba085358caabb"
+  integrity sha512-G77FlfKxbwX+CNyh2L4q3OrtY3r9riAsVCTEvWzrqNONxQazHsl01tyzWQYE1u/npYKmozEUU8VneejvE9/zyA==
 
-"@vendure/core@2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-2.0.3.tgz#3e43dcd0944c3cd7e17f10fb12447b7479179aaa"
-  integrity sha512-lr8sA9L98cO+L1uSstWPViAAPOSXtUPfUz8PvtZzkhB9isTc7r2uZe/reJVflfYeXx2d0E31EFVC8howMyjv0A==
+"@vendure/core@2.0.4":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-2.0.4.tgz#51b81105ef547c7a13397f03df3fdde16c9d76ff"
+  integrity sha512-EZ2lxJgCRLNBWIZ/XpC+516RaB2O40xt7IOAOg4++77iiuM+US1aX7Wi6Nvpsbrs51mA5ZRs3iFBWEnvyuL5NQ==
   dependencies:
     "@graphql-tools/stitch" "^8.7.43"
     "@nestjs/apollo" "^10.2.0"
@@ -1693,7 +1693,7 @@
     "@nestjs/testing" "9.3.9"
     "@nestjs/typeorm" "9.0.1"
     "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^2.0.3"
+    "@vendure/common" "^2.0.4"
     apollo-server-express "3.6.3"
     bcrypt "^5.1.0"
     body-parser "^1.19.0"
@@ -1723,14 +1723,14 @@
     rxjs "^7.5.4"
     typeorm "0.3.11"
 
-"@vendure/testing@2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-2.0.3.tgz#b3169bd0c593e5fc3f40c028189ee144e53d8d01"
-  integrity sha512-ruk5/TsXLPU+wYQ0Rkdt3BOBhbAkDzRTTNAisDJdwbK3zPTTfmjH1PA98AUqvT5nOEDFUQ8pWBNVK7l67yaxGA==
+"@vendure/testing@2.0.4":
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-2.0.4.tgz#1bdd5eedc60f6d9838c4e0656f17cc1dfb17ec8c"
+  integrity sha512-PW0PiMwgLBOy7kaFnV1NrCPkMCwefBdIZKwnf9fvaXso0KUreZqKpjRYh7dCYhw1dAfUObPzoHcdp+hRsnqetg==
   dependencies:
     "@graphql-typed-document-node/core" "^3.2.0"
     "@types/node-fetch" "^2.5.4"
-    "@vendure/common" "^2.0.3"
+    "@vendure/common" "^2.0.4"
     faker "^4.1.0"
     form-data "^3.0.0"
     graphql "16.6.0"
