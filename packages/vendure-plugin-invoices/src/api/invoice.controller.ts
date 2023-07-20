@@ -14,7 +14,7 @@ import { Request, Response } from 'express';
 import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
-import { invoicePermission } from '../index';
+import { invoicePermission } from './invoice.resolver';
 
 @Controller('invoices')
 export class InvoiceController {
@@ -34,7 +34,6 @@ export class InvoiceController {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const stream = await this.service.downloadMultiple(
       ctx,
-      // ctx.channelId as string,
       numbers.split(','),
       res
     );
