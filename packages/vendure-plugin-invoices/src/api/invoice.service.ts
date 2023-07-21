@@ -4,21 +4,19 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
-import { Connection, Repository } from 'typeorm';
+import { In } from 'typeorm';
 import {
-  Channel,
   ChannelService,
-  EntityHydrator,
   EventBus,
   Injector,
   JobQueue,
   JobQueueService,
-  JsonCompatible,
   Logger,
   Order,
   OrderPlacedEvent,
   OrderService,
   RequestContext,
+  TransactionalConnection,
 } from '@vendure/core';
 
 import {
@@ -31,7 +29,7 @@ import * as pdf from 'pdf-creator-node';
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
 import { InvoicePluginConfig } from '../invoice.plugin';
-import { loggerCtx, PLUGIN_INIT_OPTIONS, PLUGIN_NAME } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { InvoiceData } from './strategies/data-strategy';
@@ -43,7 +41,6 @@ import {
 import { Response } from 'express';
 import { createTempFile } from './file.util';
 import { ModuleRef } from '@nestjs/core';
-import { logIfInvalidLicense } from '../../../util/src/license';
 
 interface DownloadInput {
   channelToken: string;
@@ -55,8 +52,6 @@ interface DownloadInput {
 @Injectable()
 export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   jobQueue: JobQueue<{ channelToken: string; orderCode: string }> | undefined;
-  invoiceRepo: Repository<InvoiceEntity>;
-  configRepo: Repository<InvoiceConfigEntity>;
   retries = 10;
 
   constructor(
@@ -65,11 +60,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     private orderService: OrderService,
     private channelService: ChannelService,
     private moduleRef: ModuleRef,
-    connection: Connection,
+    private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
   ) {
-    this.invoiceRepo = connection.getRepository(InvoiceEntity);
-    this.configRepo = connection.getRepository(InvoiceConfigEntity);
     Handlebars.registerHelper('formatMoney', (amount?: number) => {
       if (amount == null) {
         return amount;
@@ -104,9 +97,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       if (!this.jobQueue) {
         return Logger.error(`Invoice jobQueue not initialized`, loggerCtx);
       }
-      const enabled = await this.isInvoicePluginEnabled(
-        ctx.channelId as string
-      );
+      const enabled = await this.isInvoicePluginEnabled(ctx);
       if (!enabled) {
         return Logger.debug(
           `Invoice generation not enabled for order ${order.code}`,
@@ -125,7 +116,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     });
-    logIfInvalidLicense(Logger, PLUGIN_NAME, loggerCtx, this.config.licenseKey);
   }
 
   /**
@@ -136,8 +126,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const ctx = await this.createCtx(channelToken);
     let [order, existingInvoice, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode),
-      this.getInvoice(orderCode),
-      this.getConfig(ctx.channelId as string),
+      this.getInvoice(ctx, orderCode),
+      this.getConfig(ctx),
     ]);
     if (!config) {
       throw Error(
@@ -163,7 +153,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       invoiceNumber,
       channelToken
     );
-    return this.saveInvoice({
+    return this.saveInvoice(ctx, {
       channelId: ctx.channelId as string,
       invoiceNumber,
       orderCode,
@@ -181,10 +171,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     templateString: string,
     order: Order
   ): Promise<{ tmpFileName: string } & InvoiceData> {
-    logIfInvalidLicense(Logger, PLUGIN_NAME, loggerCtx, this.config.licenseKey);
-    const latestInvoiceNumber = await this.getLatestInvoiceNumber(
-      ctx.channelId as string
-    );
+    const latestInvoiceNumber = await this.getLatestInvoiceNumber(ctx);
     const data = await this.config.dataStrategy.getData({
       ctx,
       injector: new Injector(this.moduleRef),
@@ -198,6 +185,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       orientation: 'portrait',
       border: '10mm',
       timeout: 1000 * 60 * 5, // 5 min
+      childProcessOptions: {
+        env: {
+          OPENSSL_CONF: '/dev/null',
+        },
+      },
     };
     const document = {
       html,
@@ -226,7 +218,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       sort: { orderPlacedAt: 'DESC' as any },
       take: 1,
     });
-    const config = await this.getConfig(ctx.channelId as string);
+    const config = await this.getConfig(ctx);
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
@@ -242,12 +234,18 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Returns a redirect if a publicUrl is created
    * otherwise returns a ReadStream from a file
    */
-  async downloadInvoice(input: DownloadInput): Promise<ReadStream | string> {
+  async downloadInvoice(
+    ctx: RequestContext,
+    input: DownloadInput
+  ): Promise<ReadStream | string> {
     const channel = await this.channelService.getChannelFromToken(
       input.channelToken
     );
-    const invoice = await this.invoiceRepo.findOne({
-      orderCode: input.orderCode,
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const invoice = await invoiceRepo.findOne({
+      where: {
+        orderCode: input.orderCode,
+      },
     });
     if (channel.token != input.channelToken) {
       throw Error(`Channel ${input.channelToken} doesn't exist`);
@@ -281,45 +279,62 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   async downloadMultiple(
-    channelId: string,
+    ctx: RequestContext,
     invoiceNumbers: string[],
     res: Response
   ): Promise<ReadStream> {
     const nrSelectors = invoiceNumbers.map((i) => ({
       invoiceNumber: i,
-      channelId,
+      channelId: ctx.channelId,
     }));
-    const invoices = await this.invoiceRepo.find({
-      where: nrSelectors,
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const invoices = await invoiceRepo.find({
+      where: {
+        channelId: In(nrSelectors.map((i) => i.channelId)),
+        invoiceNumber: In(nrSelectors.map((i) => i.invoiceNumber)),
+      },
     });
     if (!invoices) {
       throw Error(
-        `No invoices found for channel ${channelId} and invoiceNumbers ${invoiceNumbers}`
+        `No invoices found for channel ${ctx.channelId} and invoiceNumbers ${invoiceNumbers}`
       );
     }
     return this.config.storageStrategy.streamMultiple(invoices, res);
   }
 
   async upsertConfig(
-    channelId: string,
+    ctx: RequestContext,
     input: InvoiceConfigInput
   ): Promise<InvoiceConfigEntity> {
-    const existing = await this.configRepo.findOne({ channelId });
+    const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
+    const existing = await configRepo.findOne({
+      where: { channelId: ctx!.channelId as string },
+    });
     if (existing) {
-      await this.configRepo.update(existing.id, input);
+      await configRepo.update(existing.id, input);
     } else {
-      await this.configRepo.insert({ ...input, channelId });
+      await configRepo.insert({
+        ...input,
+        channelId: ctx!.channelId as string,
+      });
     }
-    return this.configRepo.findOneOrFail({ channelId });
+    return configRepo.findOneOrFail({
+      where: { channelId: ctx!.channelId as string },
+    });
   }
 
-  async getConfig(channelId: string): Promise<InvoiceConfigEntity | undefined> {
-    let config = await this.configRepo.findOne({ channelId });
+  async getConfig(
+    ctx: RequestContext
+  ): Promise<InvoiceConfigEntity | undefined> {
+    const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
+    let config = await configRepo.findOne({
+      where: { channelId: ctx.channelId as string },
+    });
     if (!config) {
       // sample config for display
       config = {
-        id: channelId,
-        channelId,
+        id: ctx.channelId,
+        channelId: ctx.channelId as string,
         createdAt: new Date(),
         updatedAt: new Date(),
         enabled: false,
@@ -331,24 +346,33 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return config;
   }
 
-  async isInvoicePluginEnabled(channelId: string): Promise<boolean> {
-    const result = await this.configRepo.findOne({
+  async isInvoicePluginEnabled(ctx: RequestContext): Promise<boolean> {
+    const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
+    const result = await configRepo.findOne({
       select: ['enabled'],
-      where: { channelId },
+      where: { channelId: ctx.channelId as string },
     });
     return !!result?.enabled;
   }
 
-  async getInvoice(orderCode: string): Promise<InvoiceEntity | undefined> {
-    return this.invoiceRepo.findOne({ orderCode });
+  async getInvoice(
+    ctx: RequestContext,
+    orderCode: string
+  ): Promise<InvoiceEntity | null> {
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+
+    return invoiceRepo.findOne({ where: { orderCode } });
   }
 
   /**
    * Get most recent invoice for this channel
    */
-  async getLatestInvoiceNumber(channelId: string): Promise<number | undefined> {
-    const result = await this.invoiceRepo.findOne({
-      where: [{ channelId }],
+  async getLatestInvoiceNumber(
+    ctx: RequestContext
+  ): Promise<number | undefined> {
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const result = await invoiceRepo.findOne({
+      where: [{ channelId: ctx.channelId as string }],
       select: ['invoiceNumber'],
       order: { invoiceNumber: 'DESC' },
       cache: false,
@@ -357,7 +381,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   async getAllInvoices(
-    channel: Channel,
+    ctx: RequestContext,
     input?: InvoicesListInput
   ): Promise<InvoiceList> {
     let skip = 0;
@@ -366,8 +390,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       take = input.itemsPerPage;
       skip = input.page > 1 ? take * (input.page - 1) : 0;
     }
-    const [invoices, totalItems] = await this.invoiceRepo.findAndCount({
-      where: [{ channelId: channel.id }],
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const [invoices, totalItems] = await invoiceRepo.findAndCount({
+      where: [{ channelId: ctx.channelId as string }],
       order: { invoiceNumber: 'DESC' },
       skip,
       take,
@@ -375,7 +400,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const invoicesWithUrl = invoices.map((invoice) => ({
       ...invoice,
       id: invoice.id as string,
-      downloadUrl: `${this.config.vendureHost}/invoices/${channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
+      downloadUrl: `${this.config.vendureHost}/invoices/${ctx.channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
     }));
     return {
       items: invoicesWithUrl,
@@ -384,9 +409,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   private async saveInvoice(
+    ctx: RequestContext,
     invoice: Omit<InvoiceEntity, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<InvoiceEntity | undefined> {
-    return this.invoiceRepo.save(invoice);
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    return invoiceRepo.save(invoice);
   }
 
   private async createCtx(channelToken: string): Promise<RequestContext> {
