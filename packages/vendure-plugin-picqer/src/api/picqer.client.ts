@@ -120,13 +120,6 @@ export class PicqerClient {
     return this.rawRequest('put', `/products/${productId}`, input);
   }
 
-  async addOrderNote(
-    orderId: string | number,
-    note: string
-  ): Promise<ProductData> {
-    return this.rawRequest('post', `/orders/${orderId}/notes`, { note });
-  }
-
   /**
    * Add an image to a product
    */
