@@ -28,8 +28,7 @@ import {
 import nock from 'nock';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { createSettledOrder } from '../../test/src/shop-utils';
-
-jest.setTimeout(20000);
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 describe('E-boekhouden plugin', function () {
   let server: TestServer;
