@@ -440,11 +440,13 @@ describe('Picqer plugin', function () {
   });
 
   it('Should update stock level on incoming webhook', async () => {
+    const variants2 = await getAllVariants(adminClient);
+    const variant2 = variants2.find((v) => v.sku === 'L2201308');
     const body = {
       event: 'products.free_stock_changed',
       data: {
         productcode: 'L2201308',
-        stock: [{ freestock: 543 }],
+        stock: [{ freestock: 543, idwarehouse: 2 }],
       },
     };
     const res = await adminClient.fetch(
