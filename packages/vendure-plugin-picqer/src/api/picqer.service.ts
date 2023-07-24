@@ -548,7 +548,6 @@ export class PicqerService implements OnApplicationBootstrap {
           const res = await this.connection
             .getRepository(ctx, StockLevel)
             .save({ id: stockLevelId, stockOnHand: picqerStock.freestock });
-          console.log('SAVED', res);
           // Add stock adjustment
           stockAdjustments.push(
             new StockAdjustment({
