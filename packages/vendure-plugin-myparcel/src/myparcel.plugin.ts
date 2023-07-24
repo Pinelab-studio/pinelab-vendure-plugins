@@ -1,9 +1,4 @@
-import {
-  OrderItem,
-  OrderLine,
-  PluginCommonModule,
-  VendurePlugin,
-} from '@vendure/core';
+import { OrderLine, PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { myparcelHandler } from './api/myparcel.handler';
 import { MyparcelController } from './api/myparcel.controller';
 import path from 'path';
@@ -11,10 +6,10 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { MyparcelConfigEntity } from './api/myparcel-config.entity';
 import { MyparcelService } from './api/myparcel.service';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { myparcelPermission } from './index';
 import {
   adminSchema,
   MyparcelAdminResolver,
+  myparcelPermission,
 } from './api/myparcel.admin.graphql';
 import { MyParcelShopResolver, shopSchema } from './api/myparcel.shop.graphql';
 

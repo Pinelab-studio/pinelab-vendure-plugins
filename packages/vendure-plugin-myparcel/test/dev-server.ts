@@ -15,7 +15,6 @@ import {
   mergeConfig,
   PaymentMethodService,
   RequestContext,
-  UserInputError,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
@@ -85,9 +84,6 @@ require('dotenv').config();
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
-  await server.app
-    .get(MyparcelService)
-    .upsertConfig({ channelId: '1', apiKey: process.env.MYPARCEL_APIKEY! });
   const channel = await server.app.get(ChannelService).getDefaultChannel();
   const ctx = new RequestContext({
     apiType: 'admin',
@@ -95,15 +91,23 @@ require('dotenv').config();
     authorizedAsOwnerOnly: false,
     channel,
   });
+  await server.app
+    .get(MyparcelService)
+    .upsertConfig({ ctx, apiKey: process.env.MYPARCEL_APIKEY! });
   await server.app.get(PaymentMethodService).create(ctx, {
     code: 'test-payment-method',
-    name: 'test',
-    description: '',
     enabled: true,
     handler: {
       code: 'test-payment-method',
       arguments: [],
     },
+    translations: [
+      {
+        name: 'test',
+        description: '',
+        languageCode: LanguageCode.en_US,
+      },
+    ],
   });
   // Add a test-order at every server start
   await addShippingMethod(adminClient, 'my-parcel');
