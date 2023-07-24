@@ -92,7 +92,8 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   }
 
   async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
-    throw new UserInputError('Google Cloud Tasks can not be canceled');
+    await this.jobRecordRepository.delete({ id: jobId });
+    return;
   }
 
   destroy() {

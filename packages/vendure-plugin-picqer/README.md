@@ -66,7 +66,7 @@ Stock levels are updated in Vendure on
 1. Full sync via the Admin UI
 2. Or, on incoming webhook from Picqer
 
-This plugin will mirror the stock locations from Picqer. Non-Picqer stock locations will automatically be deleted by the plugin, to keep stock in sync with Picqer.
+This plugin will mirror the stock locations from Picqer. Non-Picqer stock locations will automatically be deleted by the plugin, to keep stock in sync with Picqer. Vendure's internal allocated stock will be ignored, because this is handled by Picqer.
 
 You can use a custom [StockLocationStrategy](https://github.com/vendure-ecommerce/vendure/blob/major/packages/core/src/config/catalog/default-stock-location-strategy.ts) to control how available stock is calculated based on multiple locations.
 
