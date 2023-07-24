@@ -527,22 +527,28 @@ export class PicqerService implements OnApplicationBootstrap {
           .update({ id: variant.id }, additionalVariantFields);
         // Write stock level per location per variant
         for (const picqerStock of picqerProduct.stock) {
+          if (!picqerStock.idwarehouse) {
+            Logger.error(
+              `Can not update stock for picqer warehouse without id`,
+              loggerCtx
+            );
+            continue;
+          }
           const location = await this.getOrCreateStockLocation(
             ctx,
             picqerStock.idwarehouse
           );
-          const { stockAllocated, stockOnHand } =
-            await this.stockLevelService.getAvailableStock(ctx, variant.id);
-          // stockLevelService.update() requires a delta instead of the absolute value
-          let delta = picqerStock.freestock - stockOnHand;
-          // Account for the current allocated stock
-          delta += stockAllocated;
-          await this.stockLevelService.updateStockOnHandForLocation(
-            ctx,
-            variant.id,
-            location.id,
-            delta
-          );
+          const { id: stockLevelId, stockOnHand } =
+            await this.stockLevelService.getStockLevel(
+              ctx,
+              variant.id,
+              location.id
+            );
+          const delta = picqerStock.freestock - stockOnHand;
+          const res = await this.connection
+            .getRepository(ctx, StockLevel)
+            .save({ id: stockLevelId, stockOnHand: picqerStock.freestock });
+          console.log('SAVED', res);
           // Add stock adjustment
           stockAdjustments.push(
             new StockAdjustment({
