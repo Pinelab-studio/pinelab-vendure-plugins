@@ -86,7 +86,7 @@ export class SendcloudComponent implements OnInit {
       this.notificationService.success('common.notify-update-success', {
         entity: 'SendCloud config',
       });
-    } catch (e) {
+    } catch (e: any) {
       this.notificationService.error('common.notify-update-error', {
         entity: 'SendCloud config',
       });
