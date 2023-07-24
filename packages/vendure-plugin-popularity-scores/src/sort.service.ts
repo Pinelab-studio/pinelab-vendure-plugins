@@ -7,7 +7,7 @@ import {
   JobQueue,
   JobQueueService,
   Logger,
-  OrderItem,
+  OrderLine,
   Product,
   RequestContext,
   SerializedRequestContext,
@@ -50,15 +50,13 @@ export class SortService implements OnModuleInit {
   ): Promise<void> {
     Logger.info(`Started calculating popularity scores`, loggerCtx);
     const channel = await this.channelService.getChannelFromToken(channelToken);
-    const orderItemRepo = this.connection.getRepository(ctx, OrderItem);
+    const orderLineRepo = this.connection.getRepository(ctx, OrderLine);
     const ordersAfter = new Date();
     ordersAfter.setMonth(ordersAfter.getMonth() - 12);
-    const groupedOrderItems = await orderItemRepo
-      .createQueryBuilder('orderItem')
-      .innerJoin('orderItem.line', 'orderLine')
+    const groupedOrderLines = await orderLineRepo
+      .createQueryBuilder('orderLine')
       .select([
         'count(product.id) as count',
-        'orderItem.line',
         'orderLine.productVariant',
         'orderLine.order',
       ])
@@ -85,7 +83,7 @@ export class SortService implements OnModuleInit {
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
-    const maxCount = groupedOrderItems?.[0]?.count;
+    const maxCount = groupedOrderLines?.[0]?.count;
     if (!maxCount) {
       Logger.warn(
         `No orders found for channel ${channel.code}, not calculating popularity scores`,
@@ -96,7 +94,7 @@ export class SortService implements OnModuleInit {
     const maxValue = 1000;
     const productRepository = this.connection.getRepository(ctx, Product);
     await productRepository.save(
-      groupedOrderItems.map((gols) => {
+      groupedOrderLines.map((gols) => {
         return {
           id: gols.product_id,
           customFields: {

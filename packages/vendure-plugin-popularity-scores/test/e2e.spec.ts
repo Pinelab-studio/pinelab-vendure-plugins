@@ -17,8 +17,7 @@ import {
   GET_COLLECTIONS_WITH_POPULARITY_SCORE,
   GET_PRODUCTS_WITH_POPULARITY_SCORES,
 } from './helpers';
-
-jest.setTimeout(10000);
+import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 
 describe('Sort by Popularity Plugin', function () {
   let server: TestServer;
@@ -66,7 +65,8 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Creates an empty collection', async () => {
-    const collection = await createCollection(adminClient, {
+    //FIX ME
+    const collection = await createCollection(adminClient as any, {
       translations: [
         {
           languageCode: LanguageCode.En,
@@ -82,8 +82,12 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Should place a test orders', async () => {
-    await createSettledOrder(shopClient, 1, true, [{ id: 'T_2', quantity: 2 }]);
-    const orders = await getAllOrders(adminClient);
+    //FIX ME
+    await createSettledOrder(shopClient as any, 1, true, [
+      { id: 'T_2', quantity: 2 },
+    ]);
+    //FIX ME
+    const orders = await getAllOrders(adminClient as any);
     expect(orders.length).toBe(1);
     expect(
       orders[0].lines.every((line) => line.productVariant.product.id === 'T_1')
