@@ -61,7 +61,8 @@ import { DefaultExportStrategy, OrderExportPlugin } from '../src';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
+  //FIX ME
+  await createSettledOrder(shopClient as any, 1);
+  await createSettledOrder(shopClient as any, 1);
+  await createSettledOrder(shopClient as any, 1);
 })();

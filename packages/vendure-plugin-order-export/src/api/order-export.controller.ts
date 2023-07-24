@@ -4,8 +4,9 @@ import {
   Logger,
   OrderService,
   RequestContext,
+  PermissionDefinition,
 } from '@vendure/core';
-import { ExportPluginConfig, orderExportPermission } from '..';
+import { ExportPluginConfig } from '..';
 import {
   ArgumentMetadata,
   Controller,
@@ -32,6 +33,10 @@ export class ParseDatePipe implements PipeTransform {
   }
 }
 
+export const orderExportPermission = new PermissionDefinition({
+  name: 'ExportOrders',
+  description: 'Allows administrator to export orders',
+});
 @Controller('export-orders')
 export class OrderExportController {
   constructor(
