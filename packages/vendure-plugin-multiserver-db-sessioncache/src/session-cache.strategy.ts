@@ -20,42 +20,49 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
 
   async get(sessionToken: string): Promise<CachedSession | undefined> {
     if (!this.multiServerDBSessionCache) {
-      throw new InternalServerError(
-        'MultiServerDbSessionCache repository not initialized'
-      );
-    }
-    const retrieved = await this.multiServerDBSessionCache
-      .createQueryBuilder('multiServerDBSessionCache')
-      .where({ id: sessionToken })
-      .getOne();
-    if (retrieved) {
-      Logger.debug(
-        `Cache hit for session '${sessionToken}' last updated at ${retrieved.updatedAt}`,
+      // Getting a cached session should not propagate the error to the client
+      Logger.error(
+        'MultiServerDbSessionCache repository not initialized',
         loggerCtx
       );
-    } else {
-      Logger.debug(`No cache hit for session '${sessionToken}'`, loggerCtx);
+      return;
     }
+    const retrieved = await this.multiServerDBSessionCache.findOneBy({
+      id: sessionToken,
+    });
     return retrieved?.session;
   }
 
   async set(session: CachedSession) {
     if (!this.multiServerDBSessionCache) {
-      throw new InternalServerError(
-        'MultiServerDbSessionCache repository not initialized'
+      Logger.error(
+        'MultiServerDbSessionCache repository not initialized',
+        loggerCtx
       );
+      return;
     }
     const sessionData = new SessionCache();
     sessionData.id = session.token;
     sessionData.session = session;
-    await this.multiServerDBSessionCache.save(sessionData);
+    await this.multiServerDBSessionCache
+      .upsert(sessionData, ['id'])
+      .catch((e: any) => {
+        // Saving a cached session should not propagate the error to the client
+        if (e instanceof Error) {
+          Logger.error(e.message, loggerCtx, e.stack);
+        } else {
+          Logger.error(e, loggerCtx);
+        }
+      });
   }
 
   async delete(sessionToken: string) {
     if (!this.multiServerDBSessionCache) {
-      throw new InternalServerError(
-        'MultiServerDbSessionCache repository not initialized'
+      Logger.error(
+        'MultiServerDbSessionCache repository not initialized',
+        loggerCtx
       );
+      return;
     }
     await this.multiServerDBSessionCache.delete({ id: sessionToken });
   }
