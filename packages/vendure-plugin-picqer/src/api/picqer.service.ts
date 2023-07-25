@@ -194,6 +194,16 @@ export class PicqerService implements OnApplicationBootstrap {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       await this.addPushOrderJob(ctx, order);
     });
+    // Register webhooks on app start
+    for (const config of await this.getAllConfigs()) {
+      const ctx = await this.getCtxForChannel(config.channelId);
+      await this.registerWebhooks(ctx, config).catch((e) =>
+        Logger.error(
+          `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
+          loggerCtx
+        )
+      );
+    }
   }
 
   /**
@@ -217,10 +227,7 @@ export class PicqerService implements OnApplicationBootstrap {
     ];
     for (const hookEvent of eventsToRegister) {
       // Use first 4 digits of webhook secret as name, so we can identify the hook
-      const webhookName = `Vendure ${hookEvent} ${client.webhookSecret.slice(
-        0,
-        4
-      )}`;
+      const webhookName = `Vendure ${client.webhookSecret.slice(0, 4)}`;
       const webhooks = await client.getWebhooks();
       let hook = webhooks.find(
         (h) =>
@@ -966,6 +973,12 @@ export class PicqerService implements OnApplicationBootstrap {
     return repository.findOne({ where: { channelId: String(ctx.channelId) } });
   }
 
+  async getAllConfigs(): Promise<PicqerConfigEntity[]> {
+    const repository =
+      this.connection.rawConnection.getRepository(PicqerConfigEntity);
+    return repository.find();
+  }
+
   /**
    * Validate Picqer credentials by requesting `stats` from Picqer
    */
@@ -1049,13 +1062,14 @@ export class PicqerService implements OnApplicationBootstrap {
       deliverycontactname: shippingAddress.fullName,
       deliveryaddress: `${shippingAddress.streetLine1} ${shippingAddress.streetLine2}`,
       deliveryzipcode: shippingAddress.postalCode,
-      deliverycountry: shippingAddress.country?.toUpperCase(),
+      deliverycity: shippingAddress.city,
+      deliverycountry: shippingAddress.countryCode?.toUpperCase(),
       invoicename: billingAddress.company || billingAddress.fullName,
       invoicecontactname: billingAddress.fullName,
       invoiceaddress: `${shippingAddress.streetLine1} ${shippingAddress.streetLine2}`,
       invoicezipcode: shippingAddress.postalCode,
       invoicecity: shippingAddress.city,
-      invoicecountry: shippingAddress.country?.toUpperCase(),
+      invoicecountry: shippingAddress.countryCode?.toUpperCase(),
       products,
     };
   }
