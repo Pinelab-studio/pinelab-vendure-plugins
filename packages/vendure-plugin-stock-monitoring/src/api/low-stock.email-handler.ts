@@ -3,6 +3,8 @@ import {
   Injector,
   OrderLine,
   OrderPlacedEvent,
+  RequestContext,
+  StockLevelService,
   VendureEvent,
 } from '@vendure/core';
 
@@ -35,46 +37,71 @@ export function createLowStockEmailHandler({
   subject,
   emailRecipients,
 }: LowStockEmailOptions): EmailEventHandler<any, any> {
-  return new EmailEventListener('low-stock')
-    .on(OrderPlacedEvent)
-    .filter(
-      (event) =>
-        !!event.order.lines.find((line) =>
-          droppedBelowThreshold(threshold, line)
-        )
-    )
-    .loadData(async ({ event, injector }) => {
-      if (Array.isArray(emailRecipients)) {
-        return { adminRecipients: emailRecipients };
-      }
-      return {
-        adminRecipients: await emailRecipients(injector, event),
-      };
-    })
-    .setRecipient((event) => event.data.adminRecipients.join(','))
-    .setFrom(`{{ fromAddress }}`)
-    .setSubject(subject)
-    .setTemplateVars((event) => {
-      const lines = event.order.lines.filter((line) =>
-        droppedBelowThreshold(threshold, line)
-      );
-      return {
-        lines,
-      };
-    });
+  let stockLevelService: StockLevelService;
+  return (
+    new EmailEventListener('low-stock')
+      .on(OrderPlacedEvent)
+      // .filter(
+      //   (event) =>
+      //     !!event.order.lines.find((line) =>
+      //       droppedBelowThreshold(threshold, line, event.ctx)
+      //     )
+      // )
+      .loadData(async ({ event, injector }) => {
+        stockLevelService = injector.get(StockLevelService);
+        const dropped = !!event.order.lines.find(
+          async (line) =>
+            await droppedBelowThreshold(
+              threshold,
+              line,
+              event.ctx,
+              stockLevelService
+            )
+        );
+        if (Array.isArray(emailRecipients)) {
+          return { adminRecipients: emailRecipients };
+        }
+        return {
+          adminRecipients: dropped
+            ? await emailRecipients(injector, event)
+            : [],
+        };
+      })
+      .setRecipient((event) => event.data.adminRecipients.join(','))
+      .setFrom(`{{ fromAddress }}`)
+      .setSubject(subject)
+      .setTemplateVars((event) => {
+        const lines = event.order.lines.filter(
+          async (line) =>
+            await droppedBelowThreshold(
+              threshold,
+              line,
+              event.ctx,
+              stockLevelService
+            )
+        );
+        return {
+          lines,
+        };
+      })
+  );
 }
 
 /**
  * Returns true if this orderLine made the stocklevel drop below the threshold
  */
-export function droppedBelowThreshold(
+export async function droppedBelowThreshold(
   threshold: number,
-  line: OrderLine
-): boolean {
-  const {
-    productVariant: { stockOnHand: stockAfterOrder },
-    quantity,
-  } = line;
+  line: OrderLine,
+  ctx: RequestContext,
+  stockLevelService: StockLevelService
+): Promise<boolean> {
+  const { productVariant, quantity } = line;
+  const variantStocks = await stockLevelService.getAvailableStock(
+    ctx,
+    productVariant.id
+  );
+  const stockAfterOrder = variantStocks.stockOnHand;
   const stockBeforeOrder = stockAfterOrder + quantity;
   return stockAfterOrder <= threshold && stockBeforeOrder >= threshold;
 }
