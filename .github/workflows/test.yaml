@@ -29,7 +29,7 @@ jobs:
         package: [
             # 'vendure-plugin-coinbase',
             'vendure-plugin-customer-managed-groups',
-            # 'vendure-plugin-dutch-postalcode',
+            'vendure-plugin-dutch-postalcode',
             # 'vendure-plugin-e-boekhouden',
             # 'vendure-plugin-goedgepickt',
             'vendure-plugin-google-cloud-tasks',
