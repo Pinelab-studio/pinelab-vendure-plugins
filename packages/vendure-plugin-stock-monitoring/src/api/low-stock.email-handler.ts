@@ -38,53 +38,43 @@ export function createLowStockEmailHandler({
   emailRecipients,
 }: LowStockEmailOptions): EmailEventHandler<any, any> {
   let stockLevelService: StockLevelService;
-  return (
-    new EmailEventListener('low-stock')
-      .on(OrderPlacedEvent)
-      // .filter(
-      //   (event) =>
-      //     !!event.order.lines.find((line) =>
-      //       droppedBelowThreshold(threshold, line, event.ctx)
-      //     )
-      // )
-      .loadData(async ({ event, injector }) => {
-        stockLevelService = injector.get(StockLevelService);
-        const dropped = !!event.order.lines.find(
-          async (line) =>
-            await droppedBelowThreshold(
-              threshold,
-              line,
-              event.ctx,
-              stockLevelService
-            )
-        );
-        if (Array.isArray(emailRecipients)) {
-          return { adminRecipients: emailRecipients };
-        }
-        return {
-          adminRecipients: dropped
-            ? await emailRecipients(injector, event)
-            : [],
-        };
-      })
-      .setRecipient((event) => event.data.adminRecipients.join(','))
-      .setFrom(`{{ fromAddress }}`)
-      .setSubject(subject)
-      .setTemplateVars((event) => {
-        const lines = event.order.lines.filter(
-          async (line) =>
-            await droppedBelowThreshold(
-              threshold,
-              line,
-              event.ctx,
-              stockLevelService
-            )
-        );
-        return {
-          lines,
-        };
-      })
-  );
+  return new EmailEventListener('low-stock')
+    .on(OrderPlacedEvent)
+    .loadData(async ({ event, injector }) => {
+      stockLevelService = injector.get(StockLevelService);
+      const dropped = !!event.order.lines.find(
+        async (line) =>
+          await droppedBelowThreshold(
+            threshold,
+            line,
+            event.ctx,
+            stockLevelService
+          )
+      );
+      if (Array.isArray(emailRecipients)) {
+        return { adminRecipients: emailRecipients };
+      }
+      return {
+        adminRecipients: dropped ? await emailRecipients(injector, event) : [],
+      };
+    })
+    .setRecipient((event) => event.data.adminRecipients.join(','))
+    .setFrom(`{{ fromAddress }}`)
+    .setSubject(subject)
+    .setTemplateVars((event) => {
+      const lines = event.order.lines.filter(
+        async (line) =>
+          await droppedBelowThreshold(
+            threshold,
+            line,
+            event.ctx,
+            stockLevelService
+          )
+      );
+      return {
+        lines,
+      };
+    });
 }
 
 /**
