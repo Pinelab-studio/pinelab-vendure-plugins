@@ -42,7 +42,7 @@ jobs:
             # 'vendure-plugin-shipping-by-weight-and-country',
             # 'vendure-plugin-stock-monitoring',
             # 'vendure-plugin-sendcloud',
-            # 'vendure-plugin-metrics',
+            'vendure-plugin-metrics',
             # 'vendure-plugin-limit-variant-per-order',
             # 'vendure-plugin-variant-bulk-update',
             'vendure-plugin-stripe-subscription',
