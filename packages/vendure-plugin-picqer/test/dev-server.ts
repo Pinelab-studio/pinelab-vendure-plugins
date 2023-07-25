@@ -41,7 +41,13 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
         // These are just test values to test the strtegies, they don't mean anything in this context
         pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
         pullPicqerProductFields: (picqerProd) => ({ outOfStockThreshold: 123 }),
-        addPicqerOrderNote: (order) => 'test note',
+        pushPicqerOrderFields: (order) => ({
+          customer_remarks: 'test note',
+          pickup_point_data: {
+            carrier: 'dhl',
+            id: '901892834',
+          },
+        }),
       }),
       AssetServerPlugin.init({
         assetUploadDir: path.join(__dirname, '../__data__/assets'),
