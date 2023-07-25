@@ -391,21 +391,15 @@ export class GoedgepicktService
       if (order.state === 'Delivered') {
         return;
       }
-      //FIX ME
-      await transitionToDelivered(
-        this.orderService as any,
-        ctx as any,
-        order as any,
-        {
-          code: goedgepicktHandler.code,
-          arguments: [
-            {
-              name: 'goedGepicktOrderUUID',
-              value: orderUuid,
-            },
-          ],
-        }
-      );
+      await transitionToDelivered(this.orderService, ctx, order, {
+        code: goedgepicktHandler.code,
+        arguments: [
+          {
+            name: 'goedGepicktOrderUUID',
+            value: orderUuid,
+          },
+        ],
+      });
       Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
     } else {
       return Logger.info(
