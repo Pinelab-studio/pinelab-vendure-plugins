@@ -109,10 +109,10 @@ describe('Picqer plugin', function () {
     expect(everyVariantHasStockTracking).toBe(true);
   });
 
+  // Caught webhook creation requests
   const createdHooks: any[] = [];
 
   it('Should update Picqer config via admin api', async () => {
-    // Mock hooks GET, because webhooks are updated on config save
     nock(nockBaseUrl).get('/hooks').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
@@ -213,7 +213,8 @@ describe('Picqer plugin', function () {
     expect(picqerOrderRequest.deliverycontactname).toBeDefined();
     expect(picqerOrderRequest.deliveryaddress).toBeDefined();
     expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
-    expect(picqerOrderRequest.deliverycountry).toBeDefined();
+    expect(picqerOrderRequest.deliverycity).toBeDefined();
+    expect(picqerOrderRequest.deliverycountry).toBe('NL');
     expect(picqerOrderRequest.products.length).toBe(1);
     expect(picqerOrderRequest.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);

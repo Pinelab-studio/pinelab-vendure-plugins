@@ -9,19 +9,19 @@ export async function transitionToShipped(
   dataService: DataService,
   order: OrderDetailFragment
 ): Promise<void> {
-  const { fulfillmentHandlers } = await dataService.shippingMethod
+  const response = await dataService.shippingMethod
     .getShippingMethodOperations()
     .single$.toPromise();
   const handlerCode =
     order.shippingLines[0].shippingMethod.fulfillmentHandlerCode;
-  const handler = fulfillmentHandlers.find(
+  const handler = (response?.fulfillmentHandlers ?? []).find(
     (handler) => handler.code === handlerCode
   );
   if (!handler) {
     throw Error(`No handler found for ${handlerCode}`);
   }
   const args = handler.args.map((arg) => ({ name: arg.name, value: '' }));
-  const { addFulfillmentToOrder } = await dataService.order
+  const createFullfilmentResponse = await dataService.order
     .createFulfillment({
       handler: {
         code: handlerCode,
@@ -33,19 +33,21 @@ export async function transitionToShipped(
       })),
     })
     .toPromise();
-  let fulfillmentId = (addFulfillmentToOrder as any).id;
-  const errorResult = addFulfillmentToOrder as FulfillmentStateTransitionError;
-  if (errorResult.errorCode === 'ITEMS_ALREADY_FULFILLED_ERROR') {
+  let fulfillmentId = (createFullfilmentResponse?.addFulfillmentToOrder as any)
+    ?.id;
+  const errorResult =
+    createFullfilmentResponse?.addFulfillmentToOrder as FulfillmentStateTransitionError;
+  if (errorResult?.errorCode === 'ITEMS_ALREADY_FULFILLED_ERROR') {
     fulfillmentId = order.fulfillments?.[0].id;
   } else if (errorResult.errorCode) {
     throw Error(`${errorResult.errorCode} - ${errorResult.transitionError}`);
   }
-  const { transitionFulfillmentToState } = await dataService.order
+  const transitionFulfillmentToStateResponse = await dataService.order
     .transitionFulfillmentToState(fulfillmentId, 'Shipped')
     .toPromise();
   const transitionError =
-    transitionFulfillmentToState as FulfillmentStateTransitionError;
-  if (transitionError.errorCode) {
+    transitionFulfillmentToStateResponse?.transitionFulfillmentToState as FulfillmentStateTransitionError;
+  if (transitionError?.errorCode) {
     throw Error(`${errorResult.errorCode} - ${errorResult.transitionError}`);
   }
 }
@@ -55,12 +57,12 @@ export async function transitionToDelivered(
   order: OrderDetailFragment
 ): Promise<void> {
   const fulfillmentId = order.fulfillments?.[0].id;
-  const { transitionFulfillmentToState } = await dataService.order
+  const transitionFulfillmentToStateResponse = await dataService.order
     .transitionFulfillmentToState(fulfillmentId!, 'Delivered')
     .toPromise();
   const transitionError =
-    transitionFulfillmentToState as FulfillmentStateTransitionError;
-  if (transitionError.errorCode?.indexOf('"Delivered" to "Delivered"') > -1) {
+    transitionFulfillmentToStateResponse?.transitionFulfillmentToState as FulfillmentStateTransitionError;
+  if (transitionError?.errorCode?.indexOf('"Delivered" to "Delivered"') > -1) {
     // this is ok
   } else if (transitionError.errorCode) {
     throw Error(
@@ -80,7 +82,7 @@ export async function refund(
   if (order.state === 'AddingItems') {
     lines = [];
   }
-  const { refundOrder } = await dataService.order
+  const response = await dataService.order
     .refundOrder({
       lines,
       reason: 'Manual refund',
@@ -89,7 +91,7 @@ export async function refund(
       shipping: order.shippingWithTax,
     })
     .toPromise();
-  const errorResult = refundOrder as RefundOrderStateError;
+  const errorResult = response?.refundOrder as RefundOrderStateError;
   if (errorResult.errorCode) {
     throw Error(`${errorResult.errorCode} - ${errorResult.orderState}`);
   }
@@ -99,7 +101,7 @@ export async function cancel(
   dataService: DataService,
   order: OrderDetailFragment
 ): Promise<void> {
-  const { cancelOrder } = await dataService.order
+  const cancelOrderResponse = await dataService.order
     .cancelOrder({
       lines: order.lines.map((line) => ({
         quantity: line.quantity,
@@ -110,7 +112,7 @@ export async function cancel(
       cancelShipping: true,
     })
     .toPromise();
-  const errorResult = cancelOrder as ErrorResult;
+  const errorResult = cancelOrderResponse?.cancelOrder as ErrorResult;
   if (errorResult.errorCode) {
     throw Error(`${errorResult.errorCode} - ${errorResult.message}`);
   }
