@@ -83,11 +83,13 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     if (!this.connection) {
       throw new UserInputError('TransactionalConnection is not available');
     }
-    const result = await this.jobRecordRepository.delete({
-      ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
-      isSettled: true,
-      settledAt: LessThan(olderThan ?? new Date()),
-    });
+    const result = await this.connection.rawConnection
+      .getRepository(JobRecord)
+      .delete({
+        ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
+        isSettled: true,
+        settledAt: LessThan(olderThan ?? new Date()),
+      });
     return result.affected || 0;
   }
 
