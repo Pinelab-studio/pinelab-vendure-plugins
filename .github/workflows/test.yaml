@@ -38,7 +38,7 @@ jobs:
             # 'vendure-plugin-myparcel',
             'vendure-plugin-webhook',
             # 'vendure-plugin-admin-ui-helpers',
-            # 'vendure-plugin-order-export',
+            'vendure-plugin-order-export',
             # 'vendure-plugin-shipping-by-weight-and-country',
             # 'vendure-plugin-stock-monitoring',
             # 'vendure-plugin-sendcloud',
