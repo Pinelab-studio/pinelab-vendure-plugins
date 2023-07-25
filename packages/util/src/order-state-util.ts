@@ -52,7 +52,7 @@ export async function transitionToShipped(
   const fulfillment = await fulfillAll(ctx, orderService, order, handler);
   const result = await orderService.transitionFulfillmentToState(
     ctx,
-    (fulfillment as any).id,
+    fulfillment.id,
     'Shipped'
   );
   throwIfTransitionFailed(result);
@@ -76,7 +76,7 @@ export async function transitionToDelivered(
   );
   const result = await orderService.transitionFulfillmentToState(
     ctx,
-    (fulfillment as any).id,
+    fulfillment.id,
     'Delivered'
   );
   throwIfTransitionFailed(result);

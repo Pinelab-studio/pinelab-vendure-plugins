@@ -48,7 +48,7 @@ jobs:
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-customer-managed-groups',
             'vendure-plugin-picqer',
-            # 'vendure-plugin-popularity-scores',
+            'vendure-plugin-popularity-scores',
             'vendure-plugin-modify-customer-orders',
           ]
     steps:
