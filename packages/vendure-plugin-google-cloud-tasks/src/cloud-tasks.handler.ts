@@ -93,7 +93,6 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       createdAt: message.createdAt,
       retries: message.maxRetries,
     });
-    await this.safelyRemoveSettledJobs();
     try {
       await processFn(job);
       // The job was completed successfully
@@ -116,6 +115,7 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       });
       // Save successful job in DB
       await this.jobRecordRepository.save(jobRecord);
+      await this.safelyRemoveSettledJobs();
       res.sendStatus(200);
       return;
     } catch (error: any) {
@@ -159,6 +159,10 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
    * Safely remove settled jobs from the DB, meaning that it will never throw an error.
    */
   async safelyRemoveSettledJobs(): Promise<void> {
+    if (!this.shouldRun()) {
+      // Should only run every 1 in 100 tasks. More cleanup isn't needed
+      return;
+    }
     try {
       const cloudTaskJobStrategy = this.configService.jobQueueOptions
         .jobQueueStrategy as CloudTasksJobQueueStrategy;
@@ -179,5 +183,14 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
     } catch (e: any) {
       Logger.error(`Failed to remove settled jobs: ${e}`, loggerCtx, e.stack);
     }
+  }
+
+  /**
+   * Triggers 1 out of every 100 times
+   */
+  private shouldRun(): boolean {
+    const probability = 0.01; // 1% probability
+    const randomNumber = Math.random();
+    return randomNumber <= probability;
   }
 }
