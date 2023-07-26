@@ -53,7 +53,7 @@ describe('Sort by Popularity Plugin', function () {
           },
         ],
       },
-      productsCsvPath: './test/products.csv',
+      productsCsvPath: './test/products-import.csv',
       customerCount: 2,
     });
     serverStarted = true;
@@ -87,6 +87,7 @@ describe('Sort by Popularity Plugin', function () {
       { id: 'T_2', quantity: 4 },
       { id: 'T_5', quantity: 20 },
       { id: 'T_8', quantity: 1 },
+      { id: 'T_9', quantity: 10 },
     ]);
     await createSettledOrder(shopClient as any, 1, true, [
       { id: 'T_7', quantity: 4 },
@@ -95,9 +96,9 @@ describe('Sort by Popularity Plugin', function () {
     ]);
     //FIX ME
     const orders = await getAllOrders(adminClient as any);
-    expect(orders.length).toBe(1);
+    expect(orders.length).toBe(2);
     expect(
-      orders[0].lines.every((line) => line.productVariant.product.id === 'T_1')
+      orders[1].lines.every((line) => line.productVariant.product.id === 'T_2')
     ).toBe(true);
   });
 
@@ -120,7 +121,12 @@ describe('Sort by Popularity Plugin', function () {
     const {
       products: { items: products },
     } = await adminClient.query(GET_PRODUCTS_WITH_POPULARITY_SCORES);
-    expect(products[0].customFields.popularityScore).toBe(1000); // Just one product in test for now
+    const carProduct = products.find((p) => p.name === 'Cars');
+    const laptopProduct = products.find((p) => p.name === 'Laptop');
+    const motorsProduct = products.find((p) => p.name === 'Motors');
+    expect(carProduct.customFields.popularityScore).toBe(1000);
+    expect(laptopProduct.customFields.popularityScore).toBe(70);
+    expect(motorsProduct.customFields.popularityScore).toBe(175);
   });
 
   it('Calculated popularity per collection', async () => {
@@ -132,8 +138,8 @@ describe('Sort by Popularity Plugin', function () {
     );
     const computers = collections.find((col: any) => col.name === 'Computers');
     const testCol = collections.find((col: any) => col.name === 'test');
-    expect(electronics.customFields.popularityScore).toBe(1000);
-    expect(computers.customFields.popularityScore).toBe(1000);
+    expect(electronics.customFields.popularityScore).toBe(1245);
+    expect(computers.customFields.popularityScore).toBe(1070);
     expect(testCol.customFields.popularityScore).toBe(0);
   });
 

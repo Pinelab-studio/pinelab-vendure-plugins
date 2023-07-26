@@ -11,7 +11,7 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
+import { initialData } from './initial-data';
 import { PopularityScoresPlugin } from '../src';
 
 require('dotenv').config();
@@ -38,6 +38,6 @@ require('dotenv').config();
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
     initialData,
-    productsCsvPath: './test/products.csv',
+    productsCsvPath: './test/products-import.csv',
   });
 })();
