@@ -1,10 +1,4 @@
-import {
-  DefaultLogger,
-  LogLevel,
-  mergeConfig,
-  Order,
-  ProductVariant,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -17,7 +11,7 @@ import { initialData } from '../../test/src/initial-data';
 import gql from 'graphql-tag';
 import { LimitVariantPerOrderPlugin } from '../src/limit-variant-per-order.plugin';
 import { addItem } from '../../test/src/shop-utils';
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 describe('Limit variants per order plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
