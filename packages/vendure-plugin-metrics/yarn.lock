@@ -3093,7 +3093,7 @@
   dependencies:
     "@types/node" "*"
 
-"@vendure/admin-ui-plugin@^2.0.3":
+"@vendure/admin-ui-plugin@2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@vendure/admin-ui-plugin/-/admin-ui-plugin-2.0.4.tgz#7e7c0c3fa76c1e5025105049fba1bb3cdf864904"
   integrity sha512-+Ivc4LTM5KGwMrYQcTv2CooSZIOMD/lS53K9D46kAdxTjXP8YI/AMfLq35LRvBXiixZ2SIJRW7Um1Ze7FtbqbQ==
@@ -3101,7 +3101,7 @@
     date-fns "^2.30.0"
     fs-extra "^10.0.0"
 
-"@vendure/admin-ui@^2.0.3", "@vendure/admin-ui@^2.0.4":
+"@vendure/admin-ui@2.0.4", "@vendure/admin-ui@^2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@vendure/admin-ui/-/admin-ui-2.0.4.tgz#c74b1d181c87b8daf27e8b580899ade7d1d6601c"
   integrity sha512-0TtsOSDSYxkG90gr3zjvGcWYDobh7G4tAZb9RfingALN9mgejGgb8WPGrBca4JIZQQT91vtbTpWKsvRGEP9sow==
@@ -3159,7 +3159,7 @@
   resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.0.4.tgz#60c3972ecedca920afb4867ccf6ba085358caabb"
   integrity sha512-G77FlfKxbwX+CNyh2L4q3OrtY3r9riAsVCTEvWzrqNONxQazHsl01tyzWQYE1u/npYKmozEUU8VneejvE9/zyA==
 
-"@vendure/core@^2.0.3":
+"@vendure/core@2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@vendure/core/-/core-2.0.4.tgz#51b81105ef547c7a13397f03df3fdde16c9d76ff"
   integrity sha512-EZ2lxJgCRLNBWIZ/XpC+516RaB2O40xt7IOAOg4++77iiuM+US1aX7Wi6Nvpsbrs51mA5ZRs3iFBWEnvyuL5NQ==
@@ -3204,7 +3204,7 @@
     rxjs "^7.5.4"
     typeorm "0.3.11"
 
-"@vendure/testing@^2.0.3":
+"@vendure/testing@2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@vendure/testing/-/testing-2.0.4.tgz#1bdd5eedc60f6d9838c4e0656f17cc1dfb17ec8c"
   integrity sha512-PW0PiMwgLBOy7kaFnV1NrCPkMCwefBdIZKwnf9fvaXso0KUreZqKpjRYh7dCYhw1dAfUObPzoHcdp+hRsnqetg==
@@ -3219,7 +3219,7 @@
     node-fetch "^2.6.0"
     sql.js "1.8.0"
 
-"@vendure/ui-devkit@^2.0.3":
+"@vendure/ui-devkit@2.0.4":
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/@vendure/ui-devkit/-/ui-devkit-2.0.4.tgz#37a5cd45c8e845aea1d4a89a56d67fdb5049778d"
   integrity sha512-sFpWHDqD47t7LlMW9zCtoqYXwvG0jJ5c0lxrvBiPl+veF404pYWd6hBGCB7x03cWPrk+YEDsw8r5SHrb/8pcIw==

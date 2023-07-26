@@ -230,7 +230,7 @@ describe('Picqer plugin', function () {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
-        reference: createdOrder.code,
+        reference: createdOrder?.code,
         products: [
           { productcode: 'L2201308', amountpicked: 2 }, // Only 2 of 3 are picked
         ],
@@ -249,7 +249,7 @@ describe('Picqer plugin', function () {
         },
       }
     );
-    const order = await getOrder(adminClient, createdOrder.id as string);
+    const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('PartiallyDelivered');
   });
 
@@ -267,7 +267,7 @@ describe('Picqer plugin', function () {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
-        reference: createdOrder.code,
+        reference: createdOrder?.code,
         products: [
           { productcode: 'L2201308', amountpicked: 1 }, // last one to complete the order
         ],
@@ -286,7 +286,7 @@ describe('Picqer plugin', function () {
         },
       }
     );
-    const order = await getOrder(adminClient, createdOrder.id as string);
+    const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Delivered');
   });
 
@@ -295,7 +295,7 @@ describe('Picqer plugin', function () {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
-        reference: createdOrder.code,
+        reference: createdOrder?.code,
         products: [{ productcode: 'L2201308', amountpicked: 3 }],
       },
     } as Partial<IncomingPicklistWebhook>;
@@ -312,7 +312,7 @@ describe('Picqer plugin', function () {
         },
       }
     );
-    const order = await getOrder(adminClient, createdOrder.id as string);
+    const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Delivered');
   });
 
@@ -366,7 +366,7 @@ describe('Picqer plugin', function () {
 
   it('Should have pulled stock levels from Picqer after full sync', async () => {
     // Relies on previous trigger of full sync
-    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    await new Promise((r) => setTimeout(r, 3000)); // Wait for job queue to finish
     const variants = await getAllVariants(adminClient);
     updatedVariant = variants.find((v) => v.sku === 'L2201308');
     expect(updatedVariant?.stockOnHand).toBe(8);
@@ -441,8 +441,6 @@ describe('Picqer plugin', function () {
   });
 
   it('Should update stock level on incoming webhook', async () => {
-    const variants2 = await getAllVariants(adminClient);
-    const variant2 = variants2.find((v) => v.sku === 'L2201308');
     const body = {
       event: 'products.free_stock_changed',
       data: {
