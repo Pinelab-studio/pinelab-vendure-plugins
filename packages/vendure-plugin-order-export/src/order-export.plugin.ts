@@ -4,8 +4,9 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import {
   OrderExportController,
   OrderExportResolver,
+  orderExportPermission,
 } from './api/order-export.controller';
-import { DefaultExportStrategy, orderExportPermission } from './index';
+import { DefaultExportStrategy } from './index';
 import { ExportStrategy } from './api/export-strategy';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import gql from 'graphql-tag';

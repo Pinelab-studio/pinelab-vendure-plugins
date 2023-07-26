@@ -196,7 +196,7 @@ export class GoedgepicktComponent implements OnInit {
       this.notificationService.success('common.notify-update-success', {
         entity: 'products and stocklevels',
       });
-    } catch (e) {
+    } catch (e: any) {
       this.notificationService.error(e.message);
     } finally {
       this.loadingSync = false;

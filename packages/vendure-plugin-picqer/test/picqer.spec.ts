@@ -167,7 +167,7 @@ describe('Picqer plugin', function () {
     await addShippingMethod(adminClient, picqerHandler.code, '500');
   });
 
-  let createdOrder: Order;
+  let createdOrder: Order | undefined;
 
   it('Should push order to Picqer on order placement', async () => {
     let isOrderInProcessing = false;
