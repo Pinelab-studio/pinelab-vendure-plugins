@@ -65,8 +65,7 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Creates an empty collection', async () => {
-    //FIX ME
-    const collection = await createCollection(adminClient as any, {
+    const collection = await createCollection(adminClient, {
       translations: [
         {
           languageCode: LanguageCode.En,
@@ -82,20 +81,18 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Should place a test orders', async () => {
-    //FIX ME
-    await createSettledOrder(shopClient as any, 1, true, [
+    await createSettledOrder(shopClient, 1, true, [
       { id: 'T_2', quantity: 4 },
       { id: 'T_5', quantity: 20 },
       { id: 'T_8', quantity: 1 },
       { id: 'T_9', quantity: 10 },
     ]);
-    await createSettledOrder(shopClient as any, 1, true, [
+    await createSettledOrder(shopClient, 1, true, [
       { id: 'T_7', quantity: 4 },
       { id: 'T_5', quantity: 2 },
       { id: 'T_8', quantity: 30 },
     ]);
-    //FIX ME
-    const orders = await getAllOrders(adminClient as any);
+    const orders = await getAllOrders(adminClient);
     expect(orders.length).toBe(2);
     expect(
       orders[1].lines.every((line) => line.productVariant.product.id === 'T_2')

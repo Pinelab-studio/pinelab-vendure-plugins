@@ -127,8 +127,7 @@ describe('Order export plugin', function () {
   });
 
   it('Sends an email when stock is low after order placement', async () => {
-    //FIX ME
-    await createSettledOrder(shopClient as any, 1);
+    await createSettledOrder(shopClient, 1);
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for event handling
     const files = fs.readdirSync(testEmailDir);
     expect(files.length).toBe(3); // 3 emails should be sent, one for every handler

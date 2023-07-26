@@ -19,8 +19,7 @@ import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import { createSettledOrder } from '../../test/src/shop-utils';
 
 describe('Metrics', () => {
-  //FIX ME
-  let shopClient: any;
+  let shopClient: SimpleGraphQLClient;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
   let metrics: AdvancedMetricSummary[];

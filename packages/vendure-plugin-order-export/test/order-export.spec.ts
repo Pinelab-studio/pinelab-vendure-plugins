@@ -50,7 +50,6 @@ describe('Order export plugin', function () {
       },
       productsCsvPath: '../test/src/products-import.csv',
     });
-    //FIX ME
     await createSettledOrder(shopClient, 1);
     await createSettledOrder(shopClient, 1);
     await createSettledOrder(shopClient, 1);

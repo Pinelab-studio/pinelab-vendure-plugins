@@ -3,6 +3,7 @@ import {
   DefaultLogger,
   LogLevel,
   mergeConfig,
+  Order,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -40,8 +41,7 @@ describe('Invoices plugin', function () {
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
   let invoice: Invoice;
-  //FIX ME
-  let order: any;
+  let order: Order;
   let invoices: Invoice[] = [];
 
   beforeAll(async () => {
@@ -105,9 +105,8 @@ describe('Invoices plugin', function () {
   });
 
   it('Creates a placed order', async () => {
-    //FIX ME
-    await addShippingMethod(adminClient as any, 'manual-fulfillment');
-    order = await createSettledOrder(shopClient as any, 3);
+    await addShippingMethod(adminClient, 'manual-fulfillment');
+    order = await createSettledOrder(shopClient, 3);
     expect((order as any).id).toBeDefined();
   });
 
