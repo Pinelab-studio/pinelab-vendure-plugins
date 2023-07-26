@@ -1,6 +1,6 @@
 import { Body, Controller, Headers, Post } from '@nestjs/common';
 import { MyparcelService, MyparcelStatusChangeEvent } from './myparcel.service';
-import { Logger } from '@vendure/core';
+import { Logger, RequestContext, Ctx } from '@vendure/core';
 import { loggerCtx } from '../constants';
 
 @Controller('myparcel')
@@ -9,6 +9,7 @@ export class MyparcelController {
 
   @Post('update-status')
   async webhook(
+    @Ctx() ctx: RequestContext,
     @Body() body: MyparcelStatusChangeEvent,
     @Headers('X-MyParcel-Authorization') auth: string
   ): Promise<void> {
@@ -23,7 +24,7 @@ export class MyparcelController {
       );
     }
     const config = await this.myparcelService
-      .getConfigByKey(incomingKey)
+      .getConfigByKey(ctx, incomingKey)
       .catch((error) => {
         Logger.error('Failed to get config for incoming key', loggerCtx, error);
         throw error;
@@ -33,6 +34,7 @@ export class MyparcelController {
       loggerCtx
     );
     await this.myparcelService.updateStatus(
+      ctx,
       config.channelId,
       shipmentId,
       status
