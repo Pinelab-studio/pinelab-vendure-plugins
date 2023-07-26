@@ -1,5 +1,5 @@
 {
-  "name": "vendure-order-client",
+  "name": "@pinelab/vendure-order-client",
   "version": "0.0.3",
   "description": "A tiny, framework agnostic client for managing active orders and checkout with Vendure.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
