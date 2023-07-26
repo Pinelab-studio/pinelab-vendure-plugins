@@ -53,7 +53,7 @@ describe('Sort by Popularity Plugin', function () {
           },
         ],
       },
-      productsCsvPath: '../test/src/products-import.csv',
+      productsCsvPath: './test/products.csv',
       customerCount: 2,
     });
     serverStarted = true;
@@ -84,7 +84,14 @@ describe('Sort by Popularity Plugin', function () {
   it('Should place a test orders', async () => {
     //FIX ME
     await createSettledOrder(shopClient as any, 1, true, [
-      { id: 'T_2', quantity: 2 },
+      { id: 'T_2', quantity: 4 },
+      { id: 'T_5', quantity: 20 },
+      { id: 'T_8', quantity: 1 },
+    ]);
+    await createSettledOrder(shopClient as any, 1, true, [
+      { id: 'T_7', quantity: 4 },
+      { id: 'T_5', quantity: 2 },
+      { id: 'T_8', quantity: 30 },
     ]);
     //FIX ME
     const orders = await getAllOrders(adminClient as any);

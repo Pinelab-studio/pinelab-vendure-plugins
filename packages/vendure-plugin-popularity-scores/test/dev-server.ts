@@ -38,6 +38,6 @@ require('dotenv').config();
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
     initialData,
-    productsCsvPath: '../test/src/products-import.csv',
+    productsCsvPath: './test/products.csv',
   });
 })();

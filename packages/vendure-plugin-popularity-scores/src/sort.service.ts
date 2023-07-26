@@ -56,7 +56,7 @@ export class SortService implements OnModuleInit {
     const groupedOrderLines = await orderLineRepo
       .createQueryBuilder('orderLine')
       .select([
-        'count(product.id) as count',
+        'SUM(orderLine.quantity) as count',
         'orderLine.productVariant',
         'orderLine.order',
       ])
@@ -86,7 +86,8 @@ export class SortService implements OnModuleInit {
     const maxCount = groupedOrderLines?.[0]?.count;
     if (!maxCount) {
       Logger.warn(
-        `No orders found for channel ${channel.code}, not calculating popularity scores`,
+        `No orders found for channel ${channel.code}, 
+        not calculating popularity scores`,
         loggerCtx
       );
       return;
