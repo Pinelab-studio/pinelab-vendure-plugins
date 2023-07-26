@@ -106,7 +106,7 @@ export class OrderExportComponent implements OnInit {
       const filename = parts[1].split('=')[1];
       const blob = await res.blob();
       await this.downloadBlob(blob, filename);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       this.notificationService.error(err.message);
     }

@@ -24,15 +24,18 @@ export class StockMonitoringResolver {
       .getRepository(ctx, ProductVariant)
       .createQueryBuilder('variant')
       .leftJoin('variant.product', 'product')
+      .leftJoin('variant.stockLevels', 'stockLevel')
+      .addGroupBy('variant.id')
+      .addSelect(['SUM(stockLevel.stockOnHand) as stockOnHand'])
       .leftJoin('product.channels', 'channel')
       .where('variant.enabled = true')
-      .andWhere('variant.stockOnHand < :threshold', {
+      .andWhere('stockOnHand < :threshold', {
         threshold: StockMonitoringPlugin.threshold,
       })
       .andWhere('variant.deletedAt IS NULL')
       .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
       .limit(50)
-      .orderBy('variant.stockOnHand', 'ASC')
+      .orderBy('stockOnHand', 'ASC')
       .getMany();
   }
 }
