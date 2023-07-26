@@ -27,12 +27,10 @@
     "eslint-config-standard-with-typescript": "^34.0.1",
     "eslint-plugin-import": "^2.25.2",
     "eslint-plugin-n": "^15.0.0",
-    "eslint-plugin-progress": "taskworld/eslint-plugin-progress",
     "eslint-plugin-promise": "^6.0.0",
     "husky": "^8.0.2",
     "lerna": "^6.0.3",
-    "prettier": "^2.8.7",
-    "typescript": "*"
+    "prettier": "^2.8.7"
   },
   "commitlint": {
     "extends": [
