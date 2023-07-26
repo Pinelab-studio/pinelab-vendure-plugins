@@ -17,6 +17,9 @@ import {
   ProductVariant,
   ProductVariantService,
   ShippingMethodService,
+  StockLevelService,
+  TransactionalConnection,
+  ID,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import {
@@ -42,15 +45,14 @@ import { getOrder } from '../../test/src/admin-utils';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import gql from 'graphql-tag';
-
-jest.setTimeout(20000);
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 describe('Goedgepickt plugin', function () {
   const defaultChannelToken = 'e2e-default-channel';
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
+  let productVariantService: ProductVariantService;
   const ggConfig = {
     apiKey: 'test-api-key',
     webshopUuid: 'test-webshop-uuid',
@@ -64,14 +66,14 @@ describe('Goedgepickt plugin', function () {
   // Update products
   nock(apiUrl)
     .persist(true)
-    .post('/api/v1/products', (reqBody) => {
+    .post('/api/v1/products', (reqBody: any) => {
       pushProductsPayloads.push(reqBody);
       return true;
     })
     .reply(200, []);
   // Create order
   nock(apiUrl)
-    .post('/api/v1/orders', (reqBody) => {
+    .post('/api/v1/orders', (reqBody: any) => {
       createOrderPayload = reqBody;
       return true;
     })
@@ -109,7 +111,7 @@ describe('Goedgepickt plugin', function () {
   // Update webhooks
   nock(apiUrl)
     .persist(true)
-    .post('/api/v1/webhooks', (reqBody) => {
+    .post('/api/v1/webhooks', (reqBody: any) => {
       webhookPayloads.push(reqBody);
       return true;
     })
@@ -149,6 +151,9 @@ describe('Goedgepickt plugin', function () {
     });
     serverStarted = true;
     await adminClient.asSuperAdmin();
+    productVariantService = server.app.get<ProductVariantService>(
+      ProductVariantService
+    );
   }, 60000);
 
   it('Should start successfully', async () => {
@@ -214,7 +219,9 @@ describe('Goedgepickt plugin', function () {
       `https://test-host/admin/catalog/products/1;id=1;tab=variants`
     );
     const updatedVariant = await findVariantBySku('L2201308');
-    await expect(updatedVariant?.stockOnHand).toBe(33);
+    expect(updatedVariant).toBeDefined();
+    const stockOnHand = await getAvailableStock(updatedVariant?.id!);
+    expect(stockOnHand).toBe(33);
   });
 
   it('Set goedgepickt as fulfillment handler', async () => {
@@ -354,7 +361,9 @@ describe('Goedgepickt plugin', function () {
     await new Promise((resolve) => setTimeout(resolve, 200));
     const updatedVariant = await findVariantBySku('L2201308');
     expect(res.ok).toBe(true);
-    expect(updatedVariant.stockOnHand).toBe(123);
+    expect(updatedVariant).toBeDefined();
+    const stockOnHand = await getAvailableStock(updatedVariant?.id!);
+    expect(stockOnHand).toBe(123);
   });
 
   it('Pushes product on product creation', async () => {
@@ -406,12 +415,28 @@ describe('Goedgepickt plugin', function () {
     return server.destroy();
   });
 
-  async function findVariantBySku(sku: string): Promise<ProductVariant> {
+  async function findVariantBySku(sku: string): Promise<ProductVariant | null> {
     const ctx = await server.app
       .get(GoedgepicktService)
       .getCtxForChannel(defaultChannelToken);
-    const result = await server.app.get(ProductVariantService).findAll(ctx);
-    return result.items.find((variant) => variant.sku === sku)!;
+    const transactionalConnection = server.app.get(TransactionalConnection);
+    const productVariantRepo = transactionalConnection.getRepository(
+      ctx,
+      ProductVariant
+    );
+    return await productVariantRepo.findOne({
+      where: { sku },
+      relations: ['stockLevels'],
+    });
+  }
+
+  async function getAvailableStock(productVariantId: ID): Promise<number> {
+    const ctx = await server.app
+      .get(GoedgepicktService)
+      .getCtxForChannel(defaultChannelToken);
+    const stockLevelService = server.app.get(StockLevelService);
+    return (await stockLevelService.getAvailableStock(ctx, productVariantId))
+      .stockOnHand;
   }
 });
 
