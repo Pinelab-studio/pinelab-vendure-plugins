@@ -14,7 +14,7 @@ import {
   AdvancedMetricSummaryQuery,
   MetricsPlugin,
 } from '../src';
-import { GET_METRICS } from '../dist/ui/queries.graphql';
+import { GET_METRICS } from '../src/ui/queries.graphql';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import { createSettledOrder } from '../../test/src/shop-utils';
 

@@ -24,7 +24,6 @@
     "@graphql-codegen/typescript": "^2.4.8",
     "@graphql-codegen/typescript-operations": "^2.3.5",
     "@swc/core": "^1.3.59",
-    "@types/jest": "^27.4.1",
     "@vendure/admin-ui": "^2.0.3",
     "@vendure/admin-ui-plugin": "^2.0.3",
     "@vendure/core": "^2.0.3",
