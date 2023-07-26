@@ -50,9 +50,6 @@ export class MyparcelAdminResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: { apiKey: string }
   ): Promise<MyparcelConfigEntity | null> {
-    return this.service.upsertConfig({
-      apiKey: input.apiKey,
-      ctx,
-    });
+    return this.service.upsertConfig(ctx, input.apiKey);
   }
 }

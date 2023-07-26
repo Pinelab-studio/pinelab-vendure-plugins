@@ -18,11 +18,11 @@ import axios from 'axios';
 import { Fulfillment } from '@vendure/core';
 import { MyparcelConfigEntity } from './myparcel-config.entity';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { MyparcelConfig } from '../myparcel.plugin';
 import {
   MyparcelDropOffPoint,
   MyparcelDropOffPointInput,
 } from '../generated/graphql';
+import { MyparcelConfig } from './types';
 
 @Injectable()
 export class MyparcelService implements OnApplicationBootstrap {
@@ -93,29 +93,29 @@ export class MyparcelService implements OnApplicationBootstrap {
    * Upserts a MyparcelConfig. Deletes record if apiKey is null/undefined/empty string
    * @param config
    */
-  async upsertConfig(config: {
-    ctx: RequestContext;
-    apiKey: string;
-  }): Promise<MyparcelConfigEntity | null> {
+  async upsertConfig(
+    ctx: RequestContext,
+    apiKey: string
+  ): Promise<MyparcelConfigEntity | null> {
     const existing = await this.connection
-      .getRepository(config.ctx, MyparcelConfigEntity)
-      .findOne({ where: { channelId: config.ctx.channelId as string } });
-    if ((!config.apiKey || config.apiKey === '') && existing) {
+      .getRepository(ctx, MyparcelConfigEntity)
+      .findOne({ where: { channelId: ctx.channelId as string } });
+    if ((!apiKey || apiKey === '') && existing) {
       await this.connection
-        .getRepository(config.ctx, MyparcelConfigEntity)
+        .getRepository(ctx, MyparcelConfigEntity)
         .delete(existing.id);
     } else if (existing) {
       await this.connection
-        .getRepository(config.ctx, MyparcelConfigEntity)
-        .update(existing.id, { apiKey: config.apiKey });
+        .getRepository(ctx, MyparcelConfigEntity)
+        .update(existing.id, { apiKey: apiKey });
     } else {
       await this.connection
-        .getRepository(config.ctx, MyparcelConfigEntity)
-        .insert(config);
+        .getRepository(ctx, MyparcelConfigEntity)
+        .insert({ apiKey, channelId: ctx.channelId as string });
     }
     return this.connection
-      .getRepository(config.ctx, MyparcelConfigEntity)
-      .findOne({ where: { channelId: config.ctx.channelId as string } });
+      .getRepository(ctx, MyparcelConfigEntity)
+      .findOne({ where: { channelId: ctx.channelId as string } });
   }
 
   async getDropOffPoints(

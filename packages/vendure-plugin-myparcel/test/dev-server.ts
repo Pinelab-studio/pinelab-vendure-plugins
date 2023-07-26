@@ -93,7 +93,7 @@ require('dotenv').config();
   });
   await server.app
     .get(MyparcelService)
-    .upsertConfig({ ctx, apiKey: process.env.MYPARCEL_APIKEY! });
+    .upsertConfig(ctx, process.env.MYPARCEL_APIKEY!);
   await server.app.get(PaymentMethodService).create(ctx, {
     code: 'test-payment-method',
     enabled: true,
