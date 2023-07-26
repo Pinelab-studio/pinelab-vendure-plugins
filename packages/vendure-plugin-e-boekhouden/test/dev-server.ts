@@ -15,6 +15,7 @@ import {
   mergeConfig,
   PaymentMethodService,
   RequestContext,
+  LanguageCode,
   TaxRateService,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
@@ -68,13 +69,18 @@ import { EBoekhoudenService } from '../src/api/e-boekhouden.service';
   });
   await server.app.get(PaymentMethodService).create(ctx, {
     code: 'test-payment-method',
-    name: 'test',
-    description: '',
     enabled: true,
     handler: {
       code: 'test-payment-method',
       arguments: [],
     },
+    translations: [
+      {
+        languageCode: LanguageCode.en_US,
+        description: '',
+        name: 'test',
+      },
+    ],
   });
   await server.app.get(TaxRateService).update(ctx, { id: 2, value: 21 }); // Set europe to 21
   await server.app

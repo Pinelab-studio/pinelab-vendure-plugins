@@ -141,4 +141,18 @@ describe('CloudTasks job queue e2e', () => {
     );
     expect(data.jobs?.totalItems).toBeGreaterThan(0);
   });
+
+  it('Should clear settled jobs', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3103/cloud-tasks/clear-settled-jobs`,
+      {
+        method: 'get',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer some-secret',
+        },
+      }
+    );
+    expect(res.status).toBe(200);
+  });
 });
