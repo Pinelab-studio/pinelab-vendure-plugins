@@ -13,8 +13,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import gql from 'graphql-tag';
 import { OrderExportPlugin } from '../src';
 
-jest.setTimeout(20000);
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -51,6 +50,7 @@ describe('Order export plugin', function () {
       },
       productsCsvPath: '../test/src/products-import.csv',
     });
+    //FIX ME
     await createSettledOrder(shopClient, 1);
     await createSettledOrder(shopClient, 1);
     await createSettledOrder(shopClient, 1);

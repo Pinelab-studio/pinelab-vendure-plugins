@@ -21,7 +21,7 @@ import gql from 'graphql-tag';
           class="left align-middle"
           [class.out-of-stock]="!variant.stockOnHand"
         >
-          {{ variant.stockOnHand }}
+          {{ reduceSum(variant.stockLevels) }}
         </td>
       </ng-template>
     </vdr-data-table>
@@ -46,6 +46,9 @@ export class StockWidgetComponent implements OnInit {
               enabled
               stockOnHand
               productId
+              stockLevels {
+                stockOnHand
+              }
             }
           }
         `
@@ -58,4 +61,8 @@ export class StockWidgetComponent implements OnInit {
   imports: [SharedModule],
   declarations: [StockWidgetComponent],
 })
-export class StockWidgetModule {}
+export class StockWidgetModule {
+  reduceSum(stockLevels: any[]): number {
+    return stockLevels.reduce((acc, val) => (acc += val.stockOnHand), 0);
+  }
+}

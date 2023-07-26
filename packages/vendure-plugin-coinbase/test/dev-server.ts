@@ -18,7 +18,10 @@ import { CoinbasePlugin } from '../src/coinbase.plugin';
 import { Connection } from 'typeorm';
 import { addItem, setAddressAndShipping } from '../../test/src/shop-utils';
 import { CreatePaymentIntentMutation } from './queries';
-import { CreatePaymentMethod } from '../../test/src/generated/admin-graphql';
+import {
+  CreatePaymentMethod,
+  LanguageCode,
+} from '../../test/src/generated/admin-graphql';
 import { coinbaseHandler } from '../src/coinbase.handler';
 import { addShippingMethod } from '../../test/src/admin-utils';
 
@@ -51,8 +54,6 @@ require('dotenv').config();
   await adminClient.query(CreatePaymentMethod, {
     input: {
       code: 'coinbase-payment',
-      name: 'Coinbase payment test',
-      description: 'This is a Coinbase test payment method',
       enabled: true,
       handler: {
         code: coinbaseHandler.code,
@@ -61,6 +62,13 @@ require('dotenv').config();
           { name: 'apiKey', value: process.env.COINBASE_APIKEY },
         ],
       },
+      translations: [
+        {
+          name: 'Coinbase payment test',
+          description: 'This is a Coinbase test payment method',
+          languageCode: LanguageCode.EnUs,
+        },
+      ],
     },
   });
   // Set price of variant T_1 to 0.01
