@@ -1,6 +1,6 @@
 # Vendure Metrics plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-sales-per-variant/dev/@vendure/core)
+![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-metrics/dev/@vendure/core)
 
 A plugin to measure and visualize your shop's average order value (AOV),number of orders per
 month or per week and number of items per product variant for the past 12 months (or weeks) per variants.

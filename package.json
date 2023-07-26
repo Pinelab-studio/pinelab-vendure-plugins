@@ -65,6 +65,8 @@
           "customer-managed-groups",
           "popularity-scores",
           "modify-customer-orders",
+          "multiserver-db-sessioncache",
+          "vendure-order-client",
           "all-plugins"
         ]
       ]

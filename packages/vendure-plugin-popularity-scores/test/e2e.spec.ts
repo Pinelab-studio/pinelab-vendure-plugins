@@ -9,7 +9,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { createCollection, getAllOrders } from '../../test/src/admin-utils';
 import { LanguageCode } from '../../test/src/generated/admin-graphql';
-import { initialData } from '../../test/src/initial-data';
+import { initialTestData } from './initial-test-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PopularityScoresPlugin } from '../src';
@@ -17,8 +17,7 @@ import {
   GET_COLLECTIONS_WITH_POPULARITY_SCORE,
   GET_PRODUCTS_WITH_POPULARITY_SCORES,
 } from './helpers';
-
-jest.setTimeout(10000);
+import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 
 describe('Sort by Popularity Plugin', function () {
   let server: TestServer;
@@ -46,7 +45,7 @@ describe('Sort by Popularity Plugin', function () {
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData: {
-        ...initialData,
+        ...initialTestData,
         paymentMethods: [
           {
             name: testPaymentMethod.code,
@@ -54,7 +53,7 @@ describe('Sort by Popularity Plugin', function () {
           },
         ],
       },
-      productsCsvPath: '../test/src/products-import.csv',
+      productsCsvPath: './test/products.csv',
       customerCount: 2,
     });
     serverStarted = true;
@@ -82,11 +81,21 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Should place a test orders', async () => {
-    await createSettledOrder(shopClient, 1, true, [{ id: 'T_2', quantity: 2 }]);
+    await createSettledOrder(shopClient, 1, true, [
+      { id: 'T_2', quantity: 4 },
+      { id: 'T_5', quantity: 20 },
+      { id: 'T_8', quantity: 1 },
+      { id: 'T_9', quantity: 10 },
+    ]);
+    await createSettledOrder(shopClient, 1, true, [
+      { id: 'T_7', quantity: 4 },
+      { id: 'T_5', quantity: 2 },
+      { id: 'T_8', quantity: 30 },
+    ]);
     const orders = await getAllOrders(adminClient);
-    expect(orders.length).toBe(1);
+    expect(orders.length).toBe(2);
     expect(
-      orders[0].lines.every((line) => line.productVariant.product.id === 'T_1')
+      orders[1].lines.every((line) => line.productVariant.product.id === 'T_2')
     ).toBe(true);
   });
 
@@ -109,7 +118,12 @@ describe('Sort by Popularity Plugin', function () {
     const {
       products: { items: products },
     } = await adminClient.query(GET_PRODUCTS_WITH_POPULARITY_SCORES);
-    expect(products[0].customFields.popularityScore).toBe(1000); // Just one product in test for now
+    const carProduct = products.find((p) => p.name === 'Cars');
+    const laptopProduct = products.find((p) => p.name === 'Laptop');
+    const motorsProduct = products.find((p) => p.name === 'Motors');
+    expect(carProduct.customFields.popularityScore).toBe(1000);
+    expect(laptopProduct.customFields.popularityScore).toBe(70);
+    expect(motorsProduct.customFields.popularityScore).toBe(175);
   });
 
   it('Calculated popularity per collection', async () => {
@@ -121,8 +135,8 @@ describe('Sort by Popularity Plugin', function () {
     );
     const computers = collections.find((col: any) => col.name === 'Computers');
     const testCol = collections.find((col: any) => col.name === 'test');
-    expect(electronics.customFields.popularityScore).toBe(1000);
-    expect(computers.customFields.popularityScore).toBe(1000);
+    expect(electronics.customFields.popularityScore).toBe(1245);
+    expect(computers.customFields.popularityScore).toBe(1070);
     expect(testCol.customFields.popularityScore).toBe(0);
   });
 

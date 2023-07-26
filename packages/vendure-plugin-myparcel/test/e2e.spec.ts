@@ -6,7 +6,15 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  Channel,
+  ChannelService,
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  RequestContext,
+  TransactionalConnection,
+} from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
 import {
@@ -34,6 +42,7 @@ import fs from 'fs';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import gql from 'graphql-tag';
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -144,8 +153,17 @@ describe('MyParcel', () => {
   });
 
   it('Created webhook on startup', async () => {
+    const defualtChannel = await server.app
+      .get(ChannelService)
+      .getDefaultChannel();
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel: defualtChannel,
+    });
     // Mimic startup again, because real startup didn't have configs in DB populated yet
-    await server.app.get(MyparcelService).setWebhooksForAllChannels();
+    await server.app.get(MyparcelService).setWebhooksForAllChannels(ctx);
     const webhook = body?.data?.webhook_subscriptions?.[0];
     expect(webhook?.url).toEqual(
       'https://test-webhook.com/myparcel/update-status'
@@ -199,7 +217,7 @@ describe('MyParcel', () => {
         body = reqBody;
         return true;
       })
-      .matchHeader('Content-Type', (val) => {
+      .matchHeader('Content-Type', (val: any) => {
         contentType = val;
         return true;
       })

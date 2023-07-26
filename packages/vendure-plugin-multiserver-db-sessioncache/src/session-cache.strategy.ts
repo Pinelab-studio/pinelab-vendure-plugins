@@ -1,59 +1,70 @@
 import {
   CachedSession,
+  Injector,
   InternalServerError,
   Logger,
   SessionCacheStrategy,
-  TransactionalConnection,
-  UserInputError,
-  Injector,
 } from '@vendure/core';
 import { DataSource, Repository } from 'typeorm';
-import { MultiServerDbSessionCache } from './session-cache';
+import { SessionCache } from './session-cache';
+
+const loggerCtx = `MutliServerDbSessionCacheStrategy`;
+
 export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
-  conn?: TransactionalConnection;
-  dataSource?: DataSource;
-  multiServerDBSessionCache?: Repository<MultiServerDbSessionCache>;
+  multiServerDBSessionCache?: Repository<SessionCache>;
   init(injector: Injector) {
-    this.dataSource = injector.get(DataSource);
-    this.multiServerDBSessionCache = this.dataSource.getRepository(
-      MultiServerDbSessionCache
-    );
+    this.multiServerDBSessionCache = injector
+      .get(DataSource)
+      .getRepository(SessionCache);
   }
 
   async get(sessionToken: string): Promise<CachedSession | undefined> {
     if (!this.multiServerDBSessionCache) {
-      throw new InternalServerError(
-        'MultiServerDbSessionCache repository not initialized'
+      // Getting a cached session should not propagate the error to the client
+      Logger.error(
+        'MultiServerDbSessionCache repository not initialized',
+        loggerCtx
       );
+      return;
     }
-    const retrieved = await this.multiServerDBSessionCache
-      .createQueryBuilder('multiServerDBSessionCache')
-      .where('multiServerDBSessionCache.sessionToken = :sessionToken ', {
-        sessionToken,
-      })
-      .getOne();
+    const retrieved = await this.multiServerDBSessionCache.findOneBy({
+      id: sessionToken,
+    });
     return retrieved?.session;
   }
 
   async set(session: CachedSession) {
     if (!this.multiServerDBSessionCache) {
-      throw new InternalServerError(
-        'MultiServerDbSessionCache repository not initialized'
+      Logger.error(
+        'MultiServerDbSessionCache repository not initialized',
+        loggerCtx
       );
+      return;
     }
-    const sessionData = new MultiServerDbSessionCache();
-    sessionData.sessionToken = session.token;
+    const sessionData = new SessionCache();
+    sessionData.id = session.token;
     sessionData.session = session;
-    await this.multiServerDBSessionCache.save(sessionData);
+    await this.multiServerDBSessionCache
+      .upsert(sessionData, ['id'])
+      .catch((e: any) => {
+        // Saving a cached session should not propagate the error to the client
+        if (e instanceof Error) {
+          Logger.error(e.message, loggerCtx, e.stack);
+        } else {
+          Logger.error(e, loggerCtx);
+        }
+      });
   }
 
   async delete(sessionToken: string) {
     if (!this.multiServerDBSessionCache) {
-      throw new InternalServerError(
-        'MultiServerDbSessionCache repository not initialized'
+      Logger.error(
+        'MultiServerDbSessionCache repository not initialized',
+        loggerCtx
       );
+      return;
     }
-    await this.multiServerDBSessionCache.delete({ sessionToken });
+    await this.multiServerDBSessionCache.delete({ id: sessionToken });
   }
 
   async clear() {

@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-metrics",
-  "version": "7.0.6",
+  "version": "7.1.2",
   "description": "Vendure plugin measuring and visualizing e-commerce metrics",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab.studio",
@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "jest --preset=\"ts-jest\" --forceExit",
+    "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen"
   },
@@ -23,20 +23,20 @@
     "@graphql-codegen/cli": "^2.4.0",
     "@graphql-codegen/typescript": "^2.4.8",
     "@graphql-codegen/typescript-operations": "^2.3.5",
-    "@types/jest": "^27.4.1",
-    "@vendure/admin-ui-plugin": "1.9.5",
-    "@vendure/core": "1.9.5",
-    "@vendure/testing": "1.9.5",
-    "@vendure/ui-devkit": "^1.9.5",
+    "@swc/core": "^1.3.59",
+    "@vendure/admin-ui": "2.0.4",
+    "@vendure/admin-ui-plugin": "2.0.4",
+    "@vendure/core": "2.0.4",
+    "@vendure/testing": "2.0.4",
+    "@vendure/ui-devkit": "2.0.4",
     "copyfiles": "^2.4.1",
-    "jest": "^27.5.1",
     "node-fetch": "^2.0.0",
-    "ts-jest": "^27.1.3",
     "ts-node": "^10.7.0",
-    "typescript": "4.3.5"
+    "typescript": "4.9.5",
+    "unplugin-swc": "^1.3.2",
+    "vitest": "^0.30.1"
   },
   "dependencies": {
-    "chart.js": "^3.9.1",
     "date-fns": "^2.29.3"
   },
   "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"

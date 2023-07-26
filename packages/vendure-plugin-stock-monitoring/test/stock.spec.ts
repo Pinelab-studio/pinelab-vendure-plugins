@@ -17,9 +17,7 @@ import { createLowStockEmailHandler } from '../src/api/low-stock.email-handler';
 import * as path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
-
-jest.setTimeout(20000);
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;

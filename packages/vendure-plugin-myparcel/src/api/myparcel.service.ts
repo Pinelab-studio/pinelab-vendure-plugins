@@ -10,20 +10,19 @@ import {
   OrderLine,
   RequestContext,
   TransactionalConnection,
-  translateDeep,
   UserInputError,
 } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { ApolloError } from 'apollo-server-core';
 import axios from 'axios';
-import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
+import { Fulfillment } from '@vendure/core';
 import { MyparcelConfigEntity } from './myparcel-config.entity';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { MyparcelConfig } from '../myparcel.plugin';
 import {
   MyparcelDropOffPoint,
   MyparcelDropOffPointInput,
 } from '../generated/graphql';
+import { MyparcelConfig } from './types';
 
 @Injectable()
 export class MyparcelService implements OnApplicationBootstrap {
@@ -32,14 +31,24 @@ export class MyparcelService implements OnApplicationBootstrap {
   constructor(
     private fulfillmentService: FulfillmentService,
     private connection: TransactionalConnection,
+    // private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: MyparcelConfig,
     private hydrator: EntityHydrator
   ) {}
 
-  onApplicationBootstrap(): void {
+  async onApplicationBootstrap(): Promise<void> {
     if (this.config.syncWebhookOnStartup) {
+      const defualtChannel = await this.connection.rawConnection
+        .getRepository(Channel)
+        .find({ where: { code: '__default_channel__' } });
+      const ctx = new RequestContext({
+        apiType: 'admin',
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        channel: defualtChannel[0],
+      });
       // Async, because webhook setting is not really needed for application startup
-      this.setWebhooksForAllChannels()
+      this.setWebhooksForAllChannels(ctx)
         .then(() => Logger.info(`Initialized MyParcel plugin`, loggerCtx))
         .catch((err) =>
           Logger.error(`Failed to initialized MyParcel plugin`, loggerCtx, err)
@@ -52,10 +61,10 @@ export class MyparcelService implements OnApplicationBootstrap {
     }
   }
 
-  async setWebhooksForAllChannels(): Promise<void> {
+  async setWebhooksForAllChannels(ctx: RequestContext): Promise<void> {
     // Create webhook subscription for all channels
     const webhook = `${this.config.vendureHost}/myparcel/update-status`;
-    const configs = await this.getAllConfigs();
+    const configs = await this.getAllConfigs(ctx);
     await Promise.all(
       configs.map(({ channelId, apiKey }) => {
         return this.request('webhook_subscriptions', 'POST', apiKey, {
@@ -84,34 +93,36 @@ export class MyparcelService implements OnApplicationBootstrap {
    * Upserts a MyparcelConfig. Deletes record if apiKey is null/undefined/empty string
    * @param config
    */
-  async upsertConfig(config: {
-    channelId: string;
-    apiKey: string;
-  }): Promise<MyparcelConfigEntity | void> {
+  async upsertConfig(
+    ctx: RequestContext,
+    apiKey: string
+  ): Promise<MyparcelConfigEntity | null> {
     const existing = await this.connection
-      .getRepository(MyparcelConfigEntity)
-      .findOne({ channelId: config.channelId });
-    if ((!config.apiKey || config.apiKey === '') && existing) {
+      .getRepository(ctx, MyparcelConfigEntity)
+      .findOne({ where: { channelId: ctx.channelId as string } });
+    if ((!apiKey || apiKey === '') && existing) {
       await this.connection
-        .getRepository(MyparcelConfigEntity)
+        .getRepository(ctx, MyparcelConfigEntity)
         .delete(existing.id);
     } else if (existing) {
       await this.connection
-        .getRepository(MyparcelConfigEntity)
-        .update(existing.id, { apiKey: config.apiKey });
+        .getRepository(ctx, MyparcelConfigEntity)
+        .update(existing.id, { apiKey: apiKey });
     } else {
-      await this.connection.getRepository(MyparcelConfigEntity).insert(config);
+      await this.connection
+        .getRepository(ctx, MyparcelConfigEntity)
+        .insert({ apiKey, channelId: ctx.channelId as string });
     }
     return this.connection
-      .getRepository(MyparcelConfigEntity)
-      .findOne({ channelId: config.channelId });
+      .getRepository(ctx, MyparcelConfigEntity)
+      .findOne({ where: { channelId: ctx.channelId as string } });
   }
 
   async getDropOffPoints(
     ctx: RequestContext,
     input: MyparcelDropOffPointInput
   ): Promise<MyparcelDropOffPoint[]> {
-    const config = await this.getConfig(String(ctx.channelId));
+    const config = await this.getConfig(ctx);
     if (!config || !config?.apiKey) {
       Logger.info(
         `MyParcel is not enabled for channel ${ctx.channel.token}, can not fetch dropoff points`,
@@ -143,46 +154,48 @@ export class MyparcelService implements OnApplicationBootstrap {
     return results.slice(0, 10);
   }
 
-  async getConfig(
-    channelId: string
-  ): Promise<MyparcelConfigEntity | undefined> {
+  async getConfig(ctx: RequestContext): Promise<MyparcelConfigEntity | null> {
     return this.connection
-      .getRepository(MyparcelConfigEntity)
-      .findOne({ channelId });
+      .getRepository(ctx, MyparcelConfigEntity)
+      .findOne({ where: { channelId: ctx.channelId as string } });
   }
 
-  async getConfigByKey(apiKey: string): Promise<MyparcelConfigEntity> {
+  async getConfigByKey(
+    ctx: RequestContext,
+    apiKey: string
+  ): Promise<MyparcelConfigEntity> {
     const config = await this.connection
-      .getRepository(MyparcelConfigEntity)
-      .findOne({ apiKey });
+      .getRepository(ctx, MyparcelConfigEntity)
+      .findOne({ where: { apiKey } });
     if (!config) {
       throw new MyParcelError(`No config found for apiKey ${apiKey}`);
     }
     return config;
   }
 
-  async getAllConfigs(): Promise<MyparcelConfigEntity[]> {
+  async getAllConfigs(ctx: RequestContext): Promise<MyparcelConfigEntity[]> {
     const configs = await this.connection
-      .getRepository(MyparcelConfigEntity)
+      .getRepository(ctx, MyparcelConfigEntity)
       .find();
     return configs || [];
   }
 
   async updateStatus(
+    ctx: RequestContext,
     channelId: string,
     shipmentId: string,
     status: number
   ): Promise<void> {
     const fulfillmentReference = this.getFulfillmentReference(shipmentId);
     const channel = await this.connection
-      .getRepository(Channel)
-      .findOneOrFail(channelId);
+      .getRepository(ctx, Channel)
+      .findOneOrFail({ where: { id: ctx.channelId } });
     const fulfillment = await this.connection
-      .getRepository(Fulfillment)
-      .findOne({ method: fulfillmentReference });
+      .getRepository(ctx, Fulfillment)
+      .findOne({ where: { method: fulfillmentReference } });
     if (!fulfillment) {
       return Logger.warn(
-        `No fulfillment found with method ${fulfillmentReference} for channel with id ${channelId}`,
+        `No fulfillment found with method ${fulfillmentReference} for channel with id ${ctx.channelId}`,
         loggerCtx
       );
     }
@@ -193,12 +206,6 @@ export class MyparcelService implements OnApplicationBootstrap {
         loggerCtx
       );
     }
-    const ctx = new RequestContext({
-      apiType: 'admin',
-      isAuthorized: true,
-      authorizedAsOwnerOnly: false,
-      channel,
-    });
     await this.fulfillmentService.transitionToState(
       ctx,
       fulfillment.id,
@@ -215,7 +222,7 @@ export class MyparcelService implements OnApplicationBootstrap {
     orders: Order[],
     customsContent: string
   ): Promise<string> {
-    const config = await this.getConfig(String(ctx.channelId));
+    const config = await this.getConfig(ctx);
     if (!config) {
       throw new MyParcelError(`No config found for channel ${ctx.channelId}`);
     }
@@ -347,7 +354,7 @@ export class MyparcelService implements OnApplicationBootstrap {
         });
         return res.data;
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.response?.status >= 400 && err.response?.status < 500) {
         const errorMessage = this.getReadableError(err.response.data);
         Logger.warn(err.response.data, loggerCtx);

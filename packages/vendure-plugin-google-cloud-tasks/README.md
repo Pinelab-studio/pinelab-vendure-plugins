@@ -8,9 +8,12 @@ Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show e
 
 ## Plugin setup
 
-1. Remove `DefaultJobQueuePlugin` from your vendure-config. Add this plugin to your `vendure-config.ts`:
+1. `yarn add vendure-plugin-google-cloud-tasks`
+2. Remove `DefaultJobQueuePlugin` from your vendure-config. Add this plugin to your `vendure-config.ts`:
 
 ```ts
+import { CloudTasksPlugin } from 'vendure-plugin-google-cloud-tasks';
+
 plugins: [
   CloudTasksPlugin.init({
     // Must reachable by Google Cloud Task. Messages are pushed to this endpoint
@@ -36,6 +39,14 @@ plugins: [
 
 2. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
    via `Products > (cog icon) > reindex` to test the Cloud Tasks Plugin.
+
+# Clear settled jobs
+
+You can call the endpoint `/cloud-tasks/clear-settled-jobs` with the secret as Auth header to clear settled jobs:
+
+```shell
+curl -H "Authorization: Bearer some-secret-to-authenticate-cloud-tasks" "http://localhost:3050/cloud-tasks/clear-settled-jobs"
+```
 
 # Overview
 

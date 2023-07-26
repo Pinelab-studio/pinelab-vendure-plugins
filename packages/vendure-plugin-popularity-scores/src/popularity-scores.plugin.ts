@@ -43,6 +43,7 @@ export interface PopularityScoresPluginConfig {
     });
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class PopularityScoresPlugin {
   static config: PopularityScoresPluginConfig;

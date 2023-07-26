@@ -26,6 +26,7 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockLevelService,
   TransactionalConnection,
   Translated,
   translateDeep,
@@ -58,7 +59,6 @@ type VariantWithImage = {
   name: string;
   price: number;
   absoluteImageUrl?: string;
-  stockAllocated: number;
 };
 
 interface PushProductJobData {
@@ -104,6 +104,7 @@ export class GoedgepicktService
     private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
     private configService: ConfigService,
+    private stockLevelService: StockLevelService,
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
@@ -190,7 +191,7 @@ export class GoedgepicktService
     config.channelToken = ctx.channel.token;
     const existing = await this.connection
       .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOne({ channelToken: config.channelToken });
+      .findOne({ where: { channelToken: config.channelToken } });
     if (existing) {
       await this.connection
         .getRepository(ctx, GoedgepicktConfigEntity)
@@ -202,15 +203,15 @@ export class GoedgepicktService
     }
     return this.connection
       .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOneOrFail({ channelToken: config.channelToken });
+      .findOneOrFail({ where: { channelToken: config.channelToken } });
   }
 
   async getConfig(
     ctx: RequestContext
-  ): Promise<GoedgepicktConfigEntity | undefined> {
+  ): Promise<GoedgepicktConfigEntity | null> {
     return this.connection
       .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOne({ channelToken: ctx.channel.token });
+      .findOne({ where: { channelToken: ctx.channel.token } });
   }
 
   async getConfigs(): Promise<GoedgepicktConfigEntity[]> {
@@ -571,7 +572,7 @@ export class GoedgepicktService
     for (const variant of variants) {
       const existing = await client.findProductBySku(variant.sku);
       const product = this.mapToProductInput(
-        this.setAbsoluteImage(ctx.channel, variant)
+        await this.setAbsoluteImage(ctx, variant)
       );
       const uuid = existing?.[0]?.uuid;
       if (uuid) {
@@ -616,7 +617,7 @@ export class GoedgepicktService
   private async createStockUpdateJobs(
     ctx: RequestContext,
     ggProducts: { sku: string; stockLevel: number | undefined | null }[],
-    variants: Pick<ProductVariant, 'id' | 'stockAllocated' | 'sku'>[]
+    variants: Pick<ProductVariant, 'id' | 'sku'>[]
   ) {
     const stockPerVariant: StockInput[] = [];
     for (const ggProduct of ggProducts) {
@@ -629,7 +630,11 @@ export class GoedgepicktService
         continue; // Not updating if we have no variant with SKU
       }
       // If ggStock=0 and allocated=1, set Vendure stock=1 to prevent out of stock errors during fulfillment
-      const newStock = ggStock + variant.stockAllocated;
+      const availableStock = await this.stockLevelService.getAvailableStock(
+        ctx,
+        variant.id
+      );
+      const newStock = ggStock + availableStock.stockAllocated;
       stockPerVariant.push({
         variantId: variant.id as string,
         stock: newStock,
@@ -693,7 +698,7 @@ export class GoedgepicktService
               'taxCategory',
             ],
             channelId: ctx.channelId,
-            where: { deletedAt: null },
+            where: { deletedAt: undefined },
             ctx,
           }
         )
@@ -707,14 +712,14 @@ export class GoedgepicktService
       );
       const mappedVariants = variantsWithPrice
         .map((v) => translateDeep(v, ctx.languageCode))
-        .map((v) => this.setAbsoluteImage(ctx.channel, v));
-      translatedVariants.push(...mappedVariants);
+        .map(async (v) => await this.setAbsoluteImage(ctx, v));
+      translatedVariants.push(...(await Promise.all(mappedVariants)));
     }
     return translatedVariants;
   }
 
   private setAbsoluteImage(
-    channel: Channel,
+    ctx: RequestContext,
     variant: Translated<ProductVariant> | ProductVariant
   ): VariantWithImage {
     // Resolve images as if we are shop client
@@ -722,7 +727,7 @@ export class GoedgepicktService
       apiType: 'shop',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
-      channel,
+      channel: ctx.channel,
     });
     let imageUrl =
       variant.featuredAsset?.preview || variant.product?.featuredAsset?.preview;
@@ -740,7 +745,6 @@ export class GoedgepicktService
       name: variant.name,
       price: variant.price,
       absoluteImageUrl: imageUrl,
-      stockAllocated: variant.stockAllocated,
     };
   }
 
@@ -768,7 +772,6 @@ export class GoedgepicktService
       relations: [
         'shippingLines',
         'shippingLines.shippingMethod',
-        'lines.items',
         'lines.productVariant',
       ],
     });

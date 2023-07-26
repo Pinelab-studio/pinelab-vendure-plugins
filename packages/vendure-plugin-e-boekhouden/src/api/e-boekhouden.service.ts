@@ -74,7 +74,7 @@ export class EBoekhoudenService
   ): Promise<EBoekhoudenConfigEntity> {
     const existing = await this.connection
       .getRepository(EBoekhoudenConfigEntity)
-      .findOne({ channelToken });
+      .findOne({ where: { channelToken } });
     if (existing) {
       await this.connection
         .getRepository(EBoekhoudenConfigEntity)
@@ -86,15 +86,15 @@ export class EBoekhoudenService
     }
     return this.connection
       .getRepository(EBoekhoudenConfigEntity)
-      .findOneOrFail({ channelToken });
+      .findOneOrFail({ where: { channelToken } });
   }
 
   async getConfig(
     channelToken: string
-  ): Promise<EBoekhoudenConfigEntity | undefined> {
+  ): Promise<EBoekhoudenConfigEntity | null> {
     return this.connection
       .getRepository(EBoekhoudenConfigEntity)
-      .findOne({ channelToken }, { cache: 60000 });
+      .findOne({ where: { channelToken }, cache: 60000 });
   }
 
   async getConfigs(): Promise<EBoekhoudenConfigEntity[]> {
@@ -137,7 +137,7 @@ export class EBoekhoudenService
         `Successfully send order ${orderCode} to e-boekhouden with mutationNr ${result?.[0]?.AddMutatieResult?.Mutatienummer}`,
         loggerCtx
       );
-    } catch (e) {
+    } catch (e: any) {
       Logger.error(
         `Failed to push order ${order.code} for channel ${config.channelToken} to account ${config.username}: ${e?.message}`,
         loggerCtx,

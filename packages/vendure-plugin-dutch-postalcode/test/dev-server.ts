@@ -1,5 +1,4 @@
 require('dotenv').config();
-import { DutchPostalCodePlugin } from '../dist/dutch-postal-code.plugin';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -14,6 +13,7 @@ import {
   mergeConfig,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
+import { DutchPostalCodePlugin } from '../src/dutch-postal-code.plugin';
 
 (async () => {
   const config = mergeConfig(testConfig, {

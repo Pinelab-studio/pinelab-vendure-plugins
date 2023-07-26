@@ -1,8 +1,8 @@
 import gql from 'graphql-tag';
 
 export const GET_METRICS = gql`
-  query metricSummary($input: MetricSummaryInput!) {
-    metricSummary(input: $input) {
+  query advancedMetricSummary($input: AdvancedMetricSummaryInput!) {
+    advancedMetricSummary(input: $input) {
       interval
       code
       title
@@ -10,6 +10,7 @@ export const GET_METRICS = gql`
         label
         value
       }
+      type
     }
   }
 `;

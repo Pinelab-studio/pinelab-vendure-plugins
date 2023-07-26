@@ -15,7 +15,7 @@ import {
 } from '@vendure/core';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { CloudTaskMessage, CloudTaskOptions } from './types';
-import { In, LessThan, Repository } from 'typeorm';
+import { In, LessThan, Repository, DataSource } from 'typeorm';
 import { JobListOptions, JobState } from '@vendure/common/lib/generated-types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
@@ -26,15 +26,14 @@ export const PROCESS_MAP = new Map<string, QueueProcessFunction>();
 
 export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   private client: CloudTasksClient;
-  private connection: TransactionalConnection | undefined;
   private listQueryBuilder: ListQueryBuilder | undefined;
   private jobRecordRepository!: Repository<JobRecord>;
 
   init(injector: Injector): void | Promise<void> {
-    this.connection = injector.get(TransactionalConnection);
     this.listQueryBuilder = injector.get(ListQueryBuilder);
-    this.jobRecordRepository =
-      this.connection!.rawConnection.getRepository(JobRecord);
+    this.jobRecordRepository = injector
+      .get(DataSource)
+      .getRepository(JobRecord);
   }
 
   constructor(private options: CloudTaskOptions) {
@@ -42,7 +41,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   }
 
   async findOne(id: ID): Promise<Job<any> | undefined> {
-    if (!this.connection) {
+    if (!this.jobRecordRepository) {
       throw new UserInputError('TransactionalConnection is not available');
     }
     const jobRecord = await this.jobRecordRepository.findOne({ where: { id } });
@@ -68,7 +67,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   }
 
   async findManyById(ids: ID[]): Promise<Job<any>[]> {
-    if (!this.connection) {
+    if (!this.jobRecordRepository) {
       throw new UserInputError('TransactionalConnection is not available');
     }
     return this.jobRecordRepository
@@ -80,27 +79,23 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     queueNames: string[],
     olderThan?: Date | undefined
   ): Promise<number> {
-    if (!this.connection) {
+    if (!this.jobRecordRepository) {
       throw new UserInputError('TransactionalConnection is not available');
     }
-    const findOptions = {
+    const result = await this.jobRecordRepository.delete({
       ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
       isSettled: true,
-      settledAt: LessThan((olderThan || new Date()).toISOString()),
-    };
-    const deleteCount = await this.jobRecordRepository.count({
-      where: findOptions,
+      settledAt: LessThan(olderThan ?? new Date()),
     });
-    await this.jobRecordRepository.delete(findOptions);
-    return deleteCount;
+    return result.affected || 0;
   }
 
   async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
-    throw new UserInputError('Google Cloud Tasks can not be canceled');
+    await this.jobRecordRepository.delete({ id: jobId });
+    return;
   }
 
   destroy() {
-    this.connection = undefined;
     this.listQueryBuilder = undefined;
   }
 
@@ -167,6 +162,9 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
           CloudTasksPlugin.loggerCtx,
           e
         );
+        if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
+          throw e;
+        }
       }
     }
   }

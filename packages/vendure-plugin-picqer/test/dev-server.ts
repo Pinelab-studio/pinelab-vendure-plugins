@@ -19,6 +19,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
 import { UPSERT_CONFIG } from '../src/ui/queries';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 
 (async () => {
   require('dotenv').config();
@@ -40,7 +41,13 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
         // These are just test values to test the strtegies, they don't mean anything in this context
         pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
         pullPicqerProductFields: (picqerProd) => ({ outOfStockThreshold: 123 }),
-        addPicqerOrderNote: (order) => 'test note',
+        pushPicqerOrderFields: (order) => ({
+          customer_remarks: 'test note',
+          pickup_point_data: {
+            carrier: 'dhl',
+            id: '901892834',
+          },
+        }),
       }),
       AssetServerPlugin.init({
         assetUploadDir: path.join(__dirname, '../__data__/assets'),
@@ -50,11 +57,11 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [PicqerPlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [PicqerPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
   });
@@ -88,5 +95,7 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
     { id: 'T_3', trackInventory: GlobalFlag.True },
     { id: 'T_4', trackInventory: GlobalFlag.True },
   ]);
-  const order = await createSettledOrder(shopClient, 1);
+  const order = await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_1', quantity: 3 },
+  ]);
 })();

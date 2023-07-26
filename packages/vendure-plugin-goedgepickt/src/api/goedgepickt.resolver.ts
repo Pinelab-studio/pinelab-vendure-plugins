@@ -1,8 +1,13 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  Permission,
+  RequestContext,
+  PermissionDefinition,
+} from '@vendure/core';
 import {
   GoedgepicktConfig,
-  goedgepicktPermission,
   GoedgepicktPluginConfig,
   MutationSyncOrderToGoedgepicktArgs,
 } from '../index';
@@ -11,6 +16,10 @@ import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { Inject } from '@nestjs/common';
 
+export const goedgepicktPermission = new PermissionDefinition({
+  name: 'SetGoedgepicktConfig',
+  description: 'Allows setting Goedgepickt configurations',
+});
 @Resolver()
 export class GoedgepicktResolver {
   constructor(
@@ -22,7 +31,7 @@ export class GoedgepicktResolver {
   @Allow(goedgepicktPermission.Permission)
   async goedgepicktConfig(
     @Ctx() ctx: RequestContext
-  ): Promise<GoedgepicktConfig | undefined> {
+  ): Promise<GoedgepicktConfig | null> {
     return this.toGraphqlObject(
       ctx.channel.token,
       await this.service.getConfig(ctx)
@@ -34,7 +43,7 @@ export class GoedgepicktResolver {
   async updateGoedgepicktConfig(
     @Ctx() ctx: RequestContext,
     @Args('input') input: { apiKey: string; webshopUuid: string }
-  ): Promise<GoedgepicktConfig | undefined> {
+  ): Promise<GoedgepicktConfig | null> {
     await this.service.upsertConfig(ctx, input);
     if (this.pluginConfig.setWebhook) {
       await this.service.setWebhooks(ctx);
@@ -71,8 +80,8 @@ export class GoedgepicktResolver {
 
   private toGraphqlObject(
     channelToken: string,
-    config?: GoedgepicktConfigEntity
-  ): GoedgepicktConfig | undefined {
+    config: GoedgepicktConfigEntity | null
+  ): GoedgepicktConfig | null {
     const webhookUrl = this.service.getWebhookUrl(channelToken);
     return {
       __typename: 'GoedgepicktConfig',

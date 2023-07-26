@@ -35,39 +35,47 @@ export async function addShippingMethod(
   adminClient: SimpleGraphQLClient,
   fulfillmentHandlerCode: string,
   price = '500'
-): Promise<void> {
+): Promise<any> {
   await adminClient.asSuperAdmin();
-  await adminClient.query(CreateShippingMethod, {
-    input: {
-      code: 'test-shipping-method',
-      fulfillmentHandler: fulfillmentHandlerCode,
-      checker: {
-        code: defaultShippingEligibilityChecker.code,
-        arguments: [
+  const { createShippingMethod } = await adminClient.query(
+    CreateShippingMethod,
+    {
+      input: {
+        code: 'test-shipping-method',
+        fulfillmentHandler: fulfillmentHandlerCode,
+        checker: {
+          code: defaultShippingEligibilityChecker.code,
+          arguments: [
+            {
+              name: 'orderMinimum',
+              value: '0',
+            },
+          ],
+        },
+        calculator: {
+          code: defaultShippingCalculator.code,
+          arguments: [
+            {
+              name: 'rate',
+              value: price,
+            },
+            {
+              name: 'taxRate',
+              value: '0',
+            },
+          ],
+        },
+        translations: [
           {
-            name: 'orderMinimum',
-            value: '0',
+            languageCode: LanguageCode.En,
+            name: 'test method',
+            description: '',
           },
         ],
       },
-      calculator: {
-        code: defaultShippingCalculator.code,
-        arguments: [
-          {
-            name: 'rate',
-            value: price,
-          },
-          {
-            name: 'taxRate',
-            value: '0',
-          },
-        ],
-      },
-      translations: [
-        { languageCode: LanguageCode.En, name: 'test method', description: '' },
-      ],
-    },
-  });
+    }
+  );
+  return createShippingMethod;
 }
 
 export async function fulfill(
@@ -161,7 +169,12 @@ export async function createPromotion(
     CreatePromotionMutationVariables
   >(CreatePromotion, {
     input: {
-      name: couponCode,
+      translations: [
+        {
+          languageCode: LanguageCode.En,
+          name: couponCode,
+        },
+      ],
       enabled: true,
       couponCode,
       conditions: [],

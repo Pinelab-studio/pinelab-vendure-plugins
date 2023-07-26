@@ -10,9 +10,9 @@ import { adminSchema } from './api/api-extension';
 import {
   WebhookRequestTransformerResolver,
   WebhookResolver,
+  webhookPermission,
 } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
-import { webhookPermission } from './index';
 import {
   EventWithContext,
   RequestTransformer,
@@ -62,6 +62,7 @@ export interface WebhookPluginOptions {
     config.authOptions.customPermissions.push(webhookPermission);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class WebhookPlugin {
   static options: WebhookPluginOptions = {

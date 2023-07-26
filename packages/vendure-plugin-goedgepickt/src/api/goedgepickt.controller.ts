@@ -108,7 +108,7 @@ export class GoedgepicktController {
         `Successfully processed webhook with event ${body.event} for channel ${channelToken}`,
         loggerCtx
       );
-    } catch (err) {
+    } catch (err: any) {
       Logger.error(
         `Failed to process incoming webhook ${body?.event} for channel ${channelToken}: ${err?.message}`,
         loggerCtx,

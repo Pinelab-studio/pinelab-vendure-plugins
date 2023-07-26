@@ -12,14 +12,17 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { CoinbasePlugin } from '../src/coinbase.plugin';
 import { coinbaseHandler } from '../src/coinbase.handler';
-import { CreatePaymentMethod } from '../../test/src/generated/admin-graphql';
+import {
+  CreatePaymentMethod,
+  LanguageCode,
+} from '../../test/src/generated/admin-graphql';
 import { addItem, setAddressAndShipping } from '../../test/src/shop-utils';
 import nock from 'nock';
 import axios, { AxiosInstance } from 'axios';
 import { ChargeInput, ChargeResult } from '../src/coinbase.types';
 import { getOrder } from '../../test/src/admin-utils';
 import { CreatePaymentIntentMutation } from './queries';
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 const mockData = {
   redirectUrl: 'https://my-storefront/order',
   apiKey: 'myApiKey',
@@ -73,8 +76,6 @@ describe('Coinbase payments', () => {
       {
         input: {
           code: mockData.methodCode,
-          name: 'Coinbase payment test',
-          description: 'This is a Coinbase test payment method',
           enabled: true,
           handler: {
             code: coinbaseHandler.code,
@@ -83,6 +84,13 @@ describe('Coinbase payments', () => {
               { name: 'apiKey', value: mockData.apiKey },
             ],
           },
+          translations: [
+            {
+              name: 'Coinbase payment test',
+              description: 'This is a Coinbase test payment method',
+              languageCode: LanguageCode.EnUs,
+            },
+          ],
         },
       }
     );

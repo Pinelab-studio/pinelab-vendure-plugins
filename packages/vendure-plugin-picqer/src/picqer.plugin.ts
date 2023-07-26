@@ -9,7 +9,7 @@ import { OrderInput, ProductInput } from './api/types';
 import { adminSchema } from './api/api-extensions';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { permission } from '.';
+import { picqerPermission } from '.';
 import { PicqerConfigEntity } from './api/picqer-config.entity';
 import { PicqerService } from './api/picqer.service';
 import { PicqerResolver } from './api/picqer.resolvers';
@@ -43,12 +43,12 @@ export interface PicqerOptions {
    */
   pushProductVariantFields?: (variant: ProductVariant) => Partial<ProductInput>;
   /**
-   * Add a note to order in Picqer
+   * Map any Vendure fields to Order fields in Picqer.
+   * See https://picqer.com/en/api/orders#attributes for available Picqer fields
    * @example
-   * // Push `order.customFields.customerNote` to Picqer
-   * addPicqerOrderNote: (order) => `This is note from Vendure ${order.customFields.customerNote}`)
+   * pushPicqerOrderFields: (order) => {customer_remarks: 'Please don't package my order in plastic'})
    */
-  addPicqerOrderNote?: (order: Order) => string;
+  pushPicqerOrderFields?: (order: Order) => any;
 }
 
 @VendurePlugin({
@@ -68,10 +68,11 @@ export interface PicqerOptions {
   entities: [PicqerConfigEntity],
   configuration: (config) => {
     config.apiOptions.middleware.push(createRawBodyMiddleWare('/picqer*'));
-    config.authOptions.customPermissions.push(permission);
+    config.authOptions.customPermissions.push(picqerPermission);
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class PicqerPlugin {
   static options: PicqerOptions;

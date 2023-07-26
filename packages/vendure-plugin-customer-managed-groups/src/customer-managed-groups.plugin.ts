@@ -23,6 +23,7 @@ export interface ExampleOptions {
     };
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class CustomerManagedGroupsPlugin {
   static ui: AdminUiExtension = {

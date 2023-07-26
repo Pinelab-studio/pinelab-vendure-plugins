@@ -6,6 +6,7 @@ import {
 import {
   DefaultLogger,
   DefaultSearchPlugin,
+  LanguageCode,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
@@ -92,8 +93,6 @@ export let clientSecret = 'test';
   await adminClient.query(CREATE_PAYMENT_METHOD, {
     input: {
       code: 'stripe-subscription-method',
-      name: 'Stripe test payment',
-      description: 'This is a Stripe payment method',
       enabled: true,
       handler: {
         code: 'stripe-subscription',
@@ -105,6 +104,13 @@ export let clientSecret = 'test';
           { name: 'apiKey', value: process.env.STRIPE_APIKEY },
         ],
       },
+      translations: [
+        {
+          languageCode: LanguageCode.en,
+          name: 'Stripe test payment',
+          description: 'This is a Stripe payment method',
+        },
+      ],
     },
   });
   console.log(`Created paymentMethod stripe-subscription`);
