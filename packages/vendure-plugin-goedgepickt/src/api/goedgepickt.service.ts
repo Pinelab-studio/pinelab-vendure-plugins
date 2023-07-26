@@ -59,7 +59,6 @@ type VariantWithImage = {
   name: string;
   price: number;
   absoluteImageUrl?: string;
-  stockAllocated: number;
 };
 
 interface PushProductJobData {
@@ -719,10 +718,10 @@ export class GoedgepicktService
     return translatedVariants;
   }
 
-  private async setAbsoluteImage(
+  private setAbsoluteImage(
     ctx: RequestContext,
     variant: Translated<ProductVariant> | ProductVariant
-  ): Promise<VariantWithImage> {
+  ): VariantWithImage {
     // Resolve images as if we are shop client
     const shopCtx = new RequestContext({
       apiType: 'shop',
@@ -739,10 +738,6 @@ export class GoedgepicktService
       imageUrl = this.configService.assetOptions.assetStorageStrategy
         .toAbsoluteUrl!(shopCtx.req as any, imageUrl);
     }
-    const availableStock = await this.stockLevelService.getAvailableStock(
-      ctx,
-      variant.id
-    );
     return {
       id: variant.id,
       productId: variant.productId,
@@ -750,7 +745,6 @@ export class GoedgepicktService
       name: variant.name,
       price: variant.price,
       absoluteImageUrl: imageUrl,
-      stockAllocated: availableStock.stockAllocated,
     };
   }
 
