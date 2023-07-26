@@ -9,6 +9,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import gql from 'graphql-tag';
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import { VariantBulkUpdatePlugin } from '../src/variant-bulk-update.plugin';
 
 describe('Limit variants per order plugin', function () {
