@@ -40,6 +40,14 @@ plugins: [
 2. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
    via `Products > (cog icon) > reindex` to test the Cloud Tasks Plugin.
 
+# Clear settled jobs
+
+You can call the endpoint `/cloud-tasks/clear-settled-jobs` with the secret as Auth header to clear settled jobs:
+
+```shell
+curl -H "Authorization: Bearer some-secret-to-authenticate-cloud-tasks" "http://localhost:3050/cloud-tasks/clear-settled-jobs"
+```
+
 # Overview
 
 ![Alt text](sequence.png)
