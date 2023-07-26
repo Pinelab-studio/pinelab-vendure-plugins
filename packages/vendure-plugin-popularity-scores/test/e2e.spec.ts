@@ -9,7 +9,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { createCollection, getAllOrders } from '../../test/src/admin-utils';
 import { LanguageCode } from '../../test/src/generated/admin-graphql';
-import { initialData } from '../../test/src/initial-data';
+import { initialTestData } from './initial-test-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PopularityScoresPlugin } from '../src';
@@ -45,7 +45,7 @@ describe('Sort by Popularity Plugin', function () {
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData: {
-        ...initialData,
+        ...initialTestData,
         paymentMethods: [
           {
             name: testPaymentMethod.code,
@@ -53,7 +53,7 @@ describe('Sort by Popularity Plugin', function () {
           },
         ],
       },
-      productsCsvPath: './test/products-import.csv',
+      productsCsvPath: './test/products.csv',
       customerCount: 2,
     });
     serverStarted = true;
