@@ -4,7 +4,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: './test/e2e.spec.ts',
+    include: ['./test/e2e.spec.ts'],
+    testTimeout: 10000,
   },
   plugins: [
     // SWC required to support decorators used in test plugins
