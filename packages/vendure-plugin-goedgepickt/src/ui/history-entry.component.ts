@@ -46,7 +46,7 @@ export class HistoryEntryComponent implements OrderHistoryEntryComponent {
         )
         .toPromise();
       this.notificationService.success('Success');
-    } catch (e) {
+    } catch (e: any) {
       this.notificationService.error('Error');
     }
   }

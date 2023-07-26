@@ -17,9 +17,7 @@ import { createLowStockEmailHandler } from '../src/api/low-stock.email-handler';
 import * as path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
-
-jest.setTimeout(20000);
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -129,7 +127,8 @@ describe('Order export plugin', function () {
   });
 
   it('Sends an email when stock is low after order placement', async () => {
-    await createSettledOrder(shopClient, 1);
+    //FIX ME
+    await createSettledOrder(shopClient as any, 1);
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for event handling
     const files = fs.readdirSync(testEmailDir);
     expect(files.length).toBe(3); // 3 emails should be sent, one for every handler

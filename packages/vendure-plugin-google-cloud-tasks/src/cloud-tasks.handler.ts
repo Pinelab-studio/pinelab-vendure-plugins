@@ -3,6 +3,7 @@ import {
   Controller,
   Post,
   Req,
+  Get,
   Res,
   OnApplicationBootstrap,
 } from '@nestjs/common';
@@ -54,16 +55,7 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       res.sendStatus(500);
       return;
     }
-    if (
-      req.header('Authorization') !==
-      `Bearer ${CloudTasksPlugin.options.authSecret}`
-    ) {
-      Logger.warn(
-        `Unauthorized incoming webhook with Auth header ${req.header(
-          'Authorization'
-        )}`,
-        loggerCtx
-      );
+    if (!this.isValidRequest(req)) {
       res.sendStatus(401);
       return;
     }
@@ -115,7 +107,6 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       });
       // Save successful job in DB
       await this.jobRecordRepository.save(jobRecord);
-      await this.safelyRemoveSettledJobs();
       res.sendStatus(200);
       return;
     } catch (error: any) {
@@ -155,42 +146,48 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
     }
   }
 
-  /**
-   * Safely remove settled jobs from the DB, meaning that it will never throw an error.
-   */
-  async safelyRemoveSettledJobs(): Promise<void> {
-    if (!this.shouldRun()) {
-      // Should only run every 1 in 100 tasks. More cleanup isn't needed
+  @Get('clear-settled-jobs')
+  async clearSettledJobs(
+    @Req() req: Request,
+    @Res() res: Response,
+    @Ctx() ctx: RequestContext
+  ): Promise<void> {
+    if (!this.isValidRequest(req)) {
+      res.sendStatus(401);
       return;
     }
-    try {
-      const cloudTaskJobStrategy = this.configService.jobQueueOptions
-        .jobQueueStrategy as CloudTasksJobQueueStrategy;
-      if (!(cloudTaskJobStrategy instanceof CloudTasksJobQueueStrategy)) {
-        Logger.error(
-          `Configured jobQueueStrategy is not an instance of CloudTasksJobQueueStrategy, something is broken...`,
-          loggerCtx
-        );
-        return;
-      }
-      const sevenDaysAgo: Date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const queueNames = cloudTaskJobStrategy.getAllQueueNames();
-      await cloudTaskJobStrategy.removeSettledJobs(queueNames, sevenDaysAgo);
-      Logger.info(
-        `Successfully removed settled jobs older than 7 days`,
+    const cloudTaskJobStrategy = this.configService.jobQueueOptions
+      .jobQueueStrategy as CloudTasksJobQueueStrategy;
+    if (!(cloudTaskJobStrategy instanceof CloudTasksJobQueueStrategy)) {
+      Logger.error(
+        `Configured jobQueueStrategy is not an instance of CloudTasksJobQueueStrategy, something is broken...`,
         loggerCtx
       );
-    } catch (e: any) {
-      Logger.error(`Failed to remove settled jobs: ${e}`, loggerCtx, e.stack);
+      return;
     }
+    const sevenDaysAgo: Date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const queueNames = cloudTaskJobStrategy.getAllQueueNames();
+    await cloudTaskJobStrategy.removeSettledJobs(queueNames, sevenDaysAgo);
+    Logger.info(
+      `Successfully removed settled jobs older than 7 days`,
+      loggerCtx
+    );
+    res.sendStatus(200);
   }
 
-  /**
-   * Triggers 1 out of every 100 times
-   */
-  private shouldRun(): boolean {
-    const probability = 0.01; // 1% probability
-    const randomNumber = Math.random();
-    return randomNumber <= probability;
+  private isValidRequest(req: Request): boolean {
+    if (
+      req.header('Authorization') !==
+      `Bearer ${CloudTasksPlugin.options.authSecret}`
+    ) {
+      Logger.warn(
+        `Unauthorized incoming webhook with Auth header ${req.header(
+          'Authorization'
+        )}`,
+        loggerCtx
+      );
+      return false;
+    }
+    return true;
   }
 }

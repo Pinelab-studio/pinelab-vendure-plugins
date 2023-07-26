@@ -27,6 +27,7 @@ import { addShippingMethod, getOrder } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import nock from 'nock';
 import { SendcloudClient } from '../src/api/sendcloud.client';
+import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import crypto from 'crypto';
 
 describe('SendCloud', () => {
@@ -111,7 +112,8 @@ describe('SendCloud', () => {
     });
 
   it('Creates shippingmethod with Sendcloud handler', async () => {
-    await addShippingMethod(adminClient, sendcloudHandler.code);
+    //FIX ME
+    await addShippingMethod(adminClient as any, sendcloudHandler.code);
   });
 
   it('Fails to update SendCloud config without permission', async () => {
@@ -142,9 +144,11 @@ describe('SendCloud', () => {
   });
 
   it('Syncs order after placement when it has Sendcloud handler', async () => {
-    const { id } = await createSettledOrder(shopClient, 1);
+    //FIX ME
+    const { id } = await createSettledOrder(shopClient as any, 1);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    const order = await getOrder(adminClient, String(id));
+    //FIX ME
+    const order = await getOrder(adminClient as any, String(id));
     orderCode = order?.code;
     orderId = order?.id;
     expect(
@@ -197,7 +201,8 @@ describe('SendCloud', () => {
         headers: { [SendcloudClient.signatureHeader]: signature },
       }
     );
-    const order = await getOrder(adminClient, String(orderId));
+    //FIX ME
+    const order = await getOrder(adminClient as any, String(orderId));
     expect(order?.state).toBe('Shipped');
   });
 
@@ -225,7 +230,8 @@ describe('SendCloud', () => {
         headers: { [SendcloudClient.signatureHeader]: signature },
       }
     );
-    const order = await getOrder(adminClient, String(orderId));
+    //FIX ME
+    const order = await getOrder(adminClient as any, String(orderId));
     const fulfilment = order?.fulfillments?.[0];
     expect(order?.state).toBe('Delivered');
     expect(fulfilment?.trackingCode).toBe('test-tracking');
