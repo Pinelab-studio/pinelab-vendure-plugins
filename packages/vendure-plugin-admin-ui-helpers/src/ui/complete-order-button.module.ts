@@ -27,35 +27,33 @@ import { RouterModule } from '@angular/router';
             return;
           }
           const orderId = route.snapshot.params.id;
-          let { order } = await dataService.order
+          let getOrderResponse = await dataService.order
             .getOrder(orderId)
             .single$.toPromise();
-          if (!order) {
+          if (!getOrderResponse?.order) {
             return notificationService.error('Could not find order...');
           }
-          if (order.state === 'AddingItems') {
+          if (getOrderResponse?.order.state === 'AddingItems') {
             return notificationService.error(
               'Active orders cannot be completed.'
             );
           }
-          if (order.state === 'Delivered') {
+          if (getOrderResponse?.order.state === 'Delivered') {
             return notificationService.warning('Order is already Delivered.');
           }
-          if (order.state === 'Cancelled') {
+          if (getOrderResponse?.order.state === 'Cancelled') {
             return notificationService.error('Order is already Cancelled.');
           }
-          if (order.state === 'PaymentSettled') {
-            await transitionToShipped(dataService, order);
-            ({ order } = await dataService.order
-              .getOrder(orderId)
-              .single$.toPromise());
+          if (getOrderResponse?.order.state === 'PaymentSettled') {
+            await transitionToShipped(dataService, getOrderResponse.order);
+            await dataService.order.getOrder(orderId).single$.toPromise();
           }
-          if (order!.state === 'Shipped') {
-            await transitionToDelivered(dataService, order!);
+          if (getOrderResponse?.order!.state === 'Shipped') {
+            await transitionToDelivered(dataService, getOrderResponse.order);
           }
           await dataService.order.getOrder(orderId).single$.toPromise();
           notificationService.success('Order completed');
-        } catch (e) {
+        } catch (e: any) {
           notificationService.error(e.message);
           console.error(e);
         }
