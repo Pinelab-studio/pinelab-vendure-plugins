@@ -20,8 +20,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { ShippingByWeightAndCountryPlugin } from '../src/shipping-by-weight-and-country.plugin';
 import gql from 'graphql-tag';
-
-jest.setTimeout(20000);
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
 describe('Order export plugin', function () {
   let server: TestServer;
