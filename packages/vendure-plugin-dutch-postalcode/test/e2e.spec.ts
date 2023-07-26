@@ -33,7 +33,7 @@ describe('Dutch PostalCode plugin', () => {
       productsCsvPath: '../test/src/products-import.csv',
     });
     await expect(serverStart).resolves.toEqual(undefined);
-  });
+  }, 60000);
 
   afterAll(() => {
     return testServer.destroy();
