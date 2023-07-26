@@ -31,7 +31,7 @@ jobs:
             'vendure-plugin-customer-managed-groups',
             'vendure-plugin-e-boekhouden',
             'vendure-plugin-dutch-postalcode',
-            # 'vendure-plugin-goedgepickt',
+            'vendure-plugin-goedgepickt',
             'vendure-plugin-google-cloud-tasks',
             'vendure-plugin-google-storage-assets',
             # 'vendure-plugin-invoices',

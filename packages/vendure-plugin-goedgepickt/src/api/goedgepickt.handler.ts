@@ -38,7 +38,7 @@ export const goedgepicktHandler = new FulfillmentHandler({
             trackingUrls.push(shipment.trackTraceUrl);
           }
         });
-      } catch (e) {
+      } catch (e: any) {
         Logger.warn(
           `Unable to get tracking info for order with UUID ${args.goedGepicktOrderUUID} from Goedgepickt during fulfillment: ${e?.message}`,
           loggerCtx
