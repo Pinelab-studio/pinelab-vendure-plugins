@@ -41,7 +41,7 @@ jobs:
             'vendure-plugin-limit-variant-per-order',
             'vendure-plugin-metrics',
             'vendure-plugin-modify-customer-orders',
-            'vendure-plugin-modify-multiserver-db-sessioncache',
+            'vendure-plugin-multiserver-db-sessioncache',
             'vendure-plugin-myparcel',
             'vendure-plugin-order-export',
             'vendure-plugin-picqer',
