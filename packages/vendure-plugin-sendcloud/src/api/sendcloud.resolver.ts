@@ -6,11 +6,15 @@ import {
   OrderService,
   Permission,
   RequestContext,
+  PermissionDefinition,
 } from '@vendure/core';
 import { SendcloudService } from './sendcloud.service';
 import { SendcloudConfigEntity } from './sendcloud-config.entity';
-import { sendcloudPermission } from '../index';
 
+export const sendcloudPermission = new PermissionDefinition({
+  name: 'SetSendCloudConfig',
+  description: 'Allows setting SendCloud configuration',
+});
 @Resolver()
 export class SendcloudResolver {
   constructor(
@@ -39,7 +43,7 @@ export class SendcloudResolver {
   @Allow(sendcloudPermission.Permission)
   async sendCloudConfig(
     @Ctx() ctx: RequestContext
-  ): Promise<SendcloudConfigEntity | undefined> {
+  ): Promise<SendcloudConfigEntity | null> {
     return this.service.getConfig(ctx);
   }
 
