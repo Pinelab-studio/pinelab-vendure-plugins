@@ -62,6 +62,7 @@ export interface WebhookPluginOptions {
     config.authOptions.customPermissions.push(webhookPermission);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class WebhookPlugin {
   static options: WebhookPluginOptions = {

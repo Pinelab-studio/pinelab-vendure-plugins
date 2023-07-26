@@ -27,6 +27,7 @@ export interface ModifyCustomerOrdersPluginOptions {
       useFactory: () => ModifyCustomerOrdersPlugin.options,
     },
   ],
+  compatibility: '^2.0.0',
 })
 export class ModifyCustomerOrdersPlugin {
   static options: ModifyCustomerOrdersPluginOptions = {

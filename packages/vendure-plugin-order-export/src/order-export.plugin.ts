@@ -36,6 +36,7 @@ export interface ExportPluginConfig {
     config.authOptions.customPermissions.push(orderExportPermission);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class OrderExportPlugin {
   static config: ExportPluginConfig;

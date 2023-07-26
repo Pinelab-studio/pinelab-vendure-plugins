@@ -29,6 +29,7 @@ import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/jo
     ];
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class CloudTasksPlugin {
   static loggerCtx = 'CloudTaskPlugin';

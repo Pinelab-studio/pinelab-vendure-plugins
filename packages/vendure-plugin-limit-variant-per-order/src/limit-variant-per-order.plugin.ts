@@ -35,5 +35,6 @@ import { AddItemOverrideResolver } from './add-item-override.resolver';
     });
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class LimitVariantPerOrderPlugin {}

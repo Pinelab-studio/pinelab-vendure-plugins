@@ -47,6 +47,7 @@ export interface InvoicePluginConfig {
     schema: schema as any,
     resolvers: [InvoiceResolver],
   },
+  compatibility: '^2.0.0',
   configuration: (config: RuntimeVendureConfig) =>
     InvoicePlugin.configure(config),
 })
