@@ -13,8 +13,7 @@ import {
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { DutchPostalCodePlugin } from '../src/dutch-postal-code.plugin';
-
-jest.setTimeout(60000);
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 describe('Dutch PostalCode plugin', () => {
   let testServer: TestServer;
 
