@@ -6,7 +6,7 @@
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
