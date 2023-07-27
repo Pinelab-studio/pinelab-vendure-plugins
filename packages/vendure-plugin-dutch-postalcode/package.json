@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-dutch-postalcode",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Vendure plugin for retrieving Dutch addresses by postal code via postcode.tech",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
