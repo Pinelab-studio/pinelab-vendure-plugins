@@ -7,6 +7,9 @@
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/vendure-plugin-picqer/src/index.js",
   "types": "dist/vendure-plugin-picqer/src/index.d.ts",
   "files": [
