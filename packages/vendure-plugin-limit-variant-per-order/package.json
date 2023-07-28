@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-limit-variant-per-order",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Vendure plugin to limit the amount of a specific product that can be ordered per order.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
