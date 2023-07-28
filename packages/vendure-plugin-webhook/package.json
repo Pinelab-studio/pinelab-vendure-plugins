@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-webhook",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Call webhooks based on configured events from Vendure",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

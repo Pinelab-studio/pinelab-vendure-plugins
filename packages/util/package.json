@@ -1,6 +1,6 @@
 {
   "name": "utils",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "main": "index.ts",
   "license": "MIT",
   "private": true,
