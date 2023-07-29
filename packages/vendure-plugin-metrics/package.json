@@ -1,12 +1,15 @@
 {
-  "name": "vendure-plugin-metrics",
-  "version": "7.1.2",
+  "name": "@pinelab/vendure-plugin-metrics",
+  "version": "0.0.4",
   "description": "Vendure plugin measuring and visualizing e-commerce metrics",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -39,5 +42,5 @@
   "dependencies": {
     "date-fns": "^2.29.3"
   },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

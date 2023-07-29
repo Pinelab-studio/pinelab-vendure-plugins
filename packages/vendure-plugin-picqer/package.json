@@ -1,12 +1,15 @@
 {
-  "name": "vendure-plugin-picqer",
-  "version": "7.2.2",
+  "name": "@pinelab/vendure-plugin-picqer",
+  "version": "0.0.4",
   "description": "Vendure plugin syncing to orders and stock with Picqer",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/vendure-plugin-picqer/src/index.js",
   "types": "dist/vendure-plugin-picqer/src/index.d.ts",
   "files": [
@@ -42,5 +45,5 @@
     "axios": "^1.3.4",
     "currency.js": "^2.0.4"
   },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

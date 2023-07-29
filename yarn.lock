@@ -1931,10 +1931,6 @@ eslint-plugin-n@^15.0.0:
     resolve "^1.22.1"
     semver "^7.3.8"
 
-eslint-plugin-progress@taskworld/eslint-plugin-progress:
-  version "0.0.1"
-  resolved "https://codeload.github.com/taskworld/eslint-plugin-progress/tar.gz/aad2cb71b3e3a88f4006902f33c1b8c0bdd46e5e"
-
 eslint-plugin-promise@^6.0.0:
   version "6.1.1"
   resolved "https://registry.yarnpkg.com/eslint-plugin-promise/-/eslint-plugin-promise-6.1.1.tgz#269a3e2772f62875661220631bd4dafcb4083816"
@@ -5091,11 +5087,6 @@ typedarray@^0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/typedarray/-/typedarray-0.0.6.tgz#867ac74e3864187b1d3d47d996a78ec5c8830777"
   integrity sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==
-
-typescript@*:
-  version "5.0.4"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.0.4.tgz#b217fd20119bd61a94d4011274e0ab369058da3b"
-  integrity sha512-cW9T5W9xY37cc+jfEnaUvX91foxtHkza3Nw3wkoF4sSlKn0MONdkdEndig/qPBWXNkmplh3NzayQzCiHM4/hqw==
 
 "typescript@^3 || ^4", typescript@^4.6.4:
   version "4.9.5"

@@ -1,12 +1,15 @@
 {
-  "name": "vendure-plugin-coinbase",
-  "version": "7.0.0",
+  "name": "@pinelab/vendure-plugin-coinbase",
+  "version": "0.0.4",
   "description": "Vendure plugin for Coinbase payments",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/coinbase.plugin.js",
   "types": "dist/coinbase.plugin.d.ts",
   "files": [
@@ -23,15 +26,15 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^8.2.4",
+    "@swc/core": "^1.3.59",
     "@vendure/admin-ui-plugin": "2.0.4",
     "@vendure/core": "2.0.4",
     "@vendure/testing": "2.0.4",
     "@vendure/ui-devkit": "2.0.4",
     "nock": "^13.2.4",
-    "unplugin-swc": "^1.3.2",
-    "vitest": "^0.30.1",
     "ts-node": "10.7.0",
-    "@swc/core": "^1.3.59"
+    "unplugin-swc": "^1.3.2",
+    "vitest": "^0.30.1"
   },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

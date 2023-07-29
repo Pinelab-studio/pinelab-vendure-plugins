@@ -1,0 +1,38 @@
+name: Publish packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        type: choice
+        description: What version do you want to publish?
+        required: true
+        options:
+          - patch
+          - minor
+          - major
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+      - name: Set NPM token
+        run: npm set //registry.npmjs.org/:_authToken $NPM_PUBLISH_TOKEN
+        env:
+          NPM_PUBLISH_TOKEN: ${{secrets.NPM_PUBLISH_TOKEN}}
+      - name: Install dependencies
+        run: yarn
+      - name: Create, commit and push version
+        run: yarn lerna version ${{ github.event.inputs.version }} --force-publish --yes
+      - name: Build
+        run: yarn build
+      - name: Stash changes that build might have caused
+        run: git stash
+      - name: Publish
+        run: yarn lerna publish from-package --yes

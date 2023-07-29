@@ -1,11 +1,15 @@
 {
-  "name": "vendure-plugin-customer-managed-groups",
-  "version": "7.0.1",
+  "name": "@pinelab/vendure-plugin-customer-managed-groups",
+  "version": "0.0.4",
   "description": "This plugin allows customer groups to have 'Group admins', that are allowed to fetch placed orders for everyone in the group.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "repository": "https://github.com/vendure-ecommerce/plugin-template",
+  "homepage": "https://pinelab-plugins.com/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=16.0.0"
   },
@@ -35,5 +39,6 @@
     "typescript": "5.0.4",
     "unplugin-swc": "^1.3.2",
     "vitest": "^0.32.0"
-  }
+  },
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }
