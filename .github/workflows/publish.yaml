@@ -14,6 +14,7 @@ on:
 
 jobs:
   Publish:
+    if: contains('["martijnvdbrug"]', github.actor)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -22,7 +23,6 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '18'
-          token: ${{secrets.MARTIJN_PAT}}
       - name: Set git config
         run: |
           git config --global user.name "martijnvdbrug"
