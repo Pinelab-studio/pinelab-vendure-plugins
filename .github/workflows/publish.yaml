@@ -1,16 +1,9 @@
 name: Publish packages
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        type: choice
-        description: What version do you want to publish?
-        required: true
-        options:
-          - patch
-          - minor
-          - major
+  push:
+    branches:
+      - main
 
 jobs:
   Publish:
