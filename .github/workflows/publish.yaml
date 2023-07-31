@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - test-publish
 
 jobs:
   Publish:
@@ -15,20 +16,13 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: '18'
-          token: ${{secrets.MARTIJN_PAT}}
-      - name: Set git config
-        run: |
-          git config --global user.name "martijnvdbrug"
-          git config --global user.email "martijn.brug@gmail.com"
       - name: Set NPM token
         run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
       - name: Install dependencies
         run: yarn
-      - name: Create, commit and push version
-        run: yarn lerna version ${{ github.event.inputs.version }} --force-publish --yes
       - name: Build
         run: yarn build
-      - name: Stash changes that build might have caused
+      - name: Stash changes that build might have caused by build
         run: git stash
       - name: Publish
         run: yarn lerna publish from-package --yes
