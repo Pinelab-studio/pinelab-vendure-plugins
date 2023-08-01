@@ -8,6 +8,7 @@ on:
 
 jobs:
   Publish:
+    if: contains('["martijnvdbrug"]', github.actor)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
