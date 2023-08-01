@@ -1,6 +1,9 @@
 {
   "name": "pinelab-vendure-plugins",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "keywords": [
     "vendure",
     "vendure-plugins",
@@ -19,18 +22,33 @@
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
-    "@commitlint/cli": "^17.2.0",
-    "@commitlint/config-conventional": "^17.2.0",
-    "@typescript-eslint/eslint-plugin": "^5.43.0",
-    "eslint": "^8.0.1",
-    "eslint-config-prettier": "^8.8.0",
-    "eslint-config-standard-with-typescript": "^34.0.1",
-    "eslint-plugin-import": "^2.25.2",
-    "eslint-plugin-n": "^15.0.0",
-    "eslint-plugin-promise": "^6.0.0",
-    "husky": "^8.0.2",
-    "lerna": "^6.0.3",
-    "prettier": "^2.8.7"
+    "@commitlint/cli": "17.2.0",
+    "@commitlint/config-conventional": "17.2.0",
+    "@graphql-codegen/cli": "2.6.2",
+    "@graphql-codegen/typescript-document-nodes": "2.2.8",
+    "@graphql-codegen/typescript-operations": "2.3.5",
+    "@graphql-codegen/typescript": "2.4.8",
+    "@typescript-eslint/eslint-plugin": "5.43.0",
+    "@vendure/admin-ui-plugin": "2.0.4",
+    "@vendure/core": "2.0.4",
+    "@vendure/testing": "2.0.4",
+    "@vendure/ui-devkit": "2.0.4",
+    "copyfiles": "2.4.1",
+    "eslint-config-prettier": "8.8.0",
+    "eslint-config-standard-with-typescript": "34.0.1",
+    "eslint-plugin-import": "2.25.2",
+    "eslint-plugin-n": "15.0.0",
+    "eslint-plugin-promise": "6.0.0",
+    "eslint": "8.0.1",
+    "graphql-tag": "2.12.6",
+    "husky": "8.0.2",
+    "lerna": "6.0.3",
+    "nodemon": "2.0.15",
+    "prettier": "2.8.7",
+    "rimraf": "3.0.2",
+    "ts-node": "10.7.0",
+    "typescript": "4.9.5",
+    "vitest": "0.30.1"
   },
   "commitlint": {
     "extends": [
