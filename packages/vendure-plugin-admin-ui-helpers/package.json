@@ -22,17 +22,5 @@
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run --passWithNoTests"
   },
-  "devDependencies": {
-    "@vendure/admin-ui-plugin": "workspace:*",
-    "@vendure/core": "workspace:*",
-    "@vendure/testing": "workspace:*",
-    "@vendure/ui-devkit": "workspace:*",
-    "copyfiles": "workspace:*",
-    "nodemon": "workspace:*",
-    "rimraf": "workspace:*",
-    "ts-node": "workspace:*",
-    "typescript": "workspace:*",
-    "vitest": "workspace:*"
-  },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }
