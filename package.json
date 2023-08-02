@@ -2,12 +2,12 @@
   "name": "pinelab-vendure-plugins",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/vendure-plugin-admin-ui-helpers"
   ],
   "keywords": [
     "vendure",
     "vendure-plugins",
-    "vendure-packges"
+    "vendure-packages"
   ],
   "scripts": {
     "postinstall": "yarn husky install",
@@ -22,12 +22,8 @@
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
-    "@commitlint/cli": "17.2.0",
-    "@commitlint/config-conventional": "17.2.0",
-    "@graphql-codegen/cli": "2.6.2",
-    "@graphql-codegen/typescript-document-nodes": "2.2.8",
-    "@graphql-codegen/typescript-operations": "2.3.5",
-    "@graphql-codegen/typescript": "2.4.8",
+    "@commitlint/cli": "^17.2.0",
+    "@commitlint/config-conventional": "^17.2.0",
     "@typescript-eslint/eslint-plugin": "5.43.0",
     "@vendure/admin-ui-plugin": "2.0.4",
     "@vendure/core": "2.0.4",
@@ -40,7 +36,6 @@
     "eslint-plugin-n": "15.0.0",
     "eslint-plugin-promise": "6.0.0",
     "eslint": "8.0.1",
-    "graphql-tag": "2.12.6",
     "husky": "8.0.2",
     "lerna": "6.0.3",
     "nodemon": "2.0.15",

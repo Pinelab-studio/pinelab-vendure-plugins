@@ -5,17 +5,17 @@
   "license": "MIT",
   "private": true,
   "devDependencies": {
-    "@graphql-codegen/cli": "workspace:*",
-    "@graphql-codegen/typescript": "workspace:*",
-    "@graphql-codegen/typescript-document-nodes": "workspace:*",
-    "@graphql-codegen/typescript-operations": "workspace:*",
-    "graphql-tag": "workspace:*",
-    "@vendure/core": "workspace:*",
-    "@vendure/testing": "workspace:*",
-    "nodemon": "workspace:*",
-    "rimraf": "workspace:*",
-    "ts-node": "workspace:*",
-    "typescript": "workspace:*"
+    "@graphql-codegen/cli": "^2.6.2",
+    "@graphql-codegen/typescript-document-nodes": "^2.2.8",
+    "@graphql-codegen/typescript-operations": "^2.3.5",
+    "@graphql-codegen/typescript": "^2.4.8",
+    "graphql-tag": "^2.12.6",
+    "@vendure/core": "^2.0.4",
+    "@vendure/testing": "^2.0.4",
+    "nodemon": "^2.0.15",
+    "rimraf": "^3.0.2",
+    "ts-node": "^10.7.0",
+    "typescript": "^4.9.5"
   },
   "scripts": {
     "generate": "graphql-codegen --config codegen.yml",
