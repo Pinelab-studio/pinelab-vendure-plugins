@@ -12,7 +12,6 @@
   "scripts": {
     "postinstall": "yarn husky install",
     "build": "yarn lerna run build --concurrency 1",
-    "lerna:publish": "yarn build && git stash && yarn lerna publish --concurrency 1 --changelog-preset conventionalcommits",
     "loading-message": "echo \"\\033[0;36mLinting... This might take a minute\\033[0m\"",
     "lint": "yarn loading-message && NODE_OPTIONS=\"--max-old-space-size=8192\" yarn eslint",
     "lint:check": "yarn prettier --check . &&  yarn lint .",
@@ -32,6 +31,7 @@
     "@vendure/core": "2.0.4",
     "@vendure/testing": "2.0.4",
     "@vendure/ui-devkit": "2.0.4",
+    "@vendure/email-plugin": "2.0.4",
     "copyfiles": "2.4.1",
     "eslint-config-prettier": "8.8.0",
     "eslint-config-standard-with-typescript": "34.0.1",
