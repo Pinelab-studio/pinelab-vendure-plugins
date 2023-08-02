@@ -2,7 +2,6 @@ import gql from 'graphql-tag';
 
 export const schema = gql`
   type AdvancedMetricSummary {
-    interval: AdvancedMetricInterval!
     code: String!
     title: String!
     type: AdvancedMetricType!
@@ -14,18 +13,14 @@ export const schema = gql`
     number
   }
 
-  enum AdvancedMetricInterval {
-    WEEKLY
-    MONTHLY
-  }
   type AdvancedMetricSummaryEntry {
     label: String!
     value: Float!
   }
   input AdvancedMetricSummaryInput {
-    interval: AdvancedMetricInterval!
     variantIds: [ID!]
   }
+
   extend type Query {
     """
     Get metrics from X weeks/months ago to now.

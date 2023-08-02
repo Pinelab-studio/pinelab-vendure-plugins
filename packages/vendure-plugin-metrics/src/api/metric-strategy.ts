@@ -1,6 +1,7 @@
 import {
   AdvancedMetricInterval,
   AdvancedMetricSummaryEntry,
+  AdvancedMetricSummaryInput,
   AdvancedMetricType,
 } from '../ui/generated/graphql';
 import { RequestContext, Injector } from '@vendure/core';
@@ -34,7 +35,8 @@ export interface MetricStrategy<T extends DataWithCreatedAt[]> {
     ctx: RequestContext,
     injector: Injector,
     from: Date,
-    to: Date
+    to: Date,
+    input: AdvancedMetricSummaryInput
   ): Promise<T>;
 
   /**
@@ -63,9 +65,10 @@ export class StripeSubscriptionMetric
     ctx: RequestContext,
     injector: Injector,
     from: Date,
-    to: Date
+    to: Date,
+    input: AdvancedMetricSummaryInput
   ): Promise<StripePayment[]> {
-    // Load payments between `from` and `to`
+    // Load payments between `from` and `to`. Optionally you can use `input.variantIds` in your query
     return [
       {
         amount: 123,
