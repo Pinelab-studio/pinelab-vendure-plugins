@@ -7,6 +7,7 @@ import {
 import { RequestContext, Injector } from '@vendure/core';
 
 type DataWithCreatedAt = { createdAt: Date };
+
 export interface MetricStrategy<T extends DataWithCreatedAt[]> {
   code: string;
   /**
@@ -40,12 +41,17 @@ export interface MetricStrategy<T extends DataWithCreatedAt[]> {
   ): Promise<T>;
 
   /**
-   * Calculate the datapoint for the given month
+   * Calculate the datapoint for the given month. Return multiple datapoints for a stacked line chart
    *
    * @param ctx
    * @param data The data for the current timeframe
    */
-  calculateDataPoint(ctx: RequestContext, data: T, monthNr: number): number;
+  calculateDataPoint(
+    ctx: RequestContext,
+    data: T,
+    monthNr: number,
+    input: AdvancedMetricSummaryInput
+  ): number[];
 }
 
 // FIXME Sample strategy for Stripe subscription. Remove later
@@ -79,6 +85,6 @@ export class StripeSubscriptionMetric
 
   calculateDataPoint(ctx: RequestContext, data: StripePayment[]): number {
     // Calculate the sum of all payments for this month
-    return data.reduce((acc, curr) => acc + curr.amount, 0);
+    return [data.reduce((acc, curr) => acc + curr.amount, 0)];
   }
 }
