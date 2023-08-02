@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-admin-ui-helpers",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vendure plugin for various admin ui helpers. Cancel button, complete order button etc.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
