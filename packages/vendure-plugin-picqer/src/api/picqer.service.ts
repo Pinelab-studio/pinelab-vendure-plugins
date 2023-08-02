@@ -357,7 +357,11 @@ export class PicqerService implements OnApplicationBootstrap {
       'lines.productVariant',
     ]);
     if (!order) {
-      throw new Error(`No order found for code ${data.reference}`);
+      Logger.error(
+        `No order found for code ${data.reference}. Not processing this hook any further`,
+        loggerCtx
+      );
+      return;
     }
     const orderLinesToFulfill: OrderLineInput[] = [];
     data.products.forEach((pickListProduct) => {

@@ -9,6 +9,9 @@
 
 Contributions welcome! [Check out our Contribution guidelines](./CONTRIBUTING.md)
 
+1. `yarn` in the root of the repository will install all dependencies of each plugin (using yarn workspaces)
+2. You can now `yarn build` and/or `yarn test` in each plugin
+
 ## Upgrading Vendure version
 
 Follow these steps to upgrade the vendure version of all plugins at once.

@@ -22,18 +22,5 @@
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run"
   },
-  "devDependencies": {
-    "@swc/core": "^1.3.59",
-    "@vendure/admin-ui-plugin": "2.0.4",
-    "@vendure/common": "2.0.4",
-    "@vendure/core": "2.0.4",
-    "@vendure/testing": "2.0.4",
-    "@vendure/ui-devkit": "2.0.4",
-    "copyfiles": "^2.4.1",
-    "nodemon": "^2.0.15",
-    "ts-node": "^10.7.0",
-    "unplugin-swc": "^1.3.2",
-    "vitest": "^0.30.1"
-  },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

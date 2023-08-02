@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-admin-ui-helpers",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Vendure plugin for various admin ui helpers. Cancel button, complete order button etc.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -21,18 +21,6 @@
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run --passWithNoTests"
-  },
-  "devDependencies": {
-    "@vendure/admin-ui-plugin": "2.0.4",
-    "@vendure/core": "2.0.4",
-    "@vendure/testing": "2.0.4",
-    "@vendure/ui-devkit": "2.0.4",
-    "copyfiles": "^2.4.1",
-    "nodemon": "^2.0.15",
-    "rimraf": "^3.0.2",
-    "ts-node": "^10.7.0",
-    "typescript": "4.9.5",
-    "vitest": "^0.30.1"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }
