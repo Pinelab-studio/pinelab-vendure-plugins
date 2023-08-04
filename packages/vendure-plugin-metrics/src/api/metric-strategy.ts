@@ -83,7 +83,7 @@ export class StripeSubscriptionMetric
     ];
   }
 
-  calculateDataPoint(ctx: RequestContext, data: StripePayment[]): number {
+  calculateDataPoint(ctx: RequestContext, data: StripePayment[]): number[] {
     // Calculate the sum of all payments for this month
     return [data.reduce((acc, curr) => acc + curr.amount, 0)];
   }
