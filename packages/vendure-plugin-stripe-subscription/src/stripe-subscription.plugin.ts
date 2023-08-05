@@ -26,6 +26,7 @@ import { StripeSubscriptionService } from './api/stripe-subscription.service';
 import { stripeSubscriptionHandler } from './api/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api/has-stripe-subscription-products-payment-checker';
 import { subscriptionPromotions } from './api/subscription.promotion';
+import { StripeSubscriptionPayment } from './api/stripe-subscription-payment.entity';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -36,7 +37,7 @@ export interface StripeSubscriptionPluginOptions {
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [Schedule],
+  entities: [Schedule, StripeSubscriptionPayment],
   shopApiExtensions: {
     schema: shopSchemaExtensions,
     resolvers: [ShopResolver, ShopOrderLinePricingResolver],
@@ -85,8 +86,8 @@ export class StripeSubscriptionPlugin {
     ngModules: [
       {
         type: 'lazy',
-        route: 'subscription-schedules',
-        ngModuleFileName: 'schedules.module.ts',
+        route: 'stripe',
+        ngModuleFileName: 'stripe-subscription.module.ts',
         ngModuleName: 'SchedulesModule',
       },
       {

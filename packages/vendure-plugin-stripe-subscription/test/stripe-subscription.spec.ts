@@ -969,8 +969,8 @@ describe('Stripe Subscription Plugin', function () {
       await adminClient.asSuperAdmin();
       const { stripeSubscriptionSchedules: schedules } =
         await adminClient.query(GET_SCHEDULES);
-      expect(schedules[0]).toBeDefined();
-      expect(schedules[0].id).toBeDefined();
+      expect(schedules.items[0]).toBeDefined();
+      expect(schedules.items[0].id).toBeDefined();
     });
 
     it('Can delete Schedules', async () => {
@@ -991,7 +991,7 @@ describe('Stripe Subscription Plugin', function () {
       const { stripeSubscriptionSchedules: schedules } =
         await adminClient.query(GET_SCHEDULES);
       expect(
-        schedules.find((s: any) => s.id == toBeDeleted.id)
+        schedules.items.find((s: any) => s.id == toBeDeleted.id)
       ).toBeUndefined();
     });
 

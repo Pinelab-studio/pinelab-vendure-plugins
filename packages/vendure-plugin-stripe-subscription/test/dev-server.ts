@@ -125,6 +125,7 @@ export let clientSecret = 'test';
       billingCount: 6,
     },
   });
+  console.log(`1st upsert`);
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {
       name: '3 months, billed monthly, 199 downpayment',
@@ -136,6 +137,7 @@ export let clientSecret = 'test';
       billingCount: 1,
     },
   });
+  console.log(`2nd upsert`);
   const future = new Date('01-01-2024');
   await adminClient.query(UPSERT_SCHEDULES, {
     input: {

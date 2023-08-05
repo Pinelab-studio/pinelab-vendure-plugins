@@ -22,10 +22,20 @@ import { HistoryEntryComponent } from './history-entry.component';
     }),
     addNavMenuItem(
       {
-        id: 'stripe-subscription-schedules',
-        label: 'Subscriptions',
-        routerLink: ['/extensions/subscription-schedules'],
+        id: 'subscription-schedules',
+        label: 'Subscriptions schedules',
+        routerLink: ['/extensions/stripe/subscription-schedules'],
         icon: 'calendar',
+        requiresPermission: 'UpdateSettings',
+      },
+      'settings'
+    ),
+    addNavMenuItem(
+      {
+        id: 'subscription-payments',
+        label: 'Subscriptions payments',
+        routerLink: ['/extensions/stripe/subscription-payments'],
+        icon: 'dollar',
         requiresPermission: 'UpdateSettings',
       },
       'settings'

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService,
+  Channel,
   ChannelService,
   CustomerService,
   EntityHydrator,
@@ -9,15 +10,19 @@ import {
   EventBus,
   HistoryService,
   ID,
+  InternalServerError,
   JobQueue,
   JobQueueService,
   LanguageCode,
+  ListQueryBuilder,
+  ListQueryOptions,
   Logger,
   Order,
   OrderLine,
   OrderLineEvent,
   OrderService,
   OrderStateTransitionError,
+  PaginatedList,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
@@ -36,6 +41,8 @@ import {
 } from './subscription-custom-fields';
 import { StripeClient } from './stripe.client';
 import {
+  StripeSubscriptionPaymentList,
+  StripeSubscriptionPaymentListOptions,
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
 } from '../ui/generated/graphql';
@@ -52,6 +59,7 @@ import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellat
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
 import { randomUUID } from 'crypto';
 import { hasSubscriptions } from './has-stripe-subscription-products-payment-checker';
+import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -84,6 +92,7 @@ export class StripeSubscriptionService {
     private entityHydrator: EntityHydrator,
     private channelService: ChannelService,
     private orderService: OrderService,
+    private listQueryBuilder: ListQueryBuilder,
     private historyService: HistoryService,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
@@ -392,6 +401,49 @@ export class StripeSubscriptionService {
     };
   }
 
+  async saveStripeSubscriptionEvent(
+    ctx: RequestContext,
+    object: any
+  ): Promise<void> {
+    const stripeSubscriptionPaymentRepo = this.connection.getRepository(
+      ctx,
+      StripeSubscriptionPayment
+    );
+    const channelRepo = this.connection.getRepository(ctx, Channel);
+    const channelToken =
+      object.metadata?.channelToken ||
+      object.lines?.data[0]?.metadata.channelToken;
+    const requestChannel = await channelRepo.findOne({
+      where: { token: channelToken },
+    });
+    if (!requestChannel) {
+      throw new InternalServerError(`Channel with ${channelToken} not found`);
+    }
+    const newPayment = new StripeSubscriptionPayment();
+    newPayment.channelId = requestChannel.id as string;
+    newPayment.charge = object?.charge;
+    newPayment.currency = object.currency || requestChannel.defaultCurrencyCode;
+    newPayment.collectionMethod = object.collection_method;
+    newPayment.invoiceId = object.id;
+    newPayment.orderCode =
+      object.metadata?.orderCode || object.lines?.data[0]?.metadata.orderCode;
+    newPayment.subscriptionId = object.subscription;
+    await stripeSubscriptionPaymentRepo.save(newPayment);
+  }
+
+  async getPayments(
+    ctx: RequestContext,
+    options: StripeSubscriptionPaymentListOptions
+  ): Promise<StripeSubscriptionPaymentList> {
+    return this.listQueryBuilder
+      .build(StripeSubscriptionPayment, options, { ctx })
+      .getManyAndCount()
+      .then(([items, totalItems]) => ({
+        items,
+        totalItems,
+      }));
+  }
+
   /**
    * Handle future subscription payments that come in after the initial payment intent
    */
@@ -412,6 +464,7 @@ export class StripeSubscriptionService {
       undefined,
       object.subscription
     );
+    await this.saveStripeSubscriptionEvent(ctx, object);
   }
 
   /**
@@ -434,6 +487,7 @@ export class StripeSubscriptionService {
       undefined,
       object.subscription
     );
+    await this.saveStripeSubscriptionEvent(ctx, object);
   }
 
   /**
@@ -446,6 +500,7 @@ export class StripeSubscriptionService {
     order: Order
   ): Promise<void> {
     const { paymentMethodCode } = await this.getStripeHandler(ctx, order.id);
+    await this.saveStripeSubscriptionEvent(ctx, eventData);
     if (!eventData.customer) {
       await this.logHistoryEntry(
         ctx,

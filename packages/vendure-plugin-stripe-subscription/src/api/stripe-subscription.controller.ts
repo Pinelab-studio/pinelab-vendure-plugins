@@ -11,8 +11,10 @@ import {
   Allow,
   Ctx,
   ID,
+  ListQueryOptions,
   Logger,
   OrderService,
+  PaginatedList,
   Permission,
   ProductService,
   RequestContext,
@@ -22,9 +24,14 @@ import { Request } from 'express';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import {
+  QueryStripeSubscriptionPaymentsArgs,
+  StripeSubscriptionPaymentList,
+  StripeSubscriptionPaymentListOptions,
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
   StripeSubscriptionSchedule,
+  StripeSubscriptionScheduleList,
+  StripeSubscriptionScheduleListOptions,
   UpsertStripeSubscriptionScheduleInput,
 } from '../ui/generated/graphql';
 import { ScheduleService } from './schedule.service';
@@ -34,6 +41,7 @@ import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
+import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -119,14 +127,27 @@ export class AdminPriceIncludesTaxResolver {
 
 @Resolver()
 export class AdminResolver {
-  constructor(private scheduleService: ScheduleService) {}
+  constructor(
+    private stripeSubscriptionService: StripeSubscriptionService,
+    private scheduleService: ScheduleService
+  ) {}
 
   @Allow(Permission.ReadSettings)
   @Query()
   async stripeSubscriptionSchedules(
-    @Ctx() ctx: RequestContext
-  ): Promise<StripeSubscriptionSchedule[]> {
-    return this.scheduleService.getSchedules(ctx);
+    @Ctx() ctx: RequestContext,
+    @Args('options') options: StripeSubscriptionScheduleListOptions
+  ): Promise<StripeSubscriptionScheduleList> {
+    return this.scheduleService.getSchedules(ctx, options);
+  }
+
+  @Allow(Permission.ReadSettings)
+  @Query()
+  async stripeSubscriptionPayments(
+    @Ctx() ctx: RequestContext,
+    @Args('options') options: StripeSubscriptionPaymentListOptions
+  ): Promise<StripeSubscriptionPaymentList> {
+    return this.stripeSubscriptionService.getPayments(ctx, options);
   }
 
   @Allow(Permission.UpdateSettings)
@@ -222,6 +243,12 @@ export class StripeSubscriptionController {
           order
         );
       } else if (body.type === 'invoice.payment_failed') {
+        await this.stripeSubscriptionService.handleInvoicePaymentFailed(
+          ctx,
+          body,
+          order
+        );
+      } else if (body.type === 'invoice.payment_action_required') {
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,
           body,

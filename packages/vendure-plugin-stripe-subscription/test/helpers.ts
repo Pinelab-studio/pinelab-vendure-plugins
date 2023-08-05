@@ -186,17 +186,19 @@ export const CREATE_PAYMENT_LINK = gql`
 export const GET_SCHEDULES = gql`
   {
     stripeSubscriptionSchedules {
-      id
-      createdAt
-      updatedAt
-      name
-      downpayment
-      durationInterval
-      durationCount
-      startMoment
-      paidUpFront
-      billingInterval
-      billingCount
+      items {
+        id
+        createdAt
+        updatedAt
+        name
+        downpayment
+        durationInterval
+        durationCount
+        startMoment
+        paidUpFront
+        billingInterval
+        billingCount
+      }
     }
   }
 `;
