@@ -90,6 +90,19 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     return result.affected || 0;
   }
 
+  /**
+   * Remove all jobs older than given date.
+   * All queues, settled or unsettled
+   */
+  async removeAllJobs(olderThan: Date): Promise<void> {
+    if (!this.jobRecordRepository) {
+      throw new UserInputError('TransactionalConnection is not available');
+    }
+    await this.jobRecordRepository.delete({
+      createdAt: LessThan(olderThan),
+    });
+  }
+
   async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
     await this.jobRecordRepository.delete({ id: jobId });
     return;
