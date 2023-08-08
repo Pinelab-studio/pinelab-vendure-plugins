@@ -357,7 +357,7 @@ export class PicqerService implements OnApplicationBootstrap {
       'lines.productVariant',
     ]);
     if (!order) {
-      Logger.error(
+      Logger.warn(
         `No order found for code ${data.reference}. Not processing this hook any further`,
         loggerCtx
       );
