@@ -357,7 +357,7 @@ export class PicqerService implements OnApplicationBootstrap {
       'lines.productVariant',
     ]);
     if (!order) {
-      Logger.error(
+      Logger.warn(
         `No order found for code ${data.reference}. Not processing this hook any further`,
         loggerCtx
       );
@@ -511,7 +511,6 @@ export class PicqerService implements OnApplicationBootstrap {
       picqerProducts.map((p) => p.productcode)
     );
     const stockAdjustments: StockAdjustment[] = [];
-    let updateCount = 0; // Nr of variants that were updated
     // Loop over variants to determine new stock level per variant and update in DB
     await Promise.all(
       vendureVariants.map(async (variant) => {
@@ -567,13 +566,22 @@ export class PicqerService implements OnApplicationBootstrap {
               productVariant: { id: variant.id },
             })
           );
-          updateCount++;
         }
       })
     );
+    if (!stockAdjustments.length) {
+      Logger.warn(
+        `No stock levels updated. This means none of the products in Picqer exist in Vendure yet.`,
+        loggerCtx
+      );
+      return;
+    }
     await this.removeNonPicqerStockLocations(ctx);
     await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
-    Logger.info(`Updated stock levels of ${updateCount} variants`, loggerCtx);
+    Logger.info(
+      `Updated stock levels of ${stockAdjustments.length} variants`,
+      loggerCtx
+    );
   }
 
   /**

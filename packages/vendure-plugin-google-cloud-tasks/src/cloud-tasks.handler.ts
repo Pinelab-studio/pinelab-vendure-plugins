@@ -6,6 +6,7 @@ import {
   Get,
   Res,
   OnApplicationBootstrap,
+  Param,
 } from '@nestjs/common';
 import {
   ConfigService,
@@ -146,11 +147,12 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
     }
   }
 
-  @Get('clear-settled-jobs')
-  async clearSettledJobs(
+  @Get('clear-jobs/:days')
+  async clearJobs(
     @Req() req: Request,
     @Res() res: Response,
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
+    @Param('days') daysString: string
   ): Promise<void> {
     if (!this.isValidRequest(req)) {
       res.sendStatus(401);
@@ -165,13 +167,14 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       );
       return;
     }
-    const sevenDaysAgo: Date = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const queueNames = cloudTaskJobStrategy.getAllQueueNames();
-    await cloudTaskJobStrategy.removeSettledJobs(queueNames, sevenDaysAgo);
-    Logger.info(
-      `Successfully removed settled jobs older than 7 days`,
-      loggerCtx
-    );
+    if (isNaN(parseInt(daysString))) {
+      res.status(400).send(`${daysString} is not a number`);
+      return;
+    }
+    const days = parseInt(daysString);
+    const oneDayAgo: Date = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    await cloudTaskJobStrategy.removeAllJobs(oneDayAgo);
+    Logger.info(`Successfully removed jobs older than ${days} days`, loggerCtx);
     res.sendStatus(200);
   }
 
