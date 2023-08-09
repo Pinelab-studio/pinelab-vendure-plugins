@@ -144,7 +144,7 @@ describe('CloudTasks job queue e2e', () => {
 
   it('Should clear settled jobs', async () => {
     const res = await adminClient.fetch(
-      `http://localhost:3103/cloud-tasks/clear-settled-jobs`,
+      `http://localhost:3103/cloud-tasks/clear-jobs/1`,
       {
         method: 'get',
         headers: {
