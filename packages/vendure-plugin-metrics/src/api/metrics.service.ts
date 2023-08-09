@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import {
-  AdvancedMetricInterval,
   AdvancedMetricSummary,
   AdvancedMetricSummaryEntry,
   AdvancedMetricSummaryInput,
@@ -51,14 +50,13 @@ export class MetricsService {
 
   async getMetrics(
     ctx: RequestContext,
-    { interval, variantIds }: AdvancedMetricSummaryInput
+    { variantIds }: AdvancedMetricSummaryInput
   ): Promise<AdvancedMetricSummary[]> {
     // Set 23:59:59.999 as endDate
     const endDate = endOfDay(new Date());
     // Check if we have cached result
     const cacheKey = {
       endDate,
-      interval,
       channel: ctx.channel.token,
       variantIds,
     };

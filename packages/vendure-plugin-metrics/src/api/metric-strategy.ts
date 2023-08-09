@@ -1,14 +1,10 @@
 import {
-  AdvancedMetricInterval,
-  AdvancedMetricSummaryEntry,
   AdvancedMetricSummaryInput,
   AdvancedMetricType,
 } from '../ui/generated/graphql';
 import { RequestContext, Injector } from '@vendure/core';
 
-type DataWithCreatedAt = { createdAt: Date };
-
-export interface MetricStrategy<T extends DataWithCreatedAt[]> {
+export interface MetricStrategy<T> {
   code: string;
   /**
    * We need to know if the chart should format your metrics as
@@ -21,6 +17,13 @@ export interface MetricStrategy<T extends DataWithCreatedAt[]> {
    * Ctx can be used to localize the title
    */
   getTitle(ctx: RequestContext): string;
+
+  /**
+   * Should return the field to sort and order when loading data.
+   * For example `orderPlacedAt` when you are doing metrics for Orders
+   * Has to be a Date
+   */
+  sortByDateField(): string;
 
   /**
    * Load your data for the given time frame here.
@@ -38,7 +41,7 @@ export interface MetricStrategy<T extends DataWithCreatedAt[]> {
     from: Date,
     to: Date,
     input: AdvancedMetricSummaryInput
-  ): Promise<T>;
+  ): Promise<T[]>;
 
   /**
    * Calculate the datapoint for the given month. Return multiple datapoints for a stacked line chart
@@ -48,7 +51,7 @@ export interface MetricStrategy<T extends DataWithCreatedAt[]> {
    */
   calculateDataPoint(
     ctx: RequestContext,
-    data: T,
+    data: T[],
     monthNr: number,
     input: AdvancedMetricSummaryInput
   ): number[];
@@ -57,8 +60,7 @@ export interface MetricStrategy<T extends DataWithCreatedAt[]> {
 // FIXME Sample strategy for Stripe subscription. Remove later
 type StripePayment = { amount: number; createdAt: Date };
 
-export class StripeSubscriptionMetric
-  implements MetricStrategy<StripePayment[]>
+export class StripeSubscriptionMetric implements MetricStrategy<StripePayment>
 {
   code = 'stripe-subscription-payment';
   metricType = AdvancedMetricType.Currency;
