@@ -72,6 +72,7 @@ export interface StripeSubscriptionPluginOptions {
     config.promotionOptions.promotionActions.push(...subscriptionPromotions);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class StripeSubscriptionPlugin {
   static options: StripeSubscriptionPluginOptions;

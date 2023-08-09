@@ -1,12 +1,15 @@
 {
-  "name": "vendure-plugin-myparcel",
-  "version": "7.0.0",
+  "name": "@pinelab/vendure-plugin-myparcel",
+  "version": "1.0.1",
   "description": "Vendure plugin for MyParcel fulfillment",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -19,25 +22,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "axios": "^0.26.1"
+    "axios": "0.26.1"
   },
-  "devDependencies": {
-    "@graphql-codegen/cli": "^2.6.2",
-    "@graphql-codegen/typescript": "^2.4.8",
-    "@graphql-codegen/typescript-operations": "^2.3.5",
-    "@swc/core": "^1.3.59",
-    "@types/localtunnel": "^2.0.1",
-    "@vendure/admin-ui-plugin": "2.0.4",
-    "@vendure/core": "2.0.4",
-    "@vendure/testing": "2.0.4",
-    "@vendure/ui-devkit": "2.0.4",
-    "copyfiles": "^2.4.1",
-    "localtunnel": "^2.0.2",
-    "nock": "^13.2.4",
-    "ts-node": "^10.7.0",
-    "typescript": "4.9.5",
-    "unplugin-swc": "^1.3.2",
-    "vitest": "^0.30.1"
-  },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

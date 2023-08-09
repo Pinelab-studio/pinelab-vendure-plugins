@@ -11,6 +11,7 @@ import { MetricsService } from './api/metrics.service';
     resolvers: [MetricsResolver],
   },
   providers: [MetricsService],
+  compatibility: '^2.0.0',
 })
 export class MetricsPlugin {
   static ui: AdminUiExtension = {

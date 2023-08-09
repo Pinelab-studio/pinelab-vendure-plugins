@@ -1,6 +1,6 @@
 {
-  "name": "pinelab-vendure-utils",
-  "version": "7.0.0",
+  "name": "utils",
+  "version": "1.0.1",
   "main": "index.ts",
   "license": "MIT",
   "private": true,

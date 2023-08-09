@@ -41,6 +41,7 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
     config.customFields.Order.push(...customFields.Order!);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class GoedgepicktPlugin {
   static config: GoedgepicktPluginConfig;

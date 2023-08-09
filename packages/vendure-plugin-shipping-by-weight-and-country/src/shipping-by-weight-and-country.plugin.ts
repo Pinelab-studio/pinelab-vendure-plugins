@@ -58,6 +58,7 @@ export interface ShippingByWeightAndCountryOptions {
     });
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class ShippingByWeightAndCountryPlugin {
   static options: ShippingByWeightAndCountryOptions;

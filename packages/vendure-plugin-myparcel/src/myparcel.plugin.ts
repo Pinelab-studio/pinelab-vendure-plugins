@@ -35,6 +35,7 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
     config.authOptions.customPermissions.push(myparcelPermission);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class MyparcelPlugin {
   static config: MyparcelConfig;

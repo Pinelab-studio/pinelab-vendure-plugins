@@ -52,6 +52,7 @@ const loggerCtx = 'VariantBulkUpdatePlugin';
     });
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class VariantBulkUpdatePlugin implements OnModuleInit {
   constructor(

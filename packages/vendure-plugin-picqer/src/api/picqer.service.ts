@@ -357,7 +357,11 @@ export class PicqerService implements OnApplicationBootstrap {
       'lines.productVariant',
     ]);
     if (!order) {
-      throw new Error(`No order found for code ${data.reference}`);
+      Logger.error(
+        `No order found for code ${data.reference}. Not processing this hook any further`,
+        loggerCtx
+      );
+      return;
     }
     const orderLinesToFulfill: OrderLineInput[] = [];
     data.products.forEach((pickListProduct) => {
@@ -502,13 +506,10 @@ export class PicqerService implements OnApplicationBootstrap {
     ctx: RequestContext,
     picqerProducts: ProductData[]
   ): Promise<void> {
-    const [vendureVariants] = await Promise.all([
-      this.findAllVariantsBySku(
-        ctx,
-        picqerProducts.map((p) => p.productcode)
-      ),
-      this.removeNonPicqerStockLocations(ctx),
-    ]);
+    const vendureVariants = await this.findAllVariantsBySku(
+      ctx,
+      picqerProducts.map((p) => p.productcode)
+    );
     const stockAdjustments: StockAdjustment[] = [];
     let updateCount = 0; // Nr of variants that were updated
     // Loop over variants to determine new stock level per variant and update in DB
@@ -570,6 +571,7 @@ export class PicqerService implements OnApplicationBootstrap {
         }
       })
     );
+    await this.removeNonPicqerStockLocations(ctx);
     await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
     Logger.info(`Updated stock levels of ${updateCount} variants`, loggerCtx);
   }
@@ -616,7 +618,15 @@ export class PicqerService implements OnApplicationBootstrap {
             .getRepository(ctx, StockMovement)
             .delete({ stockLocationId: location.id });
           // Delete stock location
-          await this.stockLocationService.delete(ctx, { id: location.id });
+          const { result, message } = await this.stockLocationService.delete(
+            ctx,
+            { id: location.id }
+          );
+          if (result === 'NOT_DELETED') {
+            throw Error(
+              `Failed to delete stock location ${location.name}: ${result}: ${message}`
+            );
+          }
           Logger.warn(
             `Removed stock location ${location.name}, because it's not a Picqer managed location`,
             loggerCtx

@@ -21,6 +21,7 @@ import {
     config.authOptions.customPermissions.push(eBoekhoudenPermission);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class EBoekhoudenPlugin {
   static ui: AdminUiExtension = {

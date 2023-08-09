@@ -1,11 +1,15 @@
 {
-  "name": "vendure-plugin-dutch-postalcode",
-  "version": "7.0.0",
-  "description": "Vendure plugin for retrieving dutch addresses by postalcode via postcode.tech",
+  "name": "@pinelab/vendure-plugin-dutch-postalcode",
+  "version": "1.0.1",
+  "description": "Vendure plugin for retrieving Dutch addresses by postal code via postcode.tech",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/dutch-postal-code.plugin.js",
   "types": "dist/dutch-postal-code.plugin.d.ts",
   "files": [
@@ -17,15 +21,5 @@
     "test": "vitest run",
     "start": "yarn ts-node ./test/dev-server"
   },
-  "devDependencies": {
-    "@vendure/core": "2.0.4",
-    "@vendure/testing": "2.0.4",
-    "rimraf": "^3.0.2",
-    "ts-node": "^10.7.0",
-    "typescript": "4.9.5",
-    "unplugin-swc": "^1.3.2",
-    "vitest": "^0.30.1",
-    "@swc/core": "^1.3.59"
-  },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

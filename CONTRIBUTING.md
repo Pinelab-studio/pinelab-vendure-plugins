@@ -10,6 +10,7 @@ Below you can find our opinionated guide on how to contribute to this repository
 4. `yarn` in the root of the project.
 5. `cd packages/vendure-plugin-example` and `yarn` again to install it's dependencies
 6. Commit using the commandline, so that the eslint autocheck is executed `git commit -a -m 'feat(feat/example-plugin): implemented example stuff'`
+7. Don't forget to manually increase the version number to the next patch/minor/major, so that the package will get published.
 
 ## Helpfull commands
 
