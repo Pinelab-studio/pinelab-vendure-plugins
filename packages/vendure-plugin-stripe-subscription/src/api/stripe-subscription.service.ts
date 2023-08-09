@@ -32,7 +32,7 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
-import { IncomingStripeWebhook } from './stripe.types';
+import { IncomingStripeWebhook } from './types/stripe.types';
 import {
   CustomerWithSubscriptionFields,
   OrderLineWithSubscriptionFields,
@@ -60,6 +60,8 @@ import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity
 import { randomUUID } from 'crypto';
 import { hasSubscriptions } from './has-stripe-subscription-products-payment-checker';
 import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
+import { StripeInvoice } from './types/stripe-invoice';
+import { StripePaymentIntent } from './types/stripe-payment-intent';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -401,33 +403,32 @@ export class StripeSubscriptionService {
     };
   }
 
-  async saveStripeSubscriptionEvent(
+  async savePaymentEvent(
     ctx: RequestContext,
-    object: any
+    eventType: string,
+    object: StripeInvoice
   ): Promise<void> {
     const stripeSubscriptionPaymentRepo = this.connection.getRepository(
       ctx,
       StripeSubscriptionPayment
     );
-    const channelRepo = this.connection.getRepository(ctx, Channel);
-    const channelToken =
-      object.metadata?.channelToken ||
-      object.lines?.data[0]?.metadata.channelToken;
-    const requestChannel = await channelRepo.findOne({
-      where: { token: channelToken },
+    const charge = object.lines.data.reduce(
+      (acc, line) => acc + line.plan.amount,
+      0
+    );
+    const newPayment = new StripeSubscriptionPayment({
+      channelId: ctx.channel.id as string,
+      eventType,
+      charge: charge,
+      currency: object.currency ?? ctx.channel.defaultCurrencyCode,
+      collectionMethod: object.collection_method,
+      invoiceId: object.id,
+      orderCode:
+        object.metadata?.orderCode ??
+        object.lines?.data[0]?.metadata.orderCode ??
+        '',
+      subscriptionId: object.subscription,
     });
-    if (!requestChannel) {
-      throw new InternalServerError(`Channel with ${channelToken} not found`);
-    }
-    const newPayment = new StripeSubscriptionPayment();
-    newPayment.channelId = requestChannel.id as string;
-    newPayment.charge = object?.charge;
-    newPayment.currency = object.currency || requestChannel.defaultCurrencyCode;
-    newPayment.collectionMethod = object.collection_method;
-    newPayment.invoiceId = object.id;
-    newPayment.orderCode =
-      object.metadata?.orderCode || object.lines?.data[0]?.metadata.orderCode;
-    newPayment.subscriptionId = object.subscription;
     await stripeSubscriptionPaymentRepo.save(newPayment);
   }
 
@@ -449,7 +450,7 @@ export class StripeSubscriptionService {
    */
   async handleInvoicePaymentSucceeded(
     ctx: RequestContext,
-    { data: { object } }: IncomingStripeWebhook,
+    object: StripeInvoice,
     order: Order
   ): Promise<void> {
     const amount = object.lines?.data?.[0]?.plan?.amount;
@@ -464,7 +465,6 @@ export class StripeSubscriptionService {
       undefined,
       object.subscription
     );
-    await this.saveStripeSubscriptionEvent(ctx, object);
   }
 
   /**
@@ -472,7 +472,7 @@ export class StripeSubscriptionService {
    */
   async handleInvoicePaymentFailed(
     ctx: RequestContext,
-    { data: { object } }: IncomingStripeWebhook,
+    object: StripeInvoice,
     order: Order
   ): Promise<void> {
     const amount = object.lines?.data[0]?.plan?.amount;
@@ -487,7 +487,6 @@ export class StripeSubscriptionService {
       undefined,
       object.subscription
     );
-    await this.saveStripeSubscriptionEvent(ctx, object);
   }
 
   /**
@@ -496,12 +495,11 @@ export class StripeSubscriptionService {
    */
   async handlePaymentIntentSucceeded(
     ctx: RequestContext,
-    { data: { object: eventData } }: IncomingStripeWebhook,
+    object: StripePaymentIntent,
     order: Order
   ): Promise<void> {
     const { paymentMethodCode } = await this.getStripeHandler(ctx, order.id);
-    await this.saveStripeSubscriptionEvent(ctx, eventData);
-    if (!eventData.customer) {
+    if (!object.customer) {
       await this.logHistoryEntry(
         ctx,
         order.id,
@@ -517,8 +515,8 @@ export class StripeSubscriptionService {
           action: 'createSubscriptionsForOrder',
           ctx: ctx.serialize(),
           orderCode: order.code,
-          stripePaymentMethodId: eventData.payment_method,
-          stripeCustomerId: eventData.customer,
+          stripePaymentMethodId: object.payment_method,
+          stripeCustomerId: object.customer,
         },
         { retries: 0 } // Only 1 try, because subscription creation isn't transaction-proof
       )
@@ -547,8 +545,8 @@ export class StripeSubscriptionService {
       {
         method: paymentMethodCode,
         metadata: {
-          setupIntentId: eventData.id,
-          amount: eventData.metadata.amount,
+          setupIntentId: object.id,
+          amount: object.metadata.amount,
         },
       }
     );

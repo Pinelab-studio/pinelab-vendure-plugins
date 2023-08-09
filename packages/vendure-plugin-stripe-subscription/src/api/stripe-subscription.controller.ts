@@ -11,10 +11,8 @@ import {
   Allow,
   Ctx,
   ID,
-  ListQueryOptions,
   Logger,
   OrderService,
-  PaginatedList,
   Permission,
   ProductService,
   RequestContext,
@@ -24,7 +22,6 @@ import { Request } from 'express';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import {
-  QueryStripeSubscriptionPaymentsArgs,
   StripeSubscriptionPaymentList,
   StripeSubscriptionPaymentListOptions,
   StripeSubscriptionPricing,
@@ -36,12 +33,13 @@ import {
 } from '../ui/generated/graphql';
 import { ScheduleService } from './schedule.service';
 import { StripeSubscriptionService } from './stripe-subscription.service';
-import { IncomingStripeWebhook } from './stripe.types';
 import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
-import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
+import { StripeInvoice } from './types/stripe-invoice';
+import { StripePaymentIntent } from './types/stripe-payment-intent';
+import { IncomingStripeWebhook } from './types/stripe.types';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -187,11 +185,11 @@ export class StripeSubscriptionController {
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
     // Validate if metadata present
     const orderCode =
-      body.data.object.metadata?.orderCode ||
-      body.data.object.lines?.data[0]?.metadata.orderCode;
+      body.data.object.metadata?.orderCode ??
+      (body.data.object as StripeInvoice).lines?.data[0]?.metadata.orderCode;
     const channelToken =
-      body.data.object.metadata?.channelToken ||
-      body.data.object.lines?.data[0]?.metadata.channelToken;
+      body.data.object.metadata?.channelToken ??
+      (body.data.object as StripeInvoice).lines?.data[0]?.metadata.channelToken;
     if (
       body.type !== 'payment_intent.succeeded' &&
       body.type !== 'invoice.payment_failed' &&
@@ -233,26 +231,44 @@ export class StripeSubscriptionController {
       if (body.type === 'payment_intent.succeeded') {
         await this.stripeSubscriptionService.handlePaymentIntentSucceeded(
           ctx,
-          body,
+          body.data.object as StripePaymentIntent,
           order
         );
       } else if (body.type === 'invoice.payment_succeeded') {
+        const invoiceObject = body.data.object as StripeInvoice;
         await this.stripeSubscriptionService.handleInvoicePaymentSucceeded(
           ctx,
-          body,
+          invoiceObject,
           order
+        );
+        await this.stripeSubscriptionService.savePaymentEvent(
+          ctx,
+          body.type,
+          invoiceObject
         );
       } else if (body.type === 'invoice.payment_failed') {
+        const invoiceObject = body.data.object as StripeInvoice;
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,
-          body,
+          invoiceObject,
           order
         );
+        await this.stripeSubscriptionService.savePaymentEvent(
+          ctx,
+          body.type,
+          invoiceObject
+        );
       } else if (body.type === 'invoice.payment_action_required') {
+        const invoiceObject = body.data.object as StripeInvoice;
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,
-          body,
+          invoiceObject,
           order
+        );
+        await this.stripeSubscriptionService.savePaymentEvent(
+          ctx,
+          body.type,
+          invoiceObject
         );
       }
       Logger.info(`Successfully handled webhook ${body.type}`, loggerCtx);

@@ -15,7 +15,10 @@ export class StripeSubscriptionPayment extends VendureEntity {
   collectionMethod!: string;
 
   @Column({ nullable: true })
-  charge!: string;
+  eventType!: string;
+
+  @Column({ nullable: true })
+  charge!: number;
 
   @Column({ nullable: true })
   currency!: string;

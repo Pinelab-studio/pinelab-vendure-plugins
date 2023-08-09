@@ -57,7 +57,7 @@ const sharedTypes = gql`
     createdAt: DateTime
     updatedAt: DateTime
     collectionMethod: String
-    charge: String
+    charge: Int
     currency: String
     orderCode: String
     channelId: ID

@@ -36,9 +36,9 @@ import { HistoryEntryComponent } from './history-entry.component';
         label: 'Subscriptions payments',
         routerLink: ['/extensions/stripe/subscription-payments'],
         icon: 'dollar',
-        requiresPermission: 'UpdateSettings',
+        requiresPermission: 'ReadOrder',
       },
-      'settings'
+      'sales'
     ),
   ],
 })
