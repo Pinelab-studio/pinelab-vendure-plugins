@@ -52,11 +52,20 @@
     </ng-template>
   </vdr-dt2-column>
   <vdr-dt2-column
+    heading="Event Type"
+    [optional]="false"
+    [sort]="sorts.get('eventType')"
+  >
+    <ng-template let-payment="item"> {{ payment.eventType }} </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
     heading="Charge"
     [optional]="false"
     [sort]="sorts.get('charge')"
   >
-    <ng-template let-payment="item"> {{ payment.charge }} </ng-template>
+    <ng-template let-payment="item">
+      {{ payment.charge | localeCurrency}}
+    </ng-template>
   </vdr-dt2-column>
   <vdr-dt2-column
     heading="Currency"
@@ -84,6 +93,7 @@
   </vdr-dt2-column>
   <vdr-dt2-column
     heading="Subscription ID"
+    [hiddenByDefault]="true"
     [sort]="sorts.get('subscriptionId')"
   >
     <ng-template let-payment="item"> {{ payment.subscriptionId }} </ng-template>

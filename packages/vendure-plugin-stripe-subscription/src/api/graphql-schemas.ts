@@ -61,6 +61,7 @@ const sharedTypes = gql`
     currency: String
     orderCode: String
     channelId: ID
+    eventType: String
     subscriptionId: String
   }
   input UpsertStripeSubscriptionScheduleInput {

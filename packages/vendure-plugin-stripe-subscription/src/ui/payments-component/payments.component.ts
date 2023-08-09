@@ -43,6 +43,7 @@ export class PaymentsComponent
       { name: 'orderCode' },
       { name: 'channelId' },
       { name: 'subscriptionId' },
+      { name: 'eventType' },
     ])
     .connectToRoute(this.route);
   ngOnInit(): void {

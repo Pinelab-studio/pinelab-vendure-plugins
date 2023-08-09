@@ -27,6 +27,7 @@ export const PAYMENT_FRAGMENT = gql`
     collectionMethod
     charge
     currency
+    eventType
     orderCode
     channelId
     subscriptionId
