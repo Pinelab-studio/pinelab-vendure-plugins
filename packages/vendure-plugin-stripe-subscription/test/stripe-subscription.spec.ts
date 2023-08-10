@@ -36,6 +36,7 @@ import {
   Schedule,
   StripeSubscriptionPlugin,
   StripeSubscriptionPricing,
+  StripeSubscriptionService,
   SubscriptionInterval,
   SubscriptionStartMoment,
   VariantForCalculation,
@@ -57,6 +58,7 @@ import {
   UPDATE_VARIANT,
 } from './helpers';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { gql } from 'graphql-tag';
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
@@ -758,6 +760,14 @@ describe('Stripe Subscription Plugin', function () {
       });
       // Expect 3 saved stripe ID's
       expect(subscriptionIds.length).toBe(3);
+    });
+
+    it('Should save payment event', async () => {
+      const ctx = await getDefaultCtx(server);
+      const paymentEvents = await server.app
+        .get(StripeSubscriptionService)
+        .getPaymentEvents(ctx, {});
+      expect(paymentEvents.items?.length).toBeGreaterThan(0);
     });
 
     it('Created paid in full subscription', async () => {

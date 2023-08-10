@@ -432,7 +432,7 @@ export class StripeSubscriptionService {
     await stripeSubscriptionPaymentRepo.save(newPayment);
   }
 
-  async getPayments(
+  async getPaymentEvents(
     ctx: RequestContext,
     options: StripeSubscriptionPaymentListOptions
   ): Promise<StripeSubscriptionPaymentList> {

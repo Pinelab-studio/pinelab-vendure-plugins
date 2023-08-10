@@ -145,7 +145,7 @@ export class AdminResolver {
     @Ctx() ctx: RequestContext,
     @Args('options') options: StripeSubscriptionPaymentListOptions
   ): Promise<StripeSubscriptionPaymentList> {
-    return this.stripeSubscriptionService.getPayments(ctx, options);
+    return this.stripeSubscriptionService.getPaymentEvents(ctx, options);
   }
 
   @Allow(Permission.UpdateSettings)
