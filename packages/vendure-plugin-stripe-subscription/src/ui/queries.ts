@@ -44,13 +44,3 @@ export const DELETE_SCHEDULE = gql`
     deleteStripeSubscriptionSchedule(scheduleId: $scheduleId)
   }
 `;
-
-export const ELIGIBLE_PAYMENT_METHODS = gql`
-  query eligiblePaymentMethods {
-    eligiblePaymentMethods {
-      id
-      name
-      stripeSubscriptionPublishableKey
-    }
-  }
-`;

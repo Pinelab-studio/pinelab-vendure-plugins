@@ -40,11 +40,7 @@ import {
   SubscriptionStartMoment,
   VariantForCalculation,
 } from '../src';
-import {
-  DELETE_SCHEDULE,
-  ELIGIBLE_PAYMENT_METHODS,
-  UPSERT_SCHEDULES,
-} from '../src/ui/queries';
+import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
@@ -59,6 +55,7 @@ import {
   setShipping,
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
+  ELIGIBLE_PAYMENT_METHODS,
 } from './helpers';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
