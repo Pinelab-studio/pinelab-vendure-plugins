@@ -40,7 +40,11 @@ import {
   SubscriptionStartMoment,
   VariantForCalculation,
 } from '../src';
-import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
+import {
+  DELETE_SCHEDULE,
+  ELIGIBLE_PAYMENT_METHODS,
+  UPSERT_SCHEDULES,
+} from '../src/ui/queries';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
@@ -143,6 +147,7 @@ describe('Stripe Subscription Plugin', function () {
               value: 'testsecret',
             },
             { name: 'apiKey', value: 'test-api-key' },
+            { name: 'publishableKey', value: 'test-publishable-key' },
           ],
         },
       },
@@ -1025,6 +1030,17 @@ describe('Stripe Subscription Plugin', function () {
         },
       });
       await expect(promise).rejects.toThrow();
+    });
+  });
+
+  describe('Publishable key', () => {
+    it('Should expose publishable key via shop api', async () => {
+      const { eligiblePaymentMethods } = await shopClient.query(
+        ELIGIBLE_PAYMENT_METHODS
+      );
+      expect(eligiblePaymentMethods[0].stripeSubscriptionPublishableKey).toBe(
+        'test-publishable-key'
+      );
     });
   });
 });

@@ -1,3 +1,3 @@
 # 1.1.0 (2023-08-11)
 
-- Added the Stripe publishable key to the
+- Expose Stripe publishable key via `eligiblePaymemtMethods.stripeSubscriptionPublishableKey` ([#242](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/242))
