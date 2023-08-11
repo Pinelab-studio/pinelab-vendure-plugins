@@ -95,6 +95,20 @@ _After order settlement you can view the subscription details on the order histo
 ![](docs/sequence.png)  
 _Subscriptions are created in the background, after a customer has finished the checkout_
 
+#### Retrieving the publishable key
+
+You can optionally supply your publishable key in your payment method handler, so that you can retrieve it using the `eligiblePaymentMethods` query:
+
+```graphql
+{
+  eligiblePaymentMethods {
+    id
+    name
+    stripeSubscriptionPublishableKey
+  }
+}
+```
+
 ## Order with a total of €0
 
 With subscriptions, it can be that your order totals to €0, because, for example, you start charging your customer starting next month.

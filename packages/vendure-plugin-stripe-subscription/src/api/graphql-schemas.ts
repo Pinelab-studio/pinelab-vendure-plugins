@@ -113,6 +113,11 @@ export const shopSchemaExtensions = gql`
     startDate: DateTime
     downpayment: Int
   }
+
+  extend type PaymentMethodQuote {
+    stripeSubscriptionPublishableKey: String
+  }
+
   extend type Query {
     """
     Preview the pricing model of a given subscription.
