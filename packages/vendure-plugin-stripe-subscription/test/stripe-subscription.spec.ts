@@ -55,6 +55,7 @@ import {
   setShipping,
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
+  ELIGIBLE_PAYMENT_METHODS,
 } from './helpers';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
@@ -143,6 +144,7 @@ describe('Stripe Subscription Plugin', function () {
               value: 'testsecret',
             },
             { name: 'apiKey', value: 'test-api-key' },
+            { name: 'publishableKey', value: 'test-publishable-key' },
           ],
         },
       },
@@ -1025,6 +1027,17 @@ describe('Stripe Subscription Plugin', function () {
         },
       });
       await expect(promise).rejects.toThrow();
+    });
+  });
+
+  describe('Publishable key', () => {
+    it('Should expose publishable key via shop api', async () => {
+      const { eligiblePaymentMethods } = await shopClient.query(
+        ELIGIBLE_PAYMENT_METHODS
+      );
+      expect(eligiblePaymentMethods[0].stripeSubscriptionPublishableKey).toBe(
+        'test-publishable-key'
+      );
     });
   });
 });

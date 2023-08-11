@@ -217,6 +217,16 @@ export const UPDATE_VARIANT = gql`
   }
 `;
 
+export const ELIGIBLE_PAYMENT_METHODS = gql`
+  query eligiblePaymentMethods {
+    eligiblePaymentMethods {
+      id
+      name
+      stripeSubscriptionPublishableKey
+    }
+  }
+`;
+
 export async function setShipping(
   shopClient: SimpleGraphQLClient
 ): Promise<void> {

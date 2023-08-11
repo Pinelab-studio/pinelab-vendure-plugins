@@ -13,11 +13,13 @@ import {
   ID,
   Logger,
   OrderService,
+  PaymentMethodService,
   Permission,
   ProductService,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
+import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import { Request } from 'express';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
@@ -42,7 +44,8 @@ export class ShopResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
     private orderService: OrderService,
-    private productService: ProductService
+    private productService: ProductService,
+    private paymentMethodService: PaymentMethodService
   ) {}
 
   @Mutation()
@@ -83,6 +86,25 @@ export class ShopResolver {
         })
       )
     );
+  }
+
+  @ResolveField('stripeSubscriptionPublishableKey')
+  @Resolver('PaymentMethodQuote')
+  async stripeSubscriptionPublishableKey(
+    @Ctx() ctx: RequestContext,
+    @Parent() paymentMethodQuote: PaymentMethodQuote
+  ): Promise<string | undefined> {
+    const paymentMethod = await this.paymentMethodService.findOne(
+      ctx,
+      paymentMethodQuote.id
+    );
+    if (!paymentMethod) {
+      throw new UserInputError(
+        `No payment method with id '${paymentMethodQuote.id}' found. Unable to resolve field"stripeSubscriptionPublishableKey"`
+      );
+    }
+    return paymentMethod.handler.args.find((a) => a.name === 'publishableKey')
+      ?.value;
   }
 }
 
