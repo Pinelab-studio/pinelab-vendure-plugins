@@ -11,6 +11,6 @@ export class InvoiceConfigEntity extends VendureEntity {
   channelId!: string;
   @Column({ default: false })
   enabled: boolean = false;
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'longtext', nullable: true })
   templateString?: string | null;
 }
