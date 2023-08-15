@@ -7,7 +7,6 @@ import { loggerCtx } from '../../constants';
 export class InvoiceConfigEntity extends VendureEntity {
   constructor(input?: DeepPartial<InvoiceConfigEntity>) {
     super(input);
-    console.log(process.env.INVOICES_PLUGIN_COLUMN_TYPE);
   }
 
   @Column()
