@@ -54,7 +54,7 @@ match with the requested order. If so, it will return the invoice.
 
 ## Increase invoice template DB storage
 
-By default, the plugin uses TypeOrm's `text` to store the invoice template in the DB. This might not be enough, for example when you'd like to add base64 encoded images to your invoices. You can specify your DB engine with an env variable, and the plugin will resolve the correct column type:
+By default, the plugin uses TypeOrm's `text` to store the invoice template in the DB. This might not be enough, for example when you'd like to add base64 encoded images to your invoices. This will result in the error `ER_DATA_TOO_LONG: Data too long for column 'templateString'`. You can specify your DB engine with an env variable, and the plugin will resolve the correct column type:
 
 ```shell
 # E.g. For mysql the column type 'longtext' will be used, which supports up to 4gb
