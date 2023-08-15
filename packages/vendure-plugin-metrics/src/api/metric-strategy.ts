@@ -60,8 +60,7 @@ export interface MetricStrategy<T> {
 // FIXME Sample strategy for Stripe subscription. Remove later
 type StripePayment = { amount: number; createdAt: Date };
 
-export class StripeSubscriptionMetric implements MetricStrategy<StripePayment>
-{
+export class StripeSubscriptionMetric implements MetricStrategy<StripePayment> {
   code = 'stripe-subscription-payment';
   metricType = AdvancedMetricType.Currency;
 
