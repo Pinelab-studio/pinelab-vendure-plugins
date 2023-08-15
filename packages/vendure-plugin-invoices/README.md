@@ -61,7 +61,8 @@ By default, the plugin uses TypeOrm's `text` to store the invoice template in th
 INVOICES_PLUGIN_DB_ENGINE=mysql
 ```
 
-Don't forget to run a DB migration after! Checkout https://orkhan.gitbook.io/typeorm/docs/entities for available databases and column types.
+Don't forget to run a DB migration: This will delete any data in the `templateString` column!
+Checkout https://orkhan.gitbook.io/typeorm/docs/entities for available databases and column types.
 
 ## Google Storage strategy
 
