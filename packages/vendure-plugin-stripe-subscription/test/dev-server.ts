@@ -194,7 +194,7 @@ export let clientSecret = 'test';
     },
   }); */
   let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '3',
+    productVariantId: '2',
     quantity: 1,
     customFields: {
       // downpayment: 40000,

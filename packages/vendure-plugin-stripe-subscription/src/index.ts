@@ -5,7 +5,7 @@ export * from './api/stripe.client';
 export * from './stripe-subscription.plugin';
 export * from './api/stripe-subscription.handler';
 export * from './api/stripe-subscription.service';
-export * from './api/stripe.types';
+export * from './api/types/stripe.types';
 export * from './api/stripe-subscription.controller';
 export * from './api/schedule.entity';
 export * from './api/subscription.promotion';

@@ -5,6 +5,7 @@ generates:
     plugins:
       - typescript
       - typescript-operations
+      - typed-document-node
     config:
       avoidOptionals: false
       scalars:

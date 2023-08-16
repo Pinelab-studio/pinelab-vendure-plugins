@@ -7,6 +7,17 @@ const _scalar = gql`
   scalar DateTime
 `;
 
+const _interface = gql`
+  interface Node {
+    id: ID!
+    createdAt: DateTime
+  }
+  interface PaginatedList {
+    items: [Node!]!
+    totalItems: Int!
+  }
+`;
+
 const sharedTypes = gql`
   enum SubscriptionInterval {
     week
@@ -18,7 +29,10 @@ const sharedTypes = gql`
     time_of_purchase
     fixed_startdate
   }
-  type StripeSubscriptionSchedule {
+  """
+  For codegen to work this must implement Node
+  """
+  type StripeSubscriptionSchedule implements Node {
     id: ID!
     createdAt: DateTime
     updatedAt: DateTime
@@ -34,6 +48,21 @@ const sharedTypes = gql`
     fixedStartDate: DateTime
     useProration: Boolean
     autoRenew: Boolean
+  }
+  """
+  For codegen to work this must implement Node
+  """
+  type StripeSubscriptionPayment implements Node {
+    id: ID!
+    createdAt: DateTime
+    updatedAt: DateTime
+    collectionMethod: String
+    charge: Int
+    currency: String
+    orderCode: String
+    channelId: ID
+    eventType: String
+    subscriptionId: String
   }
   input UpsertStripeSubscriptionScheduleInput {
     id: ID
@@ -113,9 +142,39 @@ export const adminSchemaExtensions = gql`
     STRIPE_SUBSCRIPTION_NOTIFICATION
   }
 
-  extend type Query {
-    stripeSubscriptionSchedules: [StripeSubscriptionSchedule!]!
+  """
+  For codegen to work this must be non-empty
+  """
+  input StripeSubscriptionPaymentListOptions {
+    skip: Int
   }
+
+  """
+  For codegen to work this must be non-empty
+  """
+  input StripeSubscriptionScheduleListOptions {
+    skip: Int
+  }
+
+  type StripeSubscriptionPaymentList implements PaginatedList {
+    items: [StripeSubscriptionPayment!]!
+    totalItems: Int!
+  }
+
+  type StripeSubscriptionScheduleList implements PaginatedList {
+    items: [StripeSubscriptionSchedule!]!
+    totalItems: Int!
+  }
+
+  extend type Query {
+    stripeSubscriptionSchedules(
+      options: StripeSubscriptionScheduleListOptions
+    ): StripeSubscriptionScheduleList!
+    stripeSubscriptionPayments(
+      options: StripeSubscriptionPaymentListOptions
+    ): StripeSubscriptionPaymentList!
+  }
+
   extend type Mutation {
     upsertStripeSubscriptionSchedule(
       input: UpsertStripeSubscriptionScheduleInput!
