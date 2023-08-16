@@ -48,15 +48,13 @@ const sharedTypes = gql`
     useProration: Boolean
     autoRenew: Boolean
   }
+  extend type OrderLine {
+    subscriptionPricing: StripeSubscriptionPricing
+  }
 `;
 
 export const shopSchemaExtensions = gql`
   ${sharedTypes}
-
-  extend type OrderLine {
-    subscriptionPricing: StripeSubscriptionPricing
-  }
-
   type StripeSubscriptionPricing {
     variantId: String!
     pricesIncludeTax: Boolean!

@@ -43,7 +43,11 @@ export interface StripeSubscriptionPluginOptions {
   },
   adminApiExtensions: {
     schema: adminSchemaExtensions,
-    resolvers: [AdminResolver, AdminPriceIncludesTaxResolver],
+    resolvers: [
+      AdminResolver,
+      AdminPriceIncludesTaxResolver,
+      ShopOrderLinePricingResolver,
+    ],
   },
   controllers: [StripeSubscriptionController],
   providers: [
