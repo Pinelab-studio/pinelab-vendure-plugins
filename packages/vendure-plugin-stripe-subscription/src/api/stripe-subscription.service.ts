@@ -413,7 +413,7 @@ export class StripeSubscriptionService {
       StripeSubscriptionPayment
     );
     const charge = object.lines.data.reduce(
-      (acc, line) => acc + line.plan.amount,
+      (acc, line) => acc + (line.plan?.amount ?? 0),
       0
     );
     const newPayment = new StripeSubscriptionPayment({
