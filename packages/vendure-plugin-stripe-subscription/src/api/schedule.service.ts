@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import {
   ID,
+  ListQueryBuilder,
   RequestContext,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import {
   StripeSubscriptionSchedule,
+  StripeSubscriptionScheduleList,
+  StripeSubscriptionScheduleListOptions,
   SubscriptionStartMoment,
   UpsertStripeSubscriptionScheduleInput,
 } from '../ui/generated/graphql';
@@ -15,18 +18,24 @@ import { Schedule } from './schedule.entity';
 
 @Injectable()
 export class ScheduleService {
-  constructor(private connection: TransactionalConnection) {}
+  constructor(
+    private listQueryBuilder: ListQueryBuilder,
+    private connection: TransactionalConnection
+  ) {}
 
   async getSchedules(
-    ctx: RequestContext
-  ): Promise<StripeSubscriptionSchedule[]> {
-    const schedules = await this.connection
-      .getRepository(ctx, Schedule)
-      .find({ where: { channelId: String(ctx.channelId) } });
-
-    return schedules.map((schedule) => {
-      return cloneSchedule(ctx, schedule);
-    });
+    ctx: RequestContext,
+    options: StripeSubscriptionScheduleListOptions
+  ): Promise<StripeSubscriptionScheduleList> {
+    return this.listQueryBuilder
+      .build(Schedule, options, { ctx })
+      .getManyAndCount()
+      .then(([items, totalItems]) => ({
+        items: items.map((schedule) => {
+          return cloneSchedule(ctx, schedule);
+        }),
+        totalItems,
+      }));
   }
 
   async upsert(

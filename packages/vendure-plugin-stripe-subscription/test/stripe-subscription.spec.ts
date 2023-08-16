@@ -36,6 +36,7 @@ import {
   Schedule,
   StripeSubscriptionPlugin,
   StripeSubscriptionPricing,
+  StripeSubscriptionService,
   SubscriptionInterval,
   SubscriptionStartMoment,
   VariantForCalculation,
@@ -58,6 +59,7 @@ import {
   ELIGIBLE_PAYMENT_METHODS,
 } from './helpers';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { gql } from 'graphql-tag';
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
@@ -834,7 +836,7 @@ describe('Stripe Subscription Plugin', function () {
     });
 
     it('Logs payments to order history', async () => {
-      await adminClient.fetch(
+      const result = await adminClient.fetch(
         'http://localhost:3050/stripe-subscriptions/webhook',
         {
           method: 'POST',
@@ -862,11 +864,20 @@ describe('Stripe Subscription Plugin', function () {
       const history = await server.app
         .get(HistoryService)
         .getHistoryForOrder(ctx, 1, false);
+      expect(result.status).toBe(201);
       expect(
         history.items.find(
           (item) => item.data.message === 'Subscription payment failed'
         )
       ).toBeDefined();
+    });
+
+    it('Should save payment event', async () => {
+      const ctx = await getDefaultCtx(server);
+      const paymentEvents = await server.app
+        .get(StripeSubscriptionService)
+        .getPaymentEvents(ctx, {});
+      expect(paymentEvents.items?.length).toBeGreaterThan(0);
     });
 
     it('Should cancel subscription', async () => {
@@ -971,8 +982,8 @@ describe('Stripe Subscription Plugin', function () {
       await adminClient.asSuperAdmin();
       const { stripeSubscriptionSchedules: schedules } =
         await adminClient.query(GET_SCHEDULES);
-      expect(schedules[0]).toBeDefined();
-      expect(schedules[0].id).toBeDefined();
+      expect(schedules.items[0]).toBeDefined();
+      expect(schedules.items[0].id).toBeDefined();
     });
 
     it('Can delete Schedules', async () => {
@@ -993,7 +1004,7 @@ describe('Stripe Subscription Plugin', function () {
       const { stripeSubscriptionSchedules: schedules } =
         await adminClient.query(GET_SCHEDULES);
       expect(
-        schedules.find((s: any) => s.id == toBeDeleted.id)
+        schedules.items.find((s: any) => s.id == toBeDeleted.id)
       ).toBeUndefined();
     });
 

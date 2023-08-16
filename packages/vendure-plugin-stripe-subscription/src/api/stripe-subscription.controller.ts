@@ -24,18 +24,24 @@ import { Request } from 'express';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import {
+  StripeSubscriptionPaymentList,
+  StripeSubscriptionPaymentListOptions,
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
   StripeSubscriptionSchedule,
+  StripeSubscriptionScheduleList,
+  StripeSubscriptionScheduleListOptions,
   UpsertStripeSubscriptionScheduleInput,
 } from '../ui/generated/graphql';
 import { ScheduleService } from './schedule.service';
 import { StripeSubscriptionService } from './stripe-subscription.service';
-import { IncomingStripeWebhook } from './stripe.types';
 import {
   OrderLineWithSubscriptionFields,
   VariantWithSubscriptionFields,
 } from './subscription-custom-fields';
+import { StripeInvoice } from './types/stripe-invoice';
+import { StripePaymentIntent } from './types/stripe-payment-intent';
+import { IncomingStripeWebhook } from './types/stripe.types';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -141,14 +147,27 @@ export class AdminPriceIncludesTaxResolver {
 
 @Resolver()
 export class AdminResolver {
-  constructor(private scheduleService: ScheduleService) {}
+  constructor(
+    private stripeSubscriptionService: StripeSubscriptionService,
+    private scheduleService: ScheduleService
+  ) {}
 
   @Allow(Permission.ReadSettings)
   @Query()
   async stripeSubscriptionSchedules(
-    @Ctx() ctx: RequestContext
-  ): Promise<StripeSubscriptionSchedule[]> {
-    return this.scheduleService.getSchedules(ctx);
+    @Ctx() ctx: RequestContext,
+    @Args('options') options: StripeSubscriptionScheduleListOptions
+  ): Promise<StripeSubscriptionScheduleList> {
+    return this.scheduleService.getSchedules(ctx, options);
+  }
+
+  @Allow(Permission.ReadSettings)
+  @Query()
+  async stripeSubscriptionPayments(
+    @Ctx() ctx: RequestContext,
+    @Args('options') options: StripeSubscriptionPaymentListOptions
+  ): Promise<StripeSubscriptionPaymentList> {
+    return this.stripeSubscriptionService.getPaymentEvents(ctx, options);
   }
 
   @Allow(Permission.UpdateSettings)
@@ -188,11 +207,11 @@ export class StripeSubscriptionController {
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
     // Validate if metadata present
     const orderCode =
-      body.data.object.metadata?.orderCode ||
-      body.data.object.lines?.data[0]?.metadata.orderCode;
+      body.data.object.metadata?.orderCode ??
+      (body.data.object as StripeInvoice).lines?.data[0]?.metadata.orderCode;
     const channelToken =
-      body.data.object.metadata?.channelToken ||
-      body.data.object.lines?.data[0]?.metadata.channelToken;
+      body.data.object.metadata?.channelToken ??
+      (body.data.object as StripeInvoice).lines?.data[0]?.metadata.channelToken;
     if (
       body.type !== 'payment_intent.succeeded' &&
       body.type !== 'invoice.payment_failed' &&
@@ -234,20 +253,44 @@ export class StripeSubscriptionController {
       if (body.type === 'payment_intent.succeeded') {
         await this.stripeSubscriptionService.handlePaymentIntentSucceeded(
           ctx,
-          body,
+          body.data.object as StripePaymentIntent,
           order
         );
       } else if (body.type === 'invoice.payment_succeeded') {
+        const invoiceObject = body.data.object as StripeInvoice;
         await this.stripeSubscriptionService.handleInvoicePaymentSucceeded(
           ctx,
-          body,
+          invoiceObject,
           order
         );
+        await this.stripeSubscriptionService.savePaymentEvent(
+          ctx,
+          body.type,
+          invoiceObject
+        );
       } else if (body.type === 'invoice.payment_failed') {
+        const invoiceObject = body.data.object as StripeInvoice;
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,
-          body,
+          invoiceObject,
           order
+        );
+        await this.stripeSubscriptionService.savePaymentEvent(
+          ctx,
+          body.type,
+          invoiceObject
+        );
+      } else if (body.type === 'invoice.payment_action_required') {
+        const invoiceObject = body.data.object as StripeInvoice;
+        await this.stripeSubscriptionService.handleInvoicePaymentFailed(
+          ctx,
+          invoiceObject,
+          order
+        );
+        await this.stripeSubscriptionService.savePaymentEvent(
+          ctx,
+          body.type,
+          invoiceObject
         );
       }
       Logger.info(`Successfully handled webhook ${body.type}`, loggerCtx);
