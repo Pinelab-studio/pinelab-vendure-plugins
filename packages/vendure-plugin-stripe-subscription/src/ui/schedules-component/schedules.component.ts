@@ -5,19 +5,59 @@ import {
   ModalService,
   NotificationService,
 } from '@vendure/admin-ui/core';
+import { marker as _ } from '@biesbjerg/ngx-translate-extract-marker';
 import { DELETE_SCHEDULE, GET_SCHEDULES, UPSERT_SCHEDULES } from '../queries';
 import {
   StripeSubscriptionSchedule,
+  StripeSubscriptionSchedulesDocument,
   SubscriptionInterval,
   SubscriptionStartMoment,
 } from '../generated/graphql';
+import { TypedBaseListComponent } from '@vendure/admin-ui/core';
 
 @Component({
   selector: 'stripe-subscription-component',
   styleUrls: ['./schedules.component.scss'],
   templateUrl: './schedules.component.html',
 })
-export class SchedulesComponent implements OnInit {
+export class SchedulesComponent
+  extends TypedBaseListComponent<
+    typeof StripeSubscriptionSchedulesDocument,
+    'stripeSubscriptionSchedules'
+  >
+  implements OnInit
+{
+  readonly filters: any = (
+    this.createFilterCollection().addDateFilters() as any
+  )
+    .addFilters([
+      {
+        name: 'id',
+        type: { kind: 'text' },
+        label: _('common.id'),
+        filterField: 'id',
+      },
+    ])
+    .connectToRoute(this.route);
+  readonly sorts: any = this.createSortCollection()
+    .defaultSort('createdAt', 'DESC')
+    .addSorts([
+      { name: 'id' },
+      { name: 'createdAt' },
+      { name: 'updatedAt' },
+      { name: 'name' },
+      { name: 'downpayment' },
+      { name: 'durationInterval' },
+      { name: 'durationCount' },
+      { name: 'startMoment' },
+      { name: 'billingInterval' },
+      { name: 'billingCount' },
+      { name: 'paidUpFront' },
+      { name: 'fixedStartDate' },
+      { name: 'useProration' },
+      { name: 'autoRenew' },
+    ])
+    .connectToRoute(this.route);
   schedules: StripeSubscriptionSchedule[] = [];
   selectedSchedule?: StripeSubscriptionSchedule;
   page = 1;
@@ -51,6 +91,7 @@ export class SchedulesComponent implements OnInit {
     private notificationService: NotificationService,
     private modalService: ModalService
   ) {
+    super();
     this.form = this.formBuilder.group({
       name: ['name', Validators.required],
       isPaidUpFront: [false],
@@ -64,13 +105,40 @@ export class SchedulesComponent implements OnInit {
       useProration: [false],
       autoRenew: [true],
     });
+    this.configure({
+      document: StripeSubscriptionSchedulesDocument,
+      getItems: (data) => data.stripeSubscriptionSchedules,
+      setVariables: (skip, take) =>
+        ({
+          options: {
+            skip,
+            take,
+            filter: {
+              name: {
+                contains: this.searchTermControl.value,
+              },
+              ...this.filters.createFilterInput(),
+            },
+            sort: this.sorts.createSortInput() as any,
+          },
+        } as any),
+      refreshListOnChanges: [
+        this.sorts.valueChanges,
+        this.filters.valueChanges,
+      ],
+    });
   }
   get now() {
     return new Date().toISOString();
   }
 
+  closeDetail() {
+    this.selectedSchedule = undefined;
+  }
+
   async ngOnInit(): Promise<void> {
-    await this.fetchSchedules();
+    // await this.fetchSchedules();
+    super.ngOnInit();
     this.dataService.settings.getActiveChannel().single$.subscribe((data) => {
       this.currencyCode = data.activeChannel.defaultCurrencyCode;
     });
@@ -85,39 +153,41 @@ export class SchedulesComponent implements OnInit {
   }
 
   edit(scheduleId: string): void {
-    this.selectedSchedule = this.schedules.find((s) => s.id === scheduleId);
-    if (!this.selectedSchedule) {
-      return;
-    }
-    this.form.controls['name'].setValue(this.selectedSchedule.name);
-    this.form.controls['downpayment'].setValue(
-      this.selectedSchedule.downpayment
-    );
-    this.form.controls['durationInterval'].setValue(
-      this.selectedSchedule.durationInterval
-    );
-    this.form.controls['durationCount'].setValue(
-      this.selectedSchedule.durationCount
-    );
-    this.form.controls['startMoment'].setValue(
-      this.selectedSchedule.startMoment
-    );
-    this.form.controls['billingInterval'].setValue(
-      this.selectedSchedule.billingInterval
-    );
-    this.form.controls['billingCount'].setValue(
-      this.selectedSchedule.billingCount
-    );
-    this.form.controls['isPaidUpFront'].setValue(
-      this.selectedSchedule.paidUpFront
-    );
-    this.form.controls['fixedStartDate'].setValue(
-      this.selectedSchedule.fixedStartDate
-    );
-    this.form.controls['useProration'].setValue(
-      this.selectedSchedule.useProration
-    );
-    this.form.controls['autoRenew'].setValue(this.selectedSchedule.autoRenew);
+    this.items$.subscribe((schedules) => {
+      this.selectedSchedule = schedules.find((s) => s.id === scheduleId) as any;
+      if (!this.selectedSchedule) {
+        return;
+      }
+      this.form.controls['name'].setValue(this.selectedSchedule.name);
+      this.form.controls['downpayment'].setValue(
+        this.selectedSchedule.downpayment
+      );
+      this.form.controls['durationInterval'].setValue(
+        this.selectedSchedule.durationInterval
+      );
+      this.form.controls['durationCount'].setValue(
+        this.selectedSchedule.durationCount
+      );
+      this.form.controls['startMoment'].setValue(
+        this.selectedSchedule.startMoment
+      );
+      this.form.controls['billingInterval'].setValue(
+        this.selectedSchedule.billingInterval
+      );
+      this.form.controls['billingCount'].setValue(
+        this.selectedSchedule.billingCount
+      );
+      this.form.controls['isPaidUpFront'].setValue(
+        this.selectedSchedule.paidUpFront
+      );
+      this.form.controls['fixedStartDate'].setValue(
+        this.selectedSchedule.fixedStartDate
+      );
+      this.form.controls['useProration'].setValue(
+        this.selectedSchedule.useProration
+      );
+      this.form.controls['autoRenew'].setValue(this.selectedSchedule.autoRenew);
+    });
   }
 
   newSchedule(): void {
@@ -196,7 +266,8 @@ export class SchedulesComponent implements OnInit {
         entity: 'Schedule',
       });
     } finally {
-      await this.fetchSchedules();
+      super.ngOnInit();
+      this.selectedSchedule = undefined;
     }
   }
 
@@ -233,7 +304,7 @@ export class SchedulesComponent implements OnInit {
       .refetchOnChannelChange()
       .mapStream((result: any) => result.stripeSubscriptionSchedules)
       .subscribe((schedules) => {
-        this.schedules = schedules.items.slice(
+        this.schedules = schedules.slice(
           (this.page - 1) * this.itemsPerPage,
           this.itemsPerPage
         );

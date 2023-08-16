@@ -3,7 +3,6 @@ import { RouterModule } from '@angular/router';
 import { SharedModule } from '@vendure/admin-ui/core';
 import { SchedulesComponent } from './schedules-component/schedules.component';
 import { PaymentsComponent } from './payments-component/payments.component';
-import { SchedulesComponent as Schedules2Component } from './schedules-component/schedules.component-2';
 
 @NgModule({
   imports: [
@@ -11,7 +10,7 @@ import { SchedulesComponent as Schedules2Component } from './schedules-component
     RouterModule.forChild([
       {
         path: 'subscription-schedules',
-        component: Schedules2Component,
+        component: SchedulesComponent,
         data: { breadcrumb: 'Subscription schedules' },
       },
       {
@@ -22,6 +21,6 @@ import { SchedulesComponent as Schedules2Component } from './schedules-component
     ]),
   ],
   providers: [],
-  declarations: [SchedulesComponent, PaymentsComponent, Schedules2Component],
+  declarations: [SchedulesComponent, PaymentsComponent],
 })
 export class SchedulesModule {}
