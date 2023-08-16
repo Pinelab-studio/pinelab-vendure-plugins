@@ -51,10 +51,6 @@ const sharedTypes = gql`
   extend type OrderLine {
     subscriptionPricing: StripeSubscriptionPricing
   }
-`;
-
-export const shopSchemaExtensions = gql`
-  ${sharedTypes}
   type StripeSubscriptionPricing {
     variantId: String!
     pricesIncludeTax: Boolean!
@@ -77,6 +73,10 @@ export const shopSchemaExtensions = gql`
     subscriptionEndDate: DateTime
     schedule: StripeSubscriptionSchedule!
   }
+`;
+
+export const shopSchemaExtensions = gql`
+  ${sharedTypes}
   input StripeSubscriptionPricingInput {
     productVariantId: ID!
     startDate: DateTime
