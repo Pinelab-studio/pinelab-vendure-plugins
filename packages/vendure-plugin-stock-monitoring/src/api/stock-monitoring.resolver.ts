@@ -27,9 +27,10 @@ export class StockMonitoringResolver {
       .leftJoin('variant.stockLevels', 'stockLevel')
       .addGroupBy('variant.id')
       .addSelect(['SUM(stockLevel.stockOnHand) as stockOnHand'])
+      .addSelect(['SUM(stockLevel.stockAllocated) as stockAllocated'])
       .leftJoin('product.channels', 'channel')
       .where('variant.enabled = true')
-      .andWhere('stockOnHand < :threshold', {
+      .andWhere('stockOnHand - stockAllocated < :threshold', {
         threshold: StockMonitoringPlugin.threshold,
       })
       .andWhere('variant.deletedAt IS NULL')
