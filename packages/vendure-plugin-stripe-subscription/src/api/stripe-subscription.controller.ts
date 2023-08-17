@@ -115,7 +115,7 @@ export class ShopResolver {
 }
 
 @Resolver('OrderLine')
-export class ShopOrderLinePricingResolver {
+export class OrderLinePricingResolver {
   constructor(private subscriptionService: StripeSubscriptionService) {}
 
   @ResolveField()
