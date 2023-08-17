@@ -4,11 +4,9 @@ import {
   ProductVariant,
   RequestContext,
   TransactionalConnection,
-  translateEntity,
   Permission,
   Allow,
 } from '@vendure/core';
-import { LessThan } from 'typeorm';
 import { StockMonitoringPlugin } from '../stock-monitoring.plugin';
 
 @Resolver()
