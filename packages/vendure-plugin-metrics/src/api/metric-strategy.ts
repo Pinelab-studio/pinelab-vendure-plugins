@@ -56,36 +56,3 @@ export interface MetricStrategy<T> {
     input: AdvancedMetricSummaryInput
   ): number[];
 }
-
-// FIXME Sample strategy for Stripe subscription. Remove later
-type StripePayment = { amount: number; createdAt: Date };
-
-export class StripeSubscriptionMetric implements MetricStrategy<StripePayment> {
-  code = 'stripe-subscription-payment';
-  metricType = AdvancedMetricType.Currency;
-
-  getTitle(ctx: RequestContext): string {
-    return `Received payments`;
-  }
-
-  async loadData(
-    ctx: RequestContext,
-    injector: Injector,
-    from: Date,
-    to: Date,
-    input: AdvancedMetricSummaryInput
-  ): Promise<StripePayment[]> {
-    // Load payments between `from` and `to`. Optionally you can use `input.variantIds` in your query
-    return [
-      {
-        amount: 123,
-        createdAt: new Date(),
-      },
-    ];
-  }
-
-  calculateDataPoint(ctx: RequestContext, data: StripePayment[]): number[] {
-    // Calculate the sum of all payments for this month
-    return [data.reduce((acc, curr) => acc + curr.amount, 0)];
-  }
-}

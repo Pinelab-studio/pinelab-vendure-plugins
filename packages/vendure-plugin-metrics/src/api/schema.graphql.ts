@@ -5,7 +5,10 @@ export const schema = gql`
     code: String!
     title: String!
     type: AdvancedMetricType!
-    entries: [AdvancedMetricSummaryEntry!]!
+    # The number of labels always matches the number of values.
+    # E.g [january, february, march] belong to values [10, 20, 30]
+    labels: [String!]!
+    series: [AdvancedMetricSeries!]!
   }
 
   enum AdvancedMetricType {
@@ -13,20 +16,17 @@ export const schema = gql`
     number
   }
 
-  type AdvancedMetricSummaryEntry {
-    label: String!
-    value: Float!
+  type AdvancedMetricSeries {
+    name: String!
+    values: [Float!]!
   }
+
   input AdvancedMetricSummaryInput {
     variantIds: [ID!]
   }
 
   extend type Query {
-    """
-    Get metrics from X weeks/months ago to now.
-    Preceding 26 weeks for WEEKLY and the preceding 12 months when given a MONTHLY interval
-    """
-    advancedMetricSummary(
+    advancedMetricSummaries(
       input: AdvancedMetricSummaryInput
     ): [AdvancedMetricSummary!]!
   }

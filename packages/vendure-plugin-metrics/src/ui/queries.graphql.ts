@@ -1,16 +1,9 @@
 import gql from 'graphql-tag';
 
+// FIXME, incomplete
 export const GET_METRICS = gql`
-  query advancedMetricSummary($input: AdvancedMetricSummaryInput!) {
-    advancedMetricSummary(input: $input) {
-      interval
+  query advancedMetricSummaries($input: AdvancedMetricSummaryInput!) {
+    advancedMetricSummaries(input: $input) {
       code
-      title
-      entries {
-        label
-        value
-      }
-      type
-    }
   }
 `;

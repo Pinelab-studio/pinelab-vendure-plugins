@@ -36,11 +36,11 @@ import { createSettledOrder } from '../../test/src/shop-utils';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [MetricsPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [MetricsPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
   });
