@@ -3411,6 +3411,16 @@ export const SetShippingAddress = gql`
   }
 }
     `;
+export const SetBillingAddress = gql`
+    mutation SetBillingAddress($input: CreateAddressInput!) {
+  setOrderBillingAddress(input: $input) {
+    ... on Order {
+      id
+      code
+    }
+  }
+}
+    `;
 export const SetShippingMethod = gql`
     mutation SetShippingMethod($ids: [ID!]!) {
   setOrderShippingMethod(shippingMethodId: $ids) {
