@@ -9,13 +9,16 @@ import {
 } from '@nestjs/graphql';
 import {
   Allow,
+  Api,
   Ctx,
+  EntityHydrator,
   ID,
   Logger,
   OrderService,
   PaymentMethodService,
   Permission,
   ProductService,
+  ProductVariantService,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
@@ -42,6 +45,7 @@ import {
 import { StripeInvoice } from './types/stripe-invoice';
 import { StripePaymentIntent } from './types/stripe-payment-intent';
 import { IncomingStripeWebhook } from './types/stripe.types';
+import { ApiType } from '@vendure/core/dist/api/common/get-api-type';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -115,14 +119,20 @@ export class ShopResolver {
 }
 
 @Resolver('OrderLine')
-export class ShopOrderLinePricingResolver {
-  constructor(private subscriptionService: StripeSubscriptionService) {}
+export class OrderLinePricingResolver {
+  constructor(
+    private entityHydrator: EntityHydrator,
+    private subscriptionService: StripeSubscriptionService
+  ) {}
 
   @ResolveField()
   async subscriptionPricing(
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing | undefined> {
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant'],
+    });
     if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
       return await this.subscriptionService.getPricingForOrderLine(
         ctx,

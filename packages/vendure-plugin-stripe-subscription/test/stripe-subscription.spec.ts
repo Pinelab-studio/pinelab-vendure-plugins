@@ -673,6 +673,26 @@ describe('Stripe Subscription Plugin', function () {
       );
     });
 
+    it('subscriptionPricing should be available in admin api', async () => {
+      const { order: activeOrder } = await adminClient.query(
+        gql`
+          query GetOrder($id: ID!) {
+            order(id: $id) {
+              lines {
+                subscriptionPricing {
+                  recurringPrice
+                }
+              }
+            }
+          }
+        `,
+        { id: order!.id }
+      );
+      expect(activeOrder.lines[0].subscriptionPricing.recurringPrice).toBe(
+        54000
+      );
+    });
+
     it('Should have pricing and schedule on order line', async () => {
       const { activeOrder } = await shopClient.query(GET_ORDER_WITH_PRICING);
       const line1: OrderLineWithSubscriptionFields = activeOrder.lines[0];
