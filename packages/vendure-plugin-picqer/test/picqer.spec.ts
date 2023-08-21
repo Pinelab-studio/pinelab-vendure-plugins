@@ -234,7 +234,6 @@ describe('Picqer plugin', function () {
     expect(picqerOrderRequest.invoiceaddress).toBe('Remote location 123');
     expect(picqerOrderRequest.invoicezipcode).toBe('1111AB');
     expect(picqerOrderRequest.invoicecity).toBe('Faraway');
-    expect(picqerOrderRequest.invoicecity).toBe('Faraway');
     expect(picqerOrderRequest.products.length).toBe(1);
     expect(picqerOrderRequest.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);
