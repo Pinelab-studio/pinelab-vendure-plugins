@@ -106,7 +106,7 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
 })
 export class MetricsWidgetComponent implements OnInit {
   metrics$: Observable<AdvancedChartEntry[][]> | undefined;
-  selectedMetrics: AdvancedChartEntry[] | undefined;
+  selectedMetrics: AdvancedChartEntry[][] | undefined;
   variantName: string;
   dropDownName = 'Select Variant';
   selection: AdvancedMetricInterval = AdvancedMetricInterval.Monthly;
@@ -170,11 +170,11 @@ export class MetricsWidgetComponent implements OnInit {
     this.changeDetectorRef.detectChanges();
     this.metrics$.subscribe(async (metrics) => {
       if (this.selectedMetrics?.length) {
-        this.selectedMetrics = metrics.find(
-          (e) => e[0].code == this.selectedMetrics![0].code
+        this.selectedMetrics = metrics.filter(
+          (e) => e[0].code == this.selectedMetrics![0][0].code
         );
       } else {
-        this.selectedMetrics = metrics[0];
+        this.selectedMetrics = metrics;
       }
       this.changeDetectorRef.detectChanges();
     });
