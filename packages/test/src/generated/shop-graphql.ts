@@ -11,13 +11,9 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
-  /** A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar. */
   DateTime: any;
-  /** The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf). */
   JSON: any;
-  /** The `Money` scalar type represents monetary values and supports signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point). */
   Money: any;
-  /** The `Upload` scalar type represents a file upload. */
   Upload: any;
 };
 
@@ -138,6 +134,8 @@ export type BooleanOperators = {
 
 export type Channel = Node & {
   __typename?: 'Channel';
+  availableCurrencyCodes: Array<CurrencyCode>;
+  availableLanguageCodes?: Maybe<Array<LanguageCode>>;
   code: Scalars['String'];
   createdAt: Scalars['DateTime'];
   /** @deprecated Use defaultCurrencyCode instead */
@@ -148,9 +146,13 @@ export type Channel = Node & {
   defaultShippingZone?: Maybe<Zone>;
   defaultTaxZone?: Maybe<Zone>;
   id: Scalars['ID'];
+  /** Not yet used - will be implemented in a future release. */
+  outOfStockThreshold?: Maybe<Scalars['Int']>;
   pricesIncludeTax: Scalars['Boolean'];
   seller?: Maybe<Seller>;
   token: Scalars['String'];
+  /** Not yet used - will be implemented in a future release. */
+  trackInventory?: Maybe<Scalars['Boolean']>;
   updatedAt: Scalars['DateTime'];
 };
 
@@ -168,6 +170,7 @@ export type Collection = Node & {
   languageCode?: Maybe<LanguageCode>;
   name: Scalars['String'];
   parent?: Maybe<Collection>;
+  parentId: Scalars['ID'];
   position: Scalars['Int'];
   productVariants: ProductVariantList;
   slug: Scalars['String'];
@@ -193,6 +196,7 @@ export type CollectionFilterParameter = {
   id?: InputMaybe<IdOperators>;
   languageCode?: InputMaybe<StringOperators>;
   name?: InputMaybe<StringOperators>;
+  parentId?: InputMaybe<IdOperators>;
   position?: InputMaybe<NumberOperators>;
   slug?: InputMaybe<StringOperators>;
   updatedAt?: InputMaybe<DateOperators>;
@@ -215,6 +219,7 @@ export type CollectionListOptions = {
   sort?: InputMaybe<CollectionSortParameter>;
   /** Takes n results, for use in pagination */
   take?: InputMaybe<Scalars['Int']>;
+  topLevelOnly?: InputMaybe<Scalars['Boolean']>;
 };
 
 /**
@@ -232,6 +237,7 @@ export type CollectionSortParameter = {
   description?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   name?: InputMaybe<SortOrder>;
+  parentId?: InputMaybe<SortOrder>;
   position?: InputMaybe<SortOrder>;
   slug?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
@@ -1911,7 +1917,7 @@ export type Order = Node & {
   state: Scalars['String'];
   /**
    * The subTotal is the total of all OrderLines in the Order. This figure also includes any Order-level
-   * discounts which have been prorated (proportionally distributed) amongst the OrderItems.
+   * discounts which have been prorated (proportionally distributed) amongst the items of each OrderLine.
    * To get a total of all OrderLines which does not account for prorated discounts, use the
    * sum of `OrderLine.discountedLinePrice` values.
    */
@@ -1973,43 +1979,6 @@ export type OrderFilterParameter = {
   totalWithTax?: InputMaybe<NumberOperators>;
   type?: InputMaybe<StringOperators>;
   updatedAt?: InputMaybe<DateOperators>;
-};
-
-export type OrderItem = Node & {
-  __typename?: 'OrderItem';
-  adjustments: Array<Adjustment>;
-  cancelled: Scalars['Boolean'];
-  createdAt: Scalars['DateTime'];
-  /**
-   * The price of a single unit including discounts, excluding tax.
-   *
-   * If Order-level discounts have been applied, this will not be the
-   * actual taxable unit price (see `proratedUnitPrice`), but is generally the
-   * correct price to display to customers to avoid confusion
-   * about the internal handling of distributed Order-level discounts.
-   */
-  discountedUnitPrice: Scalars['Money'];
-  /** The price of a single unit including discounts and tax */
-  discountedUnitPriceWithTax: Scalars['Money'];
-  fulfillment?: Maybe<Fulfillment>;
-  id: Scalars['ID'];
-  /**
-   * The actual unit price, taking into account both item discounts _and_ prorated (proportionally-distributed)
-   * Order-level discounts. This value is the true economic value of the OrderItem, and is used in tax
-   * and refund calculations.
-   */
-  proratedUnitPrice: Scalars['Money'];
-  /** The proratedUnitPrice including tax */
-  proratedUnitPriceWithTax: Scalars['Money'];
-  refundId?: Maybe<Scalars['ID']>;
-  taxLines: Array<TaxLine>;
-  taxRate: Scalars['Float'];
-  /** The price of a single unit, excluding tax and discounts */
-  unitPrice: Scalars['Money'];
-  /** The price of a single unit, including tax but excluding discounts */
-  unitPriceWithTax: Scalars['Money'];
-  unitTax: Scalars['Money'];
-  updatedAt: Scalars['DateTime'];
 };
 
 /** Returned when the maximum order size limit has been reached. */
@@ -2150,7 +2119,7 @@ export type OrderTaxSummary = {
   __typename?: 'OrderTaxSummary';
   /** A description of this tax */
   description: Scalars['String'];
-  /** The total net price or OrderItems to which this taxRate applies */
+  /** The total net price of OrderLines to which this taxRate applies */
   taxBase: Scalars['Money'];
   /** The taxRate as a percentage */
   taxRate: Scalars['Float'];
@@ -2349,6 +2318,8 @@ export enum Permission {
   CreateSettings = 'CreateSettings',
   /** Grants permission to create ShippingMethod */
   CreateShippingMethod = 'CreateShippingMethod',
+  /** Grants permission to create StockLocation */
+  CreateStockLocation = 'CreateStockLocation',
   /** Grants permission to create System */
   CreateSystem = 'CreateSystem',
   /** Grants permission to create Tag */
@@ -2391,6 +2362,8 @@ export enum Permission {
   DeleteSettings = 'DeleteSettings',
   /** Grants permission to delete ShippingMethod */
   DeleteShippingMethod = 'DeleteShippingMethod',
+  /** Grants permission to delete StockLocation */
+  DeleteStockLocation = 'DeleteStockLocation',
   /** Grants permission to delete System */
   DeleteSystem = 'DeleteSystem',
   /** Grants permission to delete Tag */
@@ -2437,6 +2410,8 @@ export enum Permission {
   ReadSettings = 'ReadSettings',
   /** Grants permission to read ShippingMethod */
   ReadShippingMethod = 'ReadShippingMethod',
+  /** Grants permission to read StockLocation */
+  ReadStockLocation = 'ReadStockLocation',
   /** Grants permission to read System */
   ReadSystem = 'ReadSystem',
   /** Grants permission to read Tag */
@@ -2483,6 +2458,8 @@ export enum Permission {
   UpdateSettings = 'UpdateSettings',
   /** Grants permission to update ShippingMethod */
   UpdateShippingMethod = 'UpdateShippingMethod',
+  /** Grants permission to update StockLocation */
+  UpdateStockLocation = 'UpdateStockLocation',
   /** Grants permission to update System */
   UpdateSystem = 'UpdateSystem',
   /** Grants permission to update Tag */
@@ -3323,6 +3300,13 @@ export type SetShippingAddressMutationVariables = Exact<{
 
 
 export type SetShippingAddressMutation = { __typename?: 'Mutation', setOrderShippingAddress: { __typename?: 'NoActiveOrderError' } | { __typename?: 'Order', id: string, code: string } };
+
+export type SetBillingAddressMutationVariables = Exact<{
+  input: CreateAddressInput;
+}>;
+
+
+export type SetBillingAddressMutation = { __typename?: 'Mutation', setOrderBillingAddress: { __typename?: 'NoActiveOrderError' } | { __typename?: 'Order', id: string, code: string } };
 
 export type SetShippingMethodMutationVariables = Exact<{
   ids: Array<Scalars['ID']> | Scalars['ID'];
