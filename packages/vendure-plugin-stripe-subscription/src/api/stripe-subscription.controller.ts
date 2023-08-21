@@ -130,11 +130,9 @@ export class OrderLinePricingResolver {
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLineWithSubscriptionFields
   ): Promise<StripeSubscriptionPricing | undefined> {
-    if (ctx.apiType !== 'shop') {
-      await this.entityHydrator.hydrate(ctx, orderLine, {
-        relations: ['productVariant'],
-      });
-    }
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant'],
+    });
     if (orderLine.productVariant?.customFields?.subscriptionSchedule) {
       return await this.subscriptionService.getPricingForOrderLine(
         ctx,
