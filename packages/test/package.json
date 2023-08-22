@@ -6,7 +6,6 @@
   "private": true,
   "scripts": {
     "generate": "graphql-codegen --config codegen.yml",
-    "start": "ts-node ./src/dev-server.ts",
-    "build": "tsc"
+    "start": "ts-node ./src/dev-server.ts"
   }
 }

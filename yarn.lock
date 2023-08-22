@@ -5082,65 +5082,10 @@
     fs-extra "^10.0.0"
     sharp "~0.32.1"
 
-"@vendure/common@2.0.4":
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.0.4.tgz#60c3972ecedca920afb4867ccf6ba085358caabb"
-  integrity sha512-G77FlfKxbwX+CNyh2L4q3OrtY3r9riAsVCTEvWzrqNONxQazHsl01tyzWQYE1u/npYKmozEUU8VneejvE9/zyA==
-
-"@vendure/common@^2.0.4":
-  version "2.0.5"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.0.5.tgz#99e3135d41a698865a1eecbf80e2c70b0f6b1794"
-  integrity sha512-S4kYKNwJM9DL5TlNZe9aJ3EiK5YPj6zXUqj0ebsQ+HJRHHarO8OK2oj964WprZNwCJDMbZItPzPTIPutnb915g==
-
 "@vendure/common@^2.0.6":
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.0.6.tgz#4c71aedc30f13afe4f9938798a256aa5ab43aed6"
   integrity sha512-/xdrTdKk5b4nZYGSzJKlYlVTxap2yaxPcE1bVTDdiDyse/wqIbkd76nIlCaYouVce80/3kTFj0nJaSR2QXjhDA==
-
-"@vendure/core@2.0.4":
-  version "2.0.4"
-  resolved "https://registry.yarnpkg.com/@vendure/core/-/core-2.0.4.tgz#51b81105ef547c7a13397f03df3fdde16c9d76ff"
-  integrity sha512-EZ2lxJgCRLNBWIZ/XpC+516RaB2O40xt7IOAOg4++77iiuM+US1aX7Wi6Nvpsbrs51mA5ZRs3iFBWEnvyuL5NQ==
-  dependencies:
-    "@graphql-tools/stitch" "^8.7.43"
-    "@nestjs/apollo" "^10.2.0"
-    "@nestjs/common" "9.3.9"
-    "@nestjs/core" "9.3.9"
-    "@nestjs/graphql" "10.2.0"
-    "@nestjs/platform-express" "9.3.9"
-    "@nestjs/terminus" "9.2.1"
-    "@nestjs/testing" "9.3.9"
-    "@nestjs/typeorm" "9.0.1"
-    "@types/fs-extra" "^9.0.1"
-    "@vendure/common" "^2.0.4"
-    apollo-server-express "3.6.3"
-    bcrypt "^5.1.0"
-    body-parser "^1.19.0"
-    chalk "^4.1.0"
-    commander "^7.1.0"
-    cookie-session "^2.0.0-rc.1"
-    csv-parse "^4.12.0"
-    express "^4.17.1"
-    fs-extra "^10.0.0"
-    graphql "16.6.0"
-    graphql-fields "^2.0.3"
-    graphql-scalars "^1.20.1"
-    graphql-tag "^2.12.6"
-    graphql-upload "^16.0.2"
-    http-proxy-middleware "^2.0.1"
-    i18next "^23.2.6"
-    i18next-fs-backend "^2.1.5"
-    i18next-http-middleware "^3.3.2"
-    i18next-icu "^2.3.0"
-    image-size "^1.0.0"
-    intl-messageformat "^10.5.0"
-    mime-types "^2.1.27"
-    ms "^2.1.2"
-    nanoid "^3.1.23"
-    progress "^2.0.3"
-    reflect-metadata "^0.1.13"
-    rxjs "^7.5.4"
-    typeorm "0.3.11"
 
 "@vendure/core@2.0.6":
   version "2.0.6"
@@ -16092,7 +16037,7 @@ ts-node@10.7.0:
     v8-compile-cache-lib "^3.0.0"
     yn "3.1.1"
 
-ts-node@^10.8.1, ts-node@^10.9.1:
+ts-node@^10.8.1:
   version "10.9.1"
   resolved "https://registry.yarnpkg.com/ts-node/-/ts-node-10.9.1.tgz#e73de9102958af9e1f0b168a6ff320e25adcff4b"
   integrity sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==
