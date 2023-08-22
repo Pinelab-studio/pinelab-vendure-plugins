@@ -19,11 +19,11 @@ export interface MetricStrategy<T> {
   getTitle(ctx: RequestContext): string;
 
   /**
-   * Should return the field to sort and order when loading data.
-   * For example `orderPlacedAt` when you are doing metrics for Orders
-   * Has to be a Date
+   * Should return the date to sort by. This value is used to determine in what month the datapoint should be displayed.
+   * For example `order.orderPlacedAt` when you are doing metrics for Orders.
+   * By default `creeatedAt` is used
    */
-  sortByDateField(): string;
+  getSortableField?(entity: T): Date;
 
   /**
    * Load your data for the given time frame here.
@@ -44,10 +44,9 @@ export interface MetricStrategy<T> {
   ): Promise<T[]>;
 
   /**
-   * Calculate the datapoint for the given month. Return multiple datapoints for a stacked line chart
-   *
-   * @param ctx
-   * @param data The data for the current timeframe
+   * Calculate the datapoint for the given month. Return multiple datapoints for a multi line chart
+   * @example
+   * [0, 2, 3]
    */
   calculateDataPoint(
     ctx: RequestContext,
@@ -55,4 +54,13 @@ export interface MetricStrategy<T> {
     monthNr: number,
     input: AdvancedMetricSummaryInput
   ): number[];
+
+  /**
+   * Return a list of labels to use as legend when using multi line chart.
+   * Should match the number of datapoints returned in calculateDataPoint.
+   * Not needed for single line charts
+   * @example
+   * ['Product A', 'Product B', 'Product C']
+   */
+  getLabels?(ctx: RequestContext): [string];
 }

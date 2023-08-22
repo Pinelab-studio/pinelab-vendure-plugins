@@ -1,4 +1,12 @@
-import { Injector, Order, RequestContext } from '@vendure/core';
+import {
+  Injector,
+  Logger,
+  Order,
+  RequestContext,
+  Transaction,
+  TransactionalConnection,
+} from '@vendure/core';
+import { loggerCtx } from '../../constants';
 import {
   AdvancedMetricSummaryInput,
   AdvancedMetricType,
@@ -16,18 +24,49 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     return `Average order value in ${ctx.channel.defaultCurrencyCode}`;
   }
 
-  sortByDateField(): string {
-    return 'orderPlacedAt';
+  getSortableField(entity: Order): Date {
+    return entity.orderPlacedAt ?? entity.updatedAt;
   }
 
-  loadData(
+  async loadData(
     ctx: RequestContext,
     injector: Injector,
     from: Date,
-    to: Date,
-    input: AdvancedMetricSummaryInput
+    to: Date
   ): Promise<Order[]> {
-    throw new Error('Method not implemented.');
+    let skip = 0;
+    const take = 1000;
+    let hasMoreOrders = true;
+    const orders: Order[] = [];
+    while (hasMoreOrders) {
+      const [items, totalOrders] = await injector
+        .get(TransactionalConnection)
+        .getRepository(ctx, Order)
+        .createQueryBuilder('order')
+        .leftJoin('order.channels', 'orderChannel')
+        .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
+        .andWhere(`order.orderPlacedAt >= :from`, {
+          from: from.toISOString(),
+        })
+        .andWhere(`order.orderPlacedAt <= :to`, {
+          to: to.toISOString(),
+        })
+        .skip(skip)
+        .take(take)
+        .getManyAndCount();
+      orders.push(...items);
+      Logger.info(
+        `Fetched orders ${skip}-${skip + take} for channel ${
+          ctx.channel.token
+        }`,
+        loggerCtx
+      );
+      skip += items.length;
+      if (orders.length >= totalOrders) {
+        hasMoreOrders = false;
+      }
+    }
+    return orders;
   }
 
   calculateDataPoint(
