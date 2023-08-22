@@ -17,7 +17,8 @@
     "lint:check": "yarn prettier --check . &&  yarn lint .",
     "lint:fix": "yarn prettier --write . && yarn lint --fix .",
     "upgrade:vendure": "yarn lerna exec --concurrency 1 \"yarn upgrade --pattern @vendure --latest\"",
-    "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+    "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "bump-all-versions": "lerna version --no-git-tag-version"
   },
   "devDependencies": {
     "@commitlint/cli": "17.2.0",
