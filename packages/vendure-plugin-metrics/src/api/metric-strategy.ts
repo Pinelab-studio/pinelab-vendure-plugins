@@ -62,5 +62,5 @@ export interface MetricStrategy<T> {
    * @example
    * ['Product A', 'Product B', 'Product C']
    */
-  getLabels?(ctx: RequestContext): [string];
+  getLegend?(ctx: RequestContext): [string];
 }

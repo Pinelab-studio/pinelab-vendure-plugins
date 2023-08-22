@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+    AdvancedMetricSeries,
     AdvancedMetricSummary,
     AdvancedMetricSummaryEntry,
     AdvancedMetricSummaryInput,
@@ -24,6 +25,7 @@ import { loggerCtx } from '../constants';
 import { Cache } from './cache';
 import { AverageOrderValueMetric } from './metrics/average-order-value';
 import { MetricStrategy } from './metric-strategy';
+import { ca } from 'date-fns/locale';
 
 export type MetricData = {
     orders: Order[];
@@ -32,7 +34,7 @@ export type MetricData = {
 @Injectable()
 export class MetricsService {
     // Cache for datapoints
-    cache = new Cache<Array<number[]>>();
+    cache = new Cache<AdvancedMetricSummary>();
     metricStrategies: MetricStrategy<unknown>[];
     constructor(
         private connection: TransactionalConnection,
@@ -62,9 +64,11 @@ export class MetricsService {
                 channel: ctx.channel.token,
                 variantIds: variantIds?.sort() ?? [],
             };
-            let series = this.cache.get(cacheKey);
-            if (series) {
-                
+            const cachedMetricSummary = this.cache.get(cacheKey);
+            if (cachedMetricSummary) {
+                // Return cached result
+                return cachedMetricSummary;
+
             }
 
             // See if available in cache
@@ -76,7 +80,7 @@ export class MetricsService {
             return {
                 code: metric.code,
                 title: metric.getTitle(ctx),
-                labels: metric.getLabels ? (ctx) ?? [metric.getTitle(ctx)],
+                labels: [], // TODO get month names
                 series: [],
                 type: metric.metricType,
             }
@@ -134,6 +138,13 @@ export class MetricsService {
         });
         this.cache.set(cacheKey, metrics);
         return metrics;
+    }
+
+    mapToSeries(dataPoints: number[][], labels: string[]): AdvancedMetricSeries[] {
+        return dataPoints.map((dataPoint, index) => ({
+            values: dataPoint,
+            name: labels[index],
+        }));
     }
 
     async loadData(
