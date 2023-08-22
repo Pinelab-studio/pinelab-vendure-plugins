@@ -49,11 +49,6 @@ export class MetricsService {
         ctx: RequestContext,
         { variantIds }: AdvancedMetricSummaryInput
     ): Promise<AdvancedMetricSummary[]> {
-        // TODO: 
-        // Create from/to date. 
-        // For each metric, loadData, split data in months, calculate entry for each month
-        // Return with correct title and code
-        // Set 23:59:59.999 as endDate
         const today = endOfDay(new Date());
         const oneYearAgo = startOfDay(sub(today, { years: 1 }));
         // For each metric strategy
@@ -64,14 +59,11 @@ export class MetricsService {
                 channel: ctx.channel.token,
                 variantIds: variantIds?.sort() ?? [],
             };
+            // Return cached result if exists
             const cachedMetricSummary = this.cache.get(cacheKey);
             if (cachedMetricSummary) {
-                // Return cached result
                 return cachedMetricSummary;
-
             }
-
-            // See if available in cache
             // If not, load data
             // split data in months
             // Calculate entry for each month
