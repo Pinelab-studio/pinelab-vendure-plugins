@@ -24,7 +24,7 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
-import { IncomingPicklistWebhook, VatGroup } from '../src/api/types';
+import { IncomingPicklistWebhook, VatGroup } from '../src';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
@@ -199,9 +199,22 @@ describe('Picqer plugin', function () {
       })
       .reply(200, { idordder: 'mockOrderId' });
     // Shipping method 3 should be our created Picqer handler method
-    createdOrder = await createSettledOrder(shopClient, 3, true, [
-      { id: 'T_1', quantity: 3 },
-    ]);
+    createdOrder = await createSettledOrder(
+      shopClient,
+      3,
+      true,
+      [{ id: 'T_1', quantity: 3 }],
+      {
+        input: {
+          fullName: "Martinho's friend",
+          streetLine1: 'Remote location',
+          streetLine2: '123',
+          city: 'Faraway',
+          postalCode: '1111AB',
+          countryCode: 'NL',
+        },
+      }
+    );
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
@@ -215,6 +228,12 @@ describe('Picqer plugin', function () {
     expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
     expect(picqerOrderRequest.deliverycity).toBeDefined();
     expect(picqerOrderRequest.deliverycountry).toBe('NL');
+    expect(picqerOrderRequest.invoicename).toBe("Martinho's friend");
+    expect(picqerOrderRequest.invoicecontactname).toBe("Martinho's friend");
+    expect(picqerOrderRequest.invoicecountry).toBe('NL');
+    expect(picqerOrderRequest.invoiceaddress).toBe('Remote location 123');
+    expect(picqerOrderRequest.invoicezipcode).toBe('1111AB');
+    expect(picqerOrderRequest.invoicecity).toBe('Faraway');
     expect(picqerOrderRequest.products.length).toBe(1);
     expect(picqerOrderRequest.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);

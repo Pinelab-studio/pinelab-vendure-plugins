@@ -1,12 +1,6 @@
 import { Injectable } from '@angular/core';
 import { DataService, ChartFormatOptions } from '@vendure/admin-ui/core';
-import {
-  AdvancedMetricInterval,
-  AdvancedMetricSummary,
-  AdvancedMetricSummaryQuery,
-  AdvancedMetricSummaryQueryVariables,
-  AdvancedMetricType,
-} from './generated/graphql';
+import { AdvancedMetricSummary, AdvancedMetricType } from './generated/graphql';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { GET_METRICS } from './queries.graphql';
 import { switchMap } from 'rxjs/operators';
@@ -15,6 +9,7 @@ export interface AdvancedChartEntry {
   value: number;
   formatOptions: ChartFormatOptions;
   code: string;
+  name: string;
 }
 @Injectable({
   providedIn: 'root',
@@ -32,26 +27,19 @@ export class MetricsUiService {
       .mapStream((data) => data.uiState);
   }
 
-  queryData(
-    selection$: BehaviorSubject<AdvancedMetricInterval>,
-    selectedVariantIds?: string[]
-  ) {
-    return combineLatest(selection$, this.currencyCode$, this.uiState$).pipe(
-      switchMap(([selection, currencyCode, uiState]) =>
+  queryData(selectedVariantIds?: string[]) {
+    return combineLatest(this.currencyCode$, this.uiState$).pipe(
+      switchMap(([currencyCode, uiState]) =>
         this.dataService
-          .query<
-            AdvancedMetricSummaryQuery,
-            AdvancedMetricSummaryQueryVariables
-          >(GET_METRICS, {
+          .query(GET_METRICS, {
             input: {
-              interval: selection,
               ...(selectedVariantIds ? { variantIds: selectedVariantIds } : []),
             },
           })
           .refetchOnChannelChange()
-          .mapStream((metricSummary) => {
+          .mapStream((metricSummary: any) => {
             return this.toChartEntry(
-              metricSummary.advancedMetricSummary,
+              metricSummary.advancedMetricSummaries,
               `${uiState.language}-${uiState.locale}`,
               currencyCode
             );
@@ -64,7 +52,7 @@ export class MetricsUiService {
     input: AdvancedMetricSummary[],
     locale: string,
     currencyCode: string
-  ): AdvancedChartEntry[][] {
+  ): AdvancedChartEntry[][][] {
     return input.map((r) => {
       const formatValueAs: 'currency' | 'number' =
         r.type === AdvancedMetricType.Number ? 'number' : 'currency';
@@ -73,12 +61,16 @@ export class MetricsUiService {
         currencyCode,
         locale,
       };
-      return r.entries.map((e) => {
-        return {
-          code: r.code,
-          formatOptions,
-          ...e,
-        };
+      return r.series.map((e) => {
+        return e.values.map((i, index) => {
+          return {
+            code: r.code,
+            name: e.name,
+            formatOptions,
+            value: i,
+            label: r.labels[index],
+          };
+        });
       });
     });
   }

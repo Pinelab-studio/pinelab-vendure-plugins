@@ -23,6 +23,7 @@
     "generate": "graphql-codegen"
   },
   "dependencies": {
+    "chartist-plugin-tooltips-updated": "^1.0.0",
     "date-fns": "^2.29.3"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"

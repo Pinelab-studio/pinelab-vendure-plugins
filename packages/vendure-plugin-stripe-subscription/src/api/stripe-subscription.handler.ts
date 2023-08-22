@@ -38,6 +38,21 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     apiKey: {
       type: 'string',
       label: [{ languageCode: LanguageCode.en, value: 'Stripe API key' }],
+      ui: { component: 'password-form-input' },
+    },
+    publishableKey: {
+      type: 'string',
+      required: false,
+      label: [
+        { languageCode: LanguageCode.en, value: 'Stripe publishable key' },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value:
+            'You can retrieve this via the "eligiblePaymentMethods.stripeSubscriptionPublishableKey" query in the shop api',
+        },
+      ],
     },
     webhookSecret: {
       type: 'string',
@@ -54,6 +69,7 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
             'Secret to validate incoming webhooks. Get this from your Stripe dashboard',
         },
       ],
+      ui: { component: 'password-form-input' },
     },
   },
 

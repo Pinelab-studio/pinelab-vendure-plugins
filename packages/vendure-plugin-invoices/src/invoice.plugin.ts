@@ -48,8 +48,10 @@ export interface InvoicePluginConfig {
     resolvers: [InvoiceResolver],
   },
   compatibility: '^2.0.0',
-  configuration: (config: RuntimeVendureConfig) =>
-    InvoicePlugin.configure(config),
+  configuration: (config: RuntimeVendureConfig) => {
+    InvoicePlugin.configure(config);
+    return config;
+  },
 })
 export class InvoicePlugin {
   static config: InvoicePluginConfig;
