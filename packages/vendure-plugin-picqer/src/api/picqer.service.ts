@@ -140,6 +140,7 @@ export class PicqerService implements OnApplicationBootstrap {
               loggerCtx
             );
           }
+          Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
         } catch (e: unknown) {
           if (e instanceof Error) {
             // Only log a warning, because this is a background function that will be retried by the JobQueue
