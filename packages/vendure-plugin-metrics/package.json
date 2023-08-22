@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-metrics",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vendure plugin measuring and visualizing e-commerce metrics",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

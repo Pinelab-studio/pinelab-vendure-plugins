@@ -244,8 +244,7 @@ describe('Picqer plugin', function () {
     });
   });
 
-  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it.skip('Should update to "PartiallyDelivered" when 2 of 3 items are shipped', async () => {
+  it('Should update to "PartiallyDelivered" when 2 of 3 items are shipped', async () => {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
@@ -272,8 +271,7 @@ describe('Picqer plugin', function () {
     expect(order!.state).toBe('PartiallyDelivered');
   });
 
-  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it.skip('Should have updated stock after 1 item was shipped', async () => {
+  it('Should have updated stock after 1 item was shipped', async () => {
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
     );
@@ -281,8 +279,7 @@ describe('Picqer plugin', function () {
     expect(variant!.stockAllocated).toBe(1);
   });
 
-  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it.skip('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
+  it('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
@@ -290,32 +287,6 @@ describe('Picqer plugin', function () {
         products: [
           { productcode: 'L2201308', amountpicked: 1 }, // last one to complete the order
         ],
-      },
-    } as Partial<IncomingPicklistWebhook>;
-    await adminClient.fetch(
-      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(mockIncomingWebhook),
-        headers: {
-          'X-Picqer-Signature': createSignature(
-            mockIncomingWebhook,
-            'test-api-key'
-          ),
-        },
-      }
-    );
-    const order = await getOrder(adminClient, createdOrder?.id as string);
-    expect(order!.state).toBe('Delivered');
-  });
-
-  // FIXME Delete this test after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it('Should update to "Delivered" when items are shipped', async () => {
-    const mockIncomingWebhook = {
-      event: 'picklists.closed',
-      data: {
-        reference: createdOrder?.code,
-        products: [{ productcode: 'L2201308', amountpicked: 3 }],
       },
     } as Partial<IncomingPicklistWebhook>;
     await adminClient.fetch(
