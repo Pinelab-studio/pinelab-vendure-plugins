@@ -20,7 +20,18 @@
   ) !default;
 
   @import 'chartist/dist/index.scss';
-
+  svg.ct-chart-bar,
+  svg.ct-chart-line {
+    overflow: visible;
+  }
+  .ct-label.ct-label.ct-horizontal.ct-end {
+    position: relative;
+    justify-content: flex-end;
+    text-align: right;
+    transform-origin: 100% 0;
+    transform: translate(-100%) rotate(-45deg);
+    white-space: nowrap;
+  }
   .ct-series-a .ct-slice-pie,
   .ct-series-a .ct-area {
     fill: url(#gradient);

@@ -12,25 +12,6 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
 @Component({
   selector: 'product-metrics-widget',
   template: `
-    <!--<div
-      class="btn-group btn-outline-primary btn-sm"
-      *ngIf="selection$ | async as selection"
-    >
-      <button
-        class="btn"
-        [class.btn-primary]="selection === 'WEEKLY'"
-        (click)="selection$.next('WEEKLY')"
-      >
-        Weekly
-      </button>
-      <button
-        class="btn"
-        [class.btn-primary]="selection === 'MONTHLY'"
-        (click)="selection$.next('MONTHLY')"
-      >
-        Monthly
-      </button>
-    </div>-->
     <div>
       <button
         (click)="openProductSelectionDialog()"
@@ -55,6 +36,8 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
     <br />
     <br />
     <vdr-chartist [entries]="selectedMetrics" />
+    <br />
+    <br />
     <div class="flex">
       <button
         *ngFor="let metric of metrics$ | async"
