@@ -4,6 +4,11 @@ import {
 } from '../ui/generated/graphql';
 import { RequestContext, Injector } from '@vendure/core';
 
+export interface NamedDatapoint {
+  name: string;
+  value: number;
+}
+
 export interface MetricStrategy<T> {
   code: string;
   /**
@@ -26,41 +31,40 @@ export interface MetricStrategy<T> {
   getSortableField?(entity: T): Date;
 
   /**
-   * Load your data for the given time frame here.
+   * Load your entities for the given time frame here.
    *
    * Keep performance and object size in mind:
    *
-   * Data is cached in memory, so only return data you actually use in your calculateDataPoint function
+   * Entities are cached in memory, so only return data you actually use in your calculateDataPoint function
    *
    * This function is executed in the main thread when a user views its dashboard,
    * so try not to fetch objects with many relations
    */
-  loadData(
+  loadEntities(
     ctx: RequestContext,
     injector: Injector,
     from: Date,
     to: Date,
-    input: AdvancedMetricSummaryInput
+    input?: AdvancedMetricSummaryInput
   ): Promise<T[]>;
 
   /**
-   * Calculate the datapoint for the given month. Return multiple datapoints for a multi line chart
+   * Calculate the aggregated datapoint for the given data.
+   * E.g. the sum of all given data, or the average.
+   *
+   * Return multiple datapoints for a multi line chart.
+   * The name will be used as legend on the chart.
+   *
    * @example
-   * [0, 2, 3]
+   * // Number of products sold
+   * [
+   *   {name: 'product1', value: 10 },
+   *   {name: 'product2', value: 16 }
+   * ]
    */
-  calculateDataPoint(
+  calculateDataPoints(
     ctx: RequestContext,
-    data: T[],
-    monthNr: number,
-    input: AdvancedMetricSummaryInput
-  ): number[];
-
-  /**
-   * Return a list of labels to use as legend when using multi line chart.
-   * Should match the number of datapoints returned in calculateDataPoint.
-   * Not needed for single line charts
-   * @example
-   * ['Product A', 'Product B', 'Product C']
-   */
-  getLegend?(ctx: RequestContext): [string];
+    entities: T[],
+    input?: AdvancedMetricSummaryInput
+  ): NamedDatapoint[];
 }

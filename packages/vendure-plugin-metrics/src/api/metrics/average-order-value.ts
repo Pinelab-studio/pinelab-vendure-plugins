@@ -3,16 +3,12 @@ import {
   Logger,
   Order,
   RequestContext,
-  Transaction,
   TransactionalConnection,
 } from '@vendure/core';
-import { loggerCtx } from '../../constants';
-import {
-  AdvancedMetricSummaryInput,
-  AdvancedMetricType,
-} from '../../ui/generated/graphql';
-import { MetricStrategy } from '../metric-strategy';
+import { AdvancedMetricType } from '../../ui/generated/graphql';
+import { MetricStrategy, NamedDatapoint } from '../metric-strategy';
 
+const loggerCtx = 'AverageOrderValueMetric';
 /**
  * Calculates the average order value per month
  */
@@ -28,7 +24,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     return entity.orderPlacedAt ?? entity.updatedAt;
   }
 
-  async loadData(
+  async loadEntities(
     ctx: RequestContext,
     injector: Injector,
     from: Date,
@@ -69,15 +65,28 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     return orders;
   }
 
-  calculateDataPoint(
+  calculateDataPoints(
     ctx: RequestContext,
-    data: Order[],
-    monthNr: number
-  ): number[] {
-    const total = data
+    entities: Order[]
+  ): NamedDatapoint[] {
+    if (!entities.length) {
+      // Return 0 as average if no orders
+      return [
+        {
+          name: this.code,
+          value: 0,
+        },
+      ];
+    }
+    const total = entities
       .map((o) => o.totalWithTax)
-      .reduce((total, current) => total + current);
-    const average = Math.round(total / data.length) / 100;
-    return [average];
+      .reduce((total, current) => total + current, 0);
+    const average = Math.round(total / entities.length) / 100;
+    return [
+      {
+        name: this.code,
+        value: average,
+      },
+    ];
   }
 }

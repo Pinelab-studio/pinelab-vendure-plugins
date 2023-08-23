@@ -1,226 +1,193 @@
 import { Injectable } from '@nestjs/common';
-import {
-    AdvancedMetricSeries,
-    AdvancedMetricSummary,
-    AdvancedMetricSummaryEntry,
-    AdvancedMetricSummaryInput,
-} from '../ui/generated/graphql';
-import {
-    ConfigService,
-    ID,
-    Logger,
-    Order,
-    RequestContext,
-    TransactionalConnection,
-} from '@vendure/core';
-import {
-    Duration,
-    endOfDay,
-    getISOWeek,
-    getMonth,
-    startOfDay,
-    sub,
-} from 'date-fns';
+import { ModuleRef } from '@nestjs/core';
+import { Injector, Logger, RequestContext } from '@vendure/core';
+import { addMonths, endOfDay, isBefore, startOfMonth, sub } from 'date-fns';
+import { da } from 'date-fns/locale';
 import { loggerCtx } from '../constants';
+import {
+  AdvancedMetricSeries,
+  AdvancedMetricSummary,
+  AdvancedMetricSummaryInput,
+} from '../ui/generated/graphql';
 import { Cache } from './cache';
-import { AverageOrderValueMetric } from './metrics/average-order-value';
 import { MetricStrategy } from './metric-strategy';
-import { ca } from 'date-fns/locale';
+import { AverageOrderValueMetric } from './metrics/average-order-value';
+import { SalesPerProductMetric } from './metrics/sales-per-product';
 
-export type MetricData = {
-    orders: Order[];
-};
+type DataPointsPerMonth = Map<string, number[]>;
+interface EntitiesPerMonth<T> {
+  monthNr: number;
+  year: number;
+  entities: T[];
+}
 
 @Injectable()
 export class MetricsService {
-    // Cache for datapoints
-    cache = new Cache<AdvancedMetricSummary>();
-    metricStrategies: MetricStrategy<unknown>[];
-    constructor(
-        private connection: TransactionalConnection,
-        private configService: ConfigService
-    ) {
-        this.metricStrategies = [
-            new AverageOrderValueMetric(),
-        ];
-    }
+  // Cache for datapoints
+  cache = new Cache<AdvancedMetricSummary>();
+  metricStrategies: MetricStrategy<unknown>[];
+  constructor(private moduleRef: ModuleRef) {
+    this.metricStrategies = [
+      new SalesPerProductMetric(),
+      new AverageOrderValueMetric(),
+    ];
+  }
 
-    async getMetrics(
-        ctx: RequestContext,
-        { variantIds }: AdvancedMetricSummaryInput
-    ): Promise<AdvancedMetricSummary[]> {
-        const today = endOfDay(new Date());
-        const oneYearAgo = startOfDay(sub(today, { years: 1 }));
-        // For each metric strategy
-        return Promise.all(this.metricStrategies.map(async (metric) => {
-            const cacheKey = {
-                from: today,
-                to: oneYearAgo,
-                channel: ctx.channel.token,
-                variantIds: variantIds?.sort() ?? [],
-            };
-            // Return cached result if exists
-            const cachedMetricSummary = this.cache.get(cacheKey);
-            if (cachedMetricSummary) {
-                return cachedMetricSummary;
-            }
-            // If not, load data
-            // split data in months
-            // Calculate entry for each month
-            // Save in cache
-            // Return
-            return {
-                code: metric.code,
-                title: metric.getTitle(ctx),
-                labels: [], // TODO get month names
-                series: [],
-                type: metric.metricType,
-            }
-        }));
-
-
-
-
-        // Check if we have cached result
+  async getMetrics(
+    ctx: RequestContext,
+    input?: AdvancedMetricSummaryInput
+  ): Promise<AdvancedMetricSummary[]> {
+    const today = endOfDay(new Date());
+    // Use start of month, because we'd like to see the full results of last years same month
+    const oneYearAgo = startOfMonth(sub(today, { years: 1 }));
+    // For each metric strategy
+    return Promise.all(
+      this.metricStrategies.map(async (metricStrategy) => {
         const cacheKey = {
-            startDate,
-            channel: ctx.channel.token,
-            variantIds: variantIds?.sort() ?? [],
+          from: today,
+          to: oneYearAgo,
+          channel: ctx.channel.token,
+          variantIds: input?.variantIds?.sort() ?? [],
         };
-        const cachedMetricList = this.cache.get(cacheKey);
-        if (cachedMetricList) {
-            Logger.info(
-                `Returning cached metrics for channel ${ctx.channel.token}`,
-                loggerCtx
-            );
-            return cachedMetricList;
-        }
-        // No cache, calculating new metrics
-        Logger.info(
-            `No cache hit, calculating ${interval} metrics until ${endDate.toISOString()} for channel ${ctx.channel.token
-            } for ${variantIds?.length
-                ? `for order containing product variants with ids ${variantIds}`
-                : 'all orders'
-            }`,
+        // Return cached result if exists
+        const cachedMetricSummary = this.cache.get(cacheKey);
+        if (cachedMetricSummary) {
+          Logger.info(
+            `Using cached data for metric "${metricStrategy.code}"`,
             loggerCtx
+          );
+          return cachedMetricSummary;
+        }
+        // Log execution time, because custom strategies can be heavy and we need to inform the user about it
+        const start = performance.now();
+        const allEntities = await metricStrategy.loadEntities(
+          ctx,
+          new Injector(this.moduleRef),
+          oneYearAgo,
+          today,
+          input
         );
-        const data = await this.loadData(
+        const entitiesPerMonth = this.splitEntitiesInMonths(
+          metricStrategy,
+          allEntities,
+          oneYearAgo,
+          today
+        );
+        // Calculate datapoints per 'name', because we could be dealing with a multi line chart
+        const dataPointsPerName: DataPointsPerMonth = new Map<
+          string,
+          number[]
+        >();
+        entitiesPerMonth.forEach((entityMap) => {
+          const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
-            interval,
-            endDate,
-            variantIds as string[]
-        );
-        const metrics: AdvancedMetricSummary[] = [];
-        this.metricStrategies.forEach((metric) => {
-            // Calculate entry (month or week)
-            const entries: AdvancedMetricSummaryEntry[] = [];
-            data.forEach((dataPerTick, weekOrMonthNr) => {
-                entries.push(
-                    metric.calculateEntry(ctx, interval, weekOrMonthNr, dataPerTick)
-                );
-            });
-            // Create metric with calculated entries
-            metrics.push({
-                interval,
-                title: metric.getTitle(ctx),
-                code: metric.code,
-                entries,
-                type: metric.metricType,
-            });
+            entityMap.entities,
+            input
+          );
+          // Loop over datapoint, because we support multi line charts
+          calculatedDataPoints.forEach((dataPoint) => {
+            const entry = dataPointsPerName.get(dataPoint.name) ?? [];
+            entry.push(dataPoint.value);
+            // Add entry, for example `'product1', [10, 20, 30]`
+            dataPointsPerName.set(dataPoint.name, entry);
+          });
         });
-        this.cache.set(cacheKey, metrics);
-        return metrics;
-    }
-
-    mapToSeries(dataPoints: number[][], labels: string[]): AdvancedMetricSeries[] {
-        return dataPoints.map((dataPoint, index) => ({
-            values: dataPoint,
-            name: labels[index],
-        }));
-    }
-
-    async loadData(
-        ctx: RequestContext,
-        interval: AdvancedMetricInterval,
-        endDate: Date,
-        variantIds?: ID[]
-    ): Promise<Map<number, MetricData>> {
-        let nrOfEntries: number;
-        let backInTimeAmount: Duration;
-        const orderRepo = this.connection.getRepository(ctx, Order);
-        // What function to use to get the current Tick of a date (i.e. the week or month number)
-        let getTickNrFn: typeof getMonth | typeof getISOWeek;
-        let maxTick: number;
-        if (interval === AdvancedMetricInterval.Monthly) {
-            nrOfEntries = 12;
-            backInTimeAmount = { months: nrOfEntries };
-            getTickNrFn = getMonth;
-            maxTick = 12; // max 12 months
-        } else {
-            // Weekly
-            nrOfEntries = 26;
-            backInTimeAmount = { weeks: nrOfEntries };
-            getTickNrFn = getISOWeek;
-            maxTick = 52; // max 52 weeks
-        }
-        const startDate = startOfDay(sub(endDate, backInTimeAmount));
-        const startTick = getTickNrFn(startDate);
-        // Get orders in a loop until we have all
-        let skip = 0;
-        const take = 1000;
-        let hasMoreOrders = true;
-        const orders: Order[] = [];
-        while (hasMoreOrders) {
-            let query = orderRepo
-                .createQueryBuilder('order')
-                .leftJoinAndSelect('order.lines', 'orderLine')
-                .leftJoin('orderLine.productVariant', 'productVariant')
-                .leftJoin('order.channels', 'orderChannel')
-                .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
-                .andWhere(`order.orderPlacedAt >= :startDate`, {
-                    startDate: startDate.toISOString(),
-                })
-                .skip(skip)
-                .take(take);
-            if (variantIds?.length) {
-                query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
-                    variantIds,
-                });
-            }
-            const [items, nrOfOrders] = await query.getManyAndCount();
-            orders.push(...items);
-            Logger.info(
-                `Fetched orders ${skip}-${skip + take} for channel ${ctx.channel.token
-                } for ${interval} metrics`,
-                loggerCtx
-            );
-            skip += items.length;
-            if (orders.length >= nrOfOrders) {
-                hasMoreOrders = false;
-            }
-        }
+        const monthNames = entitiesPerMonth.map((d) =>
+          this.getMonthName(d.monthNr)
+        );
+        const summary: AdvancedMetricSummary = {
+          code: metricStrategy.code,
+          title: metricStrategy.getTitle(ctx),
+          labels: monthNames,
+          series: this.mapToSeries(dataPointsPerName),
+          type: metricStrategy.metricType,
+        };
+        const stop = performance.now();
         Logger.info(
-            `Finished fetching all ${orders.length} orders for channel ${ctx.channel.token} for ${interval} metrics`,
-            loggerCtx
+          `No cache hit, loaded data for metric "${
+            metricStrategy.code
+          }" in ${Math.round(stop - start)}ms`,
+          loggerCtx
         );
-        const dataPerInterval = new Map<number, MetricData>();
-        const ticks = [];
-        for (let i = 1; i <= nrOfEntries; i++) {
-            if (startTick + i >= maxTick) {
-                // make sure we dont go over month 12 or week 52
-                ticks.push(startTick + i - maxTick);
-            } else {
-                ticks.push(startTick + i);
-            }
-        }
-        ticks.forEach((tick) => {
-            const ordersInCurrentTick = orders.filter(
-                (order) => getTickNrFn(order.orderPlacedAt!) === tick
-            );
-            dataPerInterval.set(tick, {
-                orders: ordersInCurrentTick,
-            });
-        });
-        return dataPerInterval;
+        this.cache.set(cacheKey, summary);
+        return summary;
+      })
+    );
+  }
+
+  /**
+   * Map the data points per month map to the AdvancedMetricSeries array
+   */
+  mapToSeries(dataPointsPerMonth: DataPointsPerMonth): AdvancedMetricSeries[] {
+    const series: AdvancedMetricSeries[] = [];
+    dataPointsPerMonth.forEach((dataPoints, name) => {
+      series.push({
+        name,
+        values: dataPoints,
+      });
+    });
+    return series;
+  }
+
+  /**
+   * Categorize loaded entities per month
+   */
+  splitEntitiesInMonths<T>(
+    strategy: MetricStrategy<T>,
+    entities: T[],
+    from: Date,
+    to: Date
+  ): EntitiesPerMonth<T>[] {
+    // Helper function to construct yearMonth as identifier. E.g. "2021-01"
+    const getYearMonth = (date: Date) =>
+      `${date.getFullYear()}-${date.getMonth()}`;
+    const entitiesPerMonth = new Map<string, EntitiesPerMonth<T>>();
+    // Populate the map with all months in the range
+    for (let i = from; isBefore(i, to); i = addMonths(i, 1)) {
+      const yearMonth = getYearMonth(i);
+      entitiesPerMonth.set(yearMonth, {
+        monthNr: i.getMonth(),
+        year: i.getFullYear(),
+        entities: [], // Will be populated below
+      });
     }
+    // Loop over each item and categorize it in the correct month
+    entities.forEach((entity) => {
+      const date =
+        strategy.getSortableField?.(entity) ??
+        ((entity as any).createdAt as Date);
+      if (!(date instanceof Date) || isNaN(date as any)) {
+        throw Error(
+          `${date} is not a valid date! Can not calculate metrics for "${strategy.code}"`
+        );
+      }
+      const yearMonth = getYearMonth(date);
+      const entry = entitiesPerMonth.get(yearMonth);
+      if (!entry) {
+        // Should never happen, but a custom strategy could have fetched data outside of range
+        return;
+      }
+      entry.entities.push(entity);
+      entitiesPerMonth.set(yearMonth, entry);
+    });
+    return Array.from(entitiesPerMonth.values());
+  }
+
+  getMonthName(monthNr: number): string {
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
+    return monthNames[monthNr];
+  }
 }
