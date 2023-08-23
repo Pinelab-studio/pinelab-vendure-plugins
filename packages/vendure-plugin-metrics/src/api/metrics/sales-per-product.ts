@@ -111,7 +111,7 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
         0
       );
       dataPoints.push({
-        legendLabel: variant.sku,
+        legendLabel: variant.name,
         value: sum,
       });
     });

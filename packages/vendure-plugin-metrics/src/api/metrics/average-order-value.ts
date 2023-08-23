@@ -84,7 +84,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     variants: ProductVariant[]
   ): NamedDatapoint[] {
     const legendLabel = variants.length
-      ? `Orders containing variants ${variants.map((v) => v.sku).join(', ')}`
+      ? `Orders with ${variants.map((v) => v.name).join(', ')}`
       : 'Average order value';
     if (!entities.length) {
       // Return 0 as average if no orders
