@@ -20,7 +20,7 @@ export class MetricsResolver {
     return [
       {
         code: 'sales-per-product',
-        title: 'Nr. of sales per product',
+        title: 'Sales per product',
         type: AdvancedMetricType.Number,
         labels: [
           'January',
