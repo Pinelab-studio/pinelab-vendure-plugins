@@ -66,6 +66,7 @@ export class MetricsUiService {
           return {
             code: r.code,
             name: e.name,
+            title: r.title,
             formatOptions,
             value: i,
             label: r.labels[index],

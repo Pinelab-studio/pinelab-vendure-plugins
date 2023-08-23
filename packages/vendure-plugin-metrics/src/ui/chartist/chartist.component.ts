@@ -72,8 +72,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
       const labels = lines[0].map(({ label }) => label);
       //new CurrencyPipe(e.formatOptions.locale??'en_US',e.formatOptions.currencyCode).transform(e.value,e.formatOptions.currencyCode)
       const series = lines.map((entry) => {
-        return entry.map((e, index) => ({
-          meta: labels[index],
+        return entry.map((e) => ({
           legend: e.name,
           value: e.value,
         }));

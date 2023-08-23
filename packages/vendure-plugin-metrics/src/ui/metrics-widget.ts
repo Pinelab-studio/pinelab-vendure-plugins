@@ -45,7 +45,7 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
         (click)="selectedMetrics = metric"
         [class.active]="selectedMetrics?.[0][0].code === metric[0][0].code"
       >
-        {{ metric[0][0].code }}
+        {{ metric[0][0].title }}
       </button>
     </div>
   `,
