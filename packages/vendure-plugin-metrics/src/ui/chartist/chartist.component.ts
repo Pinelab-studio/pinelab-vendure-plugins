@@ -13,6 +13,7 @@ import {
 import { LineChart, LineChartData, LineChartOptions } from 'chartist';
 import ChartistTooltip from 'chartist-plugin-tooltips-updated';
 import { legend } from './legend';
+import { AdvancedMetricSummary } from '../generated/graphql';
 export interface ChartFormatOptions {
   formatValueAs: 'currency' | 'number';
   currencyCode?: string;
@@ -33,7 +34,7 @@ export interface ChartEntry {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
-  @Input() entries: ChartEntry[][] = [];
+  @Input() entries: AdvancedMetricSummary[] = [];
   @Input() options?: LineChartOptions = {};
   @ViewChild('chartistDiv', { static: true })
   private chartDivRef: ElementRef<HTMLDivElement>;
