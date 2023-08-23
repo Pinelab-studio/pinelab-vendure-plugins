@@ -60,9 +60,13 @@ describe('Metrics', () => {
   });
 
   it('Creates 3 settled orders', async () => {
-    await createSettledOrder(shopClient, 1);
-    await createSettledOrder(shopClient, 1);
-    await createSettledOrder(shopClient, 1);
+    const variants = [
+      { id: 'T_1', quantity: 1 },
+      { id: 'T_2', quantity: 2 },
+    ];
+    await createSettledOrder(shopClient, 1, true, variants);
+    await createSettledOrder(shopClient, 1, true, variants);
+    await createSettledOrder(shopClient, 1, true, variants);
   });
 
   it('Fails to fetch metrics when unauthenticated', async () => {
@@ -107,5 +111,9 @@ describe('Metrics', () => {
     expect(salesPerProduct.series[0].values.length).toEqual(13);
     expect(salesPerProduct.series[1].values.length).toEqual(13);
     expect(salesPerProduct.labels.length).toEqual(13);
+    // Expect the first series (variant 1), to have 3 sales in last month
+    expect(salesPerProduct.series[0].values[12]).toEqual(3);
+    // Expect the first series (variant 2), to have 6 sales in last month
+    expect(salesPerProduct.series[1].values[12]).toEqual(6);
   });
 });
