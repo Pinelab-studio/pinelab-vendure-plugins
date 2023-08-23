@@ -1,8 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { Injector, Logger, RequestContext } from '@vendure/core';
+import {
+  Injector,
+  Logger,
+  ProductVariant,
+  ProductVariantService,
+  RequestContext,
+} from '@vendure/core';
 import { addMonths, endOfDay, isBefore, startOfMonth, sub } from 'date-fns';
-import { da } from 'date-fns/locale';
 import { loggerCtx } from '../constants';
 import {
   AdvancedMetricSeries,
@@ -14,7 +19,8 @@ import { MetricStrategy } from './metric-strategy';
 import { AverageOrderValueMetric } from './metrics/average-order-value';
 import { SalesPerProductMetric } from './metrics/sales-per-product';
 
-type DataPointsPerMonth = Map<string, number[]>;
+// Categorize the datapoints per Legend name,
+type DataPointsPerLegend = Map<string, number[]>;
 interface EntitiesPerMonth<T> {
   monthNr: number;
   year: number;
@@ -26,7 +32,10 @@ export class MetricsService {
   // Cache for datapoints
   cache = new Cache<AdvancedMetricSummary>();
   metricStrategies: MetricStrategy<unknown>[];
-  constructor(private moduleRef: ModuleRef) {
+  constructor(
+    private moduleRef: ModuleRef,
+    private variantService: ProductVariantService
+  ) {
     this.metricStrategies = [
       new SalesPerProductMetric(),
       new AverageOrderValueMetric(),
@@ -37,6 +46,10 @@ export class MetricsService {
     ctx: RequestContext,
     input?: AdvancedMetricSummaryInput
   ): Promise<AdvancedMetricSummary[]> {
+    const variants = await this.variantService.findByIds(
+      ctx,
+      input?.variantIds ?? []
+    );
     const today = endOfDay(new Date());
     // Use start of month, because we'd like to see the full results of last years same month
     const oneYearAgo = startOfMonth(sub(today, { years: 1 }));
@@ -44,6 +57,7 @@ export class MetricsService {
     return Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
         const cacheKey = {
+          code: metricStrategy.code,
           from: today,
           to: oneYearAgo,
           channel: ctx.channel.token,
@@ -65,7 +79,7 @@ export class MetricsService {
           new Injector(this.moduleRef),
           oneYearAgo,
           today,
-          input
+          variants
         );
         const entitiesPerMonth = this.splitEntitiesInMonths(
           metricStrategy,
@@ -74,7 +88,7 @@ export class MetricsService {
           today
         );
         // Calculate datapoints per 'name', because we could be dealing with a multi line chart
-        const dataPointsPerName: DataPointsPerMonth = new Map<
+        const dataPointsPerName: DataPointsPerLegend = new Map<
           string,
           number[]
         >();
@@ -82,14 +96,14 @@ export class MetricsService {
           const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
             entityMap.entities,
-            input
+            variants
           );
           // Loop over datapoint, because we support multi line charts
           calculatedDataPoints.forEach((dataPoint) => {
-            const entry = dataPointsPerName.get(dataPoint.name) ?? [];
+            const entry = dataPointsPerName.get(dataPoint.legendLabel) ?? [];
             entry.push(dataPoint.value);
             // Add entry, for example `'product1', [10, 20, 30]`
-            dataPointsPerName.set(dataPoint.name, entry);
+            dataPointsPerName.set(dataPoint.legendLabel, entry);
           });
         });
         const monthNames = entitiesPerMonth.map((d) =>
@@ -118,7 +132,7 @@ export class MetricsService {
   /**
    * Map the data points per month map to the AdvancedMetricSeries array
    */
-  mapToSeries(dataPointsPerMonth: DataPointsPerMonth): AdvancedMetricSeries[] {
+  mapToSeries(dataPointsPerMonth: DataPointsPerLegend): AdvancedMetricSeries[] {
     const series: AdvancedMetricSeries[] = [];
     dataPointsPerMonth.forEach((dataPoints, name) => {
       series.push({

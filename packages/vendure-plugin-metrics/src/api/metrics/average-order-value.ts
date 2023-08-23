@@ -2,10 +2,14 @@ import {
   Injector,
   Logger,
   Order,
+  ProductVariant,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { AdvancedMetricType } from '../../ui/generated/graphql';
+import {
+  AdvancedMetricSummaryInput,
+  AdvancedMetricType,
+} from '../../ui/generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../metric-strategy';
 
 const loggerCtx = 'AverageOrderValueMetric';
@@ -28,18 +32,21 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     ctx: RequestContext,
     injector: Injector,
     from: Date,
-    to: Date
+    to: Date,
+    variants: ProductVariant[]
   ): Promise<Order[]> {
     let skip = 0;
     const take = 1000;
     let hasMoreOrders = true;
     const orders: Order[] = [];
     while (hasMoreOrders) {
-      const [items, totalOrders] = await injector
+      let query = injector
         .get(TransactionalConnection)
         .getRepository(ctx, Order)
         .createQueryBuilder('order')
         .leftJoin('order.channels', 'orderChannel')
+        .leftJoin('order.lines', 'orderLine')
+        .leftJoin('orderLine.productVariant', 'productVariant')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
         .andWhere(`order.orderPlacedAt >= :from`, {
           from: from.toISOString(),
@@ -48,8 +55,14 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
           to: to.toISOString(),
         })
         .skip(skip)
-        .take(take)
-        .getManyAndCount();
+        .take(take);
+
+      if (variants.length) {
+        query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
+          variantIds: variants.map((v) => v.id),
+        });
+      }
+      const [items, totalOrders] = await query.getManyAndCount();
       orders.push(...items);
       Logger.info(
         `Fetched orders ${skip}-${skip + take} for channel ${
@@ -67,13 +80,19 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
 
   calculateDataPoints(
     ctx: RequestContext,
-    entities: Order[]
+    entities: Order[],
+    variants: ProductVariant[]
   ): NamedDatapoint[] {
+    const legendLabel = variants.length
+      ? `Average order value containing variants ${variants
+          .map((v) => v.sku)
+          .join(', ')}`
+      : 'Average order value';
     if (!entities.length) {
       // Return 0 as average if no orders
       return [
         {
-          name: this.code,
+          legendLabel,
           value: 0,
         },
       ];
@@ -84,7 +103,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     const average = Math.round(total / entities.length) / 100;
     return [
       {
-        name: this.code,
+        legendLabel,
         value: average,
       },
     ];

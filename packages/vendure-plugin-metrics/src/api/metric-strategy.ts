@@ -2,10 +2,12 @@ import {
   AdvancedMetricSummaryInput,
   AdvancedMetricType,
 } from '../ui/generated/graphql';
-import { RequestContext, Injector } from '@vendure/core';
-
+import { RequestContext, Injector, ProductVariant } from '@vendure/core';
+/**
+ * GroupId is used to group datapoints. For example 'product1', so that the plugin can find all datapoints for that product;
+ */
 export interface NamedDatapoint {
-  name: string;
+  legendLabel: string;
   value: number;
 }
 
@@ -32,6 +34,7 @@ export interface MetricStrategy<T> {
 
   /**
    * Load your entities for the given time frame here.
+   * A client can optionally supply variants as input, which means metrics should be shown for the selected variants only
    *
    * Keep performance and object size in mind:
    *
@@ -45,7 +48,7 @@ export interface MetricStrategy<T> {
     injector: Injector,
     from: Date,
     to: Date,
-    input?: AdvancedMetricSummaryInput
+    variants: ProductVariant[]
   ): Promise<T[]>;
 
   /**
@@ -65,6 +68,6 @@ export interface MetricStrategy<T> {
   calculateDataPoints(
     ctx: RequestContext,
     entities: T[],
-    input?: AdvancedMetricSummaryInput
+    variants: ProductVariant[]
   ): NamedDatapoint[];
 }

@@ -12,7 +12,7 @@ export class MetricsResolver {
   constructor(private readonly metricsService: MetricsService) {}
 
   @Query()
-  // FIXME @Allow(Permission.ReadOrder)
+  @Allow(Permission.ReadOrder)
   async advancedMetricSummaries(
     @Ctx() ctx: RequestContext,
     @Args('input') input: AdvancedMetricSummaryInput

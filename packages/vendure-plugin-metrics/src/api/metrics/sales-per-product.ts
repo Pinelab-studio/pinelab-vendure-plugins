@@ -1,8 +1,8 @@
 import {
   Injector,
   Logger,
-  Order,
   OrderLine,
+  ProductVariant,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
@@ -35,7 +35,7 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
     injector: Injector,
     from: Date,
     to: Date,
-    input?: AdvancedMetricSummaryInput
+    variants: ProductVariant[]
   ): Promise<OrderLine[]> {
     let skip = 0;
     const take = 1000;
@@ -59,9 +59,9 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
         })
         .skip(skip)
         .take(take);
-      if (input?.variantIds?.length) {
+      if (variants.length) {
         query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
-          variantIds: input.variantIds,
+          variantIds: variants.map((v) => v.id),
         });
       }
       const [items, totalItems] = await query.getManyAndCount();
@@ -83,31 +83,27 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
   calculateDataPoints(
     ctx: RequestContext,
     lines: OrderLine[],
-    input?: AdvancedMetricSummaryInput
+    variants: ProductVariant[]
   ): NamedDatapoint[] {
     // Return the nr of products sold
-    if (!input?.variantIds?.length) {
+    if (!variants.length) {
       // Return total sum of quantities if no variantIds given
       const total = lines
         .map((line) => line.quantity)
         .reduce((total, current) => total + current, 0);
       return [
         {
-          name: 'Total product variants sold',
+          legendLabel: 'Total of all variants',
           value: total,
         },
       ];
     }
     // Else calculate sum per variant
     const dataPoints: NamedDatapoint[] = [];
-    console.log(
-      'lines',
-      lines.map((line) => line.productVariant)
-    );
-    input.variantIds.forEach((variantId) => {
+    variants.forEach((variant) => {
       // Find order lines per variant id
       const linesForVariant = lines.filter(
-        (line) => line.productVariant.id === variantId
+        (line) => line.productVariant.id === variant.id
       );
       // Sum of quantities for this variant
       const sum = linesForVariant.reduce(
@@ -115,7 +111,7 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
         0
       );
       dataPoints.push({
-        name: linesForVariant[0]?.productVariant.name ?? variantId,
+        legendLabel: variant.sku,
         value: sum,
       });
     });

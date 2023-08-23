@@ -11,8 +11,8 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
 import {
   AdvancedMetricSummary,
-  AdvancedMetricSummaryQuery,
   MetricsPlugin,
+  AdvancedMetricSummariesQuery,
 } from '../src';
 import { GET_METRICS } from '../src/ui/queries.graphql';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
@@ -66,129 +66,46 @@ describe('Metrics', () => {
   });
 
   it('Fails to fetch metrics when unauthenticated', async () => {
-    const promise = adminClient.query(GET_METRICS, {
-      input: { interval: 'MONTHLY' },
-    });
+    const promise = adminClient.query(GET_METRICS);
     await expect(promise).rejects.toThrow('authorized');
   });
 
-  it('Fetches MONTHLY metrics for all orders', async () => {
+  it('Fetches metrics for past 13 months', async () => {
     await adminClient.asSuperAdmin();
-    const { advancedMetricSummary } =
-      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
-        input: { interval: 'MONTHLY' },
-      });
-    expect(advancedMetricSummary.length).toEqual(3);
-    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-orders'
+    const { advancedMetricSummaries } =
+      await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS);
+    const averageorderValue = advancedMetricSummaries.find(
+      (m) => m.code === 'aov'
     )!;
-    expect(aov.entries.length).toEqual(12);
-    expect(nrOfOrders.entries.length).toEqual(12);
-    expect(aov.entries[11].value).toEqual(4921.4);
-    expect(nrOfOrders.entries[11].value).toEqual(3);
+    const salesPerProduct = advancedMetricSummaries.find(
+      (m) => m.code === 'sales-per-product'
+    )!;
+    expect(advancedMetricSummaries.length).toEqual(2);
+    expect(averageorderValue.series[0].values.length).toEqual(13);
+    expect(averageorderValue.labels.length).toEqual(13);
+    expect(salesPerProduct.series[0].values.length).toEqual(13);
+    expect(salesPerProduct.labels.length).toEqual(13);
   });
 
-  it('Fetches WEEKLY metrics for all orders', async () => {
+  it('Fetches metrics for specific variant', async () => {
     await adminClient.asSuperAdmin();
-    const { advancedMetricSummary } =
-      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
-        input: { interval: 'WEEKLY' },
+    const { advancedMetricSummaries } =
+      await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS, {
+        input: { variantIds: [1, 2] },
       });
-    expect(advancedMetricSummary.length).toEqual(3);
-    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-orders'
+    const averageorderValue = advancedMetricSummaries.find(
+      (m) => m.code === 'aov'
     )!;
-    expect(aov.entries.length).toEqual(26);
-    expect(nrOfOrders.entries.length).toEqual(26);
-    expect(aov.entries[25].value).toEqual(4921.4);
-    expect(nrOfOrders.entries[25].value).toEqual(3);
-  });
-
-  it('Fetches WEEKLY metrics for variant with no order', async () => {
-    await adminClient.asSuperAdmin();
-    const { advancedMetricSummary } =
-      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
-        input: { interval: 'WEEKLY', variantIds: [3] },
-      });
-    expect(advancedMetricSummary.length).toEqual(3);
-    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-orders'
+    const salesPerProduct = advancedMetricSummaries.find(
+      (m) => m.code === 'sales-per-product'
     )!;
-    const nrOfItemsSold = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-items-sold'
-    )!;
-    expect(aov.entries.length).toEqual(26);
-    expect(nrOfItemsSold.entries.length).toEqual(26);
-    expect(aov.entries[25].value).toEqual(0);
-    expect(nrOfItemsSold.entries[25].value).toEqual(0);
-  });
-
-  it('Fetches MONTHLY metrics for  variant with no order', async () => {
-    await adminClient.asSuperAdmin();
-    const { advancedMetricSummary } =
-      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
-        input: { interval: 'MONTHLY', variantIds: [3] },
-      });
-    expect(advancedMetricSummary.length).toEqual(3);
-    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-orders'
-    )!;
-    const nrOfItemsSold = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-items-sold'
-    )!;
-    expect(nrOfOrders.entries.length).toEqual(12);
-    expect(nrOfOrders.entries[11].value).toEqual(0);
-    expect(aov.entries.length).toEqual(12);
-    expect(nrOfItemsSold.entries.length).toEqual(12);
-    expect(aov.entries[11].value).toEqual(0);
-    expect(nrOfItemsSold.entries[11].value).toEqual(0);
-  });
-
-  it('Fetches WEEKLY metrics for variant with id 1', async () => {
-    await adminClient.asSuperAdmin();
-    const { advancedMetricSummary } =
-      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
-        input: { interval: 'WEEKLY', variantIds: [1] },
-      });
-    expect(advancedMetricSummary.length).toEqual(3);
-    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-orders'
-    )!;
-    const nrOfItemsSold = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-items-sold'
-    )!;
-    expect(nrOfOrders.entries.length).toEqual(26);
-    expect(nrOfOrders.entries[11].value).toEqual(0);
-    expect(aov.entries.length).toEqual(26);
-    expect(nrOfItemsSold.entries.length).toEqual(26);
-    expect(aov.entries[25].value).toEqual(4921.4);
-    expect(nrOfItemsSold.entries[25].value).toEqual(3);
-  });
-
-  it('Fetches MONTHLY metrics for  variant with id 1', async () => {
-    await adminClient.asSuperAdmin();
-    const { advancedMetricSummary } =
-      await adminClient.query<AdvancedMetricSummaryQuery>(GET_METRICS, {
-        input: { interval: 'MONTHLY', variantIds: [1] },
-      });
-    expect(advancedMetricSummary.length).toEqual(3);
-    const aov = advancedMetricSummary.find((m) => m.code === 'aov')!;
-    const nrOfOrders = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-orders'
-    )!;
-    const nrOfItemsSold = advancedMetricSummary.find(
-      (m) => m.code === 'nr-of-items-sold'
-    )!;
-    expect(nrOfOrders.entries.length).toEqual(12);
-    expect(nrOfOrders.entries[11].value).toEqual(3);
-    expect(aov.entries.length).toEqual(12);
-    expect(nrOfItemsSold.entries.length).toEqual(12);
-    expect(aov.entries[11].value).toEqual(4921.4);
-    expect(nrOfItemsSold.entries[11].value).toEqual(3);
+    expect(advancedMetricSummaries.length).toEqual(2);
+    expect(advancedMetricSummaries.length).toEqual(2);
+    expect(averageorderValue.series[0].values.length).toEqual(13);
+    expect(averageorderValue.labels.length).toEqual(13);
+    // For sales per product we expect 2 series: one for each variant
+    expect(salesPerProduct.series[0].values.length).toEqual(13);
+    expect(salesPerProduct.series[1].values.length).toEqual(13);
+    expect(salesPerProduct.labels.length).toEqual(13);
   });
 });
