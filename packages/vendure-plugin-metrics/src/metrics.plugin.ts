@@ -4,7 +4,6 @@ import path from 'path';
 import { schema } from './api/schema.graphql';
 import { MetricsResolver } from './api/metrics.resolver';
 import { MetricsService } from './api/metrics.service';
-// import { MetricsService } from './api/metrics.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],

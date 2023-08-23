@@ -7,7 +7,8 @@ month or per week and number of items per product variant for the past 12 months
 
 ![image](https://user-images.githubusercontent.com/6604455/236404288-e55c37ba-9508-43e6-a54c-2eb7b3cd36ee.png)
 
-// TODO descibre single vs multi datapoint charts
+// TODO describe single vs multi datapoint charts
+// TODO allow custom strategies
 
 ## Getting started
 
