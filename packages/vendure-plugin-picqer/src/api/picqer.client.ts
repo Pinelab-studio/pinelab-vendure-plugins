@@ -242,15 +242,15 @@ export class PicqerClient {
   ): Promise<ProductData> {
     const product = await this.getProductByCode(sku);
     if (!product) {
-      Logger.info(
-        `Product '${sku}' not found, creating new product`,
+      Logger.debug(
+        `Product '${sku}' not found, creating new product in Picqer`,
         loggerCtx
       );
       return this.createProduct(input);
     }
     const productId = product.idproduct;
-    Logger.info(
-      `Existing product '${productId}' found, updating product ${productId}`,
+    Logger.debug(
+      `Existing product '${productId}' found, updating product ${productId} in Picqer`,
       loggerCtx
     );
     return this.updateProduct(productId, input);

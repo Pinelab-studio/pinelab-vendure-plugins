@@ -19,11 +19,41 @@ export const SCHEDULE_FRAGMENT = gql`
   }
 `;
 
+export const PAYMENT_FRAGMENT = gql`
+  fragment PaymentFields on StripeSubscriptionPayment {
+    id
+    createdAt
+    updatedAt
+    collectionMethod
+    charge
+    currency
+    eventType
+    orderCode
+    channelId
+    subscriptionId
+  }
+`;
+
 export const GET_SCHEDULES = gql`
   ${SCHEDULE_FRAGMENT}
   query stripeSubscriptionSchedules {
     stripeSubscriptionSchedules {
-      ...ScheduleFields
+      items {
+        ...ScheduleFields
+      }
+      totalItems
+    }
+  }
+`;
+
+export const GET_PAYMENTS = gql`
+  ${PAYMENT_FRAGMENT}
+  query stripeSubscriptionPayments {
+    stripeSubscriptionPayments {
+      items {
+        ...PaymentFields
+      }
+      totalItems
     }
   }
 `;

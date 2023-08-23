@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-picqer",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "Vendure plugin syncing to orders and stock with Picqer",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
