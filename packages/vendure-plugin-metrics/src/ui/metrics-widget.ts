@@ -8,6 +8,7 @@ import {
 // import { AdvancedMetricInterval } from './generated/graphql';
 import { Observable } from 'rxjs';
 import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
+import { ChartEntry } from './chartist/chartist.component';
 
 @Component({
   selector: 'product-metrics-widget',
@@ -43,9 +44,9 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
         *ngFor="let metric of metrics$ | async"
         class="button-small"
         (click)="selectedMetrics = metric"
-        [class.active]="selectedMetrics?.[0][0].code === metric[0][0].code"
+        [class.active]="selectedMetrics?.summary.code === metric.summary.code"
       >
-        {{ metric[0][0].title }}
+        {{ metric.summary.title }}
       </button>
     </div>
   `,
@@ -88,8 +89,8 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
-  metrics$: Observable<AdvancedChartEntry[][][]> | undefined;
-  selectedMetrics: AdvancedChartEntry[][] | undefined;
+  metrics$: Observable<ChartEntry[]> | undefined;
+  selectedMetrics: ChartEntry | undefined;
   variantName: string;
   dropDownName = 'Select Variant';
   // selection: AdvancedMetricInterval = AdvancedMetricInterval.Monthly;
@@ -152,9 +153,9 @@ export class MetricsWidgetComponent implements OnInit {
     );
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
-      if (this.selectedMetrics?.length) {
+      if (this.selectedMetrics) {
         this.selectedMetrics = metrics.find(
-          (e) => e[0]![0].code == this.selectedMetrics![0]![0].code
+          (e) => e.summary.code == this.selectedMetrics?.summary.code
         );
       } else {
         this.selectedMetrics = metrics[0];

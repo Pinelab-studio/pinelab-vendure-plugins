@@ -4,6 +4,7 @@ import { AdvancedMetricSummary, AdvancedMetricType } from './generated/graphql';
 import { BehaviorSubject, Observable, combineLatest } from 'rxjs';
 import { GET_METRICS } from './queries.graphql';
 import { switchMap } from 'rxjs/operators';
+import { ChartEntry } from './chartist/chartist.component';
 export interface AdvancedChartEntry {
   label: string;
   value: number;
@@ -52,7 +53,7 @@ export class MetricsUiService {
     input: AdvancedMetricSummary[],
     locale: string,
     currencyCode: string
-  ): AdvancedChartEntry[][][] {
+  ): ChartEntry[] {
     return input.map((r) => {
       const formatValueAs: 'currency' | 'number' =
         r.type === AdvancedMetricType.Number ? 'number' : 'currency';
@@ -61,18 +62,10 @@ export class MetricsUiService {
         currencyCode,
         locale,
       };
-      return r.series.map((e) => {
-        return e.values.map((i, index) => {
-          return {
-            code: r.code,
-            name: e.name,
-            title: r.title,
-            formatOptions,
-            value: i,
-            label: r.labels[index],
-          };
-        });
-      });
+      return {
+        formatOptions,
+        summary: r,
+      };
     });
   }
 }

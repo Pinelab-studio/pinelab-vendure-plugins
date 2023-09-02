@@ -10,7 +10,8 @@ import {
   ViewChild,
   ChangeDetectorRef,
 } from '@angular/core';
-import { LineChart, LineChartData, LineChartOptions } from 'chartist';
+import { CurrencyPipe } from '@angular/common';
+import { LineChart, LineChartData, LineChartOptions, easings } from 'chartist';
 import ChartistTooltip from 'chartist-plugin-tooltips-updated';
 import { legend } from './legend';
 import { AdvancedMetricSummary } from '../generated/graphql';
@@ -21,10 +22,8 @@ export interface ChartFormatOptions {
 }
 
 export interface ChartEntry {
-  label: string;
-  value: number;
+  summary: AdvancedMetricSummary;
   formatOptions: ChartFormatOptions;
-  name: string;
 }
 
 @Component({
@@ -34,7 +33,7 @@ export interface ChartEntry {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
-  @Input() entries: AdvancedMetricSummary[] = [];
+  @Input() entries: ChartEntry;
   @Input() options?: LineChartOptions = {};
   @ViewChild('chartistDiv', { static: true })
   private chartDivRef: ElementRef<HTMLDivElement>;
@@ -52,10 +51,58 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
         showLine: true,
         showPoint: true,
         fullWidth: true,
-        plugins: [ChartistTooltip(), legend()],
+        axisY: {
+          labelInterpolationFnc: (value: number, _: number) => {
+            return this.formatCurrencyToValue(value);
+          },
+        },
+        plugins: [
+          ChartistTooltip({
+            currency: '$',
+            currencyFormatCallback: (value: number, _: any) => {
+              return this.formatCurrencyToValue(value);
+            },
+          }),
+          legend(),
+        ],
         ...this.options,
       }
     );
+
+    this.chart.on('draw', (data) => {
+      if (data.type === 'line' || data.type === 'area') {
+        data.element.animate({
+          d: {
+            begin: 2000 * data.index,
+            dur: 2000,
+            from: data.path
+              .clone()
+              .scale(1, 0)
+              .translate(0, data.chartRect.height())
+              .stringify(),
+            to: data.path.clone().stringify(),
+            easing: easings.easeOutQuint,
+          },
+        });
+      }
+    });
+  }
+
+  formatCurrencyToValue(value: number) {
+    if (this.entries !== undefined) {
+      const localeFrom =
+        localStorage.getItem('vnd__contentLanguageCode') ?? 'en';
+      const formatter = new CurrencyPipe(
+        this.entries.formatOptions.locale ?? localeFrom,
+        this.entries.formatOptions.currencyCode
+      );
+      const format = (l: number) =>
+        this.entries.formatOptions.formatValueAs === 'currency'
+          ? formatter.transform(l) ?? l
+          : l;
+      return format(value);
+    }
+    return value;
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -68,15 +115,16 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
     this.chart?.detach();
   }
 
-  private entriesToLineChartData(lines: ChartEntry[][]): LineChartData {
-    if (lines.length) {
-      const labels = lines[0].map(({ label }) => label);
-      //new CurrencyPipe(e.formatOptions.locale??'en_US',e.formatOptions.currencyCode).transform(e.value,e.formatOptions.currencyCode)
-      const series = lines.map((entry) => {
-        return entry.map((e) => ({
-          legend: e.name,
-          value: e.value,
-        }));
+  private entriesToLineChartData(entry: ChartEntry): LineChartData {
+    if (entry.summary?.labels?.length) {
+      const labels = entry.summary.labels;
+      const series = entry.summary.series.map((s) => {
+        return s.values.map((v) => {
+          return {
+            legend: s.name,
+            value: v,
+          };
+        });
       });
       this.cdr.detectChanges();
       return { labels, series };
