@@ -3,7 +3,7 @@ import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import path from 'path';
 import { schema } from './api/schema.graphql';
 import { MetricsResolver } from './api/metrics.resolver';
-// import { MetricsService } from './api/metrics.service';
+import { MetricsService } from './api/metrics.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -11,7 +11,7 @@ import { MetricsResolver } from './api/metrics.resolver';
     schema,
     resolvers: [MetricsResolver],
   },
-  // FIXME providers: [MetricsService],
+  providers: [MetricsService],
   compatibility: '^2.0.0',
 })
 export class MetricsPlugin {

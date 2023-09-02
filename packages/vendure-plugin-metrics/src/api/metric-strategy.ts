@@ -2,7 +2,14 @@ import {
   AdvancedMetricSummaryInput,
   AdvancedMetricType,
 } from '../ui/generated/graphql';
-import { RequestContext, Injector } from '@vendure/core';
+import { RequestContext, Injector, ProductVariant } from '@vendure/core';
+/**
+ * GroupId is used to group datapoints. For example 'product1', so that the plugin can find all datapoints for that product;
+ */
+export interface NamedDatapoint {
+  legendLabel: string;
+  value: number;
+}
 
 export interface MetricStrategy<T> {
   code: string;
@@ -19,40 +26,48 @@ export interface MetricStrategy<T> {
   getTitle(ctx: RequestContext): string;
 
   /**
-   * Should return the field to sort and order when loading data.
-   * For example `orderPlacedAt` when you are doing metrics for Orders
-   * Has to be a Date
+   * Should return the date to sort by. This value is used to determine in what month the datapoint should be displayed.
+   * For example `order.orderPlacedAt` when you are doing metrics for Orders.
+   * By default `creeatedAt` is used
    */
-  sortByDateField(): string;
+  getSortableField?(entity: T): Date;
 
   /**
-   * Load your data for the given time frame here.
+   * Load your entities for the given time frame here.
+   * A client can optionally supply variants as input, which means metrics should be shown for the selected variants only
    *
    * Keep performance and object size in mind:
    *
-   * Data is cached in memory, so only return data you actually use in your calculateDataPoint function
+   * Entities are cached in memory, so only return data you actually use in your calculateDataPoint function
    *
    * This function is executed in the main thread when a user views its dashboard,
    * so try not to fetch objects with many relations
    */
-  loadData(
+  loadEntities(
     ctx: RequestContext,
     injector: Injector,
     from: Date,
     to: Date,
-    input: AdvancedMetricSummaryInput
+    variants: ProductVariant[]
   ): Promise<T[]>;
 
   /**
-   * Calculate the datapoint for the given month. Return multiple datapoints for a stacked line chart
+   * Calculate the aggregated datapoint for the given data.
+   * E.g. the sum of all given data, or the average.
    *
-   * @param ctx
-   * @param data The data for the current timeframe
+   * Return multiple datapoints for a multi line chart.
+   * The name will be used as legend on the chart.
+   *
+   * @example
+   * // Number of products sold
+   * [
+   *   {name: 'product1', value: 10 },
+   *   {name: 'product2', value: 16 }
+   * ]
    */
-  calculateDataPoint(
+  calculateDataPoints(
     ctx: RequestContext,
-    data: T[],
-    monthNr: number,
-    input: AdvancedMetricSummaryInput
-  ): number[];
+    entities: T[],
+    variants: ProductVariant[]
+  ): NamedDatapoint[];
 }
