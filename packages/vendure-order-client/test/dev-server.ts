@@ -9,8 +9,6 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from './initial-data.js';
-import { OverrideVerificationTokenGeneratorPlugin } from './override-verification-token-generator.plugin.js';
-
 (async () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -24,7 +22,6 @@ import { OverrideVerificationTokenGeneratorPlugin } from './override-verificatio
       adminApiPlayground: true,
       shopApiPlayground: true,
     },
-    plugins: [OverrideVerificationTokenGeneratorPlugin],
   });
 
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
