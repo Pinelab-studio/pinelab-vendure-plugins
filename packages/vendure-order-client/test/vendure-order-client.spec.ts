@@ -1,4 +1,11 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  ChannelService,
+  DefaultLogger,
+  LogLevel,
+  RequestContext,
+  UserService,
+  mergeConfig,
+} from '@vendure/core';
 import {
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -18,9 +25,17 @@ import {
   ErrorResult,
   PaymentInput,
   CreateCustomerInput,
+  RegisterCustomerInput,
+  Success,
+  CurrentUser,
 } from '../src/';
 import { initialData } from './initial-data';
+import { addItem } from '../../test/src/shop-utils';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
+import {
+  OverrideVerificationTokenGeneratorPlugin,
+  testVerificationToken,
+} from './override-verification-token-generator.plugin';
 
 const storage: any = {};
 const window = {
@@ -56,6 +71,7 @@ describe('Vendure order client', () => {
   const couponCodeName = 'couponCodeName';
   let activeOrderCode: string | undefined;
   let adminClient: SimpleGraphQLClient;
+  let shopClient: SimpleGraphQLClient;
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
   beforeAll(async () => {
@@ -64,10 +80,13 @@ describe('Vendure order client', () => {
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethodHandler],
       },
+      authOptions: {
+        requireVerification: false,
+      },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
+      plugins: [OverrideVerificationTokenGeneratorPlugin],
     });
-
-    ({ server, adminClient } = createTestEnvironment(config));
+    ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: path.join(__dirname, './product-import.csv'),
@@ -343,12 +362,115 @@ describe('Vendure order client', () => {
   });
 
   describe('Registered customer checkout', () => {
-    it.skip('Register as customer', async () => {
-      expect(false).toBe(true);
+    const createNewCustomerInput: RegisterCustomerInput = {
+      emailAddress: `test${Math.random()}@xyz.com`,
+      password: '1qaz2wsx',
+    };
+    it('Register as customer', async () => {
+      const result = await client.registerCustomerAccount(
+        createNewCustomerInput
+      );
+      expect((result as Success)?.success).toBe(true);
+      await shopClient.asUserWithCredentials(
+        createNewCustomerInput.emailAddress,
+        createNewCustomerInput.password
+      );
+      await addItem(shopClient, 'T_1', 2);
+      const { activeOrder } = await shopClient.query(gql`
+        {
+          activeOrder {
+            lines {
+              id
+              productVariant {
+                id
+              }
+            }
+            customer {
+              id
+              emailAddress
+            }
+          }
+        }
+      `);
+      expect(activeOrder.customer.emailAddress).toBe(
+        createNewCustomerInput.emailAddress
+      );
     });
 
-    it.skip('Login as customer', async () => {
-      expect(false).toBe(true);
+    it.skip('Login with the new customer', async () => {
+      const { login } = await shopClient.query(
+        gql`
+          mutation Login($username: String!, $password: String!) {
+            login(username: $username, password: $password) {
+              ... on CurrentUser {
+                identifier
+              }
+            }
+          }
+        `,
+        {
+          username: createNewCustomerInput.emailAddress,
+          password: createNewCustomerInput.password,
+        }
+      );
+      expect(login.identifier).toBe(createNewCustomerInput.emailAddress);
+    });
+
+    const newPassword = `newPassword${Math.random()}`;
+    const passwordResetEmail = 'marques.sawayn@hotmail.com';
+
+    it('Resets password', async () => {
+      const ctx = new RequestContext({
+        apiType: 'shop',
+        channel: await server.app.get(ChannelService).getDefaultChannel(),
+        isAuthorized: false,
+        authorizedAsOwnerOnly: false,
+      });
+      // expect(server.app.get(VerificationTokenGenerator).generateVerificationToken()).toEqual(testVerificationToken);
+      console.log(
+        await server.app
+          .get(UserService)
+          .getUserByEmailAddress(ctx, passwordResetEmail)
+      );
+      const requestPasswordResetRequest = await client.requestPasswordReset(
+        passwordResetEmail
+      );
+      console.log(
+        await server.app
+          .get(UserService)
+          .getUserByEmailAddress(ctx, passwordResetEmail)
+      );
+      // const requestPasswordResetRequest= await server.app.get(UserService).setPasswordResetToken(ctx, createNewCustomerInput.emailAddress);
+      expect((requestPasswordResetRequest as Success).success).toBe(true);
+      const resetPasswordRequest = await client.resetPassword(
+        newPassword,
+        testVerificationToken
+      );
+      console.log(
+        await server.app
+          .get(UserService)
+          .getUserByEmailAddress(ctx, passwordResetEmail)
+      );
+      // const resetPasswordRequest= await server.app.get(UserService).resetPasswordByToken(ctx, testVerificationToken,newPassword);
+      expect((resetPasswordRequest as CurrentUser).identifier).toBe(
+        passwordResetEmail
+      );
+    });
+
+    it.skip('Login with the new password', async () => {
+      const { login } = await shopClient.query(
+        gql`
+          mutation Login($username: String!, $password: String!) {
+            login(username: $username, password: $password) {
+              ... on CurrentUser {
+                identifier
+              }
+            }
+          }
+        `,
+        { username: passwordResetEmail, password: newPassword }
+      );
+      expect(login.identifier).toBe(passwordResetEmail);
     });
 
     // TODO dont add shipping address etc

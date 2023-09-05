@@ -8,8 +8,8 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import path from 'path';
 import { initialData } from './initial-data.js';
+import { OverrideVerificationTokenGeneratorPlugin } from './override-verification-token-generator.plugin.js';
 
 (async () => {
   let server: TestServer;
@@ -24,6 +24,7 @@ import { initialData } from './initial-data.js';
       adminApiPlayground: true,
       shopApiPlayground: true,
     },
+    plugins: [OverrideVerificationTokenGeneratorPlugin],
   });
 
   ({ server, adminClient, shopClient } = createTestEnvironment(config));

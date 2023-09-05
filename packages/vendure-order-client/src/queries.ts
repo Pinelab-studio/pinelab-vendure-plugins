@@ -102,6 +102,18 @@ export class GraphqlQueries {
     }
   `;
 
+  CURRENT_USER_FRAGMENT = gql`
+    fragment CurrentUserShop on CurrentUser {
+      id
+      identifier
+      channels {
+        code
+        token
+        permissions
+      }
+    }
+  `;
+
   ADD_ITEM_TO_ORDER = gql`
     ${this.ACTIVE_ORDER_FIELDS}
     mutation additemToOrder($productVariantId: ID!, $quantity: Int!) {
@@ -275,6 +287,60 @@ export class GraphqlQueries {
     query GetOrderByCode($code: String!) {
       orderByCode(code: $code) {
         ...ActiveOrderFields
+      }
+    }
+  `;
+
+  REGISTER_CUSTOMER_ACCOUNT = gql`
+    mutation Register($input: RegisterCustomerInput!) {
+      registerCustomerAccount(input: $input) {
+        ... on Success {
+          success
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+        ... on PasswordValidationError {
+          validationErrorMessage
+        }
+      }
+    }
+  `;
+
+  REQUEST_PASSWORD_RESET = gql`
+    mutation RequestPasswordReset($emailAddress: String!) {
+      requestPasswordReset(emailAddress: $emailAddress) {
+        ... on Success {
+          success
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  RESET_PASSWORD = gql`
+    mutation ResetPassword($token: String!, $password: String!) {
+      resetPassword(token: $token, password: $password) {
+        ... on CurrentUser {
+          id
+          identifier
+          channels {
+            code
+            token
+            permissions
+          }
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+        ... on PasswordValidationError {
+          validationErrorMessage
+        }
       }
     }
   `;

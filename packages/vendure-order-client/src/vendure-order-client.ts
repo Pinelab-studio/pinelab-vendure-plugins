@@ -23,6 +23,12 @@ import {
   RemoveAllOrderLinesMutation,
   RemoveAllOrderLinesMutationVariables,
   MutationAddPaymentToOrderArgs,
+  RegisterCustomerInput,
+  MutationRegisterCustomerAccountArgs,
+  Success,
+  MutationRequestPasswordResetArgs,
+  MutationResetPasswordArgs,
+  CurrentUser,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
 import { Id, VendureOrderEvents } from './vendure-order-events';
@@ -335,5 +341,36 @@ export class VendureOrderClient<A = unknown> {
       { code }
     );
     return orderByCode;
+  }
+
+  async registerCustomerAccount(
+    input: RegisterCustomerInput
+  ): Promise<Success | ErrorResult> {
+    const { registerCustomerAccount } = await this.rawRequest<
+      any,
+      MutationRegisterCustomerAccountArgs
+    >(this.queries.REGISTER_CUSTOMER_ACCOUNT, { input });
+    return registerCustomerAccount;
+  }
+
+  async requestPasswordReset(
+    emailAddress: string
+  ): Promise<Success | ErrorResult> {
+    const { requestPasswordReset } = await this.rawRequest<
+      any,
+      MutationRequestPasswordResetArgs
+    >(this.queries.REQUEST_PASSWORD_RESET, { emailAddress });
+    return requestPasswordReset;
+  }
+
+  async resetPassword(
+    password: string,
+    token: string
+  ): Promise<CurrentUser | ErrorResult> {
+    const { resetPassword } = await this.rawRequest<
+      any,
+      MutationResetPasswordArgs
+    >(this.queries.RESET_PASSWORD, { token, password });
+    return resetPassword;
   }
 }
