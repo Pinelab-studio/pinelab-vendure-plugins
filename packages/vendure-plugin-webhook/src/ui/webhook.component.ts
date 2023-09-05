@@ -127,8 +127,13 @@ export class WebhookComponent implements OnInit {
       });
   }
 
-  requestTransformerSelected() {
-    if (this.requestTransformerName) {
+  requestTransformerSelected(setRequestTransformerName?: string) {
+    if (setRequestTransformerName) {
+      this.filteredWeebhookEvents =
+        this.avaiabelWebhookRequestTransformers.find(
+          (v) => v.name === this.requestTransformerName
+        )?.supportedEvents ?? [];
+    } else if (this.requestTransformerName) {
       this.filteredWeebhookEvents =
         this.avaiabelWebhookRequestTransformers.find(
           (v) => v.name === this.requestTransformerName
@@ -139,6 +144,14 @@ export class WebhookComponent implements OnInit {
     this.eventName = this.filteredWeebhookEvents.find(
       (v) => v === this.eventName
     );
+    this.changeDetector.detectChanges();
+  }
+
+  duplicate(requestTransformer: string, url: string) {
+    this.requestTransformerName = requestTransformer;
+    this.requestTransformerSelected(requestTransformer);
+    this.url = url;
+    this.showMessage = true;
     this.changeDetector.detectChanges();
   }
 }

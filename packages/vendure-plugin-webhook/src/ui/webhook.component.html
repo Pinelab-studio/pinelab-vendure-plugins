@@ -104,6 +104,14 @@
             <clr-icon shape="trash" class="is-danger"></clr-icon>
             {{ 'common.delete' | translate }}
           </button>
+          <button
+            type="button"
+            (click)="duplicate(webhook.requestTransformer?.name, webhook.url)"
+            vdrDropdownItem
+          >
+            <clr-icon shape="copy"></clr-icon>
+            Duplicate
+          </button>
         </vdr-dropdown-menu>
       </vdr-dropdown>
     </td>

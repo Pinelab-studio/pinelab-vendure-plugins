@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService,
+  Channel,
   ChannelService,
   CustomerService,
   EntityHydrator,
@@ -9,15 +10,19 @@ import {
   EventBus,
   HistoryService,
   ID,
+  InternalServerError,
   JobQueue,
   JobQueueService,
   LanguageCode,
+  ListQueryBuilder,
+  ListQueryOptions,
   Logger,
   Order,
   OrderLine,
   OrderLineEvent,
   OrderService,
   OrderStateTransitionError,
+  PaginatedList,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
@@ -27,7 +32,7 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
-import { IncomingStripeWebhook } from './stripe.types';
+import { IncomingStripeWebhook } from './types/stripe.types';
 import {
   CustomerWithSubscriptionFields,
   OrderLineWithSubscriptionFields,
@@ -36,6 +41,8 @@ import {
 } from './subscription-custom-fields';
 import { StripeClient } from './stripe.client';
 import {
+  StripeSubscriptionPaymentList,
+  StripeSubscriptionPaymentListOptions,
   StripeSubscriptionPricing,
   StripeSubscriptionPricingInput,
 } from '../ui/generated/graphql';
@@ -52,6 +59,9 @@ import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellat
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
 import { randomUUID } from 'crypto';
 import { hasSubscriptions } from './has-stripe-subscription-products-payment-checker';
+import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
+import { StripeInvoice } from './types/stripe-invoice';
+import { StripePaymentIntent } from './types/stripe-payment-intent';
 
 export interface StripeHandlerConfig {
   paymentMethodCode: string;
@@ -84,6 +94,7 @@ export class StripeSubscriptionService {
     private entityHydrator: EntityHydrator,
     private channelService: ChannelService,
     private orderService: OrderService,
+    private listQueryBuilder: ListQueryBuilder,
     private historyService: HistoryService,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
@@ -164,7 +175,7 @@ export class StripeSubscriptionService {
         )
           .map(
             (stockMovement) =>
-              stockMovement.orderItem.line as OrderLineWithSubscriptionFields
+              stockMovement.orderLine as OrderLineWithSubscriptionFields
           )
           // Filter out non-sub orderlines
           .filter((orderLine) => orderLine.customFields.subscriptionIds);
@@ -392,12 +403,54 @@ export class StripeSubscriptionService {
     };
   }
 
+  async savePaymentEvent(
+    ctx: RequestContext,
+    eventType: string,
+    object: StripeInvoice
+  ): Promise<void> {
+    const stripeSubscriptionPaymentRepo = this.connection.getRepository(
+      ctx,
+      StripeSubscriptionPayment
+    );
+    const charge = object.lines.data.reduce(
+      (acc, line) => acc + (line.plan?.amount ?? 0),
+      0
+    );
+    const newPayment = new StripeSubscriptionPayment({
+      channelId: ctx.channel.id as string,
+      eventType,
+      charge: charge,
+      currency: object.currency ?? ctx.channel.defaultCurrencyCode,
+      collectionMethod: object.collection_method,
+      invoiceId: object.id,
+      orderCode:
+        object.metadata?.orderCode ??
+        object.lines?.data[0]?.metadata.orderCode ??
+        '',
+      subscriptionId: object.subscription,
+    });
+    await stripeSubscriptionPaymentRepo.save(newPayment);
+  }
+
+  async getPaymentEvents(
+    ctx: RequestContext,
+    options: StripeSubscriptionPaymentListOptions
+  ): Promise<StripeSubscriptionPaymentList> {
+    return this.listQueryBuilder
+      .build(StripeSubscriptionPayment, options, { ctx })
+      .getManyAndCount()
+      .then(([items, totalItems]) => ({
+        items,
+        totalItems,
+      }));
+  }
+
   /**
    * Handle future subscription payments that come in after the initial payment intent
    */
   async handleInvoicePaymentSucceeded(
     ctx: RequestContext,
-    { data: { object } }: IncomingStripeWebhook,
+    object: StripeInvoice,
     order: Order
   ): Promise<void> {
     const amount = object.lines?.data?.[0]?.plan?.amount;
@@ -419,7 +472,7 @@ export class StripeSubscriptionService {
    */
   async handleInvoicePaymentFailed(
     ctx: RequestContext,
-    { data: { object } }: IncomingStripeWebhook,
+    object: StripeInvoice,
     order: Order
   ): Promise<void> {
     const amount = object.lines?.data[0]?.plan?.amount;
@@ -442,11 +495,11 @@ export class StripeSubscriptionService {
    */
   async handlePaymentIntentSucceeded(
     ctx: RequestContext,
-    { data: { object: eventData } }: IncomingStripeWebhook,
+    object: StripePaymentIntent,
     order: Order
   ): Promise<void> {
     const { paymentMethodCode } = await this.getStripeHandler(ctx, order.id);
-    if (!eventData.customer) {
+    if (!object.customer) {
       await this.logHistoryEntry(
         ctx,
         order.id,
@@ -462,8 +515,8 @@ export class StripeSubscriptionService {
           action: 'createSubscriptionsForOrder',
           ctx: ctx.serialize(),
           orderCode: order.code,
-          stripePaymentMethodId: eventData.payment_method,
-          stripeCustomerId: eventData.customer,
+          stripePaymentMethodId: object.payment_method,
+          stripeCustomerId: object.customer,
         },
         { retries: 0 } // Only 1 try, because subscription creation isn't transaction-proof
       )
@@ -492,8 +545,8 @@ export class StripeSubscriptionService {
       {
         method: paymentMethodCode,
         metadata: {
-          setupIntentId: eventData.id,
-          amount: eventData.metadata.amount,
+          setupIntentId: object.id,
+          amount: object.metadata.amount,
         },
       }
     );

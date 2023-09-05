@@ -1,6 +1,8 @@
+import { SetOrderBillingAddressMutationVariables } from '@pinelab/vendure-order-client/src';
 import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
+  SetBillingAddress,
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
@@ -21,23 +23,25 @@ import { testPaymentMethod } from './test-payment-method';
 export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
-  address?: SetShippingAddressMutationVariables
+  shippingAddress?: SetShippingAddressMutationVariables,
+  billingAddress?: SetOrderBillingAddressMutationVariables
 ): Promise<void> {
-  await shopClient.query(
-    SetShippingAddress,
-    address ?? {
-      input: {
-        fullName: 'Martinho Pinelabio',
-        streetLine1: 'Verzetsstraat',
-        streetLine2: '12a',
-        city: 'Liwwa',
-        postalCode: '8923CP',
-        countryCode: 'NL',
-      },
-    }
-  );
+  const finalShippingAddress = shippingAddress ?? {
+    input: {
+      fullName: 'Martinho Pinelabio',
+      streetLine1: 'Verzetsstraat',
+      streetLine2: '12a',
+      city: 'Liwwa',
+      postalCode: '8923CP',
+      countryCode: 'NL',
+    },
+  };
+  await shopClient.query(SetShippingAddress, finalShippingAddress);
+  if (billingAddress) {
+    await shopClient.query(SetBillingAddress, billingAddress);
+  }
   await shopClient.query(SetShippingMethod, {
-    id: shippingMethodId,
+    ids: [shippingMethodId],
   });
 }
 
@@ -47,9 +51,15 @@ export async function setAddressAndShipping(
 export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
-  address?: SetShippingAddressMutationVariables
+  shippingAddress: SetShippingAddressMutationVariables,
+  billingAddress?: SetOrderBillingAddressMutationVariables
 ): Promise<TransitionToStateMutation['transitionOrderToState']> {
-  await setAddressAndShipping(shopClient, shippingMethodId, address);
+  await setAddressAndShipping(
+    shopClient,
+    shippingMethodId,
+    shippingAddress,
+    billingAddress
+  );
   const result = await shopClient.query<
     TransitionToStateMutation,
     TransitionToStateMutationVariables
@@ -107,7 +117,8 @@ export async function createSettledOrder(
   variants: Array<{ id: string; quantity: number }> = [
     { id: 'T_1', quantity: 1 },
     { id: 'T_2', quantity: 2 },
-  ]
+  ],
+  billingAddress?: SetOrderBillingAddressMutationVariables
 ): Promise<Order> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
@@ -118,16 +129,21 @@ export async function createSettledOrder(
   for (const v of variants) {
     await addItem(shopClient, v.id, v.quantity);
   }
-  const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
-    input: {
-      fullName: 'Martinho Pinelabio',
-      streetLine1: 'Verzetsstraat',
-      streetLine2: '12a',
-      city: 'Liwwa',
-      postalCode: '8923CP',
-      countryCode: 'NL',
+  const res = await proceedToArrangingPayment(
+    shopClient,
+    shippingMethodId,
+    {
+      input: {
+        fullName: 'Martinho Pinelabio',
+        streetLine1: 'Verzetsstraat',
+        streetLine2: '12a',
+        city: 'Liwwa',
+        postalCode: '8923CP',
+        countryCode: 'NL',
+      },
     },
-  });
+    billingAddress
+  );
   if ((res as ErrorResult)?.errorCode) {
     console.error(JSON.stringify(res));
     throw Error((res as ErrorResult).errorCode);

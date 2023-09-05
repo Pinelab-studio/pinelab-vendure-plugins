@@ -163,7 +163,7 @@ export const SET_SHIPPING_ADDRESS = gql`
 `;
 
 export const SET_SHIPPING_METHOD = gql`
-  mutation SetShippingMethod($id: ID!) {
+  mutation SetShippingMethod($id: [ID!]!) {
     setOrderShippingMethod(shippingMethodId: $id) {
       ... on Order {
         id
@@ -186,17 +186,19 @@ export const CREATE_PAYMENT_LINK = gql`
 export const GET_SCHEDULES = gql`
   {
     stripeSubscriptionSchedules {
-      id
-      createdAt
-      updatedAt
-      name
-      downpayment
-      durationInterval
-      durationCount
-      startMoment
-      paidUpFront
-      billingInterval
-      billingCount
+      items {
+        id
+        createdAt
+        updatedAt
+        name
+        downpayment
+        durationInterval
+        durationCount
+        startMoment
+        paidUpFront
+        billingInterval
+        billingCount
+      }
     }
   }
 `;
@@ -217,6 +219,16 @@ export const UPDATE_VARIANT = gql`
   }
 `;
 
+export const ELIGIBLE_PAYMENT_METHODS = gql`
+  query eligiblePaymentMethods {
+    eligiblePaymentMethods {
+      id
+      name
+      stripeSubscriptionPublishableKey
+    }
+  }
+`;
+
 export async function setShipping(
   shopClient: SimpleGraphQLClient
 ): Promise<void> {
@@ -232,7 +244,7 @@ export async function setShipping(
   });
   //@ts-ignore
   await shopClient.query(SET_SHIPPING_METHOD, {
-    id: 1,
+    id: [1],
   });
 }
 

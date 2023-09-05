@@ -1,6 +1,6 @@
 # Vendure Picqer Plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-picqer/dev/@vendure/core)
+![Vendure version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure)
 
 !! This plugin is still being developed and it's still incomplete!
 
@@ -27,13 +27,20 @@ import {PicqerPlugin} from 'vendure-plugin-picqer'
 ...
 plugins: [
   PicqerPlugin.init({
-    vendureHost: 'https://example-vendure.io'
-    /**
-     * Optional strategy to push additional fields to Picqer.
-     * This example pushes variant.sku as product.barcode to Picqer
-     */
-    pushFieldsToPicqer: (variant) => ({ barcode: variant.sku })
-  }),
+          enabled: true,
+          vendureHost: 'https://example-vendure.io',
+          pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
+          pullPicqerProductFields: (picqerProd) => ({
+            outOfStockThreshold: picqerProd.stockThreshold,
+          }),
+          pushPicqerOrderFields: (order) => ({
+            customer_remarks: order.customFields.customerNote,
+            pickup_point_data: {
+              carrier: 'dhl',
+              id: '901892834',
+            },
+          }),
+        }),
   AdminUiPlugin.init({
     port: 3002,
     route: 'admin',
@@ -58,6 +65,10 @@ Stock levels are updated in Vendure on
 
 1. Full sync via the Admin UI
 2. Or, on incoming webhook from Picqer
+
+This plugin will mirror the stock locations from Picqer. Non-Picqer stock locations will automatically be deleted by the plugin, to keep stock in sync with Picqer. Vendure's internal allocated stock will be ignored, because this is handled by Picqer.
+
+You can use a custom [StockLocationStrategy](https://github.com/vendure-ecommerce/vendure/blob/major/packages/core/src/config/catalog/default-stock-location-strategy.ts) to control how available stock is calculated based on multiple locations.
 
 ## Orders
 

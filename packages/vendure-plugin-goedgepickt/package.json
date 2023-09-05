@@ -1,12 +1,15 @@
 {
-  "name": "vendure-plugin-goedgepickt",
-  "version": "7.0.0",
+  "name": "@pinelab/vendure-plugin-goedgepickt",
+  "version": "1.0.2",
   "description": "Vendure plugin for integration with the Goedgepickt order picking platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/vendure-plugin-goedgepickt/src/index.js",
   "types": "dist/vendure-plugin-goedgepickt/src/index.d.ts",
   "files": [
@@ -17,28 +20,10 @@
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-goedgepickt/src/",
-    "test": "jest --preset=\"ts-jest\" --forceExit"
+    "test": "vitest run"
   },
   "dependencies": {
     "node-fetch": "2"
   },
-  "devDependencies": {
-    "@graphql-codegen/cli": "^2.6.2",
-    "@graphql-codegen/typescript": "^2.4.8",
-    "@graphql-codegen/typescript-operations": "^2.3.5",
-    "@types/jest": "^27.4.1",
-    "@vendure/admin-ui-plugin": "1.9.5",
-    "@vendure/asset-server-plugin": "1.9.5",
-    "@vendure/core": "1.9.5",
-    "@vendure/testing": "1.9.5",
-    "@vendure/ui-devkit": "1.9.5",
-    "copyfiles": "^2.4.1",
-    "jest": "^27.5.1",
-    "nock": "^13.2.4",
-    "nodemon": "^2.0.15",
-    "rimraf": "^3.0.2",
-    "ts-jest": "^27.1.3",
-    "ts-node": "^10.7.0"
-  },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

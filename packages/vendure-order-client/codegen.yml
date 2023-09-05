@@ -1,0 +1,16 @@
+overwrite: true
+schema: 'http://localhost:3050/shop-api'
+documents: src/queries.ts
+config:
+  maybeValue: T | undefined
+  resolverValidationOptions:
+    requireResolversForResolveType: false
+  avoidOptionals: false
+  scalars:
+    ID: number | string
+
+generates:
+  src/graphql-generated-types.ts:
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'

@@ -8,33 +8,50 @@ import { GET_SENDCLOUD_CONFIG, UPDATE_SENDCLOUD_CONFIG } from './queries';
   template: `
     <div class="clr-row">
       <div class="clr-col">
-        <form class="form" [formGroup]="form">
-          <section class="form-block">
-            <vdr-form-field label="SendCloud secret" for="apiKey">
-              <input id="secret" type="text" formControlName="secret" />
-            </vdr-form-field>
-            <vdr-form-field label="SendCloud public key" for="publicKey">
-              <input id="publicKey" type="text" formControlName="publicKey" />
-            </vdr-form-field>
-            <vdr-form-field
-              label="Fallback phone nr."
-              for="defaultPhoneNr"
-              tooltip="Used when a customer hasn't entered a phone number. Phone number is required in some cases by Sendcloud"
+        <form [formGroup]="form" clrForm>
+          <clr-input-container>
+            <label>SendCloud secret</label>
+            <input
+              id="secret"
+              type="text"
+              formControlName="secret"
+              clrInput
+              size="28"
+            />
+          </clr-input-container>
+          <clr-input-container>
+            <label>SendCloud public key</label>
+            <input
+              id="publicKey"
+              type="text"
+              formControlName="publicKey"
+              clrInput
+              size="28"
+            />
+          </clr-input-container>
+          <clr-input-container>
+            <label>Fallback phone nr.</label>
+            <input
+              id="defaultPhoneNr"
+              type="text"
+              formControlName="defaultPhoneNr"
+              clrInput
+              size="28"
+            />
+            <clr-control-helper
+              >Used when a customer hasn't entered a phone number. <br />
+              Phone number is required in some cases by
+              Sendcloud</clr-control-helper
             >
-              <input
-                id="defaultPhoneNr"
-                type="text"
-                formControlName="defaultPhoneNr"
-              />
-            </vdr-form-field>
-            <button
-              class="btn btn-primary"
-              (click)="save()"
-              [disabled]="form.invalid || form.pristine"
-            >
-              Save
-            </button>
-          </section>
+          </clr-input-container>
+          <button
+            class="btn btn-primary"
+            (click)="save()"
+            style="margin-left: 20rem"
+            [disabled]="form.invalid || form.pristine"
+          >
+            Save
+          </button>
         </form>
       </div>
     </div>
@@ -86,7 +103,7 @@ export class SendcloudComponent implements OnInit {
       this.notificationService.success('common.notify-update-success', {
         entity: 'SendCloud config',
       });
-    } catch (e) {
+    } catch (e: any) {
       this.notificationService.error('common.notify-update-error', {
         entity: 'SendCloud config',
       });

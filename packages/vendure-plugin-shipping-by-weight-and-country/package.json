@@ -1,12 +1,15 @@
 {
-  "name": "vendure-plugin-shipping-by-weight-and-country",
-  "version": "7.0.0",
-  "description": "Vendure plugin for selecting a shippingmethod based on the total weight and the shipping address of an order.",
+  "name": "@pinelab/vendure-plugin-shipping-by-weight-and-country",
+  "version": "1.0.2",
+  "description": "Vendure plugin for selecting a shipping method based on the total weight and the shipping address of an order.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -17,20 +20,7 @@
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "jest --preset=\"ts-jest\" --forceExit"
+    "test": "vitest run"
   },
-  "devDependencies": {
-    "@types/jest": "^27.4.1",
-    "@vendure/admin-ui-plugin": "1.9.5",
-    "@vendure/common": "^1.9.5",
-    "@vendure/core": "1.9.5",
-    "@vendure/testing": "1.9.5",
-    "@vendure/ui-devkit": "1.9.5",
-    "copyfiles": "^2.4.1",
-    "jest": "^27.5.1",
-    "nodemon": "^2.0.15",
-    "ts-jest": "^27.1.3",
-    "ts-node": "^10.7.0"
-  },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

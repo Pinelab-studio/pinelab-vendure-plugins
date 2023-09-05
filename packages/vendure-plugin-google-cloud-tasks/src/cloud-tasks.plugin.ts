@@ -7,10 +7,12 @@ import { CloudTasksJobQueueStrategy } from './cloud-tasks-job-queue.strategy';
 import { json } from 'body-parser';
 import { CloudTasksHandler } from './cloud-tasks.handler';
 import { CloudTaskOptions, ROUTE } from './types';
+import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   controllers: [CloudTasksHandler],
+  entities: [JobRecord],
   configuration: (config: RuntimeVendureConfig) => {
     config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy(
       CloudTasksPlugin.options
@@ -27,6 +29,7 @@ import { CloudTaskOptions, ROUTE } from './types';
     ];
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class CloudTasksPlugin {
   static loggerCtx = 'CloudTaskPlugin';

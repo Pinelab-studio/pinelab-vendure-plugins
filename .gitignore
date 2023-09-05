@@ -65,3 +65,4 @@ __admin-ui/
 
 # macOS-specific files
 /docs-website/.DS_Store
+.swc

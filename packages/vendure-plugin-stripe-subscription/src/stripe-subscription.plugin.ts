@@ -18,7 +18,7 @@ import {
 import {
   AdminPriceIncludesTaxResolver,
   AdminResolver,
-  ShopOrderLinePricingResolver,
+  OrderLinePricingResolver,
   ShopResolver,
   StripeSubscriptionController,
 } from './api/stripe-subscription.controller';
@@ -26,6 +26,7 @@ import { StripeSubscriptionService } from './api/stripe-subscription.service';
 import { stripeSubscriptionHandler } from './api/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api/has-stripe-subscription-products-payment-checker';
 import { subscriptionPromotions } from './api/subscription.promotion';
+import { StripeSubscriptionPayment } from './api/stripe-subscription-payment.entity';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -36,14 +37,18 @@ export interface StripeSubscriptionPluginOptions {
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [Schedule],
+  entities: [Schedule, StripeSubscriptionPayment],
   shopApiExtensions: {
     schema: shopSchemaExtensions,
-    resolvers: [ShopResolver, ShopOrderLinePricingResolver],
+    resolvers: [ShopResolver, OrderLinePricingResolver],
   },
   adminApiExtensions: {
     schema: adminSchemaExtensions,
-    resolvers: [AdminResolver, AdminPriceIncludesTaxResolver],
+    resolvers: [
+      AdminResolver,
+      AdminPriceIncludesTaxResolver,
+      OrderLinePricingResolver,
+    ],
   },
   controllers: [StripeSubscriptionController],
   providers: [
@@ -71,6 +76,7 @@ export interface StripeSubscriptionPluginOptions {
     config.promotionOptions.promotionActions.push(...subscriptionPromotions);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class StripeSubscriptionPlugin {
   static options: StripeSubscriptionPluginOptions;
@@ -85,8 +91,8 @@ export class StripeSubscriptionPlugin {
     ngModules: [
       {
         type: 'lazy',
-        route: 'subscription-schedules',
-        ngModuleFileName: 'schedules.module.ts',
+        route: 'stripe',
+        ngModuleFileName: 'stripe-subscription.module.ts',
         ngModuleName: 'SchedulesModule',
       },
       {

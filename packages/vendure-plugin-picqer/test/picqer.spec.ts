@@ -24,18 +24,17 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
-import { IncomingPicklistWebhook, VatGroup } from '../src/api/types';
+import { IncomingPicklistWebhook, VatGroup } from '../src';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
 import { picqerHandler } from '../src/api/picqer.handler';
+import { describe, afterEach, beforeAll, it, expect, afterAll } from 'vitest';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 const nockBaseUrl = 'https://test-picqer.io/api/v1/';
-
-jest.setTimeout(60000);
 
 describe('Picqer plugin', function () {
   // Clear nock mocks after each test
@@ -54,7 +53,13 @@ describe('Picqer plugin', function () {
           pullPicqerProductFields: (picqerProd) => ({
             outOfStockThreshold: 123,
           }),
-          addPicqerOrderNote: (order) => 'test note',
+          pushPicqerOrderFields: (order) => ({
+            customer_remarks: 'test note',
+            pickup_point_data: {
+              carrier: 'dhl',
+              id: '901892834',
+            },
+          }),
         }),
       ],
       paymentOptions: {
@@ -104,10 +109,10 @@ describe('Picqer plugin', function () {
     expect(everyVariantHasStockTracking).toBe(true);
   });
 
+  // Caught webhook creation requests
   const createdHooks: any[] = [];
 
   it('Should update Picqer config via admin api', async () => {
-    // Mock hooks GET, because webhooks are updated on config save
     nock(nockBaseUrl).get('/hooks').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
@@ -162,11 +167,10 @@ describe('Picqer plugin', function () {
     await addShippingMethod(adminClient, picqerHandler.code, '500');
   });
 
-  let createdOrder: Order;
+  let createdOrder: Order | undefined;
 
   it('Should push order to Picqer on order placement', async () => {
     let isOrderInProcessing = false;
-    let createdOrderNote = undefined;
     let picqerOrderRequest: any;
     nock(nockBaseUrl)
       .get('/vatgroups') // Mock vatgroups, because it will try to update products
@@ -194,16 +198,23 @@ describe('Picqer plugin', function () {
         return true;
       })
       .reply(200, { idordder: 'mockOrderId' });
-    nock(nockBaseUrl)
-      .post('/orders/mockOrderId/notes', (reqBody) => {
-        createdOrderNote = reqBody.note;
-        return true;
-      })
-      .reply(200, { idordder: 'mockOrderId' });
     // Shipping method 3 should be our created Picqer handler method
-    createdOrder = await createSettledOrder(shopClient, 3, true, [
-      { id: 'T_1', quantity: 3 },
-    ]);
+    createdOrder = await createSettledOrder(
+      shopClient,
+      3,
+      true,
+      [{ id: 'T_1', quantity: 3 }],
+      {
+        input: {
+          fullName: "Martinho's friend",
+          streetLine1: 'Remote location',
+          streetLine2: '123',
+          city: 'Faraway',
+          postalCode: '1111AB',
+          countryCode: 'NL',
+        },
+      }
+    );
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
@@ -215,18 +226,29 @@ describe('Picqer plugin', function () {
     expect(picqerOrderRequest.deliverycontactname).toBeDefined();
     expect(picqerOrderRequest.deliveryaddress).toBeDefined();
     expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
-    expect(picqerOrderRequest.deliverycountry).toBeDefined();
+    expect(picqerOrderRequest.deliverycity).toBeDefined();
+    expect(picqerOrderRequest.deliverycountry).toBe('NL');
+    expect(picqerOrderRequest.invoicename).toBe("Martinho's friend");
+    expect(picqerOrderRequest.invoicecontactname).toBe("Martinho's friend");
+    expect(picqerOrderRequest.invoicecountry).toBe('NL');
+    expect(picqerOrderRequest.invoiceaddress).toBe('Remote location 123');
+    expect(picqerOrderRequest.invoicezipcode).toBe('1111AB');
+    expect(picqerOrderRequest.invoicecity).toBe('Faraway');
     expect(picqerOrderRequest.products.length).toBe(1);
     expect(picqerOrderRequest.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);
-    expect(createdOrderNote).toBe('test note');
+    expect(picqerOrderRequest.customer_remarks).toBe('test note');
+    expect(picqerOrderRequest.pickup_point_data).toEqual({
+      carrier: 'dhl',
+      id: '901892834',
+    });
   });
 
   it('Should update to "PartiallyDelivered" when 2 of 3 items are shipped', async () => {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
-        reference: createdOrder.code,
+        reference: createdOrder?.code,
         products: [
           { productcode: 'L2201308', amountpicked: 2 }, // Only 2 of 3 are picked
         ],
@@ -245,7 +267,7 @@ describe('Picqer plugin', function () {
         },
       }
     );
-    const order = await getOrder(adminClient, createdOrder.id as string);
+    const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('PartiallyDelivered');
   });
 
@@ -261,7 +283,7 @@ describe('Picqer plugin', function () {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
-        reference: createdOrder.code,
+        reference: createdOrder?.code,
         products: [
           { productcode: 'L2201308', amountpicked: 1 }, // last one to complete the order
         ],
@@ -280,7 +302,7 @@ describe('Picqer plugin', function () {
         },
       }
     );
-    const order = await getOrder(adminClient, createdOrder.id as string);
+    const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Delivered');
   });
 
@@ -288,7 +310,7 @@ describe('Picqer plugin', function () {
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
     );
-    expect(variant!.stockOnHand).toBe(97);
+    expect(variant!.stockOnHand).toBe(97); // 100 - 3 shipped
     expect(variant!.stockAllocated).toBe(0);
   });
 
@@ -309,7 +331,7 @@ describe('Picqer plugin', function () {
         {
           idproduct: 'mockId',
           productcode: 'L2201308',
-          stock: [{ freestock: 8 }],
+          stock: [{ freestock: 8, idwarehouse: 2 }],
         },
       ])
       .persist();
@@ -334,14 +356,14 @@ describe('Picqer plugin', function () {
 
   it('Should have pulled stock levels from Picqer after full sync', async () => {
     // Relies on previous trigger of full sync
-    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    await new Promise((r) => setTimeout(r, 3000)); // Wait for job queue to finish
     const variants = await getAllVariants(adminClient);
     updatedVariant = variants.find((v) => v.sku === 'L2201308');
     expect(updatedVariant?.stockOnHand).toBe(8);
   });
 
   it('Should have pulled custom fields from Picqer based on configured "pullFieldsFromPicqer()"', async () => {
-    // We configured the plugin to always set height to 123 for testing purposes
+    // We configured the plugin to always set outOfStockThreshold to 123 for testing purposes
     expect(updatedVariant?.outOfStockThreshold).toBe(123);
   });
 
@@ -413,7 +435,7 @@ describe('Picqer plugin', function () {
       event: 'products.free_stock_changed',
       data: {
         productcode: 'L2201308',
-        stock: [{ freestock: 543 }],
+        stock: [{ freestock: 543, idwarehouse: 2 }],
       },
     };
     const res = await adminClient.fetch(

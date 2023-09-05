@@ -60,8 +60,17 @@ mutation SetShippingAddress($input: CreateAddressInput!) {
   }
 }
 
-mutation SetShippingMethod($id: ID!) {
-  setOrderShippingMethod(shippingMethodId: $id) {
+mutation SetBillingAddress($input: CreateAddressInput!) {
+  setOrderBillingAddress(input: $input) {
+    ... on Order {
+      id
+      code
+    }
+  }
+}
+
+mutation SetShippingMethod($ids: [ID!]!) {
+  setOrderShippingMethod(shippingMethodId: $ids) {
     ... on ErrorResult {
       errorCode
       message

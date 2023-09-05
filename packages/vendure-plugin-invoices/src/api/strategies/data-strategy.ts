@@ -1,6 +1,4 @@
 import { RequestContext, Order, Injector } from '@vendure/core';
-import { ModuleRef } from '@nestjs/core';
-
 export interface InvoiceData {
   invoiceNumber: number;
   customerEmail: string;

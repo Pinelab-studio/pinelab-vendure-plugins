@@ -1,6 +1,6 @@
 # Vendure Stripe Subscription plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-stripe-subscription/dev/@vendure/core)
+![Vendure version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure)
 
 A channel aware plugin that allows you to sell subscription based services or memberships through Vendure. Also support
 non-subscription payments. This plugin was made in collaboration with the great people
@@ -94,6 +94,20 @@ _After order settlement you can view the subscription details on the order histo
 
 ![](docs/sequence.png)  
 _Subscriptions are created in the background, after a customer has finished the checkout_
+
+#### Retrieving the publishable key
+
+You can optionally supply your publishable key in your payment method handler, so that you can retrieve it using the `eligiblePaymentMethods` query:
+
+```graphql
+{
+  eligiblePaymentMethods {
+    id
+    name
+    stripeSubscriptionPublishableKey
+  }
+}
+```
 
 ## Order with a total of €0
 

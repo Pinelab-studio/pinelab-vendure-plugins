@@ -5,11 +5,12 @@ Below you can find our opinionated guide on how to contribute to this repository
 ## Gettings started
 
 1. [Create a fork](https://docs.github.com/en/get-started/quickstart/fork-a-repo) of [this repository](https://github.com/Pinelab-studio/pinelab-vendure-plugins)
-2. Checkout the `master` branch and make sure it's up to date with `git pull upstream master`
+2. Checkout the `main` branch and make sure it's up to date with `git pull upstream main`
 3. Create a feature branch `git checkout -b feat/example-feature`
 4. `yarn` in the root of the project.
 5. `cd packages/vendure-plugin-example` and `yarn` again to install it's dependencies
 6. Commit using the commandline, so that the eslint autocheck is executed `git commit -a -m 'feat(feat/example-plugin): implemented example stuff'`
+7. Don't forget to manually increase the version number to the next patch/minor/major, so that the package will get published.
 
 ## Helpfull commands
 

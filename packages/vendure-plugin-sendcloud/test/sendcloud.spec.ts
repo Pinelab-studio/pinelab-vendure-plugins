@@ -27,6 +27,7 @@ import { addShippingMethod, getOrder } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import nock from 'nock';
 import { SendcloudClient } from '../src/api/sendcloud.client';
+import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import crypto from 'crypto';
 
 describe('SendCloud', () => {

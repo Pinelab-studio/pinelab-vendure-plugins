@@ -48,7 +48,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   constructor(
     private eventBus: EventBus,
     private connection: TransactionalConnection,
-    private rawConnection: Connection,
+    // private rawConnection: Connection,
     private orderService: OrderService,
     private channelService: ChannelService,
     private jobQueueService: JobQueueService,
@@ -142,9 +142,9 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     orderCode: string,
     trackingNumber: string
   ): Promise<void> {
-    let order = await this.rawConnection
-      .getRepository(Order)
-      .findOne({ code: orderCode }, { relations: ['lines', 'lines.items'] });
+    let order = await this.connection
+      .getRepository(ctx, Order)
+      .findOne({ where: { code: orderCode }, relations: ['lines'] });
     if (!order) {
       Logger.warn(
         `Cannot update status from SendCloud: No order with code ${orderCode} found`,
@@ -167,22 +167,25 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
         loggerCtx
       );
     }
-    order = await this.rawConnection
-      .getRepository(Order)
-      .findOneOrFail(
-        { code: orderCode },
-        { relations: ['lines', 'lines.items'] }
-      ); // Refetch in case state was updated
+    order = await this.connection
+      .getRepository(ctx, Order)
+      .findOneOrFail({ where: { code: orderCode }, relations: ['lines'] }); // Refetch in case state was updated
     if (sendcloudStatus.orderState === 'Delivered') {
-      await transitionToDelivered(this.orderService, ctx, order, {
-        code: sendcloudHandler.code,
-        arguments: [
-          {
-            name: 'trackingNumber',
-            value: trackingNumber,
-          },
-        ],
-      });
+      //FIX ME
+      await transitionToDelivered(
+        this.orderService as any,
+        ctx as any,
+        order as any,
+        {
+          code: sendcloudHandler.code,
+          arguments: [
+            {
+              name: 'trackingNumber',
+              value: trackingNumber,
+            },
+          ],
+        }
+      );
       return Logger.info(
         `Successfully update order ${orderCode} to ${sendcloudStatus.orderState}`,
         loggerCtx
@@ -200,15 +203,20 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     order: Order,
     trackingNumber: string
   ): Promise<void> {
-    await transitionToShipped(this.orderService, ctx, order, {
-      code: sendcloudHandler.code,
-      arguments: [
-        {
-          name: 'trackingNumber',
-          value: trackingNumber,
-        },
-      ],
-    });
+    await transitionToShipped(
+      this.orderService as any,
+      ctx as any,
+      order as any,
+      {
+        code: sendcloudHandler.code,
+        arguments: [
+          {
+            name: 'trackingNumber',
+            value: trackingNumber,
+          },
+        ],
+      }
+    );
   }
 
   async upsertConfig(
@@ -220,7 +228,9 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     }
   ): Promise<SendcloudConfigEntity> {
     const repo = this.connection.getRepository(ctx, SendcloudConfigEntity);
-    const existing = await repo.findOne({ channelId: String(ctx.channelId) });
+    const existing = await repo.findOne({
+      where: { channelId: String(ctx.channelId) },
+    });
     if (existing) {
       await repo.update(existing.id, {
         secret: config.secret,
@@ -235,15 +245,13 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
         defaultPhoneNr: config.defaultPhoneNr,
       });
     }
-    return repo.findOneOrFail({ channelId: String(ctx.channelId) });
+    return repo.findOneOrFail({ where: { channelId: String(ctx.channelId) } });
   }
 
-  async getConfig(
-    ctx: RequestContext
-  ): Promise<SendcloudConfigEntity | undefined> {
+  async getConfig(ctx: RequestContext): Promise<SendcloudConfigEntity | null> {
     return this.connection
       .getRepository(ctx, SendcloudConfigEntity)
-      .findOne({ channelId: String(ctx.channelId) });
+      .findOne({ where: { channelId: String(ctx.channelId) } });
   }
 
   async getClient(
