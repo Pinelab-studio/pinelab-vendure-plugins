@@ -1,0 +1,7 @@
+---
+import '../styles/theme.scss';
+import { getPackageJsons } from '../api/plugins';
+
+const packageDotJsons = await getPackageJsons();
+console.log(packageDotJsons[0].name);
+---
