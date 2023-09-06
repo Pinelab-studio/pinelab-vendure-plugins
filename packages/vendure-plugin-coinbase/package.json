@@ -14,7 +14,8 @@
   "types": "dist/coinbase.plugin.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "ts-node test/dev-server.ts",

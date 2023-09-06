@@ -14,7 +14,8 @@
   "types": "dist/stock-monitoring.plugin.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
