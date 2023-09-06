@@ -18,7 +18,8 @@
   "types": "lib/index.d.ts",
   "files": [
     "lib",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "ts-node --esm ./test/dev-server.ts",

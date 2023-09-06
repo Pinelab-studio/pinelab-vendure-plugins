@@ -1,0 +1,1 @@
+// TODO set correct version number + date and the changes you've made connected to the PR. See this example for the correct format: https://github.com/Pinelab-studio/pinelab-vendure-plugins/blob/main/packages/vendure-plugin-invoices/CHANGELOG.md
