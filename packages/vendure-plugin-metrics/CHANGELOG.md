@@ -1,1 +1,3 @@
-// TODO set correct version number + date and the changes you've made connected to the PR. See this example for the correct format: https://github.com/Pinelab-studio/pinelab-vendure-plugins/blob/main/packages/vendure-plugin-invoices/CHANGELOG.md
+# 1.1.0 (2023-09-06)
+
+- Reintroduced custom strategies and using the new Chartist charts ([#236](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/236))
