@@ -12,6 +12,7 @@
   "dependencies": {
     "@astrojs/prism": "^2.1.2",
     "@astrojs/starlight": "^0.2.0",
+    "@fontsource/inter": "^5.0.8",
     "@types/marked": "^5.0.0",
     "astro": "^2.5.0",
     "bulma": "^0.9.4",

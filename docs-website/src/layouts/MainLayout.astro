@@ -1,0 +1,100 @@
+---
+import '../styles/theme.scss';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/700.css';
+---
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pinelab Vendure Plugins</title>
+    <link rel="shortcut icon" href="/favicon.png" />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@5.8.55/css/materialdesignicons.min.css"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript
+      ><link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@mdi/font@5.8.55/css/materialdesignicons.min.css"
+      /></noscript
+    >
+  </head>
+
+  <body>
+    <div id="navbar" class="navigation py-4">
+      <div class="container">
+        <nav
+          role="navigation"
+          aria-label="main navigation"
+          class="navbar is-dark"
+        >
+          <div class="navbar-brand">
+            <a href="/" class="navbar-item">
+              <img
+                src="/pinelab-logo-white-small.png"
+                alt="Pinelab logo"
+                style="width: 150px"
+              />
+            </a>
+          </div>
+          <div class="navbar-menu">
+            <div class="navbar-start"></div>
+            <div class="navbar-end">
+              <div class="navbar-item">
+                <div>
+                  <a href="/contact/" class="button cta is-primary shiny"
+                    ><strong>CONTACT</strong></a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <br />
+    <br />
+    <br />
+    <br />
+
+    <section
+      id="value-proposition"
+      class="banner is-flex is-align-items-center pt-6 mt-90"
+    >
+      <div class="container">
+        <slot />
+      </div>
+    </section>
+
+    <br />
+    <br />
+
+    <footer class="footer">
+      <div class="container content has-text-centered pb-6">
+        <p>
+          <a href="mailto:plugins@pinelab.studio">plugins@pinelab.studio</a> •
+          <a href="https://calendly.com/pinelab-martijn/how-can-we-help"
+            >Schedule a call</a
+          >
+          • VAT NL003062075B68 • CoC 76205436 •
+          <a href="https://github.com/Pinelab-studio" target="_blank">
+            <b-icon icon="github" size="is-small"></b-icon>
+          </a>
+          •
+          <a href="https://regreener.earth/pinelab-studio" target="_blank"
+            >🌲 Trees planted</a
+          >
+          •
+          <a href="https://pinelab.studio/toc.pdf" target="_blank"
+            >Terms and Conditions</a
+          >
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

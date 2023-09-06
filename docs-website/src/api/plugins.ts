@@ -6,7 +6,15 @@ interface PackageJson {
   name: string;
   description: string;
   versione: string;
-  // TODO icon\
+  // TODO icon
+}
+
+interface Plugin {
+  name: string;
+  npmName: string;
+  description: string;
+  icon: string;
+  markdownContent: string;
 }
 
 const pluginDirName = '../packages/';
@@ -33,4 +41,9 @@ export async function getPackageJsons(): Promise<PackageJson[]> {
       })
       .filter((v: any) => v !== undefined)
   );
+}
+
+// TODO combine readme and package.json into 1 single `Plugin` type
+export async function getPlugins(): Promise<Plugin[]> {
+  return [];
 }
