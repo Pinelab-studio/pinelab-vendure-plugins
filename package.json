@@ -74,6 +74,7 @@
         2,
         "always",
         [
+          "docs-website",
           "coinbase",
           "dutch-postalcode",
           "e-boekhouden",
