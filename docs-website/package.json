@@ -17,7 +17,7 @@
     "astro": "^2.5.0",
     "bulma": "^0.9.4",
     "highlight.js": "^11.8.0",
-    "marked": "^5.1.0",
+    "marked": "^4.1.0",
     "sharp": "^0.32.1"
   },
   "devDependencies": {

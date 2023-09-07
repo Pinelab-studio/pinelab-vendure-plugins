@@ -266,3 +266,12 @@ html {
     background-position: 3000px 0;
   }
 }
+/* Highlight js overrides */
+code {
+  border-radius: 10px;
+  background-color: #22272e;
+  color: #96d0ff;
+}
+pre {
+  background-color: transparent;
+}

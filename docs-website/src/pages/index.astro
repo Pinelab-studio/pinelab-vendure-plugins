@@ -1,20 +1,20 @@
 ---
 import MainLayout from '../layouts/MainLayout.astro';
-import { getPackageJsons } from '../api/plugins';
+import { getPlugins } from '../api/plugins';
 
-const packageDotJsons = await getPackageJsons();
-console.log(packageDotJsons[0].name);
+const plugins = await getPlugins();
 ---
 
 <MainLayout>
   <div class="columns is-multiline custom-grid">
     {
-      packageDotJsons.map((packageJson) => (
+      plugins.map((plugin) => (
         <div class="column is-6-widescreen is-6-tablet">
           <div class="plugin-block has-text-centered bordered">
-            <i class="mdi mdi-hand-heart mdi-36px" />
-            <h5>{packageJson.name}</h5>
-            <p>{packageJson.description}</p>
+            <i class={`mdi mdi-${plugin.icon} mdi-36px`} />
+            <h5>{plugin.name}</h5>
+            <p>{plugin.description}</p>
+            <div set:html={plugin.markdownContent} />
           </div>
         </div>
       ))
