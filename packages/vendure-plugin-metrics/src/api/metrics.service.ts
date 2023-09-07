@@ -1,14 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   Injector,
   Logger,
-  ProductVariant,
   ProductVariantService,
   RequestContext,
 } from '@vendure/core';
 import { addMonths, endOfDay, isBefore, startOfMonth, sub } from 'date-fns';
-import { loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { MetricsPluginOptions } from '../metrics.plugin';
 import {
   AdvancedMetricSeries,
   AdvancedMetricSummary,
@@ -16,8 +16,6 @@ import {
 } from '../ui/generated/graphql';
 import { Cache } from './cache';
 import { MetricStrategy } from './metric-strategy';
-import { AverageOrderValueMetric } from './metrics/average-order-value';
-import { SalesPerProductMetric } from './metrics/sales-per-product';
 
 // Categorize the datapoints per Legend name,
 type DataPointsPerLegend = Map<string, number[]>;
@@ -34,12 +32,10 @@ export class MetricsService {
   metricStrategies: MetricStrategy<unknown>[];
   constructor(
     private moduleRef: ModuleRef,
-    private variantService: ProductVariantService
+    private variantService: ProductVariantService,
+    @Inject(PLUGIN_INIT_OPTIONS) private pluginOptions: MetricsPluginOptions
   ) {
-    this.metricStrategies = [
-      new SalesPerProductMetric(),
-      new AverageOrderValueMetric(),
-    ];
+    this.metricStrategies = this.pluginOptions.metrics;
   }
 
   async getMetrics(

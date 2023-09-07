@@ -1,59 +1,3 @@
-# Vendure Metrics plugin
-
-![Vendure version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure)
-
-A plugin to measure and visualize your shop's average order value (AOV),number of orders per
-month or per week and number of items per product variant for the past 12 months (or weeks) per variants.
-
-![image](https://user-images.githubusercontent.com/6604455/236404288-e55c37ba-9508-43e6-a54c-2eb7b3cd36ee.png)
-
-// TODO describe single vs multi datapoint charts
-// TODO allow custom strategies
-
-## Getting started
-
-1. Configure the plugin in `vendure-config.ts`:
-
-```ts
-import { MetricsPlugin, AverageOrderValueMetric, SalesPerProductMetric } from "@pinelab/vendure-plugin-metrics";
-
-plugins: [
-  ...
-    MetricsPlugin.init({
-      metrics: [
-        new AverageOrderValueMetric(),
-        new SalesPerProductMetric()
-      ]
-    }),
-    AdminUiPlugin.init({
-      port: 3002,
-      route: 'admin',
-      app: compileUiExtensions({
-        outputPath: path.join(__dirname, '__admin-ui'),
-        extensions: [MetricsPlugin.ui],
-      }),
-    }),
-  ...
-]
-```
-
-2. Start your Vendure server and login as administrator
-3. You should now be able to add the widget `metrics` on your dashboard.
-
-Metric results are cached in memory to prevent heavy database queries every time a user opens its dashboard.
-
-### Default built-in Metrics
-
-1. Average Order Value (AOV): The average of `order.totalWithTax` of the orders per week/month
-2. Sales per product: The number of items sold. When no variants are selected, this metric counts the total nr of items per order.
-
-# Custom Metrics
-
-You can implement the `MetricStrategy` interface and pass it to the `MetricsPlugin.init()` function to have your custom metric visible in the Widget.
-
-```ts
-// Fictional example that displays the average value per order line per month in a chart
-
 import {
   Injector,
   OrderLine,
@@ -67,6 +11,9 @@ import {
   AdvancedMetricType,
 } from '@pinelab/vendure-plugin-metrics';
 
+/**
+ * Fictional example that displays the average value per order line per month in a chart
+ */
 export class AverageOrderLineValue implements MetricStrategy<OrderLine> {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Currency;
   readonly code = 'average-orderline-value';
@@ -155,8 +102,3 @@ export class AverageOrderLineValue implements MetricStrategy<OrderLine> {
     ];
   }
 }
-```
-
-### Contributions
-
-Thanks [@dalyathan](https://github.com/dalyathan) for his contributions on this plugin.
