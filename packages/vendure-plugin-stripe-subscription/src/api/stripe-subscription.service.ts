@@ -244,6 +244,13 @@ export class StripeSubscriptionService {
     }
   }
 
+  /**
+   * 
+   */
+  async getSubscriptions(ctx: RequestContext) {
+
+  }
+
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
     let order = (await this.activeOrderService.getActiveOrder(
       ctx,
