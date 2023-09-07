@@ -5,34 +5,14 @@ import {
   ProductMultiSelectorDialogComponent,
   // ChartEntry
 } from '@vendure/admin-ui/core';
-import { AdvancedMetricInterval } from './generated/graphql';
-import { BehaviorSubject, Observable } from 'rxjs';
+// import { AdvancedMetricInterval } from './generated/graphql';
+import { Observable } from 'rxjs';
 import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
+import { ChartEntry } from './chartist/chartist.component';
 
 @Component({
   selector: 'product-metrics-widget',
   template: `
-    <div
-      class="btn-group btn-outline-primary btn-sm"
-      *ngIf="selection$ | async as selection"
-    >
-      <button
-        class="btn"
-        [class.btn-primary]="selection === 'WEEKLY'"
-        (click)="selection$.next('WEEKLY')"
-      >
-        Weekly
-      </button>
-      <button
-        class="btn"
-        [class.btn-primary]="selection === 'MONTHLY'"
-        (click)="selection$.next('MONTHLY')"
-      >
-        Monthly
-      </button>
-    </div>
-    <br />
-    <br />
     <div>
       <button
         (click)="openProductSelectionDialog()"
@@ -54,15 +34,19 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
         {{ selectedVariantNames.join(' + ') }}
       </small>
     </div>
-    <vdr-chart [entries]="selectedMetrics" />
+    <br />
+    <br />
+    <vdr-chartist [entries]="selectedMetrics" />
+    <br />
+    <br />
     <div class="flex">
       <button
         *ngFor="let metric of metrics$ | async"
         class="button-small"
         (click)="selectedMetrics = metric"
-        [class.active]="selectedMetrics[0].code === metric[0].code"
+        [class.active]="selectedMetrics?.summary.code === metric.summary.code"
       >
-        {{ metric[0].code }}
+        {{ metric.summary.title }}
       </button>
     </div>
   `,
@@ -105,14 +89,14 @@ import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
-  metrics$: Observable<AdvancedChartEntry[][]> | undefined;
-  selectedMetrics: AdvancedChartEntry[] | undefined;
+  metrics$: Observable<ChartEntry[]> | undefined;
+  selectedMetrics: ChartEntry | undefined;
   variantName: string;
   dropDownName = 'Select Variant';
-  selection: AdvancedMetricInterval = AdvancedMetricInterval.Monthly;
-  selection$ = new BehaviorSubject<AdvancedMetricInterval>(
-    AdvancedMetricInterval.Monthly
-  );
+  // selection: AdvancedMetricInterval = AdvancedMetricInterval.Monthly;
+  // selection$ = new BehaviorSubject<AdvancedMetricInterval>(
+  //   AdvancedMetricInterval.Monthly
+  // );
   nrOfOrdersChart?: any;
   selectedVariantIds: string[] = [];
   selectedVariantNames: string[] = [];
@@ -164,14 +148,14 @@ export class MetricsWidgetComponent implements OnInit {
 
   loadChartData() {
     this.metrics$ = this.metricsService.queryData(
-      this.selection$,
+      // this.selection$,
       this.selectedVariantIds
     );
     this.changeDetectorRef.detectChanges();
-    this.metrics$.subscribe(async (metrics) => {
-      if (this.selectedMetrics?.length) {
+    this.metrics$?.subscribe(async (metrics) => {
+      if (this.selectedMetrics) {
         this.selectedMetrics = metrics.find(
-          (e) => e[0].code == this.selectedMetrics![0].code
+          (e) => e.summary.code == this.selectedMetrics?.summary.code
         );
       } else {
         this.selectedMetrics = metrics[0];
