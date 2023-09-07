@@ -32,7 +32,6 @@ export function legend(options?: any) {
 
   if (cachedDOMPosition) {
     // Reattatch the DOM Element position if it was removed before
-    // console.log(cachedDOMPosition)
     options.position = cachedDOMPosition;
   }
 
@@ -118,7 +117,6 @@ export function legend(options?: any) {
       if (!(options.position instanceof HTMLElement)) {
         switch (options.position) {
           case 'top':
-            // console.log('top new ',legendElement);
             chart.container.insertBefore(
               legendElement,
               chart.container.childNodes[0]
@@ -126,14 +124,12 @@ export function legend(options?: any) {
             break;
 
           case 'bottom':
-            // console.log('bottom new');
             chart.container.insertBefore(legendElement, null);
             break;
         }
       } else {
         // Appends the legend element as the last child of a given HTMLElement
         options.position.insertBefore(legendElement, null);
-        // console.log('else endezih new')
       }
     }
 
@@ -202,9 +198,7 @@ export function legend(options?: any) {
       removeLegendElement();
       var legendElement = createLegendElement();
       var useLabels = true; // chart instanceof PieChart && chart.data.labels && chart.data.labels.length;
-      // console.log(chart.data);
       var legendNames = chart.data.series.map((s) => s[0].legend); // getLegendNames(useLabels);
-      // console.log(legendNames,'legendNames')
       var seriesMetadata = initSeriesMetadata(useLabels);
       var legends: any[] = [];
 
