@@ -28,6 +28,7 @@ export async function getPluginDirectories(): Promise<Dirent[]> {
   return (await readdir(pluginDirName, { withFileTypes: true }))
     .filter((dir) => dir.isDirectory())
     .filter((dir) => dir.name.startsWith('vendure-plugin'));
+    // TODO sort alhabetically
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
