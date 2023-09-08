@@ -66,8 +66,7 @@ plugins: [
 6. Start the Vendure server and login to the admin UI
 7. Go to `Settings > Subscriptions` and create a Schedule.
 8. Create a variant and select a schedule in the variant detail screen in the admin UI.
-9. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. **
-   Your payment method MUST have 'stripe-subscription' in the code field**
+9. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. You can (and should) have only 1 payment method with the Stripe Subscription handler per channel.
 10. Set your API key from Stripe in the apiKey field.
 11. Get the webhook secret from you Stripe dashboard and save it on the payment method.
 

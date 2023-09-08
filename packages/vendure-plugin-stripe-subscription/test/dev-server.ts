@@ -9,6 +9,7 @@ import {
   LanguageCode,
   LogLevel,
   mergeConfig,
+  RequestContextService,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
@@ -24,7 +25,11 @@ import {
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
 import { UPSERT_SCHEDULES } from '../src/ui/queries';
-import { SubscriptionInterval, SubscriptionStartMoment } from '../src';
+import {
+  StripeSubscriptionService,
+  SubscriptionInterval,
+  SubscriptionStartMoment,
+} from '../src';
 
 // Test published version
 import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
@@ -224,4 +229,9 @@ export let clientSecret = 'test';
   );
   clientSecret = secret;
   console.log(`Go to http://localhost:3050/checkout/ to test your intent`);
+
+  // Uncomment these lines to list all subscriptions created in Stripe
+  // const ctx = await server.app.get(RequestContextService).create({apiType: 'admin'});
+  // const subscriptions = await server.app.get(StripeSubscriptionService).getAllSubscriptions(ctx);
+  // console.log(JSON.stringify(subscriptions));
 })();
