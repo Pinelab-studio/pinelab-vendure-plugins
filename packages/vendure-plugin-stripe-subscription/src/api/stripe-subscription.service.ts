@@ -259,6 +259,17 @@ export class StripeSubscriptionService {
     return stripeClient.subscriptions.list(params, options);
   }
 
+  /**
+   * Get a subscription directly from Stripe
+   */
+  async getSubscription(
+    ctx: RequestContext,
+    subscriptionId: string
+  ): Promise<Stripe.Response<Stripe.Subscription>> {
+    const { stripeClient } = await this.getStripeContext(ctx);
+    return stripeClient.subscriptions.retrieve(subscriptionId);
+  }
+
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
     let order = (await this.activeOrderService.getActiveOrder(
       ctx,
