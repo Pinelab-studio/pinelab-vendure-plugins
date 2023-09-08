@@ -63,6 +63,7 @@ import { hasSubscriptions } from './has-stripe-subscription-products-payment-che
 import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
 import { StripeInvoice } from './types/stripe-invoice';
 import { StripePaymentIntent } from './types/stripe-payment-intent';
+import Stripe from 'stripe';
 
 export interface StripeContext {
   paymentMethod: PaymentMethod;
@@ -245,9 +246,18 @@ export class StripeSubscriptionService {
   }
 
   /**
-   *
+   * Proxy to Stripe to retrieve subscriptions created for the current channel.
+   * Proxies to the Stripe api, so you can use the same filtering, parameters and options as defined here
+   * https://stripe.com/docs/api/subscriptions/list
    */
-  async getSubscriptions(ctx: RequestContext) {}
+  async getAllSubscriptions(
+    ctx: RequestContext,
+    params?: Stripe.SubscriptionListParams,
+    options?: Stripe.RequestOptions
+  ): Promise<Stripe.ApiListPromise<Stripe.Subscription>> {
+    const { stripeClient } = await this.getStripeContext(ctx);
+    return stripeClient.subscriptions.list(params, options);
+  }
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
     let order = (await this.activeOrderService.getActiveOrder(
