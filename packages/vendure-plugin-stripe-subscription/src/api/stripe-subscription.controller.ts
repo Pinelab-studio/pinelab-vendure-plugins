@@ -256,7 +256,7 @@ export class StripeSubscriptionController {
       }
       // Validate signature
       const { stripeClient } =
-        await this.stripeSubscriptionService.getStripeHandler(ctx, order.id);
+        await this.stripeSubscriptionService.getStripeContext(ctx);
       if (!this.options?.disableWebhookSignatureChecking) {
         stripeClient.validateWebhookSignature(request.rawBody, signature);
       }
