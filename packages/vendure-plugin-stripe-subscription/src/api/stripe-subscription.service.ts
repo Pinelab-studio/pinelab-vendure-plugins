@@ -281,7 +281,18 @@ export class StripeSubscriptionService {
         'Cannot create payment intent for order without shippingMethod'
       );
     }
-    const { stripeClient } = await this.getStripeContext(ctx);
+    // Check if Stripe Subscription paymentMethod is eligible for this order
+    const eligibleStripeMethodCodes = (
+      await this.orderService.getEligiblePaymentMethods(ctx, order.id)
+    )
+      .filter((m) => m.isEligible)
+      .map((m) => m.code);
+    const { stripeClient, paymentMethod } = await this.getStripeContext(ctx);
+    if (!eligibleStripeMethodCodes.includes(paymentMethod.code)) {
+      throw new UserInputError(
+        `No eligible payment method found with code \'stripe-subscription\'`
+      );
+    }
     const stripeCustomer = await stripeClient.getOrCreateCustomer(
       order.customer
     );
