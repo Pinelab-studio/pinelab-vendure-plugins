@@ -3926,11 +3926,11 @@ export interface ActiveOrderQuery {
     | undefined;
 }
 
-export type ApplyCouponCodeMutationMutationVariables = Exact<{
+export type ApplyCouponCodeMutationVariables = Exact<{
   couponCode: Scalars['String'];
 }>;
 
-export interface ApplyCouponCodeMutationMutation {
+export interface ApplyCouponCodeMutation {
   __typename?: 'Mutation';
   applyCouponCode:
     | {
@@ -5041,11 +5041,11 @@ export interface GetOrderByCodeQuery {
     | undefined;
 }
 
-export type RegisterMutationVariables = Exact<{
+export type RegisterCustomerAccountMutationVariables = Exact<{
   input: RegisterCustomerInput;
 }>;
 
-export interface RegisterMutation {
+export interface RegisterCustomerAccountMutation {
   __typename?: 'Mutation';
   registerCustomerAccount:
     | {
@@ -5123,5 +5123,42 @@ export interface ResetPasswordMutation {
         errorCode: ErrorCode;
         message: string;
         validationErrorMessage: string;
+      };
+}
+
+export type LoginMutationVariables = Exact<{
+  username: Scalars['String'];
+  password: Scalars['String'];
+  rememberMe?: InputMaybe<Scalars['Boolean']>;
+}>;
+
+export interface LoginMutation {
+  __typename?: 'Mutation';
+  login:
+    | {
+        __typename?: 'CurrentUser';
+        id: number | string;
+        identifier: string;
+        channels: Array<{
+          __typename?: 'CurrentUserChannel';
+          code: string;
+          token: string;
+          permissions: Permission[];
+        }>;
+      }
+    | {
+        __typename?: 'InvalidCredentialsError';
+        errorCode: ErrorCode;
+        message: string;
+      }
+    | {
+        __typename?: 'NativeAuthStrategyError';
+        errorCode: ErrorCode;
+        message: string;
+      }
+    | {
+        __typename?: 'NotVerifiedError';
+        errorCode: ErrorCode;
+        message: string;
       };
 }

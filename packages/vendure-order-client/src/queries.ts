@@ -170,7 +170,7 @@ export class GraphqlQueries {
 
   APPLY_COUPON_CODE = gql`
     ${this.ACTIVE_ORDER_FIELDS}
-    mutation ApplyCouponCodeMutation($couponCode: String!) {
+    mutation ApplyCouponCode($couponCode: String!) {
       applyCouponCode(couponCode: $couponCode) {
         ... on Order {
           ...ActiveOrderFields
@@ -292,7 +292,7 @@ export class GraphqlQueries {
   `;
 
   REGISTER_CUSTOMER_ACCOUNT = gql`
-    mutation Register($input: RegisterCustomerInput!) {
+    mutation RegisterCustomerAccount($input: RegisterCustomerInput!) {
       registerCustomerAccount(input: $input) {
         ... on Success {
           success
@@ -334,6 +334,24 @@ export class GraphqlQueries {
         }
         ... on PasswordValidationError {
           validationErrorMessage
+        }
+      }
+    }
+  `;
+
+  LOGIN = gql`
+    mutation Login(
+      $username: String!
+      $password: String!
+      $rememberMe: Boolean
+    ) {
+      login(username: $username, password: $password, rememberMe: $rememberMe) {
+        ... on CurrentUser {
+          ...CurrentUserFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
         }
       }
     }

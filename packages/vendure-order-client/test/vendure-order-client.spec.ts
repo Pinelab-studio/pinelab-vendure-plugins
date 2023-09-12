@@ -15,7 +15,6 @@ import {
   ActiveOrderFieldsFragment,
   CreateAddressInput,
   CreateCustomerInput,
-  ErrorResult,
   PaymentInput,
   Success,
   VendureOrderClient,
@@ -215,8 +214,12 @@ describe('Vendure order client', () => {
     });
 
     it('Applies invalid coupon', async () => {
-      const result = await client.applyCouponCode('fghj');
-      expect((result as ErrorResult).errorCode).toBeDefined();
+      expect.assertions(1);
+      try {
+        await client.applyCouponCode('fghj');
+      } catch (e: any) {
+        expect(e.errorCode).toBe('COUPON_CODE_INVALID_ERROR');
+      }
     });
 
     it('Applies valid coupon', async () => {
