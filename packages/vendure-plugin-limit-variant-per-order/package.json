@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-limit-variant-per-order",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vendure plugin to limit the amount of a specific product that can be ordered per order.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -14,7 +14,8 @@
   "types": "dist/limit-variant-per-order.plugin.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-goedgepickt",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vendure plugin for integration with the Goedgepickt order picking platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -14,7 +14,8 @@
   "types": "dist/vendure-plugin-goedgepickt/src/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",

@@ -36,6 +36,8 @@ export class ScheduleRelationSelectorComponent
   ngOnInit() {
     this.schedules$ = this.dataService
       .query(GET_SCHEDULES)
-      .mapSingle((result: any) => result.stripeSubscriptionSchedules ?? []);
+      .mapSingle(
+        (result: any) => result.stripeSubscriptionSchedules.items ?? []
+      );
   }
 }

@@ -18,7 +18,7 @@ import {
 import {
   AdminPriceIncludesTaxResolver,
   AdminResolver,
-  ShopOrderLinePricingResolver,
+  OrderLinePricingResolver,
   ShopResolver,
   StripeSubscriptionController,
 } from './api/stripe-subscription.controller';
@@ -40,11 +40,15 @@ export interface StripeSubscriptionPluginOptions {
   entities: [Schedule, StripeSubscriptionPayment],
   shopApiExtensions: {
     schema: shopSchemaExtensions,
-    resolvers: [ShopResolver, ShopOrderLinePricingResolver],
+    resolvers: [ShopResolver, OrderLinePricingResolver],
   },
   adminApiExtensions: {
     schema: adminSchemaExtensions,
-    resolvers: [AdminResolver, AdminPriceIncludesTaxResolver],
+    resolvers: [
+      AdminResolver,
+      AdminPriceIncludesTaxResolver,
+      OrderLinePricingResolver,
+    ],
   },
   controllers: [StripeSubscriptionController],
   providers: [

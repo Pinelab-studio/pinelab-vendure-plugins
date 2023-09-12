@@ -23,6 +23,7 @@ import {
   OrderService,
   OrderStateTransitionError,
   PaginatedList,
+  PaymentMethod,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
@@ -62,11 +63,11 @@ import { hasSubscriptions } from './has-stripe-subscription-products-payment-che
 import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
 import { StripeInvoice } from './types/stripe-invoice';
 import { StripePaymentIntent } from './types/stripe-payment-intent';
+import Stripe from 'stripe';
 
-export interface StripeHandlerConfig {
-  paymentMethodCode: string;
+export interface StripeContext {
+  paymentMethod: PaymentMethod;
   stripeClient: StripeClient;
-  webhookSecret: string;
 }
 
 interface CreateSubscriptionsJob {
@@ -212,7 +213,7 @@ export class StripeSubscriptionService {
       );
     }
     await this.entityHydrator.hydrate(ctx, line, { relations: ['order'] });
-    const { stripeClient } = await this.getStripeHandler(ctx, line.order.id);
+    const { stripeClient } = await this.getStripeContext(ctx);
     for (const subscriptionId of line.customFields.subscriptionIds) {
       try {
         await stripeClient.subscriptions.update(subscriptionId, {
@@ -242,6 +243,31 @@ export class StripeSubscriptionService {
         );
       }
     }
+  }
+
+  /**
+   * Proxy to Stripe to retrieve subscriptions created for the current channel.
+   * Proxies to the Stripe api, so you can use the same filtering, parameters and options as defined here
+   * https://stripe.com/docs/api/subscriptions/list
+   */
+  async getAllSubscriptions(
+    ctx: RequestContext,
+    params?: Stripe.SubscriptionListParams,
+    options?: Stripe.RequestOptions
+  ): Promise<Stripe.ApiListPromise<Stripe.Subscription>> {
+    const { stripeClient } = await this.getStripeContext(ctx);
+    return stripeClient.subscriptions.list(params, options);
+  }
+
+  /**
+   * Get a subscription directly from Stripe
+   */
+  async getSubscription(
+    ctx: RequestContext,
+    subscriptionId: string
+  ): Promise<Stripe.Response<Stripe.Subscription>> {
+    const { stripeClient } = await this.getStripeContext(ctx);
+    return stripeClient.subscriptions.retrieve(subscriptionId);
   }
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
@@ -276,8 +302,21 @@ export class StripeSubscriptionService {
         'Cannot create payment intent for order without shippingMethod'
       );
     }
-    const { stripeClient } = await this.getStripeHandler(ctx, order.id);
-    const stripeCustomer = await stripeClient.getOrCreateClient(order.customer);
+    // Check if Stripe Subscription paymentMethod is eligible for this order
+    const eligibleStripeMethodCodes = (
+      await this.orderService.getEligiblePaymentMethods(ctx, order.id)
+    )
+      .filter((m) => m.isEligible)
+      .map((m) => m.code);
+    const { stripeClient, paymentMethod } = await this.getStripeContext(ctx);
+    if (!eligibleStripeMethodCodes.includes(paymentMethod.code)) {
+      throw new UserInputError(
+        `No eligible payment method found with code \'stripe-subscription\'`
+      );
+    }
+    const stripeCustomer = await stripeClient.getOrCreateCustomer(
+      order.customer
+    );
     this.customerService
       .update(ctx, {
         id: order.customer.id,
@@ -498,7 +537,9 @@ export class StripeSubscriptionService {
     object: StripePaymentIntent,
     order: Order
   ): Promise<void> {
-    const { paymentMethodCode } = await this.getStripeHandler(ctx, order.id);
+    const {
+      paymentMethod: { code: paymentMethodCode },
+    } = await this.getStripeContext(ctx);
     if (!object.customer) {
       await this.logHistoryEntry(
         ctx,
@@ -585,7 +626,7 @@ export class StripeSubscriptionService {
         `Not creating subscriptions for order ${order.code}, because it doesn't have any subscription products`
       );
     }
-    const { stripeClient } = await this.getStripeHandler(ctx, order.id);
+    const { stripeClient } = await this.getStripeContext(ctx);
     const customer = await stripeClient.customers.retrieve(stripeCustomerId);
     if (!customer) {
       throw Error(
@@ -768,32 +809,25 @@ export class StripeSubscriptionService {
   }
 
   /**
-   * Get the paymentMethod with the stripe handler, should be only 1!
+   * Get the Stripe context for the current channel.
+   * The Stripe context consists of the Stripe client and the Vendure payment method connected to the Stripe account
    */
-  async getStripeHandler(
-    ctx: RequestContext,
-    orderId: ID
-  ): Promise<StripeHandlerConfig> {
-    const paymentMethodQuotes =
-      await this.orderService.getEligiblePaymentMethods(ctx, orderId);
-    const paymentMethodQuote = paymentMethodQuotes
-      .filter((quote) => quote.isEligible)
-      .find((pm) => pm.code.indexOf('stripe-subscription') > -1);
-    if (!paymentMethodQuote) {
+  async getStripeContext(ctx: RequestContext): Promise<StripeContext> {
+    const paymentMethods = await this.paymentMethodService.findAll(ctx, {
+      filter: { enabled: { eq: true } },
+    });
+    const stripePaymentMethods = paymentMethods.items.filter(
+      (pm) => pm.handler.code === stripeSubscriptionHandler.code
+    );
+    if (stripePaymentMethods.length > 1) {
       throw new UserInputError(
-        `No eligible payment method found with code 'stripe-subscription'`
+        `Multiple payment methods found with handler 'stripe-subscription', there should only be 1 per channel!`
       );
     }
-    const paymentMethod = await this.paymentMethodService.findOne(
-      ctx,
-      paymentMethodQuote.id
-    );
-    if (
-      !paymentMethod ||
-      paymentMethod.handler.code !== stripeSubscriptionHandler.code
-    ) {
+    const paymentMethod = stripePaymentMethods[0];
+    if (!paymentMethod) {
       throw new UserInputError(
-        `Payment method '${paymentMethodQuote.code}' doesn't have handler '${stripeSubscriptionHandler.code}' configured.`
+        `No enabled payment method found with handler 'stripe-subscription'`
       );
     }
     const apiKey = paymentMethod.handler.args.find(
@@ -812,11 +846,10 @@ export class StripeSubscriptionService {
       );
     }
     return {
-      paymentMethodCode: paymentMethod.code,
+      paymentMethod: paymentMethod,
       stripeClient: new StripeClient(webhookSecret, apiKey, {
         apiVersion: null as any, // Null uses accounts default version
       }),
-      webhookSecret,
     };
   }
 

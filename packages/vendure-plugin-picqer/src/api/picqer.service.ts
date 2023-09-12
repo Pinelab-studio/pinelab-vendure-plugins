@@ -140,6 +140,7 @@ export class PicqerService implements OnApplicationBootstrap {
               loggerCtx
             );
           }
+          Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
         } catch (e: unknown) {
           if (e instanceof Error) {
             // Only log a warning, because this is a background function that will be retried by the JobQueue
@@ -1073,10 +1074,25 @@ export class PicqerService implements OnApplicationBootstrap {
     customerId?: number
   ): OrderInput {
     const shippingAddress = order.shippingAddress;
-    // Check billing address existance based on PostalCode
-    const billingAddress = order.billingAddress.postalCode
-      ? order.billingAddress
-      : order.shippingAddress;
+
+    let invoiceData: Partial<OrderInput> = {
+      invoicename:
+        order.billingAddress?.company ||
+        order.billingAddress?.fullName ||
+        undefined,
+      invoicecontactname: order.billingAddress?.fullName || undefined,
+      invoiceaddress:
+        order.billingAddress?.streetLine1 || order.billingAddress?.streetLine2
+          ? [order.billingAddress.streetLine1, order.billingAddress.streetLine2]
+              .join(' ')
+              .trim()
+          : undefined,
+      invoicezipcode: order.billingAddress?.postalCode || undefined,
+      invoicecity: order.billingAddress?.city || undefined,
+      invoicecountry:
+        order.billingAddress?.countryCode?.toUpperCase() || undefined,
+    };
+
     return {
       idcustomer: customerId, // If none given, this creates a guest order
       reference: order.code,
@@ -1086,13 +1102,8 @@ export class PicqerService implements OnApplicationBootstrap {
       deliveryzipcode: shippingAddress.postalCode,
       deliverycity: shippingAddress.city,
       deliverycountry: shippingAddress.countryCode?.toUpperCase(),
-      invoicename: billingAddress.company || billingAddress.fullName,
-      invoicecontactname: billingAddress.fullName,
-      invoiceaddress: `${shippingAddress.streetLine1} ${shippingAddress.streetLine2}`,
-      invoicezipcode: shippingAddress.postalCode,
-      invoicecity: shippingAddress.city,
-      invoicecountry: shippingAddress.countryCode?.toUpperCase(),
       products,
+      ...invoiceData,
     };
   }
 }

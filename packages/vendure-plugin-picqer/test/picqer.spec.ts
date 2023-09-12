@@ -24,7 +24,7 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
-import { IncomingPicklistWebhook, VatGroup } from '../src/api/types';
+import { IncomingPicklistWebhook, VatGroup } from '../src';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
@@ -199,9 +199,22 @@ describe('Picqer plugin', function () {
       })
       .reply(200, { idordder: 'mockOrderId' });
     // Shipping method 3 should be our created Picqer handler method
-    createdOrder = await createSettledOrder(shopClient, 3, true, [
-      { id: 'T_1', quantity: 3 },
-    ]);
+    createdOrder = await createSettledOrder(
+      shopClient,
+      3,
+      true,
+      [{ id: 'T_1', quantity: 3 }],
+      {
+        input: {
+          fullName: "Martinho's friend",
+          streetLine1: 'Remote location',
+          streetLine2: '123',
+          city: 'Faraway',
+          postalCode: '1111AB',
+          countryCode: 'NL',
+        },
+      }
+    );
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
@@ -215,6 +228,12 @@ describe('Picqer plugin', function () {
     expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
     expect(picqerOrderRequest.deliverycity).toBeDefined();
     expect(picqerOrderRequest.deliverycountry).toBe('NL');
+    expect(picqerOrderRequest.invoicename).toBe("Martinho's friend");
+    expect(picqerOrderRequest.invoicecontactname).toBe("Martinho's friend");
+    expect(picqerOrderRequest.invoicecountry).toBe('NL');
+    expect(picqerOrderRequest.invoiceaddress).toBe('Remote location 123');
+    expect(picqerOrderRequest.invoicezipcode).toBe('1111AB');
+    expect(picqerOrderRequest.invoicecity).toBe('Faraway');
     expect(picqerOrderRequest.products.length).toBe(1);
     expect(picqerOrderRequest.products[0].amount).toBe(3);
     expect(isOrderInProcessing).toBe(true);
@@ -225,8 +244,7 @@ describe('Picqer plugin', function () {
     });
   });
 
-  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it.skip('Should update to "PartiallyDelivered" when 2 of 3 items are shipped', async () => {
+  it('Should update to "PartiallyDelivered" when 2 of 3 items are shipped', async () => {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
@@ -253,8 +271,7 @@ describe('Picqer plugin', function () {
     expect(order!.state).toBe('PartiallyDelivered');
   });
 
-  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it.skip('Should have updated stock after 1 item was shipped', async () => {
+  it('Should have updated stock after 1 item was shipped', async () => {
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
     );
@@ -262,8 +279,7 @@ describe('Picqer plugin', function () {
     expect(variant!.stockAllocated).toBe(1);
   });
 
-  // FIXME enable after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it.skip('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
+  it('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
     const mockIncomingWebhook = {
       event: 'picklists.closed',
       data: {
@@ -271,32 +287,6 @@ describe('Picqer plugin', function () {
         products: [
           { productcode: 'L2201308', amountpicked: 1 }, // last one to complete the order
         ],
-      },
-    } as Partial<IncomingPicklistWebhook>;
-    await adminClient.fetch(
-      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(mockIncomingWebhook),
-        headers: {
-          'X-Picqer-Signature': createSignature(
-            mockIncomingWebhook,
-            'test-api-key'
-          ),
-        },
-      }
-    );
-    const order = await getOrder(adminClient, createdOrder?.id as string);
-    expect(order!.state).toBe('Delivered');
-  });
-
-  // FIXME Delete this test after fix: https://github.com/vendure-ecommerce/vendure/issues/2191
-  it('Should update to "Delivered" when items are shipped', async () => {
-    const mockIncomingWebhook = {
-      event: 'picklists.closed',
-      data: {
-        reference: createdOrder?.code,
-        products: [{ productcode: 'L2201308', amountpicked: 3 }],
       },
     } as Partial<IncomingPicklistWebhook>;
     await adminClient.fetch(

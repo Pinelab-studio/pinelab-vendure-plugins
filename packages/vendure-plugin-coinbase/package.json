@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-coinbase",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Vendure plugin for Coinbase payments",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -14,7 +14,8 @@
   "types": "dist/coinbase.plugin.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "ts-node test/dev-server.ts",

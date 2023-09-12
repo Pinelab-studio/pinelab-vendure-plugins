@@ -21,14 +21,14 @@ interface SubscriptionInput {
  */
 export class StripeClient extends Stripe {
   constructor(
-    private webhookSecret: string,
+    public webhookSecret: string,
     apiKey: string,
     config: Stripe.StripeConfig
   ) {
     super(apiKey, config);
   }
 
-  async getOrCreateClient(
+  async getOrCreateCustomer(
     customer: CustomerWithSubscriptionFields
   ): Promise<Stripe.Customer> {
     if (customer.customFields?.stripeSubscriptionCustomerId) {

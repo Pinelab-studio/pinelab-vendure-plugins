@@ -6,22 +6,10 @@ import {
   Logger,
   PaymentMethodHandler,
   SettlePaymentResult,
-  UserInputError,
 } from '@vendure/core';
-import { RequestContext } from '@vendure/core/dist/api/common/request-context';
-import { Order, Payment, PaymentMethod } from '@vendure/core/dist/entity';
-import {
-  CancelPaymentErrorResult,
-  CancelPaymentResult,
-} from '@vendure/core/dist/config/payment/payment-method-handler';
-import {
-  OrderLineWithSubscriptionFields,
-  OrderWithSubscriptionFields,
-} from './subscription-custom-fields';
-import { StripeSubscriptionService } from './stripe-subscription.service';
-import { StripeClient } from './stripe.client';
 import { loggerCtx } from '../constants';
 import { printMoney } from './pricing.helper';
+import { StripeSubscriptionService } from './stripe-subscription.service';
 
 let service: StripeSubscriptionService;
 export const stripeSubscriptionHandler = new PaymentMethodHandler({
@@ -111,7 +99,7 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
     payment,
     args
   ): Promise<CreateRefundResult> {
-    const { stripeClient } = await service.getStripeHandler(ctx, order.id);
+    const { stripeClient } = await service.getStripeContext(ctx);
     const refund = await stripeClient.refunds.create({
       payment_intent: payment.transactionId,
       amount,
