@@ -36,6 +36,7 @@ import {
   RemoveCouponCodeMutation,
   RequestPasswordResetMutation,
   ResetPasswordMutation,
+  SetCustomerForOrderMutation,
   SetOrderBillingAddressMutation,
   SetOrderShippingAddressMutation,
   SetOrderShippingMethodMutation,
@@ -216,7 +217,7 @@ export class VendureOrderClient<A = unknown> {
     input: CreateCustomerInput
   ): Promise<ActiveOrder<A>> {
     const { setCustomerForOrder } = await this.rawRequest<
-      any,
+      SetCustomerForOrderMutation,
       MutationSetCustomerForOrderArgs
     >(this.queries.SET_CUSTOMER_FOR_ORDER, { input });
     const activeOrder = await this.validateOrder(setCustomerForOrder);
