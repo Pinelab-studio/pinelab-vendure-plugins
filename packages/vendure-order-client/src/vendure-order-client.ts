@@ -67,6 +67,9 @@ export class VendureOrderClient<A = unknown> {
   activeOrderStore: WritableAtom<ActiveOrder<A> | undefined>;
   readonly tokenName = 'vendure-auth-token';
 
+  /**
+   * Preferably use `useStore(activeOrderStore)` instead of this getter to achieve reactivity.
+   */
   get activeOrder(): ActiveOrder<A> | undefined {
     return this.activeOrderStore.get();
   }
