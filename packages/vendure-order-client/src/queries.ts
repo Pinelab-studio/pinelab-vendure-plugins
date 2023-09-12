@@ -102,8 +102,8 @@ export class GraphqlQueries {
     }
   `;
 
-  CURRENT_USER_FRAGMENT = gql`
-    fragment CurrentUserShop on CurrentUser {
+  CURRENT_USER_FIELDS = gql`
+    fragment CurrentUserFields on CurrentUser {
       id
       identifier
       channels {
@@ -326,13 +326,7 @@ export class GraphqlQueries {
     mutation ResetPassword($token: String!, $password: String!) {
       resetPassword(token: $token, password: $password) {
         ... on CurrentUser {
-          id
-          identifier
-          channels {
-            code
-            token
-            permissions
-          }
+          ...CurrentUserFields
         }
         ... on ErrorResult {
           errorCode

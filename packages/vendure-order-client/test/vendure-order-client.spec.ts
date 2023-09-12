@@ -1,28 +1,27 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
-  SimpleGraphQLClient,
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { gql } from 'graphql-tag';
 import path from 'path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { addItem } from '../../test/src/shop-utils';
 import {
-  VendureOrderClient,
-  VendureOrderEvent,
   ActiveOrderFieldsFragment,
   CreateAddressInput,
+  CreateCustomerInput,
   ErrorResult,
   PaymentInput,
-  CreateCustomerInput,
-  RegisterCustomerInput,
   Success,
+  VendureOrderClient,
+  VendureOrderEvent,
 } from '../src/';
 import { initialData } from './initial-data';
-import { addItem } from '../../test/src/shop-utils';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
 
 const storage: any = {};
@@ -343,16 +342,20 @@ describe('Vendure order client', () => {
     });
 
     it('Gets order by code', async () => {
+      if (!activeOrderCode) {
+        throw Error('Active order code is not defined');
+      }
       const result = await client.getOrderByCode(activeOrderCode);
       expect(activeOrderCode).toEqual(result.code);
     });
   });
 
   describe('Registered customer checkout', () => {
-    const createNewCustomerInput: RegisterCustomerInput = {
+    const createNewCustomerInput = {
       emailAddress: `test${Math.random()}@xyz.com`,
       password: '1qaz2wsx',
     };
+    /*  */
     it('Register as customer', async () => {
       const result = await client.registerCustomerAccount(
         createNewCustomerInput
@@ -401,14 +404,6 @@ describe('Vendure order client', () => {
         }
       );
       expect(login.identifier).toBe(createNewCustomerInput.emailAddress);
-    });
-  });
-
-  describe('Account management', () => {
-    // TODO: reset password, update profile
-
-    it.skip('Placeholder', async () => {
-      expect(false).toBe(true);
     });
   });
 
