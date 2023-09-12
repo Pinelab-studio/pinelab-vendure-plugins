@@ -8,9 +8,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import path from 'path';
 import { initialData } from './initial-data.js';
-
 (async () => {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;

@@ -1,23 +1,24 @@
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
-  SimpleGraphQLClient,
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { gql } from 'graphql-tag';
 import path from 'path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { addItem } from '../../test/src/shop-utils';
 import {
-  VendureOrderClient,
-  VendureOrderEvent,
   ActiveOrderFieldsFragment,
   CreateAddressInput,
-  ErrorResult,
-  PaymentInput,
   CreateCustomerInput,
+  PaymentInput,
+  Success,
+  VendureOrderClient,
+  VendureOrderEvent,
 } from '../src/';
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
@@ -56,6 +57,7 @@ describe('Vendure order client', () => {
   const couponCodeName = 'couponCodeName';
   let activeOrderCode: string | undefined;
   let adminClient: SimpleGraphQLClient;
+  let shopClient: SimpleGraphQLClient;
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
   beforeAll(async () => {
@@ -64,10 +66,12 @@ describe('Vendure order client', () => {
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethodHandler],
       },
+      authOptions: {
+        requireVerification: false,
+      },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
     });
-
-    ({ server, adminClient } = createTestEnvironment(config));
+    ({ server, adminClient, shopClient } = createTestEnvironment(config));
     await server.init({
       initialData,
       productsCsvPath: path.join(__dirname, './product-import.csv'),
@@ -210,8 +214,12 @@ describe('Vendure order client', () => {
     });
 
     it('Applies invalid coupon', async () => {
-      const result = await client.applyCouponCode('fghj');
-      expect((result as ErrorResult).errorCode).toBeDefined();
+      expect.assertions(1);
+      try {
+        await client.applyCouponCode('fghj');
+      } catch (e: any) {
+        expect(e.errorCode).toBe('COUPON_CODE_INVALID_ERROR');
+      }
     });
 
     it('Applies valid coupon', async () => {
@@ -337,28 +345,68 @@ describe('Vendure order client', () => {
     });
 
     it('Gets order by code', async () => {
+      if (!activeOrderCode) {
+        throw Error('Active order code is not defined');
+      }
       const result = await client.getOrderByCode(activeOrderCode);
       expect(activeOrderCode).toEqual(result.code);
     });
   });
 
   describe('Registered customer checkout', () => {
-    it.skip('Register as customer', async () => {
-      expect(false).toBe(true);
+    const createNewCustomerInput = {
+      emailAddress: `test${Math.random()}@xyz.com`,
+      password: '1qaz2wsx',
+    };
+    /*  */
+    it('Register as customer', async () => {
+      const result = await client.registerCustomerAccount(
+        createNewCustomerInput
+      );
+      expect((result as Success)?.success).toBe(true);
+      await shopClient.asUserWithCredentials(
+        createNewCustomerInput.emailAddress,
+        createNewCustomerInput.password
+      );
+      await addItem(shopClient, 'T_1', 2);
+      const { activeOrder } = await shopClient.query(gql`
+        {
+          activeOrder {
+            lines {
+              id
+              productVariant {
+                id
+              }
+            }
+            customer {
+              id
+              emailAddress
+            }
+          }
+        }
+      `);
+      expect(activeOrder.customer.emailAddress).toBe(
+        createNewCustomerInput.emailAddress
+      );
     });
 
-    it.skip('Login as customer', async () => {
-      expect(false).toBe(true);
-    });
-
-    // TODO dont add shipping address etc
-  });
-
-  describe('Account management', () => {
-    // TODO: reset password, update profile
-
-    it.skip('Placeholder', async () => {
-      expect(false).toBe(true);
+    it('Login with the new customer', async () => {
+      const { login } = await shopClient.query(
+        gql`
+          mutation Login($username: String!, $password: String!) {
+            login(username: $username, password: $password) {
+              ... on CurrentUser {
+                identifier
+              }
+            }
+          }
+        `,
+        {
+          username: createNewCustomerInput.emailAddress,
+          password: createNewCustomerInput.password,
+        }
+      );
+      expect(login.identifier).toBe(createNewCustomerInput.emailAddress);
     });
   });
 
