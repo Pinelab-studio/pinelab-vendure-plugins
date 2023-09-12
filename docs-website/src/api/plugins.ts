@@ -14,6 +14,7 @@ interface PackageJson {
 export interface Plugin {
   name: string;
   npmName: string;
+  slug: string;
   description: string;
   icon: string;
   markdownContent: string;
@@ -25,10 +26,23 @@ const pluginDirName = '../packages/';
  * Get all plugin directories starting with `vendure-plugin`
  */
 export async function getPluginDirectories(): Promise<Dirent[]> {
-  return (await readdir(pluginDirName, { withFileTypes: true }))
-    .filter((dir) => dir.isDirectory())
-    .filter((dir) => dir.name.startsWith('vendure-plugin'));
-    // TODO sort alhabetically
+  return (
+    (await readdir(pluginDirName, { withFileTypes: true }))
+      .filter((dir) => dir.isDirectory())
+      .filter((dir) => dir.name.startsWith('vendure-plugin'))
+      // Sort alphabetically
+      .sort((a, b) => {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+        if (nameA < nameB) {
+          return -1;
+        }
+        if (nameA > nameB) {
+          return 1;
+        }
+        return 0;
+      })
+  );
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
@@ -52,6 +66,7 @@ export async function getPlugins(): Promise<Plugin[]> {
       plugins.push({
         name,
         npmName: packageJson.name,
+        slug: packageJson.name.replace('@pinelab/', ''),
         description: packageJson.description,
         icon: packageJson.icon ?? 'package-variant-closed',
         markdownContent: readmeHtml,

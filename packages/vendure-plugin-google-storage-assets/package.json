@@ -2,6 +2,7 @@
   "name": "@pinelab/vendure-plugin-google-storage-assets",
   "version": "1.0.2",
   "description": "Vendure plugin for uploading assets to Google storage",
+  "icon": "google-cloud",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",

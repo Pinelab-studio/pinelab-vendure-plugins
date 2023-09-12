@@ -3,13 +3,15 @@ import '../styles/theme.scss';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/700.css';
 import 'highlight.js/styles/github-dark-dimmed.css';
+
+const { title } = Astro.props;
 ---
 
 <!DOCTYPE html>
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Pinelab Vendure Plugins</title>
+    <title>{title ?? 'Pinelab Vendure Plugins'}</title>
     <link rel="shortcut icon" href="/favicon.png" />
     <link
       rel="preload"

@@ -2,6 +2,7 @@
   "name": "@pinelab/vendure-plugin-admin-ui-helpers",
   "version": "1.0.2",
   "description": "Vendure plugin for various admin ui helpers. Cancel button, complete order button etc.",
+  "icon": "bitcoin",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",

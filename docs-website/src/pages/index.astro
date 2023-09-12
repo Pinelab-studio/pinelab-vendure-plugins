@@ -11,10 +11,11 @@ const plugins = await getPlugins();
       plugins.map((plugin) => (
         <div class="column is-6-widescreen is-6-tablet">
           <div class="plugin-block has-text-centered bordered">
-            <i class={`mdi mdi-${plugin.icon} mdi-36px`} />
-            <h5>{plugin.name}</h5>
-            <p>{plugin.description}</p>
-            <div set:html={plugin.markdownContent} />
+            <a href={`/plugin/${plugin.slug}`}>
+              <i class={`mdi mdi-${plugin.icon} mdi-36px`} />
+              <h5>{plugin.name}</h5>
+              <p>{plugin.description}</p>
+            </a>
           </div>
         </div>
       ))
@@ -26,6 +27,15 @@ const plugins = await getPlugins();
   .plugin-block {
     padding: 50px 40px;
     border-radius: 10px;
+    height: 100%;
+  }
+  .plugin-block a {
+    color: unset;
+    text-decoration: none;
+  }
+  .plugin-block i {
+    color: #3dc685;
+    text-decoration: none;
   }
   .plugin-block i {
     width: 70px;
