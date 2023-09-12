@@ -17,7 +17,7 @@ import { createLowStockEmailHandler } from '../src/api/low-stock.email-handler';
 import * as path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { expect, describe, beforeAll, it } from 'vitest';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
