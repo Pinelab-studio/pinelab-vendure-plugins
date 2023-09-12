@@ -1,6 +1,6 @@
 import { gql, GraphQLClient, Variables } from 'graphql-request';
 import mitt, { Emitter } from 'mitt';
-import { atom, WritableAtom } from 'nanostores';
+import { atom } from 'nanostores';
 import {
   ActiveOrderFieldsFragment,
   ActiveOrderQuery,
@@ -74,8 +74,8 @@ export class VendureOrderClient<A = unknown> {
    * The store object that holds the active order.
    * E.g. use in Vue with `const activeOrder = useStore(orderClient.$activeOrder);`
    */
-  $activeOrder: WritableAtom<ActiveOrder<A> | undefined>;
-  $currentUser: WritableAtom<CurrentUserFieldsFragment | undefined>;
+  $activeOrder = atom<ActiveOrder<A> | undefined>();
+  $currentUser = atom<CurrentUser | undefined>();
   readonly tokenName = 'vendure-auth-token';
 
   constructor(
@@ -87,7 +87,6 @@ export class VendureOrderClient<A = unknown> {
       headers: { 'vendure-token': channelToken },
     });
     this.queries = new GraphqlQueries(additionalOrderFields ?? dummyFragment);
-    this.$activeOrder = atom<ActiveOrder<A> | undefined>();
   }
 
   async getActiveOrder(): Promise<ActiveOrder<A> | undefined> {
