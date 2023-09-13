@@ -1,6 +1,6 @@
 # Vendure Client
 
-A typed, extensible, framework-agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
+A typed, extensible, framework-agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the efault logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
 
 - Sensible, but extendable default GraphQL fields.
 - Active order state management.

@@ -1,6 +1,6 @@
 import { gql, GraphQLClient, Variables } from 'graphql-request';
 import mitt, { Emitter } from 'mitt';
-import {  map } from 'nanostores';
+import { map } from 'nanostores';
 import {
   ActiveOrderFieldsFragment,
   ActiveOrderQuery,
@@ -44,7 +44,7 @@ import {
   TransitionOrderToStateMutation,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
-import { setError, setLoading, setResult } from './state-helpers';
+import { setResult, HandleLoadingState, StateStore } from './store-helpers';
 import { Id, VendureOrderEvents } from './vendure-order-events';
 
 /**
@@ -58,11 +58,7 @@ const dummyFragment = gql`
 
 export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
 export type CurrentUser = CurrentUserFieldsFragment;
-export interface State<T> {
-  loading: boolean;
-  error: ErrorResult | undefined;
-  data: T
-}
+
 
 
 /**
@@ -81,16 +77,16 @@ export class VendureOrderClient<A = unknown> {
   /**
    * The store object that holds the active order.
    */
-  $activeOrder = map<State<ActiveOrder<A> | undefined>>({
+  $activeOrder = map<StateStore<ActiveOrder<A> | undefined>>({
     loading: false,
     error: undefined,
     data: undefined,
   });
 
   /**
- * The store object that holds the current logged in user
- */
-  $currentUser = map<State<CurrentUser | undefined>>({
+   * The store object that holds the current logged in user
+   */
+  $currentUser = map<StateStore<CurrentUser | undefined>>({
     loading: false,
     error: undefined,
     data: undefined,
@@ -111,19 +107,16 @@ export class VendureOrderClient<A = unknown> {
     this.queries = new GraphqlQueries(additionalOrderFields ?? dummyFragment);
   }
 
+  @HandleLoadingState('$activeOrder')
   async getActiveOrder(): Promise<ActiveOrder<A> | undefined> {
-    setLoading(this.$activeOrder);
     const { activeOrder } = await this.rawRequest<ActiveOrderQuery>(
       this.queries.GET_ACTIVE_ORDER
-    ).catch((e: any) => {
-      setError(this.$activeOrder, e);
-      throw e;
-    });
+    );
     setResult(this.$activeOrder, activeOrder);
     if (!activeOrder) {
       return;
     }
-    return this.throwIfError(activeOrder as ActiveOrder<A>);
+    return this.throwIfErrorResult(activeOrder as ActiveOrder<A>);
   }
 
   async addItemToOrder(
@@ -367,7 +360,7 @@ export class VendureOrderClient<A = unknown> {
   /**
    * Throw if result is an ErrorResult
    */
-  throwIfError<T>(
+  throwIfErrorResult<T>(
     result: T | ErrorResult
   ): T {
     if (result && (result as ErrorResult).errorCode) {
