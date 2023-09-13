@@ -1,6 +1,6 @@
 import { gql, GraphQLClient, Variables } from 'graphql-request';
 import mitt, { Emitter } from 'mitt';
-import { atom } from 'nanostores';
+import {  map } from 'nanostores';
 import {
   ActiveOrderFieldsFragment,
   ActiveOrderQuery,
@@ -44,6 +44,7 @@ import {
   TransitionOrderToStateMutation,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
+import { setError, setLoading, setResult } from './state-helpers';
 import { Id, VendureOrderEvents } from './vendure-order-events';
 
 /**
@@ -57,6 +58,12 @@ const dummyFragment = gql`
 
 export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
 export type CurrentUser = CurrentUserFieldsFragment;
+export interface State<T> {
+  loading: boolean;
+  error: ErrorResult | undefined;
+  data: T
+}
+
 
 /**
  * @example
@@ -70,12 +77,27 @@ export class VendureOrderClient<A = unknown> {
   queries: GraphqlQueries;
   client: GraphQLClient;
   eventBus: Emitter<VendureOrderEvents> = mitt<VendureOrderEvents>();
+
   /**
    * The store object that holds the active order.
-   * E.g. use in Vue with `const activeOrder = useStore(orderClient.$activeOrder);`
    */
-  $activeOrder = atom<ActiveOrder<A> | undefined>();
-  $currentUser = atom<CurrentUser | undefined>();
+  $activeOrder = map<State<ActiveOrder<A> | undefined>>({
+    loading: false,
+    error: undefined,
+    data: undefined,
+  });
+
+  /**
+ * The store object that holds the current logged in user
+ */
+  $currentUser = map<State<CurrentUser | undefined>>({
+    loading: false,
+    error: undefined,
+    data: undefined,
+  });
+
+  // TODO: create similar stores for eligibleShippingMethods, eligiblePaymentMethods
+
   readonly tokenName = 'vendure-auth-token';
 
   constructor(
@@ -90,14 +112,18 @@ export class VendureOrderClient<A = unknown> {
   }
 
   async getActiveOrder(): Promise<ActiveOrder<A> | undefined> {
+    setLoading(this.$activeOrder);
     const { activeOrder } = await this.rawRequest<ActiveOrderQuery>(
       this.queries.GET_ACTIVE_ORDER
-    );
+    ).catch((e: any) => {
+      setError(this.$activeOrder, e);
+      throw e;
+    });
+    setResult(this.$activeOrder, activeOrder);
     if (!activeOrder) {
       return;
     }
-    this.$activeOrder.set(await this.validateOrder(activeOrder));
-    return this.$activeOrder.get();
+    return this.throwIfError(activeOrder as ActiveOrder<A>);
   }
 
   async addItemToOrder(
@@ -319,7 +345,7 @@ export class VendureOrderClient<A = unknown> {
       ResetPasswordMutation,
       MutationResetPasswordArgs
     >(this.queries.RESET_PASSWORD, { token, password });
-    const currentUser = await this.validateCurrentUser(resetPassword);
+    const currentUser = this.validateResult(resetPassword as CurrentUser);
     this.$currentUser.set(currentUser);
     return currentUser;
   }
@@ -339,52 +365,24 @@ export class VendureOrderClient<A = unknown> {
   }
 
   /**
-   * Throws if order result contains an error, if not, returns the active order
+   * Throw if result is an ErrorResult
    */
-  async validateOrder(
-    result: ActiveOrderFieldsFragment | ErrorResult
-  ): Promise<ActiveOrder<A>> {
-    if (result && (result as ErrorResult).errorCode) {
-      const error = result as ErrorResult;
-      if (
-        error.errorCode === 'ORDER_MODIFICATION_ERROR' ??
-        error.errorCode === 'ORDER_PAYMENT_STATE_ERROR'
-      ) {
-        window.localStorage.removeItem(this.tokenName); // These are unrecoverable states, so remove activeOrder
-      }
-      if (
-        error.errorCode === 'INSUFFICIENT_STOCK_ERROR' ??
-        error.errorCode === 'COUPON_CODE_INVALID_ERROR'
-      ) {
-        // Fetch activeOrder to get the current right amount of items per orderLine
-        await this.getActiveOrder();
-      }
-      // eslint-disable-next-line @typescript-eslint/no-throw-literal
-      throw error;
-    }
-    // We've verified that result is not an error, so we can safely cast it
-    return result as ActiveOrder<A>;
-  }
-
-  /**
-   * Throws if order result contains an error, if not, returns the active order
-   */
-  async validateCurrentUser(
-    result: CurrentUserFieldsFragment | ErrorResult
-  ): Promise<CurrentUser> {
+  throwIfError<T>(
+    result: T | ErrorResult
+  ): T {
     if (result && (result as ErrorResult).errorCode) {
       const error = result as ErrorResult;
       // eslint-disable-next-line @typescript-eslint/no-throw-literal
       throw error;
     }
     // We've verified that result is not an error, so we can safely cast it
-    return result as CurrentUser;
+    return result as T;
   }
 
   /**
    * Execute a GraphQL query or mutation
    */
-  async rawRequest<T = void, I = undefined>(
+  protected async rawRequest<T = void, I = undefined>(
     document: string,
     variables?: I
   ): Promise<T> {

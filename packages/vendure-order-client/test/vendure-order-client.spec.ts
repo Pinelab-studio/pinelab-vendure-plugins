@@ -11,15 +11,14 @@ import { gql } from 'graphql-tag';
 import path from 'path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { addItem } from '../../test/src/shop-utils';
+import { VendureOrderClient, VendureOrderEvent } from '../src';
 import {
   ActiveOrderFieldsFragment,
   CreateAddressInput,
   CreateCustomerInput,
   PaymentInput,
-  Success,
-  VendureOrderClient,
-  VendureOrderEvent,
-} from '../src/';
+  Success
+} from '../src/graphql-generated-types';
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
 
@@ -125,13 +124,31 @@ describe('Vendure order client', () => {
       additionalOrderFields
     );
     expect(client).toBeInstanceOf(VendureOrderClient);
-    expect(client.activeOrder).toBeUndefined();
+    expect(client.$activeOrder.get()).toBeUndefined();
     expect(client.eventBus).toBeDefined();
     client.eventBus.on(
       '*',
       (eventType, e) => (latestEmittedEvent = [eventType, e])
     );
   });
+
+  // TEST
+  async function doThing() {
+    let error = false;
+    let loading = true;
+    try {
+
+    } catch (e) {
+      error = e;
+    } finally {
+      loading = false;
+    }
+    await client.addItemToOrder('T_2', 1);
+    loading = false;
+
+
+
+  }
 
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
