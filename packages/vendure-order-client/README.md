@@ -16,18 +16,29 @@ This package should only be used client side, i.e. for fetching an active order,
 
 ## Getting started
 
-```ts
-import { VendureOrderClient } from 'vendure-order-client';
+This is a Vue.js example, but integrations for React and more are available for @nanostores
 
-const client = new VendureOrderClient(
-  'http://localhost:3050/shop-api',
-  'your-channel-token'
-);
+```vue
+<template>
+  <div>
+    <h1 v-if="loading">Loading...</h1>
+    <h1 v-if="error">Something went wrong!</h1>
+    <h1 v-if="data">Active order: {{ data.code }}</h1>
+  </div>
+</template>
+<script setup lang="ts">
+  import { VendureOrderClient } from "vendure-order-client";
+  import { useStore } from "@nanostores/vue";
 
-await client.addItemToOrder('some-id', 1);
+  const client = new VendureOrderClient(
+    "http://localhost:3050/shop-api",
+    "your-channel-token"
+  );
 
-// Make this reactive with one of Nanostores' integrations
-const total = client.activeOrder.totalWithTax;
+  const { data, loading, error } = useStore(client.$activeOrder);
+  await client.getActiveOrder();
+</script>
+
 ```
 
 ## Add your own graphql fields
