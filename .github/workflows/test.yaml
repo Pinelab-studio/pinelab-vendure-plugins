@@ -52,6 +52,7 @@ jobs:
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-webhook',
+            'vendure-plugin-primary-collection',
           ]
     steps:
       - name: Checkout code
