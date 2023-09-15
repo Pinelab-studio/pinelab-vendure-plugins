@@ -3772,6 +3772,11 @@
   dependencies:
     make-plural "^7.0.0"
 
+"@nanostores/vue@^0.10.0":
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/@nanostores/vue/-/vue-0.10.0.tgz#f1638933854c640ca4e91a59fda579cdbab4b8b0"
+  integrity sha512-832RAUbzRfHPs1CdqVEwfvgB2+RD/INji4Zo8bUSEfRO2pQRMMeq479gydnohGpRaa0oNwlfKo7TGFXCghq/1g==
+
 "@nestjs/apollo@^10.2.0":
   version "10.2.1"
   resolved "https://registry.yarnpkg.com/@nestjs/apollo/-/apollo-10.2.1.tgz#717989fc86108e047e1600db23ff1cf1a1c11c5d"

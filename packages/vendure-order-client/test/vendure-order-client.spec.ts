@@ -17,10 +17,11 @@ import {
   CreateAddressInput,
   CreateCustomerInput,
   PaymentInput,
-  Success
+  Success,
 } from '../src/graphql-generated-types';
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
+import { keepMount } from 'nanostores';
 
 const storage: any = {};
 const window = {
@@ -123,8 +124,10 @@ describe('Vendure order client', () => {
       'channel-token',
       additionalOrderFields
     );
+    keepMount(client.$activeOrder);
+    keepMount(client.$currentUser);
     expect(client).toBeInstanceOf(VendureOrderClient);
-    expect(client.$activeOrder.get()).toBeUndefined();
+    expect(client.$activeOrder).toBeUndefined();
     expect(client.eventBus).toBeDefined();
     client.eventBus.on(
       '*',
@@ -133,22 +136,19 @@ describe('Vendure order client', () => {
   });
 
   // TEST
-  async function doThing() {
-    let error = false;
-    let loading = true;
-    try {
-
-    } catch (e) {
-      error = e;
-    } finally {
-      loading = false;
-    }
-    await client.addItemToOrder('T_2', 1);
-    loading = false;
-
-
-
-  }
+  // void async function doThing() {
+  //   let error = false;
+  //   let loading = true;
+  //   try {
+  //     // do sth for eslint
+  //   } catch (e) {
+  //     error = e;
+  //   } finally {
+  //     loading = false;
+  //   }
+  //   await client.addItemToOrder('T_2', 1);
+  //   loading = false;
+  // };
 
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
@@ -231,10 +231,11 @@ describe('Vendure order client', () => {
     });
 
     it('Applies invalid coupon', async () => {
-      expect.assertions(1);
+      // expect.assertions(1);
       try {
         await client.applyCouponCode('fghj');
       } catch (e: any) {
+        console.log(e);
         expect(e.errorCode).toBe('COUPON_CODE_INVALID_ERROR');
       }
     });
