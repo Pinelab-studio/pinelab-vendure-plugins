@@ -66,22 +66,6 @@ describe('Product Primary Collection', function () {
   `;
 
   it("Should return 'Computers' as a primary collection for 'Laptop'", async () => {
-    console.log(
-      await shopClient.query(gql`
-        {
-          products {
-            items {
-              name
-              id
-              primaryCollection {
-                id
-                name
-              }
-            }
-          }
-        }
-      `)
-    );
     const { product } = await shopClient.query(primaryCollectionQuery, {
       productId: 'T_1',
     });
