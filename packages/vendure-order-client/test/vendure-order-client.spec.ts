@@ -125,7 +125,7 @@ describe('Vendure order client', () => {
       additionalOrderFields
     );
     expect(client).toBeInstanceOf(VendureOrderClient);
-    expect(client.activeOrder).toBeUndefined();
+    expect(client.$activeOrder).toBeUndefined();
     expect(client.eventBus).toBeDefined();
     client.eventBus.on(
       '*',
