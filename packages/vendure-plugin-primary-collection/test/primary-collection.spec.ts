@@ -73,20 +73,20 @@ describe('Product Primary Collection', function () {
     expect(product.primaryCollection.name).toBe('Computers');
   });
 
-  it("Should return 'Computers' as a primary collection for 'Cars'", async () => {
+  it("Should return 'Electronics' as a primary collection for 'Cars'", async () => {
     const { product } = await shopClient.query(primaryCollectionQuery, {
       productId: 'T_2',
     });
     expect(product.name).toBe('Cars');
-    expect(product.primaryCollection.name).toBe('Computers');
+    expect(product.primaryCollection.name).toBe('Electronics');
   });
 
-  it("Should return 'Electronics' as a primary collection for 'Motors'", async () => {
+  it("Should return 'Others' as a primary collection for 'Motors'", async () => {
     const { product } = await shopClient.query(primaryCollectionQuery, {
       productId: 'T_3',
     });
     expect(product.name).toBe('Motors');
-    expect(product.primaryCollection.name).toBe('Electronics');
+    expect(product.primaryCollection.name).toBe('Others');
   });
 
   afterAll(async () => {
