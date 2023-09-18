@@ -21,7 +21,7 @@ import {
 } from '../src/graphql-generated-types';
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
-import { keepMount } from 'nanostores';
+import { useStore } from '@nanostores/vue';
 
 const storage: any = {};
 const window = {
@@ -58,6 +58,7 @@ describe('Vendure order client', () => {
   let activeOrderCode: string | undefined;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
+  let activeOrderStore: any;
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
   beforeAll(async () => {
@@ -124,10 +125,10 @@ describe('Vendure order client', () => {
       'channel-token',
       additionalOrderFields
     );
-    keepMount(client.$activeOrder);
-    keepMount(client.$currentUser);
+    activeOrderStore = useStore(client.$activeOrder);
     expect(client).toBeInstanceOf(VendureOrderClient);
-    expect(client.$activeOrder).toBeUndefined();
+    // console.log(activeOrderStore.value.data);
+    expect(activeOrderStore.value.data).toBeUndefined();
     expect(client.eventBus).toBeDefined();
     client.eventBus.on(
       '*',
@@ -152,10 +153,12 @@ describe('Vendure order client', () => {
 
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
-      const order = await client.addItemToOrder('T_2', 1);
-      activeOrderCode = order?.code;
-      expect(order?.lines[0].quantity).toBe(1);
-      expect(order?.lines[0].productVariant.id).toBe('T_2');
+      await client.addItemToOrder('T_2', 1);
+      activeOrderCode = activeOrderStore?.value.data.code;
+      expect(activeOrderStore?.value.data.lines[0].quantity).toBe(1);
+      expect(activeOrderStore?.value.data.lines[0].productVariant.id).toBe(
+        'T_2'
+      );
     });
 
     it('Emits "item-added" event, with quantity 1', async () => {
@@ -168,15 +171,17 @@ describe('Vendure order client', () => {
     });
 
     it('Retrieves active order with specified additional fields', async () => {
-      const order = await client.getActiveOrder();
-      expect(order?.lines[0].quantity).toBe(1);
-      expect(order?.lines[0].productVariant.id).toBe('T_2');
-      expect(order?.history.totalItems).toBe(1);
+      await client.getActiveOrder();
+      expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
+      expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
+        'T_2'
+      );
+      expect(activeOrderStore.value?.data.history.totalItems).toBe(1);
     });
 
     it('Increases quantity from 1 to 3', async () => {
-      const order = await client.adjustOrderLine('T_1', 3);
-      expect(order?.lines[0].quantity).toBe(3);
+      await client.adjustOrderLine('T_1', 3);
+      expect(activeOrderStore.value?.data.lines[0].quantity).toBe(3);
     });
 
     it('Emits "item-added" event, with quantity 2', async () => {
@@ -189,8 +194,8 @@ describe('Vendure order client', () => {
     });
 
     it('Removes the order line', async () => {
-      const order = await client.removeOrderLine('T_1');
-      expect(order?.lines.length).toBe(0);
+      await client.removeOrderLine('T_1');
+      expect(activeOrderStore.value?.data.lines.length).toBe(0);
     });
 
     it('Emits "item-removed" event, with quantity 3', async () => {
@@ -203,14 +208,16 @@ describe('Vendure order client', () => {
     });
 
     it('Adds an item to order for the second time', async () => {
-      const order = await client.addItemToOrder('T_2', 1);
-      expect(order?.lines[0].quantity).toBe(1);
-      expect(order?.lines[0].productVariant.id).toBe('T_2');
+      await client.addItemToOrder('T_2', 1);
+      expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
+      expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
+        'T_2'
+      );
     });
 
     it('Removes all order lines', async () => {
-      const order = await client.removeAllOrderLines();
-      expect(order?.lines.length).toBe(0);
+      await client.removeAllOrderLines();
+      expect(activeOrderStore.value?.data.lines.length).toBe(0);
     });
 
     it('Emits "item-removed" event, with quantity 1', async () => {
@@ -225,9 +232,11 @@ describe('Vendure order client', () => {
 
   describe('Guest checkout', () => {
     it('Adds an item to order', async () => {
-      const order = await client.addItemToOrder('T_2', 1);
-      expect(order?.lines[0].quantity).toBe(1);
-      expect(order?.lines[0].productVariant.id).toBe('T_2');
+      await client.addItemToOrder('T_2', 1);
+      expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
+      expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
+        'T_2'
+      );
     });
 
     it('Applies invalid coupon', async () => {
@@ -241,10 +250,11 @@ describe('Vendure order client', () => {
     });
 
     it('Applies valid coupon', async () => {
-      const order = await client.applyCouponCode(couponCodeName);
-      expect((order as ActiveOrderFieldsFragment)?.couponCodes?.length).toEqual(
-        1
-      );
+      await client.applyCouponCode(couponCodeName);
+      expect(
+        (activeOrderStore.value.data as ActiveOrderFieldsFragment)?.couponCodes
+          ?.length
+      ).toEqual(1);
     });
 
     it('Emits "coupon-code-applied" event', async () => {
@@ -256,8 +266,8 @@ describe('Vendure order client', () => {
     });
 
     it('Removes coupon', async () => {
-      const order = await client.removeCouponCode(couponCodeName);
-      expect(order?.couponCodes?.length).toEqual(0);
+      await client.removeCouponCode(couponCodeName);
+      expect(activeOrderStore.value.data?.couponCodes?.length).toEqual(0);
     });
 
     it('Emits "coupon-code-removed" event', async () => {
@@ -274,8 +284,10 @@ describe('Vendure order client', () => {
         firstName: 'Mein',
         lastName: 'Zohn',
       };
-      const result = await client.setCustomerForOrder(createCustomerInput);
-      const customer = (result as ActiveOrderFieldsFragment).customer;
+      await client.setCustomerForOrder(createCustomerInput);
+      const customer = (
+        activeOrderStore.value.data as ActiveOrderFieldsFragment
+      ).customer;
       if (!customer) {
         throw Error('Failed to create customer');
       }
@@ -289,11 +301,10 @@ describe('Vendure order client', () => {
         streetLine1: ' Stree Line in Ethiopia',
         countryCode: 'GB',
       };
-      const result = await client.setOrderShippingAddress(
-        addShippingAddressInput
-      );
-      const shippingAddress = (result as ActiveOrderFieldsFragment)
-        .shippingAddress;
+      await client.setOrderShippingAddress(addShippingAddressInput);
+      const shippingAddress = (
+        activeOrderStore.value.data as ActiveOrderFieldsFragment
+      ).shippingAddress;
       if (!shippingAddress) {
         throw Error('Failed to set shipping address');
       }
@@ -310,9 +321,10 @@ describe('Vendure order client', () => {
         streetLine1: 'ANother Stree Line in Ethiopia',
         countryCode: 'GB',
       };
-      const result = await client.addBillingAddress(addBillingAddressInput);
-      const billingAddress = (result as ActiveOrderFieldsFragment)
-        .billingAddress;
+      await client.addBillingAddress(addBillingAddressInput);
+      const billingAddress = (
+        activeOrderStore.value.data as ActiveOrderFieldsFragment
+      ).billingAddress;
       if (!billingAddress) {
         throw Error('Failed to set billing address');
       }
@@ -325,22 +337,23 @@ describe('Vendure order client', () => {
     });
 
     it('Sets shipping method', async () => {
-      const result = await client.setOrderShippingMethod(['T_1']);
+      await client.setOrderShippingMethod(['T_1']);
       expect(
-        (result as ActiveOrderFieldsFragment).shippingLines?.length
+        (activeOrderStore.value.data as ActiveOrderFieldsFragment).shippingLines
+          ?.length
       ).toEqual(1);
       expect(
-        (result as ActiveOrderFieldsFragment).shippingLines?.find(
-          (s) => s.shippingMethod?.id === 'T_1'
-        )
+        (
+          activeOrderStore.value.data as ActiveOrderFieldsFragment
+        ).shippingLines?.find((s) => s.shippingMethod?.id === 'T_1')
       ).toBeDefined();
     });
 
     it('Transitions order to arranging payment state', async () => {
-      const result = await client.transitionOrderToState('ArrangingPayment');
-      expect((result as ActiveOrderFieldsFragment).state).toBe(
-        'ArrangingPayment'
-      );
+      await client.transitionOrderToState('ArrangingPayment');
+      expect(
+        (activeOrderStore.value.data as ActiveOrderFieldsFragment).state
+      ).toBe('ArrangingPayment');
     });
 
     it('Adds payment', async () => {
@@ -350,13 +363,14 @@ describe('Vendure order client', () => {
           id: 0,
         },
       };
-      const result = await client.addPayment(addPaymentInput);
+      await client.addPayment(addPaymentInput);
       expect(
-        (result as ActiveOrderFieldsFragment).payments?.length
+        (activeOrderStore.value.data as ActiveOrderFieldsFragment).payments
+          ?.length
       ).toBeGreaterThan(0);
-      const testPayment = (result as ActiveOrderFieldsFragment).payments?.find(
-        (p) => p.method === addPaymentInput.method
-      );
+      const testPayment = (
+        activeOrderStore.value.data as ActiveOrderFieldsFragment
+      ).payments?.find((p) => p.method === addPaymentInput.method);
       expect(testPayment?.metadata.public.id).toEqual(
         addPaymentInput.metadata.id
       );
@@ -366,8 +380,8 @@ describe('Vendure order client', () => {
       if (!activeOrderCode) {
         throw Error('Active order code is not defined');
       }
-      const result = await client.getOrderByCode(activeOrderCode);
-      expect(activeOrderCode).toEqual(result.code);
+      await client.getOrderByCode(activeOrderCode);
+      expect(activeOrderCode).toEqual(activeOrderStore.value.data.code);
     });
   });
 

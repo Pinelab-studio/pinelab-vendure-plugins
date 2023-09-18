@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@nanostores/vue": "^0.10.0",
+    "@vue/cli": "^5.0.8",
     "graphql-request": "^6.1.0",
     "mitt": "^3.0.0",
     "nanostores": "^0.9.2"
