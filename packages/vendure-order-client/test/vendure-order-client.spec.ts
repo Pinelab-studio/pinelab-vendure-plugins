@@ -152,11 +152,11 @@ describe('Vendure order client', () => {
       await client.addItemToOrder('T_2', 1);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when addItemToOrder started running"
+        "Loading wasn't set to true when addItemToOrder started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when addItemToOrder finished running"
+        "'loading' wasn't set to false when addItemToOrder finished running"
       ).toBe(true);
       activeOrderCode = activeOrderStore?.value.data.code;
       expect(activeOrderStore?.value.data.lines[0].quantity).toBe(1);
@@ -198,11 +198,11 @@ describe('Vendure order client', () => {
       await client.adjustOrderLine('T_1', 3);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when adjustOrderLine started running"
+        "Loading wasn't set to true when adjustOrderLine started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when adjustOrderLine finished running"
+        "'loading' wasn't set to false when adjustOrderLine finished running"
       ).toBe(true);
       expect(activeOrderStore.value?.data.lines[0].quantity).toBe(3);
     });
@@ -231,11 +231,11 @@ describe('Vendure order client', () => {
       await client.removeOrderLine('T_1');
       expect(
         wasSetToTrue,
-        "Loading was't set to true when removeOrderLine started running"
+        "Loading wasn't set to true when removeOrderLine started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when removeOrderLine finished running"
+        "'loading' wasn't set to false when removeOrderLine finished running"
       ).toBe(true);
       expect(activeOrderStore.value?.data.lines.length).toBe(0);
     });
@@ -264,11 +264,11 @@ describe('Vendure order client', () => {
       await client.addItemToOrder('T_2', 1);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when addItemToOrder started running"
+        "Loading wasn't set to true when addItemToOrder started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when addItemToOrder finished running"
+        "'loading' wasn't set to false when addItemToOrder finished running"
       ).toBe(true);
       expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
       expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
@@ -291,11 +291,11 @@ describe('Vendure order client', () => {
       await client.removeAllOrderLines();
       expect(
         wasSetToTrue,
-        "Loading was't set to true when removeAllOrderLines started running"
+        "Loading wasn't set to true when removeAllOrderLines started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when removeAllOrderLines finished running"
+        "'loading' wasn't set to false when removeAllOrderLines finished running"
       ).toBe(true);
       expect(activeOrderStore.value?.data.lines.length).toBe(0);
     });
@@ -326,11 +326,11 @@ describe('Vendure order client', () => {
       await client.addItemToOrder('T_2', 1);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when addItemToOrder started running"
+        "Loading wasn't set to true when addItemToOrder started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when addItemToOrder finished running"
+        "'loading' wasn't set to false when addItemToOrder finished running"
       ).toBe(true);
       expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
       expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
@@ -355,11 +355,11 @@ describe('Vendure order client', () => {
         await client.applyCouponCode('fghj');
         expect(
           wasSetToTrue,
-          "Loading was't set to true when applyCouponCode started running"
+          "Loading wasn't set to true when applyCouponCode started running"
         ).toBe(true);
         expect(
           wasFinallySetToFalse,
-          "'loading' was't set to false when applyCouponCode finished running"
+          "'loading' wasn't set to false when applyCouponCode finished running"
         ).toBe(true);
       } catch (e: any) {
         expect(activeOrderStore.value.error.errorCode).toBe(
@@ -383,11 +383,11 @@ describe('Vendure order client', () => {
       await client.applyCouponCode(couponCodeName);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when applyCouponCode started running"
+        "Loading wasn't set to true when applyCouponCode started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when applyCouponCode finished running"
+        "'loading' wasn't set to false when applyCouponCode finished running"
       ).toBe(true);
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment)?.couponCodes
@@ -418,11 +418,11 @@ describe('Vendure order client', () => {
       await client.removeCouponCode(couponCodeName);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when removeCouponCode started running"
+        "Loading wasn't set to true when removeCouponCode started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when removeCouponCode finished running"
+        "'loading' wasn't set to false when removeCouponCode finished running"
       ).toBe(true);
       expect(activeOrderStore.value.data?.couponCodes?.length).toEqual(0);
     });
@@ -455,11 +455,11 @@ describe('Vendure order client', () => {
       await client.setCustomerForOrder(createCustomerInput);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when setCustomerForOrder started running"
+        "Loading wasn't set to true when setCustomerForOrder started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when setCustomerForOrder finished running"
+        "'loading' wasn't set to false when setCustomerForOrder finished running"
       ).toBe(true);
       const customer = (
         activeOrderStore.value.data as ActiveOrderFieldsFragment
@@ -491,11 +491,11 @@ describe('Vendure order client', () => {
       await client.setOrderShippingAddress(addShippingAddressInput);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when setOrderShippingAddress started running"
+        "Loading wasn't set to true when setOrderShippingAddress started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when setOrderShippingAddress finished running"
+        "'loading' wasn't set to false when setOrderShippingAddress finished running"
       ).toBe(true);
       const shippingAddress = (
         activeOrderStore.value.data as ActiveOrderFieldsFragment
@@ -530,11 +530,11 @@ describe('Vendure order client', () => {
       await client.addBillingAddress(addBillingAddressInput);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when addBillingAddress started running"
+        "Loading wasn't set to true when addBillingAddress started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when addBillingAddress finished running"
+        "'loading' wasn't set to false when addBillingAddress finished running"
       ).toBe(true);
       const billingAddress = (
         activeOrderStore.value.data as ActiveOrderFieldsFragment
@@ -565,11 +565,11 @@ describe('Vendure order client', () => {
       await client.setOrderShippingMethod(['T_1']);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when setOrderShippingMethod started running"
+        "Loading wasn't set to true when setOrderShippingMethod started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when setOrderShippingMethod finished running"
+        "'loading' wasn't set to false when setOrderShippingMethod finished running"
       ).toBe(true);
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment).shippingLines
@@ -597,11 +597,11 @@ describe('Vendure order client', () => {
       await client.transitionOrderToState('ArrangingPayment');
       expect(
         wasSetToTrue,
-        "Loading was't set to true when transitionOrderToState started running"
+        "Loading wasn't set to true when transitionOrderToState started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when transitionOrderToState finished running"
+        "'loading' wasn't set to false when transitionOrderToState finished running"
       ).toBe(true);
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment).state
@@ -629,11 +629,11 @@ describe('Vendure order client', () => {
       await client.addPayment(addPaymentInput);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when addPayment started running"
+        "Loading wasn't set to true when addPayment started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when addPayment finished running"
+        "'loading' wasn't set to false when addPayment finished running"
       ).toBe(true);
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment).payments
@@ -687,11 +687,11 @@ describe('Vendure order client', () => {
       );
       expect(
         wasSetToTrue,
-        "Loading was't set to true when login started running"
+        "Loading wasn't set to true when login started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when login finished running"
+        "'loading' wasn't set to false when login finished running"
       ).toBe(true);
       expect(currentUserStore.value.data.identifier).toBe(
         createNewCustomerInput.emailAddress
@@ -713,11 +713,11 @@ describe('Vendure order client', () => {
       await client.addItemToOrder('T_1', 2);
       expect(
         wasSetToTrue,
-        "Loading was't set to true when addItemToOrder started running"
+        "Loading wasn't set to true when addItemToOrder started running"
       ).toBe(true);
       expect(
         wasFinallySetToFalse,
-        "'loading' was't set to false when addItemToOrder finished running"
+        "'loading' wasn't set to false when addItemToOrder finished running"
       ).toBe(true);
       expect(activeOrderStore.value.data.customer.emailAddress).toBe(
         createNewCustomerInput.emailAddress
