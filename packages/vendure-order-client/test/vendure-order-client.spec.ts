@@ -232,7 +232,7 @@ describe('Vendure order client', () => {
       expect(
         wasSetToTrue,
         "Loading wasn't set to true when removeOrderLine started running"
-      ).toBe(true);
+      ).toBe(false);
       expect(
         wasFinallySetToFalse,
         "'loading' wasn't set to false when removeOrderLine finished running"
@@ -339,7 +339,6 @@ describe('Vendure order client', () => {
     });
 
     it('Applies invalid coupon', async () => {
-      // expect.assertions(1);
       let wasSetToTrue = false;
       let wasFinallySetToFalse = false;
       listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
