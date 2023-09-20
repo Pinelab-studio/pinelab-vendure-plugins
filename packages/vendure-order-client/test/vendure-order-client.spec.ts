@@ -222,17 +222,15 @@ describe('Vendure order client', () => {
       listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
         if (currentActiveOrderData.loading) {
           wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
+        } else if (wasSetToTrue) {
+          wasFinallySetToFalse = true;
         }
       });
       await client.removeOrderLine('T_1');
       expect(
         wasSetToTrue,
         "Loading wasn't set to true when removeOrderLine started running"
-      ).toBe(false);
+      ).toBe(true);
       expect(
         wasFinallySetToFalse,
         "'loading' wasn't set to false when removeOrderLine finished running"
