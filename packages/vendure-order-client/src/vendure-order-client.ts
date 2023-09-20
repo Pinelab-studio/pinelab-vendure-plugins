@@ -132,7 +132,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       addItemToOrder as ActiveOrder<A>
     );
-    // this.$activeOrder.set({data: this.throwIfErrorResult(activeOrder) as ActiveOrder<A>, loading: false, error: undefined});
     setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('item-added', {
       productVariantIds: [productVariantId],
@@ -160,7 +159,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       adjustOrderLine as ActiveOrder<A>
     );
-    // this.$activeOrder.set({data: activeOrder, loading: false, error: undefined});
     setResult(this.$activeOrder, activeOrder);
     const adjustedOrderLine = this.$activeOrder
       .get()
@@ -202,7 +200,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       removeAllOrderLines as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('item-removed', {
       productVariantIds: allVariantIds,
@@ -220,7 +217,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       applyCouponCode as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('coupon-code-applied', {
       couponCode,
@@ -242,7 +238,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       removeCouponCode as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('coupon-code-removed', {
       couponCode,
@@ -261,7 +256,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       setCustomerForOrder as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
@@ -277,7 +271,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       setOrderShippingAddress as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
@@ -291,7 +284,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       setOrderBillingAddress as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
@@ -307,7 +299,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       setOrderShippingMethod as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
@@ -321,7 +312,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       addPaymentToOrder as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
@@ -340,7 +330,6 @@ export class VendureOrderClient<A = unknown> {
     const activeOrder = this.throwIfErrorResult(
       transitionOrderToState as ActiveOrder<A>
     );
-    // this.$activeOrder.set(activeOrder);
     setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
@@ -384,7 +373,6 @@ export class VendureOrderClient<A = unknown> {
       MutationResetPasswordArgs
     >(this.queries.RESET_PASSWORD, { token, password });
     const currentUser = this.throwIfErrorResult(resetPassword as CurrentUser);
-    // this.$currentUser.set(currentUser);
     setResult(this.$currentUser, currentUser);
     return currentUser;
   }
@@ -400,7 +388,6 @@ export class VendureOrderClient<A = unknown> {
       { username, password, rememberMe }
     );
     const currentUser = this.throwIfErrorResult(login as CurrentUser);
-    // this.$currentUser.set(currentUser);
     setResult(this.$currentUser, currentUser);
     return currentUser;
   }

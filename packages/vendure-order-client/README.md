@@ -21,9 +21,9 @@ This is a Vue.js example, but integrations for React and more are available for 
 ```vue
 <template>
   <div>
-    <h1 v-if="loading">Loading...</h1>
-    <h1 v-if="error">Something went wrong!</h1>
-    <h1 v-if="data">Active order: {{ data.code }}</h1>
+    <h1 v-if="activeOrder.loading">Loading...</h1>
+    <h1 v-if="activeOrder.error">Something went wrong!</h1>
+    <h1 v-if="activeOrder.data">Active order: {{ data.code }}</h1>
   </div>
 </template>
 <script setup lang="ts">
@@ -35,7 +35,7 @@ const client = new VendureOrderClient(
   'your-channel-token'
 );
 
-const { data, loading, error } = useStore(client.$activeOrder);
+const activeOrder = useStore(client.$activeOrder);
 await client.getActiveOrder();
 </script>
 ```
