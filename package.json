@@ -28,7 +28,6 @@
     "@graphql-codegen/typed-document-node": "^5.0.1",
     "@graphql-codegen/typescript-document-nodes": "2.2.8",
     "@graphql-codegen/typescript-operations": "2.3.5",
-    "@graphql-codegen/typed-document-node": "^5.0.1",
     "@graphql-codegen/typescript": "2.4.8",
     "@nestjs/cli": "8.2.4",
     "@rollup/plugin-typescript": "11.0.0",
