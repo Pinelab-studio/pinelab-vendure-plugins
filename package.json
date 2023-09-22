@@ -97,6 +97,7 @@
           "modify-customer-orders",
           "multiserver-db-sessioncache",
           "vendure-order-client",
+          "primary-collection",
           "all-plugins"
         ]
       ]
