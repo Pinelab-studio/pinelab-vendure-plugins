@@ -21,7 +21,7 @@ import {
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
 import { useStore } from '@nanostores/vue';
-import { listenKeys } from 'nanostores';
+import { MapStore } from 'nanostores';
 
 const storage: any = {};
 const window = {
@@ -78,6 +78,30 @@ describe('Vendure order client', () => {
       productsCsvPath: path.join(__dirname, './product-import.csv'),
     });
   }, 60000);
+
+  type SearchFn = () => Promise<any>;
+
+  async function testActiveOrderLoadingState(
+    awaitAbleFunction: SearchFn
+  ): Promise<any> {
+    return await testLoadingState(awaitAbleFunction, client.$activeOrder);
+  }
+
+  async function testLoadingState(
+    awaitAbleFunction: SearchFn,
+    store: MapStore
+  ): Promise<any> {
+    expect(store.value?.loading).toBe(false);
+    const promise = awaitAbleFunction();
+    expect(store.value?.loading).toBe(true);
+    return await promise;
+  }
+
+  async function testCurrentUserLoadingState(
+    awaitAbleFunction: SearchFn
+  ): Promise<any> {
+    return await testLoadingState(awaitAbleFunction, client.$currentUser);
+  }
 
   it('Starts the server successfully', async () => {
     expect(server.app.getHttpServer).toBeDefined();
@@ -138,26 +162,9 @@ describe('Vendure order client', () => {
 
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.addItemToOrder('T_2', 1);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when addItemToOrder started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when addItemToOrder finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.addItemToOrder('T_2', 1)
+      );
       activeOrderCode = activeOrderStore?.value.data.code;
       expect(activeOrderStore?.value.data.lines[0].quantity).toBe(1);
       expect(activeOrderStore?.value.data.lines[0].productVariant.id).toBe(
@@ -184,26 +191,9 @@ describe('Vendure order client', () => {
     });
 
     it('Increases quantity from 1 to 3', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.adjustOrderLine('T_1', 3);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when adjustOrderLine started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when adjustOrderLine finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.adjustOrderLine('T_1', 3)
+      );
       expect(activeOrderStore.value?.data.lines[0].quantity).toBe(3);
     });
 
@@ -217,24 +207,9 @@ describe('Vendure order client', () => {
     });
 
     it('Removes the order line', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else if (wasSetToTrue) {
-          wasFinallySetToFalse = true;
-        }
-      });
-      await client.removeOrderLine('T_1');
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when removeOrderLine started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when removeOrderLine finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.removeOrderLine('T_1')
+      );
       expect(activeOrderStore.value?.data.lines.length).toBe(0);
     });
 
@@ -248,26 +223,9 @@ describe('Vendure order client', () => {
     });
 
     it('Adds an item to order for the second time', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.addItemToOrder('T_2', 1);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when addItemToOrder started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when addItemToOrder finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.addItemToOrder('T_2', 1)
+      );
       expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
       expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
         'T_2'
@@ -275,26 +233,9 @@ describe('Vendure order client', () => {
     });
 
     it('Removes all order lines', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.removeAllOrderLines();
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when removeAllOrderLines started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when removeAllOrderLines finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.removeAllOrderLines()
+      );
       expect(activeOrderStore.value?.data.lines.length).toBe(0);
     });
 
@@ -310,26 +251,9 @@ describe('Vendure order client', () => {
 
   describe('Guest checkout', () => {
     it('Adds an item to order', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.addItemToOrder('T_2', 1);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when addItemToOrder started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when addItemToOrder finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.addItemToOrder('T_2', 1)
+      );
       expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
       expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
         'T_2'
@@ -337,27 +261,10 @@ describe('Vendure order client', () => {
     });
 
     it('Applies invalid coupon', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
       try {
-        await client.applyCouponCode('fghj');
-        expect(
-          wasSetToTrue,
-          "Loading wasn't set to true when applyCouponCode started running"
-        ).toBe(true);
-        expect(
-          wasFinallySetToFalse,
-          "'loading' wasn't set to false when applyCouponCode finished running"
-        ).toBe(true);
+        await testActiveOrderLoadingState(
+          async () => await client.applyCouponCode('fghj')
+        );
       } catch (e: any) {
         expect(activeOrderStore.value.error.errorCode).toBe(
           'COUPON_CODE_INVALID_ERROR'
@@ -366,26 +273,9 @@ describe('Vendure order client', () => {
     });
 
     it('Applies valid coupon', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.applyCouponCode(couponCodeName);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when applyCouponCode started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when applyCouponCode finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.applyCouponCode(couponCodeName)
+      );
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment)?.couponCodes
           ?.length
@@ -401,26 +291,9 @@ describe('Vendure order client', () => {
     });
 
     it('Removes coupon', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.removeCouponCode(couponCodeName);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when removeCouponCode started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when removeCouponCode finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.removeCouponCode(couponCodeName)
+      );
       expect(activeOrderStore.value.data?.couponCodes?.length).toEqual(0);
     });
 
@@ -433,31 +306,14 @@ describe('Vendure order client', () => {
     });
 
     it('Adds customer', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
       const createCustomerInput: CreateCustomerInput = {
         emailAddress: 'example@gmail.com',
         firstName: 'Mein',
         lastName: 'Zohn',
       };
-      await client.setCustomerForOrder(createCustomerInput);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when setCustomerForOrder started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when setCustomerForOrder finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.setCustomerForOrder(createCustomerInput)
+      );
       const customer = (
         activeOrderStore.value.data as ActiveOrderFieldsFragment
       ).customer;
@@ -470,30 +326,14 @@ describe('Vendure order client', () => {
     });
 
     it('Adds shipping address', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
       const addShippingAddressInput: CreateAddressInput = {
         streetLine1: ' Stree Line in Ethiopia',
         countryCode: 'GB',
       };
-      await client.setOrderShippingAddress(addShippingAddressInput);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when setOrderShippingAddress started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when setOrderShippingAddress finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () =>
+          await client.setOrderShippingAddress(addShippingAddressInput)
+      );
       const shippingAddress = (
         activeOrderStore.value.data as ActiveOrderFieldsFragment
       ).shippingAddress;
@@ -509,30 +349,13 @@ describe('Vendure order client', () => {
     });
 
     it('Adds billing address', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
       const addBillingAddressInput: CreateAddressInput = {
         streetLine1: 'ANother Stree Line in Ethiopia',
         countryCode: 'GB',
       };
-      await client.addBillingAddress(addBillingAddressInput);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when addBillingAddress started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when addBillingAddress finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.addBillingAddress(addBillingAddressInput)
+      );
       const billingAddress = (
         activeOrderStore.value.data as ActiveOrderFieldsFragment
       ).billingAddress;
@@ -548,26 +371,9 @@ describe('Vendure order client', () => {
     });
 
     it('Sets shipping method', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.setOrderShippingMethod(['T_1']);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when setOrderShippingMethod started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when setOrderShippingMethod finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.setOrderShippingMethod(['T_1'])
+      );
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment).shippingLines
           ?.length
@@ -580,58 +386,24 @@ describe('Vendure order client', () => {
     });
 
     it('Transitions order to arranging payment state', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.transitionOrderToState('ArrangingPayment');
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when transitionOrderToState started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when transitionOrderToState finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.transitionOrderToState('ArrangingPayment')
+      );
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment).state
       ).toBe('ArrangingPayment');
     });
 
     it('Adds payment', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveOrderData) => {
-        if (currentActiveOrderData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
       const addPaymentInput: PaymentInput = {
         method: 'test-payment',
         metadata: {
           id: 0,
         },
       };
-      await client.addPayment(addPaymentInput);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when addPayment started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when addPayment finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.addPayment(addPaymentInput)
+      );
       expect(
         (activeOrderStore.value.data as ActiveOrderFieldsFragment).payments
           ?.length
@@ -667,55 +439,22 @@ describe('Vendure order client', () => {
     });
 
     it('Login with the new customer', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$currentUser, ['loading'], (currentActiveUserData) => {
-        if (currentActiveUserData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.login(
-        createNewCustomerInput.emailAddress,
-        createNewCustomerInput.password
+      await testCurrentUserLoadingState(
+        async () =>
+          await client.login(
+            createNewCustomerInput.emailAddress,
+            createNewCustomerInput.password
+          )
       );
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when login started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when login finished running"
-      ).toBe(true);
       expect(currentUserStore.value.data.identifier).toBe(
         createNewCustomerInput.emailAddress
       );
     });
 
     it('Add item to cart as the new customer', async () => {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(client.$activeOrder, ['loading'], (currentActiveUserData) => {
-        if (currentActiveUserData.loading) {
-          wasSetToTrue = true;
-        } else {
-          if (wasSetToTrue) {
-            wasFinallySetToFalse = true;
-          }
-        }
-      });
-      await client.addItemToOrder('T_1', 2);
-      expect(
-        wasSetToTrue,
-        "Loading wasn't set to true when addItemToOrder started running"
-      ).toBe(true);
-      expect(
-        wasFinallySetToFalse,
-        "'loading' wasn't set to false when addItemToOrder finished running"
-      ).toBe(true);
+      await testActiveOrderLoadingState(
+        async () => await client.addItemToOrder('T_1', 2)
+      );
       expect(activeOrderStore.value.data.customer.emailAddress).toBe(
         createNewCustomerInput.emailAddress
       );
