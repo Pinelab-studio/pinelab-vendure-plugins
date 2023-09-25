@@ -3,6 +3,7 @@ export interface CloudTaskOptions {
   projectId: string;
   location: string;
   authSecret: string;
+  onProcessingError: (error: any) => void;
   /**
    * Optional suffix, I.E. for differentiating between test, acc and prod queues
    */

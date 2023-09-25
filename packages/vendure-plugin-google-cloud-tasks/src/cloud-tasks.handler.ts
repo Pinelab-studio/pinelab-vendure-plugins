@@ -134,7 +134,6 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
           })
         );
         res.sendStatus(200); // Return 200 to prevent more retries
-        return;
       } else {
         // More attempts remain, so return 500 to trigger a retry
         Logger.warn(
@@ -142,8 +141,11 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
           CloudTasksPlugin.loggerCtx
         );
         res.sendStatus(500);
-        return;
       }
+      if (CloudTasksPlugin.options.onProcessingError) {
+        CloudTasksPlugin.options.onProcessingError(error);
+      }
+      return;
     }
   }
 
