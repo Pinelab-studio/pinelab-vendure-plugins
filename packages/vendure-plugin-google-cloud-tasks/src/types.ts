@@ -3,7 +3,11 @@ export interface CloudTaskOptions {
   projectId: string;
   location: string;
   authSecret: string;
-  onProcessingError: (error: any) => void;
+  /**
+   * Custom error handler for when a job fails.
+   * Useful for when you'd like to inspect specific errors in your project.
+   */
+  errorHandler?: (error: any) => void | Promise<void>;
   /**
    * Optional suffix, I.E. for differentiating between test, acc and prod queues
    */
