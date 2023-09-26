@@ -4,6 +4,11 @@ export interface CloudTaskOptions {
   location: string;
   authSecret: string;
   /**
+   * Custom error handler for when a job fails.
+   * Useful for when you'd like to inspect specific errors in your project.
+   */
+  onJobFailure?: (error: any) => void | Promise<void>;
+  /**
    * Optional suffix, I.E. for differentiating between test, acc and prod queues
    */
   queueSuffix?: string;
