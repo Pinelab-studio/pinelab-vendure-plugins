@@ -7,7 +7,7 @@ export interface CloudTaskOptions {
    * Custom error handler for when a job fails.
    * Useful for when you'd like to inspect specific errors in your project.
    */
-  errorHandler?: (error: any) => void | Promise<void>;
+  onJobFailure?: (error: any) => void | Promise<void>;
   /**
    * Optional suffix, I.E. for differentiating between test, acc and prod queues
    */

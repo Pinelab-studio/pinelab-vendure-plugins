@@ -111,12 +111,12 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       res.sendStatus(200);
       return;
     } catch (error: any) {
-      if (CloudTasksPlugin.options.errorHandler) {
+      if (CloudTasksPlugin.options.onJobFailure) {
         try {
-          await CloudTasksPlugin.options.errorHandler(error);
+          await CloudTasksPlugin.options.onJobFailure(error);
         } catch (e: any) {
           Logger.error(
-            `Error in 'errorHandler': ${e}`,
+            `Error in 'onJobFailure': ${e}`,
             CloudTasksPlugin.loggerCtx
           );
         }
