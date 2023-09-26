@@ -39,7 +39,7 @@ describe('CloudTasks job queue e2e', () => {
       authSecret: 'some-secret',
       queueSuffix: 'plugin-test',
       defaultJobRetries: 50,
-      onJobFailed: async (error) => {
+      onJobFailure: async (error) => {
         console.log('Custom error handler', error);
       },
     })
