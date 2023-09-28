@@ -94,7 +94,9 @@ describe('Vendure order client', () => {
     expect(store.value?.loading).toBe(false);
     const promise = awaitAbleFunction();
     expect(store.value?.loading).toBe(true);
-    return await promise;
+   const result = await promise;
+   expect(store.value?.loading).toBe(false);
+   return result;
   }
 
   async function testCurrentUserLoadingState(
