@@ -1,6 +1,6 @@
 import { gql, GraphQLClient, Variables } from 'graphql-request';
 import mitt, { Emitter } from 'mitt';
-import { atom } from 'nanostores';
+import { map } from 'nanostores';
 import {
   ActiveOrderFieldsFragment,
   ActiveOrderQuery,
@@ -44,6 +44,7 @@ import {
   TransitionOrderToStateMutation,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
+import { setResult, HandleLoadingState, StateStore } from './store-helpers';
 import { Id, VendureOrderEvents } from './vendure-order-events';
 
 /**
@@ -70,12 +71,27 @@ export class VendureOrderClient<A = unknown> {
   queries: GraphqlQueries;
   client: GraphQLClient;
   eventBus: Emitter<VendureOrderEvents> = mitt<VendureOrderEvents>();
+
   /**
    * The store object that holds the active order.
-   * E.g. use in Vue with `const activeOrder = useStore(orderClient.$activeOrder);`
    */
-  $activeOrder = atom<ActiveOrder<A> | undefined>();
-  $currentUser = atom<CurrentUser | undefined>();
+  $activeOrder = map<StateStore<ActiveOrder<A> | undefined>>({
+    loading: false,
+    error: undefined,
+    data: undefined,
+  });
+
+  /**
+   * The store object that holds the current logged in user
+   */
+  $currentUser = map<StateStore<CurrentUser | undefined>>({
+    loading: false,
+    error: undefined,
+    data: undefined,
+  });
+
+  // TODO: create similar stores for eligibleShippingMethods, eligiblePaymentMethods
+
   readonly tokenName = 'vendure-auth-token';
 
   constructor(
@@ -89,17 +105,19 @@ export class VendureOrderClient<A = unknown> {
     this.queries = new GraphqlQueries(additionalOrderFields ?? dummyFragment);
   }
 
+  @HandleLoadingState('$activeOrder')
   async getActiveOrder(): Promise<ActiveOrder<A> | undefined> {
     const { activeOrder } = await this.rawRequest<ActiveOrderQuery>(
       this.queries.GET_ACTIVE_ORDER
     );
+    setResult(this.$activeOrder, activeOrder);
     if (!activeOrder) {
       return;
     }
-    this.$activeOrder.set(await this.validateOrder(activeOrder));
-    return this.$activeOrder.get();
+    return this.throwIfErrorResult(activeOrder as ActiveOrder<A>);
   }
 
+  @HandleLoadingState('$activeOrder')
   async addItemToOrder(
     productVariantId: Id,
     quantity: number
@@ -111,8 +129,10 @@ export class VendureOrderClient<A = unknown> {
       productVariantId,
       quantity,
     });
-    const activeOrder = await this.validateOrder(addItemToOrder);
-    this.$activeOrder.set(await this.validateOrder(activeOrder));
+    const activeOrder = this.throwIfErrorResult(
+      addItemToOrder as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('item-added', {
       productVariantIds: [productVariantId],
       quantity,
@@ -120,13 +140,14 @@ export class VendureOrderClient<A = unknown> {
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async adjustOrderLine(
     orderLineId: Id,
     quantity: number
   ): Promise<ActiveOrder<A>> {
     const currentOrderLine = this.$activeOrder
       .get()
-      ?.lines.find((line) => line.id === orderLineId);
+      .data?.lines.find((line) => line.id === orderLineId);
     const currentQuantity = currentOrderLine?.quantity ?? 0;
     const { adjustOrderLine } = await this.rawRequest<
       AdjustOrderLineMutation,
@@ -135,11 +156,13 @@ export class VendureOrderClient<A = unknown> {
       orderLineId,
       quantity,
     });
-    const activeOrder = await this.validateOrder(adjustOrderLine);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      adjustOrderLine as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     const adjustedOrderLine = this.$activeOrder
       .get()
-      ?.lines.find((line) => line.id === orderLineId);
+      .data?.lines.find((line) => line.id === orderLineId);
     const newQuantity = adjustedOrderLine?.quantity ?? 0;
     const adjustment = newQuantity - currentQuantity;
     const variantId =
@@ -163,17 +186,21 @@ export class VendureOrderClient<A = unknown> {
     return await this.adjustOrderLine(orderLineId, 0);
   }
 
+  @HandleLoadingState('$activeOrder')
   async removeAllOrderLines(): Promise<ActiveOrder<A>> {
-    const totalQuantity = this.$activeOrder.get()?.totalQuantity ?? 0;
+    const totalQuantity = this.$activeOrder.get().data?.totalQuantity ?? 0;
     const allVariantIds =
-      this.$activeOrder.get()?.lines.map((line) => line.productVariant.id) ??
-      [];
+      this.$activeOrder
+        .get()
+        .data?.lines.map((line) => line.productVariant.id) ?? [];
     const { removeAllOrderLines } = await this.rawRequest<
       RemoveAllOrderLinesMutation,
       RemoveAllOrderLinesMutationVariables
     >(this.queries.REMOVE_ALL_ORDERLINES);
-    const activeOrder = await this.validateOrder(removeAllOrderLines);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      removeAllOrderLines as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('item-removed', {
       productVariantIds: allVariantIds,
       quantity: totalQuantity,
@@ -181,19 +208,23 @@ export class VendureOrderClient<A = unknown> {
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async applyCouponCode(couponCode: string): Promise<ActiveOrder<A>> {
     const { applyCouponCode } = await this.rawRequest<
       ApplyCouponCodeMutation,
       MutationApplyCouponCodeArgs
     >(this.queries.APPLY_COUPON_CODE, { couponCode });
-    const activeOrder = await this.validateOrder(applyCouponCode);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      applyCouponCode as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('coupon-code-applied', {
       couponCode,
     });
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async removeCouponCode(
     couponCode: string
   ): Promise<ActiveOrder<A> | undefined> {
@@ -204,14 +235,17 @@ export class VendureOrderClient<A = unknown> {
     if (!removeCouponCode) {
       return;
     }
-    const activeOrder = await this.validateOrder(removeCouponCode);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      removeCouponCode as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     this.eventBus.emit('coupon-code-removed', {
       couponCode,
     });
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async setCustomerForOrder(
     input: CreateCustomerInput
   ): Promise<ActiveOrder<A>> {
@@ -219,11 +253,14 @@ export class VendureOrderClient<A = unknown> {
       SetCustomerForOrderMutation,
       MutationSetCustomerForOrderArgs
     >(this.queries.SET_CUSTOMER_FOR_ORDER, { input });
-    const activeOrder = await this.validateOrder(setCustomerForOrder);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      setCustomerForOrder as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async setOrderShippingAddress(
     input: CreateAddressInput
   ): Promise<ActiveOrder<A>> {
@@ -231,21 +268,27 @@ export class VendureOrderClient<A = unknown> {
       SetOrderShippingAddressMutation,
       MutationSetOrderShippingAddressArgs
     >(this.queries.SET_ORDER_SHIPPING_ADDRESS, { input });
-    const activeOrder = await this.validateOrder(setOrderShippingAddress);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      setOrderShippingAddress as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async addBillingAddress(input: CreateAddressInput): Promise<ActiveOrder<A>> {
     const { setOrderBillingAddress } = await this.rawRequest<
       SetOrderBillingAddressMutation,
       MutationSetOrderBillingAddressArgs
     >(this.queries.SET_ORDER_BILLING_ADDRESS, { input });
-    const activeOrder = await this.validateOrder(setOrderBillingAddress);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      setOrderBillingAddress as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async setOrderShippingMethod(
     shippingMethodId: Id[]
   ): Promise<ActiveOrder<A>> {
@@ -253,21 +296,27 @@ export class VendureOrderClient<A = unknown> {
       SetOrderShippingMethodMutation,
       MutationSetOrderShippingMethodArgs
     >(this.queries.SET_ORDER_SHIPPING_METHOD, { shippingMethodId });
-    const activeOrder = await this.validateOrder(setOrderShippingMethod);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      setOrderShippingMethod as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async addPayment(input: PaymentInput): Promise<ActiveOrder<A>> {
     const { addPaymentToOrder } = await this.rawRequest<
       AddPaymentToOrderMutation,
       MutationAddPaymentToOrderArgs
     >(this.queries.ADD_PAYMENT_TO_ORDER, { input });
-    const activeOrder = await this.validateOrder(addPaymentToOrder);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      addPaymentToOrder as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
 
+  @HandleLoadingState('$activeOrder')
   async transitionOrderToState(
     state: string
   ): Promise<ActiveOrder<A> | undefined> {
@@ -278,14 +327,17 @@ export class VendureOrderClient<A = unknown> {
     if (!transitionOrderToState) {
       return;
     }
-    const activeOrder = await this.validateOrder(transitionOrderToState);
-    this.$activeOrder.set(activeOrder);
+    const activeOrder = this.throwIfErrorResult(
+      transitionOrderToState as ActiveOrder<A>
+    );
+    setResult(this.$activeOrder, activeOrder);
     return activeOrder;
   }
 
   /**
    * Get order by code. This will not update the internal activeOrder store
    */
+  @HandleLoadingState('$activeOrder')
   async getOrderByCode(code: string): Promise<ActiveOrder<A>> {
     const { orderByCode } = await this.rawRequest<any, QueryOrderByCodeArgs>(
       this.queries.GET_ORDER_BY_CODE,
@@ -314,16 +366,18 @@ export class VendureOrderClient<A = unknown> {
     return requestPasswordReset;
   }
 
+  @HandleLoadingState('$currentUser')
   async resetPassword(password: string, token: string): Promise<CurrentUser> {
     const { resetPassword } = await this.rawRequest<
       ResetPasswordMutation,
       MutationResetPasswordArgs
     >(this.queries.RESET_PASSWORD, { token, password });
-    const currentUser = await this.validateCurrentUser(resetPassword);
-    this.$currentUser.set(currentUser);
+    const currentUser = this.throwIfErrorResult(resetPassword as CurrentUser);
+    setResult(this.$currentUser, currentUser);
     return currentUser;
   }
 
+  @HandleLoadingState('$currentUser')
   async login(
     username: string,
     password: string,
@@ -333,58 +387,28 @@ export class VendureOrderClient<A = unknown> {
       this.queries.LOGIN,
       { username, password, rememberMe }
     );
-    const currentUser = await this.validateCurrentUser(login);
-    this.$currentUser.set(currentUser);
+    const currentUser = this.throwIfErrorResult(login as CurrentUser);
+    setResult(this.$currentUser, currentUser);
     return currentUser;
   }
 
   /**
-   * Throws if order result contains an error, if not, returns the active order
+   * Throw if result is an ErrorResult
    */
-  async validateOrder(
-    result: ActiveOrderFieldsFragment | ErrorResult
-  ): Promise<ActiveOrder<A>> {
-    if (result && (result as ErrorResult).errorCode) {
-      const error = result as ErrorResult;
-      if (
-        error.errorCode === 'ORDER_MODIFICATION_ERROR' ??
-        error.errorCode === 'ORDER_PAYMENT_STATE_ERROR'
-      ) {
-        window.localStorage.removeItem(this.tokenName); // These are unrecoverable states, so remove activeOrder
-      }
-      if (
-        error.errorCode === 'INSUFFICIENT_STOCK_ERROR' ??
-        error.errorCode === 'COUPON_CODE_INVALID_ERROR'
-      ) {
-        // Fetch activeOrder to get the current right amount of items per orderLine
-        await this.getActiveOrder();
-      }
-      // eslint-disable-next-line @typescript-eslint/no-throw-literal
-      throw error;
-    }
-    // We've verified that result is not an error, so we can safely cast it
-    return result as ActiveOrder<A>;
-  }
-
-  /**
-   * Throws if order result contains an error, if not, returns the active order
-   */
-  async validateCurrentUser(
-    result: CurrentUserFieldsFragment | ErrorResult
-  ): Promise<CurrentUser> {
+  throwIfErrorResult<T>(result: T | ErrorResult): T {
     if (result && (result as ErrorResult).errorCode) {
       const error = result as ErrorResult;
       // eslint-disable-next-line @typescript-eslint/no-throw-literal
       throw error;
     }
     // We've verified that result is not an error, so we can safely cast it
-    return result as CurrentUser;
+    return result as T;
   }
 
   /**
    * Execute a GraphQL query or mutation
    */
-  async rawRequest<T = void, I = undefined>(
+  protected async rawRequest<T = void, I = undefined>(
     document: string,
     variables?: I
   ): Promise<T> {

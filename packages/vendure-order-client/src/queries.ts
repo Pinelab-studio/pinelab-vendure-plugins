@@ -337,6 +337,7 @@ export class GraphqlQueries {
         }
       }
     }
+    ${this.CURRENT_USER_FIELDS}
   `;
 
   LOGIN = gql`
@@ -355,5 +356,6 @@ export class GraphqlQueries {
         }
       }
     }
+    ${this.CURRENT_USER_FIELDS}
   `;
 }

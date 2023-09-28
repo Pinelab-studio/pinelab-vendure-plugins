@@ -1,1 +1,3 @@
-// TODO set correct version number + date and the changes you've made connected to the PR. See this example for the correct format: https://github.com/Pinelab-studio/pinelab-vendure-plugins/blob/main/packages/vendure-plugin-invoices/CHANGELOG.md
+# 2.1.0 (2023-09-20)
+
+- Added loading states for currentUser and activeOrder store ([#256](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/256))
