@@ -13,6 +13,8 @@ import {
 } from '@vendure/testing';
 import { initialTestData } from './initial-test-data';
 import { PrimaryCollectionPlugin } from '../src/primary-collection-plugin';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 require('dotenv').config();
 
@@ -26,6 +28,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [PrimaryCollectionPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
     apiOptions: {
