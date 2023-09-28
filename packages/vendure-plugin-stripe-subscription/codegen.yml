@@ -1,7 +1,6 @@
-schema: 'src/**/*.ts'
-documents: 'src/ui/queries.ts'
+schema: 'src/api-v2/graphql-schema.ts'
 generates:
-  ./src/ui/generated/graphql.ts:
+  ./src/api-v2/generated/graphql.ts:
     plugins:
       - typescript
       - typescript-operations

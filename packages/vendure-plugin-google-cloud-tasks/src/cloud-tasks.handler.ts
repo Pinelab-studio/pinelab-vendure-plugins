@@ -111,6 +111,16 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       res.sendStatus(200);
       return;
     } catch (error: any) {
+      if (CloudTasksPlugin.options.onJobFailure) {
+        try {
+          await CloudTasksPlugin.options.onJobFailure(error);
+        } catch (e: any) {
+          Logger.error(
+            `Error in 'onJobFailure': ${e}`,
+            CloudTasksPlugin.loggerCtx
+          );
+        }
+      }
       if (attempts === job.retries) {
         // This was the final attempt, so mark the job as failed
         Logger.error(
@@ -134,7 +144,6 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
           })
         );
         res.sendStatus(200); // Return 200 to prevent more retries
-        return;
       } else {
         // More attempts remain, so return 500 to trigger a retry
         Logger.warn(
@@ -142,8 +151,8 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
           CloudTasksPlugin.loggerCtx
         );
         res.sendStatus(500);
-        return;
       }
+      return;
     }
   }
 

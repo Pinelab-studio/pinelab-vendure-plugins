@@ -1,6 +1,6 @@
 # Vendure Client
 
-A typed, extensible, framework-agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
+A typed, extensible, framework-agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the default logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
 
 - Sensible, but extendable default GraphQL fields.
 - Active order state management.
@@ -16,18 +16,28 @@ This package should only be used client side, i.e. for fetching an active order,
 
 ## Getting started
 
-```ts
+This is a Vue.js example, but integrations for React and more are available for @nanostores
+
+```vue
+<template>
+  <div>
+    <h1 v-if="activeOrder.loading">Loading...</h1>
+    <h1 v-if="activeOrder.error">Something went wrong!</h1>
+    <h1 v-if="activeOrder.data">Active order: {{ data.code }}</h1>
+  </div>
+</template>
+<script setup lang="ts">
 import { VendureOrderClient } from 'vendure-order-client';
+import { useStore } from '@nanostores/vue';
 
 const client = new VendureOrderClient(
   'http://localhost:3050/shop-api',
   'your-channel-token'
 );
 
-await client.addItemToOrder('some-id', 1);
-
-// Make this reactive with one of Nanostores' integrations
-const total = client.activeOrder.totalWithTax;
+const activeOrder = useStore(client.$activeOrder);
+await client.getActiveOrder();
+</script>
 ```
 
 ## Add your own graphql fields
