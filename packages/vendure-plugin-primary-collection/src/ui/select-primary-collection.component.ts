@@ -30,6 +30,7 @@ export class SelectPrimaryCollectionComponent
   config!: IntCustomFieldConfig;
   formControl!: FormControl;
   productsCollections!: CollectionFragment[];
+  productsCollectionsAreLoading = true;
   id!: string;
   constructor(
     private dataService: DataService,
@@ -39,7 +40,11 @@ export class SelectPrimaryCollectionComponent
   ngOnInit(): void {
     console.log(this.formControl.value, 'value');
     this.formControl.parent?.parent?.statusChanges.subscribe((s) => {
-      if (this.formControl.pristine && !this.formControl.value) {
+      if (
+        this.formControl.pristine &&
+        !this.formControl.value &&
+        (this.productsCollections.length || this.productsCollectionsAreLoading)
+      ) {
         this.formControl.parent?.parent?.markAsPristine();
       }
     });
@@ -62,6 +67,7 @@ export class SelectPrimaryCollectionComponent
         )
         .single$.subscribe((d: any) => {
           this.productsCollections = d.product.collections;
+          this.productsCollectionsAreLoading = false;
           this.cdr.markForCheck();
         });
     });

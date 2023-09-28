@@ -3,7 +3,7 @@ import {
   SharedModule,
   registerFormInputComponent,
 } from '@vendure/admin-ui/core';
-import { SelectPrimaryCollectionComponent } from './select-primary-collection/select-primary-collection.component';
+import { SelectPrimaryCollectionComponent } from './select-primary-collection.component';
 
 @NgModule({
   imports: [SharedModule],
