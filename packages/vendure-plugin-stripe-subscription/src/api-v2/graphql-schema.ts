@@ -38,9 +38,10 @@ export const shopSchemaExtensions = gql`
 
   type StripeSubscriptionRecurringPaymentDefinition {
     amount: Int!
-    interval: StripeSubscriptionInterval
+    interval: StripeSubscriptionInterval!
     intervalCount: Int!
-    startDate: DateTime
+    startDate: DateTime!
+    endDate: DateTime
   }
 
   enum StripeSubscriptionIntentType {

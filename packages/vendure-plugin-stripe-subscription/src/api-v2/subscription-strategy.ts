@@ -25,6 +25,7 @@ export interface RecurringPayment {
     interval: 'week' | 'month' | 'year';
     intervalCount: number;
     startDate: Date;
+    endDate?: Date;
   };
 }
 
