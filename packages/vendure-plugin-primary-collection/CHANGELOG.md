@@ -8,5 +8,4 @@
 
 # 1.0.2 (2023-09-28)
 
-- Products will have a `primayrCollection` as a custom field which will be selected via Admin UI.
-- Update Test cases according to the above requirement
+- Products will have a `primaryCollection` as a custom field which can be selected via Admin UI.
