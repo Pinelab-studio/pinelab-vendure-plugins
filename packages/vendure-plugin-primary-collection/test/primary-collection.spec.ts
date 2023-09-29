@@ -47,6 +47,7 @@ describe('Product Primary Collection', function () {
       customerCount: 2,
     });
     serverStarted = true;
+    await adminClient.asSuperAdmin();
   }, 60000);
 
   it('Should start successfully', async () => {
@@ -65,28 +66,45 @@ describe('Product Primary Collection', function () {
     }
   `;
 
-  it("Should return 'Computers' as a primary collection for 'Laptop'", async () => {
+  const updatePrimaryCollectionMutation = gql`
+    mutation UpdateProuductPrimaryCollection(
+      $productId: ID!
+      $productPrimaryCollectionId: ID
+    ) {
+      updateProduct(
+        input: {
+          id: $productId
+          customFields: { primaryCollectionId: $productPrimaryCollectionId }
+        }
+      ) {
+        name
+        id
+        customFields {
+          primaryCollection {
+            name
+            id
+          }
+        }
+      }
+    }
+  `;
+
+  it("Should successfully update 'Laptop's primaryCollection as 'Electronics'", async () => {
+    const { updateProduct: product } = await adminClient.query(
+      updatePrimaryCollectionMutation,
+      { productId: 'T_1', productPrimaryCollectionId: 'T_3' }
+    );
+    expect(product.name).toBe('Laptop');
+    expect(product.id).toBe('T_1');
+    expect(product.customFields.primaryCollection.name).toBe('Electronics');
+  });
+
+  it("Should return 'Electronics' as a primary collection for 'Laptop' in Shop API", async () => {
     const { product } = await shopClient.query(primaryCollectionQuery, {
       productId: 'T_1',
     });
     expect(product.name).toBe('Laptop');
-    expect(product.primaryCollection.name).toBe('Computers');
-  });
-
-  it("Should return 'Electronics' as a primary collection for 'Cars'", async () => {
-    const { product } = await shopClient.query(primaryCollectionQuery, {
-      productId: 'T_2',
-    });
-    expect(product.name).toBe('Cars');
     expect(product.primaryCollection.name).toBe('Electronics');
-  });
-
-  it("Should return 'Others' as a primary collection for 'Motors'", async () => {
-    const { product } = await shopClient.query(primaryCollectionQuery, {
-      productId: 'T_3',
-    });
-    expect(product.name).toBe('Motors');
-    expect(product.primaryCollection.name).toBe('Others');
   });
 
   afterAll(async () => {
