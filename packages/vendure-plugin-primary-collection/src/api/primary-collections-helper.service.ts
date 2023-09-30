@@ -1,17 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import {
   Product,
-  ProductService,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 
 @Injectable()
 export class PrimaryCollectionHelperService {
-  constructor(
-    private conn: TransactionalConnection,
-    private productService: ProductService
-  ) {}
+  constructor(private conn: TransactionalConnection) {}
 
   async setPrimaryCollectionForAllProducts(ctx: RequestContext) {
     const productsRepository = this.conn.getRepository(ctx, Product);

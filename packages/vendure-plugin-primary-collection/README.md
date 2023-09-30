@@ -6,6 +6,8 @@ To construct breadcrumbs and URL's it's useful to have a primary collection for 
 
 Primary collections can be selected in the Admin UI's product detail view.
 
+This Plugin also exports `PrimaryCollectionHelperService` which can be used to assign `primaryCollection`'s to products without existing values by running `PrimaryCollectionHelperService.setPrimaryCollectionForAllProducts`.
+
 ## Getting started
 
 Add the plugin to your `vendure-config.ts`:
