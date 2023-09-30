@@ -20,15 +20,22 @@ export class PrimaryCollectionHelperService {
       .leftJoinAndSelect('product.variants', 'variant')
       .leftJoinAndSelect('variant.collections', 'collection')
       .getMany();
+    const updatedProducts: Partial<Product>[] = [];
     for (let product of allProducts) {
       if (!product.customFields.primaryCollection) {
         const variantWithCollection = product.variants?.find(
           (v) => v.collections?.length
         );
-        product.customFields.primaryCollection =
-          variantWithCollection?.collections[0]!;
+        if (variantWithCollection?.collections[0]!) {
+          updatedProducts.push({
+            id: product.id,
+            customFields: {
+              primaryCollection: variantWithCollection?.collections[0]!,
+            },
+          });
+        }
       }
     }
-    await productsRepository.save(allProducts);
+    await productsRepository.save(updatedProducts);
   }
 }
