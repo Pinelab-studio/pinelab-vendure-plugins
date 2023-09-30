@@ -1,4 +1,10 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  ChannelService,
+  DefaultLogger,
+  LogLevel,
+  RequestContext,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -12,6 +18,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PrimaryCollectionPlugin } from '../src/primary-collection-plugin';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { gql } from 'graphql-tag';
+import { PrimaryCollectionHelperService } from '../src/api/primary-collections-helper.service';
 
 describe('Product Primary Collection', function () {
   let server: TestServer;
@@ -105,6 +112,57 @@ describe('Product Primary Collection', function () {
     });
     expect(product.name).toBe('Laptop');
     expect(product.primaryCollection.name).toBe('Electronics');
+  });
+
+  it("Shouldn't assign primaryCollection to products with id 'T_2' and 'T_3'", async () => {
+    const { product } = await shopClient.query(primaryCollectionQuery, {
+      productId: 'T_2',
+    });
+    const { product: anotherProduct } = await shopClient.query(
+      primaryCollectionQuery,
+      {
+        productId: 'T_3',
+      }
+    );
+    expect(product.primaryCollection).toBeNull();
+    expect(anotherProduct.primaryCollection).toBeNull();
+  });
+
+  it(`Should assign primaryCollection to all products after running the "setPrimaryCollectionForAllProducts" function, 
+  while preserving the values for those products who already had `, async () => {
+    const defualtChannel = await server.app
+      .get(ChannelService)
+      .getDefaultChannel();
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel: defualtChannel,
+    });
+    await server.app
+      .get(PrimaryCollectionHelperService)
+      .setPrimaryCollectionForAllProducts(ctx);
+    const { product: t1Product } = await shopClient.query(
+      primaryCollectionQuery,
+      {
+        productId: 'T_1',
+      }
+    );
+    const { product: t2Product } = await shopClient.query(
+      primaryCollectionQuery,
+      {
+        productId: 'T_2',
+      }
+    );
+    const { product: t3Product } = await shopClient.query(
+      primaryCollectionQuery,
+      {
+        productId: 'T_3',
+      }
+    );
+    expect(t1Product.primaryCollection.name).toBe('Electronics');
+    expect(t2Product.primaryCollection).not.toBeNull();
+    expect(t3Product.primaryCollection).not.toBeNull();
   });
 
   afterAll(async () => {
