@@ -1,4 +1,5 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService, ChannelService,
@@ -7,7 +8,7 @@ import {
   ErrorResult,
   EventBus,
   HistoryService,
-  ID, JobQueue,
+  ID, Injector, JobQueue,
   JobQueueService,
   LanguageCode, Logger,
   Order,
@@ -28,17 +29,16 @@ import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import Stripe from 'stripe';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
-import {
-  StripeSubscriptionPricing
-} from '../ui/generated/graphql';
-import { StripeSubscriptionIntent, StripeSubscriptionIntentType } from './generated/graphql';
-import { SubscriptionStrategy } from './strategy/subscription-strategy';
-import { stripeSubscriptionHandler } from './payment-method/stripe-subscription.handler';
+import { StripeSubscriptionBothPaymentTypes, StripeSubscriptionIntent, StripeSubscriptionIntentType } from './generated/graphql';
+import { Subscription, SubscriptionStrategy } from './strategy/subscription-strategy';
 import { StripeClient } from './stripe.client';
-import './vendure-config/custom-fields.d.ts'
+import './vendure-config/custom-fields-types.d.ts'
 import { StripeInvoice } from './types/stripe-invoice';
 import { printMoney } from './util';
+import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
+import * as types from './vendure-config/custom-fields-types';
+import { stripeSubscriptionHandler } from './vendure-config/stripe-subscription.handler';
+import { StripePaymentIntent } from './types/stripe-payment-intent';
 
 export interface StripeContext {
   paymentMethod: PaymentMethod;
@@ -72,7 +72,7 @@ export class StripeSubscriptionService {
     private historyService: HistoryService,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
-    private customerService: CustomerService,
+    private moduleRef: ModuleRef,
     private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private options: StripeSubscriptionPluginOptions
   ) {
@@ -148,7 +148,7 @@ export class StripeSubscriptionService {
       .subscribe(async (event) => {
         const cancelOrReleaseEvents = event.stockMovements as (Cancellation | Release)[];
         const orderLinesWithSubscriptions = cancelOrReleaseEvents
-        // Filter out non-sub orderlines
+          // Filter out non-sub orderlines
           .filter((event) => (event.orderLine.customFields).subscriptionIds);
         await Promise.all(
           // Push jobs
@@ -167,11 +167,11 @@ export class StripeSubscriptionService {
     ctx: RequestContext,
     orderLineId: ID
   ): Promise<void> {
-    const order = (await this.orderService.findOneByOrderLineId(
+    const order = await this.orderService.findOneByOrderLineId(
       ctx,
       orderLineId,
       ['lines']
-    )) as OrderWithSubscriptionFields | undefined;
+    );
     if (!order) {
       throw Error(`Order for OrderLine ${orderLineId} not found`);
     }
@@ -241,35 +241,30 @@ export class StripeSubscriptionService {
   }
 
   async createIntent(ctx: RequestContext): Promise<StripeSubscriptionIntent> {
-    let order = (await this.activeOrderService.getActiveOrder(
+    let order = await this.activeOrderService.getActiveOrder(
       ctx,
       undefined
-    )) as OrderWithSubscriptionFields;
+    );
     if (!order) {
       throw new UserInputError('No active order for session');
     }
     if (!order.totalWithTax) {
-      // Add a verification fee to the order to support orders that are actually $0
-      order = (await this.orderService.addSurchargeToOrder(ctx, order.id, {
-        description: 'Verification fee',
-        listPrice: 100,
-        listPriceIncludesTax: true,
-      })) as OrderWithSubscriptionFields;
+      // This means a one time payment is needed
     }
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
     });
     if (!order.lines?.length) {
-      throw new UserInputError('Cannot create payment intent for empty order');
+      throw new UserInputError('Cannot create intent for empty order');
     }
     if (!order.customer) {
       throw new UserInputError(
-        'Cannot create payment intent for order without customer'
+        'Cannot create intent for order without customer'
       );
     }
     if (!order.shippingLines?.length) {
       throw new UserInputError(
-        'Cannot create payment intent for order without shippingMethod'
+        'Cannot create intent for order without shippingMethod'
       );
     }
     // Check if Stripe Subscription paymentMethod is eligible for this order
@@ -281,55 +276,65 @@ export class StripeSubscriptionService {
     const { stripeClient, paymentMethod } = await this.getStripeContext(ctx);
     if (!eligibleStripeMethodCodes.includes(paymentMethod.code)) {
       throw new UserInputError(
-        `No eligible payment method found with code \'stripe-subscription\'`
+        `No eligible payment method found with handler code '${stripeSubscriptionHandler.code}'`
       );
     }
-    const stripeCustomer = await stripeClient.getOrCreateCustomer(
-      order.customer
-    );
-    this.customerService
-      .update(ctx, {
-        id: order.customer.id,
-        customFields: {
-          stripeSubscriptionCustomerId: stripeCustomer.id,
-        },
-      })
-      .catch((err) =>
-        Logger.error(
-          `Failed to update stripeCustomerId ${stripeCustomer.id} for ${order.customer.emailAddress}`,
-          loggerCtx,
-          err
-        )
-      );
-      // FIXME
-    const hasSubscriptionProducts = order.lines.some(
-      (l) => l.productVariant.customFields.subscriptionSchedule
-    );
-    // FIXME create Setup or PaymentIntent
-    const intent = await stripeClient.paymentIntents.create({
-      customer: stripeCustomer.id,
-      payment_method_types: ['card'], // TODO make configurable per channel
-      setup_future_usage: hasSubscriptionProducts
-        ? 'off_session'
-        : 'on_session',
-      amount: order.totalWithTax,
-      currency: order.currencyCode,
-      metadata: {
-        orderCode: order.code,
-        channelToken: ctx.channel.token,
+    const stripeCustomer = await stripeClient.getOrCreateCustomer( order.customer  );
+    const stripePaymentMethods = ['card'] // TODO make configurable per channel
+    const injector = new Injector(this.moduleRef);
+    const subscriptions = await Promise.all(order.lines.map((line) => this.strategy.defineSubscription(ctx, injector, line)));
+    const hasRecurringPayments = subscriptions.some((s) => (s as StripeSubscriptionBothPaymentTypes).recurring.amount > 0);
+    const hasOneTimePayments = subscriptions.some((s) => (s as StripeSubscriptionBothPaymentTypes).amountDueNow > 0);
+    let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
+    if (hasRecurringPayments && hasOneTimePayments) {
+      // Create PaymentIntent + off_session, because we have both one-time and recurring payments
+      intent = await stripeClient.paymentIntents.create({
+        customer: stripeCustomer.id,
+        payment_method_types: stripePaymentMethods,
+        setup_future_usage: 'off_session',
         amount: order.totalWithTax,
-      },
-    });
-
-    // FIXME
-    const intentType = StripeSubscriptionIntentType.SetupIntent // FIXME
+        currency: order.currencyCode,
+        metadata: {
+          orderCode: order.code,
+          channelToken: ctx.channel.token,
+          amount: order.totalWithTax,
+        },
+      });
+    } else if (hasOneTimePayments) {
+      // Create PaymentIntent, because we only have one-time payments
+      intent = await stripeClient.paymentIntents.create({
+        customer: stripeCustomer.id,
+        payment_method_types: stripePaymentMethods,
+        setup_future_usage: 'on_session',
+        amount: order.totalWithTax,
+        currency: order.currencyCode,
+        metadata: {
+          orderCode: order.code,
+          channelToken: ctx.channel.token,
+          amount: order.totalWithTax,
+        },
+      });
+    } else {
+      // Create SetupIntent, because we only have recurring payments
+      intent = await stripeClient.setupIntents.create({
+        customer: stripeCustomer.id,
+        payment_method_types: stripePaymentMethods,
+        usage: 'off_session',
+        metadata: {
+          orderCode: order.code,
+          channelToken: ctx.channel.token,
+          amount: order.totalWithTax,
+        },
+      });
+    }
+    const intentType = intent.object === 'payment_intent' ? StripeSubscriptionIntentType.PaymentIntent : StripeSubscriptionIntentType.SetupIntent;
+    if (!intent.client_secret) {
+      throw Error(`No client_secret found in ${intentType} response, something went wrong!`);
+    }
     Logger.info(
       `Created ${intentType} '${intent.id}' for order ${order.code}`,
       loggerCtx
     );
-    if (!intent.client_secret) {
-      throw Error(`No client_secret found in ${intentType} response, something went wrong!`);
-    }
     return {
       clientSecret: intent.client_secret,
       intentType
@@ -448,11 +453,11 @@ export class StripeSubscriptionService {
     stripeCustomerId: string,
     stripePaymentMethodId: string
   ): Promise<void> {
-    const order = (await this.orderService.findOneByCode(ctx, orderCode, [
+    const order = await this.orderService.findOneByCode(ctx, orderCode, [
       'customer',
       'lines',
       'lines.productVariant',
-    ])) as OrderWithSubscriptionFields;
+    ])
     if (!order) {
       throw Error(`Cannot find order with code ${orderCode}`);
     }
@@ -548,22 +553,12 @@ export class StripeSubscriptionService {
     orderId: ID,
     message: string,
     error?: unknown,
-    pricing?: StripeSubscriptionPricing,
+    subscription?: Subscription,
     subscriptionId?: string
   ): Promise<void> {
     let prettifiedError = error
       ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
       : undefined; // Make sure its serializable
-    let prettifierPricing = pricing
-      ? {
-        ...pricing,
-        totalProratedAmount: printMoney(pricing.totalProratedAmount),
-        downpayment: printMoney(pricing.downpayment),
-        recurringPrice: printMoney(pricing.recurringPrice),
-        amountDueNow: printMoney(pricing.amountDueNow),
-        dayRate: printMoney(pricing.dayRate),
-      }
-      : undefined;
     await this.historyService.createHistoryEntryForOrder(
       {
         ctx,
@@ -574,7 +569,7 @@ export class StripeSubscriptionService {
           valid: !error,
           error: prettifiedError,
           subscriptionId,
-          pricing: prettifierPricing,
+          subscription
         },
       },
       false

@@ -49,6 +49,7 @@ export class HistoryEntryComponent implements OrderHistoryEntryComponent {
   }
 
   getIconShape(entry: TimelineHistoryEntry) {
-    return entry.data.valid ? undefined : 'exclamation-circle';
+    // No icons for not-featured entries
+    return this.isFeatured(entry) ? 'exclamation-circle' : undefined;
   }
 }

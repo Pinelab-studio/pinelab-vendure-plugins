@@ -3,22 +3,6 @@ import {
   LanguageCode
 } from '@vendure/core';
 
-export const customerCustomFields: CustomFieldConfig[] = [
-  {
-    name: 'stripeSubscriptionCustomerId',
-    label: [
-      {
-        languageCode: LanguageCode.en,
-        value: 'Stripe Customer ID',
-      },
-    ],
-    type: 'string',
-    public: false,
-    nullable: true,
-    ui: { tab: 'Subscription' },
-  },
-];
-
 export const orderLineCustomFields: CustomFieldConfig[] = [
   {
     name: 'subscriptionIds',

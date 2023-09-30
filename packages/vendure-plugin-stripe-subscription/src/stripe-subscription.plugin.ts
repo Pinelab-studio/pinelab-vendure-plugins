@@ -6,7 +6,7 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 import { DefaultSubscriptionStrategy } from './api-v2/strategy/default-subscription-strategy';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import { customerCustomFields, orderLineCustomFields } from './api-v2/vendure-config/custom-fields';
+import { orderLineCustomFields } from './api-v2/vendure-config/custom-fields';
 import { stripeSubscriptionHandler } from './api-v2/vendure-config/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api-v2/vendure-config/has-stripe-subscription-products-payment-checker';
 
@@ -37,7 +37,6 @@ export interface StripeSubscriptionPluginOptions {
       ...(config.paymentOptions.paymentMethodEligibilityCheckers ?? []),
       hasStripeSubscriptionProductsPaymentChecker,
     ];
-    config.customFields.Customer.push(...customerCustomFields);
     config.customFields.OrderLine.push(...orderLineCustomFields);
     config.apiOptions.middleware.push(
       createRawBodyMiddleWare('/stripe-subscription*')

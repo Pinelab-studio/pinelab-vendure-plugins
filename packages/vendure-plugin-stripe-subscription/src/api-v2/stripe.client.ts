@@ -1,5 +1,5 @@
+import { Customer } from '@vendure/core';
 import Stripe from 'stripe';
-import { CustomerWithSubscriptionFields } from './vendure-config/custom-fields';
 
 interface SubscriptionInput {
   customerId: string;
@@ -29,16 +29,8 @@ export class StripeClient extends Stripe {
   }
 
   async getOrCreateCustomer(
-    customer: CustomerWithSubscriptionFields
+    customer: Customer
   ): Promise<Stripe.Customer> {
-    if (customer.customFields?.stripeSubscriptionCustomerId) {
-      const stripeCustomer = await this.customers.retrieve(
-        customer.customFields.stripeSubscriptionCustomerId
-      );
-      if (stripeCustomer && !stripeCustomer.deleted) {
-        return stripeCustomer as Stripe.Customer;
-      }
-    }
     const stripeCustomers = await this.customers.list({
       email: customer.emailAddress,
     });
