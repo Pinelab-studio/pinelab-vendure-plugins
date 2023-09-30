@@ -30,6 +30,12 @@ export interface RecurringPayment {
 }
 
 export interface SubscriptionStrategy {
+
+  /**
+   * Determines if the given orderline should be treated as a subscription, or as a regular product
+   */
+  isSubscription(ctx: RequestContext, orderLineWithVariant: OrderLine): boolean;
+
   /**
    * Define a subscription based on the given order line.
    * This is executed when an item is being added to cart

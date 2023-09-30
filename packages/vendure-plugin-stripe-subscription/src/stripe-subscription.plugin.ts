@@ -1,9 +1,14 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { SubscriptionStrategy } from './api-v2/subscription-strategy';
+import { SubscriptionStrategy } from './api-v2/strategy/subscription-strategy';
 import { shopSchemaExtensions } from './api-v2/graphql-schema';
 import { createRawBodyMiddleWare } from '../../util/src/raw-body';
-import { DefaultSubscriptionStrategy } from './api-v2/default-subscription-strategy';
+import { DefaultSubscriptionStrategy } from './api-v2/strategy/default-subscription-strategy';
+import path from 'path';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import { customerCustomFields, orderLineCustomFields } from './api-v2/vendure-config/custom-fields';
+import { stripeSubscriptionHandler } from './api-v2/vendure-config/stripe-subscription.handler';
+import { hasStripeSubscriptionProductsPaymentChecker } from './api-v2/vendure-config/has-stripe-subscription-products-payment-checker';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -27,11 +32,13 @@ export interface StripeSubscriptionPluginOptions {
     },
   ],
   configuration: (config) => {
-    // FIXME config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);
-    // FIXME config.paymentOptions.paymentMethodEligibilityCheckers = [
-    //   ...(config.paymentOptions.paymentMethodEligibilityCheckers ?? []),
-    //   hasStripeSubscriptionProductsPaymentChecker,
-    // ];
+    config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);
+    config.paymentOptions.paymentMethodEligibilityCheckers = [
+      ...(config.paymentOptions.paymentMethodEligibilityCheckers ?? []),
+      hasStripeSubscriptionProductsPaymentChecker,
+    ];
+    config.customFields.Customer.push(...customerCustomFields);
+    config.customFields.OrderLine.push(...orderLineCustomFields);
     config.apiOptions.middleware.push(
       createRawBodyMiddleWare('/stripe-subscription*')
     );
@@ -54,4 +61,15 @@ export class StripeSubscriptionPlugin {
     };
     return StripeSubscriptionPlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    ngModules: [
+      {
+        type: 'shared',
+        ngModuleFileName: 'stripe-subscription-shared.module.ts',
+        ngModuleName: 'StripeSubscriptionSharedModule',
+      },
+    ],
+  };
 }

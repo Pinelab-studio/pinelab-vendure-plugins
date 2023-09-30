@@ -20,6 +20,11 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
     return this.getSubscriptionForVariant(orderLine.productVariant);
   }
 
+  isSubscription(ctx: RequestContext, orderLineWithVariant: OrderLine): boolean {
+    // This example treats all products as subscriptions
+    return true;
+  }
+
   previewSubscription(
     ctx: RequestContext,
     injector: Injector,
