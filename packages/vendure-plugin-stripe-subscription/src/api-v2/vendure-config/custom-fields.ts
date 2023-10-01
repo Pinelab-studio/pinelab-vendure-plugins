@@ -1,7 +1,4 @@
-import {
-  CustomFieldConfig,
-  LanguageCode
-} from '@vendure/core';
+import { CustomFieldConfig, LanguageCode } from '@vendure/core';
 
 export const orderLineCustomFields: CustomFieldConfig[] = [
   {

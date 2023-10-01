@@ -18,4 +18,4 @@ import { HistoryEntryComponent } from './history-entry.component';
     }),
   ],
 })
-export class StripeSubscriptionSharedModule { }
+export class StripeSubscriptionSharedModule {}

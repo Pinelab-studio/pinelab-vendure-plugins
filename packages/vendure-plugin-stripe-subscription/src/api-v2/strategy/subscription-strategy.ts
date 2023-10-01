@@ -1,8 +1,8 @@
 import {
-  OrderLine,
-  RequestContext,
   Injector,
+  OrderLine,
   ProductVariant,
+  RequestContext,
 } from '@vendure/core';
 
 /**
@@ -30,25 +30,27 @@ export interface RecurringPayment {
 }
 
 export interface SubscriptionStrategy {
-
   /**
-   * Determines if the given orderline should be treated as a subscription, or as a regular product
+   * Determines if the given variant should be treated as a subscription, or as a regular product
    */
-  isSubscription(ctx: RequestContext, orderLineWithVariant: OrderLine): boolean;
+  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean;
 
   /**
-   * Define a subscription based on the given order line.
+   * Define a subscription based on the given order line fields.
    * This is executed when an item is being added to cart
    */
   defineSubscription(
     ctx: RequestContext,
     injector: Injector,
-    orderLine: OrderLine
+    productVariant: ProductVariant,
+    orderLineCustomFields: { [key: string]: any },
+    quantity: number
   ): Promise<Subscription> | Subscription;
 
   /**
    * Preview subscription pricing for a given product variant, because there is no order line available during preview.
-   * Optional custom inputs can be passed in via the Graphql query, to, for example, preview the subscription with a custom start Date
+   * Optional custom inputs can be passed in via the Graphql query, for example to preview the subscription with a custom start Date
+   *
    * This is use by the storefront to display subscription prices before they are actually added to cart
    */
   previewSubscription(

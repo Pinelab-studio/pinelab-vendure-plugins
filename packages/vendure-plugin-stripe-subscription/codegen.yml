@@ -6,6 +6,7 @@ generates:
       - typescript-operations
       - typed-document-node
     config:
+      enumsAsTypes: true
       avoidOptionals: false
       scalars:
         DateTime: Date

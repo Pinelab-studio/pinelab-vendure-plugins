@@ -1,26 +1,35 @@
-import { Inject, Injectable, } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
-  ActiveOrderService, ChannelService,
+  ActiveOrderService,
+  ChannelService,
   CustomerService,
   EntityHydrator,
   ErrorResult,
   EventBus,
   HistoryService,
-  ID, Injector, JobQueue,
+  ID,
+  Injector,
+  JobQueue,
   JobQueueService,
-  LanguageCode, Logger,
+  LanguageCode,
+  Logger,
   Order,
   OrderLine,
   OrderLineEvent,
   OrderService,
-  OrderStateTransitionError, PaymentMethod,
-  PaymentMethodService, RequestContext,
+  OrderStateTransitionError,
+  PaymentMethod,
+  PaymentMethodService,
+  ProductService,
+  ProductVariant,
+  ProductVariantService,
+  RequestContext,
   SerializedRequestContext,
   StockMovementEvent,
   TransactionalConnection,
-  UserInputError
+  UserInputError,
 } from '@vendure/core';
 import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
@@ -29,10 +38,17 @@ import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import Stripe from 'stripe';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { StripeSubscriptionBothPaymentTypes, StripeSubscriptionIntent, StripeSubscriptionIntentType } from './generated/graphql';
-import { Subscription, SubscriptionStrategy } from './strategy/subscription-strategy';
+import {
+  StripeSubscriptionBothPaymentTypes,
+  StripeSubscriptionIntent,
+  StripeSubscriptionIntentType,
+} from './generated/graphql';
+import {
+  Subscription,
+  SubscriptionStrategy,
+} from './strategy/subscription-strategy';
 import { StripeClient } from './stripe.client';
-import './vendure-config/custom-fields-types.d.ts'
+import './vendure-config/custom-fields-types.d.ts';
 import { StripeInvoice } from './types/stripe-invoice';
 import { printMoney } from './util';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
@@ -74,9 +90,12 @@ export class StripeSubscriptionService {
     private jobQueueService: JobQueueService,
     private moduleRef: ModuleRef,
     private connection: TransactionalConnection,
-    @Inject(PLUGIN_INIT_OPTIONS) private options: StripeSubscriptionPluginOptions
+    private productVariantService: ProductVariantService,
+    private productService: ProductService,
+    @Inject(PLUGIN_INIT_OPTIONS)
+    private options: StripeSubscriptionPluginOptions
   ) {
-    this.strategy = this.options.subscriptionStrategy!
+    this.strategy = this.options.subscriptionStrategy!;
   }
 
   private jobQueue!: JobQueue<JobData>;
@@ -125,7 +144,7 @@ export class StripeSubscriptionService {
     this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
       if (
         event.type === 'created' &&
-        this.strategy.isSubscription(event.ctx, event.orderLine)
+        this.strategy.isSubscription(event.ctx, event.orderLine.productVariant)
       ) {
         await this.connection
           .getRepository(event.ctx, OrderLine)
@@ -146,10 +165,13 @@ export class StripeSubscriptionService {
         )
       )
       .subscribe(async (event) => {
-        const cancelOrReleaseEvents = event.stockMovements as (Cancellation | Release)[];
+        const cancelOrReleaseEvents = event.stockMovements as (
+          | Cancellation
+          | Release
+        )[];
         const orderLinesWithSubscriptions = cancelOrReleaseEvents
           // Filter out non-sub orderlines
-          .filter((event) => (event.orderLine.customFields).subscriptionIds);
+          .filter((event) => event.orderLine.customFields.subscriptionIds);
         await Promise.all(
           // Push jobs
           orderLinesWithSubscriptions.map((line) =>
@@ -161,6 +183,48 @@ export class StripeSubscriptionService {
           )
         );
       });
+  }
+
+  async previewSubscription(
+    ctx: RequestContext,
+    productVariantId: ID,
+    customInputs?: any
+  ): Promise<Subscription> {
+    const variant = await this.productVariantService.findOne(
+      ctx,
+      productVariantId
+    );
+    if (!variant) {
+      throw new UserInputError(
+        `No product variant with id '${productVariantId}' found`
+      );
+    }
+    const injector = new Injector(this.moduleRef);
+    return this.strategy.previewSubscription(
+      ctx,
+      injector,
+      variant,
+      customInputs
+    );
+  }
+
+  async previewSubscriptionForProduct(
+    ctx: RequestContext,
+    productId: ID,
+    customInputs?: any
+  ): Promise<Subscription[]> {
+    const product = await this.productService.findOne(ctx, productId, [
+      'variants',
+    ]);
+    if (!product) {
+      throw new UserInputError(`No product with id '${product}' found`);
+    }
+    const injector = new Injector(this.moduleRef);
+    return Promise.all(
+      product.variants.map((variant) =>
+        this.strategy.previewSubscription(ctx, injector, variant, customInputs)
+      )
+    );
   }
 
   async cancelSubscriptionForOrderLine(
@@ -241,10 +305,7 @@ export class StripeSubscriptionService {
   }
 
   async createIntent(ctx: RequestContext): Promise<StripeSubscriptionIntent> {
-    let order = await this.activeOrderService.getActiveOrder(
-      ctx,
-      undefined
-    );
+    let order = await this.activeOrderService.getActiveOrder(ctx, undefined);
     if (!order) {
       throw new UserInputError('No active order for session');
     }
@@ -279,12 +340,17 @@ export class StripeSubscriptionService {
         `No eligible payment method found with handler code '${stripeSubscriptionHandler.code}'`
       );
     }
-    const stripeCustomer = await stripeClient.getOrCreateCustomer( order.customer  );
-    const stripePaymentMethods = ['card'] // TODO make configurable per channel
-    const injector = new Injector(this.moduleRef);
-    const subscriptions = await Promise.all(order.lines.map((line) => this.strategy.defineSubscription(ctx, injector, line)));
-    const hasRecurringPayments = subscriptions.some((s) => (s as StripeSubscriptionBothPaymentTypes).recurring.amount > 0);
-    const hasOneTimePayments = subscriptions.some((s) => (s as StripeSubscriptionBothPaymentTypes).amountDueNow > 0);
+    const stripeCustomer = await stripeClient.getOrCreateCustomer(
+      order.customer
+    );
+    const stripePaymentMethods = ['card']; // TODO make configurable per channel
+    const subscriptions = await this.defineSubscriptions(ctx, order);
+    const hasRecurringPayments = subscriptions.some(
+      (s) => (s as StripeSubscriptionBothPaymentTypes).recurring.amount > 0
+    );
+    const hasOneTimePayments = subscriptions.some(
+      (s) => (s as StripeSubscriptionBothPaymentTypes).amountDueNow > 0
+    );
     let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
     if (hasRecurringPayments && hasOneTimePayments) {
       // Create PaymentIntent + off_session, because we have both one-time and recurring payments
@@ -327,9 +393,12 @@ export class StripeSubscriptionService {
         },
       });
     }
-    const intentType = intent.object === 'payment_intent' ? StripeSubscriptionIntentType.PaymentIntent : StripeSubscriptionIntentType.SetupIntent;
+    const intentType =
+      intent.object === 'payment_intent' ? 'PaymentIntent' : 'SetupIntent';
     if (!intent.client_secret) {
-      throw Error(`No client_secret found in ${intentType} response, something went wrong!`);
+      throw Error(
+        `No client_secret found in ${intentType} response, something went wrong!`
+      );
     }
     Logger.info(
       `Created ${intentType} '${intent.id}' for order ${order.code}`,
@@ -337,13 +406,35 @@ export class StripeSubscriptionService {
     );
     return {
       clientSecret: intent.client_secret,
-      intentType
-    }
+      intentType,
+    };
+  }
+
+  /**
+   * This defines the actual subscriptions and prices for each order line, based on the configured strategy.
+   */
+  async defineSubscriptions(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<Subscription[]> {
+    const injector = new Injector(this.moduleRef);
+    const subscriptions = await Promise.all(
+      order.lines.map((line) =>
+        this.strategy.defineSubscription(
+          ctx,
+          injector,
+          line.productVariant,
+          line.customFields,
+          line.quantity
+        )
+      )
+    );
+    return subscriptions;
   }
 
   hasSubscriptionProducts(ctx: RequestContext, order: Order): boolean {
-    return order.lines.some(
-      (l) => this.strategy.isSubscription(ctx, l)
+    return order.lines.some((l) =>
+      this.strategy.isSubscription(ctx, l.productVariant)
     );
   }
 
@@ -434,7 +525,8 @@ export class StripeSubscriptionService {
     );
     if ((addPaymentToOrderResult as ErrorResult).errorCode) {
       throw Error(
-        `Error adding payment to order ${order.code}: ${(addPaymentToOrderResult as ErrorResult).message
+        `Error adding payment to order ${order.code}: ${
+          (addPaymentToOrderResult as ErrorResult).message
         }`
       );
     }
@@ -457,17 +549,12 @@ export class StripeSubscriptionService {
       'customer',
       'lines',
       'lines.productVariant',
-    ])
+    ]);
     if (!order) {
       throw Error(`Cannot find order with code ${orderCode}`);
     }
     try {
       // FIXME do stuff here
-
-
-
-
-
       // await this.saveSubscriptionIds(ctx, orderLine.id, createdSubscriptions);
     } catch (e: unknown) {
       await this.logHistoryEntry(ctx, order.id, '', e);
@@ -569,7 +656,7 @@ export class StripeSubscriptionService {
           valid: !error,
           error: prettifiedError,
           subscriptionId,
-          subscription
+          subscription,
         },
       },
       false

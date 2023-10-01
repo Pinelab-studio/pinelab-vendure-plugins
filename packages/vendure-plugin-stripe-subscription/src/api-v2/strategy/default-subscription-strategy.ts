@@ -15,12 +15,14 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
   defineSubscription(
     ctx: RequestContext,
     injector: Injector,
-    orderLine: OrderLine
+    productVariant: ProductVariant,
+    orderLineCustomFields: { [key: string]: any },
+    quantity: number
   ): Subscription {
-    return this.getSubscriptionForVariant(orderLine.productVariant);
+    return this.getSubscriptionForVariant(productVariant);
   }
 
-  isSubscription(ctx: RequestContext, orderLineWithVariant: OrderLine): boolean {
+  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean {
     // This example treats all products as subscriptions
     return true;
   }

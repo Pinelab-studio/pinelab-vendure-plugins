@@ -9,6 +9,7 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { orderLineCustomFields } from './api-v2/vendure-config/custom-fields';
 import { stripeSubscriptionHandler } from './api-v2/vendure-config/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api-v2/vendure-config/has-stripe-subscription-products-payment-checker';
+import { SubscriptionOrderItemCalculation } from './api-v2/subscription-order-item-calculation';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -41,8 +42,8 @@ export interface StripeSubscriptionPluginOptions {
     config.apiOptions.middleware.push(
       createRawBodyMiddleWare('/stripe-subscription*')
     );
-    // FIXME config.orderOptions.orderItemPriceCalculationStrategy =
-    //   new SubscriptionOrderItemCalculation();
+    config.orderOptions.orderItemPriceCalculationStrategy =
+      new SubscriptionOrderItemCalculation();
     return config;
   },
   compatibility: '^2.0.0',

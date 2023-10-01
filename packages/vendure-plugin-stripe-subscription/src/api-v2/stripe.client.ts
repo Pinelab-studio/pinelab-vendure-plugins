@@ -28,9 +28,7 @@ export class StripeClient extends Stripe {
     super(apiKey, config);
   }
 
-  async getOrCreateCustomer(
-    customer: Customer
-  ): Promise<Stripe.Customer> {
+  async getOrCreateCustomer(customer: Customer): Promise<Stripe.Customer> {
     const stripeCustomers = await this.customers.list({
       email: customer.emailAddress,
     });
@@ -74,7 +72,7 @@ export class StripeClient extends Stripe {
       customer: customerId,
       // billing_cycle_anchor: this.toStripeTimeStamp(startDate),
       cancel_at: endDate ? this.toStripeTimeStamp(endDate) : undefined,
-      // We start the subscription now, but the first payment will be at the start date. 
+      // We start the subscription now, but the first payment will be at the start date.
       // This is because we can ask the customer to pay the first month during checkout, via one-time-payment
       trial_end: this.toStripeTimeStamp(startDate),
       proration_behavior: 'none',

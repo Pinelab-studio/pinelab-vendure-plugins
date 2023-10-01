@@ -63,10 +63,13 @@ export const shopSchemaExtensions = gql`
       productVariantId: ID!
       customInputs: JSON
     ): StripeSubscription!
-    previewStripeSubscriptionForProduct(productId: ID!): [StripeSubscription!]!
+    previewStripeSubscriptionForProduct(
+      productId: ID!
+      customInputs: JSON
+    ): [StripeSubscription!]!
   }
 
   extend type Mutation {
-    createStripeSubscriptionIntent: String!
+    createStripeSubscriptionIntent: StripeSubscriptionIntent!
   }
 `;
