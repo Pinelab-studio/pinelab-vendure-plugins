@@ -59,6 +59,7 @@ describe('Vendure order client', () => {
   let adminClient: SimpleGraphQLClient;
   let activeOrderStore: any;
   let currentUserStore: any;
+  // let eligibleShippingMethodsStore: any;
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
   beforeAll(async () => {
@@ -153,6 +154,7 @@ describe('Vendure order client', () => {
     );
     activeOrderStore = useStore(client.$activeOrder);
     currentUserStore = useStore(client.$currentUser);
+    // eligibleShippingMethodsStore = useStore(client.$eligibleShippingMethods);
     expect(client).toBeInstanceOf(VendureOrderClient);
     expect(activeOrderStore.value.data).toBeUndefined();
     expect(client.eventBus).toBeDefined();
@@ -164,6 +166,7 @@ describe('Vendure order client', () => {
 
   describe('Cart management', () => {
     it('Adds an item to order', async () => {
+      expect(currentUserStore.value?.loading).toBe(false);
       await testActiveOrderLoadingState(
         async () => await client.addItemToOrder('T_2', 1)
       );

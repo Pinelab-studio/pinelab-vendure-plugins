@@ -42,6 +42,7 @@ import {
   SetOrderShippingMethodMutation,
   Success,
   TransitionOrderToStateMutation,
+  ShippingMethodQuote,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
 import { setResult, HandleLoadingState, StateStore } from './store-helpers';
@@ -57,6 +58,7 @@ const dummyFragment = gql`
 `;
 
 export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
+export type EligibleShippingMethod<T> = ShippingMethodQuote & T;
 export type CurrentUser = CurrentUserFieldsFragment;
 
 /**
@@ -76,6 +78,14 @@ export class VendureOrderClient<A = unknown> {
    * The store object that holds the active order.
    */
   $activeOrder = map<StateStore<ActiveOrder<A> | undefined>>({
+    loading: false,
+    error: undefined,
+    data: undefined,
+  });
+
+  $eligibleShippingMethods = map<
+    StateStore<Array<EligibleShippingMethod<A>> | undefined>
+  >({
     loading: false,
     error: undefined,
     data: undefined,
@@ -137,6 +147,7 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: [productVariantId],
       quantity,
     });
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -179,10 +190,12 @@ export class VendureOrderClient<A = unknown> {
         quantity: -adjustment, // adjustment is negative, so invert it
       });
     }
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
   async removeOrderLine(orderLineId: Id): Promise<ActiveOrder<A>> {
+    void this.updateEligibleShippingMehods();
     return await this.adjustOrderLine(orderLineId, 0);
   }
 
@@ -205,6 +218,7 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: allVariantIds,
       quantity: totalQuantity,
     });
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -221,6 +235,7 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-applied', {
       couponCode,
     });
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -242,6 +257,7 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-removed', {
       couponCode,
     });
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -257,6 +273,7 @@ export class VendureOrderClient<A = unknown> {
       setCustomerForOrder as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -272,6 +289,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -285,6 +303,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderBillingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -300,6 +319,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingMethod as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
+    void this.updateEligibleShippingMehods();
     return activeOrder;
   }
 
@@ -436,5 +456,14 @@ export class VendureOrderClient<A = unknown> {
       console.error(e);
       throw e;
     }
+  }
+
+  @HandleLoadingState('$eligibleShippingMethods')
+  private async updateEligibleShippingMehods(): Promise<void> {
+    const { eligibleShippingMethods } = await this.rawRequest<{
+      eligibleShippingMethods: ShippingMethodQuote[];
+    }>(this.queries.GET_ELIGIBLE_SHIPPING_METHODS);
+
+    setResult(this.$eligibleShippingMethods, eligibleShippingMethods);
   }
 }
