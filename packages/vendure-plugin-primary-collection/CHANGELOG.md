@@ -10,6 +10,6 @@
 
 - Products will have a `primaryCollection` as a custom field which can be selected via Admin UI.
 
-# 1.2.1 (2023-10-01)
+# 1.2.0 (2023-10-01)
 
 - Export the service class `PrimaryCollectionHelperService` which can be used to assign `primaryCollection`s to products without existing value

@@ -114,7 +114,7 @@ describe('Product Primary Collection', function () {
     expect(product.primaryCollection.name).toBe('Electronics');
   });
 
-  it("Shouldn't assign primaryCollection to products with id 'T_2' and 'T_3'", async () => {
+  it("Shouldn't have primaryCollections set on products with id 'T_2' and 'T_3'", async () => {
     const { product } = await shopClient.query(primaryCollectionQuery, {
       productId: 'T_2',
     });
