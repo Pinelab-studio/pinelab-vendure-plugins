@@ -463,7 +463,6 @@ export class VendureOrderClient<A = unknown> {
     const { eligibleShippingMethods } = await this.rawRequest<{
       eligibleShippingMethods: ShippingMethodQuote[];
     }>(this.queries.GET_ELIGIBLE_SHIPPING_METHODS);
-
     setResult(this.$eligibleShippingMethods, eligibleShippingMethods);
   }
 }
