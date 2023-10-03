@@ -18,7 +18,7 @@ export class PrimaryCollectionHelperService {
       .getMany();
     const updatedProducts: Partial<Product>[] = [];
     for (let product of allProducts) {
-      if ((!product.customFields as any).primaryCollection) {
+      if (!(product.customFields as any).primaryCollection) {
         const variantWithCollection = product.variants?.find(
           (v) => v.collections?.length
         );
