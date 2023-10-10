@@ -10,9 +10,11 @@ import { PrimaryCollectionResolver } from './api/primary-collection.resolver';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import '../types.ts';
+import { PrimaryCollectionHelperService } from './api/primary-collections-helper.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  providers: [PrimaryCollectionHelperService],
   shopApiExtensions: {
     schema: gql`
       extend type Product {
@@ -21,6 +23,7 @@ import '../types.ts';
     `,
     resolvers: [PrimaryCollectionResolver],
   },
+  exports: [PrimaryCollectionHelperService],
   compatibility: '^2.0.0',
   configuration: (config: RuntimeVendureConfig) => {
     config.customFields.Product.push({
