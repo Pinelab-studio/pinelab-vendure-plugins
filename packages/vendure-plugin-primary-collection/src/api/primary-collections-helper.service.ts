@@ -22,7 +22,7 @@ export class PrimaryCollectionHelperService {
         const variantWithCollection = product.variants?.find(
           (v) => v.collections?.length
         );
-        if (variantWithCollection?.collections[0]!) {
+        if (variantWithCollection?.collections[0]) {
           updatedProducts.push({
             id: product.id,
             customFields: {
