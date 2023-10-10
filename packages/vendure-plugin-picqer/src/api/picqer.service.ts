@@ -1074,13 +1074,21 @@ export class PicqerService implements OnApplicationBootstrap {
     customerId?: number
   ): OrderInput {
     const shippingAddress = order.shippingAddress;
-
+    const customerFullname = [
+      order.customer?.firstName,
+      order.customer?.lastName,
+    ]
+      .join(' ')
+      .trim();
     let invoiceData: Partial<OrderInput> = {
       invoicename:
         order.billingAddress?.company ||
         order.billingAddress?.fullName ||
         undefined,
-      invoicecontactname: order.billingAddress?.fullName || undefined,
+      invoicecontactname:
+        order.billingAddress?.fullName === customerFullname
+          ? undefined
+          : order.billingAddress?.fullName,
       invoiceaddress:
         order.billingAddress?.streetLine1 || order.billingAddress?.streetLine2
           ? [order.billingAddress.streetLine1, order.billingAddress.streetLine2]
@@ -1097,7 +1105,10 @@ export class PicqerService implements OnApplicationBootstrap {
       idcustomer: customerId, // If none given, this creates a guest order
       reference: order.code,
       deliveryname: shippingAddress.company || shippingAddress.fullName,
-      deliverycontactname: shippingAddress.fullName,
+      deliverycontactname:
+        shippingAddress.fullName === customerFullname
+          ? undefined
+          : shippingAddress.fullName,
       deliveryaddress: `${shippingAddress.streetLine1} ${shippingAddress.streetLine2}`,
       deliveryzipcode: shippingAddress.postalCode,
       deliverycity: shippingAddress.city,
