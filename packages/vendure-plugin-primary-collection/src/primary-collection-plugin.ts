@@ -9,7 +9,6 @@ import { gql } from 'graphql-tag';
 import { PrimaryCollectionResolver } from './api/primary-collection.resolver';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import '../types.ts';
 import { PrimaryCollectionHelperService } from './api/primary-collections-helper.service';
 
 @VendurePlugin({
