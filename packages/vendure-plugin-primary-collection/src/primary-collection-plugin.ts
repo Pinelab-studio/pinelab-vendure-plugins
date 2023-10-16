@@ -47,7 +47,7 @@ export class PrimaryCollectionPlugin {
       {
         type: 'shared',
         ngModuleFileName: 'shared.module.ts',
-        ngModuleName: 'SharedExtensionModule',
+        ngModuleName: 'PrimaryCollectionSharedExtensionModule',
       },
     ],
   };
