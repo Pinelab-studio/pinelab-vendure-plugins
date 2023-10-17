@@ -1043,7 +1043,7 @@ export class PicqerService implements OnApplicationBootstrap {
   mapToAddressInput(address: Address): AddressInput {
     return {
       name: address.fullName,
-      address: `${address.streetLine1} ${address.streetLine2 ?? ''}`,
+      address: `${address.streetLine1} ${address.streetLine2 ?? ''}`.trim(),
       zipcode: address.postalCode,
       city: address.city,
       country: address.country?.code.toUpperCase(),

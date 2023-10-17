@@ -1,4 +1,4 @@
-# 1.0.9
+# 1.0.10
 
 - Send streetline1 + streetline2 as address in Picqer
 
