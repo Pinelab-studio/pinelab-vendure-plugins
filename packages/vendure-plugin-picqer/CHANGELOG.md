@@ -1,3 +1,7 @@
+# 1.0.9
+
+- Send streetline1 + streetline2 as address in Picqer
+
 # 1.0.8
 
 - Send telephone and email address to Picqer for guest orders
