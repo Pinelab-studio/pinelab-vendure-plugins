@@ -1104,6 +1104,8 @@ export class PicqerService implements OnApplicationBootstrap {
     return {
       idcustomer: customerId, // If none given, this creates a guest order
       reference: order.code,
+      emailaddress: order.customer?.emailAddress ?? '',
+      telephone: order.customer?.phoneNumber ?? '',
       deliveryname: shippingAddress.company || shippingAddress.fullName,
       deliverycontactname:
         shippingAddress.fullName === customerFullname
