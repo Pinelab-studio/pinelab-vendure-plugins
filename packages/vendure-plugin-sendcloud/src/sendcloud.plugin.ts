@@ -1,5 +1,5 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { gql } from 'apollo-server-core';
+import { gql } from 'graphql-tag';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { SendcloudPluginOptions } from './api/types/sendcloud.types';
