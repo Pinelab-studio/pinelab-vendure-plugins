@@ -15,4 +15,4 @@ import { SelectPrimaryCollectionComponent } from './select-primary-collection.co
     ),
   ],
 })
-export class SharedExtensionModule {}
+export class PrimaryCollectionSharedExtensionModule {}
