@@ -8,8 +8,6 @@ import {
 } from '@vendure/core';
 import { DefaultOrderItemPriceCalculationStrategy } from '@vendure/core/dist/config/order/default-order-item-price-calculation-strategy';
 import { CustomOrderLineFields } from '@vendure/core/dist/entity/custom-entity-fields';
-import { StripeSubscriptionPayment } from '../api/stripe-subscription-payment.entity';
-import { OneTimePayment } from './strategy/subscription-strategy';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
 let subcriptionService: StripeSubscriptionService | undefined;
@@ -44,7 +42,7 @@ export class SubscriptionOrderItemCalculation
       );
       return {
         priceIncludesTax: subscription.priceIncludesTax,
-        price: (subscription as OneTimePayment).amountDueNow ?? 0,
+        price: subscription.amountDueNow ?? 0,
       };
     } else {
       return super.calculateUnitPrice(ctx, productVariant);

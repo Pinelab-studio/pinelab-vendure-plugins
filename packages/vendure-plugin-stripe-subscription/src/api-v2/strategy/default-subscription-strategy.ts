@@ -40,6 +40,7 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
   ): Subscription {
     const price = productVariant.listPrice;
     return {
+      name: `Subscription ${productVariant.name}`,
       priceIncludesTax: productVariant.listPriceIncludesTax,
       amountDueNow: price,
       recurring: {

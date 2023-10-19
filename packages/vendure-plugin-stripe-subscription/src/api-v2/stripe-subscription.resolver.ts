@@ -33,8 +33,6 @@ export type RequestWithRawBody = Request & { rawBody: any };
 export class ShopResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
-    private orderService: OrderService,
-    private productService: ProductService,
     private paymentMethodService: PaymentMethodService
   ) {}
 

@@ -6,19 +6,14 @@ import {
 } from '@vendure/core';
 
 /**
- * Subscriptions can be created for One time payments, Recurring payments or a combination of the two
+ * Subscriptions can be created for Recurring payments or Recurring payments plus a one time payment
  */
-export type Subscription =
-  | OneTimePayment
-  | RecurringPayment
-  | (OneTimePayment & RecurringPayment);
-
-export interface OneTimePayment {
-  priceIncludesTax: boolean;
-  amountDueNow: number;
-}
-
-export interface RecurringPayment {
+export interface Subscription {
+  /**
+   * Name for displaying purposes
+   */
+  name: string;
+  amountDueNow?: number;
   priceIncludesTax: boolean;
   recurring: {
     amount: number;
@@ -37,7 +32,8 @@ export interface SubscriptionStrategy {
 
   /**
    * Define a subscription based on the given order line fields.
-   * This is executed when an item is being added to cart
+   * Executed after payment has been added to order,
+   * before subscriptions are created in Stripe
    */
   defineSubscription(
     ctx: RequestContext,

@@ -4,7 +4,6 @@ import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService,
   ChannelService,
-  CustomerService,
   EntityHydrator,
   ErrorResult,
   EventBus,
@@ -23,7 +22,6 @@ import {
   PaymentMethod,
   PaymentMethodService,
   ProductService,
-  ProductVariant,
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
@@ -38,23 +36,18 @@ import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import Stripe from 'stripe';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import {
-  StripeSubscriptionBothPaymentTypes,
-  StripeSubscriptionIntent,
-  StripeSubscriptionIntentType,
-} from './generated/graphql';
+import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
+import { StripeSubscriptionIntent } from './generated/graphql';
 import {
   Subscription,
   SubscriptionStrategy,
 } from './strategy/subscription-strategy';
 import { StripeClient } from './stripe.client';
-import './vendure-config/custom-fields-types.d.ts';
 import { StripeInvoice } from './types/stripe-invoice';
-import { printMoney } from './util';
-import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
-import * as types from './vendure-config/custom-fields-types';
-import { stripeSubscriptionHandler } from './vendure-config/stripe-subscription.handler';
 import { StripePaymentIntent } from './types/stripe-payment-intent';
+import { printMoney } from './util';
+import './vendure-config/custom-fields-types.d.ts';
+import { stripeSubscriptionHandler } from './vendure-config/stripe-subscription.handler';
 
 export interface StripeContext {
   paymentMethod: PaymentMethod;
@@ -345,33 +338,16 @@ export class StripeSubscriptionService {
     );
     const stripePaymentMethods = ['card']; // TODO make configurable per channel
     const subscriptions = await this.defineSubscriptions(ctx, order);
-    const hasRecurringPayments = subscriptions.some(
-      (s) => (s as StripeSubscriptionBothPaymentTypes).recurring.amount > 0
-    );
     const hasOneTimePayments = subscriptions.some(
-      (s) => (s as StripeSubscriptionBothPaymentTypes).amountDueNow > 0
+      (s) => (s.amountDueNow ?? 0) > 0
     );
     let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
-    if (hasRecurringPayments && hasOneTimePayments) {
+    if (hasOneTimePayments) {
       // Create PaymentIntent + off_session, because we have both one-time and recurring payments
       intent = await stripeClient.paymentIntents.create({
         customer: stripeCustomer.id,
         payment_method_types: stripePaymentMethods,
         setup_future_usage: 'off_session',
-        amount: order.totalWithTax,
-        currency: order.currencyCode,
-        metadata: {
-          orderCode: order.code,
-          channelToken: ctx.channel.token,
-          amount: order.totalWithTax,
-        },
-      });
-    } else if (hasOneTimePayments) {
-      // Create PaymentIntent, because we only have one-time payments
-      intent = await stripeClient.paymentIntents.create({
-        customer: stripeCustomer.id,
-        payment_method_types: stripePaymentMethods,
-        setup_future_usage: 'on_session',
         amount: order.totalWithTax,
         currency: order.currencyCode,
         metadata: {
@@ -412,26 +388,40 @@ export class StripeSubscriptionService {
 
   /**
    * This defines the actual subscriptions and prices for each order line, based on the configured strategy.
+   * Doesn't allow recurring amount to be below 0 or lower
    */
   async defineSubscriptions(
     ctx: RequestContext,
     order: Order
   ): Promise<Subscription[]> {
     const injector = new Injector(this.moduleRef);
+    // Only define subscriptions for orderlines with a subscription product variant
+    const subscriptionOrderLines = order.lines.filter((l) =>
+      this.strategy.isSubscription(ctx, l.productVariant)
+    );
     const subscriptions = await Promise.all(
-      order.lines.map((line) =>
-        this.strategy.defineSubscription(
+      subscriptionOrderLines.map(async (line) => {
+        const subscription = await this.strategy.defineSubscription(
           ctx,
           injector,
           line.productVariant,
           line.customFields,
           line.quantity
-        )
-      )
+        );
+        if (subscription.recurring.amount <= 0) {
+          throw Error(
+            `[${loggerCtx}]: Defined subscription for order line ${line.id} must have a recurring amount greater than 0`
+          );
+        }
+        return subscription;
+      })
     );
     return subscriptions;
   }
 
+  /**
+   * Check if the order has products that should be treated as subscription products
+   */
   hasSubscriptionProducts(ctx: RequestContext, order: Order): boolean {
     return order.lines.some((l) =>
       this.strategy.isSubscription(ctx, l.productVariant)
@@ -446,6 +436,7 @@ export class StripeSubscriptionService {
     object: StripeInvoice,
     order: Order
   ): Promise<void> {
+    // TODO: Emit StripeSubscriptionPaymentFailed(subscriptionId, order, stripeInvoiceObject: StripeInvoice)
     const amount = object.lines?.data[0]?.plan?.amount;
     const message = amount
       ? `Subscription payment of ${printMoney(amount)} failed`
@@ -461,10 +452,10 @@ export class StripeSubscriptionService {
   }
 
   /**
-   * Handle the initial payment Intent succeeded.
-   * Creates subscriptions in Stripe for customer attached to this order
+   * Handle the initial succeeded setup or payment intent.
+   * Creates subscriptions in Stripe in the background via the jobqueue
    */
-  async handlePaymentIntentSucceeded(
+  async handleIntentSucceeded(
     ctx: RequestContext,
     object: StripePaymentIntent,
     order: Order
@@ -491,7 +482,7 @@ export class StripeSubscriptionService {
           stripePaymentMethodId: object.payment_method,
           stripeCustomerId: object.customer,
         },
-        { retries: 0 } // Only 1 try, because subscription creation isn't transaction-proof
+        { retries: 0 } // Only 1 try, because subscription creation isn't idempotent
       )
       .catch((e) =>
         Logger.error(
@@ -499,7 +490,7 @@ export class StripeSubscriptionService {
           loggerCtx
         )
       );
-    // Status is complete, we can settle payment
+    // Settle payment for order
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
         ctx,
@@ -525,13 +516,17 @@ export class StripeSubscriptionService {
     );
     if ((addPaymentToOrderResult as ErrorResult).errorCode) {
       throw Error(
-        `Error adding payment to order ${order.code}: ${
+        `[${loggerCtx}]: Error adding payment to order ${order.code}: ${
           (addPaymentToOrderResult as ErrorResult).message
         }`
       );
     }
     Logger.info(
-      `Successfully settled payment for order ${order.code} for channel ${ctx.channel.token}`,
+      `Successfully settled payment for order ${
+        order.code
+      } with amount ${printMoney(object.metadata.amount)}, for channel ${
+        ctx.channel.token
+      }`,
       loggerCtx
     );
   }
@@ -551,10 +546,161 @@ export class StripeSubscriptionService {
       'lines.productVariant',
     ]);
     if (!order) {
-      throw Error(`Cannot find order with code ${orderCode}`);
+      throw Error(`[${loggerCtx}]: Cannot find order with code ${orderCode}`);
     }
     try {
-      // FIXME do stuff here
+      if (!this.hasSubscriptionProducts(ctx, order)) {
+        Logger.info(
+          `Order ${order.code} doesn't have any subscriptions. No action needed`,
+          loggerCtx
+        );
+        return;
+      }
+      const { stripeClient } = await this.getStripeContext(ctx);
+      const customer = await stripeClient.customers.retrieve(stripeCustomerId);
+      if (!customer) {
+        throw Error(
+          `[${loggerCtx}]: Failed to create subscription for customer ${stripeCustomerId} because it doesn't exist in Stripe`
+        );
+      }
+      const subscriptionDefinitions = await this.defineSubscriptions(
+        ctx,
+        order
+      );
+      Logger.info(`Creating subscriptions for ${orderCode}`, loggerCtx);
+      for (const subscriptionDefinition of subscriptionDefinitions) {
+        try {
+          const product = await stripeClient.products.create({
+            name: subscriptionDefinition.name,
+          });
+          const createdSubscription =
+            await stripeClient.createOffSessionSubscription({
+              customerId: stripeCustomerId,
+              productId: product.id,
+              currencyCode: order.currencyCode,
+              amount: subscriptionDefinition.recurring.amount,
+              interval: subscriptionDefinition.recurring.interval,
+              intervalCount: subscriptionDefinition.recurring.intervalCount,
+              paymentMethodId: stripePaymentMethodId,
+              startDate: subscriptionDefinition.recurring.startDate,
+              endDate: subscriptionDefinition.recurring.endDate,
+              description: `'${subscriptionDefinition.name} for order '${order.code}'`,
+              orderCode: order.code,
+              channelToken: ctx.channel.token,
+            });
+          if (
+            createdSubscription.status !== 'active' &&
+            createdSubscription.status !== 'trialing'
+          ) {
+            Logger.error(
+              `Failed to create active subscription ${createdSubscription.id} for order ${order.code}! It is still in status '${createdSubscription.status}'`,
+              loggerCtx
+            );
+            await this.logHistoryEntry(
+              ctx,
+              order.id,
+              'Failed to create subscription',
+              `Subscription status is ${createdSubscription.status}`,
+              subscriptionDefinition,
+              createdSubscription.id
+            );
+          } else {
+            Logger.info(
+              `Created subscription '${subscriptionDefinition.name}' (${
+                createdSubscription.id
+              }): ${printMoney(subscriptionDefinition.recurring.amount)}`,
+              loggerCtx
+            );
+            await this.logHistoryEntry(
+              ctx,
+              order.id,
+              `Created subscription for ${subscriptionDefinition.name}`,
+              undefined,
+              subscriptionDefinition,
+              createdSubscription.id
+            );
+          }
+          if (pricing.downpayment) {
+            // FIXME add downpayment to the strategy
+            // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
+            const downpaymentProduct = await stripeClient.products.create({
+              name: `${orderLine.productVariant.name} - Downpayment (${order.code})`,
+            });
+            const schedule =
+              orderLine.productVariant.customFields.subscriptionSchedule;
+            if (!schedule) {
+              throw new UserInputError(
+                `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
+              );
+            }
+            const downpaymentInterval = schedule.durationInterval;
+            const downpaymentIntervalCount = schedule.durationCount;
+            const nextDownpaymentDate = getNextCyclesStartDate(
+              new Date(),
+              schedule.startMoment,
+              schedule.durationInterval,
+              schedule.durationCount,
+              schedule.fixedStartDate
+            );
+            const downpaymentSubscription =
+              await stripeClient.createOffSessionSubscription({
+                customerId: stripeCustomerId,
+                productId: downpaymentProduct.id,
+                currencyCode: order.currencyCode,
+                amount: pricing.downpayment,
+                interval: downpaymentInterval,
+                intervalCount: downpaymentIntervalCount,
+                paymentMethodId: stripePaymentMethodId,
+                startDate: nextDownpaymentDate,
+                endDate: pricing.subscriptionEndDate || undefined,
+                description: `Downpayment`,
+                orderCode: order.code,
+                channelToken: ctx.channel.token,
+              });
+            createdSubscriptions.push(recurringSubscription.id);
+            if (
+              downpaymentSubscription.status !== 'active' &&
+              downpaymentSubscription.status !== 'trialing'
+            ) {
+              Logger.error(
+                `Failed to create active subscription ${downpaymentSubscription.id} for order ${order.code}! It is still in status '${downpaymentSubscription.status}'`,
+                loggerCtx
+              );
+              await this.logHistoryEntry(
+                ctx,
+                order.id,
+                'Failed to create downpayment subscription',
+                'Failed to create active subscription',
+                undefined,
+                downpaymentSubscription.id
+              );
+            } else {
+              Logger.info(
+                `Created downpayment subscription ${
+                  downpaymentSubscription.id
+                }: ${printMoney(
+                  pricing.downpayment
+                )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
+                  pricing.subscriptionStartDate
+                } for order ${order.code}`,
+                loggerCtx
+              );
+              await this.logHistoryEntry(
+                ctx,
+                order.id,
+                `Created downpayment subscription for line ${orderLineCount}`,
+                undefined,
+                pricing,
+                downpaymentSubscription.id
+              );
+            }
+          }
+        } catch (e: unknown) {
+          await this.logHistoryEntry(ctx, order.id, '', e);
+          throw e;
+        }
+      }
+      // FIXME
       // await this.saveSubscriptionIds(ctx, orderLine.id, createdSubscriptions);
     } catch (e: unknown) {
       await this.logHistoryEntry(ctx, order.id, '', e);

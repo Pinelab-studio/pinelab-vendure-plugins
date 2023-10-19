@@ -9,34 +9,20 @@ const _codegenAdditions = gql`
 `;
 
 export const shopSchemaExtensions = gql`
-  union StripeSubscription =
-      StripeSubscriptionOneTimePayment
-    | StripeSubscriptionRecurringPayment
-    | StripeSubscriptionBothPaymentTypes
-
   enum StripeSubscriptionInterval {
     week
     month
     year
   }
 
-  type StripeSubscriptionBothPaymentTypes {
+  type StripeSubscription {
+    name: String!
+    amountDueNow: Int
     priceIncludesTax: Boolean!
-    amountDueNow: Int!
-    recurring: StripeSubscriptionRecurringPaymentDefinition!
-  }
-
-  type StripeSubscriptionOneTimePayment {
-    priceIncludesTax: Boolean!
-    amountDueNow: Int!
+    recurring: StripeSubscriptionRecurringPayment!
   }
 
   type StripeSubscriptionRecurringPayment {
-    priceIncludesTax: Boolean!
-    recurring: StripeSubscriptionRecurringPaymentDefinition!
-  }
-
-  type StripeSubscriptionRecurringPaymentDefinition {
     amount: Int!
     interval: StripeSubscriptionInterval!
     intervalCount: Int!
