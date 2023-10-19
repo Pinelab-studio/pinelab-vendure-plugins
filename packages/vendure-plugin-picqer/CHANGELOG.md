@@ -1,3 +1,7 @@
+# 1.0.11
+
+- Don't throw insufficient stock errors on incoming webhooks, because it will eventually disable the entire webhook in Picqer
+
 # 1.0.10
 
 - Send streetline1 + streetline2 as address in Picqer

@@ -22,11 +22,27 @@ export class PicqerController {
     );
     // Middleware isn't loaded when using the test server from @vendure/testing, so we use the normal body
     const rawBody = (req as any).rawBody || JSON.stringify(body);
-    await this.picqerService.handleHook({
-      body,
-      channelToken,
-      rawBody,
-      signature,
-    });
+    try {
+      await this.picqerService.handleHook({
+        body,
+        channelToken,
+        rawBody,
+        signature,
+      });
+    } catch (e: any) {
+      Logger.error(
+        `Error handling incoming hook '${body.event}': ${e.message}`,
+        loggerCtx
+      );
+
+      // FIXME: For now, don't throw insufficient stock error, to prevent webhook disabling
+      if (
+        e.message ===
+        'INSUFFICIENT_STOCK_ON_HAND_ERROR: INSUFFICIENT_STOCK_ON_HAND_ERROR'
+      ) {
+        return;
+      }
+      throw e;
+    }
   }
 }
