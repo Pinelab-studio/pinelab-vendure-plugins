@@ -37,7 +37,7 @@ export class PicqerController {
 
       // FIXME: For now, don't throw insufficient stock error, to prevent webhook disabling
       if (
-        e.message !==
+        e.message ===
         'INSUFFICIENT_STOCK_ON_HAND_ERROR: INSUFFICIENT_STOCK_ON_HAND_ERROR'
       ) {
         return;
