@@ -1,6 +1,10 @@
 # 1.3.0 (2023-10-20)
 
 - Updated vendure to 2.1.1
+# 1.2.2 (2023-10-01)
+
+- Renamed admin ui extention `NgModule` from `SharedExtensionModule` to `PrimaryCollectionSharedExtensionModule`
+- the `/src/ui` folder will be copied into dist folder when running `yarn build`
 
 # 1.2.1 (2023-10-01)
 

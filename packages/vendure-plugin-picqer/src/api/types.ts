@@ -206,6 +206,8 @@ export interface Product {
 export interface OrderInput {
   idcustomer?: number;
   reference: string;
+  emailaddress: string;
+  telephone: string;
   deliveryname?: string;
   deliverycontactname?: string;
   deliveryaddress?: string;
