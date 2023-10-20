@@ -1,3 +1,7 @@
+# 1.5.0 (2023-10-20)
+
+- Updated vendure to 2.1.1
+
 # 1.4.0 (2023-09-08)
 
 - Expose proxy function to retrieve all subscriptions for current channel ([#255](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/255))

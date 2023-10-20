@@ -1,3 +1,7 @@
+# 1.3.0 (2023-10-20)
+
+- Updated vendure to 2.1.1
+
 # 1.2.1 (2023-10-01)
 
 - Fix `Error: Cannot find module '../types.ts'`
