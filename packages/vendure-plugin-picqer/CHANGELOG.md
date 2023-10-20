@@ -1,6 +1,7 @@
 # 1.1.0 (2023-10-20)
 
 - Updated vendure to 2.1.1
+
 # 1.0.11
 
 - Don't throw insufficient stock errors on incoming webhooks, because it will eventually disable the entire webhook in Picqer
