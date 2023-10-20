@@ -55,22 +55,12 @@ export class SortService implements OnModuleInit {
     ordersAfter.setMonth(ordersAfter.getMonth() - 12);
     const groupedOrderLines = await orderLineRepo
       .createQueryBuilder('orderLine')
-      .select([
-        'SUM(orderLine.quantity) as count',
-        'orderLine.productVariant',
-        'orderLine.order',
-      ])
+      .select(['SUM(orderLine.quantity) as count'])
       .innerJoin('orderLine.productVariant', 'productVariant')
-      .addSelect([
-        'productVariant.deletedAt',
-        'productVariant.enabled',
-        'productVariant.id',
-      ])
       .innerJoin('orderLine.order', 'order')
       .innerJoin('productVariant.product', 'product')
-      .addSelect(['product.deletedAt', 'product.enabled', 'product.id'])
+      .addSelect(['product.id'])
       .leftJoin('productVariant.collections', 'collection')
-      .addSelect(['collection.id'])
       .innerJoin('order.channels', 'order_channel')
       .andWhere('order.orderPlacedAt > :ordersAfter', {
         ordersAfter: ordersAfter.toISOString(),
