@@ -14,7 +14,9 @@ Add the plugin to your `vendure-config.ts`:
 
 ```ts
 plugins: [
-  PrimaryCollectionPlugin,
+  PrimaryCollectionPlugin.init({
+    customFieldUITabName: 'Primary Collection',
+  }),
   AdminUiPlugin.init({
     port: 3002,
     route: 'admin',
