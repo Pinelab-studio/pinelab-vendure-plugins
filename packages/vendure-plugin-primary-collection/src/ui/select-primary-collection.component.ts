@@ -38,7 +38,6 @@ export class SelectPrimaryCollectionComponent
     private activatedRoute: ActivatedRoute
   ) {}
   ngOnInit(): void {
-    console.log(this.formControl.value, 'value');
     this.formControl.parent?.parent?.statusChanges.subscribe((s) => {
       if (
         this.formControl.pristine &&
