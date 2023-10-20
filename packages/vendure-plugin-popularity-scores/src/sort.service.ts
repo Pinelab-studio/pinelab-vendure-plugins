@@ -128,11 +128,14 @@ export class SortService implements OnModuleInit {
       .createQueryBuilder('product')
       .select('SUM(product.customFields.popularityScore) AS productScoreSum');
     for (const col of allCollectionIds) {
-      const variantsPartialInfo = await variantsPartialInfoQuery
-        .andWhere('collection.id= :id', { id: col.collection_id })
-        .getRawMany();
+      const variantsPartialInfo = await variantsPartialInfoQuery.andWhere(
+        'collection.id= :id',
+        { id: col.collection_id }
+      );
 
-      const productIds = variantsPartialInfo
+      const variantsPartialInfo2 = await variantsPartialInfo.getRawMany();
+
+      const productIds = variantsPartialInfo2
         .filter((i) => i.product_id != null)
         .map((i) => i.product_id);
 
