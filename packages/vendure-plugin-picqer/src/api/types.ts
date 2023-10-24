@@ -208,7 +208,7 @@ export interface OrderInput {
   reference: string;
   emailaddress: string;
   telephone: string;
-  deliveryname?: string;
+  deliveryname: string;
   deliverycontactname?: string;
   deliveryaddress?: string;
   deliveryaddress2?: string;
@@ -216,7 +216,7 @@ export interface OrderInput {
   deliverycity?: string;
   deliveryregion?: string;
   deliverycountry?: string;
-  invoicename?: string;
+  invoicename: string;
   invoicecontactname?: string;
   invoiceaddress?: string;
   invoiceaddress2?: any;
