@@ -3,6 +3,7 @@ import {
   LanguageCode,
   PluginCommonModule,
   RuntimeVendureConfig,
+  Type,
   VendurePlugin,
 } from '@vendure/core';
 import { gql } from 'graphql-tag';
@@ -10,6 +11,13 @@ import { PrimaryCollectionResolver } from './api/primary-collection.resolver';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { PrimaryCollectionHelperService } from './api/primary-collections-helper.service';
+
+export interface PrimaryCollectionPluginConfig {
+  /**
+   * This specifies the admin ui tab name under which the collection dropdown appears
+   */
+  customFieldUITabName?: string;
+}
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -34,6 +42,7 @@ import { PrimaryCollectionHelperService } from './api/primary-collections-helper
       nullable: true,
       ui: {
         component: 'select-primary-collection',
+        tab: PrimaryCollectionPlugin?.config?.customFieldUITabName,
       },
       label: [{ languageCode: LanguageCode.en, value: 'Primary Collection' }],
     });
@@ -41,6 +50,7 @@ import { PrimaryCollectionHelperService } from './api/primary-collections-helper
   },
 })
 export class PrimaryCollectionPlugin {
+  static config: PrimaryCollectionPluginConfig;
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
     ngModules: [
@@ -51,4 +61,11 @@ export class PrimaryCollectionPlugin {
       },
     ],
   };
+
+  static init(
+    config: PrimaryCollectionPluginConfig
+  ): Type<PrimaryCollectionPlugin> {
+    this.config = config;
+    return this;
+  }
 }
