@@ -1,3 +1,7 @@
+# 1.0.12
+
+- Set company as name and full name as contactname for placed orders.
+
 # 1.0.11
 
 - Don't throw insufficient stock errors on incoming webhooks, because it will eventually disable the entire webhook in Picqer
