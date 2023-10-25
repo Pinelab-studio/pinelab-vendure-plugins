@@ -1,11 +1,13 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
+  OrderAddress,
+  OrderLineInput,
   UpdateProductInput,
   UpdateProductVariantInput,
 } from '@vendure/common/lib/generated-types';
 import {
   Address,
-  Allocation,
+  assertFound,
   AssetService,
   ChannelService,
   ConfigService,
@@ -34,11 +36,12 @@ import {
   StockLocationService,
   StockMovementEvent,
   TransactionalConnection,
-  assertFound,
 } from '@vendure/core';
 import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
+import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 import currency from 'currency.js';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { throwIfTransitionFailed } from '../../../util/src/order-state-util';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
   PicqerConfig,
@@ -47,6 +50,7 @@ import {
 } from '../ui/generated/graphql';
 import { PicqerConfigEntity } from './picqer-config.entity';
 import { PicqerClient, PicqerClientInput } from './picqer.client';
+import { picqerHandler } from './picqer.handler';
 import {
   AddressInput,
   CustomerData,
@@ -57,13 +61,8 @@ import {
   PickListWebhookData,
   ProductData,
   ProductInput,
-  Stock as PicqerStockLocation,
   WebhookInput,
 } from './types';
-import { OrderLineInput } from '@vendure/common/lib/generated-types';
-import { picqerHandler } from './picqer.handler';
-import { throwIfTransitionFailed } from '../../../util/src/order-state-util';
-import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 /**
  * Job to push variants from Vendure to Picqer
  */
@@ -1074,49 +1073,73 @@ export class PicqerService implements OnApplicationBootstrap {
     customerId?: number
   ): OrderInput {
     const shippingAddress = order.shippingAddress;
+    const billingAddress = order.billingAddress;
     const customerFullname = [
       order.customer?.firstName,
       order.customer?.lastName,
     ]
       .join(' ')
       .trim();
-    let invoiceData: Partial<OrderInput> = {
-      invoicename:
-        order.billingAddress?.company ||
-        order.billingAddress?.fullName ||
-        undefined,
-      invoicecontactname:
-        order.billingAddress?.fullName === customerFullname
-          ? undefined
-          : order.billingAddress?.fullName,
-      invoiceaddress:
-        order.billingAddress?.streetLine1 || order.billingAddress?.streetLine2
-          ? [order.billingAddress.streetLine1, order.billingAddress.streetLine2]
-              .join(' ')
-              .trim()
-          : undefined,
-      invoicezipcode: order.billingAddress?.postalCode || undefined,
-      invoicecity: order.billingAddress?.city || undefined,
-      invoicecountry:
-        order.billingAddress?.countryCode?.toUpperCase() || undefined,
-    };
-
+    const [deliveryname, deliverycontactname] =
+      this.getAddressName(shippingAddress);
+    const [invoicename, invoicecontactname] =
+      this.getAddressName(billingAddress);
     return {
       idcustomer: customerId, // If none given, this creates a guest order
       reference: order.code,
       emailaddress: order.customer?.emailAddress ?? '',
       telephone: order.customer?.phoneNumber ?? '',
-      deliveryname: shippingAddress.company || shippingAddress.fullName,
-      deliverycontactname:
-        shippingAddress.fullName === customerFullname
-          ? undefined
-          : shippingAddress.fullName,
-      deliveryaddress: `${shippingAddress.streetLine1} ${shippingAddress.streetLine2}`,
+      deliveryname: deliveryname ?? customerFullname,
+      deliverycontactname,
+      deliveryaddress: this.getFullAddress(shippingAddress),
       deliveryzipcode: shippingAddress.postalCode,
       deliverycity: shippingAddress.city,
       deliverycountry: shippingAddress.countryCode?.toUpperCase(),
+      // use billing if available, otherwise fallback to shipping address
+      invoicename: invoicename ?? deliveryname ?? customerFullname,
+      invoicecontactname,
+      invoiceaddress:
+        this.getFullAddress(billingAddress) ??
+        this.getFullAddress(shippingAddress),
+      invoicezipcode: billingAddress?.postalCode,
+      invoicecity: billingAddress?.city,
+      invoicecountry: order.billingAddress?.countryCode?.toUpperCase(),
       products,
-      ...invoiceData,
     };
+  }
+
+  /**
+   * Combine street and housenumber to get a full readable address.
+   * Returns undefined if address undefined
+   */
+  private getFullAddress(address?: OrderAddress): string | undefined {
+    if (!address?.streetLine1 && !address?.streetLine2) {
+      return undefined;
+    }
+    return [address.streetLine1 ?? '', address.streetLine2 ?? '']
+      .join(' ')
+      .trim();
+  }
+
+  /**
+   * Get name and contactname for given address
+   * returns [name, contactname]
+   *
+   * If a company is given, use the company as name and the full name as contact name
+   * Otherwise, use the full name as name and no explicit contact name
+   */
+  private getAddressName(
+    address?: OrderAddress
+  ): [string | undefined, string | undefined] {
+    let name;
+    let contactname;
+    if (address?.company) {
+      name = address.company;
+      contactname = address.fullName;
+    } else {
+      name = address?.fullName;
+      contactname = undefined;
+    }
+    return [name, contactname];
   }
 }

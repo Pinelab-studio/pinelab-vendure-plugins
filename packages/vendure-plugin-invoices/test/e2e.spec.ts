@@ -112,7 +112,7 @@ describe('Invoices plugin', function () {
 
   it('Gets all invoices after 3s', async () => {
     // Give the worker some time to process
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 4000));
     const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
     invoice = result.invoices.items[0];
     expect(result.invoices.totalItems).toBe(1);
@@ -165,7 +165,7 @@ describe('Invoices plugin', function () {
 
   it('Has incremental invoice number', async () => {
     await createSettledOrder(shopClient as any, 3);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 4000));
     const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
     const newInvoice = result.invoices.items[0];
     const oldInvoice = result.invoices.items[1];

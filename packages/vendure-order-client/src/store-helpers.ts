@@ -1,5 +1,5 @@
 import { MapStore } from 'nanostores';
-import { ErrorCode, ErrorResult } from './graphql-generated-types';
+import { ErrorResult } from './graphql-generated-types';
 
 /**
  * Interface defining loading and error states per store
@@ -57,7 +57,7 @@ export function HandleLoadingState(storeName: string) {
         return result;
       } catch (e: any) {
         store.setKey('error', {
-          errorCode: ErrorCode.UnknownError,
+          errorCode: e?.errorCode,
           message: e?.message,
         });
       } finally {
