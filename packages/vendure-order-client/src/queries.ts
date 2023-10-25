@@ -358,4 +358,19 @@ export class GraphqlQueries {
     }
     ${this.CURRENT_USER_FIELDS}
   `;
+
+  GET_ELIGIBLE_SHIPPING_METHODS = gql`
+    query GetEligibleShippingMethods {
+      eligibleShippingMethods {
+        id
+        name
+        price
+        priceWithTax
+        code
+        description
+        metadata
+        customFields
+      }
+    }
+  `;
 }
