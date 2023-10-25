@@ -84,13 +84,13 @@ describe(
     type PromiseFn = () => Promise<any>;
 
     async function testActiveOrderLoadingState(
-      awaitAbleFunction: PromiseFn
+      awaitableFunction: PromiseFn
     ): Promise<any> {
-      return await testLoadingState(awaitAbleFunction, client.$activeOrder);
+      return await testLoadingState(awaitableFunction, client.$activeOrder);
     }
 
     async function testEligibleShippingMethodsLoadingState(
-      awaitAbleFunction: PromiseFn,
+      awaitableFunction: PromiseFn,
       clientMethodName: string
     ): Promise<any> {
       let wasSetToTrue = false;
@@ -108,7 +108,7 @@ describe(
           }
         }
       );
-      await testActiveOrderLoadingState(awaitAbleFunction);
+      await testActiveOrderLoadingState(awaitableFunction);
       expect(
         wasSetToTrue,
         `eligibleShippingMethods's 'loading' wasn't set to true when '${clientMethodName}' started running`
@@ -122,11 +122,11 @@ describe(
     }
 
     async function testLoadingState(
-      awaitAbleFunction: PromiseFn,
+      awaitableFunction: PromiseFn,
       store: MapStore
     ): Promise<any> {
       expect(store.value?.loading).toBe(false);
-      const promise = awaitAbleFunction();
+      const promise = awaitableFunction();
       expect(store.value?.loading).toBe(true);
       const result = await promise;
       expect(store.value?.loading).toBe(false);
@@ -134,9 +134,9 @@ describe(
     }
 
     async function testCurrentUserLoadingState(
-      awaitAbleFunction: PromiseFn
+      awaitableFunction: PromiseFn
     ): Promise<any> {
-      return await testLoadingState(awaitAbleFunction, client.$currentUser);
+      return await testLoadingState(awaitableFunction, client.$currentUser);
     }
 
     it('Starts the server successfully', async () => {
