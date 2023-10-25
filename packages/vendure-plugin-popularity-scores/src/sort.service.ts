@@ -133,9 +133,9 @@ export class SortService implements OnModuleInit {
         { id: col.collection_id }
       );
 
-      const variantsPartialInfo2 = await variantsPartialInfo.getRawMany();
+      const variantsPartialInfoResults = await variantsPartialInfo.getRawMany();
 
-      const productIds = variantsPartialInfo2
+      const productIds = variantsPartialInfoResults
         .filter((i) => i.product_id != null)
         .map((i) => i.product_id);
 
