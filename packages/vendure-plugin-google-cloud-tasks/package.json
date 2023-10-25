@@ -24,8 +24,7 @@
     "start": "yarn ts-node test/dev-server.ts"
   },
   "dependencies": {
-    "@google-cloud/tasks": "^3.1.2",
-    "body-parser": "^1.20.2"
+    "@google-cloud/tasks": "^3.1.2"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

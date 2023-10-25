@@ -5,7 +5,6 @@ import {
   orderLineCustomFields,
   productVariantCustomFields,
 } from './api/subscription-custom-fields';
-import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 import { SubscriptionOrderItemCalculation } from './api/subscription-order-item-calculation';
 import { Schedule } from './api/schedule.entity';
 import { ScheduleService } from './api/schedule.service';
@@ -65,9 +64,6 @@ export interface StripeSubscriptionPluginOptions {
       ...(config.paymentOptions.paymentMethodEligibilityCheckers ?? []),
       hasStripeSubscriptionProductsPaymentChecker,
     ];
-    config.apiOptions.middleware.push(
-      createRawBodyMiddleWare('/stripe-subscription*')
-    );
     config.orderOptions.orderItemPriceCalculationStrategy =
       new SubscriptionOrderItemCalculation();
     config.customFields.ProductVariant.push(...productVariantCustomFields);

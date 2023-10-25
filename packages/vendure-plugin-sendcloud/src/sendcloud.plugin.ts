@@ -12,7 +12,6 @@ import { PLUGIN_OPTIONS } from './api/constants';
 import { SendcloudController } from './api/sendcloud.controller';
 import { SendcloudConfigEntity } from './api/sendcloud-config.entity';
 import { sendcloudHandler } from './api/sendcloud.handler';
-import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 
 @VendurePlugin({
   adminApiExtensions: {
@@ -54,10 +53,6 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
   configuration: (config) => {
     config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
     config.authOptions.customPermissions.push(sendcloudPermission);
-    // save rawBody for signature verification
-    config.apiOptions.middleware.push(
-      createRawBodyMiddleWare('/sendcloud/webhook*')
-    );
     return config;
   },
   compatibility: '^2.0.0',

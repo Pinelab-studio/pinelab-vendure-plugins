@@ -4,7 +4,6 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { CloudTasksJobQueueStrategy } from './cloud-tasks-job-queue.strategy';
-import { json } from 'body-parser';
 import { CloudTasksHandler } from './cloud-tasks.handler';
 import { CloudTaskOptions, ROUTE } from './types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
@@ -17,16 +16,6 @@ import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/jo
     config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy(
       CloudTasksPlugin.options
     );
-    config.apiOptions.middleware = [
-      {
-        route: `/${ROUTE}`,
-        beforeListen: true,
-        handler: json({
-          limit: CloudTasksPlugin.options.bodySizeLimit || '1mb',
-        }),
-      },
-      ...config.apiOptions.middleware,
-    ];
     return config;
   },
   compatibility: '^2.0.0',

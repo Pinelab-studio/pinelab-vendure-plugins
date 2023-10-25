@@ -5,7 +5,7 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { OrderInput, ProductInput } from './api/types';
+import { ProductInput } from './api/types';
 import { adminSchema } from './api/api-extensions';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
@@ -14,7 +14,6 @@ import { PicqerConfigEntity } from './api/picqer-config.entity';
 import { PicqerService } from './api/picqer.service';
 import { PicqerResolver } from './api/picqer.resolvers';
 import { PicqerController } from './api/picqer.controller';
-import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 import { picqerHandler } from './api/picqer.handler';
 
@@ -67,7 +66,6 @@ export interface PicqerOptions {
   },
   entities: [PicqerConfigEntity],
   configuration: (config) => {
-    config.apiOptions.middleware.push(createRawBodyMiddleWare('/picqer*'));
     config.authOptions.customPermissions.push(picqerPermission);
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
