@@ -207,6 +207,7 @@ describe('Picqer plugin', function () {
       {
         input: {
           fullName: "Martinho's friend",
+          company: 'Pinelab',
           streetLine1: 'Remote location',
           streetLine2: '123',
           city: 'Faraway',
@@ -223,12 +224,12 @@ describe('Picqer plugin', function () {
     expect(variant!.stockAllocated).toBe(3);
     expect(picqerOrderRequest.reference).toBe(createdOrder.code);
     expect(picqerOrderRequest.deliveryname).toBeDefined();
-    expect(picqerOrderRequest.deliverycontactname).toBeDefined();
+    expect(picqerOrderRequest.deliverycontactname).toBeUndefined();
     expect(picqerOrderRequest.deliveryaddress).toBeDefined();
     expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
     expect(picqerOrderRequest.deliverycity).toBeDefined();
     expect(picqerOrderRequest.deliverycountry).toBe('NL');
-    expect(picqerOrderRequest.invoicename).toBe("Martinho's friend");
+    expect(picqerOrderRequest.invoicename).toBe('Pinelab');
     expect(picqerOrderRequest.invoicecontactname).toBe("Martinho's friend");
     expect(picqerOrderRequest.invoicecountry).toBe('NL');
     expect(picqerOrderRequest.invoiceaddress).toBe('Remote location 123');

@@ -1751,7 +1751,7 @@
   resolved "https://registry.yarnpkg.com/@clr/icons/-/icons-13.0.2.tgz#600b530fe8e0d654de81f97d2b64db5905266eb6"
   integrity sha512-bdcSuFvQAbIIp8Q2Fm55BjHW5cawP4xEOkZf2IEIin0d9ViRcAJNjACBCOMDhx2up7nPZsXwN2gL8zJhL7TSZQ==
 
-"@clr/ui@^15.11.0":
+"@clr/ui@^15.4.0":
   version "15.12.4"
   resolved "https://registry.yarnpkg.com/@clr/ui/-/ui-15.12.4.tgz#5a0b72d9e4298501640292ef9efe4c628013e755"
   integrity sha512-uGfJeO1gnIYT9WdrmT0w1qiNWsNU47YtMpxlFHZ7/LFO6Zd2kIClWMWpTwDvYgPsh0v4YNriRpy/VOMtjPaMyQ==
@@ -3808,7 +3808,7 @@
     semver "^7.3.5"
     tar "^6.1.11"
 
-"@messageformat/core@^3.2.0":
+"@messageformat/core@^3.1.0":
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/@messageformat/core/-/core-3.2.0.tgz#fcb1e530f4ae4ed61c9c7a0b49cc119a79468da1"
   integrity sha512-ppbb/7OYqg/t4WdFk8VAfZEV2sNUq3+7VeBAo5sKFhmF786sh6gB7fUeXa2qLTDIcTHS49HivTBN7QNOU5OFTg==
@@ -3976,10 +3976,10 @@
   dependencies:
     uuid "8.3.2"
 
-"@ng-select/ng-select@^11.1.1":
-  version "11.1.1"
-  resolved "https://registry.yarnpkg.com/@ng-select/ng-select/-/ng-select-11.1.1.tgz#49fc89420bfc4022543833de5212214a1e00a0dd"
-  integrity sha512-Z5wV/u2HgaKl7CQSG3Sy1oF+BPQolmVV6jBuPqHa2+OWg0Nn2e9eXYdcZT8Q3BahfP5j5rHNIBrkkESg/m4YiQ==
+"@ng-select/ng-select@^11.0.0":
+  version "11.2.0"
+  resolved "https://registry.yarnpkg.com/@ng-select/ng-select/-/ng-select-11.2.0.tgz#33048ddeb6a524078f3134167d75137239bf1c6e"
+  integrity sha512-lTyw93kFdKGecp9eKmOP0PQSCaAJS8DCt4D60ns055+ixvRSp2fuXAuJUvn1e3gAsvpZor37osmYlOJ4LYwYIA==
   dependencies:
     tslib "^2.3.1"
 
@@ -3988,15 +3988,19 @@
   resolved "https://registry.yarnpkg.com/@ngtools/webpack/-/webpack-16.2.7.tgz#5ce59f772eff049e1fa5cdd4f9915b232ef334e0"
   integrity sha512-QnVoYpMNMuV387VgmP/c/ylD9qUIZpN02LMg3rQqz7NDej0jboBZaxqLJ+7jQaCoEIFVGIgL/RR/X1kponxJZg==
 
-"@ngx-translate/core@^15.0.0":
-  version "15.0.0"
-  resolved "https://registry.yarnpkg.com/@ngx-translate/core/-/core-15.0.0.tgz#0fe55b9bd47e75b03d1123658f15fb7b5a534f3c"
-  integrity sha512-Am5uiuR0bOOxyoercDnAA3rJVizo4RRqJHo8N3RqJ+XfzVP/I845yEnMADykOHvM6HkVm4SZSnJBOiz0Anx5BA==
+"@ngx-translate/core@^14.0.0":
+  version "14.0.0"
+  resolved "https://registry.yarnpkg.com/@ngx-translate/core/-/core-14.0.0.tgz#af421d0e1a28376843f0fed375cd2fae7630a5ff"
+  integrity sha512-UevdwNCXMRCdJv//0kC8h2eSfmi02r29xeE8E9gJ1Al4D4jEJ7eiLPdjslTMc21oJNGguqqWeEVjf64SFtvw2w==
+  dependencies:
+    tslib "^2.3.0"
 
-"@ngx-translate/http-loader@^8.0.0":
-  version "8.0.0"
-  resolved "https://registry.yarnpkg.com/@ngx-translate/http-loader/-/http-loader-8.0.0.tgz#e02c25dbe33c6b1edee73e3654ab8a161572cdfb"
-  integrity sha512-SFMsdUcmHF5OdZkL1CHEoSAwbP5EbAOPTLLboOCRRoOg21P4GJx+51jxGdJeGve6LSKLf4Pay7BkTwmE6vxYlg==
+"@ngx-translate/http-loader@^7.0.0":
+  version "7.0.0"
+  resolved "https://registry.yarnpkg.com/@ngx-translate/http-loader/-/http-loader-7.0.0.tgz#905f38d8d13342621516635bf480ff9a4f73e9fc"
+  integrity sha512-j+NpXXlcGVdyUNyY/qsJrqqeAdJdizCd+GKh3usXExSqy1aE9866jlAIL+xrfDU4w+LiMoma5pgE4emvFebZmA==
+  dependencies:
+    tslib "^2.3.0"
 
 "@node-ipc/js-queue@2.0.3":
   version "2.0.3"
@@ -5302,59 +5306,57 @@
     fs-extra "^10.0.0"
 
 "@vendure/admin-ui@^2.0.9":
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/@vendure/admin-ui/-/admin-ui-2.1.1.tgz#0d137ceeed10087b3a717480f556f5634b956612"
-  integrity sha512-AE5CsqaCIKM07jS1DGoCFe0Gg50w4vYDhhvq1ujnekcl+RsBED4N/jahMrHu2SlqJbDLjDKgUtopEipxA1p0PQ==
+  version "2.0.9"
+  resolved "https://registry.yarnpkg.com/@vendure/admin-ui/-/admin-ui-2.0.9.tgz#ac89c439f0812a658d15e2351700c8d2743bace6"
+  integrity sha512-ADte0EGKtFiHlF8pE3ulUH9Vc0dXJ3zSySFZMUd5neyQ5njgHMvZV35F84iGljnAAUfMHM7iLLqKv9TR1/xyqQ==
   dependencies:
-    "@angular/animations" "^16.2.2"
-    "@angular/cdk" "^16.2.1"
-    "@angular/common" "^16.2.2"
-    "@angular/core" "^16.2.2"
-    "@angular/forms" "^16.2.2"
-    "@angular/language-service" "^16.2.2"
-    "@angular/platform-browser" "^16.2.2"
-    "@angular/platform-browser-dynamic" "^16.2.2"
-    "@angular/router" "^16.2.2"
-    "@apollo/client" "^3.8.1"
+    "@angular/animations" "^16.0.3"
+    "@angular/cdk" "^16.0.2"
+    "@angular/common" "^16.0.3"
+    "@angular/core" "^16.0.3"
+    "@angular/forms" "^16.0.3"
+    "@angular/language-service" "^16.0.3"
+    "@angular/platform-browser" "^16.0.3"
+    "@angular/platform-browser-dynamic" "^16.0.3"
+    "@angular/router" "^16.0.3"
+    "@apollo/client" "^3.7.9"
     "@biesbjerg/ngx-translate-extract-marker" "^1.0.0"
-    "@cds/core" "^6.6.0"
-    "@clr/angular" "^15.11.0"
+    "@cds/core" "^6.4.2"
+    "@clr/angular" "^15.4.0"
     "@clr/core" "^4.0.15"
     "@clr/icons" "^13.0.2"
-    "@clr/ui" "^15.11.0"
-    "@messageformat/core" "^3.2.0"
-    "@ng-select/ng-select" "^11.1.1"
-    "@ngx-translate/core" "^15.0.0"
-    "@ngx-translate/http-loader" "^8.0.0"
-    "@vendure/common" "^2.1.1"
-    "@webcomponents/custom-elements" "^1.6.0"
+    "@clr/ui" "^15.4.0"
+    "@messageformat/core" "^3.1.0"
+    "@ng-select/ng-select" "^11.0.0"
+    "@ngx-translate/core" "^14.0.0"
+    "@ngx-translate/http-loader" "^7.0.0"
+    "@vendure/common" "^2.0.9"
+    "@webcomponents/custom-elements" "^1.5.1"
     apollo-angular "^5.0.0"
     apollo-upload-client "^17.0.0"
     chartist "^1.3.0"
-    codejar "^4.2.0"
-    core-js "^3.32.1"
-    dayjs "^1.11.9"
-    graphql "16.8.0"
+    codejar "^3.7.0"
+    core-js "^3.29.0"
+    dayjs "^1.10.4"
+    graphql "16.6.0"
     just-extend "^6.2.0"
     messageformat "2.3.0"
     ngx-pagination "^6.0.3"
-    ngx-translate-messageformat-compiler "^6.5.0"
-    prosemirror-commands "^1.5.2"
-    prosemirror-dropcursor "^1.8.1"
-    prosemirror-gapcursor "^1.3.2"
-    prosemirror-history "^1.3.2"
-    prosemirror-inputrules "^1.2.1"
-    prosemirror-keymap "^1.2.2"
-    prosemirror-menu "^1.2.4"
-    prosemirror-schema-basic "^1.2.2"
-    prosemirror-schema-list "^1.3.0"
-    prosemirror-state "^1.4.3"
-    prosemirror-tables "^1.3.4"
-    react "^18.2.0"
-    react-dom "^18.2.0"
-    rxjs "^7.8.1"
-    tslib "^2.6.2"
-    zone.js "~0.13.1"
+    ngx-translate-messageformat-compiler "^6.2.0"
+    prosemirror-commands "^1.5.1"
+    prosemirror-dropcursor "^1.7.1"
+    prosemirror-gapcursor "^1.3.1"
+    prosemirror-history "^1.3.0"
+    prosemirror-inputrules "^1.2.0"
+    prosemirror-keymap "^1.2.1"
+    prosemirror-menu "^1.2.1"
+    prosemirror-schema-basic "^1.2.1"
+    prosemirror-schema-list "^1.2.2"
+    prosemirror-state "^1.4.2"
+    prosemirror-tables "^1.3.2"
+    rxjs "^7.8.0"
+    tslib "^2.5.0"
+    zone.js "~0.13.0"
 
 "@vendure/asset-server-plugin@2.0.9":
   version "2.0.9"
@@ -5365,10 +5367,10 @@
     fs-extra "^10.0.0"
     sharp "~0.32.1"
 
-"@vendure/common@^2.0.9", "@vendure/common@^2.1.1":
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.1.1.tgz#49fb627f910b7da297cbee93df5eb090c62cf0d0"
-  integrity sha512-tZegcbEBG4NxV7XfGM8Yhw34Ri7LNSdyTF2704Ig85g0GaRVWybV+rVe8adwelxKouVFeIHMeClj7QsH+WY8Ug==
+"@vendure/common@^2.0.9":
+  version "2.0.9"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-2.0.9.tgz#de3b722ddf142732e526a89caa877e050baaaa11"
+  integrity sha512-HcrBGuejXBfx/2+lOCdEVZmJHR8iq5BwgH4rv3gblLVcbp25WJRJYONzzU+Hm88wucEvFMWrmmq2/xXilKXLEA==
 
 "@vendure/core@2.0.9":
   version "2.0.9"
@@ -5887,7 +5889,7 @@
     "@webassemblyjs/ast" "1.11.6"
     "@xtuc/long" "4.2.2"
 
-"@webcomponents/custom-elements@^1.4.2", "@webcomponents/custom-elements@^1.6.0":
+"@webcomponents/custom-elements@^1.4.2", "@webcomponents/custom-elements@^1.5.1":
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/@webcomponents/custom-elements/-/custom-elements-1.6.0.tgz#5ecde1c332464ff00612f51874484b78395d504d"
   integrity sha512-CqTpxOlUCPWRNUPZDxT5v2NnHXA4oox612iUGnmTUGQFhZ1Gkj8kirtl/2wcF6MqX7+PqqicZzOCBKKfIn0dww==
