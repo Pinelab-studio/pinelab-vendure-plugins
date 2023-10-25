@@ -1,3 +1,7 @@
+# 1.0.13
+
+- Patch priority order of names when sending to Picqer: invoicename ?? deliveryname ?? customerFullname
+
 # 1.0.12
 
 - Set company as name and full name as contactname for placed orders.

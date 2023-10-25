@@ -1137,7 +1137,7 @@ export class PicqerService implements OnApplicationBootstrap {
       name = address.company;
       contactname = address.fullName;
     } else {
-      name = address?.fullName ?? '';
+      name = address?.fullName;
       contactname = undefined;
     }
     return [name, contactname];
