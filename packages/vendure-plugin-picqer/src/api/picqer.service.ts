@@ -1089,14 +1089,14 @@ export class PicqerService implements OnApplicationBootstrap {
       reference: order.code,
       emailaddress: order.customer?.emailAddress ?? '',
       telephone: order.customer?.phoneNumber ?? '',
-      deliveryname,
+      deliveryname: deliveryname ?? customerFullname,
       deliverycontactname,
       deliveryaddress: this.getFullAddress(shippingAddress),
       deliveryzipcode: shippingAddress.postalCode,
       deliverycity: shippingAddress.city,
       deliverycountry: shippingAddress.countryCode?.toUpperCase(),
       // use billing if available, otherwise fallback to shipping address
-      invoicename,
+      invoicename: invoicename ?? deliveryname ?? customerFullname,
       invoicecontactname,
       invoiceaddress:
         this.getFullAddress(billingAddress) ??
@@ -1128,7 +1128,9 @@ export class PicqerService implements OnApplicationBootstrap {
    * If a company is given, use the company as name and the full name as contact name
    * Otherwise, use the full name as name and no explicit contact name
    */
-  private getAddressName(address?: OrderAddress): [string, string | undefined] {
+  private getAddressName(
+    address?: OrderAddress
+  ): [string | undefined, string | undefined] {
     let name;
     let contactname;
     if (address?.company) {
