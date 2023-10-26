@@ -1082,5 +1082,5 @@ describe('Stripe Subscription Plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });

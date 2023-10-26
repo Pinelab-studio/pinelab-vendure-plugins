@@ -176,5 +176,5 @@ describe('Product Primary Collection', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });

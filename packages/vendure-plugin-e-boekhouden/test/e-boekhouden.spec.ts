@@ -154,7 +154,7 @@ describe('E-boekhouden plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });
 
 const openSessionMock = `<?xml version="1.0" encoding="utf-8"?>

@@ -409,7 +409,7 @@ describe('Goedgepickt plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 
   async function findVariantBySku(sku: string): Promise<ProductVariant | null> {
     const ctx = await server.app

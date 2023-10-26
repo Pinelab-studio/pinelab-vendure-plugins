@@ -211,5 +211,5 @@ describe('Invoices plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });

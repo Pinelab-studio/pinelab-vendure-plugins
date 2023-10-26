@@ -294,7 +294,7 @@ describe('MyParcel', () => {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });
 
 export async function postStatusChange(

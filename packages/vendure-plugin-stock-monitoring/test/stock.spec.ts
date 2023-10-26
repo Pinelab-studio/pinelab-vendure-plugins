@@ -143,7 +143,7 @@ describe('Order export plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });
 
 export const GET_OUT_OF_STOCK_VARIANTS = gql`

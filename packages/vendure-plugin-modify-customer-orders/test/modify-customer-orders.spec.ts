@@ -109,5 +109,5 @@ describe('Customer managed groups', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });

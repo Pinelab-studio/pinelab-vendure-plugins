@@ -128,5 +128,5 @@ describe('Metrics', () => {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });

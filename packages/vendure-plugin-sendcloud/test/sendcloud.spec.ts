@@ -240,5 +240,5 @@ describe('SendCloud', () => {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });

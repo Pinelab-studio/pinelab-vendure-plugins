@@ -238,5 +238,5 @@ describe('Webhook plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });
