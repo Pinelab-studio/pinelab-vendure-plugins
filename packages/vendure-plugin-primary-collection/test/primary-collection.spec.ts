@@ -173,4 +173,8 @@ describe('Product Primary Collection', function () {
     );
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });

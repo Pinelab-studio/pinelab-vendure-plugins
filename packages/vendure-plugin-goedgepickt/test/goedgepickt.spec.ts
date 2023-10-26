@@ -407,6 +407,10 @@ describe('Goedgepickt plugin', function () {
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
 
+  afterAll(async () => {
+    await server.destroy();
+  });
+
   async function findVariantBySku(sku: string): Promise<ProductVariant | null> {
     const ctx = await server.app
       .get(GoedgepicktService)

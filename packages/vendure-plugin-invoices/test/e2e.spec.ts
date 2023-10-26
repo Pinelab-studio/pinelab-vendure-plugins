@@ -208,4 +208,8 @@ describe('Invoices plugin', function () {
     const files = await getFilesInAdminUiFolder(__dirname, InvoicePlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });

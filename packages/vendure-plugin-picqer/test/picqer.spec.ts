@@ -474,4 +474,8 @@ describe('Picqer plugin', function () {
     const files = await getFilesInAdminUiFolder(__dirname, PicqerPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });

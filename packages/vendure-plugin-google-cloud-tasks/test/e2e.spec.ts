@@ -158,4 +158,7 @@ describe('CloudTasks job queue e2e', () => {
     );
     expect(res.status).toBe(200);
   });
+  afterAll(async () => {
+    await server.destroy();
+  });
 });

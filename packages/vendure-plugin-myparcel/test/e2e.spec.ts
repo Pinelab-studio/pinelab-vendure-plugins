@@ -291,6 +291,10 @@ describe('MyParcel', () => {
     const files = await getFilesInAdminUiFolder(__dirname, MyparcelPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });
 
 export async function postStatusChange(

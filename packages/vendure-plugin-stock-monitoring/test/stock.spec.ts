@@ -17,7 +17,7 @@ import { createLowStockEmailHandler } from '../src/api/low-stock.email-handler';
 import * as path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
-import { expect, describe, beforeAll, it } from 'vitest';
+import { expect, describe, beforeAll, it, afterAll } from 'vitest';
 import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 describe('Order export plugin', function () {
   let server: TestServer;
@@ -140,6 +140,10 @@ describe('Order export plugin', function () {
     );
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });
 
 export const GET_OUT_OF_STOCK_VARIANTS = gql`

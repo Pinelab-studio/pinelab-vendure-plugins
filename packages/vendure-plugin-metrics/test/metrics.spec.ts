@@ -125,4 +125,8 @@ describe('Metrics', () => {
     const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });

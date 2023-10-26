@@ -230,6 +230,10 @@ describe('Order export plugin', function () {
       'ORDER_STATE_TRANSITION_ERROR'
     );
   });
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });
 
 const CREATE_SHIPPING_METHOD = gql`

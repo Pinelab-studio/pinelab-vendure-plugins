@@ -179,4 +179,7 @@ describe('Coinbase payments', () => {
     const adminOrder = await getOrder(adminClient, order.id as string);
     expect(adminOrder?.state).toEqual('PaymentSettled');
   });
+  afterAll(async () => {
+    await server.destroy();
+  });
 });

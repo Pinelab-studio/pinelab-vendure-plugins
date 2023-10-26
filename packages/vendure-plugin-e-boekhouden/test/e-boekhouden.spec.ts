@@ -151,6 +151,10 @@ describe('E-boekhouden plugin', function () {
     );
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });
 
 const openSessionMock = `<?xml version="1.0" encoding="utf-8"?>

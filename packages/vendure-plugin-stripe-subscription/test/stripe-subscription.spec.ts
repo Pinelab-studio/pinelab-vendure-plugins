@@ -1079,4 +1079,8 @@ describe('Stripe Subscription Plugin', function () {
     );
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  });
 });
