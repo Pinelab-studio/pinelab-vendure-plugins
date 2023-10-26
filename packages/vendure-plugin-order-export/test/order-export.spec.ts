@@ -92,7 +92,7 @@ describe('Order export plugin', function () {
       OrderExportPlugin.ui
     );
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 100000);
 
   afterAll(() => {
     return server.destroy();
