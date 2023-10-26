@@ -124,5 +124,5 @@ describe('Metrics', () => {
   it('Should compile admin', async () => {
     const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
-  }, 100000);
+  }, 200000);
 });

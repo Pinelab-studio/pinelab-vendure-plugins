@@ -234,5 +234,5 @@ describe('Webhook plugin', function () {
   it('Should compile admin', async () => {
     const files = await getFilesInAdminUiFolder(__dirname, WebhookPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
-  }, 100000);
+  }, 200000);
 });

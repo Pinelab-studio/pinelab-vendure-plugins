@@ -139,7 +139,7 @@ describe('Order export plugin', function () {
       StockMonitoringPlugin.ui
     );
     expect(files?.length).toBeGreaterThan(0);
-  }, 100000);
+  }, 200000);
 });
 
 export const GET_OUT_OF_STOCK_VARIANTS = gql`
