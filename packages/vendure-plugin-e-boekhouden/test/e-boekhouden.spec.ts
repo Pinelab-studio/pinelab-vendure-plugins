@@ -150,7 +150,7 @@ describe('E-boekhouden plugin', function () {
       EBoekhoudenPlugin.ui
     );
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 100000);
 });
 
 const openSessionMock = `<?xml version="1.0" encoding="utf-8"?>

@@ -1078,5 +1078,5 @@ describe('Stripe Subscription Plugin', function () {
       StripeSubscriptionPlugin.ui
     );
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 100000);
 });

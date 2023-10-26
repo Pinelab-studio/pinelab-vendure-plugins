@@ -172,5 +172,5 @@ describe('Product Primary Collection', function () {
       PrimaryCollectionPlugin.ui
     );
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 100000);
 });

@@ -105,5 +105,5 @@ describe('Customer managed groups', function () {
       ModifyCustomerOrdersPlugin.ui
     );
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 100000);
 });

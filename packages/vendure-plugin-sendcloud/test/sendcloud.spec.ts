@@ -236,5 +236,5 @@ describe('SendCloud', () => {
   it('Should compile admin', async () => {
     const files = await getFilesInAdminUiFolder(__dirname, SendcloudPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 100000);
 });

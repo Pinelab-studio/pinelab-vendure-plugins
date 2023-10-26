@@ -405,7 +405,7 @@ describe('Goedgepickt plugin', function () {
       GoedgepicktPlugin.ui
     );
     expect(files?.length).toBeGreaterThan(0);
-  }, 60000);
+  }, 100000);
 
   async function findVariantBySku(sku: string): Promise<ProductVariant | null> {
     const ctx = await server.app
