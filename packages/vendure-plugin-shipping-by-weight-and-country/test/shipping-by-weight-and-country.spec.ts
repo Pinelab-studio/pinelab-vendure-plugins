@@ -233,7 +233,7 @@ describe('Order export plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });
 
 const CREATE_SHIPPING_METHOD = gql`

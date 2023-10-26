@@ -135,10 +135,6 @@ describe('MyParcel', () => {
     });
   }, 60000);
 
-  afterAll(async () => {
-    await server.destroy();
-  });
-
   it('Adds apiKey via Graphql mutation', async () => {
     await adminClient.asSuperAdmin();
     const config = await adminClient.query(updateMyparcelConfig, {

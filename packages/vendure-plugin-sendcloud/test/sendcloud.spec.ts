@@ -92,10 +92,6 @@ describe('SendCloud', () => {
     });
   }, 60000);
 
-  afterAll(async () => {
-    await server.destroy();
-  });
-
   let authHeader: any | undefined;
   let body: { parcel: ParcelInput } | undefined;
   nock('https://panel.sendcloud.sc')

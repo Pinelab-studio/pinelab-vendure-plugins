@@ -64,7 +64,7 @@ describe('Coinbase payments', () => {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 
   it('Should start successfully', async () => {
     expect(started).toEqual(true);
@@ -178,8 +178,5 @@ describe('Coinbase payments', () => {
     });
     const adminOrder = await getOrder(adminClient, order.id as string);
     expect(adminOrder?.state).toEqual('PaymentSettled');
-  });
-  afterAll(async () => {
-    await server.destroy();
   });
 });

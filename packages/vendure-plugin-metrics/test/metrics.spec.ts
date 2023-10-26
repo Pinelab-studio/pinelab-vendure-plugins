@@ -59,10 +59,6 @@ describe('Metrics', () => {
     });
   }, 60000);
 
-  afterAll(async () => {
-    await server.destroy();
-  });
-
   it('Creates 3 settled orders', async () => {
     const variants = [
       { id: 'T_1', quantity: 1 },
