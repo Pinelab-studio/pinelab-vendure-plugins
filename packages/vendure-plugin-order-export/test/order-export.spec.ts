@@ -14,6 +14,7 @@ import gql from 'graphql-tag';
 import { OrderExportPlugin } from '../src';
 
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -85,4 +86,15 @@ describe('Order export plugin', function () {
     expect(res.headers.get('Content-type')).toContain('text/csv');
     expect(res.body.pipe).toBeDefined();
   });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(
+      __dirname,
+      OrderExportPlugin.ui
+    );
+    expect(files?.length).toBeGreaterThan(0);
+  }, 60000);
+
+  afterAll(() => {
+    return server.destroy();
+  }, 50000);
 });

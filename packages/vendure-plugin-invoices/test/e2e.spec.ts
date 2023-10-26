@@ -34,6 +34,10 @@ import {
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
+import path from 'path';
+import * as fs from 'fs';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 
 describe('Invoices plugin', function () {
   let server: TestServer;
@@ -131,7 +135,7 @@ describe('Invoices plugin', function () {
       await server.app
         .get(InvoiceService)
         .createAndSaveInvoice(channel.id as string, invoice.orderCode);
-    } catch (e) {
+    } catch (e: any) {
       expect(e.message).toContain('was already created');
     }
   });
@@ -200,7 +204,8 @@ describe('Invoices plugin', function () {
     expect(res.status).toBe(403);
   });
 
-  afterAll(() => {
-    return server.destroy();
-  });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(__dirname, InvoicePlugin.ui);
+    expect(files?.length).toBeGreaterThan(0);
+  }, 60000);
 });

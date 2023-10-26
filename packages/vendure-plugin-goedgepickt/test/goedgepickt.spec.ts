@@ -46,6 +46,7 @@ import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 describe('Goedgepickt plugin', function () {
   const defaultChannelToken = 'e2e-default-channel';
   let server: TestServer;
@@ -398,22 +399,13 @@ describe('Goedgepickt plugin', function () {
     expect(payload).toBeDefined();
   });
 
-  it.skip('Should compile admin', async () => {
-    fs.rmSync(path.join(__dirname, '__admin-ui'), {
-      recursive: true,
-      force: true,
-    });
-    await compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [GoedgepicktPlugin.ui],
-    }).compile?.();
-    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(
+      __dirname,
+      GoedgepicktPlugin.ui
+    );
     expect(files?.length).toBeGreaterThan(0);
-  }, 240000);
-
-  afterAll(() => {
-    return server.destroy();
-  });
+  }, 60000);
 
   async function findVariantBySku(sku: string): Promise<ProductVariant | null> {
     const ctx = await server.app

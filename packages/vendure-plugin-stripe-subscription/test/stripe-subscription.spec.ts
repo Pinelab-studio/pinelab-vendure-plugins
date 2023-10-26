@@ -60,6 +60,7 @@ import {
 } from './helpers';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import { gql } from 'graphql-tag';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
@@ -1071,4 +1072,11 @@ describe('Stripe Subscription Plugin', function () {
       );
     });
   });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(
+      __dirname,
+      StripeSubscriptionPlugin.ui
+    );
+    expect(files?.length).toBeGreaterThan(0);
+  }, 60000);
 });

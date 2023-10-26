@@ -30,6 +30,7 @@ import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
 import { picqerHandler } from '../src/api/picqer.handler';
 import { describe, afterEach, beforeAll, it, expect, afterAll } from 'vitest';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -469,7 +470,8 @@ describe('Picqer plugin', function () {
     expect(res.status).toBe(403);
   });
 
-  afterAll(() => {
-    return server.destroy();
-  });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(__dirname, PicqerPlugin.ui);
+    expect(files?.length).toBeGreaterThan(0);
+  }, 60000);
 });

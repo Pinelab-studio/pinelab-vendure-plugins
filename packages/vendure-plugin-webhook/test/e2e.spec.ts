@@ -35,6 +35,7 @@ import {
 } from '../src/ui/queries';
 import { stringifyProductTransformer } from './test-helpers';
 import { describe, beforeAll, it, expect, afterEach, afterAll } from 'vitest';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 
 describe('Webhook plugin', function () {
   let server: TestServer;
@@ -230,7 +231,8 @@ describe('Webhook plugin', function () {
     expect(received.length).toBe(2);
   });
 
-  afterAll(() => {
-    return server.destroy();
-  });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(__dirname, WebhookPlugin.ui);
+    expect(files?.length).toBeGreaterThan(0);
+  }, 60000);
 });

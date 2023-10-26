@@ -43,6 +43,7 @@ import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -286,18 +287,10 @@ describe('MyParcel', () => {
     expect(config.updateMyparcelConfig).toEqual(null);
   });
 
-  it.skip('Should compile admin', async () => {
-    fs.rmSync(path.join(__dirname, '__admin-ui'), {
-      recursive: true,
-      force: true,
-    });
-    await compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [MyparcelPlugin.ui],
-    }).compile?.();
-    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(__dirname, MyparcelPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
-  }, 240000);
+  }, 60000);
 });
 
 export async function postStatusChange(

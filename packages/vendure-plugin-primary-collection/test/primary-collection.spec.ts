@@ -19,6 +19,7 @@ import { PrimaryCollectionPlugin } from '../src/primary-collection-plugin';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { gql } from 'graphql-tag';
 import { PrimaryCollectionHelperService } from '../src/api/primary-collections-helper.service';
+import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
 
 describe('Product Primary Collection', function () {
   let server: TestServer;
@@ -165,7 +166,11 @@ describe('Product Primary Collection', function () {
     expect(t3Product.primaryCollection).not.toBeNull();
   });
 
-  afterAll(async () => {
-    return server.destroy();
-  });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(
+      __dirname,
+      PrimaryCollectionPlugin.ui
+    );
+    expect(files?.length).toBeGreaterThan(0);
+  }, 60000);
 });
