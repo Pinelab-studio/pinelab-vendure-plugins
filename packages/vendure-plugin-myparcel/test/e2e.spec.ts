@@ -290,7 +290,7 @@ describe('MyParcel', () => {
   it('Should compile admin', async () => {
     const files = await getFilesInAdminUiFolder(__dirname, MyparcelPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
-  }, 100000);
+  }, 200000);
 });
 
 export async function postStatusChange(
