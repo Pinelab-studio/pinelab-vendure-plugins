@@ -13,9 +13,16 @@ import gql from 'graphql-tag';
           class="left align-middle"
           [class.out-of-stock]="!variant.stockOnHand"
         >
-          <a [routerLink]="['/catalog', 'products', variant.productId]">{{
-            variant.name
-          }}</a>
+          <a
+            [routerLink]="[
+              '/catalog',
+              'products',
+              variant.productId,
+              'variants',
+              variant.id
+            ]"
+            >{{ variant.name }}</a
+          >
         </td>
         <td
           class="left align-middle"
@@ -42,6 +49,7 @@ export class StockWidgetComponent implements OnInit {
         gql`
           query productVariantsWithLowStock {
             productVariantsWithLowStock {
+              id
               name
               enabled
               stockOnHand
