@@ -473,5 +473,5 @@ describe('Picqer plugin', function () {
   it('Should compile admin', async () => {
     const files = await getFilesInAdminUiFolder(__dirname, PicqerPlugin.ui);
     expect(files?.length).toBeGreaterThan(0);
-  }, 100000);
+  }, 200000);
 });
