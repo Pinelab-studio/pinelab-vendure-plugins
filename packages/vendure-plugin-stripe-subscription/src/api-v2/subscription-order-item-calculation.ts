@@ -5,6 +5,7 @@ import {
   PriceCalculationResult,
   ProductVariant,
   RequestContext,
+  UserInputError,
 } from '@vendure/core';
 import { DefaultOrderItemPriceCalculationStrategy } from '@vendure/core/dist/config/order/default-order-item-price-calculation-strategy';
 import { CustomOrderLineFields } from '@vendure/core/dist/entity/custom-entity-fields';
@@ -32,20 +33,32 @@ export class SubscriptionOrderItemCalculation
     if (!subcriptionService) {
       throw new Error('Subscription service not initialized');
     }
-    if (subcriptionService.strategy.isSubscription(ctx, productVariant)) {
-      const subscription = await subcriptionService.strategy.defineSubscription(
-        ctx,
-        injector,
-        productVariant,
-        orderLineCustomFields,
-        orderLineQuantity
-      );
+    if (!subcriptionService.strategy.isSubscription(ctx, productVariant)) {
+      return super.calculateUnitPrice(ctx, productVariant);
+    }
+    const subscription = await subcriptionService.strategy.defineSubscription(
+      ctx,
+      injector,
+      productVariant,
+      order,
+      orderLineCustomFields,
+      orderLineQuantity
+    );
+    if (!Array.isArray(subscription)) {
       return {
         priceIncludesTax: subscription.priceIncludesTax,
         price: subscription.amountDueNow ?? 0,
       };
-    } else {
-      return super.calculateUnitPrice(ctx, productVariant);
     }
+    if (!subscription.length) {
+      throw Error(
+        `Subscription strategy returned an empty array. Must contain atleast 1 subscription`
+      );
+    }
+    const total = subscription.reduce((acc, sub) => sub.amountDueNow || 0, 0);
+    return {
+      priceIncludesTax: subscription[0].priceIncludesTax,
+      price: total,
+    };
   }
 }

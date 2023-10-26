@@ -24,6 +24,8 @@ import {
   QueryPreviewStripeSubscriptionForProductArgs,
   StripeSubscription,
   StripeSubscriptionIntent,
+  Query as GraphqlQuery,
+  Mutation as GraphqlMutation,
 } from './generated/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
@@ -40,7 +42,7 @@ export class ShopResolver {
   @Allow(Permission.Owner)
   async createStripeSubscriptionIntent(
     @Ctx() ctx: RequestContext
-  ): Promise<StripeSubscriptionIntent> {
+  ): Promise<GraphqlMutation['createStripeSubscriptionIntent']> {
     return this.stripeSubscriptionService.createIntent(ctx);
   }
 
@@ -49,7 +51,7 @@ export class ShopResolver {
     @Ctx() ctx: RequestContext,
     @Args()
     { productVariantId, customInputs }: QueryPreviewStripeSubscriptionArgs
-  ): Promise<StripeSubscription> {
+  ): Promise<GraphqlQuery['previewStripeSubscription']> {
     return this.stripeSubscriptionService.previewSubscription(
       ctx,
       productVariantId,
@@ -62,7 +64,7 @@ export class ShopResolver {
     @Ctx() ctx: RequestContext,
     @Args()
     { productId, customInputs }: QueryPreviewStripeSubscriptionForProductArgs
-  ): Promise<StripeSubscription[]> {
+  ): Promise<GraphqlQuery['previewStripeSubscriptionForProduct']> {
     return this.stripeSubscriptionService.previewSubscriptionForProduct(
       ctx,
       productId,

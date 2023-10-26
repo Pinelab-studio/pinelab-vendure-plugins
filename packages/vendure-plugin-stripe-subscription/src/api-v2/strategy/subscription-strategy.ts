@@ -1,5 +1,7 @@
 import {
+  ID,
   Injector,
+  Order,
   OrderLine,
   ProductVariant,
   RequestContext,
@@ -13,6 +15,7 @@ export interface Subscription {
    * Name for displaying purposes
    */
   name: string;
+  variantId: ID;
   amountDueNow?: number;
   priceIncludesTax: boolean;
   recurring: {
@@ -39,9 +42,14 @@ export interface SubscriptionStrategy {
     ctx: RequestContext,
     injector: Injector,
     productVariant: ProductVariant,
+    order: Order,
     orderLineCustomFields: { [key: string]: any },
     quantity: number
-  ): Promise<Subscription> | Subscription;
+  ):
+    | Promise<Subscription>
+    | Subscription
+    | Promise<Subscription[]>
+    | Subscription[];
 
   /**
    * Preview subscription pricing for a given product variant, because there is no order line available during preview.
@@ -54,5 +62,9 @@ export interface SubscriptionStrategy {
     injector: Injector,
     productVariant: ProductVariant,
     customInputs?: any
-  ): Promise<Subscription> | Subscription;
+  ):
+    | Promise<Subscription>
+    | Subscription
+    | Promise<Subscription[]>
+    | Subscription[];
 }

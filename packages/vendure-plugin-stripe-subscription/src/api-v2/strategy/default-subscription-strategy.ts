@@ -3,6 +3,7 @@ import {
   OrderLine,
   Injector,
   ProductVariant,
+  Order,
 } from '@vendure/core';
 import { Subscription, SubscriptionStrategy } from './subscription-strategy';
 
@@ -16,6 +17,7 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
     ctx: RequestContext,
     injector: Injector,
     productVariant: ProductVariant,
+    order: Order,
     orderLineCustomFields: { [key: string]: any },
     quantity: number
   ): Subscription {
@@ -41,6 +43,7 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
     const price = productVariant.listPrice;
     return {
       name: `Subscription ${productVariant.name}`,
+      variantId: productVariant.id,
       priceIncludesTax: productVariant.listPriceIncludesTax,
       amountDueNow: price,
       recurring: {

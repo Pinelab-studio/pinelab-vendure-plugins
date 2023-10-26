@@ -182,7 +182,7 @@ export class StripeSubscriptionService {
     ctx: RequestContext,
     productVariantId: ID,
     customInputs?: any
-  ): Promise<Subscription> {
+  ): Promise<Subscription[]> {
     const variant = await this.productVariantService.findOne(
       ctx,
       productVariantId
@@ -193,12 +193,17 @@ export class StripeSubscriptionService {
       );
     }
     const injector = new Injector(this.moduleRef);
-    return this.strategy.previewSubscription(
+    const subscriptions = await this.strategy.previewSubscription(
       ctx,
       injector,
       variant,
       customInputs
     );
+    if (Array.isArray(subscriptions)) {
+      return subscriptions;
+    } else {
+      return [subscriptions];
+    }
   }
 
   async previewSubscriptionForProduct(
@@ -213,11 +218,13 @@ export class StripeSubscriptionService {
       throw new UserInputError(`No product with id '${product}' found`);
     }
     const injector = new Injector(this.moduleRef);
-    return Promise.all(
+    const subscriptions = await Promise.all(
       product.variants.map((variant) =>
         this.strategy.previewSubscription(ctx, injector, variant, customInputs)
       )
     );
+    // Flatten, because there can be multiple subscriptions per variant, resulting in [[sub, sub], sub, sub]
+    return subscriptions.flat();
   }
 
   async cancelSubscriptionForOrderLine(
@@ -393,7 +400,7 @@ export class StripeSubscriptionService {
   async defineSubscriptions(
     ctx: RequestContext,
     order: Order
-  ): Promise<Subscription[]> {
+  ): Promise<(Subscription & { orderLineId: ID })[]> {
     const injector = new Injector(this.moduleRef);
     // Only define subscriptions for orderlines with a subscription product variant
     const subscriptionOrderLines = order.lines.filter((l) =>
@@ -401,22 +408,34 @@ export class StripeSubscriptionService {
     );
     const subscriptions = await Promise.all(
       subscriptionOrderLines.map(async (line) => {
-        const subscription = await this.strategy.defineSubscription(
+        const subs = await this.strategy.defineSubscription(
           ctx,
           injector,
           line.productVariant,
+          order,
           line.customFields,
           line.quantity
         );
-        if (subscription.recurring.amount <= 0) {
-          throw Error(
-            `[${loggerCtx}]: Defined subscription for order line ${line.id} must have a recurring amount greater than 0`
-          );
+        // Add orderlineId to subscription
+        if (Array.isArray(subs)) {
+          return subs.map((sub) => ({ ...sub, orderLineId: line.id }));
         }
-        return subscription;
+        return {
+          orderLineId: line.id,
+          ...subs,
+        };
       })
     );
-    return subscriptions;
+    const flattenedSubscriptionsArray = subscriptions.flat();
+    // Validate recurring amount
+    flattenedSubscriptionsArray.forEach((subscription) => {
+      if (subscription.recurring.amount <= 0) {
+        throw Error(
+          `[${loggerCtx}]: Defined subscription for order line ${subscription.variantId} must have a recurring amount greater than 0`
+        );
+      }
+    });
+    return flattenedSubscriptionsArray;
   }
 
   /**
@@ -568,6 +587,8 @@ export class StripeSubscriptionService {
         order
       );
       Logger.info(`Creating subscriptions for ${orderCode}`, loggerCtx);
+      // <orderLineId, subscriptionIds>
+      const subscriptionsPerOrderLine = new Map<ID, string[]>();
       for (const subscriptionDefinition of subscriptionDefinitions) {
         try {
           const product = await stripeClient.products.create({
@@ -592,116 +613,61 @@ export class StripeSubscriptionService {
             createdSubscription.status !== 'active' &&
             createdSubscription.status !== 'trialing'
           ) {
+            // Created subscription is not active for some reason. Log error and continue to next
             Logger.error(
-              `Failed to create active subscription ${createdSubscription.id} for order ${order.code}! It is still in status '${createdSubscription.status}'`,
+              `Failed to create active subscription ${subscriptionDefinition.name} (${createdSubscription.id}) for order ${order.code}! It is still in status '${createdSubscription.status}'`,
               loggerCtx
             );
             await this.logHistoryEntry(
               ctx,
               order.id,
-              'Failed to create subscription',
+              `Failed to create subscription ${subscriptionDefinition.name}`,
               `Subscription status is ${createdSubscription.status}`,
               subscriptionDefinition,
               createdSubscription.id
             );
-          } else {
-            Logger.info(
-              `Created subscription '${subscriptionDefinition.name}' (${
-                createdSubscription.id
-              }): ${printMoney(subscriptionDefinition.recurring.amount)}`,
-              loggerCtx
-            );
-            await this.logHistoryEntry(
-              ctx,
-              order.id,
-              `Created subscription for ${subscriptionDefinition.name}`,
-              undefined,
-              subscriptionDefinition,
+            continue;
+          }
+          Logger.info(
+            `Created subscription '${subscriptionDefinition.name}' (${
               createdSubscription.id
-            );
-          }
-          if (pricing.downpayment) {
-            // FIXME add downpayment to the strategy
-            // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
-            const downpaymentProduct = await stripeClient.products.create({
-              name: `${orderLine.productVariant.name} - Downpayment (${order.code})`,
-            });
-            const schedule =
-              orderLine.productVariant.customFields.subscriptionSchedule;
-            if (!schedule) {
-              throw new UserInputError(
-                `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
-              );
-            }
-            const downpaymentInterval = schedule.durationInterval;
-            const downpaymentIntervalCount = schedule.durationCount;
-            const nextDownpaymentDate = getNextCyclesStartDate(
-              new Date(),
-              schedule.startMoment,
-              schedule.durationInterval,
-              schedule.durationCount,
-              schedule.fixedStartDate
-            );
-            const downpaymentSubscription =
-              await stripeClient.createOffSessionSubscription({
-                customerId: stripeCustomerId,
-                productId: downpaymentProduct.id,
-                currencyCode: order.currencyCode,
-                amount: pricing.downpayment,
-                interval: downpaymentInterval,
-                intervalCount: downpaymentIntervalCount,
-                paymentMethodId: stripePaymentMethodId,
-                startDate: nextDownpaymentDate,
-                endDate: pricing.subscriptionEndDate || undefined,
-                description: `Downpayment`,
-                orderCode: order.code,
-                channelToken: ctx.channel.token,
-              });
-            createdSubscriptions.push(recurringSubscription.id);
-            if (
-              downpaymentSubscription.status !== 'active' &&
-              downpaymentSubscription.status !== 'trialing'
-            ) {
-              Logger.error(
-                `Failed to create active subscription ${downpaymentSubscription.id} for order ${order.code}! It is still in status '${downpaymentSubscription.status}'`,
-                loggerCtx
-              );
-              await this.logHistoryEntry(
-                ctx,
-                order.id,
-                'Failed to create downpayment subscription',
-                'Failed to create active subscription',
-                undefined,
-                downpaymentSubscription.id
-              );
-            } else {
-              Logger.info(
-                `Created downpayment subscription ${
-                  downpaymentSubscription.id
-                }: ${printMoney(
-                  pricing.downpayment
-                )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
-                  pricing.subscriptionStartDate
-                } for order ${order.code}`,
-                loggerCtx
-              );
-              await this.logHistoryEntry(
-                ctx,
-                order.id,
-                `Created downpayment subscription for line ${orderLineCount}`,
-                undefined,
-                pricing,
-                downpaymentSubscription.id
-              );
-            }
-          }
+            }): ${printMoney(subscriptionDefinition.recurring.amount)}`,
+            loggerCtx
+          );
+          await this.logHistoryEntry(
+            ctx,
+            order.id,
+            `Created subscription for ${subscriptionDefinition.name}`,
+            undefined,
+            subscriptionDefinition,
+            createdSubscription.id
+          );
+          // Add created subscriptions per order line
+          const existingSubscriptionIds =
+            subscriptionsPerOrderLine.get(subscriptionDefinition.orderLineId) ||
+            [];
+          existingSubscriptionIds.push(createdSubscription.id);
+          subscriptionsPerOrderLine.set(
+            subscriptionDefinition.orderLineId,
+            existingSubscriptionIds
+          );
         } catch (e: unknown) {
-          await this.logHistoryEntry(ctx, order.id, '', e);
+          await this.logHistoryEntry(
+            ctx,
+            order.id,
+            'An unknown error occured creating subscriptions',
+            e
+          );
           throw e;
         }
       }
-      // FIXME
-      // await this.saveSubscriptionIds(ctx, orderLine.id, createdSubscriptions);
+      // Save subscriptionIds per order line
+      for (const [
+        orderLineId,
+        subscriptionIds,
+      ] of subscriptionsPerOrderLine.entries()) {
+        await this.saveSubscriptionIds(ctx, orderLineId, subscriptionIds);
+      }
     } catch (e: unknown) {
       await this.logHistoryEntry(ctx, order.id, '', e);
       throw e;

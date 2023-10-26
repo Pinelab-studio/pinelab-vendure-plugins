@@ -17,6 +17,7 @@ export const shopSchemaExtensions = gql`
 
   type StripeSubscription {
     name: String!
+    variantId: ID!
     amountDueNow: Int
     priceIncludesTax: Boolean!
     recurring: StripeSubscriptionRecurringPayment!
@@ -48,7 +49,7 @@ export const shopSchemaExtensions = gql`
     previewStripeSubscription(
       productVariantId: ID!
       customInputs: JSON
-    ): StripeSubscription!
+    ): [StripeSubscription!]!
     previewStripeSubscriptionForProduct(
       productId: ID!
       customInputs: JSON
