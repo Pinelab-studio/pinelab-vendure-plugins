@@ -16,10 +16,11 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialTestData } from './initial-test-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PrimaryCollectionPlugin } from '../src/primary-collection-plugin';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { gql } from 'graphql-tag';
 import { PrimaryCollectionHelperService } from '../src/api/primary-collections-helper.service';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Product Primary Collection', function () {
   let server: TestServer;
@@ -131,15 +132,7 @@ describe('Product Primary Collection', function () {
 
   it(`Should assign primaryCollection to all products after running the "setPrimaryCollectionForAllProducts" function, 
   while preserving the values for those products who already had `, async () => {
-    const defualtChannel = await server.app
-      .get(ChannelService)
-      .getDefaultChannel();
-    const ctx = new RequestContext({
-      apiType: 'admin',
-      isAuthorized: true,
-      authorizedAsOwnerOnly: false,
-      channel: defualtChannel,
-    });
+    const ctx = await getSuperadminContext(server.app);
     await server.app
       .get(PrimaryCollectionHelperService)
       .setPrimaryCollectionForAllProducts(ctx);

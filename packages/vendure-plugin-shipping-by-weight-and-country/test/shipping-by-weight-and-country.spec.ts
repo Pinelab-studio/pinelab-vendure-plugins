@@ -17,6 +17,7 @@ import {
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { ShippingByWeightAndCountryPlugin } from '../src/shipping-by-weight-and-country.plugin';
 import gql from 'graphql-tag';
@@ -27,6 +28,7 @@ describe('Order export plugin', function () {
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
+  let ctx: RequestContext;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -53,6 +55,7 @@ describe('Order export plugin', function () {
       productsCsvPath: '../test/src/products-import.csv',
     });
     serverStarted = true;
+    ctx = await getSuperadminContext(server.app);
   }, 60000);
 
   it('Should start successfully', async () => {
@@ -108,14 +111,6 @@ describe('Order export plugin', function () {
   });
 
   it('Is eligible for method 1 with country NL and product weight 100', async () => {
-    const channel = await server.app.get(ChannelService).getDefaultChannel();
-    const ctx = new RequestContext({
-      channel,
-      authorizedAsOwnerOnly: false,
-      apiType: 'admin',
-      isAuthorized: true,
-    });
-
     const product = await server.app
       .get(ProductService)
       .update(ctx, { id: 1, customFields: { weight: 25 } });
@@ -127,14 +122,6 @@ describe('Order export plugin', function () {
   });
 
   it('Is eligible for method 1 with country NL and product weight 25 variant weight 50', async () => {
-    const channel = await server.app.get(ChannelService).getDefaultChannel();
-    const ctx = new RequestContext({
-      channel,
-      authorizedAsOwnerOnly: false,
-      apiType: 'admin',
-      isAuthorized: true,
-    });
-
     const product = await server.app
       .get(ProductService)
       .update(ctx, { id: 1, customFields: { weight: 25 } });
@@ -152,14 +139,6 @@ describe('Order export plugin', function () {
   });
 
   it('Is eligible for method 1 with country NL and product weight 50 variant weight 0', async () => {
-    const channel = await server.app.get(ChannelService).getDefaultChannel();
-    const ctx = new RequestContext({
-      channel,
-      authorizedAsOwnerOnly: false,
-      apiType: 'admin',
-      isAuthorized: true,
-    });
-
     const product = await server.app
       .get(ProductService)
       .update(ctx, { id: 1, customFields: { weight: 50 } });
@@ -184,13 +163,6 @@ describe('Order export plugin', function () {
   });
 
   it('Is NOT eligible for method 1 and 2 with weight 200', async () => {
-    const channel = await server.app.get(ChannelService).getDefaultChannel();
-    const ctx = new RequestContext({
-      channel,
-      authorizedAsOwnerOnly: false,
-      apiType: 'admin',
-      isAuthorized: true,
-    });
     const product = await server.app
       .get(ProductService)
       .update(ctx, { id: 1, customFields: { weight: 200 } });
@@ -204,14 +176,6 @@ describe('Order export plugin', function () {
   });
 
   it('Is NOT eligible for method 1 and 2 with variant weight 200', async () => {
-    const channel = await server.app.get(ChannelService).getDefaultChannel();
-    const ctx = new RequestContext({
-      channel,
-      authorizedAsOwnerOnly: false,
-      apiType: 'admin',
-      isAuthorized: true,
-    });
-
     const product = await server.app
       .get(ProductService)
       .update(ctx, { id: 1, customFields: { weight: 0 } });

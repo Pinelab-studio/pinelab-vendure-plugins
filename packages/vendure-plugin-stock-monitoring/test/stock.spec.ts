@@ -18,7 +18,7 @@ import * as path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
 import { expect, describe, beforeAll, it, afterAll } from 'vitest';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;

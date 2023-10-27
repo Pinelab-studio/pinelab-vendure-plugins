@@ -37,7 +37,7 @@ import {
 import path from 'path';
 import * as fs from 'fs';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Invoices plugin', function () {
   let server: TestServer;

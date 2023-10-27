@@ -46,7 +46,7 @@ import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('Goedgepickt plugin', function () {
   const defaultChannelToken = 'e2e-default-channel';
   let server: TestServer;

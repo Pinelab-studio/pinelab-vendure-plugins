@@ -17,6 +17,7 @@ import {
 } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import {
   addItem,
   addPaymentToOrder,
@@ -43,7 +44,7 @@ import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -150,15 +151,7 @@ describe('MyParcel', () => {
   });
 
   it('Created webhook on startup', async () => {
-    const defualtChannel = await server.app
-      .get(ChannelService)
-      .getDefaultChannel();
-    const ctx = new RequestContext({
-      apiType: 'admin',
-      isAuthorized: true,
-      authorizedAsOwnerOnly: false,
-      channel: defualtChannel,
-    });
+    const ctx = await getSuperadminContext(server.app);
     // Mimic startup again, because real startup didn't have configs in DB populated yet
     await server.app.get(MyparcelService).setWebhooksForAllChannels(ctx);
     const webhook = body?.data?.webhook_subscriptions?.[0];

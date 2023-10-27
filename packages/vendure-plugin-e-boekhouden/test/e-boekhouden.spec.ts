@@ -32,7 +32,7 @@ import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import path from 'path';
 import * as fs from 'fs';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('E-boekhouden plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;

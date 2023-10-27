@@ -20,7 +20,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import path from 'path';
 import * as fs from 'fs';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;

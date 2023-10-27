@@ -29,7 +29,7 @@ import nock from 'nock';
 import { SendcloudClient } from '../src/api/sendcloud.client';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import crypto from 'crypto';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('SendCloud', () => {
   let shopClient: SimpleGraphQLClient;

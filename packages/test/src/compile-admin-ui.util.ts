@@ -7,7 +7,7 @@ import {
 export default async function getFilesInAdminUiFolder(
   dirname: string,
   uiExtension: AdminUiExtension
-) {
+): Promise<string[]> {
   fs.rmSync(path.join(dirname, '__admin-ui'), {
     recursive: true,
     force: true,

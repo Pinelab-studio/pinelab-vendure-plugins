@@ -14,7 +14,7 @@ import gql from 'graphql-tag';
 import { OrderExportPlugin } from '../src';
 
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;

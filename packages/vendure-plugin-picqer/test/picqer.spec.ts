@@ -30,7 +30,7 @@ import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
 import { picqerHandler } from '../src/api/picqer.handler';
 import { describe, afterEach, beforeAll, it, expect, afterAll } from 'vitest';
-import getFilesInAdminUiFolder from '../../util/src/compile-admin-ui.util';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
