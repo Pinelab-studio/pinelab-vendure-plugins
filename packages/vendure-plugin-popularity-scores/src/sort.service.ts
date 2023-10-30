@@ -146,7 +146,7 @@ export class SortService implements OnModuleInit {
           .getRawOne();
         productScoreSums.push({
           id: col.collection_id,
-          score: summedProductsValue.productScoreSum,
+          score: summedProductsValue.productScoreSum ?? 0,
         });
       }
     }
