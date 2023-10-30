@@ -32,7 +32,7 @@ import { StripeSubscriptionService } from './stripe-subscription.service';
 export type RequestWithRawBody = Request & { rawBody: any };
 
 @Resolver()
-export class ShopResolver {
+export class StripeSubscriptionShopResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
     private paymentMethodService: PaymentMethodService
@@ -43,7 +43,8 @@ export class ShopResolver {
   async createStripeSubscriptionIntent(
     @Ctx() ctx: RequestContext
   ): Promise<GraphqlMutation['createStripeSubscriptionIntent']> {
-    return this.stripeSubscriptionService.createIntent(ctx);
+    const res = await this.stripeSubscriptionService.createIntent(ctx);
+    return res;
   }
 
   @Query()

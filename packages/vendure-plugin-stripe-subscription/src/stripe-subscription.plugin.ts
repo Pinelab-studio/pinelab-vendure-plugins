@@ -10,6 +10,8 @@ import { orderLineCustomFields } from './api-v2/vendure-config/custom-fields';
 import { stripeSubscriptionHandler } from './api-v2/vendure-config/stripe-subscription.handler';
 import { hasStripeSubscriptionProductsPaymentChecker } from './api-v2/vendure-config/has-stripe-subscription-products-payment-checker';
 import { SubscriptionOrderItemCalculation } from './api-v2/subscription-order-item-calculation';
+import { StripeSubscriptionService } from './api-v2/stripe-subscription.service';
+import { StripeSubscriptionShopResolver } from './api-v2/stripe-subscription.resolver';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -23,7 +25,7 @@ export interface StripeSubscriptionPluginOptions {
   imports: [PluginCommonModule],
   shopApiExtensions: {
     schema: shopSchemaExtensions,
-    resolvers: [],
+    resolvers: [StripeSubscriptionShopResolver],
   },
   controllers: [],
   providers: [
@@ -31,6 +33,7 @@ export interface StripeSubscriptionPluginOptions {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => StripeSubscriptionPlugin.options,
     },
+    StripeSubscriptionService,
   ],
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(stripeSubscriptionHandler);

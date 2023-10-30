@@ -11,15 +11,14 @@ import { DefaultOrderItemPriceCalculationStrategy } from '@vendure/core/dist/con
 import { CustomOrderLineFields } from '@vendure/core/dist/entity/custom-entity-fields';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
-let subcriptionService: StripeSubscriptionService | undefined;
 let injector: Injector;
 
 export class SubscriptionOrderItemCalculation
   extends DefaultOrderItemPriceCalculationStrategy
   implements OrderItemPriceCalculationStrategy
 {
-  init(injector: Injector): void | Promise<void> {
-    subcriptionService = injector.get(StripeSubscriptionService);
+  init(_injector: Injector): void | Promise<void> {
+    injector = _injector;
   }
 
   // @ts-ignore - Our strategy takes more arguments, so TS complains that it doesnt match the super.calculateUnitPrice
@@ -30,6 +29,7 @@ export class SubscriptionOrderItemCalculation
     order: Order,
     orderLineQuantity: number
   ): Promise<PriceCalculationResult> {
+    const subcriptionService = injector.get(StripeSubscriptionService);
     if (!subcriptionService) {
       throw new Error('Subscription service not initialized');
     }

@@ -2,6 +2,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
+  LanguageCode,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
@@ -14,6 +15,7 @@ import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
+  CREATE_PAYMENT_METHOD,
   setShipping,
   UPDATE_CHANNEL,
   UPDATE_VARIANT,
@@ -80,45 +82,47 @@ export let clientSecret = 'test';
   console.log('Update channel prices to include tax');
   // Create stripe payment method
   await adminClient.asSuperAdmin();
-  // await adminClient.query(CREATE_PAYMENT_METHOD, {
-  //   input: {
-  //     code: 'stripe-subscription-method',
-  //     enabled: true,
-  //     handler: {
-  //       code: 'stripe-subscription',
-  //       arguments: [
-  //         {
-  //           name: 'webhookSecret',
-  //           value: process.env.STRIPE_WEBHOOK_SECRET,
-  //         },
-  //         { name: 'apiKey', value: process.env.STRIPE_APIKEY },
-  //       ],
-  //     },
-  //     translations: [
-  //       {
-  //         languageCode: LanguageCode.en,
-  //         name: 'Stripe test payment',
-  //         description: 'This is a Stripe payment method',
-  //       },
-  //     ],
-  //   },
-  // });
-  // console.log(`Created paymentMethod stripe-subscription`);
+  await adminClient.query(CREATE_PAYMENT_METHOD, {
+    input: {
+      code: 'stripe-subscription-method',
+      enabled: true,
+      handler: {
+        code: 'stripe-subscription',
+        arguments: [
+          {
+            name: 'webhookSecret',
+            value: process.env.STRIPE_WEBHOOK_SECRET,
+          },
+          { name: 'apiKey', value: process.env.STRIPE_APIKEY },
+        ],
+      },
+      translations: [
+        {
+          languageCode: LanguageCode.en,
+          name: 'Stripe test payment',
+          description: 'This is a Stripe payment method',
+        },
+      ],
+    },
+  });
+  console.log(`Created paymentMethod stripe-subscription`);
 
-  // await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  // let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
-  //   productVariantId: '1',
-  //   quantity: 1,
-  // });
+  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '1',
+    quantity: 1,
+  });
 
-  // await setShipping(shopClient);
-  // console.log(`Prepared order ${order?.code}`);
+  await setShipping(shopClient);
+  console.log(`Prepared order ${order?.code}`);
 
-  // const { createStripeSubscriptionIntent: secret } = await shopClient.query(
-  //   CREATE_PAYMENT_LINK
-  // );
-  // clientSecret = secret;
-  // console.log(`Go to http://localhost:3050/checkout/ to test your intent`);
+  const {
+    createStripeSubscriptionIntent: { clientSecret: secret, intentType },
+  } = await shopClient.query(CREATE_PAYMENT_LINK);
+  clientSecret = secret;
+  console.log(
+    `Go to http://localhost:3050/checkout/ to test your ${intentType}`
+  );
 
   // Uncomment these lines to list all subscriptions created in Stripe
   // const ctx = await server.app.get(RequestContextService).create({apiType: 'admin'});

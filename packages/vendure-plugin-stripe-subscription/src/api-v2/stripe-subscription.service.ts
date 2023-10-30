@@ -46,7 +46,6 @@ import { StripeClient } from './stripe.client';
 import { StripeInvoice } from './types/stripe-invoice';
 import { StripePaymentIntent } from './types/stripe-payment-intent';
 import { printMoney } from './util';
-import './vendure-config/custom-fields-types.d.ts';
 import { stripeSubscriptionHandler } from './vendure-config/stripe-subscription.handler';
 
 export interface StripeContext {
@@ -164,7 +163,9 @@ export class StripeSubscriptionService {
         )[];
         const orderLinesWithSubscriptions = cancelOrReleaseEvents
           // Filter out non-sub orderlines
-          .filter((event) => event.orderLine.customFields.subscriptionIds);
+          .filter(
+            (event) => (event.orderLine.customFields as any).subscriptionIds
+          );
         await Promise.all(
           // Push jobs
           orderLinesWithSubscriptions.map((line) =>
@@ -239,7 +240,9 @@ export class StripeSubscriptionService {
     if (!order) {
       throw Error(`Order for OrderLine ${orderLineId} not found`);
     }
-    const line = order?.lines.find((l) => l.id == orderLineId);
+    const line = order?.lines.find((l) => l.id == orderLineId) as
+      | any
+      | undefined;
     if (!line?.customFields.subscriptionIds?.length) {
       return Logger.info(
         `OrderLine ${orderLineId} of ${orderLineId} has no subscriptionIds. Not cancelling anything... `,
@@ -314,6 +317,7 @@ export class StripeSubscriptionService {
     }
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
+      applyProductVariantPrices: true,
     });
     if (!order.lines?.length) {
       throw new UserInputError('Cannot create intent for empty order');
@@ -429,7 +433,10 @@ export class StripeSubscriptionService {
     const flattenedSubscriptionsArray = subscriptions.flat();
     // Validate recurring amount
     flattenedSubscriptionsArray.forEach((subscription) => {
-      if (subscription.recurring.amount <= 0) {
+      if (
+        !subscription.recurring.amount ||
+        subscription.recurring.amount <= 0
+      ) {
         throw Error(
           `[${loggerCtx}]: Defined subscription for order line ${subscription.variantId} must have a recurring amount greater than 0`
         );

@@ -1,20 +1,11 @@
 import { gql } from 'graphql-tag';
 import { SimpleGraphQLClient } from '@vendure/testing';
-import { SCHEDULE_FRAGMENT } from '../src/ui/queries';
 import { ChannelService, RequestContext } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 
 export const ADD_ITEM_TO_ORDER = gql`
-  mutation AddItemToOrder(
-    $productVariantId: ID!
-    $quantity: Int!
-    $customFields: OrderLineCustomFieldsInput
-  ) {
-    addItemToOrder(
-      productVariantId: $productVariantId
-      quantity: $quantity
-      customFields: $customFields
-    ) {
+  mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
+    addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
       ... on Order {
         id
         code
@@ -63,72 +54,72 @@ export const UPDATE_CHANNEL = gql`
   }
 `;
 
-export const GET_PRICING = gql`
-  ${SCHEDULE_FRAGMENT}
-  query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
-    stripeSubscriptionPricing(input: $input) {
-      downpayment
-      totalProratedAmount
-      proratedDays
-      dayRate
-      recurringPrice
-      interval
-      intervalCount
-      amountDueNow
-      subscriptionStartDate
-      schedule {
-        ...ScheduleFields
-      }
-    }
-  }
-`;
+// export const GET_PRICING = gql`
+//   ${SCHEDULE_FRAGMENT}
+//   query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
+//     stripeSubscriptionPricing(input: $input) {
+//       downpayment
+//       totalProratedAmount
+//       proratedDays
+//       dayRate
+//       recurringPrice
+//       interval
+//       intervalCount
+//       amountDueNow
+//       subscriptionStartDate
+//       schedule {
+//         ...ScheduleFields
+//       }
+//     }
+//   }
+// `;
 
-export const GET_PRICING_FOR_PRODUCT = gql`
-  ${SCHEDULE_FRAGMENT}
-  query stripeSubscriptionPricingForProduct($productId: ID!) {
-    stripeSubscriptionPricingForProduct(productId: $productId) {
-      downpayment
-      totalProratedAmount
-      proratedDays
-      dayRate
-      recurringPrice
-      interval
-      intervalCount
-      amountDueNow
-      subscriptionStartDate
-      schedule {
-        ...ScheduleFields
-      }
-    }
-  }
-`;
+// export const GET_PRICING_FOR_PRODUCT = gql`
+//   ${SCHEDULE_FRAGMENT}
+//   query stripeSubscriptionPricingForProduct($productId: ID!) {
+//     stripeSubscriptionPricingForProduct(productId: $productId) {
+//       downpayment
+//       totalProratedAmount
+//       proratedDays
+//       dayRate
+//       recurringPrice
+//       interval
+//       intervalCount
+//       amountDueNow
+//       subscriptionStartDate
+//       schedule {
+//         ...ScheduleFields
+//       }
+//     }
+//   }
+// `;
 
-export const GET_ORDER_WITH_PRICING = gql`
-  ${SCHEDULE_FRAGMENT}
-  query getOrderWithPricing {
-    activeOrder {
-      id
-      code
-      lines {
-        subscriptionPricing {
-          downpayment
-          totalProratedAmount
-          proratedDays
-          dayRate
-          recurringPrice
-          originalRecurringPrice
-          interval
-          intervalCount
-          amountDueNow
-          subscriptionStartDate
-          schedule {
-            ...ScheduleFields
-          }
-        }
-      }
-    }
-  }
-`;
+// export const GET_ORDER_WITH_PRICING = gql`
+//   ${SCHEDULE_FRAGMENT}
+//   query getOrderWithPricing {
+//     activeOrder {
+//       id
+//       code
+//       lines {
+//         subscriptionPricing {
+//           downpayment
+//           totalProratedAmount
+//           proratedDays
+//           dayRate
+//           recurringPrice
+//           originalRecurringPrice
+//           interval
+//           intervalCount
+//           amountDueNow
+//           subscriptionStartDate
+//           schedule {
+//             ...ScheduleFields
+//           }
+//         }
+//       }
+//     }
+//   }
+// `;
 
 export const CREATE_PAYMENT_METHOD = gql`
   mutation CreatePaymentMethod($input: CreatePaymentMethodInput!) {
@@ -179,7 +170,10 @@ export const SET_SHIPPING_METHOD = gql`
 
 export const CREATE_PAYMENT_LINK = gql`
   mutation createStripeSubscriptionIntent {
-    createStripeSubscriptionIntent
+    createStripeSubscriptionIntent {
+      clientSecret
+      intentType
+    }
   }
 `;
 
