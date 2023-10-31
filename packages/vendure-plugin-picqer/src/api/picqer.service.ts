@@ -150,14 +150,12 @@ export class PicqerService implements OnApplicationBootstrap {
             );
           }
           Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
-        } catch (e: unknown) {
-          if (e instanceof Error) {
-            // Only log a warning, because this is a background function that will be retried by the JobQueue
-            Logger.warn(
-              `Failed to handle job '${data.action}': ${e?.message}`,
-              loggerCtx
-            );
-          }
+        } catch (e: any) {
+          // Only log a warning, because this is a background function that will be retried by the JobQueue
+          const orderCode = Logger.warn(
+            `Failed to handle job '${data.action}': ${e?.message}`,
+            loggerCtx
+          );
           throw e;
         }
       },
@@ -730,14 +728,22 @@ export class PicqerService implements OnApplicationBootstrap {
       return;
     }
     // Fulfill order first
-    const fulfillment = await fulfillAll(ctx, this.orderService, order, {
-      code: picqerHandler.code,
-      arguments: [],
-    });
-    Logger.info(
-      `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
-      loggerCtx
-    );
+    try {
+      const fulfillment = await fulfillAll(ctx, this.orderService, order, {
+        code: picqerHandler.code,
+        arguments: [],
+      });
+      Logger.info(
+        `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
+        loggerCtx
+      );
+    } catch (e: any) {
+      Logger.error(
+        `Failed to fulfill order ${order.code}: ${e?.message}. Transition this order manually to 'Delivered' if it has been sent to Picqer, to prevent future errors related to status changes for this order.`,
+        loggerCtx,
+        util.inspect(e)
+      );
+    }
     // Push the order to Picqer
     await this.pushOrderToPicqer(ctx, order, client);
   }
