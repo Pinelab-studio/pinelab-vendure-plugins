@@ -375,7 +375,7 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     if (data.status !== 'cancelled' && data.status !== 'completed') {
       Logger.info(
-        `This plugin doesn't handle incoming status ${data.status}, skipping status for order ${order.code}`,
+        `Not handling incoming status '${data.status}'. Skipping status update for order ${order.code}`,
         loggerCtx
       );
     }
