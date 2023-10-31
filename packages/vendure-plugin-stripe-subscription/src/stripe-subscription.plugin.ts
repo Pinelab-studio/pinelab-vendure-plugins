@@ -19,6 +19,7 @@ export interface StripeSubscriptionPluginOptions {
    * Only use this for testing purposes, NEVER in production
    */
   disableWebhookSignatureChecking?: boolean;
+  vendureHost: string;
   subscriptionStrategy?: SubscriptionStrategy;
 }
 
@@ -55,6 +56,7 @@ export interface StripeSubscriptionPluginOptions {
 export class StripeSubscriptionPlugin {
   static options: StripeSubscriptionPluginOptions = {
     disableWebhookSignatureChecking: false,
+    vendureHost: '',
     subscriptionStrategy: new DefaultSubscriptionStrategy(),
   };
 

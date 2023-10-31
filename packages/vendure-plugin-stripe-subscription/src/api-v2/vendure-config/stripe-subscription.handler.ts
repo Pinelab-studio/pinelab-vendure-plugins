@@ -54,7 +54,7 @@ export const stripeSubscriptionHandler = new PaymentMethodHandler({
         {
           languageCode: LanguageCode.en,
           value:
-            'Secret to validate incoming webhooks. Get this from your Stripe dashboard',
+            'Secret to validate incoming webhooks. Get this from he created webhooks in your Stripe dashboard',
         },
       ],
       ui: { component: 'password-form-input' },

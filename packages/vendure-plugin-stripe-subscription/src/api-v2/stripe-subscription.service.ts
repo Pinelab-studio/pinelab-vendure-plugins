@@ -95,6 +95,16 @@ export class StripeSubscriptionService {
 
   private jobQueue!: JobQueue<JobData>;
   readonly strategy: SubscriptionStrategy;
+  /**
+   * The plugin expects these events to come in via webhooks
+   */
+  static webhookEvents: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
+    'payment_intent.succeeded',
+    'setup_intent.succeeded',
+    'invoice.payment_failed',
+    'invoice.payment_succeeded',
+    'invoice.payment_action_required',
+  ];
 
   async onModuleInit() {
     // Create jobQueue with handlers
@@ -182,7 +192,22 @@ export class StripeSubscriptionService {
       });
   }
 
-  // TODO automatically register webhooks on startup
+  // TODO automatically register webhooks on config save
+
+  /**
+   * Register webhooks with the right events if they don't exist yet.
+   * Does not handle secrets, thats a manual step!
+   */
+  async registerWebhooks(ctx: RequestContext): Promise<void> {
+    const { stripeClient } = await this.getStripeContext(ctx);
+    const webhookUrl = `${this.options.vendureHost}/stripe-subscriptions/webhook`;
+    // Get existing webhooks and check if url and events match. If not, create them
+
+    await stripeClient.webhookEndpoints.create({
+      enabled_events: StripeSubscriptionService.webhookEvents,
+      url: webhookUrl,
+    });
+  }
 
   async previewSubscription(
     ctx: RequestContext,

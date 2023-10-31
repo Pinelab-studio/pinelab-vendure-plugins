@@ -43,7 +43,9 @@ export let clientSecret = 'test';
     },
     plugins: [
       StripeTestCheckoutPlugin,
-      StripeSubscriptionPlugin,
+      StripeSubscriptionPlugin.init({
+        vendureHost: process.env.VENDURE_HOST!,
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
