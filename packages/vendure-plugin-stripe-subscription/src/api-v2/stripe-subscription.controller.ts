@@ -5,7 +5,10 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 import { StripeInvoice } from './types/stripe-invoice';
-import { StripePaymentIntent } from './types/stripe-payment-intent';
+import {
+  StripePaymentIntent,
+  StripeSetupIntent,
+} from './types/stripe-payment-intent';
 import { IncomingStripeWebhook } from './types/stripe.common';
 
 export type RequestWithRawBody = Request & { rawBody: any };
@@ -35,6 +38,7 @@ export class StripeSubscriptionController {
       (body.data.object as StripeInvoice).lines?.data[0]?.metadata.channelToken;
     if (
       body.type !== 'payment_intent.succeeded' &&
+      body.type !== 'setup_intent.succeeded' &&
       body.type !== 'invoice.payment_failed' &&
       body.type !== 'invoice.payment_succeeded' &&
       body.type !== 'invoice.payment_action_required'
@@ -72,20 +76,19 @@ export class StripeSubscriptionController {
       if (!this.options?.disableWebhookSignatureChecking) {
         stripeClient.validateWebhookSignature(request.rawBody, signature);
       }
-      if (body.type === 'payment_intent.succeeded') {
+      if (
+        body.type === 'payment_intent.succeeded' ||
+        body.type === 'setup_intent.succeeded'
+      ) {
         await this.stripeSubscriptionService.handleIntentSucceeded(
           ctx,
-          body.data.object as StripePaymentIntent,
+          body.data.object as StripePaymentIntent & StripeSetupIntent,
           order
         );
-      } else if (body.type === 'invoice.payment_failed') {
-        const invoiceObject = body.data.object as StripeInvoice;
-        await this.stripeSubscriptionService.handleInvoicePaymentFailed(
-          ctx,
-          invoiceObject,
-          order
-        );
-      } else if (body.type === 'invoice.payment_action_required') {
+      } else if (
+        body.type === 'invoice.payment_failed' ||
+        body.type === 'invoice.payment_action_required'
+      ) {
         const invoiceObject = body.data.object as StripeInvoice;
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,

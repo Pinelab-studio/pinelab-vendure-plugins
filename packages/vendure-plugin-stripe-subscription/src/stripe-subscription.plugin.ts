@@ -12,6 +12,7 @@ import { hasStripeSubscriptionProductsPaymentChecker } from './api-v2/vendure-co
 import { SubscriptionOrderItemCalculation } from './api-v2/subscription-order-item-calculation';
 import { StripeSubscriptionService } from './api-v2/stripe-subscription.service';
 import { StripeSubscriptionShopResolver } from './api-v2/stripe-subscription.resolver';
+import { StripeSubscriptionController } from './api-v2/stripe-subscription.controller';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -27,7 +28,7 @@ export interface StripeSubscriptionPluginOptions {
     schema: shopSchemaExtensions,
     resolvers: [StripeSubscriptionShopResolver],
   },
-  controllers: [],
+  controllers: [StripeSubscriptionController],
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,

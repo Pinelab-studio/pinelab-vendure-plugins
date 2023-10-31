@@ -16,7 +16,7 @@ export interface Subscription {
    */
   name: string;
   variantId: ID;
-  amountDueNow?: number;
+  amountDueNow: number;
   priceIncludesTax: boolean;
   recurring: {
     amount: number;

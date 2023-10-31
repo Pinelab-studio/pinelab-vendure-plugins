@@ -44,7 +44,10 @@ import {
 } from './strategy/subscription-strategy';
 import { StripeClient } from './stripe.client';
 import { StripeInvoice } from './types/stripe-invoice';
-import { StripePaymentIntent } from './types/stripe-payment-intent';
+import {
+  StripePaymentIntent,
+  StripeSetupIntent,
+} from './types/stripe-payment-intent';
 import { printMoney } from './util';
 import { stripeSubscriptionHandler } from './vendure-config/stripe-subscription.handler';
 
@@ -178,6 +181,8 @@ export class StripeSubscriptionService {
         );
       });
   }
+
+  // TODO automatically register webhooks on startup
 
   async previewSubscription(
     ctx: RequestContext,
@@ -338,16 +343,20 @@ export class StripeSubscriptionService {
     const { stripeClient, paymentMethod } = await this.getStripeContext(ctx);
     if (!eligibleStripeMethodCodes.includes(paymentMethod.code)) {
       throw new UserInputError(
-        `No eligible payment method found with handler code '${stripeSubscriptionHandler.code}'`
+        `No eligible payment method found for order ${order.code} with handler code '${stripeSubscriptionHandler.code}'`
       );
     }
+    await this.orderService.transitionToState(
+      ctx,
+      order.id,
+      'ArrangingPayment'
+    );
     const stripeCustomer = await stripeClient.getOrCreateCustomer(
       order.customer
     );
     const stripePaymentMethods = ['card']; // TODO make configurable per channel
-    const subscriptions = await this.defineSubscriptions(ctx, order);
     let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
-    if (order.totalWithTax) {
+    if (order.totalWithTax > 0) {
       // Create PaymentIntent + off_session, because we have both one-time and recurring payments. Order total is only > 0 if there are one-time payments
       intent = await stripeClient.paymentIntents.create({
         customer: stripeCustomer.id,
@@ -477,7 +486,7 @@ export class StripeSubscriptionService {
    */
   async handleIntentSucceeded(
     ctx: RequestContext,
-    object: StripePaymentIntent,
+    object: StripePaymentIntent | StripeSetupIntent,
     order: Order
   ): Promise<void> {
     const {

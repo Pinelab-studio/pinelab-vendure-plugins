@@ -18,7 +18,7 @@ export const shopSchemaExtensions = gql`
   type StripeSubscription {
     name: String!
     variantId: ID!
-    amountDueNow: Int
+    amountDueNow: Int!
     priceIncludesTax: Boolean!
     recurring: StripeSubscriptionRecurringPayment!
   }

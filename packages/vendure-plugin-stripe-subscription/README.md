@@ -1,5 +1,7 @@
 // TODO: Strategy explained. Failed invoice event
 // No support for non-recurring payments. Use the built Vendure plugin for that. Only for recurring payments
+// Explain storefront flow. Order of graphql mutations
+/ Webhook setup!
 
 # Vendure Stripe Subscription plugin
 
