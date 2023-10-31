@@ -312,9 +312,6 @@ export class StripeSubscriptionService {
     if (!order) {
       throw new UserInputError('No active order for session');
     }
-    if (!order.totalWithTax) {
-      // This means a one time payment is needed
-    }
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
       applyProductVariantPrices: true,
@@ -349,12 +346,9 @@ export class StripeSubscriptionService {
     );
     const stripePaymentMethods = ['card']; // TODO make configurable per channel
     const subscriptions = await this.defineSubscriptions(ctx, order);
-    const hasOneTimePayments = subscriptions.some(
-      (s) => (s.amountDueNow ?? 0) > 0
-    );
     let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
-    if (hasOneTimePayments) {
-      // Create PaymentIntent + off_session, because we have both one-time and recurring payments
+    if (order.totalWithTax) {
+      // Create PaymentIntent + off_session, because we have both one-time and recurring payments. Order total is only > 0 if there are one-time payments
       intent = await stripeClient.paymentIntents.create({
         customer: stripeCustomer.id,
         payment_method_types: stripePaymentMethods,
