@@ -55,7 +55,7 @@ import {
   AddressInput,
   CustomerData,
   CustomerInput,
-  IncomingWebhook,
+  OrderCompletedWebhook,
   OrderInput,
   OrderProductInput,
   PickListWebhookData,
@@ -221,10 +221,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client) {
       return;
     }
-    const eventsToRegister: WebhookInput['event'][] = [
-      'products.free_stock_changed',
-      'picklists.closed',
-    ];
+    const eventsToRegister: WebhookInput['event'][] = ['orders.completed'];
     for (const hookEvent of eventsToRegister) {
       // Use first 4 digits of webhook secret as name, so we can identify the hook
       const webhookName = `Vendure ${client.webhookSecret.slice(0, 4)}`;
@@ -264,7 +261,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async handleHook(input: {
     channelToken: string;
-    body: IncomingWebhook;
+    body: OrderCompletedWebhook;
     rawBody: string;
     signature: string;
   }): Promise<void> {

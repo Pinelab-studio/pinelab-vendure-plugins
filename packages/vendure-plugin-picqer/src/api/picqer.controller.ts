@@ -3,7 +3,7 @@ import { Logger } from '@vendure/core';
 import { Request } from 'express';
 import { loggerCtx } from '../constants';
 import { PicqerService } from './picqer.service';
-import { IncomingWebhook } from './types';
+import { OrderCompletedWebhook } from './types';
 
 @Controller('picqer')
 export class PicqerController {
@@ -12,7 +12,7 @@ export class PicqerController {
   @Post('hooks/:channelToken')
   async webhook(
     @Req() req: Request,
-    @Body() body: IncomingWebhook,
+    @Body() body: OrderCompletedWebhook,
     @Headers('X-Picqer-Signature') signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<void> {
