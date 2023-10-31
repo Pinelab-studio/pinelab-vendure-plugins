@@ -134,7 +134,7 @@ export interface OrderData {
   full_invoice_address: string;
   telephone: any;
   emailaddress: any;
-  reference: any;
+  reference: string;
   customer_remarks: any;
   pickup_point_data: any;
   partialdelivery: boolean;
@@ -143,7 +143,7 @@ export interface OrderData {
   preferred_delivery_date: any;
   discount: number;
   calculatevat: boolean;
-  status: string;
+  status: 'cancelled' | 'completed' | 'processing' | 'concept' | 'expecteds';
   public_status_page: string;
   created: string;
   updated: string;
@@ -261,87 +261,41 @@ export interface PickLocation {
 
 export interface WebhookInput {
   name: string;
-  event: 'orders.completed';
+  event: WebhookEvent;
   address: string;
   secret: string;
 }
 
 // ------------- Webhook types ------------
 
-export interface OrderCompletedWebhook {
-  idhook: number
-  name: 'orders.completed'
-  event: string
-  event_triggered_at: string
-  data: Data
+export type IncomingWebhook =
+  | IncomingProductWebhook
+  | IncomingOrderStatusWebhook;
+export type WebhookEvent =
+  | 'products.free_stock_changed'
+  | 'orders.status_changed';
+
+export interface WebhookData {
+  idhook: number;
+  name: string;
+  event: WebhookEvent;
+  address: string;
+  active: boolean;
+  secret: boolean | string;
 }
 
-export interface Data {
-  idorder: number
-  idcustomer: number
-  orderid: string
-  deliveryname: string
-  deliverycontactname: string
-  deliveryaddress: string
-  deliveryaddress2: any
-  deliveryzipcode: string
-  deliverycity: string
-  deliveryregion: any
-  deliverycountry: string
-  invoicename: string
-  invoicecontactname: string
-  invoiceaddress: string
-  invoiceaddress2: any
-  invoicezipcode: string
-  invoicecity: string
-  invoiceregion: any
-  invoicecountry: string
-  reference: string
-  partialdelivery: boolean
-  discount: number
-  status: string
-  public_status_page: string
-  created: string
-  updated: string
-  products: Product[]
-  tags: Tags
-  orderfields: Orderfield[]
+export interface IncomingOrderStatusWebhook {
+  idhook: number;
+  name: string;
+  event: 'orders.status_changed';
+  event_triggered_at: string;
+  data: OrderData;
 }
 
-export interface Product {
-  idproduct: number
-  idvatgroup: number
-  productcode: string
-  name: string
-  remarks: string
-  price: number
-  amount: number
-  weight: number
-}
-
-export interface Tags {
-  TopWebshop: TopWebshop
-  SummerProducts: SummerProducts
-}
-
-export interface TopWebshop {
-  idtag: number
-  title: string
-  color: string
-  inherit: boolean
-  textColor: string
-}
-
-export interface SummerProducts {
-  idtag: number
-  title: string
-  color: string
-  inherit: boolean
-  textColor: string
-}
-
-export interface Orderfield {
-  idorderfield: number
-  title: string
-  value: string
+export interface IncomingProductWebhook {
+  idhook: number;
+  name: string;
+  event: 'products.free_stock_changed';
+  event_triggered_at: string;
+  data: ProductData;
 }

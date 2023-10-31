@@ -3,7 +3,7 @@ import { Logger } from '@vendure/core';
 import { Request } from 'express';
 import { loggerCtx } from '../constants';
 import { PicqerService } from './picqer.service';
-import { OrderCompletedWebhook } from './types';
+import { IncomingWebhook } from './types';
 
 @Controller('picqer')
 export class PicqerController {
@@ -12,7 +12,7 @@ export class PicqerController {
   @Post('hooks/:channelToken')
   async webhook(
     @Req() req: Request,
-    @Body() body: OrderCompletedWebhook,
+    @Body() body: IncomingWebhook,
     @Headers('X-Picqer-Signature') signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<void> {
@@ -34,14 +34,6 @@ export class PicqerController {
         `Error handling incoming hook '${body.event}': ${e.message}`,
         loggerCtx
       );
-
-      // FIXME: For now, don't throw insufficient stock error, to prevent webhook disabling
-      if (
-        e.message ===
-        'INSUFFICIENT_STOCK_ON_HAND_ERROR: INSUFFICIENT_STOCK_ON_HAND_ERROR'
-      ) {
-        return;
-      }
       throw e;
     }
   }
