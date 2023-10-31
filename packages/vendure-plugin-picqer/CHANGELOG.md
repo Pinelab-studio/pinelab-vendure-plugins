@@ -1,3 +1,7 @@
+# 2.0.0
+
+- Complete orders on `orders.status_changed` webhooks, instead of `picklists.closed` hooks. ([#281](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/281))
+
 # 1.0.13
 
 - Patch priority order of names when sending to Picqer: invoicename ?? deliveryname ?? customerFullname
