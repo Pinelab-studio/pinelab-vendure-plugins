@@ -1,4 +1,3 @@
-import { SetOrderBillingAddressMutationVariables } from '@pinelab/vendure-order-client/src';
 import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
@@ -14,6 +13,7 @@ import {
   TransitionToState,
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
+  SetBillingAddressMutationVariables,
 } from './generated/shop-graphql';
 import { testPaymentMethod } from './test-payment-method';
 
@@ -24,7 +24,7 @@ export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   shippingAddress?: SetShippingAddressMutationVariables,
-  billingAddress?: SetOrderBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables
 ): Promise<void> {
   const finalShippingAddress = shippingAddress ?? {
     input: {
@@ -52,7 +52,7 @@ export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   shippingAddress: SetShippingAddressMutationVariables,
-  billingAddress?: SetOrderBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables
 ): Promise<TransitionToStateMutation['transitionOrderToState']> {
   await setAddressAndShipping(
     shopClient,
@@ -118,7 +118,7 @@ export async function createSettledOrder(
     { id: 'T_1', quantity: 1 },
     { id: 'T_2', quantity: 2 },
   ],
-  billingAddress?: SetOrderBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables
 ): Promise<Order> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
