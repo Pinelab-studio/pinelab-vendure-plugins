@@ -31,8 +31,9 @@ export class PicqerController {
         signature,
       });
     } catch (e: any) {
+      const orderCode = (body as any)?.data?.reference;
       Logger.error(
-        `Error handling incoming hook '${body.event}': ${e.message}`,
+        `Error handling incoming hook '${body.event}' (order code: ${orderCode}): ${e.message}`,
         loggerCtx,
         util.inspect(e)
       );
