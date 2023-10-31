@@ -16,42 +16,6 @@ export interface VatGroup {
   percentage: number;
 }
 
-export type WebhookEvent = 'products.free_stock_changed' | 'picklists.closed';
-
-export interface WebhookData {
-  idhook: number;
-  name: string;
-  event: WebhookEvent;
-  address: string;
-  active: boolean;
-  secret: boolean | string;
-}
-
-export interface WebhookInput {
-  name: string;
-  event: WebhookEvent;
-  address: string;
-  secret: string;
-}
-
-export type IncomingWebhook = IncomingProductWebhook | IncomingPicklistWebhook;
-
-export interface IncomingPicklistWebhook {
-  idhook: number;
-  name: string;
-  event: 'picklists.closed';
-  event_triggered_at: string;
-  data: PickListWebhookData;
-}
-
-export interface IncomingProductWebhook {
-  idhook: number;
-  name: string;
-  event: 'products.free_stock_changed';
-  event_triggered_at: string;
-  data: ProductData;
-}
-
 export interface ProductData {
   idproduct: number;
   idvatgroup: number;
@@ -170,7 +134,7 @@ export interface OrderData {
   full_invoice_address: string;
   telephone: any;
   emailaddress: any;
-  reference: any;
+  reference: string;
   customer_remarks: any;
   pickup_point_data: any;
   partialdelivery: boolean;
@@ -179,7 +143,7 @@ export interface OrderData {
   preferred_delivery_date: any;
   discount: number;
   calculatevat: boolean;
-  status: string;
+  status: 'cancelled' | 'completed' | 'processing' | 'concept' | 'expecteds';
   public_status_page: string;
   created: string;
   updated: string;
@@ -293,4 +257,45 @@ export interface PickLocation {
   idlocation: number;
   name: string;
   amount: number;
+}
+
+export interface WebhookInput {
+  name: string;
+  event: WebhookEvent;
+  address: string;
+  secret: string;
+}
+
+// ------------- Webhook types ------------
+
+export type IncomingWebhook =
+  | IncomingProductWebhook
+  | IncomingOrderStatusWebhook;
+export type WebhookEvent =
+  | 'products.free_stock_changed'
+  | 'orders.status_changed';
+
+export interface WebhookData {
+  idhook: number;
+  name: string;
+  event: WebhookEvent;
+  address: string;
+  active: boolean;
+  secret: boolean | string;
+}
+
+export interface IncomingOrderStatusWebhook {
+  idhook: number;
+  name: string;
+  event: 'orders.status_changed';
+  event_triggered_at: string;
+  data: OrderData;
+}
+
+export interface IncomingProductWebhook {
+  idhook: number;
+  name: string;
+  event: 'products.free_stock_changed';
+  event_triggered_at: string;
+  data: ProductData;
 }

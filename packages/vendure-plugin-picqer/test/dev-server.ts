@@ -12,7 +12,7 @@ import {
   registerInitializer,
 } from '@vendure/testing';
 import path from 'path';
-import { updateVariants } from '../../test/src/admin-utils';
+import { updateVariants, addShippingMethod } from '../../test/src/admin-utils';
 import { GlobalFlag } from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -20,6 +20,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
 import { UPSERT_CONFIG } from '../src/ui/queries';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.handler';
 
 (async () => {
   require('dotenv').config();
@@ -57,11 +58,11 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [PicqerPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [PicqerPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
   });
@@ -79,6 +80,7 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
     productsCsvPath: '../test/src/products-import.csv',
   });
   await adminClient.asSuperAdmin();
+  await addShippingMethod(adminClient, picqerHandler.code);
   await adminClient.query(UPSERT_CONFIG, {
     input: {
       enabled: true,
@@ -95,7 +97,7 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
     { id: 'T_3', trackInventory: GlobalFlag.True },
     { id: 'T_4', trackInventory: GlobalFlag.True },
   ]);
-  const order = await createSettledOrder(shopClient, 1, true, [
+  const order = await createSettledOrder(shopClient, 3, true, [
     { id: 'T_1', quantity: 3 },
   ]);
 })();
