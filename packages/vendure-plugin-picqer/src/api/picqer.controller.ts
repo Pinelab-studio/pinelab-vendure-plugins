@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { loggerCtx } from '../constants';
 import { PicqerService } from './picqer.service';
 import { IncomingWebhook } from './types';
+import util from 'util';
 
 @Controller('picqer')
 export class PicqerController {
@@ -32,7 +33,8 @@ export class PicqerController {
     } catch (e: any) {
       Logger.error(
         `Error handling incoming hook '${body.event}': ${e.message}`,
-        loggerCtx
+        loggerCtx,
+        util.inspect(e)
       );
       throw e;
     }
