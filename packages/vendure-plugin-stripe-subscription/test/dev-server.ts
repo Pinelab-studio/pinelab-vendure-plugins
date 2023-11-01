@@ -26,6 +26,7 @@ import {
 } from './helpers';
 import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
 import path from 'path';
+import { DownPaymentSubscriptionStrategy } from './downpayment-subscription-strategy';
 
 export let intent: StripeSubscriptionIntent;
 
@@ -55,7 +56,7 @@ export let intent: StripeSubscriptionIntent;
       StripeTestCheckoutPlugin,
       StripeSubscriptionPlugin.init({
         vendureHost: process.env.VENDURE_HOST!,
-        subscriptionStrategy: new DefaultSubscriptionStrategy(),
+        subscriptionStrategy: new DownPaymentSubscriptionStrategy(),
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -67,10 +68,7 @@ export let intent: StripeSubscriptionIntent;
               extensions: [StripeSubscriptionPlugin.ui],
               devMode: true,
             })
-          : // otherwise used precompiled files. Might need to run once using devMode: false
-            {
-              path: path.join(__dirname, '__admin-ui/dist'),
-            },
+          : undefined,
       }),
     ],
   });

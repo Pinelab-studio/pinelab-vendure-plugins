@@ -32,7 +32,8 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
   previewSubscription(
     ctx: RequestContext,
     injector: Injector,
-    productVariant: ProductVariant
+    productVariant: ProductVariant,
+    customInputs: any
   ): Subscription {
     return this.getSubscriptionForVariant(productVariant);
   }
