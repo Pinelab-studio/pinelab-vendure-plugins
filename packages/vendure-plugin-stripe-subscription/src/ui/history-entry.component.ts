@@ -4,9 +4,12 @@ import {
   OrderHistoryEntryComponent,
   TimelineDisplayType,
   TimelineHistoryEntry,
+  SharedModule,
 } from '@vendure/admin-ui/core';
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'stripe-subscription-notification-component',
   template: `
     <span>{{ entry.data.message }}</span>
@@ -25,8 +28,11 @@ import {
     <vdr-history-entry-detail *ngIf="entry.data.error">
       <vdr-object-tree [value]="entry.data.error"></vdr-object-tree>
     </vdr-history-entry-detail>
-    <vdr-history-entry-detail *ngIf="entry.data.pricing" title="pricing">
-      <vdr-object-tree [value]="entry.data.pricing"></vdr-object-tree>
+    <vdr-history-entry-detail
+      *ngIf="entry.data.subscription"
+      title="Subscription"
+    >
+      <vdr-object-tree [value]="entry.data.subscription"></vdr-object-tree>
     </vdr-history-entry-detail>
   `,
 })

@@ -45,7 +45,7 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
       name: `Subscription ${productVariant.name}`,
       variantId: productVariant.id,
       priceIncludesTax: productVariant.listPriceIncludesTax,
-      amountDueNow: price,
+      amountDueNow: 0,
       recurring: {
         amount: price,
         interval: 'month',
@@ -57,6 +57,6 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
 
   private getOneMonthFromNow(): Date {
     var now = new Date();
-    return new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate(), 12);
   }
 }

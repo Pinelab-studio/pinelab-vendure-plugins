@@ -1,4 +1,4 @@
-import { Metadata } from './stripe.types';
+import { Metadata } from './stripe.common';
 
 export interface StripePaymentIntent {
   id: string;
@@ -41,6 +41,33 @@ export interface StripePaymentIntent {
   status: string;
   transfer_data: any;
   transfer_group: any;
+}
+
+export interface StripeSetupIntent {
+  id: string;
+  object: string;
+  application: any;
+  automatic_payment_methods: any;
+  cancellation_reason: any;
+  client_secret: string;
+  created: number;
+  customer: string;
+  description: any;
+  flow_directions: any;
+  last_setup_error: any;
+  latest_attempt: any;
+  livemode: boolean;
+  mandate: any;
+  metadata: Metadata;
+  next_action: any;
+  on_behalf_of: any;
+  payment_method: any;
+  payment_method_configuration_details: any;
+  payment_method_options: PaymentMethodOptions;
+  payment_method_types: string[];
+  single_use_mandate: any;
+  status: string;
+  usage: string;
 }
 
 export interface AmountDetails {

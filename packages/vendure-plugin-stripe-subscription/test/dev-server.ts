@@ -11,18 +11,23 @@ import {
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { StripeSubscriptionPlugin } from '../src/stripe-subscription.plugin';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import {
+  StripeSubscriptionPlugin,
+  StripeSubscriptionIntent,
+  DefaultSubscriptionStrategy,
+} from '../src/';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   setShipping,
   UPDATE_CHANNEL,
-  UPDATE_VARIANT,
 } from './helpers';
 import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
+import path from 'path';
 
-export let clientSecret = 'test';
+export let intent: StripeSubscriptionIntent;
 
 /**
  * Use something like NGROK to start a reverse tunnel to receive webhooks:  ngrok http 3050
@@ -37,6 +42,11 @@ export let clientSecret = 'test';
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    authOptions: {
+      cookieOptions: {
+        secret: '123',
+      },
+    },
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
@@ -45,21 +55,22 @@ export let clientSecret = 'test';
       StripeTestCheckoutPlugin,
       StripeSubscriptionPlugin.init({
         vendureHost: process.env.VENDURE_HOST!,
+        subscriptionStrategy: new DefaultSubscriptionStrategy(),
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: process.env.COMPILE_ADMIN
-        //   ? compileUiExtensions({
-        //     outputPath: path.join(__dirname, '__admin-ui'),
-        //     extensions: [StripeSubscriptionPlugin.ui],
-        //     devMode: true,
-        //   })
-        //   : // otherwise used precompiled files. Might need to run once using devMode: false
-        //   {
-        //     path: path.join(__dirname, '__admin-ui/dist'),
-        //   },
+        app: process.env.COMPILE_ADMIN
+          ? compileUiExtensions({
+              outputPath: path.join(__dirname, '__admin-ui'),
+              extensions: [StripeSubscriptionPlugin.ui],
+              devMode: true,
+            })
+          : // otherwise used precompiled files. Might need to run once using devMode: false
+            {
+              path: path.join(__dirname, '__admin-ui/dist'),
+            },
       }),
     ],
   });
@@ -96,6 +107,7 @@ export let clientSecret = 'test';
             value: process.env.STRIPE_WEBHOOK_SECRET,
           },
           { name: 'apiKey', value: process.env.STRIPE_APIKEY },
+          { name: 'publishableKey', value: process.env.STRIPE_PUBLISHABLE_KEY },
         ],
       },
       translations: [
@@ -118,12 +130,12 @@ export let clientSecret = 'test';
   await setShipping(shopClient);
   console.log(`Prepared order ${order?.code}`);
 
-  const {
-    createStripeSubscriptionIntent: { clientSecret: secret, intentType },
-  } = await shopClient.query(CREATE_PAYMENT_LINK);
-  clientSecret = secret;
+  const { createStripeSubscriptionIntent } = await shopClient.query(
+    CREATE_PAYMENT_LINK
+  );
+  intent = createStripeSubscriptionIntent;
   console.log(
-    `Go to http://localhost:3050/checkout/ to test your ${intentType}`
+    `Go to http://localhost:3050/checkout/ to test your ${intent.intentType}`
   );
 
   // Uncomment these lines to list all subscriptions created in Stripe

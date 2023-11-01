@@ -1,18 +1,18 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { SubscriptionStrategy } from './api-v2/strategy/subscription-strategy';
-import { shopSchemaExtensions } from './api-v2/graphql-schema';
+import { SubscriptionStrategy } from './api/strategy/subscription-strategy';
+import { shopSchemaExtensions } from './api/graphql-schema';
 import { createRawBodyMiddleWare } from '../../util/src/raw-body';
-import { DefaultSubscriptionStrategy } from './api-v2/strategy/default-subscription-strategy';
+import { DefaultSubscriptionStrategy } from './api/strategy/default-subscription-strategy';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import { orderLineCustomFields } from './api-v2/vendure-config/custom-fields';
-import { stripeSubscriptionHandler } from './api-v2/vendure-config/stripe-subscription.handler';
-import { hasStripeSubscriptionProductsPaymentChecker } from './api-v2/vendure-config/has-stripe-subscription-products-payment-checker';
-import { SubscriptionOrderItemCalculation } from './api-v2/subscription-order-item-calculation';
-import { StripeSubscriptionService } from './api-v2/stripe-subscription.service';
-import { StripeSubscriptionShopResolver } from './api-v2/stripe-subscription.resolver';
-import { StripeSubscriptionController } from './api-v2/stripe-subscription.controller';
+import { orderLineCustomFields } from './api/vendure-config/custom-fields';
+import { stripeSubscriptionHandler } from './api/vendure-config/stripe-subscription.handler';
+import { hasStripeSubscriptionProductsPaymentChecker } from './api/vendure-config/has-stripe-subscription-products-payment-checker';
+import { SubscriptionOrderItemCalculation } from './api/subscription-order-item-calculation';
+import { StripeSubscriptionService } from './api/stripe-subscription.service';
+import { StripeSubscriptionShopResolver } from './api/stripe-subscription.resolver';
+import { StripeSubscriptionController } from './api/stripe-subscription.controller';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -69,6 +69,7 @@ export class StripeSubscriptionPlugin {
   }
 
   static ui: AdminUiExtension = {
+    id: 'stripe-subscription-extension',
     extensionPath: path.join(__dirname, 'ui'),
     ngModules: [
       {

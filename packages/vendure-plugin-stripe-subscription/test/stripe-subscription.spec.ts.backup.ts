@@ -24,9 +24,31 @@ import { createPromotion, getOrder } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { applyCouponCode } from '../../test/src/shop-utils';
 import {
+  allByPercentage,
+  calculateSubscriptionPricing,
+  getBillingsPerDuration,
+  getDayRate,
+  getDaysUntilNextStartDate,
+  getNextCyclesStartDate,
+  getNextStartDate,
+  IncomingStripeWebhook,
+  OrderLineWithSubscriptionFields,
+  Schedule,
+  StripeSubscriptionPlugin,
+  StripeSubscriptionPricing,
+  StripeSubscriptionService,
+  SubscriptionInterval,
+  SubscriptionStartMoment,
+  VariantForCalculation,
+} from '../src';
+import { DELETE_SCHEDULE, UPSERT_SCHEDULES } from '../src/ui/queries';
+import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
+  GET_ORDER_WITH_PRICING,
+  GET_PRICING,
+  GET_PRICING_FOR_PRODUCT,
   GET_SCHEDULES,
   getDefaultCtx,
   REFUND_ORDER,
@@ -85,8 +107,6 @@ describe('Stripe Subscription Plugin', function () {
   });
 
   const ctx = { channel: { pricesIncludeTax: true } };
-
-  // TODO test webhook registrations
 
   it("Sets channel settings to 'prices are including tax'", async () => {
     await adminClient.asSuperAdmin();

@@ -1,61 +1,50 @@
-// TODO: Strategy explained. Failed invoice event
-// No support for non-recurring payments. Use the built Vendure plugin for that. Only for recurring payments
-// Explain storefront flow. Order of graphql mutations
-// Webhook setup! Start Vendure, set ApiKey, save FIRST. Go to Stripe, see created webhook and copy the secret
-
 # Vendure Stripe Subscription plugin
 
 ![Vendure version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure)
 
-A channel aware plugin that allows you to sell subscription based services or memberships through Vendure. Also support
-non-subscription payments. This plugin was made in collaboration with the great people
+A channel aware plugin that allows you to sell subscription based services or products through Vendure. This plugin was made in collaboration with the great people
 at [isoutfitters.com](https://isoutfitters.com/).
+
+- [Vendure Stripe Subscription plugin](#vendure-stripe-subscription-plugin)
+  - [How it works](#how-it-works)
+  - [Installation](#installation)
+  - [Storefront usage](#storefront-usage)
+    - [Retrieving the publishable key](#retrieving-the-publishable-key)
+  - [Custom subscription strategy](#custom-subscription-strategy)
+    - [Custom subscription inputs](#custom-subscription-inputs)
+    - [Multiple subscriptions per variant](#multiple-subscriptions-per-variant)
+  - [Caveats](#caveats)
+  - [Additional features](#additional-features)
+    - [Canceling subscriptions](#canceling-subscriptions)
+    - [Refunding subscriptions](#refunding-subscriptions)
+    - [Payment eligibility checker](#payment-eligibility-checker)
+    - [Contributing and dev server](#contributing-and-dev-server)
 
 ## How it works
 
-A few things you should know before getting started:
+1. A customer orders a product that represents a subscription
+2. During checkout, the customer is asked to pay the initial amount OR to only supply their credit card credentials when no initial payment is needed.
+3. After order placement, the subscriptions will be created. Created subscriptions will be logged as history entries on the order.
 
-- Subscriptions are defined by `Schedules`. A schedule is a blueprint for a subscription and can be reused on multiple
-  subscriptions. An example of a schedule is
-  `Billed every first of the month, for 6 months`.
-- Schedules have a fixed duration. Currently, they do autorenew after this duration. The duration is used to calculate
-  prorations and down payment deductions. Read more on this under [Advanced features](#advanced-features)
-- By connecting a `Schedule` to a ProductVariant, you turn the variant into a subscription. The price of the variant is
-  the price a customer pays **per interval**.
+The default strategy defines subscriptions in the following manner:
 
-![](docs/schedule-weekly.png)  
-_Managing schedules in the Admin UI_
+- The product variant price is used as monthly price
+- The customer pays the initial amount due during the checkout
+- The subscription will start one month after purchase, because the first month has been paid during checkout.
 
-![](docs/sub-product.png)  
-_Connecting a schedule to a product variant_
+You can easily define your own subscriptions with a [custom subscription strategy](#custom-subscription-strategy).
 
-### Examples of schedules
+## Installation
 
-A variant with price $30,- and schedule `Duration of 6 months, billed monthly` is a subscription where the customer is
-billed $30,- per month for 6 months.
-
-A variant with price $300 and a schedule of `Duration of 12 months, billed every 2 months` is a subscription where the
-customer is billed $300 every 2 months, for a duration of 12 months.
-
-Currently, subscriptions auto-renew after their duration: After 12 months, the customer is again billed $300 per 2
-momnths for 12 months.
-
-## Getting started
-
-### Setup Stripe webhook
-
-1. Go to Stripe > developers > webhooks and create a webhook to `https://your-vendure.io/stripe-subscriptions/webhook`
-2. Select the following events for the webhook: `payment_intent.succeeded`, `invoice.payment_succeeded` and `invoice.payment_failed`
-
-## Vendure setup
-
-3. Add the plugin to your `vendure-config.ts` plugins and admin UI compilation:
+1. Add the plugin to your `vendure-config.ts` plugins and admin UI compilation:
 
 ```ts
-import { StripeSubscriptionPlugin } from 'vendure-plugin-stripe-subscription';
+import { StripeSubscriptionPlugin } from '@pinelab/vendure-plugin-stripe-subscription';
 
 plugins: [
-  StripeSubscriptionPlugin,
+  StripeSubscriptionPlugin.init({
+    vendureHost: process.env.VENDURE_HOST!,
+  }),
   AdminUiPlugin.init({
     port: 3002,
     route: 'admin',
@@ -67,39 +56,51 @@ plugins: [
 ];
 ```
 
-5. Run a migration to add the `Schedule` entity and custom fields to the database.
-6. Start the Vendure server and login to the admin UI
-7. Go to `Settings > Subscriptions` and create a Schedule.
-8. Create a variant and select a schedule in the variant detail screen in the admin UI.
-9. Create a payment method with the code `stripe-subscription-payment` and select `stripe-subscription` as handler. You can (and should) have only 1 payment method with the Stripe Subscription handler per channel.
-10. Set your API key from Stripe in the apiKey field.
-11. Get the webhook secret from you Stripe dashboard and save it on the payment method.
+2. Start the Vendure server and login to the admin UI
+3. Create a payment method and select `Stripe Subscription` as handler
+4. Fill in your `API key`. `Publishable key` and `Webhook secret` can be left empty at first.
+5. Save the payment method and refresh the Admin UI screen.
+6. The `Webhook secret` field should now have a value. This means webhooks have been created in your Stripe account. If not, check the server logs.
+7. You can (and should) have only 1 payment method with the Stripe Subscription handler per channel.
 
 ## Storefront usage
 
-1. From your storefront, add the subscription variant to your order
-2. Add a shipping address and a shipping method to the order (mandatory for all orders).
-3. Call the graphql mutation `createStripeSubscriptionIntent` to receive the Payment intent token.
-4. Use this token to display the Stripe form on your storefront. See
-   the [Stripe docs](https://stripe.com/docs/payments/accept-a-payment?platform=web&ui=elements#set-up-stripe.js) on how
-   to accomplish that.
-5. During the checkout the user is only charged any potential down payment or proration (
-   see [Advanced features](#advanced-features)). The recurring charges will occur on the start of the schedule. For
-   paid-up-front schedules the customer pays the full amount during checkout
-6. Have the customer fill out his payment details.
-7. Vendure will create the subscriptions after the intent has successfully been completed by the customer.
-8. The order will be settled by Vendure when the subscriptions are created.
+1. On the product detail page of your subscription product, you can preview the subscription for a given variant with this query:
+
+```graphql
+{
+  previewStripeSubscription(productVariantId: 1) {
+    name
+    amountDueNow
+    variantId
+    priceIncludesTax
+    recurring {
+      amount
+      interval
+      intervalCount
+      startDate
+      endDate
+    }
+  }
+}
+```
+
+2. The same can be done for all variants of a product with the query `previewStripeSubscriptionForProduct`
+3. Add the item to cart with the default `AddItemToOrder` mutation.
+4. Add a shipping address and a shipping method to the order (mandatory for all orders).
+5. You can create `createStripeSubscriptionIntent` to receive a client secret.
+6. :warning: Please make sure you render the correct Stripe elements: A created intent can be a `PaymentIntent` or a `SetupIntent`.
+7. Use this token to display the Stripe form elements on your storefront. See
+   the [Stripe docs](https://stripe.com/docs/payments/accept-a-payment?platform=web&ui=elements#set-up-stripe.js) for more information.
+8.
+9. The customer can now enter his credit card credentials.
+10. Vendure will create the subscriptions in the background, after the intent has successfully been completed by the customer.
+11. The order will be settled by Vendure when the subscriptions are created.
 
 It's important to inform your customers what you will be billing them in the
 future: https://stripe.com/docs/payments/setup-intents#mandates
 
-![](docs/subscription-events.png)  
-_After order settlement you can view the subscription details on the order history_
-
-![](docs/sequence.png)  
-_Subscriptions are created in the background, after a customer has finished the checkout_
-
-#### Retrieving the publishable key
+### Retrieving the publishable key
 
 You can optionally supply your publishable key in your payment method handler, so that you can retrieve it using the `eligiblePaymentMethods` query:
 
@@ -113,253 +114,219 @@ You can optionally supply your publishable key in your payment method handler, s
 }
 ```
 
-## Order with a total of €0
+## Custom subscription strategy
 
-With subscriptions, it can be that your order totals to €0, because, for example, you start charging your customer starting next month.
-In case of an order being €0, a verification fee of €1 is added, because payment_intents with €0 are not allowed by Stripe.
-
-## Canceling subscriptions
-
-You can cancel a subscription by canceling the corresponding order line of an order. The subscription will be canceled before the next billing cycle using Stripe's `cancel_at_period_end` parameter.
-
-## Refunding subscriptions
-
-Only initial payments of subscriptions can be refunded. Any future payments should be refunded via the Stripe dashboard.
-
-# Advanced features
-
-Features you can use, but don't have to!
-
-## Payment eligibility checker
-
-You can use the payment eligibility checker `has-stripe-subscription-products-checker` if you want customers that don't have subscription products in their order to use a different payment method. The `has-stripe-subscription-products-checker` makes your payment method not eligible if it does not contain any subscription products.
-
-The checker is added automatically, you can just select it via the Admin UI when creating or updating a payment method.
-
-## Down payments
-
-You can define down payments to a schedule, to have a customer pay a certain amount up front. The paid amount is then deducted from the recurring charges.
-
-Example:
-We have a schedule + variant where the customer normally pays $90 a month for 6 months. We set a down payment of $180, so the customer pays $180 during checkout.
-The customer will now be billed $60 a month, because he already paid $180 up front: $180 / 6 months = $30, so we deduct the $30 from every month.
-
-A down payment is created as separate subscription in Stripe. In the example above, a subscription will be created that charges the customer $180 every 6 months,
-because the down payment needs to be paid again after renewal
-
-## Paid up front
-
-Schedules can be defined as 'Paid up front'. This means the customer will have to pay the total value of the
-subscription during the checkout. Paid-up-front subscriptions can not have down payments, because it's already one big
-down payment.
-
-Example:
-![](docs/schedule-paid-up-front.png)
-When we connect the schedule above to a variant with price $540,-, the user will be prompted to pay $540,- during
-checkout. The schedules start date is **first of the month**, so a subscription is created to renew the $540,- in 6
-months from the first of the month. E.g. the customer buys this subscription on January 15 and pays $540,- during
-checkout. The subscription's start date is February 1, because that's the first of the next month.
-
-The customer will be billed $540 again automatically on July 1, because that's 6 months (the duration) from the start
-date of the subscription.
-
-## Prorations
-
-In the example above, the customer will also be billed for the remaining 15 days from January 15 to February 1, this is
-called proration.
-
-Proration can be configured on a schedule. With `useProration=false` a customer isn't charged for the remaining days during checkout.
-
-Proration is calculated on a yearly basis. E.g, in the example above: $540 is for a duration of 6 months, that means
-$1080 for the full year. The day rate of that subscription will then be 1080 / 365 = $2,96 a day. When the customer buys
-the subscription on January 15, he will be billed $44,40 proration for the remaining 15 days.
-
-## Storefront defined start dates
-
-A customer can decide to start the subscription on January 17, to pay less proration, because there are now only 13 days
-left until the first of February. This can be done in the storefront with the following query:
-
-```graphql
-mutation {
-  addItemToOrder(
-    productVariantId: 1
-    quantity: 1
-    customFields: { startDate: "2023-01-31T09:18:28.533Z" }
-  ) {
-    ... on Order {
-      id
-    }
-  }
-}
-```
-
-## Storefront defined down payments
-
-A customer can also choose to pay a higher down payment, to lower the recurring costs of a subscription.
-
-Example:
-A customer buys a subscription that has a duration of 6 months, and costs $90 per month. The customer can choose to pay
-a down payment of $270,- during checkout to lower to monthly price. The $270 down payment will be deducted from the
-monthly price: 270 / 6 months = $45. With the down payment of $270, customer will now be billed 90 - 45 = $45,- per month
-for the next 6 months.
-
-Down payments can be added via a custom field on the order line:
-
-```graphql
-mutation {
-  addItemToOrder(
-    productVariantId: 1
-    quantity: 1
-    customFields: { down payment: 27000 }
-  ) {
-    ... on Order {
-      id
-    }
-  }
-}
-```
-
-Down payments can never be lower that the amount set in the schedule, and never higher than the total value of a
-subscription.
-
-### Preview pricing calculations
-
-You can preview the pricing model of a subscription without adding it to cart with the following query on the shop-api:
-
-```graphql
-{
-  getStripeSubscriptionPricing(
-    input: {
-      productVariantId: 1
-      # Optional dynamic start date
-      startDate: "2022-12-25T00:00:00.000Z"
-      # Optional dynamic down payment
-      downpayment: 1200
-    }
-  ) {
-    downpayment
-    pricesIncludeTax
-    totalProratedAmount
-    proratedDays
-    recurringPrice
-    originalRecurringPrice
-    interval
-    intervalCount
-    amountDueNow
-    subscriptionStartDate
-    schedule {
-      id
-      name
-      downpayment
-      pricesIncludeTax
-      durationInterval
-      durationCount
-      startMoment
-      paidUpFront
-      billingCount
-      billingInterval
-    }
-  }
-}
-```
-
-`Downpayment` and `startDate` are optional parameters. Without them, the defaults defined by the schedule will be used.
-
-### Get subscription pricing details per order line
-
-You can also get the subscription and Schedule pricing details per order line with the following query:
-
-```graphql
-{
-    activeOrder {
-        id
-        code
-        lines {
-            subscriptionPricing {
-                downpayment
-                totalProratedAmount
-                proratedDays
-                dayRate
-                recurringPrice
-                interval
-                intervalCount
-                amountDueNow
-                subscriptionStartDate
-                schedule {
-                    id
-                    name
-                    downpayment
-                    durationInterval
-                    durationCount
-                    startMoment
-                    paidUpFront
-                    billingCount
-                    billingInterval
-                }
-            }
-        }
-```
-
-### Discount subscription payments
-
-Example of a discount on subscription payments:
-
-- We have a subscription that will cost $30 a month, but has the promotion `Discount future subscription payments by 10%` applied
-- The actual monthly price of the subscription will be $27, forever.
-
-There are some built in discounts that work on future payments of a subscription. You can select the under Promotion Actions in the Admin UI.
-
-`StripeSubscriptionPricing.originalrecurringPrice` will have the non-discounted subscription price, while `StripeSubscriptionPricing.recurringPrice` will have the final discounted price.
-
-### Custom future payments promotions
-
-You can implement your own custom discounts that will apply to future payments. These promotions **do not** affect the actual order price, only future payments (the actual subscription price)!
-
-The `SubscriptionPromotionAction` will discount all subscriptions in an order.
+You can define your own subscriptions by implementing the `StripeSubscriptionStrategy`:
 
 ```ts
-// Example fixed discount promotion
-import { SubscriptionPromotionAction } from 'vendure-plugin-stripe-subscription';
+import { SubscriptionStrategy } from '@pinelab/vendure-plugin-stripe-subscription';
+import { RequestContext, Injector, ProductVariant, Order } from '@vendure/core';
 
 /**
- * Discount all subscription payments by a percentage.
+ * This example creates a subscription that charges the customer the price of the variant, every 4 weeks
  */
-export const discountAllSubscriptionsByPercentage =
-  new SubscriptionPromotionAction({
-    code: 'discount_all_subscription_payments_example',
-    description: [
+export class MySubscriptionStrategy implements SubscriptionStrategy {
+  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean {
+    // This example treats all products as subscriptions
+    return true;
+  }
+
+  defineSubscription(
+    ctx: RequestContext,
+    injector: Injector,
+    productVariant: ProductVariant,
+    order: Order,
+    orderLineCustomFields: { [key: string]: any },
+    quantity: number
+  ): Subscription {
+    return {
+      name: `Subscription ${productVariant.name}`,
+      variantId: productVariant.id,
+      priceIncludesTax: productVariant.listPriceIncludesTax,
+      amountDueNow: productVariant.listPrice,
+      recurring: {
+        amount: productVariant.listPrice,
+        interval: 'week',
+        intervalCount: 4,
+        startDate: new Date(),
+      },
+    };
+  }
+
+  // This is used to preview the subscription in the storefront, without adding them to cart
+  previewSubscription(
+    ctx: RequestContext,
+    injector: Injector,
+    // Custom inputs can be passed into the preview method via the storefront
+    customInputs: any,
+    productVariant: ProductVariant
+  ): Subscription {
+    return {
+      name: `Subscription ${productVariant.name}`,
+      variantId: productVariant.id,
+      priceIncludesTax: productVariant.listPriceIncludesTax,
+      amountDueNow: productVariant.listPrice,
+      recurring: {
+        amount: productVariant.listPrice,
+        interval: 'week',
+        intervalCount: 4,
+        startDate: new Date(),
+      },
+    };
+  }
+}
+```
+
+You can then pass the strategy into the plugin during initialization in `vendure-config.ts`:
+
+```ts
+      StripeSubscriptionPlugin.init({
+        vendureHost: process.env.VENDURE_HOST!,
+        subscriptionStrategy: new MySubscriptionStrategy(),
+      }),
+```
+
+### Custom subscription inputs
+
+You can pass custom inputs to your strategy, to change how a subscription is defined, for example by having a selectable start date:
+
+1. Define a custom field on an order line named `subscriptionStartDate`
+2. When previewing a subscription for a product, you can pass a `subscriptionStartDate` to your strategy:
+
+```graphql
+{
+  previewStripeSubscriptionForProduct(
+    productVariantId: 1
+    customInputs: { subscriptionStartDate: "2024-01-01" }
+  ) {
+    name
+    amountDueNow
+    variantId
+    priceIncludesTax
+    recurring {
+      amount
+      interval
+      intervalCount
+      startDate
+      endDate
+    }
+  }
+}
+```
+
+3. In you custom strategy, you would handle the custom input:
+
+```ts
+  previewSubscription(
+    ctx: RequestContext,
+    injector: Injector,
+    customInputs: { subscriptionStartDate: string },
+    productVariant: ProductVariant
+  ): Subscription {
+    return {
+      name: `Subscription ${productVariant.name}`,
+      variantId: productVariant.id,
+      priceIncludesTax: productVariant.listPriceIncludesTax,
+      amountDueNow: productVariant.listPrice,
+      recurring: {
+        amount: productVariant.listPrice,
+        interval: 'week',
+        intervalCount: 4,
+        startDate: new Date(customInputs.subscriptionStartDate),
+      },
+    };
+  }
+}
+```
+
+4. When adding a product to cart, make sure you also set the `subscriptionStartDate` on the order line, so that you can access it in the `defineSubscription` method of your strategy:
+
+```ts
+  defineSubscription(
+    ctx: RequestContext,
+    injector: Injector,
+    productVariant: ProductVariant,
+    order: Order,
+    orderLineCustomFields: { [key: string]: any },
+    quantity: number
+  ): Subscription {
+    return {
+      name: `Subscription ${productVariant.name}`,
+      variantId: productVariant.id,
+      priceIncludesTax: productVariant.listPriceIncludesTax,
+      amountDueNow: productVariant.listPrice,
+      recurring: {
+        amount: productVariant.listPrice,
+        interval: 'week',
+        intervalCount: 4,
+        startDate: new Date(orderLineCustomFields.subscriptionStartDate),
+      },
+    };
+  }
+```
+
+### Multiple subscriptions per variant
+
+It's possible to define multiple subscriptions per product. For example when you want to support down payments or yearly contributions.
+
+Example: A customer pays $90 a month, but is also required to pay a yearly fee of $150:
+
+```ts
+  defineSubscription(
+    ctx: RequestContext,
+    injector: Injector,
+    productVariant: ProductVariant,
+  ): Subscription {
+    return [
       {
-        languageCode: LanguageCode.en,
-        value: 'Discount future subscription payments by { discount } %',
-      },
-    ],
-    args: {
-      discount: {
-        type: 'int',
-        ui: {
-          component: 'number-form-input',
-          suffix: '%',
+        name: `Monthly fee`,
+        variantId: productVariant.id,
+        priceIncludesTax: productVariant.listPriceIncludesTax,
+        amountDueNow: 0,
+        recurring: {
+          amount: 9000,
+          interval: 'month',
+          intervalCount: 1,
+          startDate: new Date(),
         },
-      },
-    },
-    async executeOnSubscription(
-      ctx,
-      currentSubscriptionPrice,
-      orderLine,
-      args
-    ) {
-      const discount = currentSubscriptionPrice * (args.discount / 100);
-      return discount;
-    },
-  });
+      }, {
+        name: `yearly fee`,
+        variantId: productVariant.id,
+        priceIncludesTax: productVariant.listPriceIncludesTax,
+        amountDueNow: 0,
+        recurring: {
+          amount: 15000,
+          interval: 'year',
+          intervalCount: 1,
+          startDate: new Date(),
+        },
+      }
+    ];
+  }
 ```
 
 ## Caveats
 
-1. This plugin overrides any set OrderItemCalculationStrategies. The strategy in this plugin is used for calculating the
-   amount due for a subscription, if the variant is a subscription. For non-subscription variants, the normal default
-   orderline calculation is used. Only 1 strategy can be used per Vendure instance, so any other
+1. This plugin overrides any set `OrderItemCalculationStrategy`. The strategy in this plugin is used for calculating the
+   amount due for a subscription, if the variant is a subscription. For non-subscription variants, Vendure's default
+   order line calculation is used. Only 1 strategy can be used per Vendure instance, so any other
    OrderItemCalculationStrategies are overwritten by this plugin.
+
+## Additional features
+
+### Canceling subscriptions
+
+You can cancel a subscription by canceling the corresponding order line of an order. The subscription will be canceled before the next billing cycle using Stripe's `cancel_at_period_end` parameter.
+
+### Refunding subscriptions
+
+Only initial payments of subscriptions can be refunded. Any future payments should be refunded via the Stripe dashboard.
+
+### Payment eligibility checker
+
+You can use the payment eligibility checker `has-stripe-subscription-products-checker` if you to use a different payment method for orders without subscriptions. The `has-stripe-subscription-products-checker` makes your payment method not eligible if it does not contain any subscription products.
+
+The checker is added automatically, you can just select it via the Admin UI when creating or updating a payment method.
 
 ### Contributing and dev server
 
@@ -367,10 +334,15 @@ You can locally test this plugin by checking out the source.
 
 1. Create a .env file with the following contents:
 
-```
-STRIPE_APIKEY=sk_test_
-STRIPE_PUBLISHABLE_KEY=pk_test_
+```shell
+
+STRIPE_APIKEY=sk_test_****
+STRIPE_PUBLISHABLE_KEY=pk_test_****
+VENDURE_HOST=https://280n-dn27839.ngrok-free.app
+
 ```
 
 2. Run `yarn start`
 3. Go to `http://localhost:3050/checkout` to view the Stripe checkout
+4. Use a [Stripe test card](https://stripe.com/docs/testing) as credit card details.
+5. See the order being `PaymentSettled` in the admin.

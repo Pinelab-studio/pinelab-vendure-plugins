@@ -5,5 +5,5 @@
     "types": ["node"]
   },
   "include": ["src/"],
-  "exclude": ["src/ui", "src/api"]
+  "exclude": ["src/ui"]
 }
