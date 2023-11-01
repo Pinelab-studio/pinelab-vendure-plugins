@@ -1,4 +1,8 @@
-# 2.0.0
+# 2.0.2
+
+- Try to fulfill again on order status changed webhooks, to support fulfilling of back orders.
+
+# 2.0.1
 
 - Push to Picqer even when fulfilling failed. Log order codes and manual steps needed when fulfillment fails.
 
