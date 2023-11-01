@@ -1177,7 +1177,7 @@ export class PicqerService implements OnApplicationBootstrap {
         arguments: [],
       });
       Logger.info(
-        `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
+        `Created fulfillment (${fulfillment.id}) for order ${order.code} on '${logAction}'`,
         loggerCtx
       );
     } catch (e: any) {
