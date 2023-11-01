@@ -407,8 +407,24 @@ export class PicqerService implements OnApplicationBootstrap {
     if (data.status === 'completed' && order.state !== 'Delivered') {
       // Order should be transitioned to Shipped, then to Delivered
       if (order.state !== 'Shipped') {
+        // Try to fulfill order first. This should have been done already, except for back orders
+        try {
+          const fulfillment = await fulfillAll(ctx, this.orderService, order, {
+            code: picqerHandler.code,
+            arguments: [],
+          });
+          Logger.info(
+            `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
+            loggerCtx
+          );
+        } catch (e: any) {
+          Logger.error(
+            `Failed to fulfill order ${order.code}: ${e?.message}. Transition this order manually to 'Delivered' if it has been sent to Picqer, to prevent future errors related to status changes for this order.`,
+            loggerCtx,
+            util.inspect(e)
+          );
+        }
         // If order isn't Shipped yet, mark all it's fulfillments as Shipped
-        // The order should already have been fulfilled when pushing to Picqer
         for (const fulfillment of order.fulfillments) {
           const result = await this.orderService.transitionFulfillmentToState(
             ctx,
@@ -1175,6 +1191,28 @@ export class PicqerService implements OnApplicationBootstrap {
       invoicecountry: order.billingAddress?.countryCode?.toUpperCase(),
       products,
     };
+  }
+
+  /**
+   * Fulfill without throwing errors. Logs an error if fulfilment fails
+   */
+  private async safeFulfill(ctx: RequestContext, order: Order): Promise<void> {
+    try {
+      const fulfillment = await fulfillAll(ctx, this.orderService, order, {
+        code: picqerHandler.code,
+        arguments: [],
+      });
+      Logger.info(
+        `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
+        loggerCtx
+      );
+    } catch (e: any) {
+      Logger.error(
+        `Failed to fulfill order ${order.code}: ${e?.message}. Transition this order manually to 'Delivered' after checking that it exists in Picqer.`,
+        loggerCtx,
+        util.inspect(e)
+      );
+    }
   }
 
   /**
