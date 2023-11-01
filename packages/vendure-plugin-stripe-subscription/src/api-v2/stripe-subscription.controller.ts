@@ -36,6 +36,7 @@ export class StripeSubscriptionController {
     const channelToken =
       body.data.object.metadata?.channelToken ??
       (body.data.object as StripeInvoice).lines?.data[0]?.metadata.channelToken;
+      // TODO get events from Service static events
     if (
       body.type !== 'payment_intent.succeeded' &&
       body.type !== 'setup_intent.succeeded' &&
