@@ -140,7 +140,6 @@ export class MySubscriptionStrategy implements SubscriptionStrategy {
   ): Subscription {
     return {
       name: `Subscription ${productVariant.name}`,
-      variantId: productVariant.id,
       priceIncludesTax: productVariant.listPriceIncludesTax,
       amountDueNow: productVariant.listPrice,
       recurring: {
@@ -162,7 +161,6 @@ export class MySubscriptionStrategy implements SubscriptionStrategy {
   ): Subscription {
     return {
       name: `Subscription ${productVariant.name}`,
-      variantId: productVariant.id,
       priceIncludesTax: productVariant.listPriceIncludesTax,
       amountDueNow: productVariant.listPrice,
       recurring: {
@@ -224,7 +222,6 @@ You can pass custom inputs to your strategy, to change how a subscription is def
   ): Subscription {
     return {
       name: `Subscription ${productVariant.name}`,
-      variantId: productVariant.id,
       priceIncludesTax: productVariant.listPriceIncludesTax,
       amountDueNow: productVariant.listPrice,
       recurring: {
@@ -251,7 +248,6 @@ You can pass custom inputs to your strategy, to change how a subscription is def
   ): Subscription {
     return {
       name: `Subscription ${productVariant.name}`,
-      variantId: productVariant.id,
       priceIncludesTax: productVariant.listPriceIncludesTax,
       amountDueNow: productVariant.listPrice,
       recurring: {
@@ -279,7 +275,6 @@ Example: A customer pays $90 a month, but is also required to pay a yearly fee o
     return [
       {
         name: `Monthly fee`,
-        variantId: productVariant.id,
         priceIncludesTax: productVariant.listPriceIncludesTax,
         amountDueNow: 0,
         recurring: {
@@ -290,7 +285,6 @@ Example: A customer pays $90 a month, but is also required to pay a yearly fee o
         },
       }, {
         name: `yearly fee`,
-        variantId: productVariant.id,
         priceIncludesTax: productVariant.listPriceIncludesTax,
         amountDueNow: 0,
         recurring: {

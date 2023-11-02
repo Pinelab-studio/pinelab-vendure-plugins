@@ -33,12 +33,16 @@ import {
 import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
 import { randomUUID } from 'crypto';
+import { sub } from 'date-fns';
 import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import Stripe from 'stripe';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
-import { StripeSubscriptionIntent } from './generated/graphql';
+import {
+  StripeSubscription,
+  StripeSubscriptionIntent,
+} from './generated/graphql';
 import {
   Subscription,
   SubscriptionStrategy,
@@ -274,7 +278,7 @@ export class StripeSubscriptionService {
     ctx: RequestContext,
     productVariantId: ID,
     customInputs?: any
-  ): Promise<Subscription[]> {
+  ): Promise<StripeSubscription[]> {
     const variant = await this.productVariantService.findOne(
       ctx,
       productVariantId
@@ -292,9 +296,17 @@ export class StripeSubscriptionService {
       customInputs
     );
     if (Array.isArray(subscriptions)) {
-      return subscriptions;
+      return subscriptions.map((sub) => ({
+        ...sub,
+        variantId: variant.id,
+      }));
     } else {
-      return [subscriptions];
+      return [
+        {
+          ...subscriptions,
+          variantId: variant.id,
+        },
+      ];
     }
   }
 
@@ -302,19 +314,15 @@ export class StripeSubscriptionService {
     ctx: RequestContext,
     productId: ID,
     customInputs?: any
-  ): Promise<Subscription[]> {
+  ): Promise<StripeSubscription[]> {
     const { items: variants } =
       await this.productVariantService.getVariantsByProductId(ctx, productId);
     if (!variants?.length) {
       throw new UserInputError(`No variants for product '${productId}' found`);
     }
-    const injector = new Injector(this.moduleRef);
     const subscriptions = await Promise.all(
-      variants.map((variant) =>
-        this.strategy.previewSubscription(ctx, injector, variant, customInputs)
-      )
+      variants.map((v) => this.previewSubscription(ctx, v.id, customInputs))
     );
-    // Flatten, because there can be multiple subscriptions per variant, resulting in [[sub, sub], sub, sub]
     return subscriptions.flat();
   }
 
@@ -492,7 +500,7 @@ export class StripeSubscriptionService {
   async defineSubscriptions(
     ctx: RequestContext,
     order: Order
-  ): Promise<(Subscription & { orderLineId: ID })[]> {
+  ): Promise<(Subscription & { orderLineId: ID; variantId: ID })[]> {
     const injector = new Injector(this.moduleRef);
     // Only define subscriptions for orderlines with a subscription product variant
     const subscriptionOrderLines = order.lines.filter((l) =>
@@ -510,10 +518,15 @@ export class StripeSubscriptionService {
         );
         // Add orderlineId to subscription
         if (Array.isArray(subs)) {
-          return subs.map((sub) => ({ ...sub, orderLineId: line.id }));
+          return subs.map((sub) => ({
+            orderLineId: line.id,
+            variantId: line.productVariant.id,
+            ...sub,
+          }));
         }
         return {
           orderLineId: line.id,
+          variantId: line.productVariant.id,
           ...subs,
         };
       })
