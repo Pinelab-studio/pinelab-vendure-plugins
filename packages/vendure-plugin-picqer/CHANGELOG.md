@@ -1,6 +1,14 @@
-# 1.1.0 (2023-10-24)
+# 2.1.0 (2023-11-02)
 
 - Updated vendure to 2.1.1
+
+# 2.0.0
+
+- Push to Picqer even when fulfilling failed. Log order codes and manual steps needed when fulfillment fails.
+
+# 2.0.0
+
+- Complete orders on `orders.status_changed` webhooks, instead of `picklists.closed` hooks. ([#281](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/281))
 
 # 1.0.13
 

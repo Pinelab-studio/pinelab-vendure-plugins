@@ -20,7 +20,7 @@ export async function fulfillAll(
   orderService: OrderService,
   order: Order,
   handler: ConfigurableOperationInput
-) {
+): Promise<Fulfillment> {
   const lines = order.lines.map((line) => ({
     orderLineId: line.id,
     quantity: line.quantity,

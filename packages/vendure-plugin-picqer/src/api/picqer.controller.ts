@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { loggerCtx } from '../constants';
 import { PicqerService } from './picqer.service';
 import { IncomingWebhook } from './types';
+import util from 'util';
 
 @Controller('picqer')
 export class PicqerController {
@@ -30,18 +31,12 @@ export class PicqerController {
         signature,
       });
     } catch (e: any) {
+      const orderCode = (body as any)?.data?.reference;
       Logger.error(
-        `Error handling incoming hook '${body.event}': ${e.message}`,
-        loggerCtx
+        `Error handling incoming hook '${body.event}' (order code: ${orderCode}): ${e.message}`,
+        loggerCtx,
+        util.inspect(e)
       );
-
-      // FIXME: For now, don't throw insufficient stock error, to prevent webhook disabling
-      if (
-        e.message ===
-        'INSUFFICIENT_STOCK_ON_HAND_ERROR: INSUFFICIENT_STOCK_ON_HAND_ERROR'
-      ) {
-        return;
-      }
       throw e;
     }
   }
