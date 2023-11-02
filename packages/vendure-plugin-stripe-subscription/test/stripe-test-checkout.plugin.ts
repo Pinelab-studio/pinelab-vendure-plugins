@@ -1,8 +1,7 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { IncomingStripeWebhook } from '../src';
 import { Body, Controller, Get, Headers, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { clientSecret } from './dev-server';
+import { intent } from './dev-server';
 
 /**
  * Return the Stripe intent checkout page
@@ -13,8 +12,10 @@ export class CheckoutController {
   async webhook(
     @Headers('stripe-signature') signature: string | undefined,
     @Res() res: Response,
-    @Body() body: IncomingStripeWebhook
+    @Body() body: any
   ): Promise<void> {
+    const confirmMethod =
+      intent.intentType === 'SetupIntent' ? 'confirmSetup' : 'confirmPayment';
     res.send(`
 <head>
   <title>Checkout</title>
@@ -37,7 +38,7 @@ export class CheckoutController {
 // See your keys here: https://dashboard.stripe.com/apikeys
 const stripe = Stripe('${process.env.STRIPE_PUBLISHABLE_KEY}');
 const options = {
-  clientSecret: '${clientSecret}',
+  clientSecret: '${intent.clientSecret}',
   // Fully customizable with appearance API.
   appearance: {/*...*/},
 };
@@ -53,8 +54,8 @@ const form = document.getElementById('payment-form');
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  // const {error} = await stripe.confirmSetup({
-  const {error} = await stripe.confirmPayment({
+  // confirmMethod needs to be 'confirmPayment' or 'confirmSetup'
+  const {error} = await stripe.${confirmMethod}({
     //\`Elements\` instance that was used to create the Payment Element
     elements,
     confirmParams: {

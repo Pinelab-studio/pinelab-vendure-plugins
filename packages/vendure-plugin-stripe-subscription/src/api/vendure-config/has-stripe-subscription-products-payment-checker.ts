@@ -1,15 +1,12 @@
 import {
+  Injector,
   LanguageCode,
   Order,
   PaymentMethodEligibilityChecker,
 } from '@vendure/core';
-import { OrderWithSubscriptionFields } from './subscription-custom-fields';
+import { StripeSubscriptionService } from '../stripe-subscription.service';
 
-export function hasSubscriptions(order: Order): boolean {
-  return (order as OrderWithSubscriptionFields).lines.some(
-    (line) => line.productVariant.customFields.subscriptionSchedule
-  );
-}
+let stripeSubscriptionService: StripeSubscriptionService;
 
 export const hasStripeSubscriptionProductsPaymentChecker =
   new PaymentMethodEligibilityChecker({
@@ -17,12 +14,15 @@ export const hasStripeSubscriptionProductsPaymentChecker =
     description: [
       {
         languageCode: LanguageCode.en,
-        value: 'Checks that the order has Stripe Subscription products.',
+        value: 'Checks if the order has Subscription products.',
       },
     ],
     args: {},
+    init: (injector: Injector) => {
+      stripeSubscriptionService = injector.get(StripeSubscriptionService);
+    },
     check: (ctx, order, args) => {
-      if (hasSubscriptions(order)) {
+      if (stripeSubscriptionService?.hasSubscriptionProducts(ctx, order)) {
         return true;
       }
       return false;
