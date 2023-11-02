@@ -12,21 +12,15 @@ import {
   SqljsInitializer,
 } from '@vendure/testing';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import {
-  StripeSubscriptionPlugin,
-  StripeSubscriptionIntent,
-  DefaultSubscriptionStrategy,
-} from '../src/';
+import path from 'path';
+import { StripeSubscriptionIntent, StripeSubscriptionPlugin } from '../src/';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   setShipping,
-  UPDATE_CHANNEL,
 } from './helpers';
 import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
-import path from 'path';
-import { DownPaymentSubscriptionStrategy } from './downpayment-subscription-strategy';
 
 export let intent: StripeSubscriptionIntent;
 
@@ -56,7 +50,7 @@ export let intent: StripeSubscriptionIntent;
       StripeTestCheckoutPlugin,
       StripeSubscriptionPlugin.init({
         vendureHost: process.env.VENDURE_HOST!,
-        subscriptionStrategy: new DownPaymentSubscriptionStrategy(),
+        // subscriptionStrategy: new DownPaymentSubscriptionStrategy(),
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -78,19 +72,8 @@ export let intent: StripeSubscriptionIntent;
       ...require('../../test/src/initial-data').initialData,
       shippingMethods: [{ name: 'Standard Shipping', price: 0 }],
     },
-    productsCsvPath: `${__dirname}/subscriptions.csv`,
+    productsCsvPath: '../test/src/products-import.csv',
   });
-  // Set channel prices to include tax
-  await adminClient.asSuperAdmin();
-  const {
-    updateChannel: { id },
-  } = await adminClient.query(UPDATE_CHANNEL, {
-    input: {
-      id: 'T_1',
-      pricesIncludeTax: true,
-    },
-  });
-  console.log('Update channel prices to include tax');
   // Create stripe payment method
   await adminClient.asSuperAdmin();
   await adminClient.query(CREATE_PAYMENT_METHOD, {

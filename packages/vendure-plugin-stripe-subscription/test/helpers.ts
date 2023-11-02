@@ -9,6 +9,8 @@ export const ADD_ITEM_TO_ORDER = gql`
       ... on Order {
         id
         code
+        totalWithTax
+        total
       }
       ... on ErrorResult {
         errorCode
@@ -18,113 +20,27 @@ export const ADD_ITEM_TO_ORDER = gql`
   }
 `;
 
-export const REMOVE_ORDERLINE = gql`
-  mutation CancelOrder($input: CancelOrderInput!) {
-    cancelOrder(input: $input) {
-      __typename
-    }
-  }
-`;
-
-export const REFUND_ORDER = gql`
-  mutation RefundOrder($input: RefundOrderInput!) {
-    refundOrder(input: $input) {
-      __typename
-    }
-  }
-`;
-
-export const REMOVE_ALL_ORDERLINES = gql`
-  mutation {
-    removeAllOrderLines {
-      ... on Order {
-        id
-      }
-    }
-  }
-`;
-
-export const UPDATE_CHANNEL = gql`
-  mutation UpdateChannel($input: UpdateChannelInput!) {
-    updateChannel(input: $input) {
-      ... on Channel {
-        id
-      }
-    }
-  }
-`;
-
-// export const GET_PRICING = gql`
-//   ${SCHEDULE_FRAGMENT}
-//   query stripeSubscriptionPricing($input: StripeSubscriptionPricingInput) {
-//     stripeSubscriptionPricing(input: $input) {
-//       downpayment
-//       totalProratedAmount
-//       proratedDays
-//       dayRate
-//       recurringPrice
-//       interval
-//       intervalCount
-//       amountDueNow
-//       subscriptionStartDate
-//       schedule {
-//         ...ScheduleFields
-//       }
-//     }
-//   }
-// `;
-
-// export const GET_PRICING_FOR_PRODUCT = gql`
-//   ${SCHEDULE_FRAGMENT}
-//   query stripeSubscriptionPricingForProduct($productId: ID!) {
-//     stripeSubscriptionPricingForProduct(productId: $productId) {
-//       downpayment
-//       totalProratedAmount
-//       proratedDays
-//       dayRate
-//       recurringPrice
-//       interval
-//       intervalCount
-//       amountDueNow
-//       subscriptionStartDate
-//       schedule {
-//         ...ScheduleFields
-//       }
-//     }
-//   }
-// `;
-
-// export const GET_ORDER_WITH_PRICING = gql`
-//   ${SCHEDULE_FRAGMENT}
-//   query getOrderWithPricing {
-//     activeOrder {
-//       id
-//       code
-//       lines {
-//         subscriptionPricing {
-//           downpayment
-//           totalProratedAmount
-//           proratedDays
-//           dayRate
-//           recurringPrice
-//           originalRecurringPrice
-//           interval
-//           intervalCount
-//           amountDueNow
-//           subscriptionStartDate
-//           schedule {
-//             ...ScheduleFields
-//           }
-//         }
-//       }
-//     }
-//   }
-// `;
-
 export const CREATE_PAYMENT_METHOD = gql`
   mutation CreatePaymentMethod($input: CreatePaymentMethodInput!) {
     createPaymentMethod(input: $input) {
       id
+    }
+  }
+`;
+
+export const GET_PAYMENT_METHODS = gql`
+  query paymentMethods {
+    paymentMethods {
+      items {
+        code
+        handler {
+          args {
+            name
+            value
+            __typename
+          }
+        }
+      }
     }
   }
 `;
@@ -177,48 +93,64 @@ export const CREATE_PAYMENT_LINK = gql`
   }
 `;
 
-export const GET_SCHEDULES = gql`
-  {
-    stripeSubscriptionSchedules {
-      items {
-        id
-        createdAt
-        updatedAt
-        name
-        downpayment
-        durationInterval
-        durationCount
-        startMoment
-        paidUpFront
-        billingInterval
-        billingCount
-      }
-    }
-  }
-`;
-
-export const UPDATE_VARIANT = gql`
-  mutation updateProductVariants($input: [UpdateProductVariantInput!]!) {
-    updateProductVariants(input: $input) {
-      ... on ProductVariant {
-        id
-        customFields {
-          subscriptionSchedule {
-            id
-          }
-        }
-      }
-      __typename
-    }
-  }
-`;
-
 export const ELIGIBLE_PAYMENT_METHODS = gql`
   query eligiblePaymentMethods {
     eligiblePaymentMethods {
       id
       name
       stripeSubscriptionPublishableKey
+    }
+  }
+`;
+
+export const PREVIEW_SUBSCRIPTIONS = gql`
+  query previewStripeSubscriptions($productVariantId: ID!) {
+    previewStripeSubscriptions(productVariantId: $productVariantId) {
+      name
+      amountDueNow
+      variantId
+      priceIncludesTax
+      recurring {
+        amount
+        interval
+        intervalCount
+        startDate
+        endDate
+      }
+    }
+  }
+`;
+
+export const PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT = gql`
+  query previewStripeSubscriptionsForProduct($productId: ID!) {
+    previewStripeSubscriptionsForProduct(productId: $productId) {
+      name
+      amountDueNow
+      variantId
+      priceIncludesTax
+      recurring {
+        amount
+        interval
+        intervalCount
+        startDate
+        endDate
+      }
+    }
+  }
+`;
+
+export const CANCEL_ORDER = gql`
+  mutation CancelOrder($input: CancelOrderInput!) {
+    cancelOrder(input: $input) {
+      __typename
+    }
+  }
+`;
+
+export const REFUND_ORDER = gql`
+  mutation RefundOrder($input: RefundOrderInput!) {
+    refundOrder(input: $input) {
+      __typename
     }
   }
 `;

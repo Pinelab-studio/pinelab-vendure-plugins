@@ -10,22 +10,17 @@ import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import {
   Allow,
   Ctx,
-  ID,
-  OrderService,
   PaymentMethodService,
   Permission,
-  ProductService,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
 import { Request } from 'express';
 import {
+  Mutation as GraphqlMutation,
+  Query as GraphqlQuery,
   QueryPreviewStripeSubscriptionArgs,
   QueryPreviewStripeSubscriptionForProductArgs,
-  StripeSubscription,
-  StripeSubscriptionIntent,
-  Query as GraphqlQuery,
-  Mutation as GraphqlMutation,
 } from './generated/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
@@ -48,7 +43,7 @@ export class StripeSubscriptionShopResolver {
   }
 
   @Query()
-  async previewStripeSubscription(
+  async previewStripeSubscriptions(
     @Ctx() ctx: RequestContext,
     @Args()
     { productVariantId, customInputs }: QueryPreviewStripeSubscriptionArgs
@@ -61,7 +56,7 @@ export class StripeSubscriptionShopResolver {
   }
 
   @Query()
-  async previewStripeSubscriptionForProduct(
+  async previewStripeSubscriptionsForProduct(
     @Ctx() ctx: RequestContext,
     @Args()
     { productId, customInputs }: QueryPreviewStripeSubscriptionForProductArgs

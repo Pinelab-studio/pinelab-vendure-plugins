@@ -175,18 +175,18 @@ export class StripeSubscriptionService {
           | Cancellation
           | Release
         )[];
-        const orderLinesWithSubscriptions = cancelOrReleaseEvents
+        const stockEvents = cancelOrReleaseEvents
           // Filter out non-sub orderlines
           .filter(
             (event) => (event.orderLine.customFields as any).subscriptionIds
           );
         await Promise.all(
           // Push jobs
-          orderLinesWithSubscriptions.map((line) =>
+          stockEvents.map((stockEvent) =>
             this.jobQueue.add({
               ctx: event.ctx.serialize(),
               action: 'cancelSubscriptionsForOrderline',
-              orderLineId: line.id,
+              orderLineId: stockEvent.orderLine.id,
             })
           )
         );
@@ -196,7 +196,7 @@ export class StripeSubscriptionService {
       if (event.type === 'created' || event.type === 'updated') {
         const paymentMethod = event.entity;
         if (paymentMethod.handler.code === stripeSubscriptionHandler.code) {
-          await this.registerWebhooks(event.ctx).catch((e) => {
+          await this.registerWebhooks(event.ctx, paymentMethod).catch((e) => {
             Logger.error(
               `Failed to register webhooks for channel ${event.ctx.channel.token}: ${e}`,
               loggerCtx
@@ -215,10 +215,21 @@ export class StripeSubscriptionService {
    * Saves the webhook secret irectly on the payment method
    */
   async registerWebhooks(
-    ctx: RequestContext
+    ctx: RequestContext,
+    paymentMethod: PaymentMethod
   ): Promise<Stripe.Response<Stripe.WebhookEndpoint> | undefined> {
     const webhookDescription = `Vendure Stripe Subscription Webhook for channel ${ctx.channel.token}`;
-    const { stripeClient, paymentMethod } = await this.getStripeContext(ctx);
+    const apiKey = paymentMethod.handler.args.find(
+      (arg) => arg.name === 'apiKey'
+    )?.value;
+    if (!apiKey) {
+      throw new UserInputError(
+        `No api key found for payment method ${paymentMethod.code}, can not register webhooks`
+      );
+    }
+    const stripeClient = new StripeClient('not-yet-available-secret', apiKey, {
+      apiVersion: null as any, // Null uses accounts default version
+    });
     const webhookUrl = `${this.options.vendureHost}/stripe-subscriptions/webhook`;
     // Get existing webhooks and check if url and events match. If not, create them
     const webhooks = await stripeClient.webhookEndpoints.list({ limit: 100 });
@@ -292,15 +303,14 @@ export class StripeSubscriptionService {
     productId: ID,
     customInputs?: any
   ): Promise<Subscription[]> {
-    const product = await this.productService.findOne(ctx, productId, [
-      'variants',
-    ]);
-    if (!product) {
-      throw new UserInputError(`No product with id '${product}' found`);
+    const { items: variants } =
+      await this.productVariantService.getVariantsByProductId(ctx, productId);
+    if (!variants?.length) {
+      throw new UserInputError(`No variants for product '${productId}' found`);
     }
     const injector = new Injector(this.moduleRef);
     const subscriptions = await Promise.all(
-      product.variants.map((variant) =>
+      variants.map((variant) =>
         this.strategy.previewSubscription(ctx, injector, variant, customInputs)
       )
     );

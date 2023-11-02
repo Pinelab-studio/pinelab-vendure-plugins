@@ -46,11 +46,11 @@ export const shopSchemaExtensions = gql`
   }
 
   extend type Query {
-    previewStripeSubscription(
+    previewStripeSubscriptions(
       productVariantId: ID!
       customInputs: JSON
     ): [StripeSubscription!]!
-    previewStripeSubscriptionForProduct(
+    previewStripeSubscriptionsForProduct(
       productId: ID!
       customInputs: JSON
     ): [StripeSubscription!]!

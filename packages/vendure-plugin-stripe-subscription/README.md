@@ -69,7 +69,7 @@ plugins: [
 
 ```graphql
 {
-  previewStripeSubscription(productVariantId: 1) {
+  previewStripeSubscriptions(productVariantId: 1) {
     name
     amountDueNow
     variantId
@@ -85,7 +85,7 @@ plugins: [
 }
 ```
 
-2. The same can be done for all variants of a product with the query `previewStripeSubscriptionForProduct`
+2. The same can be done for all variants of a product with the query `previewStripeSubscriptionsForProduct`
 3. Add the item to cart with the default `AddItemToOrder` mutation.
 4. Add a shipping address and a shipping method to the order (mandatory for all orders).
 5. You can create `createStripeSubscriptionIntent` to receive a client secret.
@@ -195,7 +195,7 @@ You can pass custom inputs to your strategy, to change how a subscription is def
 
 ```graphql
 {
-  previewStripeSubscriptionForProduct(
+  previewStripeSubscriptionsForProduct(
     productVariantId: 1
     customInputs: { subscriptionStartDate: "2024-01-01" }
   ) {
