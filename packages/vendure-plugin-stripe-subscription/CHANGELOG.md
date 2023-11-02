@@ -1,3 +1,10 @@
+# 2.0.0 (2023-11-02)
+
+- Major refactor: ([#260](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/260))
+- Scheduling has been taken out of this plugin.
+- By default product variants are seen as monthly subscriptions
+- Custom subscriptions can be defined by implementing the SubscriptionStrategy interface
+
 # 1.4.0 (2023-09-08)
 
 - Expose proxy function to retrieve all subscriptions for current channel ([#255](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/255))
