@@ -1,6 +1,13 @@
-# 1.5.0 (2023-10-24)
+# 2.1.0 (2023-11-02)
 
 - Updated vendure to 2.1.1
+
+# 2.0.0 (2023-11-02)
+
+- Major refactor: ([#260](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/260))
+- Scheduling has been taken out of this plugin.
+- By default product variants are seen as monthly subscriptions
+- Custom subscriptions can be defined by implementing the SubscriptionStrategy interface
 
 # 1.4.0 (2023-09-08)
 

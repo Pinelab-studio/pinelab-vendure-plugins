@@ -140,14 +140,15 @@ export class SortService implements OnModuleInit {
         .map((i) => i.product_id);
 
       const uniqueProductIds = [...new Set(productIds)];
-
-      const summedProductsValue = await productSummingQuery
-        .andWhere('product.id IN (:...ids)', { ids: uniqueProductIds })
-        .getRawOne();
-      productScoreSums.push({
-        id: col.collection_id,
-        score: summedProductsValue.productScoreSum,
-      });
+      if (uniqueProductIds.length) {
+        const summedProductsValue = await productSummingQuery
+          .andWhere('product.id IN (:...ids)', { ids: uniqueProductIds })
+          .getRawOne();
+        productScoreSums.push({
+          id: col.collection_id,
+          score: summedProductsValue.productScoreSum ?? 0,
+        });
+      }
     }
     await collectionsRepo.save(
       productScoreSums.map((collection) => {
