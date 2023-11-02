@@ -92,10 +92,9 @@ plugins: [
 6. :warning: Please make sure you render the correct Stripe elements: A created intent can be a `PaymentIntent` or a `SetupIntent`.
 7. Use this token to display the Stripe form elements on your storefront. See
    the [Stripe docs](https://stripe.com/docs/payments/accept-a-payment?platform=web&ui=elements#set-up-stripe.js) for more information.
-8.
-9. The customer can now enter his credit card credentials.
-10. Vendure will create the subscriptions in the background, after the intent has successfully been completed by the customer.
-11. The order will be settled by Vendure when the subscriptions are created.
+8. The customer can now enter his credit card credentials.
+9. Vendure will create the subscriptions in the background, after the intent has successfully been completed by the customer.
+10. The order will be settled by Vendure when the subscriptions are created.
 
 It's important to inform your customers what you will be billing them in the
 future: https://stripe.com/docs/payments/setup-intents#mandates

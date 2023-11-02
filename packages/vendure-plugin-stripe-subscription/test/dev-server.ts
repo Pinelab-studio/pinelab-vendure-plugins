@@ -5,6 +5,7 @@ import {
   LanguageCode,
   LogLevel,
   mergeConfig,
+  RequestContextService,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -13,7 +14,11 @@ import {
 } from '@vendure/testing';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { StripeSubscriptionIntent, StripeSubscriptionPlugin } from '../src/';
+import {
+  StripeSubscriptionIntent,
+  StripeSubscriptionPlugin,
+  StripeSubscriptionService,
+} from '../src/';
 import {
   ADD_ITEM_TO_ORDER,
   CREATE_PAYMENT_LINK,
@@ -75,32 +80,32 @@ export let intent: StripeSubscriptionIntent;
     productsCsvPath: '../test/src/products-import.csv',
   });
   // Create stripe payment method
-  await adminClient.asSuperAdmin();
-  await adminClient.query(CREATE_PAYMENT_METHOD, {
-    input: {
-      code: 'stripe-subscription-method',
-      enabled: true,
-      handler: {
-        code: 'stripe-subscription',
-        arguments: [
-          {
-            name: 'webhookSecret',
-            value: process.env.STRIPE_WEBHOOK_SECRET,
-          },
-          { name: 'apiKey', value: process.env.STRIPE_APIKEY },
-          { name: 'publishableKey', value: process.env.STRIPE_PUBLISHABLE_KEY },
-        ],
-      },
-      translations: [
-        {
-          languageCode: LanguageCode.en,
-          name: 'Stripe test payment',
-          description: 'This is a Stripe payment method',
-        },
-      ],
-    },
-  });
-  console.log(`Created paymentMethod stripe-subscription`);
+  // await adminClient.asSuperAdmin();
+  // await adminClient.query(CREATE_PAYMENT_METHOD, {
+  //   input: {
+  //     code: 'stripe-subscription-method',
+  //     enabled: true,
+  //     handler: {
+  //       code: 'stripe-subscription',
+  //       arguments: [
+  //         {
+  //           name: 'webhookSecret',
+  //           value: process.env.STRIPE_WEBHOOK_SECRET,
+  //         },
+  //         { name: 'apiKey', value: process.env.STRIPE_APIKEY },
+  //         { name: 'publishableKey', value: process.env.STRIPE_PUBLISHABLE_KEY },
+  //       ],
+  //     },
+  //     translations: [
+  //       {
+  //         languageCode: LanguageCode.en,
+  //         name: 'Stripe test payment',
+  //         description: 'This is a Stripe payment method',
+  //       },
+  //     ],
+  //   },
+  // });
+  // console.log(`Created paymentMethod stripe-subscription`);
 
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   let { addItemToOrder: order } = await shopClient.query(ADD_ITEM_TO_ORDER, {
@@ -108,19 +113,28 @@ export let intent: StripeSubscriptionIntent;
     quantity: 1,
   });
 
-  await setShipping(shopClient);
-  console.log(`Prepared order ${order?.code}`);
+  // await setShipping(shopClient);
+  // console.log(`Prepared order ${order?.code}`);
 
-  const { createStripeSubscriptionIntent } = await shopClient.query(
-    CREATE_PAYMENT_LINK
-  );
-  intent = createStripeSubscriptionIntent;
-  console.log(
-    `Go to http://localhost:3050/checkout/ to test your ${intent.intentType}`
-  );
+  // const { createStripeSubscriptionIntent } = await shopClient.query(
+  //   CREATE_PAYMENT_LINK
+  // );
+  // intent = createStripeSubscriptionIntent;
+  // console.log(
+  //   `Go to http://localhost:3050/checkout/ to test your ${intent.intentType}`
+  // );
 
-  // Uncomment these lines to list all subscriptions created in Stripe
-  // const ctx = await server.app.get(RequestContextService).create({apiType: 'admin'});
-  // const subscriptions = await server.app.get(StripeSubscriptionService).getAllSubscriptions(ctx);
-  // console.log(JSON.stringify(subscriptions));
+  const ctx = await server.app
+    .get(RequestContextService)
+    .create({ apiType: 'admin' });
+  await server.app
+    .get(StripeSubscriptionService)
+    .logHistoryEntry(
+      ctx,
+      1,
+      `Created subscription for TESTING`,
+      undefined,
+      { amount: 12345 } as any,
+      '123'
+    );
 })();
