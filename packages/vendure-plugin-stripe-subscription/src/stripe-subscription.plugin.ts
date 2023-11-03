@@ -2,7 +2,7 @@ import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { SubscriptionStrategy } from './api/strategy/subscription-strategy';
 import { shopSchemaExtensions } from './api/graphql-schema';
-import { createRawBodyMiddleWare } from '../../util/src/raw-body';
+import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 import { DefaultSubscriptionStrategy } from './api/strategy/default-subscription-strategy';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
@@ -44,9 +44,12 @@ export interface StripeSubscriptionPluginOptions {
       hasStripeSubscriptionProductsPaymentChecker,
     ];
     config.customFields.OrderLine.push(...orderLineCustomFields);
-    config.apiOptions.middleware.push(
-      createRawBodyMiddleWare('/stripe-subscription*')
-    );
+    config.apiOptions.middleware.push({
+      route: '/stripe-subscription*',
+      handler: rawBodyMiddleware,
+      beforeListen: true,
+    });
+
     config.orderOptions.orderItemPriceCalculationStrategy =
       new SubscriptionOrderItemCalculation();
     return config;
