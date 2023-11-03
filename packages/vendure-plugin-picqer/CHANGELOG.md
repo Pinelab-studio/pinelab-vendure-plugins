@@ -1,3 +1,7 @@
+# 2.1.0 (2023-11-02)
+
+- Updated vendure to 2.1.1
+
 # 2.0.2
 
 - Try to fulfill again on order status changed webhooks, to support fulfilling of back orders.

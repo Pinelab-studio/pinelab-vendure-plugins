@@ -25,9 +25,9 @@ export class StripeSubscriptionController {
   @Post('webhook')
   async webhook(
     @Headers('stripe-signature') signature: string | undefined,
-    @Req() request: RequestWithRawBody,
-    @Body() body: IncomingStripeWebhook
+    @Req() request: RequestWithRawBody
   ): Promise<void> {
+    const body = JSON.parse(request.body.toString()) as IncomingStripeWebhook;
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
     // Validate if metadata present
     const orderCode =

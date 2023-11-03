@@ -17,7 +17,8 @@ import { createLowStockEmailHandler } from '../src/api/low-stock.email-handler';
 import * as path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
-import { expect, describe, beforeAll, it } from 'vitest';
+import { expect, describe, beforeAll, it, afterAll } from 'vitest';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('Order export plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -132,6 +133,17 @@ describe('Order export plugin', function () {
     const files = fs.readdirSync(testEmailDir);
     expect(files.length).toBe(3); // 3 emails should be sent, one for every handler
   });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(
+      __dirname,
+      StockMonitoringPlugin.ui
+    );
+    expect(files?.length).toBeGreaterThan(0);
+  }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });
 
 export const GET_OUT_OF_STOCK_VARIANTS = gql`

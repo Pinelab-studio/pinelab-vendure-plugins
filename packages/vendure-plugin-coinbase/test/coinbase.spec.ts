@@ -64,7 +64,7 @@ describe('Coinbase payments', () => {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 
   it('Should start successfully', async () => {
     expect(started).toEqual(true);

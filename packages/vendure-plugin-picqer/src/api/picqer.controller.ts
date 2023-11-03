@@ -12,17 +12,16 @@ export class PicqerController {
 
   @Post('hooks/:channelToken')
   async webhook(
-    @Req() req: Request,
-    @Body() body: IncomingWebhook,
+    @Req() request: Request,
     @Headers('X-Picqer-Signature') signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<void> {
+    const body = JSON.parse(request.body.toString()) as IncomingWebhook;
+    const rawBody = (request as any).rawBody;
     Logger.info(
       `Incoming hook ${body.event} for channel ${channelToken}`,
       loggerCtx
     );
-    // Middleware isn't loaded when using the test server from @vendure/testing, so we use the normal body
-    const rawBody = (req as any).rawBody || JSON.stringify(body);
     try {
       await this.picqerService.handleHook({
         body,

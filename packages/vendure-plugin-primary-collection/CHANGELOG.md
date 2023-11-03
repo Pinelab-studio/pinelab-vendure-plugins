@@ -1,4 +1,8 @@
-# 1.3.0 (2023-10-20)
+# 1.4.0 (2023-10-24)
+
+- Updated vendure to 2.1.1
+
+# 1.3.0 (2023-10-24)
 
 - Config option `customFieldUITabName` added
 
