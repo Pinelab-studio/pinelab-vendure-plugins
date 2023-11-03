@@ -12,6 +12,7 @@ import { PLUGIN_OPTIONS } from './api/constants';
 import { SendcloudController } from './api/sendcloud.controller';
 import { SendcloudConfigEntity } from './api/sendcloud-config.entity';
 import { sendcloudHandler } from './api/sendcloud.handler';
+import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 
 @VendurePlugin({
   adminApiExtensions: {
@@ -51,6 +52,11 @@ import { sendcloudHandler } from './api/sendcloud.handler';
   controllers: [SendcloudController],
   entities: [SendcloudConfigEntity],
   configuration: (config) => {
+    config.apiOptions.middleware.push({
+      route: '/sendcloud/webhook*',
+      handler: rawBodyMiddleware,
+      beforeListen: true,
+    });
     config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
     config.authOptions.customPermissions.push(sendcloudPermission);
     return config;

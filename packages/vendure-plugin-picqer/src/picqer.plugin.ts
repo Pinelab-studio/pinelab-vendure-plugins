@@ -16,6 +16,7 @@ import { PicqerResolver } from './api/picqer.resolvers';
 import { PicqerController } from './api/picqer.controller';
 import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 import { picqerHandler } from './api/picqer.handler';
+import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 
 export interface PicqerOptions {
   enabled: boolean;
@@ -66,6 +67,11 @@ export interface PicqerOptions {
   },
   entities: [PicqerConfigEntity],
   configuration: (config) => {
+    config.apiOptions.middleware.push({
+      route: '/picqer*',
+      handler: rawBodyMiddleware,
+      beforeListen: true,
+    });
     config.authOptions.customPermissions.push(picqerPermission);
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
