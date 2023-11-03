@@ -45,7 +45,7 @@ export interface StripeSubscriptionPluginOptions {
     ];
     config.customFields.OrderLine.push(...orderLineCustomFields);
     config.apiOptions.middleware.push({
-      route: '/stripe-subscription*',
+      route: '/stripe-subscriptions*',
       handler: rawBodyMiddleware,
       beforeListen: true,
     });
