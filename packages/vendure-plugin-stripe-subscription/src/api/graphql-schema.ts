@@ -60,3 +60,9 @@ export const shopSchemaExtensions = gql`
     createStripeSubscriptionIntent: StripeSubscriptionIntent!
   }
 `;
+
+export const adminApiExtension = gql`
+  extend enum HistoryEntryType {
+    STRIPE_SUBSCRIPTION_NOTIFICATION
+  }
+`;

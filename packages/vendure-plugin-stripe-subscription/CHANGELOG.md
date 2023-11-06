@@ -1,3 +1,7 @@
+# 2.2.0 (2023-11-06)
+
+- extended the `HistoryEntryList` enum to make stripe subscription  custom history entry component work
+
 # 2.1.0 (2023-11-02)
 
 - Updated vendure to 2.1.1
