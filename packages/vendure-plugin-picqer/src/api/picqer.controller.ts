@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { loggerCtx } from '../constants';
 import { PicqerService } from './picqer.service';
 import { IncomingWebhook } from './types';
+import util from 'util';
 
 @Controller('picqer')
 export class PicqerController {
@@ -11,17 +12,16 @@ export class PicqerController {
 
   @Post('hooks/:channelToken')
   async webhook(
-    @Req() req: Request,
-    @Body() body: IncomingWebhook,
+    @Req() request: Request,
     @Headers('X-Picqer-Signature') signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<void> {
+    const body = JSON.parse(request.body.toString()) as IncomingWebhook;
+    const rawBody = (request as any).rawBody;
     Logger.info(
       `Incoming hook ${body.event} for channel ${channelToken}`,
       loggerCtx
     );
-    // Middleware isn't loaded when using the test server from @vendure/testing, so we use the normal body
-    const rawBody = (req as any).rawBody || JSON.stringify(body);
     try {
       await this.picqerService.handleHook({
         body,
@@ -30,18 +30,12 @@ export class PicqerController {
         signature,
       });
     } catch (e: any) {
+      const orderCode = (body as any)?.data?.reference;
       Logger.error(
-        `Error handling incoming hook '${body.event}': ${e.message}`,
-        loggerCtx
+        `Error handling incoming hook '${body.event}' (order code: ${orderCode}): ${e.message}`,
+        loggerCtx,
+        util.inspect(e)
       );
-
-      // FIXME: For now, don't throw insufficient stock error, to prevent webhook disabling
-      if (
-        e.message ===
-        'INSUFFICIENT_STOCK_ON_HAND_ERROR: INSUFFICIENT_STOCK_ON_HAND_ERROR'
-      ) {
-        return;
-      }
       throw e;
     }
   }

@@ -17,6 +17,10 @@ import {
 import { GET_METRICS } from '../src/ui/queries.graphql';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import path from 'path';
+import * as fs from 'fs';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
@@ -54,10 +58,6 @@ describe('Metrics', () => {
       customerCount: 2,
     });
   }, 60000);
-
-  afterAll(async () => {
-    await server.destroy();
-  });
 
   it('Creates 3 settled orders', async () => {
     const variants = [
@@ -116,4 +116,13 @@ describe('Metrics', () => {
     // Expect the first series (variant 2), to have 6 sales in last month
     expect(salesPerProduct.series[1].values[12]).toEqual(6);
   });
+
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
+    expect(files?.length).toBeGreaterThan(0);
+  }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });

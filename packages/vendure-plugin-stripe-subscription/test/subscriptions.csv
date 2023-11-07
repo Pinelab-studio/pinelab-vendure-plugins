@@ -1,4 +1,0 @@
-name               ,slug               ,description,assets,facets         ,optionGroups,optionValues  ,sku            ,price,taxCategory,stockOnHand,trackInventory,variantAssets,variantFacets
-"Adult karate"     ,adult-karate       ,""         ,      ,category:karate,"Schedule"  ,"Paid in full",adult-full     ,540  ,standard   ,100        ,false         ,             ,
-                   ,                   ,           ,      ,category:karate,            ,"Recurring"   ,adult-recurring,90   ,standard   ,100        ,false         ,             ,
-"A non-sub product","non-subscription",           ,       ,category:nonsub,            ,              ,non-sub-prod   ,123  ,standard   ,100        ,false         ,             ,

@@ -1,4 +1,4 @@
-import { Metadata } from './stripe.types';
+import { Metadata } from './stripe.common';
 
 export interface StripeInvoice {
   id: string;

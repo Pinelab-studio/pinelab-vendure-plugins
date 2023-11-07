@@ -24,12 +24,13 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
-import { IncomingPicklistWebhook, VatGroup } from '../src';
+import { VatGroup, IncomingOrderStatusWebhook } from '../src';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { Order } from '@vendure/core';
 import { picqerHandler } from '../src/api/picqer.handler';
 import { describe, afterEach, beforeAll, it, expect, afterAll } from 'vitest';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -144,13 +145,13 @@ describe('Picqer plugin', function () {
   it('Should have created hooks when config was updated', async () => {
     // Expect 1 created hook: stock change
     await expect(createdHooks.length).toBe(2);
-    await expect(createdHooks[0].event).toBe('products.free_stock_changed');
+    await expect(createdHooks[0].event).toBe('orders.status_changed');
     await expect(createdHooks[0].address).toBe(
       `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
     );
     await expect(createdHooks[0].secret).toBeDefined();
     await expect(createdHooks[0].name).toBeDefined();
-    await expect(createdHooks[1].event).toBe('picklists.closed');
+    await expect(createdHooks[1].event).toBe('products.free_stock_changed');
   });
 
   it('Should get Picqer config after upsert', async () => {
@@ -220,8 +221,8 @@ describe('Picqer plugin', function () {
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
     );
-    expect(variant!.stockOnHand).toBe(100);
-    expect(variant!.stockAllocated).toBe(3);
+    expect(variant!.stockOnHand).toBe(97);
+    expect(variant!.stockAllocated).toBe(0);
     expect(picqerOrderRequest.reference).toBe(createdOrder.code);
     expect(picqerOrderRequest.deliveryname).toBeDefined();
     expect(picqerOrderRequest.deliverycontactname).toBeUndefined();
@@ -245,51 +246,14 @@ describe('Picqer plugin', function () {
     });
   });
 
-  it('Should update to "PartiallyDelivered" when 2 of 3 items are shipped', async () => {
+  it('Should update to "Delivered" on incoming order status "completed"', async () => {
     const mockIncomingWebhook = {
-      event: 'picklists.closed',
+      event: 'orders.status_changed',
       data: {
         reference: createdOrder?.code,
-        products: [
-          { productcode: 'L2201308', amountpicked: 2 }, // Only 2 of 3 are picked
-        ],
+        status: 'completed',
       },
-    } as Partial<IncomingPicklistWebhook>;
-    await adminClient.fetch(
-      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(mockIncomingWebhook),
-        headers: {
-          'X-Picqer-Signature': createSignature(
-            mockIncomingWebhook,
-            'test-api-key'
-          ),
-        },
-      }
-    );
-    const order = await getOrder(adminClient, createdOrder?.id as string);
-    expect(order!.state).toBe('PartiallyDelivered');
-  });
-
-  it('Should have updated stock after 1 item was shipped', async () => {
-    const variant = (await getAllVariants(adminClient)).find(
-      (v) => v.id === 'T_1'
-    );
-    expect(variant!.stockOnHand).toBe(98);
-    expect(variant!.stockAllocated).toBe(1);
-  });
-
-  it('Should update to "Delivered" when 3 of 3 items are shipped', async () => {
-    const mockIncomingWebhook = {
-      event: 'picklists.closed',
-      data: {
-        reference: createdOrder?.code,
-        products: [
-          { productcode: 'L2201308', amountpicked: 1 }, // last one to complete the order
-        ],
-      },
-    } as Partial<IncomingPicklistWebhook>;
+    } as Partial<IncomingOrderStatusWebhook>;
     await adminClient.fetch(
       `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
       {
@@ -307,12 +271,29 @@ describe('Picqer plugin', function () {
     expect(order!.state).toBe('Delivered');
   });
 
-  it('Should have updated stock after all items are shipped', async () => {
-    const variant = (await getAllVariants(adminClient)).find(
-      (v) => v.id === 'T_1'
+  it('Should update to "Canceled" on incoming order status "cancelled"', async () => {
+    const mockIncomingWebhook = {
+      event: 'orders.status_changed',
+      data: {
+        reference: createdOrder?.code,
+        status: 'cancelled',
+      },
+    } as Partial<IncomingOrderStatusWebhook>;
+    await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockIncomingWebhook),
+        headers: {
+          'X-Picqer-Signature': createSignature(
+            mockIncomingWebhook,
+            'test-api-key'
+          ),
+        },
+      }
     );
-    expect(variant!.stockOnHand).toBe(97); // 100 - 3 shipped
-    expect(variant!.stockAllocated).toBe(0);
+    const order = await getOrder(adminClient, createdOrder?.id as string);
+    expect(order!.state).toBe('Cancelled');
   });
 
   /**
@@ -469,7 +450,12 @@ describe('Picqer plugin', function () {
     expect(res.status).toBe(403);
   });
 
-  afterAll(() => {
-    return server.destroy();
-  });
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(__dirname, PicqerPlugin.ui);
+    expect(files?.length).toBeGreaterThan(0);
+  }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });

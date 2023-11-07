@@ -29,6 +29,7 @@ import nock from 'nock';
 import { SendcloudClient } from '../src/api/sendcloud.client';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import crypto from 'crypto';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('SendCloud', () => {
   let shopClient: SimpleGraphQLClient;
@@ -90,10 +91,6 @@ describe('SendCloud', () => {
       customerCount: 2,
     });
   }, 60000);
-
-  afterAll(async () => {
-    await server.destroy();
-  });
 
   let authHeader: any | undefined;
   let body: { parcel: ParcelInput } | undefined;
@@ -231,4 +228,13 @@ describe('SendCloud', () => {
     expect(order?.state).toBe('Delivered');
     expect(fulfilment?.trackingCode).toBe('test-tracking');
   });
+
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(__dirname, SendcloudPlugin.ui);
+    expect(files?.length).toBeGreaterThan(0);
+  }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });

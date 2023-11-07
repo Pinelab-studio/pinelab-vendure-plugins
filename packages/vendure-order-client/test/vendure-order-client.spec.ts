@@ -522,7 +522,7 @@ describe(
 
     afterAll(async () => {
       await server.destroy();
-    });
+    }, 100000);
   },
   { timeout: 10000 }
 );
