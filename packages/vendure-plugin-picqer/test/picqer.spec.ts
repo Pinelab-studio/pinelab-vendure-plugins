@@ -383,35 +383,6 @@ describe('Picqer plugin', function () {
     expect(updatedProduct!.price).toBe(123.45);
   });
 
-  it('Disables a product in Picqer when disabled in Vendure', async () => {
-    let pushProductPayloads: any[] = [];
-    // Mock vatgroups GET
-    nock(nockBaseUrl)
-      .get('/vatgroups')
-      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
-    // Mock products GET multiple times
-    nock(nockBaseUrl)
-      .get(/.products*/)
-      .reply(200, [])
-      .persist();
-    // Mock product POST multiple times
-    nock(nockBaseUrl)
-      .post(/.products*/, (reqBody) => {
-        pushProductPayloads.push(reqBody);
-        return true;
-      })
-      .reply(200, { idproduct: 'mockId' })
-      .persist();
-    const product = await updateProduct(adminClient, {
-      id: 'T_1',
-      enabled: false,
-    });
-    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
-    expect(product?.enabled).toBe(false);
-    // expect every variant to be disabled (active=false)
-    expect(pushProductPayloads!.every((p) => p.active === false)).toBe(true);
-  });
-
   it('Should update stock level on incoming webhook', async () => {
     const body = {
       event: 'products.free_stock_changed',

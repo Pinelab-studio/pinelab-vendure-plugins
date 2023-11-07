@@ -1,3 +1,8 @@
+# 2.2.0 (2023-11-02)
+
+- Always created products as active in Picqer
+- Log order code for failed pushes of orders to Picqer
+
 # 2.1.0 (2023-11-02)
 
 - Updated vendure to 2.1.1

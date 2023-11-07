@@ -1,7 +1,6 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   OrderAddress,
-  OrderLineInput,
   UpdateProductInput,
   UpdateProductVariantInput,
 } from '@vendure/common/lib/generated-types';
@@ -16,7 +15,6 @@ import {
   ErrorResult,
   EventBus,
   ForbiddenError,
-  Fulfillment,
   FulfillmentStateTransitionError,
   ID,
   JobQueue,
@@ -25,7 +23,6 @@ import {
   Order,
   OrderPlacedEvent,
   OrderService,
-  OrderStateTransitionError,
   ProductEvent,
   ProductService,
   ProductVariant,
@@ -43,10 +40,8 @@ import {
 import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
 import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 import currency from 'currency.js';
-import {
-  fulfillAll,
-  throwIfTransitionFailed,
-} from '../../../util/src/order-state-util';
+import util from 'util';
+import { fulfillAll } from '../../../util/src/order-state-util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
@@ -61,17 +56,14 @@ import {
   AddressInput,
   CustomerData,
   CustomerInput,
-  IncomingOrderStatusWebhook,
   IncomingWebhook,
   OrderData,
   OrderInput,
   OrderProductInput,
-  PickListWebhookData,
   ProductData,
   ProductInput,
   WebhookEvent,
 } from './types';
-import util from 'util';
 
 /**
  * Job to push variants from Vendure to Picqer
@@ -89,8 +81,6 @@ interface PushVariantsJob {
 interface PullStockLevelsJob {
   action: 'pull-stock-levels';
   ctx: SerializedRequestContext;
-  variantIds?: ID[];
-  productId?: ID;
 }
 
 /**
@@ -132,32 +122,40 @@ export class PicqerService implements OnApplicationBootstrap {
       name: 'picqer-sync',
       process: async ({ data }) => {
         const ctx = RequestContext.deserialize(data.ctx);
-        try {
-          if (data.action === 'push-variants') {
-            await this.handlePushVariantsJob(
-              ctx,
-              data.variantIds,
-              data.productId
+        if (data.action === 'push-variants') {
+          await this.handlePushVariantsJob(
+            ctx,
+            data.variantIds,
+            data.productId
+          ).catch((e: any) => {
+            throw Error(
+              `Failed to push variants to Picqer (variants: ${data.variantIds?.join(
+                ','
+              )}, product: ${data.productId} }): ${e?.message}`
             );
-          } else if (data.action === 'pull-stock-levels') {
-            await this.handlePullStockLevelsJob(ctx);
-          } else if (data.action === 'push-order') {
-            await this.handlePushOrderToPicqer(ctx, data.orderId);
-          } else {
-            Logger.error(
-              `Invalid job action: ${(data as any).action}`,
-              loggerCtx
+          });
+        } else if (data.action === 'pull-stock-levels') {
+          await this.handlePullStockLevelsJob(ctx).catch((e: any) => {
+            throw Error(
+              `Failed to pull stock levels from  Picqer: ${e?.message}`
             );
-          }
-          Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
-        } catch (e: any) {
-          // Only log a warning, because this is a background function that will be retried by the JobQueue
-          const orderCode = Logger.warn(
-            `Failed to handle job '${data.action}': ${e?.message}`,
+          });
+        } else if (data.action === 'push-order') {
+          const order = await this.orderService.findOne(ctx, data.orderId);
+          await this.handlePushOrderToPicqer(ctx, data.orderId).catch(
+            (e: any) => {
+              throw Error(
+                `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
+              );
+            }
+          );
+        } else {
+          Logger.error(
+            `Invalid job action: ${(data as any).action}`,
             loggerCtx
           );
-          throw e;
         }
+        Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
       },
     });
     // Listen for Variant creation or update
@@ -170,7 +168,7 @@ export class PicqerService implements OnApplicationBootstrap {
         }
         // Only update in Picqer if one of these fields was updated
         const shouldUpdate = (input as UpdateProductVariantInput[])?.some(
-          (v) => v.enabled ?? v.translations ?? v.price ?? v.taxCategoryId
+          (v) => v.translations ?? v.price ?? v.taxCategoryId
         );
         if (!shouldUpdate) {
           Logger.info(
@@ -185,18 +183,6 @@ export class PicqerService implements OnApplicationBootstrap {
           ctx,
           entities.map((v) => v.id)
         );
-      });
-    // Listen for Product events. Only push variants when product is enabled/disabled. Other changes are handled by the variant events.
-    this.eventBus
-      .ofType(ProductEvent)
-      .subscribe(async ({ ctx, entity, type, input }) => {
-        // Only push if `enabled` is updated
-        if (
-          type === 'updated' &&
-          (input as UpdateProductInput).enabled !== undefined
-        ) {
-          await this.addPushVariantsJob(ctx, undefined, entity.id);
-        }
       });
     // Listen for Order placed events
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
@@ -1118,7 +1104,7 @@ export class PicqerService implements OnApplicationBootstrap {
       name: variant.name || variant.sku, // use SKU if no name set
       price: currency(variant.price / 100).value, // Convert to float with 2 decimals
       productcode: variant.sku,
-      active: variant.enabled,
+      active: true,
     };
   }
 
