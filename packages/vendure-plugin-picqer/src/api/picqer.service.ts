@@ -184,18 +184,6 @@ export class PicqerService implements OnApplicationBootstrap {
           entities.map((v) => v.id)
         );
       });
-    // Listen for Product events. Only push variants when product is enabled/disabled. Other changes are handled by the variant events.
-    this.eventBus
-      .ofType(ProductEvent)
-      .subscribe(async ({ ctx, entity, type, input }) => {
-        // Only push if `enabled` is updated
-        if (
-          type === 'updated' &&
-          (input as UpdateProductInput).enabled !== undefined
-        ) {
-          await this.addPushVariantsJob(ctx, undefined, entity.id);
-        }
-      });
     // Listen for Order placed events
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       await this.addPushOrderJob(ctx, order);
