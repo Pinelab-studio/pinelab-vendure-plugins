@@ -19,7 +19,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
 import { expect, describe, beforeAll, it, afterAll } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-describe('Order export plugin', function () {
+describe('Stock monitoring plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
