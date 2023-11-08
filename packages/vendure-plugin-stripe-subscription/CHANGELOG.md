@@ -1,3 +1,7 @@
+# 2.2.1 (2023-11-06)
+
+- Extended the `HistoryEntryList` enum to make stripe subscription  custom history entry component work
+
 # 2.2.0 (2023-11-08)
 
 - Return subscriptions per order line on orders
