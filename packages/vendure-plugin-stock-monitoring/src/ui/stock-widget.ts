@@ -63,14 +63,14 @@ export class StockWidgetComponent implements OnInit {
       )
       .mapStream((data) => (data as any).productVariantsWithLowStock);
   }
+
+  reduceSum(stockLevels: any[]): number {
+    return stockLevels.reduce((acc, val) => (acc += val.stockOnHand), 0);
+  }
 }
 
 @NgModule({
   imports: [SharedModule],
   declarations: [StockWidgetComponent],
 })
-export class StockWidgetModule {
-  reduceSum(stockLevels: any[]): number {
-    return stockLevels.reduce((acc, val) => (acc += val.stockOnHand), 0);
-  }
-}
+export class StockWidgetModule {}
