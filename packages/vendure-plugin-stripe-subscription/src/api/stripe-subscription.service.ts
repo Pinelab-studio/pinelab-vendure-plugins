@@ -542,9 +542,9 @@ export class StripeSubscriptionService {
       ctx,
       injector,
       orderLine.productVariant,
+      orderLine.order,
       orderLine.customFields,
-      orderLine.quantity,
-      order
+      orderLine.quantity
     );
     if (Array.isArray(subs)) {
       return subs;

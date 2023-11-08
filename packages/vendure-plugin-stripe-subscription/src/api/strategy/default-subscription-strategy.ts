@@ -17,9 +17,9 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
     ctx: RequestContext,
     injector: Injector,
     productVariant: ProductVariant,
+    order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number,
-    order?: Order
+    quantity: number
   ): Subscription {
     return this.getSubscriptionForVariant(productVariant);
   }

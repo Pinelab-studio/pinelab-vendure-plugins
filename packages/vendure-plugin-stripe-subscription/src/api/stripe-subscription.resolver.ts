@@ -10,6 +10,7 @@ import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import {
   Allow,
   Ctx,
+  EntityHydrator,
   OrderLine,
   PaymentMethodService,
   Permission,
@@ -32,7 +33,8 @@ export type RequestWithRawBody = Request & { rawBody: any };
 export class StripeSubscriptionShopResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
-    private paymentMethodService: PaymentMethodService
+    private paymentMethodService: PaymentMethodService,
+    private entityHydrator: EntityHydrator
   ) {}
 
   @Mutation()
@@ -95,6 +97,7 @@ export class StripeSubscriptionShopResolver {
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLine
   ): Promise<StripeSubscription[] | undefined> {
+    await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
     const subscriptionsForOrderLine =
       await this.stripeSubscriptionService.getSubscriptionsForOrderLine(
         ctx,
