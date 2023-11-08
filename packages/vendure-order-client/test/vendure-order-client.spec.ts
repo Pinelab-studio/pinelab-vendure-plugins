@@ -15,13 +15,15 @@ import {
   ActiveOrderFieldsFragment,
   CreateAddressInput,
   CreateCustomerInput,
+  MolliePaymentIntentInput,
   PaymentInput,
   Success,
 } from '../src/graphql-generated-types';
 import { initialData } from './initial-data';
-import { testPaymentMethodHandler } from './test-payment-method-handler';
+import { testPaymentMethodHandler } from './payment-method-handlers';
 import { useStore } from '@nanostores/vue';
 import { MapStore, listenKeys } from 'nanostores';
+import { addItem } from '../../test/src/shop-utils';
 
 const storage: any = {};
 const window = {
@@ -59,6 +61,7 @@ describe(
     const couponCodeName = 'couponCodeName';
     let activeOrderCode: string | undefined;
     let adminClient: SimpleGraphQLClient;
+    let shopClient: SimpleGraphQLClient;
     let activeOrderStore: any;
     let currentUserStore: any;
     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -67,14 +70,17 @@ describe(
       registerInitializer('sqljs', new SqljsInitializer('__data__'));
       const config = mergeConfig(testConfig, {
         paymentOptions: {
-          paymentMethodHandlers: [testPaymentMethodHandler],
+          paymentMethodHandlers: [
+            testPaymentMethodHandler,
+            molliePaymentHandler,
+          ],
         },
         authOptions: {
           requireVerification: false,
         },
         logger: new DefaultLogger({ level: LogLevel.Debug }),
       });
-      ({ server, adminClient } = createTestEnvironment(config));
+      ({ server, adminClient, shopClient } = createTestEnvironment(config));
       await server.init({
         initialData,
         productsCsvPath: path.join(__dirname, './product-import.csv'),
@@ -475,6 +481,21 @@ describe(
         }
         await client.getOrderByCode(activeOrderCode);
         expect(activeOrderCode).toEqual(activeOrderStore.value.data.code);
+      });
+
+      it('Should create mollie payment intent', async () => {
+        // first we need to create a new order
+        await shopClient.asAnonymousUser();
+        await addItem(shopClient, 'T_1', 1);
+        const createMolliPaymentIntentInput: MolliePaymentIntentInput = {
+          redirectUrl: 'https://remix-storefront.vendure.io',
+          paymentMethodCode: 'mollie-payment-method',
+          molliePaymentMethodCode: 'ideal',
+        };
+        const molliePaymentLink = await client.createMolliePaymentIntent(
+          createMolliPaymentIntentInput
+        );
+        expect(molliePaymentLink).toBeDefined();
       });
     });
 

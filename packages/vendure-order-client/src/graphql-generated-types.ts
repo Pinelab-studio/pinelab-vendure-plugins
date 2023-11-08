@@ -151,6 +151,16 @@ export interface BooleanOperators {
   isNull?: InputMaybe<Scalars['Boolean']>;
 }
 
+export interface MutationCreateMolliePaymentIntentArgs {
+  input: MolliePaymentIntentInput;
+}
+
+export interface MolliePaymentIntentInput {
+  molliePaymentMethodCode?: InputMaybe<Scalars['String']>;
+  paymentMethodCode: Scalars['String'];
+  redirectUrl?: InputMaybe<Scalars['String']>;
+}
+
 export type Channel = Node & {
   __typename?: 'Channel';
   availableCurrencyCodes: CurrencyCode[];

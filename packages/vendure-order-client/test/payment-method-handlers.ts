@@ -19,4 +19,21 @@ export const testPaymentMethodHandler = new PaymentMethodHandler({
   }),
 });
 
-// export const testPaymentMethod= new PaymentMethod()
+export const molliePaymentMethodHandler = new PaymentMethodHandler({
+  code: 'test-payment-method',
+  description: [
+    { languageCode: LanguageCode.en, value: 'Test Payment Method' },
+  ],
+  args: {},
+  createPayment: (ctx, order, amount, args, metadata) => {
+    return {
+      amount,
+      state: 'Settled',
+      transactionId: '12345',
+      metadata: { public: metadata },
+    };
+  },
+  settlePayment: () => ({
+    success: true,
+  }),
+});

@@ -43,6 +43,8 @@ import {
   Success,
   TransitionOrderToStateMutation,
   ShippingMethodQuote,
+  MolliePaymentIntentInput,
+  MutationCreateMolliePaymentIntentArgs,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
 import { setResult, HandleLoadingState, StateStore } from './store-helpers';
@@ -334,6 +336,19 @@ export class VendureOrderClient<A = unknown> {
     );
     setResult(this.$activeOrder, activeOrder);
     return activeOrder;
+  }
+
+  async createMolliePaymentIntent(
+    input: MolliePaymentIntentInput
+  ): Promise<string> {
+    const { createMolliePaymentIntent } = await this.rawRequest<
+      any,
+      MutationCreateMolliePaymentIntentArgs
+    >(this.queries.CREATE_MOLLIE_PAYMENT_INTENT, { input });
+    const molliePaymentLink = this.throwIfErrorResult<string>(
+      createMolliePaymentIntent
+    );
+    return molliePaymentLink;
   }
 
   @HandleLoadingState('$activeOrder')
