@@ -28,13 +28,7 @@ export interface StockMonitoringPlugin {
 export class StockMonitoringPlugin {
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'shared',
-        ngModuleFileName: 'stock-widget.shared-module.ts',
-        ngModuleName: 'StockWidgetSharedModule',
-      },
-    ],
+    providers: ['providers.ts'],
   };
   static threshold = 10;
   static init(options: StockMonitoringPlugin): typeof StockMonitoringPlugin {
