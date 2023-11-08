@@ -13,6 +13,10 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { convertToDraftMutation } from './test-helper';
 import { ModifyCustomerOrdersPlugin } from '../src';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import path from 'path';
+import * as fs from 'fs';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Customer managed groups', function () {
   let server: TestServer;
@@ -94,4 +98,16 @@ describe('Customer managed groups', function () {
       );
     }
   });
+
+  it('Should compile admin', async () => {
+    const files = await getFilesInAdminUiFolder(
+      __dirname,
+      ModifyCustomerOrdersPlugin.ui
+    );
+    expect(files?.length).toBeGreaterThan(0);
+  }, 200000);
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });

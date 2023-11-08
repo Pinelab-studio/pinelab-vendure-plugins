@@ -13,7 +13,7 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { ApolloError } from 'apollo-server-core';
+import { GraphQLError } from 'graphql';
 import axios from 'axios';
 import { Fulfillment } from '@vendure/core';
 import { MyparcelConfigEntity } from './myparcel-config.entity';
@@ -385,9 +385,9 @@ export class MyparcelService implements OnApplicationBootstrap {
   }
 }
 
-export class MyParcelError extends ApolloError {
+export class MyParcelError extends GraphQLError {
   constructor(message: string) {
-    super(message, 'MY_PARCEL_ERROR');
+    super(message, { extensions: { code: 'MY_PARCEL_ERROR' } });
   }
 }
 

@@ -59,10 +59,6 @@ describe('CloudTasks job queue e2e', () => {
     started = true;
   }, 60000);
 
-  afterAll(async () => {
-    await server.destroy();
-  });
-
   it('Should start successfully', async () => {
     expect(started).toBe(true);
   });
@@ -158,4 +154,7 @@ describe('CloudTasks job queue e2e', () => {
     );
     expect(res.status).toBe(200);
   });
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });

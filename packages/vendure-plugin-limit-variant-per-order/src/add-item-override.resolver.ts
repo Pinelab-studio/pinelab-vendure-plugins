@@ -15,8 +15,7 @@ import {
   MutationAddItemToOrderArgs,
   MutationAdjustOrderLineArgs,
 } from '@vendure/common/lib/generated-shop-types';
-import { ApolloError } from 'apollo-server-core';
-
+import { GraphQLError } from 'graphql';
 const loggerCtx = 'LimitVariantPerOrderPlugin';
 const maxItemsErrorCode = 'MAX_ITEMS_PER_ORDER_ERROR';
 
@@ -74,9 +73,9 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
         `There can be only max ${maxPerOrder} of ${orderLine.productVariant.name} per order, throwing error to prevent this item from being added.`,
         loggerCtx
       );
-      throw new ApolloError(
+      throw new GraphQLError(
         `You are only allowed to order max ${maxPerOrder} of ${orderLine.productVariant.name}`,
-        maxItemsErrorCode
+        { extensions: { code: maxItemsErrorCode } }
       );
       // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added
     }

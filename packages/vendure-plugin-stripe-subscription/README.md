@@ -68,7 +68,6 @@ plugins: [
 1. On the product detail page of your subscription product, you can preview the subscription for a given variant with this query:
 
 ```graphql
-{
   previewStripeSubscriptions(productVariantId: 1) {
     name
     amountDueNow
@@ -82,19 +81,42 @@ plugins: [
       endDate
     }
   }
-}
 ```
 
 2. The same can be done for all variants of a product with the query `previewStripeSubscriptionsForProduct`
 3. Add the item to cart with the default `AddItemToOrder` mutation.
-4. Add a shipping address and a shipping method to the order (mandatory for all orders).
-5. You can create `createStripeSubscriptionIntent` to receive a client secret.
-6. :warning: Please make sure you render the correct Stripe elements: A created intent can be a `PaymentIntent` or a `SetupIntent`.
-7. Use this token to display the Stripe form elements on your storefront. See
+4. The subscriptions in the active order can be viewed by fetching subscriptions on an order line:
+
+```graphql
+activeOrder {
+      id
+      code
+      lines {
+        stripeSubscriptions {
+          name
+          amountDueNow
+          variantId
+          priceIncludesTax
+          recurring {
+            amount
+            interval
+            intervalCount
+            startDate
+            endDate
+          }
+        }
+      }
+    }
+```
+
+5. Add a shipping address and a shipping method to the order (mandatory for all orders).
+6. You can create `createStripeSubscriptionIntent` to receive a client secret.
+7. :warning: Please make sure you render the correct Stripe elements: A created intent can be a `PaymentIntent` or a `SetupIntent`.
+8. Use this token to display the Stripe form elements on your storefront. See
    the [Stripe docs](https://stripe.com/docs/payments/accept-a-payment?platform=web&ui=elements#set-up-stripe.js) for more information.
-8. The customer can now enter his credit card credentials.
-9. Vendure will create the subscriptions in the background, after the intent has successfully been completed by the customer.
-10. The order will be settled by Vendure when the subscriptions are created.
+9. The customer can now enter his credit card credentials.
+10. Vendure will create the subscriptions in the background, after the intent has successfully been completed by the customer.
+11. The order will be settled by Vendure when the subscriptions are created.
 
 It's important to inform your customers what you will be billing them in the
 future: https://stripe.com/docs/payments/setup-intents#mandates
@@ -104,13 +126,11 @@ future: https://stripe.com/docs/payments/setup-intents#mandates
 You can optionally supply your publishable key in your payment method handler, so that you can retrieve it using the `eligiblePaymentMethods` query:
 
 ```graphql
-{
   eligiblePaymentMethods {
     id
     name
     stripeSubscriptionPublishableKey
   }
-}
 ```
 
 ## Custom subscription strategy
@@ -191,7 +211,6 @@ You can pass custom inputs to your strategy, to change how a subscription is def
 2. When previewing a subscription for a product, you can pass a `subscriptionStartDate` to your strategy:
 
 ```graphql
-{
   previewStripeSubscriptionsForProduct(
     productVariantId: 1
     customInputs: { subscriptionStartDate: "2024-01-01" }
@@ -208,7 +227,6 @@ You can pass custom inputs to your strategy, to change how a subscription is def
       endDate
     }
   }
-}
 ```
 
 3. In you custom strategy, you would handle the custom input:
@@ -232,7 +250,6 @@ You can pass custom inputs to your strategy, to change how a subscription is def
       },
     };
   }
-}
 ```
 
 4. When adding a product to cart, make sure you also set the `subscriptionStartDate` on the order line, so that you can access it in the `defineSubscription` method of your strategy:

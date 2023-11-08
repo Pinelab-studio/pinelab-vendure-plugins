@@ -25,9 +25,9 @@ export class StripeSubscriptionController {
   @Post('webhook')
   async webhook(
     @Headers('stripe-signature') signature: string | undefined,
-    @Req() request: RequestWithRawBody,
-    @Body() body: IncomingStripeWebhook
+    @Req() request: RequestWithRawBody
   ): Promise<void> {
+    const body = JSON.parse(request.body.toString()) as IncomingStripeWebhook;
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
     // Validate if metadata present
     const orderCode =
@@ -44,7 +44,7 @@ export class StripeSubscriptionController {
       return;
     }
     if (!orderCode || !channelToken) {
-      // For some reasone we get a webhook without metadata first, we ignore it
+      // For some reason we get a webhook without metadata first, we ignore it
       return Logger.info(
         `Incoming webhook is missing metadata.orderCode/channelToken, ignoring. We should receive another one with metadata...`,
         loggerCtx
