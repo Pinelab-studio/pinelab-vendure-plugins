@@ -1,6 +1,6 @@
 import { LanguageCode } from '@vendure/common/lib/generated-types.js';
 import { InitialData } from '@vendure/core';
-import { testPaymentMethodHandler } from './payment-method-handlers.js';
+import { testPaymentMethodHandler } from './test-payment-method-handler.js';
 import { molliePaymentHandler } from '@vendure/payments-plugin/package/mollie/mollie.handler';
 
 export const initialData: InitialData = {

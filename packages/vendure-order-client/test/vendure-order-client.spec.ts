@@ -21,7 +21,7 @@ import {
   Success,
 } from '../src/graphql-generated-types';
 import { initialData } from './initial-data';
-import { testPaymentMethodHandler } from './payment-method-handlers';
+import { testPaymentMethodHandler } from './test-payment-method-handler';
 import { useStore } from '@nanostores/vue';
 import { MapStore, listenKeys } from 'nanostores';
 import { molliePaymentHandler } from '@vendure/payments-plugin/package/mollie/mollie.handler';
