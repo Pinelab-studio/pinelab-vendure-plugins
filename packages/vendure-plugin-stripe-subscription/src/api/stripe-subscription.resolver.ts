@@ -10,6 +10,8 @@ import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import {
   Allow,
   Ctx,
+  EntityHydrator,
+  OrderLine,
   PaymentMethodService,
   Permission,
   RequestContext,
@@ -21,6 +23,7 @@ import {
   Query as GraphqlQuery,
   QueryPreviewStripeSubscriptionsArgs,
   QueryPreviewStripeSubscriptionsForProductArgs,
+  StripeSubscription,
 } from './generated/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
@@ -30,7 +33,8 @@ export type RequestWithRawBody = Request & { rawBody: any };
 export class StripeSubscriptionShopResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
-    private paymentMethodService: PaymentMethodService
+    private paymentMethodService: PaymentMethodService,
+    private entityHydrator: EntityHydrator
   ) {}
 
   @Mutation()
@@ -85,5 +89,24 @@ export class StripeSubscriptionShopResolver {
     }
     return paymentMethod.handler.args.find((a) => a.name === 'publishableKey')
       ?.value;
+  }
+
+  @ResolveField('stripeSubscriptions')
+  @Resolver('OrderLine')
+  async stripeSubscriptions(
+    @Ctx() ctx: RequestContext,
+    @Parent() orderLine: OrderLine
+  ): Promise<StripeSubscription[] | undefined> {
+    await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
+    const subscriptionsForOrderLine =
+      await this.stripeSubscriptionService.getSubscriptionsForOrderLine(
+        ctx,
+        orderLine,
+        orderLine.order
+      );
+    return subscriptionsForOrderLine.map((s) => ({
+      ...s,
+      variantId: orderLine.productVariant.id,
+    }));
   }
 }
