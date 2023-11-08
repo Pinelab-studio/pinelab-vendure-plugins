@@ -1,6 +1,7 @@
 import { LanguageCode } from '@vendure/common/lib/generated-types.js';
 import { InitialData } from '@vendure/core';
 import { testPaymentMethodHandler } from './payment-method-handlers.js';
+import { molliePaymentHandler } from '@vendure/payments-plugin/package/mollie/mollie.handler';
 
 export const initialData: InitialData = {
   defaultLanguage: LanguageCode.en,
@@ -39,6 +40,10 @@ export const initialData: InitialData = {
     {
       handler: { code: testPaymentMethodHandler.code, arguments: [] },
       name: 'Test payment',
+    },
+    {
+      handler: { code: molliePaymentHandler.code, arguments: [] },
+      name: 'Mollie Payment',
     },
   ],
 };

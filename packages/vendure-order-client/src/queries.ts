@@ -378,7 +378,7 @@ export class GraphqlQueries {
     mutation CreateMolliPaymentIntentMutation(
       $input: MolliePaymentIntentInput!
     ) {
-      createMolliePayemtnIntent(input: $input) {
+      createMolliePaymentIntent(input: $input) {
         ... on MolliePaymentIntent {
           url
         }

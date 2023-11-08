@@ -34,7 +34,8 @@
   },
   "devDependencies": {
     "@nanostores/vue": "^0.10.0",
-    "@vue/cli": "^5.0.8"
+    "@vue/cli": "^5.0.8",
+    "@mollie/api-client": "3.7.0"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }
