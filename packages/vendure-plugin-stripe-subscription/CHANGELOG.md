@@ -1,6 +1,6 @@
 # 2.2.0 (2023-11-08)
 
-- Updated vendure to 2.1.1
+- Return subscriptions per order line on orders
 
 # 2.1.0 (2023-11-02)
 
