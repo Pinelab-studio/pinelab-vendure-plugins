@@ -10,6 +10,7 @@ import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import {
   Allow,
   Ctx,
+  OrderLine,
   PaymentMethodService,
   Permission,
   RequestContext,
@@ -21,6 +22,7 @@ import {
   Query as GraphqlQuery,
   QueryPreviewStripeSubscriptionsArgs,
   QueryPreviewStripeSubscriptionsForProductArgs,
+  StripeSubscription,
 } from './generated/graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
@@ -85,5 +87,23 @@ export class StripeSubscriptionShopResolver {
     }
     return paymentMethod.handler.args.find((a) => a.name === 'publishableKey')
       ?.value;
+  }
+
+  @ResolveField('stripeSubscriptions')
+  @Resolver('OrderLine')
+  async stripeSubscriptions(
+    @Ctx() ctx: RequestContext,
+    @Parent() orderLine: OrderLine
+  ): Promise<StripeSubscription[] | undefined> {
+    const subscriptionsForOrderLine =
+      await this.stripeSubscriptionService.getSubscriptionsForOrderLine(
+        ctx,
+        orderLine,
+        orderLine.order
+      );
+    return subscriptionsForOrderLine.map((s) => ({
+      ...s,
+      variantId: orderLine.productVariant.id,
+    }));
   }
 }

@@ -41,9 +41,9 @@ export interface SubscriptionStrategy {
     ctx: RequestContext,
     injector: Injector,
     productVariant: ProductVariant,
-    order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    quantity: number,
+    order?: Order
   ):
     | Promise<Subscription>
     | Subscription

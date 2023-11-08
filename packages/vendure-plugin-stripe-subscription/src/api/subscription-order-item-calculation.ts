@@ -40,9 +40,9 @@ export class SubscriptionOrderItemCalculation
       ctx,
       injector,
       productVariant,
-      order,
       orderLineCustomFields,
-      orderLineQuantity
+      orderLineQuantity,
+      order
     );
     if (!Array.isArray(subscription)) {
       return {

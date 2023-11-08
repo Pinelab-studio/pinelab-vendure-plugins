@@ -8,7 +8,6 @@ import {
   OrderService,
   OrderStateTransitionEvent,
 } from '@vendure/core';
-import { SubscribableJob } from '@vendure/core/dist/job-queue/subscribable-job';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -32,6 +31,8 @@ import {
   CREATE_PAYMENT_METHOD,
   ELIGIBLE_PAYMENT_METHODS,
   getDefaultCtx,
+  getOneMonthFromNow,
+  GET_ACTIVE_ORDER,
   GET_PAYMENT_METHODS,
   PREVIEW_SUBSCRIPTIONS,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
@@ -157,13 +158,6 @@ describe('Stripe Subscription Plugin', function () {
     } = await shopClient.query(PREVIEW_SUBSCRIPTIONS, {
       productVariantId: 'T_1',
     });
-    const now = new Date();
-    const startDate = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      now.getDate(),
-      12
-    );
     expect(subscription).toEqual({
       name: 'Subscription Laptop 13 inch 8GB',
       amountDueNow: 129900,
@@ -173,7 +167,7 @@ describe('Stripe Subscription Plugin', function () {
         amount: 129900,
         interval: 'month',
         intervalCount: 1,
-        startDate: startDate.toISOString(),
+        startDate: getOneMonthFromNow().toISOString(),
         endDate: null,
       },
     });
@@ -203,6 +197,23 @@ describe('Stripe Subscription Plugin', function () {
     );
     orderCode = order.code;
     expect(order.total).toBe(129900);
+  });
+
+  it('Has subscriptions on an order line', async () => {
+    const { activeOrder } = await shopClient.query(GET_ACTIVE_ORDER);
+    expect(activeOrder.lines[0].stripeSubscriptions[0]).toEqual({
+      name: 'Subscription Laptop 13 inch 8GB',
+      amountDueNow: 129900,
+      variantId: 'T_1',
+      priceIncludesTax: false,
+      recurring: {
+        amount: 129900,
+        interval: 'month',
+        intervalCount: 1,
+        startDate: getOneMonthFromNow().toISOString(),
+        endDate: null,
+      },
+    });
   });
 
   it('Sets a shipping method and customer details', async () => {
