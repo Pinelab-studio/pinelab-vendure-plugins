@@ -20,6 +20,33 @@ export const ADD_ITEM_TO_ORDER = gql`
   }
 `;
 
+export const GET_ACTIVE_ORDER = gql`
+  query activeOrder {
+    activeOrder {
+      id
+      code
+      totalWithTax
+      total
+      lines {
+        id
+        stripeSubscriptions {
+          name
+          amountDueNow
+          variantId
+          priceIncludesTax
+          recurring {
+            amount
+            interval
+            intervalCount
+            startDate
+            endDate
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const CREATE_PAYMENT_METHOD = gql`
   mutation CreatePaymentMethod($input: CreatePaymentMethodInput!) {
     createPaymentMethod(input: $input) {
@@ -154,6 +181,11 @@ export const REFUND_ORDER = gql`
     }
   }
 `;
+
+export function getOneMonthFromNow() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate(), 12);
+}
 
 export async function setShipping(
   shopClient: SimpleGraphQLClient

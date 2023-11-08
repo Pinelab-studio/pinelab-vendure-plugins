@@ -497,7 +497,7 @@ export class StripeSubscriptionService {
    * This defines the actual subscriptions and prices for each order line, based on the configured strategy.
    * Doesn't allow recurring amount to be below 0 or lower
    */
-  async defineSubscriptions(
+  async getSubscriptionsForOrder(
     ctx: RequestContext,
     order: Order
   ): Promise<(Subscription & { orderLineId: ID; variantId: ID })[]> {
@@ -508,27 +508,13 @@ export class StripeSubscriptionService {
     );
     const subscriptions = await Promise.all(
       subscriptionOrderLines.map(async (line) => {
-        const subs = await this.strategy.defineSubscription(
-          ctx,
-          injector,
-          line.productVariant,
-          order,
-          line.customFields,
-          line.quantity
-        );
-        // Add orderlineId to subscription
-        if (Array.isArray(subs)) {
-          return subs.map((sub) => ({
-            orderLineId: line.id,
-            variantId: line.productVariant.id,
-            ...sub,
-          }));
-        }
-        return {
+        const subs = await this.getSubscriptionsForOrderLine(ctx, line, order);
+        // Add orderlineId and variantId to subscription
+        return subs.map((sub) => ({
           orderLineId: line.id,
           variantId: line.productVariant.id,
-          ...subs,
-        };
+          ...sub,
+        }));
       })
     );
     const flattenedSubscriptionsArray = subscriptions.flat();
@@ -544,6 +530,26 @@ export class StripeSubscriptionService {
       }
     });
     return flattenedSubscriptionsArray;
+  }
+
+  async getSubscriptionsForOrderLine(
+    ctx: RequestContext,
+    orderLine: OrderLine,
+    order: Order
+  ): Promise<Subscription[]> {
+    const injector = new Injector(this.moduleRef);
+    const subs = await this.strategy.defineSubscription(
+      ctx,
+      injector,
+      orderLine.productVariant,
+      orderLine.order,
+      orderLine.customFields,
+      orderLine.quantity
+    );
+    if (Array.isArray(subs)) {
+      return subs;
+    }
+    return [subs];
   }
 
   /**
@@ -690,7 +696,7 @@ export class StripeSubscriptionService {
           `[${loggerCtx}]: Failed to create subscription for customer ${stripeCustomerId} because it doesn't exist in Stripe`
         );
       }
-      const subscriptionDefinitions = await this.defineSubscriptions(
+      const subscriptionDefinitions = await this.getSubscriptionsForOrder(
         ctx,
         order
       );

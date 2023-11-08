@@ -44,7 +44,7 @@ export class StripeSubscriptionController {
       return;
     }
     if (!orderCode || !channelToken) {
-      // For some reasone we get a webhook without metadata first, we ignore it
+      // For some reason we get a webhook without metadata first, we ignore it
       return Logger.info(
         `Incoming webhook is missing metadata.orderCode/channelToken, ignoring. We should receive another one with metadata...`,
         loggerCtx

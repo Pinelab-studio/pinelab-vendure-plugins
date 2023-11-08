@@ -45,6 +45,10 @@ export const shopSchemaExtensions = gql`
     stripeSubscriptionPublishableKey: String
   }
 
+  extend type OrderLine {
+    stripeSubscriptions: [StripeSubscription!]
+  }
+
   extend type Query {
     previewStripeSubscriptions(
       productVariantId: ID!
