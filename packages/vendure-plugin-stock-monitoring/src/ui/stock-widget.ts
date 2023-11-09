@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 import gql from 'graphql-tag';
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'stock-widget',
   template: `
     <vdr-data-table [items]="variant$ | async" class="stock-widget-overflow">
@@ -63,13 +65,7 @@ export class StockWidgetComponent implements OnInit {
       )
       .mapStream((data) => (data as any).productVariantsWithLowStock);
   }
-}
 
-@NgModule({
-  imports: [SharedModule],
-  declarations: [StockWidgetComponent],
-})
-export class StockWidgetModule {
   reduceSum(stockLevels: any[]): number {
     return stockLevels.reduce((acc, val) => (acc += val.stockOnHand), 0);
   }
