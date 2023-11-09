@@ -18,5 +18,3 @@ export const testPaymentMethodHandler = new PaymentMethodHandler({
     success: true,
   }),
 });
-
-// export const testPaymentMethod= new PaymentMethod()

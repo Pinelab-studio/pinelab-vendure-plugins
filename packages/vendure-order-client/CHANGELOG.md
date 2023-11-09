@@ -1,3 +1,8 @@
+# 2.4.0 (2023-11-09)
+
+- Add mollie payment intent creation vendure client
+- Updated vendure to 2.1.2
+
 # 2.3.0 (2023-10-24)
 
 - Updated vendure to 2.1.1

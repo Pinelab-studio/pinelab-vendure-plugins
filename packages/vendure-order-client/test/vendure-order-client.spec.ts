@@ -15,13 +15,17 @@ import {
   ActiveOrderFieldsFragment,
   CreateAddressInput,
   CreateCustomerInput,
+  MolliePaymentIntentInput,
   PaymentInput,
+  RegisterCustomerInput,
   Success,
 } from '../src/graphql-generated-types';
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
 import { useStore } from '@nanostores/vue';
 import { MapStore, listenKeys } from 'nanostores';
+import { molliePaymentHandler } from '@vendure/payments-plugin/package/mollie/mollie.handler';
+import { MolliePlugin } from '@vendure/payments-plugin/package/mollie/mollie.plugin';
 
 const storage: any = {};
 const window = {
@@ -66,8 +70,17 @@ describe(
     beforeAll(async () => {
       registerInitializer('sqljs', new SqljsInitializer('__data__'));
       const config = mergeConfig(testConfig, {
+        plugins: [
+          MolliePlugin.init({
+            vendureHost: 'my-vendure.io',
+            useDynamicRedirectUrl: true,
+          }),
+        ],
         paymentOptions: {
-          paymentMethodHandlers: [testPaymentMethodHandler],
+          paymentMethodHandlers: [
+            testPaymentMethodHandler,
+            molliePaymentHandler,
+          ],
         },
         authOptions: {
           requireVerification: false,
@@ -479,9 +492,11 @@ describe(
     });
 
     describe('Registered customer checkout', () => {
-      const createNewCustomerInput = {
+      const createNewCustomerInput: RegisterCustomerInput = {
         emailAddress: `test${Math.random()}@xyz.com`,
         password: '1qaz2wsx',
+        firstName: 'Hans',
+        lastName: 'Miller',
       };
       /*  */
       it('Register as customer', async () => {
@@ -496,7 +511,7 @@ describe(
           async () =>
             await client.login(
               createNewCustomerInput.emailAddress,
-              createNewCustomerInput.password
+              createNewCustomerInput.password as string
             )
         );
         expect(currentUserStore.value.data.identifier).toBe(
@@ -517,6 +532,36 @@ describe(
         expect(activeOrderStore.value.data.lines[0].productVariant.id).toBe(
           'T_1'
         );
+      });
+      it('Should create mollie payment intent as authenticated customer', async () => {
+        await client.addItemToOrder('T_1', 1);
+        await client.setCustomerForOrder({
+          emailAddress: createNewCustomerInput.emailAddress,
+          firstName: createNewCustomerInput.firstName as string,
+          lastName: createNewCustomerInput.lastName as string,
+        });
+        await client.setOrderShippingAddress({
+          fullName: 'name',
+          streetLine1: '12 the street',
+          city: 'Leeuwarden',
+          postalCode: '123456',
+          countryCode: 'AT',
+        });
+        await client.setOrderShippingMethod([
+          client.$eligibleShippingMethods.value?.data?.[0]?.id as string,
+        ]);
+        const createMolliPaymentIntentInput: MolliePaymentIntentInput = {
+          redirectUrl: 'https://remix-storefront.vendure.io',
+          paymentMethodCode: 'mollie-payment',
+          molliePaymentMethodCode: 'ideal',
+        };
+        try {
+          await client.createMolliePaymentIntent(createMolliPaymentIntentInput);
+        } catch (e) {
+          expect(e.message).toBe(
+            'Paymentmethod mollie-payment has no apiKey configured'
+          );
+        }
       });
     });
 

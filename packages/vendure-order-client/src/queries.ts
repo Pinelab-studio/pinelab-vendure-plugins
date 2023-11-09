@@ -373,4 +373,20 @@ export class GraphqlQueries {
       }
     }
   `;
+
+  CREATE_MOLLIE_PAYMENT_INTENT = gql`
+    mutation CreateMolliPaymentIntentMutation(
+      $input: MolliePaymentIntentInput!
+    ) {
+      createMolliePaymentIntent(input: $input) {
+        ... on MolliePaymentIntent {
+          url
+        }
+        ... on MolliePaymentIntentError {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
 }
