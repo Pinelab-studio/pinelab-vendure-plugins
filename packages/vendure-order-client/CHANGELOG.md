@@ -1,3 +1,8 @@
+# 2.5.0 (2023-13-09)
+
+- Export vendure graphql types
+- Fixed outdated readme
+
 # 2.4.0 (2023-11-09)
 
 - Add mollie payment intent creation vendure client

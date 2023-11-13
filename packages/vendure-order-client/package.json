@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-order-client",
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "A tiny, framework agnostic client for managing active orders and checkout with Vendure.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
