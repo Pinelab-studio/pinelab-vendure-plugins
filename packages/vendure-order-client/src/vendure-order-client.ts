@@ -147,7 +147,7 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: [productVariantId],
       quantity,
     });
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -190,12 +190,12 @@ export class VendureOrderClient<A = unknown> {
         quantity: -adjustment, // adjustment is negative, so invert it
       });
     }
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
   async removeOrderLine(orderLineId: Id): Promise<ActiveOrder<A>> {
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return await this.adjustOrderLine(orderLineId, 0);
   }
 
@@ -218,7 +218,7 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: allVariantIds,
       quantity: totalQuantity,
     });
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -235,7 +235,7 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-applied', {
       couponCode,
     });
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -257,7 +257,7 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-removed', {
       couponCode,
     });
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -273,7 +273,7 @@ export class VendureOrderClient<A = unknown> {
       setCustomerForOrder as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -289,7 +289,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -303,7 +303,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderBillingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -319,7 +319,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingMethod as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMehods();
+    void this.updateEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -479,7 +479,7 @@ export class VendureOrderClient<A = unknown> {
   }
 
   @HandleLoadingState('$eligibleShippingMethods')
-  private async updateEligibleShippingMehods(): Promise<void> {
+  async updateEligibleShippingMethods(): Promise<void> {
     const { eligibleShippingMethods } = await this.rawRequest<{
       eligibleShippingMethods: ShippingMethodQuote[];
     }>(this.queries.GET_ELIGIBLE_SHIPPING_METHODS);
