@@ -271,8 +271,10 @@ export interface WebhookInput {
 export type IncomingWebhook =
   | IncomingProductWebhook
   | IncomingOrderStatusWebhook;
+
 export type WebhookEvent =
   | 'products.free_stock_changed'
+  | 'products.assembled_stock_changed'
   | 'orders.status_changed';
 
 export interface WebhookData {
@@ -295,7 +297,7 @@ export interface IncomingOrderStatusWebhook {
 export interface IncomingProductWebhook {
   idhook: number;
   name: string;
-  event: 'products.free_stock_changed';
+  event: 'products.free_stock_changed' | 'products.assembled_stock_changed';
   event_triggered_at: string;
   data: ProductData;
 }

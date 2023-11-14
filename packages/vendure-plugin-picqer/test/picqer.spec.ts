@@ -144,7 +144,7 @@ describe('Picqer plugin', function () {
 
   it('Should have created hooks when config was updated', async () => {
     // Expect 1 created hook: stock change
-    await expect(createdHooks.length).toBe(2);
+    await expect(createdHooks.length).toBe(3);
     await expect(createdHooks[0].event).toBe('orders.status_changed');
     await expect(createdHooks[0].address).toBe(
       `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
@@ -152,6 +152,9 @@ describe('Picqer plugin', function () {
     await expect(createdHooks[0].secret).toBeDefined();
     await expect(createdHooks[0].name).toBeDefined();
     await expect(createdHooks[1].event).toBe('products.free_stock_changed');
+    await expect(createdHooks[2].event).toBe(
+      'products.assembled_stock_changed'
+    );
   });
 
   it('Should get Picqer config after upsert', async () => {
@@ -383,7 +386,7 @@ describe('Picqer plugin', function () {
     expect(updatedProduct!.price).toBe(123.45);
   });
 
-  it('Should update stock level on incoming webhook', async () => {
+  it('Should update stock level on incoming "free_stock" webhook', async () => {
     const body = {
       event: 'products.free_stock_changed',
       data: {
@@ -405,6 +408,31 @@ describe('Picqer plugin', function () {
     const variant = variants.find((v) => v.sku === 'L2201308');
     expect(res.ok).toBe(true);
     expect(variant?.stockOnHand).toBe(543);
+  });
+
+  it('Should update stock level on incoming "assembled_stock" webhook', async () => {
+    const body = {
+      event: 'products.assembled_stock_changed',
+      data: {
+        productcode: 'L2201308',
+        stock: [{ freestock: 2, idwarehouse: 2 }],
+      },
+    };
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          'X-Picqer-Signature': createSignature(body, 'test-api-key'),
+        },
+      }
+    );
+    const variants = await getAllVariants(adminClient);
+    const variant = variants.find((v) => v.sku === 'L2201308');
+    console.log(variant);
+    expect(res.ok).toBe(true);
+    expect(variant?.stockOnHand).toBe(2);
   });
 
   it('Should fail with invalid signature', async () => {
