@@ -1,3 +1,7 @@
+# 2.2.0 (2023-11-14)
+
+- Update stock of virtual/asembled products based on assembled_stock webhook
+
 # 2.2.0 (2023-11-02)
 
 - Always created products as active in Picqer
