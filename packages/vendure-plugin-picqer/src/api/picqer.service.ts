@@ -218,6 +218,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const eventsToRegister: WebhookEvent[] = [
       'orders.status_changed',
       'products.free_stock_changed',
+      'products.assembled_stock_changed',
     ];
     for (const hookEvent of eventsToRegister) {
       // Use first 4 digits of webhook secret as name, so we can identify the hook
@@ -280,7 +281,11 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       throw new ForbiddenError();
     }
-    if (input.body.event === 'products.free_stock_changed') {
+    if (
+      input.body.event === 'products.free_stock_changed' ||
+      input.body.event === 'products.assembled_stock_changed'
+    ) {
+      const data = input.body.data;
       await this.updateStockBySkus(ctx, [input.body.data]);
     } else if (input.body.event === 'orders.status_changed') {
       await this.handleOrderStatusChanged(ctx, input.body.data);
