@@ -27,7 +27,7 @@ This is a Vue.js example, but integrations for React and more are available for 
   </div>
 </template>
 <script setup lang="ts">
-import { VendureOrderClient } from 'vendure-order-client';
+import { VendureOrderClient } from '@pinelab/vendure-order-client';
 import { useStore } from '@nanostores/vue';
 
 const client = new VendureOrderClient(
@@ -45,7 +45,7 @@ await client.getActiveOrder();
 You can easily include your own GraphQL fields in the active order mutations and queries. Let's say you have a custom field `referralCode` on an order:
 
 ```ts
-import { VendureOrderClient } from 'vendure-order-client';
+import { VendureOrderClient } from '@pinelab/vendure-order-client';
 
 // Make sure the fragment name is 'AdditionalOrderFields'
 const referralCodeFragment = gql`
@@ -79,7 +79,7 @@ const referralCode = client.activeOrder.referralCode;
 You can easily add your own queries and mutations by extending this client:
 
 ```ts
-import { Id, VendureOrderClient } from 'vendure-order-client';
+import { Id, VendureOrderClient } from '@pinelab/vendure-order-client';
 import { gql } from 'graphql-request';
 
 class MyOrderClient extends VendureOrderClient {
@@ -104,7 +104,10 @@ class MyOrderClient extends VendureOrderClient {
 This client uses a global eventbus, so that you can, for example, show a notification when an item is added to cart.
 
 ```ts
-import { VendureOrderClient, VendureOrderEvents } from 'vendure-order-client';
+import {
+  VendureOrderClient,
+  VendureOrderEvents,
+} from '@pinelab/vendure-order-client';
 
 function showNotification(type: string, e: VendureOrderEvents['item-added']) {
   console.log(type); // 'item-added'
@@ -124,5 +127,5 @@ client.eventBus.off('item-added', showNotification);
 
 ```ts
 // Checkout VendureOrderEvents for all available events
-import { VendureOrderEvents } from 'vendure-order-client';
+import { VendureOrderEvents } from '@pinelab/vendure-order-client';
 ```

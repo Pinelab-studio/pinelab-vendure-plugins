@@ -61,8 +61,6 @@ const dummyFragment = gql`
 
 export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
 export type EligibleShippingMethod<T> = ShippingMethodQuote & T;
-export type CurrentUser = CurrentUserFieldsFragment;
-
 /**
  * @example
  * const client = new VendureOrderClient(
@@ -96,7 +94,7 @@ export class VendureOrderClient<A = unknown> {
   /**
    * The store object that holds the current logged in user
    */
-  $currentUser = map<StateStore<CurrentUser | undefined>>({
+  $currentUser = map<StateStore<CurrentUserFieldsFragment | undefined>>({
     loading: false,
     error: undefined,
     data: undefined,
@@ -402,12 +400,17 @@ export class VendureOrderClient<A = unknown> {
   }
 
   @HandleLoadingState('$currentUser')
-  async resetPassword(password: string, token: string): Promise<CurrentUser> {
+  async resetPassword(
+    password: string,
+    token: string
+  ): Promise<CurrentUserFieldsFragment> {
     const { resetPassword } = await this.rawRequest<
       ResetPasswordMutation,
       MutationResetPasswordArgs
     >(this.queries.RESET_PASSWORD, { token, password });
-    const currentUser = this.throwIfErrorResult(resetPassword as CurrentUser);
+    const currentUser = this.throwIfErrorResult(
+      resetPassword as CurrentUserFieldsFragment
+    );
     setResult(this.$currentUser, currentUser);
     return currentUser;
   }
@@ -417,12 +420,14 @@ export class VendureOrderClient<A = unknown> {
     username: string,
     password: string,
     rememberMe?: boolean
-  ): Promise<CurrentUser> {
+  ): Promise<CurrentUserFieldsFragment> {
     const { login } = await this.rawRequest<LoginMutation, MutationLoginArgs>(
       this.queries.LOGIN,
       { username, password, rememberMe }
     );
-    const currentUser = this.throwIfErrorResult(login as CurrentUser);
+    const currentUser = this.throwIfErrorResult(
+      login as CurrentUserFieldsFragment
+    );
     setResult(this.$currentUser, currentUser);
     return currentUser;
   }
