@@ -1,8 +1,8 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   OrderAddress,
-  UpdateProductVariantInput,
   OrderLineInput,
+  UpdateProductVariantInput,
 } from '@vendure/common/lib/generated-types';
 import {
   Address,
@@ -36,7 +36,6 @@ import {
   StockMovementEvent,
   TransactionalConnection,
 } from '@vendure/core';
-import { OrderLine } from '@vendure/core/dist/entity/order-line/order-line.entity';
 import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
 import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 import currency from 'currency.js';
@@ -59,7 +58,6 @@ import {
   IncomingWebhook,
   OrderData,
   OrderInput,
-  OrderProduct,
   OrderProductInput,
   ProductData,
   ProductInput,
@@ -490,7 +488,7 @@ export class PicqerService implements OnApplicationBootstrap {
           orderLineId: line.id,
           quantity: line.quantity,
         });
-        message += `Product ${line.productVariant.sku} not found in Picqer, removed from order.\n`;
+        message += `Product ${line.productVariant.sku} not found in Picqer, canceled corresponding order line.\n`;
         return;
       }
       if (picqerOrderLine.amount < line.quantity) {

@@ -119,7 +119,7 @@ export async function createSettledOrder(
     { id: 'T_2', quantity: 2 },
   ],
   billingAddress?: SetBillingAddressMutationVariables
-): Promise<Order> {
+): Promise<AddPaymentToOrderMutation['addPaymentToOrder']> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -148,5 +148,5 @@ export async function createSettledOrder(
     console.error(JSON.stringify(res));
     throw Error((res as ErrorResult).errorCode);
   }
-  return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
+  return await addPaymentToOrder(shopClient, testPaymentMethod.code);
 }
