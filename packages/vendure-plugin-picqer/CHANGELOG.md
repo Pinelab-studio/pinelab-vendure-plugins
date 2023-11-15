@@ -1,6 +1,10 @@
 # 2.2.0 (2023-11-14)
 
 - Update stock of virtual/assembled products based on assembled_stock webhook
+ 
+# 2.2.0 (2023-11-14)
+
+- Update stock of virtual/assembled products based on assembled_stock webhook
 
 # 2.2.0 (2023-11-02)
 
