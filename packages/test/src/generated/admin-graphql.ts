@@ -6376,7 +6376,7 @@ export type ZoneSortParameter = {
   updatedAt?: InputMaybe<SortOrder>;
 };
 
-export type OrderFieldsFragment = { __typename?: 'Order', id: string, code: string, state: string, active: boolean, total: any, totalWithTax: any, customer?: { __typename?: 'Customer', emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null } | null, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null, lines: Array<{ __typename?: 'OrderLine', id: string, quantity: number, productVariant: { __typename?: 'ProductVariant', id: string, sku: string }, discounts: Array<{ __typename?: 'Discount', adjustmentSource: string, amount: any, amountWithTax: any, description: string, type: AdjustmentType }> }> };
+export type OrderFieldsFragment = { __typename?: 'Order', id: string, code: string, state: string, active: boolean, total: any, totalWithTax: any, shippingWithTax: any, customer?: { __typename?: 'Customer', emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null } | null, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null, lines: Array<{ __typename?: 'OrderLine', id: string, quantity: number, productVariant: { __typename?: 'ProductVariant', id: string, sku: string }, discounts: Array<{ __typename?: 'Discount', adjustmentSource: string, amount: any, amountWithTax: any, description: string, type: AdjustmentType }> }> };
 
 export type CreateShippingMethodMutationVariables = Exact<{
   input: CreateShippingMethodInput;
@@ -6404,7 +6404,7 @@ export type OrderQueryVariables = Exact<{
 }>;
 
 
-export type OrderQuery = { __typename?: 'Query', order?: { __typename?: 'Order', id: string, code: string, state: string, totalWithTax: any, shippingWithTax: any, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null, lines: Array<{ __typename?: 'OrderLine', id: string, quantity: number, productVariant: { __typename?: 'ProductVariant', sku: string, name: string } }> } | null };
+export type OrderQuery = { __typename?: 'Query', order?: { __typename?: 'Order', id: string, code: string, state: string, active: boolean, total: any, totalWithTax: any, shippingWithTax: any, customer?: { __typename?: 'Customer', emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null } | null, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null, lines: Array<{ __typename?: 'OrderLine', id: string, quantity: number, productVariant: { __typename?: 'ProductVariant', id: string, sku: string }, discounts: Array<{ __typename?: 'Discount', adjustmentSource: string, amount: any, amountWithTax: any, description: string, type: AdjustmentType }> }> } | null };
 
 export type OrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6452,6 +6452,7 @@ export const OrderFields = gql`
   active
   total
   totalWithTax
+  shippingWithTax
   customer {
     emailAddress
   }
@@ -6514,29 +6515,10 @@ export const CreateCollection = gql`
 export const Order = gql`
     query order($id: ID!) {
   order(id: $id) {
-    id
-    code
-    state
-    totalWithTax
-    shippingWithTax
-    fulfillments {
-      id
-      state
-      method
-      trackingCode
-      customFields
-    }
-    lines {
-      id
-      quantity
-      productVariant {
-        sku
-        name
-      }
-    }
+    ...OrderFields
   }
 }
-    `;
+    ${OrderFields}`;
 export const Orders = gql`
     query orders {
   orders {

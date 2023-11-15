@@ -5,6 +5,7 @@ fragment OrderFields on Order {
   active
   total
   totalWithTax
+  shippingWithTax
   customer {
     emailAddress
   }
@@ -73,26 +74,7 @@ mutation CreateCollection($input: CreateCollectionInput!) {
 
 query order($id: ID!) {
   order(id: $id) {
-    id
-    code
-    state
-    totalWithTax
-    shippingWithTax
-    fulfillments {
-      id
-      state
-      method
-      trackingCode
-      customFields
-    }
-    lines {
-      id
-      quantity
-      productVariant {
-        sku
-        name
-      }
-    }
+    ...OrderFields
   }
 }
 

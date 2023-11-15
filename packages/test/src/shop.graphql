@@ -5,6 +5,7 @@ fragment OrderFields on Order {
   active
   total
   totalWithTax
+  shippingWithTax
   customer {
     emailAddress
   }
