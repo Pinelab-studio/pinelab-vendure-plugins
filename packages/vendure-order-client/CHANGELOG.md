@@ -1,3 +1,8 @@
+# 2.6.0 (2023-13-09)
+
+- Make VendureOrderClient.updateEligibleShippingMethods public
+- export the store helpers
+
 # 2.5.0 (2023-13-09)
 
 - Export vendure graphql types
