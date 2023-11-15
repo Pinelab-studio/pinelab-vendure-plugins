@@ -1,8 +1,8 @@
-# 2.2.0 (2023-11-14)
+# 2.2.2 (2023-11-14)
 
-- Update stock of virtual/assembled products based on assembled_stock webhook
- 
-# 2.2.0 (2023-11-14)
+- Remove order lines when removed in Picqer
+
+# 2.2.1 (2023-11-14)
 
 - Update stock of virtual/assembled products based on assembled_stock webhook
 
