@@ -1,3 +1,41 @@
+fragment OrderFields on Order {
+  id
+  code
+  state
+  active
+  total
+  totalWithTax
+  shippingWithTax
+  customer {
+    emailAddress
+  }
+  shippingAddress {
+    fullName
+  }
+  fulfillments {
+    id
+    state
+    method
+    trackingCode
+    customFields
+  }
+  lines {
+    id
+    quantity
+    productVariant {
+      id
+      sku
+    }
+    discounts {
+      adjustmentSource
+      amount
+      amountWithTax
+      description
+      type
+    }
+  }
+}
+
 mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
   createShippingMethod(input: $input) {
     id
@@ -36,18 +74,7 @@ mutation CreateCollection($input: CreateCollectionInput!) {
 
 query order($id: ID!) {
   order(id: $id) {
-    id
-    code
-    state
-    totalWithTax
-    shippingWithTax
-    fulfillments {
-      id
-      state
-      method
-      trackingCode
-      customFields
-    }
+    ...OrderFields
   }
 }
 

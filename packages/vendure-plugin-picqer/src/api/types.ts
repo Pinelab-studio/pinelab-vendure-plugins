@@ -148,11 +148,11 @@ export interface OrderData {
   created: string;
   updated: string;
   warehouses: number[];
-  products: Product[];
+  products: OrderProduct[];
   pricelists: number[];
 }
 
-export interface Product {
+export interface OrderProduct {
   idorder_product: number;
   idproduct: number;
   idvatgroup: number;

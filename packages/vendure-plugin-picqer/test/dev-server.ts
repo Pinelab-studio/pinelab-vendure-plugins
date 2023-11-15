@@ -97,7 +97,7 @@ import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.hand
     { id: 'T_3', trackInventory: GlobalFlag.True },
     { id: 'T_4', trackInventory: GlobalFlag.True },
   ]);
-  const order = await createSettledOrder(shopClient, 3, true, [
+  const order = await createSettledOrder(shopClient, 1, true, [
     { id: 'T_1', quantity: 3 },
   ]);
 })();

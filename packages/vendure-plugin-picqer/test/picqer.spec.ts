@@ -1,4 +1,12 @@
-import { DefaultLogger, ID, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  ID,
+  LogLevel,
+  mergeConfig,
+  OrderService,
+  RequestContext,
+  RequestContextService,
+} from '@vendure/core';
 import {
   E2E_DEFAULT_CHANNEL_TOKEN,
   SimpleGraphQLClient,
@@ -23,7 +31,7 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { PicqerPlugin } from '../src';
+import { PicqerPlugin, PicqerService } from '../src';
 import { VatGroup, IncomingOrderStatusWebhook } from '../src';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
@@ -31,71 +39,73 @@ import { Order } from '@vendure/core';
 import { picqerHandler } from '../src/api/picqer.handler';
 import { describe, afterEach, beforeAll, it, expect, afterAll } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { ad } from 'vitest/dist/types-e3c9754d';
+import { Orders } from '../../test/dist/generated/admin-graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 const nockBaseUrl = 'https://test-picqer.io/api/v1/';
 
-describe('Picqer plugin', function () {
-  // Clear nock mocks after each test
-  afterEach(() => nock.cleanAll());
+// Clear nock mocks after each test
+afterEach(() => nock.cleanAll());
 
-  beforeAll(async () => {
-    registerInitializer('sqljs', new SqljsInitializer('__data__'));
-    const config = mergeConfig(testConfig, {
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [
-        PicqerPlugin.init({
-          enabled: true,
-          vendureHost: 'https://example-vendure.io',
-          // Dummy data for testing purposes
-          pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
-          pullPicqerProductFields: (picqerProd) => ({
-            outOfStockThreshold: 123,
-          }),
-          pushPicqerOrderFields: (order) => ({
-            customer_remarks: 'test note',
-            pickup_point_data: {
-              carrier: 'dhl',
-              id: '901892834',
-            },
-          }),
+beforeAll(async () => {
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
+    plugins: [
+      PicqerPlugin.init({
+        enabled: true,
+        vendureHost: 'https://example-vendure.io',
+        // Dummy data for testing purposes
+        pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
+        pullPicqerProductFields: (picqerProd) => ({
+          outOfStockThreshold: 123,
         }),
+        pushPicqerOrderFields: (order) => ({
+          customer_remarks: 'test note',
+          pickup_point_data: {
+            carrier: 'dhl',
+            id: '901892834',
+          },
+        }),
+      }),
+    ],
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
+    customFields: {
+      ProductVariant: [
+        {
+          name: 'height',
+          type: 'int',
+          public: true,
+        },
       ],
-      paymentOptions: {
-        paymentMethodHandlers: [testPaymentMethod],
-      },
-      customFields: {
-        ProductVariant: [
-          {
-            name: 'height',
-            type: 'int',
-            public: true,
-          },
-        ],
-      },
-    });
-
-    ({ server, adminClient, shopClient } = createTestEnvironment(config));
-    await server.init({
-      initialData: {
-        ...initialData,
-        paymentMethods: [
-          {
-            name: testPaymentMethod.code,
-            handler: { code: testPaymentMethod.code, arguments: [] },
-          },
-        ],
-      },
-      productsCsvPath: '../test/src/products-import.csv',
-    });
-  }, 60000);
-
-  it('Should start successfully', async () => {
-    expect(server.app.getHttpServer).toBeDefined();
+    },
   });
 
+  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  await server.init({
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
+    productsCsvPath: '../test/src/products-import.csv',
+  });
+}, 60000);
+
+it('Should start successfully', async () => {
+  expect(server.app.getHttpServer).toBeDefined();
+});
+
+describe('Plugin setup', function () {
   it('Should track inventory of all variants', async () => {
     await adminClient.asSuperAdmin();
     const variants = await updateVariants(adminClient, [
@@ -170,7 +180,9 @@ describe('Picqer plugin', function () {
   it('Should create a shipping method with Picqer handler', async () => {
     await addShippingMethod(adminClient, picqerHandler.code, '500');
   });
+});
 
+describe('Order placement', function () {
   let createdOrder: Order | undefined;
 
   it('Should push order to Picqer on order placement', async () => {
@@ -255,6 +267,12 @@ describe('Picqer plugin', function () {
       data: {
         reference: createdOrder?.code,
         status: 'completed',
+        products: [
+          {
+            productcode: 'L2201308',
+            amount: 3,
+          },
+        ],
       },
     } as Partial<IncomingOrderStatusWebhook>;
     await adminClient.fetch(
@@ -298,7 +316,9 @@ describe('Picqer plugin', function () {
     const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Cancelled');
   });
+});
 
+describe('Product synchronization', function () {
   /**
    * Request payloads of products that have been created or updated in Picqer
    */
@@ -430,7 +450,6 @@ describe('Picqer plugin', function () {
     );
     const variants = await getAllVariants(adminClient);
     const variant = variants.find((v) => v.sku === 'L2201308');
-    console.log(variant);
     expect(res.ok).toBe(true);
     expect(variant?.stockOnHand).toBe(2);
   });
@@ -448,13 +467,122 @@ describe('Picqer plugin', function () {
     );
     expect(res.status).toBe(403);
   });
-
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, PicqerPlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
-
-  afterAll(async () => {
-    await server.destroy();
-  }, 100000);
 });
+
+describe('Order modification', function () {
+  it('Update stock again', async () => {
+    const variants = await updateVariants(adminClient, [
+      { id: 'T_1', stockLevels: [{ stockLocationId: '2', stockOnHand: 10 }] },
+      { id: 'T_2', stockLevels: [{ stockLocationId: '2', stockOnHand: 10 }] },
+    ]);
+    expect(variants[0]?.stockOnHand).toBe(10);
+    expect(variants[1]?.stockOnHand).toBe(10);
+  });
+
+  let createdOrder: Order | undefined;
+
+  it('Should create settled order', async () => {
+    // Shipping method 3 should be our created Picqer handler method
+    createdOrder = await createSettledOrder(shopClient, 3, true, [
+      { id: 'T_1', quantity: 1 },
+      { id: 'T_2', quantity: 1 },
+    ]);
+    expect(createdOrder.code).toBeDefined();
+    expect(createdOrder.state).toBe('PaymentSettled');
+  });
+
+  it('Should update order when order line is removed in Picqer', async () => {
+    const mockIncomingWebhook = {
+      event: 'orders.status_changed',
+      data: {
+        reference: createdOrder?.code,
+        status: 'completed',
+        products: [
+          {
+            productcode: 'L2201308',
+            amount: 1,
+          },
+          // Variant T_2 is missing here
+        ],
+      },
+    } as Partial<IncomingOrderStatusWebhook>;
+    await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockIncomingWebhook),
+        headers: {
+          'X-Picqer-Signature': createSignature(
+            mockIncomingWebhook,
+            'test-api-key'
+          ),
+        },
+      }
+    );
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    const order = await getOrder(adminClient, createdOrder?.id as string);
+    expect(order?.lines[0].productVariant.sku).toBe('L2201308');
+    expect(order?.lines[0].quantity).toBe(1);
+    expect(order?.lines[1].productVariant.sku).toBe('L2201508');
+    expect(order?.lines[1].quantity).toBe(0);
+  });
+
+  it('Should create another settled order', async () => {
+    // Shipping method 3 should be our created Picqer handler method
+    createdOrder = await createSettledOrder(shopClient, 3, true, [
+      { id: 'T_1', quantity: 3 },
+      { id: 'T_2', quantity: 1 },
+    ]);
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    expect(createdOrder.code).toBeDefined();
+    expect(createdOrder.state).toBe('PaymentSettled');
+  });
+
+  it('Should update quantity when quantity is adjusted in Picqer', async () => {
+    const mockIncomingWebhook = {
+      event: 'orders.status_changed',
+      data: {
+        reference: createdOrder?.code,
+        status: 'completed',
+        products: [
+          {
+            productcode: 'L2201308',
+            amount: 1, // Adjusted from 3
+          },
+          {
+            productcode: 'L2201508',
+            amount: 1,
+          },
+        ],
+      },
+    } as Partial<IncomingOrderStatusWebhook>;
+    await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockIncomingWebhook),
+        headers: {
+          'X-Picqer-Signature': createSignature(
+            mockIncomingWebhook,
+            'test-api-key'
+          ),
+        },
+      }
+    );
+    const order = await getOrder(adminClient, createdOrder?.id as string);
+    expect(order?.lines.length).toBe(2);
+    expect(order?.lines[0].productVariant.sku).toBe('L2201308');
+    expect(order?.lines[0].quantity).toBe(1);
+    expect(order?.lines[1].productVariant.sku).toBe('L2201508');
+    expect(order?.lines[1].quantity).toBe(1);
+  });
+});
+
+it('Should compile admin', async () => {
+  const files = await getFilesInAdminUiFolder(__dirname, PicqerPlugin.ui);
+  expect(files?.length).toBeGreaterThan(0);
+}, 200000);
+
+afterAll(async () => {
+  await server.destroy();
+}, 100000);
