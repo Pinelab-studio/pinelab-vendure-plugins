@@ -28,8 +28,13 @@ import { loggerCtx, PLUGIN_OPTIONS } from './constants';
 import { SendcloudConfigEntity } from './sendcloud-config.entity';
 import { SendcloudClient } from './sendcloud.client';
 import { sendcloudHandler } from './sendcloud.handler';
-import { transitionToDelivered, transitionToShipped } from '../../../util/src';
+import {
+  fulfillAll,
+  transitionToDelivered,
+  transitionToShipped,
+} from '../../../util/src';
 import { Parcel, ParcelInputItem } from './types/sendcloud-api.types';
+import util from 'util';
 import {
   SendcloudParcelStatus,
   SendcloudPluginOptions,
@@ -41,7 +46,7 @@ interface SendcloudJobData {
 }
 
 @Injectable()
-export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
+export class SendcloudService implements OnApplicationBootstrap {
   // @ts-ignore
   private jobQueue!: JobQueue<SendcloudJobData>;
 
@@ -58,7 +63,18 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
     private historyService: HistoryService
   ) {}
 
-  async onModuleInit() {
+  async onApplicationBootstrap(): Promise<void> {
+    // Listen for Settled orders to sync to sendcloud
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
+      await this.jobQueue.add(
+        {
+          orderCode: event.order.code,
+          ctx: event.ctx.serialize(),
+        },
+        { retries: 20 }
+      );
+    });
+    // Handle jobs
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'sendcloud',
       process: async ({ data }) => {
@@ -73,20 +89,6 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
           throw error;
         }
       },
-    });
-  }
-
-  onApplicationBootstrap(): void {
-    // Listen for Settled orders to sync to sendcloud
-
-    this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
-      await this.jobQueue.add(
-        {
-          orderCode: event.order.code,
-          ctx: event.ctx.serialize(),
-        },
-        { retries: 20 }
-      );
     });
   }
 
@@ -139,8 +141,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   async updateOrderStatus(
     ctx: RequestContext,
     sendcloudStatus: SendcloudParcelStatus,
-    orderCode: string,
-    trackingNumber: string
+    orderCode: string
   ): Promise<void> {
     let order = await this.connection
       .getRepository(ctx, Order)
@@ -161,7 +162,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       );
     }
     if (sendcloudStatus.orderState === 'Shipped') {
-      await this.shipAll(ctx, order, trackingNumber);
+      await this.shipAll(ctx, order);
       return Logger.info(
         `Successfully update order ${orderCode} to ${sendcloudStatus.orderState}`,
         loggerCtx
@@ -171,21 +172,10 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
       .getRepository(ctx, Order)
       .findOneOrFail({ where: { code: orderCode }, relations: ['lines'] }); // Refetch in case state was updated
     if (sendcloudStatus.orderState === 'Delivered') {
-      //FIX ME
-      await transitionToDelivered(
-        this.orderService as any,
-        ctx as any,
-        order as any,
-        {
-          code: sendcloudHandler.code,
-          arguments: [
-            {
-              name: 'trackingNumber',
-              value: trackingNumber,
-            },
-          ],
-        }
-      );
+      await transitionToDelivered(this.orderService, ctx, order, {
+        code: sendcloudHandler.code,
+        arguments: [],
+      });
       return Logger.info(
         `Successfully update order ${orderCode} to ${sendcloudStatus.orderState}`,
         loggerCtx
@@ -196,27 +186,40 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
   }
 
   /**
-   * Fulfill and ship all items
+   * Ship all items
    */
-  async shipAll(
-    ctx: RequestContext,
-    order: Order,
-    trackingNumber: string
-  ): Promise<void> {
+  async shipAll(ctx: RequestContext, order: Order): Promise<void> {
     await transitionToShipped(
       this.orderService as any,
       ctx as any,
       order as any,
       {
         code: sendcloudHandler.code,
-        arguments: [
-          {
-            name: 'trackingNumber',
-            value: trackingNumber,
-          },
-        ],
+        arguments: [],
       }
     );
+  }
+
+  /**
+   * Fulfill without throwing errors. Logs an error if fulfilment fails
+   */
+  private async safeFulfill(ctx: RequestContext, order: Order): Promise<void> {
+    try {
+      const fulfillment = await fulfillAll(ctx, this.orderService, order, {
+        code: sendcloudHandler.code,
+        arguments: [],
+      });
+      Logger.info(
+        `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
+        loggerCtx
+      );
+    } catch (e: any) {
+      Logger.error(
+        `Failed to fulfill order ${order.code}: ${e?.message}. Transition this order manually to 'Delivered' after checking that it exists in Sendcloud.`,
+        loggerCtx,
+        util.inspect(e)
+      );
+    }
   }
 
   async upsertConfig(
@@ -310,6 +313,7 @@ export class SendcloudService implements OnApplicationBootstrap, OnModuleInit {
         loggerCtx
       );
     }
+    await this.safeFulfill(ctx, order);
     Logger.info(
       `Syncing order ${orderCode} for channel ${ctx.channel.token}`,
       loggerCtx

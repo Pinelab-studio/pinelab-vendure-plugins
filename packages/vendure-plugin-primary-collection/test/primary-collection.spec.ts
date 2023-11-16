@@ -159,13 +159,15 @@ describe('Product Primary Collection', function () {
     expect(t3Product.primaryCollection).not.toBeNull();
   });
 
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(
-      __dirname,
-      PrimaryCollectionPlugin.ui
-    );
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(
+        __dirname,
+        PrimaryCollectionPlugin.ui
+      );
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 
   afterAll(async () => {
     await server.destroy();

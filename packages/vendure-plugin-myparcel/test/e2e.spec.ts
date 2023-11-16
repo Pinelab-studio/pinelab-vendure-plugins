@@ -276,10 +276,12 @@ describe('MyParcel', () => {
     expect(config.updateMyparcelConfig).toEqual(null);
   });
 
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, MyparcelPlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(__dirname, MyparcelPlugin.ui);
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 
   afterAll(async () => {
     await server.destroy();
