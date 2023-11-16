@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   OrderAddress,
-  UpdateProductInput,
+  OrderLineInput,
   UpdateProductVariantInput,
 } from '@vendure/common/lib/generated-types';
 import {
@@ -23,7 +23,6 @@ import {
   Order,
   OrderPlacedEvent,
   OrderService,
-  ProductEvent,
   ProductService,
   ProductVariant,
   ProductVariantEvent,
@@ -396,6 +395,8 @@ export class PicqerService implements OnApplicationBootstrap {
       return;
     }
     if (data.status === 'completed' && order.state !== 'Delivered') {
+      // Remove any items that don't exist in Picqer order
+      await this.updateOrderBasedOnPicqer(ctx, order, data.products);
       // Order should be transitioned to Shipped, then to Delivered
       if (order.state !== 'Shipped') {
         // Try to fulfill order first. This should have been done already, except for back orders
@@ -464,6 +465,72 @@ export class PicqerService implements OnApplicationBootstrap {
       }
       Logger.info(`Order ${order.code} transitioned to Delivered`, loggerCtx);
     }
+  }
+
+  /**
+   * Cancel any order lines that don't exist in the Picqer order. This can happen when items have been manually removed in Picqer
+   *
+   * We don't add items in Vendure, because that would require additional payment.
+   */
+  async updateOrderBasedOnPicqer(
+    ctx: RequestContext,
+    order: Order,
+    picqerProducts: { productcode: string; amount: number }[]
+  ): Promise<Order> {
+    const orderLinesToCancel: OrderLineInput[] = [];
+    let message: string = ``;
+    order.lines.forEach((line) => {
+      const picqerOrderLine = picqerProducts.find(
+        (p) => p.productcode === line.productVariant.sku
+      );
+      if (!picqerOrderLine) {
+        orderLinesToCancel.push({
+          orderLineId: line.id,
+          quantity: line.quantity,
+        });
+        message += `Product ${line.productVariant.sku} not found in Picqer, canceled corresponding order line.\n`;
+        return;
+      }
+      if (picqerOrderLine.amount < line.quantity) {
+        const diff = line.quantity - picqerOrderLine.amount;
+        orderLinesToCancel.push({
+          orderLineId: line.id,
+          quantity: diff,
+        });
+        message += `Product ${line.productVariant.sku} quantity changed to ${line.quantity} based on order in Picqer.\n`;
+      }
+    });
+    if (!message) {
+      // No adjustments needed
+      return order;
+    }
+    Logger.info(
+      `Updating order lines for order ${order.code} based on Picer order`,
+      loggerCtx
+    );
+    const result = await this.orderService.cancelOrder(ctx, {
+      orderId: order.id,
+      cancelShipping: false,
+      lines: orderLinesToCancel,
+    });
+    if ((result as ErrorResult).errorCode) {
+      Logger.error(
+        `Failed to update order lines or order ${
+          order.code
+        }, based on Picqer order: ${
+          (result as ErrorResult).message
+        }. Changed order lines: ${message}`,
+        loggerCtx,
+        util.inspect(result)
+      );
+      return order;
+    }
+    this.orderService.addNoteToOrder(ctx, {
+      id: order.id,
+      note: message,
+      isPublic: false,
+    });
+    return result as Order;
   }
 
   /**
