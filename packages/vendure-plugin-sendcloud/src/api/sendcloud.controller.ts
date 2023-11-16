@@ -64,8 +64,7 @@ export class SendcloudController {
     await this.sendcloudService.updateOrderStatus(
       ctx,
       status,
-      body.parcel.order_number,
-      body.parcel.tracking_number
+      body.parcel.order_number
     );
   }
 }
