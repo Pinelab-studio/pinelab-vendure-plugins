@@ -99,13 +99,15 @@ describe('Customer managed groups', function () {
     }
   });
 
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(
-      __dirname,
-      ModifyCustomerOrdersPlugin.ui
-    );
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(
+        __dirname,
+        ModifyCustomerOrdersPlugin.ui
+      );
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 
   afterAll(async () => {
     await server.destroy();

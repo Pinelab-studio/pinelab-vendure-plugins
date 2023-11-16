@@ -117,10 +117,12 @@ describe('Metrics', () => {
     expect(salesPerProduct.series[1].values[12]).toEqual(6);
   });
 
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 
   afterAll(async () => {
     await server.destroy();

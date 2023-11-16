@@ -204,10 +204,12 @@ describe('Invoices plugin', function () {
     expect(res.status).toBe(403);
   });
 
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, InvoicePlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(__dirname, InvoicePlugin.ui);
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 
   afterAll(async () => {
     await server.destroy();

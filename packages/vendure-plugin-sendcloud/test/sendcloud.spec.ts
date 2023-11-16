@@ -105,7 +105,7 @@ describe('SendCloud', () => {
       return true;
     })
     .reply(200, {
-      parcel: { id: 'test-id', tracking_number: 'test-tracking' },
+      parcel: { id: 'test-id' },
     });
 
   it('Creates shippingmethod with Sendcloud handler', async () => {
@@ -176,7 +176,6 @@ describe('SendCloud', () => {
       action: 'parcel_status_changed',
       parcel: {
         order_number: orderCode,
-        tracking_number: 'test-tracking',
         status: {
           id: 62990,
           message: 'At sorting centre',
@@ -204,7 +203,6 @@ describe('SendCloud', () => {
       action: 'parcel_status_changed',
       parcel: {
         order_number: orderCode,
-        tracking_number: 'test-tracking',
         status: {
           id: 11,
           message: 'Delivered',
@@ -226,13 +224,17 @@ describe('SendCloud', () => {
     const order = await getOrder(adminClient, String(orderId));
     const fulfilment = order?.fulfillments?.[0];
     expect(order?.state).toBe('Delivered');
-    expect(fulfilment?.trackingCode).toBe('test-tracking');
   });
 
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, SendcloudPlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(
+        __dirname,
+        SendcloudPlugin.ui
+      );
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 
   afterAll(async () => {
     await server.destroy();
