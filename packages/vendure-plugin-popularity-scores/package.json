@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-popularity-scores",
-  "version": "1.0.2",
+  "version": "1.4.0",
   "description": "Sort products and collections by popularity based on previously placed orders",
   "icon": "heart",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -15,7 +15,8 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",

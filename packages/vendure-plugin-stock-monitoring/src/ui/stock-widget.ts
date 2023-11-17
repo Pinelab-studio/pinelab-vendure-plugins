@@ -5,6 +5,8 @@ import { Observable } from 'rxjs';
 import gql from 'graphql-tag';
 
 @Component({
+  standalone: true,
+  imports: [SharedModule],
   selector: 'stock-widget',
   template: `
     <vdr-data-table [items]="variant$ | async" class="stock-widget-overflow">
@@ -13,9 +15,16 @@ import gql from 'graphql-tag';
           class="left align-middle"
           [class.out-of-stock]="!variant.stockOnHand"
         >
-          <a [routerLink]="['/catalog', 'products', variant.productId]">{{
-            variant.name
-          }}</a>
+          <a
+            [routerLink]="[
+              '/catalog',
+              'products',
+              variant.productId,
+              'variants',
+              variant.id
+            ]"
+            >{{ variant.name }}</a
+          >
         </td>
         <td
           class="left align-middle"
@@ -42,6 +51,7 @@ export class StockWidgetComponent implements OnInit {
         gql`
           query productVariantsWithLowStock {
             productVariantsWithLowStock {
+              id
               name
               enabled
               stockOnHand
@@ -55,13 +65,7 @@ export class StockWidgetComponent implements OnInit {
       )
       .mapStream((data) => (data as any).productVariantsWithLowStock);
   }
-}
 
-@NgModule({
-  imports: [SharedModule],
-  declarations: [StockWidgetComponent],
-})
-export class StockWidgetModule {
   reduceSum(stockLevels: any[]): number {
     return stockLevels.reduce((acc, val) => (acc += val.stockOnHand), 0);
   }

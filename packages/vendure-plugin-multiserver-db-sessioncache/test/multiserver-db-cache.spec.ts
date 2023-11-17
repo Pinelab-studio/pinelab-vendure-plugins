@@ -97,5 +97,5 @@ describe('Multi-Server Db Session Cache Plugin', function () {
 
   afterAll(async () => {
     await server.destroy();
-  });
+  }, 100000);
 });

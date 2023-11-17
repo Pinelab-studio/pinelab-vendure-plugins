@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-admin-ui-helpers",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Vendure plugin for various admin ui helpers. Cancel button, complete order button etc.",
   "icon": "bitcoin",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -15,7 +15,8 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "serve": "yarn start && nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",

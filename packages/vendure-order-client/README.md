@@ -1,6 +1,6 @@
 # Vendure Client
 
-A typed, extensible, framework-agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
+A typed, extensible, framework-agnostic client for managing active orders and checkout with Vendure. This package aims to do most of the default logic related to active order and checkout management, so that you can focus on presentation with your favorite framework.
 
 - Sensible, but extendable default GraphQL fields.
 - Active order state management.
@@ -16,18 +16,28 @@ This package should only be used client side, i.e. for fetching an active order,
 
 ## Getting started
 
-```ts
-import { VendureOrderClient } from 'vendure-order-client';
+This is a Vue.js example, but integrations for React and more are available for @nanostores
+
+```vue
+<template>
+  <div>
+    <h1 v-if="activeOrder.loading">Loading...</h1>
+    <h1 v-if="activeOrder.error">Something went wrong!</h1>
+    <h1 v-if="activeOrder.data">Active order: {{ data.code }}</h1>
+  </div>
+</template>
+<script setup lang="ts">
+import { VendureOrderClient } from '@pinelab/vendure-order-client';
+import { useStore } from '@nanostores/vue';
 
 const client = new VendureOrderClient(
   'http://localhost:3050/shop-api',
   'your-channel-token'
 );
 
-await client.addItemToOrder('some-id', 1);
-
-// Make this reactive with one of Nanostores' integrations
-const total = client.activeOrder.totalWithTax;
+const activeOrder = useStore(client.$activeOrder);
+await client.getActiveOrder();
+</script>
 ```
 
 ## Add your own graphql fields
@@ -35,7 +45,7 @@ const total = client.activeOrder.totalWithTax;
 You can easily include your own GraphQL fields in the active order mutations and queries. Let's say you have a custom field `referralCode` on an order:
 
 ```ts
-import { VendureOrderClient } from 'vendure-order-client';
+import { VendureOrderClient } from '@pinelab/vendure-order-client';
 
 // Make sure the fragment name is 'AdditionalOrderFields'
 const referralCodeFragment = gql`
@@ -69,7 +79,7 @@ const referralCode = client.activeOrder.referralCode;
 You can easily add your own queries and mutations by extending this client:
 
 ```ts
-import { Id, VendureOrderClient } from 'vendure-order-client';
+import { Id, VendureOrderClient } from '@pinelab/vendure-order-client';
 import { gql } from 'graphql-request';
 
 class MyOrderClient extends VendureOrderClient {
@@ -94,7 +104,10 @@ class MyOrderClient extends VendureOrderClient {
 This client uses a global eventbus, so that you can, for example, show a notification when an item is added to cart.
 
 ```ts
-import { VendureOrderClient, VendureOrderEvents } from 'vendure-order-client';
+import {
+  VendureOrderClient,
+  VendureOrderEvents,
+} from '@pinelab/vendure-order-client';
 
 function showNotification(type: string, e: VendureOrderEvents['item-added']) {
   console.log(type); // 'item-added'
@@ -114,5 +127,5 @@ client.eventBus.off('item-added', showNotification);
 
 ```ts
 // Checkout VendureOrderEvents for all available events
-import { VendureOrderEvents } from 'vendure-order-client';
+import { VendureOrderEvents } from '@pinelab/vendure-order-client';
 ```

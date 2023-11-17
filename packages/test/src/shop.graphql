@@ -5,6 +5,7 @@ fragment OrderFields on Order {
   active
   total
   totalWithTax
+  shippingWithTax
   customer {
     emailAddress
   }
@@ -54,8 +55,7 @@ mutation ApplyCouponCode($couponCode: String!) {
 mutation SetShippingAddress($input: CreateAddressInput!) {
   setOrderShippingAddress(input: $input) {
     ... on Order {
-      id
-      code
+      ...OrderFields
     }
   }
 }
@@ -63,8 +63,7 @@ mutation SetShippingAddress($input: CreateAddressInput!) {
 mutation SetBillingAddress($input: CreateAddressInput!) {
   setOrderBillingAddress(input: $input) {
     ... on Order {
-      id
-      code
+      ...OrderFields
     }
   }
 }
@@ -91,10 +90,7 @@ mutation TransitionToState($state: String!) {
 mutation AddPaymentToOrder($input: PaymentInput!) {
   addPaymentToOrder(input: $input) {
     ... on Order {
-      id
-      code
-      state
-      shippingWithTax
+      ...OrderFields
     }
     ... on ErrorResult {
       errorCode

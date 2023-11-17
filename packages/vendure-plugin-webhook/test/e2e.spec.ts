@@ -16,6 +16,7 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
 import { initialData } from '../../test/src/initial-data';
@@ -35,6 +36,7 @@ import {
 } from '../src/ui/queries';
 import { stringifyProductTransformer } from './test-helpers';
 import { describe, beforeAll, it, expect, afterEach, afterAll } from 'vitest';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Webhook plugin', function () {
   let server: TestServer;
@@ -77,12 +79,7 @@ describe('Webhook plugin', function () {
       productsCsvPath: '../test/src/products-import.csv',
     });
     serverStarted = true;
-    ctx = new RequestContext({
-      apiType: 'admin',
-      channel: await server.app.get(ChannelService).getDefaultChannel(),
-      isAuthorized: true,
-      authorizedAsOwnerOnly: false,
-    });
+    ctx = await getSuperadminContext(server.app);
   }, 60000);
 
   // Clear nock mocks after each test
@@ -230,7 +227,14 @@ describe('Webhook plugin', function () {
     expect(received.length).toBe(2);
   });
 
-  afterAll(() => {
-    return server.destroy();
-  });
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(__dirname, WebhookPlugin.ui);
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });

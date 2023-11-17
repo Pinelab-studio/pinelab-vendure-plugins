@@ -10,17 +10,12 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/prism": "^2.1.2",
-    "@astrojs/starlight": "^0.2.0",
     "@fontsource/inter": "^5.0.8",
     "@types/marked": "^5.0.0",
-    "astro": "^2.5.0",
+    "astro": "^3.5.5",
     "bulma": "^0.9.4",
-    "highlight.js": "^11.8.0",
-    "marked": "^4.1.0",
-    "sharp": "^0.32.1"
+    "highlight.js": "11.8.0",
+    "marked": "4.1.0"
   },
-  "devDependencies": {
-    "sass": "^1.63.6"
-  }
+  "devDependencies": {}
 }

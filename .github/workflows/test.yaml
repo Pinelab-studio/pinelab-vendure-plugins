@@ -52,6 +52,7 @@ jobs:
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-webhook',
+            'vendure-plugin-primary-collection',
           ]
     steps:
       - name: Checkout code
@@ -64,4 +65,7 @@ jobs:
       - name: Build
         run: cd packages/${{ matrix.package }} && yarn build
       - name: Test
-        run: cd packages/${{ matrix.package }} && yarn test
+        # TEST_ADMIN_UI=true enables Admin UI compilation in tests
+        run: |
+          cd packages/${{ matrix.package }}
+          TEST_ADMIN_UI=true yarn test

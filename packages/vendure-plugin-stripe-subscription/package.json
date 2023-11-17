@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-stripe-subscription",
-  "version": "1.3.1",
+  "version": "2.2.1",
   "description": "Vendure plugin for selling subscriptions via Stripe",
   "icon": "credit-card-refresh",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",

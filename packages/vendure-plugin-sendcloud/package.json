@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-sendcloud",
-  "version": "1.0.2",
+  "version": "1.2.0",
   "description": "Vendure plugin for syncing orders with SendCloud",
   "icon": "truck",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -15,7 +15,8 @@
   "types": "dist/vendure-plugin-sendcloud/src/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-sendcloud/src/",

@@ -55,22 +55,12 @@ export class SortService implements OnModuleInit {
     ordersAfter.setMonth(ordersAfter.getMonth() - 12);
     const groupedOrderLines = await orderLineRepo
       .createQueryBuilder('orderLine')
-      .select([
-        'SUM(orderLine.quantity) as count',
-        'orderLine.productVariant',
-        'orderLine.order',
-      ])
+      .select(['SUM(orderLine.quantity) as count'])
       .innerJoin('orderLine.productVariant', 'productVariant')
-      .addSelect([
-        'productVariant.deletedAt',
-        'productVariant.enabled',
-        'productVariant.id',
-      ])
       .innerJoin('orderLine.order', 'order')
       .innerJoin('productVariant.product', 'product')
-      .addSelect(['product.deletedAt', 'product.enabled', 'product.id'])
+      .addSelect(['product.id'])
       .leftJoin('productVariant.collections', 'collection')
-      .addSelect(['collection.id'])
       .innerJoin('order.channels', 'order_channel')
       .andWhere('order.orderPlacedAt > :ordersAfter', {
         ordersAfter: ordersAfter.toISOString(),
@@ -138,23 +128,27 @@ export class SortService implements OnModuleInit {
       .createQueryBuilder('product')
       .select('SUM(product.customFields.popularityScore) AS productScoreSum');
     for (const col of allCollectionIds) {
-      const variantsPartialInfo = await variantsPartialInfoQuery
-        .andWhere('collection.id= :id', { id: col.collection_id })
-        .getRawMany();
+      const variantsPartialInfo = await variantsPartialInfoQuery.andWhere(
+        'collection.id= :id',
+        { id: col.collection_id }
+      );
 
-      const productIds = variantsPartialInfo
+      const variantsPartialInfoResults = await variantsPartialInfo.getRawMany();
+
+      const productIds = variantsPartialInfoResults
         .filter((i) => i.product_id != null)
         .map((i) => i.product_id);
 
       const uniqueProductIds = [...new Set(productIds)];
-
-      const summedProductsValue = await productSummingQuery
-        .andWhere('product.id IN (:...ids)', { ids: uniqueProductIds })
-        .getRawOne();
-      productScoreSums.push({
-        id: col.collection_id,
-        score: summedProductsValue.productScoreSum,
-      });
+      if (uniqueProductIds.length) {
+        const summedProductsValue = await productSummingQuery
+          .andWhere('product.id IN (:...ids)', { ids: uniqueProductIds })
+          .getRawOne();
+        productScoreSums.push({
+          id: col.collection_id,
+          score: summedProductsValue.productScoreSum ?? 0,
+        });
+      }
     }
     await collectionsRepo.save(
       productScoreSums.map((collection) => {

@@ -59,8 +59,10 @@ export async function getPlugins(): Promise<Plugin[]> {
         await readFile(packageJsonFilePath, 'utf8')
       );
       const readmeFilePath = path.join(pluginDirName, r.name, 'README.md');
-      const readme: string = await readFile(readmeFilePath, 'utf8');
-      // TODO remove "Docs here" line from readme
+      let readme: string = await readFile(readmeFilePath, 'utf8');
+      // Remove official docs link from readme
+      readme = readme.replace(/^### \[Official.*$/gm, '');
+      // Get title from first line
       const name = readme.split('\n')[0].replace('#', '').trim();
       const readmeHtml = parseReadme(readme);
       plugins.push({

@@ -1,5 +1,5 @@
+import { Customer } from '@vendure/core';
 import Stripe from 'stripe';
-import { CustomerWithSubscriptionFields } from './subscription-custom-fields';
 
 interface SubscriptionInput {
   customerId: string;
@@ -21,24 +21,14 @@ interface SubscriptionInput {
  */
 export class StripeClient extends Stripe {
   constructor(
-    private webhookSecret: string,
+    public webhookSecret: string,
     apiKey: string,
     config: Stripe.StripeConfig
   ) {
     super(apiKey, config);
   }
 
-  async getOrCreateClient(
-    customer: CustomerWithSubscriptionFields
-  ): Promise<Stripe.Customer> {
-    if (customer.customFields?.stripeSubscriptionCustomerId) {
-      const stripeCustomer = await this.customers.retrieve(
-        customer.customFields.stripeSubscriptionCustomerId
-      );
-      if (stripeCustomer && !stripeCustomer.deleted) {
-        return stripeCustomer as Stripe.Customer;
-      }
-    }
+  async getOrCreateCustomer(customer: Customer): Promise<Stripe.Customer> {
     const stripeCustomers = await this.customers.list({
       email: customer.emailAddress,
     });
@@ -82,6 +72,8 @@ export class StripeClient extends Stripe {
       customer: customerId,
       // billing_cycle_anchor: this.toStripeTimeStamp(startDate),
       cancel_at: endDate ? this.toStripeTimeStamp(endDate) : undefined,
+      // We start the subscription now, but the first payment will be at the start date.
+      // This is because we can ask the customer to pay the first month during checkout, via one-time-payment
       trial_end: this.toStripeTimeStamp(startDate),
       proration_behavior: 'none',
       description: description,

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-variant-bulk-update",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Vendure plugin to bulk update all variants of a product",
   "icon": "tag-multiple",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -15,7 +15,8 @@
   "types": "dist/variant-bulk-update.plugin.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",

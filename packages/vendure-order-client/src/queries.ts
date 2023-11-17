@@ -102,6 +102,18 @@ export class GraphqlQueries {
     }
   `;
 
+  CURRENT_USER_FIELDS = gql`
+    fragment CurrentUserFields on CurrentUser {
+      id
+      identifier
+      channels {
+        code
+        token
+        permissions
+      }
+    }
+  `;
+
   ADD_ITEM_TO_ORDER = gql`
     ${this.ACTIVE_ORDER_FIELDS}
     mutation additemToOrder($productVariantId: ID!, $quantity: Int!) {
@@ -158,7 +170,7 @@ export class GraphqlQueries {
 
   APPLY_COUPON_CODE = gql`
     ${this.ACTIVE_ORDER_FIELDS}
-    mutation ApplyCouponCodeMutation($couponCode: String!) {
+    mutation ApplyCouponCode($couponCode: String!) {
       applyCouponCode(couponCode: $couponCode) {
         ... on Order {
           ...ActiveOrderFields
@@ -275,6 +287,105 @@ export class GraphqlQueries {
     query GetOrderByCode($code: String!) {
       orderByCode(code: $code) {
         ...ActiveOrderFields
+      }
+    }
+  `;
+
+  REGISTER_CUSTOMER_ACCOUNT = gql`
+    mutation RegisterCustomerAccount($input: RegisterCustomerInput!) {
+      registerCustomerAccount(input: $input) {
+        ... on Success {
+          success
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+        ... on PasswordValidationError {
+          validationErrorMessage
+        }
+      }
+    }
+  `;
+
+  REQUEST_PASSWORD_RESET = gql`
+    mutation RequestPasswordReset($emailAddress: String!) {
+      requestPasswordReset(emailAddress: $emailAddress) {
+        ... on Success {
+          success
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+  `;
+
+  RESET_PASSWORD = gql`
+    mutation ResetPassword($token: String!, $password: String!) {
+      resetPassword(token: $token, password: $password) {
+        ... on CurrentUser {
+          ...CurrentUserFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+        ... on PasswordValidationError {
+          validationErrorMessage
+        }
+      }
+    }
+    ${this.CURRENT_USER_FIELDS}
+  `;
+
+  LOGIN = gql`
+    mutation Login(
+      $username: String!
+      $password: String!
+      $rememberMe: Boolean
+    ) {
+      login(username: $username, password: $password, rememberMe: $rememberMe) {
+        ... on CurrentUser {
+          ...CurrentUserFields
+        }
+        ... on ErrorResult {
+          errorCode
+          message
+        }
+      }
+    }
+    ${this.CURRENT_USER_FIELDS}
+  `;
+
+  GET_ELIGIBLE_SHIPPING_METHODS = gql`
+    query GetEligibleShippingMethods {
+      eligibleShippingMethods {
+        id
+        name
+        price
+        priceWithTax
+        code
+        description
+        metadata
+        customFields
+      }
+    }
+  `;
+
+  CREATE_MOLLIE_PAYMENT_INTENT = gql`
+    mutation CreateMolliPaymentIntentMutation(
+      $input: MolliePaymentIntentInput!
+    ) {
+      createMolliePaymentIntent(input: $input) {
+        ... on MolliePaymentIntent {
+          url
+        }
+        ... on MolliePaymentIntentError {
+          errorCode
+          message
+        }
       }
     }
   `;

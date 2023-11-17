@@ -1,29 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { StockMovementType } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService,
-  Channel,
   ChannelService,
-  CustomerService,
   EntityHydrator,
   ErrorResult,
   EventBus,
   HistoryService,
   ID,
-  InternalServerError,
+  Injector,
   JobQueue,
   JobQueueService,
   LanguageCode,
-  ListQueryBuilder,
-  ListQueryOptions,
   Logger,
   Order,
   OrderLine,
   OrderLineEvent,
   OrderService,
   OrderStateTransitionError,
-  PaginatedList,
+  PaymentMethod,
+  PaymentMethodEvent,
   PaymentMethodService,
+  ProductService,
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
@@ -31,42 +30,35 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { loggerCtx } from '../constants';
-import { IncomingStripeWebhook } from './types/stripe.types';
-import {
-  CustomerWithSubscriptionFields,
-  OrderLineWithSubscriptionFields,
-  OrderWithSubscriptionFields,
-  VariantWithSubscriptionFields,
-} from './subscription-custom-fields';
-import { StripeClient } from './stripe.client';
-import {
-  StripeSubscriptionPaymentList,
-  StripeSubscriptionPaymentListOptions,
-  StripeSubscriptionPricing,
-  StripeSubscriptionPricingInput,
-} from '../ui/generated/graphql';
-import { stripeSubscriptionHandler } from './stripe-subscription.handler';
-import { Request } from 'express';
-import { filter } from 'rxjs/operators';
-import {
-  calculateSubscriptionPricing,
-  applySubscriptionPromotions,
-  getNextCyclesStartDate,
-  printMoney,
-} from './pricing.helper';
 import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
 import { randomUUID } from 'crypto';
-import { hasSubscriptions } from './has-stripe-subscription-products-payment-checker';
-import { StripeSubscriptionPayment } from './stripe-subscription-payment.entity';
+import { sub } from 'date-fns';
+import { Request } from 'express';
+import { filter } from 'rxjs/operators';
+import Stripe from 'stripe';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
+import {
+  StripeSubscription,
+  StripeSubscriptionIntent,
+} from './generated/graphql';
+import {
+  Subscription,
+  SubscriptionStrategy,
+} from './strategy/subscription-strategy';
+import { StripeClient } from './stripe.client';
 import { StripeInvoice } from './types/stripe-invoice';
-import { StripePaymentIntent } from './types/stripe-payment-intent';
+import {
+  StripePaymentIntent,
+  StripeSetupIntent,
+} from './types/stripe-payment-intent';
+import { printMoney } from './util';
+import { stripeSubscriptionHandler } from './vendure-config/stripe-subscription.handler';
 
-export interface StripeHandlerConfig {
-  paymentMethodCode: string;
+export interface StripeContext {
+  paymentMethod: PaymentMethod;
   stripeClient: StripeClient;
-  webhookSecret: string;
 }
 
 interface CreateSubscriptionsJob {
@@ -90,19 +82,34 @@ export class StripeSubscriptionService {
   constructor(
     private paymentMethodService: PaymentMethodService,
     private activeOrderService: ActiveOrderService,
-    private variantService: ProductVariantService,
     private entityHydrator: EntityHydrator,
     private channelService: ChannelService,
     private orderService: OrderService,
-    private listQueryBuilder: ListQueryBuilder,
     private historyService: HistoryService,
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
-    private customerService: CustomerService,
-    private connection: TransactionalConnection
-  ) {}
+    private moduleRef: ModuleRef,
+    private connection: TransactionalConnection,
+    private productVariantService: ProductVariantService,
+    private productService: ProductService,
+    @Inject(PLUGIN_INIT_OPTIONS)
+    private options: StripeSubscriptionPluginOptions
+  ) {
+    this.strategy = this.options.subscriptionStrategy!;
+  }
 
   private jobQueue!: JobQueue<JobData>;
+  readonly strategy: SubscriptionStrategy;
+  /**
+   * The plugin expects these events to come in via webhooks
+   */
+  static webhookEvents: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
+    'payment_intent.succeeded',
+    'setup_intent.succeeded',
+    'invoice.payment_failed',
+    'invoice.payment_succeeded',
+    'invoice.payment_action_required',
+  ];
 
   async onModuleInit() {
     // Create jobQueue with handlers
@@ -145,10 +152,9 @@ export class StripeSubscriptionService {
     });
     // Add unique hash for subscriptions, so Vendure creates a new order line
     this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
-      const orderLine = event.orderLine as OrderLineWithSubscriptionFields;
       if (
         event.type === 'created' &&
-        orderLine.productVariant.customFields.subscriptionSchedule
+        this.strategy.isSubscription(event.ctx, event.orderLine.productVariant)
       ) {
         await this.connection
           .getRepository(event.ctx, OrderLine)
@@ -158,11 +164,10 @@ export class StripeSubscriptionService {
           );
       }
     });
-    // Listen for stock cancellation or release events
+    // Listen for stock cancellation or release events, to cancel an order lines subscription
     this.eventBus
       .ofType(StockMovementEvent)
       .pipe(
-        // Filter by event type
         filter(
           (event) =>
             event.type === StockMovementType.RELEASE ||
@@ -170,41 +175,172 @@ export class StripeSubscriptionService {
         )
       )
       .subscribe(async (event) => {
-        const orderLinesWithSubscriptions = (
-          event.stockMovements as (Cancellation | Release)[]
-        )
-          .map(
-            (stockMovement) =>
-              stockMovement.orderLine as OrderLineWithSubscriptionFields
-          )
+        const cancelOrReleaseEvents = event.stockMovements as (
+          | Cancellation
+          | Release
+        )[];
+        const stockEvents = cancelOrReleaseEvents
           // Filter out non-sub orderlines
-          .filter((orderLine) => orderLine.customFields.subscriptionIds);
+          .filter(
+            (event) => (event.orderLine.customFields as any).subscriptionIds
+          );
         await Promise.all(
           // Push jobs
-          orderLinesWithSubscriptions.map((line) =>
+          stockEvents.map((stockEvent) =>
             this.jobQueue.add({
               ctx: event.ctx.serialize(),
               action: 'cancelSubscriptionsForOrderline',
-              orderLineId: line.id,
+              orderLineId: stockEvent.orderLine.id,
             })
           )
         );
       });
+    // Listen for PaymentMethod create or update, to automatically create webhooks
+    this.eventBus.ofType(PaymentMethodEvent).subscribe(async (event) => {
+      if (event.type === 'created' || event.type === 'updated') {
+        const paymentMethod = event.entity;
+        if (paymentMethod.handler.code === stripeSubscriptionHandler.code) {
+          await this.registerWebhooks(event.ctx, paymentMethod).catch((e) => {
+            Logger.error(
+              `Failed to register webhooks for channel ${event.ctx.channel.token}: ${e}`,
+              loggerCtx
+            );
+          });
+        }
+      }
+    });
+  }
+
+  /**
+   * Register webhook with the right events if they don't exist yet.
+   * If already exists, the existing hook is deleted and a new one is created.
+   * Existence is checked by name.
+   *
+   * Saves the webhook secret irectly on the payment method
+   */
+  async registerWebhooks(
+    ctx: RequestContext,
+    paymentMethod: PaymentMethod
+  ): Promise<Stripe.Response<Stripe.WebhookEndpoint> | undefined> {
+    const webhookDescription = `Vendure Stripe Subscription Webhook for channel ${ctx.channel.token}`;
+    const apiKey = paymentMethod.handler.args.find(
+      (arg) => arg.name === 'apiKey'
+    )?.value;
+    if (!apiKey) {
+      throw new UserInputError(
+        `No api key found for payment method ${paymentMethod.code}, can not register webhooks`
+      );
+    }
+    const stripeClient = new StripeClient('not-yet-available-secret', apiKey, {
+      apiVersion: null as any, // Null uses accounts default version
+    });
+    const webhookUrl = `${this.options.vendureHost}/stripe-subscriptions/webhook`;
+    // Get existing webhooks and check if url and events match. If not, create them
+    const webhooks = await stripeClient.webhookEndpoints.list({ limit: 100 });
+    if (webhooks.data.length === 100) {
+      Logger.error(
+        `Your Stripe account has too many webhooks setup, ` +
+          `you will need to manually create the webhook with events ${StripeSubscriptionService.webhookEvents.join(
+            ', '
+          )}`,
+        loggerCtx
+      );
+      return;
+    }
+    const existingWebhook = webhooks.data.find(
+      (w) => w.description === webhookDescription
+    );
+    if (existingWebhook) {
+      await stripeClient.webhookEndpoints.del(existingWebhook.id);
+    }
+    const createdHook = await stripeClient.webhookEndpoints.create({
+      enabled_events: StripeSubscriptionService.webhookEvents,
+      description: webhookDescription,
+      url: webhookUrl,
+    });
+    // Update webhook secret in paymentMethod
+    paymentMethod.handler.args.forEach((arg) => {
+      if (arg.name === 'webhookSecret') {
+        arg.value = createdHook.secret!;
+      }
+    });
+    const res = await this.connection
+      .getRepository(ctx, PaymentMethod)
+      .save(paymentMethod);
+    Logger.info(
+      `Created webhook ${createdHook.id} for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
+    return createdHook;
+  }
+
+  async previewSubscription(
+    ctx: RequestContext,
+    productVariantId: ID,
+    customInputs?: any
+  ): Promise<StripeSubscription[]> {
+    const variant = await this.productVariantService.findOne(
+      ctx,
+      productVariantId
+    );
+    if (!variant) {
+      throw new UserInputError(
+        `No product variant with id '${productVariantId}' found`
+      );
+    }
+    const injector = new Injector(this.moduleRef);
+    const subscriptions = await this.strategy.previewSubscription(
+      ctx,
+      injector,
+      variant,
+      customInputs
+    );
+    if (Array.isArray(subscriptions)) {
+      return subscriptions.map((sub) => ({
+        ...sub,
+        variantId: variant.id,
+      }));
+    } else {
+      return [
+        {
+          ...subscriptions,
+          variantId: variant.id,
+        },
+      ];
+    }
+  }
+
+  async previewSubscriptionForProduct(
+    ctx: RequestContext,
+    productId: ID,
+    customInputs?: any
+  ): Promise<StripeSubscription[]> {
+    const { items: variants } =
+      await this.productVariantService.getVariantsByProductId(ctx, productId);
+    if (!variants?.length) {
+      throw new UserInputError(`No variants for product '${productId}' found`);
+    }
+    const subscriptions = await Promise.all(
+      variants.map((v) => this.previewSubscription(ctx, v.id, customInputs))
+    );
+    return subscriptions.flat();
   }
 
   async cancelSubscriptionForOrderLine(
     ctx: RequestContext,
     orderLineId: ID
   ): Promise<void> {
-    const order = (await this.orderService.findOneByOrderLineId(
+    const order = await this.orderService.findOneByOrderLineId(
       ctx,
       orderLineId,
       ['lines']
-    )) as OrderWithSubscriptionFields | undefined;
+    );
     if (!order) {
       throw Error(`Order for OrderLine ${orderLineId} not found`);
     }
-    const line = order?.lines.find((l) => l.id == orderLineId);
+    const line = order?.lines.find((l) => l.id == orderLineId) as
+      | any
+      | undefined;
     if (!line?.customFields.subscriptionIds?.length) {
       return Logger.info(
         `OrderLine ${orderLineId} of ${orderLineId} has no subscriptionIds. Not cancelling anything... `,
@@ -212,7 +348,7 @@ export class StripeSubscriptionService {
       );
     }
     await this.entityHydrator.hydrate(ctx, line, { relations: ['order'] });
-    const { stripeClient } = await this.getStripeHandler(ctx, line.order.id);
+    const { stripeClient } = await this.getStripeContext(ctx);
     for (const subscriptionId of line.customFields.subscriptionIds) {
       try {
         await stripeClient.subscriptions.update(subscriptionId, {
@@ -244,226 +380,184 @@ export class StripeSubscriptionService {
     }
   }
 
-  async createPaymentIntent(ctx: RequestContext): Promise<string> {
-    let order = (await this.activeOrderService.getActiveOrder(
-      ctx,
-      undefined
-    )) as OrderWithSubscriptionFields;
+  /**
+   * Proxy to Stripe to retrieve subscriptions created for the current channel.
+   * Proxies to the Stripe api, so you can use the same filtering, parameters and options as defined here
+   * https://stripe.com/docs/api/subscriptions/list
+   */
+  async getAllSubscriptions(
+    ctx: RequestContext,
+    params?: Stripe.SubscriptionListParams,
+    options?: Stripe.RequestOptions
+  ): Promise<Stripe.ApiListPromise<Stripe.Subscription>> {
+    const { stripeClient } = await this.getStripeContext(ctx);
+    return stripeClient.subscriptions.list(params, options);
+  }
+
+  /**
+   * Get a subscription directly from Stripe
+   */
+  async getSubscription(
+    ctx: RequestContext,
+    subscriptionId: string
+  ): Promise<Stripe.Response<Stripe.Subscription>> {
+    const { stripeClient } = await this.getStripeContext(ctx);
+    return stripeClient.subscriptions.retrieve(subscriptionId);
+  }
+
+  async createIntent(ctx: RequestContext): Promise<StripeSubscriptionIntent> {
+    let order = await this.activeOrderService.getActiveOrder(ctx, undefined);
     if (!order) {
       throw new UserInputError('No active order for session');
     }
-    if (!order.totalWithTax) {
-      // Add a verification fee to the order to support orders that are actually $0
-      order = (await this.orderService.addSurchargeToOrder(ctx, order.id, {
-        description: 'Verification fee',
-        listPrice: 100,
-        listPriceIncludesTax: true,
-      })) as OrderWithSubscriptionFields;
-    }
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
+      applyProductVariantPrices: true,
     });
     if (!order.lines?.length) {
-      throw new UserInputError('Cannot create payment intent for empty order');
+      throw new UserInputError('Cannot create intent for empty order');
     }
     if (!order.customer) {
       throw new UserInputError(
-        'Cannot create payment intent for order without customer'
+        'Cannot create intent for order without customer'
       );
     }
     if (!order.shippingLines?.length) {
       throw new UserInputError(
-        'Cannot create payment intent for order without shippingMethod'
+        'Cannot create intent for order without shippingMethod'
       );
     }
-    const { stripeClient } = await this.getStripeHandler(ctx, order.id);
-    const stripeCustomer = await stripeClient.getOrCreateClient(order.customer);
-    this.customerService
-      .update(ctx, {
-        id: order.customer.id,
-        customFields: {
-          stripeSubscriptionCustomerId: stripeCustomer.id,
-        },
-      })
-      .catch((err) =>
-        Logger.error(
-          `Failed to update stripeCustomerId ${stripeCustomer.id} for ${order.customer.emailAddress}`,
-          loggerCtx,
-          err
-        )
-      );
-    const hasSubscriptionProducts = order.lines.some(
-      (l) => l.productVariant.customFields.subscriptionSchedule
-    );
-    const intent = await stripeClient.paymentIntents.create({
-      customer: stripeCustomer.id,
-      payment_method_types: ['card'], // TODO make configurable per channel
-      setup_future_usage: hasSubscriptionProducts
-        ? 'off_session'
-        : 'on_session',
-      amount: order.totalWithTax,
-      currency: order.currencyCode,
-      metadata: {
-        orderCode: order.code,
-        channelToken: ctx.channel.token,
-        amount: order.totalWithTax,
-      },
-    });
-    Logger.info(
-      `Created payment intent '${intent.id}' for order ${order.code}`,
-      loggerCtx
-    );
-    return intent.client_secret!;
-  }
-
-  /**
-   * Used for previewing the prices including VAT of a subscription
-   */
-  async getPricingForVariant(
-    ctx: RequestContext,
-    input: StripeSubscriptionPricingInput
-  ): Promise<StripeSubscriptionPricing> {
-    const variant = (await this.variantService.findOne(
-      ctx,
-      input.productVariantId!
-    )) as VariantWithSubscriptionFields;
-    if (!variant || !variant?.enabled) {
+    // Check if Stripe Subscription paymentMethod is eligible for this order
+    const eligibleStripeMethodCodes = (
+      await this.orderService.getEligiblePaymentMethods(ctx, order.id)
+    )
+      .filter((m) => m.isEligible)
+      .map((m) => m.code);
+    const { stripeClient, paymentMethod } = await this.getStripeContext(ctx);
+    if (!eligibleStripeMethodCodes.includes(paymentMethod.code)) {
       throw new UserInputError(
-        `No variant found with id ${input!.productVariantId}`
+        `No eligible payment method found for order ${order.code} with handler code '${stripeSubscriptionHandler.code}'`
       );
     }
-    if (!variant.listPrice) {
-      throw new UserInputError(
-        `Variant ${variant.id} doesn't have a "listPrice". Variant.listPrice is needed to calculate subscription pricing`
-      );
-    }
-    if (!variant.customFields.subscriptionSchedule) {
-      throw new UserInputError(
-        `Variant ${variant.id} doesn't have a schedule attached`
-      );
-    }
-    const subscriptionPricing = calculateSubscriptionPricing(
-      ctx,
-      variant.listPrice,
-      variant.customFields.subscriptionSchedule,
-      input
-    );
-    return {
-      ...subscriptionPricing,
-      variantId: variant.id as string,
-      // original price is the same as the recurring price without discounts
-      originalRecurringPrice: subscriptionPricing.recurringPrice,
-    };
-  }
-
-  /**
-   *
-   * Calculate subscription pricing based on an orderLine.
-   * This differs from a variant, because orderLines can have discounts applied
-   */
-  async getPricingForOrderLine(
-    ctx: RequestContext,
-    orderLine: OrderLineWithSubscriptionFields
-  ): Promise<StripeSubscriptionPricing> {
-    await this.entityHydrator.hydrate(ctx, orderLine, {
-      relations: ['productVariant.taxCategory', 'order', 'order.promotions'],
-      applyProductVariantPrices: true,
-    });
-    if (!orderLine.productVariant?.enabled) {
-      throw new UserInputError(
-        `Variant ${orderLine.productVariant.sku} is not enabled`
-      );
-    }
-    if (!orderLine.productVariant.customFields.subscriptionSchedule) {
-      throw new UserInputError(
-        `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
-      );
-    }
-    const subscriptionPricing = calculateSubscriptionPricing(
-      ctx,
-      orderLine.productVariant.listPrice,
-      orderLine.productVariant.customFields.subscriptionSchedule,
-      {
-        downpayment: orderLine.customFields.downpayment,
-        startDate: orderLine.customFields.startDate,
-      }
-    );
-    // Execute promotions on recurringPrice
-    const discountedRecurringPrice = await applySubscriptionPromotions(
-      ctx,
-      subscriptionPricing.recurringPrice,
-      orderLine,
-      orderLine.order.promotions || []
-    );
-    return {
-      ...subscriptionPricing,
-      variantId: orderLine.productVariant.id as string,
-      originalRecurringPrice: subscriptionPricing.recurringPrice,
-      recurringPrice: Math.round(discountedRecurringPrice),
-    };
-  }
-
-  async savePaymentEvent(
-    ctx: RequestContext,
-    eventType: string,
-    object: StripeInvoice
-  ): Promise<void> {
-    const stripeSubscriptionPaymentRepo = this.connection.getRepository(
-      ctx,
-      StripeSubscriptionPayment
-    );
-    const charge = object.lines.data.reduce(
-      (acc, line) => acc + (line.plan?.amount ?? 0),
-      0
-    );
-    const newPayment = new StripeSubscriptionPayment({
-      channelId: ctx.channel.id as string,
-      eventType,
-      charge: charge,
-      currency: object.currency ?? ctx.channel.defaultCurrencyCode,
-      collectionMethod: object.collection_method,
-      invoiceId: object.id,
-      orderCode:
-        object.metadata?.orderCode ??
-        object.lines?.data[0]?.metadata.orderCode ??
-        '',
-      subscriptionId: object.subscription,
-    });
-    await stripeSubscriptionPaymentRepo.save(newPayment);
-  }
-
-  async getPaymentEvents(
-    ctx: RequestContext,
-    options: StripeSubscriptionPaymentListOptions
-  ): Promise<StripeSubscriptionPaymentList> {
-    return this.listQueryBuilder
-      .build(StripeSubscriptionPayment, options, { ctx })
-      .getManyAndCount()
-      .then(([items, totalItems]) => ({
-        items,
-        totalItems,
-      }));
-  }
-
-  /**
-   * Handle future subscription payments that come in after the initial payment intent
-   */
-  async handleInvoicePaymentSucceeded(
-    ctx: RequestContext,
-    object: StripeInvoice,
-    order: Order
-  ): Promise<void> {
-    const amount = object.lines?.data?.[0]?.plan?.amount;
-    const message = amount
-      ? `Received subscription payment of ${printMoney(amount)}`
-      : 'Received subscription payment';
-    await this.logHistoryEntry(
+    await this.orderService.transitionToState(
       ctx,
       order.id,
-      message,
-      undefined,
-      undefined,
-      object.subscription
+      'ArrangingPayment'
+    );
+    const stripeCustomer = await stripeClient.getOrCreateCustomer(
+      order.customer
+    );
+    const stripePaymentMethods = ['card']; // TODO make configurable per channel
+    let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
+    if (order.totalWithTax > 0) {
+      // Create PaymentIntent + off_session, because we have both one-time and recurring payments. Order total is only > 0 if there are one-time payments
+      intent = await stripeClient.paymentIntents.create({
+        customer: stripeCustomer.id,
+        payment_method_types: stripePaymentMethods,
+        setup_future_usage: 'off_session',
+        amount: order.totalWithTax,
+        currency: order.currencyCode,
+        metadata: {
+          orderCode: order.code,
+          channelToken: ctx.channel.token,
+          amount: order.totalWithTax,
+        },
+      });
+    } else {
+      // Create SetupIntent, because we only have recurring payments
+      intent = await stripeClient.setupIntents.create({
+        customer: stripeCustomer.id,
+        payment_method_types: stripePaymentMethods,
+        usage: 'off_session',
+        metadata: {
+          orderCode: order.code,
+          channelToken: ctx.channel.token,
+          amount: order.totalWithTax,
+        },
+      });
+    }
+    const intentType =
+      intent.object === 'payment_intent' ? 'PaymentIntent' : 'SetupIntent';
+    if (!intent.client_secret) {
+      throw Error(
+        `No client_secret found in ${intentType} response, something went wrong!`
+      );
+    }
+    Logger.info(
+      `Created ${intentType} '${intent.id}' for order ${order.code}`,
+      loggerCtx
+    );
+    return {
+      clientSecret: intent.client_secret,
+      intentType,
+    };
+  }
+
+  /**
+   * This defines the actual subscriptions and prices for each order line, based on the configured strategy.
+   * Doesn't allow recurring amount to be below 0 or lower
+   */
+  async getSubscriptionsForOrder(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<(Subscription & { orderLineId: ID; variantId: ID })[]> {
+    const injector = new Injector(this.moduleRef);
+    // Only define subscriptions for orderlines with a subscription product variant
+    const subscriptionOrderLines = order.lines.filter((l) =>
+      this.strategy.isSubscription(ctx, l.productVariant)
+    );
+    const subscriptions = await Promise.all(
+      subscriptionOrderLines.map(async (line) => {
+        const subs = await this.getSubscriptionsForOrderLine(ctx, line, order);
+        // Add orderlineId and variantId to subscription
+        return subs.map((sub) => ({
+          orderLineId: line.id,
+          variantId: line.productVariant.id,
+          ...sub,
+        }));
+      })
+    );
+    const flattenedSubscriptionsArray = subscriptions.flat();
+    // Validate recurring amount
+    flattenedSubscriptionsArray.forEach((subscription) => {
+      if (
+        !subscription.recurring.amount ||
+        subscription.recurring.amount <= 0
+      ) {
+        throw Error(
+          `[${loggerCtx}]: Defined subscription for order line ${subscription.variantId} must have a recurring amount greater than 0`
+        );
+      }
+    });
+    return flattenedSubscriptionsArray;
+  }
+
+  async getSubscriptionsForOrderLine(
+    ctx: RequestContext,
+    orderLine: OrderLine,
+    order: Order
+  ): Promise<Subscription[]> {
+    const injector = new Injector(this.moduleRef);
+    const subs = await this.strategy.defineSubscription(
+      ctx,
+      injector,
+      orderLine.productVariant,
+      orderLine.order,
+      orderLine.customFields,
+      orderLine.quantity
+    );
+    if (Array.isArray(subs)) {
+      return subs;
+    }
+    return [subs];
+  }
+
+  /**
+   * Check if the order has products that should be treated as subscription products
+   */
+  hasSubscriptionProducts(ctx: RequestContext, order: Order): boolean {
+    return order.lines.some((l) =>
+      this.strategy.isSubscription(ctx, l.productVariant)
     );
   }
 
@@ -475,6 +569,7 @@ export class StripeSubscriptionService {
     object: StripeInvoice,
     order: Order
   ): Promise<void> {
+    // TODO: Emit StripeSubscriptionPaymentFailed(subscriptionId, order, stripeInvoiceObject: StripeInvoice)
     const amount = object.lines?.data[0]?.plan?.amount;
     const message = amount
       ? `Subscription payment of ${printMoney(amount)} failed`
@@ -490,15 +585,17 @@ export class StripeSubscriptionService {
   }
 
   /**
-   * Handle the initial payment Intent succeeded.
-   * Creates subscriptions in Stripe for customer attached to this order
+   * Handle the initial succeeded setup or payment intent.
+   * Creates subscriptions in Stripe in the background via the jobqueue
    */
-  async handlePaymentIntentSucceeded(
+  async handleIntentSucceeded(
     ctx: RequestContext,
-    object: StripePaymentIntent,
+    object: StripePaymentIntent | StripeSetupIntent,
     order: Order
   ): Promise<void> {
-    const { paymentMethodCode } = await this.getStripeHandler(ctx, order.id);
+    const {
+      paymentMethod: { code: paymentMethodCode },
+    } = await this.getStripeContext(ctx);
     if (!object.customer) {
       await this.logHistoryEntry(
         ctx,
@@ -518,7 +615,7 @@ export class StripeSubscriptionService {
           stripePaymentMethodId: object.payment_method,
           stripeCustomerId: object.customer,
         },
-        { retries: 0 } // Only 1 try, because subscription creation isn't transaction-proof
+        { retries: 0 } // Only 1 try, because subscription creation isn't idempotent
       )
       .catch((e) =>
         Logger.error(
@@ -526,7 +623,7 @@ export class StripeSubscriptionService {
           loggerCtx
         )
       );
-    // Status is complete, we can settle payment
+    // Settle payment for order
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
         ctx,
@@ -552,13 +649,17 @@ export class StripeSubscriptionService {
     );
     if ((addPaymentToOrderResult as ErrorResult).errorCode) {
       throw Error(
-        `Error adding payment to order ${order.code}: ${
+        `[${loggerCtx}]: Error adding payment to order ${order.code}: ${
           (addPaymentToOrderResult as ErrorResult).message
         }`
       );
     }
     Logger.info(
-      `Successfully settled payment for order ${order.code} for channel ${ctx.channel.token}`,
+      `Successfully settled payment for order ${
+        order.code
+      } with amount ${printMoney(object.metadata.amount)}, for channel ${
+        ctx.channel.token
+      }`,
       loggerCtx
     );
   }
@@ -572,181 +673,129 @@ export class StripeSubscriptionService {
     stripeCustomerId: string,
     stripePaymentMethodId: string
   ): Promise<void> {
-    const order = (await this.orderService.findOneByCode(ctx, orderCode, [
+    const order = await this.orderService.findOneByCode(ctx, orderCode, [
       'customer',
       'lines',
       'lines.productVariant',
-    ])) as OrderWithSubscriptionFields;
+    ]);
     if (!order) {
-      throw Error(`Cannot find order with code ${orderCode}`);
+      throw Error(`[${loggerCtx}]: Cannot find order with code ${orderCode}`);
     }
-    if (!hasSubscriptions(order)) {
-      return Logger.info(
-        `Not creating subscriptions for order ${order.code}, because it doesn't have any subscription products`
-      );
-    }
-    const { stripeClient } = await this.getStripeHandler(ctx, order.id);
-    const customer = await stripeClient.customers.retrieve(stripeCustomerId);
-    if (!customer) {
-      throw Error(
-        `Failed to create subscription for ${stripeCustomerId} because the customer doesn't exist in Stripe`
-      );
-    }
-    let orderLineCount = 0;
-    const subscriptionOrderLines = order.lines.filter(
-      (line) => line.productVariant.customFields.subscriptionSchedule
-    );
-    for (const orderLine of subscriptionOrderLines) {
-      orderLineCount++; // Start with 1
-      const createdSubscriptions: string[] = [];
-      const pricing = await this.getPricingForOrderLine(ctx, orderLine);
-      if (pricing.schedule.paidUpFront && !pricing.schedule.autoRenew) {
-        continue; // Paid up front without autoRenew doesn't need a subscription
+    try {
+      if (!this.hasSubscriptionProducts(ctx, order)) {
+        Logger.info(
+          `Order ${order.code} doesn't have any subscriptions. No action needed`,
+          loggerCtx
+        );
+        return;
       }
+      const { stripeClient } = await this.getStripeContext(ctx);
+      const customer = await stripeClient.customers.retrieve(stripeCustomerId);
+      if (!customer) {
+        throw Error(
+          `[${loggerCtx}]: Failed to create subscription for customer ${stripeCustomerId} because it doesn't exist in Stripe`
+        );
+      }
+      const subscriptionDefinitions = await this.getSubscriptionsForOrder(
+        ctx,
+        order
+      );
       Logger.info(`Creating subscriptions for ${orderCode}`, loggerCtx);
-      try {
-        const product = await stripeClient.products.create({
-          name: `${orderLine.productVariant.name} (${order.code})`,
-        });
-        const recurringSubscription =
-          await stripeClient.createOffSessionSubscription({
-            customerId: stripeCustomerId,
-            productId: product.id,
-            currencyCode: order.currencyCode,
-            amount: pricing.recurringPrice,
-            interval: pricing.interval,
-            intervalCount: pricing.intervalCount,
-            paymentMethodId: stripePaymentMethodId,
-            startDate: pricing.subscriptionStartDate,
-            endDate: pricing.subscriptionEndDate || undefined,
-            description: orderLine.productVariant.name,
-            orderCode: order.code,
-            channelToken: ctx.channel.token,
+      // <orderLineId, subscriptionIds>
+      const subscriptionsPerOrderLine = new Map<ID, string[]>();
+      for (const subscriptionDefinition of subscriptionDefinitions) {
+        try {
+          const product = await stripeClient.products.create({
+            name: subscriptionDefinition.name,
           });
-        createdSubscriptions.push(recurringSubscription.id);
-        if (
-          recurringSubscription.status !== 'active' &&
-          recurringSubscription.status !== 'trialing'
-        ) {
-          Logger.error(
-            `Failed to create active subscription ${recurringSubscription.id} for order ${order.code}! It is still in status '${recurringSubscription.status}'`,
-            loggerCtx
-          );
-          await this.logHistoryEntry(
-            ctx,
-            order.id,
-            'Failed to create subscription',
-            `Subscription status is ${recurringSubscription.status}`,
-            pricing,
-            recurringSubscription.id
-          );
-        } else {
-          Logger.info(
-            `Created subscription ${recurringSubscription.id}: ${printMoney(
-              pricing.recurringPrice
-            )} every ${pricing.intervalCount} ${
-              pricing.interval
-            }(s) with startDate ${pricing.subscriptionStartDate} for order ${
-              order.code
-            }`,
-            loggerCtx
-          );
-          await this.logHistoryEntry(
-            ctx,
-            order.id,
-            `Created subscription for line ${orderLineCount}`,
-            undefined,
-            pricing,
-            recurringSubscription.id
-          );
-        }
-        if (pricing.downpayment) {
-          // Create downpayment with the interval of the duration. So, if the subscription renews in 6 months, then the downpayment should occur every 6 months
-          const downpaymentProduct = await stripeClient.products.create({
-            name: `${orderLine.productVariant.name} - Downpayment (${order.code})`,
-          });
-          const schedule =
-            orderLine.productVariant.customFields.subscriptionSchedule;
-          if (!schedule) {
-            throw new UserInputError(
-              `Variant ${orderLine.productVariant.id} doesn't have a schedule attached`
-            );
-          }
-          const downpaymentInterval = schedule.durationInterval;
-          const downpaymentIntervalCount = schedule.durationCount;
-          const nextDownpaymentDate = getNextCyclesStartDate(
-            new Date(),
-            schedule.startMoment,
-            schedule.durationInterval,
-            schedule.durationCount,
-            schedule.fixedStartDate
-          );
-          const downpaymentSubscription =
+          const createdSubscription =
             await stripeClient.createOffSessionSubscription({
               customerId: stripeCustomerId,
-              productId: downpaymentProduct.id,
+              productId: product.id,
               currencyCode: order.currencyCode,
-              amount: pricing.downpayment,
-              interval: downpaymentInterval,
-              intervalCount: downpaymentIntervalCount,
+              amount: subscriptionDefinition.recurring.amount,
+              interval: subscriptionDefinition.recurring.interval,
+              intervalCount: subscriptionDefinition.recurring.intervalCount,
               paymentMethodId: stripePaymentMethodId,
-              startDate: nextDownpaymentDate,
-              endDate: pricing.subscriptionEndDate || undefined,
-              description: `Downpayment`,
+              startDate: subscriptionDefinition.recurring.startDate,
+              endDate: subscriptionDefinition.recurring.endDate,
+              description: `'${subscriptionDefinition.name} for order '${order.code}'`,
               orderCode: order.code,
               channelToken: ctx.channel.token,
             });
-          createdSubscriptions.push(recurringSubscription.id);
           if (
-            downpaymentSubscription.status !== 'active' &&
-            downpaymentSubscription.status !== 'trialing'
+            createdSubscription.status !== 'active' &&
+            createdSubscription.status !== 'trialing'
           ) {
+            // Created subscription is not active for some reason. Log error and continue to next
             Logger.error(
-              `Failed to create active subscription ${downpaymentSubscription.id} for order ${order.code}! It is still in status '${downpaymentSubscription.status}'`,
+              `Failed to create active subscription ${subscriptionDefinition.name} (${createdSubscription.id}) for order ${order.code}! It is still in status '${createdSubscription.status}'`,
               loggerCtx
             );
             await this.logHistoryEntry(
               ctx,
               order.id,
-              'Failed to create downpayment subscription',
-              'Failed to create active subscription',
-              undefined,
-              downpaymentSubscription.id
+              `Failed to create subscription ${subscriptionDefinition.name}`,
+              `Subscription status is ${createdSubscription.status}`,
+              subscriptionDefinition,
+              createdSubscription.id
             );
-          } else {
-            Logger.info(
-              `Created downpayment subscription ${
-                downpaymentSubscription.id
-              }: ${printMoney(
-                pricing.downpayment
-              )} every ${downpaymentIntervalCount} ${downpaymentInterval}(s) with startDate ${
-                pricing.subscriptionStartDate
-              } for order ${order.code}`,
-              loggerCtx
-            );
-            await this.logHistoryEntry(
-              ctx,
-              order.id,
-              `Created downpayment subscription for line ${orderLineCount}`,
-              undefined,
-              pricing,
-              downpaymentSubscription.id
-            );
+            continue;
           }
+          Logger.info(
+            `Created subscription '${subscriptionDefinition.name}' (${
+              createdSubscription.id
+            }): ${printMoney(subscriptionDefinition.recurring.amount)}`,
+            loggerCtx
+          );
+          await this.logHistoryEntry(
+            ctx,
+            order.id,
+            `Created subscription for ${subscriptionDefinition.name}`,
+            undefined,
+            subscriptionDefinition,
+            createdSubscription.id
+          );
+          // Add created subscriptions per order line
+          const existingSubscriptionIds =
+            subscriptionsPerOrderLine.get(subscriptionDefinition.orderLineId) ||
+            [];
+          existingSubscriptionIds.push(createdSubscription.id);
+          subscriptionsPerOrderLine.set(
+            subscriptionDefinition.orderLineId,
+            existingSubscriptionIds
+          );
+        } catch (e: unknown) {
+          await this.logHistoryEntry(
+            ctx,
+            order.id,
+            'An unknown error occured creating subscriptions',
+            e
+          );
+          throw e;
         }
-        await this.saveSubscriptionIds(ctx, orderLine.id, createdSubscriptions);
-      } catch (e: unknown) {
-        await this.logHistoryEntry(ctx, order.id, '', e);
-        throw e;
       }
+      // Save subscriptionIds per order line
+      for (const [
+        orderLineId,
+        subscriptionIds,
+      ] of subscriptionsPerOrderLine.entries()) {
+        await this.saveSubscriptionIds(ctx, orderLineId, subscriptionIds);
+      }
+    } catch (e: unknown) {
+      await this.logHistoryEntry(ctx, order.id, '', e);
+      throw e;
     }
   }
 
+  /**
+   * Save subscriptionIds on order line
+   */
   async saveSubscriptionIds(
     ctx: RequestContext,
     orderLineId: ID,
     subscriptionIds: string[]
-  ) {
+  ): Promise<void> {
     await this.connection
       .getRepository(ctx, OrderLine)
       .update({ id: orderLineId }, { customFields: { subscriptionIds } });
@@ -768,32 +817,25 @@ export class StripeSubscriptionService {
   }
 
   /**
-   * Get the paymentMethod with the stripe handler, should be only 1!
+   * Get the Stripe context for the current channel.
+   * The Stripe context consists of the Stripe client and the Vendure payment method connected to the Stripe account
    */
-  async getStripeHandler(
-    ctx: RequestContext,
-    orderId: ID
-  ): Promise<StripeHandlerConfig> {
-    const paymentMethodQuotes =
-      await this.orderService.getEligiblePaymentMethods(ctx, orderId);
-    const paymentMethodQuote = paymentMethodQuotes
-      .filter((quote) => quote.isEligible)
-      .find((pm) => pm.code.indexOf('stripe-subscription') > -1);
-    if (!paymentMethodQuote) {
+  async getStripeContext(ctx: RequestContext): Promise<StripeContext> {
+    const paymentMethods = await this.paymentMethodService.findAll(ctx, {
+      filter: { enabled: { eq: true } },
+    });
+    const stripePaymentMethods = paymentMethods.items.filter(
+      (pm) => pm.handler.code === stripeSubscriptionHandler.code
+    );
+    if (stripePaymentMethods.length > 1) {
       throw new UserInputError(
-        `No eligible payment method found with code 'stripe-subscription'`
+        `Multiple payment methods found with handler 'stripe-subscription', there should only be 1 per channel!`
       );
     }
-    const paymentMethod = await this.paymentMethodService.findOne(
-      ctx,
-      paymentMethodQuote.id
-    );
-    if (
-      !paymentMethod ||
-      paymentMethod.handler.code !== stripeSubscriptionHandler.code
-    ) {
+    const paymentMethod = stripePaymentMethods[0];
+    if (!paymentMethod) {
       throw new UserInputError(
-        `Payment method '${paymentMethodQuote.code}' doesn't have handler '${stripeSubscriptionHandler.code}' configured.`
+        `No enabled payment method found with handler 'stripe-subscription'`
       );
     }
     const apiKey = paymentMethod.handler.args.find(
@@ -812,11 +854,10 @@ export class StripeSubscriptionService {
       );
     }
     return {
-      paymentMethodCode: paymentMethod.code,
+      paymentMethod: paymentMethod,
       stripeClient: new StripeClient(webhookSecret, apiKey, {
         apiVersion: null as any, // Null uses accounts default version
       }),
-      webhookSecret,
     };
   }
 
@@ -825,22 +866,12 @@ export class StripeSubscriptionService {
     orderId: ID,
     message: string,
     error?: unknown,
-    pricing?: StripeSubscriptionPricing,
+    subscription?: Subscription,
     subscriptionId?: string
   ): Promise<void> {
     let prettifiedError = error
       ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
       : undefined; // Make sure its serializable
-    let prettifierPricing = pricing
-      ? {
-          ...pricing,
-          totalProratedAmount: printMoney(pricing.totalProratedAmount),
-          downpayment: printMoney(pricing.downpayment),
-          recurringPrice: printMoney(pricing.recurringPrice),
-          amountDueNow: printMoney(pricing.amountDueNow),
-          dayRate: printMoney(pricing.dayRate),
-        }
-      : undefined;
     await this.historyService.createHistoryEntryForOrder(
       {
         ctx,
@@ -851,7 +882,7 @@ export class StripeSubscriptionService {
           valid: !error,
           error: prettifiedError,
           subscriptionId,
-          pricing: prettifierPricing,
+          subscription,
         },
       },
       false

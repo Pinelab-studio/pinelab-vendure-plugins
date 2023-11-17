@@ -20,7 +20,7 @@ plugins: [
 
 ## How it works
 
-This plugin exposes an endpoint that can be periodically called: `/order-by-popularity/calculate-scores/your-secret`. This will push a job named `calculate-popularity` to the worker. The worker will handle this message and do the following:
+This plugin exposes an endpoint that can be periodically called: `/popularity-scores/:yourchanneltoken/:yoursecret`. This will push a job named `calculate-popularity` to the worker. The worker will handle this message and do the following:
 
 1. Get all orders from the past 12 months. The amount of months should be configurable.
 2. Calculate the amount of times each Variant has been sold.

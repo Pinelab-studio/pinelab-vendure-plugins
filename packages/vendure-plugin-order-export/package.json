@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-order-export",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Vendure plugin for exporting orders to a file",
   "icon": "file-export",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -15,7 +15,8 @@
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",

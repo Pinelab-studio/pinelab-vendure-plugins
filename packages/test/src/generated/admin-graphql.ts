@@ -874,6 +874,7 @@ export type CreatePromotionInput = {
   perCustomerUsageLimit?: InputMaybe<Scalars['Int']>;
   startsAt?: InputMaybe<Scalars['DateTime']>;
   translations: Array<PromotionTranslationInput>;
+  usageLimit?: InputMaybe<Scalars['Int']>;
 };
 
 export type CreatePromotionResult = MissingConditionsError | Promotion;
@@ -1593,7 +1594,14 @@ export type Facet = Node & {
   name: Scalars['String'];
   translations: Array<FacetTranslation>;
   updatedAt: Scalars['DateTime'];
+  /** Returns a paginated, sortable, filterable list of the Facet's values. Added in v2.1.0. */
+  valueList: FacetValueList;
   values: Array<FacetValue>;
+};
+
+
+export type FacetValueListArgs = {
+  options?: InputMaybe<FacetValueListOptions>;
 };
 
 export type FacetFilterParameter = {
@@ -1664,6 +1672,7 @@ export type FacetValue = Node & {
   createdAt: Scalars['DateTime'];
   customFields?: Maybe<Scalars['JSON']>;
   facet: Facet;
+  facetId: Scalars['ID'];
   id: Scalars['ID'];
   languageCode: LanguageCode;
   name: Scalars['String'];
@@ -1687,6 +1696,7 @@ export type FacetValueFilterInput = {
 export type FacetValueFilterParameter = {
   code?: InputMaybe<StringOperators>;
   createdAt?: InputMaybe<DateOperators>;
+  facetId?: InputMaybe<IdOperators>;
   id?: InputMaybe<IdOperators>;
   languageCode?: InputMaybe<StringOperators>;
   name?: InputMaybe<StringOperators>;
@@ -1725,6 +1735,7 @@ export type FacetValueResult = {
 export type FacetValueSortParameter = {
   code?: InputMaybe<SortOrder>;
   createdAt?: InputMaybe<SortOrder>;
+  facetId?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   name?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
@@ -3869,6 +3880,7 @@ export type OrderLine = Node & {
   proratedUnitPrice: Scalars['Money'];
   /** The proratedUnitPrice including tax */
   proratedUnitPriceWithTax: Scalars['Money'];
+  /** The quantity of items purchased */
   quantity: Scalars['Int'];
   taxLines: Array<TaxLine>;
   taxRate: Scalars['Float'];
@@ -4611,7 +4623,7 @@ export type ProductVariantListOptions = {
 export type ProductVariantPrice = {
   __typename?: 'ProductVariantPrice';
   currencyCode: CurrencyCode;
-  price: Scalars['Int'];
+  price: Scalars['Money'];
 };
 
 /**
@@ -4671,6 +4683,7 @@ export type Promotion = Node & {
   startsAt?: Maybe<Scalars['DateTime']>;
   translations: Array<PromotionTranslation>;
   updatedAt: Scalars['DateTime'];
+  usageLimit?: Maybe<Scalars['Int']>;
 };
 
 export type PromotionFilterParameter = {
@@ -4684,6 +4697,7 @@ export type PromotionFilterParameter = {
   perCustomerUsageLimit?: InputMaybe<NumberOperators>;
   startsAt?: InputMaybe<DateOperators>;
   updatedAt?: InputMaybe<DateOperators>;
+  usageLimit?: InputMaybe<NumberOperators>;
 };
 
 export type PromotionList = PaginatedList & {
@@ -4715,6 +4729,7 @@ export type PromotionSortParameter = {
   perCustomerUsageLimit?: InputMaybe<SortOrder>;
   startsAt?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
+  usageLimit?: InputMaybe<SortOrder>;
 };
 
 export type PromotionTranslation = {
@@ -6232,6 +6247,7 @@ export type UpdatePromotionInput = {
   perCustomerUsageLimit?: InputMaybe<Scalars['Int']>;
   startsAt?: InputMaybe<Scalars['DateTime']>;
   translations?: InputMaybe<Array<PromotionTranslationInput>>;
+  usageLimit?: InputMaybe<Scalars['Int']>;
 };
 
 export type UpdatePromotionResult = MissingConditionsError | Promotion;
@@ -6360,6 +6376,8 @@ export type ZoneSortParameter = {
   updatedAt?: InputMaybe<SortOrder>;
 };
 
+export type OrderFieldsFragment = { __typename?: 'Order', id: string, code: string, state: string, active: boolean, total: any, totalWithTax: any, shippingWithTax: any, customer?: { __typename?: 'Customer', emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null } | null, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null, lines: Array<{ __typename?: 'OrderLine', id: string, quantity: number, productVariant: { __typename?: 'ProductVariant', id: string, sku: string }, discounts: Array<{ __typename?: 'Discount', adjustmentSource: string, amount: any, amountWithTax: any, description: string, type: AdjustmentType }> }> };
+
 export type CreateShippingMethodMutationVariables = Exact<{
   input: CreateShippingMethodInput;
 }>;
@@ -6386,7 +6404,7 @@ export type OrderQueryVariables = Exact<{
 }>;
 
 
-export type OrderQuery = { __typename?: 'Query', order?: { __typename?: 'Order', id: string, code: string, state: string, totalWithTax: any, shippingWithTax: any, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null } | null };
+export type OrderQuery = { __typename?: 'Query', order?: { __typename?: 'Order', id: string, code: string, state: string, active: boolean, total: any, totalWithTax: any, shippingWithTax: any, customer?: { __typename?: 'Customer', emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null } | null, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null, lines: Array<{ __typename?: 'OrderLine', id: string, quantity: number, productVariant: { __typename?: 'ProductVariant', id: string, sku: string }, discounts: Array<{ __typename?: 'Discount', adjustmentSource: string, amount: any, amountWithTax: any, description: string, type: AdjustmentType }> }> } | null };
 
 export type OrdersQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -6426,7 +6444,45 @@ export type CreatePromotionMutationVariables = Exact<{
 
 export type CreatePromotionMutation = { __typename?: 'Mutation', createPromotion: { __typename?: 'MissingConditionsError' } | { __typename?: 'Promotion', id: string, name: string, couponCode?: string | null } };
 
-
+export const OrderFields = gql`
+    fragment OrderFields on Order {
+  id
+  code
+  state
+  active
+  total
+  totalWithTax
+  shippingWithTax
+  customer {
+    emailAddress
+  }
+  shippingAddress {
+    fullName
+  }
+  fulfillments {
+    id
+    state
+    method
+    trackingCode
+    customFields
+  }
+  lines {
+    id
+    quantity
+    productVariant {
+      id
+      sku
+    }
+    discounts {
+      adjustmentSource
+      amount
+      amountWithTax
+      description
+      type
+    }
+  }
+}
+    `;
 export const CreateShippingMethod = gql`
     mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
   createShippingMethod(input: $input) {
@@ -6459,21 +6515,10 @@ export const CreateCollection = gql`
 export const Order = gql`
     query order($id: ID!) {
   order(id: $id) {
-    id
-    code
-    state
-    totalWithTax
-    shippingWithTax
-    fulfillments {
-      id
-      state
-      method
-      trackingCode
-      customFields
-    }
+    ...OrderFields
   }
 }
-    `;
+    ${OrderFields}`;
 export const Orders = gql`
     query orders {
   orders {
