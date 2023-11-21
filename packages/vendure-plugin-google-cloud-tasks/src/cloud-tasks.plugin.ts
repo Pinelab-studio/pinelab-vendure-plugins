@@ -27,7 +27,10 @@ export class CloudTasksPlugin {
 
   static init(options: CloudTaskOptions): typeof CloudTasksPlugin {
     this.options = options;
-    if (this.options?.createTaskRetries > 20) {
+    if (
+      this.options?.createTaskRetries &&
+      this.options?.createTaskRetries > 20
+    ) {
       this.options.createTaskRetries = 20;
       Logger.warn(
         `createTaskRetries can be set to a maximum of 20 retries. This is to avoid too many stacked create task retries`,
