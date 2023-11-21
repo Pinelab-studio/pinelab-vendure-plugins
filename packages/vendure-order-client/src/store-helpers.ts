@@ -48,10 +48,10 @@ export function HandleLoadingState(storeName: string) {
     const originalMethod = descriptor.value; // Save a reference to the original method
     descriptor.value = async function (this: any, ...args: any[]) {
       const store: MapStore<StateStore<any>> = this[storeName];
-      store.setKey('loading', true);
       if (!store) {
         throw new Error(`Store ${storeName} not found`);
       }
+      store.setKey('loading', true);
       try {
         const result = await originalMethod.apply(this, args);
         return result;
