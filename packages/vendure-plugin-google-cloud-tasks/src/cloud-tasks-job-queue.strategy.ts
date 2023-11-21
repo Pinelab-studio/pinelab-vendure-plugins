@@ -170,12 +170,22 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
         return new Job<any>(jobRecord);
       } catch (e: any) {
         currentAttempt += 1;
-        Logger.error(
-          `Failed to add task to queue ${queueName}: ${e?.message}`,
-          CloudTasksPlugin.loggerCtx,
-          e
+        Logger.warn(
+          `Failed to add task to queue ${queueName} in attempt nr ${currentAttempt}: ${e?.message}`,
+          CloudTasksPlugin.loggerCtx
         );
+        if (currentAttempt > 3) {
+          // Exponential backoff after first 3 subsequent attempts
+          await new Promise((resolve) =>
+            setTimeout(resolve, currentAttempt * 5000)
+          );
+        }
         if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
+          Logger.error(
+            `Failed to add task to queue ${queueName} in ${currentAttempt} attempts. Not retrying anymore! Error: ${e?.message}`,
+            CloudTasksPlugin.loggerCtx,
+            (e as Error)?.stack
+          );
           throw e;
         }
       }
