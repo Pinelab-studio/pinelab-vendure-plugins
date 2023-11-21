@@ -20,9 +20,7 @@ The plugin follows these principles:
 Add the plugin to your `vendure-config.ts`
 
 ```ts
-// vendure-config.ts
-
-import {PicqerPlugin} from 'vendure-plugin-picqer'
+import {PicqerPlugin} from '@pinelab/vendure-plugin-picqer'
 
 ...
 plugins: [
@@ -76,17 +74,11 @@ You can use a custom [StockLocationStrategy](https://github.com/vendure-ecommerc
 2. Products are fulfilled in Vendure based on the products in the incoming `picklist.closed` events from Picqer. This can result in the order being `Shipped` or `PartiallyShipped`
 3. Currently, when the order is `Shipped` it will automatically transition to `Delivered`, because we do not receive delivery events from Picqer.
 
-### Current order flow:
+### Order flow:
 
-![Current order flow](https://www.plantuml.com/plantuml/png/bOwn2i9038RtFaNef8E27Jj81n-W8BWVTr4FqqjDSe9lxnLQK73GBI7_z_tfr9nO7gWwOGfP43PxwAE_eq0BVTOhi8IoS9g7aPp70PF1ge5HE6HlklwA7z706EgIygWQqwMkvcE9BKGx0JUAQbjFh1ZWpBAOORUOFv6Ydl-P2ded5XtH4mv8yO62uV-cvfUcDtytHGPw0G00)
+![Order flow](https://www.plantuml.com/plantuml/png/RSvD2W8n30NWVKyHkjS3p49c8MuT4DmFxLCBwOzfwlcbM45XTW_oyYLprLMqHJPN9Dy4j3lG4jmJGXCjhJueYuTGJYCKNXqYalvkVED4fyQtmFmfRw8NA6acMoGxr1hItPen_9FENQXxbsDXAFpclQwDnxfv18SN1DwQkLSYlm40)
 
 [edit](https://www.plantuml.com/plantuml/uml/bOwn2i9038RtFaNef8E27Jj81n-W8BWVTr4FqqjDSe9lxnLQK73GBI7_z_tfr9nO7gWwOGfP43PxwAE_eq0BVTOhi8IoS9g7aPp70PF1ge5HE6HlklwA7z706EgIygWQqwMkvcE9BKGx0JUAQbjFh1ZWpBAOORUOFv6Ydl-P2ded5XtH4mv8yO62uV-cvfUcDtytHGPw0G00)
-
-### Desired order flow (future plans, not implemented yet):
-
-![Future order flow](https://www.plantuml.com/plantuml/png/fP3DIiKm48NtVOgXArqec6KNSa4Ve731VKX6Rt3ousGYtBUtgGsKwiBWBapEcVFDEMNHBCNJy8B15aQuUuJPcGzac60k-GAHBJB4i3qIQOCUWy2DWiJH5YFvzbVx6GKamhYe3ERimjiuR9-Bx7nnAIspf-YJ3bUOricwsJ1gGGklaLi4FEoiBMogMU_aijmRYlc7e-dsbagrdLBPPitYDD7rcmVjE1p03e5jELWazucCjY_ckTd-qONgxaBz1RAl0TNNmExkKvLu-W80)
-
-[edit](https://www.plantuml.com/plantuml/uml/fP3DIiKm48NtVOgXArqec6KNSa4Ve731VKX6Rt3ousGYtBUtgGsKwiBWBapEcVFDEMNHBCNJy8B15aQuUuJPcGzac60k-GAHBJB4i3qIQOCUWy2DWiJH5YFvzbVx6GKamhYe3ERimjiuR9-Bx7nnAIspf-YJ3bUOricwsJ1gGGklaLi4FEoiBMogMU_aijmRYlc7e-dsbagrdLBPPitYDD7rcmVjE1p03e5jELWazucCjY_ckTd-qONgxaBz1RAl0TNNmExkKvLu-W80)
 
 ## Caveats
 

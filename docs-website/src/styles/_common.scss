@@ -1,0 +1,309 @@
+.navbar-toggle .icon-bar {
+  background: $primary-color;
+}
+
+input[type='email'],
+input[type='password'],
+input[type='text'],
+input[type='tel'] {
+  box-shadow: none;
+  height: 45px;
+  outline: none;
+  font-size: 14px;
+}
+
+.form-control {
+  box-shadow: none;
+  border-radius: 0;
+
+  &:focus {
+    box-shadow: none;
+    border: 1px solid $primary-color;
+  }
+}
+
+//
+
+.py-7 {
+  padding: 7rem 0px;
+}
+
+// Background
+
+.bg-gray {
+  background: #eff0f3;
+}
+
+.bg-primary {
+  background: $primary-color;
+}
+
+.bg-primary-dark {
+  background: darken($primary-color, 10%);
+}
+
+.bg-primary-darker {
+  background: darken($primary-color, 20%);
+}
+
+.bg-dark {
+  background: $black;
+}
+
+.bg-gradient {
+  background-image: linear-gradient(
+    145deg,
+    rgba(19, 177, 205, 0.95) 0%,
+    rgba(152, 119, 234, 0.95) 100%
+  );
+  background-repeat: repeat-x;
+}
+
+//  Section Title
+.section {
+  padding: 100px 0;
+}
+
+.section-sm {
+  padding: 70px 0;
+}
+
+.section-title {
+  margin-bottom: 70px;
+
+  .title {
+    font-size: 50px;
+    line-height: 50px;
+  }
+
+  p {
+    color: #666;
+    font-family: $secondary-font;
+  }
+}
+
+.subtitle {
+  color: $primary-color;
+  font-size: 14px;
+  letter-spacing: 1px;
+}
+
+.overly {
+  position: relative;
+
+  &:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+    background: #000;
+  }
+}
+
+.overly-2 {
+  position: relative;
+
+  &:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+.text-sm {
+  font-size: 14px;
+}
+
+.text-md {
+  font-size: 2.25rem;
+}
+
+.text-lg {
+  font-size: 3.75rem;
+}
+
+.no-spacing {
+  letter-spacing: 0px;
+}
+
+/* Links */
+a {
+  text-decoration: underline;
+  display: inline-block;
+  transition: 0.3s;
+}
+
+a:focus,
+a:hover {
+  color: $primary-color;
+  text-decoration: none;
+}
+
+a:focus {
+  outline: none;
+}
+
+.content-title {
+  font-size: 40px;
+  line-height: 50px;
+}
+
+.page-title {
+  padding: 170px 0px 20px 0px;
+  position: relative;
+
+  .block {
+    h1 {
+      color: $light;
+    }
+
+    p {
+      color: $light;
+    }
+  }
+
+  .breadcumb-nav {
+    margin-top: 80px;
+    padding-top: 30px;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
+.slick-slide {
+  &:focus,
+  a {
+    outline: none;
+  }
+}
+
+@include mobile {
+  h2,
+  .h2 {
+    font-size: 1.8rem;
+    line-height: 42px;
+  }
+}
+
+// column
+@media screen and (min-width: 1216px) {
+  .container:not(.is-max-desktop) {
+    max-width: 1140px;
+  }
+}
+
+.container {
+  @include desktop {
+    max-width: 765px;
+  }
+  @include tablet {
+    max-width: 540px;
+  }
+}
+
+.container,
+.container-fluid {
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+.container-fluid {
+  width: 100%;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.heading {
+  display: block;
+  font-size: unset;
+  letter-spacing: unset;
+  margin-bottom: 5px;
+  text-transform: unset;
+}
+
+.column {
+  padding: 15px;
+}
+
+.columns {
+  margin-left: -15px;
+  margin-right: -15px;
+  margin-top: -15px;
+}
+
+.columns:last-child {
+  margin-bottom: -15px;
+}
+
+.list-inline {
+  padding-left: 0;
+  list-style: none;
+  .list-inline-item {
+    display: inline-block;
+    &:not(:last-child) {
+      margin-right: 0.5rem;
+    }
+  }
+}
+
+.w-100 {
+  width: 100%;
+}
+
+.ml-auto {
+  margin-left: auto !important;
+}
+
+.text-white {
+  color: #fff;
+}
+
+.text-white-50 {
+  color: rgba(#fff, 0.5);
+}
+
+.bg-white {
+  background-color: #fff;
+}
+
+.rounded {
+  border-radius: 4px;
+}
+
+.bg-light {
+  background-color: #f8f9fa;
+}
+
+.input {
+  border-radius: 0;
+  box-shadow: unset;
+  padding-left: 15px;
+  padding-right: 15px;
+  &:focus {
+    box-shadow: none;
+    border: 1px solid $primary-color !important;
+  }
+}
+
+textarea.input {
+  padding-top: 15px;
+  min-height: 150px;
+}
+
+.media img {
+  max-width: initial;
+}
+
+.lead {
+  font-size: 1.25rem;
+}

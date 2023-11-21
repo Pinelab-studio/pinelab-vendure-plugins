@@ -13,7 +13,7 @@ This plugin allows customers to manage their own groups, called Customer Managed
 Add the plugin to your config:
 
 ```ts
-import { CustomerManagedGroupsPlugin } from 'vendure-plugin-customer-managed-group';
+import { CustomerManagedGroupsPlugin } from '@pinelab/vendure-plugin-customer-managed-group';
 plugins: [CustomerManagedGroupsPlugin];
 ```
 

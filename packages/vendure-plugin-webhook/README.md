@@ -18,11 +18,10 @@ platforms when orders are placed by subscribing to OrderPlacedEvents!
 
 ## Getting started
 
-1. `yarn add vendure-plugin-webhook`
-2. Add the `WebhookPlugin` to your plugins in your `vendure-config.ts`:
+1. Add the `WebhookPlugin` to your plugins in your `vendure-config.ts`:
 
 ```ts
-import { WebhookPlugin } from 'vendure-plugin-webhook';
+import { WebhookPlugin } from '@pinelab/vendure-plugin-webhook';
 
 plugins: [
   WebhookPlugin.init({
@@ -62,7 +61,7 @@ Request transformers are used to create a custom POST body and custom headers fo
 
 ```ts
 import { Logger, ProductEvent } from '@vendure/core';
-import { RequestTransformer } from 'vendure-plugin-webhook';
+import { RequestTransformer } from '@pinelab/vendure-plugin-webhook';
 
 export const stringifyProductTransformer = new RequestTransformer({
   name: 'Stringify Product events',

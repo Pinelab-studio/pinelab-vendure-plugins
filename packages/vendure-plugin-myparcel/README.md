@@ -11,7 +11,7 @@ Plugin for sending placed orders to MyParcel.
 1. Add this to your plugins in `vendure-config.ts`:
 
 ```ts
-import { MyparcelPlugin } from 'vendure-plugin-myparcel';
+import { MyparcelPlugin } from '@pinelab/vendure-plugin-myparcel';
 
 plugins: [
   MyparcelPlugin.init({
@@ -25,7 +25,7 @@ plugins: [
 2. Add `MyparcelPlugin.ui` to your AdminUiPlugin extensions:
 
 ```ts
-import { MyparcelPlugin } from 'vendure-plugin-myparcel';
+import { MyparcelPlugin } from '@pinelab/vendure-plugin-myparcel';
 
 plugins: [
   AdminUiPlugin.init({

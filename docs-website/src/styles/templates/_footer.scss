@@ -1,0 +1,76 @@
+.footer {
+  padding-bottom: 10px;
+
+  .copyright {
+    a {
+      font-weight: 400;
+    }
+  }
+}
+
+.lh-35 {
+  line-height: 35px;
+}
+
+.logo {
+  h3 {
+    color: $light;
+  }
+
+  font-weight: 400;
+  letter-spacing: 1px;
+
+  span {
+    color: $primary-color;
+  }
+}
+
+.widget {
+  h4 {
+    color: $light;
+    font-weight: 400;
+  }
+
+  a {
+    color: rgba(255, 255, 255, 0.7);
+    &:hover {
+      color: $primary-color;
+    }
+  }
+
+  p {
+    color: rgba(255, 255, 255, 0.7);
+  }
+}
+
+.footer-btm {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.footer-socials {
+  li a {
+    margin-right: 7px;
+  }
+}
+
+.copyright {
+  color: rgba(255, 255, 255, 0.7);
+
+  a {
+    color: rgba(255, 255, 255, 0.8);
+    &:hover {
+      color: $primary-color;
+    }
+  }
+}
+
+.widget-contact {
+  h6 {
+    font-weight: 400;
+    margin-bottom: 18px;
+
+    i {
+      color: $secondary-color;
+    }
+  }
+}

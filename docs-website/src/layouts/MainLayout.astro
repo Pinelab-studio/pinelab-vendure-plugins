@@ -1,0 +1,93 @@
+---
+import '../styles/theme.scss';
+import '@fontsource/inter/400.css';
+import '@fontsource/inter/700.css';
+import 'highlight.js/styles/github-dark-dimmed.css';
+
+const { title } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{title ?? 'Pinelab Vendure Plugins'}</title>
+    <link rel="shortcut icon" href="/favicon.png" />
+    <link
+      rel="preload"
+      href="https://cdn.jsdelivr.net/npm/@mdi/font@5.8.55/css/materialdesignicons.min.css"
+      as="style"
+      onload="
+      this.onload = null; this.rel = 'stylesheet'
+"
+    />
+    <noscript
+      ><link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@mdi/font@5.8.55/css/materialdesignicons.min.css"
+      /></noscript
+    >
+  </head>
+
+  <body>
+    <div id="navbar" class="navigation py-4">
+      <div class="container">
+        <nav
+          role="navigation"
+          aria-label="main navigation"
+          class="navbar is-dark"
+        >
+          <div class="navbar-brand">
+            <a href="/" class="navbar-item">
+              <img
+                src="/pinelab-logo-white-small.png"
+                alt="Pinelab logo"
+                style="width: 150px"
+              />
+            </a>
+          </div>
+          <div class="navbar-menu">
+            <div class="navbar-start"></div>
+            <div class="navbar-end">
+              <div class="navbar-item">
+                <div>
+                  <a href="/" class="button cta is-primary shiny"
+                    ><strong>Plugins</strong></a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+    </div>
+
+    <br />
+
+    <section class="banner is-flex is-align-items-center pt-6 mt-90">
+      <div class="container">
+        <slot />
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div class="container content has-text-centered pb-6">
+        <p>
+          <a href="mailto:plugins@pinelab.studio">plugins@pinelab.studio</a>
+          <a href="https://github.com/Pinelab-studio" target="_blank">
+            <b-icon icon="github" size="is-small"></b-icon>
+          </a>
+          •
+          <a
+            href="https://www.trustpilot.com/review/pinelab-plugins.com"
+            target="_blank"
+          >
+            Review us on Trustpilot</a
+          >
+          •
+          <a href="https://pinelab.studio" target="_blank">Made by Pinelab</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -57,6 +57,7 @@
     "nock": "13.2.4",
     "nodemon": "2.0.15",
     "prettier": "2.8.7",
+    "prettier-plugin-astro": "^0.10.0",
     "rimraf": "3.0.2",
     "rollup": "3.19.0",
     "ts-node": "^10.9.0",
@@ -74,6 +75,7 @@
         2,
         "always",
         [
+          "docs-website",
           "coinbase",
           "dutch-postalcode",
           "e-boekhouden",

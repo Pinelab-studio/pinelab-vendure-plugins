@@ -11,7 +11,8 @@
     "sourceType": "module",
     "project": [
       "./packages/vendure-order-client/test/tsconfig.json",
-      "./packages/*/tsconfig.json"
+      "./packages/*/tsconfig.json",
+      "./docs-website/tsconfig.json"
     ]
   },
   "plugins": [],
@@ -28,6 +29,7 @@
     "*.min.js",
     ".temp",
     "generated/",
+    "env.d.ts",
 
     "packages/util",
     "packages/vendure-plugin-admin-ui-helpers/",

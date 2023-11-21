@@ -11,7 +11,7 @@ This plugin allows you to convert an active order from a customer to a Draft ord
 
 ```ts
 // vendure-config.ts
-import { ModifyCustomerOrdersPlugin } from 'vendure-plugin-modify-customer-orders';
+import { ModifyCustomerOrdersPlugin } from '@pinelab/vendure-plugin-modify-customer-orders';
 
 plugins: [
   ModifyCustomerOrdersPlugin.init({

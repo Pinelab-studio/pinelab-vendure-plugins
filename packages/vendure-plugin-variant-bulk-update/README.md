@@ -12,7 +12,7 @@ products with a lot of variants.
 1. Add the plugin config to your `vendure-config.ts`:
 
 ```ts
-import {VariantBulkUpdatePlugin} from 'vendure-plugin-variant-bulk-update';
+import {VariantBulkUpdatePlugin} from '@pinelab/vendure-plugin-variant-bulk-update';
 
 plugins: [
   VariantBulkUpdatePlugin,

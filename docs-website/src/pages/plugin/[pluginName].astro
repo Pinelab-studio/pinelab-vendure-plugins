@@ -1,0 +1,25 @@
+---
+import { getPlugins, type Plugin } from '../../api/plugins';
+import MainLayout from '../../layouts/MainLayout.astro';
+
+export async function getStaticPaths() {
+  const plugins = await getPlugins();
+  return plugins.map((p) => ({
+    params: { pluginName: p.slug },
+    props: { plugin: p },
+  }));
+}
+
+const plugin: Plugin = Astro.props.plugin;
+---
+
+<MainLayout title={plugin.name}>
+  <div class="content">
+    Run
+    <code>
+      yarn add {plugin.npmName}
+    </code>
+    &nbsp;to install this plugin.
+  </div>
+  <div class="content" set:html={plugin.markdownContent} />
+</MainLayout>

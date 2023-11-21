@@ -12,7 +12,7 @@ You can implement your own strategy to determine what and how data is exported.
 1. Add the server and admin UI extensions in your `vendure-config.ts`
 
 ```ts
-import { OrderExportPlugin } from 'vendure-plugin-order-export';
+import { OrderExportPlugin } from '@pinelab/vendure-plugin-order-export';
 
 // Server plugin
 plugins: [
@@ -42,7 +42,7 @@ plugins: [
 You can easily implement your own export strategy and pass it to the plugin:
 
 ```ts
-import { ExportStrategy } from 'vendure-plugin-order-export';
+import { ExportStrategy } from '@pinelab/vendure-plugin-order-export';
 import { promises as fs } from 'fs';
 import { createObjectCsvWriter } from 'csv-writer';
 

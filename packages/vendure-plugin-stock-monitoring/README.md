@@ -4,7 +4,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-stock-monitoring)
 
-This plugin helps you monitor the stocklevels in two ways:
+This plugin helps you monitor the stock levels in two ways:
 
 1. A dashboard widget that displays variants who's stocklevel is below a given threshold
 2. An email handler that sends an email when stocklevels of a variant dropped below a given threshold
@@ -14,7 +14,7 @@ This plugin helps you monitor the stocklevels in two ways:
 1. Add the plugin to your `vendure-config.ts` to expose a `productVariantsWithLowStock` query in the admin API.
 
 ```ts
-import { StockMonitoringPlugin } from 'vendure-plugin-stock-monitoring';
+import { StockMonitoringPlugin } from '@pinelab/vendure-plugin-stock-monitoring';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
 plugins: [
@@ -44,7 +44,7 @@ The email handler will send an email when the stocklevel of a variant drops belo
 handler, you can add the following handlers to your `vendure-config.ts`:
 
 ```ts
-import { createLowStockEmailHandler } from "vendure-plugin-stock-monitoring";
+import { createLowStockEmailHandler } from "@pinelab/vendure-plugin-stock-monitoring";
 
 EmailPlugin.init({
   handlers: [

@@ -1,0 +1,97 @@
+.portfolio {
+  position: relative;
+
+  &:before {
+    position: absolute;
+    content: '';
+    left: 0px;
+    top: 0px;
+    width: 100%;
+    height: 500px;
+    background-color: #f7f7f7;
+  }
+}
+
+.portflio-item {
+  &:before {
+    content: ' ';
+    display: block;
+    left: 0;
+    height: 100%;
+    width: 0%;
+    position: absolute;
+    transition: all 0.25s cubic-bezier(0.86, 0, 0.07, 1);
+    background: rgba(255, 113, 91, 0.98);
+    opacity: 0;
+    overflow: hidden;
+  }
+
+  .portfolio-item-content {
+    position: absolute;
+    content: '';
+    left: 30px;
+    bottom: 0px;
+    opacity: 0;
+    transition: all 0.35s ease;
+  }
+
+  &:hover:before {
+    opacity: 1;
+    width: 100%;
+  }
+
+  &:hover .portfolio-item-content {
+    opacity: 1;
+    bottom: 20px;
+  }
+
+  .overlay-item {
+    position: absolute;
+    content: '';
+    left: 0px;
+    top: 0px;
+    bottom: 0px;
+    right: 0px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    color: $light;
+    opacity: 0;
+    transition: all 0.35s ease;
+
+    i {
+      width: 80px;
+      height: 80px;
+      text-align: center;
+      border-radius: 100%;
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.06);
+      line-height: 80px;
+    }
+  }
+
+  &:hover .overlay-item {
+    opacity: 1;
+  }
+}
+
+.portfolio-gallery {
+  padding: 0px 30px;
+}
+
+// Project Single
+//
+
+.project-info-list {
+  margin-top: 25px;
+
+  li {
+    margin-bottom: 13px;
+
+    strong {
+      font-weight: 700;
+      color: $black;
+    }
+  }
+}
