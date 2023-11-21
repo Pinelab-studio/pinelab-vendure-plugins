@@ -44,14 +44,6 @@ __admin-ui/
 /packages/vendure-plugin-invoices/key.json
 /packages/vendure-plugin-stock-monitoring/test/test-emails/
 
-# build output
-/docs-website/dist/
-# generated types
-/docs-website/.astro/
-
-# dependencies
-/docs-website/node_modules/
-
 # logs
 /docs-website/npm-debug.log*
 /docs-website/yarn-debug.log*

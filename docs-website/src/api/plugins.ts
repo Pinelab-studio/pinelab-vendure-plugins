@@ -18,6 +18,7 @@ export interface Plugin {
   description: string;
   icon: string;
   markdownContent: string;
+  nrOfDownloads: number;
 }
 
 const pluginDirName = '../packages/';
@@ -65,6 +66,7 @@ export async function getPlugins(): Promise<Plugin[]> {
       // Get title from first line
       const name = readme.split('\n')[0].replace('#', '').trim();
       const readmeHtml = parseReadme(readme);
+      const nrOfDownloads = await getNrOfDownloads(packageJson.name);
       plugins.push({
         name,
         npmName: packageJson.name,
@@ -72,10 +74,14 @@ export async function getPlugins(): Promise<Plugin[]> {
         description: packageJson.description,
         icon: packageJson.icon ?? 'package-variant-closed',
         markdownContent: readmeHtml,
+        nrOfDownloads,
       });
     })
   );
-  return plugins;
+  const pluginsSortedByDownloads = plugins.sort(
+    (a, b) => b.nrOfDownloads - a.nrOfDownloads
+  );
+  return pluginsSortedByDownloads;
 }
 
 /**
@@ -99,4 +105,14 @@ export function parseReadme(readmeString: string): string {
     xhtml: false,
   });
   return marked.parse(readmeString);
+}
+
+export async function getNrOfDownloads(
+  packageName: string,
+  period: string = 'last-month'
+): Promise<number> {
+  const response = await fetch(
+    `https://api.npmjs.org/downloads/point/${period}/${packageName}`
+  );
+  return (await response.json()).downloads as number;
 }
