@@ -12,12 +12,13 @@ const plugins = await getPlugins();
         class="column is-7-desktop has-text-centered-mobile has-text-centered-tablet has-text-left-desktop"
       >
         <h1 class="mb-4">
-          Battle tested <span class="is-blue">Vendure</span> plugins
+          Battle tested <br />
+          <span class="is-blue">Vendure</span> plugins
         </h1><p class="mb-4">
           Vendure plugins built by Pinelab, used for solving real problems for
           our clients.
         </p>
-      </div><div class="column is-4-desktop hidden-on-tablet has-text-right">
+      </div><div class="column is-4-desktop is-hidden-mobile has-text-right">
         <img
           src="/silver-partner.svg"
           alt="Made by a Vendure Silver Partner!"
@@ -33,7 +34,7 @@ const plugins = await getPlugins();
   <div class="columns is-multiline custom-grid">
     {
       plugins.map((plugin) => (
-        <div class="column is-6-widescreen is-6-tablet">
+        <div class="column is-4-widescreen is-6-tablet">
           <div class="plugin-block has-text-centered bordered">
             <a href={`/plugin/${plugin.slug}`}>
               <i class={`mdi mdi-${plugin.icon} mdi-36px`} />
