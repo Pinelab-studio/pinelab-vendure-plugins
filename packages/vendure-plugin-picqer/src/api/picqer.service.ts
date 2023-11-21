@@ -567,14 +567,22 @@ export class PicqerService implements OnApplicationBootstrap {
    * Add a job to the queue to push orders to Picqer
    */
   async addPushOrderJob(ctx: RequestContext, order: Order): Promise<void> {
-    await this.jobQueue.add(
-      {
-        action: 'push-order',
-        ctx: ctx.serialize(),
-        orderId: order.id,
-      },
-      { retries: 10 }
-    );
+    await this.jobQueue
+      .add(
+        {
+          action: 'push-order',
+          ctx: ctx.serialize(),
+          orderId: order.id,
+        },
+        { retries: 10 }
+      )
+      .catch((e) => {
+        Logger.error(
+          `Failed to add job to 'push-order' queue for order ${order.code}: ${e?.message}`,
+          loggerCtx
+        );
+        throw e;
+      });
     Logger.info(
       `Added job to the 'push-order' queue for order ${order.code}`,
       loggerCtx

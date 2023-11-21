@@ -1,3 +1,7 @@
+# 2.2.3 (2023-11-21)
+
+- Log order code when order couldn't be added to push-order queue
+
 # 2.2.2 (2023-11-14)
 
 - Remove order lines when removed in Picqer
