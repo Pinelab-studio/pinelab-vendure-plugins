@@ -21,7 +21,7 @@ export interface CloudTaskOptions {
    */
   defaultJobRetries?: number;
   /**
-   *Nr of attempts the plugin should try to push a job to the queue, in case it fails. Default is 5
+   * Nr of attempts the plugin should try to push a job to the queue, in case it fails. Default is 5, maximum is 20.
    */
   createTaskRetries?: number;
 }

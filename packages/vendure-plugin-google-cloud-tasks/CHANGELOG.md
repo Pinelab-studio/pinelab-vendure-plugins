@@ -1,3 +1,8 @@
+# 1.3.0 (2023-11-21)
+
+- Only log error when job is not added to queue after configured retries
+- Apply exponential backoff when adding to queue doesn't work.
+
 # 1.2.0 (2023-10-24)
 
 - Updated vendure to 2.1.1

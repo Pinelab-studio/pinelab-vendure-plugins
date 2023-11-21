@@ -174,10 +174,10 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
           `Failed to add task to queue ${queueName} in attempt nr ${currentAttempt}: ${e?.message}`,
           CloudTasksPlugin.loggerCtx
         );
+        // Exponential backoff after first 3 subsequent attempts
         if (currentAttempt > 3) {
-          // Exponential backoff after first 3 subsequent attempts
           await new Promise((resolve) =>
-            setTimeout(resolve, currentAttempt * 5000)
+            setTimeout(resolve, 1000 * 2 ** currentAttempt)
           );
         }
         if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
