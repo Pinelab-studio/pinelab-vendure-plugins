@@ -656,13 +656,15 @@ export class PicqerService implements OnApplicationBootstrap {
               variant.id,
               location.id
             );
-          const delta = picqerStock.freestock - stockOnHand;
+          const allocated = picqerStock.reservedallocations ?? 0;
+          const newStockOnHand = allocated + picqerStock.freestock;
+          const delta = newStockOnHand - stockOnHand;
           const res = await this.connection
             .getRepository(ctx, StockLevel)
             .save({
               id: stockLevelId,
-              stockOnHand: picqerStock.freestock,
-              stockAllocated: picqerStock.reservedallocations ?? 0,
+              stockOnHand: newStockOnHand,
+              stockAllocated: allocated,
             });
           // Add stock adjustment
           stockAdjustments.push(

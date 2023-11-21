@@ -1,3 +1,7 @@
+# 2.2.4 (2023-11-21)
+
+- Take Picqer allocated stock into account when setting stock on hand
+
 # 2.2.3 (2023-11-21)
 
 - Log order code when order couldn't be added to push-order queue
