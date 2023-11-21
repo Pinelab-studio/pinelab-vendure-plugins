@@ -17,5 +17,7 @@
     "highlight.js": "11.8.0",
     "marked": "4.1.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "sass": "^1.69.5"
+  }
 }
