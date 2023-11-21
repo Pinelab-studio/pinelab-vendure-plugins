@@ -14,5 +14,12 @@ const plugin: Plugin = Astro.props.plugin;
 ---
 
 <MainLayout title={plugin.name}>
+  <div class="content">
+    Run
+    <code>
+      yarn add {plugin.npmName}
+    </code>
+    to install this plugin.
+  </div>
   <div class="content" set:html={plugin.markdownContent} />
 </MainLayout>

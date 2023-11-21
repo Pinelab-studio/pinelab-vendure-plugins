@@ -14,7 +14,7 @@ mutation line for each taxrate of the order's tax summary.
 1. Add this to your plugin in `vendure-config.ts`:
 
 ```ts
-import { EboekhoudenPlugin } from 'vendure-plugin-e-boekhouden'
+import { EboekhoudenPlugin } from '@pinelab/vendure-plugin-e-boekhouden'
 
 plugins: [
   EboekhoudenPlugin,

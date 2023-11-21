@@ -8,11 +8,10 @@ Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show e
 
 ## Plugin setup
 
-1. `yarn add vendure-plugin-google-cloud-tasks`
 2. Remove `DefaultJobQueuePlugin` from your vendure-config. Add this plugin to your `vendure-config.ts`:
 
 ```ts
-import { CloudTasksPlugin } from 'vendure-plugin-google-cloud-tasks';
+import { CloudTasksPlugin } from '@pinelab/vendure-plugin-google-cloud-tasks';
 
 plugins: [
   CloudTasksPlugin.init({
@@ -50,8 +49,4 @@ curl -H "Authorization: Bearer some-secret-to-authenticate-cloud-tasks" "http://
 
 Will clear all jobs older than 1 day.
 
-# Overview
-
-![Alt text](sequence.png)
-
-(Use this to edit the diagram on plantuml.com: `//www.plantuml.com/plantuml/png/jL0zJyCm4DtzAzu8Kf2wi7H0HHsec4h9ZanyQGqN6tntLFdtEAb49If6Dkjz-DvxAr5Vr0PsRitPGklbNHxpwvEHqRCMhxGVSNE7X_NsvNC2bxWF0LK2pPWHzyDDmlCt6vy2KrbYQtB0MtLyHOzDssxTXUWFv_o8QO_UHwRGG38AQHbn5NjuLHe-LC3KQuEi1oh7A0JE9uSLWfSfx8wwNCBrvU5VtNQaLXBgAcg2syMYmJm5Zf4PbWALogM0g4X4uPIc9lpl4GXYNKSYlJ6FpLJntCkv5QLW0ty3`)
+<!-- (Use this to edit the diagram on plantuml.com: `//www.plantuml.com/plantuml/png/jL0zJyCm4DtzAzu8Kf2wi7H0HHsec4h9ZanyQGqN6tntLFdtEAb49If6Dkjz-DvxAr5Vr0PsRitPGklbNHxpwvEHqRCMhxGVSNE7X_NsvNC2bxWF0LK2pPWHzyDDmlCt6vy2KrbYQtB0MtLyHOzDssxTXUWFv_o8QO_UHwRGG38AQHbn5NjuLHe-LC3KQuEi1oh7A0JE9uSLWfSfx8wwNCBrvU5VtNQaLXBgAcg2syMYmJm5Zf4PbWALogM0g4X4uPIc9lpl4GXYNKSYlJ6FpLJntCkv5QLW0ty3`) -->

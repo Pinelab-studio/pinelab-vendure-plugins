@@ -14,7 +14,7 @@ Add the buttons you want to the AdminUiPlugin config:
 import {
   cancelOrderButton,
   completeOrderButton,
-} from 'vendure-plugin-admin-ui-helpers';
+} from '@pinelab/vendure-plugin-admin-ui-helpers';
 
 AdminUiPlugin.init({
   port: 3002,

@@ -8,12 +8,11 @@ Plugin for storing Vendure assets on Google Cloud Storage
 
 ## Getting started
 
-1. `yarn add vendure-plugin-google-storage-assets`
 1. Create a bucket which is publicly available in Google Cloud.
-1. Add to your `sendcloud.dev-config.ts`
+2. Add to your `sendcloud.dev-config.ts`
 
 ```ts
-import { GoogleStoragePlugin, GoogleStorageStrategy } from 'vendure-plugin-google-storage-assets'
+import { GoogleStoragePlugin, GoogleStorageStrategy } from '@pinelab/vendure-plugin-google-storage-assets'
 
 plugins: [
   AssetServerPlugin.init({

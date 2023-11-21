@@ -12,7 +12,9 @@ but registering is free of charge.
 1. Register at https://postcode.tech/ to get an API key
 2. Add the following code to your plugins in `vendure-config.ts`
 
-```js
+```ts
+import { DutchPostalCodePlugin } from "@pinelab/vendure-plugin-dutch-postalcode"
+
 plugins: [
   DutchPostalCodePlugin.init('your-postcode.tech-apikey'),
   ...

@@ -13,12 +13,6 @@ A plugin for generating PDF invoices for placed orders.
 ```ts
 plugins: [
   InvoicePlugin.init({
-    /**
-     * This plugins requires a license for commercial use.
-     * Visit https://pinelab-plugins.com/vendure-plugin-invoices
-     * for more information
-     */
-    licenseKey: processs.env.LICENSE,
     // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
   }),
