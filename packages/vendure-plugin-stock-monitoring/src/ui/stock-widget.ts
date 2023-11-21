@@ -15,16 +15,9 @@ import gql from 'graphql-tag';
           class="left align-middle"
           [class.out-of-stock]="!variant.stockOnHand"
         >
-          <a
-            [routerLink]="[
-              '/catalog',
-              'products',
-              variant.productId,
-              'variants',
-              variant.id
-            ]"
-            >{{ variant.name }}</a
-          >
+          <a [routerLink]="['/catalog', 'inventory', variant.productId]">{{
+            variant.name
+          }}</a>
         </td>
         <td
           class="left align-middle"
