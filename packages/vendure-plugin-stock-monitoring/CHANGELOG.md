@@ -1,4 +1,4 @@
-# 1.3.` (2023-11-21)
+# 1.3.1 (2023-11-21)
 
 - Fixed link to products from stock widget
 
