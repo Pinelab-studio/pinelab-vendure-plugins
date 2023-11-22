@@ -1,11 +1,12 @@
 # Vendure Stripe Subscription plugin
 
-![Vendure version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure)
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-stripe-subscription)
 
 A channel aware plugin that allows you to sell subscription based services or products through Vendure. This plugin was made in collaboration with the great people
 at [isoutfitters.com](https://isoutfitters.com/).
 
 - [Vendure Stripe Subscription plugin](#vendure-stripe-subscription-plugin)
+  - [Official documentation here](#official-documentation-here)
   - [How it works](#how-it-works)
   - [Installation](#installation)
   - [Storefront usage](#storefront-usage)

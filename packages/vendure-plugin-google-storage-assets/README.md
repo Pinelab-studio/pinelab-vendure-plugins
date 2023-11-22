@@ -1,7 +1,5 @@
 # Vendure Google Asset Storage plugin
 
-![Vendure version](https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-google-storage-assets)
 
 Plugin for storing Vendure assets on Google Cloud Storage
