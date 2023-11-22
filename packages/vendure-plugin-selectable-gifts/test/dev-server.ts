@@ -1,26 +1,26 @@
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
+import {
+  DefaultLogger,
+  DefaultSearchPlugin,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import {
-  ChannelService,
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-  RequestContext,
-} from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import path from 'path';
 import { initialData } from '../../test/src/initial-data';
 import { SelectableGiftsPlugin } from '../src';
-import { createPromotion } from './helpers';
-import { addItem, createSettledOrder } from '../../test/src/shop-utils';
-import { GiftService } from '../src/gift.service';
-import { ADD_ITEM_TO_ORDER } from './helpers';
+import {
+  ADD_ITEM_TO_ORDER,
+  createPromotion,
+  ELIGIBLE_GIFTS,
+  getEligibleGifts,
+} from './helpers';
 
 require('dotenv').config();
 
@@ -52,24 +52,31 @@ require('dotenv').config();
     productsCsvPath: '../test/src/products-import.csv',
   });
   await adminClient.asSuperAdmin();
-  await createPromotion(adminClient).catch((e) => console.error(e));
+  await createPromotion(
+    adminClient,
+    'Gift for orders above $0',
+    ['T_1'],
+    [
+      {
+        code: 'minimum_order_amount',
+        arguments: [
+          {
+            name: 'amount',
+            value: '0',
+          },
+          {
+            name: 'taxInclusive',
+            value: 'false',
+          },
+        ],
+      },
+    ]
+  );
   // Create an active order
   await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '1',
-    quantity: 2,
-    customFields: {
-      isSelectedAsGift: true,
-    },
+    productVariantId: 'T_1',
+    quantity: 1,
   });
-  const channel = await server.app.get(ChannelService).getDefaultChannel();
-  const ctx = new RequestContext({
-    channel,
-    authorizedAsOwnerOnly: false,
-    apiType: 'admin',
-    isAuthorized: true,
-  });
-  const res = await server.app
-    .get(GiftService)
-    .getEligibleGiftsForOrder(ctx, '1')
-    .catch((e) => console.error(e));
+  const gifts = await getEligibleGifts(shopClient);
+  console.log(gifts);
 })();

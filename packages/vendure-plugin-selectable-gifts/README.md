@@ -2,12 +2,13 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-selectable-gifts)
 
-Vendure plugin to enable customer selected gifts.
+Vendure plugin to allow your loyal customers to select gifts when they placed more than X orders, or to select a gift when their order value is over $50.
 
 - Administrators can use a Promotion to select products that are applicable as gift.
 - Administrators can use Promotion Conditions to determine if gifts are eligible for an order
 - The storefront can fetch eligible gifts for an order,and add a gift to cart
-- The selected gift in cart wil be free of charge
+- The selected gift in cart will be free of charge
+- Includes the Promotion Condition `When customer placed more than {minimum} orders`
 
 ## Getting started
 
@@ -31,9 +32,14 @@ You can use different conditions for the free gifts, but the promotion **needs t
 
 You can create multiple promotions with different gifts to support different gift tiers. For example:
 
-- Promotion 1: Customers with over 2 orders can select gifts A, B and C
-- Promotion 2: Customers with over 5 orders can select gifts X, Y and Z
+- _Tier 1 promotion: Customers with over 2 placed orders can select gifts A, B and C_
+- _Tier 2 promotion: Customers with over 5 placed orders can select gifts X, Y and Z_
 
-When a customer has over 5 placed orders, the `eligibleGifts` query will return gifts A, B, C, X, Y and Z, because both promotion conditions are met. However, only 1 gift can be added to the order.
+When a customer has over 5 placed orders, the `eligibleGifts` query will return gifts A, B, C, X, Y and Z, because both promotion conditions are met. However, only 1 gift can be added to the order, even though the gifts come from 2 different promotions.
 
 ℹ️ Only 1 gift can be added to an order at any given time. Selecting a new gift will remove the other selected gift.
+
+If you don't want tier 2 to have tier 1 gifts, you can set a maximum in your promotion condition. It would then look like this:
+
+- _Promotion 1: Customers with 2 - 5 placed orders can select gifts A, B and C_
+- _Promotion 2: Customers with 5 - 999 placed orders can select gifts X, Y and Z_

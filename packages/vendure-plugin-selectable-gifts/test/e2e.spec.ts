@@ -5,11 +5,19 @@ import {
   SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
+  TestServer,
 } from '@vendure/testing';
-import { TestServer } from '@vendure/testing';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { SelectableGiftsPlugin } from '../src';
-import { describe, beforeAll, it, expect, afterAll } from 'vitest';
+import {
+  ADD_GIFT_TO_ORDER,
+  ADD_ITEM_TO_ORDER,
+  createPromotion,
+  getEligibleGifts,
+} from './helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -21,82 +29,229 @@ beforeAll(async () => {
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [SelectableGiftsPlugin],
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
   });
 
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
 }, 60000);
 
-it('Should start successfully', async () => {
+it('Start successfully', async () => {
   await expect(server.app.getHttpServer).toBeDefined;
 });
 
 // Free gift for orders > $0
-const freeGiftVariantId0 = 1;
-// Free gift for customers with >1 placed orders
-const freeGiftVariantId1 = 2;
+const giftForOrdersAbove0 = 'T_2';
+// Free gifts for customers with >1 placed orders
+const giftForLoyalCustomer = 'T_4';
 
 describe('Gift management via admin UI', function () {
-  it('Creates a selectable gift promotion for orders greater than $0', async () => {
-    await expect(true).toBe(true);
+  it('Creates a gift promotion for orders greater than $0', async () => {
+    await adminClient.asSuperAdmin();
+    const promotion = await createPromotion(
+      adminClient,
+      'Free gift for orders above $0',
+      [giftForOrdersAbove0],
+      [
+        {
+          code: 'minimum_order_amount',
+          arguments: [
+            {
+              name: 'amount',
+              value: '0',
+            },
+            {
+              name: 'taxInclusive',
+              value: 'false',
+            },
+          ],
+        },
+      ]
+    );
+    expect(promotion.name).toBe('Free gift for orders above $0');
   });
 
-  it('Creates a selectable gift promotion for customers with 1 or more placed orders', async () => {
-    await expect(true).toBe(true);
+  it('Creates a gift promotion for customers with 1 or more placed orders', async () => {
+    const promotion = await createPromotion(
+      adminClient,
+      'Free gift for loyal customers',
+      [giftForLoyalCustomer],
+      [
+        {
+          code: 'minimum_orders_placed',
+          arguments: [
+            {
+              name: 'minimum',
+              value: '1',
+            },
+            {
+              name: 'maximum',
+              value: '2',
+            },
+          ],
+        },
+      ]
+    );
+    expect(promotion.name).toBe('Free gift for loyal customers');
   });
 });
 
 describe('Storefront free gift selection', function () {
+  it('Should not allow setting gift custom field via shop api', async () => {
+    let error: string | undefined = undefined;
+    try {
+      await shopClient.query(ADD_ITEM_TO_ORDER, {
+        productVariantId: 'T_1',
+        quantity: 1,
+        customFields: {
+          isSelectedAsGift: true,
+        },
+      });
+    } catch (e) {
+      error = e.message;
+    }
+    expect(error).toBe('The custom field "isSelectedAsGift" is readonly');
+  });
+
   it('Has no eligible gifts for an empty order', async () => {
-    await expect(true).toBe(true);
+    // Creates a session
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBe(0);
   });
 
-  it('Add item to order', async () => {
-    await expect(true).toBe(true);
+  it('Add item to order, so the order has a total > $0', async () => {
+    const { addItemToOrder: order } = await shopClient.query(
+      ADD_ITEM_TO_ORDER,
+      {
+        productVariantId: 'T_1',
+        quantity: 1,
+      }
+    );
+    expect(order.lines.length).toBe(1);
+    expect(order.totalWithTax).toBeGreaterThan(0);
   });
 
-  it('Has 1 eligible gift for customer with 1 orders', async () => {
-    await expect(true).toBe(true);
+  it('Has 1 eligible gift for order > $0', async () => {
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBe(1);
+    expect(eligibleGifts[0].id).toBe(giftForOrdersAbove0);
   });
 
-  it('Place an order for customer', async () => {
-    await expect(true).toBe(true);
-  });
-
-  it('Create new active order with items ', async () => {
-    await expect(true).toBe(true);
-  });
-
-  it('Has 1 eligible gift, because the customer already placed 1 order before', async () => {
-    await expect(true).toBe(true);
-  });
-
-  it('Add item to order', async () => {
-    await expect(true).toBe(true);
-  });
-
-  it('Has 2 eligible gifts, because the customer already placed 1 order before and the order is greater than $0', async () => {
-    await expect(true).toBe(true);
-  });
-
-  it('Adds gift to order for $0', async () => {
-    // Gift should be free of charge
-    await expect(true).toBe(true);
-  });
-
-  it('Still has eligible gifts', async () => {
-    await expect(true).toBe(true);
+  it('Adds gift to order', async () => {
+    const { addSelectedGiftToOrder: order } = await shopClient.query(
+      ADD_GIFT_TO_ORDER,
+      { productVariantId: giftForOrdersAbove0 }
+    );
+    const giftLine = order.lines.find(
+      (line) => line.productVariant.id === giftForOrdersAbove0
+    );
+    expect(order.lines.length).toBe(2);
+    expect(giftLine.customFields.isSelectedAsGift).toBe(true);
+    expect(giftLine.discountedUnitPriceWithTax).toBe(0);
+    expect(giftLine.discountedLinePriceWithTax).toBe(0);
+    expect(order.discounts[0].description).toBe(
+      'Free gift for orders above $0'
+    );
   });
 
   it('Adds a new gift to order and removes the old gift', async () => {
-    await expect(true).toBe(true);
+    const { addSelectedGiftToOrder: order } = await shopClient.query(
+      ADD_GIFT_TO_ORDER,
+      { productVariantId: giftForOrdersAbove0 }
+    );
+    const giftLine = order.lines.find(
+      (line) => line.productVariant.id === giftForOrdersAbove0
+    );
+    expect(order.lines.length).toBe(2);
+    expect(giftLine.customFields.isSelectedAsGift).toBe(true);
+    expect(giftLine.discountedUnitPriceWithTax).toBe(0);
+    expect(giftLine.discountedLinePriceWithTax).toBe(0);
   });
 
-  it('Removes gift from order', async () => {
-    await expect(true).toBe(true);
+  it('Create a new non-discounted order line when the gift is added as normal item', async () => {
+    const { addItemToOrder: order } = await shopClient.query(
+      ADD_ITEM_TO_ORDER,
+      {
+        productVariantId: giftForOrdersAbove0,
+        quantity: 1,
+      }
+    );
+    const linesWithGiftVariant = order.lines.filter(
+      (line) => line.productVariant.id === giftForOrdersAbove0
+    );
+    expect(linesWithGiftVariant.length).toBe(2);
+    expect(linesWithGiftVariant[0].discountedLinePriceWithTax).toBe(0);
+    expect(linesWithGiftVariant[1].discountedLinePriceWithTax).toBe(167880);
+  });
+
+  it('Creates a placed order for customer', async () => {
+    const order: any = await createSettledOrder(shopClient, 1, false);
+    expect(order.code).toBeDefined();
+  });
+
+  it('Has 2 eligible gifts, because both gift promotions are now eligible: 1 order placed and order > $0', async () => {
+    await shopClient.query(ADD_ITEM_TO_ORDER, {
+      productVariantId: 'T_1',
+      quantity: 1,
+    });
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBe(2);
+  });
+
+  it('Adds "Loyal customer" gift to order', async () => {
+    const { addSelectedGiftToOrder: order } = await shopClient.query(
+      ADD_GIFT_TO_ORDER,
+      { productVariantId: giftForLoyalCustomer }
+    );
+    const giftLine = order.lines.find(
+      (line) => line.productVariant.id === giftForLoyalCustomer
+    );
+    expect(order.lines.length).toBe(2);
+    expect(giftLine.customFields.isSelectedAsGift).toBe(true);
+    expect(giftLine.discountedUnitPriceWithTax).toBe(0);
+    expect(giftLine.discountedLinePriceWithTax).toBe(0);
+    // Only 1 discount can be applied
+    expect(order.discounts[0].description).toBe(
+      'Free gift for loyal customers'
+    );
+  });
+
+  it('Still has eligible gifts after a gift has been added', async () => {
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBeGreaterThan(0);
+  });
+
+  it('Creates 2 more placed orders for customer', async () => {
+    const order: any = await createSettledOrder(shopClient, 1, false);
+    expect(order.code).toBeDefined();
+    const order2: any = await createSettledOrder(shopClient, 1, false);
+    expect(order2.code).toBeDefined();
+  });
+
+  it('Has 1 eligible gift, because the customer has placed 3 orders, and the configured max is 2', async () => {
+    await shopClient.query(ADD_ITEM_TO_ORDER, {
+      productVariantId: 'T_1',
+      quantity: 1,
+    });
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBe(1);
   });
 
   afterAll(() => {

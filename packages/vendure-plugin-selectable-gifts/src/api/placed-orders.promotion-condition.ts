@@ -1,44 +1,53 @@
 import {
-  FacetValueChecker,
+  Injector,
   LanguageCode,
-  Logger,
   PromotionCondition,
   TransactionalConnection,
+  Order,
 } from '@vendure/core';
-import { loggerCtx } from '../constants';
 
-let 
+let injector: Injector;
 /**
  * Checks if a customer has placed a certain number of orders before.
  */
-export const customerHasPlacedOrders = new PromotionCondition({
-  code: 'customer_has_placed_orders',
+export const minOrdersPlacedPromotionCondition = new PromotionCondition({
+  code: 'minimum_orders_placed',
   description: [
-      { languageCode: LanguageCode.en, value: 'Customer has placed { minimum } orders' },
-      ],
+    {
+      languageCode: LanguageCode.en,
+      value: 'Customer has placed { minimum } orders',
+    },
+  ],
   args: {
-      minimum: {
-          type: 'int',
-          defaultValue: 1,
-      },
-      productVariantIds: {
-          type: 'ID',
-          list: true,
-          ui: { component: 'product-selector-form-input' },
-          label: [{ languageCode: LanguageCode.en, value: 'Product variants' }],
-      },
+    minimum: {
+      type: 'int',
+      defaultValue: 1,
+    },
+    maximum: {
+      type: 'int',
+      defaultValue: 9999,
+    },
+    productVariantIds: {
+      type: 'ID',
+      list: true,
+      ui: { component: 'product-selector-form-input' },
+      label: [{ languageCode: LanguageCode.en, value: 'Product variants' }],
+    },
   },
-  init(injector) {
-
-  }
+  init(_injector) {
+    injector = _injector;
+  },
   async check(ctx, order, args) {
-      const ids = args.productVariantIds;
-      let matches = 0;
-      for (const line of order.lines) {
-          if (lineContainsIds(ids, line)) {
-              matches += line.quantity;
-          }
-      }
-      return args.minimum <= matches;
+    if (!order.customerId) {
+      return false;
+    }
+    const placedOrderCount = await injector
+      .get(TransactionalConnection)
+      .getRepository(ctx, Order)
+      .createQueryBuilder('order')
+      .where('order.customerId = :customerId', { customerId: order.customerId })
+      .andWhere('orderPlacedAt IS NOT NULL')
+      .getCount();
+    return args.minimum <= placedOrderCount && placedOrderCount <= args.maximum;
   },
 });
