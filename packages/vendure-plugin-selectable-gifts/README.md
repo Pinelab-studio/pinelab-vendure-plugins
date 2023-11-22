@@ -1,11 +1,13 @@
 # Vendure Selectable Gifts Plugin
 
-Vendure plugin to enable free customer selected gifts:
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-selectable-gifts)
 
-- Administrators can use a custom Promotion to select variants that are applicable as gift.
-- Administrators can use Promotion Conditions that determine when gifts are eligible for an order
-- Customers can view which gifts apply to their order during checkout, and select their prefered gift, and add it to cart
-- The selected gift is added to the order for free.
+Vendure plugin to enable customer selected gifts.
+
+- Administrators can use a Promotion to select products that are applicable as gift.
+- Administrators can use Promotion Conditions to determine if gifts are eligible for an order
+- The storefront can fetch eligible gifts for an order,and add a gift to cart
+- The selected gift in cart wil be free of charge
 
 ## Getting started
 
@@ -25,14 +27,13 @@ You can use different conditions for the free gifts, but the promotion **needs t
 6. // TODO example
 7. The order should now include the Gift, with a price of €0,-
 
-### !! Remove this section before plublishing the plugin
+### Gift tiers
 
-## What needs to happen:
+You can create multiple promotions with different gifts to support different gift tiers. For example:
 
-[] Read the above documentation, it should give you an idea of how this plugin should work
-[] Write e2e test to cover all functionality
-[] Implement testcases
-[] Create a custom Promotion Condition that checks the amount of placed orders for a customer
-[] Create a custom Promotion Action that discounts 1 variant with the selected facet. Similar to the built in `Discount products with these facets by {}` action, but we don't need the %, because we discount the entire product.
-[] Create the `eligibleGifts` GraphQL query. It should use the configured Promotion to determine what variants are eligible
-[] Make all test succeed
+- Promotion 1: Customers with over 2 orders can select gifts A, B and C
+- Promotion 2: Customers with over 5 orders can select gifts X, Y and Z
+
+When a customer has over 5 placed orders, the `eligibleGifts` query will return gifts A, B, C, X, Y and Z, because both promotion conditions are met. However, only 1 gift can be added to the order.
+
+ℹ️ Only 1 gift can be added to an order at any given time. Selecting a new gift will remove the other selected gift.

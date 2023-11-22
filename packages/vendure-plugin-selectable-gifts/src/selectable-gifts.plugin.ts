@@ -1,7 +1,7 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { GiftResolver, shopApiExtensions } from './api-extensions';
-import { freeGiftPromotionAction } from './free-gift.promotion-action';
-import { GiftService } from './gift.service';
+import { GiftResolver, shopApiExtensions } from './api/api-extensions';
+import { freeGiftPromotionAction } from './api/free-gift.promotion-action';
+import { GiftService } from './api/gift.service';
 
 export interface GiftPluginOptions {
   enabled: boolean;
