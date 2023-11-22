@@ -14,7 +14,7 @@ export interface ExampleOptions {
   providers: [CustomerManagedGroupsService],
   shopApiExtensions: {
     resolvers: [CustomerManagedGroupsResolver],
-    schema: shopSchema as any,
+    schema: shopSchema,
   },
   configuration: (config) => {
     config.customFields = {
