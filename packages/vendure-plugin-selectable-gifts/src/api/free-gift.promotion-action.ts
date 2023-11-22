@@ -15,7 +15,7 @@ export const freeGiftPromotionAction = new PromotionItemAction({
       description: [
         {
           languageCode: LanguageCode.en,
-          value: 'These variants can be selected as gift',
+          value: 'One of these products can be selected as gift',
         },
       ],
       list: true,

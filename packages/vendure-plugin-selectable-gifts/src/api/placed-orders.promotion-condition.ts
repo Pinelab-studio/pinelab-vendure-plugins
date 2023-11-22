@@ -27,12 +27,6 @@ export const minOrdersPlacedPromotionCondition = new PromotionCondition({
       type: 'int',
       defaultValue: 9999,
     },
-    productVariantIds: {
-      type: 'ID',
-      list: true,
-      ui: { component: 'product-selector-form-input' },
-      label: [{ languageCode: LanguageCode.en, value: 'Product variants' }],
-    },
   },
   init(_injector) {
     injector = _injector;

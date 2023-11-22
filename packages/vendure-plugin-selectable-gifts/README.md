@@ -12,14 +12,20 @@ Vendure plugin to allow your loyal customers to select gifts when they placed mo
 
 ## Getting started
 
-// TODO vendure config
+Just add the plugin to the plugins in your `vendure-config.ts`:
+
+```ts
+import { SelectableGiftsPlugin } from '@pinelab/vendure-plugin-selectable-gifts';
+
+    plugins: [SelectableGiftsPlugin],
+```
 
 ### Admin UI
 
 1. Create a Promotion and select Condition `If customer placed more than { amount } orders`, and fill out the number you'd like, e.g. 'placed more than 5 orders'.
 2. Attach the Action `Allow selected products as free gift` to the Promotion and select which variants should be selectable as gift.
 
-You can use different conditions for the free gifts, but the promotion **needs to have the free-gifts action**, in order for the `eligibleGifts` query to work.
+You can use different conditions for the free gifts, but the promotion **needs to have the selectable_gifts action**, in order for the `eligibleGifts` query to work.
 
 ### Storefront usage
 
