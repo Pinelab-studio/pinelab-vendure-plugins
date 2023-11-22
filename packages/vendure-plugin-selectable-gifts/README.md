@@ -29,10 +29,65 @@ You can use different conditions for the free gifts, but the promotion **needs t
 
 ### Storefront usage
 
-4. On your storefront, call `eligibleGifts` to show a list of eligible gifts to your customer
-5. Add the desired Gift to the order with `addItemToOrder` and with the custom field `isSelectedAsGift=true`
-6. // TODO example
-7. The order should now include the Gift, with a price of €0,-
+1. On your storefront, call `eligibleGifts` to show a list of eligible gifts to your customer:
+
+```graphql
+{
+  eligibleGifts {
+    id
+    name
+    sku
+    priceWithTax
+  }
+}
+```
+
+2. Add the desired Gift to the order with the `addSelectedGiftToOrder` mutation:
+
+```graphql
+mutation addSelectedGiftToOrder($productVariantId: ID!) {
+  addSelectedGiftToOrder(productVariantId: $productVariantId) {
+    ... on Order {
+      id
+      code
+      totalWithTax
+      lines {
+        id
+        quantity
+        linePriceWithTax
+        discountedUnitPriceWithTax
+        discountedLinePriceWithTax
+        productVariant {
+          id
+          name
+          sku
+        }
+        customFields {
+          isSelectedAsGift
+        }
+      }
+      discounts {
+        amount
+        amountWithTax
+        description
+      }
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+```
+
+3. The order should now include the Gift, with a `discountedLinePriceWithTax` of €0,-
+4. You can display the selected gift to the customer by finding the order line that has `customField.isSelectedAsGift = true`. The quantity of that order line will always be 1.
+
+```ts
+const orderLineWithGift = order.lines.find(
+  (l) => l.customFields.isSelectedAsGift
+);
+```
 
 ### Gift tiers
 
