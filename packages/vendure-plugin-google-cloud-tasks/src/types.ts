@@ -4,6 +4,11 @@ export interface CloudTaskOptions {
   location: string;
   authSecret: string;
   /**
+   * Custom error handler for when a job fails.
+   * Useful for when you'd like to inspect specific errors in your project.
+   */
+  onJobFailure?: (error: any) => void | Promise<void>;
+  /**
    * Optional suffix, I.E. for differentiating between test, acc and prod queues
    */
   queueSuffix?: string;
@@ -14,11 +19,15 @@ export interface CloudTaskOptions {
   /**
    * Default nr of retries a job should attempt if no job.retries is given
    */
-  defaultRetries?: number;
+  defaultJobRetries?: number;
+  /**
+   * Nr of attempts the plugin should try to push a job to the queue, in case it fails. Default is 5, maximum is 20.
+   */
+  createTaskRetries?: number;
 }
 
 export interface CloudTaskMessage {
-  id: string;
+  id: string | number;
   data: unknown;
   queueName: string;
   createdAt: Date;

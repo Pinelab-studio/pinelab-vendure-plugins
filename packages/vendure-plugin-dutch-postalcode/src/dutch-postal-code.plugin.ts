@@ -7,6 +7,7 @@ import { PostalCodeResolver } from './postal-code.resolver';
     schema: PostalCodeResolver.schema,
     resolvers: [PostalCodeResolver],
   },
+  compatibility: '^2.0.0',
 })
 export class DutchPostalCodePlugin {
   static apiKey: string;

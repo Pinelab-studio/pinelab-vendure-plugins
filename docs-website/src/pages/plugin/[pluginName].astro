@@ -1,0 +1,34 @@
+---
+import { getPlugins, type Plugin } from '../../api/plugins';
+import MainLayout from '../../layouts/MainLayout.astro';
+
+export async function getStaticPaths() {
+  const plugins = await getPlugins();
+  return plugins.map((p) => ({
+    params: { pluginName: p.slug },
+    props: { plugin: p },
+  }));
+}
+
+const plugin: Plugin = Astro.props.plugin;
+---
+
+<MainLayout title={plugin.name}>
+  <div class="content">
+    Run
+    <code>yarn add {plugin.npmName}</code>
+    to install this plugin.
+  </div>
+
+  <!-- Badges -->
+  <img
+    src={`https://img.shields.io/npm/v/${encodeURIComponent(
+      plugin.npmName
+    )}?label=version&color=%233dc685`}
+  />
+  <img
+    src="https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure&color=%2317C1FF"
+  />
+
+  <div class="content" set:html={plugin.markdownContent} />
+</MainLayout>

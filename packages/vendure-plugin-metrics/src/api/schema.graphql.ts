@@ -1,28 +1,33 @@
 import gql from 'graphql-tag';
 
 export const schema = gql`
-  type MetricSummary {
-    interval: MetricInterval!
+  type AdvancedMetricSummary {
     code: String!
     title: String!
-    entries: [MetricSummaryEntry!]!
+    type: AdvancedMetricType!
+    # The number of labels always matches the number of values.
+    # E.g [january, february, march] belong to values [10, 20, 30]
+    labels: [String!]!
+    series: [AdvancedMetricSeries!]!
   }
-  enum MetricInterval {
-    WEEKLY
-    MONTHLY
+
+  enum AdvancedMetricType {
+    currency
+    number
   }
-  type MetricSummaryEntry {
-    label: String!
-    value: Float!
+
+  type AdvancedMetricSeries {
+    name: String!
+    values: [Float!]!
   }
-  input MetricSummaryInput {
-    interval: MetricInterval!
+
+  input AdvancedMetricSummaryInput {
+    variantIds: [ID!]
   }
+
   extend type Query {
-    """
-    Get metrics from X weeks/months ago to now.
-    Preceding 26 weeks for WEEKLY and the preceding 12 months when given a MONTHLY interval
-    """
-    metricSummary(input: MetricSummaryInput): [MetricSummary!]!
+    advancedMetricSummaries(
+      input: AdvancedMetricSummaryInput
+    ): [AdvancedMetricSummary!]!
   }
 `;

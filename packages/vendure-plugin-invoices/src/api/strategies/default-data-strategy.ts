@@ -1,9 +1,4 @@
-import {
-  EntityHydrator,
-  Injector,
-  LanguageCode,
-  translateEntity,
-} from '@vendure/core';
+import { translateEntity } from '@vendure/core';
 import { DataFnInput, DataStrategy, InvoiceData } from './data-strategy';
 
 export class DefaultDataStrategy implements DataStrategy {

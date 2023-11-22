@@ -1,7 +1,5 @@
 # Vendure Order Export Plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-order-export/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-order-export)
 
 This plugin allows administrators to export orders to a file. The default exports orders and their totals to a csv file.
@@ -12,7 +10,7 @@ You can implement your own strategy to determine what and how data is exported.
 1. Add the server and admin UI extensions in your `vendure-config.ts`
 
 ```ts
-import { OrderExportPlugin } from 'vendure-plugin-order-export';
+import { OrderExportPlugin } from '@pinelab/vendure-plugin-order-export';
 
 // Server plugin
 plugins: [
@@ -42,7 +40,7 @@ plugins: [
 You can easily implement your own export strategy and pass it to the plugin:
 
 ```ts
-import { ExportStrategy } from 'vendure-plugin-order-export';
+import { ExportStrategy } from '@pinelab/vendure-plugin-order-export';
 import { promises as fs } from 'fs';
 import { createObjectCsvWriter } from 'csv-writer';
 

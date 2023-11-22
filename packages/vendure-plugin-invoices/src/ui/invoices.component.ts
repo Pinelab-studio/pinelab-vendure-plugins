@@ -9,7 +9,6 @@ import {
 import {
   getAllInvoicesQuery,
   getConfigQuery,
-  isInvoicePluginLicenseValid,
   upsertConfigMutation,
 } from './queries.graphql';
 import {
@@ -19,114 +18,109 @@ import {
   InvoiceList,
   InvoicesQuery,
   InvoicesQueryVariables,
-  IsInvoicePluginLicenseValidQuery,
   UpsertInvoiceConfigMutation,
   UpsertInvoiceConfigMutationVariables,
 } from './generated/graphql';
+import { firstValueFrom } from 'rxjs';
+import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
 
 @Component({
   selector: 'invoices-component',
   template: `
-    <clr-accordion>
-      <clr-accordion-panel>
-        <clr-accordion-title>Settings</clr-accordion-title>
-        <clr-accordion-content *clrIfExpanded>
-          <section class="form-block">
-            <form class="form" [formGroup]="form">
-              <vdr-form-field label="Generate invoices on" for="enabled">
-                <clr-checkbox-wrapper>
-                  <input
-                    type="checkbox"
-                    clrCheckbox
-                    formControlName="enabled"
-                  />
-                </clr-checkbox-wrapper>
-              </vdr-form-field>
-              <vdr-form-field label="HTML template" for="templateString">
-                <textarea
-                  id="templateString"
-                  type="text"
-                  formControlName="templateString"
-                  style="height: 300px; width: 100%;"
-                ></textarea>
-              </vdr-form-field>
-              <button
-                class="btn btn-primary"
-                (click)="save()"
-                [disabled]="form.invalid || form.pristine"
-              >
-                Save
-              </button>
-              <button class="btn btn-secondary" (click)="testDownload()">
-                Preview
-              </button>
-              <vdr-help-tooltip
-                content="Preview the HTML template. Uses the most recent placed order. Just a preview, it doesn't save any invoices!"
-              ></vdr-help-tooltip>
-            </form>
-            <br />
-            <small *ngIf="!isLicenseValid" style="color: red;">
-              For commercial use of this plugin, please purchase a license at
-              <a
-                href="https://pinelab-plugins.com/plugin/vendure-plugin-invoices/"
-                target="_blank"
-                >pinelab-plugins.com</a
-              >.
-              <br />
-              Already a user of this plugin? You might be applicable for a free
-              license! Contact us at <b>plugins@pinelab.studio</b>
-            </small>
-          </section>
-        </clr-accordion-content>
-      </clr-accordion-panel>
-    </clr-accordion>
+    <div class="page-block">
+      <clr-accordion>
+        <clr-accordion-panel>
+          <clr-accordion-title>Settings</clr-accordion-title>
+          <clr-accordion-content *clrIfExpanded>
+            <section class="form-block">
+              <form class="form" [formGroup]="form">
+                <vdr-form-field label="Generate invoices on" for="enabled">
+                  <clr-checkbox-wrapper>
+                    <input
+                      type="checkbox"
+                      clrCheckbox
+                      formControlName="enabled"
+                    />
+                  </clr-checkbox-wrapper>
+                </vdr-form-field>
+                <vdr-form-field label="HTML template" for="templateString">
+                  <vdr-dynamic-form-input
+                    formControlName="templateString"
+                    [readonly]="false"
+                    [def]="htmlFormInputConfigArgsDef"
+                    [control]="form.get('templateString')"
+                    style="max-width: 100%;"
+                  >
+                  </vdr-dynamic-form-input>
+                </vdr-form-field>
+                <button
+                  class="btn btn-primary"
+                  (click)="save()"
+                  [disabled]="form.invalid || form.pristine"
+                >
+                  Save
+                </button>
+                <button class="btn btn-secondary" (click)="testDownload()">
+                  Preview
+                </button>
+                <vdr-help-tooltip
+                  content="Preview the HTML template. Uses the most recent placed order. Just a preview, it doesn't save any invoices!"
+                ></vdr-help-tooltip>
+              </form>
+            </section>
+          </clr-accordion-content>
+        </clr-accordion-panel>
+      </clr-accordion>
 
-    <hr />
-    <section>
-      <h2>Created invoices</h2>
-      <button
-        class="btn btn-primary"
-        (click)="downloadSelected()"
-        [disabled]="selectedInvoices?.length == 0"
-      >
-        Download
-      </button>
-      <vdr-data-table
-        [items]="invoicesList?.items"
-        [itemsPerPage]="itemsPerPage"
-        [totalItems]="invoicesList?.totalItems"
-        [currentPage]="page"
-        (pageChange)="setPageNumber($event)"
-        (itemsPerPageChange)="setItemsPerPage($event)"
-        [allSelected]="areAllSelected()"
-        [isRowSelectedFn]="isSelected"
-        (rowSelectChange)="toggleSelect($event)"
-        (allSelectChange)="toggleSelectAll()"
-      >
-        <vdr-dt-column>Invoice nr.</vdr-dt-column>
-        <vdr-dt-column>Created</vdr-dt-column>
-        <vdr-dt-column>Customer</vdr-dt-column>
-        <vdr-dt-column>Order</vdr-dt-column>
-        <vdr-dt-column>Download</vdr-dt-column>
-        <ng-template let-invoice="item">
-          <td class="left align-middle">{{ invoice.invoiceNumber }}</td>
-          <td class="left align-middle">
-            {{ invoice.createdAt | date }}
-          </td>
-          <td class="left align-middle">{{ invoice.customerEmail }}</td>
-          <td class="left align-middle">
-            <a [routerLink]="['/orders', invoice.orderId]">
-              {{ invoice.orderCode }}
-            </a>
-          </td>
-          <td class="left align-middle">
-            <a [href]="invoice.downloadUrl" target="_blank">
-              <clr-icon shape="download"></clr-icon>
-            </a>
-          </td>
-        </ng-template>
-      </vdr-data-table>
-    </section>
+      <hr />
+      <section>
+        <h2>Created invoices</h2>
+        <button
+          class="btn btn-primary"
+          (click)="downloadSelected()"
+          [disabled]="selectedInvoices?.length == 0"
+        >
+          Download
+        </button>
+        <br />
+        <br />
+        <vdr-data-table
+          [items]="invoicesList?.items"
+          [itemsPerPage]="itemsPerPage"
+          [totalItems]="invoicesList?.totalItems"
+          [currentPage]="page"
+          (pageChange)="setPageNumber($event)"
+          (itemsPerPageChange)="setItemsPerPage($event)"
+          [allSelected]="areAllSelected()"
+          [isRowSelectedFn]="isSelected"
+          (rowSelectChange)="toggleSelect($event)"
+          (allSelectChange)="toggleSelectAll()"
+        >
+          <vdr-dt-column>Invoice nr.</vdr-dt-column>
+          <vdr-dt-column>Created</vdr-dt-column>
+          <vdr-dt-column>Customer</vdr-dt-column>
+          <vdr-dt-column>Order</vdr-dt-column>
+          <vdr-dt-column>Download</vdr-dt-column>
+          <ng-template let-invoice="item">
+            <td class="left align-middle">{{ invoice.invoiceNumber }}</td>
+            <td class="left align-middle">
+              {{ invoice.createdAt | date }}
+            </td>
+            <td class="left align-middle">{{ invoice.customerEmail }}</td>
+            <td class="left align-middle">
+              <a [routerLink]="['/orders', invoice.orderId]">
+                {{ invoice.orderCode }}
+              </a>
+            </td>
+            <td class="left align-middle">
+              <a [href]="invoice.downloadUrl" target="_blank">
+                <clr-icon shape="download"></clr-icon>
+              </a>
+            </td>
+          </ng-template>
+        </vdr-data-table>
+      </section>
+    </div>
   `,
 })
 export class InvoicesComponent implements OnInit {
@@ -136,7 +130,13 @@ export class InvoicesComponent implements OnInit {
   page = 1;
   selectedInvoices: Invoice[] = [];
   serverPath: string;
-  isLicenseValid: boolean | undefined | null;
+  htmlFormInputConfigArgsDef: ConfigArgDefinition = {
+    name: 'templateString',
+    type: 'text',
+    list: false,
+    required: false,
+    ui: { component: 'html-editor-form-input' },
+  };
 
   constructor(
     private formBuilder: FormBuilder,
@@ -160,11 +160,6 @@ export class InvoicesComponent implements OnInit {
         this.form.controls['enabled'].setValue(config?.enabled);
         this.form.controls['templateString'].setValue(config?.templateString);
       });
-    // Validate license
-    this.dataService
-      .query<IsInvoicePluginLicenseValidQuery>(isInvoicePluginLicenseValid)
-      .mapStream((l) => l.isInvoicePluginLicenseValid)
-      .subscribe((result) => (this.isLicenseValid = result));
     await this.getAllInvoices();
   }
 
@@ -186,17 +181,16 @@ export class InvoicesComponent implements OnInit {
     try {
       if (this.form.dirty) {
         const formValue = this.form.value;
-        const { upsertInvoiceConfig: result } = await this.dataService
-          .mutate<
-            UpsertInvoiceConfigMutation,
-            UpsertInvoiceConfigMutationVariables
-          >(upsertConfigMutation, {
-            input: {
-              enabled: formValue.enabled,
-              templateString: formValue.templateString,
-            },
-          })
-          .toPromise();
+        const result$ = await this.dataService.mutate<
+          UpsertInvoiceConfigMutation,
+          UpsertInvoiceConfigMutationVariables
+        >(upsertConfigMutation, {
+          input: {
+            enabled: formValue.enabled,
+            templateString: formValue.templateString,
+          },
+        });
+        const { upsertInvoiceConfig: result } = await firstValueFrom(result$);
         this.form.controls['enabled'].setValue(result.enabled);
         this.form.controls['templateString'].setValue(result.templateString);
       }
@@ -205,7 +199,7 @@ export class InvoicesComponent implements OnInit {
       this.notificationService.success('common.notify-update-success', {
         entity: 'InvoiceConfig',
       });
-    } catch (e) {
+    } catch (e: any) {
       this.notificationService.error('common.notify-update-error', {
         entity: 'InvoiceConfig',
       });
@@ -227,9 +221,9 @@ export class InvoicesComponent implements OnInit {
       }
       const blob = await res.blob();
       await this.downloadBlob(blob, 'invoices.zip');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      this.notificationService.error(err.message);
+      this.notificationService.error(err?.message);
     }
   }
 
@@ -287,9 +281,9 @@ export class InvoicesComponent implements OnInit {
       }
       const blob = await res.blob();
       await this.downloadBlob(blob, 'test-invoice.pdf', true);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      this.notificationService.error(err.message);
+      this.notificationService.error(err?.message);
     }
   }
 

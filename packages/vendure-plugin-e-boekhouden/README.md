@@ -1,7 +1,5 @@
 # Vendure E-boekhouden plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-e-boekhouden/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-e-boekhouden)
 
 Plugin for syncing orders to the Dutch accounting platform E-boekhouden.nl.
@@ -14,7 +12,7 @@ mutation line for each taxrate of the order's tax summary.
 1. Add this to your plugin in `vendure-config.ts`:
 
 ```ts
-import { EboekhoudenPlugin } from 'vendure-plugin-e-boekhouden'
+import { EboekhoudenPlugin } from '@pinelab/vendure-plugin-e-boekhouden'
 
 plugins: [
   EboekhoudenPlugin,

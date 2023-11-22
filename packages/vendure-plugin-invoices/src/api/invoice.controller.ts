@@ -11,17 +11,10 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import {
-  Allow,
-  Ctx,
-  Logger,
-  Permission,
-  RequestContext,
-  UnauthorizedError,
-} from '@vendure/core';
+import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
-import { invoicePermission } from '../index';
+import { invoicePermission } from './invoice.resolver';
 
 @Controller('invoices')
 export class InvoiceController {
@@ -40,7 +33,7 @@ export class InvoiceController {
     }
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const stream = await this.service.downloadMultiple(
-      ctx.channelId as string,
+      ctx,
       numbers.split(','),
       res
     );
@@ -76,11 +69,12 @@ export class InvoiceController {
     @Param('orderCode') orderCode: string,
     @Query('email') customerEmail: string,
     @Req() req: Request,
-    @Res() res: Response
+    @Res() res: Response,
+    @Ctx() ctx: RequestContext
   ) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     try {
-      const streamOrRedirect = await this.service.downloadInvoice({
+      const streamOrRedirect = await this.service.downloadInvoice(ctx, {
         channelToken,
         orderCode,
         customerEmail,
@@ -95,7 +89,7 @@ export class InvoiceController {
       } else {
         return (streamOrRedirect as ReadStream).pipe(res);
       }
-    } catch (error) {
+    } catch (error: any) {
       Logger.warn(
         `Failed invoice download attempt from ${ip} for ${req.path}: ${error.message}`,
         loggerCtx

@@ -86,7 +86,7 @@ export class EBoekhoudenComponent implements OnInit {
     try {
       if (this.form.dirty) {
         const formValue = this.form.value;
-        const { updateEBoekhoudenConfig: result } = await this.dataService
+        const updateEBoekhoudenConfigRresult = await this.dataService
           .mutate<
             UpdateEBoekhoudenConfigMutation,
             UpdateEBoekhoudenConfigMutationVariables
@@ -96,7 +96,7 @@ export class EBoekhoudenComponent implements OnInit {
             },
           })
           .toPromise();
-        this.setValues(result);
+        this.setValues(updateEBoekhoudenConfigRresult?.updateEBoekhoudenConfig);
       }
       this.form.markAsPristine();
       this.changeDetector.markForCheck();

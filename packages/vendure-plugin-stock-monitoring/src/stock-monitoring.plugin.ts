@@ -1,7 +1,7 @@
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { gql } from 'apollo-server-core';
+import { gql } from 'graphql-tag';
 import { StockMonitoringResolver } from './api/stock-monitoring.resolver';
 
 export * from './api/low-stock.email-handler';
@@ -23,17 +23,12 @@ export interface StockMonitoringPlugin {
     `,
     resolvers: [StockMonitoringResolver],
   },
+  compatibility: '^2.0.0',
 })
 export class StockMonitoringPlugin {
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'shared',
-        ngModuleFileName: 'stock-widget.shared-module.ts',
-        ngModuleName: 'StockWidgetSharedModule',
-      },
-    ],
+    providers: ['providers.ts'],
   };
   static threshold = 10;
   static init(options: StockMonitoringPlugin): typeof StockMonitoringPlugin {

@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "declaration": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "types": ["node"],
+    "experimentalDecorators": true
   },
   "include": ["src/"],
   "exclude": ["src/ui"]

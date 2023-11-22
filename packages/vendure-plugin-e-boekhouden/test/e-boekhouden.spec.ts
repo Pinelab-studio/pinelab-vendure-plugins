@@ -28,9 +28,11 @@ import {
 import nock from 'nock';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { createSettledOrder } from '../../test/src/shop-utils';
-
-jest.setTimeout(20000);
-
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import path from 'path';
+import * as fs from 'fs';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('E-boekhouden plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -142,9 +144,19 @@ describe('E-boekhouden plugin', function () {
     expect(payloads[1]).toContain(eBoekhoudenConfig.contraAccount);
   });
 
-  afterAll(() => {
-    return server.destroy();
-  });
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(
+        __dirname,
+        EBoekhoudenPlugin.ui
+      );
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });
 
 const openSessionMock = `<?xml version="1.0" encoding="utf-8"?>

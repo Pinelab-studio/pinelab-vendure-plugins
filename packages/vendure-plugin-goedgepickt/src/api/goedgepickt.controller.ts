@@ -66,6 +66,9 @@ export class GoedgepicktController {
     try {
       const ctx = await this.service.getCtxForChannel(channelToken);
       const client = await this.service.getClientForChannel(ctx);
+      if (!client) {
+        return;
+      }
       const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
       switch (body.event) {
         case 'orderStatusChanged':
@@ -105,7 +108,7 @@ export class GoedgepicktController {
         `Successfully processed webhook with event ${body.event} for channel ${channelToken}`,
         loggerCtx
       );
-    } catch (err) {
+    } catch (err: any) {
       Logger.error(
         `Failed to process incoming webhook ${body?.event} for channel ${channelToken}: ${err?.message}`,
         loggerCtx,

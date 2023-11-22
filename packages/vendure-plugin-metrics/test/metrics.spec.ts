@@ -9,19 +9,24 @@ import {
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
-import { MetricsPlugin } from '../src';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { GET_METRICS } from '../dist/ui/queries.graphql';
 import {
-  MetricSummary,
-  MetricSummaryQuery,
-} from '../dist/ui/generated/graphql';
+  AdvancedMetricSummary,
+  MetricsPlugin,
+  AdvancedMetricSummariesQuery,
+} from '../src';
+import { GET_METRICS } from '../src/ui/queries.graphql';
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import path from 'path';
+import * as fs from 'fs';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
-  let metrics: MetricSummary[];
+  let metrics: AdvancedMetricSummary[];
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -54,54 +59,72 @@ describe('Metrics', () => {
     });
   }, 60000);
 
-  afterAll(async () => {
-    await server.destroy();
-  });
-
   it('Creates 3 settled orders', async () => {
-    await createSettledOrder(shopClient, 1);
-    await createSettledOrder(shopClient, 1);
-    await createSettledOrder(shopClient, 1);
+    const variants = [
+      { id: 'T_1', quantity: 1 },
+      { id: 'T_2', quantity: 2 },
+    ];
+    await createSettledOrder(shopClient, 1, true, variants);
+    await createSettledOrder(shopClient, 1, true, variants);
+    await createSettledOrder(shopClient, 1, true, variants);
   });
 
   it('Fails to fetch metrics when unauthenticated', async () => {
-    const promise = adminClient.query(GET_METRICS, {
-      input: { interval: 'MONTHLY' },
-    });
+    const promise = adminClient.query(GET_METRICS);
     await expect(promise).rejects.toThrow('authorized');
   });
 
-  it('Fetches MONTHLY metrics', async () => {
+  it('Fetches metrics for past 13 months', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'MONTHLY' } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const cvr = metricSummary.find((m) => m.code === 'cvr')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
-    expect(aov.entries.length).toEqual(12);
-    expect(cvr.entries.length).toEqual(12);
-    expect(nrOfOrders.entries.length).toEqual(12);
-    expect(aov.entries[11].value).toEqual(4921.4);
-    expect(nrOfOrders.entries[11].value).toEqual(3);
+    const { advancedMetricSummaries } =
+      await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS);
+    const averageorderValue = advancedMetricSummaries.find(
+      (m) => m.code === 'aov'
+    )!;
+    const salesPerProduct = advancedMetricSummaries.find(
+      (m) => m.code === 'sales-per-product'
+    )!;
+    expect(advancedMetricSummaries.length).toEqual(2);
+    expect(averageorderValue.series[0].values.length).toEqual(13);
+    expect(averageorderValue.labels.length).toEqual(13);
+    expect(salesPerProduct.series[0].values.length).toEqual(13);
+    expect(salesPerProduct.labels.length).toEqual(13);
   });
 
-  it('Fetches WEEKLY metrics', async () => {
+  it('Fetches metrics for specific variant', async () => {
     await adminClient.asSuperAdmin();
-    const { metricSummary } = await adminClient.query<MetricSummaryQuery>(
-      GET_METRICS,
-      { input: { interval: 'WEEKLY' } }
-    );
-    expect(metricSummary.length).toEqual(3);
-    const aov = metricSummary.find((m) => m.code === 'aov')!;
-    const cvr = metricSummary.find((m) => m.code === 'cvr')!;
-    const nrOfOrders = metricSummary.find((m) => m.code === 'nr-of-orders')!;
-    expect(aov.entries.length).toEqual(26);
-    expect(cvr.entries.length).toEqual(26);
-    expect(nrOfOrders.entries.length).toEqual(26);
-    expect(aov.entries[25].value).toEqual(4921.4);
-    expect(nrOfOrders.entries[25].value).toEqual(3);
+    const { advancedMetricSummaries } =
+      await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS, {
+        input: { variantIds: [1, 2] },
+      });
+    const averageorderValue = advancedMetricSummaries.find(
+      (m) => m.code === 'aov'
+    )!;
+    const salesPerProduct = advancedMetricSummaries.find(
+      (m) => m.code === 'sales-per-product'
+    )!;
+    expect(advancedMetricSummaries.length).toEqual(2);
+    expect(advancedMetricSummaries.length).toEqual(2);
+    expect(averageorderValue.series[0].values.length).toEqual(13);
+    expect(averageorderValue.labels.length).toEqual(13);
+    // For sales per product we expect 2 series: one for each variant
+    expect(salesPerProduct.series[0].values.length).toEqual(13);
+    expect(salesPerProduct.series[1].values.length).toEqual(13);
+    expect(salesPerProduct.labels.length).toEqual(13);
+    // Expect the first series (variant 1), to have 3 sales in last month
+    expect(salesPerProduct.series[0].values[12]).toEqual(3);
+    // Expect the first series (variant 2), to have 6 sales in last month
+    expect(salesPerProduct.series[1].values[12]).toEqual(6);
   });
+
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });

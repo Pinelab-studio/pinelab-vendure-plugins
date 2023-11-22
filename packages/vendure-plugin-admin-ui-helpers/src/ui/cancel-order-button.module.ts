@@ -1,12 +1,7 @@
 import { addActionBarItem, SharedModule } from '@vendure/admin-ui/core';
 import { NgModule } from '@angular/core';
 import { Observable } from 'rxjs';
-import {
-  cancel,
-  refund,
-  transitionToDelivered,
-  transitionToShipped,
-} from './order-state.util';
+import { cancel, refund } from './order-state.util';
 import { RouterModule } from '@angular/router';
 
 @NgModule({
@@ -32,22 +27,23 @@ import { RouterModule } from '@angular/router';
             return;
           }
           const orderId = route.snapshot.params.id;
-          let { order } = await dataService.order
+          dataService.order
             .getOrder(orderId)
-            .single$.toPromise();
-          if (!order) {
-            return notificationService.error('Could not find order...');
-          }
-          if (
-            order.state === 'PaymentSettled' ||
-            order.state === 'Delivered' ||
-            order.state === 'Shipped'
-          ) {
-            await refund(dataService, order);
-          }
-          await cancel(dataService, order);
-          notificationService.success('Order refunded and cancelled');
-        } catch (e) {
+            .single$.subscribe(async (response) => {
+              if (!response?.order) {
+                return notificationService.error('Could not find order...');
+              }
+              if (
+                response.order.state === 'PaymentSettled' ||
+                response.order.state === 'Delivered' ||
+                response.order.state === 'Shipped'
+              ) {
+                await refund(dataService, response.order);
+              }
+              await cancel(dataService, response.order);
+              notificationService.success('Order refunded and cancelled');
+            });
+        } catch (e: any) {
           notificationService.error(e.message);
           console.error(e);
         }

@@ -1,0 +1,1294 @@
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  OrderAddress,
+  OrderLineInput,
+  UpdateProductVariantInput,
+} from '@vendure/common/lib/generated-types';
+import {
+  Address,
+  assertFound,
+  AssetService,
+  ChannelService,
+  ConfigService,
+  Customer,
+  EntityHydrator,
+  ErrorResult,
+  EventBus,
+  ForbiddenError,
+  FulfillmentStateTransitionError,
+  ID,
+  JobQueue,
+  JobQueueService,
+  Logger,
+  Order,
+  OrderPlacedEvent,
+  OrderService,
+  ProductService,
+  ProductVariant,
+  ProductVariantEvent,
+  ProductVariantService,
+  RequestContext,
+  SerializedRequestContext,
+  StockLevel,
+  StockLevelService,
+  StockLocation,
+  StockLocationService,
+  StockMovementEvent,
+  TransactionalConnection,
+} from '@vendure/core';
+import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
+import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
+import currency from 'currency.js';
+import util from 'util';
+import { fulfillAll } from '../../../util/src/order-state-util';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PicqerOptions } from '../picqer.plugin';
+import {
+  PicqerConfig,
+  PicqerConfigInput,
+  TestPicqerInput,
+} from '../ui/generated/graphql';
+import { PicqerConfigEntity } from './picqer-config.entity';
+import { PicqerClient, PicqerClientInput } from './picqer.client';
+import { picqerHandler } from './picqer.handler';
+import {
+  AddressInput,
+  CustomerData,
+  CustomerInput,
+  IncomingWebhook,
+  OrderData,
+  OrderInput,
+  OrderProductInput,
+  ProductData,
+  ProductInput,
+  WebhookEvent,
+} from './types';
+
+/**
+ * Job to push variants from Vendure to Picqer
+ */
+interface PushVariantsJob {
+  action: 'push-variants';
+  ctx: SerializedRequestContext;
+  variantIds?: ID[];
+  productId?: ID;
+}
+
+/**
+ * Job to pull stock levels from Picqer into Vendure
+ */
+interface PullStockLevelsJob {
+  action: 'pull-stock-levels';
+  ctx: SerializedRequestContext;
+}
+
+/**
+ * Job to push orders to Picqer
+ */
+interface PushOrderJob {
+  action: 'push-order';
+  ctx: SerializedRequestContext;
+  orderId: ID;
+}
+
+type JobData = PushVariantsJob | PullStockLevelsJob | PushOrderJob;
+
+const STOCK_LOCATION_PREFIX = 'Picqer Warehouse';
+
+@Injectable()
+export class PicqerService implements OnApplicationBootstrap {
+  private jobQueue!: JobQueue<JobData>;
+
+  constructor(
+    @Inject(PLUGIN_INIT_OPTIONS) private options: PicqerOptions,
+    private eventBus: EventBus,
+    private jobQueueService: JobQueueService,
+    private connection: TransactionalConnection,
+    private variantService: ProductVariantService,
+    private productService: ProductService,
+    private assetService: AssetService,
+    private configService: ConfigService,
+    private entityHydrator: EntityHydrator,
+    private channelService: ChannelService,
+    private orderService: OrderService,
+    private stockLocationService: StockLocationService,
+    private stockLevelService: StockLevelService
+  ) {}
+
+  async onApplicationBootstrap() {
+    // Create JobQueue and handlers
+    this.jobQueue = await this.jobQueueService.createQueue({
+      name: 'picqer-sync',
+      process: async ({ data }) => {
+        const ctx = RequestContext.deserialize(data.ctx);
+        if (data.action === 'push-variants') {
+          await this.handlePushVariantsJob(
+            ctx,
+            data.variantIds,
+            data.productId
+          ).catch((e: any) => {
+            throw Error(
+              `Failed to push variants to Picqer (variants: ${data.variantIds?.join(
+                ','
+              )}, product: ${data.productId} }): ${e?.message}`
+            );
+          });
+        } else if (data.action === 'pull-stock-levels') {
+          await this.handlePullStockLevelsJob(ctx).catch((e: any) => {
+            throw Error(
+              `Failed to pull stock levels from  Picqer: ${e?.message}`
+            );
+          });
+        } else if (data.action === 'push-order') {
+          const order = await this.orderService.findOne(ctx, data.orderId);
+          await this.handlePushOrderToPicqer(ctx, data.orderId).catch(
+            (e: any) => {
+              throw Error(
+                `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
+              );
+            }
+          );
+        } else {
+          Logger.error(
+            `Invalid job action: ${(data as any).action}`,
+            loggerCtx
+          );
+        }
+        Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
+      },
+    });
+    // Listen for Variant creation or update
+    this.eventBus
+      .ofType(ProductVariantEvent)
+      .subscribe(async ({ ctx, entity: entities, type, input }) => {
+        if (type !== 'created' && type !== 'updated') {
+          // Ignore anything other than creation or update
+          return;
+        }
+        // Only update in Picqer if one of these fields was updated
+        const shouldUpdate = (input as UpdateProductVariantInput[])?.some(
+          (v) => v.translations ?? v.price ?? v.taxCategoryId
+        );
+        if (!shouldUpdate) {
+          Logger.info(
+            `No relevant changes to variants ${entities.map(
+              (v) => v.sku
+            )}, not pushing to Picqer`,
+            loggerCtx
+          );
+          return;
+        }
+        await this.addPushVariantsJob(
+          ctx,
+          entities.map((v) => v.id)
+        );
+      });
+    // Listen for Order placed events
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
+      await this.addPushOrderJob(ctx, order);
+    });
+    // Register webhooks on app start
+    for (const config of await this.getAllConfigs()) {
+      const ctx = await this.getCtxForChannel(config.channelId);
+      await this.registerWebhooks(ctx, config).catch((e) =>
+        Logger.error(
+          `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
+          loggerCtx
+        )
+      );
+    }
+  }
+
+  /**
+   * Checks if webhooks for events exist in Picqer, if not, register new webhooks.
+   * When hooks exist, but url or secret is different, it will create new hooks.
+   *
+   * Registers hooks for: products.free_stock_changed and orders.completed
+   */
+  async registerWebhooks(
+    ctx: RequestContext,
+    config: PicqerConfig
+  ): Promise<void> {
+    const hookUrl = `${this.options.vendureHost}/picqer/hooks/${ctx.channel.token}`;
+    const client = await this.getClient(ctx, config);
+    if (!client) {
+      return;
+    }
+    const eventsToRegister: WebhookEvent[] = [
+      'orders.status_changed',
+      'products.free_stock_changed',
+      'products.assembled_stock_changed',
+    ];
+    for (const hookEvent of eventsToRegister) {
+      // Use first 4 digits of webhook secret as name, so we can identify the hook
+      const webhookName = `Vendure ${client.webhookSecret.slice(0, 4)}`;
+      const webhooks = await client.getWebhooks();
+      let hook = webhooks.find(
+        (h) =>
+          h.event === hookEvent && h.address === hookUrl && h.active === true
+      );
+      if (hook && hook.name !== webhookName) {
+        // A hook exists, but the name is different, that means the secret changed. We need to create a new hook
+        // The combination of hook address and hook event must be unique in picqer
+        Logger.info(`Deactivating outdated hook ${hook.name}`);
+        await client.deactivateHook(hook.idhook);
+        hook = undefined; // Set as undefined, because we deactivated the previous one
+      }
+      if (!hook) {
+        const webhook = await client.createWebhook({
+          name: webhookName,
+          address: hookUrl,
+          event: hookEvent,
+          secret: client.webhookSecret,
+        });
+        Logger.info(
+          `Registered hook (id: ${webhook.idhook}) for event ${hookEvent} and url ${hookUrl}`,
+          loggerCtx
+        );
+      }
+    }
+    Logger.info(
+      `Registered webhooks for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Handle incoming webhooks
+   */
+  async handleHook(input: {
+    channelToken: string;
+    body: IncomingWebhook;
+    rawBody: string;
+    signature: string;
+  }): Promise<void> {
+    // Get client for channelToken
+    const ctx = await this.getCtxForChannel(input.channelToken);
+    const client = await this.getClient(ctx);
+    if (!client) {
+      Logger.error(
+        `No client found for channel ${input.channelToken}`,
+        loggerCtx
+      );
+      return;
+    }
+    // Verify signature
+    if (!client.isSignatureValid(input.rawBody, input.signature)) {
+      Logger.error(
+        `Invalid signature for incoming webhook ${input.body.event} channel ${input.channelToken}`,
+        loggerCtx
+      );
+      throw new ForbiddenError();
+    }
+    if (
+      input.body.event === 'products.free_stock_changed' ||
+      input.body.event === 'products.assembled_stock_changed'
+    ) {
+      const data = input.body.data;
+      await this.updateStockBySkus(ctx, [input.body.data]);
+    } else if (input.body.event === 'orders.status_changed') {
+      await this.handleOrderStatusChanged(ctx, input.body.data);
+    } else {
+      Logger.warn(
+        `Unknown event ${
+          (input.body as any).event
+        } for incoming webhook for channel ${
+          input.channelToken
+        }. Not handling this webhook...`,
+        loggerCtx
+      );
+      return;
+    }
+    Logger.info(`Successfully handled hook ${input.body.event}`, loggerCtx);
+  }
+
+  async triggerFullSync(ctx: RequestContext): Promise<boolean> {
+    const variantIds: ID[] = [];
+    let skip = 0;
+    const take = 1000;
+    let hasMore = true;
+    while (hasMore) {
+      // Only fetch IDs, not the whole entities
+      const [variants, count] = await this.connection
+        .getRepository(ctx, ProductVariant)
+        .createQueryBuilder('variant')
+        .select(['variant.id'])
+        .leftJoin('variant.channels', 'channel')
+        .leftJoin('variant.product', 'product')
+        .where('channel.id = :channelId', { channelId: ctx.channelId })
+        .andWhere('variant.deletedAt IS NULL')
+        .andWhere('variant.enabled = true')
+        .andWhere('product.deletedAt IS NULL')
+        .andWhere('product.enabled is true')
+        .skip(skip)
+        .take(take)
+        .getManyAndCount();
+      variantIds.push(...variants.map((v) => v.id));
+      if (variantIds.length >= count) {
+        hasMore = false;
+      }
+      skip += take;
+    }
+    // Create batches
+    const batchSize = 10;
+    while (variantIds.length) {
+      await this.addPushVariantsJob(ctx, variantIds.splice(0, batchSize));
+    }
+    await this.jobQueue.add(
+      {
+        action: 'pull-stock-levels',
+        ctx: ctx.serialize(),
+      },
+      { retries: 10 }
+    );
+    Logger.info(`Added 'pull-stock-levels' job to queue`, loggerCtx);
+    return true;
+  }
+
+  /**
+   * Move an order to Delivered or Cancelled based on the incoming webhook
+   */
+  async handleOrderStatusChanged(ctx: RequestContext, data: OrderData) {
+    const order = await this.orderService.findOneByCode(ctx, data.reference, [
+      'lines',
+      'lines.productVariant',
+      'fulfillments',
+    ]);
+    if (!order) {
+      Logger.warn(
+        `No order found for code ${data.reference}. Not processing this hook any further`,
+        loggerCtx
+      );
+      return;
+    }
+    if (data.status !== 'cancelled' && data.status !== 'completed') {
+      Logger.info(
+        `Not handling incoming status '${data.status}'. Skipping status update for order ${order.code}`,
+        loggerCtx
+      );
+    }
+    if (data.status === 'cancelled' && order.state === 'Cancelled') {
+      // Do nothing, order already Cancelled
+      return;
+    }
+    if (data.status === 'completed' && order.state === 'Delivered') {
+      // Do nothing, order already Delivered
+      return;
+    }
+    if (data.status === 'cancelled' && order.state !== 'Cancelled') {
+      const result = await this.orderService.cancelOrder(ctx, {
+        orderId: order.id,
+        reason: 'Cancelled in Picqer',
+        cancelShipping: true,
+      });
+      if ((result as ErrorResult).errorCode) {
+        Logger.error(
+          `Failed to cancel order ${order.code}: ${
+            (result as ErrorResult).message
+          }`,
+          loggerCtx,
+          util.inspect(result)
+        );
+        return;
+      }
+      Logger.info(`Cancelled order ${order.code}`, loggerCtx);
+      return;
+    }
+    if (data.status === 'completed' && order.state !== 'Delivered') {
+      // Remove any items that don't exist in Picqer order
+      await this.updateOrderBasedOnPicqer(ctx, order, data.products);
+      // Order should be transitioned to Shipped, then to Delivered
+      if (order.state !== 'Shipped') {
+        // Try to fulfill order first. This should have been done already, except for back orders
+        await this.safeFulfill(ctx, order, 'order.status_changed webhook');
+        // If order isn't Shipped yet, mark all it's fulfillments as Shipped
+        for (const fulfillment of order.fulfillments) {
+          const result = await this.orderService.transitionFulfillmentToState(
+            ctx,
+            fulfillment.id,
+            'Shipped'
+          );
+          if ((result as FulfillmentStateTransitionError).errorCode) {
+            Logger.error(
+              `Failed to transition fulfilment (${fulfillment.id}) of order ${
+                order.code
+              } to Shipped: ${
+                (result as FulfillmentStateTransitionError).message
+              }`,
+              loggerCtx,
+              util.inspect(result)
+            );
+            return;
+          }
+        }
+        const updatedOrder = await assertFound(
+          this.orderService.findOne(ctx, order.id)
+        );
+        if (updatedOrder.state !== 'Shipped') {
+          Logger.error(
+            `Failed to transition order ${order.code} to Shipped, after marking all fulfillments as Shipped. This order should be manually transitioned to Shipped and Delivered`,
+            loggerCtx
+          );
+          return;
+        }
+        Logger.info(`Order ${order.code} transitioned to Shipped`, loggerCtx);
+      }
+      // Move all fulfillments to Delivered
+      for (const fulfillment of order.fulfillments) {
+        const result = await this.orderService.transitionFulfillmentToState(
+          ctx,
+          fulfillment.id,
+          'Delivered'
+        );
+        if ((result as FulfillmentStateTransitionError).errorCode) {
+          Logger.error(
+            `Failed to transition fulfilment (${fulfillment.id}) of order ${
+              order.code
+            } to Delivered: ${
+              (result as FulfillmentStateTransitionError).message
+            }`,
+            loggerCtx,
+            util.inspect(result)
+          );
+          return;
+        }
+      }
+      const updatedOrder = await assertFound(
+        this.orderService.findOne(ctx, order.id)
+      );
+      if (updatedOrder.state !== 'Delivered') {
+        Logger.error(
+          `Failed to transition order ${order.code} to Delivered. This order should be manually transitioned to Delivered`,
+          loggerCtx
+        );
+        return;
+      }
+      Logger.info(`Order ${order.code} transitioned to Delivered`, loggerCtx);
+    }
+  }
+
+  /**
+   * Cancel any order lines that don't exist in the Picqer order. This can happen when items have been manually removed in Picqer
+   *
+   * We don't add items in Vendure, because that would require additional payment.
+   */
+  async updateOrderBasedOnPicqer(
+    ctx: RequestContext,
+    order: Order,
+    picqerProducts: { productcode: string; amount: number }[]
+  ): Promise<Order> {
+    const orderLinesToCancel: OrderLineInput[] = [];
+    let message: string = ``;
+    order.lines.forEach((line) => {
+      const picqerOrderLine = picqerProducts.find(
+        (p) => p.productcode === line.productVariant.sku
+      );
+      if (!picqerOrderLine) {
+        orderLinesToCancel.push({
+          orderLineId: line.id,
+          quantity: line.quantity,
+        });
+        message += `Product ${line.productVariant.sku} not found in Picqer, canceled corresponding order line.\n`;
+        return;
+      }
+      if (picqerOrderLine.amount < line.quantity) {
+        const diff = line.quantity - picqerOrderLine.amount;
+        orderLinesToCancel.push({
+          orderLineId: line.id,
+          quantity: diff,
+        });
+        message += `Product ${line.productVariant.sku} quantity changed to ${line.quantity} based on order in Picqer.\n`;
+      }
+    });
+    if (!message) {
+      // No adjustments needed
+      return order;
+    }
+    Logger.info(
+      `Updating order lines for order ${order.code} based on Picer order`,
+      loggerCtx
+    );
+    const result = await this.orderService.cancelOrder(ctx, {
+      orderId: order.id,
+      cancelShipping: false,
+      lines: orderLinesToCancel,
+    });
+    if ((result as ErrorResult).errorCode) {
+      Logger.error(
+        `Failed to update order lines or order ${
+          order.code
+        }, based on Picqer order: ${
+          (result as ErrorResult).message
+        }. Changed order lines: ${message}`,
+        loggerCtx,
+        util.inspect(result)
+      );
+      return order;
+    }
+    this.orderService.addNoteToOrder(ctx, {
+      id: order.id,
+      note: message,
+      isPublic: false,
+    });
+    return result as Order;
+  }
+
+  /**
+   * Add a job to the queue to push variants to Picqer
+   */
+  async addPushVariantsJob(
+    ctx: RequestContext,
+    variantIds?: ID[],
+    productId?: ID
+  ): Promise<void> {
+    await this.jobQueue.add(
+      {
+        action: 'push-variants',
+        ctx: ctx.serialize(),
+        variantIds,
+        productId,
+      },
+      { retries: 10 }
+    );
+    if (variantIds) {
+      Logger.info(
+        `Added job to the 'push-variants' queue for ${variantIds.length} variants for channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+    } else {
+      Logger.info(
+        `Added job to the 'push-variants' queue for product ${productId} and channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+    }
+  }
+
+  /**
+   * Add a job to the queue to push orders to Picqer
+   */
+  async addPushOrderJob(ctx: RequestContext, order: Order): Promise<void> {
+    await this.jobQueue
+      .add(
+        {
+          action: 'push-order',
+          ctx: ctx.serialize(),
+          orderId: order.id,
+        },
+        { retries: 10 }
+      )
+      .catch((e) => {
+        Logger.error(
+          `Failed to add job to 'push-order' queue for order ${order.code}: ${e?.message}`,
+          loggerCtx
+        );
+        throw e;
+      });
+    Logger.info(
+      `Added job to the 'push-order' queue for order ${order.code}`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Pulls all products from Picqer and updates the stock levels in Vendure
+   * based on the stock levels from Picqer products
+   */
+  async handlePullStockLevelsJob(userCtx: RequestContext): Promise<void> {
+    const ctx = this.createDefaultLanguageContext(userCtx);
+    const client = await this.getClient(ctx);
+    if (!client) {
+      return;
+    }
+    const picqerProducts = await client.getAllActiveProducts();
+    await this.updateStockBySkus(ctx, picqerProducts);
+    Logger.info(`Successfully pulled stock levels from Picqer`, loggerCtx);
+  }
+
+  /**
+   * Update variant stock in Vendure based on given Picqer products
+   */
+  async updateStockBySkus(
+    ctx: RequestContext,
+    picqerProducts: ProductData[]
+  ): Promise<void> {
+    const vendureVariants = await this.findAllVariantsBySku(
+      ctx,
+      picqerProducts.map((p) => p.productcode)
+    );
+    const stockAdjustments: StockAdjustment[] = [];
+    // Loop over variants to determine new stock level per variant and update in DB
+    await Promise.all(
+      vendureVariants.map(async (variant) => {
+        const picqerProduct = picqerProducts.find(
+          (p) => p.productcode === variant.sku
+        )!; // safe non-null assertion, because we fetched variants based on the Picqer skus
+        // Fields from picqer that should be added to the variant
+        let additionalVariantFields = {};
+        try {
+          additionalVariantFields =
+            this.options.pullPicqerProductFields?.(picqerProduct) || {};
+        } catch (e: any) {
+          Logger.error(
+            `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
+            loggerCtx
+          );
+        }
+        // Update the actual variant in Vendure, with raw connection for better performance
+        await this.connection
+          .getRepository(ctx, ProductVariant)
+          .update({ id: variant.id }, additionalVariantFields);
+        // Write stock level per location per variant
+        for (const picqerStock of picqerProduct.stock) {
+          if (!picqerStock.idwarehouse) {
+            Logger.error(
+              `Can not update stock for picqer warehouse without id`,
+              loggerCtx
+            );
+            continue;
+          }
+          const location = await this.getOrCreateStockLocation(
+            ctx,
+            picqerStock.idwarehouse
+          );
+          const { id: stockLevelId, stockOnHand } =
+            await this.stockLevelService.getStockLevel(
+              ctx,
+              variant.id,
+              location.id
+            );
+          const allocated = picqerStock.reservedallocations ?? 0;
+          const newStockOnHand = allocated + picqerStock.freestock;
+          const delta = newStockOnHand - stockOnHand;
+          const res = await this.connection
+            .getRepository(ctx, StockLevel)
+            .save({
+              id: stockLevelId,
+              stockOnHand: newStockOnHand,
+              stockAllocated: allocated,
+            });
+          // Add stock adjustment
+          stockAdjustments.push(
+            new StockAdjustment({
+              quantity: delta,
+              productVariant: { id: variant.id },
+            })
+          );
+        }
+      })
+    );
+    if (!stockAdjustments.length) {
+      Logger.warn(
+        `No stock levels updated. This means none of the products in Picqer exist in Vendure yet.`,
+        loggerCtx
+      );
+      return;
+    }
+    await this.removeNonPicqerStockLocations(ctx);
+    await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
+    Logger.info(
+      `Updated stock levels of ${stockAdjustments.length} variants`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Get or create stock locations based on the stock locations we receive from Picqer
+   * @returns The Vendure stock locations that mirror Picqers stock locations
+   */
+  async getOrCreateStockLocation(
+    ctx: RequestContext,
+    picqerLocationId: number
+  ): Promise<StockLocation> {
+    const name = `${STOCK_LOCATION_PREFIX} ${picqerLocationId}`;
+    const existingLocations = await this.stockLocationService.findAll(ctx, {
+      filter: { name: { eq: name } },
+      take: 1,
+    });
+    if (existingLocations.totalItems > 1) {
+      Logger.error(
+        `Found multiple stock locations with name "${name}", only 1 mirrored location should exist!`,
+        loggerCtx
+      );
+    }
+    if (existingLocations.items[0]) {
+      return existingLocations.items[0];
+    }
+    return this.stockLocationService.create(ctx, {
+      name,
+      description: `Mirrored location from Picqer warehouse with id ${picqerLocationId}`,
+    });
+  }
+
+  /**
+   * Removes any stock locations that are not Picqer warehouses for given variant
+   * This is determined by the "Picqer" preview in the name
+   */
+  async removeNonPicqerStockLocations(ctx: RequestContext): Promise<void> {
+    const locations = await this.stockLocationService.findAll(ctx);
+    await Promise.all(
+      locations.items.map(async (location) => {
+        if (!location.name.startsWith(STOCK_LOCATION_PREFIX)) {
+          // Delete stock movements first, because of foreign key constraint
+          await this.connection
+            .getRepository(ctx, StockMovement)
+            .delete({ stockLocationId: location.id });
+          // Delete stock location
+          const { result, message } = await this.stockLocationService.delete(
+            ctx,
+            { id: location.id }
+          );
+          if (result === 'NOT_DELETED') {
+            throw Error(
+              `Failed to delete stock location ${location.name}: ${result}: ${message}`
+            );
+          }
+          Logger.warn(
+            `Removed stock location ${location.name}, because it's not a Picqer managed location`,
+            loggerCtx
+          );
+        }
+      })
+    );
+  }
+
+  /**
+   * Fulfil the order first, then pushes the order to Picqer
+   */
+  async handlePushOrderToPicqer(
+    ctx: RequestContext,
+    orderId: ID
+  ): Promise<void> {
+    const client = await this.getClient(ctx);
+    if (!client) {
+      // This means Picqer is not configured, so ignore this job
+      return;
+    }
+    const order = await this.orderService.findOne(ctx, orderId, [
+      'lines',
+      'lines.productVariant',
+      'lines.productVariant.taxCategory',
+      'customer',
+      'customer.addresses',
+      'shippingLines',
+      'shippingLines.shippingMethod',
+    ]);
+    if (!order) {
+      Logger.error(
+        `Order with id ${orderId} not found, ignoring this order...`,
+        loggerCtx
+      );
+      return;
+    }
+    const hasPicqerHandler = order.shippingLines.some(
+      (s) => s.shippingMethod?.fulfillmentHandlerCode === picqerHandler.code
+    );
+    if (!hasPicqerHandler) {
+      Logger.info(
+        `Order ${order.code} doesn't have the Picqer handler set in shipping lines, ignoring this order...`,
+        loggerCtx
+      );
+      return;
+    }
+    if (!order.customer) {
+      Logger.error(
+        `Order ${order.code} doesn't have a customer. Something is wrong, ignoring this order...`,
+        loggerCtx
+      );
+      return;
+    }
+    // Fulfill order first
+    await this.safeFulfill(ctx, order, 'order placement');
+    // Push the order to Picqer
+    await this.pushOrderToPicqer(ctx, order, client);
+  }
+
+  async pushOrderToPicqer(
+    ctx: RequestContext,
+    order: Order,
+    picqerClient: PicqerClient
+  ): Promise<void> {
+    if (!order.customer) {
+      throw Error(`Cannot push order to picqer without an order.customer`);
+    }
+    let picqerCustomer: CustomerData | undefined = undefined;
+    if (order.customer.user) {
+      // This means customer is registered, not a guest
+      const name =
+        order.shippingAddress.company ??
+        order.shippingAddress.fullName ??
+        `${order.customer.firstName} ${order.customer.lastName}`;
+      picqerCustomer = await picqerClient.getOrCreateMinimalCustomer(
+        order.customer.emailAddress,
+        name
+      );
+    }
+    const vatGroups = await picqerClient.getVatGroups();
+    // Create or update each product of order
+    const productInputs: OrderProductInput[] = [];
+    for (const line of order.lines) {
+      const vatGroup = vatGroups.find(
+        (vg) => vg.percentage === line.productVariant.taxRateApplied.value
+      );
+      if (!vatGroup) {
+        throw Error(
+          `Can not find vat group ${line.productVariant.taxRateApplied.value}% for variant ${line.productVariant.sku}. Can not create order in Picqer`
+        );
+      }
+      const picqerProduct = await picqerClient.createOrUpdateProduct(
+        line.productVariant.sku,
+        this.mapToProductInput(line.productVariant, vatGroup.idvatgroup)
+      );
+      productInputs.push({
+        idproduct: picqerProduct.idproduct,
+        amount: line.quantity,
+      });
+    }
+    let orderInput = this.mapToOrderInput(
+      order,
+      productInputs,
+      picqerCustomer?.idcustomer
+    );
+    if (this.options.pushPicqerOrderFields) {
+      const additionalFields = this.options.pushPicqerOrderFields(order);
+      orderInput = {
+        ...orderInput,
+        ...additionalFields,
+      };
+      Logger.info(
+        `Added custom order fields to order '${order.code}'`,
+        loggerCtx
+      );
+    }
+    const createdOrder = await picqerClient.createOrder(orderInput);
+    await picqerClient.processOrder(createdOrder.idorder);
+    Logger.info(
+      `Created order "${order.code}" in status "processing" in Picqer with id ${createdOrder.idorder}`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Find all variants by SKUS via raw connection for better performance
+   * Only selects id and sku of variants
+   */
+  async findAllVariantsBySku(
+    ctx: RequestContext,
+    skus: string[]
+  ): Promise<Pick<ProductVariant, 'id' | 'sku'>[]> {
+    let skip = 0;
+    const take = 1000;
+    let hasMore = true;
+    const allVariants: ProductVariant[] = [];
+    while (hasMore) {
+      const [variants, count] = await this.connection
+        .getRepository(ctx, ProductVariant)
+        .createQueryBuilder('variant')
+        .select(['variant.id', 'variant.sku'])
+        .leftJoin('variant.channels', 'channel')
+        .where('channel.id = :channelId', { channelId: ctx.channelId })
+        .andWhere('variant.sku IN(:...skus)', { skus })
+        .andWhere('variant.deletedAt IS NULL')
+        .skip(skip)
+        .take(take)
+        .getManyAndCount();
+      allVariants.push(...variants);
+      if (allVariants.length >= count) {
+        hasMore = false;
+      }
+      skip += take;
+    }
+    return allVariants;
+  }
+
+  /**
+   * Creates or updates products in Picqer based on the given variantIds.
+   * Checks for existance of SKU in Picqer and updates if found.
+   * If not found, creates a new product.
+   */
+  async handlePushVariantsJob(
+    userCtx: RequestContext,
+    variantIds?: ID[],
+    productId?: ID
+  ): Promise<void> {
+    const ctx = this.createDefaultLanguageContext(userCtx);
+    const client = await this.getClient(ctx);
+    if (!client) {
+      return;
+    }
+    // Get variants by ID or by ProductId
+    let variants: ProductVariant[] | undefined;
+    if (variantIds) {
+      variants = await this.variantService.findByIds(ctx, variantIds);
+    } else if (productId) {
+      const product = await this.productService.findOne(ctx, productId);
+      if (!product) {
+        Logger.warn(
+          `Could not find product with id ${productId} for push-variants job`,
+          loggerCtx
+        );
+        return;
+      }
+      // Separate hydration is needed for taxRateApplied and variant prices
+      await this.entityHydrator.hydrate(ctx, product, {
+        relations: ['variants'],
+        applyProductVariantPrices: true,
+      });
+      variants = product.variants;
+      if (!product.enabled) {
+        // Disable all variants if the product is disabled
+        variants.forEach((v) => (v.enabled = false));
+      }
+    } else {
+      throw Error('No variantIds or productId provided');
+    }
+    const vatGroups = await client.getVatGroups();
+    await Promise.all(
+      variants.map(async (variant) => {
+        const vatGroup = vatGroups.find(
+          (vg) => vg.percentage === variant.taxRateApplied.value
+        );
+        if (!vatGroup) {
+          Logger.error(
+            `Could not find vatGroup for taxRate ${variant.taxRateApplied.value} for variant ${variant.sku}. Not pushing this variant to Picqer`,
+            loggerCtx
+          );
+          return;
+        }
+        try {
+          const productInput = this.mapToProductInput(
+            variant,
+            vatGroup.idvatgroup
+          );
+          const picqerProduct = await client.createOrUpdateProduct(
+            variant.sku,
+            productInput
+          );
+          // Update images
+          const shouldUpdateImages = !picqerProduct.images?.length;
+          if (!shouldUpdateImages) {
+            return;
+          }
+          const featuredImage = await this.getFeaturedImageAsBase64(
+            ctx,
+            variant
+          );
+          if (featuredImage) {
+            await client.addImage(picqerProduct.idproduct, featuredImage);
+            Logger.info(
+              `Added image for variant ${variant.sku} in Picqer for channel ${ctx.channel.token}`,
+              loggerCtx
+            );
+          }
+        } catch (e: any) {
+          throw new Error(
+            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`
+          );
+        }
+      })
+    );
+  }
+
+  /**
+   * Create or update config for the current channel and register webhooks after saving.
+   */
+  async upsertConfig(
+    ctx: RequestContext,
+    input: PicqerConfigInput
+  ): Promise<PicqerConfig> {
+    const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
+    const existing = await repository.findOne({
+      where: {
+        channelId: String(ctx.channelId),
+      },
+    });
+    if (existing) {
+      (input as Partial<PicqerConfigEntity>).id = existing.id;
+    }
+    await repository.save({
+      ...input,
+      channelId: ctx.channelId,
+    } as PicqerConfigEntity);
+    Logger.info(
+      `Picqer config updated for channel ${ctx.channel.token} by user ${ctx.activeUserId}`,
+      loggerCtx
+    );
+    const config = await repository.findOneOrFail({
+      where: {
+        channelId: String(ctx.channelId),
+      },
+    });
+    await this.registerWebhooks(ctx, config).catch((e) =>
+      Logger.error(
+        `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
+        loggerCtx
+      )
+    );
+    return config;
+  }
+
+  /**
+   * Create a new RequestContext with the default language of the current channel.
+   */
+  createDefaultLanguageContext(ctx: RequestContext): RequestContext {
+    return new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      languageCode: ctx.channel.defaultLanguageCode,
+      channel: ctx.channel,
+    });
+  }
+
+  /**
+   * Get a Picqer client for the current channel if the config is complete and enabled.
+   */
+  async getClient(
+    ctx: RequestContext,
+    config?: PicqerConfig
+  ): Promise<PicqerClient | undefined> {
+    if (!config) {
+      config = (await this.getConfig(ctx)) ?? undefined;
+    }
+    if (!config || !config.enabled) {
+      Logger.info(
+        `Picqer is not enabled for channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+      return;
+    }
+    if (
+      !config.apiKey ||
+      !config.apiEndpoint ||
+      !config.storefrontUrl ||
+      !config.supportEmail
+    ) {
+      Logger.warn(
+        `Picqer config is incomplete for channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+      return;
+    }
+    return new PicqerClient(config as PicqerClientInput); // Safe, because we checked for undefined values
+  }
+
+  /**
+   * Get featured asset as base64 string, but only when the asset is a png or jpeg.
+   * If variant has no featured asset, it checks if the parent product has a featured asset.
+   */
+  async getFeaturedImageAsBase64(
+    ctx: RequestContext,
+    variant: ProductVariant
+  ): Promise<string | undefined> {
+    let asset = await this.assetService.getFeaturedAsset(ctx, variant);
+    if (!asset?.preview) {
+      // No featured asset on variant, try the parent product
+      await this.entityHydrator.hydrate(ctx, variant, {
+        relations: ['product'],
+      });
+      asset = await this.assetService.getFeaturedAsset(ctx, variant.product);
+    }
+    if (!asset?.preview) {
+      // Still no asset, return undefined
+      return;
+    }
+    const image = asset.preview;
+    const hasAllowedExtension = ['png', 'jpg', 'jpeg'].some((extension) =>
+      image.endsWith(extension)
+    );
+    if (!hasAllowedExtension) {
+      // Only png, jpg and jpeg are supported by Picqer
+      Logger.info(
+        `featured asset for variant ${variant.sku} is not a png or jpeg, skipping`,
+        loggerCtx
+      );
+      return;
+    }
+    const buffer =
+      await this.configService.assetOptions.assetStorageStrategy.readFileToBuffer(
+        image
+      );
+    return buffer.toString('base64');
+  }
+
+  /**
+   * Get the Picqer config for the current channel based on given context
+   */
+  async getConfig(ctx: RequestContext): Promise<PicqerConfig | null> {
+    const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
+    return repository.findOne({ where: { channelId: String(ctx.channelId) } });
+  }
+
+  async getAllConfigs(): Promise<PicqerConfigEntity[]> {
+    const repository =
+      this.connection.rawConnection.getRepository(PicqerConfigEntity);
+    return repository.find();
+  }
+
+  /**
+   * Validate Picqer credentials by requesting `stats` from Picqer
+   */
+  async testRequest(input: TestPicqerInput): Promise<boolean> {
+    const client = new PicqerClient(input);
+    // If getStatus() doesn't throw, the request is valid
+    try {
+      await client.getStats();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Creates admin context for channel
+   */
+  async getCtxForChannel(channelToken: string): Promise<RequestContext> {
+    const channel = await this.channelService.getChannelFromToken(channelToken);
+    return new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel,
+    });
+  }
+
+  mapToCustomerInput(customer: Customer, companyName?: string): CustomerInput {
+    const customerName = `${customer.firstName} ${customer.lastName}`;
+    return {
+      name: companyName || customerName,
+      contactname: customerName,
+      emailaddress: customer.emailAddress,
+      telephone: customer.phoneNumber,
+      addresses: customer.addresses.map(this.mapToAddressInput),
+    };
+  }
+
+  mapToAddressInput(address: Address): AddressInput {
+    return {
+      name: address.fullName,
+      address: `${address.streetLine1} ${address.streetLine2 ?? ''}`.trim(),
+      zipcode: address.postalCode,
+      city: address.city,
+      country: address.country?.code.toUpperCase(),
+      defaultdelivery: address.defaultShippingAddress,
+      defaultinvoice: address.defaultBillingAddress,
+    };
+  }
+
+  mapToProductInput(variant: ProductVariant, vatGroupId: number): ProductInput {
+    const additionalFields =
+      this.options.pushProductVariantFields?.(variant) || {};
+    if (!variant.sku) {
+      throw Error(`Variant with ID ${variant.id} has no SKU`);
+    }
+    return {
+      ...additionalFields,
+      idvatgroup: vatGroupId,
+      name: variant.name || variant.sku, // use SKU if no name set
+      price: currency(variant.price / 100).value, // Convert to float with 2 decimals
+      productcode: variant.sku,
+      active: true,
+    };
+  }
+
+  mapToOrderInput(
+    order: Order,
+    products: OrderProductInput[],
+    customerId?: number
+  ): OrderInput {
+    const shippingAddress = order.shippingAddress;
+    const billingAddress = order.billingAddress;
+    const customerFullname = [
+      order.customer?.firstName,
+      order.customer?.lastName,
+    ]
+      .join(' ')
+      .trim();
+    const [deliveryname, deliverycontactname] =
+      this.getAddressName(shippingAddress);
+    const [invoicename, invoicecontactname] =
+      this.getAddressName(billingAddress);
+    return {
+      idcustomer: customerId, // If none given, this creates a guest order
+      reference: order.code,
+      emailaddress: order.customer?.emailAddress ?? '',
+      telephone: order.customer?.phoneNumber ?? '',
+      deliveryname: deliveryname ?? customerFullname,
+      deliverycontactname,
+      deliveryaddress: this.getFullAddress(shippingAddress),
+      deliveryzipcode: shippingAddress.postalCode,
+      deliverycity: shippingAddress.city,
+      deliverycountry: shippingAddress.countryCode?.toUpperCase(),
+      // use billing if available, otherwise fallback to shipping address
+      invoicename: invoicename ?? deliveryname ?? customerFullname,
+      invoicecontactname,
+      invoiceaddress:
+        this.getFullAddress(billingAddress) ??
+        this.getFullAddress(shippingAddress),
+      invoicezipcode: billingAddress?.postalCode,
+      invoicecity: billingAddress?.city,
+      invoicecountry: order.billingAddress?.countryCode?.toUpperCase(),
+      products,
+    };
+  }
+
+  /**
+   * Fulfill without throwing errors. Logs an error if fulfilment fails
+   */
+  private async safeFulfill(
+    ctx: RequestContext,
+    order: Order,
+    logAction: string
+  ): Promise<void> {
+    try {
+      const fulfillment = await fulfillAll(ctx, this.orderService, order, {
+        code: picqerHandler.code,
+        arguments: [],
+      });
+      Logger.info(
+        `Created fulfillment (${fulfillment.id}) for order ${order.code} on '${logAction}'`,
+        loggerCtx
+      );
+    } catch (e: any) {
+      Logger.error(
+        `Failed to fulfill order ${order.code} on '${logAction}': ${e?.message}. Transition this order manually to 'Delivered' after checking that it exists in Picqer.`,
+        loggerCtx,
+        util.inspect(e)
+      );
+    }
+  }
+
+  /**
+   * Combine street and housenumber to get a full readable address.
+   * Returns undefined if address undefined
+   */
+  private getFullAddress(address?: OrderAddress): string | undefined {
+    if (!address?.streetLine1 && !address?.streetLine2) {
+      return undefined;
+    }
+    return [address.streetLine1 ?? '', address.streetLine2 ?? '']
+      .join(' ')
+      .trim();
+  }
+
+  /**
+   * Get name and contactname for given address
+   * returns [name, contactname]
+   *
+   * If a company is given, use the company as name and the full name as contact name
+   * Otherwise, use the full name as name and no explicit contact name
+   */
+  private getAddressName(
+    address?: OrderAddress
+  ): [string | undefined, string | undefined] {
+    let name;
+    let contactname;
+    if (address?.company) {
+      name = address.company;
+      contactname = address.fullName;
+    } else {
+      name = address?.fullName;
+      contactname = undefined;
+    }
+    return [name, contactname];
+  }
+}

@@ -1,0 +1,29 @@
+.counter {
+  background: $primary-color;
+
+  .counter-item {
+    h2 {
+      color: $light;
+    }
+
+    p {
+      color: rgba(255, 255, 255, 0.7);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0px;
+    }
+  }
+}
+
+.counter--style {
+  i {
+    font-size: 40px;
+    width: 100px;
+    height: 100px;
+    border-radius: 100%;
+    color: $border-color;
+    background: $primary-color;
+    display: inline-block;
+    padding-top: 28px;
+  }
+}

@@ -25,20 +25,23 @@ export const initialData: InitialData = {
   ],
   collections: [
     {
-      name: 'Plants',
+      name: 'Computers',
       filters: [
         {
           code: 'facet-value-filter',
-          args: { facetValueNames: ['plants'], containsAny: false },
+          args: { facetValueNames: ['computers'], containsAny: false },
+        },
+      ],
+    },
+    {
+      name: 'Electronics',
+      filters: [
+        {
+          code: 'facet-value-filter',
+          args: { facetValueNames: ['electronics'], containsAny: false },
         },
       ],
     },
   ],
   paymentMethods: [],
-  /*  paymentMethods: [
-    {
-      name: testPaymentMethod.code,
-      handler: { code: testPaymentMethod.code, arguments: [] },
-    },
-  ],*/
 };

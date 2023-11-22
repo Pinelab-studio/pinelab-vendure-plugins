@@ -36,9 +36,3 @@ export const getAllInvoicesQuery = gql`
     }
   }
 `;
-
-export const isInvoicePluginLicenseValid = gql`
-  query isInvoicePluginLicenseValid {
-    isInvoicePluginLicenseValid
-  }
-`;

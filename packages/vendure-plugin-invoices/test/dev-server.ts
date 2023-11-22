@@ -11,6 +11,7 @@ import {
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
+  RequestContextService,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -32,7 +33,6 @@ require('dotenv').config();
     logger: new DefaultLogger({ level: LogLevel.Info }),
     plugins: [
       InvoicePlugin.init({
-        // licenseKey: process.env.LICENSE,
         vendureHost: 'http://localhost:3050',
         storageStrategy: new GoogleStorageInvoiceStrategy({
           bucketName: process.env.TEST_BUCKET!,
@@ -45,11 +45,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [InvoicePlugin.ui],
           devMode: true,
-        }),*/
+        }),
       }),
     ],
     paymentOptions: {
@@ -72,15 +72,16 @@ require('dotenv').config();
   });
   // add default Config
   const channel = await server.app.get(ChannelService).getDefaultChannel();
-  await server.app
-    .get(InvoiceService)
-    .upsertConfig(channel.id as string, { enabled: true });
+  const ctx = await server.app.get(RequestContextService).create({
+    apiType: 'admin',
+  });
+  await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
   // Add a testorders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
-  await addShippingMethod(adminClient, 'manual-fulfillment');
+  await addShippingMethod(adminClient as any, 'manual-fulfillment');
   const orders = 3;
   for (let i = 1; i <= orders; i++) {
-    await createSettledOrder(shopClient, 3);
+    await createSettledOrder(shopClient as any, 3);
   }
   console.log(`Created ${orders} orders`);
 })();

@@ -1,19 +1,11 @@
 {
-  "name": "pinelab-test-utils",
-  "version": "5.0.0",
+  "name": "test-utils",
+  "version": "1.0.2",
   "main": "index.ts",
   "license": "MIT",
   "private": true,
-  "devDependencies": {
-    "@graphql-codegen/cli": "2.6.2",
-    "@graphql-codegen/typescript": "2.4.8",
-    "@graphql-codegen/typescript-document-nodes": "2.2.8",
-    "@graphql-codegen/typescript-operations": "2.3.5",
-    "@vendure/core": "1.9.2",
-    "@vendure/testing": "1.9.2",
-    "graphql-tag": "^2.12.6"
-  },
   "scripts": {
-    "generate": "graphql-codegen --config codegen.yml"
+    "generate": "graphql-codegen --config codegen.yml",
+    "start": "ts-node ./src/dev-server.ts"
   }
 }

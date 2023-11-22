@@ -1,7 +1,5 @@
 # Vendure Plugin for limiting the amount of specific product variants per order
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-limit-product-per-order/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-limit-product-per-order)
 
 This plugin allows you to limit the amount of a specific product variant per order. I.E. A customer is only allowed to

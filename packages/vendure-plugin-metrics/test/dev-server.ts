@@ -14,8 +14,8 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { MetricsPlugin } from '../src/';
-import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 (async () => {
   require('dotenv').config();
@@ -57,9 +57,10 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
+  //FIX ME
+  await createSettledOrder(shopClient as any, 1);
+  await createSettledOrder(shopClient as any, 1);
+  await createSettledOrder(shopClient as any, 1);
+  await createSettledOrder(shopClient as any, 1);
+  await createSettledOrder(shopClient as any, 1);
 })();

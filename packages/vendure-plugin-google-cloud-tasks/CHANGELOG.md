@@ -1,82 +1,12 @@
-# Change Log
+# 1.3.0 (2023-11-21)
 
-All notable changes to this project will be documented in this file.
-See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+- Only log error when job is not added to queue after configured retries
+- Apply exponential backoff when adding to queue doesn't work.
 
-## [4.3.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.2.3...v4.3.0) (2022-11-11)
+# 1.2.0 (2023-10-24)
 
-### Bug Fixes
+- Updated vendure to 2.1.1
 
-- all packages tyo 1.8.3 ([9351d16](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/9351d16d1b4d5bf271dec05d72bd395f86145aae))
+# 1.1.2 (2023-09-26)
 
-## [4.1.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.0.3...v4.1.0) (2022-10-18)
-
-### Features
-
-- **sendcloud:** sync on placement ([17c5329](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/17c53296063d95142bd9ddb9f195c9c73158e2c0))
-
-### [4.0.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v4.0.0...v4.0.1) (2022-10-12)
-
-**Note:** Version bump only for package vendure-plugin-google-cloud-tasks
-
-## [4.0.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.21.0...v4.0.0) (2022-10-12)
-
-**Note:** Version bump only for package vendure-plugin-google-cloud-tasks
-
-# [3.21.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.20.0...v3.21.0) (2022-10-11)
-
-### Features
-
-- readme updates for all packages ([7f9940b](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/7f9940bf5cfac94680d7f4646aa5e37254b68098))
-
-## [3.16.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.16.0...v3.16.1) (2022-09-15)
-
-### Bug Fixes
-
-- **google-cloud-tasks:** readme ([36c9856](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/36c98568401c2c8cfd0ca882bbf59a4f4d73f5cf))
-
-# [3.16.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.15.0...v3.16.0) (2022-09-15)
-
-### Features
-
-- **google-cloud-tasks:** configurable default retries ([0b30df6](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/0b30df6bef84a2898939f555d0874c7326160735))
-
-# [3.13.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.12.0...v3.13.0) (2022-09-02)
-
-### Features
-
-- upgraded to venduer 1.7.1 ([1ad0371](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/1ad0371ee1be4f0d1371407b93e76809be08d851))
-
-## [3.11.5](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.11.4...v3.11.5) (2022-08-26)
-
-### Bug Fixes
-
-- **google-cloud-tasks:** added beforeListen true for bodyparser limit to have effect ([e0b1c28](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/e0b1c28d9ffced3e81f4686ae06f62ef3eb01685))
-
-## [3.11.4](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.11.3...v3.11.4) (2022-08-24)
-
-### Bug Fixes
-
-- **goedgepickt:** also sync 0 stock ([1905463](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/1905463de9d964effdbe7c329ac83f259c9d4f75))
-
-## [3.8.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.8.0...v3.8.1) (2022-07-25)
-
-### Bug Fixes
-
-- **google-cloud-tasks:** return http 200 after max attempts to prevent retries by gcloud ([9d99b19](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/9d99b19a03c51ea93efa4b7d48cc543c50734bee))
-
-# [3.7.0](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.6.1...v3.7.0) (2022-06-20)
-
-### Bug Fixes
-
-- new yarn lockfiles ([bcf017a](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/bcf017a3bbf7f7581a2e02b4bcc1cc1ab18fca88))
-
-### Features
-
-- upgraded vendure to 1.6.2 ([bf04e3c](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/bf04e3c3e4e41d338622b9487bd2e7c54e7d299f))
-
-## [3.3.1](https://github.com/Pinelab-studio/pinelab-vendure-plugins/compare/v3.3.0...v3.3.1) (2022-05-24)
-
-### Bug Fixes
-
-- **all-plugins:** updated readmes ([3c4da0b](https://github.com/Pinelab-studio/pinelab-vendure-plugins/commit/3c4da0b54712bd864ddc2336d40073169c58e052))
+- Added `onJobFailure` option to inspect errors from failed jobs([#262](https://github.com/Pinelab-studio/pinelab-vendure-plugins/pull/262))

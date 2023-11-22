@@ -1,19 +1,16 @@
 # Vendure Google Asset Storage plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-google-storage-assets/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-google-storage-assets)
 
 Plugin for storing Vendure assets on Google Cloud Storage
 
 ## Getting started
 
-1. `yarn add vendure-plugin-google-storage-assets`
 1. Create a bucket which is publicly available in Google Cloud.
-1. Add to your `sendcloud.dev-config.ts`
+2. Add to your `sendcloud.dev-config.ts`
 
 ```ts
-import { GoogleStoragePlugin, GoogleStorageStrategy } from 'vendure-plugin-google-storage-assets'
+import { GoogleStoragePlugin, GoogleStorageStrategy } from '@pinelab/vendure-plugin-google-storage-assets'
 
 plugins: [
   AssetServerPlugin.init({
@@ -43,7 +40,16 @@ plugins: [
 
 ### Local development
 
-For local development, use `gcloud auth application-default login` to authorize for your Gcloud project.  
+1. Run `gcloud auth application-default login`
+2. Create a .env file with the following contents:
+
+```env
+GCLOUD_PROJECT=your-project-id
+BUCKET=your-bucket
+```
+
+3. Run `yarn start` and go to https://localhost:3050/admin to test asset uploads
+
 Internally this plugin uses `new Storage();` to instantiate the Storage client, which uses ENV variables to
 authenticate:
 

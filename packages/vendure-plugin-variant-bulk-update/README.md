@@ -1,7 +1,5 @@
 # Vendure Plugin for bulk updating all variants of a product
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-variant-bulk-update/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-variant-bulk-update)
 
 Tiny plugin that allows you to update the prices of all variants for a given product. This is especially useful for
@@ -12,7 +10,7 @@ products with a lot of variants.
 1. Add the plugin config to your `vendure-config.ts`:
 
 ```ts
-import {VariantBulkUpdatePlugin} from 'vendure-plugin-variant-bulk-update';
+import {VariantBulkUpdatePlugin} from '@pinelab/vendure-plugin-variant-bulk-update';
 
 plugins: [
   VariantBulkUpdatePlugin,

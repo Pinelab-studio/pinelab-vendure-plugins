@@ -1,34 +1,28 @@
 {
-  "name": "vendure-plugin-variant-bulk-update",
-  "version": "5.0.1",
+  "name": "@pinelab/vendure-plugin-variant-bulk-update",
+  "version": "1.1.0",
   "description": "Vendure plugin to bulk update all variants of a product",
+  "icon": "tag-multiple",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/variant-bulk-update.plugin.js",
   "types": "dist/variant-bulk-update.plugin.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "build": "rimraf dist && tsc",
-    "test": "jest --preset=\"ts-jest\""
+    "test": "vitest run"
   },
-  "devDependencies": {
-    "@types/jest": "27.4.1",
-    "@vendure/admin-ui-plugin": "1.9.2",
-    "@vendure/core": "1.9.2",
-    "@vendure/testing": "1.9.2",
-    "jest": "27.2.0",
-    "nodemon": "2.0.15",
-    "ts-jest": "27.0.5",
-    "ts-node": "10.7.0",
-    "typescript": "4.3.5"
-  },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

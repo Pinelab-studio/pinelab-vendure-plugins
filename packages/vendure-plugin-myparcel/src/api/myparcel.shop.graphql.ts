@@ -1,8 +1,6 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, RequestContext } from '@vendure/core';
+import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Ctx, RequestContext } from '@vendure/core';
 import { MyparcelService } from './myparcel.service';
-import { myparcelPermission } from '../index';
-import { MyparcelConfigEntity } from './myparcel-config.entity';
 import {
   MyparcelDropOffPoint,
   MyparcelDropOffPointInput,

@@ -1,26 +1,49 @@
+fragment OrderFields on Order {
+  id
+  code
+  state
+  active
+  total
+  totalWithTax
+  shippingWithTax
+  customer {
+    emailAddress
+  }
+  shippingAddress {
+    fullName
+  }
+  lines {
+    id
+    quantity
+    productVariant {
+      id
+    }
+    discounts {
+      adjustmentSource
+      amount
+      amountWithTax
+      description
+      type
+    }
+  }
+}
+
 mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
   addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
     ... on Order {
-      id
-      code
-      state
-      active
-      total
-      totalWithTax
-      lines {
-        id
-        quantity
-        productVariant {
-          id
-        }
-        discounts {
-          adjustmentSource
-          amount
-          amountWithTax
-          description
-          type
-        }
-      }
+      ...OrderFields
+    }
+    ... on ErrorResult {
+      errorCode
+      message
+    }
+  }
+}
+
+mutation ApplyCouponCode($couponCode: String!) {
+  applyCouponCode(couponCode: $couponCode) {
+    ... on Order {
+      ...OrderFields
     }
     ... on ErrorResult {
       errorCode
@@ -32,14 +55,21 @@ mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
 mutation SetShippingAddress($input: CreateAddressInput!) {
   setOrderShippingAddress(input: $input) {
     ... on Order {
-      id
-      code
+      ...OrderFields
     }
   }
 }
 
-mutation SetShippingMethod($id: ID!) {
-  setOrderShippingMethod(shippingMethodId: $id) {
+mutation SetBillingAddress($input: CreateAddressInput!) {
+  setOrderBillingAddress(input: $input) {
+    ... on Order {
+      ...OrderFields
+    }
+  }
+}
+
+mutation SetShippingMethod($ids: [ID!]!) {
+  setOrderShippingMethod(shippingMethodId: $ids) {
     ... on ErrorResult {
       errorCode
       message
@@ -60,10 +90,7 @@ mutation TransitionToState($state: String!) {
 mutation AddPaymentToOrder($input: PaymentInput!) {
   addPaymentToOrder(input: $input) {
     ... on Order {
-      id
-      code
-      state
-      shippingWithTax
+      ...OrderFields
     }
     ... on ErrorResult {
       errorCode

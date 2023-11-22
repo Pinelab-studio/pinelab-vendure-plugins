@@ -1,11 +1,13 @@
-schema: 'src/**/*.ts'
-documents: 'src/ui/queries.ts'
+schema: 'src/api/graphql-schema.ts'
 generates:
-  ./src/ui/generated/graphql.ts:
+  ./src/api/generated/graphql.ts:
     plugins:
       - typescript
       - typescript-operations
+      - typed-document-node
     config:
+      enumsAsTypes: true
       avoidOptionals: false
       scalars:
         DateTime: Date
+        ID: string | number

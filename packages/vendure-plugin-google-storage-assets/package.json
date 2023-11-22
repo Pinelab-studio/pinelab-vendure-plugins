@@ -1,21 +1,26 @@
 {
-  "name": "vendure-plugin-google-storage-assets",
-  "version": "5.0.1",
-  "description": "Upload vendure assets to Google storage",
+  "name": "@pinelab/vendure-plugin-google-storage-assets",
+  "version": "1.1.0",
+  "description": "Vendure plugin for uploading assets to Google storage",
+  "icon": "google-cloud",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab.studio",
+  "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "rimraf dist && tsc",
-    "test": "jest --preset=\"ts-jest\"",
+    "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts"
   },
   "dependencies": {
@@ -25,21 +30,5 @@
   "peerDependencies": {
     "sharp": "*"
   },
-  "devDependencies": {
-    "@types/jest": "^27.4.1",
-    "@types/sharp": "^0.28.0",
-    "@types/tmp": "^0.2.3",
-    "@vendure/admin-ui": "1.9.2",
-    "@vendure/admin-ui-plugin": "1.9.2",
-    "@vendure/asset-server-plugin": "1.9.2",
-    "@vendure/core": "1.9.2",
-    "@vendure/testing": "1.9.2",
-    "jest": "^27.5.1",
-    "rimraf": "^3.0.2",
-    "sharp": "^0.28.1",
-    "ts-jest": "^27.1.3",
-    "ts-node": "^10.7.0",
-    "typescript": "4.3.5"
-  },
-  "gitHead": "89507cfaa85a9fe1fb204f382f6ba730138fcc27"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

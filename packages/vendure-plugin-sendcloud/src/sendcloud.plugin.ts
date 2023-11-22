@@ -1,16 +1,18 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { gql } from 'apollo-server-core';
+import { gql } from 'graphql-tag';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { SendcloudPluginOptions } from './api/types/sendcloud.types';
-import { SendcloudResolver } from './api/sendcloud.resolver';
+import {
+  SendcloudResolver,
+  sendcloudPermission,
+} from './api/sendcloud.resolver';
 import { SendcloudService } from './api/sendcloud.service';
 import { PLUGIN_OPTIONS } from './api/constants';
 import { SendcloudController } from './api/sendcloud.controller';
 import { SendcloudConfigEntity } from './api/sendcloud-config.entity';
 import { sendcloudHandler } from './api/sendcloud.handler';
-import { sendcloudPermission } from './index';
-import { createRawBodyMiddleWare } from '../../util/src/raw-body';
+import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 
 @VendurePlugin({
   adminApiExtensions: {
@@ -50,14 +52,16 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
   controllers: [SendcloudController],
   entities: [SendcloudConfigEntity],
   configuration: (config) => {
+    config.apiOptions.middleware.push({
+      route: '/sendcloud/webhook*',
+      handler: rawBodyMiddleware,
+      beforeListen: true,
+    });
     config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
     config.authOptions.customPermissions.push(sendcloudPermission);
-    // save rawBody for signature verification
-    config.apiOptions.middleware.push(
-      createRawBodyMiddleWare('/sendcloud/webhook*')
-    );
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class SendcloudPlugin {
   private static options: SendcloudPluginOptions;

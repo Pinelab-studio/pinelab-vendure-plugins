@@ -3,7 +3,7 @@ import {
   registerDashboardWidget,
   setDashboardWidgetLayout,
 } from '@vendure/admin-ui/core';
-import { MetricsWidgetModule } from './metrics-widget';
+import { MetricsWidgetModule } from './metrics-widget.module';
 
 @NgModule({
   imports: [MetricsWidgetModule],

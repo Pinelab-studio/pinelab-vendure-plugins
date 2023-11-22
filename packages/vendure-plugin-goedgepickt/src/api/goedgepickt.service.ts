@@ -26,6 +26,7 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockLevelService,
   TransactionalConnection,
   Translated,
   translateDeep,
@@ -58,7 +59,6 @@ type VariantWithImage = {
   name: string;
   price: number;
   absoluteImageUrl?: string;
-  stockAllocated: number;
 };
 
 interface PushProductJobData {
@@ -104,6 +104,7 @@ export class GoedgepicktService
     private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
     private configService: ConfigService,
+    private stockLevelService: StockLevelService,
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
@@ -190,7 +191,7 @@ export class GoedgepicktService
     config.channelToken = ctx.channel.token;
     const existing = await this.connection
       .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOne({ channelToken: config.channelToken });
+      .findOne({ where: { channelToken: config.channelToken } });
     if (existing) {
       await this.connection
         .getRepository(ctx, GoedgepicktConfigEntity)
@@ -202,15 +203,15 @@ export class GoedgepicktService
     }
     return this.connection
       .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOneOrFail({ channelToken: config.channelToken });
+      .findOneOrFail({ where: { channelToken: config.channelToken } });
   }
 
   async getConfig(
     ctx: RequestContext
-  ): Promise<GoedgepicktConfigEntity | undefined> {
+  ): Promise<GoedgepicktConfigEntity | null> {
     return this.connection
       .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOne({ channelToken: ctx.channel.token });
+      .findOne({ where: { channelToken: ctx.channel.token } });
   }
 
   async getConfigs(): Promise<GoedgepicktConfigEntity[]> {
@@ -220,8 +221,11 @@ export class GoedgepicktService
   /**
    * Set webhook and update secrets in DB
    */
-  async setWebhooks(ctx: RequestContext): Promise<GoedgepicktConfigEntity> {
+  async setWebhooks(ctx: RequestContext): Promise<undefined> {
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     const webhookTarget = this.getWebhookUrl(ctx.channel.token);
     // Check if webhooks already present
     const webhooks = await client.getWebhooks();
@@ -260,7 +264,7 @@ export class GoedgepicktService
     } else {
       Logger.info(`StockWebhook already present`, loggerCtx);
     }
-    return await this.upsertConfig(ctx, {
+    await this.upsertConfig(ctx, {
       orderWebhookKey: orderSecret,
       stockWebhookKey: stockSecret,
     });
@@ -273,15 +277,18 @@ export class GoedgepicktService
   private async createOrder(
     ctx: RequestContext,
     order: Order
-  ): Promise<GgOrder> {
+  ): Promise<GgOrder | undefined> {
     try {
+      const client = await this.getClientForChannel(ctx);
+      if (!client) {
+        return undefined;
+      }
       const orderItems: OrderItemInput[] = order.lines.map((orderLine) => ({
         sku: orderLine.productVariant.sku,
         productName: orderLine.productVariant.name,
         productQuantity: orderLine.quantity,
         taxRate: orderLine.taxRate,
       }));
-      const client = await this.getClientForChannel(ctx);
       if (
         !order.shippingAddress.streetLine2 ||
         !order.shippingAddress.streetLine1 ||
@@ -423,10 +430,20 @@ export class GoedgepicktService
     );
   }
 
-  async getClientForChannel(ctx: RequestContext): Promise<GoedgepicktClient> {
+  /**
+   * Returns undefined if plugin is disabled
+   */
+  async getClientForChannel(
+    ctx: RequestContext
+  ): Promise<GoedgepicktClient | undefined> {
     const config = await this.getConfig(ctx);
-    if (!config || !config?.apiKey || !config.webshopUuid) {
-      throw Error(`Incomplete config found for channel ${ctx.channel.token}`);
+    if (!config?.enabled) {
+      return undefined;
+    }
+    if (!config?.apiKey || !config.webshopUuid) {
+      throw Error(
+        `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`
+      );
     }
     return new GoedgepicktClient({
       webshopUuid: config.webshopUuid,
@@ -460,9 +477,12 @@ export class GoedgepicktService
   /**
    * Creates 2 types of jobs: jobs for pushing products and jobs for updating stocklevels
    */
-  async createFullsyncJobs(channelToken: string) {
+  async createFullsyncJobs(channelToken: string): Promise<void> {
     const ctx = await this.getCtxForChannel(channelToken);
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     const [ggProducts, variants] = await Promise.all([
       client.getAllProducts(),
       this.getAllVariants(ctx),
@@ -510,6 +530,9 @@ export class GoedgepicktService
     { products }: PushProductJobData
   ): Promise<void> {
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     for (const product of products) {
       if (product.uuid) {
         await client.updateProduct(product.uuid, product);
@@ -536,17 +559,20 @@ export class GoedgepicktService
 
   /**
    * Create or update products in Goedgepickt based on given Vendure variants
-   * Waits for 1 minute every 30 products, because of Goedgepickts rate limit
+   * Waits for 1 minute every 30 products, because of Goedgepickt's rate limit
    */
   async handlePushByVariantsJob(
     ctx: RequestContext,
     { variants }: PushProductByVariantsJobData
   ): Promise<void> {
     const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
     for (const variant of variants) {
       const existing = await client.findProductBySku(variant.sku);
       const product = this.mapToProductInput(
-        this.setAbsoluteImage(ctx.channel, variant)
+        await this.setAbsoluteImage(ctx, variant)
       );
       const uuid = existing?.[0]?.uuid;
       if (uuid) {
@@ -591,7 +617,7 @@ export class GoedgepicktService
   private async createStockUpdateJobs(
     ctx: RequestContext,
     ggProducts: { sku: string; stockLevel: number | undefined | null }[],
-    variants: Pick<ProductVariant, 'id' | 'stockAllocated' | 'sku'>[]
+    variants: Pick<ProductVariant, 'id' | 'sku'>[]
   ) {
     const stockPerVariant: StockInput[] = [];
     for (const ggProduct of ggProducts) {
@@ -604,7 +630,11 @@ export class GoedgepicktService
         continue; // Not updating if we have no variant with SKU
       }
       // If ggStock=0 and allocated=1, set Vendure stock=1 to prevent out of stock errors during fulfillment
-      const newStock = ggStock + variant.stockAllocated;
+      const availableStock = await this.stockLevelService.getAvailableStock(
+        ctx,
+        variant.id
+      );
+      const newStock = ggStock + availableStock.stockAllocated;
       stockPerVariant.push({
         variantId: variant.id as string,
         stock: newStock,
@@ -668,7 +698,7 @@ export class GoedgepicktService
               'taxCategory',
             ],
             channelId: ctx.channelId,
-            where: { deletedAt: null },
+            where: { deletedAt: undefined },
             ctx,
           }
         )
@@ -682,14 +712,14 @@ export class GoedgepicktService
       );
       const mappedVariants = variantsWithPrice
         .map((v) => translateDeep(v, ctx.languageCode))
-        .map((v) => this.setAbsoluteImage(ctx.channel, v));
-      translatedVariants.push(...mappedVariants);
+        .map(async (v) => await this.setAbsoluteImage(ctx, v));
+      translatedVariants.push(...(await Promise.all(mappedVariants)));
     }
     return translatedVariants;
   }
 
   private setAbsoluteImage(
-    channel: Channel,
+    ctx: RequestContext,
     variant: Translated<ProductVariant> | ProductVariant
   ): VariantWithImage {
     // Resolve images as if we are shop client
@@ -697,7 +727,7 @@ export class GoedgepicktService
       apiType: 'shop',
       isAuthorized: true,
       authorizedAsOwnerOnly: false,
-      channel,
+      channel: ctx.channel,
     });
     let imageUrl =
       variant.featuredAsset?.preview || variant.product?.featuredAsset?.preview;
@@ -715,7 +745,6 @@ export class GoedgepicktService
       name: variant.name,
       price: variant.price,
       absoluteImageUrl: imageUrl,
-      stockAllocated: variant.stockAllocated,
     };
   }
 
@@ -743,7 +772,6 @@ export class GoedgepicktService
       relations: [
         'shippingLines',
         'shippingLines.shippingMethod',
-        'lines.items',
         'lines.productVariant',
       ],
     });

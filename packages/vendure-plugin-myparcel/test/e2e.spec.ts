@@ -6,9 +6,18 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  Channel,
+  ChannelService,
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  RequestContext,
+  TransactionalConnection,
+} from '@vendure/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import {
   addItem,
   addPaymentToOrder,
@@ -34,6 +43,8 @@ import fs from 'fs';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import gql from 'graphql-tag';
+import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 type OutgoingMyparcelShipment = { data: { shipments: MyparcelShipment[] } };
 type OutgoingWebhookSubscription = {
@@ -125,10 +136,6 @@ describe('MyParcel', () => {
     });
   }, 60000);
 
-  afterAll(async () => {
-    await server.destroy();
-  });
-
   it('Adds apiKey via Graphql mutation', async () => {
     await adminClient.asSuperAdmin();
     const config = await adminClient.query(updateMyparcelConfig, {
@@ -144,8 +151,9 @@ describe('MyParcel', () => {
   });
 
   it('Created webhook on startup', async () => {
+    const ctx = await getSuperadminContext(server.app);
     // Mimic startup again, because real startup didn't have configs in DB populated yet
-    await server.app.get(MyparcelService).setWebhooksForAllChannels();
+    await server.app.get(MyparcelService).setWebhooksForAllChannels(ctx);
     const webhook = body?.data?.webhook_subscriptions?.[0];
     expect(webhook?.url).toEqual(
       'https://test-webhook.com/myparcel/update-status'
@@ -199,7 +207,7 @@ describe('MyParcel', () => {
         body = reqBody;
         return true;
       })
-      .matchHeader('Content-Type', (val) => {
+      .matchHeader('Content-Type', (val: any) => {
         contentType = val;
         return true;
       })
@@ -268,18 +276,16 @@ describe('MyParcel', () => {
     expect(config.updateMyparcelConfig).toEqual(null);
   });
 
-  it.skip('Should compile admin', async () => {
-    fs.rmSync(path.join(__dirname, '__admin-ui'), {
-      recursive: true,
-      force: true,
-    });
-    await compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [MyparcelPlugin.ui],
-    }).compile?.();
-    const files = fs.readdirSync(path.join(__dirname, '__admin-ui/dist'));
-    expect(files?.length).toBeGreaterThan(0);
-  }, 240000);
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(__dirname, MyparcelPlugin.ui);
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
+
+  afterAll(async () => {
+    await server.destroy();
+  }, 100000);
 });
 
 export async function postStatusChange(

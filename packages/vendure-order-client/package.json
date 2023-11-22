@@ -1,0 +1,41 @@
+{
+  "name": "@pinelab/vendure-order-client",
+  "version": "2.6.0",
+  "description": "A tiny, framework agnostic client for managing active orders and checkout with Vendure.",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab-plugins.com/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "start": "ts-node --esm ./test/dev-server.ts",
+    "build": "yarn tsc && rimraf lib && rollup -c rollup.config.js",
+    "test": "vitest run",
+    "generate": "graphql-codegen"
+  },
+  "dependencies": {
+    "graphql-request": "^6.1.0",
+    "mitt": "^3.0.0",
+    "nanostores": "^0.9.2"
+  },
+  "devDependencies": {
+    "@nanostores/vue": "^0.10.0",
+    "@vue/cli": "^5.0.8",
+    "@mollie/api-client": "3.7.0"
+  },
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
+}

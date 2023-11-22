@@ -14,11 +14,11 @@ export class SendcloudController {
   @Post('webhook/:channelToken')
   async webhook(
     @Req() req: Request,
-    @Body() body: IncomingWebhookBody,
     @Headers(SendcloudClient.signatureHeader) signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<unknown> {
-    const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
+    const body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
+    const rawBody = (req as any).rawBody;
     const ctx = await this.sendcloudService.createContext(channelToken);
     const { client } = await this.sendcloudService.getClient(ctx);
     if (!client.isValidWebhook(rawBody, signature)) {
@@ -43,13 +43,13 @@ export class SendcloudController {
     );
     if (!status) {
       return Logger.warn(
-        `Status is ${body.action}, but no matching SendCloud status was found for ${body.parcel?.status}`,
+        `Unknown SendCloud status "${body.parcel?.status?.message}", not handling this webhook.`,
         loggerCtx
       );
     }
     if (!status.orderState) {
       return Logger.info(
-        `No corresponding Vendure order state for SendCloud status ${body.parcel?.status}. Ignoring this webhook.`,
+        `Ignoring incoming webhook status "${body.parcel?.status?.message}", because we don't update Vendure order status for this sendcloud status.`,
         loggerCtx
       );
     }
@@ -64,8 +64,7 @@ export class SendcloudController {
     await this.sendcloudService.updateOrderStatus(
       ctx,
       status,
-      body.parcel.order_number,
-      body.parcel.tracking_number
+      body.parcel.order_number
     );
   }
 }

@@ -1,0 +1,163 @@
+.blog-item {
+  display: flex;
+  margin-bottom: 30px;
+  @include tablet {
+    display: block;
+  }
+}
+
+.blog-thumb {
+  width: 70%;
+  margin-right: 40px;
+}
+
+.blog-item-content {
+  h3 {
+    font-weight: 400;
+  }
+}
+
+.nav-links {
+  .page-numbers {
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    border-radius: 100%;
+    background: #eee;
+    text-align: center;
+    padding-top: 13px;
+    font-weight: 700;
+    margin-right: 10px;
+
+    &:hover {
+      background: $primary-color;
+      color: $light;
+    }
+  }
+}
+
+//  Comments
+
+.comment-area {
+  .comment-thumb {
+    margin-right: 20px;
+    margin-bottom: 10px;
+    img {
+      width: 70px;
+      border-radius: 5px;
+      max-width: unset;
+    }
+  }
+
+  h5 {
+    font-size: 18px;
+    font-weight: 400;
+  }
+  span {
+    font-size: 14px;
+  }
+}
+
+.posts-nav {
+  h6 {
+    font-weight: 400;
+  }
+}
+
+.quote {
+  font-size: 22px;
+  color: $black;
+  padding: 40px;
+  font-style: italic;
+  background: #f5f6ff;
+  border-left: 5px solid $primary-color;
+  margin: 25px 0px;
+}
+
+// Comment Form
+.comment-form {
+  .input {
+    background: #f7f8fb;
+    border-radius: 5px;
+    border-color: #f7f8fb;
+    height: 50px;
+  }
+
+  textarea.input {
+    height: auto;
+  }
+}
+
+@include mobile {
+  .blog-thumb {
+    width: 100%;
+    float: none;
+    margin-right: 0px;
+    margin-bottom: 15px;
+
+    img {
+      width: 100%;
+    }
+  }
+}
+
+@include mobile-xs {
+  .blog-thumb {
+    width: 100%;
+    float: none;
+    margin-right: 0px;
+    margin-bottom: 15px;
+    img {
+      width: 100%;
+    }
+  }
+}
+
+@include tablet {
+  .blog-thumb {
+    width: 100%;
+    float: none;
+    margin-right: 0px;
+    margin-bottom: 15px;
+    img {
+      width: 100%;
+    }
+  }
+}
+
+.tag-option {
+  @include tablet {
+    display: block;
+  }
+}
+
+.posts-nav {
+  .border {
+    border: 1px solid #dee2e6;
+    height: 80px;
+    @include tablet {
+      height: 2px;
+      width: 100%;
+      margin: 30px 0;
+    }
+  }
+  @include tablet {
+    display: block !important;
+  }
+}
+
+.tag-option {
+  @include tablet {
+    display: block !important;
+    .list-inline:first-child {
+      margin-bottom: 20px;
+    }
+  }
+}
+
+.comment-content,
+.comment-area-box {
+  @include mobile {
+    display: block !important;
+  }
+}

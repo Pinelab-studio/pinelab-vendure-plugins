@@ -1,7 +1,5 @@
 # Vendure Coinbase plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-coinbase/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-coinbase)
 
 Accept crypto payments via Coinbase Commerce in Vendure.
@@ -11,7 +9,13 @@ Accept crypto payments via Coinbase Commerce in Vendure.
 Add the plugin to your `vendure-config.ts`:
 
 ```ts
-plugins: [CoinbasePlugin];
+import { CoinbasePlugin } from "@pinelab/vendure-plugin-coinbase"
+
+
+plugins: [
+  CoinbasePlugin,
+  ...
+  ];
 ```
 
 ### 2. Set API key in Vendure

@@ -7,15 +7,16 @@ import { GoedgepicktService } from './api/goedgepickt.service';
 import { GoedgepicktController } from './api/goedgepickt.controller';
 import { goedgepicktHandler } from './api/goedgepickt.handler';
 import { GoedgepicktPluginConfig } from './api/goedgepickt.types';
-import { goedgepicktPermission } from './index';
-import { GoedgepicktResolver } from './api/goedgepickt.resolver';
+import {
+  GoedgepicktResolver,
+  goedgepicktPermission,
+} from './api/goedgepickt.resolver';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { schema } from './api/schema.graphql';
 import { GoedgepicktConfigEntity } from './api/goedgepickt-config.entity';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { customFields } from './api/custom-fields';
-import { createRawBodyMiddleWare } from '../../util/src/raw-body';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -33,12 +34,12 @@ import { createRawBodyMiddleWare } from '../../util/src/raw-body';
     resolvers: [GoedgepicktResolver],
   },
   configuration: (config: RuntimeVendureConfig) => {
-    config.apiOptions.middleware.push(createRawBodyMiddleWare('/goedgepickt*'));
     config.shippingOptions.fulfillmentHandlers.push(goedgepicktHandler);
     config.authOptions.customPermissions.push(goedgepicktPermission);
     config.customFields.Order.push(...customFields.Order!);
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class GoedgepicktPlugin {
   static config: GoedgepicktPluginConfig;

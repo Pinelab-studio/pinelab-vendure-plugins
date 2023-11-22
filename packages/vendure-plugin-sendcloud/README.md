@@ -1,8 +1,6 @@
 # Vendure SendCloud plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-sendcloud/dev/@vendure/core)
-
-### Visit [pinelab-plugins.com](https://pinelab-plugins.com/plugin/vendure-plugin-sendcloud) for more documentation and examples.
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-sendcloud)
 
 This plugin syncs orders to the SendCloud fulfillment platform.
 

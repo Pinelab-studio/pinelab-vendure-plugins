@@ -1,7 +1,5 @@
 # Vendure GoedGepickt plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-goedgepickt/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-goedgepickt)
 
 Plugin for integrating Vendure with GoedGepickt.
@@ -16,11 +14,11 @@ Vendure's responsibilities vs GoedGepickt's responsibilities:
 1. Add this to your plugin in `vendure-config.ts`:
 
 ```ts
-import { GoedgepicktPlugin } from 'vendure-plugin-goedgepickt';
+import { GoedgepicktPlugin } from '@pinelab/vendure-plugin-goedgepickt';
 
 plugins: [
   GoedgepicktPlugin.init({
-    vendureHost: tunnel.url,
+    vendureHost: 'https://your-vendure-server.io/',
     endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
     setWebhook: true // Automatically set webhooks in Goedgepickt or not
   }),

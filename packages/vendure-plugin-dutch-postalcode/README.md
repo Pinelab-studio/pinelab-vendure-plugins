@@ -1,7 +1,5 @@
 # Vendure Plugin Dutch Postalcodes
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-dutch-postalcode/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-dutch-postalcode)
 
 Find Dutch addresses by postalcode and housenumber using https://postcode.tech's api. You need to register to obtain an API key,
@@ -12,7 +10,9 @@ but registering is free of charge.
 1. Register at https://postcode.tech/ to get an API key
 2. Add the following code to your plugins in `vendure-config.ts`
 
-```js
+```ts
+import { DutchPostalCodePlugin } from "@pinelab/vendure-plugin-dutch-postalcode"
+
 plugins: [
   DutchPostalCodePlugin.init('your-postcode.tech-apikey'),
   ...

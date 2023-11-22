@@ -6,6 +6,7 @@ import {
   RequestContext,
 } from '@vendure/core';
 import {
+  AddFulfillmentToOrderResult,
   ConfigurableOperationInput,
   ItemsAlreadyFulfilledError,
 } from '@vendure/common/lib/generated-types';
@@ -19,7 +20,7 @@ export async function fulfillAll(
   orderService: OrderService,
   order: Order,
   handler: ConfigurableOperationInput
-) {
+): Promise<Fulfillment> {
   const lines = order.lines.map((line) => ({
     orderLineId: line.id,
     quantity: line.quantity,
@@ -51,7 +52,7 @@ export async function transitionToShipped(
   const fulfillment = await fulfillAll(ctx, orderService, order, handler);
   const result = await orderService.transitionFulfillmentToState(
     ctx,
-    (fulfillment as any).id,
+    fulfillment.id,
     'Shipped'
   );
   throwIfTransitionFailed(result);
@@ -75,26 +76,32 @@ export async function transitionToDelivered(
   );
   const result = await orderService.transitionFulfillmentToState(
     ctx,
-    (fulfillment as any).id,
+    fulfillment.id,
     'Delivered'
   );
   throwIfTransitionFailed(result);
   return result as Fulfillment;
 }
 
-function throwIfTransitionFailed(result: any): void {
+/**
+ * Throws the error result if the transition failed
+ */
+export function throwIfTransitionFailed(
+  result:
+    | FulfillmentStateTransitionError
+    | Fulfillment
+    | AddFulfillmentToOrderResult
+): void {
   const stateError = result as FulfillmentStateTransitionError;
-  if (stateError.transitionError) {
-    if (stateError.fromState === stateError.toState) {
-      return; // If already 'Shipped', don't count this as an error
-    }
-    throw Error(
-      `${stateError.message} - from ${stateError.fromState} to ${stateError.toState} - ${stateError.transitionError}`
-    );
+  if (
+    stateError.transitionError &&
+    stateError.fromState === stateError.toState
+  ) {
+    return; // If already 'Shipped', don't count this as an error
   }
   // It's not a stateTransition error
   const error = result as ErrorResult;
   if (error.errorCode) {
-    throw Error(`${error.errorCode}: ${error.message}`);
+    throw error;
   }
 }

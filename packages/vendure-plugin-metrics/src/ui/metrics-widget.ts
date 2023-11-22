@@ -1,130 +1,166 @@
-import { Component, NgModule, OnInit } from '@angular/core';
-import { DataService, SharedModule } from '@vendure/admin-ui/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import {
-  MetricInterval,
-  MetricSummary,
-  MetricSummaryQuery,
-  MetricSummaryQueryVariables,
-} from './generated/graphql';
-import Chart from 'chart.js/auto';
-import { GET_METRICS } from './queries.graphql';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { switchMap } from 'rxjs/operators';
+  DataService,
+  ModalService,
+  ProductMultiSelectorDialogComponent,
+  // ChartEntry
+} from '@vendure/admin-ui/core';
+// import { AdvancedMetricInterval } from './generated/graphql';
+import { Observable } from 'rxjs';
+import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
+import { ChartEntry } from './chartist/chartist.component';
 
 @Component({
-  selector: 'metrics-widget',
+  selector: 'product-metrics-widget',
   template: `
-    <div
-      class="btn-group btn-outline-primary btn-sm"
-      *ngIf="selection$ | async as selection"
-    >
+    <div>
       <button
-        class="btn"
-        [class.btn-primary]="selection === 'WEEKLY'"
-        (click)="selection$.next('WEEKLY')"
+        (click)="openProductSelectionDialog()"
+        class="btn btn-sm btn-secondary"
       >
-        Weekly
+        {{
+          'common.items-selected-count'
+            | translate : { count: selectedVariantIds?.length ?? 0 }
+        }}...
       </button>
       <button
-        class="btn"
-        [class.btn-primary]="selection === 'MONTHLY'"
-        (click)="selection$.next('MONTHLY')"
+        class="btn btn-sm circular-button"
+        [attr.disabled]="selectedVariantIds.length == 0 ? 'disabled' : null"
+        (click)="clearProductVariantSelection()"
       >
-        Monthly
+        <clr-icon shape="times"></clr-icon>
       </button>
+      <small *ngIf="selectedVariantNames.length">
+        {{ selectedVariantNames.join(' + ') }}
+      </small>
     </div>
     <br />
-
-    <div *ngFor="let metric of metrics$ | async" class="chart-container">
-      <canvas [id]="metric.code"></canvas>
+    <br />
+    <vdr-chartist [entries]="selectedMetrics" />
+    <br />
+    <br />
+    <div class="flex">
+      <button
+        *ngFor="let metric of metrics$ | async"
+        class="button-small"
+        (click)="selectedMetrics = metric"
+        [class.active]="selectedMetrics?.summary.code === metric.summary.code"
+      >
+        {{ metric.summary.title }}
+      </button>
     </div>
   `,
   styles: [
     '.chart-container { height: 200px; width: 33%; padding-right: 20px; display: inline-block; padding-top: 20px;}',
     '@media screen and (max-width: 768px) { .chart-container { width: 100%; } }',
+    `
+      .circular-button {
+        width: 16px !important;
+        min-width: 16px !important;
+        height: 16px !important;
+        min-height: 16px !important;
+        border-radius: 50% !important;
+        padding: 0px 0px !important;
+        margin-left: 10.55px !important;
+        margin-right: 10.55px !important;
+        margin-bottom: 5px !important;
+        padding-top: 7.5px !important;
+        position: relative;
+        top: 4px;
+      }
+    `,
+    `
+      clr-icon[shape='times'] {
+        margin-top: -7.75px !important;
+        margin-left: 0.2px !important;
+      }
+    `,
+    `
+      .button-small.active {
+        background-color: var(--color-primary-200);
+        color: var(--color-primary-900);
+      }
+    `,
+    `
+      .flex {
+        gap: 0.5rem;
+      }
+    `,
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
-  metrics$: Observable<MetricSummary[]> | undefined;
-  charts: any[] = [];
-  selection: MetricInterval = MetricInterval.Monthly;
-  selection$ = new BehaviorSubject<MetricInterval>(MetricInterval.Monthly);
+  metrics$: Observable<ChartEntry[]> | undefined;
+  selectedMetrics: ChartEntry | undefined;
+  variantName: string;
+  dropDownName = 'Select Variant';
+  // selection: AdvancedMetricInterval = AdvancedMetricInterval.Monthly;
+  // selection$ = new BehaviorSubject<AdvancedMetricInterval>(
+  //   AdvancedMetricInterval.Monthly
+  // );
   nrOfOrdersChart?: any;
-  // Config for all charts
-  config = {
-    x: {
-      grid: {
-        display: false,
-      },
-    },
-    y: {
-      ticks: {
-        display: true,
-      },
-      grid: {
-        display: false,
-        drawBorder: false,
-      },
-    },
-  };
+  selectedVariantIds: string[] = [];
+  selectedVariantNames: string[] = [];
 
-  constructor(private dataService: DataService) {}
+  constructor(
+    private dataService: DataService,
+    private changeDetectorRef: ChangeDetectorRef,
+    private modalService: ModalService,
+    private metricsService: MetricsUiService
+  ) {}
 
   async ngOnInit() {
-    //this.observe();
-    this.metrics$ = this.selection$.pipe(
-      switchMap((selection) => {
-        return this.dataService
-          .query<MetricSummaryQuery, MetricSummaryQueryVariables>(GET_METRICS, {
-            input: {
-              interval: selection,
-            },
-          })
-          .refetchOnChannelChange()
-          .mapStream((metricSummary) => {
-            return metricSummary.metricSummary;
-          });
-      })
-    );
-    this.metrics$.subscribe(async (metrics) => {
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for Angular redraw
-      this.charts.forEach((chart) => chart.destroy());
-      metrics.forEach((chartData) =>
-        this.charts.push(this.createChart(chartData))
-      );
-    });
+    this.loadChartData();
   }
 
-  createChart(metric: MetricSummary) {
-    const h = 196; // Vendure hue
-    const s = 100;
-    const l = Math.floor(Math.random() * (80 - 20 + 1)) + 20;
-    const color = h + ', ' + s + '%, ' + l + '%';
-    return new Chart(metric.code, {
-      type: 'bar',
-      data: {
-        // values on X-Axis
-        labels: metric.entries.map((e) => e.label),
-        datasets: [
-          {
-            label: metric.title,
-            data: metric.entries.map((e) => e.value),
-            backgroundColor: `hsla(${color}, 0.4)`,
-            borderColor: `hsla(${color})`,
-            borderWidth: 1,
-          },
-        ],
-      },
-      options: {
-        maintainAspectRatio: false,
-        scales: this.config,
-      },
+  onDropdownItemClick(variantId: string, variantName: string) {
+    this.loadChartData();
+    this.dropDownName = variantName;
+  }
+
+  openProductSelectionDialog() {
+    this.modalService
+      .fromComponent(ProductMultiSelectorDialogComponent, {
+        size: 'xl',
+        locals: {
+          mode: 'variant',
+
+          initialSelectionIds: this.selectedVariantIds ?? [],
+        },
+      })
+      .subscribe((selection) => {
+        if (selection) {
+          this.selectedVariantNames = selection.map(
+            (s) => s.productVariantName
+          );
+          (this.selectedVariantIds = selection.map((s) => s.productVariantId)),
+            this.changeDetectorRef.detectChanges();
+          this.loadChartData();
+        }
+      });
+  }
+
+  clearProductVariantSelection() {
+    this.selectedVariantIds = [];
+    this.selectedVariantNames = [];
+    this.changeDetectorRef.detectChanges();
+    this.loadChartData();
+  }
+
+  loadChartData() {
+    this.metrics$ = this.metricsService.queryData(
+      // this.selection$,
+      this.selectedVariantIds
+    );
+    this.changeDetectorRef.detectChanges();
+    this.metrics$?.subscribe(async (metrics) => {
+      if (this.selectedMetrics) {
+        this.selectedMetrics = metrics.find(
+          (e) => e.summary.code == this.selectedMetrics?.summary.code
+        );
+      } else {
+        this.selectedMetrics = metrics[0];
+      }
+      this.changeDetectorRef.detectChanges();
     });
   }
 }
-
-@NgModule({
-  imports: [SharedModule],
-  declarations: [MetricsWidgetComponent],
-})
-export class MetricsWidgetModule {}

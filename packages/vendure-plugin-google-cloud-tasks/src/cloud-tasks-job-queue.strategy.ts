@@ -1,19 +1,119 @@
 import { CloudTasksClient } from '@google-cloud/tasks';
-import { Job, JobData, JobQueueStrategy, Logger } from '@vendure/core';
+import {
+  ID,
+  Injector,
+  InspectableJobQueueStrategy,
+  Job,
+  JobData,
+  JobQueueStrategy,
+  ListQueryBuilder,
+  Logger,
+  PaginatedList,
+  TransactionalConnection,
+  User,
+  UserInputError,
+} from '@vendure/core';
 import { CloudTasksPlugin } from './cloud-tasks.plugin';
 import { CloudTaskMessage, CloudTaskOptions } from './types';
-import { JobState } from '@vendure/common/lib/generated-types';
+import { In, LessThan, Repository, DataSource } from 'typeorm';
+import { JobListOptions, JobState } from '@vendure/common/lib/generated-types';
+import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
 const LIVE_QUEUES = new Set<string>();
 
 export type QueueProcessFunction = (job: Job) => Promise<any>;
 export const PROCESS_MAP = new Map<string, QueueProcessFunction>();
 
-export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
+export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   private client: CloudTasksClient;
+  private listQueryBuilder: ListQueryBuilder | undefined;
+  private jobRecordRepository!: Repository<JobRecord>;
+
+  init(injector: Injector): void | Promise<void> {
+    this.listQueryBuilder = injector.get(ListQueryBuilder);
+    this.jobRecordRepository = injector
+      .get(DataSource)
+      .getRepository(JobRecord);
+  }
 
   constructor(private options: CloudTaskOptions) {
     this.client = new CloudTasksClient();
+  }
+
+  async findOne(id: ID): Promise<Job<any> | undefined> {
+    if (!this.jobRecordRepository) {
+      throw new UserInputError('TransactionalConnection is not available');
+    }
+    const jobRecord = await this.jobRecordRepository.findOne({ where: { id } });
+    if (!jobRecord) {
+      throw new UserInputError(`No JobRecord with id ${id} exists`);
+    }
+    return new Job(jobRecord);
+  }
+
+  async findMany(
+    options?: JobListOptions | undefined
+  ): Promise<PaginatedList<Job<any>>> {
+    if (!this.listQueryBuilder) {
+      throw new UserInputError('ListQueryBuilder is not available');
+    }
+    return this.listQueryBuilder
+      .build(JobRecord, options)
+      .getManyAndCount()
+      .then(([items, totalItems]) => ({
+        items: items.map(this.fromRecord),
+        totalItems,
+      }));
+  }
+
+  async findManyById(ids: ID[]): Promise<Job<any>[]> {
+    if (!this.jobRecordRepository) {
+      throw new UserInputError('TransactionalConnection is not available');
+    }
+    return this.jobRecordRepository
+      .find({ where: { id: In(ids) } })
+      .then((records) => records.map(this.fromRecord));
+  }
+
+  async removeSettledJobs(
+    queueNames: string[],
+    olderThan?: Date | undefined
+  ): Promise<number> {
+    if (!this.jobRecordRepository) {
+      throw new UserInputError('TransactionalConnection is not available');
+    }
+    const result = await this.jobRecordRepository.delete({
+      ...(0 < queueNames.length ? { queueName: In(queueNames) } : {}),
+      isSettled: true,
+      settledAt: LessThan(olderThan ?? new Date()),
+    });
+    return result.affected || 0;
+  }
+
+  /**
+   * Remove all jobs older than given date.
+   * All queues, settled or unsettled
+   */
+  async removeAllJobs(olderThan: Date): Promise<void> {
+    if (!this.jobRecordRepository) {
+      throw new UserInputError('TransactionalConnection is not available');
+    }
+    await this.jobRecordRepository.delete({
+      createdAt: LessThan(olderThan),
+    });
+  }
+
+  async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
+    await this.jobRecordRepository.delete({ id: jobId });
+    return;
+  }
+
+  destroy() {
+    this.listQueryBuilder = undefined;
+  }
+
+  private fromRecord(this: void, jobRecord: JobRecord): Job<any> {
+    return new Job<any>(jobRecord);
   }
 
   async add<Data extends JobData<Data> = {}>(
@@ -23,53 +123,72 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
     if (!LIVE_QUEUES.has(queueName)) {
       await this.createQueue(queueName);
     }
-    try {
-      const cloudTaskMessage: CloudTaskMessage = {
-        id: `${queueName}-${Date.now()}`,
+    // Store record saying that the task is PENDING, because we don't distinguish between pending and running
+    const jobRecord = await this.jobRecordRepository.save(
+      new JobRecord({
         queueName: queueName,
         data: job.data,
-        createdAt: new Date(),
-        maxRetries: job.retries || this.options.defaultRetries || 3,
-      };
-      const parent = this.getQueuePath(queueName);
-      const task = {
-        httpRequest: {
-          httpMethod: 'POST' as const,
-          headers: {
-            'Content-type': 'application/json',
-            Authorization: `Bearer ${this.options.authSecret}`,
-          },
-          url: `${this.options.taskHandlerHost}/cloud-tasks/handler`,
-          body: Buffer.from(JSON.stringify(cloudTaskMessage)).toString(
-            'base64'
-          ),
-        },
-      };
-      const request = { parent, task };
-      await this.client.createTask(request, {
-        maxRetries: cloudTaskMessage.maxRetries,
-      });
-      Logger.debug(
-        `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
-        CloudTasksPlugin.loggerCtx
-      );
-      return new Job({
-        id: cloudTaskMessage.id,
-        queueName: job.queueName,
-        data: job.data,
         attempts: job.attempts,
-        state: JobState.RUNNING,
+        state: JobState.PENDING,
         startedAt: job.startedAt,
         createdAt: job.createdAt,
-        retries: job.retries,
-      });
-    } catch (e) {
-      Logger.error(
-        `Failed to add task to queue ${queueName}: ${e?.message}`,
-        CloudTasksPlugin.loggerCtx,
-        e
-      );
-      throw e;
+        isSettled: false,
+        retries: job.retries || this.options.defaultJobRetries || 3,
+        progress: 0,
+      })
+    );
+    const cloudTaskMessage: CloudTaskMessage = {
+      id: jobRecord.id,
+      queueName: jobRecord.queueName,
+      data: jobRecord.data,
+      createdAt: jobRecord.createdAt,
+      maxRetries: jobRecord.retries,
+    };
+    const parent = this.getQueuePath(queueName);
+    const task = {
+      httpRequest: {
+        httpMethod: 'POST' as const,
+        headers: {
+          'Content-type': 'application/json',
+          Authorization: `Bearer ${this.options.authSecret}`,
+        },
+        url: `${this.options.taskHandlerHost}/cloud-tasks/handler`,
+        body: Buffer.from(JSON.stringify(cloudTaskMessage)).toString('base64'),
+      },
+    };
+    const request = { parent, task };
+    let currentAttempt = 0;
+    while (true) {
+      try {
+        await this.client.createTask(request, {
+          maxRetries: cloudTaskMessage.maxRetries,
+        });
+        Logger.debug(
+          `Added job with retries=${cloudTaskMessage.maxRetries} to queue ${queueName}: ${cloudTaskMessage.id} for ${task.httpRequest.url}`,
+          CloudTasksPlugin.loggerCtx
+        );
+        return new Job<any>(jobRecord);
+      } catch (e: any) {
+        currentAttempt += 1;
+        if (currentAttempt === (this.options.createTaskRetries ?? 5)) {
+          Logger.error(
+            `Failed to add task to queue ${queueName} in ${currentAttempt} attempts. Not retrying anymore! Error: ${e?.message}`,
+            CloudTasksPlugin.loggerCtx,
+            (e as Error)?.stack
+          );
+          throw e;
+        }
+        Logger.warn(
+          `Failed to add task to queue ${queueName} in attempt nr ${currentAttempt}: ${e?.message}`,
+          CloudTasksPlugin.loggerCtx
+        );
+        // Exponential backoff after first 3 subsequent attempts
+        if (currentAttempt > 3) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 1000 * 2 ** currentAttempt)
+          );
+        }
+      }
     }
   }
 
@@ -85,6 +204,10 @@ export class CloudTasksJobQueueStrategy implements JobQueueStrategy {
     const queueName = this.getQueueName(originalQueueName);
     PROCESS_MAP.set(queueName, process);
     Logger.info(`Started queue ${queueName}`, CloudTasksPlugin.loggerCtx);
+  }
+
+  getAllQueueNames(): string[] {
+    return Array.from(PROCESS_MAP.keys());
   }
 
   /**

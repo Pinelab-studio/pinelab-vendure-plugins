@@ -1,7 +1,5 @@
 # Shipping by weight and country Vendure Plugin
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-shipping-by-weight-and-country/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-shipping-by-weight-and-country)
 
 This plugin adds a shipping eligibility checker to Vendure that checks the total weight and the shipping country of an

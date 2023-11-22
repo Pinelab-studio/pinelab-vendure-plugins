@@ -2,31 +2,24 @@ import {
   PluginCommonModule,
   RuntimeVendureConfig,
   VendurePlugin,
+  Logger,
 } from '@vendure/core';
 import { CloudTasksJobQueueStrategy } from './cloud-tasks-job-queue.strategy';
-import { json } from 'body-parser';
 import { CloudTasksHandler } from './cloud-tasks.handler';
-import { CloudTaskOptions, ROUTE } from './types';
+import { CloudTaskOptions } from './types';
+import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   controllers: [CloudTasksHandler],
+  entities: [JobRecord],
   configuration: (config: RuntimeVendureConfig) => {
     config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy(
       CloudTasksPlugin.options
     );
-    config.apiOptions.middleware = [
-      {
-        route: `/${ROUTE}`,
-        beforeListen: true,
-        handler: json({
-          limit: CloudTasksPlugin.options.bodySizeLimit || '1mb',
-        }),
-      },
-      ...config.apiOptions.middleware,
-    ];
     return config;
   },
+  compatibility: '^2.0.0',
 })
 export class CloudTasksPlugin {
   static loggerCtx = 'CloudTaskPlugin';
@@ -34,6 +27,16 @@ export class CloudTasksPlugin {
 
   static init(options: CloudTaskOptions): typeof CloudTasksPlugin {
     this.options = options;
+    if (
+      this.options?.createTaskRetries &&
+      this.options?.createTaskRetries > 20
+    ) {
+      this.options.createTaskRetries = 20;
+      Logger.warn(
+        `createTaskRetries can be set to a maximum of 20 retries. This is to avoid too many stacked create task retries`,
+        this.loggerCtx
+      );
+    }
     return CloudTasksPlugin;
   }
 }

@@ -1,7 +1,5 @@
 # Vendure Plugin for generating invoices
 
-![Vendure version](https://img.shields.io/npm/dependency-version/vendure-plugin-invoices/dev/@vendure/core)
-
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-invoices)
 
 A plugin for generating PDF invoices for placed orders.
@@ -13,12 +11,6 @@ A plugin for generating PDF invoices for placed orders.
 ```ts
 plugins: [
   InvoicePlugin.init({
-    /**
-     * This plugins requires a license for commercial use.
-     * Visit https://pinelab-plugins.com/vendure-plugin-invoices
-     * for more information
-     */
-    licenseKey: processs.env.LICENSE,
     // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
   }),
@@ -43,13 +35,6 @@ plugins: [
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
-If you are using Docker with node:16 or higher as base, you need to add this to your Dockerfile:
-
-```shell
-# PhantomJS fix https://github.com/bazelbuild/rules_closure/issues/351
-ENV OPENSSL_CONF=/dev/null
-```
-
 ## Adding invoices to your order-confirmation email
 
 Add the following link to your email template:
@@ -58,6 +43,18 @@ Add the following link to your email template:
 
 When the customer clicks the link, the server will check if the `ordercode`, `channelCode` and `customer emailaddress`
 match with the requested order. If so, it will return the invoice.
+
+## Increase invoice template DB storage
+
+By default, the plugin uses TypeOrm's `text` to store the invoice template in the DB. This might not be enough, for example when you'd like to add base64 encoded images to your invoices. This will result in the error `ER_DATA_TOO_LONG: Data too long for column 'templateString'`. You can specify your DB engine with an env variable, and the plugin will resolve the correct column type:
+
+```shell
+# E.g. For mysql the column type 'longtext' will be used, which supports up to 4gb
+INVOICES_PLUGIN_DB_ENGINE=mysql
+```
+
+Don't forget to run a DB migration: This will delete any data in the `templateString` column!
+Checkout https://orkhan.gitbook.io/typeorm/docs/entities for available databases and column types.
 
 ## Google Storage strategy
 

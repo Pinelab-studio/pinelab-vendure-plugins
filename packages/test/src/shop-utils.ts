@@ -1,17 +1,20 @@
+import { ErrorResult, Order } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
+  SetBillingAddress,
   AddItemToOrder,
   AddPaymentToOrder,
   AddPaymentToOrderMutation,
-  ErrorCode,
+  ApplyCouponCode,
+  OrderFieldsFragment,
   SetShippingAddress,
   SetShippingAddressMutationVariables,
   SetShippingMethod,
   TransitionToState,
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
+  SetBillingAddressMutationVariables,
 } from './generated/shop-graphql';
-import { ErrorResult, Order } from '@vendure/core';
 import { testPaymentMethod } from './test-payment-method';
 
 /**
@@ -20,23 +23,25 @@ import { testPaymentMethod } from './test-payment-method';
 export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
-  address?: SetShippingAddressMutationVariables
-) {
-  await shopClient.query(
-    SetShippingAddress,
-    address ?? {
-      input: {
-        fullName: 'Martinho Pinelabio',
-        streetLine1: 'Verzetsstraat',
-        streetLine2: '12a',
-        city: 'Liwwa',
-        postalCode: '8923CP',
-        countryCode: 'NL',
-      },
-    }
-  );
+  shippingAddress?: SetShippingAddressMutationVariables,
+  billingAddress?: SetBillingAddressMutationVariables
+): Promise<void> {
+  const finalShippingAddress = shippingAddress ?? {
+    input: {
+      fullName: 'Martinho Pinelabio',
+      streetLine1: 'Verzetsstraat',
+      streetLine2: '12a',
+      city: 'Liwwa',
+      postalCode: '8923CP',
+      countryCode: 'NL',
+    },
+  };
+  await shopClient.query(SetShippingAddress, finalShippingAddress);
+  if (billingAddress) {
+    await shopClient.query(SetBillingAddress, billingAddress);
+  }
   await shopClient.query(SetShippingMethod, {
-    id: shippingMethodId,
+    ids: [shippingMethodId],
   });
 }
 
@@ -46,9 +51,15 @@ export async function setAddressAndShipping(
 export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
-  address?: SetShippingAddressMutationVariables
-) {
-  await setAddressAndShipping(shopClient, shippingMethodId, address);
+  shippingAddress: SetShippingAddressMutationVariables,
+  billingAddress?: SetBillingAddressMutationVariables
+): Promise<TransitionToStateMutation['transitionOrderToState']> {
+  await setAddressAndShipping(
+    shopClient,
+    shippingMethodId,
+    shippingAddress,
+    billingAddress
+  );
   const result = await shopClient.query<
     TransitionToStateMutation,
     TransitionToStateMutationVariables
@@ -89,26 +100,53 @@ export async function addItem(
   return addItemToOrder;
 }
 
+export async function applyCouponCode(
+  shopClient: SimpleGraphQLClient,
+  couponCode: string
+): Promise<OrderFieldsFragment> {
+  const { applyCouponCode } = await shopClient.query(ApplyCouponCode, {
+    couponCode,
+  });
+  return applyCouponCode;
+}
+
 export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
-  shippingMethodId: string | number
-): Promise<Order> {
-  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  await addItem(shopClient, 'T_1', 1);
-  await addItem(shopClient, 'T_2', 2);
-  const res = await proceedToArrangingPayment(shopClient, shippingMethodId, {
-    input: {
-      fullName: 'Martinho Pinelabio',
-      streetLine1: 'Verzetsstraat',
-      streetLine2: '12a',
-      city: 'Liwwa',
-      postalCode: '8923CP',
-      countryCode: 'NL',
+  shippingMethodId: string | number,
+  authorizeFirst = true,
+  variants: Array<{ id: string; quantity: number }> = [
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_2', quantity: 2 },
+  ],
+  billingAddress?: SetBillingAddressMutationVariables
+): Promise<AddPaymentToOrderMutation['addPaymentToOrder']> {
+  if (authorizeFirst) {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+  }
+  for (const v of variants) {
+    await addItem(shopClient, v.id, v.quantity);
+  }
+  const res = await proceedToArrangingPayment(
+    shopClient,
+    shippingMethodId,
+    {
+      input: {
+        fullName: 'Martinho Pinelabio',
+        streetLine1: 'Verzetsstraat',
+        streetLine2: '12a',
+        city: 'Liwwa',
+        postalCode: '8923CP',
+        countryCode: 'NL',
+      },
     },
-  });
+    billingAddress
+  );
   if ((res as ErrorResult)?.errorCode) {
     console.error(JSON.stringify(res));
     throw Error((res as ErrorResult).errorCode);
   }
-  return (await addPaymentToOrder(shopClient, testPaymentMethod.code)) as Order;
+  return await addPaymentToOrder(shopClient, testPaymentMethod.code);
 }
