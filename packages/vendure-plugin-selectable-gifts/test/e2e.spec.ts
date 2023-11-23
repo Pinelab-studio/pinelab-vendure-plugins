@@ -171,20 +171,6 @@ describe('Storefront free gift selection', function () {
     );
   });
 
-  it('Adds a new gift to order and removes the old gift', async () => {
-    const { addSelectedGiftToOrder: order } = await shopClient.query(
-      ADD_GIFT_TO_ORDER,
-      { productVariantId: giftForOrdersAbove0 }
-    );
-    const giftLine = order.lines.find(
-      (line) => line.productVariant.id === giftForOrdersAbove0
-    );
-    expect(order.lines.length).toBe(2);
-    expect(giftLine.customFields.isSelectedAsGift).toBe(true);
-    expect(giftLine.discountedUnitPriceWithTax).toBe(0);
-    expect(giftLine.discountedLinePriceWithTax).toBe(0);
-  });
-
   it('Create a new non-discounted order line when the gift is added as normal item', async () => {
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
@@ -213,6 +199,13 @@ describe('Storefront free gift selection', function () {
     });
     const eligibleGifts = await getEligibleGifts(shopClient);
     expect(eligibleGifts.length).toBe(2);
+    // Both gifts should be eligible
+    expect(
+      eligibleGifts.find((g) => g.id === giftForLoyalCustomer)
+    ).toBeDefined();
+    expect(
+      eligibleGifts.find((g) => g.id === giftForOrdersAbove0)
+    ).toBeDefined();
   });
 
   it('Adds "Loyal customer" gift to order', async () => {
@@ -231,6 +224,24 @@ describe('Storefront free gift selection', function () {
     expect(order.discounts[0].description).toBe(
       'Free gift for loyal customers'
     );
+  });
+
+  it('Adds a new gift to order and removes the old gift', async () => {
+    const { addSelectedGiftToOrder: order } = await shopClient.query(
+      ADD_GIFT_TO_ORDER,
+      { productVariantId: giftForOrdersAbove0 }
+    );
+    const giftLine = order.lines.find(
+      (line) => line.productVariant.id === giftForOrdersAbove0
+    );
+    const linesSelectedAsGift = order.lines.filter(
+      (l) => l.customFields.isSelectedAsGift
+    );
+    expect(order.lines.length).toBe(2); // 1 gift, 1 normal item
+    expect(linesSelectedAsGift.length).toBe(1);
+    expect(giftLine.customFields.isSelectedAsGift).toBe(true);
+    expect(giftLine.discountedUnitPriceWithTax).toBe(0);
+    expect(giftLine.discountedLinePriceWithTax).toBe(0);
   });
 
   it('Still has eligible gifts after a gift has been added', async () => {

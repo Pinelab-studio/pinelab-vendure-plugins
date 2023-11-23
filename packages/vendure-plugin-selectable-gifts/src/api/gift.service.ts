@@ -73,7 +73,7 @@ export class GiftService {
     }
     // Remove previously selected gifts if any
     const giftLine = order.lines.find(
-      (line) => line.productVariant.id === productVariantId
+      (line) => (line.customFields as any)?.isSelectedAsGift
     );
     if (giftLine) {
       await this.orderService.adjustOrderLine(ctx, orderId, giftLine.id, 0, {
