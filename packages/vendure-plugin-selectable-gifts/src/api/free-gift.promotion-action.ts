@@ -25,7 +25,7 @@ export const freeGiftPromotionAction = new PromotionItemAction({
   init(injector) {},
   async execute(ctx, orderLine, args, state) {
     if ((orderLine.customFields as any).isSelectedAsGift) {
-      Logger.info(
+      Logger.verbose(
         `Discounting 1 ${orderLine.productVariant.name} (order line ${orderLine.id}) because it's selected as gift`,
         loggerCtx
       );
