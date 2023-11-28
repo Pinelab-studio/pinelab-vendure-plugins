@@ -302,7 +302,10 @@ export class PicqerService implements OnApplicationBootstrap {
     Logger.info(`Successfully handled hook ${input.body.event}`, loggerCtx);
   }
 
-  async triggerFullSync(ctx: RequestContext): Promise<boolean> {
+  /**
+   * Create jobs to push all Vendure variants as products to Picqer
+   */
+  async createPushProductsJob(ctx: RequestContext): Promise<void> {
     const variantIds: ID[] = [];
     let skip = 0;
     const take = 1000;
@@ -334,6 +337,12 @@ export class PicqerService implements OnApplicationBootstrap {
     while (variantIds.length) {
       await this.addPushVariantsJob(ctx, variantIds.splice(0, batchSize));
     }
+  }
+
+  /**
+   * Create job to pull stock levels of all products from Picqer
+   */
+  async createStockLevelJobs(ctx: RequestContext): Promise<void> {
     await this.jobQueue.add(
       {
         action: 'pull-stock-levels',
@@ -342,7 +351,6 @@ export class PicqerService implements OnApplicationBootstrap {
       { retries: 10 }
     );
     Logger.info(`Added 'pull-stock-levels' job to queue`, loggerCtx);
-    return true;
   }
 
   /**

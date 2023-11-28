@@ -3,10 +3,12 @@ import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
+  Logger,
   PermissionDefinition,
   RequestContext,
 } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
+import { all } from 'axios';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
   PicqerConfig,
@@ -30,7 +32,28 @@ export class PicqerResolver {
   @Mutation()
   @Allow(picqerPermission.Permission)
   async triggerPicqerFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
-    return this.service.triggerFullSync(ctx);
+    let allSucceeded = true;
+    await this.service
+      .createStockLevelJobs(ctx)
+      .catch((e: Error | undefined) => {
+        Logger.error(
+          `Failed to create jobs to pull stock levels from Picqer: ${e?.message}`,
+          loggerCtx,
+          e?.stack
+        );
+        allSucceeded = false;
+      });
+    await this.service
+      .createPushProductsJob(ctx)
+      .catch((e: Error | undefined) => {
+        Logger.error(
+          `Failed to create jobs to push products to Picqer: ${e?.message}`,
+          loggerCtx,
+          e?.stack
+        );
+        allSucceeded = false;
+      });
+    return allSucceeded;
   }
 
   @Mutation()
