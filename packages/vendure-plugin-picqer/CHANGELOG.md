@@ -1,4 +1,8 @@
-# 2.2.4 (2023-11-21)
+# 2.2.5 (2023-11-28)
+
+- Expose `PicqerService.createStockLevelJobs(ctx)` to allow consumers to only trigger stock level updates
+
+- # 2.2.4 (2023-11-21)
 
 - Take Picqer allocated stock into account when setting stock on hand
 
