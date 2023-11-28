@@ -61,23 +61,34 @@ Stock levels are updated in Vendure on
 
 1. Full sync via the Admin UI
 2. On incoming webhook from Picqer
-3. Or, on trigger of the GET endpoint `/picqer/pull-stock/<channeltoken>`. You will need to pass your api key as auth header when you call this endpoint: `Authorization: "Bearer 1134090403msfksdl"`
+3. Or, on trigger of the GET endpoint `/picqer/pull-stock-levels/<channeltoken>`.
 
 This plugin will mirror the stock locations from Picqer. Non-Picqer stock locations will automatically be deleted by the plugin, to keep stock in sync with Picqer. Vendure's internal allocated stock will be ignored, because this is handled by Picqer.
 
 You can use a custom [StockLocationStrategy](https://github.com/vendure-ecommerce/vendure/blob/major/packages/core/src/config/catalog/default-stock-location-strategy.ts) to control how available stock is calculated based on multiple locations.
 
+### Periodical stock level sync
+
+You can call the endpoint `/picqer/pull-stock-levels/<channeltoken>`, with your Picqer API key as bearer token, to trigger a full stock level sync. This will pull stock levels from Picqer, and update them in Picqer.
+
+```
+curl -H "Authorization: Bearer abcde-your-apikey" `http://localhost:3000/picqer/pull-stock-levels/your-channel-token`
+```
+
+### Custom fulfillment process
+
+This plugin installs a custom fulfillment process in your Vendure instance, because Picqer will be responsible for fulfilling and thus for allocating/releasing stock. The custom fulfillment process makes sure an order is always fulfillable, stock synchronization with Picqer handles the stock levels.
+
+![!image](https://www.plantuml.com/plantuml/png/VOt1IeP054RtynJV0rIeAn4C9OXs2L7xmRdIq7McPkuiUlkqKVW5SNUvd7E-BeeEacPMJsp92UuVyK7Ef40DUcCW7XMiq1pNqmT3GMt0WVtK4MM1A7xyWf-oSXOTz2-qCuWamdHHx9dzg8Ns_IR7NztBehTbSGUz4QQjJWlFYIVBd3UkzS6EFnGEzjkA8tsR1S4KYFuVRVs0z_opReUXuw5UtyOBrQtKp4hz0G00)
+
+- Without incoming stock from Picqer, items would be allocated indefinitely. Picqer has to tell Vendure what the stock levels of items are.
+
 ## Orders
 
-1. Orders are pushed to Picqer with status `processing` when an order is placed in Vendure. The Vendure order will remain in `Payment Settled` and no fulfillments are created.
-2. Products are fulfilled in Vendure based on the products in the incoming `picklist.closed` events from Picqer. This can result in the order being `Shipped` or `PartiallyShipped`
-3. Currently, when the order is `Shipped` it will automatically transition to `Delivered`, because we do not receive delivery events from Picqer.
-
-### Order flow:
-
-![Order flow](https://www.plantuml.com/plantuml/png/RSvD2W8n30NWVKyHkjS3p49c8MuT4DmFxLCBwOzfwlcbM45XTW_oyYLprLMqHJPN9Dy4j3lG4jmJGXCjhJueYuTGJYCKNXqYalvkVED4fyQtmFmfRw8NA6acMoGxr1hItPen_9FENQXxbsDXAFpclQwDnxfv18SN1DwQkLSYlm40)
-
-[edit](https://www.plantuml.com/plantuml/uml/bOwn2i9038RtFaNef8E27Jj81n-W8BWVTr4FqqjDSe9lxnLQK73GBI7_z_tfr9nO7gWwOGfP43PxwAE_eq0BVTOhi8IoS9g7aPp70PF1ge5HE6HlklwA7z706EgIygWQqwMkvcE9BKGx0JUAQbjFh1ZWpBAOORUOFv6Ydl-P2ded5XtH4mv8yO62uV-cvfUcDtytHGPw0G00)
+1. Orders are pushed to Picqer with status `processing` when an order is placed in Vendure.
+2. The order is immediately fulfilled on order placement.
+3. On incoming `order.completed` event from Picqer, the order is transitioned to `Shipped`.
+4. There currently is no way of telling when an order is `Deliverd` based on Picqer events, so we automatically transition to `Delivered`.
 
 ## Caveats
 

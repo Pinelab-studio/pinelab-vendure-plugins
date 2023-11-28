@@ -51,7 +51,7 @@ export class PicqerController {
     }
   }
 
-  @Post('pull-stock/:channelToken')
+  @Post('pull-stock-levels/:channelToken')
   async pullStockLevels(
     @Headers('Authorization') authHeader: string,
     @Param('channelToken') channelToken: string
