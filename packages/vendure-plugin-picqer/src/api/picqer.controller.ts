@@ -6,6 +6,7 @@ import {
   Post,
   Req,
   BadRequestException,
+  Get,
 } from '@nestjs/common';
 import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { Request } from 'express';
@@ -51,7 +52,7 @@ export class PicqerController {
     }
   }
 
-  @Post('pull-stock-levels/:channelToken')
+  @Get('pull-stock-levels/:channelToken')
   async pullStockLevels(
     @Headers('Authorization') authHeader: string,
     @Param('channelToken') channelToken: string

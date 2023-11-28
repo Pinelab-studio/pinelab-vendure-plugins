@@ -75,11 +75,11 @@ You can call the endpoint `/picqer/pull-stock-levels/<channeltoken>`, with your 
 curl -H "Authorization: Bearer abcde-your-apikey" `http://localhost:3000/picqer/pull-stock-levels/your-channel-token`
 ```
 
-### Custom fulfillment process
+### Order process override
 
-This plugin installs a custom fulfillment process in your Vendure instance, because Picqer will be responsible for fulfilling and thus for allocating/releasing stock. The custom fulfillment process makes sure an order is always fulfillable, stock synchronization with Picqer handles the stock levels.
+This plugin installs the default order process with `checkFulfillmentStates: false`, so that orders can be transitioned to Shipped and Delivered without the need of fulfilment. Fulfilment is the responsibility of Picqer, so we wont handle that in Vendure when using this plugin.
 
-![!image](https://www.plantuml.com/plantuml/png/VOt1IeP054RtynJV0rIeAn4C9OXs2L7xmRdIq7McPkuiUlkqKVW5SNUvd7E-BeeEacPMJsp92UuVyK7Ef40DUcCW7XMiq1pNqmT3GMt0WVtK4MM1A7xyWf-oSXOTz2-qCuWamdHHx9dzg8Ns_IR7NztBehTbSGUz4QQjJWlFYIVBd3UkzS6EFnGEzjkA8tsR1S4KYFuVRVs0z_opReUXuw5UtyOBrQtKp4hz0G00)
+![!image](https://www.plantuml.com/plantuml/png/VOv1IyD048Nl-HNl1rH9Uog1I8iNRnQYtfVCn0nkPkFk1F7VIvgjfb2yBM_VVEyx97FHfi4NZrvO3NSFU6EbANA58n4iO0Sn7jBy394u5hbmrUrTmhP4ij1-87JBoIteoNt3AI6ncUT_Y4VlG-kCB_lL0d_M9wTKRyiDN6vGlLiJJj9-SgpGiDB2XuMSuaki3vEXctmdVc2r8l-ijvjv2TD8ytuNcSz1lR_7wvA9NifmwKfil_OgRy5VejCa9a7_x9fUnf5fy-lNHdOc-fv5pwQfECoCmVy0)
 
 - Without incoming stock from Picqer, items would be allocated indefinitely. Picqer has to tell Vendure what the stock levels of items are.
 

@@ -456,34 +456,6 @@ describe('Product synchronization', function () {
   });
 });
 
-describe('Periodical stock updates', function () {
-  it('Throws forbidden for invalid api key', async () => {
-    const res = await adminClient.fetch(
-      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: 'Bearer this is not right',
-        },
-      }
-    );
-    expect(res.status).toBe(403);
-  });
-
-  it('Creates full sync jobs on calling of endpoint', async () => {
-    const res = await adminClient.fetch(
-      `http://localhost:3050/picqer/pull-stock-levels/${E2E_DEFAULT_CHANNEL_TOKEN}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: 'Bearer test-api-key',
-        },
-      }
-    );
-    expect(res.status).toBe(201);
-  });
-});
-
 describe('Order modification', function () {
   it('Update stock again', async () => {
     const variants = await updateVariants(adminClient, [
@@ -498,12 +470,12 @@ describe('Order modification', function () {
 
   it('Should create settled order', async () => {
     // Shipping method 3 should be our created Picqer handler method
-    createdOrder = await createSettledOrder(shopClient, 3, true, [
+    createdOrder = (await createSettledOrder(shopClient, 3, true, [
       { id: 'T_1', quantity: 1 },
       { id: 'T_2', quantity: 1 },
-    ]);
-    expect(createdOrder.code).toBeDefined();
-    expect(createdOrder.state).toBe('PaymentSettled');
+    ])) as any;
+    expect(createdOrder?.code).toBeDefined();
+    expect(createdOrder?.state).toBe('PaymentSettled');
   });
 
   it('Should update order when order line is removed in Picqer', async () => {
@@ -544,13 +516,13 @@ describe('Order modification', function () {
 
   it('Should create another settled order', async () => {
     // Shipping method 3 should be our created Picqer handler method
-    createdOrder = await createSettledOrder(shopClient, 3, true, [
+    createdOrder = (await createSettledOrder(shopClient, 3, true, [
       { id: 'T_1', quantity: 3 },
       { id: 'T_2', quantity: 1 },
-    ]);
+    ])) as any;
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
-    expect(createdOrder.code).toBeDefined();
-    expect(createdOrder.state).toBe('PaymentSettled');
+    expect(createdOrder?.code).toBeDefined();
+    expect(createdOrder?.state).toBe('PaymentSettled');
   });
 
   it('Should update quantity when quantity is adjusted in Picqer', async () => {
@@ -590,6 +562,34 @@ describe('Order modification', function () {
     expect(order?.lines[0].quantity).toBe(1);
     expect(order?.lines[1].productVariant.sku).toBe('L2201508');
     expect(order?.lines[1].quantity).toBe(1);
+  });
+});
+
+describe('Periodical stock updates', function () {
+  it('Throws forbidden for invalid api key', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/pull-stock-levels/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer this is not right',
+        },
+      }
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('Creates full sync jobs on calling of endpoint', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/pull-stock-levels/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer test-api-key',
+        },
+      }
+    );
+    expect(res.status).toBe(200);
   });
 });
 
