@@ -1,6 +1,7 @@
-# 2.2.5 (2023-11-28)
+# 2.3.0 (2023-11-28)
 
-- Expose `PicqerService.createStockLevelJobs(ctx)` to allow consumers to only trigger stock level updates
+- Expose endpoint to periodically pull stock levels
+- Load
 
 - # 2.2.4 (2023-11-21)
 

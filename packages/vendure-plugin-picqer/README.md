@@ -60,7 +60,8 @@ Start the server and set the fulfillment handler to `picqer: Fulfill with Picqer
 Stock levels are updated in Vendure on
 
 1. Full sync via the Admin UI
-2. Or, on incoming webhook from Picqer
+2. On incoming webhook from Picqer
+3. Or, on trigger of the GET endpoint `/picqer/pull-stock/<channeltoken>`. You will need to pass your api key as auth header when you call this endpoint: `Authorization: "Bearer 1134090403msfksdl"`
 
 This plugin will mirror the stock locations from Picqer. Non-Picqer stock locations will automatically be deleted by the plugin, to keep stock in sync with Picqer. Vendure's internal allocated stock will be ignored, because this is handled by Picqer.
 
