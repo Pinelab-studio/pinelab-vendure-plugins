@@ -1,29 +1,22 @@
+import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
 import {
-  DefaultLogger,
-  ID,
-  LogLevel,
-  mergeConfig,
-  OrderService,
-  RequestContext,
-  RequestContextService,
-} from '@vendure/core';
-import {
+  createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
+  registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  createTestEnvironment,
-  registerInitializer,
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import {
   addShippingMethod,
   getAllVariants,
   getOrder,
-  updateProduct,
   updateVariants,
 } from '../../test/src/admin-utils';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import {
   GetVariantsQuery,
   GlobalFlag,
@@ -31,16 +24,10 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { PicqerPlugin, PicqerService } from '../src';
-import { VatGroup, IncomingOrderStatusWebhook } from '../src';
+import { IncomingOrderStatusWebhook, PicqerPlugin, VatGroup } from '../src';
+import { picqerHandler } from '../src/api/picqer.handler';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
-import { Order } from '@vendure/core';
-import { picqerHandler } from '../src/api/picqer.handler';
-import { describe, afterEach, beforeAll, it, expect, afterAll } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-import { ad } from 'vitest/dist/types-e3c9754d';
-import { Orders } from '../../test/dist/generated/admin-graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -466,6 +453,34 @@ describe('Product synchronization', function () {
       }
     );
     expect(res.status).toBe(403);
+  });
+});
+
+describe('Periodical stock updates', function () {
+  it('Throws forbidden for invalid api key', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer this is not right',
+        },
+      }
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('Creates full sync jobs on calling of endpoint', async () => {
+    const res = await adminClient.fetch(
+      `http://localhost:3050/picqer/pull-stock-levels/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer test-api-key',
+        },
+      }
+    );
+    expect(res.status).toBe(201);
   });
 });
 
