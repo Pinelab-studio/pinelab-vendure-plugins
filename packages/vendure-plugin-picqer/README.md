@@ -77,21 +77,19 @@ curl -H "Authorization: Bearer abcde-your-apikey" `http://localhost:3000/picqer/
 
 ### Order process override
 
-This plugin installs the default order process with `checkFulfillmentStates: false` configured, so that orders can be transitioned to Shipped and Delivered without the need of fulfilment. Fulfilment is the responsibility of Picqer, so we wont handle that in Vendure when using this plugin.
+This plugin installs the default order process with `checkFulfillmentStates: false` configured, so that orders can be transitioned to Shipped and Delivered without the need of fulfillment. Fulfillment is the responsibility of Picqer, so we won't handle that in Vendure when using this plugin.
 
 ![!image](https://www.plantuml.com/plantuml/png/VOv1IyD048Nl-HNl1rH9Uog1I8iNRnQYtfVCn0nkPkFk1F7VIvgjfb2yBM_VVEyx97FHfi4NZrvO3NSFU6EbANA58n4iO0Sn7jBy394u5hbmrUrTmhP4ij1-87JBoIteoNt3AI6ncUT_Y4VlG-kCB_lL0d_M9wTKRyiDN6vGlLiJJj9-SgpGiDB2XuMSuaki3vEXctmdVc2r8l-ijvjv2TD8ytuNcSz1lR_7wvA9NifmwKfil_OgRy5VejCa9a7_x9fUnf5fy-lNHdOc-fv5pwQfECoCmVy0)
 
-- Without incoming stock from Picqer, items would be allocated indefinitely. Picqer has to tell Vendure what the stock levels of items are.
+- Without incoming stock from Picqer, either via webhook or pulled from the Picqer API, items would be allocated indefinitely. Picqer has to tell Vendure what the stock level of products are.
 
 ## Orders
 
 1. Orders are pushed to Picqer with status `processing` when an order is placed in Vendure.
-2. The order is immediately fulfilled on order placement.
-3. On incoming `order.completed` event from Picqer, the order is transitioned to `Shipped`.
-4. There currently is no way of telling when an order is `Deliverd` based on Picqer events, so we automatically transition to `Delivered`.
+2. On incoming `order.completed` event from Picqer, the order is transitioned to `Shipped`.
+3. There currently is no way of telling when an order is `Delivered` based on Picqer events, so we automatically transition to `Delivered`.
 
 ## Caveats
 
 - Due to limitation of the Picqer API, the plugin only uploads images if no images exist for the product in Picqer.
-- Stock is updated directly on a variant, so no `StockMovementEvents` are emitted by Vendure when variants are updated in Vendure by the full sync.
 - This plugin automatically creates webhooks and deactivates old ones. Webhooks are created when you save your config.
