@@ -1,7 +1,7 @@
 # 2.3.0 (2023-11-28)
 
 - Expose endpoint to periodically pull stock levels
-- Load
+- Install order process that allows skipping fulfillments when transitioning to Shipped or Delivered
 
 - # 2.2.4 (2023-11-21)
 
