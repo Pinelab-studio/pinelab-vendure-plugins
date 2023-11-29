@@ -146,6 +146,7 @@ query GetVariants {
       outOfStockThreshold
       trackInventory
       stockAllocated
+      stockLevel
     }
     totalItems
   }

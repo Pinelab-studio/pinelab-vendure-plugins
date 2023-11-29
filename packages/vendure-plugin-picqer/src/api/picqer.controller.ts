@@ -1,14 +1,26 @@
-import { Body, Controller, Headers, Param, Post, Req } from '@nestjs/common';
-import { Logger } from '@vendure/core';
+import {
+  Controller,
+  ForbiddenException,
+  Headers,
+  Param,
+  Post,
+  Req,
+  BadRequestException,
+  Get,
+} from '@nestjs/common';
+import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { Request } from 'express';
+import util from 'util';
 import { loggerCtx } from '../constants';
 import { PicqerService } from './picqer.service';
 import { IncomingWebhook } from './types';
-import util from 'util';
 
 @Controller('picqer')
 export class PicqerController {
-  constructor(private picqerService: PicqerService) {}
+  constructor(
+    private picqerService: PicqerService,
+    private channelService: ChannelService
+  ) {}
 
   @Post('hooks/:channelToken')
   async webhook(
@@ -38,5 +50,33 @@ export class PicqerController {
       );
       throw e;
     }
+  }
+
+  @Get('pull-stock-levels/:channelToken')
+  async pullStockLevels(
+    @Headers('Authorization') authHeader: string,
+    @Param('channelToken') channelToken: string
+  ): Promise<void> {
+    if (!authHeader) {
+      throw new ForbiddenException('No bearer token provided');
+    }
+    const channel = await this.channelService.getChannelFromToken(channelToken);
+    if (!channel) {
+      throw new BadRequestException(
+        `No channel found for token ${channelToken}`
+      );
+    }
+    const apiKey = authHeader.replace('Bearer ', '').replace('bearer ', '');
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel,
+    });
+    const picqerConfig = await this.picqerService.getConfig(ctx);
+    if (picqerConfig?.apiKey !== apiKey) {
+      throw new ForbiddenException('Invalid bearer token');
+    }
+    await this.picqerService.createStockLevelJobs(ctx);
   }
 }

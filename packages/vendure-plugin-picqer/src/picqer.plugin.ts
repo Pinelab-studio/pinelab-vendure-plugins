@@ -1,4 +1,5 @@
 import {
+  configureDefaultOrderProcess,
   Order,
   PluginCommonModule,
   ProductVariant,
@@ -74,6 +75,9 @@ export interface PicqerOptions {
     });
     config.authOptions.customPermissions.push(picqerPermission);
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
+    config.orderOptions.process = [
+      configureDefaultOrderProcess({ checkFulfillmentStates: false }),
+    ];
     return config;
   },
   compatibility: '^2.0.0',
