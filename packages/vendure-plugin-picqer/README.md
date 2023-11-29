@@ -69,7 +69,7 @@ You can use a custom [StockLocationStrategy](https://github.com/vendure-ecommerc
 
 ### Periodical stock level sync
 
-You can call the endpoint `/picqer/pull-stock-levels/<channeltoken>`, with your Picqer API key as bearer token, to trigger a full stock level sync. This will pull stock levels from Picqer, and update them in Picqer.
+You can call the endpoint `/picqer/pull-stock-levels/<channeltoken>`, with your Picqer API key as bearer token, to trigger a full stock level sync. This will pull stock levels from Picqer, and update them in Vendure.
 
 ```
 curl -H "Authorization: Bearer abcde-your-apikey" `http://localhost:3000/picqer/pull-stock-levels/your-channel-token`
