@@ -23,6 +23,7 @@ import {
   Order,
   OrderPlacedEvent,
   OrderService,
+  OrderStateTransitionError,
   ProductService,
   ProductVariant,
   ProductVariantEvent,
@@ -40,7 +41,6 @@ import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-
 import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 import currency from 'currency.js';
 import util from 'util';
-import { fulfillAll } from '../../../util/src/order-state-util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
@@ -360,27 +360,12 @@ export class PicqerService implements OnApplicationBootstrap {
     const order = await this.orderService.findOneByCode(ctx, data.reference, [
       'lines',
       'lines.productVariant',
-      'fulfillments',
     ]);
     if (!order) {
       Logger.warn(
         `No order found for code ${data.reference}. Not processing this hook any further`,
         loggerCtx
       );
-      return;
-    }
-    if (data.status !== 'cancelled' && data.status !== 'completed') {
-      Logger.info(
-        `Not handling incoming status '${data.status}'. Skipping status update for order ${order.code}`,
-        loggerCtx
-      );
-    }
-    if (data.status === 'cancelled' && order.state === 'Cancelled') {
-      // Do nothing, order already Cancelled
-      return;
-    }
-    if (data.status === 'completed' && order.state === 'Delivered') {
-      // Do nothing, order already Delivered
       return;
     }
     if (data.status === 'cancelled' && order.state !== 'Cancelled') {
@@ -402,143 +387,32 @@ export class PicqerService implements OnApplicationBootstrap {
       Logger.info(`Cancelled order ${order.code}`, loggerCtx);
       return;
     }
-    if (data.status === 'completed' && order.state !== 'Delivered') {
-      // Remove any items that don't exist in Picqer order
-      await this.updateOrderBasedOnPicqer(ctx, order, data.products);
-      // Order should be transitioned to Shipped, then to Delivered
-      if (order.state !== 'Shipped') {
-        // Try to fulfill order first. This should have been done already, except for back orders
-        await this.safeFulfill(ctx, order, 'order.status_changed webhook');
-        // If order isn't Shipped yet, mark all it's fulfillments as Shipped
-        for (const fulfillment of order.fulfillments) {
-          const result = await this.orderService.transitionFulfillmentToState(
-            ctx,
-            fulfillment.id,
-            'Shipped'
-          );
-          if ((result as FulfillmentStateTransitionError).errorCode) {
-            Logger.error(
-              `Failed to transition fulfilment (${fulfillment.id}) of order ${
-                order.code
-              } to Shipped: ${
-                (result as FulfillmentStateTransitionError).message
-              }`,
-              loggerCtx,
-              util.inspect(result)
-            );
-            return;
-          }
-        }
-        const updatedOrder = await assertFound(
-          this.orderService.findOne(ctx, order.id)
-        );
-        if (updatedOrder.state !== 'Shipped') {
-          Logger.error(
-            `Failed to transition order ${order.code} to Shipped, after marking all fulfillments as Shipped. This order should be manually transitioned to Shipped and Delivered`,
-            loggerCtx
-          );
-          return;
-        }
-        Logger.info(`Order ${order.code} transitioned to Shipped`, loggerCtx);
-      }
-      // Move all fulfillments to Delivered
-      for (const fulfillment of order.fulfillments) {
-        const result = await this.orderService.transitionFulfillmentToState(
-          ctx,
-          fulfillment.id,
-          'Delivered'
-        );
-        if ((result as FulfillmentStateTransitionError).errorCode) {
-          Logger.error(
-            `Failed to transition fulfilment (${fulfillment.id}) of order ${
-              order.code
-            } to Delivered: ${
-              (result as FulfillmentStateTransitionError).message
-            }`,
-            loggerCtx,
-            util.inspect(result)
-          );
-          return;
-        }
-      }
-      const updatedOrder = await assertFound(
-        this.orderService.findOne(ctx, order.id)
+    if (
+      data.status === 'completed' &&
+      order.state !== 'Delivered' &&
+      order.state !== 'Cancelled'
+    ) {
+      // Order should be transitioned to Delivered
+      const result = await this.orderService.transitionToState(
+        ctx,
+        order.id,
+        'Delivered'
       );
-      if (updatedOrder.state !== 'Delivered') {
+      const errorResult = result as OrderStateTransitionError;
+      if (errorResult.errorCode) {
         Logger.error(
-          `Failed to transition order ${order.code} to Delivered. This order should be manually transitioned to Delivered`,
-          loggerCtx
+          `Failed to transition order ${order.code} to Delivered: ${errorResult.message}`,
+          loggerCtx,
+          util.inspect(errorResult)
         );
         return;
       }
       Logger.info(`Order ${order.code} transitioned to Delivered`, loggerCtx);
     }
-  }
-
-  /**
-   * Cancel any order lines that don't exist in the Picqer order. This can happen when items have been manually removed in Picqer
-   *
-   * We don't add items in Vendure, because that would require additional payment.
-   */
-  async updateOrderBasedOnPicqer(
-    ctx: RequestContext,
-    order: Order,
-    picqerProducts: { productcode: string; amount: number }[]
-  ): Promise<Order> {
-    const orderLinesToCancel: OrderLineInput[] = [];
-    let message: string = ``;
-    order.lines.forEach((line) => {
-      const picqerOrderLine = picqerProducts.find(
-        (p) => p.productcode === line.productVariant.sku
-      );
-      if (!picqerOrderLine) {
-        orderLinesToCancel.push({
-          orderLineId: line.id,
-          quantity: line.quantity,
-        });
-        message += `Product ${line.productVariant.sku} not found in Picqer, canceled corresponding order line.\n`;
-        return;
-      }
-      if (picqerOrderLine.amount < line.quantity) {
-        const diff = line.quantity - picqerOrderLine.amount;
-        orderLinesToCancel.push({
-          orderLineId: line.id,
-          quantity: diff,
-        });
-        message += `Product ${line.productVariant.sku} quantity changed to ${line.quantity} based on order in Picqer.\n`;
-      }
-    });
-    if (!message) {
-      // No adjustments needed
-      return order;
-    }
     Logger.info(
-      `Updating order lines for order ${order.code} based on Picer order`,
+      `Not handling incoming status '${data.status}' because order ${order.code} is already '${order.state}'`,
       loggerCtx
     );
-    const result = await this.orderService.cancelOrder(ctx, {
-      orderId: order.id,
-      cancelShipping: false,
-      lines: orderLinesToCancel,
-    });
-    if ((result as ErrorResult).errorCode) {
-      Logger.error(
-        `Failed to update order lines or order ${
-          order.code
-        }, based on Picqer order: ${
-          (result as ErrorResult).message
-        }. Changed order lines: ${message}`,
-        loggerCtx,
-        util.inspect(result)
-      );
-      return order;
-    }
-    this.orderService.addNoteToOrder(ctx, {
-      id: order.id,
-      note: message,
-      isPublic: false,
-    });
-    return result as Order;
   }
 
   /**
@@ -802,8 +676,6 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
-    // Fulfill order first
-    await this.safeFulfill(ctx, order, 'order placement');
     // Push the order to Picqer
     await this.pushOrderToPicqer(ctx, order, client);
   }
@@ -1235,32 +1107,6 @@ export class PicqerService implements OnApplicationBootstrap {
       invoicecountry: order.billingAddress?.countryCode?.toUpperCase(),
       products,
     };
-  }
-
-  /**
-   * Fulfill without throwing errors. Logs an error if fulfilment fails
-   */
-  private async safeFulfill(
-    ctx: RequestContext,
-    order: Order,
-    logAction: string
-  ): Promise<void> {
-    try {
-      const fulfillment = await fulfillAll(ctx, this.orderService, order, {
-        code: picqerHandler.code,
-        arguments: [],
-      });
-      Logger.info(
-        `Created fulfillment (${fulfillment.id}) for order ${order.code} on '${logAction}'`,
-        loggerCtx
-      );
-    } catch (e: any) {
-      Logger.error(
-        `Failed to fulfill order ${order.code} on '${logAction}': ${e?.message}. Transition this order manually to 'Delivered' after checking that it exists in Picqer.`,
-        loggerCtx,
-        util.inspect(e)
-      );
-    }
   }
 
   /**

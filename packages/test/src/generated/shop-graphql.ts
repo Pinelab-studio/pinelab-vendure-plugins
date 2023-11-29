@@ -2423,6 +2423,8 @@ export enum Permission {
   DeleteZone = 'DeleteZone',
   /** Owner means the user owns this entity, e.g. a Customer's own Order */
   Owner = 'Owner',
+  /** Allows setting Picqer config and triggering Picqer full sync */
+  Picqer = 'Picqer',
   /** Public means any unauthenticated user may perform the operation */
   Public = 'Public',
   /** Grants permission to read Administrator */

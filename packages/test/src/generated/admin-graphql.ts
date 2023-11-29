@@ -2477,6 +2477,36 @@ export type ManualPaymentStateError = ErrorResult & {
   message: Scalars['String'];
 };
 
+export enum MetricInterval {
+  Daily = 'Daily'
+}
+
+export type MetricSummary = {
+  __typename?: 'MetricSummary';
+  entries: Array<MetricSummaryEntry>;
+  interval: MetricInterval;
+  title: Scalars['String'];
+  type: MetricType;
+};
+
+export type MetricSummaryEntry = {
+  __typename?: 'MetricSummaryEntry';
+  label: Scalars['String'];
+  value: Scalars['Float'];
+};
+
+export type MetricSummaryInput = {
+  interval: MetricInterval;
+  refresh?: InputMaybe<Scalars['Boolean']>;
+  types: Array<MetricType>;
+};
+
+export enum MetricType {
+  AverageOrderValue = 'AverageOrderValue',
+  OrderCount = 'OrderCount',
+  OrderTotal = 'OrderTotal'
+}
+
 export type MimeTypeError = ErrorResult & {
   __typename?: 'MimeTypeError';
   errorCode: ErrorCode;
@@ -2777,6 +2807,8 @@ export type Mutation = {
   transitionFulfillmentToState: TransitionFulfillmentToStateResult;
   transitionOrderToState?: Maybe<TransitionOrderToStateResult>;
   transitionPaymentToState: TransitionPaymentToStateResult;
+  /** Push all products to, and pull all stock levels from Picqer */
+  triggerPicqerFullSync: Scalars['Boolean'];
   /** Update the active (currently logged-in) Administrator */
   updateActiveAdministrator: Administrator;
   /** Update an existing Administrator */
@@ -2832,6 +2864,8 @@ export type Mutation = {
   updateTaxRate: TaxRate;
   /** Update an existing Zone */
   updateZone: Zone;
+  /** Upsert Picqer config for the current channel */
+  upsertPicqerConfig: PicqerConfig;
 };
 
 
@@ -3647,6 +3681,11 @@ export type MutationUpdateZoneArgs = {
   input: UpdateZoneInput;
 };
 
+
+export type MutationUpsertPicqerConfigArgs = {
+  input: PicqerConfigInput;
+};
+
 export type NativeAuthInput = {
   password: Scalars['String'];
   username: Scalars['String'];
@@ -4267,6 +4306,8 @@ export enum Permission {
   DeleteZone = 'DeleteZone',
   /** Owner means the user owns this entity, e.g. a Customer's own Order */
   Owner = 'Owner',
+  /** Allows setting Picqer config and triggering Picqer full sync */
+  Picqer = 'Picqer',
   /** Public means any unauthenticated user may perform the operation */
   Public = 'Public',
   /** Grants permission to read Administrator */
@@ -4368,6 +4409,23 @@ export type PermissionDefinition = {
   assignable: Scalars['Boolean'];
   description: Scalars['String'];
   name: Scalars['String'];
+};
+
+export type PicqerConfig = {
+  __typename?: 'PicqerConfig';
+  apiEndpoint?: Maybe<Scalars['String']>;
+  apiKey?: Maybe<Scalars['String']>;
+  enabled?: Maybe<Scalars['Boolean']>;
+  storefrontUrl?: Maybe<Scalars['String']>;
+  supportEmail?: Maybe<Scalars['String']>;
+};
+
+export type PicqerConfigInput = {
+  apiEndpoint?: InputMaybe<Scalars['String']>;
+  apiKey?: InputMaybe<Scalars['String']>;
+  enabled?: InputMaybe<Scalars['Boolean']>;
+  storefrontUrl?: InputMaybe<Scalars['String']>;
+  supportEmail?: InputMaybe<Scalars['String']>;
 };
 
 export type PreviewCollectionVariantsInput = {
@@ -4850,12 +4908,16 @@ export type Query = {
   facets: FacetList;
   fulfillmentHandlers: Array<ConfigurableOperationDefinition>;
   globalSettings: GlobalSettings;
+  /** Test Picqer config against the Picqer API */
+  isPicqerConfigValid: Scalars['Boolean'];
   job?: Maybe<Job>;
   jobBufferSize: Array<JobBufferSize>;
   jobQueues: Array<JobQueue>;
   jobs: JobList;
   jobsById: Array<Job>;
   me?: Maybe<CurrentUser>;
+  /** Get metrics for the given interval and metric types. */
+  metricSummary: Array<MetricSummary>;
   order?: Maybe<Order>;
   orders: OrderList;
   paymentMethod?: Maybe<PaymentMethod>;
@@ -4863,6 +4925,7 @@ export type Query = {
   paymentMethodHandlers: Array<ConfigurableOperationDefinition>;
   paymentMethods: PaymentMethodList;
   pendingSearchIndexUpdates: Scalars['Int'];
+  picqerConfig?: Maybe<PicqerConfig>;
   /** Used for real-time previews of the contents of a Collection */
   previewCollectionVariants: ProductVariantList;
   /** Get a Product either by id or slug. If neither id nor slug is specified, an error will result. */
@@ -4996,6 +5059,11 @@ export type QueryFacetsArgs = {
 };
 
 
+export type QueryIsPicqerConfigValidArgs = {
+  input: TestPicqerInput;
+};
+
+
 export type QueryJobArgs = {
   jobId: Scalars['ID'];
 };
@@ -5013,6 +5081,11 @@ export type QueryJobsArgs = {
 
 export type QueryJobsByIdArgs = {
   jobIds: Array<Scalars['ID']>;
+};
+
+
+export type QueryMetricSummaryArgs = {
+  input?: InputMaybe<MetricSummaryInput>;
 };
 
 
@@ -5974,6 +6047,13 @@ export type TestEligibleShippingMethodsInput = {
   shippingAddress: CreateAddressInput;
 };
 
+export type TestPicqerInput = {
+  apiEndpoint: Scalars['String'];
+  apiKey: Scalars['String'];
+  storefrontUrl: Scalars['String'];
+  supportEmail: Scalars['String'];
+};
+
 export type TestShippingMethodInput = {
   calculator: ConfigurableOperationInput;
   checker: ConfigurableOperationInput;
@@ -6435,7 +6515,7 @@ export type UpdateProductMutation = { __typename?: 'Mutation', updateProduct: { 
 export type GetVariantsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetVariantsQuery = { __typename?: 'Query', productVariants: { __typename?: 'ProductVariantList', totalItems: number, items: Array<{ __typename?: 'ProductVariant', name: string, id: string, sku: string, stockOnHand: number, price: any, priceWithTax: any, outOfStockThreshold: number, trackInventory: GlobalFlag, stockAllocated: number }> } };
+export type GetVariantsQuery = { __typename?: 'Query', productVariants: { __typename?: 'ProductVariantList', totalItems: number, items: Array<{ __typename?: 'ProductVariant', name: string, id: string, sku: string, stockOnHand: number, price: any, priceWithTax: any, outOfStockThreshold: number, trackInventory: GlobalFlag, stockAllocated: number, stockLevel: string }> } };
 
 export type CreatePromotionMutationVariables = Exact<{
   input: CreatePromotionInput;
@@ -6592,6 +6672,7 @@ export const GetVariants = gql`
       outOfStockThreshold
       trackInventory
       stockAllocated
+      stockLevel
     }
     totalItems
   }
