@@ -544,7 +544,7 @@ export class PicqerService implements OnApplicationBootstrap {
           await this.connection.getRepository(ctx, StockLevel).save({
             id: stockLevelId,
             stockOnHand: picqerStock.freestock,
-            stockAllocated: 0, // Reset allocations based on Picqer events, because of our custom fulfilmentproces
+            stockAllocated: 0, // Reset allocations, because we skip fulfillment with this plugin
           });
           // Add stock adjustment
           stockAdjustments.push(
