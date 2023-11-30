@@ -75,6 +75,7 @@
         2,
         "always",
         [
+          "accept-blue",
           "admin-ui-helpers",
           "all-plugins",
           "coinbase",
