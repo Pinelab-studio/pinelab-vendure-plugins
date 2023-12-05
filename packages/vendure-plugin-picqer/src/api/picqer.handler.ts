@@ -17,12 +17,8 @@ export const picqerHandler = new FulfillmentHandler({
     service = injector.get(PicqerService);
   },
   createFulfillment: async (ctx, orders, orderItems, args) => {
-    orders.forEach((order) =>
-      Logger.info(`Fulfilled order ${order.code} with Picqer`, loggerCtx)
+    throw Error(
+      `Don't use fulfillment with Picqer. Directly transition to Shipped or Delivered instead.`
     );
-    // We can fetch track and trace codes from the Picqer API here
-    return {
-      method: `Picqer`,
-    };
   },
 });

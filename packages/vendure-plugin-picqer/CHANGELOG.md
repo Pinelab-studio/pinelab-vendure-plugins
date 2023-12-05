@@ -1,3 +1,7 @@
+# 2.3.1 (2023-12-05)
+
+- Throw error when trying to fulfill, because fulfilment shouldn't be used together with Picqer.
+
 # 2.3.0 (2023-11-28)
 
 - Expose endpoint to periodically pull stock levels
