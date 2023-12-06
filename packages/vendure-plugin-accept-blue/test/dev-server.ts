@@ -1,4 +1,4 @@
-import { AcceptBlueClient } from '../src/accept-blue-client';
+import { AcceptBlueClient } from '../src/api/accept-blue-client';
 import dotenv from 'dotenv';
 
 //  https://sandbox.emeraldworldpayments.com/login
