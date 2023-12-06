@@ -556,20 +556,21 @@ describe(
       });
 
       it('Should get Mollie payment methods', async () => {
-        expect.assertions(1);
+        let errorMessage: any | undefined;
         try {
           await client.getMolliePaymentMethods({
             paymentMethodCode: 'mollie-payment',
           });
         } catch (e: any) {
-          expect(e.message).toContain(
-            'No apiKey configured for payment method mollie-payment'
-          );
+          errorMessage = e.message;
         }
+        expect(errorMessage).toContain(
+          'No apiKey configured for payment method mollie-payment'
+        );
       });
 
       it('Should create Mollie payment intent as authenticated customer', async () => {
-        expect.assertions(1);
+        let errorMessage: any | undefined;
         const createMolliePaymentIntentInput: MolliePaymentIntentInput = {
           redirectUrl: 'https://remix-storefront.vendure.io',
           paymentMethodCode: 'mollie-payment',
@@ -580,10 +581,11 @@ describe(
             createMolliePaymentIntentInput
           );
         } catch (e: any) {
-          expect(e.message).toBe(
-            'Paymentmethod mollie-payment has no apiKey configured'
-          );
+          errorMessage = e.message;
         }
+        expect(errorMessage).toContain(
+          'Paymentmethod mollie-payment has no apiKey configured'
+        );
       });
     });
 
