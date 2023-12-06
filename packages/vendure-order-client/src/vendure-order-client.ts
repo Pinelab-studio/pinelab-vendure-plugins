@@ -15,8 +15,12 @@ import {
   CurrentUserFieldsFragment,
   ErrorResult,
   LoginMutation,
+  MolliePaymentIntentInput,
+  MolliePaymentMethodsInput,
+  MolliePaymentMethodsQuery,
   MutationAddPaymentToOrderArgs,
   MutationApplyCouponCodeArgs,
+  MutationCreateMolliePaymentIntentArgs,
   MutationLoginArgs,
   MutationRegisterCustomerAccountArgs,
   MutationRemoveCouponCodeArgs,
@@ -28,6 +32,7 @@ import {
   MutationSetOrderShippingMethodArgs,
   MutationTransitionOrderToStateArgs,
   PaymentInput,
+  QueryMolliePaymentMethodsArgs,
   QueryOrderByCodeArgs,
   RegisterCustomerAccountMutation,
   RegisterCustomerInput,
@@ -40,14 +45,12 @@ import {
   SetOrderBillingAddressMutation,
   SetOrderShippingAddressMutation,
   SetOrderShippingMethodMutation,
+  ShippingMethodQuote,
   Success,
   TransitionOrderToStateMutation,
-  ShippingMethodQuote,
-  MolliePaymentIntentInput,
-  MutationCreateMolliePaymentIntentArgs,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
-import { setResult, HandleLoadingState, StateStore } from './store-helpers';
+import { HandleLoadingState, setResult, StateStore } from './store-helpers';
 import { Id, VendureOrderEvents } from './vendure-order-events';
 
 /**
@@ -347,6 +350,16 @@ export class VendureOrderClient<A = unknown> {
       createMolliePaymentIntent
     );
     return molliePaymentLink;
+  }
+
+  async getMolliePaymentMethods(
+    input: MolliePaymentMethodsInput
+  ): Promise<MolliePaymentMethodsQuery['molliePaymentMethods']> {
+    const { molliePaymentMethods } = await this.rawRequest<
+      MolliePaymentMethodsQuery,
+      QueryMolliePaymentMethodsArgs
+    >(this.queries.GET_MOLLIE_PAYMENT_METHODS, { input });
+    return molliePaymentMethods;
   }
 
   @HandleLoadingState('$activeOrder')

@@ -1,3 +1,7 @@
+# 2.7.0 (2023-12-06)
+
+- Added `getMolliePaymentMethods` query
+
 # 2.6.1 (2023-12-01)
 
 - Expose getEligibleShippingMethods
