@@ -375,7 +375,7 @@ export class GraphqlQueries {
   `;
 
   CREATE_MOLLIE_PAYMENT_INTENT = gql`
-    mutation CreateMolliPaymentIntentMutation(
+    mutation CreateMolliePaymentIntentMutation(
       $input: MolliePaymentIntentInput!
     ) {
       createMolliePaymentIntent(input: $input) {
@@ -386,6 +386,30 @@ export class GraphqlQueries {
           errorCode
           message
         }
+      }
+    }
+  `;
+
+  GET_MOLLIE_PAYMENT_METHODS = gql`
+    query MolliePaymentMethods($input: MolliePaymentMethodsInput!) {
+      molliePaymentMethods(input: $input) {
+        id
+        code
+        description
+        minimumAmount {
+          value
+          currency
+        }
+        maximumAmount {
+          value
+          currency
+        }
+        image {
+          size1x
+          size2x
+          svg
+        }
+        status
       }
     }
   `;

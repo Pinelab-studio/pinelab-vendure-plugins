@@ -151,16 +151,6 @@ export interface BooleanOperators {
   isNull?: InputMaybe<Scalars['Boolean']>;
 }
 
-export interface MutationCreateMolliePaymentIntentArgs {
-  input: MolliePaymentIntentInput;
-}
-
-export interface MolliePaymentIntentInput {
-  molliePaymentMethodCode?: InputMaybe<Scalars['String']>;
-  paymentMethodCode: Scalars['String'];
-  redirectUrl?: InputMaybe<Scalars['String']>;
-}
-
 export type Channel = Node & {
   __typename?: 'Channel';
   availableCurrencyCodes: CurrencyCode[];
@@ -920,6 +910,7 @@ export enum ErrorCode {
   InsufficientStockError = 'INSUFFICIENT_STOCK_ERROR',
   InvalidCredentialsError = 'INVALID_CREDENTIALS_ERROR',
   MissingPasswordError = 'MISSING_PASSWORD_ERROR',
+  MolliePaymentIntentError = 'MOLLIE_PAYMENT_INTENT_ERROR',
   NativeAuthStrategyError = 'NATIVE_AUTH_STRATEGY_ERROR',
   NegativeQuantityError = 'NEGATIVE_QUANTITY_ERROR',
   NotVerifiedError = 'NOT_VERIFIED_ERROR',
@@ -954,8 +945,14 @@ export type Facet = Node & {
   name: Scalars['String'];
   translations: FacetTranslation[];
   updatedAt: Scalars['DateTime'];
+  /** Returns a paginated, sortable, filterable list of the Facet's values. Added in v2.1.0. */
+  valueList: FacetValueList;
   values: FacetValue[];
 };
+
+export interface FacetValueListArgs {
+  options?: InputMaybe<FacetValueListOptions>;
+}
 
 export interface FacetFilterParameter {
   code?: InputMaybe<StringOperators>;
@@ -1008,6 +1005,7 @@ export type FacetValue = Node & {
   createdAt: Scalars['DateTime'];
   customFields?: Maybe<Scalars['JSON']>;
   facet: Facet;
+  facetId: Scalars['ID'];
   id: Scalars['ID'];
   languageCode: LanguageCode;
   name: Scalars['String'];
@@ -1028,6 +1026,35 @@ export interface FacetValueFilterInput {
   or?: InputMaybe<Array<Scalars['ID']>>;
 }
 
+export interface FacetValueFilterParameter {
+  code?: InputMaybe<StringOperators>;
+  createdAt?: InputMaybe<DateOperators>;
+  facetId?: InputMaybe<IdOperators>;
+  id?: InputMaybe<IdOperators>;
+  languageCode?: InputMaybe<StringOperators>;
+  name?: InputMaybe<StringOperators>;
+  updatedAt?: InputMaybe<DateOperators>;
+}
+
+export type FacetValueList = PaginatedList & {
+  __typename?: 'FacetValueList';
+  items: FacetValue[];
+  totalItems: Scalars['Int'];
+};
+
+export interface FacetValueListOptions {
+  /** Allows the results to be filtered */
+  filter?: InputMaybe<FacetValueFilterParameter>;
+  /** Specifies whether multiple "filter" arguments should be combines with a logical AND or OR operation. Defaults to AND. */
+  filterOperator?: InputMaybe<LogicalOperator>;
+  /** Skips the first n results, for use in pagination */
+  skip?: InputMaybe<Scalars['Int']>;
+  /** Specifies which properties to sort the results by */
+  sort?: InputMaybe<FacetValueSortParameter>;
+  /** Takes n results, for use in pagination */
+  take?: InputMaybe<Scalars['Int']>;
+}
+
 /**
  * Which FacetValues are present in the products returned
  * by the search, and in what quantity.
@@ -1036,6 +1063,15 @@ export interface FacetValueResult {
   __typename?: 'FacetValueResult';
   count: Scalars['Int'];
   facetValue: FacetValue;
+}
+
+export interface FacetValueSortParameter {
+  code?: InputMaybe<SortOrder>;
+  createdAt?: InputMaybe<SortOrder>;
+  facetId?: InputMaybe<SortOrder>;
+  id?: InputMaybe<SortOrder>;
+  name?: InputMaybe<SortOrder>;
+  updatedAt?: InputMaybe<SortOrder>;
 }
 
 export interface FacetValueTranslation {
@@ -1622,6 +1658,55 @@ export type MissingPasswordError = ErrorResult & {
   message: Scalars['String'];
 };
 
+export interface MollieAmount {
+  __typename?: 'MollieAmount';
+  currency?: Maybe<Scalars['String']>;
+  value?: Maybe<Scalars['String']>;
+}
+
+export interface MolliePaymentIntent {
+  __typename?: 'MolliePaymentIntent';
+  url: Scalars['String'];
+}
+
+export type MolliePaymentIntentError = ErrorResult & {
+  __typename?: 'MolliePaymentIntentError';
+  errorCode: ErrorCode;
+  message: Scalars['String'];
+};
+
+export interface MolliePaymentIntentInput {
+  molliePaymentMethodCode?: InputMaybe<Scalars['String']>;
+  paymentMethodCode: Scalars['String'];
+  redirectUrl?: InputMaybe<Scalars['String']>;
+}
+
+export type MolliePaymentIntentResult =
+  | MolliePaymentIntent
+  | MolliePaymentIntentError;
+
+export interface MolliePaymentMethod {
+  __typename?: 'MolliePaymentMethod';
+  code: Scalars['String'];
+  description?: Maybe<Scalars['String']>;
+  id: Scalars['ID'];
+  image?: Maybe<MolliePaymentMethodImages>;
+  maximumAmount?: Maybe<MollieAmount>;
+  minimumAmount?: Maybe<MollieAmount>;
+  status?: Maybe<Scalars['String']>;
+}
+
+export interface MolliePaymentMethodImages {
+  __typename?: 'MolliePaymentMethodImages';
+  size1x?: Maybe<Scalars['String']>;
+  size2x?: Maybe<Scalars['String']>;
+  svg?: Maybe<Scalars['String']>;
+}
+
+export interface MolliePaymentMethodsInput {
+  paymentMethodCode: Scalars['String'];
+}
+
 export interface Mutation {
   __typename?: 'Mutation';
   /** Adds an item to the order. If custom fields are defined on the OrderLine entity, a third argument 'customFields' will be available. */
@@ -1636,6 +1721,7 @@ export interface Mutation {
   authenticate: AuthenticationResult;
   /** Create a new Customer Address */
   createCustomerAddress: Address;
+  createMolliePaymentIntent: MolliePaymentIntentResult;
   /** Delete an existing Address */
   deleteCustomerAddress: Success;
   /** Authenticates the user using the native authentication strategy. This mutation is an alias for `authenticate({ native: { ... }})` */
@@ -1740,6 +1826,10 @@ export interface MutationAuthenticateArgs {
 
 export interface MutationCreateCustomerAddressArgs {
   input: CreateAddressInput;
+}
+
+export interface MutationCreateMolliePaymentIntentArgs {
+  input: MolliePaymentIntentInput;
 }
 
 export interface MutationDeleteCustomerAddressArgs {
@@ -2051,6 +2141,7 @@ export type OrderLine = Node & {
   proratedUnitPrice: Scalars['Money'];
   /** The proratedUnitPrice including tax */
   proratedUnitPriceWithTax: Scalars['Money'];
+  /** The quantity of items purchased */
   quantity: Scalars['Int'];
   taxLines: TaxLine[];
   taxRate: Scalars['Float'];
@@ -2706,6 +2797,7 @@ export type Promotion = Node & {
   startsAt?: Maybe<Scalars['DateTime']>;
   translations: PromotionTranslation[];
   updatedAt: Scalars['DateTime'];
+  usageLimit?: Maybe<Scalars['Int']>;
 };
 
 export type PromotionList = PaginatedList & {
@@ -2775,6 +2867,7 @@ export interface Query {
   facets: FacetList;
   /** Returns information about the current authenticated User */
   me?: Maybe<CurrentUser>;
+  molliePaymentMethods: MolliePaymentMethod[];
   /** Returns the possible next states that the activeOrder can transition to */
   nextOrderStates: Array<Scalars['String']>;
   /**
@@ -2812,6 +2905,10 @@ export interface QueryFacetArgs {
 
 export interface QueryFacetsArgs {
   options?: InputMaybe<FacetListOptions>;
+}
+
+export interface QueryMolliePaymentMethodsArgs {
+  input: MolliePaymentMethodsInput;
 }
 
 export interface QueryOrderArgs {
@@ -5171,4 +5268,75 @@ export interface LoginMutation {
         errorCode: ErrorCode;
         message: string;
       };
+}
+
+export type GetEligibleShippingMethodsQueryVariables = Exact<
+  Record<string, never>
+>;
+
+export interface GetEligibleShippingMethodsQuery {
+  __typename?: 'Query';
+  eligibleShippingMethods: Array<{
+    __typename?: 'ShippingMethodQuote';
+    id: number | string;
+    name: string;
+    price: any;
+    priceWithTax: any;
+    code: string;
+    description: string;
+    metadata?: any | undefined;
+    customFields?: any | undefined;
+  }>;
+}
+
+export type CreateMolliePaymentIntentMutationMutationVariables = Exact<{
+  input: MolliePaymentIntentInput;
+}>;
+
+export interface CreateMolliePaymentIntentMutationMutation {
+  __typename?: 'Mutation';
+  createMolliePaymentIntent:
+    | { __typename?: 'MolliePaymentIntent'; url: string }
+    | {
+        __typename?: 'MolliePaymentIntentError';
+        errorCode: ErrorCode;
+        message: string;
+      };
+}
+
+export type MolliePaymentMethodsQueryVariables = Exact<{
+  input: MolliePaymentMethodsInput;
+}>;
+
+export interface MolliePaymentMethodsQuery {
+  __typename?: 'Query';
+  molliePaymentMethods: Array<{
+    __typename?: 'MolliePaymentMethod';
+    id: number | string;
+    code: string;
+    description?: string | undefined;
+    status?: string | undefined;
+    minimumAmount?:
+      | {
+          __typename?: 'MollieAmount';
+          value?: string | undefined;
+          currency?: string | undefined;
+        }
+      | undefined;
+    maximumAmount?:
+      | {
+          __typename?: 'MollieAmount';
+          value?: string | undefined;
+          currency?: string | undefined;
+        }
+      | undefined;
+    image?:
+      | {
+          __typename?: 'MolliePaymentMethodImages';
+          size1x?: string | undefined;
+          size2x?: string | undefined;
+          svg?: string | undefined;
+        }
+      | undefined;
+  }>;
 }
