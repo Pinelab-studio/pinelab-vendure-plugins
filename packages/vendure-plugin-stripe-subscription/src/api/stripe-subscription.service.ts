@@ -9,7 +9,6 @@ import {
   EventBus,
   HistoryService,
   ID,
-  Injector,
   JobQueue,
   JobQueueService,
   LanguageCode,
@@ -22,7 +21,6 @@ import {
   PaymentMethod,
   PaymentMethodEvent,
   PaymentMethodService,
-  ProductService,
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
@@ -33,20 +31,13 @@ import {
 import { Cancellation } from '@vendure/core/dist/entity/stock-movement/cancellation.entity';
 import { Release } from '@vendure/core/dist/entity/stock-movement/release.entity';
 import { randomUUID } from 'crypto';
-import { sub } from 'date-fns';
 import { Request } from 'express';
 import { filter } from 'rxjs/operators';
 import Stripe from 'stripe';
+import { Subscription, SubscriptionHelper } from '../';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
-import {
-  StripeSubscription,
-  StripeSubscriptionIntent,
-} from './generated/graphql';
-import {
-  Subscription,
-  SubscriptionStrategy,
-} from './strategy/subscription-strategy';
+import { StripeSubscriptionIntent } from './generated/graphql';
 import { StripeClient } from './stripe.client';
 import { StripeInvoice } from './types/stripe-invoice';
 import {
@@ -90,16 +81,20 @@ export class StripeSubscriptionService {
     private jobQueueService: JobQueueService,
     private moduleRef: ModuleRef,
     private connection: TransactionalConnection,
-    private productVariantService: ProductVariantService,
-    private productService: ProductService,
+    productVariantService: ProductVariantService,
     @Inject(PLUGIN_INIT_OPTIONS)
     private options: StripeSubscriptionPluginOptions
   ) {
-    this.strategy = this.options.subscriptionStrategy!;
+    this.subscriptionHelper = new SubscriptionHelper(
+      loggerCtx,
+      moduleRef,
+      productVariantService,
+      this.options.subscriptionStrategy!
+    );
   }
 
   private jobQueue!: JobQueue<JobData>;
-  readonly strategy: SubscriptionStrategy;
+  readonly subscriptionHelper: SubscriptionHelper;
   /**
    * The plugin expects these events to come in via webhooks
    */
@@ -154,7 +149,10 @@ export class StripeSubscriptionService {
     this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
       if (
         event.type === 'created' &&
-        this.strategy.isSubscription(event.ctx, event.orderLine.productVariant)
+        this.subscriptionHelper.isSubscription(
+          event.ctx,
+          event.orderLine.productVariant
+        )
       ) {
         await this.connection
           .getRepository(event.ctx, OrderLine)
@@ -272,58 +270,6 @@ export class StripeSubscriptionService {
       loggerCtx
     );
     return createdHook;
-  }
-
-  async previewSubscription(
-    ctx: RequestContext,
-    productVariantId: ID,
-    customInputs?: any
-  ): Promise<StripeSubscription[]> {
-    const variant = await this.productVariantService.findOne(
-      ctx,
-      productVariantId
-    );
-    if (!variant) {
-      throw new UserInputError(
-        `No product variant with id '${productVariantId}' found`
-      );
-    }
-    const injector = new Injector(this.moduleRef);
-    const subscriptions = await this.strategy.previewSubscription(
-      ctx,
-      injector,
-      variant,
-      customInputs
-    );
-    if (Array.isArray(subscriptions)) {
-      return subscriptions.map((sub) => ({
-        ...sub,
-        variantId: variant.id,
-      }));
-    } else {
-      return [
-        {
-          ...subscriptions,
-          variantId: variant.id,
-        },
-      ];
-    }
-  }
-
-  async previewSubscriptionForProduct(
-    ctx: RequestContext,
-    productId: ID,
-    customInputs?: any
-  ): Promise<StripeSubscription[]> {
-    const { items: variants } =
-      await this.productVariantService.getVariantsByProductId(ctx, productId);
-    if (!variants?.length) {
-      throw new UserInputError(`No variants for product '${productId}' found`);
-    }
-    const subscriptions = await Promise.all(
-      variants.map((v) => this.previewSubscription(ctx, v.id, customInputs))
-    );
-    return subscriptions.flat();
   }
 
   async cancelSubscriptionForOrderLine(
@@ -494,70 +440,11 @@ export class StripeSubscriptionService {
   }
 
   /**
-   * This defines the actual subscriptions and prices for each order line, based on the configured strategy.
-   * Doesn't allow recurring amount to be below 0 or lower
-   */
-  async getSubscriptionsForOrder(
-    ctx: RequestContext,
-    order: Order
-  ): Promise<(Subscription & { orderLineId: ID; variantId: ID })[]> {
-    const injector = new Injector(this.moduleRef);
-    // Only define subscriptions for orderlines with a subscription product variant
-    const subscriptionOrderLines = order.lines.filter((l) =>
-      this.strategy.isSubscription(ctx, l.productVariant)
-    );
-    const subscriptions = await Promise.all(
-      subscriptionOrderLines.map(async (line) => {
-        const subs = await this.getSubscriptionsForOrderLine(ctx, line, order);
-        // Add orderlineId and variantId to subscription
-        return subs.map((sub) => ({
-          orderLineId: line.id,
-          variantId: line.productVariant.id,
-          ...sub,
-        }));
-      })
-    );
-    const flattenedSubscriptionsArray = subscriptions.flat();
-    // Validate recurring amount
-    flattenedSubscriptionsArray.forEach((subscription) => {
-      if (
-        !subscription.recurring.amount ||
-        subscription.recurring.amount <= 0
-      ) {
-        throw Error(
-          `[${loggerCtx}]: Defined subscription for order line ${subscription.variantId} must have a recurring amount greater than 0`
-        );
-      }
-    });
-    return flattenedSubscriptionsArray;
-  }
-
-  async getSubscriptionsForOrderLine(
-    ctx: RequestContext,
-    orderLine: OrderLine,
-    order: Order
-  ): Promise<Subscription[]> {
-    const injector = new Injector(this.moduleRef);
-    const subs = await this.strategy.defineSubscription(
-      ctx,
-      injector,
-      orderLine.productVariant,
-      orderLine.order,
-      orderLine.customFields,
-      orderLine.quantity
-    );
-    if (Array.isArray(subs)) {
-      return subs;
-    }
-    return [subs];
-  }
-
-  /**
    * Check if the order has products that should be treated as subscription products
    */
   hasSubscriptionProducts(ctx: RequestContext, order: Order): boolean {
     return order.lines.some((l) =>
-      this.strategy.isSubscription(ctx, l.productVariant)
+      this.subscriptionHelper.isSubscription(ctx, l.productVariant)
     );
   }
 
@@ -696,10 +583,8 @@ export class StripeSubscriptionService {
           `[${loggerCtx}]: Failed to create subscription for customer ${stripeCustomerId} because it doesn't exist in Stripe`
         );
       }
-      const subscriptionDefinitions = await this.getSubscriptionsForOrder(
-        ctx,
-        order
-      );
+      const subscriptionDefinitions =
+        await this.subscriptionHelper.getSubscriptionsForOrder(ctx, order);
       Logger.info(`Creating subscriptions for ${orderCode}`, loggerCtx);
       // <orderLineId, subscriptionIds>
       const subscriptionsPerOrderLine = new Map<ID, string[]>();

@@ -3,7 +3,6 @@ import {
   EventBus,
   LogLevel,
   mergeConfig,
-  Order,
   OrderPlacedEvent,
   OrderService,
   OrderStateTransitionEvent,
@@ -16,7 +15,6 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import gql from 'graphql-tag';
 // @ts-ignore
 import nock from 'nock';
 // @ts-ignore
@@ -145,7 +143,7 @@ describe('Stripe Subscription Plugin', function () {
   it('Created webhooks and saved webhook secrets', async () => {
     const { paymentMethods } = await adminClient.query(GET_PAYMENT_METHODS);
     const webhookSecret = paymentMethods.items[0].handler.args.find(
-      (a) => a.name === 'webhookSecret'
+      (a: any) => a.name === 'webhookSecret'
     )?.value;
     expect(createdWebhooks.length).toBe(1);
     expect(paymentMethods.items[0].code).toBe('stripe-subscription-method');
@@ -181,7 +179,7 @@ describe('Stripe Subscription Plugin', function () {
     expect(subscriptions.length).toBe(4);
   });
 
-  let orderCode;
+  let orderCode: string | undefined;
 
   it('Adds item to order', async () => {
     await shopClient.asUserWithCredentials(

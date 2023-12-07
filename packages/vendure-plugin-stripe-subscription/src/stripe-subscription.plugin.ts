@@ -1,9 +1,8 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { SubscriptionStrategy } from './api/strategy/subscription-strategy';
 import { adminApiExtension, shopSchemaExtensions } from './api/graphql-schema';
 import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
-import { DefaultSubscriptionStrategy } from './api/strategy/default-subscription-strategy';
+import { DefaultSubscriptionStrategy, SubscriptionStrategy } from './';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { orderLineCustomFields } from './api/vendure-config/custom-fields';

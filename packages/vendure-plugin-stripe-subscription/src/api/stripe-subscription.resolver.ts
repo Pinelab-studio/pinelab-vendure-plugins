@@ -52,7 +52,7 @@ export class StripeSubscriptionShopResolver {
     @Args()
     { productVariantId, customInputs }: QueryPreviewStripeSubscriptionsArgs
   ): Promise<GraphqlQuery['previewStripeSubscriptions']> {
-    return this.stripeSubscriptionService.previewSubscription(
+    return this.stripeSubscriptionService.subscriptionHelper.previewSubscription(
       ctx,
       productVariantId,
       customInputs
@@ -65,7 +65,7 @@ export class StripeSubscriptionShopResolver {
     @Args()
     { productId, customInputs }: QueryPreviewStripeSubscriptionsForProductArgs
   ): Promise<GraphqlQuery['previewStripeSubscriptionsForProduct']> {
-    return this.stripeSubscriptionService.previewSubscriptionForProduct(
+    return this.stripeSubscriptionService.subscriptionHelper.previewSubscriptionsForProduct(
       ctx,
       productId,
       customInputs
@@ -99,7 +99,7 @@ export class StripeSubscriptionShopResolver {
   ): Promise<StripeSubscription[] | undefined> {
     await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
     const subscriptionsForOrderLine =
-      await this.stripeSubscriptionService.getSubscriptionsForOrderLine(
+      await this.stripeSubscriptionService.subscriptionHelper.getSubscriptionsForOrderLine(
         ctx,
         orderLine,
         orderLine.order
