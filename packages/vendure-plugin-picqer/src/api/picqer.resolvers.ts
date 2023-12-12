@@ -34,7 +34,7 @@ export class PicqerResolver {
   async triggerPicqerFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
     let allSucceeded = true;
     await this.service
-      .createStockLevelJobs(ctx)
+      .createStockLevelJob(ctx)
       .catch((e: Error | undefined) => {
         Logger.error(
           `Failed to create jobs to pull stock levels from Picqer: ${e?.message}`,

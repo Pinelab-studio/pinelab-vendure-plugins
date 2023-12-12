@@ -58,6 +58,15 @@ export interface Stock {
   freepickablestock: number;
 }
 
+export interface Warehouse {
+  idwarehouse: number;
+  name: string;
+  accept_orders: boolean;
+  counts_for_general_stock: boolean;
+  priority: number;
+  active: boolean;
+}
+
 export interface CustomerData {
   idcustomer: number;
   idtemplate: any;
