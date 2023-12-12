@@ -1,3 +1,7 @@
+# 2.4.0 (2023-12-12)
+
+- Sync warehouses including names on full sync and stock level sync
+
 # 2.3.1 (2023-12-05)
 
 - Throw error when trying to fulfill, because fulfilment shouldn't be used together with Picqer.
@@ -7,7 +11,7 @@
 - Expose endpoint to periodically pull stock levels
 - Install order process that allows skipping fulfillments when transitioning to Shipped or Delivered
 
-- # 2.2.4 (2023-11-21)
+# 2.2.4 (2023-11-21)
 
 - Take Picqer allocated stock into account when setting stock on hand
 

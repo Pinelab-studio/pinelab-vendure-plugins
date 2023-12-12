@@ -60,8 +60,8 @@ Start the server and set the fulfillment handler to `picqer: Fulfill with Picqer
 Stock levels are updated in Vendure on
 
 1. Full sync via the Admin UI
-2. On incoming webhook from Picqer
-3. Or, on trigger of the GET endpoint `/picqer/pull-stock-levels/<channeltoken>`.
+2. Or, on trigger of the GET endpoint `/picqer/pull-stock-levels/<channeltoken>`.
+3. On incoming webhook from Picqer. Before incoming webhooks work, you need a full sync or pull-stock-levels sync, so that stock locations are created in Vendure based on the Picqer Warehouses
 
 This plugin will mirror the stock locations from Picqer. Non-Picqer stock locations will automatically be deleted by the plugin, to keep stock in sync with Picqer. Vendure's internal allocated stock will be ignored, because this is handled by Picqer.
 
