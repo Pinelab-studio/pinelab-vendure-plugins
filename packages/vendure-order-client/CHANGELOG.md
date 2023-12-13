@@ -1,9 +1,17 @@
-# 2.6.0 (2023-13-09)
+# 2.7.0 (2023-12-06)
+
+- Added `getMolliePaymentMethods` query
+
+# 2.6.1 (2023-12-01)
+
+- Expose getEligibleShippingMethods
+
+# 2.6.0
 
 - Make VendureOrderClient.updateEligibleShippingMethods public
 - export the store helpers
 
-# 2.5.0 (2023-13-09)
+# 2.5.0
 
 - Export vendure graphql types
 - Fixed outdated readme

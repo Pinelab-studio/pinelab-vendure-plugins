@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-order-client",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "A tiny, framework agnostic client for managing active orders and checkout with Vendure.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -22,7 +22,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "start": "ts-node --esm ./test/dev-server.ts",
+    "start": "ts-node --experimental-specifier-resolution=node --esm ./test/dev-server.ts",
     "build": "yarn tsc && rimraf lib && rollup -c rollup.config.js",
     "test": "vitest run",
     "generate": "graphql-codegen"

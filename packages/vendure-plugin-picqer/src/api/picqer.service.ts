@@ -1,12 +1,10 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
   OrderAddress,
-  OrderLineInput,
   UpdateProductVariantInput,
 } from '@vendure/common/lib/generated-types';
 import {
   Address,
-  assertFound,
   AssetService,
   ChannelService,
   ConfigService,
@@ -15,7 +13,6 @@ import {
   ErrorResult,
   EventBus,
   ForbiddenError,
-  FulfillmentStateTransitionError,
   ID,
   JobQueue,
   JobQueueService,
@@ -38,7 +35,6 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import { StockAdjustment } from '@vendure/core/dist/entity/stock-movement/stock-adjustment.entity';
-import { StockMovement } from '@vendure/core/dist/entity/stock-movement/stock-movement.entity';
 import currency from 'currency.js';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
@@ -92,8 +88,6 @@ interface PushOrderJob {
 }
 
 type JobData = PushVariantsJob | PullStockLevelsJob | PushOrderJob;
-
-const STOCK_LOCATION_PREFIX = 'Picqer Warehouse';
 
 @Injectable()
 export class PicqerService implements OnApplicationBootstrap {
@@ -342,7 +336,7 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Create job to pull stock levels of all products from Picqer
    */
-  async createStockLevelJobs(ctx: RequestContext): Promise<void> {
+  async createStockLevelJob(ctx: RequestContext): Promise<void> {
     await this.jobQueue.add(
       {
         action: 'pull-stock-levels',
@@ -472,7 +466,7 @@ export class PicqerService implements OnApplicationBootstrap {
   }
 
   /**
-   * Pulls all products from Picqer and updates the stock levels in Vendure
+   * Sync warehouses, pull all products from Picqer and updates the stock levels in Vendure
    * based on the stock levels from Picqer products
    */
   async handlePullStockLevelsJob(userCtx: RequestContext): Promise<void> {
@@ -481,9 +475,102 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client) {
       return;
     }
+    await this.syncWarehouses(ctx).catch((e: any) => {
+      Logger.error(
+        `Failed to sync warehouses with Picqer: ${e?.message}`,
+        loggerCtx,
+        util.inspect(e)
+      );
+    });
     const picqerProducts = await client.getAllActiveProducts();
     await this.updateStockBySkus(ctx, picqerProducts);
     Logger.info(`Successfully pulled stock levels from Picqer`, loggerCtx);
+  }
+
+  /**
+   * Fetch warehouses from Picqer and save as stock location in Vendure
+   * Deletes any warehouses from Vendure that are not active in Picqer
+   */
+  async syncWarehouses(ctx: RequestContext): Promise<void> {
+    const client = await this.getClient(ctx);
+    if (!client) {
+      return;
+    }
+    // List of Vendure location ID's that are created/updated based on Picqer warehouses
+    const syncedFromPicqer: ID[] = [];
+    const warehouses = await client.getAllWarehouses();
+    for (const warehouse of warehouses) {
+      const existing = await this.getStockLocation(ctx, warehouse.idwarehouse);
+      if (!warehouse.active) {
+        continue;
+      }
+      const stockLocationName = `Picqer ${warehouse.idwarehouse}: ${warehouse.name}`;
+      const stocklocationDescription = `Mirrored warehouse from Picqer '${warehouse.name}' (${warehouse.idwarehouse})`;
+      if (existing) {
+        await this.stockLocationService.update(ctx, {
+          id: existing.id,
+          name: stockLocationName,
+          description: stocklocationDescription,
+        });
+        syncedFromPicqer.push(existing.id);
+        Logger.info(`Updated stock location '${stockLocationName}'`, loggerCtx);
+      } else {
+        const created = await this.stockLocationService.create(ctx, {
+          name: stockLocationName,
+          description: stocklocationDescription,
+        });
+        syncedFromPicqer.push(created.id);
+        Logger.info(
+          `Created new stock location '${stockLocationName}'`,
+          loggerCtx
+        );
+      }
+    }
+    // Delete non-picqer warehouses
+    const locations = await this.stockLocationService.findAll(ctx);
+    // Delete locations that are not Picqer based
+    const locationsToDelete = locations.items.filter(
+      (l) => !syncedFromPicqer.includes(l.id)
+    );
+    for (const location of locationsToDelete) {
+      const res = await this.stockLocationService.delete(ctx, {
+        id: location.id,
+      });
+      if (res.result === 'DELETED') {
+        Logger.info(`Deleted stock location ${location.name}`, loggerCtx);
+      } else {
+        Logger.error(
+          `Failed to delete stock location ${location.name}: ${res.message}`,
+          loggerCtx
+        );
+      }
+    }
+    Logger.info(`Successfully synced warehouses from Picqer`, loggerCtx);
+  }
+
+  /**
+   * Get stock locations based on the stock locations we receive from Picqer
+   * @returns The Vendure stock location that mirrors the Picqer warehouse
+   */
+  async getStockLocation(
+    ctx: RequestContext,
+    picqerLocationId: number
+  ): Promise<StockLocation | undefined> {
+    // Picqer location ID's are also used as the ID of the Vendure stock location
+    // return await this.stockLocationService.findOne(ctx, picqerLocationId);
+    const { items } = await this.stockLocationService.findAll(ctx, {
+      filter: {
+        name: { contains: `Picqer ${picqerLocationId}` },
+      },
+    });
+    const location = items[0];
+    if (items.length > 1) {
+      Logger.error(
+        `Found multiple locations with name "Picqer ${picqerLocationId}", there should be only one! Using location with ID ${location.id}`,
+        loggerCtx
+      );
+    }
+    return location;
   }
 
   /**
@@ -528,10 +615,16 @@ export class PicqerService implements OnApplicationBootstrap {
             );
             continue;
           }
-          const location = await this.getOrCreateStockLocation(
+          const location = await this.getStockLocation(
             ctx,
             picqerStock.idwarehouse
           );
+          if (!location) {
+            Logger.info(
+              `Not updating stock of warehouse ${picqerStock.idwarehouse}, because it doesn't exist in Vendure. You might need to re-sync stock levels and locations if this is an active warehouse.`
+            );
+            continue;
+          }
           const { id: stockLevelId, stockOnHand } =
             await this.stockLevelService.getStockLevel(
               ctx,
@@ -563,71 +656,10 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
-    await this.removeNonPicqerStockLocations(ctx);
     await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
     Logger.info(
       `Updated stock levels of ${stockAdjustments.length} variants`,
       loggerCtx
-    );
-  }
-
-  /**
-   * Get or create stock locations based on the stock locations we receive from Picqer
-   * @returns The Vendure stock locations that mirror Picqers stock locations
-   */
-  async getOrCreateStockLocation(
-    ctx: RequestContext,
-    picqerLocationId: number
-  ): Promise<StockLocation> {
-    const name = `${STOCK_LOCATION_PREFIX} ${picqerLocationId}`;
-    const existingLocations = await this.stockLocationService.findAll(ctx, {
-      filter: { name: { eq: name } },
-      take: 1,
-    });
-    if (existingLocations.totalItems > 1) {
-      Logger.error(
-        `Found multiple stock locations with name "${name}", only 1 mirrored location should exist!`,
-        loggerCtx
-      );
-    }
-    if (existingLocations.items[0]) {
-      return existingLocations.items[0];
-    }
-    return this.stockLocationService.create(ctx, {
-      name,
-      description: `Mirrored location from Picqer warehouse with id ${picqerLocationId}`,
-    });
-  }
-
-  /**
-   * Removes any stock locations that are not Picqer warehouses for given variant
-   * This is determined by the "Picqer" preview in the name
-   */
-  async removeNonPicqerStockLocations(ctx: RequestContext): Promise<void> {
-    const locations = await this.stockLocationService.findAll(ctx);
-    await Promise.all(
-      locations.items.map(async (location) => {
-        if (!location.name.startsWith(STOCK_LOCATION_PREFIX)) {
-          // Delete stock movements first, because of foreign key constraint
-          await this.connection
-            .getRepository(ctx, StockMovement)
-            .delete({ stockLocationId: location.id });
-          // Delete stock location
-          const { result, message } = await this.stockLocationService.delete(
-            ctx,
-            { id: location.id }
-          );
-          if (result === 'NOT_DELETED') {
-            throw Error(
-              `Failed to delete stock location ${location.name}: ${result}: ${message}`
-            );
-          }
-          Logger.warn(
-            `Removed stock location ${location.name}, because it's not a Picqer managed location`,
-            loggerCtx
-          );
-        }
-      })
     );
   }
 

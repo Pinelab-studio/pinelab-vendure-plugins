@@ -15,8 +15,12 @@ import {
   CurrentUserFieldsFragment,
   ErrorResult,
   LoginMutation,
+  MolliePaymentIntentInput,
+  MolliePaymentMethodsInput,
+  MolliePaymentMethodsQuery,
   MutationAddPaymentToOrderArgs,
   MutationApplyCouponCodeArgs,
+  MutationCreateMolliePaymentIntentArgs,
   MutationLoginArgs,
   MutationRegisterCustomerAccountArgs,
   MutationRemoveCouponCodeArgs,
@@ -28,6 +32,7 @@ import {
   MutationSetOrderShippingMethodArgs,
   MutationTransitionOrderToStateArgs,
   PaymentInput,
+  QueryMolliePaymentMethodsArgs,
   QueryOrderByCodeArgs,
   RegisterCustomerAccountMutation,
   RegisterCustomerInput,
@@ -40,14 +45,12 @@ import {
   SetOrderBillingAddressMutation,
   SetOrderShippingAddressMutation,
   SetOrderShippingMethodMutation,
+  ShippingMethodQuote,
   Success,
   TransitionOrderToStateMutation,
-  ShippingMethodQuote,
-  MolliePaymentIntentInput,
-  MutationCreateMolliePaymentIntentArgs,
 } from './graphql-generated-types';
 import { GraphqlQueries } from './queries';
-import { setResult, HandleLoadingState, StateStore } from './store-helpers';
+import { HandleLoadingState, setResult, StateStore } from './store-helpers';
 import { Id, VendureOrderEvents } from './vendure-order-events';
 
 /**
@@ -147,7 +150,7 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: [productVariantId],
       quantity,
     });
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -190,12 +193,12 @@ export class VendureOrderClient<A = unknown> {
         quantity: -adjustment, // adjustment is negative, so invert it
       });
     }
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
   async removeOrderLine(orderLineId: Id): Promise<ActiveOrder<A>> {
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return await this.adjustOrderLine(orderLineId, 0);
   }
 
@@ -218,7 +221,7 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: allVariantIds,
       quantity: totalQuantity,
     });
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -235,7 +238,7 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-applied', {
       couponCode,
     });
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -257,7 +260,7 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-removed', {
       couponCode,
     });
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -273,7 +276,7 @@ export class VendureOrderClient<A = unknown> {
       setCustomerForOrder as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -289,7 +292,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -303,7 +306,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderBillingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -319,7 +322,7 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingMethod as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.updateEligibleShippingMethods();
+    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -347,6 +350,16 @@ export class VendureOrderClient<A = unknown> {
       createMolliePaymentIntent
     );
     return molliePaymentLink;
+  }
+
+  async getMolliePaymentMethods(
+    input: MolliePaymentMethodsInput
+  ): Promise<MolliePaymentMethodsQuery['molliePaymentMethods']> {
+    const { molliePaymentMethods } = await this.rawRequest<
+      MolliePaymentMethodsQuery,
+      QueryMolliePaymentMethodsArgs
+    >(this.queries.GET_MOLLIE_PAYMENT_METHODS, { input });
+    return molliePaymentMethods;
   }
 
   @HandleLoadingState('$activeOrder')
@@ -432,6 +445,14 @@ export class VendureOrderClient<A = unknown> {
     return currentUser;
   }
 
+  @HandleLoadingState('$eligibleShippingMethods')
+  async getEligibleShippingMethods(): Promise<void> {
+    const { eligibleShippingMethods } = await this.rawRequest<{
+      eligibleShippingMethods: ShippingMethodQuote[];
+    }>(this.queries.GET_ELIGIBLE_SHIPPING_METHODS);
+    setResult(this.$eligibleShippingMethods, eligibleShippingMethods);
+  }
+
   /**
    * Throw if result is an ErrorResult
    */
@@ -476,13 +497,5 @@ export class VendureOrderClient<A = unknown> {
       console.error(e);
       throw e;
     }
-  }
-
-  @HandleLoadingState('$eligibleShippingMethods')
-  async updateEligibleShippingMethods(): Promise<void> {
-    const { eligibleShippingMethods } = await this.rawRequest<{
-      eligibleShippingMethods: ShippingMethodQuote[];
-    }>(this.queries.GET_ELIGIBLE_SHIPPING_METHODS);
-    setResult(this.$eligibleShippingMethods, eligibleShippingMethods);
   }
 }

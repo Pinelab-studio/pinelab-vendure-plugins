@@ -18,7 +18,7 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { PicqerPlugin } from '../src';
-import { UPSERT_CONFIG } from '../src/ui/queries';
+import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.handler';
 
@@ -90,14 +90,14 @@ import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.hand
       supportEmail: 'support@mystore.io',
     },
   });
-  // await adminClient.query(FULL_SYNC);
-  const variants = await updateVariants(adminClient, [
-    { id: 'T_1', trackInventory: GlobalFlag.True },
-    { id: 'T_2', trackInventory: GlobalFlag.True },
-    { id: 'T_3', trackInventory: GlobalFlag.True },
-    { id: 'T_4', trackInventory: GlobalFlag.True },
-  ]);
-  const order = await createSettledOrder(shopClient, 3, true, [
-    { id: 'T_1', quantity: 3 },
-  ]);
+  await adminClient.query(FULL_SYNC);
+  // const variants = await updateVariants(adminClient, [
+  //   { id: 'T_1', trackInventory: GlobalFlag.True },
+  //   { id: 'T_2', trackInventory: GlobalFlag.True },
+  //   { id: 'T_3', trackInventory: GlobalFlag.True },
+  //   { id: 'T_4', trackInventory: GlobalFlag.True },
+  // ]);
+  // const order = await createSettledOrder(shopClient, 3, true, [
+  //   { id: 'T_1', quantity: 3 },
+  // ]);
 })();

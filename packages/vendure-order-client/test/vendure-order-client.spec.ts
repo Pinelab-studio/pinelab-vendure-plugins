@@ -491,14 +491,14 @@ describe(
       });
     });
 
+    const createNewCustomerInput: RegisterCustomerInput = {
+      emailAddress: `test${Math.random()}@xyz.com`,
+      password: '1qaz2wsx',
+      firstName: 'Hans',
+      lastName: 'Miller',
+    };
+
     describe('Registered customer checkout', () => {
-      const createNewCustomerInput: RegisterCustomerInput = {
-        emailAddress: `test${Math.random()}@xyz.com`,
-        password: '1qaz2wsx',
-        firstName: 'Hans',
-        lastName: 'Miller',
-      };
-      /*  */
       it('Register as customer', async () => {
         const result = await client.registerCustomerAccount(
           createNewCustomerInput
@@ -533,7 +533,10 @@ describe(
           'T_1'
         );
       });
-      it('Should create mollie payment intent as authenticated customer', async () => {
+    });
+
+    describe('Mollie payment', () => {
+      it('Prepares an active order', async () => {
         await client.addItemToOrder('T_1', 1);
         await client.setCustomerForOrder({
           emailAddress: createNewCustomerInput.emailAddress,
@@ -550,18 +553,39 @@ describe(
         await client.setOrderShippingMethod([
           client.$eligibleShippingMethods.value?.data?.[0]?.id as string,
         ]);
-        const createMolliPaymentIntentInput: MolliePaymentIntentInput = {
+      });
+
+      it('Should get Mollie payment methods', async () => {
+        let errorMessage: any | undefined;
+        try {
+          await client.getMolliePaymentMethods({
+            paymentMethodCode: 'mollie-payment',
+          });
+        } catch (e: any) {
+          errorMessage = e.message;
+        }
+        expect(errorMessage).toContain(
+          'No apiKey configured for payment method mollie-payment'
+        );
+      });
+
+      it('Should create Mollie payment intent as authenticated customer', async () => {
+        let errorMessage: any | undefined;
+        const createMolliePaymentIntentInput: MolliePaymentIntentInput = {
           redirectUrl: 'https://remix-storefront.vendure.io',
           paymentMethodCode: 'mollie-payment',
           molliePaymentMethodCode: 'ideal',
         };
         try {
-          await client.createMolliePaymentIntent(createMolliPaymentIntentInput);
-        } catch (e) {
-          expect(e.message).toBe(
-            'Paymentmethod mollie-payment has no apiKey configured'
+          await client.createMolliePaymentIntent(
+            createMolliePaymentIntentInput
           );
+        } catch (e: any) {
+          errorMessage = e.message;
         }
+        expect(errorMessage).toContain(
+          'Paymentmethod mollie-payment has no apiKey configured'
+        );
       });
     });
 
