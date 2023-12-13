@@ -1,14 +1,25 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { DefaultSubscriptionStrategy } from '.';
+import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
 import { AcceptBlueService } from './api/accept-blue-service';
 import { acceptBlueCreditCardHandler } from './api/credit-card-handler';
+import { PLUGIN_INIT_OPTIONS } from './constants';
 
-export interface StripeSubscriptionPluginOptions {
-  subscriptionStrategy?: any;
+interface AcceptBluePluginOptionsInput {
+  subscriptionStrategy?: SubscriptionStrategy;
 }
+
+export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  providers: [AcceptBlueService],
+  providers: [
+    AcceptBlueService,
+    {
+      provide: PLUGIN_INIT_OPTIONS,
+      useFactory: () => AcceptBluePlugin.options,
+    },
+  ],
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(
       acceptBlueCreditCardHandler
@@ -18,7 +29,15 @@ export interface StripeSubscriptionPluginOptions {
   compatibility: '^2.0.0',
 })
 export class AcceptBluePlugin {
-  static init(options: any) {
+  static options: AcceptBluePluginOptions = {
+    subscriptionStrategy: new DefaultSubscriptionStrategy(),
+  };
+
+  static init(options: AcceptBluePluginOptionsInput): AcceptBluePlugin {
+    this.options = {
+      ...this.options,
+      ...options,
+    };
     return AcceptBluePlugin;
   }
 }

@@ -7,7 +7,7 @@ import {
   PaymentMethodHandler,
   SettlePaymentResult,
 } from '@vendure/core';
-import { AcceptBlueClient } from './accept-blue-client';
+import { loggerCtx } from '../constants';
 import { AcceptBlueService } from './accept-blue-service';
 
 let service: AcceptBlueService;
@@ -51,6 +51,7 @@ export const acceptBlueCreditCardHandler = new PaymentMethodHandler({
       throw Error(`The plugin doesn't support one-time charges yet`);
     }
     // Create recurring schedules for order
+    await service.createCharge(ctx);
     return {
       amount: metadata.amount,
       state: 'Authorized',
@@ -73,25 +74,15 @@ export const acceptBlueCreditCardHandler = new PaymentMethodHandler({
     payment,
     args
   ): Promise<CreateRefundResult> {
-    const { stripeClient } = await service.getStripeContext(ctx);
-    const refund = await stripeClient.refunds.create({
-      payment_intent: payment.transactionId,
-      amount,
-    });
+    // TODO
     Logger.info(
-      `Refund of ${printMoney(amount)} created for payment ${
-        payment.transactionId
-      } for order ${order.id}`,
+      `Refund of ${amount} created for payment ${payment.transactionId} for order ${order.id}`,
       loggerCtx
     );
-    await service.logHistoryEntry(
-      ctx,
-      order.id,
-      `Created refund of ${printMoney(amount)}`
-    );
+    // Log order history
     return {
       state: 'Settled',
-      metadata: refund,
+      // metadata: refund,
     };
   },
 });
