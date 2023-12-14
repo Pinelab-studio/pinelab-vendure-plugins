@@ -1,14 +1,101 @@
-import { AcceptBlueClient } from '../src/api/accept-blue-client';
-import dotenv from 'dotenv';
-
 //  https://sandbox.emeraldworldpayments.com/login
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import {
+  DefaultLogger,
+  DefaultSearchPlugin,
+  LanguageCode,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
+import { AcceptBluePlugin } from '../src';
+import {
+  ADD_ITEM_TO_ORDER,
+  ADD_PAYMENT_TO_ORDER,
+  CREATE_PAYMENT_METHOD,
+  SET_SHIPPING_METHOD,
+  TRANSITION_ORDER_TO,
+} from './helpers';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
-  dotenv.config();
-
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const client = new AcceptBlueClient(process.env.API_KEY!);
-  const customer = await client.getOrCreateCustomer('martijn@pinelab.studio');
-  console.log('cust', customer);
+  require('dotenv').config();
+  const { testConfig } = require('@vendure/testing');
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
+    authOptions: {
+      cookieOptions: {
+        secret: '123',
+      },
+    },
+    apiOptions: {
+      adminApiPlayground: {},
+      shopApiPlayground: {},
+    },
+    plugins: [
+      AcceptBluePlugin.init({}),
+      DefaultSearchPlugin,
+      AdminUiPlugin.init({
+        port: 3002,
+        route: 'admin',
+      }),
+    ],
+  });
+  const { server, shopClient, adminClient } = createTestEnvironment(config);
+  await server.init({
+    initialData: {
+      ...require('../../test/src/initial-data').initialData,
+      shippingMethods: [{ name: 'Standard Shipping', price: 0 }],
+    },
+    productsCsvPath: '../test/src/products-import.csv',
+  });
+  // Create Accept Blue payment method
+  await adminClient.asSuperAdmin();
+  await adminClient.query(CREATE_PAYMENT_METHOD, {
+    input: {
+      code: 'accept-blue-credit-card',
+      enabled: true,
+      handler: {
+        code: 'accept-blue-credit-card',
+        arguments: [{ name: 'apiKey', value: process.env.API_KEY }],
+      },
+      translations: [
+        {
+          languageCode: LanguageCode.en,
+          name: 'Accept blue test payment',
+        },
+      ],
+    },
+  });
+  console.log(`Created paymentMethod`);
+  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  const { addItemToOrder } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+    productVariantId: '1',
+    quantity: 1,
+  });
+  console.log(`Added item`);
+  await shopClient.query(SET_SHIPPING_METHOD, {
+    id: [1],
+  });
+  console.log(`Shipping method set`);
+  const { transitionOrderToState } = await shopClient.query(TRANSITION_ORDER_TO, {
+    state: 'ArrangingPayment',
+  });
+  console.log(`Transitioned to ArrangingPayment`, transitionOrderToState);
+  const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
+    input: {
+      method: 'accept-blue-credit-card',
+      metadata: {
+        card: '476153000111118',
+        expiry_year: 2025,
+        expiry_month: 1,
+      },
+    },
+  });
+  console.log(JSON.stringify(addPaymentToOrder));
 })();
