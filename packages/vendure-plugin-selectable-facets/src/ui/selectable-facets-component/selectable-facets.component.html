@@ -1,0 +1,38 @@
+<vdr-card *ngIf="formGroup" title="Selectable Facets">
+  <form [formGroup]="formGroup">
+    <div
+      formArrayName="showOnProductDetailFacetsControls"
+      class="form-grid"
+      *ngFor="let facet of showOnProductDetailFacets; let i = index"
+    >
+      <label>{{ facet.name }}</label>
+      <ng-select
+        [multiple]="true"
+        [name]="'facet' + i"
+        [formControlName]="i"
+        bindLabel="name"
+      >
+        <ng-option *ngFor="let value of facet.values" [value]="value">{{
+          value.name
+        }}</ng-option>
+      </ng-select>
+    </div>
+    <div
+      formArrayName="conditionalShowOnProductDetailFacetsControls"
+      class="form-grid"
+      *ngFor="let facet of conditionalShowOnProductDetailFacets; let i = index"
+    >
+      <label>{{ facet.name }}</label>
+      <ng-select
+        [multiple]="true"
+        [name]="'facet' + i"
+        [formControlName]="i"
+        bindLabel="name"
+      >
+        <ng-option *ngFor="let value of facet.values" [value]="value">{{
+          value.name
+        }}</ng-option>
+      </ng-select>
+    </div>
+  </form>
+</vdr-card>
