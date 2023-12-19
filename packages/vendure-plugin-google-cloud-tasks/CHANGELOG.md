@@ -1,3 +1,9 @@
+# 1.4.0 (2023-12-19)
+
+- Allow setting `fallback:true` to fallback to HTTP instead of gRPC to prevent DEADLINE_EXCEEDED errors
+- Allow setting of all Google Cloud Tasks Client options via `clientOptions: ...`
+- Removed `bodySizeLimit` option, because body-parser is loaded by NestJs since Vendure V2
+
 # 1.3.0 (2023-11-21)
 
 - Only log error when job is not added to queue after configured retries
