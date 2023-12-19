@@ -86,14 +86,25 @@ import {
   const { transitionOrderToState } = await shopClient.query(TRANSITION_ORDER_TO, {
     state: 'ArrangingPayment',
   });
+
+
+  // Create Payment method with Accept blue
+  // No guest checkouts allowed
+
+  // Get available Accept blue payment methods
+
+
   console.log(`Transitioned to ArrangingPayment`, transitionOrderToState);
+
+  
   const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
     input: {
       method: 'accept-blue-credit-card',
       metadata: {
-        card: '476153000111118',
-        expiry_year: 2025,
-        expiry_month: 1,
+        acceptBlueMethod: 1
+        // card: '476153000111118',
+        // expiry_year: 2025,
+        // expiry_month: 1,
       },
     },
   });
