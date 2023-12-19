@@ -1,5 +1,5 @@
 import { Resolver, Query, Args } from '@nestjs/graphql';
-import { Ctx, RequestContext } from '@vendure/core';
+import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { AcceptBlueService } from './accept-blue-service';
 import {
@@ -37,6 +37,19 @@ export const shopApiExtensions = gql`
     endDate: DateTime
   }
 
+  type AcceptBluePaymentMethod {
+    id: ID!
+    created_at: DateTime!
+    avs_address: String
+    avs_zip: String
+    name: String
+    expiry_month: Int!
+    expiry_year: Int!
+    payment_method_type: String
+    card_type: String
+    last4: String
+  }
+
   extend type OrderLine {
     acceptBlueSubscriptions: [AcceptBlueSubscription!]
   }
@@ -50,6 +63,7 @@ export const shopApiExtensions = gql`
       productId: ID!
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
+    acceptBluePaymentMethods: [AcceptBluePaymentMethod!]!
   }
 `;
 
@@ -84,5 +98,13 @@ export class AcceptBlueResolver {
       productId,
       customInputs
     );
+  }
+
+  @Query()
+  @Allow(Permission.Authenticated)
+  async acceptBluePaymentMethods(
+    @Ctx() ctx: RequestContext
+  ): Promise<GraphqlQuery['acceptBluePaymentMethods']> {
+    return await this.acceptBlueService.getPaymentMethods(ctx);
   }
 }

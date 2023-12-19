@@ -2,7 +2,7 @@ import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { DefaultSubscriptionStrategy } from '.';
 import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
 import { AcceptBlueService } from './api/accept-blue-service';
-import { acceptBlueCreditCardHandler } from './api/credit-card-handler';
+import { acceptBluePaymentHandler } from './api/accept-blue-handler';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 
 interface AcceptBluePluginOptionsInput {
@@ -21,9 +21,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
     },
   ],
   configuration: (config) => {
-    config.paymentOptions.paymentMethodHandlers.push(
-      acceptBlueCreditCardHandler
-    );
+    config.paymentOptions.paymentMethodHandlers.push(acceptBluePaymentHandler);
     return config;
   },
   compatibility: '^2.0.0',

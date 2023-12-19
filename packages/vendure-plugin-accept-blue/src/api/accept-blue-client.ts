@@ -2,10 +2,11 @@ import { Logger } from '@vendure/core';
 import axios, { AxiosInstance } from 'axios';
 import { loggerCtx } from '../constants';
 import {
-  CreditCardPaymentMethodInput,
   AcceptBlueCustomer,
   AcceptBluePaymentMethod,
+  CreditCardPaymentInput,
 } from '../types';
+import { isSameCard } from '../util';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -40,6 +41,7 @@ export class AcceptBlueClient {
     if (existing) {
       return existing;
     } else {
+      Logger.info(`Creating new customer ${emailAddress}`, loggerCtx);
       return await this.createCustomer(emailAddress);
     }
   }
@@ -52,25 +54,23 @@ export class AcceptBlueClient {
   }
 
   async createCustomer(emailAddress: string): Promise<AcceptBlueCustomer> {
-    const customer: AcceptBlueCustomer = {
+    const customer: Partial<AcceptBlueCustomer> = {
       identifier: emailAddress,
       customer_number: emailAddress,
       email: emailAddress,
       active: true,
     };
     const result = await this.request('post', 'customers', customer);
-    Logger.info(`Created new customer ${emailAddress}`, loggerCtx);
+    Logger.info(`Created new customer '${emailAddress}'`, loggerCtx);
     return result;
   }
 
   async getOrPaymentMethod(
     customerId: string,
-    input: CreditCardPaymentMethodInput
+    input: CreditCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(customerId);
-    const existing = methods.find(
-      (m) => m.last4 && input.card.endsWith(m.last4)
-    );
+    const existing = methods.find((method) => isSameCard(input, method));
     if (existing) {
       return existing;
     } else {
@@ -81,16 +81,23 @@ export class AcceptBlueClient {
   async getPaymentMethods(
     customerId: string
   ): Promise<AcceptBluePaymentMethod[]> {
-    return await this.request('get', `customers/${customerId}/payment_methods`);
+    const result = await this.request(
+      'get',
+      `customers/${customerId}/payment-methods`
+    );
+    if (!result) {
+      return [];
+    }
+    return result;
   }
 
   async createPaymentMethod(
     customerId: string,
-    input: CreditCardPaymentMethodInput
+    input: CreditCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
     const result: AcceptBluePaymentMethod = await this.request(
       'post',
-      `customers/${customerId}/payment_methods`,
+      `customers/${customerId}/payment-methods`,
       input
     );
     Logger.info(
@@ -107,6 +114,10 @@ export class AcceptBlueClient {
   ): Promise<any | undefined> {
     const result = await this.instance[method](`/${path}`, data);
     if (result.status === 404) {
+      Logger.debug(
+        `No result found for ${method} to "${path}", returning undefined`,
+        loggerCtx
+      );
       return undefined;
     }
     if (result.status >= 400) {

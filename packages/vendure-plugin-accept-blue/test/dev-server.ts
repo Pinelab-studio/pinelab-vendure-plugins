@@ -13,6 +13,7 @@ import {
   SqljsInitializer,
 } from '@vendure/testing';
 import { AcceptBluePlugin } from '../src';
+import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -21,6 +22,7 @@ import {
   TRANSITION_ORDER_TO,
 } from './helpers';
 
+// eslint-disable @typescript-eslint/no-var-requires
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
   require('dotenv').config();
@@ -61,7 +63,7 @@ import {
       code: 'accept-blue-credit-card',
       enabled: true,
       handler: {
-        code: 'accept-blue-credit-card',
+        code: acceptBluePaymentHandler.code,
         arguments: [{ name: 'apiKey', value: process.env.API_KEY }],
       },
       translations: [
@@ -74,7 +76,7 @@ import {
   });
   console.log(`Created paymentMethod`);
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  const { addItemToOrder } = await shopClient.query(ADD_ITEM_TO_ORDER, {
+  await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '1',
     quantity: 1,
   });
@@ -83,28 +85,28 @@ import {
     id: [1],
   });
   console.log(`Shipping method set`);
-  const { transitionOrderToState } = await shopClient.query(TRANSITION_ORDER_TO, {
-    state: 'ArrangingPayment',
-  });
-
+  const { transitionOrderToState } = await shopClient.query(
+    TRANSITION_ORDER_TO,
+    {
+      state: 'ArrangingPayment',
+    }
+  );
 
   // Create Payment method with Accept blue
   // No guest checkouts allowed
 
   // Get available Accept blue payment methods
 
-
   console.log(`Transitioned to ArrangingPayment`, transitionOrderToState);
 
-  
   const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
     input: {
       method: 'accept-blue-credit-card',
       metadata: {
-        acceptBlueMethod: 1
-        // card: '476153000111118',
-        // expiry_year: 2025,
-        // expiry_month: 1,
+        // acceptBluePaymentMethod: 1,
+        card: '476153000111118',
+        expiry_year: 2025,
+        expiry_month: 1,
       },
     },
   });

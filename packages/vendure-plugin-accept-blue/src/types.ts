@@ -1,4 +1,8 @@
 export interface AcceptBlueCustomer {
+  id: string;
+  /**
+   * On creation, we set the emailaddress as identifier
+   */
   identifier: string;
   customer_number: string;
   first_name?: string;
@@ -32,7 +36,9 @@ export interface AcceptBlueCustomer {
   active: boolean;
 }
 
-export interface CreditCardPaymentMethodInput {
+export type AddPaymentInput = CreditCardPaymentInput | SavedMethodInput;
+
+export interface CreditCardPaymentInput {
   card: string;
   expiry_month: number;
   expiry_year: number;
@@ -41,9 +47,13 @@ export interface CreditCardPaymentMethodInput {
   name?: string;
 }
 
-export interface HandleCardPaymentResult {
+export interface SavedMethodInput {
+  paymentMethodId: number;
+}
+
+export interface HandlePaymentResult {
   customerId: string;
-  paymentMethodId: string;
+  paymentMethodId: string | number;
   recurringScheduleResult: any;
   chargeResult: any;
 }
@@ -59,5 +69,5 @@ export interface AcceptBluePaymentMethod {
   expiry_year: number;
   payment_method_type: string;
   card_type?: string;
-  last4?: string;
+  last4: string;
 }
