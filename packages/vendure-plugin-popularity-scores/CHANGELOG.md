@@ -1,3 +1,7 @@
+# 1.5.0 (2023-12-15)
+
+- Allow manual setting of populairty scores on Products and Collections
+
 # 1.4.0 (2023-11-02)
 
 - Updated vendure to 2.1.1
