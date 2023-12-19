@@ -42,6 +42,9 @@ describe('CloudTasks job queue e2e', () => {
       onJobFailure: async (error) => {
         console.log('Custom error handler', error);
       },
+      clientOptions: {
+        fallback: true,
+      },
     })
   );
   testConfig.plugins.push(DefaultSearchPlugin);
