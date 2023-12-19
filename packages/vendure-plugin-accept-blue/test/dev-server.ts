@@ -22,7 +22,6 @@ import {
   TRANSITION_ORDER_TO,
 } from './helpers';
 
-// eslint-disable @typescript-eslint/no-var-requires
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
   require('dotenv').config();
