@@ -10,6 +10,7 @@ import {
   ProductData,
   ProductInput,
   VatGroup,
+  Warehouse,
   WebhookData,
   WebhookInput,
 } from './types';
@@ -24,8 +25,7 @@ export interface PicqerClientInput {
 export class PicqerClient {
   readonly instance: AxiosInstance;
   /**
-   * This is the default limit for lists in the Picqer API.
-   * Resultsets greater than this will require pagination.
+   * This is the default limit for everything that uses pagination in the Picqer API.
    */
   readonly responseLimit = 100;
 
@@ -178,6 +178,31 @@ export class PicqerClient {
       loggerCtx
     );
     return customer;
+  }
+
+  async getAllWarehouses(): Promise<Warehouse[]> {
+    const allWarehouses: Warehouse[] = [];
+    let hasMore = true;
+    let offset = 0;
+    while (hasMore) {
+      const warehouses: Warehouse[] = await this.rawRequest(
+        'get',
+        `/warehouses?offset=${offset}`
+      );
+      Logger.info(`Fetched ${warehouses.length} warehouses`, loggerCtx);
+      allWarehouses.push(...warehouses);
+      if (warehouses.length < this.responseLimit) {
+        hasMore = false;
+      } else {
+        Logger.info(`Fetching more...`, loggerCtx);
+      }
+      offset += this.responseLimit;
+    }
+    Logger.info(
+      `Fetched a total of ${allWarehouses.length} warehouses`,
+      loggerCtx
+    );
+    return allWarehouses;
   }
 
   async createCustomer(input: CustomerInput): Promise<CustomerData> {

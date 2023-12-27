@@ -77,6 +77,6 @@ export class PicqerController {
     if (picqerConfig?.apiKey !== apiKey) {
       throw new ForbiddenException('Invalid bearer token');
     }
-    await this.picqerService.createStockLevelJobs(ctx);
+    await this.picqerService.createStockLevelJob(ctx);
   }
 }

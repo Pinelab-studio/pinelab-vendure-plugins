@@ -37,7 +37,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   }
 
   constructor(private options: CloudTaskOptions) {
-    this.client = new CloudTasksClient();
+    this.client = new CloudTasksClient(options.clientOptions);
   }
 
   async findOne(id: ID): Promise<Job<any> | undefined> {

@@ -336,6 +336,10 @@ describe('Product synchronization', function () {
       })
       .reply(200, { idproduct: 'mockId' })
       .persist();
+    // Mock warehouses GET
+    nock(nockBaseUrl)
+      .get('/warehouses?offset=0')
+      .reply(200, [{ idwarehouse: 2, name: 'Main warehouse', active: true }]);
     const { triggerPicqerFullSync } = await adminClient.query(FULL_SYNC);
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     expect(pushProductPayloads.length).toBe(4);
@@ -349,7 +353,6 @@ describe('Product synchronization', function () {
 
   it('Should have pulled stock levels from Picqer after full sync', async () => {
     // Relies on previous trigger of full sync
-    await new Promise((r) => setTimeout(r, 3000)); // Wait for job queue to finish
     const variants = await getAllVariants(adminClient);
     updatedVariant = variants.find((v) => v.sku === 'L2201308');
     expect(updatedVariant?.stockOnHand).toBe(8);

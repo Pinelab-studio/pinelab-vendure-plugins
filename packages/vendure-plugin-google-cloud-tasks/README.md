@@ -50,3 +50,18 @@ curl -H "Authorization: Bearer some-secret-to-authenticate-cloud-tasks" "http://
 Will clear all jobs older than 1 day.
 
 <!-- (Use this to edit the diagram on plantuml.com: `//www.plantuml.com/plantuml/png/jL0zJyCm4DtzAzu8Kf2wi7H0HHsec4h9ZanyQGqN6tntLFdtEAb49If6Dkjz-DvxAr5Vr0PsRitPGklbNHxpwvEHqRCMhxGVSNE7X_NsvNC2bxWF0LK2pPWHzyDDmlCt6vy2KrbYQtB0MtLyHOzDssxTXUWFv_o8QO_UHwRGG38AQHbn5NjuLHe-LC3KQuEi1oh7A0JE9uSLWfSfx8wwNCBrvU5VtNQaLXBgAcg2syMYmJm5Zf4PbWALogM0g4X4uPIc9lpl4GXYNKSYlJ6FpLJntCkv5QLW0ty3`) -->
+
+# FAQ
+
+## DEADLINE_EXCEEDED errors when pushing tasks to queue
+
+When pushing multiple tasks concurrently to a queue in serverless environments, you might see `DEADLINE_EXCEEDED` errors. If that happens, you can instantiate the plugin with `fallback: true` to make the Google Cloud Tasks client fallback to HTTP instead of GRPC. For more details see https://github.com/googleapis/nodejs-tasks/issues/397#issuecomment-618580649
+
+```ts
+    CloudTasksPlugin.init({
+      ...
+      clientOptions: {
+        fallback: true
+      }
+    });
+```
