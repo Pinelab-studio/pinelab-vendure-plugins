@@ -56,6 +56,7 @@ export class SubscriptionOrderItemCalculation
       );
     }
     const total = subscription.reduce((acc, sub) => sub.amountDueNow || 0, 0);
+    console.log('subscription total: ' + total);
     return {
       priceIncludesTax: subscription[0].priceIncludesTax,
       price: total,

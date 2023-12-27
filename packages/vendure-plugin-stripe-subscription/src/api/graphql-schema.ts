@@ -8,7 +8,7 @@ const _codegenAdditions = gql`
   scalar JSON
 `;
 
-export const shopSchemaExtensions = gql`
+export const commonSchemaExtensions = gql`
   enum StripeSubscriptionInterval {
     week
     month
@@ -46,6 +46,10 @@ export const shopSchemaExtensions = gql`
   }
 
   extend type OrderLine {
+    """
+    These subscriptions are calculated dynamically, and should not be used for historical data.
+    Actual created subscriptions should be fetched from he connected Stripe account.
+    """
     stripeSubscriptions: [StripeSubscription!]
   }
 
@@ -62,11 +66,5 @@ export const shopSchemaExtensions = gql`
 
   extend type Mutation {
     createStripeSubscriptionIntent: StripeSubscriptionIntent!
-  }
-`;
-
-export const adminApiExtension = gql`
-  extend enum HistoryEntryType {
-    STRIPE_SUBSCRIPTION_NOTIFICATION
   }
 `;
