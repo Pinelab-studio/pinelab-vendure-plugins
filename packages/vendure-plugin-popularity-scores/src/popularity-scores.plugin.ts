@@ -33,13 +33,11 @@ export interface PopularityScoresPluginConfig {
       name: 'popularityScore',
       type: 'int',
       defaultValue: 0,
-      readonly: true,
     });
     config.customFields.Collection.push({
       name: 'popularityScore',
       type: 'int',
       defaultValue: 0,
-      readonly: true,
     });
     return config;
   },

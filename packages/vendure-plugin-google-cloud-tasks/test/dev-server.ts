@@ -24,6 +24,9 @@ import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
       location: process.env.TASKQUEUE_LOCATION!,
       authSecret: 'some-secret-to-authenticate-cloud-tasks',
       queueSuffix: 'plugin-test2',
+      clientOptions: {
+        fallback: true,
+      },
     })
   );
   testConfig.plugins.push(AdminUiPlugin.init({ route: 'admin', port: 3002 }));
