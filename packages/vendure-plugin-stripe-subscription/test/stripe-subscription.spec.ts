@@ -181,7 +181,7 @@ describe('Stripe Subscription Plugin', function () {
     expect(subscriptions.length).toBe(4);
   });
 
-  it('Previews subscription for variant for backend', async () => {
+  it('Previews subscription for variant for via admin API', async () => {
     const {
       previewStripeSubscriptions: [subscription],
     } = await adminClient.query(PREVIEW_SUBSCRIPTIONS, {
@@ -202,7 +202,7 @@ describe('Stripe Subscription Plugin', function () {
     });
   });
 
-  it('Preview subscriptions for product for backend', async () => {
+  it('Preview subscriptions for product via admin API', async () => {
     const { previewStripeSubscriptionsForProduct: subscriptions } =
       await adminClient.query(PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT, {
         productId: 'T_1',

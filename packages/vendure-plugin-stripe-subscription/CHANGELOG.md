@@ -1,6 +1,6 @@
-# 2.2.2 (2023-12-26)
+# 2.3.0 (2023-12-26)
 
-- Extended the admin-api to include all of the same methods as the shop-api for stripe subscription
+- Extended the admin-api to include all of the same methods as the shop-api for Stripe subscription
 
 # 2.2.1 (2023-11-06)
 
