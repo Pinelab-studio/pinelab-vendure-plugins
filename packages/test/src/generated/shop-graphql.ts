@@ -3388,11 +3388,29 @@ export const OrderFields = gql`
   total
   totalWithTax
   shippingWithTax
-  customer {
-    emailAddress
-  }
   shippingAddress {
     fullName
+    company
+    streetLine1
+    streetLine2
+    city
+    postalCode
+    country
+  }
+  billingAddress {
+    fullName
+    company
+    streetLine1
+    streetLine2
+    city
+    postalCode
+    country
+  }
+  customer {
+    id
+    firstName
+    lastName
+    emailAddress
   }
   lines {
     id

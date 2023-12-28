@@ -102,6 +102,7 @@
           "stripe-subscription",
           "variant-bulk-update",
           "vendure-order-client",
+          "vendure-plugin-anonymized-order",
           "webhook"
         ]
       ]
