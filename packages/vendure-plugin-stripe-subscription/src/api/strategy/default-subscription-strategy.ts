@@ -20,8 +20,11 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
     order: Order,
     orderLineCustomFields: { [key: string]: any },
     quantity: number
-  ): Subscription {
-    return this.getSubscriptionForVariant(productVariant);
+  ): Subscription[] {
+    return [
+      this.getSubscriptionForVariant(productVariant),
+      this.getSubscriptionForVariant(productVariant),
+    ];
   }
 
   isSubscription(ctx: RequestContext, variant: ProductVariant): boolean {

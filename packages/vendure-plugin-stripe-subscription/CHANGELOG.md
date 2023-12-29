@@ -1,3 +1,7 @@
+# 2.3.1 (2023-12-26)
+
+- Correctly calculate line price sum when multiple subscriptions are returned
+
 # 2.3.0 (2023-12-26)
 
 - Extended the admin-api to include all of the same methods as the shop-api for Stripe subscription

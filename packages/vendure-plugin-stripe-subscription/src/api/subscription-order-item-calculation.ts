@@ -55,8 +55,7 @@ export class SubscriptionOrderItemCalculation
         `Subscription strategy returned an empty array. Must contain atleast 1 subscription`
       );
     }
-    const total = subscription.reduce((acc, sub) => sub.amountDueNow || 0, 0);
-    console.log('subscription total: ' + total);
+    const total = subscription.reduce((acc, sub) => acc + sub.amountDueNow, 0);
     return {
       priceIncludesTax: subscription[0].priceIncludesTax,
       price: total,
