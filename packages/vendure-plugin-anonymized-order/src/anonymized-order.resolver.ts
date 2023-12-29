@@ -10,8 +10,8 @@ export class AnonymizeOrderShopResolver {
   async anonymizedOrder(
     @Ctx() ctx: RequestContext,
     @Args() args: { orderCode: string; emailAddress: string }
-  ): Promise<Order | undefined> {
-    return await this.anonymizeOrderService.anonymizedOrder(
+  ): Promise<Order> {
+    return await this.anonymizeOrderService.getAnonymizedOrder(
       ctx,
       args.orderCode,
       args.emailAddress

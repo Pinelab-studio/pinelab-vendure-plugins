@@ -64,9 +64,7 @@ export const ANONYMIZED_ORDER_QUERY = gql`
   ${OrderFieldsFragment}
   query anonymizedOrderQuery($orderCode: String!, $emailAddress: String!) {
     anonymizedOrder(orderCode: $orderCode, emailAddress: $emailAddress) {
-      ... on Order {
-        ...OrderFields
-      }
+      ...OrderFields
     }
   }
 `;

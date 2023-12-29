@@ -5,6 +5,6 @@ const scalars = gql`
 `;
 export const anonymizeOrderShopSchema = gql`
   extend type Query {
-    anonymizedOrder(orderCode: String!, emailAddress: String!): Order
+    anonymizedOrder(orderCode: String!, emailAddress: String!): Order!
   }
 `;

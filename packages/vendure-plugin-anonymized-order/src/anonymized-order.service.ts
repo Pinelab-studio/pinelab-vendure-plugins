@@ -16,13 +16,13 @@ export class AnonymizeOrderService {
     private readonly orderService: OrderService
   ) {}
 
-  async anonymizedOrder(
+  async getAnonymizedOrder(
     ctx: RequestContext,
     orderCode: string,
     emailAddress: string
-  ): Promise<Order | undefined> {
+  ): Promise<Order> {
     const order = await this.orderService.findOneByCode(ctx, orderCode);
-    if (order && order?.customer?.emailAddress === emailAddress) {
+    if (order && order.customer?.emailAddress === emailAddress) {
       order.customer = undefined;
       order.shippingAddress = {};
       order.billingAddress = {};
