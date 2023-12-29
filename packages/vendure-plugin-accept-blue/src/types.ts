@@ -42,9 +42,9 @@ export interface CreditCardPaymentInput {
   card: string;
   expiry_month: number;
   expiry_year: number;
-  avs_address?: string;
-  avs_zip?: string;
-  name?: string;
+  avs_address: string;
+  avs_zip: string;
+  name: string;
 }
 
 export interface SavedMethodInput {

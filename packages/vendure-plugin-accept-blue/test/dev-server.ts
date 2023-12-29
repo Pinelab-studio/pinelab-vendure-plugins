@@ -14,6 +14,7 @@ import {
 } from '@vendure/testing';
 import { AcceptBluePlugin } from '../src';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
+import { CreditCardPaymentInput } from '../src/types';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -101,11 +102,14 @@ import {
   const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
     input: {
       method: 'accept-blue-credit-card',
-      metadata: {
+      metadata: <CreditCardPaymentInput> {
         // acceptBluePaymentMethod: 1,
         card: '476153000111118',
         expiry_year: 2025,
         expiry_month: 1,
+        avs_address: 'Testing address',
+        avs_zip: '12345',
+        name: 'Hayden Zieme',
       },
     },
   });
