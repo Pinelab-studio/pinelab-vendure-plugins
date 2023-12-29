@@ -3424,6 +3424,7 @@ export const OrderFields = gql`
       type
     }
   }
+  couponCodes
 }
     `;
 export const AddItemToOrder = gql`
