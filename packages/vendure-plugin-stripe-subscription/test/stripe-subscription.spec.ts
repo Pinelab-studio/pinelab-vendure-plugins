@@ -179,6 +179,64 @@ describe('Stripe Subscription Plugin', function () {
     expect(subscriptions.length).toBe(4);
   });
 
+  it('Previews subscription for variant for via admin API', async () => {
+    const {
+      previewStripeSubscriptions: [subscription],
+    } = await adminClient.query(PREVIEW_SUBSCRIPTIONS, {
+      productVariantId: 'T_1',
+    });
+    expect(subscription).toEqual({
+      name: 'Subscription Laptop 13 inch 8GB',
+      amountDueNow: 129900,
+      variantId: 'T_1',
+      priceIncludesTax: false,
+      recurring: {
+        amount: 129900,
+        interval: 'month',
+        intervalCount: 1,
+        startDate: getOneMonthFromNow().toISOString(),
+        endDate: null,
+      },
+    });
+  });
+
+  it('Preview subscriptions for product via admin API', async () => {
+    const { previewStripeSubscriptionsForProduct: subscriptions } =
+      await adminClient.query(PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT, {
+        productId: 'T_1',
+      });
+    expect(subscriptions.length).toBe(4);
+  });
+
+  it('Previews subscription for variant for via admin API', async () => {
+    const {
+      previewStripeSubscriptions: [subscription],
+    } = await adminClient.query(PREVIEW_SUBSCRIPTIONS, {
+      productVariantId: 'T_1',
+    });
+    expect(subscription).toEqual({
+      name: 'Subscription Laptop 13 inch 8GB',
+      amountDueNow: 129900,
+      variantId: 'T_1',
+      priceIncludesTax: false,
+      recurring: {
+        amount: 129900,
+        interval: 'month',
+        intervalCount: 1,
+        startDate: getOneMonthFromNow().toISOString(),
+        endDate: null,
+      },
+    });
+  });
+
+  it('Preview subscriptions for product via admin API', async () => {
+    const { previewStripeSubscriptionsForProduct: subscriptions } =
+      await adminClient.query(PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT, {
+        productId: 'T_1',
+      });
+    expect(subscriptions.length).toBe(4);
+  });
+
   let orderCode: string | undefined;
 
   it('Adds item to order', async () => {
