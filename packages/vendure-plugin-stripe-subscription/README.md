@@ -6,7 +6,7 @@ A channel aware plugin that allows you to sell subscription based services or pr
 at [isoutfitters.com](https://isoutfitters.com/).
 
 - [Vendure Stripe Subscription plugin](#vendure-stripe-subscription-plugin)
-  - [Official documentation here](#official-documentation-here)
+    - [Official documentation here](#official-documentation-here)
   - [How it works](#how-it-works)
   - [Installation](#installation)
   - [Storefront usage](#storefront-usage)
@@ -146,7 +146,8 @@ import { RequestContext, Injector, ProductVariant, Order } from '@vendure/core';
  * This example creates a subscription that charges the customer the price of the variant, every 4 weeks
  */
 export class MySubscriptionStrategy implements SubscriptionStrategy {
-  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean {
+  
+  isSubscription(ctx: RequestContext, variant: ProductVariant, injector: Injector): boolean {
     // This example treats all products as subscriptions
     return true;
   }
