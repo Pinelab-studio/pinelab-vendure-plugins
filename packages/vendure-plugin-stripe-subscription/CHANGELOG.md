@@ -1,3 +1,7 @@
+# 2.4.0 (2024-12-02)
+
+- Made `isSubscription()` async and passed an instance of `Injector`, so that consumers can fetch additional relations inside `isSubscription()`;
+
 # 2.3.1 (2023-12-26)
 
 - Correctly calculate line price sum when multiple subscriptions are returned

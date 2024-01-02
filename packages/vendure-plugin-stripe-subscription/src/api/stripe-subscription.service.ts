@@ -152,9 +152,15 @@ export class StripeSubscriptionService {
     });
     // Add unique hash for subscriptions, so Vendure creates a new order line
     this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
+      if (event.type !== 'created') {
+        return;
+      }
       if (
-        event.type === 'created' &&
-        this.strategy.isSubscription(event.ctx, event.orderLine.productVariant)
+        await this.strategy.isSubscription(
+          event.ctx,
+          event.orderLine.productVariant,
+          new Injector(this.moduleRef)
+        )
       ) {
         await this.connection
           .getRepository(event.ctx, OrderLine)
@@ -289,6 +295,11 @@ export class StripeSubscriptionService {
       );
     }
     const injector = new Injector(this.moduleRef);
+    if (!(await this.strategy.isSubscription(ctx, variant, injector))) {
+      throw new UserInputError(
+        `Product variant '${variant.id}' is not a subscription product`
+      );
+    }
     const subscriptions = await this.strategy.previewSubscription(
       ctx,
       injector,
@@ -503,8 +514,9 @@ export class StripeSubscriptionService {
   ): Promise<(Subscription & { orderLineId: ID; variantId: ID })[]> {
     const injector = new Injector(this.moduleRef);
     // Only define subscriptions for orderlines with a subscription product variant
-    const subscriptionOrderLines = order.lines.filter((l) =>
-      this.strategy.isSubscription(ctx, l.productVariant)
+    const subscriptionOrderLines = await this.getSubscriptionOrderLines(
+      ctx,
+      order
     );
     const subscriptions = await Promise.all(
       subscriptionOrderLines.map(async (line) => {
@@ -553,12 +565,38 @@ export class StripeSubscriptionService {
   }
 
   /**
-   * Check if the order has products that should be treated as subscription products
+   * Get order lines that have a subscription product variant
    */
-  hasSubscriptionProducts(ctx: RequestContext, order: Order): boolean {
-    return order.lines.some((l) =>
-      this.strategy.isSubscription(ctx, l.productVariant)
+  async getSubscriptionOrderLines(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<OrderLine[]> {
+    const subscriptionOrderLines: OrderLine[] = [];
+    await Promise.all(
+      order.lines.map(async (l) => {
+        if (
+          await this.strategy.isSubscription(
+            ctx,
+            l.productVariant,
+            new Injector(this.moduleRef)
+          )
+        ) {
+          subscriptionOrderLines.push(l);
+        }
+      })
     );
+    return subscriptionOrderLines;
+  }
+
+  /**
+   * Checks if the order has any variants that should be treated as subscriptions
+   */
+  async hasSubscriptions(ctx: RequestContext, order: Order): Promise<boolean> {
+    const subscriptionOrderLines = await this.getSubscriptionOrderLines(
+      ctx,
+      order
+    );
+    return subscriptionOrderLines.length > 0;
   }
 
   /**
@@ -682,7 +720,7 @@ export class StripeSubscriptionService {
       throw Error(`[${loggerCtx}]: Cannot find order with code ${orderCode}`);
     }
     try {
-      if (!this.hasSubscriptionProducts(ctx, order)) {
+      if (!(await this.hasSubscriptions(ctx, order))) {
         Logger.info(
           `Order ${order.code} doesn't have any subscriptions. No action needed`,
           loggerCtx
