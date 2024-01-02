@@ -38,7 +38,7 @@ import {
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
   REFUND_ORDER,
   setShipping,
-} from './helpers';
+} from './helpers/graphql-helpers';
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;

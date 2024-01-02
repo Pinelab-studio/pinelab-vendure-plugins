@@ -33,7 +33,13 @@ export class SubscriptionOrderItemCalculation
     if (!subcriptionService) {
       throw new Error('Subscription service not initialized');
     }
-    if (!subcriptionService.strategy.isSubscription(ctx, productVariant)) {
+    if (
+      !(await subcriptionService.strategy.isSubscription(
+        ctx,
+        productVariant,
+        injector
+      ))
+    ) {
       return super.calculateUnitPrice(ctx, productVariant);
     }
     const subscription = await subcriptionService.strategy.defineSubscription(
