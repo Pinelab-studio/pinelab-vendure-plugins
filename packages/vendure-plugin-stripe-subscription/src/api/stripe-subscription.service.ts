@@ -150,26 +150,6 @@ export class StripeSubscriptionService {
         }
       },
     });
-    // Add unique hash for subscriptions, so Vendure creates a new order line
-    this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
-      if (event.type !== 'created') {
-        return;
-      }
-      if (
-        await this.strategy.isSubscription(
-          event.ctx,
-          event.orderLine.productVariant,
-          new Injector(this.moduleRef)
-        )
-      ) {
-        await this.connection
-          .getRepository(event.ctx, OrderLine)
-          .update(
-            { id: event.orderLine.id },
-            { customFields: { subscriptionHash: randomUUID() } }
-          );
-      }
-    });
     // Listen for stock cancellation or release events, to cancel an order lines subscription
     this.eventBus
       .ofType(StockMovementEvent)
