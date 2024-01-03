@@ -3,6 +3,7 @@ import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
+  dummyPaymentHandler,
   mergeConfig,
 } from '@vendure/core';
 import {
@@ -18,6 +19,7 @@ import { SelectableFacetsPlugin } from '../src/selectable-facets.plugin';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
+import { testPaymentMethodHandler } from './test-payment-method-handler';
 
 (async () => {
   let server: TestServer;
@@ -45,6 +47,9 @@ import path from 'path';
         }),
       }),
     ],
+    paymentOptions: {
+      paymentMethodHandlers: [dummyPaymentHandler, testPaymentMethodHandler],
+    },
   });
 
   ({ server, adminClient, shopClient } = createTestEnvironment(config));

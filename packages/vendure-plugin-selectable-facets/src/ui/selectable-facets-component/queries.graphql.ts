@@ -1,20 +1,24 @@
-import { gql } from 'graphql-tag';
-import { FACET_WITH_VALUES_FRAGMENT } from '@vendure/admin-ui/core';
+import { gql } from 'apollo-angular';
 
-export const GET_SHOW_ON_PRODUCT_DETAIL_FACETS = gql`
-  query GetFacetDetail {
-    showOnProductDetailFacets {
-      ...FacetWithValues
+export const GET_REQUIRED_FACETS = gql`
+  query GetRequiredFacets {
+    requiredFacets {
+      id
+      name
+      customFields {
+        showOnProductDetail
+        showOnProductDetailIf {
+          id
+        }
+      }
+      values {
+        id
+        name
+        facet {
+          id
+          name
+        }
+      }
     }
   }
-  ${FACET_WITH_VALUES_FRAGMENT}
-`;
-
-export const GET_SHOW_ON_PRODUCT_DETAIL_FACETS_IF = gql`
-  query GetFacetsDetail($facetValueIds: [ID!]!) {
-    showOnProductDetailForFacets(facetValueIds: $facetValueIds) {
-      ...FacetWithValues
-    }
-  }
-  ${FACET_WITH_VALUES_FRAGMENT}
 `;

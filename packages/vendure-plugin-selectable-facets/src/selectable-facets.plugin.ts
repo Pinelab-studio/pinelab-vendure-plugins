@@ -5,23 +5,18 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { adminApiExtensions } from './api/schema.graphql';
-import { ShowOnProductDetailFacetsService } from './api/show-on-product-detail-facets.service';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { ShowOnProductDetailFacetsResolver } from './api/show-on-product-detail-facets.resolver';
+import { AdminResolver } from './api/admin.resolver';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  providers: [ShowOnProductDetailFacetsService],
   configuration: (config) => {
     config.customFields.Facet.push(
       {
         name: 'showOnProductDetail',
         label: [
-          {
-            languageCode: LanguageCode.en,
-            value: 'Show on Product Detail Page',
-          },
+          { languageCode: LanguageCode.en, value: 'Show On Product Detail' },
         ],
         type: 'boolean',
         nullable: true,
@@ -30,10 +25,7 @@ import { ShowOnProductDetailFacetsResolver } from './api/show-on-product-detail-
       {
         name: 'showOnProductDetailIf',
         label: [
-          {
-            languageCode: LanguageCode.en,
-            value: 'Show on Product Detail Page depending on',
-          },
+          { languageCode: LanguageCode.en, value: 'Show On Product Detail If' },
         ],
         type: 'relation',
         entity: FacetValue,
@@ -46,7 +38,7 @@ import { ShowOnProductDetailFacetsResolver } from './api/show-on-product-detail-
   },
   adminApiExtensions: {
     schema: adminApiExtensions,
-    resolvers: [ShowOnProductDetailFacetsResolver],
+    resolvers: [AdminResolver],
   },
 })
 export class SelectableFacetsPlugin {
