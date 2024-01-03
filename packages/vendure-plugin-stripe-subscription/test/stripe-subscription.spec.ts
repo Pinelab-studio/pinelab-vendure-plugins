@@ -241,7 +241,7 @@ describe('Stripe Subscription Plugin', function () {
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
-        productVariantId: 'T_2', // Is subscription
+        productVariantId: 'T_2', // Is not a subscription
         quantity: 1,
       }
     );
