@@ -276,9 +276,7 @@ export class StripeSubscriptionService {
     }
     const injector = new Injector(this.moduleRef);
     if (!(await this.strategy.isSubscription(ctx, variant, injector))) {
-      throw new UserInputError(
-        `Product variant '${variant.id}' is not a subscription product`
-      );
+      return [];
     }
     const subscriptions = await this.strategy.previewSubscription(
       ctx,
@@ -530,11 +528,20 @@ export class StripeSubscriptionService {
     order: Order
   ): Promise<Subscription[]> {
     const injector = new Injector(this.moduleRef);
+    if (
+      !(await this.strategy.isSubscription(
+        ctx,
+        orderLine.productVariant,
+        injector
+      ))
+    ) {
+      return [];
+    }
     const subs = await this.strategy.defineSubscription(
       ctx,
       injector,
       orderLine.productVariant,
-      orderLine.order,
+      order,
       orderLine.customFields,
       orderLine.quantity
     );

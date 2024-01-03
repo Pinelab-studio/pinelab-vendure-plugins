@@ -1,3 +1,7 @@
+# 2.4.1 (2024-12-03)
+
+- Return empty array instead of throwing an error for variants that are not subscriptions
+
 # 2.4.0 (2024-12-02)
 
 - Made `isSubscription()` async and passed an instance of `Injector`, so that consumers can fetch additional relations inside `isSubscription()`;
