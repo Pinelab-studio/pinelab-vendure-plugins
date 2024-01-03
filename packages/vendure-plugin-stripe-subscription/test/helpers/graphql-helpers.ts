@@ -11,6 +11,22 @@ export const ADD_ITEM_TO_ORDER = gql`
         code
         totalWithTax
         total
+        lines {
+          id
+          stripeSubscriptions {
+            name
+            amountDueNow
+            variantId
+            priceIncludesTax
+            recurring {
+              amount
+              interval
+              intervalCount
+              startDate
+              endDate
+            }
+          }
+        }
       }
       ... on ErrorResult {
         errorCode

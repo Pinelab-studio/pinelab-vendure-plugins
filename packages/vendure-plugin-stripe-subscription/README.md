@@ -146,7 +146,11 @@ import { RequestContext, Injector, ProductVariant, Order } from '@vendure/core';
  * This example creates a subscription that charges the customer the price of the variant, every 4 weeks
  */
 export class MySubscriptionStrategy implements SubscriptionStrategy {
-  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean {
+  isSubscription(
+    ctx: RequestContext,
+    variant: ProductVariant,
+    injector: Injector
+  ): boolean {
     // This example treats all products as subscriptions
     return true;
   }

@@ -29,8 +29,9 @@ import { StripeSubscriptionService } from './stripe-subscription.service';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
+// Resolver for both Shop and Admin API
 @Resolver()
-export class StripeSubscriptionShopResolver {
+export class StripeSubscriptionCommonResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
     private paymentMethodService: PaymentMethodService,
