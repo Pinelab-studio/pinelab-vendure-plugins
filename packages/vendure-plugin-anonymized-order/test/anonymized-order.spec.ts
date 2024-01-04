@@ -26,7 +26,7 @@ describe('Customer managed groups', function () {
       plugins: [
         AnonymizedOrderPlugin.init({
           anonymizeOrderFn: (order) => {
-            order.lines = [];
+            order.couponCodes = [];
           },
         }),
       ],
@@ -71,7 +71,12 @@ describe('Customer managed groups', function () {
       expect(anonymizedOrder?.customer).toBeNull();
       expect(anonymizedOrder?.billingAddress?.fullName).toBeNull();
       expect(anonymizedOrder?.shippingAddress?.fullName).toBeNull();
-      expect(anonymizedOrder?.lines?.length).toBe(0);
+      expect(anonymizedOrder?.couponCodes?.length).toBe(0);
+      for (let line of anonymizedOrder.lines) {
+        expect(line.order?.customer).toBeUndefined();
+        expect(line.order?.billingAddress?.fullName).toBeUndefined();
+        expect(line.order?.shippingAddress?.fullName).toBeUndefined();
+      }
     });
   });
 });
