@@ -23,18 +23,28 @@ import {
 import { initialData } from './initial-data';
 import { testPaymentMethodHandler } from './test-payment-method-handler';
 import { useStore } from '@nanostores/vue';
-import { MapStore, listenKeys } from 'nanostores';
+import { MapStore } from 'nanostores';
 import { molliePaymentHandler } from '@vendure/payments-plugin/package/mollie/mollie.handler';
 import { MolliePlugin } from '@vendure/payments-plugin/package/mollie/mollie.plugin';
 
-const storage: any = {};
-const window = {
-  localStorage: {
-    getItem: (key: string) => storage[key],
-    setItem: (key: string, data: any) => (storage[key] = data),
-    removeItem: (key: string) => (storage[key] = undefined),
-  },
-};
+// Mock window.localStorage
+class LocalStorageMock {
+  mockStorage: Record<string, string | undefined> = {};
+  getItem(key: string): string | undefined {
+    return this.mockStorage[key];
+  }
+
+  setItem(key: string, data: string): void {
+    this.mockStorage[key] = data;
+  }
+
+  removeItem(key: string): void {
+    this.mockStorage[key] = undefined;
+    console.log('================', this.mockStorage);
+  }
+}
+const localStorageMock = new LocalStorageMock();
+const window = { localStorage: localStorageMock };
 vi.stubGlobal('window', window);
 
 // order.history is not included by default, so we use it to test additionalOrderFields
@@ -64,7 +74,6 @@ describe(
     let activeOrderCode: string | undefined;
     let adminClient: SimpleGraphQLClient;
     let activeOrderStore: any;
-    let currentUserStore: any;
     const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
     beforeAll(async () => {
@@ -102,38 +111,6 @@ describe(
       return await testLoadingState(awaitableFunction, client.$activeOrder);
     }
 
-    async function testEligibleShippingMethodsLoadingState(
-      awaitableFunction: PromiseFn,
-      clientMethodName: string
-    ): Promise<any> {
-      let wasSetToTrue = false;
-      let wasFinallySetToFalse = false;
-      listenKeys(
-        client.$eligibleShippingMethods,
-        ['loading'],
-        (currentEligibleShippingMethods) => {
-          if (currentEligibleShippingMethods.loading) {
-            wasSetToTrue = true;
-          } else {
-            if (wasSetToTrue) {
-              wasFinallySetToFalse = true;
-            }
-          }
-        }
-      );
-      await testActiveOrderLoadingState(awaitableFunction);
-      expect(
-        wasSetToTrue,
-        `eligibleShippingMethods's 'loading' wasn't set to true when '${clientMethodName}' started running`
-      ).toBe(true);
-      setTimeout(() => {
-        expect(
-          wasFinallySetToFalse,
-          `eligibleShippingMethods's 'loading' wasn't set to false when '${clientMethodName}' finished running`
-        ).toBe(true);
-      }, 1000);
-    }
-
     async function testLoadingState(
       awaitableFunction: PromiseFn,
       store: MapStore
@@ -144,12 +121,6 @@ describe(
       const result = await promise;
       expect(store.value?.loading).toBe(false);
       return result;
-    }
-
-    async function testCurrentUserLoadingState(
-      awaitableFunction: PromiseFn
-    ): Promise<any> {
-      return await testLoadingState(awaitableFunction, client.$currentUser);
     }
 
     it('Starts the server successfully', async () => {
@@ -199,7 +170,6 @@ describe(
         additionalOrderFields
       );
       activeOrderStore = useStore(client.$activeOrder);
-      currentUserStore = useStore(client.$currentUser);
       expect(client).toBeInstanceOf(VendureOrderClient);
       expect(activeOrderStore.value.data).toBeUndefined();
       expect(client.eventBus).toBeDefined();
@@ -210,13 +180,16 @@ describe(
     });
 
     describe('Cart management', () => {
+      it('Has no auth token in localstorage', async () => {
+        expect(
+          localStorageMock.getItem(client.LOCALSTORAGE_TOKEN_NAME)
+        ).toBeUndefined();
+      });
+
       it(
         'Adds an item to order',
         async () => {
-          await testEligibleShippingMethodsLoadingState(
-            async () => await client.addItemToOrder('T_2', 1),
-            'addItemToOrder'
-          );
+          await client.addItemToOrder('T_2', 1);
           activeOrderCode = activeOrderStore?.value.data.code;
           expect(activeOrderStore?.value.data.lines[0].quantity).toBe(1);
           expect(activeOrderStore?.value.data.lines[0].productVariant.id).toBe(
@@ -225,6 +198,12 @@ describe(
         },
         { timeout: 10000 }
       );
+
+      it('Has auth token in localstorage', async () => {
+        expect(
+          localStorageMock.getItem(client.LOCALSTORAGE_TOKEN_NAME)
+        ).toBeDefined();
+      });
 
       it('Emits "item-added" event, with quantity 1', async () => {
         const [eventType, event] = latestEmittedEvent;
@@ -245,10 +224,7 @@ describe(
       });
 
       it('Increases quantity from 1 to 3', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.adjustOrderLine('T_1', 3),
-          'adjustOrderLine'
-        );
+        await client.adjustOrderLine('T_1', 3);
         expect(activeOrderStore.value?.data.lines[0].quantity).toBe(3);
       });
 
@@ -262,10 +238,7 @@ describe(
       });
 
       it('Removes the order line', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.removeOrderLine('T_1'),
-          'removeOrderLine'
-        );
+        await client.removeOrderLine('T_1');
         expect(activeOrderStore.value?.data.lines.length).toBe(0);
       });
 
@@ -279,10 +252,7 @@ describe(
       });
 
       it('Adds an item to order for the second time', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.addItemToOrder('T_2', 1),
-          'addItemToOrder'
-        );
+        await client.addItemToOrder('T_2', 1);
         expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
         expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
           'T_2'
@@ -290,10 +260,7 @@ describe(
       });
 
       it('Removes all order lines', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.removeAllOrderLines(),
-          'removeAllOrderLines'
-        );
+        await client.removeAllOrderLines();
         expect(activeOrderStore.value?.data.lines.length).toBe(0);
       });
 
@@ -309,10 +276,7 @@ describe(
 
     describe('Guest checkout', () => {
       it('Adds an item to order', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.addItemToOrder('T_2', 1),
-          'addItemToOrder'
-        );
+        await client.addItemToOrder('T_2', 1);
         expect(activeOrderStore.value?.data.lines[0].quantity).toBe(1);
         expect(activeOrderStore.value?.data.lines[0].productVariant.id).toBe(
           'T_2'
@@ -321,10 +285,7 @@ describe(
 
       it('Applies invalid coupon', async () => {
         try {
-          await testEligibleShippingMethodsLoadingState(
-            async () => await client.applyCouponCode('fghj'),
-            'applyCouponCode'
-          );
+          await client.applyCouponCode('fghj');
         } catch (e: any) {
           expect(activeOrderStore.value.error.errorCode).toBe(
             'COUPON_CODE_INVALID_ERROR'
@@ -333,10 +294,7 @@ describe(
       });
 
       it('Applies valid coupon', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.applyCouponCode(couponCodeName),
-          'applyCouponCode'
-        );
+        await client.applyCouponCode(couponCodeName);
         expect(
           (activeOrderStore.value.data as ActiveOrderFieldsFragment)
             ?.couponCodes?.length
@@ -352,10 +310,7 @@ describe(
       });
 
       it('Removes coupon', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.removeCouponCode(couponCodeName),
-          'removeCouponCode'
-        );
+        await client.removeCouponCode(couponCodeName);
         expect(activeOrderStore.value.data?.couponCodes?.length).toEqual(0);
       });
 
@@ -373,10 +328,7 @@ describe(
           firstName: 'Mein',
           lastName: 'Zohn',
         };
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.setCustomerForOrder(createCustomerInput),
-          'setCustomerForOrder'
-        );
+        await client.setCustomerForOrder(createCustomerInput);
         const customer = (
           activeOrderStore.value.data as ActiveOrderFieldsFragment
         ).customer;
@@ -393,11 +345,7 @@ describe(
           streetLine1: ' Stree Line in Ethiopia',
           countryCode: 'GB',
         };
-        await testEligibleShippingMethodsLoadingState(
-          async () =>
-            await client.setOrderShippingAddress(addShippingAddressInput),
-          'setOrderShippingAddress'
-        );
+        await client.setOrderShippingAddress(addShippingAddressInput);
         const shippingAddress = (
           activeOrderStore.value.data as ActiveOrderFieldsFragment
         ).shippingAddress;
@@ -417,10 +365,7 @@ describe(
           streetLine1: 'ANother Stree Line in Ethiopia',
           countryCode: 'GB',
         };
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.addBillingAddress(addBillingAddressInput),
-          'addBillingAddress'
-        );
+        await client.addBillingAddress(addBillingAddressInput);
         const billingAddress = (
           activeOrderStore.value.data as ActiveOrderFieldsFragment
         ).billingAddress;
@@ -436,10 +381,7 @@ describe(
       });
 
       it('Sets shipping method', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.setOrderShippingMethod(['T_1']),
-          'setOrderShippingMethod'
-        );
+        await client.setOrderShippingMethod(['T_1']);
         expect(
           (activeOrderStore.value.data as ActiveOrderFieldsFragment)
             .shippingLines?.length
@@ -499,6 +441,11 @@ describe(
     };
 
     describe('Registered customer checkout', () => {
+      it(`Doesn't have an active customer`, async () => {
+        const activeCustomer = await client.getActiveCustomer();
+        expect(activeCustomer).toBeNull();
+      });
+
       it('Register as customer', async () => {
         const result = await client.registerCustomerAccount(
           createNewCustomerInput
@@ -506,24 +453,33 @@ describe(
         expect((result as Success)?.success).toBe(true);
       });
 
+      it('Throws an error when login with wrong credentials', async () => {
+        expect.assertions(1);
+        try {
+          await client.login(
+            createNewCustomerInput.emailAddress,
+            'false-unexistant-password'
+          );
+        } catch (e: any) {
+          expect(e.message).toBe('The provided credentials are invalid');
+        }
+      });
+
       it('Login with the new customer', async () => {
-        await testCurrentUserLoadingState(
-          async () =>
-            await client.login(
-              createNewCustomerInput.emailAddress,
-              createNewCustomerInput.password as string
-            )
+        const result = await client.login(
+          createNewCustomerInput.emailAddress,
+          createNewCustomerInput.password as string
         );
-        expect(currentUserStore.value.data.identifier).toBe(
-          createNewCustomerInput.emailAddress
-        );
+        expect(result.identifier).toBe(createNewCustomerInput.emailAddress);
+      });
+
+      it(`Has an active customer`, async () => {
+        const result = await client.getActiveCustomer();
+        expect(result?.emailAddress).toBe(createNewCustomerInput.emailAddress);
       });
 
       it('Add item to cart as the new customer', async () => {
-        await testEligibleShippingMethodsLoadingState(
-          async () => await client.addItemToOrder('T_1', 2),
-          'addItemToOrder'
-        );
+        await client.addItemToOrder('T_1', 2);
         expect(activeOrderStore.value.data.customer.emailAddress).toBe(
           createNewCustomerInput.emailAddress
         );
@@ -533,10 +489,23 @@ describe(
           'T_1'
         );
       });
+
+      it('Logs out', async () => {
+        await client.logout();
+        expect(
+          localStorageMock.getItem(client.LOCALSTORAGE_TOKEN_NAME)
+        ).toBeUndefined();
+        const activeCustomer = await client.getActiveCustomer();
+        expect(activeCustomer).toBeNull();
+      });
     });
 
     describe('Mollie payment', () => {
       it('Prepares an active order', async () => {
+        await client.login(
+          createNewCustomerInput.emailAddress,
+          createNewCustomerInput.password as string
+        );
         await client.addItemToOrder('T_1', 1);
         await client.setCustomerForOrder({
           emailAddress: createNewCustomerInput.emailAddress,
@@ -550,9 +519,7 @@ describe(
           postalCode: '123456',
           countryCode: 'AT',
         });
-        await client.setOrderShippingMethod([
-          client.$eligibleShippingMethods.value?.data?.[0]?.id as string,
-        ]);
+        await client.setOrderShippingMethod([1]);
       });
 
       it('Should get Mollie payment methods', async () => {

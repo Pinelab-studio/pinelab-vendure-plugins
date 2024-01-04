@@ -1,5 +1,10 @@
 # 2.7.0 (2023-12-06)
 
+- Added `getActiveCustomer` and `logout()` functions;
+- Removed `$currentUser` and `$eligibleShippingMethods` stores for simplicity. You should manually fetch that data in your project where needed.
+
+# 2.7.0 (2023-12-06)
+
 - Added `getMolliePaymentMethods` query
 
 # 2.6.1 (2023-12-01)
