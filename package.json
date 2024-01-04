@@ -98,6 +98,7 @@
           "primary-collection",
           "selectable-gifts",
           "sendcloud",
+          "social-auth",
           "shipping",
           "stock-monitoring",
           "stripe-subscription",
