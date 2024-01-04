@@ -5,7 +5,7 @@ import {
   ProductVariant,
   Order,
 } from '@vendure/core';
-import { Subscription, SubscriptionStrategy } from '../src/';
+import { Subscription, SubscriptionStrategy } from '../../src';
 
 /**
  * This strategy creates a monthly subscription + a recurring down payment based on the duration (12 by default) of the subscription:
@@ -59,7 +59,6 @@ export class DownPaymentSubscriptionStrategy implements SubscriptionStrategy {
     const subscriptions: Subscription[] = [];
     subscriptions.push({
       name: `Monthly subscription - ${productVariant.name}`,
-      variantId: productVariant.id,
       priceIncludesTax: productVariant.listPriceIncludesTax,
       amountDueNow: 0,
       recurring: {
@@ -72,7 +71,6 @@ export class DownPaymentSubscriptionStrategy implements SubscriptionStrategy {
     if (downpayment > 0) {
       subscriptions.push({
         name: `Downpayment subscription - ${productVariant.name}`,
-        variantId: productVariant.id,
         priceIncludesTax: productVariant.listPriceIncludesTax,
         amountDueNow: 0,
         recurring: {

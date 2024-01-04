@@ -33,7 +33,13 @@ export class SubscriptionOrderItemCalculation
     if (!subcriptionService) {
       throw new Error('Subscription service not initialized');
     }
-    if (!subcriptionService.strategy.isSubscription(ctx, productVariant)) {
+    if (
+      !(await subcriptionService.strategy.isSubscription(
+        ctx,
+        productVariant,
+        injector
+      ))
+    ) {
       return super.calculateUnitPrice(ctx, productVariant);
     }
     const subscription = await subcriptionService.strategy.defineSubscription(
@@ -55,8 +61,7 @@ export class SubscriptionOrderItemCalculation
         `Subscription strategy returned an empty array. Must contain atleast 1 subscription`
       );
     }
-    const total = subscription.reduce((acc, sub) => sub.amountDueNow || 0, 0);
-    console.log('subscription total: ' + total);
+    const total = subscription.reduce((acc, sub) => acc + sub.amountDueNow, 0);
     return {
       priceIncludesTax: subscription[0].priceIncludesTax,
       price: total,

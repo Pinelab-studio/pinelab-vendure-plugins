@@ -1,7 +1,7 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { Body, Controller, Get, Headers, Res } from '@nestjs/common';
 import { Response } from 'express';
-import { intent } from './dev-server';
+import { intent } from '../dev-server';
 
 /**
  * Return the Stripe intent checkout page
