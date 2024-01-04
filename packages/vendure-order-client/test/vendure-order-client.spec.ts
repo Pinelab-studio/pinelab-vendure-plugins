@@ -40,7 +40,6 @@ class LocalStorageMock {
 
   removeItem(key: string): void {
     this.mockStorage[key] = undefined;
-    console.log('================', this.mockStorage);
   }
 }
 const localStorageMock = new LocalStorageMock();
