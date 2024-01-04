@@ -5270,6 +5270,43 @@ export interface LoginMutation {
       };
 }
 
+export type LogoutMutationVariables = Exact<Record<string, never>>;
+
+export interface LogoutMutation {
+  __typename?: 'Mutation';
+  logout: { __typename?: 'Success'; success: boolean };
+}
+
+export type ActiveCustomerQueryVariables = Exact<Record<string, never>>;
+
+export interface ActiveCustomerQuery {
+  __typename?: 'Query';
+  activeCustomer?:
+    | {
+        __typename?: 'Customer';
+        id: number | string;
+        createdAt: any;
+        updatedAt: any;
+        title?: string | undefined;
+        firstName: string;
+        lastName: string;
+        phoneNumber?: string | undefined;
+        emailAddress: string;
+        user?:
+          | {
+              __typename?: 'User';
+              id: number | string;
+              createdAt: any;
+              updatedAt: any;
+              identifier: string;
+              verified: boolean;
+              lastLogin?: any | undefined;
+            }
+          | undefined;
+      }
+    | undefined;
+}
+
 export type GetEligibleShippingMethodsQueryVariables = Exact<
   Record<string, never>
 >;

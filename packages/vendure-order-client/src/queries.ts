@@ -359,6 +359,37 @@ export class GraphqlQueries {
     ${this.CURRENT_USER_FIELDS}
   `;
 
+  LOGOUT = gql`
+    mutation Logout {
+      logout {
+        success
+      }
+    }
+  `;
+
+  ACTIVE_CUSTOMER = gql`
+    query activeCustomer {
+      activeCustomer {
+        id
+        createdAt
+        updatedAt
+        title
+        firstName
+        lastName
+        phoneNumber
+        emailAddress
+        user {
+          id
+          createdAt
+          updatedAt
+          identifier
+          verified
+          lastLogin
+        }
+      }
+    }
+  `;
+
   GET_ELIGIBLE_SHIPPING_METHODS = gql`
     query GetEligibleShippingMethods {
       eligibleShippingMethods {
