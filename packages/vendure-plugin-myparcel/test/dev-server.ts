@@ -26,6 +26,8 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import localtunnel from 'localtunnel';
 import { MyparcelService } from '../src/api/myparcel.service';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 require('dotenv').config();
 
@@ -67,11 +69,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
+        app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [MyparcelPlugin.ui],
           devMode: true,
-        }),*/
+        }),
       }),
     ],
     paymentOptions: {
