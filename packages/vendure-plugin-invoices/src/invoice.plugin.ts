@@ -1,37 +1,34 @@
 import {
-  Logger,
   PluginCommonModule,
   RuntimeVendureConfig,
   Type,
-  VendurePlugin,
+  VendurePlugin
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { InvoiceConfigEntity } from './api/entities/invoice-config.entity';
-import { InvoiceEntity } from './api/entities/invoice.entity';
+import { adminSchemaExtensions, shopSchemaExtensions } from './api/api-extensions';
+import { InvoiceAdminResolver } from './api/invoice-admin.resolver';
+import { InvoiceCommonResolver, invoicePermission } from './api/invoice-common.resolver';
 import { InvoiceController } from './api/invoice.controller';
-import { InvoiceResolver } from './api/invoice.resolver';
-import { InvoiceService } from './api/invoice.service';
-import { schema } from './api/schema.graphql';
-import { DataStrategy } from './api/strategies/data-strategy';
-import { DefaultDataStrategy } from './api/strategies/default-data-strategy';
-import { LocalFileStrategy } from './api/strategies/local-file-strategy';
-import { loggerCtx, PLUGIN_INIT_OPTIONS, PLUGIN_NAME } from './constants';
-import { StorageStrategy } from './index';
-import { invoicePermission } from './api/invoice.resolver';
+import { DataLoadingFn } from './strategies/data-loading-fn';
+import { DefaultDataStrategy } from './strategies/default-data-strategy';
+import { LocalFileStrategy } from './strategies/local-file-strategy';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { InvoiceConfigEntity } from './entities/invoice-config.entity';
+import { InvoiceEntity } from './entities/invoice.entity';
+import { StorageStrategy } from './strategies/storage-strategy';
+import { InvoiceService } from './services/invoice.service';
 
 export interface InvoicePluginConfig {
-  /**
-   * @deprecated We are moving this paid plugin to the Vendure Marketplace soon, so a licensekey won't be needed anymore.
-   * Existing customers will be migrated to the new system ofcourse.
-   */
-  licenseKey?: string;
   /**
    * Hostname to use for download links, can be the Vendure instance,
    * but also the worker instance if you want
    */
   vendureHost: string;
-  dataStrategy: DataStrategy;
+  /**
+   * Load custom data that is passed in to your HTML/handlebars template
+   */
+  dataLoadingFn: DataLoadingFn;
   storageStrategy: StorageStrategy;
 }
 
@@ -44,8 +41,12 @@ export interface InvoicePluginConfig {
   ],
   controllers: [InvoiceController],
   adminApiExtensions: {
-    schema: schema as any,
-    resolvers: [InvoiceResolver],
+    schema: adminSchemaExtensions,
+    resolvers: [InvoiceAdminResolver, InvoiceCommonResolver],
+  },
+  shopApiExtensions: {
+    schema: shopSchemaExtensions,
+    resolvers: [InvoiceCommonResolver],
   },
   compatibility: '^2.0.0',
   configuration: (config: RuntimeVendureConfig) => {
@@ -54,7 +55,9 @@ export interface InvoicePluginConfig {
   },
 })
 export class InvoicePlugin {
-  static config: InvoicePluginConfig;
+  static config: InvoicePluginConfig = {
+    dataLoadingFn: defaultData
+  };
 
   static init(
     config: Partial<InvoicePluginConfig> & { vendureHost: string }

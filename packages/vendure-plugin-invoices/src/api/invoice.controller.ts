@@ -1,4 +1,4 @@
-import { InvoiceService } from './invoice.service';
+import { InvoiceService } from '../services/invoice.service';
 import {
   Controller,
   Get,
@@ -14,7 +14,7 @@ import { Request, Response } from 'express';
 import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
-import { invoicePermission } from './invoice.resolver';
+import { invoicePermission } from './invoice-admin.resolver';
 
 @Controller('invoices')
 export class InvoiceController {

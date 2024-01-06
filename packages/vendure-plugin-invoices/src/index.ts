@@ -6,4 +6,4 @@ export * from './api/strategies/s3-storage.strategy';
 export * from './api/strategies/google-storage-invoice-strategy';
 export * from './api/strategies/local-file-strategy';
 export * from './api/file.util';
-export * from './api/invoice.service';
+export * from './services/invoice.service';

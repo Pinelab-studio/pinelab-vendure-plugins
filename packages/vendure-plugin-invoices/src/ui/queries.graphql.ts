@@ -19,20 +19,3 @@ export const getConfigQuery = gql`
     }
   }
 `;
-
-export const getAllInvoicesQuery = gql`
-  query invoices($input: InvoicesListInput) {
-    invoices(input: $input) {
-      items {
-        id
-        createdAt
-        orderCode
-        orderId
-        customerEmail
-        invoiceNumber
-        downloadUrl
-      }
-      totalItems
-    }
-  }
-`;
