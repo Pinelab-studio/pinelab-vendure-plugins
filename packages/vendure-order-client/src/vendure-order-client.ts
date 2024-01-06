@@ -2,6 +2,8 @@ import { gql, GraphQLClient, Variables } from 'graphql-request';
 import mitt, { Emitter } from 'mitt';
 import { map } from 'nanostores';
 import {
+  ActiveCustomerQuery,
+  ActiveCustomerQueryVariables,
   ActiveOrderFieldsFragment,
   ActiveOrderQuery,
   AdditemToOrderMutation,
@@ -14,7 +16,11 @@ import {
   CreateCustomerInput,
   CurrentUserFieldsFragment,
   ErrorResult,
+  GetEligibleShippingMethodsQuery,
+  GetEligibleShippingMethodsQueryVariables,
   LoginMutation,
+  LogoutMutation,
+  LogoutMutationVariables,
   MolliePaymentIntentInput,
   MolliePaymentMethodsInput,
   MolliePaymentMethodsQuery,
@@ -45,7 +51,6 @@ import {
   SetOrderBillingAddressMutation,
   SetOrderShippingAddressMutation,
   SetOrderShippingMethodMutation,
-  ShippingMethodQuote,
   Success,
   TransitionOrderToStateMutation,
 } from './graphql-generated-types';
@@ -63,7 +68,6 @@ const dummyFragment = gql`
 `;
 
 export type ActiveOrder<T> = ActiveOrderFieldsFragment & T;
-export type EligibleShippingMethod<T> = ShippingMethodQuote & T;
 /**
  * @example
  * const client = new VendureOrderClient(
@@ -86,26 +90,7 @@ export class VendureOrderClient<A = unknown> {
     data: undefined,
   });
 
-  $eligibleShippingMethods = map<
-    StateStore<Array<EligibleShippingMethod<A>> | undefined>
-  >({
-    loading: false,
-    error: undefined,
-    data: undefined,
-  });
-
-  /**
-   * The store object that holds the current logged in user
-   */
-  $currentUser = map<StateStore<CurrentUserFieldsFragment | undefined>>({
-    loading: false,
-    error: undefined,
-    data: undefined,
-  });
-
-  // TODO: create similar stores for eligibleShippingMethods, eligiblePaymentMethods
-
-  readonly tokenName = 'vendure-auth-token';
+  readonly LOCALSTORAGE_TOKEN_NAME = 'vendure-auth-token';
 
   constructor(
     public url: string,
@@ -150,7 +135,6 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: [productVariantId],
       quantity,
     });
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -193,12 +177,10 @@ export class VendureOrderClient<A = unknown> {
         quantity: -adjustment, // adjustment is negative, so invert it
       });
     }
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
   async removeOrderLine(orderLineId: Id): Promise<ActiveOrder<A>> {
-    void this.getEligibleShippingMethods();
     return await this.adjustOrderLine(orderLineId, 0);
   }
 
@@ -221,7 +203,6 @@ export class VendureOrderClient<A = unknown> {
       productVariantIds: allVariantIds,
       quantity: totalQuantity,
     });
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -238,7 +219,6 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-applied', {
       couponCode,
     });
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -260,7 +240,6 @@ export class VendureOrderClient<A = unknown> {
     this.eventBus.emit('coupon-code-removed', {
       couponCode,
     });
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -276,7 +255,6 @@ export class VendureOrderClient<A = unknown> {
       setCustomerForOrder as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -292,7 +270,6 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -306,7 +283,6 @@ export class VendureOrderClient<A = unknown> {
       setOrderBillingAddress as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -322,7 +298,6 @@ export class VendureOrderClient<A = unknown> {
       setOrderShippingMethod as ActiveOrder<A>
     );
     setResult(this.$activeOrder, activeOrder);
-    void this.getEligibleShippingMethods();
     return activeOrder;
   }
 
@@ -412,23 +387,25 @@ export class VendureOrderClient<A = unknown> {
     return requestPasswordReset;
   }
 
-  @HandleLoadingState('$currentUser')
   async resetPassword(
     password: string,
     token: string
-  ): Promise<CurrentUserFieldsFragment> {
+  ): Promise<ResetPasswordMutation['resetPassword']> {
     const { resetPassword } = await this.rawRequest<
       ResetPasswordMutation,
       MutationResetPasswordArgs
     >(this.queries.RESET_PASSWORD, { token, password });
-    const currentUser = this.throwIfErrorResult(
-      resetPassword as CurrentUserFieldsFragment
-    );
-    setResult(this.$currentUser, currentUser);
-    return currentUser;
+    return resetPassword;
   }
 
-  @HandleLoadingState('$currentUser')
+  async getActiveCustomer(): Promise<ActiveCustomerQuery['activeCustomer']> {
+    const { activeCustomer } = await this.rawRequest<
+      ActiveCustomerQuery,
+      ActiveCustomerQueryVariables
+    >(this.queries.ACTIVE_CUSTOMER);
+    return activeCustomer;
+  }
+
   async login(
     username: string,
     password: string,
@@ -438,19 +415,29 @@ export class VendureOrderClient<A = unknown> {
       this.queries.LOGIN,
       { username, password, rememberMe }
     );
-    const currentUser = this.throwIfErrorResult(
-      login as CurrentUserFieldsFragment
-    );
-    setResult(this.$currentUser, currentUser);
-    return currentUser;
+    this.throwIfErrorResult(login);
+    return login as CurrentUserFieldsFragment;
   }
 
-  @HandleLoadingState('$eligibleShippingMethods')
-  async getEligibleShippingMethods(): Promise<void> {
-    const { eligibleShippingMethods } = await this.rawRequest<{
-      eligibleShippingMethods: ShippingMethodQuote[];
-    }>(this.queries.GET_ELIGIBLE_SHIPPING_METHODS);
-    setResult(this.$eligibleShippingMethods, eligibleShippingMethods);
+  async logout(): Promise<boolean> {
+    const { logout } = await this.rawRequest<
+      LogoutMutation,
+      LogoutMutationVariables
+    >(this.queries.LOGOUT);
+    if (window?.localStorage) {
+      window.localStorage.removeItem(this.LOCALSTORAGE_TOKEN_NAME);
+    }
+    return logout.success;
+  }
+
+  async getEligibleShippingMethods(): Promise<
+    GetEligibleShippingMethodsQuery['eligibleShippingMethods']
+  > {
+    const { eligibleShippingMethods } = await this.rawRequest<
+      GetEligibleShippingMethodsQuery,
+      GetEligibleShippingMethodsQueryVariables
+    >(this.queries.GET_ELIGIBLE_SHIPPING_METHODS);
+    return eligibleShippingMethods;
   }
 
   /**
@@ -475,7 +462,7 @@ export class VendureOrderClient<A = unknown> {
   ): Promise<T> {
     if (window?.localStorage) {
       // Make sure we send auth token in request
-      const token = window.localStorage.getItem(this.tokenName);
+      const token = window.localStorage.getItem(this.LOCALSTORAGE_TOKEN_NAME);
       if (token) {
         this.client.setHeader('Authorization', `Bearer ${token}`);
       }
@@ -487,10 +474,10 @@ export class VendureOrderClient<A = unknown> {
         document,
         variables as Variables // Needed because of TS bug https://github.com/microsoft/TypeScript/issues/42825
       )) as any;
-      const token = headers.get(this.tokenName);
+      const token = headers.get(this.LOCALSTORAGE_TOKEN_NAME);
       if (token && window?.localStorage) {
         // Make sure we save received tokens
-        window.localStorage.setItem(this.tokenName, token);
+        window.localStorage.setItem(this.LOCALSTORAGE_TOKEN_NAME, token);
       }
       return data;
     } catch (e) {

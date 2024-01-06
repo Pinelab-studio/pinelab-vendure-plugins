@@ -1,3 +1,20 @@
+# 2.4.1 (2024-12-03)
+
+- Return empty array instead of throwing an error for variants that are not subscriptions
+
+# 2.4.0 (2024-12-02)
+
+- Made `isSubscription()` async and passed an instance of `Injector`, so that consumers can fetch additional relations inside `isSubscription()`;
+- `subscriptionHash` custom field was removed: The plugin doesn't need an order line per subscription per se.
+
+# 2.3.1 (2023-12-26)
+
+- Correctly calculate line price sum when multiple subscriptions are returned
+
+# 2.3.0 (2023-12-26)
+
+- Extended the admin-api to include all of the same methods as the shop-api for Stripe subscription
+
 # 2.2.1 (2023-11-06)
 
 - Extended the `HistoryEntryList` enum to make stripe subscription  custom history entry component work
