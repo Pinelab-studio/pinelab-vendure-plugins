@@ -26,5 +26,9 @@
   "dependencies": {
     "axios": "0.26.1"
   },
-  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
+  "devDependencies": {
+    "@types/localtunnel": "^2.0.4",
+    "localtunnel": "^2.0.2"
+  }
 }
