@@ -35,6 +35,10 @@ plugins: [
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
+## Credit invoices
+
+!!! TODO example strategy
+
 ## Adding invoices to your order-confirmation email
 
 Add the following link to your email template:

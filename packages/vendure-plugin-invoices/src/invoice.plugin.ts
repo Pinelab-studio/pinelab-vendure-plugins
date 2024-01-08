@@ -10,8 +10,7 @@ import { adminSchemaExtensions, shopSchemaExtensions } from './api/api-extension
 import { InvoiceAdminResolver } from './api/invoice-admin.resolver';
 import { InvoiceCommonResolver, invoicePermission } from './api/invoice-common.resolver';
 import { InvoiceController } from './api/invoice.controller';
-import { DataLoadingFn } from './strategies/data-loading-fn';
-import { DefaultDataStrategy } from './strategies/default-data-strategy';
+import { defaultLoadDataFn, LoadDataFn } from './strategies/load-data-fn';
 import { LocalFileStrategy } from './strategies/local-file-strategy';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
@@ -28,8 +27,13 @@ export interface InvoicePluginConfig {
   /**
    * Load custom data that is passed in to your HTML/handlebars template
    */
-  dataLoadingFn: DataLoadingFn;
+  loadDataFn: LoadDataFn;
   storageStrategy: StorageStrategy;
+  /**
+   * Generate credit invoices when an invoice already exists, before creating a new invoice.
+   * Defaults to true
+   */
+  createCreditInvoices: boolean;
 }
 
 @VendurePlugin({
@@ -55,17 +59,16 @@ export interface InvoicePluginConfig {
   },
 })
 export class InvoicePlugin {
-  static config: InvoicePluginConfig = {
-    dataLoadingFn: defaultData
-  };
+  static config: InvoicePluginConfig;
 
   static init(
     config: Partial<InvoicePluginConfig> & { vendureHost: string }
   ): Type<InvoicePlugin> {
     InvoicePlugin.config = {
-      ...config,
+      vendureHost: config.vendureHost,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
-      dataStrategy: config.dataStrategy || new DefaultDataStrategy(),
+      loadDataFn: config.loadDataFn || defaultLoadDataFn,
+      createCreditInvoices: config.createCreditInvoices || true,
     };
     return this;
   }

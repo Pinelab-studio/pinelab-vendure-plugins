@@ -9,43 +9,26 @@ import {
   Res,
   Body,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Allow, Ctx, Logger, RequestContext } from '@vendure/core';
+import { Allow, ChannelService, Ctx, ForbiddenError, Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
-import { invoicePermission } from './invoice-admin.resolver';
+import { invoicePermission } from './invoice-common.resolver';
 
 @Controller('invoices')
 export class InvoiceController {
-  constructor(private service: InvoiceService) {}
+  constructor(
+    private invoiceService: InvoiceService,
+    private channelService: ChannelService,
+  ) { }
 
   @Allow(invoicePermission.Permission)
-  @Get('/download')
-  async downloadMultipleInvoices(
-    @Ctx() ctx: RequestContext,
-    @Query('nrs') numbers: string,
-    @Req() req: Request,
-    @Res() res: Response
-  ) {
-    if (!ctx.channelId) {
-      throw Error(`Channel id is needed to download invoices`);
-    }
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const stream = await this.service.downloadMultiple(
-      ctx,
-      numbers.split(','),
-      res
-    );
-    Logger.info(`Invoices ${numbers} downloaded from ${ip}`, loggerCtx);
-    stream.pipe(res);
-  }
-
-  @Allow(invoicePermission.Permission)
-  @Post('/preview')
+  @Post('/preview/:orderCode')
   async preview(
     @Ctx() ctx: RequestContext,
-    @Res() req: Request,
+    @Param('orderCode') orderCode: string,
     @Res() res: Response,
     @Body() data: { template: string }
   ) {
@@ -55,29 +38,45 @@ export class InvoiceController {
     if (!data?.template || !data?.template.trim()) {
       throw new BadRequestException('No template given');
     }
-    const stream = await this.service.testTemplate(ctx, data.template);
+    const stream = await this.invoiceService.previewInvoiceWithTemplate(ctx, data.template, orderCode);
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="test-invoice.pdf"`,
+      'Content-Disposition': `inline; filename="preview-invoice.pdf"`,
     });
     stream.pipe(res);
   }
 
-  @Get('/:channelToken/:orderCode')
+  // Example: /invoices/default-channel/DJSLHJ238390/123?email=customer%40example.com
+  @Get('/:channelToken/:orderCode/:invoiceNumber?')
   async downloadInvoice(
     @Param('channelToken') channelToken: string,
     @Param('orderCode') orderCode: string,
+    @Param('invoiceNumber') invoiceNumber: string | number | undefined,
     @Query('email') customerEmail: string,
     @Req() req: Request,
     @Res() res: Response,
-    @Ctx() ctx: RequestContext
+    @Ctx() _ctx: RequestContext
   ) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     try {
-      const streamOrRedirect = await this.service.downloadInvoice(ctx, {
-        channelToken,
+      if (!channelToken || !orderCode || !customerEmail) {
+        Logger.warn(
+          `Invalid invoice download attempt from ${ip} for ${req.path}`,
+          loggerCtx
+        );
+        throw new BadRequestException();
+      }
+      const channel = await this.channelService.getChannelFromToken(channelToken);
+      const ctx = new RequestContext({
+        apiType: 'admin',
+        authorizedAsOwnerOnly: false,
+        isAuthorized: true,
+        channel
+      });
+      const streamOrRedirect = await this.invoiceService.downloadInvoice(ctx, {
         orderCode,
         customerEmail,
+        invoiceNumber,
         res,
       });
       Logger.info(`Invoice downloaded from ${ip} for ${req.path}`, loggerCtx);
@@ -92,13 +91,9 @@ export class InvoiceController {
     } catch (error: any) {
       Logger.warn(
         `Failed invoice download attempt from ${ip} for ${req.path}: ${error.message}`,
-        loggerCtx
+        loggerCtx,
       );
-      res.statusCode = 400;
-      return res.json({
-        message:
-          'This invoice does not exist or you are not authorized to download it',
-      });
+      throw new ForbiddenException('This invoice does not exist or you are not authorized to download it')
     }
   }
 }

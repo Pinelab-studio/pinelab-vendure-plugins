@@ -21,12 +21,6 @@ interface BaseStorageStrategy {
     channelToken: string
   ): Promise<string>;
 
-  /**
-   * Bundles multiple files by invoiceNumbers in zipFile for download via admin UI
-   * Will only be called by admins
-   */
-  streamMultiple(invoices: InvoiceEntity[], res: Response): Promise<ReadStream>;
-
   init(): Promise<void>;
 }
 

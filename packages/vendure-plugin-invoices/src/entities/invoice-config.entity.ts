@@ -1,7 +1,6 @@
-import { Column, Entity, ColumnType, getMetadataArgsStorage } from 'typeorm';
 import { DeepPartial, Logger, VendureEntity } from '@vendure/core';
-import { InvoicePlugin } from '../../invoice.plugin';
-import { loggerCtx } from '../../constants';
+import { Column, ColumnType, Entity } from 'typeorm';
+import { loggerCtx } from '../constants';
 
 @Entity('invoice_config')
 export class InvoiceConfigEntity extends VendureEntity {

@@ -33,7 +33,7 @@ export const adminSchemaExtensions = gql`
   type InvoiceConfig {
     id: ID!
     enabled: Boolean!
-    templateString: String
+    templateString: String!
   }
 
   input InvoiceConfigInput {

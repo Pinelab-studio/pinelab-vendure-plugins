@@ -8,6 +8,7 @@ import { In } from 'typeorm';
 import {
   ChannelService,
   EventBus,
+  ID,
   Injector,
   JobQueue,
   JobQueueService,
@@ -17,12 +18,11 @@ import {
   OrderService,
   RequestContext,
   TransactionalConnection,
+  UserInputError,
 } from '@vendure/core';
-
+import * as util from 'util'
 import {
   InvoiceConfigInput,
-  InvoiceList,
-  InvoicesListInput,
 } from '../ui/generated/graphql';
 // @ts-ignore
 import * as pdf from 'pdf-creator-node';
@@ -32,20 +32,22 @@ import { InvoicePluginConfig } from '../invoice.plugin';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { InvoiceData } from '../strategies/data-loading-fn';
+import { InvoiceData } from '../strategies/load-data-fn';
 import { createReadStream, ReadStream } from 'fs';
 import {
   LocalStorageStrategy,
   RemoteStorageStrategy,
 } from '../strategies/storage-strategy';
 import { Response } from 'express';
-import { createTempFile } from './api/file.util';
+import { createTempFile } from '../util/file.util';
 import { ModuleRef } from '@nestjs/core';
+import fs from 'fs/promises';
+import { reverseAmounts } from '../util/order-calculations';
 
 interface DownloadInput {
-  channelToken: string;
   customerEmail: string;
   orderCode: string;
+  invoiceNumber: string | number | undefined;
   res: Response;
 }
 
@@ -122,11 +124,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Creates an invoice and save it to DB
    * Checks if an invoice has already been created for this order
    */
-  async createAndSaveInvoice(channelToken: string, orderCode: string) {
+  async createAndSaveInvoice(channelToken: string, orderCode: string): Promise<void> {
     const ctx = await this.createCtx(channelToken);
-    let [order, existingInvoice, config] = await Promise.all([
+    let [order, previousInvoiceForOrder, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode),
-      this.getInvoice(ctx, orderCode),
+      this.getMostRecentInvoiceForOrder(ctx, orderCode),
       this.getConfig(ctx),
     ]);
     if (!config) {
@@ -134,30 +136,46 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         `Cannot generate invoice for ${orderCode}, because no config was found`
       );
     } else if (!config.enabled) {
-      return Logger.warn(
+      return Logger.error(
         `Not generating invoice for ${orderCode}, because plugin is disabled. This message should not be in the queue!`,
         loggerCtx
       );
     } else if (!order) {
       throw Error(`No order found with code ${orderCode}`);
     }
-    if (existingInvoice) {
-      throw Error(
-        `An invoice with number ${existingInvoice.invoiceNumber} was already created for order ${orderCode}`
+    // Create a credit invoice first, if an invoice already exists and config.createCreditInvoices is true
+    if (previousInvoiceForOrder && this.config.createCreditInvoices) {
+      const { invoiceNumber, invoiceTmpFile } =
+        await this.generateInvoice(ctx, config.templateString!, order, previousInvoiceForOrder);
+      const storageReference = await this.config.storageStrategy.save(
+        invoiceTmpFile,
+        invoiceNumber,
+        channelToken
       );
+      await fs.unlink(invoiceTmpFile);
+      await this.saveInvoice(ctx, {
+        channelId: ctx.channelId as string,
+        invoiceNumber,
+        orderId: order.id as string,
+        storageReference,
+        orderTotals: {
+          taxSummary: reverseAmounts(previousInvoiceForOrder.orderTotals.taxSummary),
+          total: -order.total,
+          totalWithTax: -order.totalWithTax,
+        }
+      });
+
     }
-    const { invoiceNumber, customerEmail, tmpFileName } =
+    const { invoiceNumber, tmpFileName } =
       await this.generateInvoice(ctx, config.templateString!, order);
     const storageReference = await this.config.storageStrategy.save(
       tmpFileName,
       invoiceNumber,
       channelToken
     );
-    return this.saveInvoice(ctx, {
+    await this.saveInvoice(ctx, {
       channelId: ctx.channelId as string,
       invoiceNumber,
-      orderCode,
-      customerEmail,
       orderId: order.id as string,
       storageReference,
     });
@@ -169,15 +187,17 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   async generateInvoice(
     ctx: RequestContext,
     templateString: string,
-    order: Order
-  ): Promise<{ tmpFileName: string } & InvoiceData> {
+    order: Order,
+    previousInvoiceForOrder?: InvoiceEntity
+  ): Promise<{ invoiceTmpFile: string, invoiceNumber: number }> {
     const latestInvoiceNumber = await this.getLatestInvoiceNumber(ctx);
-    const data = await this.config.dataStrategy.getData({
+    const data = await this.config.loadDataFn(
       ctx,
-      injector: new Injector(this.moduleRef),
+      new Injector(this.moduleRef),
       order,
       latestInvoiceNumber,
-    });
+      previousInvoiceForOrder
+    );
     const tmpFilePath = await createTempFile('.pdf');
     const html = templateString;
     const options = {
@@ -199,25 +219,23 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     };
     await pdf.create(document, options);
     return {
-      tmpFileName: tmpFilePath,
+      invoiceTmpFile: tmpFilePath,
       invoiceNumber: data.invoiceNumber,
-      customerEmail: data.customerEmail,
     };
   }
 
   /**
    * Generates an invoice for the latest placed order and the given template
    */
-  async testTemplate(
+  async previewInvoiceWithTemplate(
     ctx: RequestContext,
-    template: string
+    template: string,
+    orderCode: string,
   ): Promise<ReadStream> {
-    const {
-      items: [latestOrder],
-    } = await this.orderService.findAll(ctx, {
-      sort: { orderPlacedAt: 'DESC' as any },
-      take: 1,
-    });
+    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!order) {
+      throw new UserInputError(`No order found with code ${orderCode}`);
+    }
     const config = await this.getConfig(ctx);
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
@@ -225,82 +243,96 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const { tmpFileName } = await this.generateInvoice(
       ctx,
       template,
-      latestOrder
+      order
     );
     return createReadStream(tmpFileName);
   }
 
   /**
    * Returns a redirect if a publicUrl is created
-   * otherwise returns a ReadStream from a file
+   * otherwise returns a ReadStream from the invoice
    */
   async downloadInvoice(
     ctx: RequestContext,
     input: DownloadInput
   ): Promise<ReadStream | string> {
-    const channel = await this.channelService.getChannelFromToken(
-      input.channelToken
-    );
-    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    const invoice = await invoiceRepo.findOne({
-      where: {
-        orderCode: input.orderCode,
-      },
-    });
-    if (channel.token != input.channelToken) {
-      throw Error(`Channel ${input.channelToken} doesn't exist`);
-    } else if (!invoice) {
-      throw Error(`No invoice exists for ${input.orderCode}`);
-    } else if (invoice.customerEmail !== input.customerEmail) {
+    const order = await this.orderService.findOneByCode(ctx, input.orderCode, ['customer']);
+    if (!order) {
+      throw Error(`No order found with code ${input.orderCode}`);
+    }
+    if (order.customer?.emailAddress !== input.customerEmail) {
       throw Error(
-        `This invoice doesnt belong to customer ${input.customerEmail}`
-      );
-    } else if (invoice.channelId != channel.id) {
-      throw Error(
-        `This invoice doesnt belong to channel ${input.channelToken}`
+        `This order doesn't belong to customer ${input.customerEmail}`
       );
     }
-    const strategy = this.config.storageStrategy;
-    try {
-      if ((strategy as RemoteStorageStrategy).getPublicUrl) {
-        return await (strategy as RemoteStorageStrategy).getPublicUrl(invoice);
-      } else {
-        return await (strategy as LocalStorageStrategy).streamFile(
-          invoice,
-          input.res
-        );
+    const invoices = await this.getInvoicesForOrder(ctx, order.id);
+    if (!invoices.length) {
+      throw Error(`No invoices exists for ${input.orderCode}`);
+    }
+    let invoice = invoices[0]; // First invoice, because sorted by createdAt
+    // If an invoiceNumber is given, we need to find the invoice with that number
+    if (input.invoiceNumber) {
+      const invoiceWithNumber = invoices.find((i) => i.invoiceNumber === input.invoiceNumber);
+      if (!invoiceWithNumber) {
+        throw Error(`No invoice found with number ${input.invoiceNumber}`);
       }
-    } catch (error) {
-      Logger.error(
-        `Failed to download invoice ${invoice.invoiceNumber} for channel ${input.channelToken}`
+      invoice = invoiceWithNumber;
+    }
+    const strategy = this.config.storageStrategy;
+    if ((strategy as RemoteStorageStrategy).getPublicUrl) {
+      return await (strategy as RemoteStorageStrategy).getPublicUrl(invoice);
+    } else {
+      return await (strategy as LocalStorageStrategy).streamFile(
+        invoice,
+        input.res
       );
-      throw error;
     }
   }
 
-  async downloadMultiple(
-    ctx: RequestContext,
-    invoiceNumbers: string[],
-    res: Response
-  ): Promise<ReadStream> {
-    const nrSelectors = invoiceNumbers.map((i) => ({
-      invoiceNumber: i,
-      channelId: ctx.channelId,
-    }));
+  /**
+   * Return all invoices for order, sorted by createdAt
+   */
+  async getInvoicesForOrder(ctx: RequestContext, orderId: ID): Promise<InvoiceEntity[]> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    const invoices = await invoiceRepo.find({
+    return await invoiceRepo.find({
       where: {
-        channelId: In(nrSelectors.map((i) => i.channelId)),
-        invoiceNumber: In(nrSelectors.map((i) => i.invoiceNumber)),
+        orderId: String(orderId),
       },
+      order: { createdAt: 'ASC' },
     });
-    if (!invoices) {
-      throw Error(
-        `No invoices found for channel ${ctx.channelId} and invoiceNumbers ${invoiceNumbers}`
-      );
-    }
-    return this.config.storageStrategy.streamMultiple(invoices, res);
   }
+
+  /**
+   * Get the most recent invoice for this order
+   */
+  async getMostRecentInvoiceForOrder(ctx: RequestContext, orderCode: string): Promise<InvoiceEntity> {
+    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!order) {
+      throw Error(`No order found with code ${orderCode}`);
+    }
+    const invoices = await this.getInvoicesForOrder(ctx, order.id);
+    if (!invoices.length) {
+      throw Error(`No invoices exists for ${orderCode}`);
+    }
+    return invoices[invoices.length - 1];
+  }
+
+  /**
+ * Get last generated invoice number for this channel
+ */
+  async getLatestInvoiceNumber(
+    ctx: RequestContext
+  ): Promise<number | undefined> {
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const result = await invoiceRepo.findOne({
+      where: [{ channelId: ctx.channelId as string }],
+      select: ['invoiceNumber'],
+      order: { invoiceNumber: 'DESC' },
+      cache: false,
+    });
+    return result?.invoiceNumber;
+  }
+
 
   async upsertConfig(
     ctx: RequestContext,
@@ -355,62 +387,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return !!result?.enabled;
   }
 
-  async getInvoice(
-    ctx: RequestContext,
-    orderCode: string
-  ): Promise<InvoiceEntity | null> {
-    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-
-    return invoiceRepo.findOne({ where: { orderCode } });
-  }
-
-  /**
-   * Get most recent invoice for this channel
-   */
-  async getLatestInvoiceNumber(
-    ctx: RequestContext
-  ): Promise<number | undefined> {
-    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    const result = await invoiceRepo.findOne({
-      where: [{ channelId: ctx.channelId as string }],
-      select: ['invoiceNumber'],
-      order: { invoiceNumber: 'DESC' },
-      cache: false,
-    });
-    return result?.invoiceNumber;
-  }
-
-  async getAllInvoices(
-    ctx: RequestContext,
-    input?: InvoicesListInput
-  ): Promise<InvoiceList> {
-    let skip = 0;
-    let take = 25;
-    if (input) {
-      take = input.itemsPerPage;
-      skip = input.page > 1 ? take * (input.page - 1) : 0;
-    }
-    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    const [invoices, totalItems] = await invoiceRepo.findAndCount({
-      where: [{ channelId: ctx.channelId as string }],
-      order: { invoiceNumber: 'DESC' },
-      skip,
-      take,
-    });
-    const invoicesWithUrl = invoices.map((invoice) => ({
-      ...invoice,
-      id: invoice.id as string,
-      downloadUrl: `${this.config.vendureHost}/invoices/${ctx.channel.token}/${invoice.orderCode}?email=${invoice.customerEmail}`,
-    }));
-    return {
-      items: invoicesWithUrl,
-      totalItems,
-    };
-  }
 
   private async saveInvoice(
     ctx: RequestContext,
-    invoice: Omit<InvoiceEntity, 'id' | 'createdAt' | 'updatedAt'>
+    invoice: Omit<InvoiceEntity, 'id' | 'createdAt' | 'updatedAt' | 'isCreditInvoice'>
   ): Promise<InvoiceEntity | undefined> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     return invoiceRepo.save(invoice);

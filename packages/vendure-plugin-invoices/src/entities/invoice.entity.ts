@@ -1,5 +1,16 @@
 import { Column, Entity, Unique, BeforeRemove, BeforeUpdate } from 'typeorm';
 import { DeepPartial, VendureEntity } from '@vendure/core';
+import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
+
+/**
+ * The order totals that were used to generate the invoice.
+ * These can be used to generate credit invoices.
+ */
+export interface InvoiceOrderTotals {
+    taxSummaries: OrderTaxSummary[],
+    total: number,
+    totalWithTax: number,
+}
 
 @Entity('invoice')
 @Unique(['channelId', 'invoiceNumber'])
@@ -9,15 +20,26 @@ export class InvoiceEntity extends VendureEntity {
   }
 
   @Column()
-  channelId!: string;
-  @Column({ nullable: false })
-  orderCode!: string;
+  channelId!: string; // Channel id is needed here to ensure uniqueness of invoiceNumber
+  
   @Column({ nullable: false })
   orderId!: string;
-  @Column({ nullable: false })
-  customerEmail!: string;
+  
   @Column({ nullable: false, type: 'int' })
   invoiceNumber!: number;
+  
   @Column({ nullable: false })
   storageReference!: string;
+  
+  get isCreditInvoice(): boolean {
+    return this.orderTotals.total < 0;
+  }
+  
+  /**
+   * The order totals that were used to generate the invoice.
+   * These are needed when generating credit invoices for a previous invoice.
+   */
+  @Column({ nullable: true, type: 'simple-json' })
+  orderTotals!: InvoiceOrderTotals;
+  
 }

@@ -4,7 +4,7 @@ import { createReadStream, ReadStream } from 'fs';
 import { readFile, writeFile } from 'fs/promises';
 import path from 'path';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { createTempFile, zipFiles, ZippableFile } from '../util/file.util';
+import { createTempFile} from '../util/file.util';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 export interface Config {
@@ -61,27 +61,5 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
       ContentDisposition: 'inline',
     }).promise();
     return Key;
-  }
-
-  async streamMultiple(
-    invoices: InvoiceEntity[],
-    res: Response<any, Record<string, any>>
-  ): Promise<ReadStream> {
-    const files: ZippableFile[] = await Promise.all(
-      invoices.map(async (invoice) => {
-        const tmpFile = await createTempFile('.pdf');
-        const object = await this.s3!.getObject({
-          Bucket: this.bucket,
-          Key: invoice.storageReference,
-        }).promise();
-        await writeFile(tmpFile, object.Body?.toString()!);
-        return {
-          path: tmpFile,
-          name: invoice.invoiceNumber + '.pdf',
-        };
-      })
-    );
-    const zipFile = await zipFiles(files);
-    return createReadStream(zipFile);
   }
 }
