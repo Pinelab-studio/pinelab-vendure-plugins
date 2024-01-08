@@ -13,3 +13,4 @@ export * from './util/file.util';
 export * from './util/order-calculations';
 export * from './util/default-template';
 export * from './services/invoice.service';
+export * from './ui/generated/graphql';

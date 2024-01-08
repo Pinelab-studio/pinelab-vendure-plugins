@@ -311,14 +311,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Get the most recent invoice for this order
    */
-  async getMostRecentInvoiceForOrder(ctx: RequestContext, orderCode: string): Promise<InvoiceEntity> {
+  async getMostRecentInvoiceForOrder(ctx: RequestContext, orderCode: string): Promise<InvoiceEntity | undefined> {
     const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       throw Error(`No order found with code ${orderCode}`);
     }
     const invoices = await this.getInvoicesForOrder(ctx, order.id);
     if (!invoices.length) {
-      throw Error(`No invoices exists for ${orderCode}`);
+      return undefined;
     }
     return invoices[invoices.length - 1];
   }

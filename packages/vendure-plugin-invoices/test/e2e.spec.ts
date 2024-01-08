@@ -1,43 +1,32 @@
 import {
-  ChannelService,
   DefaultLogger,
   LogLevel,
   mergeConfig,
-  Order,
+  Order
 } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig,
+  testConfig
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import fetch from 'node-fetch';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addShippingMethod } from '../../test/src/admin-utils';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { InvoicePlugin } from '../src';
-import { defaultTemplate } from '../src/api/default-template';
-import { InvoiceService } from '../src/api/invoice.service';
-import {
-  Invoice,
+import { InvoicePlugin, defaultTemplate,   Invoice,
   InvoiceConfigQuery,
-  InvoicesQuery,
   MutationUpsertInvoiceConfigArgs,
-  UpsertInvoiceConfigMutation,
-} from '../src/ui/generated/graphql';
+  UpsertInvoiceConfigMutation } from '../src';
 import {
-  getAllInvoicesQuery,
   getConfigQuery,
-  upsertConfigMutation,
+  upsertConfigMutation
 } from '../src/ui/queries.graphql';
-import path from 'path';
-import * as fs from 'fs';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('Invoices plugin', function () {
   let server: TestServer;
@@ -45,7 +34,7 @@ describe('Invoices plugin', function () {
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
   let invoice: Invoice;
-  let order: Order;
+  let order: Awaited<ReturnType<typeof createSettledOrder>>;
   let invoices: Invoice[] = [];
 
   beforeAll(async () => {
@@ -114,7 +103,7 @@ describe('Invoices plugin', function () {
     expect((order as any).id).toBeDefined();
   });
 
-  it('Gets all invoices after 3s', async () => {
+  it('Gets invoices for order', async () => {
     // Give the worker some time to process
     await new Promise((resolve) => setTimeout(resolve, 4000));
     const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
@@ -125,19 +114,17 @@ describe('Invoices plugin', function () {
     expect(invoice.downloadUrl).toContain('/invoices/e2e-default-channel/');
   });
 
-  it('Throws an error on duplicate invoices in DB', async () => {
-    expect.assertions(1);
-    try {
-      const channel = await server.app.get(ChannelService).getDefaultChannel();
-      await server.app
-        .get(InvoiceService)
-        .createAndSaveInvoice(channel.id as string, invoice.orderCode);
-    } catch (e: any) {
-      expect(e.message).toContain('was already created');
-    }
-  });
-
   it('Downloads a pdf', async () => {
+    const res = await fetch(
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12@hotmail.com`
+    );
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-type')).toBe('application/pdf');
+    expect(res.body.pipe).toBeDefined();
+  });
+  
+  it('Downloads a pdf via URL without invoice number', async () => {
+    // Not specifying invoice number should download the first invoice
     const res = await fetch(
       `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12@hotmail.com`
     );

@@ -19,3 +19,19 @@ export const getConfigQuery = gql`
     }
   }
 `;
+
+export const getOrderWithInvoices = gql`
+  query order($id: ID!) {
+      order(id: $id) {
+        id
+        code
+        invoices {
+          id
+          createdAt
+          invoiceNumber
+          downloadUrl
+          isCreditInvoice
+        }
+      }
+  }
+`;
