@@ -21,7 +21,8 @@ import { InvoiceService } from './services/invoice.service';
 export interface InvoicePluginConfig {
   /**
    * Hostname to use for download links, can be the Vendure instance,
-   * but also the worker instance if you want
+   * but also the worker instance if you want. 
+   * Make sure to include protocol and no trailing slash, e.g. https://vendure.myshop.com
    */
   vendureHost: string;
   /**

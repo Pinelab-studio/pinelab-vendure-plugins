@@ -1,10 +1,17 @@
-import { RequestContext, Order, Injector, translateEntity } from '@vendure/core';
+import { Injector, Order, RequestContext, translateEntity } from '@vendure/core';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { reverseOrderTotals } from '../util/order-calculations';
 
 export interface InvoiceData {
   invoiceNumber: number;
   [key: string]: any;
+}
+
+export interface CreditInvoiceInput {
+  previousInvoice: InvoiceEntity;
+  /**
+   * The reversed (i.e. negative) order totals of the previous invoice
+   */
+  reversedOrderTotals: InvoiceEntity['orderTotals'];
 }
 
 export type LoadDataFn = (
@@ -13,19 +20,33 @@ export type LoadDataFn = (
   order: Order,
   mostRecentInvoiceNumber?: number,
   /**
-   * When a previous invoice for this order is given, it means that the current invoice
+   * When shouldGenerateCreditInvoice is given, it means that the current invoice
    * needs to be a credit invoice for the given previous invoice
    */
-  previousInvoiceForOrder?: InvoiceEntity
+  shouldGenerateCreditInvoice?: CreditInvoiceInput
 ) => Promise<InvoiceData>;
+
+interface DefaultInvoiceData {
+  orderDate: string;
+  invoiceNumber: number;
+  order: Partial<Order>;
+}
+
+interface CreditInvoiceData extends DefaultInvoiceData {
+  isCreditInvoice: true;
+  originalInvoiceNumber: number;
+}
+
+export type DefaultInvoiceDataResponse = DefaultInvoiceData | CreditInvoiceData;
+
 
 export const defaultLoadDataFn: LoadDataFn = async (
   ctx: RequestContext,
   injector: Injector,
   order: Order,
   mostRecentInvoiceNumber?: number,
-  previousInvoiceForOrder?: InvoiceEntity
-): Promise<InvoiceData> => {
+  shouldGenerateCreditInvoice?: CreditInvoiceInput
+): Promise<DefaultInvoiceDataResponse> => {
   // Increase order number
   let newInvoiceNumber = mostRecentInvoiceNumber || 0;
   newInvoiceNumber += 1;
@@ -38,19 +59,29 @@ export const defaultLoadDataFn: LoadDataFn = async (
       ctx.languageCode
     );
   });
-  if (previousInvoiceForOrder) {
-    // This means we need to create a credit invoice for the given previous invoice
+  if (shouldGenerateCreditInvoice) {
+    // Create credit invoice
+    const { previousInvoice, reversedOrderTotals } = shouldGenerateCreditInvoice;
     return {
       orderDate,
       invoiceNumber: newInvoiceNumber,
       isCreditInvoice: true,
-      order: order,
-      reversedOrderTotals: reverseOrderTotals(previousInvoiceForOrder.orderTotals),
+      // Reference to original invoice because this is a credit invoice
+      originalInvoiceNumber: previousInvoice.invoiceNumber, 
+      order: {
+        ...order,
+        total: reversedOrderTotals.total,
+        totalWithTax: reversedOrderTotals.totalWithTax,
+        taxSummary: reversedOrderTotals.taxSummaries,
+
+      },
     }
+  } else {
+    // Normal debit invoice
+    return {
+      orderDate,
+      invoiceNumber: newInvoiceNumber,
+      order: order,
+    };
   }
-  return {
-    orderDate,
-    invoiceNumber: newInvoiceNumber,
-    order: order,
-  };
 }

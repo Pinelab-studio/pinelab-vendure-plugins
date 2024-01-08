@@ -52,13 +52,18 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
   async save(
     tmpFile: string,
     invoiceNumber: number,
-    channelToken: string
+    channelToken: string,
+    isCreditInvoice: boolean
   ): Promise<string> {
-    const name = `${channelToken}/${invoiceNumber}.pdf`;
+    let filename = `${invoiceNumber}.pdf`;
+    if (isCreditInvoice) {
+      filename = `${invoiceNumber}-credit.pdf`;
+    }
+    const fullPath = `${channelToken}/${filename}`;
     await this.storage.bucket(this.bucketName).upload(tmpFile, {
-      destination: name,
+      destination: fullPath,
     });
-    return name;
+    return fullPath;
   }
 
 }

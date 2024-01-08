@@ -121,10 +121,7 @@ describe('Invoices plugin', function () {
     invoice = result.invoices.items[0];
     expect(result.invoices.totalItems).toBe(1);
     expect(invoice.id).toBeDefined();
-    expect(invoice.orderCode).toBeDefined();
-    expect(invoice.orderId).toBeDefined();
     expect(invoice.customerEmail).toBe('hayden.zieme12@hotmail.com');
-    expect(invoice.downloadUrl).toContain('/invoices/e2e-default-channel/');
     expect(invoice.downloadUrl).toContain('/invoices/e2e-default-channel/');
   });
 

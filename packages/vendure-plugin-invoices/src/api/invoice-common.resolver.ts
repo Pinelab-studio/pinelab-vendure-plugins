@@ -1,20 +1,16 @@
-import { Inject } from '@nestjs/common';
-import { Args, ResolveField, Query, Resolver, Parent } from '@nestjs/graphql';
+import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
+  EntityHydrator,
   Order,
   PermissionDefinition,
-  RequestContext,
+  RequestContext
 } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { InvoicePluginConfig } from '../index';
-import {
-  Invoice,
-  InvoiceConfigInput,
-} from '../ui/generated/graphql';
-import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceService } from '../services/invoice.service';
+import {
+  Invoice
+} from '../ui/generated/graphql';
 
 export const invoicePermission = new PermissionDefinition({
   name: 'AllowInvoicesPermission',
@@ -24,7 +20,8 @@ export const invoicePermission = new PermissionDefinition({
 @Resolver()
 export class InvoiceCommonResolver {
   constructor(
-    private service: InvoiceService,
+    private invoiceService: InvoiceService,
+    private entityHydrator: EntityHydrator,
   ) {}
 
   @ResolveField('invoices')
@@ -33,7 +30,16 @@ export class InvoiceCommonResolver {
   async invoices(
     @Ctx() ctx: RequestContext,
     @Parent() order: Order
-  ): Promise<Invoice> {
-    return this.service.getInvoices(ctx, order.id);
+  ): Promise<Invoice[]> {
+    const invoices = await this.invoiceService.getInvoicesForOrder(ctx, order.id);
+    await this.entityHydrator.hydrate(ctx, order, {relations: ['customer']});
+    if (!order.customer?.emailAddress) {
+      throw new Error(`Can not fetch invoices for an order without 'customer.emailAddress'`);
+    }
+    return invoices.map(invoice => ({
+      ...invoice,
+      isCreditInvoice: invoice.isCreditInvoice,
+      downloadUrl: this.invoiceService.getDownloadUrl(ctx, invoice, order.code, order.customer!.emailAddress)
+    }));
   }
 }

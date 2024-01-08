@@ -14,12 +14,15 @@ export class LocalFileStrategy implements LocalStorageStrategy {
 
   async init(): Promise<void> {}
 
-  async save(tmpFile: string, invoiceNumber: number, channelToken: string) {
+  async save(tmpFile: string, invoiceNumber: number, channelToken: string, isCreditInvoice: boolean) {
     if (!(await exists(this.invoiceDir))) {
       await fs.mkdir(this.invoiceDir);
     }
-    const fileName = path.basename(tmpFile);
-    const newPath = `${this.invoiceDir}/${invoiceNumber}.pdf`;
+    let name = `${invoiceNumber}.pdf`;
+    if (isCreditInvoice) {
+      name = `${invoiceNumber}-credit.pdf`;
+    }
+    const newPath = `${this.invoiceDir}/${name}`;
     await fs.rename(tmpFile, newPath);
     return newPath;
   }

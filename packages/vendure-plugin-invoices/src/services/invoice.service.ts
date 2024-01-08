@@ -2,9 +2,8 @@ import {
   Inject,
   Injectable,
   OnApplicationBootstrap,
-  OnModuleInit,
+  OnModuleInit
 } from '@nestjs/common';
-import { In } from 'typeorm';
 import {
   ChannelService,
   EventBus,
@@ -18,31 +17,30 @@ import {
   OrderService,
   RequestContext,
   TransactionalConnection,
-  UserInputError,
+  UserInputError
 } from '@vendure/core';
-import * as util from 'util'
 import {
-  InvoiceConfigInput,
+  InvoiceConfigInput
 } from '../ui/generated/graphql';
+import { ModuleRef } from '@nestjs/core';
+import { Response } from 'express';
+import { createReadStream, ReadStream } from 'fs';
+import fs from 'fs/promises';
+import Handlebars from 'handlebars';
 // @ts-ignore
 import * as pdf from 'pdf-creator-node';
-import Handlebars from 'handlebars';
-import { defaultTemplate } from '../util/default-template';
-import { InvoicePluginConfig } from '../invoice.plugin';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { InvoiceData } from '../strategies/load-data-fn';
-import { createReadStream, ReadStream } from 'fs';
+import { InvoicePluginConfig } from '../invoice.plugin';
+import { CreditInvoiceInput } from '../strategies/load-data-fn';
 import {
   LocalStorageStrategy,
-  RemoteStorageStrategy,
+  RemoteStorageStrategy
 } from '../strategies/storage-strategy';
-import { Response } from 'express';
+import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
-import { ModuleRef } from '@nestjs/core';
-import fs from 'fs/promises';
-import { reverseAmounts, reverseOrderTotals } from '../util/order-calculations';
+import { reverseOrderTotals } from '../util/order-calculations';
 
 interface DownloadInput {
   customerEmail: string;
@@ -145,8 +143,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     }
     // Create a credit invoice first, if an invoice already exists and config.createCreditInvoices is true
     if (previousInvoiceForOrder && this.config.createCreditInvoices) {
+      // Reverse order totals of previous invoice, because creditInvoice
+      const reversedOrderTotals = reverseOrderTotals(previousInvoiceForOrder.orderTotals);
       const { invoiceNumber, invoiceTmpFile } =
-        await this.generateInvoice(ctx, config.templateString!, order, previousInvoiceForOrder);
+        await this.generateInvoice(ctx, config.templateString!, order, {
+          previousInvoice: previousInvoiceForOrder,
+          reversedOrderTotals,
+        });
       const storageReference = await this.config.storageStrategy.save(
         invoiceTmpFile,
         invoiceNumber,
@@ -159,10 +162,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         invoiceNumber,
         orderId: order.id as string,
         storageReference,
-        orderTotals: reverseOrderTotals(previousInvoiceForOrder.orderTotals),
+        orderTotals: reversedOrderTotals,
       });
-
     }
+    // Generate normal/debit invoice
     const { invoiceNumber, invoiceTmpFile } =
       await this.generateInvoice(ctx, config.templateString!, order);
     const storageReference = await this.config.storageStrategy.save(
@@ -176,6 +179,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       invoiceNumber,
       orderId: order.id as string,
       storageReference,
+      orderTotals: {
+        taxSummaries: order.taxSummary,
+        total: order.totalWithTax,
+        totalWithTax: order.totalWithTax,
+      }
     });
   }
 
@@ -186,7 +194,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     templateString: string,
     order: Order,
-    previousInvoiceForOrder?: InvoiceEntity
+    shouldGenerateCreditInvoice?: CreditInvoiceInput
   ): Promise<{ invoiceTmpFile: string, invoiceNumber: number }> {
     const latestInvoiceNumber = await this.getLatestInvoiceNumber(ctx);
     const data = await this.config.loadDataFn(
@@ -194,7 +202,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       new Injector(this.moduleRef),
       order,
       latestInvoiceNumber,
-      previousInvoiceForOrder
+      shouldGenerateCreditInvoice
     );
     const tmpFilePath = await createTempFile('.pdf');
     const html = templateString;
@@ -238,12 +246,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const { tmpFileName } = await this.generateInvoice(
+    const { invoiceTmpFile } = await this.generateInvoice(
       ctx,
       template,
       order
     );
-    return createReadStream(tmpFileName);
+    return createReadStream(invoiceTmpFile);
   }
 
   /**
@@ -329,6 +337,16 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       cache: false,
     });
     return result?.invoiceNumber;
+  }
+
+  /**
+   * Construct the download url for an invoice.
+   * @Example
+   * `/invoices/default-channel/DJSLHJ238390/123?email=customer@example.com`
+   */
+  getDownloadUrl(ctx: RequestContext, invoice: InvoiceEntity, orderCode: string, customerEmail: string): string {
+    const emailAddress = encodeURIComponent(customerEmail);
+    return `${this.config.vendureHost}/${ctx.channel.token}/${orderCode}/${invoice.invoiceNumber}?email=${emailAddress}`;
   }
 
 

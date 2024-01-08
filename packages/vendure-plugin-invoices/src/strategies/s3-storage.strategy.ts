@@ -1,10 +1,6 @@
 import { Logger } from '@vendure/core';
-import { Response } from 'express';
-import { createReadStream, ReadStream } from 'fs';
-import { readFile, writeFile } from 'fs/promises';
-import path from 'path';
+import { readFile } from 'fs/promises';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { createTempFile} from '../util/file.util';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 export interface Config {
@@ -50,9 +46,14 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
   async save(
     tmpFile: string,
     invoiceNumber: number,
-    channelToken: string
+    channelToken: string,
+    isCreditInvoice: boolean
   ): Promise<string> {
-    const Key: string = `invoices/${channelToken}/${invoiceNumber}.pdf`;
+    let filename = `${invoiceNumber}.pdf`;
+    if (isCreditInvoice) {
+      filename = `${invoiceNumber}-credit.pdf`;
+    }
+    const Key: string = `invoices/${channelToken}/${filename}`;
     await this.s3!.upload({
       Bucket: this.bucket,
       Key,
