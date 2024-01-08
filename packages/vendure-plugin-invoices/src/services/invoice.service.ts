@@ -42,7 +42,7 @@ import { Response } from 'express';
 import { createTempFile } from '../util/file.util';
 import { ModuleRef } from '@nestjs/core';
 import fs from 'fs/promises';
-import { reverseAmounts } from '../util/order-calculations';
+import { reverseAmounts, reverseOrderTotals } from '../util/order-calculations';
 
 interface DownloadInput {
   customerEmail: string;
@@ -150,7 +150,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       const storageReference = await this.config.storageStrategy.save(
         invoiceTmpFile,
         invoiceNumber,
-        channelToken
+        channelToken,
+        true
       );
       await fs.unlink(invoiceTmpFile);
       await this.saveInvoice(ctx, {
@@ -158,20 +159,17 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         invoiceNumber,
         orderId: order.id as string,
         storageReference,
-        orderTotals: {
-          taxSummary: reverseAmounts(previousInvoiceForOrder.orderTotals.taxSummary),
-          total: -order.total,
-          totalWithTax: -order.totalWithTax,
-        }
+        orderTotals: reverseOrderTotals(previousInvoiceForOrder.orderTotals),
       });
 
     }
-    const { invoiceNumber, tmpFileName } =
+    const { invoiceNumber, invoiceTmpFile } =
       await this.generateInvoice(ctx, config.templateString!, order);
     const storageReference = await this.config.storageStrategy.save(
-      tmpFileName,
+      invoiceTmpFile,
       invoiceNumber,
-      channelToken
+      channelToken,
+      false
     );
     await this.saveInvoice(ctx, {
       channelId: ctx.channelId as string,
