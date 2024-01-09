@@ -65,5 +65,4 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
     });
     return fullPath;
   }
-
 }

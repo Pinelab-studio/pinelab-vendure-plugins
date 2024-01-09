@@ -14,7 +14,12 @@ export class LocalFileStrategy implements LocalStorageStrategy {
 
   async init(): Promise<void> {}
 
-  async save(tmpFile: string, invoiceNumber: number, channelToken: string, isCreditInvoice: boolean) {
+  async save(
+    tmpFile: string,
+    invoiceNumber: number,
+    channelToken: string,
+    isCreditInvoice: boolean
+  ) {
     if (!(await exists(this.invoiceDir))) {
       await fs.mkdir(this.invoiceDir);
     }

@@ -1,4 +1,9 @@
-import { Injector, Order, RequestContext, translateEntity } from '@vendure/core';
+import {
+  Injector,
+  Order,
+  RequestContext,
+  translateEntity,
+} from '@vendure/core';
 import { InvoiceEntity } from '../entities/invoice.entity';
 
 export interface InvoiceData {
@@ -39,7 +44,6 @@ interface CreditInvoiceData extends DefaultInvoiceData {
 
 export type DefaultInvoiceDataResponse = DefaultInvoiceData | CreditInvoiceData;
 
-
 export const defaultLoadDataFn: LoadDataFn = async (
   ctx: RequestContext,
   injector: Injector,
@@ -51,8 +55,8 @@ export const defaultLoadDataFn: LoadDataFn = async (
   let newInvoiceNumber = mostRecentInvoiceNumber || 0;
   newInvoiceNumber += 1;
   const orderDate = order.orderPlacedAt
-  ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
-  : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
+    ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
+    : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
   order.lines.forEach((line) => {
     line.productVariant = translateEntity(
       line.productVariant,
@@ -61,21 +65,21 @@ export const defaultLoadDataFn: LoadDataFn = async (
   });
   if (shouldGenerateCreditInvoice) {
     // Create credit invoice
-    const { previousInvoice, reversedOrderTotals } = shouldGenerateCreditInvoice;
+    const { previousInvoice, reversedOrderTotals } =
+      shouldGenerateCreditInvoice;
     return {
       orderDate,
       invoiceNumber: newInvoiceNumber,
       isCreditInvoice: true,
       // Reference to original invoice because this is a credit invoice
-      originalInvoiceNumber: previousInvoice.invoiceNumber, 
+      originalInvoiceNumber: previousInvoice.invoiceNumber,
       order: {
         ...order,
         total: reversedOrderTotals.total,
         totalWithTax: reversedOrderTotals.totalWithTax,
         taxSummary: reversedOrderTotals.taxSummaries,
-
       },
-    }
+    };
   } else {
     // Normal debit invoice
     return {
@@ -84,4 +88,4 @@ export const defaultLoadDataFn: LoadDataFn = async (
       order: order,
     };
   }
-}
+};

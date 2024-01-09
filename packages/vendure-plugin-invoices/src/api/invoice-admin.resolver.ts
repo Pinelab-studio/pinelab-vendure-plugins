@@ -1,15 +1,10 @@
 import { Inject } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import {
-  Allow,
-  Ctx, RequestContext
-} from '@vendure/core';
+import { Allow, Ctx, RequestContext } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoicePluginConfig } from '../index';
 import { InvoiceService } from '../services/invoice.service';
-import {
-  InvoiceConfigInput
-} from '../ui/generated/graphql';
+import { InvoiceConfigInput } from '../ui/generated/graphql';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
 import { invoicePermission } from './invoice-common.resolver';
 

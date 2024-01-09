@@ -13,7 +13,6 @@ export async function createTempFile(postfix: string): Promise<string> {
   });
 }
 
-
 export async function exists(path: string): Promise<boolean> {
   let exists = false;
   try {

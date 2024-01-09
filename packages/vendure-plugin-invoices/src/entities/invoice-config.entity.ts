@@ -14,6 +14,9 @@ export class InvoiceConfigEntity extends VendureEntity {
   @Column({ default: false })
   enabled: boolean = false;
 
+  @Column({ default: true })
+  createCreditInvoices: boolean = true;
+
   @Column({ type: resolveTemplateColumnType(), nullable: true })
   templateString?: string | null;
 }

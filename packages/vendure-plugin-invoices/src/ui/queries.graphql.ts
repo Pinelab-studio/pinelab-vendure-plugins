@@ -5,6 +5,7 @@ export const upsertConfigMutation = gql`
     upsertInvoiceConfig(input: $input) {
       id
       enabled
+      createCreditInvoices
       templateString
     }
   }
@@ -15,6 +16,7 @@ export const getConfigQuery = gql`
     invoiceConfig {
       id
       enabled
+      createCreditInvoices
       templateString
     }
   }
@@ -22,16 +24,16 @@ export const getConfigQuery = gql`
 
 export const getOrderWithInvoices = gql`
   query order($id: ID!) {
-      order(id: $id) {
+    order(id: $id) {
+      id
+      code
+      invoices {
         id
-        code
-        invoices {
-          id
-          createdAt
-          invoiceNumber
-          downloadUrl
-          isCreditInvoice
-        }
+        createdAt
+        invoiceNumber
+        downloadUrl
+        isCreditInvoice
       }
+    }
   }
 `;

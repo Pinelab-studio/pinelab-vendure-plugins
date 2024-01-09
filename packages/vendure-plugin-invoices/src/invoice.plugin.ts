@@ -2,13 +2,19 @@ import {
   PluginCommonModule,
   RuntimeVendureConfig,
   Type,
-  VendurePlugin
+  VendurePlugin,
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { adminSchemaExtensions, shopSchemaExtensions } from './api/api-extensions';
+import {
+  adminSchemaExtensions,
+  shopSchemaExtensions,
+} from './api/api-extensions';
 import { InvoiceAdminResolver } from './api/invoice-admin.resolver';
-import { InvoiceCommonResolver, invoicePermission } from './api/invoice-common.resolver';
+import {
+  InvoiceCommonResolver,
+  invoicePermission,
+} from './api/invoice-common.resolver';
 import { InvoiceController } from './api/invoice.controller';
 import { defaultLoadDataFn, LoadDataFn } from './strategies/load-data-fn';
 import { LocalFileStrategy } from './strategies/local-file-strategy';
@@ -21,7 +27,7 @@ import { InvoiceService } from './services/invoice.service';
 export interface InvoicePluginConfig {
   /**
    * Hostname to use for download links, can be the Vendure instance,
-   * but also the worker instance if you want. 
+   * but also the worker instance if you want.
    * Make sure to include protocol and no trailing slash, e.g. https://vendure.myshop.com
    */
   vendureHost: string;
@@ -30,11 +36,6 @@ export interface InvoicePluginConfig {
    */
   loadDataFn: LoadDataFn;
   storageStrategy: StorageStrategy;
-  /**
-   * Generate credit invoices when an invoice already exists, before creating a new invoice.
-   * Defaults to true
-   */
-  createCreditInvoices: boolean;
 }
 
 @VendurePlugin({
@@ -69,7 +70,6 @@ export class InvoicePlugin {
       vendureHost: config.vendureHost,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
-      createCreditInvoices: config.createCreditInvoices || true,
     };
     return this;
   }

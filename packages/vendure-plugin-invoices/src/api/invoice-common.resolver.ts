@@ -5,12 +5,10 @@ import {
   EntityHydrator,
   Order,
   PermissionDefinition,
-  RequestContext
+  RequestContext,
 } from '@vendure/core';
 import { InvoiceService } from '../services/invoice.service';
-import {
-  Invoice
-} from '../ui/generated/graphql';
+import { Invoice } from '../ui/generated/graphql';
 
 export const invoicePermission = new PermissionDefinition({
   name: 'AllowInvoicesPermission',
@@ -21,7 +19,7 @@ export const invoicePermission = new PermissionDefinition({
 export class InvoiceCommonResolver {
   constructor(
     private invoiceService: InvoiceService,
-    private entityHydrator: EntityHydrator,
+    private entityHydrator: EntityHydrator
   ) {}
 
   @ResolveField('invoices')
@@ -31,15 +29,25 @@ export class InvoiceCommonResolver {
     @Ctx() ctx: RequestContext,
     @Parent() order: Order
   ): Promise<Invoice[]> {
-    const invoices = await this.invoiceService.getInvoicesForOrder(ctx, order.id);
-    await this.entityHydrator.hydrate(ctx, order, {relations: ['customer']});
+    const invoices = await this.invoiceService.getInvoicesForOrder(
+      ctx,
+      order.id
+    );
+    await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
     if (!order.customer?.emailAddress) {
-      throw new Error(`Can not fetch invoices for an order without 'customer.emailAddress'`);
+      throw new Error(
+        `Can not fetch invoices for an order without 'customer.emailAddress'`
+      );
     }
-    return invoices.map(invoice => ({
+    return invoices.map((invoice) => ({
       ...invoice,
       isCreditInvoice: invoice.isCreditInvoice,
-      downloadUrl: this.invoiceService.getDownloadUrl(ctx, invoice, order.code, order.customer!.emailAddress)
+      downloadUrl: this.invoiceService.getDownloadUrl(
+        ctx,
+        invoice,
+        order.code,
+        order.customer!.emailAddress
+      ),
     }));
   }
 }

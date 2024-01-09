@@ -12,7 +12,14 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { Allow, ChannelService, Ctx, ForbiddenError, Logger, RequestContext } from '@vendure/core';
+import {
+  Allow,
+  ChannelService,
+  Ctx,
+  ForbiddenError,
+  Logger,
+  RequestContext,
+} from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
 import { invoicePermission } from './invoice-common.resolver';
@@ -21,8 +28,8 @@ import { invoicePermission } from './invoice-common.resolver';
 export class InvoiceController {
   constructor(
     private invoiceService: InvoiceService,
-    private channelService: ChannelService,
-  ) { }
+    private channelService: ChannelService
+  ) {}
 
   @Allow(invoicePermission.Permission)
   @Post('/preview/:orderCode')
@@ -38,7 +45,11 @@ export class InvoiceController {
     if (!data?.template || !data?.template.trim()) {
       throw new BadRequestException('No template given');
     }
-    const stream = await this.invoiceService.previewInvoiceWithTemplate(ctx, data.template, orderCode);
+    const stream = await this.invoiceService.previewInvoiceWithTemplate(
+      ctx,
+      data.template,
+      orderCode
+    );
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="preview-invoice.pdf"`,
@@ -52,26 +63,29 @@ export class InvoiceController {
     @Param('channelToken') channelToken: string,
     @Param('orderCode') orderCode: string,
     @Param('invoiceNumber') invoiceNumber: string | number | undefined,
-    @Query('email') customerEmail: string,
+    @Query('email') encodedCustomerEmail: string,
     @Req() req: Request,
     @Res() res: Response,
     @Ctx() _ctx: RequestContext
   ) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    if (!channelToken || !orderCode || !encodedCustomerEmail) {
+      Logger.warn(
+        `Invalid invoice download attempt from ${ip} for ${req.path}`,
+        loggerCtx
+      );
+      throw new BadRequestException();
+    }
     try {
-      if (!channelToken || !orderCode || !customerEmail) {
-        Logger.warn(
-          `Invalid invoice download attempt from ${ip} for ${req.path}`,
-          loggerCtx
-        );
-        throw new BadRequestException();
-      }
-      const channel = await this.channelService.getChannelFromToken(channelToken);
+      const customerEmail = decodeURIComponent(encodedCustomerEmail);
+      const channel = await this.channelService.getChannelFromToken(
+        channelToken
+      );
       const ctx = new RequestContext({
         apiType: 'admin',
         authorizedAsOwnerOnly: false,
         isAuthorized: true,
-        channel
+        channel,
       });
       const streamOrRedirect = await this.invoiceService.downloadInvoice(ctx, {
         orderCode,
@@ -91,9 +105,11 @@ export class InvoiceController {
     } catch (error: any) {
       Logger.warn(
         `Failed invoice download attempt from ${ip} for ${req.path}: ${error.message}`,
-        loggerCtx,
+        loggerCtx
       );
-      throw new ForbiddenException('This invoice does not exist or you are not authorized to download it')
+      throw new ForbiddenException(
+        'This invoice does not exist or you are not authorized to download it'
+      );
     }
   }
 }

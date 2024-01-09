@@ -57,8 +57,8 @@ require('dotenv').config();
     },
     apiOptions: {
       adminApiPlayground: true,
-      shopApiPlayground: true
-    }
+      shopApiPlayground: true,
+    },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
@@ -79,11 +79,13 @@ require('dotenv').config();
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });
-  await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
-  // Add a testorders at every server start
+  await server.app
+    .get(InvoiceService)
+    .upsertConfig(ctx, { enabled: true, createCreditInvoices: true });
+  // Add a test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient as any, 'manual-fulfillment');
-  const orders = 3;
+  const orders = 1;
   for (let i = 1; i <= orders; i++) {
     await createSettledOrder(shopClient as any, 3);
   }

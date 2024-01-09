@@ -5,7 +5,6 @@ const scalars = gql`
   scalar DateTime
 `;
 
-
 const commonSchemaExtensions = gql`
   type Invoice {
     id: ID!
@@ -21,23 +20,22 @@ const commonSchemaExtensions = gql`
 `;
 
 export const shopSchemaExtensions = gql`
-
-  ${commonSchemaExtensions} 
-  
+  ${commonSchemaExtensions}
 `;
 
 export const adminSchemaExtensions = gql`
-
-  ${commonSchemaExtensions} 
+  ${commonSchemaExtensions}
 
   type InvoiceConfig {
     id: ID!
     enabled: Boolean!
+    createCreditInvoices: Boolean!
     templateString: String!
   }
 
   input InvoiceConfigInput {
     enabled: Boolean!
+    createCreditInvoices: Boolean!
     templateString: String
   }
 
