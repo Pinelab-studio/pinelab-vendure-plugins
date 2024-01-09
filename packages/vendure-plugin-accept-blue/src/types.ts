@@ -71,3 +71,35 @@ export interface AcceptBluePaymentMethod {
   card_type?: string;
   last4: string;
 }
+
+export type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "bimonthly" | "quarterly" | "biannually" | "annually";
+
+export interface AcceptBlueRecurringSchedule {
+  id: number,
+  customer_id: number,
+  created_at: Date
+  title: string,
+  frequency: Frequency
+  amount: number,
+  next_run_date: Date,
+  num_left: number,
+  payment_method_id: number,
+  active: boolean,
+  receipt_email: string,
+  status: string,
+  prev_run_date: Date,
+  transaction_count: number
+}
+
+
+export interface AcceptBlueRecurringScheduleInput {
+  title: string,
+  frequency: Frequency,
+  amount: number,
+  next_run_date: Date,
+  num_left: number,
+  payment_method_id: number,
+  active: true,
+  receipt_email: string,
+  use_this_source_key: boolean
+  }

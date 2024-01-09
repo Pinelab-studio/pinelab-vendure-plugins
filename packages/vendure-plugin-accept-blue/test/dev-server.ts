@@ -104,7 +104,7 @@ import {
       method: 'accept-blue-credit-card',
       metadata: <CreditCardPaymentInput> {
         // acceptBluePaymentMethod: 1,
-        card: '476153000111118',
+        card: '4761530001111118',
         expiry_year: 2025,
         expiry_month: 1,
         avs_address: 'Testing address',

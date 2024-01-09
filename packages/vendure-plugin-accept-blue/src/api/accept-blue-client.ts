@@ -4,9 +4,12 @@ import { loggerCtx } from '../constants';
 import {
   AcceptBlueCustomer,
   AcceptBluePaymentMethod,
+  AcceptBlueRecurringSchedule,
+  AcceptBlueRecurringScheduleInput,
   CreditCardPaymentInput,
 } from '../types';
 import { isSameCard } from '../util';
+import util from 'util';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -65,7 +68,7 @@ export class AcceptBlueClient {
     return result;
   }
 
-  async getOrPaymentMethod(
+  async getOrCreatePaymentMethod(
     customerId: string,
     input: CreditCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
@@ -101,7 +104,23 @@ export class AcceptBlueClient {
       input
     );
     Logger.info(
-      `Created new payment method '${result.id}' for customer '${result.customer_id}'`,
+      `Created payment method '${result.card_type}' (${result.id}) for customer '${result.customer_id}'`,
+      loggerCtx
+    );
+    return result;
+  }
+  
+  async createRecurringSchedule(
+    customerId: string,
+    input: AcceptBlueRecurringScheduleInput
+  ): Promise<AcceptBlueRecurringSchedule> {
+    const result: AcceptBlueRecurringSchedule = await this.request(
+      'post',
+      `customers/${customerId}/recurring-schedules`,
+      input
+    );
+    Logger.info(
+      `Created recurring schedule ${result.id} for customer '${result.customer_id}'`,
       loggerCtx
     );
     return result;
@@ -122,8 +141,9 @@ export class AcceptBlueClient {
     }
     if (result.status >= 400) {
       Logger.error(
-        `${method} to "${path}" resulted in: ${result.status} ${result.statusText}`,
-        loggerCtx
+        `${method} to "${path}" resulted in: ${result.status} (${result.statusText}): ${util.inspect(result.data)}`,
+        loggerCtx,
+        util.inspect(result.data)
       );
       throw Error(result.statusText);
     }
