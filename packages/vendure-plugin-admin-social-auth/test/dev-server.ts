@@ -13,7 +13,7 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import path from 'path';
-import { SocialAuthPlugin } from '../src';
+import { AdminSocialAuthPlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
 
 require('dotenv').config();
@@ -27,7 +27,7 @@ require('dotenv').config();
         assetUploadDir: path.join(__dirname, '__data__/assets'),
         route: 'assets',
     }),
-      SocialAuthPlugin.init({
+    AdminSocialAuthPlugin.init({
         adminLoginProviders: [{
           googleOAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
         }],

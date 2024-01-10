@@ -23,11 +23,11 @@ export interface SocialAuthPluginOptions {
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,
-      useFactory: () => SocialAuthPlugin.options,
+      useFactory: () => AdminSocialAuthPlugin.options,
     },
   ],
   configuration: (config) => {
-    for (const provider of SocialAuthPlugin.options.adminLoginProviders) {
+    for (const provider of AdminSocialAuthPlugin.options.adminLoginProviders) {
       if (provider.googleOAuthClientId) {
         config.authOptions.adminAuthenticationStrategy = [
           new GoogleAuthStrategy(provider.googleOAuthClientId),
@@ -38,11 +38,11 @@ export interface SocialAuthPluginOptions {
     return config;
   },
 })
-export class SocialAuthPlugin {
+export class AdminSocialAuthPlugin {
   static options: SocialAuthPluginOptions;
 
   static init(options: SocialAuthPluginOptions) {
     this.options = options;
-    return SocialAuthPlugin;
+    return AdminSocialAuthPlugin;
   }
 }

@@ -1,12 +1,12 @@
-# Social authentication plugin for Vendure
+# Vendure Social Authentication for Administrators
 
-Allow admins and customers to login with social accounts like Google.
+Allow admins to login with social accounts like Google.
 
 Currently this plugin only supports Google login for the Admin UI! The plugin setup allows for easy extension of other auth providers in either shop or admin though. Contributions welcome: Contact us via Discord and we'll help you get started on contributing.
 
-## Admin Login
+## Allow admins to login with Google
 
-### Allow admins to login with Google only
+https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
 
 1. Install `google-auth-library`: `yarn add google-auth-library`
 
