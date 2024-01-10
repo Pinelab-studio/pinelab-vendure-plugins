@@ -79,7 +79,7 @@ export class GoogleAuthStrategy implements AuthenticationStrategy<GoogleAuthData
             if (!payload || !payload.email) {
                 return false;
             }
-
+            console.log('logged in:', payload.email);
             // First we check to see if this user has already authenticated in our
             // Vendure server using this Google account. If so, we return that
             // User object, and they will be now authenticated in Vendure.

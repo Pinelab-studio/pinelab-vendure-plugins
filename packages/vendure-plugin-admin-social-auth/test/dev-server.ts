@@ -28,9 +28,9 @@ require('dotenv').config();
         route: 'assets',
     }),
     AdminSocialAuthPlugin.init({
-        adminLoginProviders: [{
-          googleOAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
-        }],
+        google: {
+          oAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -38,6 +38,9 @@ require('dotenv').config();
         route: 'admin',
         adminUiConfig: {
             loginUrl: '/social-auth/login',
+            brand: 'Pinelab',
+            hideVendureBranding: false,
+            hideVersion: false,
         },
         /*      
         TODO: uncomment this block to start the admin ui in dev mode
