@@ -4,6 +4,6 @@
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": ["src/", "src/index.ts", "types.ts"],
+  "include": ["src/"],
   "exclude": ["src/ui"]
 }
