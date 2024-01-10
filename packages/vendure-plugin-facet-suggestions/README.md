@@ -28,11 +28,12 @@ This feature is based on one of [Michael Bromley's (Co-founder of Vendure) tutor
      ...
 ```
 
-2. Login to the admin UI and go to `facets`
-3. On the facet detail page, check the box `Show on product detail page`
-4. Update the facet
-5. Go to a product detail page
-6. You should now see a facet value selector for your facet right below the name/description block
+2. Run a DB migration to add the new custom fields: https://docs.vendure.io/guides/developer-guide/migrations/#migration-workflow
+3. Start the server and login to the admin UI and go to `facets`
+4. On the facet detail page, check the box `Show on product detail page`
+5. Update the facet
+6. Go to a product detail page
+7. You should now see a facet value selector for your facet right below the name/description block
 
 There are two ways to show facets on the product detail page:
 
