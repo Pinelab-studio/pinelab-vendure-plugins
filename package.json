@@ -103,7 +103,8 @@
           "stripe-subscription",
           "variant-bulk-update",
           "vendure-order-client",
-          "webhook"
+          "webhook",
+          "pinelab-plugin-admin-components"
         ]
       ]
     }
