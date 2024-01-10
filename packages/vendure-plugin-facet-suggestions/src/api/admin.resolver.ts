@@ -12,8 +12,8 @@ import {
 @Resolver()
 export class AdminResolver {
   constructor(
-    private connection: TransactionalConnection,
-    private translator: TranslatorService
+    private readonly connection: TransactionalConnection,
+    private readonly translator: TranslatorService
   ) {}
 
   @Query()
@@ -41,7 +41,7 @@ export class AdminResolver {
       .having('count(dependencies.id) > 0')
       .orHaving('facet.customFields.showOnProductDetail = true');
 
-    return qb.getMany().then((facets) => {
+    return await qb.getMany().then((facets) => {
       for (const facet of facets) {
         this.translator.translate(facet, ctx, ['values', ['values', 'facet']]);
       }

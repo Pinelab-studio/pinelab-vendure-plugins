@@ -58,7 +58,7 @@
     "packages/vendure-plugin-webhook/",
     "packages/vendure-plugin-modify-customer-orders/",
     "packages/vendure-plugin-multiserver-db-sessioncache",
-    "packages/vendure-plugin-selectable-facets",
+    "packages/vendure-plugin-facet-suggestions",
     "packages/vendure-plugin-anonymized-order"
   ]
 }

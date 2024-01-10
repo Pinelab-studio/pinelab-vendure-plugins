@@ -1,4 +1,4 @@
-import { gql } from 'apollo-angular';
+import { gql } from 'graphql-tag';
 
 export const GET_REQUIRED_FACETS = gql`
   query GetRequiredFacets {

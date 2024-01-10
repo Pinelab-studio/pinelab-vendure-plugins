@@ -14,11 +14,11 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { FacetSuggestionsPlugin } from '../src/facet-suggestions.plugin';
+import { FacetSuggestionsPlugin } from '../src/';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { testPaymentMethodHandler } from './test-payment-method-handler';
+import { initialData } from '../../test/src/initial-data';
 
 (async () => {
   let server: TestServer;
@@ -47,7 +47,7 @@ import { testPaymentMethodHandler } from './test-payment-method-handler';
       }),
     ],
     paymentOptions: {
-      paymentMethodHandlers: [dummyPaymentHandler, testPaymentMethodHandler],
+      paymentMethodHandlers: [dummyPaymentHandler],
     },
   });
 

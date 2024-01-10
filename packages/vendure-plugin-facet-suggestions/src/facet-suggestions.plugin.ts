@@ -16,28 +16,46 @@ import { AdminResolver } from './api/admin.resolver';
       {
         name: 'showOnProductDetail',
         label: [
-          { languageCode: LanguageCode.en, value: 'Show on product detail page' },
+          {
+            languageCode: LanguageCode.en,
+            value: 'Show on product detail page',
+          },
         ],
         description: [
-          { languageCode: LanguageCode.en, value: 'Always show this facet as suggestion on product detail pages' },
+          {
+            languageCode: LanguageCode.en,
+            value:
+              'Always show this facet as suggestion on product detail pages',
+          },
         ],
         type: 'boolean',
         nullable: true,
         public: false,
+        ui: { tab: 'Show on product detail' },
       },
       {
         name: 'showOnProductDetailIf',
         label: [
-          { languageCode: LanguageCode.en, value: 'Show if product has facets' },
+          {
+            languageCode: LanguageCode.en,
+            value: 'Show if product has facets',
+          },
         ],
         description: [
-          { languageCode: LanguageCode.en, value: 'Show as suggestion on product detail pages when the product has these facets' },
+          {
+            languageCode: LanguageCode.en,
+            value:
+              'Show as suggestion on product detail pages when the product has these facets',
+          },
         ],
         type: 'relation',
         entity: FacetValue,
         list: true,
         public: false,
-        ui: { component: 'facet-value-form-input' },
+        ui: {
+          component: 'facet-value-form-input',
+          tab: 'Show on product detail',
+        },
       }
     );
     return config;

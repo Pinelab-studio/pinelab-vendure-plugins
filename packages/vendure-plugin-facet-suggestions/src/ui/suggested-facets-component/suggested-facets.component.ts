@@ -22,8 +22,7 @@ type RequiredFacetValueStatus = 'complete' | 'incomplete';
   templateUrl: `./suggested-facets.component.html`,
   styleUrls: [`./suggested-facets.component.scss`],
 })
-export class SuggestedFacetsComponent
-  implements CustomDetailComponent, OnInit {
+export class SuggestedFacetsComponent implements CustomDetailComponent, OnInit {
   detailForm: FormGroup;
   entity$: Observable<any>;
   status$: Observable<RequiredFacetValueStatus>;
@@ -34,9 +33,7 @@ export class SuggestedFacetsComponent
     }>
   >;
 
-  constructor(
-    private dataService: DataService,
-  ) { }
+  constructor(private dataService: DataService) {}
 
   ngOnInit() {
     const selectedFacetValueIds$ = this.detailForm
@@ -45,11 +42,7 @@ export class SuggestedFacetsComponent
         startWith(this.detailForm.get(['facetValueIds'])!.value)
       );
     const possiblyRequiredFacets$ = this.dataService
-      .query<any, any>(
-        GET_REQUIRED_FACETS,
-        {},
-        'cache-first'
-      )
+      .query<any, any>(GET_REQUIRED_FACETS, {}, 'cache-first')
       .single$.pipe(
         map(({ requiredFacets }) =>
           requiredFacets.filter(
@@ -61,7 +54,7 @@ export class SuggestedFacetsComponent
       );
     this.requiredFacets$ = combineLatest([
       possiblyRequiredFacets$,
-      selectedFacetValueIds$
+      selectedFacetValueIds$,
     ]).pipe(
       shareReplay(1),
       map(([facets, selectedFacetValueIds]) => {
