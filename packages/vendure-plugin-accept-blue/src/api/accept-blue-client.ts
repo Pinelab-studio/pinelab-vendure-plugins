@@ -2,6 +2,7 @@ import { Logger } from '@vendure/core';
 import axios, { AxiosInstance } from 'axios';
 import { loggerCtx } from '../constants';
 import {
+  AcceptBlueCardPaymentMethod,
   AcceptBlueCustomer,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
@@ -50,13 +51,17 @@ export class AcceptBlueClient {
     }
   }
 
-  async getCustomer(emailAddress: string): Promise<AcceptBlueCustomer | undefined> {
+  async getCustomer(
+    emailAddress: string
+  ): Promise<AcceptBlueCustomer | undefined> {
     const customers = await this.request(
       'get',
       `customers?active=true&customer_number=${emailAddress}`
     );
     if (customers.length > 1) {
-      throw Error(`Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one.`);
+      throw Error(
+        `Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one.`
+      );
     }
     if (customers[0]) {
       return customers[0];
@@ -81,7 +86,9 @@ export class AcceptBlueClient {
     input: CreditCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(acceptBlueCustomerId);
-    const existing = methods.find((method) => isSameCard(input, method));
+    const existing = methods.find((method) =>
+      isSameCard(input, method as AcceptBlueCardPaymentMethod)
+    );
     if (existing) {
       return existing;
     } else {
@@ -119,7 +126,7 @@ export class AcceptBlueClient {
   }
 
   async createRecurringSchedule(
-    customerId: string,
+    customerId: number,
     input: AcceptBlueRecurringScheduleInput
   ): Promise<AcceptBlueRecurringSchedule> {
     const result: AcceptBlueRecurringSchedule = await this.request(
