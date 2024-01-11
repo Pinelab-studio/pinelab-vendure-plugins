@@ -14,6 +14,7 @@ import {
 } from '@vendure/testing';
 import { AcceptBluePlugin } from '../src';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
+import { CreditCardPaymentMethodInput } from '../src/types';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -24,7 +25,9 @@ import {
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
+  // eslint-disable-next-line
   require('dotenv').config();
+  // eslint-disable-next-line
   const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
@@ -50,6 +53,7 @@ import {
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
     initialData: {
+      // eslint-disable-next-line
       ...require('../../test/src/initial-data').initialData,
       shippingMethods: [{ name: 'Standard Shipping', price: 0 }],
     },
@@ -98,15 +102,20 @@ import {
 
   console.log(`Transitioned to ArrangingPayment`, transitionOrderToState);
 
+  const metadata: CreditCardPaymentMethodInput = {
+    // acceptBluePaymentMethod: 1,
+    card: '4761530001111118',
+    expiry_year: 2025,
+    expiry_month: 1,
+    avs_address: 'Testing address',
+    avs_zip: '12345',
+    name: 'Hayden Zieme',
+  };
+
   const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
     input: {
       method: 'accept-blue-credit-card',
-      metadata: {
-        // acceptBluePaymentMethod: 1,
-        card: '476153000111118',
-        expiry_year: 2025,
-        expiry_month: 1,
-      },
+      metadata,
     },
   });
   console.log(JSON.stringify(addPaymentToOrder));

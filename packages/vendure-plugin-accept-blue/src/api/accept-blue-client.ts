@@ -4,9 +4,14 @@ import { loggerCtx } from '../constants';
 import {
   AcceptBlueCustomer,
   AcceptBluePaymentMethod,
+  AcceptBlueRecurringSchedule,
+  AcceptBlueRecurringScheduleInput,
+  AcceptBlueRefundInput,
+  AcceptBlueTransaction,
   CreditCardPaymentInput,
 } from '../types';
 import { isSameCard } from '../util';
+import util from 'util';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -65,25 +70,25 @@ export class AcceptBlueClient {
     return result;
   }
 
-  async getOrPaymentMethod(
-    customerId: string,
+  async getOrCreatePaymentMethod(
+    acceptBlueCustomerId: number,
     input: CreditCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
-    const methods = await this.getPaymentMethods(customerId);
+    const methods = await this.getPaymentMethods(acceptBlueCustomerId);
     const existing = methods.find((method) => isSameCard(input, method));
     if (existing) {
       return existing;
     } else {
-      return await this.createPaymentMethod(customerId, input);
+      return await this.createPaymentMethod(acceptBlueCustomerId, input);
     }
   }
 
   async getPaymentMethods(
-    customerId: string
+    acceptBlueCustomerId: number
   ): Promise<AcceptBluePaymentMethod[]> {
     const result = await this.request(
       'get',
-      `customers/${customerId}/payment-methods`
+      `customers/${acceptBlueCustomerId}/payment-methods`
     );
     if (!result) {
       return [];
@@ -92,23 +97,61 @@ export class AcceptBlueClient {
   }
 
   async createPaymentMethod(
-    customerId: string,
+    acceptBlueCustomerId: number,
     input: CreditCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
     const result: AcceptBluePaymentMethod = await this.request(
       'post',
-      `customers/${customerId}/payment-methods`,
+      `customers/${acceptBlueCustomerId}/payment-methods`,
       input
     );
     Logger.info(
-      `Created new payment method '${result.id}' for customer '${result.customer_id}'`,
+      `Created payment method '${result.payment_method_type}' (${result.id}) for customer '${result.customer_id}'`,
       loggerCtx
     );
     return result;
   }
 
+  async createRecurringSchedule(
+    customerId: string,
+    input: AcceptBlueRecurringScheduleInput
+  ): Promise<AcceptBlueRecurringSchedule> {
+    const result: AcceptBlueRecurringSchedule = await this.request(
+      'post',
+      `customers/${customerId}/recurring-schedules`,
+      input
+    );
+    Logger.info(
+      `Created recurring schedule ${result.id} for customer '${result.customer_id}'`,
+      loggerCtx
+    );
+    return result;
+  }
+
+  async createRefund(
+    input: AcceptBlueRefundInput
+  ): Promise<AcceptBlueTransaction> {
+    const result: AcceptBlueTransaction = await this.request(
+      'post',
+      `transactions/refund`,
+      input
+    );
+    if (result.error_code) {
+      Logger.error(
+        `Failed creating refund for reference '${input.reference_number}'`,
+        loggerCtx
+      );
+    } else {
+      Logger.info(
+        `Created refund with status '${result.status}' for reference '${input.reference_number}'`,
+        loggerCtx
+      );
+    }
+    return result;
+  }
+
   async request(
-    method: 'get' | 'post',
+    method: 'get' | 'post' | 'patch' | 'delete',
     path: string,
     data?: any
   ): Promise<any | undefined> {
@@ -122,8 +165,11 @@ export class AcceptBlueClient {
     }
     if (result.status >= 400) {
       Logger.error(
-        `${method} to "${path}" resulted in: ${result.status} ${result.statusText}`,
-        loggerCtx
+        `${method} to "${path}" resulted in: ${result.status} (${
+          result.statusText
+        }): ${util.inspect(result.data)}`,
+        loggerCtx,
+        util.inspect(result.data)
       );
       throw Error(result.statusText);
     }

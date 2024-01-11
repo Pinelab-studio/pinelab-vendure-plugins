@@ -12,10 +12,13 @@ import {
 import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { CreditCardPaymentInput, HandlePaymentResult } from '../types';
+import {
+  AcceptBlueCardPaymentMethod,
+  CreditCardPaymentInput,
+  HandlePaymentResult,
+} from '../types';
 import { AcceptBlueClient } from './accept-blue-client';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
-import { AcceptBluePaymentMethod } from './generated/graphql';
 
 @Injectable()
 export class AcceptBlueService {
@@ -42,8 +45,7 @@ export class AcceptBlueService {
    * Handles credit card payments for order
    * 1. Get or Create customer
    * 2. Create payment method
-   * 3. Create recurring schedule
-   * 4. Create charge
+   * Call payWithSavedPaymentMethod() to do the actual payment
    */
   async payWithCreditCard(
     ctx: RequestContext,
@@ -59,17 +61,17 @@ export class AcceptBlueService {
       order.customer.emailAddress
     );
     // Save payment method
-    const paymentMethod = await client.getOrPaymentMethod(
+    const paymentMethod = await client.getOrCreatePaymentMethod(
       customer.id,
       ccDetails
     );
-    // TODO create recurring schedule + one time charge
-    return {
-      customerId: customer.identifier,
-      paymentMethodId: paymentMethod.id,
-      recurringScheduleResult: null,
-      chargeResult: null,
-    };
+    return await this.payWithSavedPaymentMethod(
+      ctx,
+      order,
+      amount,
+      client,
+      paymentMethod.id
+    );
   }
 
   /**
@@ -81,7 +83,7 @@ export class AcceptBlueService {
     order: Order,
     amount: number,
     client: AcceptBlueClient,
-    paymentMethodId: number
+    paymentMethodId: number | string
   ): Promise<HandlePaymentResult> {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
@@ -102,7 +104,9 @@ export class AcceptBlueService {
         `Saved payment methods can only be used for registered customers, ${order.customer.emailAddress} (customer ID ${order.customer.id}) is not a registered customer`
       );
     }
-    // TODO create recurring schedule + one time charge
+    // TODO create recurring schedule
+
+    // TODO create one time charge
     return {
       customerId: 'TODO',
       paymentMethodId,
@@ -113,7 +117,7 @@ export class AcceptBlueService {
 
   async getPaymentMethods(
     ctx: RequestContext
-  ): Promise<AcceptBluePaymentMethod[]> {
+  ): Promise<AcceptBlueCardPaymentMethod[]> {
     const client = await this.getClientForChannel(ctx);
     if (!ctx.activeUserId) {
       throw new Error(`User is not logged in!`);
@@ -125,7 +129,10 @@ export class AcceptBlueService {
     if (!customer) {
       throw new Error(`No customer found for user ${ctx.activeUserId}`);
     }
-    return await client.getPaymentMethods(customer.emailAddress);
+    // TODO we need to get the active blue customer id to get payment methods
+    await client.getPaymentMethods(1);
+    // return await client.getPaymentMethods(customer.customFields.activeBlueCustomerId);
+    throw new Error('NOT IMPLEMENT');
   }
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
