@@ -82,7 +82,6 @@ export class AcceptBlueClient {
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(acceptBlueCustomerId);
     const existing = methods.find((method) => isSameCard(input, method));
-    console.log('SAME', existing)
     if (existing) {
       return existing;
     } else {
