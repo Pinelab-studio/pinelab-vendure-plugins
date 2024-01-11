@@ -41,8 +41,7 @@ export class AcceptBlueClient {
   }
 
   async getOrCreateCustomer(emailAddress: string): Promise<AcceptBlueCustomer> {
-    const existingCustomers = await this.getCustomer(emailAddress);
-    const existing = existingCustomers.find((c) => c.email === emailAddress);
+    const existing = await this.getCustomer(emailAddress);
     if (existing) {
       return existing;
     } else {
@@ -51,11 +50,18 @@ export class AcceptBlueClient {
     }
   }
 
-  async getCustomer(emailAddress: string): Promise<AcceptBlueCustomer[]> {
-    return await this.request(
+  async getCustomer(emailAddress: string): Promise<AcceptBlueCustomer | undefined> {
+    const customers = await this.request(
       'get',
       `customers?active=true&customer_number=${emailAddress}`
     );
+    if (customers.length > 1) {
+      throw Error(`Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one.`);
+    }
+    if (customers[0]) {
+      return customers[0];
+    }
+    return undefined;
   }
 
   async createCustomer(emailAddress: string): Promise<AcceptBlueCustomer> {
@@ -76,6 +82,7 @@ export class AcceptBlueClient {
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(acceptBlueCustomerId);
     const existing = methods.find((method) => isSameCard(input, method));
+    console.log('SAME', existing)
     if (existing) {
       return existing;
     } else {

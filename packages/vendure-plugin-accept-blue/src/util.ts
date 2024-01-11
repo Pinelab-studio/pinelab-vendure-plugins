@@ -12,7 +12,7 @@ interface CardToCheck {
 
 export function isSameCard(input: CardInput, card: CardToCheck): boolean {
   return (
-    input.card === card.last4 &&
+    input.card.endsWith(card.last4) &&
     input.expiry_month === card.expiry_month &&
     input.expiry_year === card.expiry_year
   );

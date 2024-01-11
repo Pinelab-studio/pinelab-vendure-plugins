@@ -83,28 +83,42 @@ export class AcceptBlueService {
     order: Order,
     amount: number,
     client: AcceptBlueClient,
-    paymentMethodId: number | string
+    paymentMethodId: number
   ): Promise<HandlePaymentResult> {
-    if (!order.customer) {
-      throw new UserInputError(`Order must have a customer`);
-    }
-    const customer = await client.getCustomer(order.customer.emailAddress);
-    if (!customer) {
-      throw new UserInputError(
-        `No customer found in Accept blue with email ${order.customer.emailAddress} not found`
-      );
-    }
     if (!order.customer) {
       throw new UserInputError(
         `Order must have a customer before creating a payment`
       );
     }
     if (!order.customer.user) {
+      // We don't want unregistered users to be able to use someone's email address to pay
       throw new UserInputError(
         `Saved payment methods can only be used for registered customers, ${order.customer.emailAddress} (customer ID ${order.customer.id}) is not a registered customer`
       );
     }
-    // TODO create recurring schedule
+    const acceptBlueCustomer = await client.getCustomer(order.customer.emailAddress);
+    if (!acceptBlueCustomer) {
+      throw new UserInputError(
+        `No customer found in Accept bBlue with email ${order.customer.emailAddress} not found`
+      );
+    }
+
+    // Create recurring schedule
+    // FIXME JUST A TEST
+    const recurringScheduleResult = await client.createRecurringSchedule(
+      acceptBlueCustomer.id,
+      {
+        title: "Test recurring schedule",
+        active: true,
+        amount: order.totalWithTax,
+        frequency: 'monthly',
+        num_left: 0, // 0 = infinite
+        payment_method_id: paymentMethodId,
+        receipt_email: order.customer.emailAddress,
+      }
+    );
+    console.log(JSON.stringify(recurringScheduleResult, null, 2))
+    
     // TODO create one time charge
     return {
       customerId: 'TODO',
