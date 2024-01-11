@@ -5,6 +5,7 @@ import {
   DefaultSearchPlugin,
   LanguageCode,
   LogLevel,
+  VendureConfig,
   mergeConfig,
 } from '@vendure/core';
 import {
@@ -22,15 +23,30 @@ import {
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
 } from './helpers';
-
+import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin';
+/**
+ * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
+ * The value of this key can be retrieved from the dashboard Accept Blue (Control Panel > Sources > Create Key, and choose "Tokenization" from the Source Key Type dropdown.)
+ *
+ */
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
   // eslint-disable-next-line
   require('dotenv').config();
+
+  const tokenizationSourceKey =
+    process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? '';
+
+  if (!tokenizationSourceKey.length) {
+    console.log(
+      "Missing Accept Blue tokenizationSourceKey. Please look it up on the dashboard and add it to the environment key 'ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY'"
+    );
+  }
+
   // eslint-disable-next-line
   const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const config = mergeConfig(testConfig, {
+  const config: Required<VendureConfig> = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     authOptions: {
       cookieOptions: {
@@ -42,6 +58,7 @@ import {
       shopApiPlayground: {},
     },
     plugins: [
+      AcceptBlueTestCheckoutPlugin,
       AcceptBluePlugin.init({}),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -59,6 +76,27 @@ import {
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
+
+  const port = config.apiOptions?.port ?? '';
+  console.log('\n\n========================');
+  console.log(`Vendure server now running on port ${port}`);
+  console.log('------------------------');
+  console.log(
+    'shopApi',
+    `http://localhost:${port}/${config.apiOptions?.shopApiPath ?? ''}`
+  );
+  console.log(
+    'adminApi',
+    `http://localhost:${port}/${config.apiOptions?.adminApiPath ?? ''}`
+  );
+  // console.log('Asset server', `http://localhost:${port}/assets`);
+  // console.log('Dev mailbox', `http://localhost:${port}/mailbox`);
+  console.log('admin UI', `http://localhost:${port}/admin`);
+  console.log('------------------------\n');
+  console.log('Accept blue checkout form', `http://localhost:${port}/checkout`);
+  console.log('\n------------------------');
+  console.log('========================\n\n');
+
   // Create Accept Blue payment method
   await adminClient.asSuperAdmin();
   await adminClient.query(CREATE_PAYMENT_METHOD, {

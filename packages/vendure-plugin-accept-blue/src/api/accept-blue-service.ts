@@ -96,19 +96,20 @@ export class AcceptBlueService {
         `Saved payment methods can only be used for registered customers, ${order.customer.emailAddress} (customer ID ${order.customer.id}) is not a registered customer`
       );
     }
-    const acceptBlueCustomer = await client.getCustomer(order.customer.emailAddress);
+    const acceptBlueCustomer = await client.getCustomer(
+      order.customer.emailAddress
+    );
     if (!acceptBlueCustomer) {
       throw new UserInputError(
         `No customer found in Accept bBlue with email ${order.customer.emailAddress} not found`
       );
     }
-
     // Create recurring schedule
     // FIXME JUST A TEST
     const recurringScheduleResult = await client.createRecurringSchedule(
       acceptBlueCustomer.id,
       {
-        title: "Test recurring schedule",
+        title: 'Test recurring schedule',
         active: true,
         amount: order.totalWithTax,
         frequency: 'monthly',
@@ -117,8 +118,8 @@ export class AcceptBlueService {
         receipt_email: order.customer.emailAddress,
       }
     );
-    console.log(JSON.stringify(recurringScheduleResult, null, 2))
-    
+    console.log(JSON.stringify(recurringScheduleResult, null, 2));
+
     // TODO create one time charge
     return {
       customerId: 'TODO',
