@@ -105,7 +105,6 @@ export class AcceptBlueService {
       );
     }
     // TODO create recurring schedule
-
     // TODO create one time charge
     return {
       customerId: 'TODO',
