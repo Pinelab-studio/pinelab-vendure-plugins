@@ -1,6 +1,13 @@
 <html>
   <head>
-    <title>Vendure login</title>
+    <title>
+      {{#if brand}}
+        {{brand}}
+      {{/if}} 
+      {{#unless hideVendureBranding}}
+          Vendure
+      {{/unless}} 
+    </title>
     <link rel="icon" type="image/x-icon" href="/admin/favicon.ico" />
     <script src="https://accounts.google.com/gsi/client" async></script>
   </head>
