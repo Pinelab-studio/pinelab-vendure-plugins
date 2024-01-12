@@ -64,6 +64,7 @@ export const shopApiExtensions = gql`
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
     acceptBluePaymentMethods: [AcceptBluePaymentMethod!]!
+    acceptBlueHostedTokenizationKey: String
   }
 `;
 
@@ -72,7 +73,7 @@ export class AcceptBlueResolver {
   constructor(private readonly acceptBlueService: AcceptBlueService) {}
 
   @Query()
-  async previewStripeSubscriptions(
+  async previewAcceptBlueSubscriptions(
     @Ctx() ctx: RequestContext,
     @Args()
     { productVariantId, customInputs }: QueryPreviewAcceptBlueSubscriptionsArgs
@@ -85,7 +86,7 @@ export class AcceptBlueResolver {
   }
 
   @Query()
-  async previewStripeSubscriptionsForProduct(
+  async previewAcceptBlueSubscriptionsForProduct(
     @Ctx() ctx: RequestContext,
     @Args()
     {
@@ -106,5 +107,12 @@ export class AcceptBlueResolver {
     @Ctx() ctx: RequestContext
   ): Promise<GraphqlQuery['acceptBluePaymentMethods']> {
     return await this.acceptBlueService.getPaymentMethods(ctx);
+  }
+
+  @Query()
+  async acceptBlueHostedTokenizationKey(
+    @Ctx() ctx: RequestContext
+  ): Promise<GraphqlQuery['acceptBlueHostedTokenizationKey']> {
+    return await this.acceptBlueService.getHostedTokenizationKey(ctx);
   }
 }

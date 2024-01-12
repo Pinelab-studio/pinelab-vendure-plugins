@@ -4,6 +4,7 @@ import {
   CustomerService,
   EntityHydrator,
   Order,
+  PaymentMethod,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
@@ -150,6 +151,30 @@ export class AcceptBlueService {
   }
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
+    const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    const apiKey = acceptBlueMethod.handler.args.find(
+      (a) => a.name === 'apiKey'
+    )?.value;
+    const pin = acceptBlueMethod.handler.args.find(
+      (a) => a.name === 'pin'
+    )?.value;
+    if (!apiKey || !pin) {
+      throw new Error(
+        `No apiKey or pin found on configured Accept Blue payment method`
+      );
+    }
+    return new AcceptBlueClient(apiKey, pin);
+  }
+
+  async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {
+    const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    const tokenizationSourceKey = acceptBlueMethod.handler.args.find(
+      (a) => a.name === 'tokenizationSourceKey'
+    )?.value;
+    return tokenizationSourceKey ?? null;
+  }
+
+  async getAcceptBlueMethod(ctx: RequestContext): Promise<PaymentMethod> {
     const methods = await this.paymentMethodService.findAll(ctx, {
       filter: {
         enabled: { eq: true },
@@ -163,17 +188,6 @@ export class AcceptBlueService {
         `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
       );
     }
-    const apiKey = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'apiKey'
-    )?.value;
-    const pin = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'pin'
-    )?.value;
-    if (!apiKey || !pin) {
-      throw new Error(
-        `No apiKey or pin found on configured Accept Blue payment method`
-      );
-    }
-    return new AcceptBlueClient(apiKey, pin);
+    return acceptBlueMethod;
   }
 }

@@ -105,7 +105,13 @@ import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin
       enabled: true,
       handler: {
         code: acceptBluePaymentHandler.code,
-        arguments: [{ name: 'apiKey', value: process.env.API_KEY }],
+        arguments: [
+          { name: 'apiKey', value: process.env.API_KEY },
+          {
+            name: 'tokenizationSourceKey',
+            value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
+          },
+        ],
       },
       translations: [
         {

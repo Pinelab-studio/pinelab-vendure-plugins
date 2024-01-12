@@ -68,14 +68,6 @@ form.addEventListener('submit', async (event) => {
 
   const result = await cardForm.getNonceToken();
 
-  const input = {
-    source: 'nonce-' + result.nonce,
-    name: 'Test user',
-    expiry_month: result.expiry_month,
-    expiry_year: result.expiry_year,
-    avs_zip: result.avs_zip,
-  }
-
   var pre = document.createElement('pre');
   pre.innerHTML += "{\\n";
   pre.innerHTML += "source: nonce-" + result.nonce + "\\n";

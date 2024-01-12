@@ -32,6 +32,14 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       label: [{ languageCode: LanguageCode.en, value: 'API key' }],
       ui: { component: 'password-form-input' },
     },
+    tokenizationSourceKey: {
+      type: 'string',
+      required: false,
+      label: [
+        { languageCode: LanguageCode.en, value: 'Hosted tokenization key' },
+      ],
+      ui: { component: 'password-form-input' },
+    },
     pin: {
       type: 'string',
       required: false,
