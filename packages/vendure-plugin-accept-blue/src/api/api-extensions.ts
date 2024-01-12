@@ -1,11 +1,18 @@
-import { Resolver, Query, Args } from '@nestjs/graphql';
-import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
+import { Resolver, Query, ResolveField, Parent, Args } from '@nestjs/graphql';
+import {
+  Allow,
+  Ctx,
+  OrderLine,
+  Permission,
+  RequestContext,
+} from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { AcceptBlueService } from './accept-blue-service';
 import {
   QueryPreviewAcceptBlueSubscriptionsArgs,
   Query as GraphqlQuery,
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
+  AcceptBlueSubscription,
 } from './generated/graphql';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Needed for gql codegen
@@ -50,6 +57,10 @@ export const shopApiExtensions = gql`
     last4: String
   }
 
+  extend type PaymentMethodQuote {
+    acceptBlueHostedTokenizationKey: String
+  }
+
   extend type OrderLine {
     acceptBlueSubscriptions: [AcceptBlueSubscription!]
   }
@@ -64,7 +75,6 @@ export const shopApiExtensions = gql`
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
     acceptBluePaymentMethods: [AcceptBluePaymentMethod!]!
-    acceptBlueHostedTokenizationKey: String
   }
 `;
 
@@ -109,10 +119,33 @@ export class AcceptBlueResolver {
     return await this.acceptBlueService.getPaymentMethods(ctx);
   }
 
-  @Query()
+  @ResolveField('acceptBlueHostedTokenizationKey')
+  @Resolver('PaymentMethodQuote')
   async acceptBlueHostedTokenizationKey(
     @Ctx() ctx: RequestContext
-  ): Promise<GraphqlQuery['acceptBlueHostedTokenizationKey']> {
+  ): Promise<string | null> {
     return await this.acceptBlueService.getHostedTokenizationKey(ctx);
+  }
+
+  @ResolveField('acceptBlueSubscriptions')
+  @Resolver('OrderLine')
+  async stripeSubscriptions(
+    @Ctx() ctx: RequestContext,
+    @Parent() orderLine: OrderLine
+  ): Promise<AcceptBlueSubscription[] | undefined> {
+    // TODO place in service
+    return undefined;
+
+    // await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
+    // const subscriptionsForOrderLine =
+    //   await this.stripeSubscriptionService.subscriptionHelper.getSubscriptionsForOrderLine(
+    //     ctx,
+    //     orderLine,
+    //     orderLine.order
+    //   );
+    // return subscriptionsForOrderLine.map((s) => ({
+    //   ...s,
+    //   variantId: orderLine.productVariant.id,
+    // }));
   }
 }

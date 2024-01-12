@@ -3,6 +3,29 @@ import { Body, Controller, Get, Headers, Res } from '@nestjs/common';
 import { Response } from 'express';
 // import './dev-server';
 
+interface CommonResult {
+  cardType: string; // e.g. Visa
+  maskedCard: string;
+  maskedCvv2: string;
+  expiryMonth: number;
+  expiryYear: number;
+  last4: string;
+}
+
+export interface NonceCardResult extends CommonResult {
+  nonce: string;
+  surcharge: { type: 'percent' | 'amount'; value: number } | null;
+  binType: 'C' | 'D' | null;
+  maskedCard: string;
+  maskedCvv2: string;
+
+  last4: string;
+}
+
+export interface DataResult extends CommonResult {
+  avsZip: string;
+}
+
 /**
  * Return the Accept Blue Card Tokenization page
  */
@@ -72,9 +95,11 @@ form.addEventListener('submit', async (event) => {
   pre.innerHTML += "{\\n";
   pre.innerHTML += "source: nonce-" + result.nonce + "\\n";
   pre.innerHTML += "name: 'Test user'\\n";
-  pre.innerHTML += "expiry_month: " + result.expiry_month + "\\n";
-  pre.innerHTML += "expiry_year: " + result.expiry_year + "\\n";
-  pre.innerHTML += "avs_zip: " + result.avs_zip + "\\n";
+  pre.innerHTML += "expiryMonth: " + result.expiryMonth + "\\n";
+  pre.innerHTML += "expiryYear: " + result.expiryYear + "\\n";
+  pre.innerHTML += "maskedCard: " + result.maskedCard + "\\n";
+  pre.innerHTML += "cardType: " + result.cardType + "\\n";
+  pre.innerHTML += "last4: " + result.last4 + "\\n";
   pre.innerHTML += "}";
 
   output.innerHTML = '';
