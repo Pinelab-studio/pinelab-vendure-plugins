@@ -47,7 +47,20 @@ export class GiftService {
     if (!variantIds.length) {
       return [];
     }
-    return await this.variantService.findByIds(ctx, variantIds);
+    return this.connection
+      .getRepository(ctx, ProductVariant)
+      .createQueryBuilder('variant')
+      .leftJoin('variant.stockLevels', 'stockLevel')
+      .leftJoin('variant.channels', 'channel')
+      .addGroupBy('variant.id')
+      .addSelect(['SUM(stockLevel.stockOnHand) as stockOnHand'])
+      .addSelect(['SUM(stockLevel.stockAllocated) as stockAllocated'])
+      .where('variant.id IN (:...ids)', { ids: variantIds })
+      .andWhere('variant.enabled = true')
+      .andWhere('stockOnHand > stockAllocated')
+      .andWhere('variant.deletedAt IS NULL')
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .getMany();
   }
 
   /**
