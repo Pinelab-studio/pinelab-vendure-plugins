@@ -40,6 +40,45 @@ require('dotenv').config();
             keyFilename: 'key.json',
           },
         }),
+        loadDataFn: async (
+          ctx,
+          injector,
+          order,
+          mostRecentInvoiceNumber?,
+          shouldGenerateCreditInvoice?
+        ) => {
+          // Increase order number
+          let newInvoiceNumber = mostRecentInvoiceNumber || 0;
+          newInvoiceNumber += 1;
+          const orderDate = order.orderPlacedAt
+            ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
+            : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
+          if (shouldGenerateCreditInvoice) {
+            // Create credit invoice
+            const { previousInvoice, reversedOrderTotals } =
+              shouldGenerateCreditInvoice;
+            return {
+              orderDate,
+              invoiceNumber: newInvoiceNumber,
+              isCreditInvoice: true,
+              // Reference to original invoice because this is a credit invoice
+              originalInvoiceNumber: previousInvoice.invoiceNumber,
+              order: {
+                ...order,
+                total: reversedOrderTotals.total,
+                totalWithTax: reversedOrderTotals.totalWithTax,
+                taxSummary: reversedOrderTotals.taxSummaries,
+              },
+            };
+          } else {
+            // Normal debit invoice
+            return {
+              orderDate,
+              invoiceNumber: newInvoiceNumber,
+              order: order,
+            };
+          }
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -75,7 +114,6 @@ require('dotenv').config();
     customerCount: 2,
   });
   // add default Config
-  const channel = await server.app.get(ChannelService).getDefaultChannel();
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });

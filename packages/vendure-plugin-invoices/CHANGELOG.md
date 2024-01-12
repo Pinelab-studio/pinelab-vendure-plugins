@@ -1,11 +1,10 @@
 # 2.0.0 (2024-01-07)
 
-- BREAKING: Script needs to be run
-- BREAKING: Invoice download URL's from before v2 will always download the first invoice of an order
-- BREAKING: Downloading multiple invoices has been removed. Invoices are downloaded on a per order basis
-- BREAKING: Downloading multiple invoices has been removed. Invoices are downloaded on a per order basis
+- Allow creating new invoices for orders via the Admin UI. Credit invoices will be generated when a previous invoice exists.
+- Credit invoice generation can be disabled, the plugin will then just generate a new invoice.
+- BREAKING: Checkout the README for migration and breaking changes.
 
-  1.2.0 (2023-10-24)
+# 1.2.0 (2023-10-24)
 
 - Updated vendure to 2.1.1
 
