@@ -1,9 +1,6 @@
 import { Logger } from '@vendure/core';
-import { Response } from 'express';
-import { createReadStream, ReadStream } from 'fs';
-import path from 'path';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { createTempFile } from '../util/file.util';
+import { safeRemove } from '../util/file.util';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 interface GoogleInvoiceConfig {
@@ -63,6 +60,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
     await this.storage.bucket(this.bucketName).upload(tmpFile, {
       destination: fullPath,
     });
+    safeRemove(tmpFile);
     return fullPath;
   }
 }

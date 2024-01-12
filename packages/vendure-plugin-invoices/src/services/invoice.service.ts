@@ -23,7 +23,6 @@ import { InvoiceConfigInput } from '../ui/generated/graphql';
 import { ModuleRef } from '@nestjs/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
-import fs from 'fs/promises';
 import Handlebars from 'handlebars';
 // @ts-ignore
 import * as pdf from 'pdf-creator-node';
@@ -39,6 +38,7 @@ import {
 import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
+import { InvoiceCreatedEvent } from './invoice-created-event';
 
 interface DownloadInput {
   customerEmail: string;
@@ -98,7 +98,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       const enabled = await this.isInvoicePluginEnabled(ctx);
       if (!enabled) {
         return Logger.debug(
-          `Invoice generation not enabled for order ${order.code}`,
+          `Invoice generation not enabled for order ${order.code} in channel ${ctx.channel.token}`,
           loggerCtx
         );
       }
@@ -118,12 +118,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
 
   /**
    * Creates an invoice and save it to DB
-   * Checks if an invoice has already been created for this order
+   * This method can also be used for re-generating an invoice.
+   * Re-generating an invoice will also create a credit invoice, if createCreditInvoices is enabled
    */
   async createAndSaveInvoice(
     channelToken: string,
     orderCode: string
-  ): Promise<void> {
+  ): Promise<InvoiceEntity> {
     const ctx = await this.createCtx(channelToken);
     let [order, previousInvoiceForOrder, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode),
@@ -135,14 +136,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         `Cannot generate invoice for ${orderCode}, because no config was found`
       );
     } else if (!config.enabled) {
-      return Logger.error(
-        `Not generating invoice for ${orderCode}, because plugin is disabled. This message should not be in the queue!`,
-        loggerCtx
+      throw Error(
+        `Not generating invoice for ${orderCode} for channel ${channelToken}, because invoice generation is disabled in the config.`
       );
     } else if (!order) {
       throw Error(`No order found with code ${orderCode}`);
     }
     // Create a credit invoice first, if an invoice already exists and config.createCreditInvoices is true
+    let creditInvoice: InvoiceEntity | undefined;
     if (previousInvoiceForOrder && config.createCreditInvoices) {
       // Reverse order totals of previous invoice, because creditInvoice
       const reversedOrderTotals = reverseOrderTotals(
@@ -163,8 +164,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         channelToken,
         true
       );
-      await fs.unlink(invoiceTmpFile);
-      await this.saveInvoice(ctx, {
+      creditInvoice = await this.saveInvoice(ctx, {
         channelId: ctx.channelId as string,
         invoiceNumber,
         orderId: order.id as string,
@@ -184,17 +184,27 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       channelToken,
       false
     );
-    await this.saveInvoice(ctx, {
+    const newInvoice = await this.saveInvoice(ctx, {
       channelId: ctx.channelId as string,
       invoiceNumber,
       orderId: order.id as string,
       storageReference,
       orderTotals: {
         taxSummaries: order.taxSummary,
-        total: order.totalWithTax,
+        total: order.total,
         totalWithTax: order.totalWithTax,
       },
     });
+    this.eventBus.publish(
+      new InvoiceCreatedEvent(
+        ctx,
+        order,
+        newInvoice,
+        previousInvoiceForOrder,
+        creditInvoice
+      )
+    );
+    return newInvoice;
   }
 
   /**
@@ -287,10 +297,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     // If an invoiceNumber is given, we need to find the invoice with that number
     if (input.invoiceNumber) {
       const invoiceWithNumber = invoices.find(
-        (i) => i.invoiceNumber === input.invoiceNumber
+        (i) => i.invoiceNumber == input.invoiceNumber
       );
       if (!invoiceWithNumber) {
-        throw Error(`No invoice found with number ${input.invoiceNumber}`);
+        throw new UserInputError(
+          `No invoice found with number ${input.invoiceNumber}`
+        );
       }
       invoice = invoiceWithNumber;
     }
@@ -428,9 +440,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       InvoiceEntity,
       'id' | 'createdAt' | 'updatedAt' | 'isCreditInvoice'
     >
-  ): Promise<InvoiceEntity | undefined> {
+  ): Promise<InvoiceEntity> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    return invoiceRepo.save(invoice);
+    const { id } = await invoiceRepo.save(invoice);
+    return invoiceRepo.findOneOrFail({ where: { id } });
   }
 
   private async createCtx(channelToken: string): Promise<RequestContext> {

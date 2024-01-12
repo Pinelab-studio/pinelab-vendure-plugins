@@ -22,18 +22,34 @@ export const getConfigQuery = gql`
   }
 `;
 
+export const invoiceFragment = gql`
+  fragment invoiceFields on Invoice {
+    id
+    createdAt
+    invoiceNumber
+    isCreditInvoice
+    downloadUrl
+  }
+`;
+
 export const getOrderWithInvoices = gql`
+  ${invoiceFragment}
   query order($id: ID!) {
     order(id: $id) {
       id
       code
       invoices {
-        id
-        createdAt
-        invoiceNumber
-        downloadUrl
-        isCreditInvoice
+        ...invoiceFields
       }
+    }
+  }
+`;
+
+export const createInvoice = gql`
+  ${invoiceFragment}
+  mutation createInvoice($orderId: ID!) {
+    createInvoice(orderId: $orderId) {
+      ...invoiceFields
     }
   }
 `;

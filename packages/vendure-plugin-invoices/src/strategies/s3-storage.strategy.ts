@@ -1,6 +1,7 @@
 import { Logger } from '@vendure/core';
 import { readFile } from 'fs/promises';
 import { InvoiceEntity } from '../entities/invoice.entity';
+import { safeRemove } from '../util/file.util';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 export interface Config {
@@ -61,6 +62,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
       ContentType: 'application/pdf',
       ContentDisposition: 'inline',
     }).promise();
+    safeRemove(tmpFile);
     return Key;
   }
 }

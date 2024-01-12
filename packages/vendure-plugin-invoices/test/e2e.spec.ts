@@ -1,4 +1,13 @@
-import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
+import {
+  assertFound,
+  DefaultLogger,
+  EventBus,
+  LogLevel,
+  mergeConfig,
+  Order,
+  OrderService,
+  TransactionalConnection,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -7,6 +16,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import fetch from 'node-fetch';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { addShippingMethod } from '../../test/src/admin-utils';
@@ -20,7 +30,9 @@ import {
   InvoicePlugin,
   MutationUpsertInvoiceConfigArgs,
 } from '../src';
+import { InvoiceCreatedEvent } from '../src/services/invoice-created-event';
 import {
+  createInvoice as createInvoiceMutation,
   getConfigQuery,
   getOrderWithInvoices,
   upsertConfigMutation,
@@ -30,9 +42,9 @@ let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 let serverStarted = false;
-let invoice: Invoice;
+let latestInvoice: Invoice;
 let order: Order;
-let invoices: Invoice[] = [];
+let events: InvoiceCreatedEvent[] = [];
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -67,6 +79,11 @@ beforeAll(async () => {
   });
   serverStarted = true;
   await adminClient.asSuperAdmin();
+  // Listen for invoice created events
+  server.app
+    .get(EventBus)
+    .ofType(InvoiceCreatedEvent)
+    .subscribe((event) => events.push(event));
 }, 60000);
 
 it('Should start successfully', async () => {
@@ -107,61 +124,121 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Gets invoices for order', async () => {
-    // Give the worker some time to process
+    // Give the worker some time to generate invoices
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });
-    invoice = result.invoices[0];
-    expect(invoice.id).toBeDefined();
-    expect(invoice.createdAt).toBeDefined();
-    expect(invoice.invoiceNumber).toBe(1);
-    expect(invoice.isCreditInvoice).toBe(false);
-    expect(invoice.downloadUrl).toContain(
+    latestInvoice = result.invoices[0];
+    expect(latestInvoice.id).toBeDefined();
+    expect(latestInvoice.createdAt).toBeDefined();
+    expect(latestInvoice.invoiceNumber).toBe(1);
+    expect(latestInvoice.isCreditInvoice).toBe(false);
+    expect(latestInvoice.downloadUrl).toContain(
       `/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`
     );
   });
 
   it('Emitted event for created invoice', async () => {
-    expect(true).toBe(false);
+    const newInvoice = events[0].newInvoice;
+    expect(newInvoice.createdAt).toBeDefined();
+    expect(newInvoice.channelId).toBeDefined();
+    expect(newInvoice.id).toBeDefined();
+    expect(newInvoice.invoiceNumber).toBe(1);
+    expect(newInvoice.isCreditInvoice).toBe(false);
+    expect(newInvoice.orderTotals.total).toBe(order.total);
+    expect(newInvoice.orderTotals.totalWithTax).toBe(order.totalWithTax);
+    expect(newInvoice.orderTotals.taxSummaries.length).toBe(2); // 20% tax + 0% shipping tax
+    expect(events[0].creditInvoice).toBeUndefined();
+    expect(events[0].previousInvoice).toBeUndefined();
+    expect(events[1]).toBeUndefined();
   });
 
-  it('Creates credit and new invoice on re-generate mutation', async () => {
-    expect(true).toBe(false);
+  it('Modifies order', async () => {
+    // Modify order total
+    const ctx = await getSuperadminContext(server.app);
+    const orderId = String(order.id).replace('T_', ''); // replace T_ prefix
+    await server.app
+      .get(TransactionalConnection)
+      .getRepository(ctx, Order)
+      .update(orderId, {
+        // Ugly modification, but good enough for testing invoice regeneration
+        subTotal: 1234,
+        subTotalWithTax: 1480,
+        shipping: 0,
+        shippingWithTax: 0,
+      });
+    order = await assertFound(
+      server.app.get(OrderService).findOne(ctx, orderId)
+    );
+    expect(order.total).toBe(1234);
+    expect(order.totalWithTax).toBe(1480);
+  });
+
+  it('Creates credit and new invoice on createInvoice mutation', async () => {
+    const result = await adminClient.query(createInvoiceMutation, {
+      orderId: order.id,
+    });
+    latestInvoice = result.createInvoice;
+    expect(latestInvoice.invoiceNumber).toBe(3); // credit invoice is #2
+    expect(latestInvoice.isCreditInvoice).toBe(false);
+    expect(latestInvoice.downloadUrl).toContain(
+      `/invoices/e2e-default-channel/${order.code}/3?email=hayden.zieme12%40hotmail.com`
+    );
   });
 
   it('Emitted event for credit and new invoice', async () => {
-    expect(true).toBe(false);
+    const newInvoice = events[1].newInvoice;
+    const creditInvoice = events[1].creditInvoice!;
+    const previousInvoice = events[1].previousInvoice!;
+    expect(previousInvoice.invoiceNumber).toBe(1);
+    expect(creditInvoice.invoiceNumber).toBe(2);
+    expect(newInvoice.invoiceNumber).toBe(3);
+    expect(creditInvoice?.isCreditInvoice).toBe(true);
+    expect(previousInvoice.isCreditInvoice).toBe(false);
+    expect(newInvoice.isCreditInvoice).toBe(false);
+    // Credit invoice should have the reversed totals of the previous invoice
+    expect(creditInvoice.orderTotals.total).toBe(
+      -previousInvoice.orderTotals.total
+    );
+    expect(creditInvoice.orderTotals.totalWithTax).toBe(
+      -previousInvoice.orderTotals.totalWithTax
+    );
+    // New invoice should have the modified totals
+    expect(newInvoice.orderTotals.total).toBe(1234);
+    expect(newInvoice.orderTotals.totalWithTax).toBe(1480);
+    expect(events[2]).toBeUndefined();
   });
 
-  it('Has incremental invoice number for new invoice', async () => {
-    await createSettledOrder(shopClient as any, 3);
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-    const result = await adminClient.query<InvoicesQuery>(getAllInvoicesQuery);
-    const newInvoice = result.invoices.items[0];
-    const oldInvoice = result.invoices.items[1];
-    invoices = result.invoices.items;
-    expect(result.invoices.totalItems).toBe(2);
-    expect(Number(newInvoice.invoiceNumber) - 1).toBe(
-      Number(oldInvoice.invoiceNumber)
-    );
+  it('Returns all invoices for order', async () => {
+    const { order: result } = await adminClient.query(getOrderWithInvoices, {
+      id: order.id,
+    });
+    const invoices: Invoice[] = result.invoices;
+    // First invoice
+    expect(invoices.length).toBe(3);
+    expect(invoices[0].invoiceNumber).toBe(1);
+    // Credit invoice
+    expect(invoices[1].invoiceNumber).toBe(2);
+    expect(invoices[1].isCreditInvoice).toBe(true);
+    // New invoice
+    expect(invoices[2].invoiceNumber).toBe(3);
   });
 });
 
 describe('Download invoices', function () {
-  it('Downloads a pdf', async () => {
+  it('Downloads first invoice when no invoice number is specified', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12@hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12%40hotmail.com`
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toBe('application/pdf');
     expect(res.body.pipe).toBeDefined();
   });
 
-  it('Downloads a pdf via URL without invoice number', async () => {
-    // Not specifying invoice number should download the first invoice
+  it('Downloads a pdf via URL with invoice number', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12@hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toBe('application/pdf');
@@ -172,16 +249,14 @@ describe('Download invoices', function () {
     const res = await fetch(
       `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=malicious@gmail.com`
     );
-    expect(res.status).toBe(400);
-    const json = await res.json();
-    expect(json.message).toBeDefined();
+    expect(res.status).toBe(403);
   });
 
   it('Download fails for invalid channel', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/wrong-channel/${order.code}?email=hayden.zieme12@hotmail.com`
+      `http://localhost:3106/invoices/wrong-channel/${order.code}?email=hayden.zieme12%40hotmail.com`
     );
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(403);
     const json = await res.json();
     expect(json.message).toBeDefined();
   });
@@ -191,22 +266,29 @@ describe('Download invoices', function () {
       `http://localhost:3106/invoices/preview/${order.code}`,
       {
         method: 'POST',
+        body: JSON.stringify({ template: defaultTemplate }),
       }
     );
-    // TODO test response
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
   });
 
   it('Fails to preview for unauthenticated calls', async () => {
-    const res = await fetch('http://localhost:3106/invoices/preview', {
-      method: 'POST',
-      body: JSON.stringify({ template: defaultTemplate }),
-    });
+    const res = await fetch(
+      `http://localhost:3106/invoices/preview/${order.code}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ template: defaultTemplate }),
+      }
+    );
     expect(res.status).toBe(403);
   });
 });
 
 describe('Generate without credit invoicing', function () {
+  it('Resets events', async () => {
+    events = [];
+  });
+
   it('Disables credit invoice generation', async () => {
     await adminClient.asSuperAdmin();
     const result = await adminClient.query<
@@ -222,14 +304,54 @@ describe('Generate without credit invoicing', function () {
     expect(result.upsertInvoiceConfig.id).toBeDefined();
     expect(result.upsertInvoiceConfig.enabled).toBe(true);
     expect(result.upsertInvoiceConfig.templateString).toBe(defaultTemplate);
+    expect(result.upsertInvoiceConfig.createCreditInvoices).toBe(false);
   });
 
-  it('Creates new invoice without credit invoice on re-generate mutation', async () => {
-    expect(true).toBe(false);
+  it('Creates settled order', async () => {
+    order = (await createSettledOrder(shopClient, 3)) as any;
+    expect((order as any).id).toBeDefined();
+  });
+
+  it('Created invoice', async () => {
+    // Give the worker some time to generate invoices
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const { order: result } = await adminClient.query(getOrderWithInvoices, {
+      id: order.id,
+    });
+    latestInvoice = result.invoices[0];
+    expect(latestInvoice.id).toBeDefined();
+    expect(latestInvoice.createdAt).toBeDefined();
+    expect(latestInvoice.invoiceNumber).toBe(4);
+    expect(latestInvoice.isCreditInvoice).toBe(false);
+    expect(latestInvoice.downloadUrl).toContain(
+      `/invoices/e2e-default-channel/${order.code}/4?email=hayden.zieme12%40hotmail.com`
+    );
+  });
+
+  it('Emitted event', async () => {
+    expect(events[0].newInvoice).toBeDefined();
+    // Previous and credit invoices should be undefined
+    expect(events[0].previousInvoice).toBeUndefined();
+    expect(events[0].creditInvoice).toBeUndefined();
+  });
+
+  it('Creates new invoice without credit invoice on createInvoices mutation', async () => {
+    const result = await adminClient.query(createInvoiceMutation, {
+      orderId: order.id,
+    });
+    latestInvoice = result.createInvoice;
+    expect(latestInvoice.invoiceNumber).toBe(5);
+    expect(latestInvoice.isCreditInvoice).toBe(false);
+    expect(latestInvoice.downloadUrl).toContain(
+      `/invoices/e2e-default-channel/${order.code}/5?email=hayden.zieme12%40hotmail.com`
+    );
   });
 
   it('Emitted event without credit invoice', async () => {
-    expect(true).toBe(false);
+    expect(events[1].newInvoice).toBeDefined();
+    // Previous should be defined, but credit is empty because we disabled the createCreditInvocies config
+    expect(events[1].previousInvoice).toBeDefined();
+    expect(events[1].creditInvoice).toBeUndefined();
   });
 });
 

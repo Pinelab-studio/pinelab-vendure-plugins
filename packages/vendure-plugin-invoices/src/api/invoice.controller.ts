@@ -19,6 +19,7 @@ import {
   ForbiddenError,
   Logger,
   RequestContext,
+  UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import { ReadStream } from 'fs';
@@ -37,24 +38,24 @@ export class InvoiceController {
     @Ctx() ctx: RequestContext,
     @Param('orderCode') orderCode: string,
     @Res() res: Response,
-    @Body() data: { template: string }
+    @Body() body: { template: string }
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
     }
-    if (!data?.template || !data?.template.trim()) {
+    if (!body?.template || !body?.template.trim()) {
       throw new BadRequestException('No template given');
     }
     const stream = await this.invoiceService.previewInvoiceWithTemplate(
       ctx,
-      data.template,
+      body.template,
       orderCode
     );
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="preview-invoice.pdf"`,
     });
-    stream.pipe(res);
+    return stream.pipe(res);
   }
 
   // Example: /invoices/default-channel/DJSLHJ238390/123?email=customer%40example.com
@@ -81,6 +82,11 @@ export class InvoiceController {
       const channel = await this.channelService.getChannelFromToken(
         channelToken
       );
+      if (channel.token !== channelToken) {
+        throw new UserInputError(
+          `No channel found with token '${channelToken}'`
+        );
+      }
       const ctx = new RequestContext({
         apiType: 'admin',
         authorizedAsOwnerOnly: false,

@@ -41,6 +41,10 @@ export const adminSchemaExtensions = gql`
 
   extend type Mutation {
     upsertInvoiceConfig(input: InvoiceConfigInput): InvoiceConfig!
+    """
+    Generate a new invoice for the given order. Creates a credit invoice if the order already has an invoice.
+    """
+    createInvoice(orderId: ID!): Invoice!
   }
 
   extend type Query {

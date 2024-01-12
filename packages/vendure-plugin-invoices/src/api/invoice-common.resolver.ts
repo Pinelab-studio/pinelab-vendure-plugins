@@ -6,6 +6,7 @@ import {
   Order,
   PermissionDefinition,
   RequestContext,
+  UserInputError,
 } from '@vendure/core';
 import { InvoiceService } from '../services/invoice.service';
 import { Invoice } from '../ui/generated/graphql';
@@ -35,7 +36,7 @@ export class InvoiceCommonResolver {
     );
     await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
     if (!order.customer?.emailAddress) {
-      throw new Error(
+      throw new UserInputError(
         `Can not fetch invoices for an order without 'customer.emailAddress'`
       );
     }

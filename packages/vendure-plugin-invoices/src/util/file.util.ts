@@ -1,5 +1,7 @@
-import { promises as fs } from 'fs';
+import { Logger } from '@vendure/core';
+import fs from 'fs/promises';
 import * as tmp from 'tmp';
+import { loggerCtx } from '../constants';
 
 export async function createTempFile(postfix: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -22,4 +24,17 @@ export async function exists(path: string): Promise<boolean> {
     exists = false;
   }
   return exists;
+}
+
+/**
+ * Attempt deletion of file, but swallow any errors.
+ */
+export function safeRemove(path: string): void {
+  fs.unlink(path).catch((err: any | undefined) => {
+    Logger.error(
+      `Could not remove file ${path}: ${err?.message}`,
+      loggerCtx,
+      err?.stack
+    );
+  });
 }

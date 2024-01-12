@@ -1,6 +1,6 @@
-import { Column, Entity, Unique, BeforeRemove, BeforeUpdate } from 'typeorm';
-import { DeepPartial, VendureEntity } from '@vendure/core';
 import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
+import { DeepPartial, VendureEntity } from '@vendure/core';
+import { Column, Entity, Unique } from 'typeorm';
 
 /**
  * The order totals that were used to generate the invoice.
