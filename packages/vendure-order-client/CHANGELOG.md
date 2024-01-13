@@ -1,3 +1,7 @@
+# 2.8.1 (2023-12-01)
+
+- Update the getOrderByCode to be polling for 30 seconds
+
 # 2.8.0 (2024-01-04)
 
 - Added `getActiveCustomer` and `logout()` functions;

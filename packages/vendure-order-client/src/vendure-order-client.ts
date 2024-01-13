@@ -360,11 +360,23 @@ export class VendureOrderClient<A = unknown> {
    */
   @HandleLoadingState('$activeOrder')
   async getOrderByCode(code: string): Promise<ActiveOrder<A>> {
-    const { orderByCode } = await this.rawRequest<any, QueryOrderByCodeArgs>(
-      this.queries.GET_ORDER_BY_CODE,
-      { code }
-    );
-    return orderByCode;
+    let order: ActiveOrder<A> | undefined;
+    let pollingCount = 0;
+    while (
+      order?.state !== 'PaymentSettled' &&
+      order?.state !== 'PaymentAuthorized'
+    ) {
+      if (pollingCount > 30) {
+        throw Error(`Order not settled after polling 30 times`);
+      }
+      order = await this.rawRequest<any, QueryOrderByCodeArgs>(
+        this.queries.GET_ORDER_BY_CODE,
+        { code }
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      pollingCount++;
+    }
+    return order;
   }
 
   async registerCustomerAccount(

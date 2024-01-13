@@ -423,13 +423,17 @@ describe(
         );
       });
 
-      it('Gets order by code', async () => {
-        if (!activeOrderCode) {
-          throw Error('Active order code is not defined');
-        }
-        await client.getOrderByCode(activeOrderCode);
-        expect(activeOrderCode).toEqual(activeOrderStore.value.data.code);
-      });
+      it(
+        'Gets order by code',
+        async () => {
+          if (!activeOrderCode) {
+            throw Error('Active order code is not defined');
+          }
+          await client.getOrderByCode(activeOrderCode);
+          expect(activeOrderCode).toEqual(activeOrderStore.value.data.code);
+        },
+        { timeout: 35000 }
+      );
     });
 
     const createNewCustomerInput: RegisterCustomerInput = {
