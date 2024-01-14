@@ -1,9 +1,10 @@
 schema: 'src/api/api-extensions.ts'
-# documents: 'src/**/*.ts'
+documents: 'src/**/*.graphql.ts'
 generates:
   ./src/ui/generated/graphql.ts:
     plugins:
       - typescript
+      - typescript-document-nodes
       - typescript-operations
     config:
       avoidOptionals: false

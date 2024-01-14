@@ -1,5 +1,7 @@
 import { NgModule } from '@angular/core';
 import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
+import { registerCustomDetailComponent } from '@vendure/admin-ui/core';
+import { InvoiceDetailViewComponent } from './invoices-detail-view/invoices-detail-view.component';
 
 @NgModule({
   imports: [SharedModule],
@@ -12,8 +14,12 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
         icon: 'file-group',
         requiresPermission: 'AllowInvoicesPermission',
       },
-      'sales'
+      'settings'
     ),
+    registerCustomDetailComponent({
+      locationId: 'order-detail',
+      component: InvoiceDetailViewComponent,
+    }),
   ],
 })
 export class InvoicesNavModule {}

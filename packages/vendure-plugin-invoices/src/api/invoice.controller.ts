@@ -16,7 +16,6 @@ import {
   Allow,
   ChannelService,
   Ctx,
-  ForbiddenError,
   Logger,
   RequestContext,
   UserInputError,

@@ -6,18 +6,9 @@ import {
   LocalStorageService,
   NotificationService,
 } from '@vendure/admin-ui/core';
+import { getConfigQuery, upsertConfigMutation } from './queries.graphql';
 import {
-  getAllInvoicesQuery,
-  getConfigQuery,
-  upsertConfigMutation,
-} from './queries.graphql';
-import {
-  Invoice,
-  InvoiceConfig,
   InvoiceConfigQuery,
-  InvoiceList,
-  InvoicesQuery,
-  InvoicesQueryVariables,
   UpsertInvoiceConfigMutation,
   UpsertInvoiceConfigMutationVariables,
 } from './generated/graphql';
@@ -53,6 +44,11 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
                   >
                   </vdr-dynamic-form-input>
                 </vdr-form-field>
+                <vdr-form-field label="Order Code" for="enabled">
+                  <clr-input-container>
+                    <input type="text" clrInput formControlName="orderCode" />
+                  </clr-input-container>
+                </vdr-form-field>
                 <button
                   class="btn btn-primary"
                   (click)="save()"
@@ -60,7 +56,13 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
                 >
                   Save
                 </button>
-                <button class="btn btn-secondary" (click)="testDownload()">
+                <button
+                  class="btn btn-secondary"
+                  (click)="testDownload()"
+                  [disabled]="
+                    !form.get('orderCode')?.value || invoicePreviewLoading
+                  "
+                >
                   Preview
                 </button>
                 <vdr-help-tooltip
@@ -71,65 +73,14 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
           </clr-accordion-content>
         </clr-accordion-panel>
       </clr-accordion>
-
-      <hr />
-      <section>
-        <h2>Created invoices</h2>
-        <button
-          class="btn btn-primary"
-          (click)="downloadSelected()"
-          [disabled]="selectedInvoices?.length == 0"
-        >
-          Download
-        </button>
-        <br />
-        <br />
-        <vdr-data-table
-          [items]="invoicesList?.items"
-          [itemsPerPage]="itemsPerPage"
-          [totalItems]="invoicesList?.totalItems"
-          [currentPage]="page"
-          (pageChange)="setPageNumber($event)"
-          (itemsPerPageChange)="setItemsPerPage($event)"
-          [allSelected]="areAllSelected()"
-          [isRowSelectedFn]="isSelected"
-          (rowSelectChange)="toggleSelect($event)"
-          (allSelectChange)="toggleSelectAll()"
-        >
-          <vdr-dt-column>Invoice nr.</vdr-dt-column>
-          <vdr-dt-column>Created</vdr-dt-column>
-          <vdr-dt-column>Customer</vdr-dt-column>
-          <vdr-dt-column>Order</vdr-dt-column>
-          <vdr-dt-column>Download</vdr-dt-column>
-          <ng-template let-invoice="item">
-            <td class="left align-middle">{{ invoice.invoiceNumber }}</td>
-            <td class="left align-middle">
-              {{ invoice.createdAt | date }}
-            </td>
-            <td class="left align-middle">{{ invoice.customerEmail }}</td>
-            <td class="left align-middle">
-              <a [routerLink]="['/orders', invoice.orderId]">
-                {{ invoice.orderCode }}
-              </a>
-            </td>
-            <td class="left align-middle">
-              <a [href]="invoice.downloadUrl" target="_blank">
-                <clr-icon shape="download"></clr-icon>
-              </a>
-            </td>
-          </ng-template>
-        </vdr-data-table>
-      </section>
     </div>
   `,
 })
 export class InvoicesComponent implements OnInit {
   form: FormGroup;
-  invoicesList: InvoiceList | undefined;
-  itemsPerPage = 10;
-  page = 1;
-  selectedInvoices: Invoice[] = [];
   serverPath: string;
+  invoicePreviewLoading: boolean = false;
+  createCreditInvoices: boolean = false;
   htmlFormInputConfigArgsDef: ConfigArgDefinition = {
     name: 'templateString',
     type: 'text',
@@ -148,6 +99,7 @@ export class InvoicesComponent implements OnInit {
     this.form = this.formBuilder.group({
       enabled: ['enabled'],
       templateString: ['templateString'],
+      orderCode: ['99SWXHRE9D58LJLC'],
     });
     this.serverPath = getServerLocation();
   }
@@ -159,21 +111,7 @@ export class InvoicesComponent implements OnInit {
       .subscribe((config) => {
         this.form.controls['enabled'].setValue(config?.enabled);
         this.form.controls['templateString'].setValue(config?.templateString);
-      });
-    await this.getAllInvoices();
-  }
-
-  async getAllInvoices(): Promise<void> {
-    await this.dataService
-      .query<InvoicesQuery, InvoicesQueryVariables>(getAllInvoicesQuery, {
-        input: {
-          page: this.page,
-          itemsPerPage: this.itemsPerPage,
-        },
-      })
-      .mapStream((r) => r.invoices)
-      .subscribe((result) => {
-        this.invoicesList = result;
+        this.createCreditInvoices = config?.createCreditInvoices ?? false;
       });
   }
 
@@ -188,6 +126,7 @@ export class InvoicesComponent implements OnInit {
           input: {
             enabled: formValue.enabled,
             templateString: formValue.templateString,
+            createCreditInvoices: this.createCreditInvoices,
           },
         });
         const { upsertInvoiceConfig: result } = await firstValueFrom(result$);
@@ -206,75 +145,24 @@ export class InvoicesComponent implements OnInit {
     }
   }
 
-  async downloadSelected(): Promise<void> {
-    try {
-      const nrs = this.selectedInvoices.map((i) => i.invoiceNumber).join(',');
-      const res = await fetch(
-        `${this.serverPath}/invoices/download?nrs=${nrs}`,
-        {
-          headers: this.getHeaders(),
-        }
-      );
-      if (!res.ok) {
-        const json = await res.json();
-        throw Error(json?.message);
-      }
-      const blob = await res.blob();
-      await this.downloadBlob(blob, 'invoices.zip');
-    } catch (err: any) {
-      console.error(err);
-      this.notificationService.error(err?.message);
-    }
-  }
-
-  async setPageNumber(page: number) {
-    this.page = page;
-    await this.getAllInvoices();
-  }
-
-  async setItemsPerPage(nrOfItems: number) {
-    this.page = 1;
-    this.itemsPerPage = Number(nrOfItems);
-    await this.getAllInvoices();
-  }
-
-  isSelected = (row: Invoice): boolean => {
-    return !!this.selectedInvoices?.find((selected) => selected.id === row.id);
-  };
-
-  toggleSelect(row: Invoice): void {
-    if (this.isSelected(row)) {
-      this.selectedInvoices = this.selectedInvoices.filter(
-        (s) => s.id !== row.id
-      );
-    } else {
-      this.selectedInvoices.push(row);
-    }
-  }
-
-  toggleSelectAll() {
-    if (this.areAllSelected()) {
-      this.selectedInvoices = [];
-    } else {
-      this.selectedInvoices = this.invoicesList?.items || [];
-    }
-  }
-
-  areAllSelected(): boolean {
-    return this.selectedInvoices.length === this.invoicesList?.items.length;
-  }
-
   async testDownload() {
     try {
       const template = this.form.value.templateString;
-      const res = await fetch(`${this.serverPath}/invoices/preview`, {
-        headers: {
-          ...this.getHeaders(),
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-        body: JSON.stringify({ template }),
-      });
+      const orderCode = this.form.value.orderCode;
+      this.invoicePreviewLoading = true;
+      this.changeDetector.markForCheck();
+      console.log(`${this.serverPath}/invoices/preview/${orderCode}`);
+      const res = await fetch(
+        `${this.serverPath}/invoices/preview/${orderCode}`,
+        {
+          headers: {
+            ...this.getHeaders(),
+            'Content-Type': 'application/json',
+          },
+          method: 'POST',
+          body: JSON.stringify({ template }),
+        }
+      );
       if (!res.ok) {
         const json = await res.json();
         throw Error(json?.message);
@@ -285,6 +173,8 @@ export class InvoicesComponent implements OnInit {
       console.error(err);
       this.notificationService.error(err?.message);
     }
+    this.invoicePreviewLoading = false;
+    this.changeDetector.markForCheck();
   }
 
   private getHeaders(): Record<string, string> {
