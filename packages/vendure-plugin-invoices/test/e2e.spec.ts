@@ -34,9 +34,9 @@ import { InvoiceCreatedEvent } from '../src/services/invoice-created-event';
 import {
   createInvoice as createInvoiceMutation,
   getConfigQuery,
-  getOrderWithInvoices,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
+import { getOrderWithInvoices } from '../src/ui/invoices-detail-view/invoices-detail-view';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -56,7 +56,6 @@ beforeAll(async () => {
     plugins: [
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3106',
-        loadDataFn: () => {},
       }),
     ],
     paymentOptions: {

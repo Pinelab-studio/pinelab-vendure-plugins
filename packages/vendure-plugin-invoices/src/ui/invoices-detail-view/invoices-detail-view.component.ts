@@ -7,7 +7,7 @@ import {
 } from '@vendure/admin-ui/core';
 import { Observable } from 'rxjs';
 import { Invoice } from '../generated/graphql';
-import { getOrderWithInvoices } from './invoices-detail-view.graphql';
+import { getOrderWithInvoices } from './invoices-detail-view';
 
 @Component({
   selector: 'invoices-detail-view',
@@ -30,7 +30,6 @@ export class InvoiceDetailViewComponent
     this.serverPath = getServerLocation();
   }
   async ngOnInit(): Promise<void> {
-    console.log(this.detailForm.value);
     await this.getOrderInvoices();
   }
 
@@ -57,20 +56,5 @@ export class InvoiceDetailViewComponent
     this.page = 1;
     this.itemsPerPage = Number(nrOfItems);
     await this.getOrderInvoices();
-  }
-
-  private async downloadBlob(
-    invoice: Invoice,
-    openInNewTab = false
-  ): Promise<void> {
-    const a = document.createElement('a');
-    document.body.appendChild(a);
-    a.setAttribute('hidden', 'true');
-    a.href = invoice.downloadUrl;
-    if (!openInNewTab) {
-      a.download = `${invoice.invoiceNumber}`;
-    }
-    a.setAttribute('target', '_blank');
-    a.click();
   }
 }

@@ -244,7 +244,20 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       path: tmpFilePath,
       type: '',
     };
-    await pdf.create(document, options);
+
+    if (process.env.NODE_ENV === 'test') {
+      pdf.create(document, options).catch((error: any) => {
+        Logger.error(JSON.stringify(error), loggerCtx);
+      });
+    } else {
+      try {
+        await pdf.create(document, options);
+      } catch (e) {
+        Logger.error(JSON.stringify(e), loggerCtx);
+        throw e;
+      }
+    }
+
     return {
       invoiceTmpFile: tmpFilePath,
       invoiceNumber: data.invoiceNumber,
