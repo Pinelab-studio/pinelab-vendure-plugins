@@ -87,16 +87,6 @@ export interface MyparcelShipment {
 }
 
 export interface MyParcelShipmentStrategy {
-  getOptions: (
-    address: OrderAddress,
-    order: Order,
-    customsContent: string
-  ) => MyparcelShipment['options'];
-  getRecipient: (
-    address: OrderAddress,
-    order: Order,
-    customsContent: string
-  ) => MyparcelShipment['recipient'];
   getShipment: (
     address: OrderAddress,
     order: Order,

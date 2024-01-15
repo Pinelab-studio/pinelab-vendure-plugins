@@ -11,7 +11,7 @@ import {
 export class MyParcalDefaultShipmentStrategy
   implements MyParcelShipmentStrategy
 {
-  private getHousenumber(nrAndSuffix: string): [string, string] {
+  getHousenumber(nrAndSuffix: string): [string, string] {
     if (!nrAndSuffix) {
       throw new MyParcelError(`No houseNr given`);
     }
