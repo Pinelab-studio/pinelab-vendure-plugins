@@ -99,6 +99,7 @@
           "selectable-gifts",
           "sendcloud",
           "shipping",
+          "facet-suggestions",
           "stock-monitoring",
           "stripe-subscription",
           "variant-bulk-update",
