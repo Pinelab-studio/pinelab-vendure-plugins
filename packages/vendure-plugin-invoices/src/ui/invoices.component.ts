@@ -80,7 +80,6 @@ export class InvoicesComponent implements OnInit {
   form: FormGroup;
   serverPath: string;
   invoicePreviewLoading: boolean = false;
-  createCreditInvoices: boolean = false;
   htmlFormInputConfigArgsDef: ConfigArgDefinition = {
     name: 'templateString',
     type: 'text',
@@ -111,7 +110,6 @@ export class InvoicesComponent implements OnInit {
       .subscribe((config) => {
         this.form.controls['enabled'].setValue(config?.enabled);
         this.form.controls['templateString'].setValue(config?.templateString);
-        this.createCreditInvoices = config?.createCreditInvoices ?? false;
       });
   }
 
@@ -126,7 +124,6 @@ export class InvoicesComponent implements OnInit {
           input: {
             enabled: formValue.enabled,
             templateString: formValue.templateString,
-            createCreditInvoices: this.createCreditInvoices,
           },
         });
         const { upsertInvoiceConfig: result } = await firstValueFrom(result$);

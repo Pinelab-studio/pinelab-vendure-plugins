@@ -35,7 +35,7 @@ export const adminSchemaExtensions = gql`
 
   input InvoiceConfigInput {
     enabled: Boolean!
-    createCreditInvoices: Boolean!
+    createCreditInvoices: Boolean
     templateString: String
   }
 

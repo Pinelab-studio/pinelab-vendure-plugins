@@ -39,6 +39,7 @@ import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 interface DownloadInput {
   customerEmail: string;
@@ -391,12 +392,15 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       where: { channelId: String(ctx!.channelId) },
     });
     if (existing) {
-      await configRepo.update(existing.id, input);
+      await configRepo.update(
+        existing.id,
+        input as QueryDeepPartialEntity<InvoiceConfigEntity>
+      );
     } else {
       await configRepo.insert({
         ...input,
         channelId: String(ctx.channelId),
-      });
+      } as QueryDeepPartialEntity<InvoiceConfigEntity>);
     }
     return configRepo.findOneOrFail({
       where: { channelId: String(ctx.channelId) },
