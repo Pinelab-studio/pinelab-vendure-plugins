@@ -4,6 +4,7 @@ import {
   Customer,
   CustomerService,
   EntityHydrator,
+  ID,
   Order,
   PaymentMethod,
   PaymentMethodService,
@@ -107,19 +108,27 @@ export class AcceptBlueService {
       );
     }
     // Create recurring schedule
+    const subscriptionDefinitions = await this.subscriptionHelper.getSubscriptionsForOrder(ctx, order);
+    // <orderLineId, subscriptionIds>
+    const subscriptionsPerOrderLine = new Map<ID, string[]>();
+    
+    for (const subscriptionDefinition of subscriptionDefinitions) {
+      const recurringScheduleResult = await client.createRecurringSchedule(
+        acceptBlueCustomer.id,
+        {
+          title: subscriptionDefinition.name,
+          active: true,
+          amount: subscriptionDefinition.recurring.amount,
+          frequency: subscriptionDefinition.recurring.interval,
+          num_left: 0, // 0 = infinite
+          payment_method_id: paymentMethodId,
+          receipt_email: order.customer.emailAddress,
+        }
+      );
+
+    }
+
     // FIXME JUST A TEST
-    const recurringScheduleResult = await client.createRecurringSchedule(
-      acceptBlueCustomer.id,
-      {
-        title: 'Test recurring schedule',
-        active: true,
-        amount: order.totalWithTax,
-        frequency: 'monthly',
-        num_left: 0, // 0 = infinite
-        payment_method_id: paymentMethodId,
-        receipt_email: order.customer.emailAddress,
-      }
-    );
     console.log(JSON.stringify(recurringScheduleResult, null, 2));
 
     // TODO create one time charge

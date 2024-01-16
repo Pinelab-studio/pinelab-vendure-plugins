@@ -1,3 +1,6 @@
+import { Subscription } from "../../util/src/subscription/subscription-strategy";
+import { Frequency } from "./types";
+
 interface CardInput {
   card: string;
   expiry_month: number;
@@ -16,4 +19,36 @@ export function isSameCard(input: CardInput, card: CardToCheck): boolean {
     input.expiry_month === card.expiry_month &&
     input.expiry_year === card.expiry_year
   );
+}
+/**
+ * Map a subscription interval and interval count to an Accept Blue frequency
+ * 'biweekly' in this context means every two weeks
+ */
+export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
+  const { recurring: { interval, intervalCount } } = subscription;
+  if (interval === 'week' && intervalCount === 1) {
+    return 'weekly';
+  }
+  if (interval === 'week' && intervalCount === 2) {
+    return 'biweekly';
+  }
+  if (interval === 'month' && intervalCount === 1) {
+    return 'monthly';
+  }
+  if (interval === 'month' && intervalCount === 2) {
+    return 'bimonthly';
+  }
+  if (interval === 'month' && intervalCount === 3) {
+    return 'quarterly';
+  }
+  if (interval === 'year' && intervalCount === 1) {
+    return 'annually';
+  }
+  if (interval === 'year' && intervalCount === 2) {
+    return 'biannually';
+  }
+  throw new Error(`Subscription interval '${interval}' and intervalCount '${intervalCount}' cannot be mapped to any of these frequencies: weekly, biweekly, monthly, bimonthly, quarterly, annually or biannually`);
+
+
+
 }
