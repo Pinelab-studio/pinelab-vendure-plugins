@@ -56,7 +56,7 @@ export async function transitionToShipped(
     'Shipped'
   );
   throwIfTransitionFailed(result);
-  return result as Fulfillment;
+  return result;
 }
 
 /**
@@ -96,6 +96,8 @@ export async function transitionToDelivered(
 
 /**
  * Throws the error result if the transition failed
+ * Ignores transition errors where from and to state are the same,
+ * because that still results in the situation we want
  */
 export function throwIfTransitionFailed(
   result:
