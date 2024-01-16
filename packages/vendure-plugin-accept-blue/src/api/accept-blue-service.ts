@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
+  Customer,
   CustomerService,
   EntityHydrator,
   Order,
@@ -130,17 +131,17 @@ export class AcceptBlueService {
     };
   }
 
-  async getPaymentMethods(
-    ctx: RequestContext
+  /**
+   * Get the payment methods stored in Accept Blue for the given customer
+   */
+  async getSavedPaymentMethods(
+    ctx: RequestContext,
+    customer: Customer
   ): Promise<AcceptBlueCardPaymentMethod[]> {
     const client = await this.getClientForChannel(ctx);
     if (!ctx.activeUserId) {
       throw new Error(`User is not logged in!`);
     }
-    const customer = await this.customerService.findOneByUserId(
-      ctx,
-      ctx.activeUserId
-    );
     if (!customer) {
       throw new Error(`No customer found for user ${ctx.activeUserId}`);
     }
