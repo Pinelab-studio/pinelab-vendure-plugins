@@ -132,7 +132,13 @@ export class AcceptBlueClient {
     const result: AcceptBlueRecurringSchedule = await this.request(
       'post',
       `customers/${customerId}/recurring-schedules`,
-      input
+      {
+        ...input,
+        // Accept Blue requires dates to be in 'yyyy-mm-dd' format
+        next_run_date: input.next_run_date
+          ? this.toDateString(input.next_run_date)
+          : undefined,
+      }
     );
     Logger.info(
       `Created recurring schedule ${result.id} for customer '${result.customer_id}'`,
@@ -187,5 +193,12 @@ export class AcceptBlueClient {
       throw Error(result.statusText);
     }
     return result.data;
+  }
+
+  /**
+   * Transform date to 'yyyy-mm-dd' format for Accept Blue
+   */
+  toDateString(date: Date): string {
+    return date.toISOString().split('T')[0];
   }
 }

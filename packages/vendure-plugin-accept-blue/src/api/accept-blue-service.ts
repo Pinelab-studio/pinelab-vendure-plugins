@@ -20,6 +20,11 @@ import {
   CreditCardPaymentInput,
   HandlePaymentResult,
 } from '../types';
+import {
+  getNrOfBillingCyclesLeft,
+  isToday,
+  toAcceptBlueFrequency,
+} from '../util';
 import { AcceptBlueClient } from './accept-blue-client';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
 
@@ -84,7 +89,7 @@ export class AcceptBlueService {
   async payWithSavedPaymentMethod(
     ctx: RequestContext,
     order: Order,
-    amount: number,
+    amountDueNow: number,
     client: AcceptBlueClient,
     paymentMethodId: number
   ): Promise<HandlePaymentResult> {
@@ -107,29 +112,57 @@ export class AcceptBlueService {
         `No customer found in Accept bBlue with email ${order.customer.emailAddress} not found`
       );
     }
-    // Create recurring schedule
-    const subscriptionDefinitions = await this.subscriptionHelper.getSubscriptionsForOrder(ctx, order);
-    // <orderLineId, subscriptionIds>
-    const subscriptionsPerOrderLine = new Map<ID, string[]>();
-    
+    // Create recurring schedules
+    const subscriptionDefinitions = (
+      await this.subscriptionHelper.getSubscriptionsForOrder(ctx, order)
+    ).map((subscription) => {
+      // Mapping and validation for all subscriptions, before actually calling the Accept Blue API
+      const {
+        recurring: { startDate, endDate },
+      } = subscription;
+      // throws error if frequency can't be mapped
+      const frequency = toAcceptBlueFrequency(subscription);
+      // Get number of billing cycles if an end date is given
+      const billingCyclesLeft = endDate
+        ? getNrOfBillingCyclesLeft(startDate, endDate, frequency)
+        : 0;
+      // Only pass next_run_date if it's not today, because the API requires this date to be in the future
+      const nextRunDate = isToday(startDate) ? undefined : startDate;
+      return {
+        ...subscription,
+        frequency,
+        billingCyclesLeft,
+        nextRunDate,
+      };
+    });
+    // Map<orderLineId, subscriptionIds> to save on orderLine custom field
+    const subscriptionsPerOrderLine = new Map<ID, number[]>();
     for (const subscriptionDefinition of subscriptionDefinitions) {
-      const recurringScheduleResult = await client.createRecurringSchedule(
+      const recurringSchedule = await client.createRecurringSchedule(
         acceptBlueCustomer.id,
         {
           title: subscriptionDefinition.name,
           active: true,
           amount: subscriptionDefinition.recurring.amount,
-          frequency: subscriptionDefinition.recurring.interval,
-          num_left: 0, // 0 = infinite
+          frequency: subscriptionDefinition.frequency,
+          num_left: subscriptionDefinition.billingCyclesLeft,
           payment_method_id: paymentMethodId,
           receipt_email: order.customer.emailAddress,
+          next_run_date: subscriptionDefinition.nextRunDate,
         }
       );
-
+      // Save subscriptionId for orderLine
+      const subscriptionIds =
+        subscriptionsPerOrderLine.get(subscriptionDefinition.orderLineId) ?? [];
+      subscriptionIds.push(recurringSchedule.id);
+      subscriptionsPerOrderLine.set(
+        subscriptionDefinition.orderLineId,
+        subscriptionIds
+      );
+      // FIXME
+      console.log(JSON.stringify(recurringSchedule, null, 2));
     }
-
-    // FIXME JUST A TEST
-    console.log(JSON.stringify(recurringScheduleResult, null, 2));
+    // TODO save subscription IDS on orderLine custom field
 
     // TODO create one time charge
     return {
