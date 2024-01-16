@@ -1,6 +1,6 @@
 {
   "name": "vendure-plugin-accept-blue",
-  "version": "1.0.0",
+  "version": "0.0.2-beta.1",
   "description": "Vendure plugin for creating subscriptions with the Accept Blue platform",
   "icon": "credit-card-refresh",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -25,7 +25,7 @@
     "test": "vitest run --bail"
   },
   "dependencies": {
-    "date-fns": "2.29.3",
-    "axios": "1.6.2"
+    "axios": "1.6.2",
+    "date-fns": "2.29.3"
   }
 }
