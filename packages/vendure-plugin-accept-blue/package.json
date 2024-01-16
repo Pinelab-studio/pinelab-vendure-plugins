@@ -1,6 +1,6 @@
 {
-  "name": "vendure-plugin-accept-blue",
-  "version": "0.0.2-beta.1",
+  "name": "@pinelab/vendure-plugin-accept-blue",
+  "version": "0.0.3-beta.3",
   "description": "Vendure plugin for creating subscriptions with the Accept Blue platform",
   "icon": "credit-card-refresh",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
