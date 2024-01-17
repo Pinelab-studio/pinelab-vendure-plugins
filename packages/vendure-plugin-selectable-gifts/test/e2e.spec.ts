@@ -264,6 +264,10 @@ describe('Storefront free gift selection', function () {
     });
     const eligibleGifts = await getEligibleGifts(shopClient);
     expect(eligibleGifts.length).toBe(1);
+    expect(eligibleGifts[0].name).not.toBeUndefined();
+    expect(eligibleGifts[0].name).not.toBeNull();
+    expect(eligibleGifts[0].name?.trim()).not.toEqual('');
+    expect(eligibleGifts[0].priceWithTax).toBeGreaterThan(0);
   });
 
   it('Should return only in stock variants as eligible gifts', async () => {
