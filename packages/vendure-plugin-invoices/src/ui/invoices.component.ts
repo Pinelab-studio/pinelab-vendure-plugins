@@ -98,7 +98,7 @@ export class InvoicesComponent implements OnInit {
     this.form = this.formBuilder.group({
       enabled: ['enabled'],
       templateString: ['templateString'],
-      orderCode: ['99SWXHRE9D58LJLC'],
+      orderCode: [''],
     });
     this.serverPath = getServerLocation();
   }
@@ -148,7 +148,6 @@ export class InvoicesComponent implements OnInit {
       const orderCode = this.form.value.orderCode;
       this.invoicePreviewLoading = true;
       this.changeDetector.markForCheck();
-      console.log(`${this.serverPath}/invoices/preview/${orderCode}`);
       const res = await fetch(
         `${this.serverPath}/invoices/preview/${orderCode}`,
         {
