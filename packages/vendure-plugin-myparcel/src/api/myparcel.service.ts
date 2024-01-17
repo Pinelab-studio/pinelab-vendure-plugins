@@ -13,7 +13,7 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { GraphQLError } from 'graphql';
+
 import axios from 'axios';
 import { Fulfillment } from '@vendure/core';
 import { MyparcelConfigEntity } from './myparcel-config.entity';
@@ -22,7 +22,12 @@ import {
   MyparcelDropOffPoint,
   MyparcelDropOffPointInput,
 } from '../generated/graphql';
-import { MyparcelConfig } from './types';
+import {
+  CustomsItem,
+  MyparcelConfig,
+  MyParcelError,
+  MyparcelShipment,
+} from './types';
 
 @Injectable()
 export class MyparcelService implements OnApplicationBootstrap {
@@ -244,28 +249,14 @@ export class MyparcelService implements OnApplicationBootstrap {
   toShipment(orders: Order[], customsContent: string): MyparcelShipment[] {
     return orders.map((order) => {
       Logger.info(`Creating shipment for ${order.code}`, loggerCtx);
+
       const address: OrderAddress = order.shippingAddress;
-      const [nr, nrSuffix] = this.getHousenumber(address.streetLine2!);
-      const shipment: MyparcelShipment = {
-        carrier: 1, // PostNL
-        reference_identifier: order.code,
-        options: {
-          package_type: 1, // Parcel
-          label_description: order.code,
-        },
-        recipient: {
-          cc: address.countryCode!,
-          region: address.province || undefined,
-          city: address.city!,
-          street: address.streetLine1!,
-          number: nr,
-          number_suffix: nrSuffix,
-          postal_code: address.postalCode!,
-          person: address.fullName!,
-          phone: address.phoneNumber || undefined,
-          email: order.customer?.emailAddress,
-        },
-      };
+      const shipment = this.config.shipmentStrategy.getShipment(
+        address,
+        order,
+        customsContent
+      );
+
       if (customsContent) {
         // Set customs information
         const items = order.lines.map((line) =>
@@ -366,79 +357,12 @@ export class MyparcelService implements OnApplicationBootstrap {
     }
   }
 
-  private getHousenumber(nrAndSuffix: string): [string, string] {
-    if (!nrAndSuffix) {
-      throw new MyParcelError(`No houseNr given`);
-    }
-    const [_, houseNr, suffix] = nrAndSuffix.split(/^[^\d]*(\d+)/);
-    if (!houseNr) {
-      throw new MyParcelError(`Invalid houseNumber ${nrAndSuffix}`);
-    }
-    return [houseNr, suffix];
-  }
-
   private getReadableError(data: MyparcelErrorResponse): string | undefined {
     const error = Object.values(data.errors?.[0] || {}).find(
       (value) => value?.human?.[0]
     );
     return error?.human?.[0];
   }
-}
-
-export class MyParcelError extends GraphQLError {
-  constructor(message: string) {
-    super(message, { extensions: { code: 'MY_PARCEL_ERROR' } });
-  }
-}
-
-export interface MyparcelRecipient {
-  cc: string;
-  region?: string;
-  city: string;
-  street: string;
-  number: string;
-  number_suffix?: string;
-  postal_code: string;
-  person: string;
-  phone?: string;
-  email?: string;
-}
-
-export interface MyparcelShipmentOptions {
-  package_type: number;
-  label_description?: string;
-}
-
-export interface MyparcelShipment {
-  carrier: number;
-  reference_identifier?: string;
-  recipient: MyparcelRecipient;
-  options: MyparcelShipmentOptions;
-  customs_declaration?: CustomsDeclaration;
-  physical_properties?: {
-    weight: number;
-  };
-}
-
-export interface ItemValue {
-  amount: number;
-  currency: string;
-}
-
-export interface CustomsItem {
-  description: string;
-  amount: number;
-  weight: number;
-  item_value: ItemValue;
-  classification: string;
-  country: string;
-}
-
-export interface CustomsDeclaration {
-  contents: string | number;
-  invoice: string;
-  weight: number;
-  items: CustomsItem[];
 }
 
 export interface WebhookSubscription {

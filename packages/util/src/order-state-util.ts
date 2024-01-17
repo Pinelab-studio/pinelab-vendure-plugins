@@ -48,7 +48,7 @@ export async function transitionToShipped(
   ctx: RequestContext,
   order: Order,
   handler: ConfigurableOperationInput
-): Promise<Fulfillment> {
+): Promise<Fulfillment | FulfillmentStateTransitionError> {
   const fulfillment = await fulfillAll(ctx, orderService, order, handler);
   const result = await orderService.transitionFulfillmentToState(
     ctx,
@@ -56,7 +56,7 @@ export async function transitionToShipped(
     'Shipped'
   );
   throwIfTransitionFailed(result);
-  return result as Fulfillment;
+  return result;
 }
 
 /**
@@ -67,24 +67,37 @@ export async function transitionToDelivered(
   ctx: RequestContext,
   order: Order,
   handler: ConfigurableOperationInput
-): Promise<Fulfillment> {
-  const fulfillment = await transitionToShipped(
+): Promise<(Fulfillment | FulfillmentStateTransitionError)[]> {
+  const shippedResult = await transitionToShipped(
     orderService,
     ctx,
     order,
     handler
   );
-  const result = await orderService.transitionFulfillmentToState(
-    ctx,
-    fulfillment.id,
-    'Delivered'
-  );
-  throwIfTransitionFailed(result);
-  return result as Fulfillment;
+  let fulfillments: Fulfillment[] = [];
+  if ((shippedResult as FulfillmentStateTransitionError).errorCode) {
+    fulfillments = await orderService.getOrderFulfillments(ctx, order);
+  } else {
+    // if not an error, shippedResult is the only fulfillment
+    fulfillments.push(shippedResult as Fulfillment);
+  }
+  const results: (Fulfillment | FulfillmentStateTransitionError)[] = [];
+  for (const fulfillment of fulfillments) {
+    const result = await orderService.transitionFulfillmentToState(
+      ctx,
+      fulfillment.id,
+      'Delivered'
+    );
+    throwIfTransitionFailed(result);
+    results.push(result);
+  }
+  return results;
 }
 
 /**
  * Throws the error result if the transition failed
+ * Ignores transition errors where from and to state are the same,
+ * because that still results in the situation we want
  */
 export function throwIfTransitionFailed(
   result:
