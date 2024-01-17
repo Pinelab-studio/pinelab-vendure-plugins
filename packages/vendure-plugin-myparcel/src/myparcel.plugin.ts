@@ -11,8 +11,9 @@ import { MyparcelController } from './api/myparcel.controller';
 import { myparcelHandler } from './api/myparcel.handler';
 import { MyparcelService } from './api/myparcel.service';
 import { MyParcelShopResolver, shopSchema } from './api/myparcel.shop.graphql';
-import { MyparcelConfig } from './api/types';
+import { MyparcelConfig, PartialBy } from './api/types';
 import { PLUGIN_INIT_OPTIONS } from './constants';
+import { MyParcalDefaultShipmentStrategy } from './api/myparcel-default-shipment.strategy';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -40,8 +41,14 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
 export class MyparcelPlugin {
   static config: MyparcelConfig;
 
-  static init(config: MyparcelConfig): typeof MyparcelPlugin {
-    this.config = config;
+  static init(
+    config: PartialBy<MyparcelConfig, 'shipmentStrategy'>
+  ): typeof MyparcelPlugin {
+    this.config = {
+      ...config,
+      shipmentStrategy:
+        config.shipmentStrategy ?? new MyParcalDefaultShipmentStrategy(),
+    };
     return MyparcelPlugin;
   }
 

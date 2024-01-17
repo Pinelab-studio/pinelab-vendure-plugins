@@ -164,7 +164,7 @@ export class SendcloudService implements OnApplicationBootstrap {
     if (sendcloudStatus.orderState === 'Shipped') {
       await this.shipAll(ctx, order);
       return Logger.info(
-        `Successfully update order ${orderCode} to ${sendcloudStatus.orderState}`,
+        `Successfully updated order ${orderCode} to Shipped`,
         loggerCtx
       );
     }
@@ -177,7 +177,7 @@ export class SendcloudService implements OnApplicationBootstrap {
         arguments: [],
       });
       return Logger.info(
-        `Successfully update order ${orderCode} to ${sendcloudStatus.orderState}`,
+        `Successfully updated order ${orderCode} to Delivered`,
         loggerCtx
       );
     }
