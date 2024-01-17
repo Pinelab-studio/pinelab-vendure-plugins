@@ -52,11 +52,13 @@
             v{{ version }}
         {{/unless}} 
       </small>
+      <br/>
+      <br/>
+      <small id="errorMessage" style="color: red;"></small>
     </div>
 
     <script type="text/javascript">
       async function handleCredentialResponse(response) {
-        console.log('handleCredentialResponse', response);
         const res = await fetch('/admin-api', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -75,8 +77,42 @@
           }),
         });
         const json = await res.json();
+        const authToken = res.headers.get('Vendure-Auth-Token');
+        console.log(authToken);
+        if (json.data.authenticate.message) {
+          document.getElementById('errorMessage').innerHTML = json.data.authenticate.message;
+        } else {
+
+          const res = await fetch('/admin-api', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'Vendure-Auth-Token': authToken
+          },
+          body: JSON.stringify({
+            query: `
+            {
+              me{
+                id
+                identifier
+                channels {
+                  id
+                  token
+                  code
+                  permissions
+                }
+              }
+            }`,
+          }),
+        });
+        const json = await res.json();
+        console.log('Logged in');
         console.log(json);
-        // TODO redirect
+          
+
+          // FIXME
+          // window.location.replace('http://localhost:3050/admin/orders');
+        }
       }
     </script>
   </body>

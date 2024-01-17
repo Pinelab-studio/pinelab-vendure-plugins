@@ -30,7 +30,7 @@ plugins: [
       }),
 ]
 ```
-// TODO
+// TODO this checks for existance of users, regardless of auth strategy
 
 
 

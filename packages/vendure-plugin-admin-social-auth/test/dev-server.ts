@@ -4,11 +4,13 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
+  AdministratorService
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
@@ -26,8 +28,8 @@ require('dotenv').config();
       AssetServerPlugin.init({
         assetUploadDir: path.join(__dirname, '__data__/assets'),
         route: 'assets',
-    }),
-    AdminSocialAuthPlugin.init({
+      }),
+      AdminSocialAuthPlugin.init({
         google: {
           oAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
         },
@@ -37,10 +39,10 @@ require('dotenv').config();
         port: 5001,
         route: 'admin',
         adminUiConfig: {
-            loginUrl: '/social-auth/login',
-            brand: 'Pinelab',
-            hideVendureBranding: false,
-            hideVersion: false,
+          loginUrl: '/social-auth/login',
+          brand: 'Pinelab',
+          hideVendureBranding: false,
+          hideVersion: false,
         },
         /*      
         TODO: uncomment this block to start the admin ui in dev mode
@@ -63,4 +65,13 @@ require('dotenv').config();
     initialData,
     productsCsvPath: '../test/src/products-import.csv',
   });
+  const ctx = await getSuperadminContext(server.app);
+  const result = await server.app.get(AdministratorService).create(ctx, {
+    emailAddress: 'martijn@pinelab.studio',
+    firstName: 'Martijn',
+    lastName: 'Pinelab',
+    roleIds: ['1'],
+    password: 'test'
+  });
+  console.log(`Created admin user ${result.emailAddress}`);
 })();

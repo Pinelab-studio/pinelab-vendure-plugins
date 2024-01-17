@@ -8,7 +8,7 @@ export interface GoogleInput {
   oAuthClientId: string;
 }
 
-export interface SocialAuthPluginOptions {
+export interface AdminSocialAuthPluginOptions {
   google?: GoogleInput;
 }
 
@@ -24,6 +24,8 @@ export interface SocialAuthPluginOptions {
     },
   ],
   configuration: (config) => {
+    // Reset the adminAuthenticationStrategy to an empty array, because we only want social logins
+    config.authOptions.adminAuthenticationStrategy = [];
     if (AdminSocialAuthPlugin.options.google?.oAuthClientId) {
       config.authOptions.adminAuthenticationStrategy.push(
         new GoogleAuthStrategy(AdminSocialAuthPlugin.options.google.oAuthClientId),
@@ -34,9 +36,9 @@ export interface SocialAuthPluginOptions {
   },
 })
 export class AdminSocialAuthPlugin {
-  static options: SocialAuthPluginOptions;
+  static options: AdminSocialAuthPluginOptions;
 
-  static init(options: SocialAuthPluginOptions) {
+  static init(options: AdminSocialAuthPluginOptions): AdminSocialAuthPlugin {
     this.options = options;
     return AdminSocialAuthPlugin;
   }

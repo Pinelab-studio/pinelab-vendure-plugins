@@ -1,36 +1,21 @@
 import {
     AuthenticationStrategy,
-    ExternalAuthenticationService,
     Injector,
     Logger,
     RequestContext,
+    ExternalAuthenticationMethod,
     User,
+    NativeAuthenticationMethod,
+    TransactionalConnection
 } from '@vendure/core';
-import { JWT } from 'google-auth-library';
 import { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
+import { AdministratorService } from '@vendure/core'
 
 export type GoogleAuthData = {
     credentialJWT: string;
 };
 
-interface GoogleAuthPayload {
-    iss: string,
-    azp: string
-    aud: string
-    sub: string
-    email: string
-    email_verified: boolean
-    nbf: number,
-    name: string
-    picture: string
-    given_name: string
-    family_name: string
-    locale: string
-    iat: number,
-    exp: number,
-    jti: string
-}
 
 const loggerCtx = 'GoogleAuthStrategy';
 
@@ -42,16 +27,15 @@ const loggerCtx = 'GoogleAuthStrategy';
 export class GoogleAuthStrategy implements AuthenticationStrategy<GoogleAuthData> {
     readonly name = 'google';
     private client!: import('google-auth-library').OAuth2Client;
-    private externalAuthenticationService: ExternalAuthenticationService | undefined;
+    private adminService: AdministratorService | undefined;
+    private connection: TransactionalConnection | undefined;
 
     constructor(private clientId: string) {
     }
 
     async init(injector: Injector) {
-        // The ExternalAuthenticationService is a helper service which encapsulates much
-        // of the common functionality related to dealing with external authentication
-        // providers.
-        this.externalAuthenticationService = injector.get(ExternalAuthenticationService);
+        this.adminService = injector.get(AdministratorService);
+        this.connection = injector.get(TransactionalConnection);
         const { OAuth2Client } = await import('google-auth-library');
         this.client = new OAuth2Client(this.clientId);
     }
@@ -79,32 +63,54 @@ export class GoogleAuthStrategy implements AuthenticationStrategy<GoogleAuthData
             if (!payload || !payload.email) {
                 return false;
             }
-            console.log('logged in:', payload.email);
+            const email = payload.email;
             // First we check to see if this user has already authenticated in our
             // Vendure server using this Google account. If so, we return that
             // User object, and they will be now authenticated in Vendure.
-            const user = await this.externalAuthenticationService!.findAdministratorUser(ctx, this.name, payload.email);
-            console.log('USER', user);
-            if (user) {
-                return user;
+            const admins = await this.adminService!.findAll(ctx, { filter: { emailAddress: { eq: email } } }, ['user', 'user.authenticationMethods']);
+            if (admins.totalItems > 1) {
+                Logger.error(`Multiple admins for '${email}' found. Only one should exist. Unable to login`, loggerCtx);
+                return false;
             }
-
-            // If no user was found, we need to create a new User and Customer based
-            // on the details provided by Google. The ExternalAuthenticationService
-            // provides a convenience method which encapsulates all of this into
-            // a single method call.
-            return this.externalAuthenticationService!.createCustomerAndUser(ctx, {
-                strategy: this.name,
-                externalIdentifier: payload.sub,
-                verified: payload.email_verified || false,
-                emailAddress: payload.email,
-                firstName: payload.given_name,
-                lastName: payload.family_name,
+            if (admins.totalItems === 0) {
+                // No admins exist for this email address, not logging in
+                Logger.warn(`Attempted login with '${email}', but this is not an administrator`, loggerCtx);
+                return false;
+            }
+            // An admin exists in Vendure
+            const admin = admins.items[0];
+            let user = admin.user;
+            // Check if GoogleAuth already enabled, otherwise enable it for this admin
+            const hasGoogleAuth = user.authenticationMethods.find((m) => {
+                console.log(m instanceof NativeAuthenticationMethod);
+                console.log(m);
+                return (m as ExternalAuthenticationMethod).strategy === this.name;
             });
+            if (!hasGoogleAuth) {
+                user = await this.addGoogleAuthMethod(ctx, user, email);
+            }
+            Logger.info(`Admin '${email}' logged in`, loggerCtx);
+            return user;
         } catch (error: any) {
-            Logger.error(`Error verifying Google JWT: ${error}`, loggerCtx, error?.stack);
+            Logger.error(`Error authenticating with Google login: ${error}`, loggerCtx, error?.stack);
             return false;
         }
 
+    }
+
+    /**
+     * Adds Google auth as authentication method for this user.
+     */
+    private async addGoogleAuthMethod(ctx: RequestContext, user: User, externalIdentifier: string): Promise<User> {
+        const googleAuthMethod = await this.connection!
+            .getRepository(ctx, ExternalAuthenticationMethod)
+            .save(
+                new ExternalAuthenticationMethod({
+                    externalIdentifier,
+                    strategy: this.name,
+                }),
+            );
+        user.authenticationMethods.push(googleAuthMethod);
+        return this.connection!.getRepository(ctx, User).save(user);
     }
 }
