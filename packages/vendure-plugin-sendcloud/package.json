@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-sendcloud",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Vendure plugin for syncing orders with SendCloud",
   "icon": "truck",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
