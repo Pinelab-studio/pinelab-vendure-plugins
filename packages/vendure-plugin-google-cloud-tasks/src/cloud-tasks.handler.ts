@@ -43,6 +43,15 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this.applicationBootstrapped = true;
+    this.removeSettledJobs(30)
+      .then(() => {})
+      .catch((e: any) => {
+        Logger.error(
+          `Failed to remove settled jobs: ${e?.message}`,
+          CloudTasksPlugin.loggerCtx,
+          e?.stack
+        );
+      });
   }
 
   @Post('handler')
@@ -107,7 +116,13 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
         progress: 100,
       });
       // Save successful job in DB
-      await this.jobRecordRepository.save(jobRecord);
+      await this.jobRecordRepository.save(jobRecord).catch((e: any) => {
+        // Just a warning, because it doesn't impact actual job processing
+        Logger.warn(
+          `Failed to update COMPLETED job record for job ${job.id}: ${e?.message}`,
+          CloudTasksPlugin.loggerCtx
+        );
+      });
       res.sendStatus(200);
       return;
     } catch (error: any) {
@@ -128,21 +143,29 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
           CloudTasksPlugin.loggerCtx
         );
         // Log failed job in DB
-        await this.jobRecordRepository.save(
-          new JobRecord({
-            queueName: job.queueName,
-            data: job.data,
-            attempts: job.attempts,
-            state: JobState.FAILED,
-            startedAt: job.startedAt,
-            createdAt: job.createdAt,
-            retries: job.retries,
-            isSettled: true,
-            settledAt: new Date(),
-            progress: 0,
-            result: error?.message ?? error.toString(),
-          })
-        );
+        await this.jobRecordRepository
+          .save(
+            new JobRecord({
+              queueName: job.queueName,
+              data: job.data,
+              attempts: job.attempts,
+              state: JobState.FAILED,
+              startedAt: job.startedAt,
+              createdAt: job.createdAt,
+              retries: job.retries,
+              isSettled: true,
+              settledAt: new Date(),
+              progress: 0,
+              result: error?.message ?? error.toString(),
+            })
+          )
+          .catch((e: any) => {
+            // Just a warning, because it doesn't impact actual job processing
+            Logger.warn(
+              `Failed to update COMPLETED job record for job ${job.id}: ${e?.message}`,
+              CloudTasksPlugin.loggerCtx
+            );
+          });
         res.sendStatus(200); // Return 200 to prevent more retries
       } else {
         // More attempts remain, so return 500 to trigger a retry
@@ -160,13 +183,23 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
   async clearJobs(
     @Req() req: Request,
     @Res() res: Response,
-    @Ctx() ctx: RequestContext,
     @Param('days') daysString: string
   ): Promise<void> {
     if (!this.isValidRequest(req)) {
       res.sendStatus(401);
       return;
     }
+    if (isNaN(parseInt(daysString))) {
+      res.status(400).send(`${daysString} is not a number`);
+      return;
+    }
+    const days = parseInt(daysString);
+    await this.removeSettledJobs(days);
+    res.sendStatus(200);
+  }
+
+  private async removeSettledJobs(days: number): Promise<void> {
+    const daysAgo: Date = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
     const cloudTaskJobStrategy = this.configService.jobQueueOptions
       .jobQueueStrategy as CloudTasksJobQueueStrategy;
     if (!(cloudTaskJobStrategy instanceof CloudTasksJobQueueStrategy)) {
@@ -176,15 +209,8 @@ export class CloudTasksHandler implements OnApplicationBootstrap {
       );
       return;
     }
-    if (isNaN(parseInt(daysString))) {
-      res.status(400).send(`${daysString} is not a number`);
-      return;
-    }
-    const days = parseInt(daysString);
-    const oneDayAgo: Date = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    await cloudTaskJobStrategy.removeAllJobs(oneDayAgo);
+    await cloudTaskJobStrategy.removeAllJobs(daysAgo);
     Logger.info(`Successfully removed jobs older than ${days} days`, loggerCtx);
-    res.sendStatus(200);
   }
 
   private isValidRequest(req: Request): boolean {

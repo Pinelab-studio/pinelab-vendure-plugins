@@ -123,8 +123,9 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     if (!LIVE_QUEUES.has(queueName)) {
       await this.createQueue(queueName);
     }
+    const retries = job.retries || this.options.defaultJobRetries || 3;
     // Store record saying that the task is PENDING, because we don't distinguish between pending and running
-    const jobRecord = await this.jobRecordRepository.save(
+    const jobRecord = await this.saveWithRetry(
       new JobRecord({
         queueName: queueName,
         data: job.data,
@@ -133,16 +134,16 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
         startedAt: job.startedAt,
         createdAt: job.createdAt,
         isSettled: false,
-        retries: job.retries || this.options.defaultJobRetries || 3,
+        retries,
         progress: 0,
       })
     );
     const cloudTaskMessage: CloudTaskMessage = {
       id: jobRecord.id,
-      queueName: jobRecord.queueName,
-      data: jobRecord.data,
-      createdAt: jobRecord.createdAt,
-      maxRetries: jobRecord.retries,
+      queueName: queueName,
+      data: job.data,
+      createdAt: job.createdAt,
+      maxRetries: retries,
     };
     const parent = this.getQueuePath(queueName);
     const task = {
@@ -160,7 +161,7 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
     let currentAttempt = 0;
     while (true) {
       try {
-        await this.client.createTask(request, {
+        const res = await this.client.createTask(request, {
           maxRetries: cloudTaskMessage.maxRetries,
         });
         Logger.debug(
@@ -222,6 +223,19 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
       `Stopped queue ${this.getQueueName(queueName)}`,
       CloudTasksPlugin.loggerCtx
     );
+  }
+
+  private async saveWithRetry(jobRecord: JobRecord): Promise<JobRecord> {
+    try {
+      return await this.jobRecordRepository.save(jobRecord);
+    } catch (e: any) {
+      if (e?.message?.indexOf('ER_DATA_TOO_LONG') > -1) {
+        // Save job without data
+        jobRecord.data = undefined;
+        return await this.jobRecordRepository.save(jobRecord);
+      }
+      throw e;
+    }
   }
 
   private getQueueName(name: string): string {
