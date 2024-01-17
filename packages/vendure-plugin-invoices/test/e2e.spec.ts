@@ -56,7 +56,6 @@ beforeAll(async () => {
     plugins: [
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3106',
-        loadDataFn: () => {},
       }),
     ],
     paymentOptions: {
@@ -126,7 +125,7 @@ describe('Generate with credit invoicing enabled', function () {
 
   it('Gets invoices for order', async () => {
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });
