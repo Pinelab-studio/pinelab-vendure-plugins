@@ -80,6 +80,32 @@ export const ELIGIBLE_GIFTS = gql`
   }
 `;
 
+export const UPDATE_PRODUCT_VARIANT_STOCK_ON_HAND = gql`
+  mutation UpdateProductVariantStockOnHandMutation(
+    $id: ID!
+    $stockLevels: [StockLevelInput!]
+  ) {
+    updateProductVariants(
+      input: [{ id: $id, stockLevels: $stockLevels, trackInventory: TRUE }]
+    ) {
+      id
+      stockLevel
+    }
+  }
+`;
+
+export const VARIANT_STOCK_LOCATIONS = gql`
+  query GetVariantStockLocationsQuery($id: ID!) {
+    productVariant(id: $id) {
+      stockLevels {
+        stockLocation {
+          id
+        }
+        stockOnHand
+      }
+    }
+  }
+`;
 /**
  * Create a promotion that allows for a free  gift for orders above a certain amount
  */
