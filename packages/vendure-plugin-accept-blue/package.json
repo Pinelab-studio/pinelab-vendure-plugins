@@ -11,8 +11,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "dist/vendure-plugin-picqer/src/index.js",
-  "types": "dist/vendure-plugin-picqer/src/index.d.ts",
+  "main": "dist/vendure-plugin-accept-blue/src/index.js",
+  "types": "dist/vendure-plugin-accept-blue/src/index.d.ts",
   "files": [
     "dist",
     "README.md",

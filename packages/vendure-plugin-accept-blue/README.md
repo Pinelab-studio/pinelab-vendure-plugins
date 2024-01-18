@@ -13,3 +13,9 @@ Create recurring subscriptions with the Accept Blue platform.
    - A charge is created for the customer with the initial amount due
    - A recurring subscription(s) for that customer is created
 3. If all succeed, the order is transitioned to `PaymentSettled`
+
+# Tips
+
+## CORS
+
+If you run into CORS issues loading the Accept Blue hosted tokenization javascript library, you might need to remove the `cross-origin` key on your `script` tag.
