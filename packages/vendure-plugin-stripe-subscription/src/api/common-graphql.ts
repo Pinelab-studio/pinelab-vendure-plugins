@@ -63,8 +63,4 @@ export const commonSchemaExtensions = gql`
       customInputs: JSON
     ): [StripeSubscription!]!
   }
-
-  extend type Mutation {
-    createStripeSubscriptionIntent: StripeSubscriptionIntent!
-  }
 `;
