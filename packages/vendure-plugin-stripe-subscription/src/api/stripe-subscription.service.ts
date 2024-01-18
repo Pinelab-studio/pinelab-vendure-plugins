@@ -411,9 +411,12 @@ export class StripeSubscriptionService {
     if (!order) {
       throw new EntityNotFoundError('Order', orderId);
     }
-    if (!order.active) {
-      throw new UserInputError('No active order for session');
-    }
+    // TODO this should maybe be removed? Active orders are carts. So when an admin edits an order
+    // a user could finish it in his cart. And the other way around. Not really an issue perhaps unless the admin can change settings
+    // an end user cannot
+    // if (!order.active) {
+    //   throw new UserInputError('No active order for session');
+    // }
     return this.createIntentByOrder(ctx, order);
   }
 
