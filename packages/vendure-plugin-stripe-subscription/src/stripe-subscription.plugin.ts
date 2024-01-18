@@ -1,8 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { SubscriptionStrategy } from './api/strategy/subscription-strategy';
-import { shopApiSchemaExtensions } from './api/graphql-shop-schema';
-import { adminApiSchemaExtensions } from './api/graphql-admin-schema';
 import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 import { DefaultSubscriptionStrategy } from './api/strategy/default-subscription-strategy';
 import path from 'path';
@@ -18,6 +16,8 @@ import {
   StripeSubscriptionCommonResolver,
   StripeSubscriptionShopApiResolver,
 } from './api/stripe-subscription.resolver';
+import { shopApiSchemaExtensions } from './api/shop-graphql';
+import { adminApiSchemaExtensions } from './api/admin-graphql';
 
 export interface StripeSubscriptionPluginOptions {
   /**

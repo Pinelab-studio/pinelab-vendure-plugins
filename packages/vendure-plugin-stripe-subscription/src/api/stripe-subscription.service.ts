@@ -43,7 +43,7 @@ import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import {
   StripeSubscription,
   StripeSubscriptionIntent,
-} from './generated/graphql';
+} from './generated/shop-graphql';
 import {
   Subscription,
   SubscriptionStrategy,

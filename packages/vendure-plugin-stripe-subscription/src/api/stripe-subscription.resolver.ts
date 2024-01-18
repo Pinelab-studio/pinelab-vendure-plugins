@@ -25,7 +25,10 @@ import {
   QueryPreviewStripeSubscriptionsForProductArgs,
   StripeSubscription,
 } from './generated/shop-graphql';
-import { Mutation as GraphqlAdminMutation } from './generated/admin-graphql';
+import {
+  Mutation as GraphqlAdminMutation,
+  MutationCreateStripeSubscriptionIntentArgs,
+} from './generated/admin-graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
 export type RequestWithRawBody = Request & { rawBody: any };
@@ -125,9 +128,13 @@ export class StripeSubscriptionAdminApiResolver {
   @Mutation()
   @Allow(Permission.Owner)
   async createStripeSubscriptionIntent(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
+    @Args() args: MutationCreateStripeSubscriptionIntentArgs
   ): Promise<GraphqlAdminMutation['createStripeSubscriptionIntent']> {
-    const res = await this.stripeSubscriptionService.createIntent(ctx);
+    const res = await this.stripeSubscriptionService.createIntentByOrderId(
+      ctx,
+      args.orderId
+    );
     return res;
   }
 }
