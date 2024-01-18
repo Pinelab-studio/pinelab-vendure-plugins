@@ -1,3 +1,7 @@
+# 2.4.2 (2024-01-18)
+
+- Allow admin API to create Payment Intent based on specified orderId, since there is no concept of an `activeOrder` for an admin
+
 # 2.4.1 (2024-12-03)
 
 - Return empty array instead of throwing an error for variants that are not subscriptions

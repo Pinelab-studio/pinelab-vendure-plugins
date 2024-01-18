@@ -127,9 +127,18 @@ export const SET_SHIPPING_METHOD = gql`
   }
 `;
 
-export const CREATE_PAYMENT_LINK = gql`
+export const CREATE_SHOP_PAYMENT_LINK = gql`
   mutation createStripeSubscriptionIntent {
     createStripeSubscriptionIntent {
+      clientSecret
+      intentType
+    }
+  }
+`;
+
+export const CREATE_ADMIN_PAYMENT_LINK = gql`
+  mutation createStripeSubscriptionIntent($orderId: ID!) {
+    createStripeSubscriptionIntent(orderId: $orderId) {
       clientSecret
       intentType
     }

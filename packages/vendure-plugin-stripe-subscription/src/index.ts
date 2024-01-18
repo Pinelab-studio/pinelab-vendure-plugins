@@ -1,5 +1,6 @@
 export * from './stripe-subscription.plugin';
-export * from './api/generated/graphql';
+export * from './api/generated/shop-graphql';
+export { MutationCreateStripeSubscriptionIntentArgs } from './api/generated/admin-graphql';
 export * from './api/stripe-subscription.service';
 export * from './api/strategy/subscription-strategy';
 export * from './api/strategy/default-subscription-strategy';

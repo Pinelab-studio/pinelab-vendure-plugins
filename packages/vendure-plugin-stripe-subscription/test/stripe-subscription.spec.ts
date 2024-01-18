@@ -28,7 +28,8 @@ import { DefaultStrategyTestWrapper } from './helpers/default-strategy-test-wrap
 import {
   ADD_ITEM_TO_ORDER,
   CANCEL_ORDER,
-  CREATE_PAYMENT_LINK,
+  CREATE_SHOP_PAYMENT_LINK,
+  CREATE_ADMIN_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   ELIGIBLE_PAYMENT_METHODS,
   getDefaultCtx,
@@ -280,7 +281,7 @@ describe('Stripe Subscription Plugin', function () {
     );
   });
 
-  it('Created a PaymentIntent', async () => {
+  it('Created a PaymentIntent via Shop API', async () => {
     // Mock API
     let paymentIntentInput: any = {};
     nock('https://api.stripe.com')
@@ -296,7 +297,38 @@ describe('Stripe Subscription Plugin', function () {
         object: 'payment_intent',
       });
     const { createStripeSubscriptionIntent: intent } = await shopClient.query(
-      CREATE_PAYMENT_LINK
+      CREATE_SHOP_PAYMENT_LINK
+    );
+    expect(intent.clientSecret).toBe('mock-secret-1234');
+    expect(intent.intentType).toBe('PaymentIntent');
+    expect(paymentIntentInput.setup_future_usage).toBe('off_session');
+    expect(paymentIntentInput.customer).toBe('customer-test-id');
+    // (T_1 + T_2) * tax + shipping
+    const totalDueNow = (129900 + 139900) * 1.2 + 500; // = 324260
+    expect(paymentIntentInput.amount).toBe(String(totalDueNow));
+  });
+
+  it('Created a PaymentIntent via Admin API', async () => {
+    const { activeOrder } = await shopClient.query(GET_ACTIVE_ORDER);
+    // Mock API
+    let paymentIntentInput: any = {};
+    nock('https://api.stripe.com')
+      .get(/customers.*/)
+      .reply(200, { data: [{ id: 'customer-test-id' }] });
+    nock('https://api.stripe.com')
+      .post(/payment_intents.*/, (body) => {
+        paymentIntentInput = body;
+        return true;
+      })
+      .reply(200, {
+        client_secret: 'mock-secret-1234',
+        object: 'payment_intent',
+      });
+    const { createStripeSubscriptionIntent: intent } = await adminClient.query(
+      CREATE_ADMIN_PAYMENT_LINK,
+      {
+        orderId: activeOrder.id,
+      }
     );
     expect(intent.clientSecret).toBe('mock-secret-1234');
     expect(intent.intentType).toBe('PaymentIntent');
