@@ -1,3 +1,7 @@
+# 2.4.3 (2024-01-18)
+
+- Remove `active` check for admin API create Payment Intent as `Draft` orders are not the same as `active` orders and there is no adequate way to manipulate the `active` state directly.
+
 # 2.4.2 (2024-01-18)
 
 - Allow admin API to create Payment Intent based on specified orderId, since there is no concept of an `activeOrder` for an admin
