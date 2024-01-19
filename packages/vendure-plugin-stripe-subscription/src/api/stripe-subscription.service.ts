@@ -403,7 +403,7 @@ export class StripeSubscriptionService {
     return this.createIntentByOrder(ctx, order);
   }
 
-  async createIntentByOrderId(
+  async createIntentForDraftOrder(
     ctx: RequestContext,
     orderId: ID
   ): Promise<StripeSubscriptionIntent> {
@@ -411,9 +411,8 @@ export class StripeSubscriptionService {
     if (!order) {
       throw new EntityNotFoundError('Order', orderId);
     }
-    if (!order.active) {
-      throw new UserInputError('No active order for session');
-    }
+    // TODO Perhaps need an order state check (Draft, ArrangingPayment) here?
+    // But state transition verification will likely be a good place for this as well
     return this.createIntentByOrder(ctx, order);
   }
 

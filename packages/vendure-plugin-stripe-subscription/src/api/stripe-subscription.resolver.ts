@@ -131,7 +131,7 @@ export class StripeSubscriptionAdminApiResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationCreateStripeSubscriptionIntentArgs
   ): Promise<GraphqlAdminMutation['createStripeSubscriptionIntent']> {
-    const res = await this.stripeSubscriptionService.createIntentByOrderId(
+    const res = await this.stripeSubscriptionService.createIntentForDraftOrder(
       ctx,
       args.orderId
     );
