@@ -3,36 +3,43 @@ import {
   Controller,
   Post,
   Res,
+  Param,
   Body,
   BadRequestException,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { Allow, Ctx, RequestContext } from '@vendure/core';
 import { pinelabPluginComponetsPermission } from './pinelab-plugin-admin-components.resolver';
 
 @Controller('invoices')
 export class PinelabPluginAdminComponentsController {
-  constructor(private readonly service: PinelabPluginAdminComponentsService) {}
+  constructor(
+    private readonly invoiceService: PinelabPluginAdminComponentsService
+  ) {}
 
   @Allow(pinelabPluginComponetsPermission.Permission)
-  @Post('/preview')
+  @Post('/preview/:orderCode')
   async preview(
     @Ctx() ctx: RequestContext,
-    @Res() req: Request,
+    @Param('orderCode') orderCode: string,
     @Res() res: Response,
-    @Body() data: { template: string }
+    @Body() body: { template: string }
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
     }
-    if (!data?.template || !data?.template.trim()) {
+    if (!body?.template || !body?.template.trim()) {
       throw new BadRequestException('No template given');
     }
-    const stream = await this.service.testTemplate(ctx, data.template);
+    const stream = await this.invoiceService.previewInvoiceWithTemplate(
+      ctx,
+      body.template,
+      orderCode
+    );
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="test-invoice.pdf"`,
+      'Content-Disposition': `inline; filename="preview-invoice.pdf"`,
     });
-    stream.pipe(res);
+    return stream.pipe(res);
   }
 }

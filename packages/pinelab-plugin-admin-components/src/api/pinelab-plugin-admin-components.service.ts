@@ -6,11 +6,11 @@ import {
   OrderService,
   RequestContext,
   TransactionalConnection,
+  UserInputError,
 } from '@vendure/core';
 
 import { InvoiceConfigInput } from '../ui/generated/graphql';
 import { ModuleRef } from '@nestjs/core';
-// @ts-expect-error
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
 import { InvoiceConfigEntity } from './invoice-config.entity';
@@ -149,5 +149,25 @@ export class PinelabPluginAdminComponentsService {
       invoiceNumber: data.invoiceNumber,
       customerEmail: data.customerEmail,
     };
+  }
+
+  /**
+   * Generates an invoice for the latest placed order and the given template
+   */
+  async previewInvoiceWithTemplate(
+    ctx: RequestContext,
+    template: string,
+    orderCode: string
+  ): Promise<ReadStream> {
+    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!order) {
+      throw new UserInputError(`No order found with code ${orderCode}`);
+    }
+    const config = await this.getConfig(ctx);
+    if (!config) {
+      throw Error(`No config found for channel ${ctx.channel.token}`);
+    }
+    const { tmpFileName } = await this.generateInvoice(ctx, template, order);
+    return createReadStream(tmpFileName);
   }
 }

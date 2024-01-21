@@ -6,7 +6,6 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
-  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -60,7 +59,6 @@ require('dotenv').config();
     customerCount: 2,
   });
   // add default Config
-  const channel = await server.app.get(ChannelService).getDefaultChannel();
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });
