@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import {
   ChannelService,
   Collection,
@@ -13,9 +13,10 @@ import {
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { loggerCtx } from './constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
+import { PopularityScoresPluginConfig } from './popularity-scores.plugin';
 @Injectable()
-export class SortService implements OnModuleInit {
+export class PopularityScoresService implements OnModuleInit {
   private jobQueue!: JobQueue<{
     channelToken: string;
     ctx: SerializedRequestContext;
@@ -24,7 +25,8 @@ export class SortService implements OnModuleInit {
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private channelService: ChannelService,
-    private collectionService: CollectionService
+    private collectionService: CollectionService,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig
   ) {}
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
@@ -141,12 +143,31 @@ export class SortService implements OnModuleInit {
 
       const uniqueProductIds = [...new Set(productIds)];
       if (uniqueProductIds.length) {
-        const summedProductsValue = await productSummingQuery
-          .andWhere('product.id IN (:...ids)', { ids: uniqueProductIds })
-          .getRawOne();
+        var sliceArray = (arr: number[], chunkSize: number): number[][] => {
+          var result = [];
+          for (var i = 0; i < arr.length; i += chunkSize) {
+            if (i + chunkSize < arr.length) {
+              result.push(arr.slice(i, i + chunkSize));
+            } else {
+              result.push(arr.slice(i));
+            }
+          }
+          return result;
+        };
+        let score = 0;
+        const chunkedProductIds = sliceArray(
+          uniqueProductIds,
+          this.config.chunkSize ?? 100
+        );
+        for (let uniqueProductIdsSlice of chunkedProductIds) {
+          const summedProductsValue = await productSummingQuery
+            .andWhere('product.id IN (:...ids)', { ids: uniqueProductIdsSlice })
+            .getRawOne();
+          score += summedProductsValue.productScoreSum ?? 0;
+        }
         productScoreSums.push({
           id: col.collection_id,
-          score: summedProductsValue.productScoreSum ?? 0,
+          score,
         });
       }
     }

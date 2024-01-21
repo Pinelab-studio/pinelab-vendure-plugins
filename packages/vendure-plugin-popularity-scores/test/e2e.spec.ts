@@ -35,6 +35,7 @@ describe('Sort by Popularity Plugin', function () {
       plugins: [
         PopularityScoresPlugin.init({
           endpointSecret: 'test-secret',
+          chunkSize: 1,
         }),
       ],
       paymentOptions: {

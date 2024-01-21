@@ -1,2 +1,2 @@
 export * from './popularity-scores.plugin';
-export * from './sort.service';
+export * from './popularity-scores.service';
