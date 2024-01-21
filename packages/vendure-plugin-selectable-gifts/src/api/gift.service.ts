@@ -14,6 +14,8 @@ import {
   UserInputError,
   Order,
   ID,
+  TranslatorService,
+  ProductPriceApplicator,
 } from '@vendure/core';
 import { freeGiftPromotionAction } from './free-gift.promotion-action';
 
@@ -23,7 +25,8 @@ export class GiftService {
     private promotionService: PromotionService,
     private orderService: OrderService,
     private connection: TransactionalConnection,
-    private variantService: ProductVariantService
+    private translatorService: TranslatorService,
+    private priceApplicator: ProductPriceApplicator
   ) {}
 
   /**
@@ -47,7 +50,30 @@ export class GiftService {
     if (!variantIds.length) {
       return [];
     }
-    return await this.variantService.findByIds(ctx, variantIds);
+    const variants = await this.connection
+      .getRepository(ctx, ProductVariant)
+      .createQueryBuilder('variant')
+      .leftJoin('variant.stockLevels', 'stockLevel')
+      .leftJoin('variant.translations', 'translations')
+      .leftJoinAndSelect('variant.productVariantPrices', 'productVariantPrices')
+      .leftJoinAndSelect('variant.taxCategory', 'taxCategory')
+      .leftJoin('variant.channels', 'channel')
+      .addGroupBy('variant.id')
+      .addSelect(['SUM(stockLevel.stockOnHand) as stockOnHand'])
+      .addSelect(['SUM(stockLevel.stockAllocated) as stockAllocated'])
+      .where('variant.id IN (:...ids)', { ids: variantIds })
+      .andWhere('variant.enabled = true')
+      .andWhere('stockOnHand > stockAllocated')
+      .andWhere('variant.deletedAt IS NULL')
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .getMany();
+    const translatedVariants = variants.map((v) =>
+      this.translatorService.translate(v, ctx)
+    );
+    const translatedVariantsWithPrice = translatedVariants.map((v) =>
+      this.priceApplicator.applyChannelPriceAndTax(v, ctx)
+    );
+    return Promise.all(translatedVariantsWithPrice);
   }
 
   /**

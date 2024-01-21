@@ -1,10 +1,27 @@
-schema: 'src/api/graphql-schema.ts'
+overwrite: true
 generates:
-  ./src/api/generated/graphql.ts:
+  src/api/generated/admin-graphql.ts:
+    schema:
+      - 'src/api/common-graphql.ts'
+      - 'src/api/admin-graphql.ts'
     plugins:
-      - typescript
-      - typescript-operations
-      - typed-document-node
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typed-document-node'
+    config:
+      enumsAsTypes: true
+      avoidOptionals: false
+      scalars:
+        DateTime: Date
+        ID: string | number
+  src/api/generated/shop-graphql.ts:
+    schema:
+      - 'src/api/common-graphql.ts'
+      - 'src/api/shop-graphql.ts'
+    plugins:
+      - 'typescript'
+      - 'typescript-operations'
+      - 'typed-document-node'
     config:
       enumsAsTypes: true
       avoidOptionals: false

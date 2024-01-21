@@ -5,6 +5,7 @@ import {
   ActiveOrderService,
   ChannelService,
   EntityHydrator,
+  EntityNotFoundError,
   ErrorResult,
   EventBus,
   HistoryService,
@@ -42,7 +43,7 @@ import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import {
   StripeSubscription,
   StripeSubscriptionIntent,
-} from './generated/graphql';
+} from './generated/shop-graphql';
 import {
   Subscription,
   SubscriptionStrategy,
@@ -399,6 +400,26 @@ export class StripeSubscriptionService {
     if (!order) {
       throw new UserInputError('No active order for session');
     }
+    return this.createIntentByOrder(ctx, order);
+  }
+
+  async createIntentForDraftOrder(
+    ctx: RequestContext,
+    orderId: ID
+  ): Promise<StripeSubscriptionIntent> {
+    let order = await this.orderService.findOne(ctx, orderId);
+    if (!order) {
+      throw new EntityNotFoundError('Order', orderId);
+    }
+    // TODO Perhaps need an order state check (Draft, ArrangingPayment) here?
+    // But state transition verification will likely be a good place for this as well
+    return this.createIntentByOrder(ctx, order);
+  }
+
+  async createIntentByOrder(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<StripeSubscriptionIntent> {
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
       applyProductVariantPrices: true,

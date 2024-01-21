@@ -1,7 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { SubscriptionStrategy } from './api/strategy/subscription-strategy';
-import { commonSchemaExtensions } from './api/graphql-schema';
 import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 import { DefaultSubscriptionStrategy } from './api/strategy/default-subscription-strategy';
 import path from 'path';
@@ -12,7 +11,13 @@ import { hasStripeSubscriptionProductsPaymentChecker } from './api/vendure-confi
 import { SubscriptionOrderItemCalculation } from './api/subscription-order-item-calculation';
 import { StripeSubscriptionService } from './api/stripe-subscription.service';
 import { StripeSubscriptionController } from './api/stripe-subscription.controller';
-import { StripeSubscriptionCommonResolver } from './api/stripe-subscription.resolver';
+import {
+  StripeSubscriptionAdminApiResolver,
+  StripeSubscriptionCommonResolver,
+  StripeSubscriptionShopApiResolver,
+} from './api/stripe-subscription.resolver';
+import { shopApiSchemaExtensions } from './api/shop-graphql';
+import { adminApiSchemaExtensions } from './api/admin-graphql';
 
 export interface StripeSubscriptionPluginOptions {
   /**
@@ -26,12 +31,18 @@ export interface StripeSubscriptionPluginOptions {
 @VendurePlugin({
   imports: [PluginCommonModule],
   shopApiExtensions: {
-    schema: commonSchemaExtensions,
-    resolvers: [StripeSubscriptionCommonResolver],
+    schema: shopApiSchemaExtensions,
+    resolvers: [
+      StripeSubscriptionCommonResolver,
+      StripeSubscriptionShopApiResolver,
+    ],
   },
   adminApiExtensions: {
-    schema: commonSchemaExtensions,
-    resolvers: [StripeSubscriptionCommonResolver],
+    schema: adminApiSchemaExtensions,
+    resolvers: [
+      StripeSubscriptionCommonResolver,
+      StripeSubscriptionAdminApiResolver,
+    ],
   },
   controllers: [StripeSubscriptionController],
   providers: [
