@@ -423,17 +423,21 @@ describe(
         );
       });
 
-      it(
-        'Gets order by code',
-        async () => {
-          if (!activeOrderCode) {
-            throw Error('Active order code is not defined');
-          }
-          await client.getOrderByCode(activeOrderCode);
-          expect(activeOrderCode).toEqual(activeOrderStore.value.data.code);
-        },
-        { timeout: 35000 }
-      );
+      it('Gets order by code', async () => {
+        if (!activeOrderCode) {
+          throw Error('Active order code is not defined');
+        }
+        await client.getOrderByCode(activeOrderCode);
+        expect(activeOrderCode).toEqual(activeOrderStore.value.data.code);
+      });
+
+      it('Poll order by code for', async () => {
+        if (!activeOrderCode) {
+          throw Error('Active order code is not defined');
+        }
+        await client.pollOrderByCode(activeOrderCode);
+        expect(activeOrderCode).toEqual(activeOrderStore.value.data.code);
+      });
     });
 
     const createNewCustomerInput: RegisterCustomerInput = {

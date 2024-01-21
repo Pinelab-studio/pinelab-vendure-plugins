@@ -360,19 +360,34 @@ export class VendureOrderClient<A = unknown> {
    */
   @HandleLoadingState('$activeOrder')
   async getOrderByCode(code: string): Promise<ActiveOrder<A>> {
+    const { orderByCode } = await this.rawRequest<any, QueryOrderByCodeArgs>(
+      this.queries.GET_ORDER_BY_CODE,
+      { code }
+    );
+    if (
+      orderByCode?.state !== 'PaymentSettled' &&
+      orderByCode?.state !== 'PaymentAuthorized'
+    ) {
+      throw Error(`Can not get order by code.`);
+    }
+    return orderByCode;
+  }
+
+  /**
+   * Poll order by code for a given poll amount of times. And Poll for x seconds
+   */
+  @HandleLoadingState('$activeOrder')
+  async pollOrderByCode(
+    code: string,
+    pollFor: number = 10
+  ): Promise<ActiveOrder<A>> {
     let order: ActiveOrder<A> | undefined;
     let pollingCount = 0;
-    while (
-      order?.state !== 'PaymentSettled' &&
-      order?.state !== 'PaymentAuthorized'
-    ) {
-      if (pollingCount > 30) {
-        throw Error(`Order not settled after polling 30 times`);
+    while (!order) {
+      if (pollingCount > pollFor) {
+        throw Error(`Order not settled after polling ${pollFor} times`);
       }
-      order = await this.rawRequest<any, QueryOrderByCodeArgs>(
-        this.queries.GET_ORDER_BY_CODE,
-        { code }
-      );
+      order = await this.getOrderByCode(code);
       await new Promise((resolve) => setTimeout(resolve, 1000));
       pollingCount++;
     }
