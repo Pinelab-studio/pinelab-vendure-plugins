@@ -7,7 +7,7 @@ import { PopularityScoresService } from './popularity-scores.service';
 @Controller('/popularity-scores')
 export class OrderByPopularityController {
   constructor(
-    private sortService: PopularityScoresService,
+    private popularityScoreService: PopularityScoresService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig
   ) {}
 
@@ -20,6 +20,6 @@ export class OrderByPopularityController {
     if (secret !== this.config.endpointSecret) {
       throw new UnauthorizedError();
     }
-    await this.sortService.addScoreCalculatingJobToQueue(token, ctx);
+    await this.popularityScoreService.addScoreCalculatingJobToQueue(token, ctx);
   }
 }

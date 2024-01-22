@@ -143,9 +143,9 @@ export class PopularityScoresService implements OnModuleInit {
 
       const uniqueProductIds = [...new Set(productIds)];
       if (uniqueProductIds.length) {
-        var sliceArray = (arr: number[], chunkSize: number): number[][] => {
-          var result = [];
-          for (var i = 0; i < arr.length; i += chunkSize) {
+        const sliceArray = (arr: number[], chunkSize: number): number[][] => {
+          const result = [];
+          for (let i = 0; i < arr.length; i += chunkSize) {
             if (i + chunkSize < arr.length) {
               result.push(arr.slice(i, i + chunkSize));
             } else {
