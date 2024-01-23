@@ -18,6 +18,7 @@ import { CloudTaskMessage, CloudTaskOptions } from './types';
 import { In, LessThan, Repository, DataSource } from 'typeorm';
 import { JobListOptions, JobState } from '@vendure/common/lib/generated-types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
+import { CloudTasksService } from './cloud-tasks-service';
 
 const LIVE_QUEUES = new Set<string>();
 
@@ -28,8 +29,10 @@ export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   private client: CloudTasksClient;
   private listQueryBuilder: ListQueryBuilder | undefined;
   private jobRecordRepository!: Repository<JobRecord>;
+  private service!: CloudTasksService;
 
   init(injector: Injector): void | Promise<void> {
+    this.service = injector.get(CloudTasksService);
     this.listQueryBuilder = injector.get(ListQueryBuilder);
     this.jobRecordRepository = injector
       .get(DataSource)

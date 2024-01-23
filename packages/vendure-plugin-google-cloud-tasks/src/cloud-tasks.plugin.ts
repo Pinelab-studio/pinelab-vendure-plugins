@@ -5,13 +5,14 @@ import {
   Logger,
 } from '@vendure/core';
 import { CloudTasksJobQueueStrategy } from './cloud-tasks-job-queue.strategy';
-import { CloudTasksHandler } from './cloud-tasks.handler';
+import { CloudTasksController } from './cloud-tasks-controller';
+import { CloudTasksService } from './cloud-tasks-service';
 import { CloudTaskOptions } from './types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  controllers: [CloudTasksHandler],
+  controllers: [CloudTasksController],
   entities: [JobRecord],
   configuration: (config: RuntimeVendureConfig) => {
     config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy(

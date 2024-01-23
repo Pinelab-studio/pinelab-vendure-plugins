@@ -29,7 +29,7 @@ import { loggerCtx } from '@vendure/core/dist/job-queue/constants';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 
 @Controller(ROUTE)
-export class CloudTasksHandler implements OnApplicationBootstrap {
+export class CloudTasksController implements OnApplicationBootstrap {
   private jobRecordRepository: Repository<JobRecord>;
   private applicationBootstrapped = false;
 
