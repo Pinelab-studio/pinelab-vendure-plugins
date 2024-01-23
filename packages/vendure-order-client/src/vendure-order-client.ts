@@ -364,12 +364,6 @@ export class VendureOrderClient<A = unknown> {
       this.queries.GET_ORDER_BY_CODE,
       { code }
     );
-    if (
-      orderByCode?.state !== 'PaymentSettled' &&
-      orderByCode?.state !== 'PaymentAuthorized'
-    ) {
-      throw Error(`Can not get order by code.`);
-    }
     return orderByCode;
   }
 
@@ -379,13 +373,14 @@ export class VendureOrderClient<A = unknown> {
   @HandleLoadingState('$activeOrder')
   async pollOrderByCode(
     code: string,
-    pollFor: number = 10
+    pollFor: number = 10,
+    acceptedStates: string[] = ['PaymentSettled', 'PaymentAuthorized']
   ): Promise<ActiveOrder<A>> {
     let order: ActiveOrder<A> | undefined;
     let pollingCount = 0;
-    while (!order) {
+    while (!order || !acceptedStates.includes(order?.state)) {
       if (pollingCount > pollFor) {
-        throw Error(`Order not settled after polling ${pollFor} times`);
+        throw Error(`Order not found after polling ${pollFor} times`);
       }
       order = await this.getOrderByCode(code);
       await new Promise((resolve) => setTimeout(resolve, 1000));

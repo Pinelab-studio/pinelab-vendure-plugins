@@ -1,6 +1,6 @@
 # 2.8.1 (2023-12-01)
 
-- Update the getOrderByCode and add pollOrderByCode function
+- Added `pollOrderByCode` to poll for order every second
 
 # 2.8.0 (2024-01-04)
 
