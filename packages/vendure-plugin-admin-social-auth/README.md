@@ -11,6 +11,7 @@ https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid
 1. Install `google-auth-library`: `yarn add google-auth-library`
 
 2. In your vendure-config, add the plugin:
+
 ```ts
 import { SocialAuthPlugin } from '@pinelab/vendure-plugin-social-auth';
 
@@ -30,11 +31,5 @@ plugins: [
       }),
 ]
 ```
+
 // TODO this checks for existance of users, regardless of auth strategy
-
-
-
-
-
-
-

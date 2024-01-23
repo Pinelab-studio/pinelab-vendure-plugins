@@ -1,12 +1,8 @@
 <html>
   <head>
     <title>
-      {{#if brand}}
-        {{brand}}
-      {{/if}} 
-      {{#unless hideVendureBranding}}
-          Vendure
-      {{/unless}} 
+      {{#if brand}} {{brand}} {{/if}} {{#unless hideVendureBranding}} Vendure
+      {{/unless}}
     </title>
     <link rel="icon" type="image/x-icon" href="/admin/favicon.ico" />
     <script src="https://accounts.google.com/gsi/client" async></script>
@@ -42,19 +38,12 @@
     <div style="text-align: center">
       <br />
       <small>
-        {{#if brand}}
-            {{brand}}
-        {{/if}} 
-        {{#unless hideVendureBranding}}
-            Vendure
-        {{/unless}} 
-        {{#unless hideVersion}}
-            v{{ version }}
-        {{/unless}} 
+        {{#if brand}} {{brand}} {{/if}} {{#unless hideVendureBranding}} Vendure
+        {{/unless}} {{#unless hideVersion}} v{{ version }} {{/unless}}
       </small>
-      <br/>
-      <br/>
-      <small id="errorMessage" style="color: red;"></small>
+      <br />
+      <br />
+      <small id="errorMessage" style="color: red"></small>
     </div>
 
     <script type="text/javascript">
@@ -79,18 +68,20 @@
         const json = await res.json();
         const authToken = res.headers.get('Vendure-Auth-Token');
         console.log(authToken);
+        localStorage.setItem('vnd__authToken', `"${authToken}"`);
         if (json.data.authenticate.message) {
-          document.getElementById('errorMessage').innerHTML = json.data.authenticate.message;
+          document.getElementById('errorMessage').innerHTML =
+            json.data.authenticate.message;
         } else {
-
           const res = await fetch('/admin-api', {
-          method: 'POST',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Vendure-Auth-Token': authToken
-          },
-          body: JSON.stringify({
-            query: `
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Vendure-Auth-Token': authToken,
+              Authorization: `Bearer ${authToken}`,
+            },
+            body: JSON.stringify({
+              query: `
             {
               me{
                 id
@@ -103,15 +94,12 @@
                 }
               }
             }`,
-          }),
-        });
-        const json = await res.json();
-        console.log('Logged in');
-        console.log(json);
-          
-
-          // FIXME
-          // window.location.replace('http://localhost:3050/admin/orders');
+            }),
+          });
+          const json = await res.json();
+          console.log('Logged in');
+          console.log(json);
+          window.location.replace('http://localhost:3050/admin/orders');
         }
       }
     </script>
