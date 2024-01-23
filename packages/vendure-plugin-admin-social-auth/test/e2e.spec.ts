@@ -36,7 +36,7 @@ describe('Example plugin e2e', function () {
   }, 60000);
 
   it('Should start successfully', async () => {
-    await expect(server.app.getHttpServer).toBeDefined
+    await expect(server.app.getHttpServer).toBeDefined;
   });
 
   // TODO: write your tests here

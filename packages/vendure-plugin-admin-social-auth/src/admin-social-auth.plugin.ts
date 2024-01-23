@@ -1,8 +1,8 @@
-import { Logger, PluginCommonModule, VendurePlugin } from "@vendure/core";
-import { GoogleAuthStrategy } from "./api/google-auth-strategy";
-import { LoginController } from "./api/login-controller";
+import { Logger, PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { GoogleAuthStrategy } from './api/google-auth-strategy';
+import { LoginController } from './api/login-controller';
 
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from "./constants";
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 
 export interface GoogleInput {
   oAuthClientId: string;
@@ -14,9 +14,7 @@ export interface AdminSocialAuthPluginOptions {
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  controllers: [
-    LoginController
-  ],
+  controllers: [LoginController],
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,
@@ -28,7 +26,9 @@ export interface AdminSocialAuthPluginOptions {
     config.authOptions.adminAuthenticationStrategy = [];
     if (AdminSocialAuthPlugin.options.google?.oAuthClientId) {
       config.authOptions.adminAuthenticationStrategy.push(
-        new GoogleAuthStrategy(AdminSocialAuthPlugin.options.google.oAuthClientId),
+        new GoogleAuthStrategy(
+          AdminSocialAuthPlugin.options.google.oAuthClientId
+        )
       );
       Logger.info(`Registered Google auth login for administrators`, loggerCtx);
     }

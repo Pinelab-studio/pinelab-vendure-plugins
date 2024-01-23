@@ -10,7 +10,7 @@ import {
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
-  AdministratorService
+  AdministratorService,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
@@ -71,7 +71,7 @@ require('dotenv').config();
     firstName: 'Martijn',
     lastName: 'Pinelab',
     roleIds: ['1'],
-    password: 'test'
+    password: 'test',
   });
   console.log(`Created admin user ${result.emailAddress}`);
 })();
