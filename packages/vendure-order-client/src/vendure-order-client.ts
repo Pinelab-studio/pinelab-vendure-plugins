@@ -367,6 +367,28 @@ export class VendureOrderClient<A = unknown> {
     return orderByCode;
   }
 
+  /**
+   * Poll order by code for a given poll amount of times. And Poll for x seconds
+   */
+  @HandleLoadingState('$activeOrder')
+  async pollOrderByCode(
+    code: string,
+    pollFor: number = 10,
+    acceptedStates: string[] = ['PaymentSettled', 'PaymentAuthorized']
+  ): Promise<ActiveOrder<A>> {
+    let order: ActiveOrder<A> | undefined;
+    let pollingCount = 0;
+    while (!order || !acceptedStates.includes(order?.state)) {
+      if (pollingCount > pollFor) {
+        throw Error(`Order not found after polling ${pollFor} times`);
+      }
+      order = await this.getOrderByCode(code);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      pollingCount++;
+    }
+    return order;
+  }
+
   async registerCustomerAccount(
     input: RegisterCustomerInput
   ): Promise<Success | ErrorResult> {
