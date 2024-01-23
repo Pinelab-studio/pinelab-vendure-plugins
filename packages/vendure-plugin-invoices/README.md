@@ -108,7 +108,6 @@ To disable the credit invoice behaviour:
   InvoicePlugin.init({
     // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
-    createCreditInvoices: false
   }),
 ```
 

@@ -32,19 +32,6 @@ export const invoiceFragment = gql`
   }
 `;
 
-export const getOrderWithInvoices = gql`
-  ${invoiceFragment}
-  query order($id: ID!) {
-    order(id: $id) {
-      id
-      code
-      invoices {
-        ...invoiceFields
-      }
-    }
-  }
-`;
-
 export const createInvoice = gql`
   ${invoiceFragment}
   mutation createInvoice($orderId: ID!) {

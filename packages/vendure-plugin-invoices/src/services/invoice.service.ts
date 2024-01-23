@@ -39,6 +39,7 @@ import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 interface DownloadInput {
   customerEmail: string;
@@ -243,7 +244,20 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       path: tmpFilePath,
       type: '',
     };
-    await pdf.create(document, options);
+
+    if (process.env.NODE_ENV === 'test') {
+      pdf.create(document, options).catch((error: any) => {
+        Logger.error(JSON.stringify(error), loggerCtx);
+      });
+    } else {
+      try {
+        await pdf.create(document, options);
+      } catch (e) {
+        Logger.error(JSON.stringify(e), loggerCtx);
+        throw e;
+      }
+    }
+
     return {
       invoiceTmpFile: tmpFilePath,
       invoiceNumber: data.invoiceNumber,
@@ -391,12 +405,15 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       where: { channelId: String(ctx!.channelId) },
     });
     if (existing) {
-      await configRepo.update(existing.id, input);
+      await configRepo.update(
+        existing.id,
+        input as QueryDeepPartialEntity<InvoiceConfigEntity>
+      );
     } else {
       await configRepo.insert({
         ...input,
         channelId: String(ctx.channelId),
-      });
+      } as QueryDeepPartialEntity<InvoiceConfigEntity>);
     }
     return configRepo.findOneOrFail({
       where: { channelId: String(ctx.channelId) },

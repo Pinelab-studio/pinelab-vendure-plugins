@@ -6,7 +6,6 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
-  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -16,11 +15,7 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
-import {
-  InvoicePlugin,
-  GoogleStorageInvoiceStrategy,
-  InvoiceService,
-} from '../src';
+import { InvoicePlugin, InvoiceService, LocalFileStrategy } from '../src';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -34,12 +29,7 @@ require('dotenv').config();
     plugins: [
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
-        storageStrategy: new GoogleStorageInvoiceStrategy({
-          bucketName: process.env.TEST_BUCKET!,
-          storageOptions: {
-            keyFilename: 'key.json',
-          },
-        }),
+        storageStrategy: new LocalFileStrategy(),
         loadDataFn: async (
           ctx,
           injector,
@@ -84,11 +74,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [InvoicePlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [InvoicePlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
     paymentOptions: {
