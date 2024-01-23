@@ -75,6 +75,7 @@
         2,
         "always",
         [
+          "admin-social-auth",
           "admin-ui-helpers",
           "all-plugins",
           "anonymized-order",
@@ -98,7 +99,6 @@
           "primary-collection",
           "selectable-gifts",
           "sendcloud",
-          "social-auth",
           "shipping",
           "stock-monitoring",
           "stripe-subscription",

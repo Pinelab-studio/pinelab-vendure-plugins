@@ -27,7 +27,6 @@ export class LoginController {
 
   @Get('social-auth/login')
   async getLogin(@Res() res: Response): Promise<void> {
-    const adminUiPlugin = this.injector.get(AdminUiPlugin);
     // Dirty hack to get the private static adminUiConfig
     const adminUiConfig: Partial<AdminUiConfig> | undefined = (
       AdminUiPlugin as any
