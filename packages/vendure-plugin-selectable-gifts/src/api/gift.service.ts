@@ -1,21 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigurableOperation } from '@vendure/common/lib/generated-types';
 import {
-  ConfigurableOperation,
-  UpdateOrderItemsResult,
-} from '@vendure/common/lib/generated-types';
-import {
+  ID,
+  Order,
   OrderService,
   ProductVariant,
   ProductVariantService,
   Promotion,
   PromotionService,
   RequestContext,
-  TransactionalConnection,
+  StockLevelService,
   UserInputError,
-  Order,
-  ID,
-  TranslatorService,
-  ProductPriceApplicator,
 } from '@vendure/core';
 import { freeGiftPromotionAction } from './free-gift.promotion-action';
 
@@ -24,9 +19,8 @@ export class GiftService {
   constructor(
     private promotionService: PromotionService,
     private orderService: OrderService,
-    private connection: TransactionalConnection,
-    private translatorService: TranslatorService,
-    private priceApplicator: ProductPriceApplicator
+    private variantService: ProductVariantService,
+    private stockLevelService: StockLevelService
   ) {}
 
   /**
@@ -50,30 +44,17 @@ export class GiftService {
     if (!variantIds.length) {
       return [];
     }
-    const variants = await this.connection
-      .getRepository(ctx, ProductVariant)
-      .createQueryBuilder('variant')
-      .leftJoin('variant.stockLevels', 'stockLevel')
-      .leftJoin('variant.translations', 'translations')
-      .leftJoinAndSelect('variant.productVariantPrices', 'productVariantPrices')
-      .leftJoinAndSelect('variant.taxCategory', 'taxCategory')
-      .leftJoin('variant.channels', 'channel')
-      .addGroupBy('variant.id')
-      .addSelect(['SUM(stockLevel.stockOnHand) as stockOnHand'])
-      .addSelect(['SUM(stockLevel.stockAllocated) as stockAllocated'])
-      .where('variant.id IN (:...ids)', { ids: variantIds })
-      .andWhere('variant.enabled = true')
-      .andWhere('stockOnHand > stockAllocated')
-      .andWhere('variant.deletedAt IS NULL')
-      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
-      .getMany();
-    const translatedVariants = variants.map((v) =>
-      this.translatorService.translate(v, ctx)
+    const variants = await this.variantService.findByIds(ctx, variantIds);
+    const variantsWithStock: ProductVariant[] = [];
+    // only add variants with stock to the list
+    await Promise.all(
+      variants.map(async (variant) => {
+        if ((await this.hasStock(ctx, variant)) && variant.enabled) {
+          variantsWithStock.push(variant);
+        }
+      })
     );
-    const translatedVariantsWithPrice = translatedVariants.map((v) =>
-      this.priceApplicator.applyChannelPriceAndTax(v, ctx)
-    );
-    return Promise.all(translatedVariantsWithPrice);
+    return variantsWithStock;
   }
 
   /**
@@ -145,5 +126,14 @@ export class GiftService {
    */
   private parseConfigArg(facetValueIdsArg: string): ID[] {
     return JSON.parse(facetValueIdsArg);
+  }
+
+  private async hasStock(
+    ctx: RequestContext,
+    variant: ProductVariant
+  ): Promise<boolean> {
+    const { stockAllocated, stockOnHand } =
+      await this.stockLevelService.getAvailableStock(ctx, variant.id);
+    return stockOnHand > stockAllocated;
   }
 }
