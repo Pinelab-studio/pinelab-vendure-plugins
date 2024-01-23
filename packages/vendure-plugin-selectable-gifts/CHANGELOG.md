@@ -1,4 +1,4 @@
-# 1.1.1 (2023-11-22)
+# 1.1.1 (2024-01-23)
 
 - MySQL bugfix and use stock level service for resolving stock
 
