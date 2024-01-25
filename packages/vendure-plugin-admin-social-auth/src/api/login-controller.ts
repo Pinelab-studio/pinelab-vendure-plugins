@@ -28,6 +28,7 @@ export class LoginController {
   @Get('social-auth/login')
   async getLogin(@Res() res: Response): Promise<void> {
     // Dirty hack to get the private static adminUiConfig
+
     const adminUiConfig: Partial<AdminUiConfig> | undefined = (
       AdminUiPlugin as any
     ).options?.adminUiConfig;
@@ -35,11 +36,14 @@ export class LoginController {
       `${__dirname}/../ui/login.html`,
       'utf8'
     );
+    const tokenMethod = this.configService.authOptions.tokenMethod;
     const rendered = Handlebars.compile(loginHtml)({
       clientId: this.options.google?.oAuthClientId,
       version: VENDURE_VERSION,
       brand: adminUiConfig?.brand,
       hideVendureBranding: adminUiConfig?.hideVendureBranding,
+      isCookieTokenMethodEnabled:
+        tokenMethod === 'cookie' || tokenMethod.includes('cookie'),
       hideVersion: adminUiConfig?.hideVersion,
     });
     res.send(rendered);

@@ -69,11 +69,13 @@
         if (json.data.authenticate.message) {
           document.getElementById('errorMessage').innerHTML =
             json.data.authenticate.message;
-        } else {
-          const authToken = res.headers.get('Vendure-Auth-Token');
-          localStorage.setItem('vnd__authToken', `"${authToken}"`);
-          window.location.replace('http://localhost:3050/admin');
+          return;
         }
+        const authToken = res.headers.get('Vendure-Auth-Token');
+        if ('{{isCookieTokenMethodEnabled}}' === 'false') {
+          localStorage.setItem('vnd__authToken', `"${authToken}"`);
+        }
+        window.location.replace('../../admin');
       }
     </script>
   </body>
