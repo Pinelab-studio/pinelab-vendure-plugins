@@ -21,11 +21,11 @@ import {
 } from '../src/';
 import {
   ADD_ITEM_TO_ORDER,
-  CREATE_PAYMENT_LINK,
+  CREATE_SHOP_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   setShipping,
-} from './helpers';
-import { StripeTestCheckoutPlugin } from './stripe-test-checkout.plugin';
+} from './helpers/graphql-helpers';
+import { StripeTestCheckoutPlugin } from './helpers/stripe-test-checkout.plugin';
 
 export let intent: StripeSubscriptionIntent;
 

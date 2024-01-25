@@ -222,7 +222,6 @@ describe('SendCloud', () => {
       }
     );
     const order = await getOrder(adminClient, String(orderId));
-    const fulfilment = order?.fulfillments?.[0];
     expect(order?.state).toBe('Delivered');
   });
 

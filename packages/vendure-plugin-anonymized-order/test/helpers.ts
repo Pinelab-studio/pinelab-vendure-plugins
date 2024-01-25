@@ -10,6 +10,7 @@ export const OrderFieldsFragment = gql`
     total
     totalWithTax
     shippingWithTax
+    couponCodes
     shippingAddress {
       fullName
       company

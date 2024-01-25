@@ -1,19 +1,16 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigurableOperation } from '@vendure/common/lib/generated-types';
 import {
-  ConfigurableOperation,
-  UpdateOrderItemsResult,
-} from '@vendure/common/lib/generated-types';
-import {
+  ID,
+  Order,
   OrderService,
   ProductVariant,
   ProductVariantService,
   Promotion,
   PromotionService,
   RequestContext,
-  TransactionalConnection,
+  StockLevelService,
   UserInputError,
-  Order,
-  ID,
 } from '@vendure/core';
 import { freeGiftPromotionAction } from './free-gift.promotion-action';
 
@@ -22,8 +19,8 @@ export class GiftService {
   constructor(
     private promotionService: PromotionService,
     private orderService: OrderService,
-    private connection: TransactionalConnection,
-    private variantService: ProductVariantService
+    private variantService: ProductVariantService,
+    private stockLevelService: StockLevelService
   ) {}
 
   /**
@@ -47,7 +44,17 @@ export class GiftService {
     if (!variantIds.length) {
       return [];
     }
-    return await this.variantService.findByIds(ctx, variantIds);
+    const variants = await this.variantService.findByIds(ctx, variantIds);
+    const variantsWithStock: ProductVariant[] = [];
+    // only add variants with stock to the list
+    await Promise.all(
+      variants.map(async (variant) => {
+        if ((await this.hasStock(ctx, variant)) && variant.enabled) {
+          variantsWithStock.push(variant);
+        }
+      })
+    );
+    return variantsWithStock;
   }
 
   /**
@@ -119,5 +126,14 @@ export class GiftService {
    */
   private parseConfigArg(facetValueIdsArg: string): ID[] {
     return JSON.parse(facetValueIdsArg);
+  }
+
+  private async hasStock(
+    ctx: RequestContext,
+    variant: ProductVariant
+  ): Promise<boolean> {
+    const { stockAllocated, stockOnHand } =
+      await this.stockLevelService.getAvailableStock(ctx, variant.id);
+    return stockOnHand > stockAllocated;
   }
 }

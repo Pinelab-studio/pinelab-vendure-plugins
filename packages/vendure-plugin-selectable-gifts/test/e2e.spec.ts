@@ -15,10 +15,11 @@ import { SelectableGiftsPlugin } from '../src';
 import {
   ADD_GIFT_TO_ORDER,
   ADD_ITEM_TO_ORDER,
+  UPDATE_PRODUCT_VARIANT_STOCK_ON_HAND,
+  VARIANT_STOCK_LOCATIONS,
   createPromotion,
   getEligibleGifts,
 } from './helpers';
-
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
@@ -263,6 +264,33 @@ describe('Storefront free gift selection', function () {
     });
     const eligibleGifts = await getEligibleGifts(shopClient);
     expect(eligibleGifts.length).toBe(1);
+    expect(eligibleGifts[0].name).not.toBeUndefined();
+    expect(eligibleGifts[0].name).not.toBeNull();
+    expect(eligibleGifts[0].name?.trim()).not.toEqual('');
+    expect(eligibleGifts[0].priceWithTax).toBeGreaterThan(0);
+  });
+
+  it('Should return only in stock variants as eligible gifts', async () => {
+    const {
+      productVariant: { stockLevels },
+    } = await adminClient.query(VARIANT_STOCK_LOCATIONS, {
+      id: giftForOrdersAbove0,
+    });
+    const stockLevelUpdateInput: any[] = [];
+    for (let stockLevel of stockLevels) {
+      stockLevelUpdateInput.push({
+        stockLocationId: (stockLevel as any).stockLocation.id,
+        stockOnHand: 0,
+      });
+    }
+    const { updateProductVariants } = await adminClient.query(
+      UPDATE_PRODUCT_VARIANT_STOCK_ON_HAND,
+      { id: giftForOrdersAbove0, stockLevels: stockLevelUpdateInput }
+    );
+    expect(updateProductVariants[0].id).toBe(giftForOrdersAbove0);
+    expect(updateProductVariants[0].stockLevel).toBe('OUT_OF_STOCK');
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBe(0);
   });
 
   afterAll(() => {
