@@ -22,13 +22,13 @@ export interface AdminSocialAuthPluginOptions {
     },
   ],
   configuration: (config) => {
+    const pluginOptions = AdminSocialAuthPlugin.options;
     // Reset the adminAuthenticationStrategy to an empty array, because we only want social logins
     config.authOptions.adminAuthenticationStrategy = [];
-    if (AdminSocialAuthPlugin.options.google?.oAuthClientId) {
+    // Set Google as auth
+    if (pluginOptions.google?.oAuthClientId) {
       config.authOptions.adminAuthenticationStrategy.push(
-        new GoogleAuthStrategy(
-          AdminSocialAuthPlugin.options.google.oAuthClientId
-        )
+        new GoogleAuthStrategy(pluginOptions.google.oAuthClientId)
       );
       Logger.info(`Registered Google auth login for administrators`, loggerCtx);
     }

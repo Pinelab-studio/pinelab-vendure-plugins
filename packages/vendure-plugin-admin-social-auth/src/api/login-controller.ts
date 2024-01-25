@@ -14,21 +14,16 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
  */
 @Controller()
 export class LoginController {
-  private readonly injector: Injector;
-
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AdminSocialAuthPluginOptions,
     private readonly configService: ConfigService,
     private readonly moduleRef: ModuleRef
-  ) {
-    this.injector = new Injector(this.moduleRef);
-  }
+  ) {}
 
   @Get('social-auth/login')
   async getLogin(@Res() res: Response): Promise<void> {
     // Dirty hack to get the private static adminUiConfig
-
     const adminUiConfig: Partial<AdminUiConfig> | undefined = (
       AdminUiPlugin as any
     ).options?.adminUiConfig;

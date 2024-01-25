@@ -7,9 +7,10 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { ExamplePlugin } from '../src/example.plugin';
-import { initialData } from './initial-data';
 import path from 'path';
+import { initialData } from '../../test/src/initial-data';
+import { AdminSocialAuthPlugin } from '../src';
+import { describe, it, beforeAll, expect, afterAll } from 'vitest';
 
 describe('Example plugin e2e', function () {
   let server: TestServer;
@@ -22,8 +23,10 @@ describe('Example plugin e2e', function () {
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
-        ExamplePlugin.init({
-          enabled: true,
+        AdminSocialAuthPlugin.init({
+          google: {
+            oAuthClientId: 'Just a test',
+          },
         }),
       ],
     });
@@ -37,11 +40,6 @@ describe('Example plugin e2e', function () {
 
   it('Should start successfully', async () => {
     await expect(server.app.getHttpServer).toBeDefined;
-  });
-
-  // TODO: write your tests here
-  it('My little testcase', async () => {
-    await expect(true).toBe(true);
   });
 
   afterAll(() => {

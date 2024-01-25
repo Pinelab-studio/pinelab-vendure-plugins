@@ -18,7 +18,7 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc",
-    "test": "jest --preset=\"ts-jest\""
+    "test": "vitest run"
   },
   "devDependencies": {
     "google-auth-library": "^9.4.1"

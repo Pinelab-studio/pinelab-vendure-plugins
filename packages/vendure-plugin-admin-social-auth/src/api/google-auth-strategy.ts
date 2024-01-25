@@ -1,13 +1,12 @@
 import {
+  AdministratorService,
   AuthenticationStrategy,
+  ExternalAuthenticationMethod,
   Injector,
   Logger,
   RequestContext,
-  ExternalAuthenticationMethod,
-  User,
-  NativeAuthenticationMethod,
   TransactionalConnection,
-  AdministratorService,
+  User,
 } from '@vendure/core';
 import { DocumentNode } from 'graphql';
 import gql from 'graphql-tag';
@@ -36,6 +35,7 @@ export class GoogleAuthStrategy
   async init(injector: Injector) {
     this.adminService = injector.get(AdministratorService);
     this.connection = injector.get(TransactionalConnection);
+    // Inline import, because the google-auth-library package is only available if consumers specify Google as auth method
     const { OAuth2Client } = await import('google-auth-library');
     this.client = new OAuth2Client(this.clientId);
   }
@@ -44,7 +44,7 @@ export class GoogleAuthStrategy
     return gql`
       input GoogleAuthInput {
         """
-        The encoded response.credential returned by the Google Sign-In API
+        The encoded response credential returned by the Google Sign-In API
         """
         credentialJWT: String!
       }
@@ -67,9 +67,7 @@ export class GoogleAuthStrategy
         return false;
       }
       const email = payload.email;
-      // First we check to see if this user has already authenticated in our
-      // Vendure server using this Google account. If so, we return that
-      // User object, and they will be now authenticated in Vendure.
+      // First we check to see if this user is an admin in our Vendure server
       const admins = await this.adminService!.findAll(
         ctx,
         { filter: { emailAddress: { eq: email } } },
@@ -94,11 +92,9 @@ export class GoogleAuthStrategy
       const admin = admins.items[0];
       let user = admin.user;
       // Check if GoogleAuth already enabled, otherwise enable it for this admin
-      const hasGoogleAuth = user.authenticationMethods.find((m) => {
-        console.log(m instanceof NativeAuthenticationMethod);
-        console.log(m);
-        return (m as ExternalAuthenticationMethod).strategy === this.name;
-      });
+      const hasGoogleAuth = user.authenticationMethods.find(
+        (m) => (m as ExternalAuthenticationMethod).strategy === this.name
+      );
       if (!hasGoogleAuth) {
         user = await this.addGoogleAuthMethod(ctx, user, email);
       }
