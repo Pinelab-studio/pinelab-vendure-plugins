@@ -6,6 +6,8 @@ Currently this plugin only supports Google login for the Admin UI! The plugin se
 
 You will be able to login if an administrator with your email address already exists in Vendure. Roles and permissions are still handled in Vendure. This plugin disables the native authentication method, so you will only be able to login via Google.
 
+![image](https://pinelab-plugins.com/plugin-images/admin-social-auth-login.png)
+
 ## Set up Google login
 
 First, you need to get your Google Client id using these steps: https://developers.google.com/identity/gsi/web/guides/get-google-api-clientid.
