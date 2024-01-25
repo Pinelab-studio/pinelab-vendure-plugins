@@ -30,6 +30,7 @@ jobs:
           [
             'vendure-order-client',
             'vendure-plugin-admin-ui-helpers',
+            'vendure-plugin-admin-social-auth',
             'vendure-plugin-anonymized-order',
             'vendure-plugin-coinbase',
             'vendure-plugin-customer-managed-groups',
