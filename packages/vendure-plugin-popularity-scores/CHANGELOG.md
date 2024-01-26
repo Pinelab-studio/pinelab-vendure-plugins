@@ -1,3 +1,7 @@
+# 1.6.0 (2024-01-21)
+
+- Aggregate the child `Product`s of a `Collection` in chunks when calcuating it's `popularityScore`. This adjustment aims to address [this reported issue](https://github.com/Pinelab-studio/pinelab-vendure-plugins/issues/303)
+
 # 1.5.0 (2023-12-15)
 
 - Allow manual setting of populairty scores on Products and Collections

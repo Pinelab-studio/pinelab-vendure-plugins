@@ -2,19 +2,25 @@ import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { OrderByPopularityController } from './popularity.controller';
-import { SortService } from './sort.service';
+import { PopularityScoresService } from './popularity-scores.service';
 
 export interface PopularityScoresPluginConfig {
   /**
    * Prevent unauthenticated requests to the calculation endpoint
    */
   endpointSecret: string;
+  /**
+   * chunk size for product score summing query
+   *
+   * @default 100
+   */
+  chunkSize?: number;
 }
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   providers: [
-    SortService,
+    PopularityScoresService,
     {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => PopularityScoresPlugin.config,
@@ -50,6 +56,9 @@ export class PopularityScoresPlugin {
     config: PopularityScoresPluginConfig
   ): Type<PopularityScoresPlugin> {
     this.config = config;
+    if (!this.config?.chunkSize) {
+      this.config.chunkSize = 100;
+    }
     return this;
   }
 }
