@@ -1,0 +1,26 @@
+{
+  "name": "vendure-plugin-admin-social-auth",
+  "version": "1.0.0",
+  "description": "Plugin to allow authentication for administrators with socials like Google",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "repository": "https://github.com/vendure-ecommerce/plugin-template",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "yarn ts-node test/dev-server.ts",
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "google-auth-library": "^9.4.1"
+  }
+}

@@ -77,6 +77,7 @@
         2,
         "always",
         [
+          "admin-social-auth",
           "admin-ui-helpers",
           "all-plugins",
           "anonymized-order",
