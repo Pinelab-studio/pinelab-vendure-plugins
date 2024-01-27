@@ -9,11 +9,18 @@ import { CloudTasksController } from './cloud-tasks-controller';
 import { CloudTasksService } from './cloud-tasks-service';
 import { CloudTaskOptions } from './types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
+import { PLUGIN_INIT_OPTIONS } from './constants';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   controllers: [CloudTasksController],
   entities: [JobRecord],
+  providers: [
+    {
+      provide: PLUGIN_INIT_OPTIONS,
+      useFactory: () => CloudTasksPlugin.options,
+    },
+  ],
   configuration: (config: RuntimeVendureConfig) => {
     config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy(
       CloudTasksPlugin.options
