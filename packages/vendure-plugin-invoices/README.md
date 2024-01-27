@@ -10,7 +10,18 @@ Database migration
 
 1. Always create a backup of your database
 2. Install the plugin and run a DB migration
-3. Run `node ./node_modules/@pinelab/vendure-plugin-invoices/scripts/populate-invoice-fields` to populate `invoice.orderTotals` in the DB
+3. TODO: previously generated invoices do not have the `invoice.orderTotals` field populated, therefor no credit invoices can be generated for them. A script needs to be built to get all invoices + orders, and populate `invoice.orderTotals` based on the corresponding order, like so:
+
+```ts
+const newInvoice = await this.repository.save({
+  id,
+  orderTotals: {
+    taxSummaries: order.taxSummary,
+    total: order.total,
+    totalWithTax: order.totalWithTax,
+  },
+});
+```
 
 Other breaking changes
 
