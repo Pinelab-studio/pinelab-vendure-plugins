@@ -37,7 +37,7 @@ import { ApolloCache } from '@apollo/client/cache';
         (event.target as HTMLButtonElement).disabled = true;
         context.dataService
           .mutate(createInvoice, { orderId }, (cache: ApolloCache<any>, _) => {
-            cache.evict({ fieldName: 'order' });
+            cache.evict({ fieldName: 'invoices', id: `Order:${orderId}` });
           })
           .pipe(
             catchError((error) => {
