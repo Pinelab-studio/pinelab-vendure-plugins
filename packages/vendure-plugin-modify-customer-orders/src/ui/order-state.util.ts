@@ -1,24 +1,29 @@
-import { DataService, OrderDetailFragment } from '@vendure/admin-ui/core';
+import { DataService, ORDER_DETAIL_FRAGMENT } from '@vendure/admin-ui/core';
 import { take } from 'rxjs/operators';
 import { gql } from 'graphql-tag';
 import { ID } from '@vendure/core';
+import { lastValueFrom } from 'rxjs';
 
 export async function createNewDraftOrder(
   dataService: DataService,
   oldOrderID: ID
 ): Promise<Boolean> {
-  const result = await dataService
-    .mutate(
-      gql`
-        mutation ConvertToDraft($id: ID!) {
-          convertOrderToDraft(id: $id) {
-            id
+  await lastValueFrom(
+    dataService
+      .mutate(
+        gql`
+          mutation ConvertToDraft($id: ID!) {
+            convertOrderToDraft(id: $id) {
+              ... on Order {
+                ...OrderDetail
+              }
+            }
           }
-        }
-      `,
-      { id: oldOrderID }
-    )
-    .pipe(take(1))
-    .toPromise();
+          ${ORDER_DETAIL_FRAGMENT}
+        `,
+        { id: oldOrderID }
+      )
+      .pipe(take(1))
+  );
   return true;
 }
