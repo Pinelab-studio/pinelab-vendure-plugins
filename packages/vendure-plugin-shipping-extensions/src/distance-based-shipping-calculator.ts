@@ -30,7 +30,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
     },
     pricePerKm: {
       type: 'float',
-      ui: { component: 'number-form-input', suffix: '/km' },
+      ui: { component: 'currency-form-input' },
       label: [{ languageCode: LanguageCode.en, value: 'Price per KM' }],
     },
     taxRate: {
