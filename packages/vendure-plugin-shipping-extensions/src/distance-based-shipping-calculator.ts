@@ -60,7 +60,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       shippingAddressGeoLocation,
       storeGeoLocation
     );
-    const rate = distance * args.pricePerKm * (1 + args.taxRate / 100);
+    const rate = distance * args.pricePerKm;
     return {
       price: rate,
       priceIncludesTax: ctx.channel.pricesIncludeTax,
