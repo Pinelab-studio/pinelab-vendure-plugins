@@ -5,6 +5,7 @@ import {
   ProductVariant,
   VendurePlugin,
 } from '@vendure/core';
+import { ProductData } from './api/types';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ProductInput } from './api/types';
 import { adminSchema } from './api/api-extensions';
@@ -34,7 +35,7 @@ export interface PicqerOptions {
    * pullPicqerProductFields: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
   pullPicqerProductFields?: (
-    product: ProductInput
+    product: ProductInput & ProductData
   ) => Partial<UpdateProductVariantInput>;
   /**
    * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
@@ -42,7 +43,9 @@ export interface PicqerOptions {
    * // Store `variant.customFields.EAN` from Vendure as `product.barcode` in Picqer
    * pushProductVariantFields: (variant) => ({ barcode: variant.customFields.EAN }})
    */
-  pushProductVariantFields?: (variant: ProductVariant) => Partial<ProductInput>;
+  pushProductVariantFields?: (
+    variant: ProductVariant
+  ) => Partial<ProductInput & ProductData>;
   /**
    * Map any Vendure fields to Order fields in Picqer.
    * See https://picqer.com/en/api/orders#attributes for available Picqer fields
