@@ -1,3 +1,7 @@
+# 2.4.1 (2024-01-29)
+
+- Fix types of pushing and pulling Picqer data
+
 # 2.4.0 (2023-12-12)
 
 - Sync warehouses including names on full sync and stock level sync
