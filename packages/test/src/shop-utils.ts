@@ -118,7 +118,8 @@ export async function createSettledOrder(
     { id: 'T_1', quantity: 1 },
     { id: 'T_2', quantity: 2 },
   ],
-  billingAddress?: SetBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables,
+  shippingAddress?: SetShippingAddressMutationVariables
 ): Promise<AddPaymentToOrderMutation['addPaymentToOrder']> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
@@ -129,10 +130,9 @@ export async function createSettledOrder(
   for (const v of variants) {
     await addItem(shopClient, v.id, v.quantity);
   }
-  const res = await proceedToArrangingPayment(
-    shopClient,
-    shippingMethodId,
-    {
+  let orderShippingAddress = shippingAddress;
+  if (!orderShippingAddress) {
+    orderShippingAddress = {
       input: {
         fullName: 'Martinho Pinelabio',
         streetLine1: 'Verzetsstraat',
@@ -141,7 +141,12 @@ export async function createSettledOrder(
         postalCode: '8923CP',
         countryCode: 'NL',
       },
-    },
+    };
+  }
+  const res = await proceedToArrangingPayment(
+    shopClient,
+    shippingMethodId,
+    orderShippingAddress,
     billingAddress
   );
   if ((res as ErrorResult)?.errorCode) {
