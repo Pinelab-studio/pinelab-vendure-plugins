@@ -14,7 +14,7 @@ import {
   ProductVariantService,
   defaultShippingEligibilityChecker,
   RequestContext,
-  ConfigService,
+  roundMoney,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -248,9 +248,7 @@ describe('Order export plugin', function () {
       storeGeoLocation,
       shippingAddressGeoLocation
     );
-    const serverConfig = server.app.get(ConfigService);
-    const configuredMoneyStrategy = serverConfig.entityOptions.moneyStrategy;
-    const expectedPrice = configuredMoneyStrategy.round(
+    const expectedPrice = roundMoney(
       priceBasedShippingMethodArgs.pricePerKm * shippingDistance
     );
     const distanceBasedShippingMethod = await createDistanceBasedShippingMethod(
@@ -269,7 +267,7 @@ describe('Order export plugin', function () {
       undefined,
       { input: shippingAdress }
     );
-    expect(order.shippingWithTax).toBe(expectedPrice);
+    expect(order.shipping).toBe(expectedPrice);
   });
 
   afterAll(async () => {
