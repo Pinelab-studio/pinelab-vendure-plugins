@@ -9,7 +9,6 @@ import {
   ListQueryBuilder,
   Logger,
   PaginatedList,
-  UserInputError,
 } from '@vendure/core';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 import { DataSource, In, LessThan, Repository } from 'typeorm';
@@ -50,12 +49,9 @@ export class CloudTasksService implements OnApplicationBootstrap {
   }
 
   async findJob(id: ID): Promise<Job<any> | undefined> {
-    if (!this.jobRecordRepository) {
-      throw new UserInputError('TransactionalConnection is not available');
-    }
     const jobRecord = await this.jobRecordRepository.findOne({ where: { id } });
     if (!jobRecord) {
-      throw new UserInputError(`No JobRecord with id ${id} exists`);
+      return undefined;
     }
     return new Job(jobRecord);
   }
@@ -95,9 +91,6 @@ export class CloudTasksService implements OnApplicationBootstrap {
    * All queues, settled or unsettled
    */
   async removeAllJobs(olderThan: Date): Promise<void> {
-    if (!this.jobRecordRepository) {
-      throw new UserInputError('TransactionalConnection is not available');
-    }
     await this.jobRecordRepository.delete({
       createdAt: LessThan(olderThan),
     });
