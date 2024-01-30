@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-invoices",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "description": "Vendure plugin for invoice generation",
   "icon": "receipt",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -22,10 +22,9 @@
     "start": "yarn ts-node test/dev-server.ts",
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "vitest run"
+    "test": "vitest --bail 1 run"
   },
   "dependencies": {
-    "adm-zip": "0.5.9",
     "pdf-creator-node": "2.3.4",
     "tmp": "0.2.1"
   },

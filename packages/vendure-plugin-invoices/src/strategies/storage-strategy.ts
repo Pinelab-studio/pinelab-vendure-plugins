@@ -18,14 +18,9 @@ interface BaseStorageStrategy {
   save(
     tmpFile: string,
     invoiceNumber: number,
-    channelToken: string
+    channelToken: string,
+    isCreditInvoice: boolean
   ): Promise<string>;
-
-  /**
-   * Bundles multiple files by invoiceNumbers in zipFile for download via admin UI
-   * Will only be called by admins
-   */
-  streamMultiple(invoices: InvoiceEntity[], res: Response): Promise<ReadStream>;
 
   init(): Promise<void>;
 }

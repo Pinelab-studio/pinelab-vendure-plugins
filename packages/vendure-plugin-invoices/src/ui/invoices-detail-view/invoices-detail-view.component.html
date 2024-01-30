@@ -1,0 +1,42 @@
+<clr-accordion>
+  <clr-accordion-panel>
+    <clr-accordion-title>Invoices</clr-accordion-title>
+    <clr-accordion-content *clrIfExpanded>
+      <vdr-data-table
+        [items]="invoicesList"
+        [itemsPerPage]="itemsPerPage"
+        [totalItems]="invoicesList?.length"
+        [currentPage]="page"
+        (pageChange)="setPageNumber($event)"
+        (itemsPerPageChange)="setItemsPerPage($event)"
+      >
+        <vdr-dt-column>Invoice nr.</vdr-dt-column>
+        <vdr-dt-column>Created</vdr-dt-column>
+        <vdr-dt-column>Is Credit Invoice</vdr-dt-column>
+        <vdr-dt-column>Download</vdr-dt-column>
+        <ng-template let-invoice="item">
+          <td class="left align-middle">{{ invoice.invoiceNumber }}</td>
+          <td class="left align-middle">
+            {{ invoice.createdAt | date }}
+          </td>
+          <td class="left align-middle">
+            <clr-icon
+              *ngIf="invoice.isCreditInvoice"
+              shape="check"
+              class="color-success-700"
+            ></clr-icon>
+            <clr-icon *ngIf="!invoice.isCreditInvoice" shape="times"></clr-icon>
+          </td>
+          <td class="left align-middle">
+            <a [href]="invoice.downloadUrl" target="_blank">
+              <clr-icon shape="download"></clr-icon>
+            </a>
+            <!-- <button class="btn btn-sm btn-link" (click)="downloadBlob(invoice)">
+                            <clr-icon shape="download"></clr-icon>
+                        </button> -->
+          </td>
+        </ng-template>
+      </vdr-data-table>
+    </clr-accordion-content>
+  </clr-accordion-panel>
+</clr-accordion>
