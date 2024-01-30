@@ -9,7 +9,7 @@ import { CloudTasksController } from './cloud-tasks-controller';
 import { CloudTasksService } from './cloud-tasks-service';
 import { CloudTaskOptions } from './types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
-import { PLUGIN_INIT_OPTIONS } from './constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -29,7 +29,6 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
   compatibility: '^2.0.0',
 })
 export class CloudTasksPlugin {
-  static loggerCtx = 'CloudTaskPlugin';
   static options: CloudTaskOptions;
 
   static init(options: CloudTaskOptions): typeof CloudTasksPlugin {
@@ -41,7 +40,7 @@ export class CloudTasksPlugin {
       this.options.createTaskRetries = 20;
       Logger.warn(
         `createTaskRetries can be set to a maximum of 20 retries. This is to avoid too many stacked create task retries`,
-        this.loggerCtx
+        loggerCtx
       );
     }
     return CloudTasksPlugin;

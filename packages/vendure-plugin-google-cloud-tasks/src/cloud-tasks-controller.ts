@@ -1,33 +1,18 @@
-import { Request, Response } from 'express';
 import {
   Controller,
-  Post,
-  Req,
   Get,
-  Res,
   OnApplicationBootstrap,
   Param,
+  Post,
+  Req,
+  Res,
 } from '@nestjs/common';
-import {
-  ConfigService,
-  Ctx,
-  Job,
-  JsonCompatible,
-  Logger,
-  RequestContext,
-  TransactionalConnection,
-} from '@vendure/core';
-import { JobState } from '@vendure/common/lib/generated-types';
-import { CloudTaskMessage, ROUTE } from './types';
-import { Repository } from 'typeorm';
-import { CloudTasksPlugin } from './cloud-tasks.plugin';
-import {
-  CloudTasksJobQueueStrategy,
-  PROCESS_MAP,
-} from './cloud-tasks-job-queue.strategy';
-import { loggerCtx } from '@vendure/core/dist/job-queue/constants';
-import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
+import { Logger } from '@vendure/core';
+import { Request, Response } from 'express';
 import { CloudTasksService } from './cloud-tasks-service';
+import { CloudTasksPlugin } from './cloud-tasks.plugin';
+import { loggerCtx } from './constants';
+import { CloudTaskMessage, ROUTE } from './types';
 
 @Controller(ROUTE)
 export class CloudTasksController implements OnApplicationBootstrap {
