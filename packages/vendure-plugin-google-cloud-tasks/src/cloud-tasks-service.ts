@@ -112,6 +112,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
     // Store record saying that the task is PENDING, because we don't distinguish between pending and running
     const jobRecord = await this.saveWithRetry(
       new JobRecord({
+        id: job.id,
         queueName: queueName,
         data: job.data,
         attempts: job.attempts,
@@ -263,6 +264,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
         // Log failed job in DB
         await this.saveWithRetry(
           new JobRecord({
+            id: job.id,
             queueName: job.queueName,
             data: job.data,
             attempts: job.attempts,
