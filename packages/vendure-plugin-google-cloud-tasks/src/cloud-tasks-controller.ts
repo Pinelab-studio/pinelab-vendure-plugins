@@ -75,7 +75,7 @@ export class CloudTasksController implements OnApplicationBootstrap {
     }
     const days = parseInt(daysString);
     const daysAgo = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    this.service.removeAllJobs(daysAgo);
+    await this.service.removeAllJobs(daysAgo);
     res.sendStatus(200);
   }
 
