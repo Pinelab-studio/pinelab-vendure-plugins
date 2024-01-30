@@ -5,6 +5,7 @@ import { AdminApiResolver } from './api/api.resolver';
 import { OrderTransitionListenerService } from './api/order-transition-listener.service';
 import { convertToDraftButton } from './ui';
 import { PLUGIN_INIT_OPTIONS } from './constants';
+import { convertToDraft } from './custom-order-process';
 
 export interface ModifyCustomerOrdersPluginOptions {
   /**
@@ -27,6 +28,10 @@ export interface ModifyCustomerOrdersPluginOptions {
       useFactory: () => ModifyCustomerOrdersPlugin.options,
     },
   ],
+  configuration: (config) => {
+    config.orderOptions.process.push(convertToDraft);
+    return config;
+  },
   compatibility: '^2.0.0',
 })
 export class ModifyCustomerOrdersPlugin {

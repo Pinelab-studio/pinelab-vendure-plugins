@@ -1,3 +1,7 @@
+# 1.1.5 (2024-01-28)
+
+- Transition the `Order` from `AddingItems` to `Draft` rather than copy all the fields and make a new `Draft` `Order`
+
 # 1.1.1 (2024-01-23)
 
 - Deactivate order when an active order already exists, instead of deleting it.
