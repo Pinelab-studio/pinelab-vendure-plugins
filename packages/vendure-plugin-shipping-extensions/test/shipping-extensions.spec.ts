@@ -33,50 +33,50 @@ import nock from 'nock';
 import { getDistanceBetweenPointsInKMs } from '../src/get-distance-between-points';
 import { CreateAddressInput } from '../../test/src/generated/shop-graphql';
 
-describe('Order export plugin', function () {
-  let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
-  let serverStarted = false;
-  let ctx: RequestContext;
+let server: TestServer;
+let adminClient: SimpleGraphQLClient;
+let shopClient: SimpleGraphQLClient;
+let serverStarted = false;
+let ctx: RequestContext;
 
-  beforeAll(async () => {
-    registerInitializer('sqljs', new SqljsInitializer('__data__'));
-    const config = mergeConfig(testConfig, {
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [
-        ShippingExtensionsPlugin.init({
-          orderAddressToGeolocationStrategy:
-            new UKPostalCodeToGelocationConversionStrategy(),
-        }),
-      ],
-      paymentOptions: {
-        paymentMethodHandlers: [testPaymentMethod],
-      },
-    });
-
-    ({ server, adminClient, shopClient } = createTestEnvironment(config));
-    await server.init({
-      initialData: {
-        ...initialData,
-        shippingMethods: [],
-        paymentMethods: [
-          {
-            name: testPaymentMethod.code,
-            handler: { code: testPaymentMethod.code, arguments: [] },
-          },
-        ],
-      },
-      productsCsvPath: '../test/src/products-import.csv',
-    });
-    serverStarted = true;
-    ctx = await getSuperadminContext(server.app);
-  }, 60000);
-
-  it('Should start successfully', async () => {
-    await expect(serverStarted).toBe(true);
+beforeAll(async () => {
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
+    plugins: [
+      ShippingExtensionsPlugin.init({
+        orderAddressToGeolocationStrategy:
+          new UKPostalCodeToGelocationConversionStrategy(),
+      }),
+    ],
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
   });
 
+  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  await server.init({
+    initialData: {
+      ...initialData,
+      shippingMethods: [],
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
+    productsCsvPath: '../test/src/products-import.csv',
+  });
+  serverStarted = true;
+  ctx = await getSuperadminContext(server.app);
+}, 60000);
+
+it('Should start successfully', async () => {
+  await expect(serverStarted).toBe(true);
+});
+
+describe('Shipping by weight and country', function () {
   it('Creates shippingmethod 1 for NL and BE, with weight between 0 and 100 ', async () => {
     await adminClient.asSuperAdmin();
     const res = await createShippingMethod(adminClient, {
@@ -209,7 +209,9 @@ describe('Order export plugin', function () {
       'ORDER_STATE_TRANSITION_ERROR'
     );
   });
+});
 
+describe('Distance based shipping calculator', function () {
   it('Should calculate distance based Shipping Price', async () => {
     const shippingAddressPostalCode = 'SW1W 0NY';
     const shippingAddressGeoLocation: GeoLocation = {
@@ -269,11 +271,11 @@ describe('Order export plugin', function () {
     );
     expect(order.shipping).toBe(expectedPrice);
   });
-
-  afterAll(async () => {
-    await server.destroy();
-  }, 100000);
 });
+
+afterAll(async () => {
+  await server.destroy();
+}, 100000);
 
 const CREATE_SHIPPING_METHOD = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {

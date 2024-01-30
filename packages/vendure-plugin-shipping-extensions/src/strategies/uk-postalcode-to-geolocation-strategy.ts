@@ -13,7 +13,7 @@ export class UKPostalCodeToGelocationConversionStrategy
     orderAddress: OrderAddress
   ): Promise<GeoLocation> {
     if (!orderAddress?.postalCode) {
-      throw new UserInputError(`Order Shipping Address postal code not found`);
+      throw new Error(`Order Shipping Address postal code not found`);
     }
     const url = `${POSTCODES_URL}/${encodeURIComponent(
       orderAddress.postalCode

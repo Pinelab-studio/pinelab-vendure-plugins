@@ -29,7 +29,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       label: [{ languageCode: LanguageCode.en, value: 'Store Longitude' }],
     },
     pricePerKm: {
-      type: 'float',
+      type: 'int',
       ui: { component: 'currency-form-input' },
       label: [{ languageCode: LanguageCode.en, value: 'Price per KM' }],
     },
@@ -52,6 +52,14 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       latitude: args.storeLatitude,
       longitude: args.storeLongitude,
     };
+    if (!order?.shippingAddress) {
+      return {
+        price: 0,
+        priceIncludesTax: ctx.channel.pricesIncludeTax,
+        taxRate: args.taxRate,
+        metadata: { storeGeoLocation },
+      };
+    }
     const shippingAddressGeoLocation =
       await pluginOptions.orderAddressToGeolocationStrategy.getGeoLocationForAddress(
         order.shippingAddress
