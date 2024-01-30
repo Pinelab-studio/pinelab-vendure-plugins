@@ -27,39 +27,20 @@ import {
 } from './cloud-tasks-job-queue.strategy';
 import { loggerCtx } from '@vendure/core/dist/job-queue/constants';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
+import { CloudTasksService } from './cloud-tasks-service';
 
 @Controller(ROUTE)
 export class CloudTasksController implements OnApplicationBootstrap {
-  private jobRecordRepository: Repository<JobRecord>;
   private applicationBootstrapped = false;
 
-  constructor(
-    private readonly connection: TransactionalConnection,
-    private configService: ConfigService
-  ) {
-    this.jobRecordRepository =
-      this.connection!.rawConnection.getRepository(JobRecord);
-  }
+  constructor(private readonly service: CloudTasksService) {}
 
   onApplicationBootstrap() {
     this.applicationBootstrapped = true;
-    this.removeSettledJobs(30)
-      .then(() => {})
-      .catch((e: any) => {
-        Logger.error(
-          `Failed to remove settled jobs: ${e?.message}`,
-          CloudTasksPlugin.loggerCtx,
-          e?.stack
-        );
-      });
   }
 
   @Post('handler')
-  async handler(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Ctx() ctx: RequestContext
-  ): Promise<void> {
+  async handler(@Req() req: Request, @Res() res: Response): Promise<void> {
     if (!this.applicationBootstrapped) {
       // Don't try to handle jobs when application isn't fully bootstrapped
       res.sendStatus(500);
@@ -70,113 +51,12 @@ export class CloudTasksController implements OnApplicationBootstrap {
       return;
     }
     const message: CloudTaskMessage = req.body;
-    Logger.debug(
-      `Received Cloud Task message ${message.id}`,
-      CloudTasksPlugin.loggerCtx
+    const attemptsHeader = req.header('x-cloudtasks-taskretrycount');
+    const responseCode = await this.service.handleIncomingJob(
+      message,
+      attemptsHeader
     );
-    const processFn = PROCESS_MAP.get(message.queueName);
-    if (!processFn) {
-      Logger.error(
-        `No process function found for queue ${message.queueName}`,
-        loggerCtx
-      );
-      res.sendStatus(500);
-      return;
-    }
-    const attemptsHeader = req.header('x-cloudtasks-taskretrycount') ?? 0;
-    const attempts = attemptsHeader ? parseInt(attemptsHeader) : 0;
-    const job = new Job({
-      id: message.id,
-      queueName: message.queueName,
-      data: message.data as JsonCompatible<unknown>,
-      attempts: attempts,
-      state: JobState.RUNNING,
-      startedAt: new Date(),
-      createdAt: message.createdAt,
-      retries: message.maxRetries,
-    });
-    try {
-      await processFn(job);
-      // The job was completed successfully
-      Logger.debug(
-        `Successfully handled ${message.id} after ${attempts} attempts`,
-        CloudTasksPlugin.loggerCtx
-      );
-      const jobRecord = new JobRecord({
-        id: job.id,
-        queueName: job.queueName,
-        data: job.data,
-        attempts: job.attempts,
-        state: JobState.COMPLETED,
-        startedAt: job.startedAt,
-        createdAt: job.createdAt,
-        retries: job.retries,
-        isSettled: true,
-        settledAt: new Date(),
-        progress: 100,
-      });
-      // Save successful job in DB
-      await this.jobRecordRepository.save(jobRecord).catch((e: any) => {
-        // Just a warning, because it doesn't impact actual job processing
-        Logger.warn(
-          `Failed to update COMPLETED job record for job ${job.id}: ${e?.message}`,
-          CloudTasksPlugin.loggerCtx
-        );
-      });
-      res.sendStatus(200);
-      return;
-    } catch (error: any) {
-      if (CloudTasksPlugin.options.onJobFailure) {
-        try {
-          await CloudTasksPlugin.options.onJobFailure(error);
-        } catch (e: any) {
-          Logger.error(
-            `Error in 'onJobFailure': ${e}`,
-            CloudTasksPlugin.loggerCtx
-          );
-        }
-      }
-      if (attempts === job.retries) {
-        // This was the final attempt, so mark the job as failed
-        Logger.error(
-          `Failed to handle message ${message.id} after final attempt (${attempts} attempts made). Marking with status 200 to prevent retries: ${error}`,
-          CloudTasksPlugin.loggerCtx
-        );
-        // Log failed job in DB
-        await this.jobRecordRepository
-          .save(
-            new JobRecord({
-              queueName: job.queueName,
-              data: job.data,
-              attempts: job.attempts,
-              state: JobState.FAILED,
-              startedAt: job.startedAt,
-              createdAt: job.createdAt,
-              retries: job.retries,
-              isSettled: true,
-              settledAt: new Date(),
-              progress: 0,
-              result: error?.message ?? error.toString(),
-            })
-          )
-          .catch((e: any) => {
-            // Just a warning, because it doesn't impact actual job processing
-            Logger.warn(
-              `Failed to update COMPLETED job record for job ${job.id}: ${e?.message}`,
-              CloudTasksPlugin.loggerCtx
-            );
-          });
-        res.sendStatus(200); // Return 200 to prevent more retries
-      } else {
-        // More attempts remain, so return 500 to trigger a retry
-        Logger.warn(
-          `Failed to handle message ${message.id} after ${attempts} attempts. Retrying... ${error}`,
-          CloudTasksPlugin.loggerCtx
-        );
-        res.sendStatus(500);
-      }
-      return;
-    }
+    res.sendStatus(responseCode);
   }
 
   @Get('clear-jobs/:days')
@@ -194,23 +74,9 @@ export class CloudTasksController implements OnApplicationBootstrap {
       return;
     }
     const days = parseInt(daysString);
-    await this.removeSettledJobs(days);
+    const daysAgo = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    this.service.removeAllJobs(daysAgo);
     res.sendStatus(200);
-  }
-
-  private async removeSettledJobs(days: number): Promise<void> {
-    const daysAgo: Date = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    const cloudTaskJobStrategy = this.configService.jobQueueOptions
-      .jobQueueStrategy as CloudTasksJobQueueStrategy;
-    if (!(cloudTaskJobStrategy instanceof CloudTasksJobQueueStrategy)) {
-      Logger.error(
-        `Configured jobQueueStrategy is not an instance of CloudTasksJobQueueStrategy, something is broken...`,
-        loggerCtx
-      );
-      return;
-    }
-    await cloudTaskJobStrategy.removeAllJobs(daysAgo);
-    Logger.info(`Successfully removed jobs older than ${days} days`, loggerCtx);
   }
 
   private isValidRequest(req: Request): boolean {

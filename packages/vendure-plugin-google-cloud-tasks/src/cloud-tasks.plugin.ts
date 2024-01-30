@@ -16,15 +16,14 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
   controllers: [CloudTasksController],
   entities: [JobRecord],
   providers: [
+    CloudTasksService,
     {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => CloudTasksPlugin.options,
     },
   ],
   configuration: (config: RuntimeVendureConfig) => {
-    config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy(
-      CloudTasksPlugin.options
-    );
+    config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy();
     return config;
   },
   compatibility: '^2.0.0',
