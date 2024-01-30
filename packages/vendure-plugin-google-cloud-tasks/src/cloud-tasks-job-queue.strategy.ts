@@ -1,29 +1,13 @@
-import { CloudTasksClient } from '@google-cloud/tasks';
+import { JobListOptions } from '@vendure/common/lib/generated-types';
 import {
   ID,
   Injector,
   InspectableJobQueueStrategy,
   Job,
   JobData,
-  JobQueueStrategy,
-  ListQueryBuilder,
-  Logger,
   PaginatedList,
-  TransactionalConnection,
-  User,
-  UserInputError,
 } from '@vendure/core';
-import { CloudTasksPlugin } from './cloud-tasks.plugin';
-import { CloudTaskMessage, CloudTaskOptions } from './types';
-import { In, LessThan, Repository, DataSource } from 'typeorm';
-import { JobListOptions, JobState } from '@vendure/common/lib/generated-types';
-import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 import { CloudTasksService } from './cloud-tasks-service';
-
-const LIVE_QUEUES = new Set<string>();
-
-export type QueueProcessFunction = (job: Job) => Promise<any>;
-export const PROCESS_MAP = new Map<string, QueueProcessFunction>();
 
 export class CloudTasksJobQueueStrategy implements InspectableJobQueueStrategy {
   private service!: CloudTasksService;

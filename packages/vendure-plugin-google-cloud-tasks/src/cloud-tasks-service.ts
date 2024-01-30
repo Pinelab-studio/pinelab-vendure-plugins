@@ -1,26 +1,20 @@
-import { Injectable, Inject, OnApplicationBootstrap } from '@nestjs/common';
 import { CloudTasksClient } from '@google-cloud/tasks';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { JobListOptions, JobState } from '@vendure/common/lib/generated-types';
 import {
   ID,
-  Injector,
-  InspectableJobQueueStrategy,
   Job,
   JobData,
-  JobQueueStrategy,
   JsonCompatible,
   ListQueryBuilder,
   Logger,
   PaginatedList,
-  TransactionalConnection,
-  User,
   UserInputError,
 } from '@vendure/core';
-import { CloudTasksPlugin } from './cloud-tasks.plugin';
-import { CloudTaskMessage, CloudTaskOptions } from './types';
-import { In, LessThan, Repository, DataSource } from 'typeorm';
-import { JobListOptions, JobState } from '@vendure/common/lib/generated-types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
+import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
+import { CloudTaskMessage, CloudTaskOptions } from './types';
 
 type QueueProcessFunction = (job: Job) => Promise<any>;
 
@@ -49,7 +43,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
       .catch((e: any) => {
         Logger.error(
           `Failed to remove settled jobs: ${e?.message}`,
-          CloudTasksPlugin.loggerCtx,
+          loggerCtx,
           e?.stack
         );
       });
