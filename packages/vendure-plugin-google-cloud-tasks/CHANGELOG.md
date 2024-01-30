@@ -1,6 +1,6 @@
-# 1.5.0 (2024-01-16)
+# 1.5.0 (2024-01-30)
 
-- Don't store `job.data` when it's too big for MySQL text
+- Don't store `job.data` when it's too big for MySQL text column
 - Remove jobs older than 30 days on application startup
 
 # 1.4.0 (2023-12-19)
