@@ -2,31 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-invoices)
 
-A plugin for generating PDF invoices for placed orders.
-
-## Breaking changes and migrating from V1
-
-Database migration
-
-1. Always create a backup of your database
-2. Install the plugin and run a DB migration
-3. TODO: previously generated invoices do not have the `invoice.orderTotals` field populated, therefor no credit invoices can be generated for them. A script needs to be built to get all invoices + orders, and populate `invoice.orderTotals` based on the corresponding order, like so:
-
-```ts
-const newInvoice = await this.repository.save({
-  id,
-  orderTotals: {
-    taxSummaries: order.taxSummary,
-    total: order.total,
-    totalWithTax: order.totalWithTax,
-  },
-});
-```
-
-Other breaking changes
-
-1. When using credit invoices, make sure to update your template so it can handle credit invoices. Checkout the included `defaultTemplate` as reference.
-2. Downloading multiple invoices has been removed. Invoices are now downloaded on a per order basis via the Admin UI.
+A plugin for generating PDF invoices for orders. Allows for manual regeneration of new invoices or credit invoices.
 
 ## Getting started
 
@@ -58,6 +34,28 @@ plugins: [
 6. Unfold the `Settings` accordion.
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
+
+## Migrating from V1 to V2 of this plugin
+
+1. Always create a backup of your database
+2. Install the plugin and generate a migration
+3. In your migration file, add the function `migrateInvoices(queryRunner)` to the bottom of the `up` function in your migration file, like so
+
+```ts
+import {migrateInvoices} from "@pinelab/vendure-plugin-invoices";
+
+   public async up(queryRunner: QueryRunner): Promise<any> {
+        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `orderCode`", undefined);
+        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `customerEmail`", undefined);
+        await queryRunner.query("ALTER TABLE `invoice_config` ADD `createCreditInvoices` tinyint NOT NULL DEFAULT 1", undefined);
+        await queryRunner.query("ALTER TABLE `invoice` ADD `orderTotals` text NULL", undefined);
+
+        // Add this line
+        await migrateInvoices(queryRunner);
+   }
+```
+
+4. Run the migration.
 
 ## Adding invoices to your order-confirmation email
 

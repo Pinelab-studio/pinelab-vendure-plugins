@@ -54,33 +54,14 @@ export const defaultLoadDataFn: LoadDataFn = async (
   // Increase order number
   let newInvoiceNumber = mostRecentInvoiceNumber || 0;
   newInvoiceNumber += 1;
-  const orderDate = order.orderPlacedAt
-    ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
-    : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
+  const orderDate = new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
   order.lines.forEach((line) => {
     line.productVariant = translateEntity(
       line.productVariant,
       ctx.languageCode
     );
   });
-  if (shouldGenerateCreditInvoice) {
-    // Create credit invoice
-    const { previousInvoice, reversedOrderTotals } =
-      shouldGenerateCreditInvoice;
-    return {
-      orderDate,
-      invoiceNumber: newInvoiceNumber,
-      isCreditInvoice: true,
-      // Reference to original invoice because this is a credit invoice
-      originalInvoiceNumber: previousInvoice.invoiceNumber,
-      order: {
-        ...order,
-        total: reversedOrderTotals.total,
-        totalWithTax: reversedOrderTotals.totalWithTax,
-        taxSummary: reversedOrderTotals.taxSummaries,
-      },
-    };
-  } else {
+  if (!shouldGenerateCreditInvoice) {
     // Normal debit invoice
     return {
       orderDate,
@@ -88,4 +69,19 @@ export const defaultLoadDataFn: LoadDataFn = async (
       order: order,
     };
   }
+  // Create credit invoice
+  const { previousInvoice, reversedOrderTotals } = shouldGenerateCreditInvoice;
+  return {
+    orderDate,
+    invoiceNumber: newInvoiceNumber,
+    isCreditInvoice: true,
+    // Reference to original invoice because this is a credit invoice
+    originalInvoiceNumber: previousInvoice.invoiceNumber,
+    order: {
+      ...order,
+      total: reversedOrderTotals.total,
+      totalWithTax: reversedOrderTotals.totalWithTax,
+      taxSummary: reversedOrderTotals.taxSummaries,
+    },
+  };
 };
