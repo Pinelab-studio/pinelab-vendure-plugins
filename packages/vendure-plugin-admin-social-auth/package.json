@@ -1,5 +1,5 @@
 {
-  "name": "vendure-plugin-admin-social-auth",
+  "name": "@pinelab/vendure-plugin-admin-social-auth",
   "version": "1.0.0",
   "description": "Plugin to allow authentication for administrators with socials like Google",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
