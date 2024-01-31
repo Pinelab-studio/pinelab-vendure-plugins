@@ -23,9 +23,9 @@ import { AdminSocialAuthPlugin } from '@pinelab/vendure-plugin-admin-social-auth
 ...
 plugins: [
       AdminSocialAuthPlugin.init({
-        adminLoginProviders: [{
-          googleOAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
-        }],
+        google: {
+          oAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
+        },
       }),
       // Set the new custom login URL
       AdminUiPlugin.init({
