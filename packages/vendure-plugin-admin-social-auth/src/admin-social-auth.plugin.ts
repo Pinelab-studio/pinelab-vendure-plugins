@@ -1,4 +1,4 @@
-import { Logger, PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { Logger, PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { GoogleAuthStrategy } from './api/google-auth-strategy';
 import { LoginController } from './api/login-controller';
 
@@ -40,7 +40,7 @@ export class AdminSocialAuthPlugin {
 
   static init(
     options: AdminSocialAuthPluginOptions
-  ): typeof AdminSocialAuthPlugin {
+  ): Type<AdminSocialAuthPlugin> {
     this.options = options;
     return AdminSocialAuthPlugin;
   }
