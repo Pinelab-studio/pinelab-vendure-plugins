@@ -6,6 +6,9 @@
   "repository": "https://github.com/vendure-ecommerce/plugin-template",
   "license": "MIT",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "engines": {
     "node": ">=16.0.0"
   },
