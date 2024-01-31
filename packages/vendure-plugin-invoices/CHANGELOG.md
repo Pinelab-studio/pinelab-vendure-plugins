@@ -1,3 +1,8 @@
+# 2.0.1 (2024-01-32)
+
+- Added script for migrating to V2
+- Updated default template to support credit invoices
+
 # 2.0.0 (2024-01-07)
 
 - Allow creating new invoices for orders via the Admin UI. Credit invoices will be generated when a previous invoice exists.

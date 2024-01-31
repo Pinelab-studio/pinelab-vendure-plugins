@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-invoices",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Vendure plugin for invoice generation",
   "icon": "receipt",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
