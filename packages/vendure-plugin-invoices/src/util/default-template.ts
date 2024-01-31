@@ -62,10 +62,18 @@ export const defaultTemplate = `
         <table style="width: 96%">
             <tr>
                 <td id="invoice-info">
+                    {{#if isCreditInvoice}}
+                      <h2>Credit invoice</h2>
+                    {{else}}
+                      <h2>Invoice</h2>
+                    {{/if}}
                     <h2>Invoice</h2>
                     <h5>Date: <h20>{{ orderDate }}</h20></h5>
                     <h5>Order: <h20>{{ order.code }}</h20></h5>
-                    <h5>Invoice Number: <h20>{{ invoiceNumber }}</h20></h5>  
+                    <h5>Invoice Number: <h20>{{ invoiceNumber }}</h20></h5>
+                    {{#if originalInvoiceNumber}}
+                      <h5>Credit invoice for invoice: <h20>{{ originalInvoiceNumber }}</h20></h5>
+                    {{/if}}
                 </td>    
                 <td id="logo">
                     <a href="https://pinelab.studio">
@@ -112,10 +120,10 @@ export const defaultTemplate = `
             </tr>
         </table>
     
-
+        <!-- Don't render order lines for credit invoices, just the totals -->
+        {{#unless isCreditInvoice}}
 
         <!-- #, PRODUCTS, QUANTITY, AMOUNT IN $ -->
-
         <table style="width: 96%">
             <tr>
                 <td class="quantity-info"> 
@@ -179,7 +187,7 @@ export const defaultTemplate = `
             {{/each}}
         </table>
 
-
+        {{/unless}}
 
         <hr> <!-- LINE -->
 
