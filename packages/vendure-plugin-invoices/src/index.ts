@@ -12,6 +12,7 @@ export * from './strategies/storage-strategy';
 export * from './util/file.util';
 export * from './util/order-calculations';
 export * from './util/default-template';
+export * from './util/v2-migration';
 export * from './services/invoice.service';
 export * from './ui/generated/graphql';
 export * from './services/invoice-created-event';
