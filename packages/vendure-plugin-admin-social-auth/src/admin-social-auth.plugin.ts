@@ -38,7 +38,9 @@ export interface AdminSocialAuthPluginOptions {
 export class AdminSocialAuthPlugin {
   static options: AdminSocialAuthPluginOptions;
 
-  static init(options: AdminSocialAuthPluginOptions): AdminSocialAuthPlugin {
+  static init(
+    options: AdminSocialAuthPluginOptions
+  ): typeof AdminSocialAuthPlugin {
     this.options = options;
     return AdminSocialAuthPlugin;
   }
