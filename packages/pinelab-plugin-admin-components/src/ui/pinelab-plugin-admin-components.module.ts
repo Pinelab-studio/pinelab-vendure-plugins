@@ -1,11 +1,10 @@
 import { NgModule, isDevMode } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { SharedModule } from '@vendure/admin-ui/core';
-import { TestContentComponent } from './test-content-component';
 import { PinelabPluginAdminComponentsComponent } from './pinelab-plugin-admin-components.component';
 
 @NgModule({
-  declarations: [TestContentComponent, PinelabPluginAdminComponentsComponent],
+  declarations: [PinelabPluginAdminComponentsComponent],
   imports: [
     SharedModule,
     RouterModule.forChild([
