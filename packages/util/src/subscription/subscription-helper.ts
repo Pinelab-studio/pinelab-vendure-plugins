@@ -162,6 +162,9 @@ export class SubscriptionHelper {
     order: Order
   ): Promise<Subscription[]> {
     const injector = new Injector(this.moduleRef);
+    if (!(await this.isSubscription(ctx, orderLine.productVariant))) {
+      return [];
+    }
     const subs = await this.strategy.defineSubscription(
       ctx,
       injector,
@@ -176,8 +179,35 @@ export class SubscriptionHelper {
     return [subs];
   }
 
-  // proxy methods to strategy
+  async isSubscription(
+    ctx: RequestContext,
+    variant: ProductVariant
+  ): Promise<boolean> {
+    return this.strategy.isSubscription(
+      ctx,
+      variant,
+      new Injector(this.moduleRef)
+    );
+  }
 
-  isSubscription = this.strategy.isSubscription;
-  defineSubscription = this.strategy.defineSubscription;
+  defineSubscription(
+    ctx: RequestContext,
+    productVariant: ProductVariant,
+    order: Order,
+    orderLineCustomFields: { [key: string]: any },
+    quantity: number
+  ):
+    | Promise<Subscription>
+    | Subscription
+    | Promise<Subscription[]>
+    | Subscription[] {
+    return this.strategy.defineSubscription(
+      ctx,
+      new Injector(this.moduleRef),
+      productVariant,
+      order,
+      orderLineCustomFields,
+      quantity
+    );
+  }
 }

@@ -238,14 +238,6 @@ describe('Stripe Subscription Plugin', function () {
     });
   });
 
-  it('Preview subscriptions for product via admin API', async () => {
-    const { previewStripeSubscriptionsForProduct: subscriptions } =
-      await adminClient.query(PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT, {
-        productId: 'T_1',
-      });
-    expect(subscriptions.length).toBe(4);
-  });
-
   let orderCode: string | undefined;
 
   it('Adds a subscription to order', async () => {

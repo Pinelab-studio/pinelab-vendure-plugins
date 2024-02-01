@@ -35,8 +35,7 @@ export class SubscriptionOrderItemCalculation
     if (
       !(await subcriptionService.subscriptionHelper.isSubscription(
         ctx,
-        productVariant,
-        injector
+        productVariant
       ))
     ) {
       return super.calculateUnitPrice(ctx, productVariant);
@@ -44,7 +43,6 @@ export class SubscriptionOrderItemCalculation
     const subscription =
       await subcriptionService.subscriptionHelper.defineSubscription(
         ctx,
-        injector,
         productVariant,
         order,
         orderLineCustomFields,
