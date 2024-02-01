@@ -41,6 +41,9 @@ export class SubscriptionHelper {
       );
     }
     const injector = new Injector(this.moduleRef);
+    if (!(await this.strategy.isSubscription(ctx, variant, injector))) {
+      return [];
+    }
     const subscriptions = await this.strategy.previewSubscription(
       ctx,
       injector,
@@ -91,8 +94,9 @@ export class SubscriptionHelper {
   ): Promise<(SubscriptionWithVariantId & { orderLineId: ID })[]> {
     const injector = new Injector(this.moduleRef);
     // Only define subscriptions for orderlines with a subscription product variant
-    const subscriptionOrderLines = order.lines.filter((l) =>
-      this.isSubscription(ctx, l.productVariant)
+    const subscriptionOrderLines = await this.getSubscriptionOrderLines(
+      ctx,
+      order
     );
     const subscriptions = await Promise.all(
       subscriptionOrderLines.map(async (line) => {
@@ -118,6 +122,35 @@ export class SubscriptionHelper {
       }
     });
     return flattenedSubscriptionsArray;
+  }
+
+  async hasSubscriptions(ctx: RequestContext, order: Order): Promise<boolean> {
+    const subscriptionOrderLines = await this.getSubscriptionOrderLines(
+      ctx,
+      order
+    );
+    return subscriptionOrderLines.length > 0;
+  }
+
+  async getSubscriptionOrderLines(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<OrderLine[]> {
+    const subscriptionOrderLines: OrderLine[] = [];
+    await Promise.all(
+      order.lines.map(async (l) => {
+        if (
+          await this.strategy.isSubscription(
+            ctx,
+            l.productVariant,
+            new Injector(this.moduleRef)
+          )
+        ) {
+          subscriptionOrderLines.push(l);
+        }
+      })
+    );
+    return subscriptionOrderLines;
   }
 
   /**

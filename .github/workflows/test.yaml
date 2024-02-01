@@ -30,10 +30,13 @@ jobs:
           [
             'vendure-order-client',
             'vendure-plugin-admin-ui-helpers',
+            'vendure-plugin-admin-social-auth',
+            'vendure-plugin-anonymized-order',
             'vendure-plugin-coinbase',
             'vendure-plugin-customer-managed-groups',
             'vendure-plugin-dutch-postalcode',
             'vendure-plugin-e-boekhouden',
+            'vendure-plugin-facet-suggestions',
             'vendure-plugin-goedgepickt',
             'vendure-plugin-google-cloud-tasks',
             'vendure-plugin-google-storage-assets',
@@ -46,13 +49,13 @@ jobs:
             'vendure-plugin-order-export',
             'vendure-plugin-picqer',
             'vendure-plugin-popularity-scores',
+            'vendure-plugin-primary-collection',
             'vendure-plugin-sendcloud',
             'vendure-plugin-shipping-by-weight-and-country',
             'vendure-plugin-stock-monitoring',
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-webhook',
-            'vendure-plugin-primary-collection',
           ]
     steps:
       - name: Checkout code

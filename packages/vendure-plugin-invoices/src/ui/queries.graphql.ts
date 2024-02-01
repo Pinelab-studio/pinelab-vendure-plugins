@@ -5,6 +5,7 @@ export const upsertConfigMutation = gql`
     upsertInvoiceConfig(input: $input) {
       id
       enabled
+      createCreditInvoices
       templateString
     }
   }
@@ -15,24 +16,27 @@ export const getConfigQuery = gql`
     invoiceConfig {
       id
       enabled
+      createCreditInvoices
       templateString
     }
   }
 `;
 
-export const getAllInvoicesQuery = gql`
-  query invoices($input: InvoicesListInput) {
-    invoices(input: $input) {
-      items {
-        id
-        createdAt
-        orderCode
-        orderId
-        customerEmail
-        invoiceNumber
-        downloadUrl
-      }
-      totalItems
+export const invoiceFragment = gql`
+  fragment invoiceFields on Invoice {
+    id
+    createdAt
+    invoiceNumber
+    isCreditInvoice
+    downloadUrl
+  }
+`;
+
+export const createInvoice = gql`
+  ${invoiceFragment}
+  mutation createInvoice($orderId: ID!) {
+    createInvoice(orderId: $orderId) {
+      ...invoiceFields
     }
   }
 `;

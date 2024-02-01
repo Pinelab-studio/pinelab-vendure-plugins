@@ -19,12 +19,16 @@ import {
 } from '@vendure/core';
 import { Request } from 'express';
 import {
-  Mutation as GraphqlMutation,
+  Mutation as GraphqlShopMutation,
   Query as GraphqlQuery,
   QueryPreviewStripeSubscriptionsArgs,
   QueryPreviewStripeSubscriptionsForProductArgs,
   StripeSubscription,
-} from './generated/graphql';
+} from './generated/shop-graphql';
+import {
+  Mutation as GraphqlAdminMutation,
+  MutationCreateStripeSubscriptionIntentArgs,
+} from './generated/admin-graphql';
 import { StripeSubscriptionService } from './stripe-subscription.service';
 
 export type RequestWithRawBody = Request & { rawBody: any };
@@ -37,15 +41,6 @@ export class StripeSubscriptionCommonResolver {
     private paymentMethodService: PaymentMethodService,
     private entityHydrator: EntityHydrator
   ) {}
-
-  @Mutation()
-  @Allow(Permission.Owner)
-  async createStripeSubscriptionIntent(
-    @Ctx() ctx: RequestContext
-  ): Promise<GraphqlMutation['createStripeSubscriptionIntent']> {
-    const res = await this.stripeSubscriptionService.createIntent(ctx);
-    return res;
-  }
 
   @Query()
   async previewStripeSubscriptions(
@@ -109,5 +104,37 @@ export class StripeSubscriptionCommonResolver {
       ...s,
       variantId: orderLine.productVariant.id,
     }));
+  }
+}
+
+@Resolver()
+export class StripeSubscriptionShopApiResolver {
+  constructor(private stripeSubscriptionService: StripeSubscriptionService) {}
+
+  @Mutation()
+  @Allow(Permission.Owner)
+  async createStripeSubscriptionIntent(
+    @Ctx() ctx: RequestContext
+  ): Promise<GraphqlShopMutation['createStripeSubscriptionIntent']> {
+    const res = await this.stripeSubscriptionService.createIntent(ctx);
+    return res;
+  }
+}
+
+@Resolver()
+export class StripeSubscriptionAdminApiResolver {
+  constructor(private stripeSubscriptionService: StripeSubscriptionService) {}
+
+  @Mutation()
+  @Allow(Permission.Owner)
+  async createStripeSubscriptionIntent(
+    @Ctx() ctx: RequestContext,
+    @Args() args: MutationCreateStripeSubscriptionIntentArgs
+  ): Promise<GraphqlAdminMutation['createStripeSubscriptionIntent']> {
+    const res = await this.stripeSubscriptionService.createIntentForDraftOrder(
+      ctx,
+      args.orderId
+    );
+    return res;
   }
 }

@@ -84,14 +84,11 @@ describe('Customer managed groups', function () {
   });
 
   it('Should not change non active order to draft order', async () => {
-    const testNonActiveOrder = await createSettledOrder(shopClient, 1);
+    const testNonActiveOrder = (await createSettledOrder(shopClient, 1)) as any;
     try {
-      const { convertOrderToDraft: draftOrder } = await adminClient.query(
-        convertToDraftMutation,
-        {
-          id: testNonActiveOrder.id,
-        }
-      );
+      await adminClient.query(convertToDraftMutation, {
+        id: testNonActiveOrder.id,
+      });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
         'Only active orders can be changed to a draft order'

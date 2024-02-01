@@ -10,6 +10,7 @@ import {
   OrderStateTransitionEvent,
   ProcessContext,
   RequestContext,
+  SessionService,
   TransactionalConnection,
 } from '@vendure/core';
 import { filter } from 'rxjs/operators';
@@ -22,6 +23,7 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
     private readonly eventBus: EventBus,
     private readonly orderService: OrderService,
     private readonly connection: TransactionalConnection,
+    private readonly sessionService: SessionService,
     private readonly processContext: ProcessContext,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: ModifyCustomerOrdersPluginOptions
@@ -42,51 +44,75 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
           filter((event) => event.fromState === 'Draft'),
           filter((event) => event.toState === 'ArrangingPayment')
         )
-        .subscribe(async ({ ctx, order: draftOrder }) => {
-          if (!draftOrder.customer?.user?.id) {
-            Logger.info(
-              `Draft order ${draftOrder.code} has no customer, skipping auto assign`,
-              loggerCtx
+        .subscribe(({ ctx, order: draftOrder }) =>
+          this.assignOrderToCustomer(ctx, draftOrder).catch((e: any) => {
+            Logger.error(
+              `Error assigning draft order ${draftOrder.code} to customer`,
+              loggerCtx,
+              e?.stack
             );
-            return;
-          }
-          // Get current active order
-          const activeOrder = await this.orderService.getActiveOrderForUser(
-            ctx,
-            draftOrder.customer.user.id
-          );
-          if (activeOrder) {
-            // Delete active order and clear cache, because a customer should not have multiple orders in AddingItems state
-            await this.orderService.deleteOrder(ctx, activeOrder.id);
-            Logger.info(
-              `Deactivated active order ${activeOrder.code} for customer ${draftOrder.customer?.emailAddress}`,
-              loggerCtx
-            );
-          }
-          await this.setOrderState(ctx, draftOrder, 'AddingItems');
-          await this.setOrderActiveState(ctx, draftOrder, true);
-          Logger.info(
-            `Assigned draft order ${draftOrder.code} as active order to ${draftOrder.customer?.emailAddress}`,
-            loggerCtx
-          );
-        });
+          })
+        );
     }
   }
 
-  async setOrderActiveState(
+  async assignOrderToCustomer(
     ctx: RequestContext,
-    order: Order,
-    active: boolean = true
+    draftOrder: Order
   ): Promise<void> {
-    await this.connection
-      .getRepository(ctx, Order)
-      .update({ id: order.id }, { active });
+    if (!draftOrder.customer?.user?.id) {
+      Logger.info(
+        `Draft order ${draftOrder.code} has no customer, skipping auto assign`,
+        loggerCtx
+      );
+      return;
+    }
+    // Get current active order
+    const activeOrder = await this.orderService.getActiveOrderForUser(
+      ctx,
+      draftOrder.customer.user.id
+    );
+    if (activeOrder) {
+      // Deactivate order, because a customer should not have multiple orders in AddingItems state
+      await this.deactivateOrder(ctx, activeOrder);
+      Logger.info(
+        `Deactivated active order ${activeOrder.code} for customer ${draftOrder.customer?.emailAddress}`,
+        loggerCtx
+      );
+    }
+    await this.setOrderState(ctx, draftOrder, 'AddingItems');
+    await this.setAsActiveOrder(ctx, draftOrder);
     Logger.info(
-      `Successfully set order ${order.code} to ${
-        active ? 'active' : 'inactive'
-      }`,
+      `Assigned draft order ${draftOrder.code} as active order to ${draftOrder.customer?.emailAddress}`,
       loggerCtx
     );
+  }
+
+  /**
+   * Set order to active, remove previous order from session and set new order in session.
+   */
+  async setAsActiveOrder(ctx: RequestContext, order: Order): Promise<void> {
+    if (ctx.session) {
+      await this.sessionService.unsetActiveOrder(ctx, ctx.session);
+    }
+    await this.connection
+      .getRepository(ctx, Order)
+      .update({ id: order.id }, { active: true });
+    if (ctx.session) {
+      await this.sessionService.setActiveOrder(ctx, ctx.session, order);
+    }
+  }
+
+  /**
+   * Remove order as active from session
+   */
+  async deactivateOrder(ctx: RequestContext, order: Order): Promise<void> {
+    if (ctx.session) {
+      await this.sessionService.unsetActiveOrder(ctx, ctx.session);
+    }
+    await this.connection
+      .getRepository(ctx, Order)
+      .update({ id: order.id }, { active: false });
   }
 
   async setOrderState(

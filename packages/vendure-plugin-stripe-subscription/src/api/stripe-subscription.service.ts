@@ -5,6 +5,7 @@ import {
   ActiveOrderService,
   ChannelService,
   EntityHydrator,
+  EntityNotFoundError,
   ErrorResult,
   EventBus,
   HistoryService,
@@ -37,7 +38,7 @@ import Stripe from 'stripe';
 import { Subscription, SubscriptionHelper } from '../';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
-import { StripeSubscriptionIntent } from './generated/graphql';
+import { StripeSubscriptionIntent } from './generated/shop-graphql';
 import { StripeClient } from './stripe.client';
 import { StripeInvoice } from './types/stripe-invoice';
 import {
@@ -144,23 +145,6 @@ export class StripeSubscriptionService {
           }
         }
       },
-    });
-    // Add unique hash for subscriptions, so Vendure creates a new order line
-    this.eventBus.ofType(OrderLineEvent).subscribe(async (event) => {
-      if (
-        event.type === 'created' &&
-        this.subscriptionHelper.isSubscription(
-          event.ctx,
-          event.orderLine.productVariant
-        )
-      ) {
-        await this.connection
-          .getRepository(event.ctx, OrderLine)
-          .update(
-            { id: event.orderLine.id },
-            { customFields: { subscriptionHash: randomUUID() } }
-          );
-      }
     });
     // Listen for stock cancellation or release events, to cancel an order lines subscription
     this.eventBus
@@ -356,6 +340,26 @@ export class StripeSubscriptionService {
     if (!order) {
       throw new UserInputError('No active order for session');
     }
+    return this.createIntentByOrder(ctx, order);
+  }
+
+  async createIntentForDraftOrder(
+    ctx: RequestContext,
+    orderId: ID
+  ): Promise<StripeSubscriptionIntent> {
+    let order = await this.orderService.findOne(ctx, orderId);
+    if (!order) {
+      throw new EntityNotFoundError('Order', orderId);
+    }
+    // TODO Perhaps need an order state check (Draft, ArrangingPayment) here?
+    // But state transition verification will likely be a good place for this as well
+    return this.createIntentByOrder(ctx, order);
+  }
+
+  async createIntentByOrder(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<StripeSubscriptionIntent> {
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
       applyProductVariantPrices: true,
@@ -437,15 +441,6 @@ export class StripeSubscriptionService {
       clientSecret: intent.client_secret,
       intentType,
     };
-  }
-
-  /**
-   * Check if the order has products that should be treated as subscription products
-   */
-  hasSubscriptionProducts(ctx: RequestContext, order: Order): boolean {
-    return order.lines.some((l) =>
-      this.subscriptionHelper.isSubscription(ctx, l.productVariant)
-    );
   }
 
   /**
@@ -569,7 +564,7 @@ export class StripeSubscriptionService {
       throw Error(`[${loggerCtx}]: Cannot find order with code ${orderCode}`);
     }
     try {
-      if (!this.hasSubscriptionProducts(ctx, order)) {
+      if (!(await this.subscriptionHelper.hasSubscriptions(ctx, order))) {
         Logger.info(
           `Order ${order.code} doesn't have any subscriptions. No action needed`,
           loggerCtx

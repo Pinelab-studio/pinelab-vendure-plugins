@@ -1,3 +1,8 @@
+# 1.5.0 (2024-01-30)
+
+- Don't store `job.data` when it's too big for MySQL text column
+- Remove jobs older than 30 days on application startup
+
 # 1.4.0 (2023-12-19)
 
 - Allow setting `fallback:true` to fallback to HTTP instead of gRPC to prevent DEADLINE_EXCEEDED errors. For more details see https://github.com/googleapis/nodejs-tasks/issues/397#issuecomment-618580649

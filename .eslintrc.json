@@ -33,17 +33,22 @@
     "env.d.ts",
 
     "packages/util",
+    "packages/vendure-plugin-admin-social-auth",
     "packages/vendure-plugin-admin-ui-helpers/",
+    "packages/vendure-plugin-anonymized-order",
     "packages/vendure-plugin-coinbase/",
     "packages/vendure-plugin-customer-managed-groups/",
     "packages/vendure-plugin-dutch-postalcode/",
     "packages/vendure-plugin-e-boekhouden/",
+    "packages/vendure-plugin-facet-suggestions",
     "packages/vendure-plugin-goedgepickt/",
     "packages/vendure-plugin-google-cloud-tasks/",
     "packages/vendure-plugin-google-storage-assets/",
     "packages/vendure-plugin-invoices/",
     "packages/vendure-plugin-limit-variant-per-order/",
     "packages/vendure-plugin-metrics/",
+    "packages/vendure-plugin-modify-customer-orders/",
+    "packages/vendure-plugin-multiserver-db-sessioncache",
     "packages/vendure-plugin-myparcel/",
     "packages/vendure-plugin-order-export/",
     "packages/vendure-plugin-picqer/",
@@ -56,9 +61,6 @@
     "packages/vendure-plugin-stock-monitoring/",
     "packages/vendure-plugin-stripe-subscription/",
     "packages/vendure-plugin-variant-bulk-update/",
-    "packages/vendure-plugin-webhook/",
-    "packages/vendure-plugin-modify-customer-orders/",
-    "packages/vendure-plugin-multiserver-db-sessioncache",
-    "packages/vendure-plugin-anonymized-order"
+    "packages/vendure-plugin-webhook/"
   ]
 }

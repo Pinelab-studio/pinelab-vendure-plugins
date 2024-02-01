@@ -1,0 +1,19 @@
+.facet-row {
+  width: 100%;
+  margin-bottom: 6px;
+}
+.facet-name {
+  min-width: 120px;
+}
+ng-select {
+  width: 100%;
+}
+::ng-deep {
+  .clr-accordion-header-button {
+    display: flex;
+    align-items: center;
+  }
+  .clr-accordion-title {
+    width: 100%;
+  }
+}

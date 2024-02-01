@@ -28,9 +28,14 @@ export interface Subscription {
 
 export interface SubscriptionStrategy {
   /**
-   * Determines if the given variant should be treated as a subscription, or as a regular product
+   * Determines if the given variant should be treated as a subscription, or as a regular product.
+   * Try too keep this function as light as possible, because it is called for every product variant in the cart, every time the cart is updated.
    */
-  isSubscription(ctx: RequestContext, variant: ProductVariant): boolean;
+  isSubscription(
+    ctx: RequestContext,
+    variant: ProductVariant,
+    injector: Injector
+  ): boolean | Promise<boolean>;
 
   /**
    * Define a subscription based on the given order line fields.

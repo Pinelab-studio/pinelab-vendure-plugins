@@ -1,3 +1,24 @@
+# 2.4.3 (2024-01-18)
+
+- Remove `active` check for admin API create Payment Intent as `Draft` orders are not the same as `active` orders and there is no adequate way to manipulate the `active` state directly.
+
+# 2.4.2 (2024-01-18)
+
+- Allow admin API to create Payment Intent based on specified orderId, since there is no concept of an `activeOrder` for an admin
+
+# 2.4.1 (2024-12-03)
+
+- Return empty array instead of throwing an error for variants that are not subscriptions
+
+# 2.4.0 (2024-12-02)
+
+- Made `isSubscription()` async and passed an instance of `Injector`, so that consumers can fetch additional relations inside `isSubscription()`;
+- `subscriptionHash` custom field was removed: The plugin doesn't need an order line per subscription per se.
+
+# 2.3.1 (2023-12-26)
+
+- Correctly calculate line price sum when multiple subscriptions are returned
+
 # 2.3.0 (2023-12-26)
 
 - Extended the admin-api to include all of the same methods as the shop-api for Stripe subscription

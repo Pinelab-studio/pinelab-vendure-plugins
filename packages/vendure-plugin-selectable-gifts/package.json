@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-selectable-gifts",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Vendure plugin to enable free customer selected gifts",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "repository": "https://github.com/martijnvdbrug/pinelab-vendure-plugins",

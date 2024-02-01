@@ -23,7 +23,7 @@ Follow these steps to upgrade the vendure version of all plugins at once.
 ## Create a new plugin
 
 1. `cd packages`
-2. `wget https://github.com/vendure-ecommerce/plugin-template/archive/refs/heads/main.zip`
-3. `unzip main.zip`
-4. `rm main.zip`
-5. Follow the README in `plugin-template-main`
+2. `wget https://github.com/vendure-ecommerce/plugin-template/zipball/master.zip`
+3. `unzip master`
+4. `rm master`
+5. Follow the README in `vendure-ecommerce-plugin-tempalte-xxxx`

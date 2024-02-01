@@ -22,10 +22,12 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { getOrder } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { stripeSubscriptionHandler, StripeSubscriptionPlugin } from '../src';
+import { DefaultStrategyTestWrapper } from './helpers/default-strategy-test-wrapper';
 import {
   ADD_ITEM_TO_ORDER,
   CANCEL_ORDER,
-  CREATE_PAYMENT_LINK,
+  CREATE_SHOP_PAYMENT_LINK,
+  CREATE_ADMIN_PAYMENT_LINK,
   CREATE_PAYMENT_METHOD,
   ELIGIBLE_PAYMENT_METHODS,
   getDefaultCtx,
@@ -36,7 +38,7 @@ import {
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
   REFUND_ORDER,
   setShipping,
-} from './helpers';
+} from './helpers/graphql-helpers';
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
@@ -52,6 +54,7 @@ describe('Stripe Subscription Plugin', function () {
         StripeSubscriptionPlugin.init({
           disableWebhookSignatureChecking: true,
           vendureHost: 'https://public-test-host.io',
+          subscriptionStrategy: new DefaultStrategyTestWrapper(),
         }),
       ],
     });
@@ -176,7 +179,10 @@ describe('Stripe Subscription Plugin', function () {
       await shopClient.query(PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT, {
         productId: 'T_1',
       });
-    expect(subscriptions.length).toBe(4);
+    // T_2 is not a subscription, so it should not be in the preview result
+    const nonSubscription = subscriptions.find((s) => s.variantId === 'T_2');
+    expect(nonSubscription).toBeUndefined();
+    expect(subscriptions.length).toBe(3);
   });
 
   it('Previews subscription for variant for via admin API', async () => {
@@ -205,7 +211,10 @@ describe('Stripe Subscription Plugin', function () {
       await adminClient.query(PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT, {
         productId: 'T_1',
       });
-    expect(subscriptions.length).toBe(4);
+    // T_2 is not a subscription, so it should not be in the preview result
+    const nonSubscription = subscriptions.find((s) => s.variantId === 'T_2');
+    expect(nonSubscription).toBeUndefined();
+    expect(subscriptions.length).toBe(3);
   });
 
   it('Previews subscription for variant for via admin API', async () => {
@@ -239,7 +248,7 @@ describe('Stripe Subscription Plugin', function () {
 
   let orderCode: string | undefined;
 
-  it('Adds item to order', async () => {
+  it('Adds a subscription to order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
@@ -247,12 +256,26 @@ describe('Stripe Subscription Plugin', function () {
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
-        productVariantId: 'T_1',
+        productVariantId: 'T_1', // Is subscription
         quantity: 1,
       }
     );
     orderCode = order.code;
     expect(order.total).toBe(129900);
+    expect(order.lines[0].stripeSubscriptions.length).toBe(1);
+  });
+
+  it('Adds a non-subscription item to order', async () => {
+    const { addItemToOrder: order } = await shopClient.query(
+      ADD_ITEM_TO_ORDER,
+      {
+        productVariantId: 'T_2', // Is not a subscription
+        quantity: 1,
+      }
+    );
+    orderCode = order.code;
+    expect(order.lines[0].stripeSubscriptions.length).toBe(1);
+    expect(order.lines[1].stripeSubscriptions.length).toBe(0);
   });
 
   it('Has subscriptions on an order line', async () => {
@@ -285,7 +308,7 @@ describe('Stripe Subscription Plugin', function () {
     );
   });
 
-  it('Created a PaymentIntent', async () => {
+  it('Created a PaymentIntent via Shop API', async () => {
     // Mock API
     let paymentIntentInput: any = {};
     nock('https://api.stripe.com')
@@ -301,13 +324,46 @@ describe('Stripe Subscription Plugin', function () {
         object: 'payment_intent',
       });
     const { createStripeSubscriptionIntent: intent } = await shopClient.query(
-      CREATE_PAYMENT_LINK
+      CREATE_SHOP_PAYMENT_LINK
     );
     expect(intent.clientSecret).toBe('mock-secret-1234');
     expect(intent.intentType).toBe('PaymentIntent');
     expect(paymentIntentInput.setup_future_usage).toBe('off_session');
     expect(paymentIntentInput.customer).toBe('customer-test-id');
-    expect(paymentIntentInput.amount).toBe('156380');
+    // (T_1 + T_2) * tax + shipping
+    const totalDueNow = (129900 + 139900) * 1.2 + 500; // = 324260
+    expect(paymentIntentInput.amount).toBe(String(totalDueNow));
+  });
+
+  it('Created a PaymentIntent via Admin API', async () => {
+    const { activeOrder } = await shopClient.query(GET_ACTIVE_ORDER);
+    // Mock API
+    let paymentIntentInput: any = {};
+    nock('https://api.stripe.com')
+      .get(/customers.*/)
+      .reply(200, { data: [{ id: 'customer-test-id' }] });
+    nock('https://api.stripe.com')
+      .post(/payment_intents.*/, (body) => {
+        paymentIntentInput = body;
+        return true;
+      })
+      .reply(200, {
+        client_secret: 'mock-secret-1234',
+        object: 'payment_intent',
+      });
+    const { createStripeSubscriptionIntent: intent } = await adminClient.query(
+      CREATE_ADMIN_PAYMENT_LINK,
+      {
+        orderId: activeOrder.id,
+      }
+    );
+    expect(intent.clientSecret).toBe('mock-secret-1234');
+    expect(intent.intentType).toBe('PaymentIntent');
+    expect(paymentIntentInput.setup_future_usage).toBe('off_session');
+    expect(paymentIntentInput.customer).toBe('customer-test-id');
+    // (T_1 + T_2) * tax + shipping
+    const totalDueNow = (129900 + 139900) * 1.2 + 500; // = 324260
+    expect(paymentIntentInput.amount).toBe(String(totalDueNow));
   });
 
   let createdSubscriptions: any[] = [];

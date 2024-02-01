@@ -21,8 +21,13 @@ export const hasStripeSubscriptionProductsPaymentChecker =
     init: (injector: Injector) => {
       stripeSubscriptionService = injector.get(StripeSubscriptionService);
     },
-    check: (ctx, order, args) => {
-      if (stripeSubscriptionService?.hasSubscriptionProducts(ctx, order)) {
+    check: async (ctx, order, args) => {
+      if (
+        await stripeSubscriptionService.subscriptionHelper.hasSubscriptions(
+          ctx,
+          order
+        )
+      ) {
         return true;
       }
       return false;

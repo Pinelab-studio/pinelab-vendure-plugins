@@ -44,6 +44,7 @@ fragment OrderFields on Order {
       type
     }
   }
+  couponCodes
 }
 
 mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
