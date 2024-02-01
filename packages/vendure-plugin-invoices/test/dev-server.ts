@@ -6,7 +6,6 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
-  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -16,11 +15,7 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
-import {
-  InvoicePlugin,
-  GoogleStorageInvoiceStrategy,
-  InvoiceService,
-} from '../src';
+import { InvoicePlugin, InvoiceService, LocalFileStrategy } from '../src';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -34,12 +29,46 @@ require('dotenv').config();
     plugins: [
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
-        storageStrategy: new GoogleStorageInvoiceStrategy({
-          bucketName: process.env.TEST_BUCKET!,
-          storageOptions: {
-            keyFilename: 'key.json',
-          },
-        }),
+        storageStrategy: new LocalFileStrategy(),
+        loadDataFn: async (
+          ctx,
+          injector,
+          order,
+          mostRecentInvoiceNumber?,
+          shouldGenerateCreditInvoice?
+        ) => {
+          // Increase order number
+          let newInvoiceNumber = mostRecentInvoiceNumber || 0;
+          newInvoiceNumber += 1;
+          const orderDate = order.orderPlacedAt
+            ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
+            : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
+          if (shouldGenerateCreditInvoice) {
+            // Create credit invoice
+            const { previousInvoice, reversedOrderTotals } =
+              shouldGenerateCreditInvoice;
+            return {
+              orderDate,
+              invoiceNumber: newInvoiceNumber,
+              isCreditInvoice: true,
+              // Reference to original invoice because this is a credit invoice
+              originalInvoiceNumber: previousInvoice.invoiceNumber,
+              order: {
+                ...order,
+                total: reversedOrderTotals.total,
+                totalWithTax: reversedOrderTotals.totalWithTax,
+                taxSummary: reversedOrderTotals.taxSummaries,
+              },
+            };
+          } else {
+            // Normal debit invoice
+            return {
+              orderDate,
+              invoiceNumber: newInvoiceNumber,
+              order: order,
+            };
+          }
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -54,6 +83,10 @@ require('dotenv').config();
     ],
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
+    },
+    apiOptions: {
+      adminApiPlayground: true,
+      shopApiPlayground: true,
     },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
@@ -71,15 +104,16 @@ require('dotenv').config();
     customerCount: 2,
   });
   // add default Config
-  const channel = await server.app.get(ChannelService).getDefaultChannel();
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });
-  await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
-  // Add a testorders at every server start
+  await server.app
+    .get(InvoiceService)
+    .upsertConfig(ctx, { enabled: true, createCreditInvoices: true });
+  // Add a test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient as any, 'manual-fulfillment');
-  const orders = 3;
+  const orders = 1;
   for (let i = 1; i <= orders; i++) {
     await createSettledOrder(shopClient as any, 3);
   }

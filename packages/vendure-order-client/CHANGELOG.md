@@ -1,3 +1,7 @@
+# 2.8.1 (2023-12-01)
+
+- Added `pollOrderByCode` to poll for order every second
+
 # 2.8.0 (2024-01-04)
 
 - Added `getActiveCustomer` and `logout()` functions;

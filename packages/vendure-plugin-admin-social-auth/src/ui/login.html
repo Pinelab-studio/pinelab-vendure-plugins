@@ -1,0 +1,97 @@
+<html>
+  <head>
+    <title>
+      {{#if brand}} {{brand}} {{/if}} {{#unless hideVendureBranding}} Vendure
+      {{/unless}}
+    </title>
+    <link rel="icon" type="image/x-icon" href="/admin/favicon.ico" />
+    <script src="https://accounts.google.com/gsi/client" async></script>
+  </head>
+  <body>
+    <br />
+    <br />
+    <div style="text-align: center">
+      <img src="/admin/assets/logo-login.webp" />
+      <h1>Log in to Vendure</h1>
+    </div>
+
+    <div class="center-screen">
+      <div
+        id="g_id_onload"
+        data-client_id="{{ clientId }}"
+        data-context="signin"
+        data-ux_mode="popup"
+        data-callback="handleCredentialResponse"
+        data-auto_prompt="false"
+      ></div>
+
+      <div
+        class="g_id_signin"
+        data-type="standard"
+        data-shape="rectangular"
+        data-theme="outline"
+        data-text="signin_with"
+        data-size="large"
+        data-logo_alignment="left"
+      ></div>
+    </div>
+    <div style="text-align: center">
+      <br />
+      <small>
+        {{#if brand}} {{brand}} {{/if}} {{#unless hideVendureBranding}} Vendure
+        {{/unless}} {{#unless hideVersion}} v{{ version }} {{/unless}}
+      </small>
+      <br />
+      <br />
+      <small id="errorMessage" style="color: red"></small>
+    </div>
+
+    <script type="text/javascript">
+      async function handleCredentialResponse(response) {
+        const res = await fetch('/admin-api', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            query: `
+            mutation {
+                authenticate(input: { google: { credentialJWT: "${response.credential}" } }) {
+                    ... on CurrentUser {
+                    identifier
+                    }
+                    ... on ErrorResult {
+                    message
+                    }
+                }
+            }`,
+          }),
+        });
+        const json = await res.json();
+        if (json.data.authenticate.message) {
+          document.getElementById('errorMessage').innerHTML =
+            json.data.authenticate.message;
+          return;
+        }
+        const authToken = res.headers.get('Vendure-Auth-Token');
+        if ('{{isCookieTokenMethodEnabled}}' === 'false') {
+          localStorage.setItem('vnd__authToken', `"${authToken}"`);
+        }
+        window.location.replace('../../admin');
+      }
+    </script>
+  </body>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      color: #282828;
+    }
+    small {
+      color: #8f96a3;
+    }
+    .center-screen {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+  </style>
+</html>

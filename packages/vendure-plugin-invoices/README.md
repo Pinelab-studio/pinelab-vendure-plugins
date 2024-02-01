@@ -2,7 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-invoices)
 
-A plugin for generating PDF invoices for placed orders.
+A plugin for generating PDF invoices for orders. Allows for manual regeneration of new invoices or credit invoices.
 
 ## Getting started
 
@@ -35,6 +35,28 @@ plugins: [
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
+## Migrating from V1 to V2 of this plugin
+
+1. Always create a backup of your database
+2. Install the plugin and generate a migration
+3. In your migration file, add the function `migrateInvoices(queryRunner)` to the bottom of the `up` function in your migration file, like so
+
+```ts
+import {migrateInvoices} from "@pinelab/vendure-plugin-invoices";
+
+   public async up(queryRunner: QueryRunner): Promise<any> {
+        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `orderCode`", undefined);
+        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `customerEmail`", undefined);
+        await queryRunner.query("ALTER TABLE `invoice_config` ADD `createCreditInvoices` tinyint NOT NULL DEFAULT 1", undefined);
+        await queryRunner.query("ALTER TABLE `invoice` ADD `orderTotals` text NULL", undefined);
+
+        // Add this line
+        await migrateInvoices(queryRunner);
+   }
+```
+
+4. Run the migration.
+
 ## Adding invoices to your order-confirmation email
 
 Add the following link to your email template:
@@ -43,6 +65,60 @@ Add the following link to your email template:
 
 When the customer clicks the link, the server will check if the `ordercode`, `channelCode` and `customer emailaddress`
 match with the requested order. If so, it will return the invoice.
+
+This link will always return the first invoice generated for an order. If invoices were recreated via the Admin UI, you can specify the invoice number in the url: ``
+
+## Recreating invoices and credit invoices
+
+On the order detail page you can click the button `recreate invoice` to generate a new invoice based on the current state of the order.
+By default, this will first create a credit invoice, then a new invoice. A credit invoice basically voids the previous invoice before generating a new one.
+
+To send emails when new invoices are created, you can listen for `InvoiceCreatedEvents`:
+
+```ts
+this.eventBus.ofType(InvoiceCreatedEvent).subscribe((event) => {
+  if (event.previousInvoice) {
+    // This means a new invoice has been created for an order that already had an invoice
+    // You should send an email to the customer with the new invoice and the credit invoice.
+    sendEmail(
+      `Your order was changed, so 
+          we've credited invoice ${event.previousInvoice.invoiceNumber} with ${event.creditInvoice} 
+          and created a new invoice ${event.newInvoice.invoiceNumber} for your order ${event.order.code}`
+    );
+  } else {
+    // If no event.previousInvoice is defined, this is the first invoice created, and you can use the download link in your order confirmation email
+  }
+});
+```
+
+**Credit invoices use the same template as regular invoices, so make sure to handle credit invoice data. Checkout the default template for an example on credit invoices.**
+
+Credit invoices will receive additional data with the default `loadDataFn()`. This data is needed to create valid credit invoices:
+
+```ts
+{
+   orderDate,
+   invoiceNumber: newInvoiceNumber,
+   isCreditInvoice: true,
+   // Reference to original invoice is often mandatory for credit invoices
+   originalInvoiceNumber: previousInvoice.invoiceNumber,
+   // The order totals are reversed, meaning that if the order total was $100, it will now be -$100, because this is a credit invoice.
+   order: {
+     ...order,
+     total: reversedOrderTotals.total,
+     totalWithTax: reversedOrderTotals.totalWithTax,
+     taxSummary: reversedOrderTotals.taxSummaries,
+},
+```
+
+To disable the credit invoice behaviour:
+
+```ts
+  InvoicePlugin.init({
+    // Used for generating download URLS for the admin ui
+    vendureHost: 'http://localhost:3106',
+  }),
+```
 
 ## Increase invoice template DB storage
 
@@ -189,28 +265,56 @@ export class YourLocalStrategy implements LocalStorageStrategy {
 }
 ```
 
-## Custom invoice numbering and custom data
+## Custom invoice numbering and custom template data
 
-Implement the `DataStrategy` to pass custom data to your template or generate custom invoice numbers:
+Implement a custom `loadDataFn` to pass custom data into your template or generate custom invoice numbers:
 
 ```ts
-export class DefaultDataStrategy implements DataStrategy {
-  async getData({
-    ctx,
-    injector,
-    order,
-    latestInvoiceNumber,
-  }: DataFnInput): Promise<InvoiceData> {
-    // Do something with the data
-    return {
-      invoiceNumber: String(Math.floor(Math.random() * 90000) + 10000),
-      customerEmail: 'just used for admin display',
-      order,
-      someCustomField: '2022',
-    };
-  }
-}
+      InvoicePlugin.init({
+        vendureHost: 'http://localhost:3050',
+        loadDataFn: async (
+          ctx,
+          injector,
+          order,
+          mostRecentInvoiceNumber?,
+          shouldGenerateCreditInvoice?
+        ) => {
+          // Increase order number
+          let newInvoiceNumber = mostRecentInvoiceNumber || 0;
+          newInvoiceNumber += 1;
+          const orderDate = order.orderPlacedAt
+            ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
+            : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
+          if (shouldGenerateCreditInvoice) {
+            // Create credit invoice
+            const { previousInvoice, reversedOrderTotals } =
+              shouldGenerateCreditInvoice;
+            return {
+              orderDate,
+              invoiceNumber: newInvoiceNumber,
+              isCreditInvoice: true,
+              // Reference to original invoice because this is a credit invoice
+              originalInvoiceNumber: previousInvoice.invoiceNumber,
+              order: {
+                ...order,
+                total: reversedOrderTotals.total,
+                totalWithTax: reversedOrderTotals.totalWithTax,
+                taxSummary: reversedOrderTotals.taxSummaries,
+              },
+            };
+          } else {
+            // Normal debit invoice
+            return {
+              orderDate,
+              invoiceNumber: newInvoiceNumber,
+              order: order,
+            };
+          }
+        }
+      }),
 ```
+
+Make sure to return the data needed for credit invoices when `shouldGenerateCreditInvoice` is defined.
 
 You can access this data in your HTML template using Handlebars.js:
 
