@@ -1,3 +1,7 @@
+# 1.2.0 (2024-02-01)
+
+- Place the transition logic into its own service class as suggested in #343
+
 # 1.1.5 (2024-01-28)
 
 - Transition the `Order` from `AddingItems` to `Draft` rather than copy all the fields and make a new `Draft` `Order`

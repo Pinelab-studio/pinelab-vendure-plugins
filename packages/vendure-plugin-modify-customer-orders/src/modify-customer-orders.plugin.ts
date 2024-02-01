@@ -6,6 +6,7 @@ import { OrderTransitionListenerService } from './api/order-transition-listener.
 import { convertToDraftButton } from './ui';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { convertToDraft } from './custom-order-process';
+import { ModifyCustomerOrderService } from './api/modify-customer-order.service';
 
 export interface ModifyCustomerOrdersPluginOptions {
   /**
@@ -27,12 +28,14 @@ export interface ModifyCustomerOrdersPluginOptions {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => ModifyCustomerOrdersPlugin.options,
     },
+    ModifyCustomerOrderService,
   ],
   configuration: (config) => {
     config.orderOptions.process.push(convertToDraft);
     return config;
   },
   compatibility: '^2.0.0',
+  exports: [ModifyCustomerOrderService],
 })
 export class ModifyCustomerOrdersPlugin {
   static options: ModifyCustomerOrdersPluginOptions = {
