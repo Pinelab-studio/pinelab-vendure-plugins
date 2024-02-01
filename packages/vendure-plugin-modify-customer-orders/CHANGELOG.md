@@ -1,6 +1,6 @@
 # 1.2.0 (2024-02-01)
 
-- Make the transition logic into its own service class as suggested in #343
+- Place the transition logic into its own service class as suggested in #343
 
 # 1.1.5 (2024-01-28)
 
