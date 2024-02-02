@@ -33,6 +33,7 @@
     "env.d.ts",
 
     "packages/util",
+    "packages/vendure-plugin-accept-blue",
     "packages/vendure-plugin-admin-social-auth",
     "packages/vendure-plugin-admin-ui-helpers/",
     "packages/vendure-plugin-anonymized-order",
