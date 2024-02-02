@@ -1,7 +1,7 @@
 # 2.4.4 (2024-02-02)
 
 - Refactored subscription logic into helper, to make it reusable between Accept Blue and Stripe plugin
- 
+
 # 2.4.3 (2024-01-18)
 
 - Remove `active` check for admin API create Payment Intent as `Draft` orders are not the same as `active` orders and there is no adequate way to manipulate the `active` state directly.

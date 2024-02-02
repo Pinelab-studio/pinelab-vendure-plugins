@@ -22,7 +22,7 @@
     "build": "rimraf dist && yarn generate && tsc",
     "start": "yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen",
-    "test": "vitest run --bail"
+    "test": "vitest run --bail 1"
   },
   "dependencies": {
     "axios": "1.6.2",
