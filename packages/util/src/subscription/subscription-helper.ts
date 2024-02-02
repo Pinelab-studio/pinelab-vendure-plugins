@@ -19,12 +19,15 @@ export interface SubscriptionWithVariantId extends Subscription {
  * Helper for payment-provider independent subscription logic
  */
 export class SubscriptionHelper {
+  injector: Injector;
   constructor(
     private loggerCtx: string,
     private moduleRef: ModuleRef,
     private productVariantService: ProductVariantService,
     private strategy: SubscriptionStrategy
-  ) {}
+  ) {
+    this.injector = new Injector(moduleRef);
+  }
 
   async previewSubscription(
     ctx: RequestContext,
@@ -40,13 +43,13 @@ export class SubscriptionHelper {
         `No product variant with id '${productVariantId}' found`
       );
     }
-    const injector = new Injector(this.moduleRef);
-    if (!(await this.strategy.isSubscription(ctx, variant, injector))) {
+
+    if (!(await this.strategy.isSubscription(ctx, variant, this.injector))) {
       return [];
     }
     const subscriptions = await this.strategy.previewSubscription(
       ctx,
-      injector,
+      this.injector,
       variant,
       customInputs
     );
@@ -92,7 +95,6 @@ export class SubscriptionHelper {
     ctx: RequestContext,
     order: Order
   ): Promise<(SubscriptionWithVariantId & { orderLineId: ID })[]> {
-    const injector = new Injector(this.moduleRef);
     // Only define subscriptions for orderlines with a subscription product variant
     const subscriptionOrderLines = await this.getSubscriptionOrderLines(
       ctx,
@@ -161,13 +163,12 @@ export class SubscriptionHelper {
     orderLine: OrderLine,
     order: Order
   ): Promise<Subscription[]> {
-    const injector = new Injector(this.moduleRef);
     if (!(await this.isSubscription(ctx, orderLine.productVariant))) {
       return [];
     }
     const subs = await this.strategy.defineSubscription(
       ctx,
-      injector,
+      this.injector,
       orderLine.productVariant,
       order,
       orderLine.customFields,
@@ -183,11 +184,7 @@ export class SubscriptionHelper {
     ctx: RequestContext,
     variant: ProductVariant
   ): Promise<boolean> {
-    return this.strategy.isSubscription(
-      ctx,
-      variant,
-      new Injector(this.moduleRef)
-    );
+    return this.strategy.isSubscription(ctx, variant, this.injector);
   }
 
   defineSubscription(
@@ -203,7 +200,7 @@ export class SubscriptionHelper {
     | Subscription[] {
     return this.strategy.defineSubscription(
       ctx,
-      new Injector(this.moduleRef),
+      this.injector,
       productVariant,
       order,
       orderLineCustomFields,
