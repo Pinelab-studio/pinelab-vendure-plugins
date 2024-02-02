@@ -22,7 +22,12 @@ export const hasStripeSubscriptionProductsPaymentChecker =
       stripeSubscriptionService = injector.get(StripeSubscriptionService);
     },
     check: async (ctx, order, args) => {
-      if (await stripeSubscriptionService.hasSubscriptions(ctx, order)) {
+      if (
+        await stripeSubscriptionService.subscriptionHelper.hasSubscriptions(
+          ctx,
+          order
+        )
+      ) {
         return true;
       }
       return false;

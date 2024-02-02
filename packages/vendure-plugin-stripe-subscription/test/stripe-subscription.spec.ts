@@ -3,7 +3,6 @@ import {
   EventBus,
   LogLevel,
   mergeConfig,
-  Order,
   OrderPlacedEvent,
   OrderService,
   OrderStateTransitionEvent,
@@ -16,7 +15,6 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import gql from 'graphql-tag';
 // @ts-ignore
 import nock from 'nock';
 // @ts-ignore
@@ -148,7 +146,7 @@ describe('Stripe Subscription Plugin', function () {
   it('Created webhooks and saved webhook secrets', async () => {
     const { paymentMethods } = await adminClient.query(GET_PAYMENT_METHODS);
     const webhookSecret = paymentMethods.items[0].handler.args.find(
-      (a) => a.name === 'webhookSecret'
+      (a: any) => a.name === 'webhookSecret'
     )?.value;
     expect(createdWebhooks.length).toBe(1);
     expect(paymentMethods.items[0].code).toBe('stripe-subscription-method');
@@ -219,7 +217,28 @@ describe('Stripe Subscription Plugin', function () {
     expect(subscriptions.length).toBe(3);
   });
 
-  let orderCode;
+  it('Previews subscription for variant for via admin API', async () => {
+    const {
+      previewStripeSubscriptions: [subscription],
+    } = await adminClient.query(PREVIEW_SUBSCRIPTIONS, {
+      productVariantId: 'T_1',
+    });
+    expect(subscription).toEqual({
+      name: 'Subscription Laptop 13 inch 8GB',
+      amountDueNow: 129900,
+      variantId: 'T_1',
+      priceIncludesTax: false,
+      recurring: {
+        amount: 129900,
+        interval: 'month',
+        intervalCount: 1,
+        startDate: getOneMonthFromNow().toISOString(),
+        endDate: null,
+      },
+    });
+  });
+
+  let orderCode: string | undefined;
 
   it('Adds a subscription to order', async () => {
     await shopClient.asUserWithCredentials(

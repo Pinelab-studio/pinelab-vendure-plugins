@@ -5,7 +5,6 @@ import {
   PriceCalculationResult,
   ProductVariant,
   RequestContext,
-  UserInputError,
 } from '@vendure/core';
 import { DefaultOrderItemPriceCalculationStrategy } from '@vendure/core/dist/config/order/default-order-item-price-calculation-strategy';
 import { CustomOrderLineFields } from '@vendure/core/dist/entity/custom-entity-fields';
@@ -34,22 +33,21 @@ export class SubscriptionOrderItemCalculation
       throw new Error('Subscription service not initialized');
     }
     if (
-      !(await subcriptionService.strategy.isSubscription(
+      !(await subcriptionService.subscriptionHelper.isSubscription(
         ctx,
-        productVariant,
-        injector
+        productVariant
       ))
     ) {
       return super.calculateUnitPrice(ctx, productVariant);
     }
-    const subscription = await subcriptionService.strategy.defineSubscription(
-      ctx,
-      injector,
-      productVariant,
-      order,
-      orderLineCustomFields,
-      orderLineQuantity
-    );
+    const subscription =
+      await subcriptionService.subscriptionHelper.defineSubscription(
+        ctx,
+        productVariant,
+        order,
+        orderLineCustomFields,
+        orderLineQuantity
+      );
     if (!Array.isArray(subscription)) {
       return {
         priceIncludesTax: subscription.priceIncludesTax,

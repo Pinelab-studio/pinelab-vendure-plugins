@@ -1,10 +1,4 @@
-import {
-  RequestContext,
-  OrderLine,
-  Injector,
-  ProductVariant,
-  Order,
-} from '@vendure/core';
+import { Injector, Order, ProductVariant, RequestContext } from '@vendure/core';
 import { Subscription, SubscriptionStrategy } from './subscription-strategy';
 
 /**

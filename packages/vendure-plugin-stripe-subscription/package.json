@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-stripe-subscription",
-  "version": "2.4.3",
+  "version": "2.4.4",
   "description": "Vendure plugin for selling subscriptions via Stripe",
   "icon": "credit-card-refresh",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -20,7 +20,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-stripe-subscription/src/",
-    "test": "vitest run",
+    "test": "vitest run --bail 1",
     "start": "COMPILE_ADMIN=true yarn ts-node test/dev-server.ts",
     "start:no-admin": "yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen"
