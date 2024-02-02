@@ -19,6 +19,7 @@ import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { PinelabAdminComponentsPluginConfig } from '../plugin';
 import { InvoiceData } from './strategies/data-strategy';
 import { createTempFile } from './file.util';
+import { SortOrder } from '@vendure/common/lib/generated-shop-types';
 
 @Injectable()
 export class PinelabPluginAdminComponentsService {
@@ -157,9 +158,19 @@ export class PinelabPluginAdminComponentsService {
   async previewInvoiceWithTemplate(
     ctx: RequestContext,
     template: string,
-    orderCode: string
+    orderCode?: string
   ): Promise<ReadStream> {
-    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    let order: Order | undefined;
+    if (orderCode) {
+      order = await this.orderService.findOneByCode(ctx, orderCode);
+    } else {
+      order = (
+        await this.orderService.findAll(ctx, {
+          take: 1,
+          sort: { createdAt: SortOrder.DESC },
+        })
+      )?.items[0];
+    }
     if (!order) {
       throw new UserInputError(`No order found with code ${orderCode}`);
     }
