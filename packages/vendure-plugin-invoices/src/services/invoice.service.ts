@@ -337,7 +337,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       where: {
         orderId: String(orderId),
       },
-      order: { createdAt: 'DESC' },
+      order: { invoiceNumber: 'DESC' },
     });
   }
 
