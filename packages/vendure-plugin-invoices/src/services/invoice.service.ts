@@ -244,18 +244,15 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       path: tmpFilePath,
       type: '',
     };
-
-    if (process.env.NODE_ENV === 'test') {
-      pdf.create(document, options).catch((error: any) => {
-        Logger.error(JSON.stringify(error), loggerCtx);
-      });
-    } else {
-      try {
-        await pdf.create(document, options);
-      } catch (e) {
-        Logger.error(JSON.stringify(e), loggerCtx);
-        throw e;
-      }
+    try {
+      await pdf.create(document, options);
+    } catch (e: any) {
+      Logger.error(
+        `Failed to generate invoice: ${e?.message}`,
+        loggerCtx,
+        e.stack
+      );
+      throw e;
     }
 
     return {
@@ -343,7 +340,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       where: {
         orderId: String(orderId),
       },
-      order: { createdAt: 'ASC' },
+      order: { createdAt: 'DESC' },
     });
   }
 
