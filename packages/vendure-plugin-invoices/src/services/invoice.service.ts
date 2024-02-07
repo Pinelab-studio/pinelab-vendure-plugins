@@ -247,11 +247,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     try {
       await pdf.create(document, options);
     } catch (e: any) {
-      Logger.error(
-        `Failed to generate invoice: ${e?.message}`,
-        loggerCtx,
-        e.stack
-      );
+      // Warning, because this will be retried, or is returned to the user
+      Logger.warn(`Failed to generate invoice: ${e?.message}`, loggerCtx);
       throw e;
     }
 

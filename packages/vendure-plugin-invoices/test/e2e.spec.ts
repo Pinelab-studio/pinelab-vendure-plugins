@@ -215,14 +215,14 @@ describe('Generate with credit invoicing enabled', function () {
       id: order.id,
     });
     const invoices: Invoice[] = result.invoices;
-    // First invoice
+    // Latest invoice
     expect(invoices.length).toBe(3);
-    expect(invoices[0].invoiceNumber).toBe(1);
+    expect(invoices[2].invoiceNumber).toBe(1);
     // Credit invoice
     expect(invoices[1].invoiceNumber).toBe(2);
     expect(invoices[1].isCreditInvoice).toBe(true);
-    // New invoice
-    expect(invoices[2].invoiceNumber).toBe(3);
+    // First invoice
+    expect(invoices[0].invoiceNumber).toBe(3);
   });
 });
 

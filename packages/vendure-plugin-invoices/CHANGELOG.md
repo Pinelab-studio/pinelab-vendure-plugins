@@ -1,7 +1,7 @@
 # 2.0.2 (2024-02-07)
 
 - Sort by latest invoices first in admin UI
-- Don't throw an error when a user
+- Don't throw error for orders without customer, because the order can be in an active state
 
 # 2.0.1 (2024-01-23)
 
