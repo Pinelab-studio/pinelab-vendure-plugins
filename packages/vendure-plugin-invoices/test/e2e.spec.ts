@@ -215,6 +215,7 @@ describe('Generate with credit invoicing enabled', function () {
       id: order.id,
     });
     const invoices: Invoice[] = result.invoices;
+    console.log(JSON.stringify(invoices, null, 2));
     // Latest invoice
     expect(invoices.length).toBe(3);
     expect(invoices[2].invoiceNumber).toBe(1);
