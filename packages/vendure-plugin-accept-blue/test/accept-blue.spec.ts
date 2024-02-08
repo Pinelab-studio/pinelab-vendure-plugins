@@ -70,8 +70,6 @@ let testingCreditCardDetail = {
   last4: '4444',
 };
 
-require('dotenv').config();
-
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
@@ -88,7 +86,7 @@ beforeAll(async () => {
     productsCsvPath: '../test/src/products-import.csv',
   });
   serverStarted = true;
-  acceptBlueClient = new AcceptBlueClient(process.env.API_KEY ?? '', '');
+  acceptBlueClient = new AcceptBlueClient('process.env.API_KEY', '');
   nockInstance = nock(acceptBlueClient.endpoint);
 }, 60000);
 
@@ -111,10 +109,10 @@ it('Creates Accept Blue payment method', async () => {
         handler: {
           code: acceptBluePaymentHandler.code,
           arguments: [
-            { name: 'apiKey', value: process.env.API_KEY },
+            { name: 'apiKey', value: 'process.env.API_KEY' },
             {
               name: 'tokenizationSourceKey',
-              value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
+              value: 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY',
             },
           ],
         },
@@ -414,7 +412,7 @@ describe('Payment with Tokenized Card Payment Method', () => {
     });
     const acceptBlueHostedTokenizationUrl =
       'https://tokenization.develop.accept.blue/v2/tokenization/get-nonce';
-    const sourceKey = process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? '';
+    const sourceKey = 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY';
     nock(acceptBlueHostedTokenizationUrl)
       .post('')
       .reply(200, { data: { nonce_token: 'nonce_token' } });
