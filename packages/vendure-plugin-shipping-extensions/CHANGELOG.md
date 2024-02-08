@@ -1,3 +1,7 @@
+# 2.1.0 (2024-02-08)
+
+- Allow a custom weightCalculationFunction
+
 # 2.0.1 (2024-02-08)
 
 - Docs update

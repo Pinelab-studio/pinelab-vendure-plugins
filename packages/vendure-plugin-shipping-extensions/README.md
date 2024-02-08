@@ -62,3 +62,26 @@ plugins: [
 
 This checker can be used to have a shippingmethod eligible for an order based on the total weight and shipping country
 of an order.
+
+## Custom weight calculation
+
+By default, the plugin will calculate the weight of an order based on the custom field `weight`:
+
+1. It will use the `productVariant.customFields.weight` of each order line
+2. If that's not set, it will look for the `productVariant.product.customFields.weight` of each order line.
+
+If you'd like to change this behaviour, you can specify a custom `weightCalculationFunction`:
+
+```ts
+ShippingExtensionsPlugin.init({
+          weightCalculationFunction: (order) => {
+            // The order is hydrated with `order.lines.productVariant.product`
+            let totalOrderWeight = 0;
+            order.lines.forEach((line) => {
+              // Do your calculation magic here.
+              totalOrderWeight += line.myCustomWeightField
+            });
+            return totalWeight;
+          },
+      }),
+```
