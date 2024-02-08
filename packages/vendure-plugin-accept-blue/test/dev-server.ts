@@ -1,4 +1,6 @@
 //  https://sandbox.emeraldworldpayments.com/login
+//seems to be running to compile error without the next line
+import * as sth from '../src/api/custom-field-types';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,

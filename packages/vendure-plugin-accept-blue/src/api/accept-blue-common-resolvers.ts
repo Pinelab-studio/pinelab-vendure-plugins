@@ -1,5 +1,11 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
-import { Ctx, Customer, OrderLine, RequestContext } from '@vendure/core';
+import {
+  Ctx,
+  Customer,
+  EntityHydrator,
+  OrderLine,
+  RequestContext,
+} from '@vendure/core';
 import { AcceptBluePaymentMethod } from '../types';
 import { AcceptBlueService } from './accept-blue-service';
 import {
@@ -11,7 +17,10 @@ import {
 
 @Resolver()
 export class AcceptBlueCommonResolver {
-  constructor(private readonly acceptBlueService: AcceptBlueService) {}
+  constructor(
+    private readonly acceptBlueService: AcceptBlueService,
+    private entityHydrator: EntityHydrator
+  ) {}
 
   @Query()
   async previewAcceptBlueSubscriptions(
@@ -65,19 +74,26 @@ export class AcceptBlueCommonResolver {
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLine
   ): Promise<AcceptBlueSubscription[]> {
-    // TODO place in service
+    await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
+    const subscriptionsForOrderLine =
+      await this.acceptBlueService.subscriptionHelper.getSubscriptionsForOrderLine(
+        ctx,
+        orderLine,
+        orderLine.order
+      );
+    return subscriptionsForOrderLine.map((s) => ({
+      ...s,
+      variantId: orderLine.productVariant.id,
+    }));
+  }
+}
 
-    // await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
-    // const subscriptionsForOrderLine =
-    //   await this.stripeSubscriptionService.subscriptionHelper.getSubscriptionsForOrderLine(
-    //     ctx,
-    //     orderLine,
-    //     orderLine.order
-    //   );
-    // return subscriptionsForOrderLine.map((s) => ({
-    //   ...s,
-    //   variantId: orderLine.productVariant.id,
-    // }));
-    throw new Error('Not implemented');
+@Resolver('AcceptBluePaymentMethod')
+export class SavedPaymentMethodsResolver {
+  @ResolveField()
+  __resolveType(value: any): string {
+    return value.payment_method_type === 'card'
+      ? 'AcceptBlueCardPaymentMethod'
+      : 'AcceptBlueCheckPaymentMethod';
   }
 }

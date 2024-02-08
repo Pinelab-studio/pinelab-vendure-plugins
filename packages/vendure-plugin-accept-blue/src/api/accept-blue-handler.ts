@@ -10,8 +10,10 @@ import {
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import {
+  CheckPaymentInput,
   CreditCardPaymentInput,
-  SavedMethodInput as SavedPaymentMethodInput,
+  PaymentInput,
+  TokenPaymentMethodInput,
 } from '../types';
 import { AcceptBlueClient } from './accept-blue-client';
 import { AcceptBlueService } from './accept-blue-service';
@@ -59,19 +61,19 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     args,
     metadata
   ): Promise<CreatePaymentResult> {
-    const ccMetadata = metadata as CreditCardPaymentInput;
+    const ccMetadata = metadata as PaymentInput;
     const client = new AcceptBlueClient(args.apiKey, args.pin);
-    if ((metadata as SavedPaymentMethodInput).paymentMethodId) {
-      const { paymentMethodId } = metadata as SavedPaymentMethodInput;
-      const result = await service.payWithSavedPaymentMethod(
+    const deNormalizedAmountValue = amount / 100;
+    if (isCardPaymentInputMetadata(ccMetadata as any)) {
+      const result = await service.payWithCreditCard(
         ctx,
         order,
-        amount,
+        deNormalizedAmountValue,
         client,
-        paymentMethodId
+        ccMetadata as CreditCardPaymentInput
       );
       Logger.info(
-        `Created payment for saved payment method '${paymentMethodId}' for order ${order.code}`,
+        `Created payment with manual card credentials for order ${order.code}`,
         loggerCtx
       );
       return {
@@ -80,17 +82,31 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
         transactionId: result.chargeResult?.transaction?.id,
         metadata: result,
       };
-    } else if (
-      ccMetadata.card &&
-      ccMetadata.expiry_year &&
-      ccMetadata.expiry_month
-    ) {
-      const result = await service.payWithCreditCard(
+    } else if (isCheckPaymentInputMetaData(ccMetadata as any)) {
+      const result = await service.payWithCheck(
         ctx,
         order,
-        amount,
+        deNormalizedAmountValue,
         client,
-        ccMetadata
+        ccMetadata as CheckPaymentInput
+      );
+      Logger.info(
+        `Created payment with manual card credentials for order ${order.code}`,
+        loggerCtx
+      );
+      return {
+        amount,
+        state: 'Settled',
+        transactionId: result.chargeResult?.transaction?.id,
+        metadata: result,
+      };
+    } else if (isTokenizedCardPaymentMetadata(ccMetadata as any)) {
+      const result = await service.payWithToken(
+        ctx,
+        order,
+        deNormalizedAmountValue,
+        client,
+        ccMetadata as TokenPaymentMethodInput
       );
       Logger.info(
         `Created payment with manual card credentials for order ${order.code}`,
@@ -105,7 +121,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     } else {
       // Invalid input
       throw new UserInputError(
-        `You need to supply a 'paymentMethodId', or 'card', 'expiry_year' and 'expiry_month' as metadata`
+        `You need to supply a 'paymentMethodId' or metadata with relevant fields`
       );
     }
   },
@@ -137,3 +153,22 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     // };
   },
 });
+
+export function isCardPaymentInputMetadata(ccMetadata: any) {
+  return ccMetadata.card && ccMetadata.expiry_year && ccMetadata.expiry_month;
+}
+
+export function isCheckPaymentInputMetaData(ccMetadata: any) {
+  return (
+    ccMetadata.routing_number && ccMetadata.account_number && ccMetadata.name
+  );
+}
+
+export function isTokenizedCardPaymentMetadata(ccMetadata: any) {
+  return (
+    ccMetadata.source &&
+    ccMetadata.last4 &&
+    ccMetadata.expiry_year &&
+    ccMetadata.expiry_month
+  );
+}

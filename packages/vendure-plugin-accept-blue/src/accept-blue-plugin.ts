@@ -5,7 +5,10 @@ import { AcceptBlueService } from './api/accept-blue-service';
 import { acceptBluePaymentHandler } from './api/accept-blue-handler';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { commonApiExtensions } from './api/api-extensions';
-import { AcceptBlueCommonResolver } from './api/accept-blue-common-resolvers';
+import {
+  AcceptBlueCommonResolver,
+  SavedPaymentMethodsResolver,
+} from './api/accept-blue-common-resolvers';
 
 interface AcceptBluePluginOptionsInput {
   subscriptionStrategy?: SubscriptionStrategy;
@@ -17,11 +20,11 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
   imports: [PluginCommonModule],
   adminApiExtensions: {
     schema: commonApiExtensions,
-    resolvers: [AcceptBlueCommonResolver],
+    resolvers: [AcceptBlueCommonResolver, SavedPaymentMethodsResolver],
   },
   shopApiExtensions: {
     schema: commonApiExtensions,
-    resolvers: [AcceptBlueCommonResolver],
+    resolvers: [AcceptBlueCommonResolver, SavedPaymentMethodsResolver],
   },
   providers: [
     AcceptBlueService,
@@ -32,6 +35,15 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
   ],
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(acceptBluePaymentHandler);
+    config.customFields.OrderLine.push({
+      name: 'subscriptionIds',
+      type: 'int',
+      list: true,
+    });
+    config.customFields.Customer.push({
+      name: 'activeBlueCustomerId',
+      type: 'int',
+    });
     return config;
   },
   compatibility: '^2.0.0',
