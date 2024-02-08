@@ -4,6 +4,7 @@ fragment OrderFields on Order {
   state
   active
   total
+  shipping
   totalWithTax
   shippingWithTax
   shippingAddress {
