@@ -244,6 +244,7 @@ describe('Distance based shipping calculator', function () {
         storeLatitude: storeGeoLocation.latitude,
         storeLongitude: storeGeoLocation.longitude,
         pricePerKm: 10,
+        fallbackPrice: 20,
         taxRate: 0,
       };
     const shippingDistance = getDistanceBetweenPointsInKMs(
@@ -361,6 +362,7 @@ interface DistanceBasedShippingCalculatorOptions {
   storeLatitude: number;
   storeLongitude: number;
   pricePerKm: number;
+  fallbackPrice: number;
   taxRate: number;
 }
 async function createDistanceBasedShippingMethod(

@@ -3,9 +3,10 @@ import {
   ShippingCalculator,
   Injector,
   InternalServerError,
+  Logger,
 } from '@vendure/core';
 import { ShippingExtensionsOptions } from './shipping-extensions.plugin';
-import { PLUGIN_OPTIONS } from './constants';
+import { loggerCtx, PLUGIN_OPTIONS } from './constants';
 import { getDistanceBetweenPointsInKMs } from './get-distance-between-points';
 
 let pluginOptions: ShippingExtensionsOptions;
@@ -33,6 +34,16 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       ui: { component: 'currency-form-input' },
       label: [{ languageCode: LanguageCode.en, value: 'Price per KM' }],
     },
+    fallbackPrice: {
+      type: 'int',
+      ui: { component: 'currency-form-input' },
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Price to use when no address is set',
+        },
+      ],
+    },
     taxRate: {
       type: 'float',
       ui: { component: 'number-form-input', suffix: '%', min: 0, max: 100 },
@@ -42,7 +53,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
   init(injector: Injector) {
     pluginOptions = injector.get<ShippingExtensionsOptions>(PLUGIN_OPTIONS);
   },
-  calculate: async (ctx, order, args) => {
+  calculate: async (ctx, order, args, method) => {
     if (!pluginOptions?.orderAddressToGeolocationStrategy) {
       throw new InternalServerError(
         'OrderAddress to geolocation conversion strategy not configured'
@@ -52,28 +63,43 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       latitude: args.storeLatitude,
       longitude: args.storeLongitude,
     };
-    if (!order?.shippingAddress) {
-      return {
-        price: 0,
-        priceIncludesTax: ctx.channel.pricesIncludeTax,
-        taxRate: args.taxRate,
-        metadata: { storeGeoLocation },
-      };
-    }
-    const shippingAddressGeoLocation =
-      await pluginOptions.orderAddressToGeolocationStrategy.getGeoLocationForAddress(
-        order.shippingAddress
-      );
-    const distance = getDistanceBetweenPointsInKMs(
-      shippingAddressGeoLocation,
-      storeGeoLocation
-    );
-    const rate = distance * args.pricePerKm;
-    return {
-      price: rate,
+    // Used as fallback when order shipping address is not available or something goes wrong
+    const fallbackPrice = {
+      price: args.fallbackPrice,
       priceIncludesTax: ctx.channel.pricesIncludeTax,
       taxRate: args.taxRate,
-      metadata: { shippingAddressGeoLocation, storeGeoLocation },
+      metadata: { storeGeoLocation },
     };
+    if (
+      !order?.shippingAddress ||
+      !order.shippingAddress?.postalCode ||
+      !order.shippingAddress?.countryCode ||
+      !order.shippingAddress
+    ) {
+      return fallbackPrice;
+    }
+    try {
+      const shippingAddressGeoLocation =
+        await pluginOptions.orderAddressToGeolocationStrategy.getGeoLocationForAddress(
+          order.shippingAddress
+        );
+      const distance = getDistanceBetweenPointsInKMs(
+        shippingAddressGeoLocation,
+        storeGeoLocation
+      );
+      const rate = distance * args.pricePerKm;
+      return {
+        price: rate,
+        priceIncludesTax: ctx.channel.pricesIncludeTax,
+        taxRate: args.taxRate,
+        metadata: { shippingAddressGeoLocation, storeGeoLocation },
+      };
+    } catch (e: any) {
+      Logger.error(
+        `Failed to calculate shipping for ${method.name}: ${e.message}`,
+        loggerCtx
+      );
+      return fallbackPrice;
+    }
   },
 });

@@ -1,3 +1,7 @@
+# 2.2.0 (2024-02-08)
+
+- Allow setting a fallback price for distance based calculator
+
 # 2.1.0 (2024-02-08)
 
 - Allow a custom weightCalculationFunction
