@@ -1,4 +1,9 @@
-import { LanguageCode, PluginCommonModule, VendurePlugin } from '@vendure/core';
+import {
+  LanguageCode,
+  Order,
+  PluginCommonModule,
+  VendurePlugin,
+} from '@vendure/core';
 import { weightAndCountryChecker } from './weight-and-country-checker';
 import { OrderAddressToGeolocationConversionStrategy } from './strategies/order-address-to-geolocation-strategy';
 import { PLUGIN_OPTIONS } from './constants';
@@ -17,6 +22,12 @@ export interface ShippingExtensionsOptions {
    * This can be an existing tab. For example: 'Physical properties'
    */
   customFieldsTab?: string;
+
+  /**
+   * A custom function to calculate the total weight of an order.
+   * By default the shipping eligibility checker will use the weight custom fields.
+   */
+  weightCalculationFunction?: (order: Order) => number;
 
   /**
    * The selected strategy to convert (OrderAddress)[https://docs.vendure.io/reference/graphql-api/shop/object-types/#orderaddress] values to lat/lon values
