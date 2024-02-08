@@ -2,11 +2,11 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-shipping-extensions)
 
-This plugin does two things in general
+This plugin does two things in general:
 
 - adds a shipping eligibility checker to Vendure that checks the total weight and the shipping country of an
   order, to verify if a shipping method is eligible for a given order.
-- introduces a distance based (`ShippingCalculator`)[https://docs.vendure.io/reference/typescript-api/shipping/shipping-calculator/], based on a configurable `OrderAddressToGeolocationConversionStrategy` used to convert the `shippingAddress` of an `Order` to a geographic latitudinal and longitudinal values to be used when calculating the shipping distance.
+- introduces a distance based [ShippingCalculator](https://docs.vendure.io/reference/typescript-api/shipping/shipping-calculator/), based on a configurable `OrderAddressToGeolocationConversionStrategy` used to convert the `shippingAddress` of an `Order` to a geographic latitudinal and longitudinal values to be used when calculating the shipping distance.
 
 The weight of a product can be configured on the customfield `Product.weight`. You can configure the units to be in KG,
 grams or whatever unit you like.
