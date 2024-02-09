@@ -1,3 +1,3 @@
 # 1.0.0 (2024-01-10)
 
-- Creatd the plugin
+- Abstracted HTML editor component in to admin components package
