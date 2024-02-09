@@ -1,3 +1,8 @@
+# 2.3.0 (2024-02-09)
+
+- Added minimum price instead of fallback price.
+- Fallback was removed in favor of a minimum price
+
 # 2.2.0 (2024-02-08)
 
 - Allow setting a fallback price for distance based calculator

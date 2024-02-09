@@ -34,13 +34,13 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       ui: { component: 'currency-form-input' },
       label: [{ languageCode: LanguageCode.en, value: 'Price per KM' }],
     },
-    fallbackPrice: {
+    minPrice: {
       type: 'int',
       ui: { component: 'currency-form-input' },
       label: [
         {
           languageCode: LanguageCode.en,
-          value: 'Price to use when no address is set',
+          value: 'MinimumPrice',
         },
       ],
     },
@@ -64,8 +64,8 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       longitude: args.storeLongitude,
     };
     // Used as fallback when order shipping address is not available or something goes wrong
-    const fallbackPrice = {
-      price: args.fallbackPrice,
+    const minimumPrice = {
+      price: args.minPrice,
       priceIncludesTax: ctx.channel.pricesIncludeTax,
       taxRate: args.taxRate,
       metadata: { storeGeoLocation },
@@ -76,7 +76,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       !order.shippingAddress?.countryCode ||
       !order.shippingAddress
     ) {
-      return fallbackPrice;
+      return minimumPrice;
     }
     try {
       const shippingAddressGeoLocation =
@@ -87,9 +87,12 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         shippingAddressGeoLocation,
         storeGeoLocation
       );
-      const rate = distance * args.pricePerKm;
+      let price = distance * args.pricePerKm;
+      if (price < args.minPrice) {
+        price = args.minPrice;
+      }
       return {
-        price: rate,
+        price,
         priceIncludesTax: ctx.channel.pricesIncludeTax,
         taxRate: args.taxRate,
         metadata: { shippingAddressGeoLocation, storeGeoLocation },
@@ -99,7 +102,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         `Failed to calculate shipping for ${method.name}: ${e.message}`,
         loggerCtx
       );
-      return fallbackPrice;
+      return minimumPrice;
     }
   },
 });
