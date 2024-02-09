@@ -108,7 +108,7 @@
           "variant-bulk-update",
           "vendure-order-client",
           "webhook",
-          "pinelab-plugin-admin-components"
+          "admin-components"
         ]
       ]
     }
