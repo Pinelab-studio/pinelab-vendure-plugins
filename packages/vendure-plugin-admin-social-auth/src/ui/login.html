@@ -11,8 +11,12 @@
     <br />
     <br />
     <div style="text-align: center">
-      <img src="/admin/assets/logo-login.webp" />
-      <h1>Log in to Vendure</h1>
+      <img src="/admin/assets/logo-login.webp" style="width: 100px" />
+
+      <h1>
+        {{#if hideVendureBranding}} Log in to back office {{else}} Log in to
+        Vendure {{/if}}
+      </h1>
     </div>
 
     <div class="center-screen">
