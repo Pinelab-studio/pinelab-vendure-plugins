@@ -1,3 +1,7 @@
+# 2.8.2 (2023-12-01)
+
+- Updated `getActiveCustomer` to get default billing and shipping addresses
+
 # 2.8.1 (2023-12-01)
 
 - Added `pollOrderByCode` to poll for order every second

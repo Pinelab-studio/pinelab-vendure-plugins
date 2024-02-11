@@ -386,6 +386,10 @@ export class GraphqlQueries {
           verified
           lastLogin
         }
+        addresses {
+          defaultShippingAddress
+          defaultBillingAddress
+        }
       }
     }
   `;

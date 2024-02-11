@@ -39,7 +39,7 @@ export type Address = Node & {
   company?: Maybe<Scalars['String']>;
   country: Country;
   createdAt: Scalars['DateTime'];
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<AddressCustomFields>;
   defaultBillingAddress?: Maybe<Scalars['Boolean']>;
   defaultShippingAddress?: Maybe<Scalars['Boolean']>;
   fullName?: Maybe<Scalars['String']>;
@@ -51,6 +51,11 @@ export type Address = Node & {
   streetLine2?: Maybe<Scalars['String']>;
   updatedAt: Scalars['DateTime'];
 };
+
+export interface AddressCustomFields {
+  __typename?: 'AddressCustomFields';
+  addressline3?: Maybe<Scalars['String']>;
+}
 
 export interface Adjustment {
   __typename?: 'Adjustment';
@@ -93,6 +98,7 @@ export type Asset = Node & {
   preview: Scalars['String'];
   source: Scalars['String'];
   tags: Tag[];
+  thumbnail: Scalars['String'];
   type: AssetType;
   updatedAt: Scalars['DateTime'];
   width: Scalars['Int'];
@@ -181,7 +187,7 @@ export type Collection = Node & {
   breadcrumbs: CollectionBreadcrumb[];
   children?: Maybe<Collection[]>;
   createdAt: Scalars['DateTime'];
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<CollectionCustomFields>;
   description: Scalars['String'];
   featuredAsset?: Maybe<Asset>;
   filters: ConfigurableOperation[];
@@ -208,6 +214,11 @@ export interface CollectionBreadcrumb {
   slug: Scalars['String'];
 }
 
+export interface CollectionCustomFields {
+  __typename?: 'CollectionCustomFields';
+  popularityScore?: Maybe<Scalars['Int']>;
+}
+
 export interface CollectionFilterParameter {
   createdAt?: InputMaybe<DateOperators>;
   description?: InputMaybe<StringOperators>;
@@ -215,6 +226,7 @@ export interface CollectionFilterParameter {
   languageCode?: InputMaybe<StringOperators>;
   name?: InputMaybe<StringOperators>;
   parentId?: InputMaybe<IdOperators>;
+  popularityScore?: InputMaybe<NumberOperators>;
   position?: InputMaybe<NumberOperators>;
   slug?: InputMaybe<StringOperators>;
   updatedAt?: InputMaybe<DateOperators>;
@@ -256,6 +268,7 @@ export interface CollectionSortParameter {
   id?: InputMaybe<SortOrder>;
   name?: InputMaybe<SortOrder>;
   parentId?: InputMaybe<SortOrder>;
+  popularityScore?: InputMaybe<SortOrder>;
   position?: InputMaybe<SortOrder>;
   slug?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
@@ -314,6 +327,49 @@ export interface ConfigurableOperationInput {
   code: Scalars['String'];
 }
 
+export type ConfiguratorOptionGroup =
+  | ConfiguratorOptionGroupCheckBox
+  | ConfiguratorOptionGroupNumber
+  | ConfiguratorOptionGroupRadio;
+
+/**
+ * Configurator option group that allows selection of
+ * multiple options
+ */
+export interface ConfiguratorOptionGroupCheckBox {
+  __typename?: 'ConfiguratorOptionGroupCheckBox';
+  id: Scalars['String'];
+  name: Scalars['String'];
+  options: ConfiguratorSelectableOption[];
+}
+
+/** Option group that allows the user to enter a number */
+export interface ConfiguratorOptionGroupNumber {
+  __typename?: 'ConfiguratorOptionGroupNumber';
+  id: Scalars['String'];
+  max: Scalars['Float'];
+  min: Scalars['Float'];
+  name: Scalars['String'];
+}
+
+/**
+ * Configurator option group that only allows
+ * selection of one of its options
+ */
+export interface ConfiguratorOptionGroupRadio {
+  __typename?: 'ConfiguratorOptionGroupRadio';
+  id: Scalars['String'];
+  name: Scalars['String'];
+  options: ConfiguratorSelectableOption[];
+}
+
+export interface ConfiguratorSelectableOption {
+  __typename?: 'ConfiguratorSelectableOption';
+  customFields?: Maybe<Scalars['JSON']>;
+  id: Scalars['String'];
+  name: Scalars['String'];
+}
+
 export interface Coordinate {
   __typename?: 'Coordinate';
   x: Scalars['Float'];
@@ -368,11 +424,15 @@ export type CouponCodeLimitError = ErrorResult & {
   message: Scalars['String'];
 };
 
+export interface CreateAddressCustomFieldsInput {
+  addressline3?: InputMaybe<Scalars['String']>;
+}
+
 export interface CreateAddressInput {
   city?: InputMaybe<Scalars['String']>;
   company?: InputMaybe<Scalars['String']>;
   countryCode: Scalars['String'];
-  customFields?: InputMaybe<Scalars['JSON']>;
+  customFields?: InputMaybe<CreateAddressCustomFieldsInput>;
   defaultBillingAddress?: InputMaybe<Scalars['Boolean']>;
   defaultShippingAddress?: InputMaybe<Scalars['Boolean']>;
   fullName?: InputMaybe<Scalars['String']>;
@@ -935,6 +995,11 @@ export interface ErrorResult {
   message: Scalars['String'];
 }
 
+export interface ExampleType {
+  __typename?: 'ExampleType';
+  name?: Maybe<Scalars['String']>;
+}
+
 export type Facet = Node & {
   __typename?: 'Facet';
   code: Scalars['String'];
@@ -1202,6 +1267,13 @@ export enum HistoryEntryType {
   OrderPaymentTransition = 'ORDER_PAYMENT_TRANSITION',
   OrderRefundTransition = 'ORDER_REFUND_TRANSITION',
   OrderStateTransition = 'ORDER_STATE_TRANSITION',
+}
+
+/** Human readable selected configurator options. Should only be used for displaying purposes */
+export interface HumanReadableSelectedConfiguratorOption {
+  __typename?: 'HumanReadableSelectedConfiguratorOption';
+  optionGroupName: Scalars['String'];
+  optionValue: Scalars['String'];
 }
 
 /** Operators for filtering on a list of ID fields */
@@ -1779,6 +1851,7 @@ export interface Mutation {
    * shipping method will apply to.
    */
   setOrderShippingMethod: SetOrderShippingMethodResult;
+  transitionOrderToAwaitingPrepress?: Maybe<TransitionOrderToStateResult>;
   /** Transitions an Order to a new state. Valid next states can be found by querying `nextOrderStates` */
   transitionOrderToState?: Maybe<TransitionOrderToStateResult>;
   /** Update an existing Customer */
@@ -1802,6 +1875,7 @@ export interface Mutation {
 }
 
 export interface MutationAddItemToOrderArgs {
+  customFields?: InputMaybe<OrderLineCustomFieldsInput>;
   productVariantId: Scalars['ID'];
   quantity: Scalars['Int'];
 }
@@ -1811,6 +1885,7 @@ export interface MutationAddPaymentToOrderArgs {
 }
 
 export interface MutationAdjustOrderLineArgs {
+  customFields?: InputMaybe<OrderLineCustomFieldsInput>;
   orderLineId: Scalars['ID'];
   quantity: Scalars['Int'];
 }
@@ -1890,6 +1965,11 @@ export interface MutationSetOrderShippingAddressArgs {
 
 export interface MutationSetOrderShippingMethodArgs {
   shippingMethodId: Array<Scalars['ID']>;
+}
+
+export interface MutationTransitionOrderToAwaitingPrepressArgs {
+  emailAddress: Scalars['String'];
+  orderCode: Scalars['String'];
 }
 
 export interface MutationTransitionOrderToStateArgs {
@@ -1999,9 +2079,14 @@ export type Order = Node & {
   couponCodes: Array<Scalars['String']>;
   createdAt: Scalars['DateTime'];
   currencyCode: CurrencyCode;
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<OrderCustomFields>;
   customer?: Maybe<Customer>;
   discounts: Discount[];
+  /**
+   * An estimated delivery date for the order to be used in the checkout process.
+   * For definitive dates see order.customFields.shippingDate
+   */
+  estimatedDeliveryDate: Scalars['DateTime'];
   fulfillments?: Maybe<Fulfillment[]>;
   history: HistoryEntryList;
   id: Scalars['ID'];
@@ -2056,7 +2141,7 @@ export interface OrderAddress {
   company?: Maybe<Scalars['String']>;
   country?: Maybe<Scalars['String']>;
   countryCode?: Maybe<Scalars['String']>;
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<AddressCustomFields>;
   fullName?: Maybe<Scalars['String']>;
   phoneNumber?: Maybe<Scalars['String']>;
   postalCode?: Maybe<Scalars['String']>;
@@ -2065,14 +2150,21 @@ export interface OrderAddress {
   streetLine2?: Maybe<Scalars['String']>;
 }
 
+export interface OrderCustomFields {
+  __typename?: 'OrderCustomFields';
+  shippingDate?: Maybe<Scalars['DateTime']>;
+}
+
 export interface OrderFilterParameter {
   active?: InputMaybe<BooleanOperators>;
   code?: InputMaybe<StringOperators>;
   createdAt?: InputMaybe<DateOperators>;
   currencyCode?: InputMaybe<StringOperators>;
+  estimatedDeliveryDate?: InputMaybe<DateOperators>;
   id?: InputMaybe<IdOperators>;
   orderPlacedAt?: InputMaybe<DateOperators>;
   shipping?: InputMaybe<NumberOperators>;
+  shippingDate?: InputMaybe<DateOperators>;
   shippingWithTax?: InputMaybe<NumberOperators>;
   state?: InputMaybe<StringOperators>;
   subTotal?: InputMaybe<NumberOperators>;
@@ -2095,7 +2187,7 @@ export type OrderLimitError = ErrorResult & {
 export type OrderLine = Node & {
   __typename?: 'OrderLine';
   createdAt: Scalars['DateTime'];
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<OrderLineCustomFields>;
   /** The price of the line including discounts, excluding tax */
   discountedLinePrice: Scalars['Money'];
   /** The price of the line including discounts and tax */
@@ -2143,6 +2235,9 @@ export type OrderLine = Node & {
   proratedUnitPriceWithTax: Scalars['Money'];
   /** The quantity of items purchased */
   quantity: Scalars['Int'];
+  selectedConfiguratorOptions?: Maybe<
+    HumanReadableSelectedConfiguratorOption[]
+  >;
   taxLines: TaxLine[];
   taxRate: Scalars['Float'];
   /** The price of a single unit, excluding tax and discounts */
@@ -2155,6 +2250,19 @@ export type OrderLine = Node & {
   unitPriceWithTaxChangeSinceAdded: Scalars['Money'];
   updatedAt: Scalars['DateTime'];
 };
+
+export interface OrderLineCustomFields {
+  __typename?: 'OrderLineCustomFields';
+  customerNote?: Maybe<Scalars['String']>;
+  selectedConfiguratorOptions?: Maybe<Array<Scalars['String']>>;
+}
+
+export interface OrderLineCustomFieldsInput {
+  customerNote?: InputMaybe<Scalars['String']>;
+  selectedConfiguratorOptions?: InputMaybe<
+    Array<InputMaybe<Scalars['String']>>
+  >;
+}
 
 export type OrderList = PaginatedList & {
   __typename?: 'OrderList';
@@ -2192,9 +2300,11 @@ export type OrderPaymentStateError = ErrorResult & {
 export interface OrderSortParameter {
   code?: InputMaybe<SortOrder>;
   createdAt?: InputMaybe<SortOrder>;
+  estimatedDeliveryDate?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   orderPlacedAt?: InputMaybe<SortOrder>;
   shipping?: InputMaybe<SortOrder>;
+  shippingDate?: InputMaybe<SortOrder>;
   shippingWithTax?: InputMaybe<SortOrder>;
   state?: InputMaybe<SortOrder>;
   subTotal?: InputMaybe<SortOrder>;
@@ -2526,6 +2636,8 @@ export enum Permission {
   ReadTaxRate = 'ReadTaxRate',
   /** Grants permission to read Zone */
   ReadZone = 'ReadZone',
+  /** Allows setting a webhook URL */
+  SetWebhook = 'SetWebhook',
   /** SuperAdmin has unrestricted access to all operations */
   SuperAdmin = 'SuperAdmin',
   /** Grants permission to update Administrator */
@@ -2587,15 +2699,18 @@ export type Product = Node & {
   __typename?: 'Product';
   assets: Asset[];
   collections: Collection[];
+  configuratorOptionGroups?: Maybe<ConfiguratorOptionGroup[]>;
   createdAt: Scalars['DateTime'];
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<ProductCustomFields>;
   description: Scalars['String'];
   facetValues: FacetValue[];
   featuredAsset?: Maybe<Asset>;
   id: Scalars['ID'];
+  isConfigurable: Scalars['Boolean'];
   languageCode: LanguageCode;
   name: Scalars['String'];
   optionGroups: ProductOptionGroup[];
+  primaryCollection?: Maybe<Collection>;
   slug: Scalars['String'];
   translations: ProductTranslation[];
   updatedAt: Scalars['DateTime'];
@@ -2609,14 +2724,35 @@ export interface ProductVariantListArgs {
   options?: InputMaybe<ProductVariantListOptions>;
 }
 
+export interface ProductCustomFields {
+  __typename?: 'ProductCustomFields';
+  collections?: Maybe<Array<Scalars['String']>>;
+  configuratorOptionGroups?: Maybe<Scalars['String']>;
+  documents?: Maybe<Asset[]>;
+  metaDescription?: Maybe<Scalars['String']>;
+  metaTitle?: Maybe<Scalars['String']>;
+  popularityScore?: Maybe<Scalars['Int']>;
+  primaryCollection?: Maybe<Collection>;
+  shortDescription?: Maybe<Scalars['String']>;
+  weight?: Maybe<Scalars['Int']>;
+}
+
 export interface ProductFilterParameter {
+  collections?: InputMaybe<StringListOperators>;
+  configuratorOptionGroups?: InputMaybe<StringOperators>;
   createdAt?: InputMaybe<DateOperators>;
   description?: InputMaybe<StringOperators>;
   id?: InputMaybe<IdOperators>;
+  isConfigurable?: InputMaybe<BooleanOperators>;
   languageCode?: InputMaybe<StringOperators>;
+  metaDescription?: InputMaybe<StringOperators>;
+  metaTitle?: InputMaybe<StringOperators>;
   name?: InputMaybe<StringOperators>;
+  popularityScore?: InputMaybe<NumberOperators>;
+  shortDescription?: InputMaybe<StringOperators>;
   slug?: InputMaybe<StringOperators>;
   updatedAt?: InputMaybe<DateOperators>;
+  weight?: InputMaybe<NumberOperators>;
 }
 
 export type ProductList = PaginatedList & {
@@ -2684,17 +2820,25 @@ export interface ProductOptionTranslation {
 }
 
 export interface ProductSortParameter {
+  configuratorOptionGroups?: InputMaybe<SortOrder>;
   createdAt?: InputMaybe<SortOrder>;
   description?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
+  metaDescription?: InputMaybe<SortOrder>;
+  metaTitle?: InputMaybe<SortOrder>;
   name?: InputMaybe<SortOrder>;
+  popularityScore?: InputMaybe<SortOrder>;
+  primaryCollection?: InputMaybe<SortOrder>;
+  shortDescription?: InputMaybe<SortOrder>;
   slug?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
+  weight?: InputMaybe<SortOrder>;
 }
 
 export interface ProductTranslation {
   __typename?: 'ProductTranslation';
   createdAt: Scalars['DateTime'];
+  customFields?: Maybe<ProductTranslationCustomFields>;
   description: Scalars['String'];
   id: Scalars['ID'];
   languageCode: LanguageCode;
@@ -2703,12 +2847,20 @@ export interface ProductTranslation {
   updatedAt: Scalars['DateTime'];
 }
 
+export interface ProductTranslationCustomFields {
+  __typename?: 'ProductTranslationCustomFields';
+  metaDescription?: Maybe<Scalars['String']>;
+  metaTitle?: Maybe<Scalars['String']>;
+  shortDescription?: Maybe<Scalars['String']>;
+}
+
 export type ProductVariant = Node & {
   __typename?: 'ProductVariant';
   assets: Asset[];
   createdAt: Scalars['DateTime'];
   currencyCode: CurrencyCode;
-  customFields?: Maybe<Scalars['JSON']>;
+  customFields?: Maybe<ProductVariantCustomFields>;
+  defaultConfiguratorPrice?: Maybe<Scalars['Int']>;
   facetValues: FacetValue[];
   featuredAsset?: Maybe<Asset>;
   id: Scalars['ID'];
@@ -2727,9 +2879,15 @@ export type ProductVariant = Node & {
   updatedAt: Scalars['DateTime'];
 };
 
+export interface ProductVariantCustomFields {
+  __typename?: 'ProductVariantCustomFields';
+  weight?: Maybe<Scalars['Int']>;
+}
+
 export interface ProductVariantFilterParameter {
   createdAt?: InputMaybe<DateOperators>;
   currencyCode?: InputMaybe<StringOperators>;
+  defaultConfiguratorPrice?: InputMaybe<NumberOperators>;
   id?: InputMaybe<IdOperators>;
   languageCode?: InputMaybe<StringOperators>;
   name?: InputMaybe<StringOperators>;
@@ -2739,6 +2897,7 @@ export interface ProductVariantFilterParameter {
   sku?: InputMaybe<StringOperators>;
   stockLevel?: InputMaybe<StringOperators>;
   updatedAt?: InputMaybe<DateOperators>;
+  weight?: InputMaybe<NumberOperators>;
 }
 
 export type ProductVariantList = PaginatedList & {
@@ -2762,6 +2921,7 @@ export interface ProductVariantListOptions {
 
 export interface ProductVariantSortParameter {
   createdAt?: InputMaybe<SortOrder>;
+  defaultConfiguratorPrice?: InputMaybe<SortOrder>;
   id?: InputMaybe<SortOrder>;
   name?: InputMaybe<SortOrder>;
   price?: InputMaybe<SortOrder>;
@@ -2770,6 +2930,7 @@ export interface ProductVariantSortParameter {
   sku?: InputMaybe<SortOrder>;
   stockLevel?: InputMaybe<SortOrder>;
   updatedAt?: InputMaybe<SortOrder>;
+  weight?: InputMaybe<SortOrder>;
 }
 
 export interface ProductVariantTranslation {
@@ -2851,8 +3012,14 @@ export interface Query {
    * query will once again return `null`.
    */
   activeOrder?: Maybe<Order>;
+  anonymizedOrder: Order;
   /** An array of supported Countries */
   availableCountries: Country[];
+  /**
+   * Calculate the price of a product variant with given selected options.
+   * Price is incl. tax or ex tax depending on the channel settings.
+   */
+  calculateConfiguratorPrice: Scalars['Money'];
   /** Returns a Collection either by its id or slug. If neither 'id' nor 'slug' is specified, an error will result. */
   collection?: Maybe<Collection>;
   /** A list of Collections available to the shop */
@@ -2888,6 +3055,17 @@ export interface Query {
   products: ProductList;
   /** Search Products based on the criteria set by the `SearchInput` */
   search: SearchResponse;
+}
+
+export interface QueryAnonymizedOrderArgs {
+  emailAddress: Scalars['String'];
+  orderCode: Scalars['String'];
+}
+
+export interface QueryCalculateConfiguratorPriceArgs {
+  quantity?: InputMaybe<Scalars['Int']>;
+  selectedOptions: SelectedConfiguratorOption[];
+  variantId: Scalars['ID'];
 }
 
 export interface QueryCollectionArgs {
@@ -3112,6 +3290,20 @@ export interface SearchResultSortParameter {
   price?: InputMaybe<SortOrder>;
 }
 
+/**
+ * A map of option group ID's and option ID's that define what options have been selected by a customer.
+ *
+ * Should either have an optionId for radio option groups,
+ * multiple optionId's for Checkbox option groups,
+ * or, a value for number option groups
+ */
+export interface SelectedConfiguratorOption {
+  optionGroupId: Scalars['String'];
+  optionId?: InputMaybe<Scalars['String']>;
+  optionIds?: InputMaybe<Array<Scalars['String']>>;
+  value?: InputMaybe<Scalars['Float']>;
+}
+
 export type Seller = Node & {
   __typename?: 'Seller';
   createdAt: Scalars['DateTime'];
@@ -3324,11 +3516,15 @@ export type TextCustomFieldConfig = CustomField & {
 
 export type TransitionOrderToStateResult = Order | OrderStateTransitionError;
 
+export interface UpdateAddressCustomFieldsInput {
+  addressline3?: InputMaybe<Scalars['String']>;
+}
+
 export interface UpdateAddressInput {
   city?: InputMaybe<Scalars['String']>;
   company?: InputMaybe<Scalars['String']>;
   countryCode?: InputMaybe<Scalars['String']>;
-  customFields?: InputMaybe<Scalars['JSON']>;
+  customFields?: InputMaybe<UpdateAddressCustomFieldsInput>;
   defaultBillingAddress?: InputMaybe<Scalars['Boolean']>;
   defaultShippingAddress?: InputMaybe<Scalars['Boolean']>;
   fullName?: InputMaybe<Scalars['String']>;
@@ -3360,8 +3556,12 @@ export type UpdateCustomerPasswordResult =
   | PasswordValidationError
   | Success;
 
+export interface UpdateOrderCustomFieldsInput {
+  shippingDate?: InputMaybe<Scalars['DateTime']>;
+}
+
 export interface UpdateOrderInput {
-  customFields?: InputMaybe<Scalars['JSON']>;
+  customFields?: InputMaybe<UpdateOrderCustomFieldsInput>;
 }
 
 export type UpdateOrderItemsResult =
@@ -5303,13 +5503,18 @@ export interface ActiveCustomerQuery {
               lastLogin?: any | undefined;
             }
           | undefined;
+        addresses?:
+          | Array<{
+              __typename?: 'Address';
+              defaultShippingAddress?: boolean | undefined;
+              defaultBillingAddress?: boolean | undefined;
+            }>
+          | undefined;
       }
     | undefined;
 }
 
-export type GetEligibleShippingMethodsQueryVariables = Exact<
-  Record<string, never>
->;
+export type GetEligibleShippingMethodsQueryVariables = Exact<Record<string, never>>;
 
 export interface GetEligibleShippingMethodsQuery {
   __typename?: 'Query';
