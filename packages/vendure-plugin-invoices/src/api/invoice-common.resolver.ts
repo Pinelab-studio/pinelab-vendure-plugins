@@ -36,9 +36,7 @@ export class InvoiceCommonResolver {
     );
     await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
     if (!order.customer?.emailAddress) {
-      throw new UserInputError(
-        `Can not fetch invoices for an order without 'customer.emailAddress'`
-      );
+      return [];
     }
     return invoices.map((invoice) => ({
       ...invoice,

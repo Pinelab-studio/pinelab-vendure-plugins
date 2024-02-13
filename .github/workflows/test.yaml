@@ -28,7 +28,6 @@ jobs:
       matrix:
         package:
           [
-            'vendure-order-client',
             'vendure-plugin-accept-blue',
             'vendure-plugin-admin-ui-helpers',
             'vendure-plugin-admin-social-auth',
@@ -52,8 +51,8 @@ jobs:
             'vendure-plugin-popularity-scores',
             'vendure-plugin-primary-collection',
             'vendure-plugin-sendcloud',
-            'vendure-plugin-shipping-by-weight-and-country',
             'vendure-plugin-stock-monitoring',
+            'vendure-plugin-shipping-extensions',
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-webhook',

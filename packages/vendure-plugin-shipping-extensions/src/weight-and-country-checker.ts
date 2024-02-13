@@ -1,32 +1,25 @@
 import {
   CountryService,
+  EntityHydrator,
   LanguageCode,
   Order,
-  Product,
   RequestContext,
   ShippingEligibilityChecker,
-  TransactionalConnection,
 } from '@vendure/core';
-import { ShippingByWeightAndCountryPlugin } from './shipping-by-weight-and-country.plugin';
+import { ShippingExtensionsPlugin } from './shipping-extensions.plugin';
 
-export function calculateOrderWeight(
-  order: Order,
-  products: Product[]
-): number {
+export function calculateOrderWeight(order: Order): number {
   return order.lines.reduce((acc, line) => {
-    const product = products.find(
-      (p) => p.id === line.productVariant.productId
-    );
     const weight =
       (line.productVariant.customFields as any).weight ??
-      (product?.customFields as any).weight ??
+      (line.productVariant.product?.customFields as any).weight ??
       0;
     const lineWeight = weight * line.quantity;
     return acc + lineWeight;
   }, 0);
 }
 
-let connection: TransactionalConnection;
+let entityHydrator: EntityHydrator;
 export const weightAndCountryChecker = new ShippingEligibilityChecker({
   code: 'shipping-by-weight-and-country',
   description: [
@@ -71,7 +64,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     },
   },
   async init(injector) {
-    connection = injector.get(TransactionalConnection);
+    entityHydrator = injector.get(EntityHydrator);
     const ctx = RequestContext.empty();
     const countries = await injector.get(CountryService).findAll(ctx);
     this.args.countries.ui.options = countries.items.map((c) => ({
@@ -86,13 +79,13 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     this.args.minWeight.description = [
       {
         languageCode: LanguageCode.en,
-        value: `Minimum weight in ${ShippingByWeightAndCountryPlugin.options?.weightUnit}`,
+        value: `Minimum weight in ${ShippingExtensionsPlugin.options?.weightUnit}`,
       },
     ];
     this.args.maxWeight.description = [
       {
         languageCode: LanguageCode.en,
-        value: `Maximum weight in ${ShippingByWeightAndCountryPlugin.options?.weightUnit}`,
+        value: `Maximum weight in ${ShippingExtensionsPlugin.options?.weightUnit}`,
       },
     ];
   },
@@ -103,7 +96,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
   ) {
     const shippingCountry = order.shippingAddress.countryCode;
     const orderIsInSelectedCountry = shippingCountry
-      ? countries.indexOf(shippingCountry) > -1
+      ? countries.includes(shippingCountry)
       : false;
     if (orderIsInSelectedCountry && excludeCountries) {
       // Not eligible, because order.country is in our excluded-country-list
@@ -115,14 +108,20 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     }
     // Shipping country is allowed, continue checking order weight
     const productIds = order.lines.map((line) => line.productVariant.productId);
-    const products = await connection.findByIdsInChannel(
-      ctx,
-      Product,
-      productIds,
-      ctx.channelId,
-      {}
-    );
-    const totalOrderWeight = calculateOrderWeight(order, products);
+    await entityHydrator.hydrate(ctx, order, {
+      relations: [
+        'lines',
+        'lines.productVariant',
+        'lines.productVariant.product',
+      ],
+    });
+    let totalOrderWeight = 0;
+    if (ShippingExtensionsPlugin.options?.weightCalculationFunction) {
+      totalOrderWeight =
+        ShippingExtensionsPlugin.options.weightCalculationFunction(order);
+    } else {
+      totalOrderWeight = calculateOrderWeight(order);
+    }
     return totalOrderWeight <= maxWeight && totalOrderWeight >= minWeight;
   },
 });

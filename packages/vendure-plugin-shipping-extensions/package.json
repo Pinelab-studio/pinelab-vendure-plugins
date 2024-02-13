@@ -1,7 +1,7 @@
 {
-  "name": "@pinelab/vendure-plugin-shipping-by-weight-and-country",
-  "version": "1.1.0",
-  "description": "Vendure plugin for selecting a shipping method based on the total weight and the shipping address of an order.",
+  "name": "@pinelab/vendure-plugin-shipping-extensions",
+  "version": "2.3.0",
+  "description": "Vendure plugin for configurable shipping calculators and eligibility checkers.",
   "icon": "truck",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

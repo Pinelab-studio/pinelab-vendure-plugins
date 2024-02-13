@@ -1,4 +1,9 @@
-# 2.0.1 (2024-01-32)
+# 2.0.2 (2024-02-07)
+
+- Sort by latest invoices first in admin UI
+- Don't throw error for orders without customer, because the order can be in an active state
+
+# 2.0.1 (2024-01-23)
 
 - Added script for migrating to V2
 - Updated default template to support credit invoices

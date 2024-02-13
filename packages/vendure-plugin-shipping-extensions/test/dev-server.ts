@@ -12,7 +12,8 @@ import {
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { ShippingByWeightAndCountryPlugin } from '../src/shipping-by-weight-and-country.plugin';
+import { ShippingExtensionsPlugin } from '../src/shipping-extensions.plugin';
+import { UKPostalCodeToGelocationConversionStrategy } from '../src/strategies/uk-postalcode-to-geolocation-strategy';
 
 (async () => {
   require('dotenv').config();
@@ -49,9 +50,11 @@ import { ShippingByWeightAndCountryPlugin } from '../src/shipping-by-weight-and-
         port: 3002,
         route: 'admin',
       }),
-      ShippingByWeightAndCountryPlugin.init({
+      ShippingExtensionsPlugin.init({
         weightUnit: 'kg',
         customFieldsTab: 'Physical properties',
+        orderAddressToGeolocationStrategy:
+          new UKPostalCodeToGelocationConversionStrategy(),
       }),
     ],
   });

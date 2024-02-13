@@ -10,7 +10,6 @@
     "ecmaVersion": "latest",
     "sourceType": "module",
     "project": [
-      "./packages/vendure-order-client/test/tsconfig.json",
       "./packages/*/tsconfig.json",
       "./packages/*/test/tsconfig.json",
       "./docs-website/tsconfig.json"
@@ -62,6 +61,7 @@
     "packages/vendure-plugin-stock-monitoring/",
     "packages/vendure-plugin-stripe-subscription/",
     "packages/vendure-plugin-variant-bulk-update/",
-    "packages/vendure-plugin-webhook/"
+    "packages/vendure-plugin-webhook/",
+    "packages/vendure-plugin-shipping-extensions"
   ]
 }

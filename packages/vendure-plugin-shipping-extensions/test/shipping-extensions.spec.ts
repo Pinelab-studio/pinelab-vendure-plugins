@@ -7,61 +7,76 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import {
-  ChannelService,
   DefaultLogger,
   LogLevel,
   mergeConfig,
   ProductService,
   ProductVariantService,
+  defaultShippingEligibilityChecker,
   RequestContext,
+  roundMoney,
 } from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { ShippingByWeightAndCountryPlugin } from '../src/shipping-by-weight-and-country.plugin';
+import { ShippingExtensionsPlugin } from '../src/shipping-extensions.plugin';
 import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+import { distanceBasedShippingCalculator } from '../src/distance-based-shipping-calculator';
+import {
+  POSTCODES_URL,
+  UKPostalCodeToGelocationConversionStrategy,
+} from '../src/strategies/uk-postalcode-to-geolocation-strategy';
+import { GeoLocation } from '../src/strategies/order-address-to-geolocation-strategy';
+import nock from 'nock';
+import { getDistanceBetweenPointsInKMs } from '../src/get-distance-between-points';
+import { CreateAddressInput } from '../../test/src/generated/shop-graphql';
 
-describe('Order export plugin', function () {
-  let server: TestServer;
-  let adminClient: SimpleGraphQLClient;
-  let shopClient: SimpleGraphQLClient;
-  let serverStarted = false;
-  let ctx: RequestContext;
+let server: TestServer;
+let adminClient: SimpleGraphQLClient;
+let shopClient: SimpleGraphQLClient;
+let serverStarted = false;
+let ctx: RequestContext;
 
-  beforeAll(async () => {
-    registerInitializer('sqljs', new SqljsInitializer('__data__'));
-    const config = mergeConfig(testConfig, {
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [ShippingByWeightAndCountryPlugin.init({})],
-      paymentOptions: {
-        paymentMethodHandlers: [testPaymentMethod],
-      },
-    });
-
-    ({ server, adminClient, shopClient } = createTestEnvironment(config));
-    await server.init({
-      initialData: {
-        ...initialData,
-        shippingMethods: [],
-        paymentMethods: [
-          {
-            name: testPaymentMethod.code,
-            handler: { code: testPaymentMethod.code, arguments: [] },
-          },
-        ],
-      },
-      productsCsvPath: '../test/src/products-import.csv',
-    });
-    serverStarted = true;
-    ctx = await getSuperadminContext(server.app);
-  }, 60000);
-
-  it('Should start successfully', async () => {
-    await expect(serverStarted).toBe(true);
+beforeAll(async () => {
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
+    plugins: [
+      ShippingExtensionsPlugin.init({
+        orderAddressToGeolocationStrategy:
+          new UKPostalCodeToGelocationConversionStrategy(),
+      }),
+    ],
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
   });
 
+  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  await server.init({
+    initialData: {
+      ...initialData,
+      shippingMethods: [],
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
+    productsCsvPath: '../test/src/products-import.csv',
+  });
+  serverStarted = true;
+  ctx = await getSuperadminContext(server.app);
+}, 60000);
+
+it('Should start successfully', async () => {
+  await expect(serverStarted).toBe(true);
+});
+
+describe('Shipping by weight and country', function () {
   it('Creates shippingmethod 1 for NL and BE, with weight between 0 and 100 ', async () => {
     await adminClient.asSuperAdmin();
     const res = await createShippingMethod(adminClient, {
@@ -194,11 +209,74 @@ describe('Order export plugin', function () {
       'ORDER_STATE_TRANSITION_ERROR'
     );
   });
-
-  afterAll(async () => {
-    await server.destroy();
-  }, 100000);
 });
+
+describe('Distance based shipping calculator', function () {
+  it('Should calculate distance based Shipping Price', async () => {
+    const shippingAddressPostalCode = 'SW1W 0NY';
+    const shippingAddressGeoLocation: GeoLocation = {
+      longitude: -0.147421,
+      latitude: 51.495373,
+    };
+    const storeGeoLocation: GeoLocation = {
+      latitude: 51.5072,
+      longitude: -0.118092,
+    };
+    const shippingAdress: CreateAddressInput = {
+      countryCode: 'GB',
+      streetLine1: 'London Street',
+      postalCode: shippingAddressPostalCode,
+    };
+    nock(POSTCODES_URL)
+      .get(`/${shippingAddressPostalCode}`)
+      .reply(200, {
+        data: {
+          status: 200,
+          result: {
+            postcode: shippingAddressPostalCode,
+            longitude: shippingAddressGeoLocation.longitude,
+            latitude: shippingAddressGeoLocation.latitude,
+          },
+        },
+      });
+    const priceBasedShippingMethodArgs: DistanceBasedShippingCalculatorOptions =
+      {
+        storeLatitude: storeGeoLocation.latitude,
+        storeLongitude: storeGeoLocation.longitude,
+        pricePerKm: 10,
+        fallbackPrice: 20,
+        taxRate: 0,
+      };
+    const shippingDistance = getDistanceBetweenPointsInKMs(
+      storeGeoLocation,
+      shippingAddressGeoLocation
+    );
+    const expectedPrice = roundMoney(
+      priceBasedShippingMethodArgs.pricePerKm * shippingDistance
+    );
+    const distanceBasedShippingMethod = await createDistanceBasedShippingMethod(
+      adminClient,
+      priceBasedShippingMethodArgs
+    );
+    expect(distanceBasedShippingMethod.id).toBeDefined();
+    const order: any = await createSettledOrder(
+      shopClient,
+      distanceBasedShippingMethod.id,
+      true,
+      [
+        { id: 'T_1', quantity: 1 },
+        { id: 'T_2', quantity: 2 },
+      ],
+      undefined,
+      { input: shippingAdress }
+    );
+    expect(order.shipping).toBe(expectedPrice);
+  });
+});
+
+afterAll(async () => {
+  await server.destroy();
+}, 100000);
 
 const CREATE_SHIPPING_METHOD = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
@@ -272,6 +350,60 @@ async function createShippingMethod(
           languageCode: 'en',
           name: 'Shipping by weight and country',
           description: '',
+          customFields: {},
+        },
+      ],
+    },
+  });
+  return res.createShippingMethod;
+}
+
+interface DistanceBasedShippingCalculatorOptions {
+  storeLatitude: number;
+  storeLongitude: number;
+  pricePerKm: number;
+  fallbackPrice: number;
+  taxRate: number;
+}
+async function createDistanceBasedShippingMethod(
+  adminClient: SimpleGraphQLClient,
+  options: DistanceBasedShippingCalculatorOptions
+) {
+  const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
+    input: {
+      code: 'shipping-by-distance',
+      checker: {
+        code: defaultShippingEligibilityChecker.code,
+        arguments: [{ name: 'orderMinimum', value: '0' }],
+      },
+      calculator: {
+        code: distanceBasedShippingCalculator.code,
+        arguments: [
+          {
+            name: 'storeLatitude',
+            value: String(options.storeLatitude),
+          },
+          {
+            name: 'storeLongitude',
+            value: String(options.storeLongitude),
+          },
+          {
+            name: 'taxRate',
+            value: String(options.taxRate),
+          },
+          {
+            name: 'pricePerKm',
+            value: String(options.pricePerKm),
+          },
+        ],
+      },
+      fulfillmentHandler: 'manual-fulfillment',
+      customFields: {},
+      translations: [
+        {
+          languageCode: 'en',
+          name: 'Shipping by Distance',
+          description: 'Distance Based Shipping Method',
           customFields: {},
         },
       ],
