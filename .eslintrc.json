@@ -10,7 +10,6 @@
     "ecmaVersion": "latest",
     "sourceType": "module",
     "project": [
-      "./packages/vendure-order-client/test/tsconfig.json",
       "./packages/*/tsconfig.json",
       "./packages/*/test/tsconfig.json",
       "./docs-website/tsconfig.json"

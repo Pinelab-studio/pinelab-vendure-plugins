@@ -107,7 +107,6 @@
           "stock-monitoring",
           "stripe-subscription",
           "variant-bulk-update",
-          "vendure-order-client",
           "webhook"
         ]
       ]
