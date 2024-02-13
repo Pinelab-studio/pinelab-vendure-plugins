@@ -159,11 +159,11 @@ export const GET_CUSTOMER_WITH_ID = gql`
 `;
 
 export const UPDATE_CUSTOMER_BLUE_ID = gql`
-  mutation UpdateCustomer($customerId: ID!, $activeBlueCustomerId: Int!) {
+  mutation UpdateCustomer($customerId: ID!, $acceptBlueCustomerId: Int!) {
     updateCustomer(
       input: {
         id: $customerId
-        customFields: { activeBlueCustomerId: $activeBlueCustomerId }
+        customFields: { acceptBlueCustomerId: $acceptBlueCustomerId }
       }
     ) {
       ... on Customer {

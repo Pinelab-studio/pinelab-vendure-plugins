@@ -158,7 +158,7 @@ describe('Shop API', () => {
     );
     const { updateCustomer } = await adminClient.query(
       UPDATE_CUSTOMER_BLUE_ID,
-      { customerId: '1', activeBlueCustomerId: haydenZiemeCustomerDetails.id }
+      { customerId: '1', acceptBlueCustomerId: haydenZiemeCustomerDetails.id }
     );
     expect(updateCustomer.emailAddress).toBe('hayden.zieme12@hotmail.com');
     const {

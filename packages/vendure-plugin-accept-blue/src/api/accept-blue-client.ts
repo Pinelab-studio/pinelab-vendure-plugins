@@ -172,6 +172,7 @@ export class AcceptBlueClient {
   async createCharge(
     input: AcceptBlueChargeTransactionInput
   ): Promise<AcceptBlueChargeTransaction> {
+    input.amount /= 100;
     const result = await this.request('post', `transactions/charge`, input);
     if (
       (result as any).status === 'Error' ||

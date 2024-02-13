@@ -70,7 +70,7 @@ export class AcceptBlueCommonResolver {
 
   @ResolveField('acceptBlueSubscriptions')
   @Resolver('OrderLine')
-  async stripeSubscriptions(
+  async acceptBlueSubscriptions(
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLine
   ): Promise<AcceptBlueSubscription[]> {
@@ -86,11 +86,8 @@ export class AcceptBlueCommonResolver {
       variantId: orderLine.productVariant.id,
     }));
   }
-}
-
-@Resolver('AcceptBluePaymentMethod')
-export class SavedPaymentMethodsResolver {
   @ResolveField()
+  @Resolver('AcceptBluePaymentMethod')
   __resolveType(value: any): string {
     return value.payment_method_type === 'card'
       ? 'AcceptBlueCardPaymentMethod'

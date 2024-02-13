@@ -5,7 +5,7 @@ import {
 
 declare module '@vendure/core/dist/entity/custom-entity-fields' {
   interface CustomCustomerFields {
-    activeBlueCustomerId: number;
+    acceptBlueCustomerId: number;
   }
 
   interface CustomOrderLineFields {

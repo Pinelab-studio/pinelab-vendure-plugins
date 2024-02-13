@@ -63,12 +63,11 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
   ): Promise<CreatePaymentResult> {
     const ccMetadata = metadata as PaymentInput;
     const client = new AcceptBlueClient(args.apiKey, args.pin);
-    const deNormalizedAmountValue = amount / 100;
     if (isCardPaymentInputMetadata(ccMetadata as any)) {
       const result = await service.payWithCreditCard(
         ctx,
         order,
-        deNormalizedAmountValue,
+        amount,
         client,
         ccMetadata as CreditCardPaymentInput
       );
@@ -86,7 +85,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       const result = await service.payWithCheck(
         ctx,
         order,
-        deNormalizedAmountValue,
+        amount,
         client,
         ccMetadata as CheckPaymentInput
       );
@@ -104,7 +103,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       const result = await service.payWithToken(
         ctx,
         order,
-        deNormalizedAmountValue,
+        amount,
         client,
         ccMetadata as TokenPaymentMethodInput
       );
