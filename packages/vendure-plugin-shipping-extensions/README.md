@@ -2,32 +2,11 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-shipping-extensions)
 
-This plugin does two things in general:
+A collection of shipping calculators, checkers and promotion conditions that help you create customizable shipping options:
 
-- adds a shipping eligibility checker to Vendure that checks the total weight and the shipping country of an
-  order, to verify if a shipping method is eligible for a given order.
-- introduces a distance based [ShippingCalculator](https://docs.vendure.io/reference/typescript-api/shipping/shipping-calculator/), based on a configurable `OrderAddressToGeolocationConversionStrategy` used to convert the `shippingAddress` of an `Order` to a geographic latitudinal and longitudinal values to be used when calculating the shipping distance.
-
-The weight of a product can be configured on the customfield `Product.weight`. You can configure the units to be in KG,
-grams or whatever unit you like.
-
-A Custom `OrderAddressToGeolocationConversionStrategy` can be configured by as follows:
-
-```ts
-import {OrderAddressToGeolocationConversionStrategy} from '@pinelab/vendure-plugin-shipping-extensions'
-export class USStreetLineToGeolocationConversionStrategy implements OrderAddressToGeolocationConversionStrategy{
-   async getGeoLocationForAddress(orderAddress: OrderAddress): Promise<GeoLocation> {
-    const location=//...result of a possible API call or any other lookup method
-    return {latitude: location.latitude, longitude: location.longitude}
-   }
-}
-```
-
-Some examples:
-
-- Create a shippingmethod for orders placed in Australia, with a total order weight between 10kg and 40kg
-- Create a shippingmethod for all orders except the ones placed in Canada and Norway, with a total order weight below
-  1100 grams
+- Shipping eligibility checks based on the order weight and the order's country
+- Distance based Shipping calculator, to calculate your shipping price based on the distance from your store
+- A promotion condition that checks the order's shipping country. For example to only give free shipping to countries X, Y and Z
 
 ## Getting started
 
@@ -48,7 +27,6 @@ plugins: [
        * This can be an existing tab
        */
       customFieldsTab: "Physical properties",
-      orderAddressToGeolocationStrategy: new USStreetLineToGeolocationConversionStrategy()
     })
   ...
 ]
@@ -59,11 +37,20 @@ plugins: [
 4. Create a new shippingmethod
 5. Under `Shipping eligibility checker` you should see `Check by weight and country`
 6. Under `Shipping calculator` you should see `Distance Based Shipping Calculator`
+7. Under Promotions conditions you should see `Order is in country` condition.
 
-This checker can be used to have a shippingmethod eligible for an order based on the total weight and shipping country
-of an order.
+## Shipping by weight and country options
 
-## Custom weight calculation
+Some examples:
+
+- Create a shipping method for orders placed in Australia, with a total order weight between 10kg and 40kg
+- Create a shipping method for all orders except the ones placed in Canada and Norway, with a total order weight below
+  1100 grams
+
+The weight of a product can be configured on the customfield `Product.weight`. You can configure the units to be in KG,
+grams or whatever unit you like.
+
+### Custom weight calculation
 
 By default, the plugin will calculate the weight of an order based on the custom field `weight`:
 
@@ -84,4 +71,20 @@ ShippingExtensionsPlugin.init({
             return totalWeight;
           },
       }),
+```
+
+## Distance based shipping options
+
+A configurable `OrderAddressToGeolocationConversionStrategy` is used to convert the `shippingAddress` of an `Order` to a geographic latitudinal and longitudinal, which in turn is used to calculate the distance. The built-in strategy converts a UK postalcode to a lat/lon.
+
+To support distance based calculation in other countries you'd have to implement your own strategy:
+
+```ts
+import {OrderAddressToGeolocationConversionStrategy} from '@pinelab/vendure-plugin-shipping-extensions'
+export class USStreetLineToGeolocationConversionStrategy implements OrderAddressToGeolocationConversionStrategy{
+   async getGeoLocationForAddress(orderAddress: OrderAddress): Promise<GeoLocation> {
+    const location=//...result of a possible API call or any other lookup method
+    return {latitude: location.latitude, longitude: location.longitude}
+   }
+}
 ```
