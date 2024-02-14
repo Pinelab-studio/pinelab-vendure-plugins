@@ -3,20 +3,23 @@ import {
   LogLevel,
   mergeConfig,
   ProductService,
-  ProductVariantService, RequestContext,
-  roundMoney
+  ProductVariantService,
+  RequestContext,
+  roundMoney,
 } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
-  testConfig
+  testConfig,
+  clearAllTables,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import nock from 'nock';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { LanguageCode } from '../../test/src/generated/admin-graphql';
 import { CreateAddressInput } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -25,10 +28,15 @@ import { ShippingExtensionsPlugin } from '../src/shipping-extensions.plugin';
 import { GeoLocation } from '../src/strategies/order-address-to-geolocation-strategy';
 import {
   POSTCODES_URL,
-  UKPostalCodeToGelocationConversionStrategy
+  UKPostalCodeToGelocationConversionStrategy,
 } from '../src/strategies/uk-postalcode-to-geolocation-strategy';
 import { getDistanceBetweenPointsInKMs } from '../src/util/get-distance-between-points';
-import { createDistanceBasedShippingMethod, createShippingMethod, DistanceBasedShippingCalculatorOptions } from './test-helpers';
+import {
+  createDistanceBasedShippingMethod,
+  createPromotion,
+  createShippingMethod,
+  DistanceBasedShippingCalculatorOptions,
+} from './test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -167,7 +175,6 @@ describe('Shipping by weight and country', function () {
   });
 
   it('Is NOT eligible for method 2 with country NL', async () => {
-    await adminClient.asSuperAdmin();
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
       'ORDER_STATE_TRANSITION_ERROR'
     );
@@ -267,6 +274,77 @@ describe('Distance based shipping calculator', function () {
       { input: shippingAdress }
     );
     expect(order.shipping).toBe(expectedPrice);
+  });
+});
+
+describe('Country based Promotion condition', function () {
+  it('Creates promotion hat gives free shipping for orders in NL', async () => {
+    const promotion = await createPromotion(adminClient, {
+      input: {
+        conditions: [
+          {
+            code: 'order_in_country',
+            arguments: [
+              {
+                name: 'countries',
+                value: '["NL"]',
+              },
+            ],
+          },
+        ],
+        actions: [
+          {
+            code: 'free_shipping',
+            arguments: [],
+          },
+        ],
+        enabled: true,
+        translations: [
+          {
+            languageCode: LanguageCode.En,
+            name: 'Free Shipping for NL',
+            customFields: {},
+          },
+        ],
+        customFields: {},
+      },
+    });
+    expect(promotion.name).toBe('Free Shipping for NL');
+  });
+
+  it('Order in NL should have free shipping', async () => {
+    // Default country is NL
+    const order = await createSettledOrder(shopClient, 1, true, [
+      {
+        id: 'T_3', // Variant 3's weight hasn't been altered yet
+        quantity: 1,
+      },
+    ]);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingWithTax).toBe(0);
+  });
+
+  it('Order in BE should NOT have free shipping', async () => {
+    const order = await createSettledOrder(
+      shopClient,
+      1,
+      true,
+      [
+        {
+          id: 'T_3', // Variant 3's weight hasn't been altered yet
+          quantity: 1,
+        },
+      ],
+      undefined,
+      {
+        input: {
+          countryCode: 'BE',
+          streetLine1: 'Brussels Street',
+        },
+      }
+    );
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingWithTax).toBe(111);
   });
 });
 

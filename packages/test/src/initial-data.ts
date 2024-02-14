@@ -22,6 +22,7 @@ export const initialData: InitialData = {
     { name: 'United Kingdom', code: 'GB', zone: 'Europe' },
     { name: 'United States of America', code: 'US', zone: 'Americas' },
     { name: 'Nederland', code: 'NL', zone: 'Europe' },
+    { name: 'Belgie', code: 'BE', zone: 'Europe' },
   ],
   collections: [
     {
