@@ -1,3 +1,7 @@
+# 2.4.0 (2024-02-14)
+
+- Added `orderInCountryPromotionCondition`, which checks if the order's shipping country matches one of the configured countries
+
 # 2.3.0 (2024-02-09)
 
 - Added minimum price instead of fallback price.

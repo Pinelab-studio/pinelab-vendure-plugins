@@ -1,4 +1,4 @@
-import { GeoLocation } from './strategies/order-address-to-geolocation-strategy';
+import { GeoLocation } from '../strategies/order-address-to-geolocation-strategy';
 
 export function getDistanceBetweenPointsInKMs(
   pointA: GeoLocation,

@@ -1,37 +1,42 @@
 import {
-  createTestEnvironment,
-  registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import {
   DefaultLogger,
   LogLevel,
   mergeConfig,
   ProductService,
   ProductVariantService,
-  defaultShippingEligibilityChecker,
   RequestContext,
   roundMoney,
 } from '@vendure/core';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
+  testConfig,
+  clearAllTables,
+} from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
+import nock from 'nock';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { LanguageCode } from '../../test/src/generated/admin-graphql';
+import { CreateAddressInput } from '../../test/src/generated/shop-graphql';
+import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { ShippingExtensionsPlugin } from '../src/shipping-extensions.plugin';
-import gql from 'graphql-tag';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import { distanceBasedShippingCalculator } from '../src/distance-based-shipping-calculator';
+import { GeoLocation } from '../src/strategies/order-address-to-geolocation-strategy';
 import {
   POSTCODES_URL,
   UKPostalCodeToGelocationConversionStrategy,
 } from '../src/strategies/uk-postalcode-to-geolocation-strategy';
-import { GeoLocation } from '../src/strategies/order-address-to-geolocation-strategy';
-import nock from 'nock';
-import { getDistanceBetweenPointsInKMs } from '../src/get-distance-between-points';
-import { CreateAddressInput } from '../../test/src/generated/shop-graphql';
+import { getDistanceBetweenPointsInKMs } from '../src/util/get-distance-between-points';
+import {
+  createDistanceBasedShippingMethod,
+  createPromotion,
+  createShippingMethod,
+  DistanceBasedShippingCalculatorOptions,
+} from './test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -164,14 +169,12 @@ describe('Shipping by weight and country', function () {
       .update(ctx, [{ id: 1, customFields: { weight: 0 } }]);
     expect(productVariants.length).toBe(1);
     expect((productVariants[0].customFields as any).weight).toBe(0);
-
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shippingWithTax).toBe(111);
   });
 
   it('Is NOT eligible for method 2 with country NL', async () => {
-    await adminClient.asSuperAdmin();
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
       'ORDER_STATE_TRANSITION_ERROR'
     );
@@ -274,140 +277,77 @@ describe('Distance based shipping calculator', function () {
   });
 });
 
+describe('Country based Promotion condition', function () {
+  it('Creates promotion hat gives free shipping for orders in NL', async () => {
+    const promotion = await createPromotion(adminClient, {
+      input: {
+        conditions: [
+          {
+            code: 'order_in_country',
+            arguments: [
+              {
+                name: 'countries',
+                value: '["NL"]',
+              },
+            ],
+          },
+        ],
+        actions: [
+          {
+            code: 'free_shipping',
+            arguments: [],
+          },
+        ],
+        enabled: true,
+        translations: [
+          {
+            languageCode: LanguageCode.En,
+            name: 'Free Shipping for NL',
+            customFields: {},
+          },
+        ],
+        customFields: {},
+      },
+    });
+    expect(promotion.name).toBe('Free Shipping for NL');
+  });
+
+  it('Order in NL should have free shipping', async () => {
+    // Default country is NL
+    const order = await createSettledOrder(shopClient, 1, true, [
+      {
+        id: 'T_3', // Variant 3's weight hasn't been altered yet
+        quantity: 1,
+      },
+    ]);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingWithTax).toBe(0);
+  });
+
+  it('Order in BE should NOT have free shipping', async () => {
+    const order = await createSettledOrder(
+      shopClient,
+      1,
+      true,
+      [
+        {
+          id: 'T_3', // Variant 3's weight hasn't been altered yet
+          quantity: 1,
+        },
+      ],
+      undefined,
+      {
+        input: {
+          countryCode: 'BE',
+          streetLine1: 'Brussels Street',
+        },
+      }
+    );
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingWithTax).toBe(111);
+  });
+});
+
 afterAll(async () => {
   await server.destroy();
 }, 100000);
-
-const CREATE_SHIPPING_METHOD = gql`
-  mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
-    createShippingMethod(input: $input) {
-      ... on ShippingMethod {
-        id
-        code
-      }
-      __typename
-    }
-  }
-`;
-
-interface Options {
-  minWeight: number;
-  maxWeight: number;
-  countries: string[];
-  exclude: boolean;
-  rate: number;
-}
-
-async function createShippingMethod(
-  adminClient: SimpleGraphQLClient,
-  options: Options
-) {
-  const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
-    input: {
-      code: 'shipping-by-weight-and-country',
-      checker: {
-        code: 'shipping-by-weight-and-country',
-        arguments: [
-          {
-            name: 'minWeight',
-            value: String(options.minWeight),
-          },
-          {
-            name: 'maxWeight',
-            value: String(options.maxWeight),
-          },
-          {
-            name: 'countries',
-            value: JSON.stringify(options.countries),
-          },
-          {
-            name: 'excludeCountries',
-            value: String(options.exclude),
-          },
-        ],
-      },
-      calculator: {
-        code: 'default-shipping-calculator',
-        arguments: [
-          {
-            name: 'rate',
-            value: String(options.rate),
-          },
-          {
-            name: 'includesTax',
-            value: 'exclude',
-          },
-          {
-            name: 'taxRate',
-            value: '0',
-          },
-        ],
-      },
-      fulfillmentHandler: 'manual-fulfillment',
-      customFields: {},
-      translations: [
-        {
-          languageCode: 'en',
-          name: 'Shipping by weight and country',
-          description: '',
-          customFields: {},
-        },
-      ],
-    },
-  });
-  return res.createShippingMethod;
-}
-
-interface DistanceBasedShippingCalculatorOptions {
-  storeLatitude: number;
-  storeLongitude: number;
-  pricePerKm: number;
-  fallbackPrice: number;
-  taxRate: number;
-}
-async function createDistanceBasedShippingMethod(
-  adminClient: SimpleGraphQLClient,
-  options: DistanceBasedShippingCalculatorOptions
-) {
-  const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
-    input: {
-      code: 'shipping-by-distance',
-      checker: {
-        code: defaultShippingEligibilityChecker.code,
-        arguments: [{ name: 'orderMinimum', value: '0' }],
-      },
-      calculator: {
-        code: distanceBasedShippingCalculator.code,
-        arguments: [
-          {
-            name: 'storeLatitude',
-            value: String(options.storeLatitude),
-          },
-          {
-            name: 'storeLongitude',
-            value: String(options.storeLongitude),
-          },
-          {
-            name: 'taxRate',
-            value: String(options.taxRate),
-          },
-          {
-            name: 'pricePerKm',
-            value: String(options.pricePerKm),
-          },
-        ],
-      },
-      fulfillmentHandler: 'manual-fulfillment',
-      customFields: {},
-      translations: [
-        {
-          languageCode: 'en',
-          name: 'Shipping by Distance',
-          description: 'Distance Based Shipping Method',
-          customFields: {},
-        },
-      ],
-    },
-  });
-  return res.createShippingMethod;
-}

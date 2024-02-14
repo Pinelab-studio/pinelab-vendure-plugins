@@ -6,7 +6,7 @@ import {
   RequestContext,
   ShippingEligibilityChecker,
 } from '@vendure/core';
-import { ShippingExtensionsPlugin } from './shipping-extensions.plugin';
+import { ShippingExtensionsPlugin } from '../shipping-extensions.plugin';
 
 export function calculateOrderWeight(order: Order): number {
   return order.lines.reduce((acc, line) => {
@@ -66,6 +66,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
   async init(injector) {
     entityHydrator = injector.get(EntityHydrator);
     const ctx = RequestContext.empty();
+    // Populate the countries arg list
     const countries = await injector.get(CountryService).findAll(ctx);
     this.args.countries.ui.options = countries.items.map((c) => ({
       value: c.code,
@@ -76,6 +77,8 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
         },
       ],
     }));
+    // Set the description based on the given weight unit.
+    // This needs to happen in `init`, because plugin.options are otherwise not available
     this.args.minWeight.description = [
       {
         languageCode: LanguageCode.en,

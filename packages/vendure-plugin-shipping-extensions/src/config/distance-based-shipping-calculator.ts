@@ -5,9 +5,9 @@ import {
   InternalServerError,
   Logger,
 } from '@vendure/core';
-import { ShippingExtensionsOptions } from './shipping-extensions.plugin';
-import { loggerCtx, PLUGIN_OPTIONS } from './constants';
-import { getDistanceBetweenPointsInKMs } from './get-distance-between-points';
+import { ShippingExtensionsOptions } from '../shipping-extensions.plugin';
+import { loggerCtx, PLUGIN_OPTIONS } from '../constants';
+import { getDistanceBetweenPointsInKMs } from '../util/get-distance-between-points';
 
 let pluginOptions: ShippingExtensionsOptions;
 export const distanceBasedShippingCalculator = new ShippingCalculator({
