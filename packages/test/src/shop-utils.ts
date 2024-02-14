@@ -110,6 +110,11 @@ export async function applyCouponCode(
   return applyCouponCode;
 }
 
+/**
+ * The non-error result of adding a payment to an order
+ */
+export type SettledOrder = Extract<AddPaymentToOrderMutation['addPaymentToOrder'], { code: any }>;
+
 export async function createSettledOrder(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
@@ -120,7 +125,7 @@ export async function createSettledOrder(
   ],
   billingAddress?: SetBillingAddressMutationVariables,
   shippingAddress?: SetShippingAddressMutationVariables
-): Promise<AddPaymentToOrderMutation['addPaymentToOrder']> {
+): Promise<SettledOrder> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -153,5 +158,9 @@ export async function createSettledOrder(
     console.error(JSON.stringify(res));
     throw Error((res as ErrorResult).errorCode);
   }
-  return await addPaymentToOrder(shopClient, testPaymentMethod.code);
+  const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
+  if ((order as ErrorResult).errorCode) {
+    throw new Error(`Failed to create settled order: ${(order as ErrorResult).message}`);
+  }
+  return order as SettledOrder;
 }

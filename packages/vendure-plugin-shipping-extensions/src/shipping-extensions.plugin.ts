@@ -4,10 +4,10 @@ import {
   PluginCommonModule,
   VendurePlugin,
 } from '@vendure/core';
-import { weightAndCountryChecker } from './weight-and-country-checker';
+import { weightAndCountryChecker } from './config/weight-and-country-checker';
 import { OrderAddressToGeolocationConversionStrategy } from './strategies/order-address-to-geolocation-strategy';
 import { PLUGIN_OPTIONS } from './constants';
-import { distanceBasedShippingCalculator } from './distance-based-shipping-calculator';
+import { distanceBasedShippingCalculator } from './config/distance-based-shipping-calculator';
 
 export interface ShippingExtensionsOptions {
   /**
