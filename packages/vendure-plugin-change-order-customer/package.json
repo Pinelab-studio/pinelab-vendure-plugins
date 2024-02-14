@@ -2,7 +2,7 @@
   "name": "@pinelab/vendure-plugin-change-order-customer",
   "version": "1.0.0",
   "description": "This plugin helps change Customer for Orders of all states",
-  "icon": "incognito",
+  "icon": "account-circle",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
