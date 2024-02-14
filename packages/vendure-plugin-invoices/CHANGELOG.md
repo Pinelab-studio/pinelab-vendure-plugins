@@ -1,3 +1,7 @@
+# 2.1.0 (2024-02-14)
+
+- Work on ui improvements as described in #352
+
 # 2.0.2 (2024-02-07)
 
 - Sort by latest invoices first in admin UI
