@@ -65,3 +65,27 @@ When pushing multiple tasks concurrently to a queue in serverless environments, 
       }
     });
 ```
+
+## Request entity too large
+
+This means the Job data is larger than NestJS's configured request limit. You can set a large limit in your `vendure-config.ts`:
+
+```ts
+import { VendureConfig } from '@vendure/core';
+import { json } from 'body-parser';
+
+export const config: VendureConfig = {
+  // ...
+  apiOptions: {
+    middleware: [
+      {
+        handler: json({ limit: '10mb' }),
+        route: '*',
+        beforeListen: true,
+      },
+    ],
+  },
+};
+```
+
+We don't include this in the plugin, because it affects the entire NestJS instance

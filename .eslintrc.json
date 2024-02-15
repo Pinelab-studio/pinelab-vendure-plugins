@@ -10,8 +10,8 @@
     "ecmaVersion": "latest",
     "sourceType": "module",
     "project": [
-      "./packages/vendure-order-client/test/tsconfig.json",
       "./packages/*/tsconfig.json",
+      "./packages/*/test/tsconfig.json",
       "./docs-website/tsconfig.json"
     ]
   },
@@ -32,6 +32,7 @@
     "env.d.ts",
 
     "packages/util",
+    "packages/vendure-plugin-accept-blue",
     "packages/vendure-plugin-admin-social-auth",
     "packages/vendure-plugin-admin-ui-helpers/",
     "packages/vendure-plugin-anonymized-order",
@@ -65,6 +66,7 @@
     "packages/vendure-plugin-multiserver-db-sessioncache",
     "packages/vendure-plugin-facet-suggestions",
     "packages/vendure-plugin-anonymized-order",
-    "packages/pinelab-plugin-admin-components"
+    "packages/pinelab-plugin-admin-components",
+    "packages/vendure-plugin-shipping-extensions"
   ]
 }

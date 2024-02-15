@@ -1,4 +1,4 @@
-import { ProductVariant, Promotion } from '@pinelab/vendure-order-client/src';
+import { ProductVariant, Promotion } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import { CreatePromotionInput } from '@vendure/common/lib/generated-types';
 import { gql } from 'graphql-tag';
