@@ -1,7 +1,7 @@
 {
-  "name": "@pinelab/pinelab-plugin-admin-components",
+  "name": "@pinelab/vendure-plugin-picklist",
   "version": "1.0.0",
-  "description": "Vendure plugin that provides a unified user interface for both the invoice and picklist plugins",
+  "description": "Vendure plugin that provides invoices per order that won't be saved in the database",
   "icon": "receipt",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",
@@ -26,6 +26,7 @@
     "generate": "graphql-codegen"
   },
   "dependencies": {
+    "adm-zip": "0.5.9",
     "pdf-creator-node": "2.3.4",
     "tmp": "0.2.1"
   }

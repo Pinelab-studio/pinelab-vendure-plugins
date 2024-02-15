@@ -7,19 +7,19 @@ import {
 } from '@vendure/core';
 import { InvoiceConfigInput } from '../ui/generated/graphql';
 import { InvoiceConfigEntity } from './invoice-config.entity';
-import { PinelabPluginAdminComponentsService } from './pinelab-plugin-admin-components.service';
+import { PicklistService } from './picklist.service';
 
-export const pinelabPluginComponetsPermission = new PermissionDefinition({
-  name: 'AllowPinelabPluginAdminPermission',
-  description: 'Allow this user to enable pinelab plugin admin components',
+export const picklistPermission = new PermissionDefinition({
+  name: 'AllowPicklistPermission',
+  description: 'Allow this user to use picklists',
 });
 
 @Resolver()
-export class PinelabPluginAdminComponentsResolver {
-  constructor(private readonly service: PinelabPluginAdminComponentsService) {}
+export class PicklistResolver {
+  constructor(private readonly service: PicklistService) {}
 
   @Mutation()
-  @Allow(pinelabPluginComponetsPermission.Permission)
+  @Allow(picklistPermission.Permission)
   async upsertInvoiceConfig(
     @Ctx() ctx: RequestContext,
     @Args('input') input: InvoiceConfigInput
@@ -28,7 +28,7 @@ export class PinelabPluginAdminComponentsResolver {
   }
 
   @Query()
-  @Allow(pinelabPluginComponetsPermission.Permission)
+  @Allow(picklistPermission.Permission)
   async invoiceConfig(
     @Ctx() ctx: RequestContext
   ): Promise<InvoiceConfigEntity | undefined> {

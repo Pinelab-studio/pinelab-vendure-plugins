@@ -15,7 +15,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
 @Component({
-  selector: 'invoices-component',
+  selector: 'vdr-picklist-component',
   template: `
     <div class="page-block">
       <vdr-page-block>
@@ -67,9 +67,9 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
       </vdr-page-block>
     </div>
   `,
-  styleUrls: ['./pinelab-plugin-admin-components.component.scss'],
+  styleUrls: ['./picklist.component.scss'],
 })
-export class PinelabPluginAdminComponentsComponent implements OnInit {
+export class PicklistComponent implements OnInit {
   form: FormGroup;
   serverPath: string;
   invoicePreviewLoading: boolean = false;
@@ -145,7 +145,7 @@ export class PinelabPluginAdminComponentsComponent implements OnInit {
       this.invoicePreviewLoading = true;
       this.changeDetector.markForCheck();
       const res = await fetch(
-        `${this.serverPath}/invoices/preview/${orderCode}`,
+        `${this.serverPath}/picklists/preview/${orderCode}`,
         {
           headers: {
             ...this.getHeaders(),

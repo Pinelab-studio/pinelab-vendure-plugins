@@ -1,37 +1,31 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
-  Injector,
   JobQueue,
   Order,
   OrderService,
   RequestContext,
   TransactionalConnection,
+  translateEntity,
   UserInputError,
 } from '@vendure/core';
 
 import { InvoiceConfigInput } from '../ui/generated/graphql';
-import { ModuleRef } from '@nestjs/core';
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
 import { InvoiceConfigEntity } from './invoice-config.entity';
 import { createReadStream, ReadStream } from 'fs';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { PinelabAdminComponentsPluginConfig } from '../plugin';
-import { InvoiceData } from './strategies/data-strategy';
-import { createTempFile } from './file.util';
+import { createTempFile, zipFiles, ZippableFile } from './file.util';
 import { SortOrder } from '@vendure/common/lib/generated-shop-types';
+import { InvoiceData } from './types';
 
 @Injectable()
-export class PinelabPluginAdminComponentsService {
+export class PicklistService {
   jobQueue: JobQueue<{ channelToken: string; orderCode: string }> | undefined;
   retries = 10;
 
   constructor(
     private readonly connection: TransactionalConnection,
-    private readonly orderService: OrderService,
-    private readonly moduleRef: ModuleRef,
-    @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly config: PinelabAdminComponentsPluginConfig
+    private readonly orderService: OrderService
   ) {
     Handlebars.registerHelper('formatMoney', (amount?: number) => {
       if (amount == null) {
@@ -88,26 +82,54 @@ export class PinelabPluginAdminComponentsService {
   /**
    * Generates an invoice for the latest placed order and the given template
    */
-  async testTemplate(
+  async downloadPicklist(
     ctx: RequestContext,
-    template: string
+    order: Order
   ): Promise<ReadStream> {
-    const {
-      items: [latestOrder],
-    } = await this.orderService.findAll(ctx, {
-      sort: { orderPlacedAt: 'DESC' as any },
-      take: 1,
-    });
     const config = await this.getConfig(ctx);
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const { tmpFileName } = await this.generateInvoice(
+    const { tempFilePath } = await this.generateInvoice(
       ctx,
-      template,
-      latestOrder
+      config.templateString ?? defaultTemplate,
+      order
     );
-    return createReadStream(tmpFileName);
+    return createReadStream(tempFilePath);
+  }
+
+  async downloadMultiplePicklists(ctx: RequestContext, orders: Order[]) {
+    const config = await this.getConfig(ctx);
+    if (!config) {
+      throw Error(`No config found for channel ${ctx.channel.token}`);
+    }
+    const tmpFilesPromises: Array<
+      Promise<{
+        tempFilePath: string;
+        orderCode: string;
+      }>
+    > = [];
+    for (const order of orders) {
+      const hydaratedOrder = await this.orderService.findOne(ctx, order.id);
+      if (!hydaratedOrder) {
+        throw new UserInputError(`No Order with code ${order.code} found`);
+      }
+      tmpFilesPromises.push(
+        this.generateInvoice(
+          ctx,
+          config.templateString ?? defaultTemplate,
+          hydaratedOrder
+        )
+      );
+    }
+
+    const picklistData = await Promise.all(tmpFilesPromises);
+    const zippableFiles: ZippableFile[] = picklistData.map((picklist) => ({
+      path: picklist.tempFilePath,
+      name: picklist.orderCode + '.pdf',
+    }));
+    const zipFile = await zipFiles(zippableFiles);
+    return createReadStream(zipFile);
   }
 
   /**
@@ -117,14 +139,9 @@ export class PinelabPluginAdminComponentsService {
     ctx: RequestContext,
     templateString: string,
     order: Order
-  ): Promise<{ tmpFileName: string } & InvoiceData> {
+  ): Promise<{ tempFilePath: string; orderCode: string }> {
     const pdf = require('pdf-creator-node');
-    const data = await this.config.dataStrategy.getData({
-      ctx,
-      injector: new Injector(this.moduleRef),
-      order,
-      latestInvoiceNumber: undefined,
-    });
+    const data = await this.getData(ctx, order);
     const tmpFilePath = await createTempFile('.pdf');
     const html = templateString;
     const options = {
@@ -145,11 +162,7 @@ export class PinelabPluginAdminComponentsService {
       type: '',
     };
     await pdf.create(document, options);
-    return {
-      tmpFileName: tmpFilePath,
-      invoiceNumber: data.invoiceNumber,
-      customerEmail: data.customerEmail,
-    };
+    return { tempFilePath: tmpFilePath, orderCode: order.code };
   }
 
   /**
@@ -164,12 +177,17 @@ export class PinelabPluginAdminComponentsService {
     if (orderCode) {
       order = await this.orderService.findOneByCode(ctx, orderCode);
     } else {
-      order = (
-        await this.orderService.findAll(ctx, {
-          take: 1,
-          sort: { createdAt: SortOrder.DESC },
-        })
-      )?.items[0];
+      const orderId = (
+        await this.orderService.findAll(
+          ctx,
+          {
+            take: 1,
+            sort: { createdAt: SortOrder.DESC },
+          },
+          []
+        )
+      )?.items[0].id;
+      order = await this.orderService.findOne(ctx, orderId);
     }
     if (!order) {
       throw new UserInputError(`No order found with code ${orderCode}`);
@@ -178,7 +196,37 @@ export class PinelabPluginAdminComponentsService {
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const { tmpFileName } = await this.generateInvoice(ctx, template, order);
-    return createReadStream(tmpFileName);
+    const { tempFilePath } = await this.generateInvoice(ctx, template, order);
+    return createReadStream(tempFilePath);
+  }
+
+  async getData(
+    ctx: RequestContext,
+    order: Order,
+    latestInvoiceNumber?: number
+  ): Promise<InvoiceData> {
+    order.lines.forEach((line) => {
+      line.productVariant = translateEntity(
+        line.productVariant,
+        ctx.languageCode
+      );
+    });
+    if (!order.customer?.emailAddress) {
+      throw Error(`Order doesnt have a customer.email set!`);
+    }
+    let nr = latestInvoiceNumber;
+    if (nr) {
+      nr += 1;
+    } else {
+      nr = Math.floor(Math.random() * 90000) + 10000;
+    }
+    return {
+      orderDate: order.orderPlacedAt
+        ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
+        : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt),
+      invoiceNumber: nr,
+      customerEmail: order.customer.emailAddress,
+      order,
+    };
   }
 }

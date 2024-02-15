@@ -1,6 +1,7 @@
 import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
 import {
   createTestEnvironment,
+  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -22,9 +23,10 @@ import {
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-import { PinelabAdminComponentsPlugin } from '../src/plugin';
+import { PicklistPlugin } from '../src/plugin';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
-describe('Invoices plugin', function () {
+describe('Picklists plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
@@ -38,7 +40,7 @@ describe('Invoices plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [PinelabAdminComponentsPlugin.init()],
+      plugins: [PicklistPlugin],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -88,18 +90,33 @@ describe('Invoices plugin', function () {
   });
 
   it('Preview fails for unauthenticated calls', async () => {
-    const res = await fetch('http://localhost:3106/invoices/preview', {
+    const res = await fetch('http://localhost:3106/picklists/preview', {
       method: 'POST',
     });
     expect(res.status).toBe(403);
   });
 
+  it('Should download picklist', async () => {
+    const order = await createSettledOrder(shopClient, 'T_1');
+    const headers: Record<string, string> = {};
+    headers['vendure-token'] = E2E_DEFAULT_CHANNEL_TOKEN;
+    headers.authorization = `Bearer ${adminClient.getAuthToken()}`;
+    const res = await fetch(
+      `http://localhost:3106/picklists/download/${order.code}`,
+      {
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        method: 'GET',
+      }
+    );
+    expect(res.status).toBe(200);
+  });
+
   if (process.env.TEST_ADMIN_UI) {
     it('Should compile admin', async () => {
-      const files = await getFilesInAdminUiFolder(
-        __dirname,
-        PinelabAdminComponentsPlugin.ui
-      );
+      const files = await getFilesInAdminUiFolder(__dirname, PicklistPlugin.ui);
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);
   }
