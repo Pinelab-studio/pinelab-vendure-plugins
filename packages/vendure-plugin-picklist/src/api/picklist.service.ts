@@ -84,7 +84,7 @@ export class PicklistService {
    */
   async downloadPicklist(
     ctx: RequestContext,
-    order: Order
+    orders: Order[]
   ): Promise<ReadStream> {
     const config = await this.getConfig(ctx);
     if (!config) {
@@ -93,43 +93,9 @@ export class PicklistService {
     const { tempFilePath } = await this.generateInvoice(
       ctx,
       config.templateString ?? defaultTemplate,
-      order
+      orders
     );
     return createReadStream(tempFilePath);
-  }
-
-  async downloadMultiplePicklists(ctx: RequestContext, orders: Order[]) {
-    const config = await this.getConfig(ctx);
-    if (!config) {
-      throw Error(`No config found for channel ${ctx.channel.token}`);
-    }
-    const tmpFilesPromises: Array<
-      Promise<{
-        tempFilePath: string;
-        orderCode: string;
-      }>
-    > = [];
-    for (const order of orders) {
-      const hydaratedOrder = await this.orderService.findOne(ctx, order.id);
-      if (!hydaratedOrder) {
-        throw new UserInputError(`No Order with code ${order.code} found`);
-      }
-      tmpFilesPromises.push(
-        this.generateInvoice(
-          ctx,
-          config.templateString ?? defaultTemplate,
-          hydaratedOrder
-        )
-      );
-    }
-
-    const picklistData = await Promise.all(tmpFilesPromises);
-    const zippableFiles: ZippableFile[] = picklistData.map((picklist) => ({
-      path: picklist.tempFilePath,
-      name: picklist.orderCode + '.pdf',
-    }));
-    const zipFile = await zipFiles(zippableFiles);
-    return createReadStream(zipFile);
   }
 
   /**
@@ -138,10 +104,10 @@ export class PicklistService {
   async generateInvoice(
     ctx: RequestContext,
     templateString: string,
-    order: Order
+    orders: Order[]
   ): Promise<{ tempFilePath: string; orderCode: string }> {
     const pdf = require('pdf-creator-node');
-    const data = await this.getData(ctx, order);
+    const data = await this.getData(ctx, orders);
     const tmpFilePath = await createTempFile('.pdf');
     const html = templateString;
     const options = {
@@ -162,7 +128,7 @@ export class PicklistService {
       type: '',
     };
     await pdf.create(document, options);
-    return { tempFilePath: tmpFilePath, orderCode: order.code };
+    return { tempFilePath: tmpFilePath, orderCode: orders[0].code };
   }
 
   /**
@@ -196,23 +162,25 @@ export class PicklistService {
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const { tempFilePath } = await this.generateInvoice(ctx, template, order);
+    const { tempFilePath } = await this.generateInvoice(ctx, template, [order]);
     return createReadStream(tempFilePath);
   }
 
   async getData(
     ctx: RequestContext,
-    order: Order,
+    orders: Order[],
     latestInvoiceNumber?: number
   ): Promise<InvoiceData> {
-    order.lines.forEach((line) => {
-      line.productVariant = translateEntity(
-        line.productVariant,
-        ctx.languageCode
-      );
-    });
-    if (!order.customer?.emailAddress) {
-      throw Error(`Order doesnt have a customer.email set!`);
+    for (let order of orders) {
+      order.lines.forEach((line) => {
+        line.productVariant = translateEntity(
+          line.productVariant,
+          ctx.languageCode
+        );
+      });
+      if (!order.customer?.emailAddress) {
+        throw Error(`Order doesnt have a customer.email set!`);
+      }
     }
     let nr = latestInvoiceNumber;
     if (nr) {
@@ -221,12 +189,9 @@ export class PicklistService {
       nr = Math.floor(Math.random() * 90000) + 10000;
     }
     return {
-      orderDate: order.orderPlacedAt
-        ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
-        : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt),
       invoiceNumber: nr,
-      customerEmail: order.customer.emailAddress,
-      order,
+      customerEmail: orders[0].customer?.emailAddress,
+      orders,
     };
   }
 }

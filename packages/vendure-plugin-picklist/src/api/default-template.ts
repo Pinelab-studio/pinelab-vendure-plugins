@@ -52,20 +52,20 @@ export const defaultTemplate = `
 
 
         </style>
-    <title>Order: {{ order.code }}</title>
+    <title>Order: {{ customerEmail }}</title>
 </head>
 
 <body style="font-family: IBM Plex Mono, Arial, Helvetica, sans-serif; width: 100%;">
 
         <!-- INVOICE INFO + LOGO -->
 
+        {{#each orders}}
+        <div>
         <table style="width: 96%">
             <tr>
                 <td id="invoice-info">
-                    <h2>Invoice</h2>
-                    <h5>Date: <h20>{{ orderDate }}</h20></h5>
-                    <h5>Order: <h20>{{ order.code }}</h20></h5>
-                    <h5>Invoice Number: <h20>{{ invoiceNumber }}</h20></h5>  
+                    <h5>Date: <h20>{{ this.updatedAt }}</h20></h5>
+                    <h5>Order: <h20>{{ this.code }}</h20></h5>
                 </td>    
                 <td id="logo">
                     <a href="https://pinelab.studio">
@@ -86,7 +86,7 @@ export const defaultTemplate = `
             <tr>
                 <td id="shipping-info">
                     <h4>Shipping Info</h4>
-                    <h20>{{#with order.shippingAddress }}
+                    <h20>{{#with this.shippingAddress }}
                     {{ fullName }}<br />
                     {{#if company}} {{ company }}<br />
                     {{/if}} {{#if streetLine1}} {{ streetLine1 }} {{ streetLine2 }}<br />
@@ -96,9 +96,9 @@ export const defaultTemplate = `
                     {{ customerEmail }}<br /></h20>
                 </td>
                 <td id="billing-info">
-                    {{#if order.billingAddress.streetLine1}}
+                    {{#if this.billingAddress.streetLine1}}
                         <h4>Billing Info</h4>
-                        <h20>{{#with order.billingAddress }}
+                        <h20>{{#with this.billingAddress }}
                         <br />
                         {{#if company}} {{ company }}<br />
                         {{/if}} {{#if streetLine1}} {{ streetLine1 }} {{ streetLine2 }}<br />
@@ -139,7 +139,7 @@ export const defaultTemplate = `
         <!-- PRODUCT INFO -->
 
         <table style="width: 96%">
-            {{#each order.lines }}
+            {{#each this.lines }}
             <tr>
                 <td class="quantity-info"> 
                     <h4>{{ quantity }}</h4>
@@ -158,7 +158,7 @@ export const defaultTemplate = `
 
             <!-- SHIPPING COSTS -->
 
-            {{#each order.shippingLines }}
+            {{#each this.shippingLines }}
             <tr>
                 <td class="quantity-info"></td>
                 <td class="product-info"><h20>Shipping costs</h20></td>
@@ -169,7 +169,7 @@ export const defaultTemplate = `
 
             <!-- DISCOUNT -->
 
-            {{#each order.discounts }}
+            {{#each this.discounts }}
             <tr>
                 <td class="quantity-info"></td>
                 <td class="product-info"><h20>{{ description }}</h20></td>
@@ -188,14 +188,14 @@ export const defaultTemplate = `
         <table style="width:96%;" >
           <tr>
               <td id="tax-information" style="width: 50%">
-                  {{#each order.taxSummary }}
+                  {{#each this.taxSummary }}
                   <h6>{{ description }}:</h6>
                   <h5>TAX {{ taxRate }}%: &dollar;{{ formatMoney taxTotal }}</h5>
                   {{/each}}
               </td>
               <td id="total-amount ">
-                  <h5>Subtotal (ex VAT): &dollar;{{ formatMoney order.total }}</h5>
-                  <h2>Total: &dollar;{{ formatMoney order.totalWithTax }}</h2>  
+                  <h5>Subtotal (ex VAT): &dollar;{{ formatMoney this.total }}</h5>
+                  <h2>Total: &dollar;{{ formatMoney this.totalWithTax }}</h2>  
                   <h6>Thanks for your order at Pinelab.studio</h6>
               </td>
           </tr>
@@ -227,6 +227,8 @@ export const defaultTemplate = `
               </td>  
           </tr>
       </table>
+      </div>
+      {{/each}}
   </body>
 </html>
 

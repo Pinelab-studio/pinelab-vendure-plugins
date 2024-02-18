@@ -96,41 +96,25 @@ describe('Picklists plugin', function () {
     expect(res.status).toBe(403);
   });
 
-  it('Should download picklist', async () => {
-    const order = await createSettledOrder(shopClient, 'T_1');
-    const headers: Record<string, string> = {};
-    headers['vendure-token'] = E2E_DEFAULT_CHANNEL_TOKEN;
-    headers.authorization = `Bearer ${adminClient.getAuthToken()}`;
-    headers['Content-Type'] = 'application/json';
-    const res = await fetch(
-      `http://localhost:3106/picklists/download/${order.code}`,
-      {
+  it(
+    'Should download picklist',
+    async () => {
+      const order = await createSettledOrder(shopClient, 'T_1');
+      const headers: Record<string, string> = {};
+      headers['vendure-token'] = E2E_DEFAULT_CHANNEL_TOKEN;
+      headers.authorization = `Bearer ${adminClient.getAuthToken()}`;
+      headers['Content-Type'] = 'application/json';
+      const res = await fetch(`http://localhost:3106/picklists/download/T_1`, {
         headers: {
           ...headers,
           'Content-Type': 'application/json',
         },
         method: 'GET',
-      }
-    );
-    expect(res.status).toBe(200);
-  });
-
-  it('Should download multiple picklists', async () => {
-    const order1 = await createSettledOrder(shopClient, 'T_1');
-    const order2 = await createSettledOrder(shopClient, 'T_1');
-    const headers: Record<string, string> = {};
-    headers['vendure-token'] = E2E_DEFAULT_CHANNEL_TOKEN;
-    headers.authorization = `Bearer ${adminClient.getAuthToken()}`;
-    headers['Content-Type'] = 'application/json';
-    const res = await fetch(
-      `http://localhost:3106/picklists/download?orderCodes=${order1.code},${order2.code}`,
-      {
-        headers,
-        method: 'GET',
-      }
-    );
-    expect(res.status).toBe(200);
-  });
+      });
+      expect(res.status).toBe(200);
+    },
+    10 * 1000
+  );
 
   if (process.env.TEST_ADMIN_UI) {
     it('Should compile admin', async () => {

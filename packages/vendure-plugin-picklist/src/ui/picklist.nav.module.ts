@@ -27,29 +27,16 @@ import { downloadBlob, getHeaders } from './helpers';
     addActionBarItem({
       id: 'download-picklist',
       label: 'Download picklist',
-      locationId: 'order-detail',
+      locationId: 'customer-detail',
       requiresPermission: 'AllowPicklistPermission',
       onClick: async (event, context) => {
         (event.target as HTMLButtonElement).disabled = true;
-        const orderId = context.route.snapshot.paramMap.get('id');
-        const response: any = await firstValueFrom(
-          context.dataService.query(
-            gql`
-              query GetOrderCode($id: ID!) {
-                order(id: $id) {
-                  code
-                }
-              }
-            `,
-            { id: orderId }
-          ).single$
-        );
-        const orderCode = response.order.code;
+        const customerId = context.route.snapshot.paramMap.get('id');
         const localStorageService = context.injector.get(LocalStorageService);
         const headers = getHeaders(localStorageService);
         const serverPath = getServerLocation();
         const res = await fetch(
-          `${serverPath}/picklists/download/${orderCode}`,
+          `${serverPath}/picklists/download/${customerId}`,
           {
             headers,
             method: 'GET',
@@ -61,35 +48,8 @@ import { downloadBlob, getHeaders } from './helpers';
           throw Error(json?.message);
         }
         const blob = await res.blob();
-        const fileName = `${orderCode}.pdf`;
+        const fileName = `customer-${customerId}.pdf`;
         await downloadBlob(blob, fileName, true);
-        (event.target as HTMLButtonElement).disabled = false;
-      },
-    }),
-    registerBulkAction({
-      location: 'order-list',
-      label: 'Download picklists',
-      icon: 'file-zip',
-      onClick: async ({ injector, selection, route, event }) => {
-        (event.target as HTMLButtonElement).disabled = true;
-        const orderCodes = selection.map((s) => s.code);
-        const localStorageService = injector.get(LocalStorageService);
-        const headers = getHeaders(localStorageService);
-        const serverPath = getServerLocation();
-        const res = await fetch(
-          `${serverPath}/picklists/download?orderCodes=${orderCodes}`,
-          {
-            headers,
-            method: 'GET',
-          }
-        );
-        if (!res.ok) {
-          const json = await res.json();
-          (event.target as HTMLButtonElement).disabled = false;
-          throw Error(json?.message);
-        }
-        const blob = await res.blob();
-        await downloadBlob(blob, 'picklists.zip');
         (event.target as HTMLButtonElement).disabled = false;
       },
     }),
