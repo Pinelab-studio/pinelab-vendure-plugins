@@ -1,4 +1,5 @@
 import {
+  Injector,
   LanguageCode,
   Order,
   PluginCommonModule,
@@ -28,7 +29,10 @@ export interface ShippingExtensionsOptions {
    * A custom function to calculate the total weight of an order.
    * By default the shipping eligibility checker will use the weight custom fields.
    */
-  weightCalculationFunction?: (order: Order) => number;
+  weightCalculationFunction?: (
+    order: Order,
+    injector: Injector
+  ) => Promise<number>;
 
   /**
    * The selected strategy to convert (OrderAddress)[https://docs.vendure.io/reference/graphql-api/shop/object-types/#orderaddress] values to lat/lon values
