@@ -13,8 +13,8 @@
   "scripts": {
     "postinstall": "yarn husky install",
     "build": "yarn lerna run build --concurrency 1",
-    "prettier:check": "yarn prettier --check",
-    "prettier:write": "yarn prettier --write",
+    "prettier:check": "yarn prettier --check .",
+    "prettier:write": "yarn prettier --write .",
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
   },
   "devDependencies": {
