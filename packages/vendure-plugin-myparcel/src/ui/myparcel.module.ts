@@ -23,7 +23,7 @@ import { MyparcelComponent } from './myparcel.component';
         routerLink: ['/extensions/myparcel'],
         icon: 'cursor-hand-open',
       },
-      'settings'
+      'settings',
     ),
   ],
   declarations: [MyparcelComponent],

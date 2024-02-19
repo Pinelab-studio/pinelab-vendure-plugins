@@ -35,7 +35,7 @@ export class SelectPrimaryCollectionComponent
   constructor(
     private dataService: DataService,
     private cdr: ChangeDetectorRef,
-    private activatedRoute: ActivatedRoute
+    private activatedRoute: ActivatedRoute,
   ) {}
   ngOnInit(): void {
     this.formControl.parent?.parent?.statusChanges.subscribe((s) => {
@@ -62,7 +62,7 @@ export class SelectPrimaryCollectionComponent
             }
             ${COLLECTION_FRAGMENT}
           `,
-          { id: params.id }
+          { id: params.id },
         )
         .single$.subscribe((d: any) => {
           this.productsCollections = d.product.collections;

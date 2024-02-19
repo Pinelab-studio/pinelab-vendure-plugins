@@ -39,7 +39,7 @@ export class MyparcelAdminResolver {
   @Query()
   @Allow(myparcelPermission.Permission)
   async myparcelConfig(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<MyparcelConfigEntity | null> {
     return this.service.getConfig(ctx);
   }
@@ -48,7 +48,7 @@ export class MyparcelAdminResolver {
   @Allow(myparcelPermission.Permission)
   async updateMyparcelConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: { apiKey: string }
+    @Args('input') input: { apiKey: string },
   ): Promise<MyparcelConfigEntity | null> {
     return this.service.upsertConfig(ctx, input.apiKey);
   }

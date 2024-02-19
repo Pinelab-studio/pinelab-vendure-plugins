@@ -63,22 +63,22 @@ export class PicqerClient {
    * Fetches active and inactive products
    */
   async getProductByCode(
-    productCode: string
+    productCode: string,
   ): Promise<ProductData | undefined> {
     const [activeProducts, inactiveProducts] = await Promise.all([
       this.rawRequest(
         'get',
-        `/products?productcode=${encodeURIComponent(productCode)}`
+        `/products?productcode=${encodeURIComponent(productCode)}`,
       ),
       this.rawRequest(
         'get',
-        `/products?productcode=${encodeURIComponent(productCode)}&inactive`
+        `/products?productcode=${encodeURIComponent(productCode)}&inactive`,
       ),
     ]);
     const result = [...activeProducts, ...inactiveProducts];
     if (result.length > 1) {
       Logger.warn(
-        `Picqer returned multiple products for product code ${productCode}, using the first result (${result[0].idproduct})`
+        `Picqer returned multiple products for product code ${productCode}, using the first result (${result[0].idproduct})`,
       );
     }
     return result?.[0];
@@ -94,7 +94,7 @@ export class PicqerClient {
     while (hasMore) {
       const products = await this.rawRequest(
         'get',
-        `/products?offset=${offset}`
+        `/products?offset=${offset}`,
       );
       Logger.info(`Fetched ${products.length} products`, loggerCtx);
       allProducts.push(...products);
@@ -115,7 +115,7 @@ export class PicqerClient {
 
   async updateProduct(
     productId: string | number,
-    input: ProductInput
+    input: ProductInput,
   ): Promise<ProductData> {
     return this.rawRequest('put', `/products/${productId}`, input);
   }
@@ -125,7 +125,7 @@ export class PicqerClient {
    */
   async addImage(
     productId: string | number,
-    base64EncodedImage: string
+    base64EncodedImage: string,
   ): Promise<ProductData> {
     return this.rawRequest('post', `/products/${productId}/images`, {
       image: base64EncodedImage,
@@ -164,7 +164,7 @@ export class PicqerClient {
   async getCustomer(emailAddress: string): Promise<CustomerData | undefined> {
     const customers: CustomerData[] = await this.rawRequest(
       'get',
-      `/customers?search=${encodeURIComponent(emailAddress)}`
+      `/customers?search=${encodeURIComponent(emailAddress)}`,
     );
     if (!customers.length) {
       return undefined;
@@ -175,7 +175,7 @@ export class PicqerClient {
     const customer = customers[0];
     Logger.warn(
       `Picqer returned multiple customers for email address ${emailAddress}, using the first result (${customer.idcustomer})`,
-      loggerCtx
+      loggerCtx,
     );
     return customer;
   }
@@ -187,7 +187,7 @@ export class PicqerClient {
     while (hasMore) {
       const warehouses: Warehouse[] = await this.rawRequest(
         'get',
-        `/warehouses?offset=${offset}`
+        `/warehouses?offset=${offset}`,
       );
       Logger.info(`Fetched ${warehouses.length} warehouses`, loggerCtx);
       allWarehouses.push(...warehouses);
@@ -200,7 +200,7 @@ export class PicqerClient {
     }
     Logger.info(
       `Fetched a total of ${allWarehouses.length} warehouses`,
-      loggerCtx
+      loggerCtx,
     );
     return allWarehouses;
   }
@@ -211,7 +211,7 @@ export class PicqerClient {
 
   async updateCustomer(
     id: number,
-    input: CustomerInput
+    input: CustomerInput,
   ): Promise<CustomerData> {
     return this.rawRequest('put', `/customers/${id}`, input);
   }
@@ -221,19 +221,19 @@ export class PicqerClient {
    */
   async createOrUpdateCustomer(
     emailAddress: string,
-    input: CustomerInput
+    input: CustomerInput,
   ): Promise<CustomerData> {
     const existingCustomer = await this.getCustomer(emailAddress);
     if (!existingCustomer) {
       Logger.info(
         `Customer '${emailAddress}' not found, creating new customer`,
-        loggerCtx
+        loggerCtx,
       );
       return this.createCustomer(input);
     }
     Logger.info(
       `Existing customer '${emailAddress}' found, updating customer ${existingCustomer.idcustomer}`,
-      loggerCtx
+      loggerCtx,
     );
     return this.updateCustomer(existingCustomer.idcustomer, input);
   }
@@ -245,7 +245,7 @@ export class PicqerClient {
    */
   async getOrCreateMinimalCustomer(
     emailAddress: string,
-    name: string
+    name: string,
   ): Promise<CustomerData> {
     const existingCustomer = await this.getCustomer(emailAddress);
     if (existingCustomer) {
@@ -253,7 +253,7 @@ export class PicqerClient {
     }
     Logger.info(
       `Customer '${emailAddress}' not found, creating new customer`,
-      loggerCtx
+      loggerCtx,
     );
     return this.createCustomer({ emailaddress: emailAddress, name });
   }
@@ -263,20 +263,20 @@ export class PicqerClient {
    */
   async createOrUpdateProduct(
     sku: string,
-    input: ProductInput
+    input: ProductInput,
   ): Promise<ProductData> {
     const product = await this.getProductByCode(sku);
     if (!product) {
       Logger.debug(
         `Product '${sku}' not found, creating new product in Picqer`,
-        loggerCtx
+        loggerCtx,
       );
       return this.createProduct(input);
     }
     const productId = product.idproduct;
     Logger.debug(
       `Existing product '${productId}' found, updating product ${productId} in Picqer`,
-      loggerCtx
+      loggerCtx,
     );
     return this.updateProduct(productId, input);
   }
@@ -287,10 +287,10 @@ export class PicqerClient {
   async rawRequest(
     method: 'post' | 'get' | 'put' | 'delete',
     url: string,
-    data?: any
+    data?: any,
   ): Promise<any> {
     const result = await this.instance({ method, url, data }).catch((e: any) =>
-      this.handleError(e, url)
+      this.handleError(e, url),
     );
     return result?.data;
   }
@@ -328,7 +328,7 @@ export class PicqerClient {
     if (results.length > this.responseLimit) {
       Logger.error(
         `Picqer response limit exceeded for "${path}". Pagination is required, but this is not implemented yet.`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }

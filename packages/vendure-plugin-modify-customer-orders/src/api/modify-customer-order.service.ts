@@ -17,26 +17,26 @@ export class ModifyCustomerOrderService {
     const order = await this.orderService.findOne(ctx, id);
     if (order?.state !== 'AddingItems') {
       throw new UserInputError(
-        `Only active orders can be changed to a draft order`
+        `Only active orders can be changed to a draft order`,
       );
     }
     const transitionlResult = await this.orderService.transitionToState(
       ctx,
       id,
-      'Draft'
+      'Draft',
     );
     if (transitionlResult instanceof Order) {
       Logger.info(
         `Transitioned Order with id ${transitionlResult.id} from 'AddingItems' to 'Draft'`,
-        loggerCtx
+        loggerCtx,
       );
       return await assertFound(
-        this.orderService.findOne(ctx, transitionlResult.id)
+        this.orderService.findOne(ctx, transitionlResult.id),
       );
     }
     Logger.error(
       `Failed to transition Order with id ${id} to 'Draft' state`,
-      loggerCtx
+      loggerCtx,
     );
     throw transitionlResult;
   }

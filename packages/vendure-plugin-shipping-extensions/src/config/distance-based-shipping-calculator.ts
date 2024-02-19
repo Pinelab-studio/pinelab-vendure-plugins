@@ -56,7 +56,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
   calculate: async (ctx, order, args, method) => {
     if (!pluginOptions?.orderAddressToGeolocationStrategy) {
       throw new InternalServerError(
-        'OrderAddress to geolocation conversion strategy not configured'
+        'OrderAddress to geolocation conversion strategy not configured',
       );
     }
     const storeGeoLocation = {
@@ -81,11 +81,11 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
     try {
       const shippingAddressGeoLocation =
         await pluginOptions.orderAddressToGeolocationStrategy.getGeoLocationForAddress(
-          order.shippingAddress
+          order.shippingAddress,
         );
       const distance = getDistanceBetweenPointsInKMs(
         shippingAddressGeoLocation,
-        storeGeoLocation
+        storeGeoLocation,
       );
       let price = distance * args.pricePerKm;
       if (price < args.minPrice) {
@@ -100,7 +100,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
     } catch (e: any) {
       Logger.error(
         `Failed to calculate shipping for ${method.name}: ${e.message}`,
-        loggerCtx
+        loggerCtx,
       );
       return minimumPrice;
     }

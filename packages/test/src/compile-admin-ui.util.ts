@@ -6,7 +6,7 @@ import {
 } from '@vendure/ui-devkit/compiler';
 export default async function getFilesInAdminUiFolder(
   dirname: string,
-  uiExtension: AdminUiExtension
+  uiExtension: AdminUiExtension,
 ): Promise<string[]> {
   fs.rmSync(path.join(dirname, '__admin-ui'), {
     recursive: true,

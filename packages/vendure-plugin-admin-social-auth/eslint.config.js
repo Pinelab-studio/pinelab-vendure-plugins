@@ -1,11 +1,11 @@
-import parentConfig from "../../eslint.config.js";
+import parentConfig from '../../eslint.config.js';
 
 export default [
   ...parentConfig,
   {
     languageOptions: {
       parserOptions: {
-        project: "./tsconfig.eslint.json",
+        project: './tsconfig.eslint.json',
       },
     },
   },

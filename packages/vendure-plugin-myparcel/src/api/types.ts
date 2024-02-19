@@ -90,7 +90,7 @@ export interface MyParcelShipmentStrategy {
   getShipment: (
     address: OrderAddress,
     order: Order,
-    customsContent: string
+    customsContent: string,
   ) => MyparcelShipment;
 }
 

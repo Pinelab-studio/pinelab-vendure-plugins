@@ -11,7 +11,7 @@ import { SelectPrimaryCollectionComponent } from './select-primary-collection.co
   providers: [
     registerFormInputComponent(
       'select-primary-collection',
-      SelectPrimaryCollectionComponent
+      SelectPrimaryCollectionComponent,
     ),
   ],
 })

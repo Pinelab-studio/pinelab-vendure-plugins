@@ -20,14 +20,14 @@ export class InvoiceAdminResolver {
   constructor(
     private invoiceService: InvoiceService,
     private orderService: OrderService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig,
   ) {}
 
   @Mutation()
   @Allow(invoicePermission.Permission)
   async upsertInvoiceConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: InvoiceConfigInput
+    @Args('input') input: InvoiceConfigInput,
   ): Promise<InvoiceConfigEntity> {
     return this.invoiceService.upsertConfig(ctx, input);
   }
@@ -36,17 +36,17 @@ export class InvoiceAdminResolver {
   @Allow(invoicePermission.Permission)
   async createInvoice(
     @Ctx() ctx: RequestContext,
-    @Args('orderId') orderId: ID
+    @Args('orderId') orderId: ID,
   ): Promise<Invoice> {
     const order = await this.orderService.findOne(ctx, orderId, ['customer']);
     if (!order?.customer?.emailAddress) {
       throw new UserInputError(
-        `Can not generate invoice for an order without 'customer.emailAddress'`
+        `Can not generate invoice for an order without 'customer.emailAddress'`,
       );
     }
     const invoice = await this.invoiceService.createAndSaveInvoice(
       ctx.channel.token,
-      order.code
+      order.code,
     );
     return {
       ...invoice,
@@ -55,7 +55,7 @@ export class InvoiceAdminResolver {
         ctx,
         invoice,
         order.code,
-        order.customer.emailAddress
+        order.customer.emailAddress,
       ),
     };
   }
@@ -63,7 +63,7 @@ export class InvoiceAdminResolver {
   @Query()
   @Allow(invoicePermission.Permission)
   async invoiceConfig(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<InvoiceConfigEntity | undefined> {
     return this.invoiceService.getConfig(ctx);
   }

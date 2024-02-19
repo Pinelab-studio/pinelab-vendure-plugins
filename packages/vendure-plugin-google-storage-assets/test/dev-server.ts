@@ -29,7 +29,7 @@ import dotenv from 'dotenv';
         }),
       route: 'assets',
       assetUploadDir: '/tmp/vendure/assets',
-    })
+    }),
   );
   testConfig.plugins.push(GoogleStoragePlugin);
   testConfig.plugins.push(DefaultSearchPlugin);

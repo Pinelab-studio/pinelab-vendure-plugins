@@ -18,7 +18,7 @@ export class LoginController {
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AdminSocialAuthPluginOptions,
     private readonly configService: ConfigService,
-    private readonly moduleRef: ModuleRef
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   @Get('social-auth/login')
@@ -29,7 +29,7 @@ export class LoginController {
     ).options?.adminUiConfig;
     const loginHtml = await fs.readFile(
       `${__dirname}/../ui/login.html`,
-      'utf8'
+      'utf8',
     );
     const tokenMethod = this.configService.authOptions.tokenMethod;
     const rendered = Handlebars.compile(loginHtml)({

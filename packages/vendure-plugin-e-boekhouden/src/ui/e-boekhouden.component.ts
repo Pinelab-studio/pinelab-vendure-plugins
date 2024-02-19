@@ -63,7 +63,7 @@ export class EBoekhoudenComponent implements OnInit {
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {
     this.form = this.formBuilder.group({
       enabled: ['enabled'],

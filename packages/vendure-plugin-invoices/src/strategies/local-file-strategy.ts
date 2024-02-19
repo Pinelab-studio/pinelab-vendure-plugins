@@ -18,7 +18,7 @@ export class LocalFileStrategy implements LocalStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ) {
     if (!(await exists(this.invoiceDir))) {
       await fs.mkdir(this.invoiceDir);

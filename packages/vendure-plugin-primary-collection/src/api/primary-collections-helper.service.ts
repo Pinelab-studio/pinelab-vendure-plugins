@@ -20,7 +20,7 @@ export class PrimaryCollectionHelperService {
     for (let product of allProducts) {
       if (!(product.customFields as any).primaryCollection) {
         const variantWithCollection = product.variants?.find(
-          (v) => v.collections?.length
+          (v) => v.collections?.length,
         );
         if (variantWithCollection?.collections[0]) {
           updatedProducts.push({

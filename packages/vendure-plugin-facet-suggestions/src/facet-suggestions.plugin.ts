@@ -56,7 +56,7 @@ import { AdminResolver } from './api/admin.resolver';
           component: 'facet-value-form-input',
           tab: 'Show on product detail',
         },
-      }
+      },
     );
     return config;
   },

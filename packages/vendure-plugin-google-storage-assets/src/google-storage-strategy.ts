@@ -35,7 +35,7 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
     ) {
       // go via assetServer if admin
       return `${request!.protocol}://${request!.get(
-        'host'
+        'host',
       )}/assets/${identifier}`;
     }
     return `${this.urlPrefix}/${this.bucketName}/${identifier}`;

@@ -54,10 +54,10 @@ export async function getPlugins(): Promise<Plugin[]> {
       const packageJsonFilePath = path.join(
         pluginDirName,
         r.name,
-        'package.json'
+        'package.json',
       );
       const packageJson: PackageJson = JSON.parse(
-        await readFile(packageJsonFilePath, 'utf8')
+        await readFile(packageJsonFilePath, 'utf8'),
       );
       const readmeFilePath = path.join(pluginDirName, r.name, 'README.md');
       let readme: string = await readFile(readmeFilePath, 'utf8');
@@ -76,10 +76,10 @@ export async function getPlugins(): Promise<Plugin[]> {
         markdownContent: readmeHtml,
         nrOfDownloads,
       });
-    })
+    }),
   );
   const pluginsSortedByDownloads = plugins.sort(
-    (a, b) => b.nrOfDownloads - a.nrOfDownloads
+    (a, b) => b.nrOfDownloads - a.nrOfDownloads,
   );
   return pluginsSortedByDownloads;
 }
@@ -109,10 +109,10 @@ export function parseReadme(readmeString: string): string {
 
 export async function getNrOfDownloads(
   packageName: string,
-  period: string = 'last-month'
+  period: string = 'last-month',
 ): Promise<number> {
   const response = await fetch(
-    `https://api.npmjs.org/downloads/point/${period}/${packageName}`
+    `https://api.npmjs.org/downloads/point/${period}/${packageName}`,
   );
   return (await response.json()).downloads as number;
 }

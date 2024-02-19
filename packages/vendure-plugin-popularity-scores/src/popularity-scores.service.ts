@@ -27,7 +27,7 @@ export class PopularityScoresService implements OnModuleInit {
     private jobQueueService: JobQueueService,
     private channelService: ChannelService,
     private collectionService: CollectionService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig,
   ) {}
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
@@ -35,11 +35,11 @@ export class PopularityScoresService implements OnModuleInit {
       process: async (job) => {
         await this.setProductPopularity(
           RequestContext.deserialize(job.data.ctx),
-          job.data.channelToken
+          job.data.channelToken,
         ).catch((e) => {
           Logger.warn(
             `Failed to handle popularity calculation job: ${e?.message}`,
-            loggerCtx
+            loggerCtx,
           );
           throw e;
         });
@@ -49,7 +49,7 @@ export class PopularityScoresService implements OnModuleInit {
 
   async setProductPopularity(
     ctx: RequestContext,
-    channelToken: string
+    channelToken: string,
   ): Promise<void> {
     Logger.info(`Started calculating popularity scores`, loggerCtx);
     const channel = await this.channelService.getChannelFromToken(channelToken);
@@ -81,7 +81,7 @@ export class PopularityScoresService implements OnModuleInit {
       Logger.warn(
         `No orders found for channel ${channel.code}, 
         not calculating popularity scores`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -95,7 +95,7 @@ export class PopularityScoresService implements OnModuleInit {
             popularityScore: Math.round((gols.count / maxCount) * maxValue),
           },
         };
-      })
+      }),
     );
     await this.assignScoreValuesToCollections(ctx);
     Logger.info(`Finished calculating popularity scores`, loggerCtx);
@@ -112,7 +112,7 @@ export class PopularityScoresService implements OnModuleInit {
    * @returns Array of collection ids and their corresponding popularity scores not including subcollections
    */
   async getEachCollectionsScore(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<{ id: string; score: number }[]> {
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
     const productsRepo = this.connection.getRepository(ctx, Product);
@@ -133,7 +133,7 @@ export class PopularityScoresService implements OnModuleInit {
     for (const col of allCollectionIds) {
       const variantsPartialInfo = await variantsPartialInfoQuery.andWhere(
         'collection.id= :id',
-        { id: col.collection_id }
+        { id: col.collection_id },
       );
 
       const variantsPartialInfoResults = await variantsPartialInfo.getRawMany();
@@ -147,7 +147,7 @@ export class PopularityScoresService implements OnModuleInit {
         let score = 0;
         const chunkedProductIds = sliceArray(
           uniqueProductIds,
-          this.config.chunkSize ?? 100
+          this.config.chunkSize ?? 100,
         );
         for (let uniqueProductIdsSlice of chunkedProductIds) {
           const summedProductsValue = await productSummingQuery
@@ -169,7 +169,7 @@ export class PopularityScoresService implements OnModuleInit {
             popularityScore: collection.score ?? 0,
           },
         };
-      })
+      }),
     );
     return productScoreSums;
   }
@@ -181,7 +181,7 @@ export class PopularityScoresService implements OnModuleInit {
    */
   async addUpTheTreeAndSave(
     input: { id: string; score: number }[],
-    ctx: RequestContext
+    ctx: RequestContext,
   ) {
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
     for (const colIndex in input) {
@@ -200,14 +200,14 @@ export class PopularityScoresService implements OnModuleInit {
             popularityScore: collection.score ?? 0,
           },
         };
-      })
+      }),
     );
   }
 
   addScoreCalculatingJobToQueue(channelToken: string, ctx: RequestContext) {
     return this.jobQueue.add(
       { channelToken, ctx: ctx.serialize() },
-      { retries: 5 }
+      { retries: 5 },
     );
   }
 }

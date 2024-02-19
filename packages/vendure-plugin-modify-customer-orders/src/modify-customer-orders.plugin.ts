@@ -43,7 +43,7 @@ export class ModifyCustomerOrdersPlugin {
   };
   static ui: AdminUiExtension = convertToDraftButton;
   static init(
-    options: ModifyCustomerOrdersPluginOptions
+    options: ModifyCustomerOrdersPluginOptions,
   ): typeof ModifyCustomerOrdersPlugin {
     this.options = options;
     return ModifyCustomerOrdersPlugin;

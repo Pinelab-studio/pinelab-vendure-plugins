@@ -23,7 +23,8 @@
     "test": "vitest run --bail 1",
     "start": "COMPILE_ADMIN=true yarn ts-node test/dev-server.ts",
     "start:no-admin": "yarn ts-node test/dev-server.ts",
-    "generate": "graphql-codegen"
+    "generate": "graphql-codegen",
+    "lint": "echo 'Not configured yet'"
   },
   "dependencies": {
     "date-fns": "2.29.3",

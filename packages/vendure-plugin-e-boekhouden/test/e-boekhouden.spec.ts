@@ -148,7 +148,7 @@ describe('E-boekhouden plugin', function () {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(
         __dirname,
-        EBoekhoudenPlugin.ui
+        EBoekhoudenPlugin.ui,
       );
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);

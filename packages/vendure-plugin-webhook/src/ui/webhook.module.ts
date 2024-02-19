@@ -23,7 +23,7 @@ import { WebhookComponent } from './webhook.component';
         routerLink: ['/extensions/webhook'],
         icon: 'cursor-hand-open',
       },
-      'settings'
+      'settings',
     ),
   ],
   declarations: [WebhookComponent],

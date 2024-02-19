@@ -57,7 +57,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     order,
     amount,
     args,
-    metadata
+    metadata,
   ): Promise<CreatePaymentResult> {
     const ccMetadata = metadata as CreditCardPaymentInput;
     const client = new AcceptBlueClient(args.apiKey, args.pin);
@@ -68,11 +68,11 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
         order,
         amount,
         client,
-        paymentMethodId
+        paymentMethodId,
       );
       Logger.info(
         `Created payment for saved payment method '${paymentMethodId}' for order ${order.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return {
         amount,
@@ -90,11 +90,11 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
         order,
         amount,
         client,
-        ccMetadata
+        ccMetadata,
       );
       Logger.info(
         `Created payment with manual card credentials for order ${order.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return {
         amount,
@@ -105,7 +105,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     } else {
       // Invalid input
       throw new UserInputError(
-        `You need to supply a 'paymentMethodId', or 'card', 'expiry_year' and 'expiry_month' as metadata`
+        `You need to supply a 'paymentMethodId', or 'card', 'expiry_year' and 'expiry_month' as metadata`,
       );
     }
   },
@@ -122,7 +122,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     amount,
     order,
     payment,
-    args
+    args,
   ): Promise<CreateRefundResult> {
     throw Error(`not implemented`);
     // TODO

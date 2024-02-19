@@ -103,7 +103,7 @@ describe('Plugin setup', function () {
       { id: 'T_4', trackInventory: GlobalFlag.True },
     ]);
     const everyVariantHasStockTracking = variants.every(
-      (v) => v!.trackInventory === GlobalFlag.True
+      (v) => v!.trackInventory === GlobalFlag.True,
     );
     expect(everyVariantHasStockTracking).toBe(true);
   });
@@ -131,7 +131,7 @@ describe('Plugin setup', function () {
           storefrontUrl: 'mystore.io',
           supportEmail: 'support@mystore.io',
         },
-      }
+      },
     );
     await expect(config.enabled).toBe(true);
     await expect(config.apiKey).toBe('test-api-key');
@@ -145,13 +145,13 @@ describe('Plugin setup', function () {
     await expect(createdHooks.length).toBe(3);
     await expect(createdHooks[0].event).toBe('orders.status_changed');
     await expect(createdHooks[0].address).toBe(
-      `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`
+      `https://example-vendure.io/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
     );
     await expect(createdHooks[0].secret).toBeDefined();
     await expect(createdHooks[0].name).toBeDefined();
     await expect(createdHooks[1].event).toBe('products.free_stock_changed');
     await expect(createdHooks[2].event).toBe(
-      'products.assembled_stock_changed'
+      'products.assembled_stock_changed',
     );
   });
 
@@ -218,11 +218,11 @@ describe('Order placement', function () {
           postalCode: '1111AB',
           countryCode: 'NL',
         },
-      }
+      },
     )) as any;
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     const variant = (await getAllVariants(adminClient)).find(
-      (v) => v.id === 'T_1'
+      (v) => v.id === 'T_1',
     );
     expect(variant!.stockOnHand).toBe(100);
     expect(variant!.stockAllocated).toBe(3);
@@ -271,10 +271,10 @@ describe('Order placement', function () {
         headers: {
           'X-Picqer-Signature': createSignature(
             mockIncomingWebhook,
-            'test-api-key'
+            'test-api-key',
           ),
         },
-      }
+      },
     );
     const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Delivered');
@@ -296,10 +296,10 @@ describe('Order placement', function () {
         headers: {
           'X-Picqer-Signature': createSignature(
             mockIncomingWebhook,
-            'test-api-key'
+            'test-api-key',
           ),
         },
-      }
+      },
     );
     const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Cancelled');
@@ -365,7 +365,7 @@ describe('Product synchronization', function () {
 
   it('Should push custom fields to Picqer based on configured "pushFieldsToPicqer()"', async () => {
     const pushedProduct = pushProductPayloads.find(
-      (p) => p.productcode === 'L2201516'
+      (p) => p.productcode === 'L2201516',
     );
     // Expect the barcode to be the same as SKU, because thats what we configure in the plugin.init()
     expect(pushedProduct?.barcode).toBe('L2201516');
@@ -413,7 +413,7 @@ describe('Product synchronization', function () {
         headers: {
           'X-Picqer-Signature': createSignature(body, 'test-api-key'),
         },
-      }
+      },
     );
     const variants = await getAllVariants(adminClient);
     const variant = variants.find((v) => v.sku === 'L2201308');
@@ -437,7 +437,7 @@ describe('Product synchronization', function () {
         headers: {
           'X-Picqer-Signature': createSignature(body, 'test-api-key'),
         },
-      }
+      },
     );
     const variants = await getAllVariants(adminClient);
     const variant = variants.find((v) => v.sku === 'L2201308');
@@ -454,7 +454,7 @@ describe('Product synchronization', function () {
         headers: {
           'X-Picqer-Signature': 'invalid signature',
         },
-      }
+      },
     );
     expect(res.status).toBe(403);
   });
@@ -469,7 +469,7 @@ describe('Periodical stock updates', function () {
         headers: {
           Authorization: 'Bearer this is not right',
         },
-      }
+      },
     );
     expect(res.status).toBe(403);
   });
@@ -482,7 +482,7 @@ describe('Periodical stock updates', function () {
         headers: {
           Authorization: 'Bearer test-api-key',
         },
-      }
+      },
     );
     expect(res.status).toBe(200);
   });

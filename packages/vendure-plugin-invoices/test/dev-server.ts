@@ -35,7 +35,7 @@ require('dotenv').config();
           injector,
           order,
           mostRecentInvoiceNumber?,
-          shouldGenerateCreditInvoice?
+          shouldGenerateCreditInvoice?,
         ) => {
           // Increase order number
           let newInvoiceNumber = mostRecentInvoiceNumber || 0;

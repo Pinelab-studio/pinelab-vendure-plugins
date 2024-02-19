@@ -60,7 +60,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     private channelService: ChannelService,
     private moduleRef: ModuleRef,
     private connection: TransactionalConnection,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig,
   ) {
     Handlebars.registerHelper('formatMoney', (amount?: number) => {
       if (amount == null) {
@@ -77,11 +77,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       process: async (job) =>
         this.createAndSaveInvoice(
           job.data.channelToken,
-          job.data.orderCode
+          job.data.orderCode,
         ).catch(async (error) => {
           Logger.warn(
             `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
-            loggerCtx
+            loggerCtx,
           );
           throw error;
         }),
@@ -100,7 +100,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       if (!enabled) {
         return Logger.debug(
           `Invoice generation not enabled for order ${order.code} in channel ${ctx.channel.token}`,
-          loggerCtx
+          loggerCtx,
         );
       }
       await this.jobQueue.add(
@@ -108,11 +108,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           channelToken: ctx.channel.token,
           orderCode: order.code,
         },
-        { retries: this.retries }
+        { retries: this.retries },
       );
       return Logger.info(
         `Added invoice job to queue for order ${order.code}`,
-        loggerCtx
+        loggerCtx,
       );
     });
   }
@@ -124,7 +124,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   async createAndSaveInvoice(
     channelToken: string,
-    orderCode: string
+    orderCode: string,
   ): Promise<InvoiceEntity> {
     const ctx = await this.createCtx(channelToken);
     let [order, previousInvoiceForOrder, config] = await Promise.all([
@@ -134,11 +134,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     ]);
     if (!config) {
       throw Error(
-        `Cannot generate invoice for ${orderCode}, because no config was found`
+        `Cannot generate invoice for ${orderCode}, because no config was found`,
       );
     } else if (!config.enabled) {
       throw Error(
-        `Not generating invoice for ${orderCode} for channel ${channelToken}, because invoice generation is disabled in the config.`
+        `Not generating invoice for ${orderCode} for channel ${channelToken}, because invoice generation is disabled in the config.`,
       );
     } else if (!order) {
       throw Error(`No order found with code ${orderCode}`);
@@ -148,7 +148,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (previousInvoiceForOrder && config.createCreditInvoices) {
       // Reverse order totals of previous invoice, because creditInvoice
       const reversedOrderTotals = reverseOrderTotals(
-        previousInvoiceForOrder.orderTotals
+        previousInvoiceForOrder.orderTotals,
       );
       const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
         ctx,
@@ -157,13 +157,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         {
           previousInvoice: previousInvoiceForOrder,
           reversedOrderTotals,
-        }
+        },
       );
       const storageReference = await this.config.storageStrategy.save(
         invoiceTmpFile,
         invoiceNumber,
         channelToken,
-        true
+        true,
       );
       creditInvoice = await this.saveInvoice(ctx, {
         channelId: ctx.channelId as string,
@@ -177,13 +177,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
       ctx,
       config.templateString!,
-      order
+      order,
     );
     const storageReference = await this.config.storageStrategy.save(
       invoiceTmpFile,
       invoiceNumber,
       channelToken,
-      false
+      false,
     );
     const newInvoice = await this.saveInvoice(ctx, {
       channelId: ctx.channelId as string,
@@ -202,8 +202,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         order,
         newInvoice,
         previousInvoiceForOrder,
-        creditInvoice
-      )
+        creditInvoice,
+      ),
     );
     return newInvoice;
   }
@@ -215,7 +215,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     templateString: string,
     order: Order,
-    shouldGenerateCreditInvoice?: CreditInvoiceInput
+    shouldGenerateCreditInvoice?: CreditInvoiceInput,
   ): Promise<{ invoiceTmpFile: string; invoiceNumber: number }> {
     const latestInvoiceNumber = await this.getLatestInvoiceNumber(ctx);
     const data = await this.config.loadDataFn(
@@ -223,7 +223,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       new Injector(this.moduleRef),
       order,
       latestInvoiceNumber,
-      shouldGenerateCreditInvoice
+      shouldGenerateCreditInvoice,
     );
     const tmpFilePath = await createTempFile('.pdf');
     const html = templateString;
@@ -264,7 +264,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   async previewInvoiceWithTemplate(
     ctx: RequestContext,
     template: string,
-    orderCode: string
+    orderCode: string,
   ): Promise<ReadStream> {
     const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
@@ -284,7 +284,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   async downloadInvoice(
     ctx: RequestContext,
-    input: DownloadInput
+    input: DownloadInput,
   ): Promise<ReadStream | string> {
     const order = await this.orderService.findOneByCode(ctx, input.orderCode, [
       'customer',
@@ -294,7 +294,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     }
     if (order.customer?.emailAddress !== input.customerEmail) {
       throw Error(
-        `This order doesn't belong to customer ${input.customerEmail}`
+        `This order doesn't belong to customer ${input.customerEmail}`,
       );
     }
     const invoices = await this.getInvoicesForOrder(ctx, order.id);
@@ -305,11 +305,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     // If an invoiceNumber is given, we need to find the invoice with that number
     if (input.invoiceNumber) {
       const invoiceWithNumber = invoices.find(
-        (i) => i.invoiceNumber == input.invoiceNumber
+        (i) => i.invoiceNumber == input.invoiceNumber,
       );
       if (!invoiceWithNumber) {
         throw new UserInputError(
-          `No invoice found with number ${input.invoiceNumber}`
+          `No invoice found with number ${input.invoiceNumber}`,
         );
       }
       invoice = invoiceWithNumber;
@@ -320,7 +320,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     } else {
       return await (strategy as LocalStorageStrategy).streamFile(
         invoice,
-        input.res
+        input.res,
       );
     }
   }
@@ -330,7 +330,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   async getInvoicesForOrder(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
   ): Promise<InvoiceEntity[]> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     return await invoiceRepo.find({
@@ -346,7 +346,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   async getMostRecentInvoiceForOrder(
     ctx: RequestContext,
-    orderCode: string
+    orderCode: string,
   ): Promise<InvoiceEntity | undefined> {
     const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
@@ -363,7 +363,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Get last generated invoice number for this channel
    */
   async getLatestInvoiceNumber(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<number | undefined> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     const result = await invoiceRepo.findOne({
@@ -384,7 +384,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     invoice: InvoiceEntity,
     orderCode: string,
-    customerEmail: string
+    customerEmail: string,
   ): string {
     const emailAddress = encodeURIComponent(customerEmail);
     return `${this.config.vendureHost}/invoices/${ctx.channel.token}/${orderCode}/${invoice.invoiceNumber}?email=${emailAddress}`;
@@ -392,7 +392,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
 
   async upsertConfig(
     ctx: RequestContext,
-    input: InvoiceConfigInput
+    input: InvoiceConfigInput,
   ): Promise<InvoiceConfigEntity> {
     const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
     const existing = await configRepo.findOne({
@@ -401,7 +401,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (existing) {
       await configRepo.update(
         existing.id,
-        input as QueryDeepPartialEntity<InvoiceConfigEntity>
+        input as QueryDeepPartialEntity<InvoiceConfigEntity>,
       );
     } else {
       await configRepo.insert({
@@ -415,7 +415,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   async getConfig(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<InvoiceConfigEntity | undefined> {
     const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
     let config = await configRepo.findOne({
@@ -450,7 +450,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     invoice: Omit<
       InvoiceEntity,
       'id' | 'createdAt' | 'updatedAt' | 'isCreditInvoice'
-    >
+    >,
   ): Promise<InvoiceEntity> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     const { id } = await invoiceRepo.save(invoice);

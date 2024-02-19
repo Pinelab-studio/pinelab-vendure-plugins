@@ -8,14 +8,14 @@ import { PopularityScoresService } from './popularity-scores.service';
 export class OrderByPopularityController {
   constructor(
     private popularityScoreService: PopularityScoresService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: PopularityScoresPluginConfig,
   ) {}
 
   @Get('calculate-scores/:mychanneltoken/:secret')
   async calculateScores(
     @Ctx() ctx: RequestContext,
     @Param('mychanneltoken') token: string,
-    @Param('secret') secret: string
+    @Param('secret') secret: string,
   ) {
     if (secret !== this.config.endpointSecret) {
       throw new UnauthorizedError();

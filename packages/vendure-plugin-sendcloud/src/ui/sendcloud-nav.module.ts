@@ -18,7 +18,7 @@ import { HistoryEntryComponent } from './history-entry.component';
         icon: 'cloud',
         requiresPermission: 'SetSendCloudConfig',
       },
-      'settings'
+      'settings',
     ),
     registerHistoryEntryComponent({
       type: 'SENDCLOUD_NOTIFICATION',

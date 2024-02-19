@@ -70,7 +70,7 @@ export class MyCustomExport implements ExportStrategy {
           },
         },
       },
-      ['lines.productVariant']
+      ['lines.productVariant'],
     );
     // Do your magic with the order data here
     const filePath = '/tmp/your-temp-file.csv';

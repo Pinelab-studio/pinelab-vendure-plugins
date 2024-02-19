@@ -137,7 +137,7 @@ describe('Stripe Subscription Plugin', function () {
             ],
           },
         },
-      }
+      },
     );
     await new Promise((resolve) => setTimeout(resolve, 1000)); // Await asyncronous webhook creation
     expect(createPaymentMethod.id).toBe('T_1');
@@ -146,7 +146,7 @@ describe('Stripe Subscription Plugin', function () {
   it('Created webhooks and saved webhook secrets', async () => {
     const { paymentMethods } = await adminClient.query(GET_PAYMENT_METHODS);
     const webhookSecret = paymentMethods.items[0].handler.args.find(
-      (a: any) => a.name === 'webhookSecret'
+      (a: any) => a.name === 'webhookSecret',
     )?.value;
     expect(createdWebhooks.length).toBe(1);
     expect(paymentMethods.items[0].code).toBe('stripe-subscription-method');
@@ -243,14 +243,14 @@ describe('Stripe Subscription Plugin', function () {
   it('Adds a subscription to order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
         productVariantId: 'T_1', // Is subscription
         quantity: 1,
-      }
+      },
     );
     orderCode = order.code;
     expect(order.total).toBe(129900);
@@ -263,7 +263,7 @@ describe('Stripe Subscription Plugin', function () {
       {
         productVariantId: 'T_2', // Is not a subscription
         quantity: 1,
-      }
+      },
     );
     orderCode = order.code;
     expect(order.lines[0].stripeSubscriptions.length).toBe(1);
@@ -293,10 +293,10 @@ describe('Stripe Subscription Plugin', function () {
 
   it('Exposes publishable key via eligible payment methods', async () => {
     const { eligiblePaymentMethods } = await shopClient.query(
-      ELIGIBLE_PAYMENT_METHODS
+      ELIGIBLE_PAYMENT_METHODS,
     );
     expect(eligiblePaymentMethods[0].stripeSubscriptionPublishableKey).toBe(
-      'test-publishable-key'
+      'test-publishable-key',
     );
   });
 
@@ -316,7 +316,7 @@ describe('Stripe Subscription Plugin', function () {
         object: 'payment_intent',
       });
     const { createStripeSubscriptionIntent: intent } = await shopClient.query(
-      CREATE_SHOP_PAYMENT_LINK
+      CREATE_SHOP_PAYMENT_LINK,
     );
     expect(intent.clientSecret).toBe('mock-secret-1234');
     expect(intent.intentType).toBe('PaymentIntent');
@@ -347,7 +347,7 @@ describe('Stripe Subscription Plugin', function () {
       CREATE_ADMIN_PAYMENT_LINK,
       {
         orderId: activeOrder.id,
-      }
+      },
     );
     expect(intent.clientSecret).toBe('mock-secret-1234');
     expect(intent.intentType).toBe('PaymentIntent');
@@ -399,7 +399,7 @@ describe('Stripe Subscription Plugin', function () {
             },
           },
         }),
-      }
+      },
     );
     await new Promise((resolve) => setTimeout(resolve, 500));
     adminOrder = await getOrder(adminClient, '1');

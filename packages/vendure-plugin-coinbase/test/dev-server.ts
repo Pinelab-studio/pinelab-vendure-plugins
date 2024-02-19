@@ -86,7 +86,7 @@ require('dotenv').config();
   await setAddressAndShipping(shopClient, 'T_3');
   console.log('Created order with item and shipping');
   const { createCoinbasePaymentIntent } = await shopClient.query(
-    CreatePaymentIntentMutation
+    CreatePaymentIntentMutation,
   );
   console.log(`Pay with crypto on ${createCoinbasePaymentIntent}`);
 })();

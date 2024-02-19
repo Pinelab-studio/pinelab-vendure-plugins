@@ -24,17 +24,17 @@ export const goedgepicktPermission = new PermissionDefinition({
 export class GoedgepicktResolver {
   constructor(
     private service: GoedgepicktService,
-    @Inject(PLUGIN_INIT_OPTIONS) private pluginConfig: GoedgepicktPluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private pluginConfig: GoedgepicktPluginConfig,
   ) {}
 
   @Query()
   @Allow(goedgepicktPermission.Permission)
   async goedgepicktConfig(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<GoedgepicktConfig | null> {
     return this.toGraphqlObject(
       ctx.channel.token,
-      await this.service.getConfig(ctx)
+      await this.service.getConfig(ctx),
     );
   }
 
@@ -42,7 +42,7 @@ export class GoedgepicktResolver {
   @Allow(goedgepicktPermission.Permission)
   async updateGoedgepicktConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: { apiKey: string; webshopUuid: string }
+    @Args('input') input: { apiKey: string; webshopUuid: string },
   ): Promise<GoedgepicktConfig | null> {
     await this.service.upsertConfig(ctx, input);
     if (this.pluginConfig.setWebhook) {
@@ -72,7 +72,7 @@ export class GoedgepicktResolver {
   @Allow(Permission.UpdateOrder)
   async syncOrderToGoedgepickt(
     @Ctx() ctx: RequestContext,
-    @Args() input: MutationSyncOrderToGoedgepicktArgs
+    @Args() input: MutationSyncOrderToGoedgepicktArgs,
   ): Promise<boolean> {
     await this.service.syncOrder(ctx, input.orderCode);
     return true;
@@ -80,7 +80,7 @@ export class GoedgepicktResolver {
 
   private toGraphqlObject(
     channelToken: string,
-    config: GoedgepicktConfigEntity | null
+    config: GoedgepicktConfigEntity | null,
   ): GoedgepicktConfig | null {
     const webhookUrl = this.service.getWebhookUrl(channelToken);
     return {

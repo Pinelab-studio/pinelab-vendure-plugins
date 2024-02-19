@@ -19,7 +19,7 @@ export class CoinbaseController {
           error?.message
         }: ${JSON.stringify(body)}`,
         loggerCtx,
-        error
+        error,
       );
       throw error;
     }

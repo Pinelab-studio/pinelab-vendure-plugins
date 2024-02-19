@@ -22,7 +22,7 @@ import { Request } from 'express';
 export class GoedgepicktController {
   constructor(
     private service: GoedgepicktService,
-    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
   ) {}
 
   @Get('fullsync/:secret')
@@ -30,7 +30,7 @@ export class GoedgepicktController {
     if (secret !== this.config.endpointSecret) {
       Logger.warn(
         `Invalid incoming fullsync request with secret ${secret}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -45,22 +45,22 @@ export class GoedgepicktController {
     @Param('channelToken') channelToken: string,
     @Req() req: Request,
     @Body() body: IncomingStockUpdateEvent | IncomingOrderStatusEvent,
-    @Headers('signature') signature: string
+    @Headers('signature') signature: string,
   ) {
     Logger.info(
       `Incoming event ${body?.event} for channel ${channelToken}`,
-      loggerCtx
+      loggerCtx,
     );
     if (!signature) {
       return Logger.warn(
         `Ignoring incoming event without signature for channel ${channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     if (!channelToken) {
       return Logger.warn(
         `Ignoring incoming event without channelToken`,
-        loggerCtx
+        loggerCtx,
       );
     }
     try {
@@ -75,44 +75,44 @@ export class GoedgepicktController {
           if (!client.isOrderWebhookSignatureValid(rawBody, signature)) {
             return Logger.warn(
               `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
-              loggerCtx
+              loggerCtx,
             );
           }
           await this.service.updateOrderStatus(
             ctx,
             body.orderNumber,
             body.orderUuid,
-            body.newStatus
+            body.newStatus,
           );
           break;
         case 'stockUpdated':
           if (!client.isStockWebhookSignatureValid(rawBody, signature)) {
             return Logger.warn(
               `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
-              loggerCtx
+              loggerCtx,
             );
           }
           await this.service.processStockUpdateEvent(
             ctx,
             body.productSku,
-            Number(body.newStock)
+            Number(body.newStock),
           );
           break;
         default:
           return Logger.warn(
             `Unknown incoming event: ${JSON.stringify(body)}`,
-            loggerCtx
+            loggerCtx,
           );
       }
       Logger.info(
         `Successfully processed webhook with event ${body.event} for channel ${channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
     } catch (err: any) {
       Logger.error(
         `Failed to process incoming webhook ${body?.event} for channel ${channelToken}: ${err?.message}`,
         loggerCtx,
-        JSON.stringify(err, Object.getOwnPropertyNames(err))
+        JSON.stringify(err, Object.getOwnPropertyNames(err)),
       );
       throw err;
     }

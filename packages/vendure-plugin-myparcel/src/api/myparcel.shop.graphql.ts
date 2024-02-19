@@ -45,7 +45,7 @@ export class MyParcelShopResolver {
   @Query()
   async myparcelDropOffPoints(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: MyparcelDropOffPointInput
+    @Args('input') input: MyparcelDropOffPointInput,
   ): Promise<MyparcelDropOffPoint[]> {
     return this.service.getDropOffPoints(ctx, input);
   }

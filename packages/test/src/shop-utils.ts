@@ -24,7 +24,7 @@ export async function setAddressAndShipping(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   shippingAddress?: SetShippingAddressMutationVariables,
-  billingAddress?: SetBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables,
 ): Promise<void> {
   const finalShippingAddress = shippingAddress ?? {
     input: {
@@ -52,13 +52,13 @@ export async function proceedToArrangingPayment(
   shopClient: SimpleGraphQLClient,
   shippingMethodId: string | number,
   shippingAddress: SetShippingAddressMutationVariables,
-  billingAddress?: SetBillingAddressMutationVariables
+  billingAddress?: SetBillingAddressMutationVariables,
 ): Promise<TransitionToStateMutation['transitionOrderToState']> {
   await setAddressAndShipping(
     shopClient,
     shippingMethodId,
     shippingAddress,
-    billingAddress
+    billingAddress,
   );
   const result = await shopClient.query<
     TransitionToStateMutation,
@@ -72,7 +72,7 @@ export async function proceedToArrangingPayment(
  */
 export async function addPaymentToOrder(
   shopClient: SimpleGraphQLClient,
-  code: string
+  code: string,
 ): Promise<AddPaymentToOrderMutation['addPaymentToOrder']> {
   const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
     input: {
@@ -91,7 +91,7 @@ export async function addPaymentToOrder(
 export async function addItem(
   shopClient: SimpleGraphQLClient,
   variantId: string,
-  quantity: number
+  quantity: number,
 ): Promise<Order> {
   const { addItemToOrder } = await shopClient.query(AddItemToOrder, {
     productVariantId: variantId,
@@ -102,7 +102,7 @@ export async function addItem(
 
 export async function applyCouponCode(
   shopClient: SimpleGraphQLClient,
-  couponCode: string
+  couponCode: string,
 ): Promise<OrderFieldsFragment> {
   const { applyCouponCode } = await shopClient.query(ApplyCouponCode, {
     couponCode,
@@ -127,12 +127,12 @@ export async function createSettledOrder(
     { id: 'T_2', quantity: 2 },
   ],
   billingAddress?: SetBillingAddressMutationVariables,
-  shippingAddress?: SetShippingAddressMutationVariables
+  shippingAddress?: SetShippingAddressMutationVariables,
 ): Promise<SettledOrder> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
   }
   for (const v of variants) {
@@ -155,7 +155,7 @@ export async function createSettledOrder(
     shopClient,
     shippingMethodId,
     orderShippingAddress,
-    billingAddress
+    billingAddress,
   );
   if ((res as ErrorResult)?.errorCode) {
     console.error(JSON.stringify(res));
@@ -164,7 +164,7 @@ export async function createSettledOrder(
   const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
   if ((order as ErrorResult).errorCode) {
     throw new Error(
-      `Failed to create settled order: ${(order as ErrorResult).message}`
+      `Failed to create settled order: ${(order as ErrorResult).message}`,
     );
   }
   return order as SettledOrder;

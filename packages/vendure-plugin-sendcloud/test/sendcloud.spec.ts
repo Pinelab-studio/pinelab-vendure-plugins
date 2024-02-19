@@ -119,8 +119,8 @@ describe('SendCloud', () => {
         adminClient,
         'test-secret',
         'test-public',
-        '06123456789'
-      )
+        '06123456789',
+      ),
     ).rejects.toThrow('authorized');
   });
 
@@ -130,7 +130,7 @@ describe('SendCloud', () => {
       adminClient,
       'test-secret',
       'test-public',
-      '06123456789'
+      '06123456789',
     );
     const config = await getSendCloudConfig(adminClient);
     expect(config.secret).toBe('test-secret');
@@ -146,26 +146,26 @@ describe('SendCloud', () => {
     orderCode = order?.code;
     orderId = order?.id;
     expect(
-      body?.parcel.parcel_items.find((i) => i.sku === 'additional')
+      body?.parcel.parcel_items.find((i) => i.sku === 'additional'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((i) => i.weight === '5.000')
+      body?.parcel.parcel_items.find((i) => i.weight === '5.000'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((i) => i.origin_country === 'NL')
+      body?.parcel.parcel_items.find((i) => i.origin_country === 'NL'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((i) => i.hs_code === 'test hs')
+      body?.parcel.parcel_items.find((i) => i.hs_code === 'test hs'),
     ).toBeDefined();
     expect(
-      body?.parcel.parcel_items.find((item) => item.sku === 'L2201308')?.value
+      body?.parcel.parcel_items.find((item) => item.sku === 'L2201308')?.value,
     ).toBe('1558.80');
     expect(
-      body?.parcel.parcel_items.find((item) => item.sku === 'L2201508')?.value
+      body?.parcel.parcel_items.find((item) => item.sku === 'L2201508')?.value,
     ).toBe('1678.80');
     expect(authHeader?.[0]).toContain('Basic');
     expect(body?.parcel.shipping_method_checkout_name).toContain(
-      'test-shipping-method'
+      'test-shipping-method',
     );
     expect(body?.parcel.telephone).toContain('029 1203 1336');
     expect(body?.parcel.email).toContain('hayden.zieme12@hotmail.com');
@@ -192,7 +192,7 @@ describe('SendCloud', () => {
         method: 'POST',
         body: JSON.stringify(body),
         headers: { [SendcloudClient.signatureHeader]: signature },
-      }
+      },
     );
     const order = await getOrder(adminClient, String(orderId));
     expect(order?.state).toBe('Shipped');
@@ -219,7 +219,7 @@ describe('SendCloud', () => {
         method: 'POST',
         body: JSON.stringify(body),
         headers: { [SendcloudClient.signatureHeader]: signature },
-      }
+      },
     );
     const order = await getOrder(adminClient, String(orderId));
     expect(order?.state).toBe('Delivered');
@@ -229,7 +229,7 @@ describe('SendCloud', () => {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(
         __dirname,
-        SendcloudPlugin.ui
+        SendcloudPlugin.ui,
       );
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);

@@ -213,7 +213,7 @@ export function getOneMonthFromNow() {
 }
 
 export async function setShipping(
-  shopClient: SimpleGraphQLClient
+  shopClient: SimpleGraphQLClient,
 ): Promise<void> {
   //@ts-ignore
   await shopClient.query(SET_SHIPPING_ADDRESS, {

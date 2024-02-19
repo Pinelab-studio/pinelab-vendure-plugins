@@ -39,7 +39,7 @@ import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin
 
   if (!tokenizationSourceKey.length) {
     console.log(
-      "Missing Accept Blue tokenizationSourceKey. Please look it up on the dashboard and add it to the environment key 'ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY'"
+      "Missing Accept Blue tokenizationSourceKey. Please look it up on the dashboard and add it to the environment key 'ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY'",
     );
   }
 
@@ -83,11 +83,11 @@ import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin
   console.log('------------------------');
   console.log(
     'shopApi',
-    `http://localhost:${port}/${config.apiOptions?.shopApiPath ?? ''}`
+    `http://localhost:${port}/${config.apiOptions?.shopApiPath ?? ''}`,
   );
   console.log(
     'adminApi',
-    `http://localhost:${port}/${config.apiOptions?.adminApiPath ?? ''}`
+    `http://localhost:${port}/${config.apiOptions?.adminApiPath ?? ''}`,
   );
   // console.log('Asset server', `http://localhost:${port}/assets`);
   // console.log('Dev mailbox', `http://localhost:${port}/mailbox`);
@@ -136,7 +136,7 @@ import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin
     TRANSITION_ORDER_TO,
     {
       state: 'ArrangingPayment',
-    }
+    },
   );
 
   // Create Payment method with Accept blue

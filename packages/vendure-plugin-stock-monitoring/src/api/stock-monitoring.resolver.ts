@@ -16,7 +16,7 @@ export class StockMonitoringResolver {
   @Query()
   @Allow(Permission.ReadCatalog)
   async productVariantsWithLowStock(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<ProductVariant[]> {
     return this.connection
       .getRepository(ctx, ProductVariant)

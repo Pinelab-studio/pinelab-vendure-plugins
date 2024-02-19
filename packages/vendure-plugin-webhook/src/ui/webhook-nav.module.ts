@@ -15,7 +15,7 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
         icon: 'cloud-traffic',
         requiresPermission: 'SetWebhook',
       },
-      'settings'
+      'settings',
     ),
   ],
 })

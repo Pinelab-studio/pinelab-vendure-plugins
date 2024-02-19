@@ -11,7 +11,7 @@ export class MyparcelController {
   async webhook(
     @Ctx() ctx: RequestContext,
     @Body() body: MyparcelStatusChangeEvent,
-    @Headers('X-MyParcel-Authorization') auth: string
+    @Headers('X-MyParcel-Authorization') auth: string,
   ): Promise<void> {
     const status = body?.data?.hooks?.[0]?.status;
     const shipmentId = body?.data?.hooks?.[0]?.shipment_id;
@@ -20,7 +20,7 @@ export class MyparcelController {
     if (!shipmentId || !status) {
       return Logger.error(
         `Invalid incoming webhook: ${JSON.stringify(body.data)}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     const config = await this.myparcelService
@@ -31,13 +31,13 @@ export class MyparcelController {
       });
     Logger.info(
       `Incoming status-change for shipment ${shipmentId} for channel ${config.channelId} with status ${status}`,
-      loggerCtx
+      loggerCtx,
     );
     await this.myparcelService.updateStatus(
       ctx,
       config.channelId,
       shipmentId,
-      status
+      status,
     );
   }
 }

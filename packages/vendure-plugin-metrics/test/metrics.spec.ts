@@ -79,10 +79,10 @@ describe('Metrics', () => {
     const { advancedMetricSummaries } =
       await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS);
     const averageorderValue = advancedMetricSummaries.find(
-      (m) => m.code === 'aov'
+      (m) => m.code === 'aov',
     )!;
     const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'sales-per-product'
+      (m) => m.code === 'sales-per-product',
     )!;
     expect(advancedMetricSummaries.length).toEqual(2);
     expect(averageorderValue.series[0].values.length).toEqual(13);
@@ -98,10 +98,10 @@ describe('Metrics', () => {
         input: { variantIds: [1, 2] },
       });
     const averageorderValue = advancedMetricSummaries.find(
-      (m) => m.code === 'aov'
+      (m) => m.code === 'aov',
     )!;
     const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'sales-per-product'
+      (m) => m.code === 'sales-per-product',
     )!;
     expect(advancedMetricSummaries.length).toEqual(2);
     expect(advancedMetricSummaries.length).toEqual(2);

@@ -26,7 +26,7 @@ export class SubscriptionOrderItemCalculation
     productVariant: ProductVariant,
     orderLineCustomFields: CustomOrderLineFields,
     order: Order,
-    orderLineQuantity: number
+    orderLineQuantity: number,
   ): Promise<PriceCalculationResult> {
     const subcriptionService = injector.get(StripeSubscriptionService);
     if (!subcriptionService) {
@@ -35,7 +35,7 @@ export class SubscriptionOrderItemCalculation
     if (
       !(await subcriptionService.subscriptionHelper.isSubscription(
         ctx,
-        productVariant
+        productVariant,
       ))
     ) {
       return super.calculateUnitPrice(ctx, productVariant);
@@ -46,7 +46,7 @@ export class SubscriptionOrderItemCalculation
         productVariant,
         order,
         orderLineCustomFields,
-        orderLineQuantity
+        orderLineQuantity,
       );
     if (!Array.isArray(subscription)) {
       return {
@@ -56,7 +56,7 @@ export class SubscriptionOrderItemCalculation
     }
     if (!subscription.length) {
       throw Error(
-        `Subscription strategy returned an empty array. Must contain atleast 1 subscription`
+        `Subscription strategy returned an empty array. Must contain atleast 1 subscription`,
       );
     }
     const total = subscription.reduce((acc, sub) => acc + sub.amountDueNow, 0);

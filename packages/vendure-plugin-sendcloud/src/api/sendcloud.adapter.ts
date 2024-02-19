@@ -10,7 +10,7 @@ import { SendcloudPluginOptions } from './types/sendcloud.types';
 export function toParcelInput(
   order: Order,
   options: SendcloudPluginOptions,
-  defaultPhoneNr?: string
+  defaultPhoneNr?: string,
 ): ParcelInput {
   const items = order.lines
     .filter((line) => line.quantity >= 1)
@@ -36,7 +36,7 @@ export function toParcelInput(
 
 export function toParcelInputItem(
   line: OrderLine,
-  options: SendcloudPluginOptions
+  options: SendcloudPluginOptions,
 ): ParcelInputItem {
   const variant = line.productVariant;
   let weightPerUnit = options.weightFn?.(line) || 0;

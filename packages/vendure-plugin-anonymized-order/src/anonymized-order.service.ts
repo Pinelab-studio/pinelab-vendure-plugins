@@ -13,13 +13,13 @@ export class AnonymizeOrderService {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AnonymizeOrderPluginOptions,
-    private readonly orderService: OrderService
+    private readonly orderService: OrderService,
   ) {}
 
   async getAnonymizedOrder(
     ctx: RequestContext,
     orderCode: string,
-    emailAddress: string
+    emailAddress: string,
   ): Promise<Order> {
     const order = await this.orderService.findOneByCode(ctx, orderCode);
     if (order && order.customer?.emailAddress === emailAddress) {

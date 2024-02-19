@@ -10,13 +10,13 @@ export class UKPostalCodeToGelocationConversionStrategy
   implements OrderAddressToGeolocationConversionStrategy
 {
   async getGeoLocationForAddress(
-    orderAddress: OrderAddress
+    orderAddress: OrderAddress,
   ): Promise<GeoLocation> {
     if (!orderAddress?.postalCode) {
       throw new Error(`Order Shipping Address postal code not found`);
     }
     const url = `${POSTCODES_URL}/${encodeURIComponent(
-      orderAddress.postalCode
+      orderAddress.postalCode,
     )}`;
     const response = await fetch(url);
     if (!response.ok) {

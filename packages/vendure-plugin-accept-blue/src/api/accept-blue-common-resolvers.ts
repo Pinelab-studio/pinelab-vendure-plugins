@@ -17,12 +17,12 @@ export class AcceptBlueCommonResolver {
   async previewAcceptBlueSubscriptions(
     @Ctx() ctx: RequestContext,
     @Args()
-    { productVariantId, customInputs }: QueryPreviewAcceptBlueSubscriptionsArgs
+    { productVariantId, customInputs }: QueryPreviewAcceptBlueSubscriptionsArgs,
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptions']> {
     return await this.acceptBlueService.subscriptionHelper.previewSubscription(
       ctx,
       productVariantId,
-      customInputs
+      customInputs,
     );
   }
 
@@ -33,19 +33,19 @@ export class AcceptBlueCommonResolver {
     {
       productId,
       customInputs,
-    }: QueryPreviewAcceptBlueSubscriptionsForProductArgs
+    }: QueryPreviewAcceptBlueSubscriptionsForProductArgs,
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptionsForProduct']> {
     return await this.acceptBlueService.subscriptionHelper.previewSubscriptionsForProduct(
       ctx,
       productId,
-      customInputs
+      customInputs,
     );
   }
 
   @ResolveField('acceptBlueHostedTokenizationKey')
   @Resolver('PaymentMethodQuote')
   async acceptBlueHostedTokenizationKey(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<string | null> {
     return await this.acceptBlueService.getHostedTokenizationKey(ctx);
   }
@@ -54,7 +54,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('Customer')
   async savedPaymentMethods(
     @Ctx() ctx: RequestContext,
-    @Parent() customer: Customer
+    @Parent() customer: Customer,
   ): Promise<AcceptBluePaymentMethod[]> {
     return await this.acceptBlueService.getSavedPaymentMethods(ctx, customer);
   }
@@ -63,7 +63,7 @@ export class AcceptBlueCommonResolver {
   @Resolver('OrderLine')
   async stripeSubscriptions(
     @Ctx() ctx: RequestContext,
-    @Parent() orderLine: OrderLine
+    @Parent() orderLine: OrderLine,
   ): Promise<AcceptBlueSubscription[]> {
     // TODO place in service
 

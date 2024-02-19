@@ -23,7 +23,7 @@ export class AnonymizedOrderPlugin {
   static options: AnonymizeOrderPluginOptions | undefined;
 
   static init(
-    options: AnonymizeOrderPluginOptions
+    options: AnonymizeOrderPluginOptions,
   ): typeof AnonymizedOrderPlugin {
     this.options = options;
     return AnonymizedOrderPlugin;

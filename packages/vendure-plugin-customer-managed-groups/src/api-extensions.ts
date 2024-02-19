@@ -160,7 +160,7 @@ export class CustomerManagedGroupsResolver {
   @Query()
   @Allow(Permission.Authenticated)
   async ordersForMyCustomerManagedGroup(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<PaginatedList<Order>> {
     return this.service.getOrdersForCustomer(ctx);
   }
@@ -168,7 +168,7 @@ export class CustomerManagedGroupsResolver {
   @Query()
   @Allow(Permission.Authenticated)
   async activeCustomerManagedGroupMember(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<CustomerManagedGroupMember | undefined> {
     return this.service.getActiveMember(ctx);
   }
@@ -176,7 +176,7 @@ export class CustomerManagedGroupsResolver {
   @Query()
   @Allow(Permission.Authenticated)
   async myCustomerManagedGroup(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<CustomerManagedGroup | undefined> {
     return this.service.myCustomerManagedGroup(ctx);
   }
@@ -184,7 +184,7 @@ export class CustomerManagedGroupsResolver {
   @Mutation()
   @Allow(Permission.Authenticated)
   async createCustomerManagedGroup(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<CustomerManagedGroup | undefined> {
     return this.service.createCustomerManagedGroup(ctx);
   }
@@ -194,7 +194,7 @@ export class CustomerManagedGroupsResolver {
   async makeCustomerAdminOfCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
     @Args('groupId') groupId: ID,
-    @Args('customerId') customerId: ID
+    @Args('customerId') customerId: ID,
   ): Promise<CustomerManagedGroup> {
     return this.service.makeAdminOfGroup(ctx, groupId, customerId);
   }
@@ -203,7 +203,7 @@ export class CustomerManagedGroupsResolver {
   @Allow(Permission.Authenticated)
   async addCustomerToMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: AddCustomerToMyCustomerManagedGroupInput
+    @Args('input') input: AddCustomerToMyCustomerManagedGroupInput,
   ): Promise<CustomerManagedGroup> {
     return this.service.addToGroup(ctx, input);
   }
@@ -212,7 +212,7 @@ export class CustomerManagedGroupsResolver {
   @Allow(Permission.Authenticated)
   async updateCustomerManagedGroupMember(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: UpdateCustomerManagedGroupMemberInput
+    @Args('input') input: UpdateCustomerManagedGroupMemberInput,
   ): Promise<CustomerManagedGroup> {
     return this.service.updateGroupMember(ctx, input);
   }
@@ -221,7 +221,7 @@ export class CustomerManagedGroupsResolver {
   @Allow(Permission.Authenticated)
   async removeCustomerFromMyCustomerManagedGroup(
     @Ctx() ctx: RequestContext,
-    @Args('customerId') customerId: ID
+    @Args('customerId') customerId: ID,
   ): Promise<CustomerManagedGroup> {
     return this.service.removeFromGroup(ctx, customerId);
   }

@@ -11,7 +11,7 @@ import { WebhookPlugin } from '../webhook.plugin';
 
 export type TransformFn<T extends EventWithContext> = (
   event: T,
-  injector: Injector
+  injector: Injector,
 ) => WebhookRequest | Promise<WebhookRequest>;
 
 export type EventWithContext = VendureEvent & {
@@ -36,7 +36,7 @@ export class RequestTransformer<T extends Array<Type<EventWithContext>>> {
        */
       supportedEvents: T;
       transform: TransformFn<EventWithContext>;
-    }
+    },
   ) {
     this.name = options.name;
     this.supportedEvents = options.supportedEvents;

@@ -53,7 +53,7 @@ export class PopularityScoresPlugin {
   static config: PopularityScoresPluginConfig;
 
   static init(
-    config: PopularityScoresPluginConfig
+    config: PopularityScoresPluginConfig,
   ): Type<PopularityScoresPlugin> {
     this.config = config;
     if (!this.config?.chunkSize) {

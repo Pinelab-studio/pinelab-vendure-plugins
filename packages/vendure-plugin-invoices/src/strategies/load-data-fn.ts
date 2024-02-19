@@ -28,7 +28,7 @@ export type LoadDataFn = (
    * When shouldGenerateCreditInvoice is given, it means that the current invoice
    * needs to be a credit invoice for the given previous invoice
    */
-  shouldGenerateCreditInvoice?: CreditInvoiceInput
+  shouldGenerateCreditInvoice?: CreditInvoiceInput,
 ) => Promise<InvoiceData>;
 
 interface DefaultInvoiceData {
@@ -49,7 +49,7 @@ export const defaultLoadDataFn: LoadDataFn = async (
   injector: Injector,
   order: Order,
   mostRecentInvoiceNumber?: number,
-  shouldGenerateCreditInvoice?: CreditInvoiceInput
+  shouldGenerateCreditInvoice?: CreditInvoiceInput,
 ): Promise<DefaultInvoiceDataResponse> => {
   // Increase order number
   let newInvoiceNumber = mostRecentInvoiceNumber || 0;
@@ -58,7 +58,7 @@ export const defaultLoadDataFn: LoadDataFn = async (
   order.lines.forEach((line) => {
     line.productVariant = translateEntity(
       line.productVariant,
-      ctx.languageCode
+      ctx.languageCode,
     );
   });
   if (!shouldGenerateCreditInvoice) {

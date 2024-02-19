@@ -93,7 +93,7 @@ export class InvoicesComponent implements OnInit {
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
     private notificationService: NotificationService,
-    private localStorageService: LocalStorageService
+    private localStorageService: LocalStorageService,
   ) {
     this.form = this.formBuilder.group({
       enabled: ['enabled'],
@@ -157,7 +157,7 @@ export class InvoicesComponent implements OnInit {
           },
           method: 'POST',
           body: JSON.stringify({ template }),
-        }
+        },
       );
       if (!res.ok) {
         const json = await res.json();
@@ -189,7 +189,7 @@ export class InvoicesComponent implements OnInit {
   private async downloadBlob(
     blob: Blob,
     fileName: string,
-    openInNewTab = false
+    openInNewTab = false,
   ): Promise<void> {
     const blobUrl = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

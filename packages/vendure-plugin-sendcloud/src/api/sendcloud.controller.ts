@@ -15,7 +15,7 @@ export class SendcloudController {
   async webhook(
     @Req() req: Request,
     @Headers(SendcloudClient.signatureHeader) signature: string,
-    @Param('channelToken') channelToken: string
+    @Param('channelToken') channelToken: string,
   ): Promise<unknown> {
     const body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
     const rawBody = (req as any).rawBody;
@@ -24,47 +24,47 @@ export class SendcloudController {
     if (!client.isValidWebhook(rawBody, signature)) {
       Logger.warn(
         `Ignoring incoming webhook for channel ${channelToken}, because it has an invalid signature`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     if (body.action !== 'parcel_status_changed') {
       return Logger.info(
         `Incoming webhook: ${body.action}. skipping...`,
-        loggerCtx
+        loggerCtx,
       );
     }
     Logger.info(
       `Incoming Sendcloud webhook: ${body.action} - ${body.parcel?.id} - ${body.parcel?.order_number} - ${body.parcel?.status.id} (${body.parcel?.status.message})`,
-      loggerCtx
+      loggerCtx,
     );
     const status = sendcloudStates.find(
-      (s) => s.id === body.parcel?.status?.id
+      (s) => s.id === body.parcel?.status?.id,
     );
     if (!status) {
       return Logger.warn(
         `Unknown SendCloud status "${body.parcel?.status?.message}", not handling this webhook.`,
-        loggerCtx
+        loggerCtx,
       );
     }
     if (!status.orderState) {
       return Logger.info(
         `Ignoring incoming webhook status "${body.parcel?.status?.message}", because we don't update Vendure order status for this sendcloud status.`,
-        loggerCtx
+        loggerCtx,
       );
     }
     if (!body.parcel?.order_number) {
       return Logger.warn(
         `No order_number in incoming Sendcloud webhook: ${JSON.stringify(
-          body.parcel
+          body.parcel,
         )}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     await this.sendcloudService.updateOrderStatus(
       ctx,
       status,
-      body.parcel.order_number
+      body.parcel.order_number,
     );
   }
 }

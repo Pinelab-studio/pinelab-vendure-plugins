@@ -2,12 +2,12 @@
 /** @type {import("prettier").Config} */
 export default {
   singleQuote: true,
-  plugins: ["./node_modules/prettier-plugin-astro/dist/index.js"],
+  plugins: ['./node_modules/prettier-plugin-astro/dist/index.js'],
   overrides: [
     {
-      files: "*.astro",
+      files: '*.astro',
       options: {
-        parser: "astro",
+        parser: 'astro',
       },
     },
   ],

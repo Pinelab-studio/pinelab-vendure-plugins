@@ -176,7 +176,7 @@ describe('Shipping by weight and country', function () {
 
   it('Is NOT eligible for method 2 with country NL', async () => {
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
   });
 
@@ -186,10 +186,10 @@ describe('Shipping by weight and country', function () {
       .update(ctx, { id: 1, customFields: { weight: 200 } });
     expect((product.customFields as any).weight).toBe(200);
     await expect(createSettledOrder(shopClient, 1)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
   });
 
@@ -206,10 +206,10 @@ describe('Shipping by weight and country', function () {
     expect((productVariants[0].customFields as any).weight).toBe(200);
 
     await expect(createSettledOrder(shopClient, 1)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
     await expect(createSettledOrder(shopClient, 2)).rejects.toThrow(
-      'ORDER_STATE_TRANSITION_ERROR'
+      'ORDER_STATE_TRANSITION_ERROR',
     );
   });
 });
@@ -252,14 +252,14 @@ describe('Distance based shipping calculator', function () {
       };
     const shippingDistance = getDistanceBetweenPointsInKMs(
       storeGeoLocation,
-      shippingAddressGeoLocation
+      shippingAddressGeoLocation,
     );
     const expectedPrice = roundMoney(
-      priceBasedShippingMethodArgs.pricePerKm * shippingDistance
+      priceBasedShippingMethodArgs.pricePerKm * shippingDistance,
     );
     const distanceBasedShippingMethod = await createDistanceBasedShippingMethod(
       adminClient,
-      priceBasedShippingMethodArgs
+      priceBasedShippingMethodArgs,
     );
     expect(distanceBasedShippingMethod.id).toBeDefined();
     const order: any = await createSettledOrder(
@@ -271,7 +271,7 @@ describe('Distance based shipping calculator', function () {
         { id: 'T_2', quantity: 2 },
       ],
       undefined,
-      { input: shippingAdress }
+      { input: shippingAdress },
     );
     expect(order.shipping).toBe(expectedPrice);
   });
@@ -341,7 +341,7 @@ describe('Country based Promotion condition', function () {
           countryCode: 'BE',
           streetLine1: 'Brussels Street',
         },
-      }
+      },
     );
     expect(order.state).toBe('PaymentSettled');
     expect(order.shippingWithTax).toBe(111);

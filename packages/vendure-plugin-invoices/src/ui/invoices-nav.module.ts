@@ -22,7 +22,7 @@ import { ApolloCache } from '@apollo/client/cache';
         icon: 'file-group',
         requiresPermission: 'AllowInvoicesPermission',
       },
-      'settings'
+      'settings',
     ),
     registerCustomDetailComponent({
       locationId: 'order-detail',
@@ -42,20 +42,20 @@ import { ApolloCache } from '@apollo/client/cache';
           .pipe(
             catchError((error) => {
               context.notificationService.error(
-                'Failed to regenerate invoices'
+                'Failed to regenerate invoices',
               );
               (event.target as HTMLButtonElement).disabled = false;
               throw new Error('An error occurred. Please try again later.');
-            })
+            }),
           )
           .subscribe((data: any) => {
             if (data?.createInvoice?.id) {
               context.notificationService.success(
-                'Invoice has been regenerated successfully'
+                'Invoice has been regenerated successfully',
               );
             } else {
               context.notificationService.error(
-                'Failed to regenerate invoices'
+                'Failed to regenerate invoices',
               );
             }
             (event.target as HTMLButtonElement).disabled = false;

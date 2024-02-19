@@ -95,7 +95,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
   async check(
     ctx,
     order,
-    { minWeight, maxWeight, countries, excludeCountries }
+    { minWeight, maxWeight, countries, excludeCountries },
   ) {
     const shippingCountry = order.shippingAddress.countryCode;
     const orderIsInSelectedCountry = shippingCountry

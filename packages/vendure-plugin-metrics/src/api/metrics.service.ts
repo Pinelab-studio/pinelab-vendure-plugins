@@ -33,18 +33,18 @@ export class MetricsService {
   constructor(
     private moduleRef: ModuleRef,
     private variantService: ProductVariantService,
-    @Inject(PLUGIN_INIT_OPTIONS) private pluginOptions: MetricsPluginOptions
+    @Inject(PLUGIN_INIT_OPTIONS) private pluginOptions: MetricsPluginOptions,
   ) {
     this.metricStrategies = this.pluginOptions.metrics;
   }
 
   async getMetrics(
     ctx: RequestContext,
-    input?: AdvancedMetricSummaryInput
+    input?: AdvancedMetricSummaryInput,
   ): Promise<AdvancedMetricSummary[]> {
     const variants = await this.variantService.findByIds(
       ctx,
-      input?.variantIds ?? []
+      input?.variantIds ?? [],
     );
     const today = endOfDay(new Date());
     // Use start of month, because we'd like to see the full results of last years same month
@@ -64,7 +64,7 @@ export class MetricsService {
         if (cachedMetricSummary) {
           Logger.info(
             `Using cached data for metric "${metricStrategy.code}"`,
-            loggerCtx
+            loggerCtx,
           );
           return cachedMetricSummary;
         }
@@ -75,13 +75,13 @@ export class MetricsService {
           new Injector(this.moduleRef),
           oneYearAgo,
           today,
-          variants
+          variants,
         );
         const entitiesPerMonth = this.splitEntitiesInMonths(
           metricStrategy,
           allEntities,
           oneYearAgo,
-          today
+          today,
         );
         // Calculate datapoints per 'name', because we could be dealing with a multi line chart
         const dataPointsPerName: DataPointsPerLegend = new Map<
@@ -92,7 +92,7 @@ export class MetricsService {
           const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
             entityMap.entities,
-            variants
+            variants,
           );
           // Loop over datapoint, because we support multi line charts
           calculatedDataPoints.forEach((dataPoint) => {
@@ -103,7 +103,7 @@ export class MetricsService {
           });
         });
         const monthNames = entitiesPerMonth.map((d) =>
-          this.getMonthName(d.monthNr)
+          this.getMonthName(d.monthNr),
         );
         const summary: AdvancedMetricSummary = {
           code: metricStrategy.code,
@@ -117,11 +117,11 @@ export class MetricsService {
           `No cache hit, loaded data for metric "${
             metricStrategy.code
           }" in ${Math.round(stop - start)}ms`,
-          loggerCtx
+          loggerCtx,
         );
         this.cache.set(cacheKey, summary);
         return summary;
-      })
+      }),
     );
   }
 
@@ -146,7 +146,7 @@ export class MetricsService {
     strategy: MetricStrategy<T>,
     entities: T[],
     from: Date,
-    to: Date
+    to: Date,
   ): EntitiesPerMonth<T>[] {
     // Helper function to construct yearMonth as identifier. E.g. "2021-01"
     const getYearMonth = (date: Date) =>
@@ -168,7 +168,7 @@ export class MetricsService {
         ((entity as any).createdAt as Date);
       if (!(date instanceof Date) || isNaN(date as any)) {
         throw Error(
-          `${date} is not a valid date! Can not calculate metrics for "${strategy.code}"`
+          `${date} is not a valid date! Can not calculate metrics for "${strategy.code}"`,
         );
       }
       const yearMonth = getYearMonth(date);

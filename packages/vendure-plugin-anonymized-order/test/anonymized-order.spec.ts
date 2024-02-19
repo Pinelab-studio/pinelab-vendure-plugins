@@ -66,7 +66,7 @@ describe('Customer managed groups', function () {
         {
           orderCode: setteledOrder.code,
           emailAddress: setteledOrder.customer?.emailAddress,
-        }
+        },
       );
       expect(anonymizedOrder?.customer).toBeNull();
       expect(anonymizedOrder?.billingAddress?.fullName).toBeNull();

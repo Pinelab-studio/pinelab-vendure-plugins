@@ -20,7 +20,7 @@ import { ChartEntry } from './chartist/chartist.component';
       >
         {{
           'common.items-selected-count'
-            | translate : { count: selectedVariantIds?.length ?? 0 }
+            | translate: { count: selectedVariantIds?.length ?? 0 }
         }}...
       </button>
       <button
@@ -105,7 +105,7 @@ export class MetricsWidgetComponent implements OnInit {
     private dataService: DataService,
     private changeDetectorRef: ChangeDetectorRef,
     private modalService: ModalService,
-    private metricsService: MetricsUiService
+    private metricsService: MetricsUiService,
   ) {}
 
   async ngOnInit() {
@@ -130,7 +130,7 @@ export class MetricsWidgetComponent implements OnInit {
       .subscribe((selection) => {
         if (selection) {
           this.selectedVariantNames = selection.map(
-            (s) => s.productVariantName
+            (s) => s.productVariantName,
           );
           (this.selectedVariantIds = selection.map((s) => s.productVariantId)),
             this.changeDetectorRef.detectChanges();
@@ -149,13 +149,13 @@ export class MetricsWidgetComponent implements OnInit {
   loadChartData() {
     this.metrics$ = this.metricsService.queryData(
       // this.selection$,
-      this.selectedVariantIds
+      this.selectedVariantIds,
     );
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
       if (this.selectedMetrics) {
         this.selectedMetrics = metrics.find(
-          (e) => e.summary.code == this.selectedMetrics?.summary.code
+          (e) => e.summary.code == this.selectedMetrics?.summary.code,
         );
       } else {
         this.selectedMetrics = metrics[0];

@@ -135,7 +135,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(latestInvoice.invoiceNumber).toBe(1);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`,
     );
   });
 
@@ -169,7 +169,7 @@ describe('Generate with credit invoicing enabled', function () {
         shippingWithTax: 0,
       });
     order = await assertFound(
-      server.app.get(OrderService).findOne(ctx, orderId)
+      server.app.get(OrderService).findOne(ctx, orderId),
     );
     expect(order.total).toBe(1234);
     expect(order.totalWithTax).toBe(1480);
@@ -183,7 +183,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(latestInvoice.invoiceNumber).toBe(3); // credit invoice is #2
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/3?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/3?email=hayden.zieme12%40hotmail.com`,
     );
   });
 
@@ -199,10 +199,10 @@ describe('Generate with credit invoicing enabled', function () {
     expect(newInvoice.isCreditInvoice).toBe(false);
     // Credit invoice should have the reversed totals of the previous invoice
     expect(creditInvoice.orderTotals.total).toBe(
-      -previousInvoice.orderTotals.total
+      -previousInvoice.orderTotals.total,
     );
     expect(creditInvoice.orderTotals.totalWithTax).toBe(
-      -previousInvoice.orderTotals.totalWithTax
+      -previousInvoice.orderTotals.totalWithTax,
     );
     // New invoice should have the modified totals
     expect(newInvoice.orderTotals.total).toBe(1234);
@@ -229,7 +229,7 @@ describe('Generate with credit invoicing enabled', function () {
 describe('Download invoices', function () {
   it('Downloads first invoice when no invoice number is specified', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=hayden.zieme12%40hotmail.com`,
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toBe('application/pdf');
@@ -238,7 +238,7 @@ describe('Download invoices', function () {
 
   it('Downloads a pdf via URL with invoice number', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`,
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toBe('application/pdf');
@@ -247,14 +247,14 @@ describe('Download invoices', function () {
 
   it('Download fails for invalid email', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=malicious@gmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}?email=malicious@gmail.com`,
     );
     expect(res.status).toBe(403);
   });
 
   it('Download fails for invalid channel', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/wrong-channel/${order.code}?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/wrong-channel/${order.code}?email=hayden.zieme12%40hotmail.com`,
     );
     expect(res.status).toBe(403);
     const json = await res.json();
@@ -267,7 +267,7 @@ describe('Download invoices', function () {
       {
         method: 'POST',
         body: JSON.stringify({ template: defaultTemplate }),
-      }
+      },
     );
     expect(res.status).toBe(201);
   });
@@ -278,7 +278,7 @@ describe('Download invoices', function () {
       {
         method: 'POST',
         body: JSON.stringify({ template: defaultTemplate }),
-      }
+      },
     );
     expect(res.status).toBe(403);
   });
@@ -324,7 +324,7 @@ describe('Generate without credit invoicing', function () {
     expect(latestInvoice.invoiceNumber).toBe(4);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/4?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/4?email=hayden.zieme12%40hotmail.com`,
     );
   });
 
@@ -343,7 +343,7 @@ describe('Generate without credit invoicing', function () {
     expect(latestInvoice.invoiceNumber).toBe(5);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/5?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/5?email=hayden.zieme12%40hotmail.com`,
     );
   });
 

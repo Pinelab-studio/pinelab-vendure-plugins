@@ -25,7 +25,7 @@ export class InvoiceDetailViewComponent
   selectedInvoices: Invoice[] = [];
   constructor(
     protected dataService: DataService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
   ) {
     this.serverPath = getServerLocation();
   }

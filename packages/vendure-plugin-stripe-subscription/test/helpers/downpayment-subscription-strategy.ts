@@ -26,12 +26,12 @@ export class DownPaymentSubscriptionStrategy implements SubscriptionStrategy {
     productVariant: ProductVariant,
     order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    quantity: number,
   ): Subscription[] {
     return this.getSubscriptionsForVariant(
       productVariant,
       orderLineCustomFields.subscriptionDownpayment,
-      this.durationInMonths
+      this.durationInMonths,
     );
   }
 
@@ -41,19 +41,19 @@ export class DownPaymentSubscriptionStrategy implements SubscriptionStrategy {
     productVariant: ProductVariant,
     customInputs: {
       subscriptionDownpayment: number;
-    }
+    },
   ): Subscription[] {
     return this.getSubscriptionsForVariant(
       productVariant,
       customInputs.subscriptionDownpayment,
-      this.durationInMonths
+      this.durationInMonths,
     );
   }
 
   private getSubscriptionsForVariant(
     productVariant: ProductVariant,
     downpayment: number,
-    durationInMonths: number
+    durationInMonths: number,
   ): Subscription[] {
     const discountPerMonth = downpayment / durationInMonths;
     const subscriptions: Subscription[] = [];

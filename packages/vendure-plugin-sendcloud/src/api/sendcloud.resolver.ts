@@ -19,21 +19,21 @@ export const sendcloudPermission = new PermissionDefinition({
 export class SendcloudResolver {
   constructor(
     private service: SendcloudService,
-    private orderService: OrderService
+    private orderService: OrderService,
   ) {}
 
   @Mutation()
   @Allow(Permission.UpdateOrder)
   async sendToSendCloud(
     @Ctx() ctx: RequestContext,
-    @Args('orderId') orderId: string
+    @Args('orderId') orderId: string,
   ): Promise<boolean> {
     const order = await this.orderService.findOne(ctx, orderId);
     if (!order) {
       throw new Error(`No order with id ${orderId} exists`);
     }
     Logger.info(
-      `Sync to Sendcloud mutation called by user ${ctx.activeUserId} for order ${orderId}`
+      `Sync to Sendcloud mutation called by user ${ctx.activeUserId} for order ${orderId}`,
     );
     await this.service.createOrderInSendcloud(ctx, order);
     return true;
@@ -42,7 +42,7 @@ export class SendcloudResolver {
   @Query()
   @Allow(sendcloudPermission.Permission)
   async sendCloudConfig(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<SendcloudConfigEntity | null> {
     return this.service.getConfig(ctx);
   }
@@ -52,7 +52,7 @@ export class SendcloudResolver {
   async updateSendCloudConfig(
     @Ctx() ctx: RequestContext,
     @Args('input')
-    input: { secret: string; publicKey: string; defaultPhoneNr: string }
+    input: { secret: string; publicKey: string; defaultPhoneNr: string },
   ): Promise<SendcloudConfigEntity> {
     return this.service.upsertConfig(ctx, input);
   }

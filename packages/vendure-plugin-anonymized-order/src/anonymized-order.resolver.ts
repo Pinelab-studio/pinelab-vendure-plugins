@@ -9,12 +9,12 @@ export class AnonymizeOrderShopResolver {
   @Query()
   async anonymizedOrder(
     @Ctx() ctx: RequestContext,
-    @Args() args: { orderCode: string; emailAddress: string }
+    @Args() args: { orderCode: string; emailAddress: string },
   ): Promise<Order> {
     return await this.anonymizeOrderService.getAnonymizedOrder(
       ctx,
       args.orderCode,
-      args.emailAddress
+      args.emailAddress,
     );
   }
 }

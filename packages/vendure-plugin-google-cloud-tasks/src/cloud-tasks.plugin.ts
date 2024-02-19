@@ -40,7 +40,7 @@ export class CloudTasksPlugin {
       this.options.createTaskRetries = 20;
       Logger.warn(
         `createTaskRetries can be set to a maximum of 20 retries. This is to avoid too many stacked create task retries`,
-        loggerCtx
+        loggerCtx,
       );
     }
     return CloudTasksPlugin;

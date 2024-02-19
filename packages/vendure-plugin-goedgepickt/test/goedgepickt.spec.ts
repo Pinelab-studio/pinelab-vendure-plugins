@@ -99,7 +99,7 @@ describe('Goedgepickt plugin', function () {
   nock(apiUrl)
     .persist(true)
     .get(
-      /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
+      /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/,
     )
     .reply(200, { items: [] });
   // Get webshops
@@ -153,7 +153,7 @@ describe('Goedgepickt plugin', function () {
     serverStarted = true;
     await adminClient.asSuperAdmin();
     productVariantService = server.app.get<ProductVariantService>(
-      ProductVariantService
+      ProductVariantService,
     );
   }, 60000);
 
@@ -167,24 +167,24 @@ describe('Goedgepickt plugin', function () {
         input: ggConfig,
       });
     await expect(result.updateGoedgepicktConfig.webshopUuid).toBe(
-      ggConfig.webshopUuid
+      ggConfig.webshopUuid,
     );
     await expect(result.updateGoedgepicktConfig.orderWebhookKey).toBe(
-      'test-secret'
+      'test-secret',
     );
     await expect(result.updateGoedgepicktConfig.stockWebhookKey).toBe(
-      'test-secret'
+      'test-secret',
     );
     await expect(webhookPayloads.length).toBe(2); // Order and Stock webhooks
     await expect(webhookPayloads[0].targetUrl).toBe(
-      'https://test-host/goedgepickt/webhook/e2e-default-channel'
+      'https://test-host/goedgepickt/webhook/e2e-default-channel',
     );
   });
 
   it('Retrieves config via graphql', async () => {
     const result = await adminClient.query(getGoedgepicktConfig);
     await expect(result.goedgepicktConfig.webshopUuid).toBe(
-      ggConfig.webshopUuid
+      ggConfig.webshopUuid,
     );
     await expect(result.goedgepicktConfig.apiKey).toBe(ggConfig.apiKey);
   });
@@ -209,7 +209,7 @@ describe('Goedgepickt plugin', function () {
     await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
     await expect(pushProductsPayloads.length).toBeGreaterThanOrEqual(3); // After multiple restarts we have 1 extra
     const laptopPayload = pushProductsPayloads.find(
-      (p) => p.sku === 'L2201516'
+      (p) => p.sku === 'L2201516',
     );
     await expect(laptopPayload.webshopUuid).toBe(ggConfig.webshopUuid);
     await expect(laptopPayload.productId).toBe('L2201516');
@@ -217,7 +217,7 @@ describe('Goedgepickt plugin', function () {
     await expect(laptopPayload.name).toBe('Laptop 15 inch 16GB');
     await expect(laptopPayload.price).toBe('2299.00');
     await expect(laptopPayload.url).toBe(
-      `https://test-host/admin/catalog/products/1;id=1;tab=variants`
+      `https://test-host/admin/catalog/products/1;id=1;tab=variants`,
     );
     const updatedVariant = await findVariantBySku('L2201308');
     expect(updatedVariant).toBeDefined();
@@ -242,7 +242,7 @@ describe('Goedgepickt plugin', function () {
   it('Pushes order after placement', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     await addItem(shopClient, 'T_1', 1);
     const res = await shopClient.query(SET_CUSTOM_FIELDS);
@@ -259,13 +259,13 @@ describe('Goedgepickt plugin', function () {
     await expect(createOrderPayload.shippingCity).toBe('Liwwa');
     await expect(createOrderPayload.shippingCountry).toBe('NL');
     await expect(createOrderPayload.pickupLocationData?.houseNumber).toBe(
-      '13a'
+      '13a',
     );
     await expect(createOrderPayload.pickupLocationData?.city).toBe(
-      'Leeuwarden'
+      'Leeuwarden',
     );
     await expect(createOrderPayload.pickupLocationData?.locationNumber).toBe(
-      '1234'
+      '1234',
     );
     await expect(createOrderPayload.pickupLocationData?.country).toBe('NL');
     await expect(createOrderPayload.shippingMethod).toBe('Standard Shipping');
@@ -287,7 +287,7 @@ describe('Goedgepickt plugin', function () {
         headers: {
           signature: signature,
         },
-      }
+      },
     );
     const ctx = await server.app
       .get(GoedgepicktService)
@@ -308,7 +308,7 @@ describe('Goedgepickt plugin', function () {
     };
     const signature = GoedgepicktClient.computeSignature(
       'test-secret',
-      JSON.stringify(body)
+      JSON.stringify(body),
     );
     const res = await shopClient.fetch(
       `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
@@ -318,7 +318,7 @@ describe('Goedgepickt plugin', function () {
         headers: {
           signature: signature,
         },
-      }
+      },
     );
     const ctx = await server.app
       .get(GoedgepicktService)
@@ -346,7 +346,7 @@ describe('Goedgepickt plugin', function () {
     };
     const signature = GoedgepicktClient.computeSignature(
       'test-secret',
-      JSON.stringify(body)
+      JSON.stringify(body),
     );
     const res = await shopClient.fetch(
       `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
@@ -356,7 +356,7 @@ describe('Goedgepickt plugin', function () {
         headers: {
           signature: signature,
         },
-      }
+      },
     );
     // Await async job processing
     await new Promise((resolve) => setTimeout(resolve, 200));
@@ -403,7 +403,7 @@ describe('Goedgepickt plugin', function () {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(
         __dirname,
-        GoedgepicktPlugin.ui
+        GoedgepicktPlugin.ui,
       );
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);
@@ -420,7 +420,7 @@ describe('Goedgepickt plugin', function () {
     const transactionalConnection = server.app.get(TransactionalConnection);
     const productVariantRepo = transactionalConnection.getRepository(
       ctx,
-      ProductVariant
+      ProductVariant,
     );
     return await productVariantRepo.findOne({
       where: { sku },

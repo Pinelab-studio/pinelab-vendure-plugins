@@ -27,7 +27,7 @@ export const freeGiftPromotionAction = new PromotionItemAction({
     if ((orderLine.customFields as any).isSelectedAsGift) {
       Logger.verbose(
         `Discounting 1 ${orderLine.productVariant.name} (order line ${orderLine.id}) because it's selected as gift`,
-        loggerCtx
+        loggerCtx,
       );
       const unitPrice = ctx.channel.pricesIncludeTax
         ? orderLine.unitPriceWithTax

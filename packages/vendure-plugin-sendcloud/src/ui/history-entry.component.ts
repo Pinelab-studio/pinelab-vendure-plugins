@@ -31,7 +31,7 @@ export class HistoryEntryComponent implements OrderHistoryEntryComponent {
 
   constructor(
     protected dataService: DataService,
-    protected notificationService: NotificationService
+    protected notificationService: NotificationService,
   ) {}
 
   async mutate(): Promise<void> {
@@ -42,7 +42,7 @@ export class HistoryEntryComponent implements OrderHistoryEntryComponent {
           mutation {
               sendToSendCloud(orderId: "${this.order.id}")
           }
-      `
+      `,
         )
         .toPromise();
       this.notificationService.success('Success');

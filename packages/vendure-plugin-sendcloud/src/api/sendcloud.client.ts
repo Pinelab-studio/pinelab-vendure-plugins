@@ -10,7 +10,10 @@ export class SendcloudClient {
   endpoint = 'https://panel.sendcloud.sc/api/v2';
   headers: { [key: string]: string };
 
-  constructor(private publicKey: string, private secret: string) {
+  constructor(
+    private publicKey: string,
+    private secret: string,
+  ) {
     this.headers = {
       'Content-Type': 'application/json',
       Authorization:
@@ -28,7 +31,7 @@ export class SendcloudClient {
     const json = (await res.json()) as any;
     Logger.info(
       `Created parcel in SendCloud with for order ${parcelInput.order_number}  with id ${json.parcel?.id}`,
-      loggerCtx
+      loggerCtx,
     );
     return json.parcel;
   }

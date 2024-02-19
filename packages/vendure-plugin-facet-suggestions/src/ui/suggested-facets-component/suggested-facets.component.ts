@@ -39,7 +39,7 @@ export class SuggestedFacetsComponent implements CustomDetailComponent, OnInit {
     const selectedFacetValueIds$ = this.detailForm
       .get(['facetValueIds'])!
       .valueChanges.pipe(
-        startWith(this.detailForm.get(['facetValueIds'])!.value)
+        startWith(this.detailForm.get(['facetValueIds'])!.value),
       );
     const possiblyRequiredFacets$ = this.dataService
       .query<any, any>(GET_REQUIRED_FACETS, {}, 'cache-first')
@@ -48,9 +48,9 @@ export class SuggestedFacetsComponent implements CustomDetailComponent, OnInit {
           requiredFacets.filter(
             ({ customFields }) =>
               customFields?.showOnProductDetail === true ||
-              customFields?.showOnProductDetailIf?.length
-          )
-        )
+              customFields?.showOnProductDetailIf?.length,
+          ),
+        ),
       );
     this.requiredFacets$ = combineLatest([
       possiblyRequiredFacets$,
@@ -63,23 +63,23 @@ export class SuggestedFacetsComponent implements CustomDetailComponent, OnInit {
             ({ customFields }) =>
               customFields?.showOnProductDetail === true ||
               customFields?.showOnProductDetailIf?.find((f) =>
-                selectedFacetValueIds.includes(f.id)
-              )
+                selectedFacetValueIds.includes(f.id),
+              ),
           )
           .map((facet) => ({
             facet,
             selectedValues: facet.values.filter((value) =>
-              selectedFacetValueIds.includes(value.id)
+              selectedFacetValueIds.includes(value.id),
             ),
           }));
-      })
+      }),
     );
     this.status$ = this.requiredFacets$.pipe(
       map((items) =>
         items.every((i) => 0 < i.selectedValues.length)
           ? 'complete'
-          : 'incomplete'
-      )
+          : 'incomplete',
+      ),
     );
   }
 

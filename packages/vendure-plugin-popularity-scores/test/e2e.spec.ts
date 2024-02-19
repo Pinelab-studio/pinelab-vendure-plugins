@@ -96,20 +96,20 @@ describe('Sort by Popularity Plugin', function () {
     const orders = await getAllOrders(adminClient);
     expect(orders.length).toBe(2);
     expect(
-      orders[1].lines.every((line) => line.productVariant.product.id === 'T_2')
+      orders[1].lines.every((line) => line.productVariant.product.id === 'T_2'),
     ).toBe(true);
   });
 
   it('Fails for unauthenticated calls to calculate popularity endpoint', async () => {
     const res = await adminClient.fetch(
-      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/invalid-secreet`
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/invalid-secreet`,
     );
     expect(res.status).toBe(401);
   });
 
   it('Calls endpoint to calculate popularity', async () => {
     const res = await adminClient.fetch(
-      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`,
     );
     expect(res.status).toBe(200);
   });
@@ -132,7 +132,7 @@ describe('Sort by Popularity Plugin', function () {
       collections: { items: collections },
     } = await adminClient.query(GET_COLLECTIONS_WITH_POPULARITY_SCORE);
     const electronics = collections.find(
-      (col: any) => col.name === 'Electronics'
+      (col: any) => col.name === 'Electronics',
     );
     const computers = collections.find((col: any) => col.name === 'Computers');
     const testCol = collections.find((col: any) => col.name === 'test');

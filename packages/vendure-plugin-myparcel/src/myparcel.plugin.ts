@@ -42,7 +42,7 @@ export class MyparcelPlugin {
   static config: MyparcelConfig;
 
   static init(
-    config: PartialBy<MyparcelConfig, 'shipmentStrategy'>
+    config: PartialBy<MyparcelConfig, 'shipmentStrategy'>,
   ): typeof MyparcelPlugin {
     this.config = {
       ...config,

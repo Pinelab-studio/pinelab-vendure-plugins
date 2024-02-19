@@ -82,7 +82,7 @@ export class AverageOrderLineValue implements MetricStrategy<OrderLine> {
     injector: Injector,
     from: Date,
     to: Date,
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): Promise<OrderLine[]> {
     let skip = 0;
     const take = 1000;
@@ -126,7 +126,7 @@ export class AverageOrderLineValue implements MetricStrategy<OrderLine> {
     ctx: RequestContext,
     lines: OrderLine[],
     // Variants are given when a user is filtering based on variants in the chart widget
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): NamedDatapoint[] {
     const legendLabel = variants.length
       ? `Order lines with ${variants.map((v) => v.name).join(', ')}`

@@ -18,7 +18,7 @@ import { HistoryEntryComponent } from './history-entry.component';
         icon: 'check',
         requiresPermission: 'SetGoedgepicktConfig',
       },
-      'settings'
+      'settings',
     ),
     registerHistoryEntryComponent({
       type: 'GOEDGEPICKT_NOTIFICATION',

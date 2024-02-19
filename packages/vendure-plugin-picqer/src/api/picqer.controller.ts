@@ -19,20 +19,20 @@ import { IncomingWebhook } from './types';
 export class PicqerController {
   constructor(
     private picqerService: PicqerService,
-    private channelService: ChannelService
+    private channelService: ChannelService,
   ) {}
 
   @Post('hooks/:channelToken')
   async webhook(
     @Req() request: Request,
     @Headers('X-Picqer-Signature') signature: string,
-    @Param('channelToken') channelToken: string
+    @Param('channelToken') channelToken: string,
   ): Promise<void> {
     const body = JSON.parse(request.body.toString()) as IncomingWebhook;
     const rawBody = (request as any).rawBody;
     Logger.info(
       `Incoming hook ${body.event} for channel ${channelToken}`,
-      loggerCtx
+      loggerCtx,
     );
     try {
       await this.picqerService.handleHook({
@@ -46,7 +46,7 @@ export class PicqerController {
       Logger.error(
         `Error handling incoming hook '${body.event}' (order code: ${orderCode}): ${e.message}`,
         loggerCtx,
-        util.inspect(e)
+        util.inspect(e),
       );
       throw e;
     }
@@ -55,7 +55,7 @@ export class PicqerController {
   @Get('pull-stock-levels/:channelToken')
   async pullStockLevels(
     @Headers('Authorization') authHeader: string,
-    @Param('channelToken') channelToken: string
+    @Param('channelToken') channelToken: string,
   ): Promise<void> {
     if (!authHeader) {
       throw new ForbiddenException('No bearer token provided');
@@ -63,7 +63,7 @@ export class PicqerController {
     const channel = await this.channelService.getChannelFromToken(channelToken);
     if (!channel) {
       throw new BadRequestException(
-        `No channel found for token ${channelToken}`
+        `No channel found for token ${channelToken}`,
       );
     }
     const apiKey = authHeader.replace('Bearer ', '').replace('bearer ', '');

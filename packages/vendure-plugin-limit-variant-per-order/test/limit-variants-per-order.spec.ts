@@ -78,7 +78,7 @@ describe('Limit variants per order plugin', function () {
       }
     `);
     expect(
-      product.variants.find((v: any) => v.customFields.maxPerOrder === 2)
+      product.variants.find((v: any) => v.customFields.maxPerOrder === 2),
     ).toBeDefined();
   });
 
@@ -90,7 +90,7 @@ describe('Limit variants per order plugin', function () {
   it('Fails to add 2 more to cart', async () => {
     const promise = addItem(shopClient, 'T_1', 2);
     await expect(promise).rejects.toThrow(
-      'You are only allowed to order max 2 of Laptop 13 inch 8GB'
+      'You are only allowed to order max 2 of Laptop 13 inch 8GB',
     );
   });
 
@@ -108,7 +108,7 @@ describe('Limit variants per order plugin', function () {
       }
     `);
     await expect(promise).rejects.toThrow(
-      'You are only allowed to order max 2 of Laptop 13 inch 8GB'
+      'You are only allowed to order max 2 of Laptop 13 inch 8GB',
     );
   });
 

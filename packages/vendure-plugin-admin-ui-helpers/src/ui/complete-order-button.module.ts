@@ -35,7 +35,7 @@ import { RouterModule } from '@angular/router';
           }
           if (getOrderResponse?.order.state === 'AddingItems') {
             return notificationService.error(
-              'Active orders cannot be completed.'
+              'Active orders cannot be completed.',
             );
           }
           if (getOrderResponse?.order.state === 'Delivered') {

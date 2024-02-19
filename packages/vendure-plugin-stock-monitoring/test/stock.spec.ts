@@ -103,7 +103,7 @@ describe('Stock monitoring plugin', function () {
   it('Gets variants with stocklevels below threshold', async () => {
     await adminClient.asSuperAdmin();
     const { productVariantsWithLowStock } = await adminClient.query(
-      GET_OUT_OF_STOCK_VARIANTS
+      GET_OUT_OF_STOCK_VARIANTS,
     );
     expect(productVariantsWithLowStock.length).toBe(4);
     expect(productVariantsWithLowStock[0].name).toBeDefined();
@@ -122,7 +122,7 @@ describe('Stock monitoring plugin', function () {
       }
     `);
     const { productVariantsWithLowStock } = await adminClient.query(
-      GET_OUT_OF_STOCK_VARIANTS
+      GET_OUT_OF_STOCK_VARIANTS,
     );
     expect(productVariantsWithLowStock.length).toBe(3);
   });
@@ -138,7 +138,7 @@ describe('Stock monitoring plugin', function () {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(
         __dirname,
-        StockMonitoringPlugin.ui
+        StockMonitoringPlugin.ui,
       );
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);

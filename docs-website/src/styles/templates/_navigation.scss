@@ -69,12 +69,21 @@
   visibility: hidden;
   filter: alpha(opacity=0);
   opacity: 0;
-  transition: all 0.2s ease-in, visibility 0s linear 0.2s, transform 0.2s linear;
-  -webkit-transition: all 0.2s ease-in, visibility 0s linear 0.2s,
+  transition:
+    all 0.2s ease-in,
+    visibility 0s linear 0.2s,
+    transform 0.2s linear;
+  -webkit-transition:
+    all 0.2s ease-in,
+    visibility 0s linear 0.2s,
     -webkit-transform 0.2s linear;
-  -o-transition: all 0.2s ease-in, visibility 0s linear 0.2s,
+  -o-transition:
+    all 0.2s ease-in,
+    visibility 0s linear 0.2s,
     -o-transform 0.2s linear;
-  -ms-transition: all 0.2s ease-in, visibility 0s linear 0.2s,
+  -ms-transition:
+    all 0.2s ease-in,
+    visibility 0s linear 0.2s,
     -ms-transform 0.2s linear;
   width: 250px;
   padding: 8px 0;

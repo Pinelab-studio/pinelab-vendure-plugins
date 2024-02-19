@@ -39,7 +39,7 @@ export class WebhookResolver {
   @Allow(webhookPermission.Permission)
   async setWebhooks(
     @Ctx() ctx: RequestContext,
-    @Args('webhooks') webhooks: WebhookInput[]
+    @Args('webhooks') webhooks: WebhookInput[],
   ): Promise<Webhook[]> {
     return this.webhookService.saveWebhooks(ctx, webhooks);
   }
@@ -76,14 +76,14 @@ export class WebhookRequestTransformerResolver {
   @ResolveField()
   async requestTransformer(
     @Ctx() ctx: RequestContext,
-    @Parent() webhook: WebhookEntity
+    @Parent() webhook: WebhookEntity,
   ): Promise<WebhookRequestTransformer | undefined> {
     if (!webhook.transformerName) {
       return;
     }
     const transformers = this.webhookService.getAvailableTransformers();
     const transformer = transformers.find(
-      (t) => t.name === webhook.transformerName
+      (t) => t.name === webhook.transformerName,
     );
     if (!transformer) {
       return;
@@ -93,12 +93,12 @@ export class WebhookRequestTransformerResolver {
 }
 
 export function mapToGraphqlTransformer(
-  transformer: RequestTransformer<any>
+  transformer: RequestTransformer<any>,
 ): WebhookRequestTransformer {
   return {
     name: transformer.name,
     supportedEvents: transformer.supportedEvents.map(
-      (event: any) => event.name
+      (event: any) => event.name,
     ),
   };
 }

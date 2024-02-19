@@ -66,7 +66,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
           legend(),
         ],
         ...this.options,
-      }
+      },
     );
 
     this.chart.on('draw', (data) => {
@@ -94,7 +94,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
         localStorage.getItem('vnd__contentLanguageCode') ?? 'en';
       const formatter = new CurrencyPipe(
         this.entries.formatOptions.locale ?? localeFrom,
-        this.entries.formatOptions.currencyCode
+        this.entries.formatOptions.currencyCode,
       );
       const format = (l: number) =>
         this.entries.formatOptions.formatValueAs === 'currency'

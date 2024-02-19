@@ -35,7 +35,7 @@ export class CheckoutController {
   async webhook(
     @Headers('X-signature') signature: string | undefined,
     @Res() res: Response,
-    @Body() body: any
+    @Body() body: any,
   ): Promise<void> {
     res.send(`
 <head>

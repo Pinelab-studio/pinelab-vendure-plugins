@@ -13,7 +13,7 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
     productVariant: ProductVariant,
     order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    quantity: number,
   ): Subscription {
     return this.getSubscriptionForVariant(productVariant);
   }
@@ -27,13 +27,13 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
     ctx: RequestContext,
     injector: Injector,
     productVariant: ProductVariant,
-    customInputs: any
+    customInputs: any,
   ): Subscription {
     return this.getSubscriptionForVariant(productVariant);
   }
 
   private getSubscriptionForVariant(
-    productVariant: ProductVariant
+    productVariant: ProductVariant,
   ): Subscription {
     const price = productVariant.listPrice;
     return {

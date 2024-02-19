@@ -106,7 +106,7 @@ export class PicqerService implements OnApplicationBootstrap {
     private channelService: ChannelService,
     private orderService: OrderService,
     private stockLocationService: StockLocationService,
-    private stockLevelService: StockLevelService
+    private stockLevelService: StockLevelService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -119,18 +119,18 @@ export class PicqerService implements OnApplicationBootstrap {
           await this.handlePushVariantsJob(
             ctx,
             data.variantIds,
-            data.productId
+            data.productId,
           ).catch((e: any) => {
             throw Error(
               `Failed to push variants to Picqer (variants: ${data.variantIds?.join(
-                ','
-              )}, product: ${data.productId} }): ${e?.message}`
+                ',',
+              )}, product: ${data.productId} }): ${e?.message}`,
             );
           });
         } else if (data.action === 'pull-stock-levels') {
           await this.handlePullStockLevelsJob(ctx).catch((e: any) => {
             throw Error(
-              `Failed to pull stock levels from  Picqer: ${e?.message}`
+              `Failed to pull stock levels from  Picqer: ${e?.message}`,
             );
           });
         } else if (data.action === 'push-order') {
@@ -138,14 +138,14 @@ export class PicqerService implements OnApplicationBootstrap {
           await this.handlePushOrderToPicqer(ctx, data.orderId).catch(
             (e: any) => {
               throw Error(
-                `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
+                `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`,
               );
-            }
+            },
           );
         } else {
           Logger.error(
             `Invalid job action: ${(data as any).action}`,
-            loggerCtx
+            loggerCtx,
           );
         }
         Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
@@ -161,20 +161,20 @@ export class PicqerService implements OnApplicationBootstrap {
         }
         // Only update in Picqer if one of these fields was updated
         const shouldUpdate = (input as UpdateProductVariantInput[])?.some(
-          (v) => v.translations ?? v.price ?? v.taxCategoryId
+          (v) => v.translations ?? v.price ?? v.taxCategoryId,
         );
         if (!shouldUpdate) {
           Logger.info(
             `No relevant changes to variants ${entities.map(
-              (v) => v.sku
+              (v) => v.sku,
             )}, not pushing to Picqer`,
-            loggerCtx
+            loggerCtx,
           );
           return;
         }
         await this.addPushVariantsJob(
           ctx,
-          entities.map((v) => v.id)
+          entities.map((v) => v.id),
         );
       });
     // Listen for Order placed events
@@ -187,8 +187,8 @@ export class PicqerService implements OnApplicationBootstrap {
       await this.registerWebhooks(ctx, config).catch((e) =>
         Logger.error(
           `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
-          loggerCtx
-        )
+          loggerCtx,
+        ),
       );
     }
   }
@@ -201,7 +201,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async registerWebhooks(
     ctx: RequestContext,
-    config: PicqerConfig
+    config: PicqerConfig,
   ): Promise<void> {
     const hookUrl = `${this.options.vendureHost}/picqer/hooks/${ctx.channel.token}`;
     const client = await this.getClient(ctx, config);
@@ -219,7 +219,7 @@ export class PicqerService implements OnApplicationBootstrap {
       const webhooks = await client.getWebhooks();
       let hook = webhooks.find(
         (h) =>
-          h.event === hookEvent && h.address === hookUrl && h.active === true
+          h.event === hookEvent && h.address === hookUrl && h.active === true,
       );
       if (hook && hook.name !== webhookName) {
         // A hook exists, but the name is different, that means the secret changed. We need to create a new hook
@@ -237,13 +237,13 @@ export class PicqerService implements OnApplicationBootstrap {
         });
         Logger.info(
           `Registered hook (id: ${webhook.idhook}) for event ${hookEvent} and url ${hookUrl}`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
     Logger.info(
       `Registered webhooks for channel ${ctx.channel.token}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -262,7 +262,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client) {
       Logger.error(
         `No client found for channel ${input.channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -270,7 +270,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!client.isSignatureValid(input.rawBody, input.signature)) {
       Logger.error(
         `Invalid signature for incoming webhook ${input.body.event} channel ${input.channelToken}`,
-        loggerCtx
+        loggerCtx,
       );
       throw new ForbiddenError();
     }
@@ -289,7 +289,7 @@ export class PicqerService implements OnApplicationBootstrap {
         } for incoming webhook for channel ${
           input.channelToken
         }. Not handling this webhook...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -342,7 +342,7 @@ export class PicqerService implements OnApplicationBootstrap {
         action: 'pull-stock-levels',
         ctx: ctx.serialize(),
       },
-      { retries: 10 }
+      { retries: 10 },
     );
     Logger.info(`Added 'pull-stock-levels' job to queue`, loggerCtx);
   }
@@ -358,7 +358,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!order) {
       Logger.warn(
         `No order found for code ${data.reference}. Not processing this hook any further`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -374,7 +374,7 @@ export class PicqerService implements OnApplicationBootstrap {
             (result as ErrorResult).message
           }`,
           loggerCtx,
-          util.inspect(result)
+          util.inspect(result),
         );
         return;
       }
@@ -390,14 +390,14 @@ export class PicqerService implements OnApplicationBootstrap {
       const result = await this.orderService.transitionToState(
         ctx,
         order.id,
-        'Delivered'
+        'Delivered',
       );
       const errorResult = result as OrderStateTransitionError;
       if (errorResult.errorCode) {
         Logger.error(
           `Failed to transition order ${order.code} to Delivered: ${errorResult.message}`,
           loggerCtx,
-          util.inspect(errorResult)
+          util.inspect(errorResult),
         );
         return;
       }
@@ -405,7 +405,7 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     Logger.info(
       `Not handling incoming status '${data.status}' because order ${order.code} is already '${order.state}'`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -415,7 +415,7 @@ export class PicqerService implements OnApplicationBootstrap {
   async addPushVariantsJob(
     ctx: RequestContext,
     variantIds?: ID[],
-    productId?: ID
+    productId?: ID,
   ): Promise<void> {
     await this.jobQueue.add(
       {
@@ -424,17 +424,17 @@ export class PicqerService implements OnApplicationBootstrap {
         variantIds,
         productId,
       },
-      { retries: 10 }
+      { retries: 10 },
     );
     if (variantIds) {
       Logger.info(
         `Added job to the 'push-variants' queue for ${variantIds.length} variants for channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
     } else {
       Logger.info(
         `Added job to the 'push-variants' queue for product ${productId} and channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }
@@ -450,18 +450,18 @@ export class PicqerService implements OnApplicationBootstrap {
           ctx: ctx.serialize(),
           orderId: order.id,
         },
-        { retries: 10 }
+        { retries: 10 },
       )
       .catch((e) => {
         Logger.error(
           `Failed to add job to 'push-order' queue for order ${order.code}: ${e?.message}`,
-          loggerCtx
+          loggerCtx,
         );
         throw e;
       });
     Logger.info(
       `Added job to the 'push-order' queue for order ${order.code}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -479,7 +479,7 @@ export class PicqerService implements OnApplicationBootstrap {
       Logger.error(
         `Failed to sync warehouses with Picqer: ${e?.message}`,
         loggerCtx,
-        util.inspect(e)
+        util.inspect(e),
       );
     });
     const picqerProducts = await client.getAllActiveProducts();
@@ -522,7 +522,7 @@ export class PicqerService implements OnApplicationBootstrap {
         syncedFromPicqer.push(created.id);
         Logger.info(
           `Created new stock location '${stockLocationName}'`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
@@ -530,7 +530,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const locations = await this.stockLocationService.findAll(ctx);
     // Delete locations that are not Picqer based
     const locationsToDelete = locations.items.filter(
-      (l) => !syncedFromPicqer.includes(l.id)
+      (l) => !syncedFromPicqer.includes(l.id),
     );
     for (const location of locationsToDelete) {
       const res = await this.stockLocationService.delete(ctx, {
@@ -541,7 +541,7 @@ export class PicqerService implements OnApplicationBootstrap {
       } else {
         Logger.error(
           `Failed to delete stock location ${location.name}: ${res.message}`,
-          loggerCtx
+          loggerCtx,
         );
       }
     }
@@ -554,7 +554,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async getStockLocation(
     ctx: RequestContext,
-    picqerLocationId: number
+    picqerLocationId: number,
   ): Promise<StockLocation | undefined> {
     // Picqer location ID's are also used as the ID of the Vendure stock location
     // return await this.stockLocationService.findOne(ctx, picqerLocationId);
@@ -567,7 +567,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (items.length > 1) {
       Logger.error(
         `Found multiple locations with name "Picqer ${picqerLocationId}", there should be only one! Using location with ID ${location.id}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     return location;
@@ -578,18 +578,18 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async updateStockBySkus(
     ctx: RequestContext,
-    picqerProducts: ProductData[]
+    picqerProducts: ProductData[],
   ): Promise<void> {
     const vendureVariants = await this.findAllVariantsBySku(
       ctx,
-      picqerProducts.map((p) => p.productcode)
+      picqerProducts.map((p) => p.productcode),
     );
     const stockAdjustments: StockAdjustment[] = [];
     // Loop over variants to determine new stock level per variant and update in DB
     await Promise.all(
       vendureVariants.map(async (variant) => {
         const picqerProduct = picqerProducts.find(
-          (p) => p.productcode === variant.sku
+          (p) => p.productcode === variant.sku,
         )!; // safe non-null assertion, because we fetched variants based on the Picqer skus
         // Fields from picqer that should be added to the variant
         let additionalVariantFields = {};
@@ -599,7 +599,7 @@ export class PicqerService implements OnApplicationBootstrap {
         } catch (e: any) {
           Logger.error(
             `Failed to get additional fields from the configured pullFieldsFromPicqer function: ${e?.message}`,
-            loggerCtx
+            loggerCtx,
           );
         }
         // Update the actual variant in Vendure, with raw connection for better performance
@@ -611,17 +611,17 @@ export class PicqerService implements OnApplicationBootstrap {
           if (!picqerStock.idwarehouse) {
             Logger.error(
               `Can not update stock for picqer warehouse without id`,
-              loggerCtx
+              loggerCtx,
             );
             continue;
           }
           const location = await this.getStockLocation(
             ctx,
-            picqerStock.idwarehouse
+            picqerStock.idwarehouse,
           );
           if (!location) {
             Logger.info(
-              `Not updating stock of warehouse ${picqerStock.idwarehouse}, because it doesn't exist in Vendure. You might need to re-sync stock levels and locations if this is an active warehouse.`
+              `Not updating stock of warehouse ${picqerStock.idwarehouse}, because it doesn't exist in Vendure. You might need to re-sync stock levels and locations if this is an active warehouse.`,
             );
             continue;
           }
@@ -629,7 +629,7 @@ export class PicqerService implements OnApplicationBootstrap {
             await this.stockLevelService.getStockLevel(
               ctx,
               variant.id,
-              location.id
+              location.id,
             );
           const allocated = picqerStock.reservedallocations ?? 0;
           const newStockOnHand = allocated + picqerStock.freestock;
@@ -644,22 +644,22 @@ export class PicqerService implements OnApplicationBootstrap {
             new StockAdjustment({
               quantity: delta,
               productVariant: { id: variant.id },
-            })
+            }),
           );
         }
-      })
+      }),
     );
     if (!stockAdjustments.length) {
       Logger.warn(
         `No stock levels updated. This means none of the products in Picqer exist in Vendure yet.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     await this.eventBus.publish(new StockMovementEvent(ctx, stockAdjustments));
     Logger.info(
       `Updated stock levels of ${stockAdjustments.length} variants`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -668,7 +668,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async handlePushOrderToPicqer(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
   ): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
@@ -687,24 +687,24 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!order) {
       Logger.error(
         `Order with id ${orderId} not found, ignoring this order...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const hasPicqerHandler = order.shippingLines.some(
-      (s) => s.shippingMethod?.fulfillmentHandlerCode === picqerHandler.code
+      (s) => s.shippingMethod?.fulfillmentHandlerCode === picqerHandler.code,
     );
     if (!hasPicqerHandler) {
       Logger.info(
         `Order ${order.code} doesn't have the Picqer handler set in shipping lines, ignoring this order...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     if (!order.customer) {
       Logger.error(
         `Order ${order.code} doesn't have a customer. Something is wrong, ignoring this order...`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -715,7 +715,7 @@ export class PicqerService implements OnApplicationBootstrap {
   async pushOrderToPicqer(
     ctx: RequestContext,
     order: Order,
-    picqerClient: PicqerClient
+    picqerClient: PicqerClient,
   ): Promise<void> {
     if (!order.customer) {
       throw Error(`Cannot push order to picqer without an order.customer`);
@@ -729,7 +729,7 @@ export class PicqerService implements OnApplicationBootstrap {
         `${order.customer.firstName} ${order.customer.lastName}`;
       picqerCustomer = await picqerClient.getOrCreateMinimalCustomer(
         order.customer.emailAddress,
-        name
+        name,
       );
     }
     const vatGroups = await picqerClient.getVatGroups();
@@ -737,16 +737,16 @@ export class PicqerService implements OnApplicationBootstrap {
     const productInputs: OrderProductInput[] = [];
     for (const line of order.lines) {
       const vatGroup = vatGroups.find(
-        (vg) => vg.percentage === line.productVariant.taxRateApplied.value
+        (vg) => vg.percentage === line.productVariant.taxRateApplied.value,
       );
       if (!vatGroup) {
         throw Error(
-          `Can not find vat group ${line.productVariant.taxRateApplied.value}% for variant ${line.productVariant.sku}. Can not create order in Picqer`
+          `Can not find vat group ${line.productVariant.taxRateApplied.value}% for variant ${line.productVariant.sku}. Can not create order in Picqer`,
         );
       }
       const picqerProduct = await picqerClient.createOrUpdateProduct(
         line.productVariant.sku,
-        this.mapToProductInput(line.productVariant, vatGroup.idvatgroup)
+        this.mapToProductInput(line.productVariant, vatGroup.idvatgroup),
       );
       productInputs.push({
         idproduct: picqerProduct.idproduct,
@@ -756,7 +756,7 @@ export class PicqerService implements OnApplicationBootstrap {
     let orderInput = this.mapToOrderInput(
       order,
       productInputs,
-      picqerCustomer?.idcustomer
+      picqerCustomer?.idcustomer,
     );
     if (this.options.pushPicqerOrderFields) {
       const additionalFields = this.options.pushPicqerOrderFields(order);
@@ -766,14 +766,14 @@ export class PicqerService implements OnApplicationBootstrap {
       };
       Logger.info(
         `Added custom order fields to order '${order.code}'`,
-        loggerCtx
+        loggerCtx,
       );
     }
     const createdOrder = await picqerClient.createOrder(orderInput);
     await picqerClient.processOrder(createdOrder.idorder);
     Logger.info(
       `Created order "${order.code}" in status "processing" in Picqer with id ${createdOrder.idorder}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -783,7 +783,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async findAllVariantsBySku(
     ctx: RequestContext,
-    skus: string[]
+    skus: string[],
   ): Promise<Pick<ProductVariant, 'id' | 'sku'>[]> {
     let skip = 0;
     const take = 1000;
@@ -818,7 +818,7 @@ export class PicqerService implements OnApplicationBootstrap {
   async handlePushVariantsJob(
     userCtx: RequestContext,
     variantIds?: ID[],
-    productId?: ID
+    productId?: ID,
   ): Promise<void> {
     const ctx = this.createDefaultLanguageContext(userCtx);
     const client = await this.getClient(ctx);
@@ -834,7 +834,7 @@ export class PicqerService implements OnApplicationBootstrap {
       if (!product) {
         Logger.warn(
           `Could not find product with id ${productId} for push-variants job`,
-          loggerCtx
+          loggerCtx,
         );
         return;
       }
@@ -855,23 +855,23 @@ export class PicqerService implements OnApplicationBootstrap {
     await Promise.all(
       variants.map(async (variant) => {
         const vatGroup = vatGroups.find(
-          (vg) => vg.percentage === variant.taxRateApplied.value
+          (vg) => vg.percentage === variant.taxRateApplied.value,
         );
         if (!vatGroup) {
           Logger.error(
             `Could not find vatGroup for taxRate ${variant.taxRateApplied.value} for variant ${variant.sku}. Not pushing this variant to Picqer`,
-            loggerCtx
+            loggerCtx,
           );
           return;
         }
         try {
           const productInput = this.mapToProductInput(
             variant,
-            vatGroup.idvatgroup
+            vatGroup.idvatgroup,
           );
           const picqerProduct = await client.createOrUpdateProduct(
             variant.sku,
-            productInput
+            productInput,
           );
           // Update images
           const shouldUpdateImages = !picqerProduct.images?.length;
@@ -880,21 +880,21 @@ export class PicqerService implements OnApplicationBootstrap {
           }
           const featuredImage = await this.getFeaturedImageAsBase64(
             ctx,
-            variant
+            variant,
           );
           if (featuredImage) {
             await client.addImage(picqerProduct.idproduct, featuredImage);
             Logger.info(
               `Added image for variant ${variant.sku} in Picqer for channel ${ctx.channel.token}`,
-              loggerCtx
+              loggerCtx,
             );
           }
         } catch (e: any) {
           throw new Error(
-            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`
+            `Error pushing variant ${variant.sku} to Picqer: ${e?.message}`,
           );
         }
-      })
+      }),
     );
   }
 
@@ -903,7 +903,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async upsertConfig(
     ctx: RequestContext,
-    input: PicqerConfigInput
+    input: PicqerConfigInput,
   ): Promise<PicqerConfig> {
     const repository = this.connection.getRepository(ctx, PicqerConfigEntity);
     const existing = await repository.findOne({
@@ -920,7 +920,7 @@ export class PicqerService implements OnApplicationBootstrap {
     } as PicqerConfigEntity);
     Logger.info(
       `Picqer config updated for channel ${ctx.channel.token} by user ${ctx.activeUserId}`,
-      loggerCtx
+      loggerCtx,
     );
     const config = await repository.findOneOrFail({
       where: {
@@ -930,8 +930,8 @@ export class PicqerService implements OnApplicationBootstrap {
     await this.registerWebhooks(ctx, config).catch((e) =>
       Logger.error(
         `Failed to register webhooks for channel ${ctx.channel.token}: ${e?.message}`,
-        loggerCtx
-      )
+        loggerCtx,
+      ),
     );
     return config;
   }
@@ -954,7 +954,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async getClient(
     ctx: RequestContext,
-    config?: PicqerConfig
+    config?: PicqerConfig,
   ): Promise<PicqerClient | undefined> {
     if (!config) {
       config = (await this.getConfig(ctx)) ?? undefined;
@@ -962,7 +962,7 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!config || !config.enabled) {
       Logger.info(
         `Picqer is not enabled for channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -974,7 +974,7 @@ export class PicqerService implements OnApplicationBootstrap {
     ) {
       Logger.warn(
         `Picqer config is incomplete for channel ${ctx.channel.token}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -987,7 +987,7 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async getFeaturedImageAsBase64(
     ctx: RequestContext,
-    variant: ProductVariant
+    variant: ProductVariant,
   ): Promise<string | undefined> {
     let asset = await this.assetService.getFeaturedAsset(ctx, variant);
     if (!asset?.preview) {
@@ -1003,19 +1003,19 @@ export class PicqerService implements OnApplicationBootstrap {
     }
     const image = asset.preview;
     const hasAllowedExtension = ['png', 'jpg', 'jpeg'].some((extension) =>
-      image.endsWith(extension)
+      image.endsWith(extension),
     );
     if (!hasAllowedExtension) {
       // Only png, jpg and jpeg are supported by Picqer
       Logger.info(
         `featured asset for variant ${variant.sku} is not a png or jpeg, skipping`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const buffer =
       await this.configService.assetOptions.assetStorageStrategy.readFileToBuffer(
-        image
+        image,
       );
     return buffer.toString('base64');
   }
@@ -1103,7 +1103,7 @@ export class PicqerService implements OnApplicationBootstrap {
   mapToOrderInput(
     order: Order,
     products: OrderProductInput[],
-    customerId?: number
+    customerId?: number,
   ): OrderInput {
     const shippingAddress = order.shippingAddress;
     const billingAddress = order.billingAddress;
@@ -1162,7 +1162,7 @@ export class PicqerService implements OnApplicationBootstrap {
    * Otherwise, use the full name as name and no explicit contact name
    */
   private getAddressName(
-    address?: OrderAddress
+    address?: OrderAddress,
   ): [string | undefined, string | undefined] {
     let name;
     let contactname;

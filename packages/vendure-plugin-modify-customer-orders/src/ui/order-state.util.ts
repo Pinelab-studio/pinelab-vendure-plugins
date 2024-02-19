@@ -6,7 +6,7 @@ import { lastValueFrom } from 'rxjs';
 
 export async function createNewDraftOrder(
   dataService: DataService,
-  oldOrderID: ID
+  oldOrderID: ID,
 ): Promise<Boolean> {
   await lastValueFrom(
     dataService
@@ -21,9 +21,9 @@ export async function createNewDraftOrder(
           }
           ${ORDER_DETAIL_FRAGMENT}
         `,
-        { id: oldOrderID }
+        { id: oldOrderID },
       )
-      .pipe(take(1))
+      .pipe(take(1)),
   );
   return true;
 }

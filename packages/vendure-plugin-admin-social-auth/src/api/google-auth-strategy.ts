@@ -53,7 +53,7 @@ export class GoogleAuthStrategy
 
   async authenticate(
     ctx: RequestContext,
-    { credentialJWT }: GoogleAuthData
+    { credentialJWT }: GoogleAuthData,
   ): Promise<User | false> {
     // Here is the logic that uses the token provided by the storefront and uses it
     // to find the user data from Google.
@@ -71,12 +71,12 @@ export class GoogleAuthStrategy
       const admins = await this.adminService!.findAll(
         ctx,
         { filter: { emailAddress: { eq: email } } },
-        ['user', 'user.authenticationMethods']
+        ['user', 'user.authenticationMethods'],
       );
       if (admins.totalItems > 1) {
         Logger.error(
           `Multiple admins for '${email}' found. Only one should exist. Unable to login`,
-          loggerCtx
+          loggerCtx,
         );
         return false;
       }
@@ -84,7 +84,7 @@ export class GoogleAuthStrategy
         // No admins exist for this email address, not logging in
         Logger.warn(
           `Attempted login with '${email}', but this is not an administrator`,
-          loggerCtx
+          loggerCtx,
         );
         return false;
       }
@@ -93,7 +93,7 @@ export class GoogleAuthStrategy
       let user = admin.user;
       // Check if GoogleAuth already enabled, otherwise enable it for this admin
       const hasGoogleAuth = user.authenticationMethods.find(
-        (m) => (m as ExternalAuthenticationMethod).strategy === this.name
+        (m) => (m as ExternalAuthenticationMethod).strategy === this.name,
       );
       if (!hasGoogleAuth) {
         user = await this.addGoogleAuthMethod(ctx, user, email);
@@ -104,7 +104,7 @@ export class GoogleAuthStrategy
       Logger.error(
         `Error authenticating with Google login: ${error}`,
         loggerCtx,
-        error?.stack
+        error?.stack,
       );
       return false;
     }
@@ -116,16 +116,16 @@ export class GoogleAuthStrategy
   private async addGoogleAuthMethod(
     ctx: RequestContext,
     user: User,
-    externalIdentifier: string
+    externalIdentifier: string,
   ): Promise<User> {
     const googleAuthMethod = await this.connection!.getRepository(
       ctx,
-      ExternalAuthenticationMethod
+      ExternalAuthenticationMethod,
     ).save(
       new ExternalAuthenticationMethod({
         externalIdentifier,
         strategy: this.name,
-      })
+      }),
     );
     user.authenticationMethods.push(googleAuthMethod);
     return await this.connection!.getRepository(ctx, User).save(user);

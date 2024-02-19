@@ -18,7 +18,7 @@ export class EBoekhoudenResolver {
   @Query()
   @Allow(eBoekhoudenPermission.Permission)
   async eBoekhoudenConfig(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<EBoekhoudenConfig | null> {
     return this.service.getConfig(ctx.channel.token);
   }
@@ -27,7 +27,7 @@ export class EBoekhoudenResolver {
   @Allow(eBoekhoudenPermission.Permission)
   async updateEBoekhoudenConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: EBoekhoudenConfigInput
+    @Args('input') input: EBoekhoudenConfigInput,
   ): Promise<EBoekhoudenConfig | null> {
     return this.service.upsertConfig(ctx.channel.token, input);
   }

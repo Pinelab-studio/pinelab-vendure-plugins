@@ -64,7 +64,7 @@ export class OrderExportComponent implements OnInit {
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
     private notificationService: NotificationService,
-    private localStorageService: LocalStorageService
+    private localStorageService: LocalStorageService,
   ) {
     this.form = this.formBuilder.group({
       startsAt: null,
@@ -76,13 +76,11 @@ export class OrderExportComponent implements OnInit {
 
   ngOnInit(): void {
     this.dataService
-      .query(
-        gql`
-          query availableOrderExportStrategies {
-            availableOrderExportStrategies
-          }
-        `
-      )
+      .query(gql`
+        query availableOrderExportStrategies {
+          availableOrderExportStrategies
+        }
+      `)
       .single$.subscribe((result: any) => {
         this.strategies = result.availableOrderExportStrategies;
         this.form.controls['strategy'].setValue(this.strategies?.[0]);
@@ -95,7 +93,7 @@ export class OrderExportComponent implements OnInit {
         `${this.serverPath}/export-orders/export/${this.form.value.strategy}?startDate=${this.form.value.startsAt}&endDate=${this.form.value.endsAt}`,
         {
           headers: this.getHeaders(),
-        }
+        },
       );
       if (!res.ok) {
         const json = await res.json();

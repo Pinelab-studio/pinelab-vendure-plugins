@@ -2,7 +2,7 @@ import { GeoLocation } from '../strategies/order-address-to-geolocation-strategy
 
 export function getDistanceBetweenPointsInKMs(
   pointA: GeoLocation,
-  pointB: GeoLocation
+  pointB: GeoLocation,
 ): number {
   const EARTH_RADIUS = 6371; // Radius of the earth in km
   const dLat = deg2rad(pointA.latitude - pointB.latitude);

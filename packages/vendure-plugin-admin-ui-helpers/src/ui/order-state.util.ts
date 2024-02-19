@@ -7,7 +7,7 @@ import { ErrorResult, RefundOrderStateError } from '@vendure/core';
 
 export async function transitionToShipped(
   dataService: DataService,
-  order: OrderDetailFragment
+  order: OrderDetailFragment,
 ): Promise<void> {
   const response = await dataService.shippingMethod
     .getShippingMethodOperations()
@@ -15,7 +15,7 @@ export async function transitionToShipped(
   const handlerCode =
     order.shippingLines[0].shippingMethod.fulfillmentHandlerCode;
   const handler = (response?.fulfillmentHandlers ?? []).find(
-    (handler) => handler.code === handlerCode
+    (handler) => handler.code === handlerCode,
   );
   if (!handler) {
     throw Error(`No handler found for ${handlerCode}`);
@@ -54,7 +54,7 @@ export async function transitionToShipped(
 
 export async function transitionToDelivered(
   dataService: DataService,
-  order: OrderDetailFragment
+  order: OrderDetailFragment,
 ): Promise<void> {
   const fulfillmentId = order.fulfillments?.[0].id;
   const transitionFulfillmentToStateResponse = await dataService.order
@@ -66,14 +66,14 @@ export async function transitionToDelivered(
     // this is ok
   } else if (transitionError.errorCode) {
     throw Error(
-      `${transitionError.errorCode} - ${transitionError.transitionError}`
+      `${transitionError.errorCode} - ${transitionError.transitionError}`,
     );
   }
 }
 
 export async function refund(
   dataService: DataService,
-  order: OrderDetailFragment
+  order: OrderDetailFragment,
 ): Promise<void> {
   let lines = order.lines.map((line) => ({
     quantity: line.quantity,
@@ -99,7 +99,7 @@ export async function refund(
 
 export async function cancel(
   dataService: DataService,
-  order: OrderDetailFragment
+  order: OrderDetailFragment,
 ): Promise<void> {
   const cancelOrderResponse = await dataService.order
     .cancelOrder({

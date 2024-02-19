@@ -135,6 +135,6 @@ export let intent: StripeSubscriptionIntent;
       `Created subscription for TESTING`,
       undefined,
       { amount: 12345 } as any,
-      '123'
+      '123',
     );
 })();

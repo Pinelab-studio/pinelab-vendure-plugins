@@ -48,7 +48,7 @@ export class GoedgepicktClient {
     });
     Logger.debug(
       `Fetched ${result.items?.length} products from Goedgepickt`,
-      loggerCtx
+      loggerCtx,
     );
     return result.items as Product[];
   }
@@ -82,7 +82,7 @@ export class GoedgepicktClient {
     }
     Logger.debug(
       `Fetched ${items?.length} webhooks from Goedgepickt`,
-      loggerCtx
+      loggerCtx,
     );
     return items.filter((item) => item.webshopUuid === this.config.webshopUuid);
   }
@@ -95,7 +95,7 @@ export class GoedgepicktClient {
     });
     Logger.debug(
       `Created product ${result.items?.[0]?.uuid} in Goedgepickt`,
-      loggerCtx
+      loggerCtx,
     );
     return result.items as Product[];
   }
@@ -131,7 +131,7 @@ export class GoedgepicktClient {
     });
     Logger.info(
       `Set webhook for event ${input.webhookEvent} to url ${input.targetUrl}`,
-      loggerCtx
+      loggerCtx,
     );
     return result;
   }
@@ -144,7 +144,7 @@ export class GoedgepicktClient {
     });
     Logger.info(
       `Created order ${order.orderId} in Goedgepickt with uuid ${result.orderUuid}`,
-      loggerCtx
+      loggerCtx,
     );
     return result;
   }
@@ -177,7 +177,7 @@ export class GoedgepicktClient {
               })
             : undefined,
         redirect: 'follow',
-      }
+      },
     );
     const json = (await response.json()) as any;
     if (response.ok) {
@@ -188,7 +188,7 @@ export class GoedgepicktClient {
 
   isOrderWebhookSignatureValid(
     data: string,
-    incomingSignature: string
+    incomingSignature: string,
   ): boolean {
     return this.isSignatureValid({
       data,
@@ -199,7 +199,7 @@ export class GoedgepicktClient {
 
   isStockWebhookSignatureValid(
     data: string,
-    incomingSignature: string
+    incomingSignature: string,
   ): boolean {
     return this.isSignatureValid({
       data,
@@ -215,12 +215,12 @@ export class GoedgepicktClient {
   }): boolean {
     if (!input.secret) {
       throw Error(
-        `GoedGepickt plugin doesn't have a webhook secret configured`
+        `GoedGepickt plugin doesn't have a webhook secret configured`,
       );
     }
     const computedSignature = GoedgepicktClient.computeSignature(
       input.secret,
-      input.data
+      input.data,
     );
     return computedSignature === input.incomingSignature;
   }
