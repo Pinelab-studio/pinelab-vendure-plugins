@@ -15,7 +15,7 @@ import { describe, it, beforeAll, expect, afterAll } from 'vitest';
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
-let serverStarted = false;
+const serverStarted = false;
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));

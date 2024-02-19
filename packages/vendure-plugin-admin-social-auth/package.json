@@ -12,6 +12,7 @@
   "engines": {
     "node": ">=16.0.0"
   },
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -21,7 +22,9 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "yarn eslint ."
+    
   },
   "devDependencies": {
     "google-auth-library": "^9.4.1"
