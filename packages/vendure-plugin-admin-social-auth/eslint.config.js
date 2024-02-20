@@ -1,12 +1,13 @@
-import parentConfig from '../../eslint.config.js';
-
-export default [
-  ...parentConfig,
-  {
-    languageOptions: {
-      parserOptions: {
-        project: './tsconfig.eslint.json',
+module.exports = (async () => {
+  const { default: parentConfig } = await import('../../eslint.config.js');
+  return [
+    ...parentConfig,
+    {
+      languageOptions: {
+        parserOptions: {
+          project: './tsconfig.eslint.json',
+        },
       },
     },
-  },
-];
+  ];
+})();
