@@ -47,7 +47,7 @@ import {
   checkChargeResult,
   creditCardChargeResult,
   haydenZiemeCustomerDetails,
-  heydenSavedPaymentMethods,
+  haydenSavedPaymentMethods,
   recurringScheduleResult,
   tokenizedCreditCardChargeResult,
 } from './nock-helpers';
@@ -151,7 +151,7 @@ describe('Shop API', () => {
     //use nock here
     nockInstance
       .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
-      .reply(200, heydenSavedPaymentMethods);
+      .reply(200, haydenSavedPaymentMethods);
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
@@ -165,7 +165,7 @@ describe('Shop API', () => {
       activeCustomer: { savedAcceptBluePaymentMethods },
     } = await shopClient.query(GET_USER_SAVED_PAYMENT_METHOD);
     expect(savedAcceptBluePaymentMethods?.length).toBe(
-      heydenSavedPaymentMethods.length
+      haydenSavedPaymentMethods.length
     );
   });
 
@@ -214,7 +214,7 @@ describe('Payment with Credit Card Payment Method', () => {
     nockInstance
       .persist()
       .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
-      .reply(200, heydenSavedPaymentMethods);
+      .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
     nockInstance
       .persist()
@@ -302,7 +302,7 @@ describe('Payment with Check Payment Method', () => {
     nockInstance
       .persist()
       .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
-      .reply(200, heydenSavedPaymentMethods);
+      .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
     nockInstance
       .persist()
@@ -320,7 +320,7 @@ describe('Payment with Check Payment Method', () => {
       state: 'ArrangingPayment',
     });
     const workTestPaymentMethod =
-      heydenSavedPaymentMethods[heydenSavedPaymentMethods.length - 1];
+      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
     const metadata: CheckPaymentMethodInput = {
       name: workTestPaymentMethod.name!,
       routing_number: workTestPaymentMethod.routing_number!,
@@ -393,7 +393,7 @@ describe('Payment with Tokenized Card Payment Method', () => {
     nockInstance
       .persist()
       .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
-      .reply(200, heydenSavedPaymentMethods);
+      .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
     nockInstance
       .persist()
@@ -412,7 +412,7 @@ describe('Payment with Tokenized Card Payment Method', () => {
     });
     const acceptBlueHostedTokenizationUrl =
       'https://tokenization.develop.accept.blue/v2/tokenization/get-nonce';
-    const sourceKey = 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY';
+    const sourceKey = 'some-source-key';
     nock(acceptBlueHostedTokenizationUrl)
       .post('')
       .reply(200, { data: { nonce_token: 'nonce_token' } });
@@ -474,7 +474,7 @@ describe('Admin API', () => {
     nockInstance
       .persist()
       .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
-      .reply(200, heydenSavedPaymentMethods);
+      .reply(200, haydenSavedPaymentMethods);
     const { customer } = await adminClient.query(GET_CUSTOMER_WITH_ID, {
       id: '1',
     });

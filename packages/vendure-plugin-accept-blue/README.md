@@ -14,7 +14,7 @@ Create recurring subscriptions with the Accept Blue platform.
    - A recurring subscription(s) for that customer is created
 3. If all succeed, the order is transitioned to `PaymentSettled`
 
-# Tips
+##
 
 ## CORS
 

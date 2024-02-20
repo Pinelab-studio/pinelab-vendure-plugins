@@ -179,14 +179,25 @@ export class AcceptBlueService {
       customer.id,
       checkDetails
     );
-    return await this.payWithCheckPaymentMethodDetails(
+    const recurringSchedules = await this.createRecurringSchedule(
       ctx,
       order,
-      amount,
       client,
-      paymentMethod.id,
-      checkDetails
+      paymentMethod.id
     );
+    const creditCardChargeInput: AcceptBlueCheckChargeTransactionInput = {
+      amount,
+      routing_number: checkDetails.routing_number,
+      account_number: checkDetails.account_number,
+      name: checkDetails.name,
+    };
+    const chargeResult = await client.createCharge(creditCardChargeInput);
+    return {
+      customerId: `${order?.customer?.customFields.acceptBlueCustomerId}`,
+      paymentMethodId: paymentMethod.id,
+      recurringScheduleResult: recurringSchedules,
+      chargeResult,
+    };
   }
 
   async createOneTimePayment(
@@ -215,36 +226,6 @@ export class AcceptBlueService {
       throw new Error('Not Implemented');
     }
     return await client.createCharge(creditCardChargeInput);
-  }
-
-  async payWithCheckPaymentMethodDetails(
-    ctx: RequestContext,
-    order: Order,
-    amountDueNow: number,
-    client: AcceptBlueClient,
-    paymentMethodId: number,
-    ccDetails: CheckPaymentInput
-  ): Promise<HandlePaymentResult> {
-    const recurringSchedules = await this.createRecurringSchedule(
-      ctx,
-      order,
-      client,
-      paymentMethodId
-    );
-
-    const creditCardChargeInput: AcceptBlueCheckChargeTransactionInput = {
-      amount: amountDueNow,
-      routing_number: ccDetails.routing_number,
-      account_number: ccDetails.account_number,
-      name: ccDetails.name,
-    };
-    const chargeResult = await client.createCharge(creditCardChargeInput);
-    return {
-      customerId: `${order?.customer?.customFields.acceptBlueCustomerId}`,
-      paymentMethodId,
-      recurringScheduleResult: recurringSchedules,
-      chargeResult,
-    };
   }
 
   /**
@@ -327,19 +308,18 @@ export class AcceptBlueService {
     }
     await this.entityHydrator.hydrate(ctx, order, { relations: ['lines'] });
     // save subscription IDS on orderLine custom field
-    const orderLineUpdatePromises = [];
-    for (let orderLineId of subscriptionsPerOrderLine.keys()) {
-      const orderLine = order.lines.find((l) => l.id === orderLineId);
-      if (orderLine) {
-        orderLine.customFields.subscriptionIds =
-          subscriptionsPerOrderLine.get(orderLineId) ?? [];
-        orderLineUpdatePromises.push(
-          this.connection.getRepository(ctx, OrderLine).save(orderLine)
-        );
-      }
-    }
-
-    await Promise.all(orderLineUpdatePromises);
+    await Promise.all(
+      Array.from(subscriptionsPerOrderLine).map(
+        async ([orderLineId, subscriptionIds]) => {
+          const orderLine = order.lines.find((l) => l.id === orderLineId);
+          if (orderLine) {
+            orderLine.customFields.subscriptionIds =
+              subscriptionsPerOrderLine.get(orderLineId) ?? [];
+            await this.connection.getRepository(ctx, OrderLine).save(orderLine);
+          }
+        }
+      )
+    );
     return recurringSchedules;
   }
 

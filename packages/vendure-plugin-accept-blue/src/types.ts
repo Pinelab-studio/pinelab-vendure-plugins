@@ -231,7 +231,6 @@ export interface TokenPaymentMethodInput extends BaseCardPaymentMethodInput {
    * Nonce token: nonce-
    */
   source: string;
-
   expiry_month: number;
   expiry_year: number;
   last4: string;
@@ -391,27 +390,32 @@ export interface AcceptBlueRecurringScheduleInput {
   use_this_source_key?: boolean;
 }
 
-export interface AcceptBlueChargeTransactionInput {
+export interface AcceptBlueChargeTransactionInputAmount {
   amount: number;
 }
 export interface AcceptBlueTokenizedCreditCardChargeTransactionInput
-  extends AcceptBlueChargeTransactionInput {
+  extends AcceptBlueChargeTransactionInputAmount {
   source: string;
 }
 
 export interface AcceptBlueCreditCardChargeTransactionInput
-  extends AcceptBlueChargeTransactionInput {
+  extends AcceptBlueChargeTransactionInputAmount {
   card: string;
   expiry_month: number;
   expiry_year: number;
 }
 
 export interface AcceptBlueCheckChargeTransactionInput
-  extends AcceptBlueChargeTransactionInput {
+  extends AcceptBlueChargeTransactionInputAmount {
   routing_number: string;
   account_number: string;
   name: string;
 }
+
+export type AcceptBlueChargeTransactionInput =
+  | AcceptBlueTokenizedCreditCardChargeTransactionInput
+  | AcceptBlueCreditCardChargeTransactionInput
+  | AcceptBlueCheckChargeTransactionInput;
 
 /** ++++++ Refunds ++++++ */
 

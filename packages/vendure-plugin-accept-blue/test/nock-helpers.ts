@@ -1,4 +1,4 @@
-export const heydenSavedPaymentMethods = [
+export const haydenSavedPaymentMethods = [
   {
     id: 14556,
     created_at: '2024-01-11T10:44:14.000Z',
@@ -111,7 +111,6 @@ export const heydenSavedPaymentMethods = [
     account_type: 'Checking',
     sec_code: 'PPD',
   },
-  //here
   {
     id: 15036,
     created_at: '2024-02-07T22:14:07.000Z',

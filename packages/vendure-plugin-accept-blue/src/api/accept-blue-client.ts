@@ -14,6 +14,8 @@ import {
   BaseCardPaymentInput,
   CheckPaymentInput,
   CreditCardPaymentInput,
+  TokenBasedPaymentInput,
+  TokenPaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 import util from 'util';
@@ -178,10 +180,12 @@ export class AcceptBlueClient {
       (result as any).status === 'Error' ||
       (result as any).status === 'Declined'
     ) {
-      throw new Error('One time charge creation failed');
+      throw new Error(
+        `One time charge creation failed: ${result.error_message} (${result.error_code})`
+      );
     }
     Logger.info(
-      `Created charge ${result.id} for customer '${result.customer_id}'`,
+      `Created charge ${input.amount} with id '${result.transaction.id}'`,
       loggerCtx
     );
     return result;
