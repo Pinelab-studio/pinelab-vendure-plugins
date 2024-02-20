@@ -9,7 +9,7 @@ import {
 } from '@vendure/admin-ui/core';
 import { DataService } from '@vendure/admin-ui/core';
 import { gql } from 'graphql-tag';
-import { ActivatedRoute, Params } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 @Component({
   template: `
     <select
@@ -31,7 +31,7 @@ export class SelectPrimaryCollectionComponent
   formControl!: FormControl;
   productsCollections!: CollectionFragment[];
   productsCollectionsAreLoading = true;
-  id!: string;
+  id!: string | null;
   constructor(
     private dataService: DataService,
     private cdr: ChangeDetectorRef,
@@ -42,14 +42,16 @@ export class SelectPrimaryCollectionComponent
       if (
         this.formControl.pristine &&
         !this.formControl.value &&
-        (this.productsCollections.length || this.productsCollectionsAreLoading)
+        (this.productsCollections?.length ||
+          this.productsCollectionsAreLoading) &&
+        this.id !== 'create'
       ) {
         this.formControl.parent?.parent?.markAsPristine();
       }
     });
-    this.activatedRoute.params.subscribe((params: Params) => {
-      this.id = params.id;
-      this.dataService.collection.getCollectionContents(params.id);
+    this.id = this.activatedRoute.snapshot.paramMap.get('id');
+    if (this.id && this.id !== 'create') {
+      this.dataService.collection.getCollectionContents(this.id);
       this.dataService
         .query(
           gql`
@@ -62,14 +64,14 @@ export class SelectPrimaryCollectionComponent
             }
             ${COLLECTION_FRAGMENT}
           `,
-          { id: params.id }
+          { id: this.id }
         )
         .single$.subscribe((d: any) => {
-          this.productsCollections = d.product.collections;
+          this.productsCollections = d?.product?.collections;
           this.productsCollectionsAreLoading = false;
           this.cdr.markForCheck();
         });
-    });
+    }
   }
 
   compareFn(a: any, b: any) {
