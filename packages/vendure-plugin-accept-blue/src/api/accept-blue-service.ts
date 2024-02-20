@@ -37,13 +37,13 @@ export class AcceptBlueService {
     private readonly entityHydrator: EntityHydrator,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly options: AcceptBluePluginOptions
+    private readonly options: AcceptBluePluginOptions,
   ) {
     this.subscriptionHelper = new SubscriptionHelper(
       loggerCtx,
       moduleRef,
       productVariantService,
-      this.options.subscriptionStrategy
+      this.options.subscriptionStrategy,
     );
   }
 
@@ -60,25 +60,25 @@ export class AcceptBlueService {
     order: Order,
     amount: number,
     client: AcceptBlueClient,
-    ccDetails: CreditCardPaymentInput
+    ccDetails: CreditCardPaymentInput,
   ): Promise<HandlePaymentResult> {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
     }
     const customer = await client.getOrCreateCustomer(
-      order.customer.emailAddress
+      order.customer.emailAddress,
     );
     // Save payment method
     const paymentMethod = await client.getOrCreatePaymentMethod(
       customer.id,
-      ccDetails
+      ccDetails,
     );
     return await this.payWithSavedPaymentMethod(
       ctx,
       order,
       amount,
       client,
-      paymentMethod.id
+      paymentMethod.id,
     );
   }
 
@@ -91,25 +91,25 @@ export class AcceptBlueService {
     order: Order,
     amountDueNow: number,
     client: AcceptBlueClient,
-    paymentMethodId: number
+    paymentMethodId: number,
   ): Promise<HandlePaymentResult> {
     if (!order.customer) {
       throw new UserInputError(
-        `Order must have a customer before creating a payment`
+        `Order must have a customer before creating a payment`,
       );
     }
     if (!order.customer.user) {
       // We don't want unregistered users to be able to use someone's email address to pay
       throw new UserInputError(
-        `Saved payment methods can only be used for registered customers, ${order.customer.emailAddress} (customer ID ${order.customer.id}) is not a registered customer`
+        `Saved payment methods can only be used for registered customers, ${order.customer.emailAddress} (customer ID ${order.customer.id}) is not a registered customer`,
       );
     }
     const acceptBlueCustomer = await client.getCustomer(
-      order.customer.emailAddress
+      order.customer.emailAddress,
     );
     if (!acceptBlueCustomer) {
       throw new UserInputError(
-        `No customer found in Accept bBlue with email ${order.customer.emailAddress} not found`
+        `No customer found in Accept bBlue with email ${order.customer.emailAddress} not found`,
       );
     }
     // Create recurring schedules
@@ -149,7 +149,7 @@ export class AcceptBlueService {
           payment_method_id: paymentMethodId,
           receipt_email: order.customer.emailAddress,
           next_run_date: subscriptionDefinition.nextRunDate,
-        }
+        },
       );
       // Save subscriptionId for orderLine
       const subscriptionIds =
@@ -157,7 +157,7 @@ export class AcceptBlueService {
       subscriptionIds.push(recurringSchedule.id);
       subscriptionsPerOrderLine.set(
         subscriptionDefinition.orderLineId,
-        subscriptionIds
+        subscriptionIds,
       );
       // FIXME
       console.log(JSON.stringify(recurringSchedule, null, 2));
@@ -178,7 +178,7 @@ export class AcceptBlueService {
    */
   async getSavedPaymentMethods(
     ctx: RequestContext,
-    customer: Customer
+    customer: Customer,
   ): Promise<AcceptBlueCardPaymentMethod[]> {
     const client = await this.getClientForChannel(ctx);
     if (!ctx.activeUserId) {
@@ -196,14 +196,14 @@ export class AcceptBlueService {
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
     const apiKey = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'apiKey'
+      (a) => a.name === 'apiKey',
     )?.value;
     const pin = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'pin'
+      (a) => a.name === 'pin',
     )?.value;
     if (!apiKey || !pin) {
       throw new Error(
-        `No apiKey or pin found on configured Accept Blue payment method`
+        `No apiKey or pin found on configured Accept Blue payment method`,
       );
     }
     return new AcceptBlueClient(apiKey, pin);
@@ -212,7 +212,7 @@ export class AcceptBlueService {
   async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
     const tokenizationSourceKey = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'tokenizationSourceKey'
+      (a) => a.name === 'tokenizationSourceKey',
     )?.value;
     return tokenizationSourceKey ?? null;
   }
@@ -224,11 +224,11 @@ export class AcceptBlueService {
       },
     });
     const acceptBlueMethod = methods.items.find(
-      (m) => m.handler.code === acceptBluePaymentHandler.code
+      (m) => m.handler.code === acceptBluePaymentHandler.code,
     );
     if (!acceptBlueMethod) {
       throw new Error(
-        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
+        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`,
       );
     }
     return acceptBlueMethod;

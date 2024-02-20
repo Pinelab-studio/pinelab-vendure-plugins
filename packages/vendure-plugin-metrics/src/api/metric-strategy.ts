@@ -48,7 +48,7 @@ export interface MetricStrategy<T> {
     injector: Injector,
     from: Date,
     to: Date,
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): Promise<T[]>;
 
   /**
@@ -68,6 +68,6 @@ export interface MetricStrategy<T> {
   calculateDataPoints(
     ctx: RequestContext,
     entities: T[],
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): NamedDatapoint[];
 }

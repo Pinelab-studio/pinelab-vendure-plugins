@@ -35,7 +35,7 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
     injector: Injector,
     from: Date,
     to: Date,
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): Promise<OrderLine[]> {
     let skip = 0;
     const take = 1000;
@@ -70,7 +70,7 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
         `Fetched orderLines ${skip}-${skip + take} for channel ${
           ctx.channel.token
         }`,
-        loggerCtx
+        loggerCtx,
       );
       skip += items.length;
       if (lines.length >= totalItems) {
@@ -83,7 +83,7 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
   calculateDataPoints(
     ctx: RequestContext,
     lines: OrderLine[],
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): NamedDatapoint[] {
     // Return the nr of products sold
     if (!variants.length) {
@@ -103,12 +103,12 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
     variants.forEach((variant) => {
       // Find order lines per variant id
       const linesForVariant = lines.filter(
-        (line) => line.productVariant.id === variant.id
+        (line) => line.productVariant.id === variant.id,
       );
       // Sum of quantities for this variant
       const sum = linesForVariant.reduce(
         (total, current) => total + current.quantity,
-        0
+        0,
       );
       dataPoints.push({
         legendLabel: variant.name,

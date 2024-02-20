@@ -47,10 +47,10 @@ export interface ShippingExtensionsOptions {
   ],
   configuration: (config) => {
     config.shippingOptions.shippingEligibilityCheckers.push(
-      weightAndCountryChecker
+      weightAndCountryChecker,
     );
     config.promotionOptions.promotionConditions.push(
-      orderInCountryPromotionCondition
+      orderInCountryPromotionCondition,
     );
     config.customFields.Product.push({
       name: 'weight',
@@ -87,7 +87,7 @@ export interface ShippingExtensionsOptions {
       type: 'int',
     });
     config.shippingOptions.shippingCalculators.push(
-      distanceBasedShippingCalculator
+      distanceBasedShippingCalculator,
     );
     return config;
   },
@@ -97,7 +97,7 @@ export class ShippingExtensionsPlugin {
   static options: ShippingExtensionsOptions;
 
   static init(
-    options: ShippingExtensionsOptions
+    options: ShippingExtensionsOptions,
   ): typeof ShippingExtensionsPlugin {
     if (!options.weightUnit) {
       options.weightUnit = 'grams';

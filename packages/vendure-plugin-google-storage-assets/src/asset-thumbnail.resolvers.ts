@@ -12,7 +12,7 @@ export class AssetThumbnailResolvers {
     if (assetOptions.assetStorageStrategy.toAbsoluteUrl) {
       return assetOptions.assetStorageStrategy.toAbsoluteUrl(
         ctx.req!,
-        `${asset.preview}_thumbnail.jpg`
+        `${asset.preview}_thumbnail.jpg`,
       );
     } else {
       return `${asset.preview}_thumbnail.jpg`;

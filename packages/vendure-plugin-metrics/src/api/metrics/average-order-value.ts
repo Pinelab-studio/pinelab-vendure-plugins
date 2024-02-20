@@ -33,7 +33,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     injector: Injector,
     from: Date,
     to: Date,
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): Promise<Order[]> {
     let skip = 0;
     const take = 1000;
@@ -68,7 +68,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
         `Fetched orders ${skip}-${skip + take} for channel ${
           ctx.channel.token
         }`,
-        loggerCtx
+        loggerCtx,
       );
       skip += items.length;
       if (orders.length >= totalOrders) {
@@ -81,7 +81,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
   calculateDataPoints(
     ctx: RequestContext,
     entities: Order[],
-    variants: ProductVariant[]
+    variants: ProductVariant[],
   ): NamedDatapoint[] {
     const legendLabel = variants.length
       ? `Orders with ${variants.map((v) => v.name).join(', ')}`

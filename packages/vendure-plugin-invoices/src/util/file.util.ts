@@ -34,7 +34,7 @@ export function safeRemove(path: string): void {
     Logger.error(
       `Could not remove file ${path}: ${err?.message}`,
       loggerCtx,
-      err?.stack
+      err?.stack,
     );
   });
 }

@@ -40,7 +40,7 @@ export class AllocateStockOnSettlementStrategy
     ctx: RequestContext,
     fromState: OrderState,
     toState: OrderState,
-    order: Order
+    order: Order,
   ): boolean | Promise<boolean> {
     return false;
   }
@@ -103,7 +103,7 @@ export class AllocateStockOnSettlementStrategy
     adminClient,
     process.env.SECRET!,
     process.env.PUBLIC!,
-    '058123456789'
+    '058123456789',
   );
   //FIX ME
   updateVariants(adminClient as any, [

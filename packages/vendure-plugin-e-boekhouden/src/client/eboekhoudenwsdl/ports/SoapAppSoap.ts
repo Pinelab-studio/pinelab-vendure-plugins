@@ -47,8 +47,8 @@ export interface SoapAppSoap {
       result: GetAdministratiesResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetSaldo(
     getSaldo: GetSaldo,
@@ -57,8 +57,8 @@ export interface SoapAppSoap {
       result: GetSaldoResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetSaldi(
     getSaldi: GetSaldi,
@@ -67,8 +67,8 @@ export interface SoapAppSoap {
       result: GetSaldiResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddFactuur(
     addFactuur: AddFactuur,
@@ -77,8 +77,8 @@ export interface SoapAppSoap {
       result: AddFactuurResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetFacturen(
     getFacturen: GetFacturen,
@@ -87,8 +87,8 @@ export interface SoapAppSoap {
       result: GetFacturenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddMutatie(
     addMutatie: AddMutatie,
@@ -97,8 +97,8 @@ export interface SoapAppSoap {
       result: AddMutatieResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetMutaties(
     getMutaties: GetMutaties,
@@ -107,8 +107,8 @@ export interface SoapAppSoap {
       result: GetMutatiesResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddGrootboekrekening(
     addGrootboekrekening: AddGrootboekrekening,
@@ -117,8 +117,8 @@ export interface SoapAppSoap {
       result: AddGrootboekrekeningResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   UpdateGrootboekrekening(
     updateGrootboekrekening: UpdateGrootboekrekening,
@@ -127,8 +127,8 @@ export interface SoapAppSoap {
       result: UpdateGrootboekrekeningResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetGrootboekrekeningen(
     getGrootboekrekeningen: GetGrootboekrekeningen,
@@ -137,8 +137,8 @@ export interface SoapAppSoap {
       result: GetGrootboekrekeningenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AddRelatie(
     addRelatie: AddRelatie,
@@ -147,8 +147,8 @@ export interface SoapAppSoap {
       result: AddRelatieResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   UpdateRelatie(
     updateRelatie: UpdateRelatie,
@@ -157,8 +157,8 @@ export interface SoapAppSoap {
       result: UpdateRelatieResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetRelaties(
     getRelaties: GetRelaties,
@@ -167,8 +167,8 @@ export interface SoapAppSoap {
       result: GetRelatiesResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetOpenPosten(
     getOpenPosten: GetOpenPosten,
@@ -177,8 +177,8 @@ export interface SoapAppSoap {
       result: GetOpenPostenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   OpenSession(
     openSession: OpenSession,
@@ -187,8 +187,8 @@ export interface SoapAppSoap {
       result: OpenSessionResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   OpenSessionSub(
     openSessionSub: OpenSessionSub,
@@ -197,8 +197,8 @@ export interface SoapAppSoap {
       result: OpenSessionSubResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   CloseSession(
     closeSession: CloseSession,
@@ -207,8 +207,8 @@ export interface SoapAppSoap {
       result: CloseSessionResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   AutoLogin(
     autoLogin: AutoLogin,
@@ -217,8 +217,8 @@ export interface SoapAppSoap {
       result: AutoLoginResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetKostenplaatsen(
     getKostenplaatsen: GetKostenplaatsen,
@@ -227,8 +227,8 @@ export interface SoapAppSoap {
       result: GetKostenplaatsenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
   GetArtikelen(
     getArtikelen: GetArtikelen,
@@ -237,7 +237,7 @@ export interface SoapAppSoap {
       result: GetArtikelenResponse,
       rawResponse: any,
       soapHeader: any,
-      rawRequest: any
-    ) => void
+      rawRequest: any,
+    ) => void,
   ): void;
 }

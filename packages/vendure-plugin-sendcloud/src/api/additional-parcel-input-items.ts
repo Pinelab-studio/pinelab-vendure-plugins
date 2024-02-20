@@ -12,7 +12,7 @@ import { ParcelInputItem } from './types/sendcloud-api.types';
 export async function getNrOfOrders(
   ctx: RequestContext,
   injector: Injector,
-  order: Order
+  order: Order,
 ): Promise<ParcelInputItem> {
   let nrOfOrders = 0;
   if (order.customer?.id) {

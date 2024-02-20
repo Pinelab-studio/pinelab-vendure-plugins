@@ -17,7 +17,7 @@ export const stringifyProductTransformer = new RequestTransformer({
     }
     Logger.warn(
       `This transformer is only for transforming ProductEvents, but got ${event.constructor.name}. Not handling this event.`,
-      'WebhookStringifyProductTransformer'
+      'WebhookStringifyProductTransformer',
     );
     return {};
   },

@@ -199,12 +199,12 @@ export interface SendcloudPluginOptions {
 export type AdditionalParcelInputFn = (
   ctx: RequestContext,
   injector: Injector,
-  order: Order
+  order: Order,
 ) => Promise<ParcelInputItem[]>;
 
 export type CustomFieldFn<T = string | number> = (
   /**
    * OrderLine with line.productVariant and line.productVariant.product
    */
-  line: OrderLine
+  line: OrderLine,
 ) => T;

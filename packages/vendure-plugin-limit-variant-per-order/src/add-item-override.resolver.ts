@@ -29,7 +29,7 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
   @Allow(Permission.UpdateOrder, Permission.Owner)
   async addItemToOrder(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationAddItemToOrderArgs
+    @Args() args: MutationAddItemToOrderArgs,
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
     const result = await super.addItemToOrder(ctx, args);
     if (!(result as Order).code) {
@@ -45,7 +45,7 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
   @Allow(Permission.UpdateOrder, Permission.Owner)
   async adjustOrderLine(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationAdjustOrderLineArgs
+    @Args() args: MutationAdjustOrderLineArgs,
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
     const result = await super.adjustOrderLine(ctx, args);
     if (!(result as Order).code) {
@@ -64,18 +64,18 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
    */
   private validate(order: Order, variantId: string | number): void {
     const orderLine = order.lines.find(
-      (line) => line.productVariant.id == variantId
+      (line) => line.productVariant.id == variantId,
     )!;
     const maxPerOrder = (orderLine.productVariant.customFields as any)
       .maxPerOrder;
     if (maxPerOrder && orderLine.quantity > maxPerOrder) {
       Logger.warn(
         `There can be only max ${maxPerOrder} of ${orderLine.productVariant.name} per order, throwing error to prevent this item from being added.`,
-        loggerCtx
+        loggerCtx,
       );
       throw new GraphQLError(
         `You are only allowed to order max ${maxPerOrder} of ${orderLine.productVariant.name}`,
-        { extensions: { code: maxItemsErrorCode } }
+        { extensions: { code: maxItemsErrorCode } },
       );
       // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added
     }

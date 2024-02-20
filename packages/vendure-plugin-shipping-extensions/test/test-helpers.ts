@@ -32,7 +32,7 @@ interface Options {
 
 export async function createShippingMethod(
   adminClient: SimpleGraphQLClient,
-  options: Options
+  options: Options,
 ) {
   const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
     input: {
@@ -100,7 +100,7 @@ export interface DistanceBasedShippingCalculatorOptions {
 
 export async function createDistanceBasedShippingMethod(
   adminClient: SimpleGraphQLClient,
-  options: DistanceBasedShippingCalculatorOptions
+  options: DistanceBasedShippingCalculatorOptions,
 ) {
   const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
     input: {
@@ -147,7 +147,7 @@ export async function createDistanceBasedShippingMethod(
 
 export async function createPromotion(
   adminClient: SimpleGraphQLClient,
-  input: CreatePromotionMutationVariables
+  input: CreatePromotionMutationVariables,
 ): Promise<Promotion> {
   const { createPromotion } = await adminClient.query<
     CreatePromotionMutation,

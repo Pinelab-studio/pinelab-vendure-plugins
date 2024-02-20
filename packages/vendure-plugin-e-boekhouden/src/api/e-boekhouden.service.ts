@@ -37,7 +37,7 @@ export class EBoekhoudenService
     private orderService: OrderService,
     private channelService: ChannelService,
     private eventBus: EventBus,
-    private jobQueueService: JobQueueService
+    private jobQueueService: JobQueueService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -64,13 +64,13 @@ export class EBoekhoudenService
         await this.jobQueue.add({
           channelToken: event.ctx.channel.token,
           orderCode: event.order.code,
-        })
+        }),
     );
   }
 
   async upsertConfig(
     channelToken: string,
-    input: EBoekhoudenConfigInput
+    input: EBoekhoudenConfigInput,
   ): Promise<EBoekhoudenConfigEntity> {
     const existing = await this.connection
       .getRepository(EBoekhoudenConfigEntity)
@@ -90,7 +90,7 @@ export class EBoekhoudenService
   }
 
   async getConfig(
-    channelToken: string
+    channelToken: string,
   ): Promise<EBoekhoudenConfigEntity | null> {
     return this.connection
       .getRepository(EBoekhoudenConfigEntity)
@@ -119,7 +119,7 @@ export class EBoekhoudenService
     if (!order) {
       Logger.error(
         `No order with code ${orderCode} found. Not retrying this job`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -135,13 +135,13 @@ export class EBoekhoudenService
       this.validate(result[0].AddMutatieResult);
       Logger.info(
         `Successfully send order ${orderCode} to e-boekhouden with mutationNr ${result?.[0]?.AddMutatieResult?.Mutatienummer}`,
-        loggerCtx
+        loggerCtx,
       );
     } catch (e: any) {
       Logger.error(
         `Failed to push order ${order.code} for channel ${config.channelToken} to account ${config.username}: ${e?.message}`,
         loggerCtx,
-        e
+        e,
       );
       throw e;
     } finally {
@@ -161,7 +161,7 @@ export class EBoekhoudenService
     const sessionId = openSession[0].OpenSessionResult?.SessionID;
     if (!sessionId) {
       throw Error(
-        `No SessionID from OpenSession for account ${config.username}`
+        `No SessionID from OpenSession for account ${config.username}`,
       );
     }
     return sessionId;
@@ -174,7 +174,7 @@ export class EBoekhoudenService
   private validate(res?: { ErrorMsg?: ErrorMsg }) {
     if (res?.ErrorMsg?.LastErrorDescription || res?.ErrorMsg?.LastErrorCode) {
       throw Error(
-        `${res.ErrorMsg?.LastErrorCode} - ${res.ErrorMsg?.LastErrorDescription}`
+        `${res.ErrorMsg?.LastErrorCode} - ${res.ErrorMsg?.LastErrorDescription}`,
       );
     }
   }

@@ -7,7 +7,7 @@ import { InvoiceOrderTotals } from '../entities/invoice.entity';
  * E.g. When `totalWithTax: 100` is given, this will return `totalWithTax: -100`
  */
 export function reverseOrderTotals(
-  orderTotal: InvoiceOrderTotals
+  orderTotal: InvoiceOrderTotals,
 ): InvoiceOrderTotals {
   const summaries = orderTotal.taxSummaries.map((summary) => {
     return {

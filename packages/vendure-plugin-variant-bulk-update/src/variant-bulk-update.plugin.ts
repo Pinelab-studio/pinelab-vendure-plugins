@@ -58,14 +58,14 @@ export class VariantBulkUpdatePlugin implements OnModuleInit {
   constructor(
     private eventBus: EventBus,
     private variantService: ProductVariantService,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
   ) {}
 
   async onModuleInit(): Promise<void> {
     this.eventBus
       .ofType(ProductEvent)
       .pipe(
-        filter((event) => event.type === 'updated' || event.type === 'created')
+        filter((event) => event.type === 'updated' || event.type === 'created'),
       )
       .subscribe(async (event) => {
         const { product, ctx } = event as ProductEventWithCustomFields;
@@ -90,10 +90,10 @@ export class VariantBulkUpdatePlugin implements OnModuleInit {
             .execute();
           Logger.info(
             `Updated prices of ${res.affected} variants of product ${product.id} to ${product.customFields.price}`,
-            loggerCtx
+            loggerCtx,
           );
           this.eventBus.publish(
-            new ProductVariantEvent(ctx, variants, 'updated')
+            new ProductVariantEvent(ctx, variants, 'updated'),
           );
         }
       });

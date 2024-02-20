@@ -85,7 +85,7 @@ mutation addSelectedGiftToOrder($productVariantId: ID!) {
 
 ```ts
 const orderLineWithGift = order.lines.find(
-  (l) => l.customFields.isSelectedAsGift
+  (l) => l.customFields.isSelectedAsGift,
 );
 ```
 

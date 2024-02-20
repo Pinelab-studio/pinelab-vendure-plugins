@@ -23,7 +23,7 @@ export async function migrateInvoices(queryRunner: QueryRunner): Promise<void> {
         'order.invoice',
         InvoiceEntity,
         'invoice',
-        'invoice.orderId = order.id'
+        'invoice.orderId = order.id',
       )
       .where('invoice.orderTotals IS NULL')
       .take(take)
@@ -50,7 +50,7 @@ export async function migrateInvoices(queryRunner: QueryRunner): Promise<void> {
     console.log(
       `Migrated invoices ${migratedInvoices}/${total}. Last invoice nr.: ${
         orders[orders.length - 1].invoice.invoiceNumber
-      }`
+      }`,
     );
   }
   console.log(`Successfully migrated ${migratedInvoices} invoices`);

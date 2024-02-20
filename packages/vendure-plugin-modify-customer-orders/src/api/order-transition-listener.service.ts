@@ -26,7 +26,7 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
     private readonly sessionService: SessionService,
     private readonly processContext: ProcessContext,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private readonly options: ModifyCustomerOrdersPluginOptions
+    private readonly options: ModifyCustomerOrdersPluginOptions,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -36,55 +36,55 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
     ) {
       Logger.info(
         'Listening for Draft order completion, to auto assign draft orders to customers',
-        loggerCtx
+        loggerCtx,
       );
       this.eventBus
         .ofType(OrderStateTransitionEvent)
         .pipe(
           filter((event) => event.fromState === 'Draft'),
-          filter((event) => event.toState === 'ArrangingPayment')
+          filter((event) => event.toState === 'ArrangingPayment'),
         )
         .subscribe(({ ctx, order: draftOrder }) =>
           this.assignOrderToCustomer(ctx, draftOrder).catch((e: any) => {
             Logger.error(
               `Error assigning draft order ${draftOrder.code} to customer`,
               loggerCtx,
-              e?.stack
+              e?.stack,
             );
-          })
+          }),
         );
     }
   }
 
   async assignOrderToCustomer(
     ctx: RequestContext,
-    draftOrder: Order
+    draftOrder: Order,
   ): Promise<void> {
     if (!draftOrder.customer?.user?.id) {
       Logger.info(
         `Draft order ${draftOrder.code} has no customer, skipping auto assign`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     // Get current active order
     const activeOrder = await this.orderService.getActiveOrderForUser(
       ctx,
-      draftOrder.customer.user.id
+      draftOrder.customer.user.id,
     );
     if (activeOrder) {
       // Deactivate order, because a customer should not have multiple orders in AddingItems state
       await this.deactivateOrder(ctx, activeOrder);
       Logger.info(
         `Deactivated active order ${activeOrder.code} for customer ${draftOrder.customer?.emailAddress}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     await this.setOrderState(ctx, draftOrder, 'AddingItems');
     await this.setAsActiveOrder(ctx, draftOrder);
     Logger.info(
       `Assigned draft order ${draftOrder.code} as active order to ${draftOrder.customer?.emailAddress}`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -118,16 +118,16 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
   async setOrderState(
     ctx: RequestContext,
     order: Order,
-    state: OrderState
+    state: OrderState,
   ): Promise<Order | OrderStateTransitionError> {
     const transitionToStateResult = await this.orderService.transitionToState(
       ctx,
       order.id,
-      state
+      state,
     );
     if (transitionToStateResult instanceof OrderStateTransitionError) {
       throw Error(
-        `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`
+        `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`,
       );
     }
     return transitionToStateResult;

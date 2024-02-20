@@ -12,7 +12,7 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
         icon: 'dollar-bill',
         requiresPermission: 'eBoekhouden',
       },
-      'settings'
+      'settings',
     ),
   ],
 })

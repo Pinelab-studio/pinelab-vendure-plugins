@@ -70,7 +70,7 @@ require('dotenv').config();
           },
         ],
       },
-    ]
+    ],
   );
   // Create an active order
   await shopClient.query(ADD_ITEM_TO_ORDER, {

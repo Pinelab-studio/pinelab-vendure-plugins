@@ -32,7 +32,7 @@ export class EBoekhoudenAdapter {
   static toMutation(order: Order, config: EBoekhoudenConfigEntity): OMut {
     const description = `Order ${order.code} - ${order.customer?.firstName} ${order.customer?.lastName} (${order.customer?.emailAddress})`;
     const cMutatieRegel = order.taxSummary.map((summary) =>
-      this.toMutationLine(summary, config)
+      this.toMutationLine(summary, config),
     );
     return {
       Soort: 'GeldOntvangen',
@@ -48,7 +48,7 @@ export class EBoekhoudenAdapter {
 
   static toMutationLine(
     tax: OrderTaxSummary,
-    config: EBoekhoudenConfigEntity
+    config: EBoekhoudenConfigEntity,
   ): CMutatieRegel {
     const recalculatedTax = recalculateTaxFromTotalIncVAT(tax);
     return {
@@ -64,7 +64,7 @@ export class EBoekhoudenAdapter {
 
   static getTax(
     value: number,
-    reference: string
+    reference: string,
   ): 'LAAG_VERK_9' | 'HOOG_VERK_21' | 'AFW' | 'GEEN' {
     if (value === 9) {
       return 'LAAG_VERK_9';
@@ -75,7 +75,7 @@ export class EBoekhoudenAdapter {
     } else {
       Logger.error(
         `Unknown taxValue ${value} for ${reference}. Used 21 as default`,
-        loggerCtx
+        loggerCtx,
       );
       return 'HOOG_VERK_21';
     }

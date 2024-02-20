@@ -12,7 +12,7 @@ export class CheckoutController {
   async webhook(
     @Headers('stripe-signature') signature: string | undefined,
     @Res() res: Response,
-    @Body() body: any
+    @Body() body: any,
   ): Promise<void> {
     const confirmMethod =
       intent.intentType === 'SetupIntent' ? 'confirmSetup' : 'confirmPayment';

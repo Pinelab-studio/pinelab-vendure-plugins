@@ -23,7 +23,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
       // Getting a cached session should not propagate the error to the client
       Logger.error(
         'MultiServerDbSessionCache repository not initialized',
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -37,7 +37,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
     if (!this.multiServerDBSessionCache) {
       Logger.error(
         'MultiServerDbSessionCache repository not initialized',
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -60,7 +60,7 @@ export class MultiServerDbSessionCacheStrategy implements SessionCacheStrategy {
     if (!this.multiServerDBSessionCache) {
       Logger.error(
         'MultiServerDbSessionCache repository not initialized',
-        loggerCtx
+        loggerCtx,
       );
       return;
     }

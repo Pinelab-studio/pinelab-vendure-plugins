@@ -18,7 +18,7 @@ export const picqerHandler = new FulfillmentHandler({
   },
   createFulfillment: async (ctx, orders, orderItems, args) => {
     throw Error(
-      `Don't use fulfillment with Picqer. Directly transition to Shipped or Delivered instead.`
+      `Don't use fulfillment with Picqer. Directly transition to Shipped or Delivered instead.`,
     );
   },
 });

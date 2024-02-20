@@ -12,7 +12,7 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
         icon: 'bundle',
         requiresPermission: 'SetMyparcelConfig',
       },
-      'settings'
+      'settings',
     ),
   ],
 })

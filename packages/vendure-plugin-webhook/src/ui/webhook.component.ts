@@ -33,7 +33,7 @@ export class WebhookComponent implements OnInit {
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {}
 
   ngOnInit() {
@@ -131,18 +131,18 @@ export class WebhookComponent implements OnInit {
     if (setRequestTransformerName) {
       this.filteredWeebhookEvents =
         this.avaiabelWebhookRequestTransformers.find(
-          (v) => v.name === this.requestTransformerName
+          (v) => v.name === this.requestTransformerName,
         )?.supportedEvents ?? [];
     } else if (this.requestTransformerName) {
       this.filteredWeebhookEvents =
         this.avaiabelWebhookRequestTransformers.find(
-          (v) => v.name === this.requestTransformerName
+          (v) => v.name === this.requestTransformerName,
         )?.supportedEvents ?? [];
     } else {
       this.filteredWeebhookEvents = this.availableWeebhookEvents;
     }
     this.eventName = this.filteredWeebhookEvents.find(
-      (v) => v === this.eventName
+      (v) => v === this.eventName,
     );
     this.changeDetector.detectChanges();
   }

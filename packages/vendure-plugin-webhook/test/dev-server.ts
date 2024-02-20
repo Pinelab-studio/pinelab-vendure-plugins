@@ -27,7 +27,7 @@ import { stringifyProductTransformer } from './test-helpers';
       delay: 3000,
       events: [ProductEvent, AttemptedLoginEvent],
       requestTransformers: [stringifyProductTransformer],
-    })
+    }),
   );
   testConfig.plugins.push(DefaultSearchPlugin);
   testConfig.plugins.push(
@@ -39,7 +39,7 @@ import { stringifyProductTransformer } from './test-helpers';
         extensions: [WebhookPlugin.ui],
         devMode: true,
       }),
-    })
+    }),
   );
   testConfig.apiOptions.shopApiPlayground = {};
   testConfig.apiOptions.adminApiPlayground = {};

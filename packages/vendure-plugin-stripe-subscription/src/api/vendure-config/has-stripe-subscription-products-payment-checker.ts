@@ -25,7 +25,7 @@ export const hasStripeSubscriptionProductsPaymentChecker =
       if (
         await stripeSubscriptionService.subscriptionHelper.hasSubscriptions(
           ctx,
-          order
+          order,
         )
       ) {
         return true;

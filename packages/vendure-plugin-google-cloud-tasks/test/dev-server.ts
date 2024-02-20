@@ -27,7 +27,7 @@ import { CloudTasksPlugin } from '../src/cloud-tasks.plugin';
       clientOptions: {
         fallback: true,
       },
-    })
+    }),
   );
   testConfig.plugins.push(AdminUiPlugin.init({ route: 'admin', port: 3002 }));
   testConfig.plugins.push(DefaultSearchPlugin);

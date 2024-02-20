@@ -63,7 +63,7 @@ export class PrimaryCollectionPlugin {
   };
 
   static init(
-    config: PrimaryCollectionPluginConfig
+    config: PrimaryCollectionPluginConfig,
   ): Type<PrimaryCollectionPlugin> {
     this.config = config;
     return this;

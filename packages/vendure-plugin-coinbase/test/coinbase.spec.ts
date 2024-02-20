@@ -58,7 +58,7 @@ describe('Coinbase payments', () => {
     await adminClient.asSuperAdmin();
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
   }, 60000);
 
@@ -92,7 +92,7 @@ describe('Coinbase payments', () => {
             },
           ],
         },
-      }
+      },
     );
     expect(createPaymentMethod.code).toBe(mockData.methodCode);
   });
@@ -117,16 +117,16 @@ describe('Coinbase payments', () => {
       });
     await setAddressAndShipping(shopClient, 'T_1');
     const { createCoinbasePaymentIntent } = await shopClient.query(
-      CreatePaymentIntentMutation
+      CreatePaymentIntentMutation,
     );
     expect(createCoinbasePaymentIntent).toBe(
-      'https://mock-hosted-checkout/charges'
+      'https://mock-hosted-checkout/charges',
     );
     const adminOrder = await getOrder(adminClient, order.id as string);
     expect(payload!.metadata.channelToken).toBe(E2E_DEFAULT_CHANNEL_TOKEN);
     expect(payload!.metadata.orderCode).toBe(adminOrder!.code);
     expect(payload!.local_price.amount).toBe(
-      (adminOrder!.totalWithTax / 100).toFixed(2)
+      (adminOrder!.totalWithTax / 100).toFixed(2),
     );
   });
 

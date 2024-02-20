@@ -84,13 +84,13 @@ export class StripeSubscriptionService {
     private connection: TransactionalConnection,
     productVariantService: ProductVariantService,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private options: StripeSubscriptionPluginOptions
+    private options: StripeSubscriptionPluginOptions,
   ) {
     this.subscriptionHelper = new SubscriptionHelper(
       loggerCtx,
       moduleRef,
       productVariantService,
-      this.options.subscriptionStrategy!
+      this.options.subscriptionStrategy!,
     );
   }
 
@@ -119,26 +119,26 @@ export class StripeSubscriptionService {
           const order = await this.orderService.findOneByCode(
             ctx,
             data.orderCode,
-            []
+            [],
           );
           try {
             await this.createSubscriptions(
               ctx,
               data.orderCode,
               data.stripeCustomerId,
-              data.stripePaymentMethodId
+              data.stripePaymentMethodId,
             );
           } catch (error) {
             Logger.warn(
               `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
-              loggerCtx
+              loggerCtx,
             );
             if (order) {
               await this.logHistoryEntry(
                 ctx,
                 order.id,
                 'Failed to create subscription',
-                error
+                error,
               );
             }
             throw error;
@@ -153,8 +153,8 @@ export class StripeSubscriptionService {
         filter(
           (event) =>
             event.type === StockMovementType.RELEASE ||
-            event.type === StockMovementType.CANCELLATION
-        )
+            event.type === StockMovementType.CANCELLATION,
+        ),
       )
       .subscribe(async (event) => {
         const cancelOrReleaseEvents = event.stockMovements as (
@@ -164,7 +164,7 @@ export class StripeSubscriptionService {
         const stockEvents = cancelOrReleaseEvents
           // Filter out non-sub orderlines
           .filter(
-            (event) => (event.orderLine.customFields as any).subscriptionIds
+            (event) => (event.orderLine.customFields as any).subscriptionIds,
           );
         await Promise.all(
           // Push jobs
@@ -173,8 +173,8 @@ export class StripeSubscriptionService {
               ctx: event.ctx.serialize(),
               action: 'cancelSubscriptionsForOrderline',
               orderLineId: stockEvent.orderLine.id,
-            })
-          )
+            }),
+          ),
         );
       });
     // Listen for PaymentMethod create or update, to automatically create webhooks
@@ -185,7 +185,7 @@ export class StripeSubscriptionService {
           await this.registerWebhooks(event.ctx, paymentMethod).catch((e) => {
             Logger.error(
               `Failed to register webhooks for channel ${event.ctx.channel.token}: ${e}`,
-              loggerCtx
+              loggerCtx,
             );
           });
         }
@@ -202,15 +202,15 @@ export class StripeSubscriptionService {
    */
   async registerWebhooks(
     ctx: RequestContext,
-    paymentMethod: PaymentMethod
+    paymentMethod: PaymentMethod,
   ): Promise<Stripe.Response<Stripe.WebhookEndpoint> | undefined> {
     const webhookDescription = `Vendure Stripe Subscription Webhook for channel ${ctx.channel.token}`;
     const apiKey = paymentMethod.handler.args.find(
-      (arg) => arg.name === 'apiKey'
+      (arg) => arg.name === 'apiKey',
     )?.value;
     if (!apiKey) {
       throw new UserInputError(
-        `No api key found for payment method ${paymentMethod.code}, can not register webhooks`
+        `No api key found for payment method ${paymentMethod.code}, can not register webhooks`,
       );
     }
     const stripeClient = new StripeClient('not-yet-available-secret', apiKey, {
@@ -223,14 +223,14 @@ export class StripeSubscriptionService {
       Logger.error(
         `Your Stripe account has too many webhooks setup, ` +
           `you will need to manually create the webhook with events ${StripeSubscriptionService.webhookEvents.join(
-            ', '
+            ', ',
           )}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
     const existingWebhook = webhooks.data.find(
-      (w) => w.description === webhookDescription
+      (w) => w.description === webhookDescription,
     );
     if (existingWebhook) {
       await stripeClient.webhookEndpoints.del(existingWebhook.id);
@@ -251,19 +251,19 @@ export class StripeSubscriptionService {
       .save(paymentMethod);
     Logger.info(
       `Created webhook ${createdHook.id} for channel ${ctx.channel.token}`,
-      loggerCtx
+      loggerCtx,
     );
     return createdHook;
   }
 
   async cancelSubscriptionForOrderLine(
     ctx: RequestContext,
-    orderLineId: ID
+    orderLineId: ID,
   ): Promise<void> {
     const order = await this.orderService.findOneByOrderLineId(
       ctx,
       orderLineId,
-      ['lines']
+      ['lines'],
     );
     if (!order) {
       throw Error(`Order for OrderLine ${orderLineId} not found`);
@@ -274,7 +274,7 @@ export class StripeSubscriptionService {
     if (!line?.customFields.subscriptionIds?.length) {
       return Logger.info(
         `OrderLine ${orderLineId} of ${orderLineId} has no subscriptionIds. Not cancelling anything... `,
-        loggerCtx
+        loggerCtx,
       );
     }
     await this.entityHydrator.hydrate(ctx, line, { relations: ['order'] });
@@ -291,12 +291,12 @@ export class StripeSubscriptionService {
           `Cancelled subscription ${subscriptionId}`,
           undefined,
           undefined,
-          subscriptionId
+          subscriptionId,
         );
       } catch (e: unknown) {
         Logger.error(
           `Failed to cancel subscription ${subscriptionId}`,
-          loggerCtx
+          loggerCtx,
         );
         await this.logHistoryEntry(
           ctx,
@@ -304,7 +304,7 @@ export class StripeSubscriptionService {
           `Failed to cancel ${subscriptionId}`,
           e,
           undefined,
-          subscriptionId
+          subscriptionId,
         );
       }
     }
@@ -318,7 +318,7 @@ export class StripeSubscriptionService {
   async getAllSubscriptions(
     ctx: RequestContext,
     params?: Stripe.SubscriptionListParams,
-    options?: Stripe.RequestOptions
+    options?: Stripe.RequestOptions,
   ): Promise<Stripe.ApiListPromise<Stripe.Subscription>> {
     const { stripeClient } = await this.getStripeContext(ctx);
     return stripeClient.subscriptions.list(params, options);
@@ -329,7 +329,7 @@ export class StripeSubscriptionService {
    */
   async getSubscription(
     ctx: RequestContext,
-    subscriptionId: string
+    subscriptionId: string,
   ): Promise<Stripe.Response<Stripe.Subscription>> {
     const { stripeClient } = await this.getStripeContext(ctx);
     return stripeClient.subscriptions.retrieve(subscriptionId);
@@ -345,7 +345,7 @@ export class StripeSubscriptionService {
 
   async createIntentForDraftOrder(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
   ): Promise<StripeSubscriptionIntent> {
     let order = await this.orderService.findOne(ctx, orderId);
     if (!order) {
@@ -358,7 +358,7 @@ export class StripeSubscriptionService {
 
   async createIntentByOrder(
     ctx: RequestContext,
-    order: Order
+    order: Order,
   ): Promise<StripeSubscriptionIntent> {
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
@@ -369,12 +369,12 @@ export class StripeSubscriptionService {
     }
     if (!order.customer) {
       throw new UserInputError(
-        'Cannot create intent for order without customer'
+        'Cannot create intent for order without customer',
       );
     }
     if (!order.shippingLines?.length) {
       throw new UserInputError(
-        'Cannot create intent for order without shippingMethod'
+        'Cannot create intent for order without shippingMethod',
       );
     }
     // Check if Stripe Subscription paymentMethod is eligible for this order
@@ -386,16 +386,16 @@ export class StripeSubscriptionService {
     const { stripeClient, paymentMethod } = await this.getStripeContext(ctx);
     if (!eligibleStripeMethodCodes.includes(paymentMethod.code)) {
       throw new UserInputError(
-        `No eligible payment method found for order ${order.code} with handler code '${stripeSubscriptionHandler.code}'`
+        `No eligible payment method found for order ${order.code} with handler code '${stripeSubscriptionHandler.code}'`,
       );
     }
     await this.orderService.transitionToState(
       ctx,
       order.id,
-      'ArrangingPayment'
+      'ArrangingPayment',
     );
     const stripeCustomer = await stripeClient.getOrCreateCustomer(
-      order.customer
+      order.customer,
     );
     const stripePaymentMethods = ['card']; // TODO make configurable per channel
     let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
@@ -430,12 +430,12 @@ export class StripeSubscriptionService {
       intent.object === 'payment_intent' ? 'PaymentIntent' : 'SetupIntent';
     if (!intent.client_secret) {
       throw Error(
-        `No client_secret found in ${intentType} response, something went wrong!`
+        `No client_secret found in ${intentType} response, something went wrong!`,
       );
     }
     Logger.info(
       `Created ${intentType} '${intent.id}' for order ${order.code}`,
-      loggerCtx
+      loggerCtx,
     );
     return {
       clientSecret: intent.client_secret,
@@ -449,7 +449,7 @@ export class StripeSubscriptionService {
   async handleInvoicePaymentFailed(
     ctx: RequestContext,
     object: StripeInvoice,
-    order: Order
+    order: Order,
   ): Promise<void> {
     // TODO: Emit StripeSubscriptionPaymentFailed(subscriptionId, order, stripeInvoiceObject: StripeInvoice)
     const amount = object.lines?.data[0]?.plan?.amount;
@@ -462,7 +462,7 @@ export class StripeSubscriptionService {
       message,
       `${message} - ${object.id}`,
       undefined,
-      object.subscription
+      object.subscription,
     );
   }
 
@@ -473,7 +473,7 @@ export class StripeSubscriptionService {
   async handleIntentSucceeded(
     ctx: RequestContext,
     object: StripePaymentIntent | StripeSetupIntent,
-    order: Order
+    order: Order,
   ): Promise<void> {
     const {
       paymentMethod: { code: paymentMethodCode },
@@ -483,7 +483,7 @@ export class StripeSubscriptionService {
         ctx,
         order.id,
         '',
-        `No customer ID found in incoming webhook. Can not create subscriptions for this order.`
+        `No customer ID found in incoming webhook. Can not create subscriptions for this order.`,
       );
       throw Error(`No customer found in webhook data for order ${order.code}`);
     }
@@ -497,24 +497,24 @@ export class StripeSubscriptionService {
           stripePaymentMethodId: object.payment_method,
           stripeCustomerId: object.customer,
         },
-        { retries: 0 } // Only 1 try, because subscription creation isn't idempotent
+        { retries: 0 }, // Only 1 try, because subscription creation isn't idempotent
       )
       .catch((e) =>
         Logger.error(
           `Failed to add subscription-creation job to queue`,
-          loggerCtx
-        )
+          loggerCtx,
+        ),
       );
     // Settle payment for order
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
         ctx,
         order.id,
-        'ArrangingPayment'
+        'ArrangingPayment',
       );
       if (transitionToStateResult instanceof OrderStateTransitionError) {
         throw Error(
-          `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`
+          `Error transitioning order ${order.code} from ${transitionToStateResult.fromState} to ${transitionToStateResult.toState}: ${transitionToStateResult.message}`,
         );
       }
     }
@@ -527,13 +527,13 @@ export class StripeSubscriptionService {
           setupIntentId: object.id,
           amount: object.metadata.amount,
         },
-      }
+      },
     );
     if ((addPaymentToOrderResult as ErrorResult).errorCode) {
       throw Error(
         `[${loggerCtx}]: Error adding payment to order ${order.code}: ${
           (addPaymentToOrderResult as ErrorResult).message
-        }`
+        }`,
       );
     }
     Logger.info(
@@ -542,7 +542,7 @@ export class StripeSubscriptionService {
       } with amount ${printMoney(object.metadata.amount)}, for channel ${
         ctx.channel.token
       }`,
-      loggerCtx
+      loggerCtx,
     );
   }
 
@@ -553,7 +553,7 @@ export class StripeSubscriptionService {
     ctx: RequestContext,
     orderCode: string,
     stripeCustomerId: string,
-    stripePaymentMethodId: string
+    stripePaymentMethodId: string,
   ): Promise<void> {
     const order = await this.orderService.findOneByCode(ctx, orderCode, [
       'customer',
@@ -567,7 +567,7 @@ export class StripeSubscriptionService {
       if (!(await this.subscriptionHelper.hasSubscriptions(ctx, order))) {
         Logger.info(
           `Order ${order.code} doesn't have any subscriptions. No action needed`,
-          loggerCtx
+          loggerCtx,
         );
         return;
       }
@@ -575,7 +575,7 @@ export class StripeSubscriptionService {
       const customer = await stripeClient.customers.retrieve(stripeCustomerId);
       if (!customer) {
         throw Error(
-          `[${loggerCtx}]: Failed to create subscription for customer ${stripeCustomerId} because it doesn't exist in Stripe`
+          `[${loggerCtx}]: Failed to create subscription for customer ${stripeCustomerId} because it doesn't exist in Stripe`,
         );
       }
       const subscriptionDefinitions =
@@ -610,7 +610,7 @@ export class StripeSubscriptionService {
             // Created subscription is not active for some reason. Log error and continue to next
             Logger.error(
               `Failed to create active subscription ${subscriptionDefinition.name} (${createdSubscription.id}) for order ${order.code}! It is still in status '${createdSubscription.status}'`,
-              loggerCtx
+              loggerCtx,
             );
             await this.logHistoryEntry(
               ctx,
@@ -618,7 +618,7 @@ export class StripeSubscriptionService {
               `Failed to create subscription ${subscriptionDefinition.name}`,
               `Subscription status is ${createdSubscription.status}`,
               subscriptionDefinition,
-              createdSubscription.id
+              createdSubscription.id,
             );
             continue;
           }
@@ -626,7 +626,7 @@ export class StripeSubscriptionService {
             `Created subscription '${subscriptionDefinition.name}' (${
               createdSubscription.id
             }): ${printMoney(subscriptionDefinition.recurring.amount)}`,
-            loggerCtx
+            loggerCtx,
           );
           await this.logHistoryEntry(
             ctx,
@@ -634,7 +634,7 @@ export class StripeSubscriptionService {
             `Created subscription for ${subscriptionDefinition.name}`,
             undefined,
             subscriptionDefinition,
-            createdSubscription.id
+            createdSubscription.id,
           );
           // Add created subscriptions per order line
           const existingSubscriptionIds =
@@ -643,14 +643,14 @@ export class StripeSubscriptionService {
           existingSubscriptionIds.push(createdSubscription.id);
           subscriptionsPerOrderLine.set(
             subscriptionDefinition.orderLineId,
-            existingSubscriptionIds
+            existingSubscriptionIds,
           );
         } catch (e: unknown) {
           await this.logHistoryEntry(
             ctx,
             order.id,
             'An unknown error occured creating subscriptions',
-            e
+            e,
           );
           throw e;
         }
@@ -674,7 +674,7 @@ export class StripeSubscriptionService {
   async saveSubscriptionIds(
     ctx: RequestContext,
     orderLineId: ID,
-    subscriptionIds: string[]
+    subscriptionIds: string[],
   ): Promise<void> {
     await this.connection
       .getRepository(ctx, OrderLine)
@@ -683,7 +683,7 @@ export class StripeSubscriptionService {
 
   async createContext(
     channelToken: string,
-    req: Request
+    req: Request,
   ): Promise<RequestContext> {
     const channel = await this.channelService.getChannelFromToken(channelToken);
     return new RequestContext({
@@ -705,32 +705,32 @@ export class StripeSubscriptionService {
       filter: { enabled: { eq: true } },
     });
     const stripePaymentMethods = paymentMethods.items.filter(
-      (pm) => pm.handler.code === stripeSubscriptionHandler.code
+      (pm) => pm.handler.code === stripeSubscriptionHandler.code,
     );
     if (stripePaymentMethods.length > 1) {
       throw new UserInputError(
-        `Multiple payment methods found with handler 'stripe-subscription', there should only be 1 per channel!`
+        `Multiple payment methods found with handler 'stripe-subscription', there should only be 1 per channel!`,
       );
     }
     const paymentMethod = stripePaymentMethods[0];
     if (!paymentMethod) {
       throw new UserInputError(
-        `No enabled payment method found with handler 'stripe-subscription'`
+        `No enabled payment method found with handler 'stripe-subscription'`,
       );
     }
     const apiKey = paymentMethod.handler.args.find(
-      (arg) => arg.name === 'apiKey'
+      (arg) => arg.name === 'apiKey',
     )?.value;
     let webhookSecret = paymentMethod.handler.args.find(
-      (arg) => arg.name === 'webhookSecret'
+      (arg) => arg.name === 'webhookSecret',
     )?.value;
     if (!apiKey || !webhookSecret) {
       Logger.warn(
         `No api key or webhook secret is configured for ${paymentMethod.code}`,
-        loggerCtx
+        loggerCtx,
       );
       throw Error(
-        `Payment method ${paymentMethod.code} has no api key or webhook secret configured`
+        `Payment method ${paymentMethod.code} has no api key or webhook secret configured`,
       );
     }
     return {
@@ -747,7 +747,7 @@ export class StripeSubscriptionService {
     message: string,
     error?: unknown,
     subscription?: Subscription,
-    subscriptionId?: string
+    subscriptionId?: string,
   ): Promise<void> {
     let prettifiedError = error
       ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
@@ -765,7 +765,7 @@ export class StripeSubscriptionService {
           subscription,
         },
       },
-      false
+      false,
     );
   }
 }

@@ -35,7 +35,7 @@ export interface PicqerOptions {
    * pullPicqerProductFields: (product) => ({ customFields: { weight: product.weight / 1000 }})
    */
   pullPicqerProductFields?: (
-    product: ProductInput & ProductData
+    product: ProductInput & ProductData,
   ) => Partial<UpdateProductVariantInput>;
   /**
    * Implement this function if you'd like to sync additional (custom) fields from Vendure to Picqer,
@@ -44,7 +44,7 @@ export interface PicqerOptions {
    * pushProductVariantFields: (variant) => ({ barcode: variant.customFields.EAN }})
    */
   pushProductVariantFields?: (
-    variant: ProductVariant
+    variant: ProductVariant,
   ) => Partial<ProductInput & ProductData>;
   /**
    * Map any Vendure fields to Order fields in Picqer.

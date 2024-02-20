@@ -19,7 +19,7 @@ export interface GiftPluginOptions {
   configuration: (config) => {
     config.promotionOptions.promotionActions.push(freeGiftPromotionAction);
     config.promotionOptions.promotionConditions.push(
-      minOrdersPlacedPromotionCondition
+      minOrdersPlacedPromotionCondition,
     );
     config.customFields.OrderLine.push(...orderLineCustomFields);
     return config;

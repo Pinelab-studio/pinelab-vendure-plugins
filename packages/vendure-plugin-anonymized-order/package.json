@@ -25,6 +25,7 @@
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && yarn graphql-codegen && tsc",
     "test": "vitest run",
+    "lint": "echo 'Not configured yet'",
     "generate": "graphql-codegen"
   }
 }

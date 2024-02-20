@@ -119,7 +119,7 @@ export function legend(options?: any) {
           case 'top':
             chart.container.insertBefore(
               legendElement,
-              chart.container.childNodes[0]
+              chart.container.childNodes[0],
             );
             break;
 
@@ -137,7 +137,7 @@ export function legend(options?: any) {
       legendElement,
       legends,
       seriesMetadata,
-      useLabels
+      useLabels,
     ) {
       legendElement.addEventListener('click', function (e) {
         var li = e.target;

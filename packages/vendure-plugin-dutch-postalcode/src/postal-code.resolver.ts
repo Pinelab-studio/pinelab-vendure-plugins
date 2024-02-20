@@ -48,7 +48,7 @@ export class PostalCodeResolver {
   constructor() {
     if (!DutchPostalCodePlugin.apiKey) {
       throw Error(
-        `DutchPostalCodePlugin needs an apiKey. Use DutchPostalCodePlugin.init('yourkey') to set an apiKey`
+        `DutchPostalCodePlugin needs an apiKey. Use DutchPostalCodePlugin.init('yourkey') to set an apiKey`,
       );
     }
     this.headers = {
@@ -60,7 +60,7 @@ export class PostalCodeResolver {
   @Allow(Permission.Public)
   async dutchAddressLookup(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: { postalCode: string; houseNumber: string }
+    @Args('input') input: { postalCode: string; houseNumber: string },
   ): Promise<DutchAddressLookupResult | undefined> {
     if (!ctx.channelId || !ctx.session?.token) {
       // A little sanity check if this call is from a storefront
@@ -69,7 +69,7 @@ export class PostalCodeResolver {
     const { postalCode, houseNumber } = input;
     const result = await fetch(
       `https://postcode.tech/api/v1/postcode/full?postcode=${postalCode}&number=${houseNumber}`,
-      { headers: this.headers }
+      { headers: this.headers },
     );
     const jsonResult = await result.json();
     if (!jsonResult.street) {

@@ -26,7 +26,7 @@ export const picqerPermission = new PermissionDefinition({
 export class PicqerResolver {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS) private options: PicqerOptions,
-    private service: PicqerService
+    private service: PicqerService,
   ) {}
 
   @Mutation()
@@ -39,7 +39,7 @@ export class PicqerResolver {
         Logger.error(
           `Failed to create jobs to pull stock levels from Picqer: ${e?.message}`,
           loggerCtx,
-          e?.stack
+          e?.stack,
         );
         allSucceeded = false;
       });
@@ -49,7 +49,7 @@ export class PicqerResolver {
         Logger.error(
           `Failed to create jobs to push products to Picqer: ${e?.message}`,
           loggerCtx,
-          e?.stack
+          e?.stack,
         );
         allSucceeded = false;
       });
@@ -60,7 +60,7 @@ export class PicqerResolver {
   @Allow(picqerPermission.Permission)
   async upsertPicqerConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: PicqerConfigInput
+    @Args('input') input: PicqerConfigInput,
   ): Promise<PicqerConfig> {
     return this.service.upsertConfig(ctx, input);
   }
@@ -75,7 +75,7 @@ export class PicqerResolver {
   @Allow(picqerPermission.Permission)
   async isPicqerConfigValid(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: TestPicqerInput
+    @Args('input') input: TestPicqerInput,
   ): Promise<boolean> {
     return this.service.testRequest(input);
   }

@@ -64,7 +64,7 @@ export class InvoicePlugin {
   static config: InvoicePluginConfig;
 
   static init(
-    config: Partial<InvoicePluginConfig> & { vendureHost: string }
+    config: Partial<InvoicePluginConfig> & { vendureHost: string },
   ): Type<InvoicePlugin> {
     InvoicePlugin.config = {
       vendureHost: config.vendureHost,
@@ -75,7 +75,7 @@ export class InvoicePlugin {
   }
 
   static async configure(
-    config: RuntimeVendureConfig
+    config: RuntimeVendureConfig,
   ): Promise<RuntimeVendureConfig> {
     config.authOptions.customPermissions.push(invoicePermission);
     if (this.config.storageStrategy) {

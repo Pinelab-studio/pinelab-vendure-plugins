@@ -57,29 +57,29 @@ describe('Customer managed groups', function () {
   it('Should change active order to draft order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const testActiveOrder = await addItem(shopClient, 'T_1', 1);
     const { convertOrderToDraft: draftOrder } = await adminClient.query(
       convertToDraftMutation,
       {
         id: testActiveOrder.id,
-      }
+      },
     );
     expect(draftOrder.state).toBe('Draft');
     expect(draftOrder.lines.length).toBe(testActiveOrder.lines.length);
     for (let line of testActiveOrder.lines) {
       expect(
         draftOrder.lines.some(
-          (l: OrderLine) => l.productVariant.id == line.productVariant.id
-        )
+          (l: OrderLine) => l.productVariant.id == line.productVariant.id,
+        ),
       ).toBe(true);
     }
     expect(draftOrder.shippingAddress.fullName).toBe(
-      testActiveOrder.shippingAddress.fullName
+      testActiveOrder.shippingAddress.fullName,
     );
     expect(draftOrder.customer.emailAddress).toBe(
-      testActiveOrder.customer?.emailAddress
+      testActiveOrder.customer?.emailAddress,
     );
   });
 
@@ -91,7 +91,7 @@ describe('Customer managed groups', function () {
       });
     } catch (e) {
       expect((e as any).response.errors[0].message).toBe(
-        'Only active orders can be changed to a draft order'
+        'Only active orders can be changed to a draft order',
       );
     }
   });
@@ -100,7 +100,7 @@ describe('Customer managed groups', function () {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(
         __dirname,
-        ModifyCustomerOrdersPlugin.ui
+        ModifyCustomerOrdersPlugin.ui,
       );
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);

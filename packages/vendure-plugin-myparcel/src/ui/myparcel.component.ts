@@ -33,7 +33,7 @@ export class MyparcelComponent implements OnInit {
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {
     this.form = this.formBuilder.group({
       apiKey: ['your-api-key'],
@@ -45,7 +45,7 @@ export class MyparcelComponent implements OnInit {
       .query(getMyparcelConfig)
       .mapStream((d: any) => d.myparcelConfig)
       .subscribe((config) =>
-        this.form.controls['apiKey'].setValue(config.apiKey)
+        this.form.controls['apiKey'].setValue(config.apiKey),
       );
   }
 

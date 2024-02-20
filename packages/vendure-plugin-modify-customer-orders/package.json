@@ -22,7 +22,8 @@
     "serve": "yarn start && nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "echo 'Not configured yet'"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

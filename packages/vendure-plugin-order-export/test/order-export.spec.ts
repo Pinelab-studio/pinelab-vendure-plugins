@@ -63,13 +63,11 @@ describe('Order export plugin', function () {
 
   it('Should fetch available strategies', async () => {
     await adminClient.asSuperAdmin();
-    const result = await adminClient.query(
-      gql`
-        query availableOrderExportStrategies {
-          availableOrderExportStrategies
-        }
-      `
-    );
+    const result = await adminClient.query(gql`
+      query availableOrderExportStrategies {
+        availableOrderExportStrategies
+      }
+    `);
     await expect(result.availableOrderExportStrategies.length).toBe(1);
   });
 
@@ -80,7 +78,7 @@ describe('Order export plugin', function () {
     tomorrow.setDate(tomorrow.getDate() + 1);
     await adminClient.asSuperAdmin();
     const res = await adminClient.fetch(
-      `http://localhost:3105/export-orders/export/example-export?startDate=${yesterday.toISOString()}&endDate=${tomorrow.toISOString()}`
+      `http://localhost:3105/export-orders/export/example-export?startDate=${yesterday.toISOString()}&endDate=${tomorrow.toISOString()}`,
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toContain('text/csv');
@@ -91,7 +89,7 @@ describe('Order export plugin', function () {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(
         __dirname,
-        OrderExportPlugin.ui
+        OrderExportPlugin.ui,
       );
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);

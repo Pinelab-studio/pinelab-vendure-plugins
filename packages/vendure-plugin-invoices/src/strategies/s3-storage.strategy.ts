@@ -31,7 +31,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
       Logger.error(
         `Could not find the "aws-sdk" package. Make sure it is installed`,
         S3StorageStrategy.name,
-        e.stack
+        e.stack,
       );
     }
   }
@@ -48,7 +48,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ): Promise<string> {
     let filename = `${invoiceNumber}.pdf`;
     if (isCreditInvoice) {

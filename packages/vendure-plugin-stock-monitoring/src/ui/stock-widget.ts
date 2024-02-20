@@ -40,22 +40,20 @@ export class StockWidgetComponent implements OnInit {
 
   ngOnInit() {
     this.variant$ = this.dataService
-      .query(
-        gql`
-          query productVariantsWithLowStock {
-            productVariantsWithLowStock {
-              id
-              name
-              enabled
+      .query(gql`
+        query productVariantsWithLowStock {
+          productVariantsWithLowStock {
+            id
+            name
+            enabled
+            stockOnHand
+            productId
+            stockLevels {
               stockOnHand
-              productId
-              stockLevels {
-                stockOnHand
-              }
             }
           }
-        `
-      )
+        }
+      `)
       .mapStream((data) => (data as any).productVariantsWithLowStock);
   }
 

@@ -6,7 +6,7 @@ export class PrimaryCollectionResolver {
   @ResolveField()
   async primaryCollection(
     @Ctx() ctx: RequestContext,
-    @Parent() product: Product
+    @Parent() product: Product,
   ): Promise<Collection | null> {
     return (product.customFields as any).primaryCollection;
   }

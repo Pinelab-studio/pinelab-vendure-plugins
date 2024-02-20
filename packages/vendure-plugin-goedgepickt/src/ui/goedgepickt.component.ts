@@ -128,7 +128,7 @@ export class GoedgepicktComponent implements OnInit {
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {
     this.form = this.formBuilder.group({
       enabled: ['enabled'],
@@ -216,7 +216,7 @@ export class GoedgepicktComponent implements OnInit {
           Authorization: `Bearer ${this.form.controls['apiKey'].value}`,
         },
         redirect: 'follow',
-      }
+      },
     );
     if (result.status !== 200) {
       this.testFailed = 'Invalid ApiKey';
@@ -225,7 +225,7 @@ export class GoedgepicktComponent implements OnInit {
     const json = await result.json();
     const webshop = json.items?.find(
       (item: { uuid: string }) =>
-        item.uuid === this.form.controls['webshopUuid'].value
+        item.uuid === this.form.controls['webshopUuid'].value,
     );
     if (!webshop) {
       this.testFailed = 'Apikey is correct, but cannot find webshopUuid';

@@ -19,7 +19,7 @@ interface BaseStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ): Promise<string>;
 
   init(): Promise<void>;

@@ -101,7 +101,7 @@ describe('Product Primary Collection', function () {
   it("Should successfully update 'Laptop's primaryCollection as 'Electronics'", async () => {
     const { updateProduct: product } = await adminClient.query(
       updatePrimaryCollectionMutation,
-      { productId: 'T_1', productPrimaryCollectionId: 'T_3' }
+      { productId: 'T_1', productPrimaryCollectionId: 'T_3' },
     );
     expect(product.name).toBe('Laptop');
     expect(product.id).toBe('T_1');
@@ -124,7 +124,7 @@ describe('Product Primary Collection', function () {
       primaryCollectionQuery,
       {
         productId: 'T_3',
-      }
+      },
     );
     expect(product.primaryCollection).toBeNull();
     expect(anotherProduct.primaryCollection).toBeNull();
@@ -140,19 +140,19 @@ describe('Product Primary Collection', function () {
       primaryCollectionQuery,
       {
         productId: 'T_1',
-      }
+      },
     );
     const { product: t2Product } = await shopClient.query(
       primaryCollectionQuery,
       {
         productId: 'T_2',
-      }
+      },
     );
     const { product: t3Product } = await shopClient.query(
       primaryCollectionQuery,
       {
         productId: 'T_3',
-      }
+      },
     );
     expect(t1Product.primaryCollection.name).toBe('Electronics');
     expect(t2Product.primaryCollection).not.toBeNull();
@@ -163,7 +163,7 @@ describe('Product Primary Collection', function () {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(
         __dirname,
-        PrimaryCollectionPlugin.ui
+        PrimaryCollectionPlugin.ui,
       );
       expect(files?.length).toBeGreaterThan(0);
     }, 200000);

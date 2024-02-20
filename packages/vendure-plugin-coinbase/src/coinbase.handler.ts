@@ -38,7 +38,7 @@ export const coinbaseHandler = new PaymentMethodHandler({
     order,
     amount,
     args,
-    metadata
+    metadata,
   ): Promise<CreatePaymentResult | CreatePaymentErrorResult> => {
     // Creating a payment immediately settles the payment, so only Admins and internal calls should be allowed to do this
     if (ctx.apiType !== 'admin') {
@@ -59,11 +59,11 @@ export const coinbaseHandler = new PaymentMethodHandler({
     input,
     amount,
     order,
-    payment
+    payment,
   ): Promise<CreateRefundResult> => {
     Logger.warn(
       `This plugin does not support refunds. You need to manually refund ${payment.transactionId} via Coinbase`,
-      loggerCtx
+      loggerCtx,
     );
     return {
       state: 'Failed',

@@ -49,7 +49,7 @@ describe('Multi-Server Db Session Cache Plugin', function () {
   it('Should add item to order', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
-      'test'
+      'test',
     );
     const { addItemToOrder } = await shopClient.query(
       gql`
@@ -76,11 +76,11 @@ describe('Multi-Server Db Session Cache Plugin', function () {
       {
         productVariantId: 'T_1',
         quantity: 1,
-      }
+      },
     );
     expect(addItemToOrder.id).toBeDefined();
     expect(addItemToOrder.customer.emailAddress).toEqual(
-      'hayden.zieme12@hotmail.com'
+      'hayden.zieme12@hotmail.com',
     );
     activeUserId = addItemToOrder.customer.user.id;
   });

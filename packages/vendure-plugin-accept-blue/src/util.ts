@@ -50,7 +50,7 @@ export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
     return 'biannually';
   }
   throw new Error(
-    `Subscription interval '${interval}' and intervalCount '${intervalCount}' cannot be mapped to any of these frequencies: weekly, biweekly, monthly, bimonthly, quarterly, annually or biannually`
+    `Subscription interval '${interval}' and intervalCount '${intervalCount}' cannot be mapped to any of these frequencies: weekly, biweekly, monthly, bimonthly, quarterly, annually or biannually`,
   );
 }
 
@@ -60,12 +60,12 @@ export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
 export function getNrOfBillingCyclesLeft(
   startDate: Date,
   endDate: Date,
-  frequency: Frequency
+  frequency: Frequency,
 ): number {
   const diff = endDate.getTime() - startDate.getTime();
   const diffInDays = diff / (1000 * 3600 * 24);
   const nrOfBillingCyclesLeft = Math.floor(
-    diffInDays / getDaysBetweenBillingCycles(frequency)
+    diffInDays / getDaysBetweenBillingCycles(frequency),
   );
   return nrOfBillingCyclesLeft;
 }

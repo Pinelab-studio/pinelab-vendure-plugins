@@ -22,7 +22,8 @@
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
-    "generate": "graphql-codegen"
+    "generate": "graphql-codegen",
+    "lint": "echo 'Not configured yet'"
   },
   "dependencies": {
     "chartist-plugin-tooltips-updated": "^1.0.0",

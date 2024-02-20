@@ -19,7 +19,7 @@ import { PicqerConfigComponent } from './picqer-config.component';
         icon: 'cloud-network',
         requiresPermission: 'Picqer',
       },
-      'settings'
+      'settings',
     ),
     /*     registerHistoryEntryComponent({
           type: 'GOEDGEPICKT_NOTIFICATION',

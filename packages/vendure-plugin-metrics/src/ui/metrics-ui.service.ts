@@ -42,17 +42,17 @@ export class MetricsUiService {
             return this.toChartEntry(
               metricSummary.advancedMetricSummaries,
               `${uiState.language}-${uiState.locale}`,
-              currencyCode
+              currencyCode,
             );
-          })
-      )
+          }),
+      ),
     );
   }
 
   toChartEntry(
     input: AdvancedMetricSummary[],
     locale: string,
-    currencyCode: string
+    currencyCode: string,
   ): ChartEntry[] {
     return input.map((r) => {
       const formatValueAs: 'currency' | 'number' =

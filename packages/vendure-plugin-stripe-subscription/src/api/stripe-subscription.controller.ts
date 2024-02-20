@@ -19,13 +19,13 @@ export class StripeSubscriptionController {
     private stripeSubscriptionService: StripeSubscriptionService,
     private orderService: OrderService,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private options: StripeSubscriptionPluginOptions
+    private options: StripeSubscriptionPluginOptions,
   ) {}
 
   @Post('webhook')
   async webhook(
     @Headers('stripe-signature') signature: string | undefined,
-    @Req() request: RequestWithRawBody
+    @Req() request: RequestWithRawBody,
   ): Promise<void> {
     const body = JSON.parse(request.body.toString()) as IncomingStripeWebhook;
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
@@ -39,7 +39,7 @@ export class StripeSubscriptionController {
     if (!StripeSubscriptionService.webhookEvents.includes(body.type as any)) {
       Logger.info(
         `Received incoming '${body.type}' webhook, not processing this event.`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -47,13 +47,13 @@ export class StripeSubscriptionController {
       // For some reason we get a webhook without metadata first, we ignore it
       return Logger.info(
         `Incoming webhook is missing metadata.orderCode/channelToken, ignoring. We should receive another one with metadata...`,
-        loggerCtx
+        loggerCtx,
       );
     }
     try {
       const ctx = await this.stripeSubscriptionService.createContext(
         channelToken,
-        request
+        request,
       );
       const order = await this.orderService.findOneByCode(ctx, orderCode);
       if (!order) {
@@ -72,7 +72,7 @@ export class StripeSubscriptionController {
         await this.stripeSubscriptionService.handleIntentSucceeded(
           ctx,
           body.data.object as StripePaymentIntent & StripeSetupIntent,
-          order
+          order,
         );
       } else if (
         body.type === 'invoice.payment_failed' ||
@@ -82,7 +82,7 @@ export class StripeSubscriptionController {
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,
           invoiceObject,
-          order
+          order,
         );
       }
       Logger.info(`Successfully handled webhook ${body.type}`, loggerCtx);
@@ -93,7 +93,7 @@ export class StripeSubscriptionController {
           (error as Error)?.message
         }`,
         loggerCtx,
-        (error as Error)?.stack
+        (error as Error)?.stack,
       );
       throw error;
     }

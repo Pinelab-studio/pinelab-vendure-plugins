@@ -29,7 +29,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
       Logger.error(
         `Could not find the "@google-cloud/storage" package. Make sure it is installed`,
         GoogleStorageInvoiceStrategy.name,
-        err.stack
+        err.stack,
       );
     }
   }
@@ -50,7 +50,7 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
     tmpFile: string,
     invoiceNumber: number,
     channelToken: string,
-    isCreditInvoice: boolean
+    isCreditInvoice: boolean,
   ): Promise<string> {
     let filename = `${invoiceNumber}.pdf`;
     if (isCreditInvoice) {

@@ -112,7 +112,7 @@ describe('Webhook plugin', function () {
     await expect(setWebhooks[0].event).toBe('ProductEvent');
     await expect(setWebhooks[0].url).toBe(testProductWebhookUrl);
     await expect(setWebhooks[0].requestTransformer?.supportedEvents[0]).toBe(
-      'ProductEvent'
+      'ProductEvent',
     );
     await expect(setWebhooks[0].requestTransformer?.name).toBeDefined();
     await expect(setWebhooks[1].event).toBe('AccountRegistrationEvent');
@@ -121,14 +121,13 @@ describe('Webhook plugin', function () {
   });
 
   it('Should get all webhooks for current channel', async () => {
-    const { webhooks } = await adminClient.query<WebhooksQuery>(
-      getWebhooksQuery
-    );
+    const { webhooks } =
+      await adminClient.query<WebhooksQuery>(getWebhooksQuery);
     await expect(webhooks.length).toBe(2);
     await expect(webhooks[0].event).toBe('ProductEvent');
     await expect(webhooks[0].url).toBe(testProductWebhookUrl);
     await expect(webhooks[0].requestTransformer?.supportedEvents[0]).toBe(
-      'ProductEvent'
+      'ProductEvent',
     );
     await expect(webhooks[0].requestTransformer?.name).toBeDefined();
   });
@@ -136,13 +135,13 @@ describe('Webhook plugin', function () {
   it('Should get available events', async () => {
     const { availableWebhookEvents } =
       await adminClient.query<AvailableWebhookEventsQuery>(
-        getAvailableWebhookEventsQuery
+        getAvailableWebhookEventsQuery,
       );
     const hasRegistrationEvent = availableWebhookEvents.some(
-      (event) => event === 'AccountRegistrationEvent'
+      (event) => event === 'AccountRegistrationEvent',
     );
     const hasProductEvent = availableWebhookEvents.some(
-      (event) => event === 'ProductEvent'
+      (event) => event === 'ProductEvent',
     );
     await expect(availableWebhookEvents.length).toBe(2);
     await expect(hasRegistrationEvent).toBe(true);
@@ -152,14 +151,14 @@ describe('Webhook plugin', function () {
   it('Should get available request tranformers', async () => {
     const { availableWebhookRequestTransformers } =
       await adminClient.query<AvailableWebhookRequestTransformersQuery>(
-        getAvailableWebhookRequestTransformersQuery
+        getAvailableWebhookRequestTransformersQuery,
       );
     expect(availableWebhookRequestTransformers.length).toBe(1);
     expect(availableWebhookRequestTransformers[0].name).toBe(
-      'Stringify Product events'
+      'Stringify Product events',
     );
     expect(availableWebhookRequestTransformers[0].supportedEvents[0]).toBe(
-      'ProductEvent'
+      'ProductEvent',
     );
   });
 

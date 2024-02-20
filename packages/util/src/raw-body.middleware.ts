@@ -15,7 +15,7 @@ export const rawBodyMiddleware = raw({
     req: RequestWithRawBody,
     res: http.ServerResponse,
     buf: Buffer,
-    encoding: string
+    encoding: string,
   ) {
     if (Buffer.isBuffer(buf)) {
       req.rawBody = Buffer.from(buf);

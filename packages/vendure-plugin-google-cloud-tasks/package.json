@@ -22,6 +22,7 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "vitest run",
+    "lint": "echo 'Not configured yet'",
     "start": "yarn ts-node test/dev-server.ts"
   },
   "dependencies": {

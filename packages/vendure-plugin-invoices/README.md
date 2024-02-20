@@ -83,7 +83,7 @@ this.eventBus.ofType(InvoiceCreatedEvent).subscribe((event) => {
     sendEmail(
       `Your order was changed, so 
           we've credited invoice ${event.previousInvoice.invoiceNumber} with ${event.creditInvoice} 
-          and created a new invoice ${event.newInvoice.invoiceNumber} for your order ${event.order.code}`
+          and created a new invoice ${event.newInvoice.invoiceNumber} for your order ${event.order.code}`,
     );
   } else {
     // If no event.previousInvoice is defined, this is the first invoice created, and you can use the download link in your order confirmation email
@@ -212,7 +212,7 @@ export class YourRemoteStrategy implements RemoteStorageStrategy {
   async save(
     tmpFile: string,
     invoiceNumber: number,
-    channelToken: string
+    channelToken: string,
   ): Promise<string> {
     // Save the invoice in your favorite cloud storage. The string you return will be saved as unique reference to your invoice.
     // You should be able to retrieve the file later with just the unique reference
@@ -227,7 +227,7 @@ export class YourRemoteStrategy implements RemoteStorageStrategy {
 
   async streamMultiple(
     invoices: InvoiceEntity[],
-    res: Response
+    res: Response,
   ): Promise<ReadStream> {
     // zip files and return stream
     const zipped = zipFiles(files);
@@ -251,7 +251,7 @@ export class YourLocalStrategy implements LocalStorageStrategy {
 
   async streamMultiple(
     invoices: InvoiceEntity[],
-    res: Response
+    res: Response,
   ): Promise<ReadStream> {
     // make a zip of your files
     const zipFile = await zipFiles(files);

@@ -20,7 +20,7 @@ export class AcceptBlueClient {
 
   constructor(
     public readonly apiKey: string,
-    public readonly pin: string = ''
+    public readonly pin: string = '',
   ) {
     if (process.env.ACCEPT_BLUE_TEST_MODE === 'true') {
       this.endpoint = 'https://api.develop.accept.blue/api/v2/';
@@ -34,7 +34,7 @@ export class AcceptBlueClient {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Basic ${Buffer.from(
-          `${this.apiKey}:${this.pin}`
+          `${this.apiKey}:${this.pin}`,
         ).toString('base64')}`,
       },
       validateStatus: () => true,
@@ -52,15 +52,15 @@ export class AcceptBlueClient {
   }
 
   async getCustomer(
-    emailAddress: string
+    emailAddress: string,
   ): Promise<AcceptBlueCustomer | undefined> {
     const customers = await this.request(
       'get',
-      `customers?active=true&customer_number=${emailAddress}`
+      `customers?active=true&customer_number=${emailAddress}`,
     );
     if (customers.length > 1) {
       throw Error(
-        `Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one.`
+        `Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one.`,
       );
     }
     if (customers[0]) {
@@ -83,11 +83,11 @@ export class AcceptBlueClient {
 
   async getOrCreatePaymentMethod(
     acceptBlueCustomerId: number,
-    input: CreditCardPaymentInput
+    input: CreditCardPaymentInput,
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(acceptBlueCustomerId);
     const existing = methods.find((method) =>
-      isSameCard(input, method as AcceptBlueCardPaymentMethod)
+      isSameCard(input, method as AcceptBlueCardPaymentMethod),
     );
     if (existing) {
       return existing;
@@ -97,11 +97,11 @@ export class AcceptBlueClient {
   }
 
   async getPaymentMethods(
-    acceptBlueCustomerId: number
+    acceptBlueCustomerId: number,
   ): Promise<AcceptBluePaymentMethod[]> {
     const result = await this.request(
       'get',
-      `customers/${acceptBlueCustomerId}/payment-methods`
+      `customers/${acceptBlueCustomerId}/payment-methods`,
     );
     if (!result) {
       return [];
@@ -111,23 +111,23 @@ export class AcceptBlueClient {
 
   async createPaymentMethod(
     acceptBlueCustomerId: number,
-    input: CreditCardPaymentInput
+    input: CreditCardPaymentInput,
   ): Promise<AcceptBluePaymentMethod> {
     const result: AcceptBluePaymentMethod = await this.request(
       'post',
       `customers/${acceptBlueCustomerId}/payment-methods`,
-      input
+      input,
     );
     Logger.info(
       `Created payment method '${result.payment_method_type}' (${result.id}) for customer '${result.customer_id}'`,
-      loggerCtx
+      loggerCtx,
     );
     return result;
   }
 
   async createRecurringSchedule(
     customerId: number,
-    input: AcceptBlueRecurringScheduleInput
+    input: AcceptBlueRecurringScheduleInput,
   ): Promise<AcceptBlueRecurringSchedule> {
     const result: AcceptBlueRecurringSchedule = await this.request(
       'post',
@@ -138,32 +138,32 @@ export class AcceptBlueClient {
         next_run_date: input.next_run_date
           ? this.toDateString(input.next_run_date)
           : undefined,
-      }
+      },
     );
     Logger.info(
       `Created recurring schedule ${result.id} for customer '${result.customer_id}'`,
-      loggerCtx
+      loggerCtx,
     );
     return result;
   }
 
   async createRefund(
-    input: AcceptBlueRefundInput
+    input: AcceptBlueRefundInput,
   ): Promise<AcceptBlueTransaction> {
     const result: AcceptBlueTransaction = await this.request(
       'post',
       `transactions/refund`,
-      input
+      input,
     );
     if (result.error_code) {
       Logger.error(
         `Failed creating refund for reference '${input.reference_number}'`,
-        loggerCtx
+        loggerCtx,
       );
     } else {
       Logger.info(
         `Created refund with status '${result.status}' for reference '${input.reference_number}'`,
-        loggerCtx
+        loggerCtx,
       );
     }
     return result;
@@ -172,13 +172,13 @@ export class AcceptBlueClient {
   async request(
     method: 'get' | 'post' | 'patch' | 'delete',
     path: string,
-    data?: any
+    data?: any,
   ): Promise<any | undefined> {
     const result = await this.instance[method](`/${path}`, data);
     if (result.status === 404) {
       Logger.debug(
         `No result found for ${method} to "${path}", returning undefined`,
-        loggerCtx
+        loggerCtx,
       );
       return undefined;
     }
@@ -188,7 +188,7 @@ export class AcceptBlueClient {
           result.statusText
         }): ${util.inspect(result.data)}`,
         loggerCtx,
-        util.inspect(result.data)
+        util.inspect(result.data),
       );
       throw Error(result.statusText);
     }

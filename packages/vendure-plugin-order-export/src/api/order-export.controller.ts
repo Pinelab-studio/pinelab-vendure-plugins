@@ -41,7 +41,7 @@ export const orderExportPermission = new PermissionDefinition({
 export class OrderExportController {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS) private config: ExportPluginConfig,
-    private orderService: OrderService
+    private orderService: OrderService,
   ) {}
 
   @Allow(orderExportPermission.Permission)
@@ -51,24 +51,24 @@ export class OrderExportController {
     @Param('strategy') strategyName: string,
     @Query('startDate', new ParseDatePipe()) startDate: Date,
     @Query('endDate', new ParseDatePipe()) endDate: Date,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
     if (!ctx.channelId) {
       throw Error(`Channel id is needed to export orders`);
     }
     const strategy = this.config.exportStrategies.find(
-      (strategy) => strategy.name === strategyName
+      (strategy) => strategy.name === strategyName,
     );
     if (!strategy) {
       throw new UnprocessableEntityException(
-        `No strategy named '${strategyName}' configured`
+        `No strategy named '${strategyName}' configured`,
       );
     }
     Logger.info(
       `Exporting orders for user ${
         ctx.activeUserId
       } from ${startDate.toDateString()} to ${endDate.toDateString()} with strategy ${strategyName}`,
-      loggerCtx
+      loggerCtx,
     );
     const filePath = await strategy.createExportFile({
       ctx,
@@ -93,7 +93,7 @@ export class OrderExportController {
 @Resolver()
 export class OrderExportResolver {
   constructor(
-    @Inject(PLUGIN_INIT_OPTIONS) private config: ExportPluginConfig
+    @Inject(PLUGIN_INIT_OPTIONS) private config: ExportPluginConfig,
   ) {}
 
   @Allow(orderExportPermission.Permission)

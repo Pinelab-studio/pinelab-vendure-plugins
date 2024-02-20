@@ -39,7 +39,7 @@ export class CloudTasksController implements OnApplicationBootstrap {
     const attemptsHeader = req.header('x-cloudtasks-taskretrycount');
     const responseCode = await this.service.handleIncomingJob(
       message,
-      attemptsHeader
+      attemptsHeader,
     );
     res.sendStatus(responseCode);
   }
@@ -48,7 +48,7 @@ export class CloudTasksController implements OnApplicationBootstrap {
   async clearJobs(
     @Req() req: Request,
     @Res() res: Response,
-    @Param('days') daysString: string
+    @Param('days') daysString: string,
   ): Promise<void> {
     if (!this.isValidRequest(req)) {
       res.sendStatus(401);
@@ -71,9 +71,9 @@ export class CloudTasksController implements OnApplicationBootstrap {
     ) {
       Logger.warn(
         `Unauthorized incoming webhook with Auth header ${req.header(
-          'Authorization'
+          'Authorization',
         )}`,
-        loggerCtx
+        loggerCtx,
       );
       return false;
     }

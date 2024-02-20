@@ -24,7 +24,7 @@ export class InvoiceCreatedEvent extends VendureEvent {
      * Undefined when credit invoices are disabled,
      * or when this is the first invoice for the order
      */
-    public creditInvoice?: InvoiceEntity
+    public creditInvoice?: InvoiceEntity,
   ) {
     super();
   }

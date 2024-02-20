@@ -28,7 +28,7 @@ import { invoicePermission } from './invoice-common.resolver';
 export class InvoiceController {
   constructor(
     private invoiceService: InvoiceService,
-    private channelService: ChannelService
+    private channelService: ChannelService,
   ) {}
 
   @Allow(invoicePermission.Permission)
@@ -37,7 +37,7 @@ export class InvoiceController {
     @Ctx() ctx: RequestContext,
     @Param('orderCode') orderCode: string,
     @Res() res: Response,
-    @Body() body: { template: string }
+    @Body() body: { template: string },
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
@@ -48,7 +48,7 @@ export class InvoiceController {
     const stream = await this.invoiceService.previewInvoiceWithTemplate(
       ctx,
       body.template,
-      orderCode
+      orderCode,
     );
     res.set({
       'Content-Type': 'application/pdf',
@@ -66,24 +66,23 @@ export class InvoiceController {
     @Query('email') encodedCustomerEmail: string,
     @Req() req: Request,
     @Res() res: Response,
-    @Ctx() _ctx: RequestContext
+    @Ctx() _ctx: RequestContext,
   ) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     if (!channelToken || !orderCode || !encodedCustomerEmail) {
       Logger.warn(
         `Invalid invoice download attempt from ${ip} for ${req.path}`,
-        loggerCtx
+        loggerCtx,
       );
       throw new BadRequestException();
     }
     try {
       const customerEmail = decodeURIComponent(encodedCustomerEmail);
-      const channel = await this.channelService.getChannelFromToken(
-        channelToken
-      );
+      const channel =
+        await this.channelService.getChannelFromToken(channelToken);
       if (channel.token !== channelToken) {
         throw new UserInputError(
-          `No channel found with token '${channelToken}'`
+          `No channel found with token '${channelToken}'`,
         );
       }
       const ctx = new RequestContext({
@@ -110,10 +109,10 @@ export class InvoiceController {
     } catch (error: any) {
       Logger.warn(
         `Failed invoice download attempt from ${ip} for ${req.path}: ${error.message}`,
-        loggerCtx
+        loggerCtx,
       );
       throw new ForbiddenException(
-        'This invoice does not exist or you are not authorized to download it'
+        'This invoice does not exist or you are not authorized to download it',
       );
     }
   }

@@ -76,7 +76,7 @@ export class PicqerConfigComponent implements OnInit {
     private formBuilder: FormBuilder,
     protected dataService: DataService,
     private changeDetector: ChangeDetectorRef,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -108,7 +108,7 @@ export class PicqerConfigComponent implements OnInit {
         })
         .toPromise(),
       'Saved',
-      'Failed to save'
+      'Failed to save',
     );
     if (result) {
       this.enabled = result.enabled;
@@ -123,7 +123,7 @@ export class PicqerConfigComponent implements OnInit {
     await this.tryAndNotify(
       this.dataService.mutate(FULL_SYNC).toPromise(),
       'Full sync started, this might take a while',
-      'Failed to start sync'
+      'Failed to start sync',
     );
   }
 
@@ -148,7 +148,7 @@ export class PicqerConfigComponent implements OnInit {
   private async tryAndNotify(
     promise: Promise<any>,
     successmessage: string,
-    failedMessage: string
+    failedMessage: string,
   ): Promise<any | undefined> {
     try {
       const res = await promise;

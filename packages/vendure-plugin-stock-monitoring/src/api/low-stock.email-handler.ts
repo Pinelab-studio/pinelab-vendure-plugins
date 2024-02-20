@@ -10,7 +10,7 @@ import {
 
 type StockEmailRecipientsFn = (
   injector: Injector,
-  event: VendureEvent
+  event: VendureEvent,
 ) => Promise<string[]> | string[];
 
 export interface LowStockEmailOptions {
@@ -48,8 +48,8 @@ export function createLowStockEmailHandler({
             threshold,
             line,
             event.ctx,
-            stockLevelService
-          )
+            stockLevelService,
+          ),
       );
       if (Array.isArray(emailRecipients)) {
         return { adminRecipients: emailRecipients };
@@ -68,8 +68,8 @@ export function createLowStockEmailHandler({
             threshold,
             line,
             event.ctx,
-            stockLevelService
-          )
+            stockLevelService,
+          ),
       );
       return {
         lines,
@@ -84,12 +84,12 @@ export async function droppedBelowThreshold(
   threshold: number,
   line: OrderLine,
   ctx: RequestContext,
-  stockLevelService: StockLevelService
+  stockLevelService: StockLevelService,
 ): Promise<boolean> {
   const { productVariant, quantity } = line;
   const variantStocks = await stockLevelService.getAvailableStock(
     ctx,
-    productVariant.id
+    productVariant.id,
   );
   const stockAfterOrder = variantStocks.stockOnHand;
   const stockBeforeOrder = stockAfterOrder + quantity;

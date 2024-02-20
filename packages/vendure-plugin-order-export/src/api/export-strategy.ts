@@ -68,7 +68,7 @@ export class DefaultExportStrategy implements ExportStrategy {
     if (orders.totalItems > orders.items.length) {
       // This is just a sample strategy, so this is oke
       throw new InternalServerError(
-        'Too many orders, getting paginated orders is not implemented.'
+        'Too many orders, getting paginated orders is not implemented.',
       );
     }
     Logger.info(`Exporting ${orders.items.length} orders`, loggerCtx);

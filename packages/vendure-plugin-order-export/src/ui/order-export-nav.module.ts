@@ -12,7 +12,7 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
         icon: 'download',
         requiresPermission: 'ExportOrders',
       },
-      'sales'
+      'sales',
     ),
   ],
 })

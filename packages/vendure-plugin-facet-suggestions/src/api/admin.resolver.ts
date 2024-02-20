@@ -13,7 +13,7 @@ import {
 export class AdminResolver {
   constructor(
     private readonly connection: TransactionalConnection,
-    private readonly translator: TranslatorService
+    private readonly translator: TranslatorService,
   ) {}
 
   @Query()
@@ -25,7 +25,7 @@ export class AdminResolver {
       .leftJoinAndSelect('facet.values', 'value')
       .leftJoinAndSelect(
         'facet.customFields.showOnProductDetailIf',
-        'dependencies'
+        'dependencies',
       )
       .leftJoinAndSelect('facet.translations', 'ft')
       .leftJoinAndSelect('value.translations', 'vt')

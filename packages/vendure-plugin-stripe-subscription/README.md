@@ -149,7 +149,7 @@ export class MySubscriptionStrategy implements SubscriptionStrategy {
   isSubscription(
     ctx: RequestContext,
     variant: ProductVariant,
-    injector: Injector
+    injector: Injector,
   ): boolean {
     // This example treats all products as subscriptions
     return true;
@@ -161,7 +161,7 @@ export class MySubscriptionStrategy implements SubscriptionStrategy {
     productVariant: ProductVariant,
     order: Order,
     orderLineCustomFields: { [key: string]: any },
-    quantity: number
+    quantity: number,
   ): Subscription {
     return {
       name: `Subscription ${productVariant.name}`,
@@ -182,7 +182,7 @@ export class MySubscriptionStrategy implements SubscriptionStrategy {
     injector: Injector,
     // Custom inputs can be passed into the preview method via the storefront
     customInputs: any,
-    productVariant: ProductVariant
+    productVariant: ProductVariant,
   ): Subscription {
     return {
       name: `Subscription ${productVariant.name}`,

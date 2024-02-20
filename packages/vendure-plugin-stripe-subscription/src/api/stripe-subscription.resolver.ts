@@ -39,19 +39,19 @@ export class StripeSubscriptionCommonResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
     private paymentMethodService: PaymentMethodService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
   ) {}
 
   @Query()
   async previewStripeSubscriptions(
     @Ctx() ctx: RequestContext,
     @Args()
-    { productVariantId, customInputs }: QueryPreviewStripeSubscriptionsArgs
+    { productVariantId, customInputs }: QueryPreviewStripeSubscriptionsArgs,
   ): Promise<GraphqlQuery['previewStripeSubscriptions']> {
     return this.stripeSubscriptionService.subscriptionHelper.previewSubscription(
       ctx,
       productVariantId,
-      customInputs
+      customInputs,
     );
   }
 
@@ -59,12 +59,12 @@ export class StripeSubscriptionCommonResolver {
   async previewStripeSubscriptionsForProduct(
     @Ctx() ctx: RequestContext,
     @Args()
-    { productId, customInputs }: QueryPreviewStripeSubscriptionsForProductArgs
+    { productId, customInputs }: QueryPreviewStripeSubscriptionsForProductArgs,
   ): Promise<GraphqlQuery['previewStripeSubscriptionsForProduct']> {
     return this.stripeSubscriptionService.subscriptionHelper.previewSubscriptionsForProduct(
       ctx,
       productId,
-      customInputs
+      customInputs,
     );
   }
 
@@ -72,15 +72,15 @@ export class StripeSubscriptionCommonResolver {
   @Resolver('PaymentMethodQuote')
   async stripeSubscriptionPublishableKey(
     @Ctx() ctx: RequestContext,
-    @Parent() paymentMethodQuote: PaymentMethodQuote
+    @Parent() paymentMethodQuote: PaymentMethodQuote,
   ): Promise<string | undefined> {
     const paymentMethod = await this.paymentMethodService.findOne(
       ctx,
-      paymentMethodQuote.id
+      paymentMethodQuote.id,
     );
     if (!paymentMethod) {
       throw new UserInputError(
-        `No payment method with id '${paymentMethodQuote.id}' found. Unable to resolve field"stripeSubscriptionPublishableKey"`
+        `No payment method with id '${paymentMethodQuote.id}' found. Unable to resolve field"stripeSubscriptionPublishableKey"`,
       );
     }
     return paymentMethod.handler.args.find((a) => a.name === 'publishableKey')
@@ -91,14 +91,14 @@ export class StripeSubscriptionCommonResolver {
   @Resolver('OrderLine')
   async stripeSubscriptions(
     @Ctx() ctx: RequestContext,
-    @Parent() orderLine: OrderLine
+    @Parent() orderLine: OrderLine,
   ): Promise<StripeSubscription[] | undefined> {
     await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
     const subscriptionsForOrderLine =
       await this.stripeSubscriptionService.subscriptionHelper.getSubscriptionsForOrderLine(
         ctx,
         orderLine,
-        orderLine.order
+        orderLine.order,
       );
     return subscriptionsForOrderLine.map((s) => ({
       ...s,
@@ -114,7 +114,7 @@ export class StripeSubscriptionShopApiResolver {
   @Mutation()
   @Allow(Permission.Owner)
   async createStripeSubscriptionIntent(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
   ): Promise<GraphqlShopMutation['createStripeSubscriptionIntent']> {
     const res = await this.stripeSubscriptionService.createIntent(ctx);
     return res;
@@ -129,11 +129,11 @@ export class StripeSubscriptionAdminApiResolver {
   @Allow(Permission.Owner)
   async createStripeSubscriptionIntent(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationCreateStripeSubscriptionIntentArgs
+    @Args() args: MutationCreateStripeSubscriptionIntentArgs,
   ): Promise<GraphqlAdminMutation['createStripeSubscriptionIntent']> {
     const res = await this.stripeSubscriptionService.createIntentForDraftOrder(
       ctx,
-      args.orderId
+      args.orderId,
     );
     return res;
   }

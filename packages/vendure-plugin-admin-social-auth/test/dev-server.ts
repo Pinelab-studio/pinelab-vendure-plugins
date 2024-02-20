@@ -17,8 +17,8 @@ import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import path from 'path';
 import { AdminSocialAuthPlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
-
-require('dotenv').config();
+import { config } from 'dotenv';
+config();
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -60,7 +60,7 @@ require('dotenv').config();
       adminApiPlayground: true,
     },
   });
-  const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
+  const { server } = createTestEnvironment(devConfig);
   await server.init({
     initialData,
     productsCsvPath: '../test/src/products-import.csv',

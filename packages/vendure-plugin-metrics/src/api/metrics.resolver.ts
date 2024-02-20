@@ -15,7 +15,7 @@ export class MetricsResolver {
   @Allow(Permission.ReadOrder)
   async advancedMetricSummaries(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: AdvancedMetricSummaryInput
+    @Args('input') input: AdvancedMetricSummaryInput,
   ): Promise<AdvancedMetricSummary[]> {
     return this.metricsService.getMetrics(ctx, input);
   }

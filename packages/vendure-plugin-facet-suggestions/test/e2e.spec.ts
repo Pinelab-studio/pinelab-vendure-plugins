@@ -55,7 +55,7 @@ if (process.env.TEST_ADMIN_UI) {
   it('Should compile admin', async () => {
     const files = await getFilesInAdminUiFolder(
       __dirname,
-      FacetSuggestionsPlugin.ui
+      FacetSuggestionsPlugin.ui,
     );
     expect(files?.length).toBeGreaterThan(0);
   }, 200000);

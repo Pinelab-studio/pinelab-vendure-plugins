@@ -23,7 +23,7 @@ import { GoedgepicktComponent } from './goedgepickt.component';
         routerLink: ['/extensions/goedgepickt'],
         icon: 'cursor-hand-open',
       },
-      'settings'
+      'settings',
     ),
   ],
   declarations: [GoedgepicktComponent],

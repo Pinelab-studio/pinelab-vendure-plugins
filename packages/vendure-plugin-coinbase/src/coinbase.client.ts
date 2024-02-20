@@ -32,7 +32,7 @@ export class CoinbaseClient {
     if (result.data.error) {
       Logger.error(
         `Coinbase call failed: ${result.data.error?.message}`,
-        loggerCtx
+        loggerCtx,
       );
       throw Error(result.data.error?.message);
     }

@@ -60,7 +60,7 @@ export class SendcloudService implements OnApplicationBootstrap {
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions,
     private entityHydrator: EntityHydrator,
-    private historyService: HistoryService
+    private historyService: HistoryService,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -71,7 +71,7 @@ export class SendcloudService implements OnApplicationBootstrap {
           orderCode: event.order.code,
           ctx: event.ctx.serialize(),
         },
-        { retries: 20 }
+        { retries: 20 },
       );
     });
     // Handle jobs
@@ -84,7 +84,7 @@ export class SendcloudService implements OnApplicationBootstrap {
         } catch (error) {
           Logger.warn(
             `Failed to sync order ${data.orderCode} for channel ${ctx.channel.token}: ${error}`,
-            loggerCtx
+            loggerCtx,
           );
           throw error;
         }
@@ -94,12 +94,12 @@ export class SendcloudService implements OnApplicationBootstrap {
 
   async createOrderInSendcloud(
     userCtx: RequestContext,
-    order: Order
+    order: Order,
   ): Promise<Parcel | undefined> {
     if (this.options.disabled) {
       Logger.info(
         `Plugin is disabled, not syncing order ${order.code}`,
-        loggerCtx
+        loggerCtx,
       );
       return;
     }
@@ -118,8 +118,8 @@ export class SendcloudService implements OnApplicationBootstrap {
           ...(await this.options.additionalParcelItemsFn(
             ctx,
             new Injector(this.moduleRef),
-            order
-          ))
+            order,
+          )),
         );
       }
       const { client, defaultPhoneNr } = await this.getClient(ctx);
@@ -141,7 +141,7 @@ export class SendcloudService implements OnApplicationBootstrap {
   async updateOrderStatus(
     ctx: RequestContext,
     sendcloudStatus: SendcloudParcelStatus,
-    orderCode: string
+    orderCode: string,
   ): Promise<void> {
     let order = await this.connection
       .getRepository(ctx, Order)
@@ -149,23 +149,23 @@ export class SendcloudService implements OnApplicationBootstrap {
     if (!order) {
       Logger.warn(
         `Cannot update status from SendCloud: No order with code ${orderCode} found`,
-        loggerCtx
+        loggerCtx,
       );
       throw Error(
-        `Cannot update status from SendCloud: No order with code ${orderCode} found`
+        `Cannot update status from SendCloud: No order with code ${orderCode} found`,
       );
     }
     if (order.state === sendcloudStatus.orderState) {
       return Logger.info(
         `Not updating order with code ${orderCode}: Order already has state ${order.state}`,
-        loggerCtx
+        loggerCtx,
       );
     }
     if (sendcloudStatus.orderState === 'Shipped') {
       await this.shipAll(ctx, order);
       return Logger.info(
         `Successfully updated order ${orderCode} to Shipped`,
-        loggerCtx
+        loggerCtx,
       );
     }
     order = await this.connection
@@ -178,7 +178,7 @@ export class SendcloudService implements OnApplicationBootstrap {
       });
       return Logger.info(
         `Successfully updated order ${orderCode} to Delivered`,
-        loggerCtx
+        loggerCtx,
       );
     }
     // Fall through, means unhandled state
@@ -196,7 +196,7 @@ export class SendcloudService implements OnApplicationBootstrap {
       {
         code: sendcloudHandler.code,
         arguments: [],
-      }
+      },
     );
   }
 
@@ -211,13 +211,13 @@ export class SendcloudService implements OnApplicationBootstrap {
       });
       Logger.info(
         `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
-        loggerCtx
+        loggerCtx,
       );
     } catch (e: any) {
       Logger.error(
         `Failed to fulfill order ${order.code}: ${e?.message}. Transition this order manually to 'Delivered' after checking that it exists in Sendcloud.`,
         loggerCtx,
-        util.inspect(e)
+        util.inspect(e),
       );
     }
   }
@@ -228,7 +228,7 @@ export class SendcloudService implements OnApplicationBootstrap {
       secret: string;
       publicKey: string;
       defaultPhoneNr: string;
-    }
+    },
   ): Promise<SendcloudConfigEntity> {
     const repo = this.connection.getRepository(ctx, SendcloudConfigEntity);
     const existing = await repo.findOne({
@@ -258,7 +258,7 @@ export class SendcloudService implements OnApplicationBootstrap {
   }
 
   async getClient(
-    ctx: RequestContext
+    ctx: RequestContext,
   ): Promise<{ client: SendcloudClient; defaultPhoneNr?: string }> {
     const config = await this.getConfig(ctx);
     if (!config || !config?.secret || !config.publicKey) {
@@ -286,7 +286,7 @@ export class SendcloudService implements OnApplicationBootstrap {
    */
   private async syncOrder(
     ctx: RequestContext,
-    orderCode: string
+    orderCode: string,
   ): Promise<void> {
     const config = await this.getConfig(ctx);
     if (!config?.secret || !config?.publicKey) {
@@ -300,29 +300,29 @@ export class SendcloudService implements OnApplicationBootstrap {
     if (!order) {
       return Logger.error(
         `No order found with code ${orderCode}. Can not sync this order.`,
-        loggerCtx
+        loggerCtx,
       );
     }
     const hasSendcloudHandler = order.shippingLines.find(
       (line) =>
-        line.shippingMethod?.fulfillmentHandlerCode === sendcloudHandler.code
+        line.shippingMethod?.fulfillmentHandlerCode === sendcloudHandler.code,
     );
     if (!hasSendcloudHandler) {
       return Logger.info(
         `Order ${order.code} does not have SendCloud set as handler. Not syncing this order.`,
-        loggerCtx
+        loggerCtx,
       );
     }
     await this.safeFulfill(ctx, order);
     Logger.info(
       `Syncing order ${orderCode} for channel ${ctx.channel.token}`,
-      loggerCtx
+      loggerCtx,
     );
     const result = await this.createOrderInSendcloud(ctx, order);
     if (result) {
       Logger.info(
         `Order ${order.code} synced to SendCloud: ${result.id}`,
-        loggerCtx
+        loggerCtx,
       );
     }
   }
@@ -330,7 +330,7 @@ export class SendcloudService implements OnApplicationBootstrap {
   async logHistoryEntry(
     ctx: RequestContext,
     orderId: ID,
-    error?: unknown
+    error?: unknown,
   ): Promise<void> {
     let prettifiedError = error
       ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
@@ -346,7 +346,7 @@ export class SendcloudService implements OnApplicationBootstrap {
           error: prettifiedError,
         },
       },
-      false
+      false,
     );
   }
 }

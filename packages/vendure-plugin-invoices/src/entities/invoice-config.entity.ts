@@ -43,7 +43,7 @@ function resolveTemplateColumnType(): ColumnType {
   } else {
     Logger.warn(
       `No large-text column type available for DB engine "${dbEngine}", using "text". ( Contributions welcome )`,
-      loggerCtx
+      loggerCtx,
     );
   }
   return 'text';
