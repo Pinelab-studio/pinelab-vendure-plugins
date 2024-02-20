@@ -15,7 +15,8 @@
     "build": "yarn lerna run build --concurrency 1",
     "prettier:check": "yarn prettier --check .",
     "prettier:write": "yarn prettier --write .",
-    "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +"
+    "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
+    "lint": "echo '❌ Linting can only be done in the individual packages' && exit 1"
   },
   "devDependencies": {
     "@commitlint/cli": "17.2.0",
