@@ -1,13 +1,13 @@
 import { Controller, Get, Inject, Res } from '@nestjs/common';
-import { ConfigService, VENDURE_VERSION, Injector } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { AdminUiConfig } from '@vendure/common/lib/shared-types';
+import { ConfigService, VENDURE_VERSION } from '@vendure/core';
 import { Response } from 'express';
 import fs from 'fs/promises';
 import Handlebars from 'handlebars';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { AdminSocialAuthPluginOptions } from '../admin-social-auth.plugin';
-import { AdminUiConfig } from '@vendure/common/lib/shared-types';
-import { ModuleRef } from '@nestjs/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
 
 /**
  * Custom login page
@@ -23,10 +23,11 @@ export class LoginController {
 
   @Get('social-auth/login')
   async getLogin(@Res() res: Response): Promise<void> {
-    // Dirty hack to get the private static adminUiConfig
-    const adminUiConfig: Partial<AdminUiConfig> | undefined = (
-      AdminUiPlugin as any
-    ).options?.adminUiConfig;
+    // eslint-disable-next-line -- Dirty hack to get the private static adminUiConfig
+    const adminUiConfig: Partial<AdminUiConfig> | undefined =
+      // eslint-disable-next-line
+      // eslint-disable-next-line
+      (AdminUiPlugin as any)?.options?.adminUiConfig;
     const loginHtml = await fs.readFile(
       `${__dirname}/../ui/login.html`,
       'utf8',

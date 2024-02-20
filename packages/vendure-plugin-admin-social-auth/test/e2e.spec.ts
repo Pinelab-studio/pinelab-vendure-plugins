@@ -2,20 +2,15 @@ import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
-  SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import path from 'path';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { AdminSocialAuthPlugin } from '../src';
-import { describe, it, beforeAll, expect, afterAll } from 'vitest';
 
 let server: TestServer;
-let adminClient: SimpleGraphQLClient;
-let shopClient: SimpleGraphQLClient;
-const serverStarted = false;
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -30,15 +25,15 @@ beforeAll(async () => {
     ],
   });
 
-  ({ server, adminClient, shopClient } = createTestEnvironment(config));
+  ({ server } = createTestEnvironment(config));
   await server.init({
     initialData,
     productsCsvPath: '../test/src/products-import.csv',
   });
 }, 60000);
 
-it('Should start successfully', async () => {
-  await expect(server.app.getHttpServer).toBeDefined;
+it('Should start successfully', () => {
+  expect(server.app.getHttpServer()).toBeDefined();
 });
 
 afterAll(() => {
