@@ -35,7 +35,7 @@ export function isSameCard(
   input: CardInput | MaskedCardInput,
   card: MaskedCardInput
 ): boolean {
-  if ((input as any).card) {
+  if ((input as CardInput).card) {
     return (
       (input as CardInput).card.endsWith(card.last4) &&
       input.expiry_month === card.expiry_month &&
