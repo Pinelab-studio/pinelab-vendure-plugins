@@ -164,8 +164,8 @@ export interface AcceptBlueLineItem {
 /** +++++ Payment +++++ */
 
 type CardType = 'Visa' | 'MasterCard' | 'Discover' | 'Amex' | 'JCB' | 'Diners';
-type AccountType = 'checking' | 'savings';
-type SecCode = 'FPD' | 'CCD' | 'TEL' | 'WEB';
+export type AccountType = 'Checking' | 'Savings';
+export type SecCode = 'PPD' | 'CCD' | 'TEL' | 'WEB';
 
 interface AcceptBlue3DSecure {
   eci: string;
@@ -197,6 +197,7 @@ export interface AcceptBlueCheckPaymentMethod {
   name: string;
   payment_method_type: 'check';
   last4: string;
+  account_number: string;
 
   routing_number: string;
   account_type: AccountType;
@@ -218,6 +219,7 @@ export interface CreditCardPaymentMethodInput
   card: string;
   expiry_month: number;
   expiry_year: number;
+  cvv2?: string;
 }
 
 export interface TokenPaymentMethodInput extends BaseCardPaymentMethodInput {
@@ -229,12 +231,9 @@ export interface TokenPaymentMethodInput extends BaseCardPaymentMethodInput {
    * Nonce token: nonce-
    */
   source: string;
-
-  expiry_month?: number;
-  expiry_year?: number;
-  routing_number?: string;
-  account_type?: AccountType;
-  sec_code?: SecCode;
+  expiry_month: number;
+  expiry_year: number;
+  last4: string;
 }
 
 export interface CheckPaymentMethodInput {
@@ -303,6 +302,11 @@ export interface CreditCardPaymentInput extends BaseCardPaymentInput {
 
   cvv2?: string;
 }
+
+export type PaymentInput =
+  | CreditCardPaymentInput
+  | CheckPaymentInput
+  | TokenPaymentMethodInput;
 
 export interface WalletPaymentInput extends BaseCardPaymentInput {
   source: 'applepay' | 'googlepay';
@@ -385,6 +389,33 @@ export interface AcceptBlueRecurringScheduleInput {
   receipt_email?: string;
   use_this_source_key?: boolean;
 }
+
+export interface AcceptBlueChargeTransactionInputAmount {
+  amount: number;
+}
+export interface AcceptBlueTokenizedCreditCardChargeTransactionInput
+  extends AcceptBlueChargeTransactionInputAmount {
+  source: string;
+}
+
+export interface AcceptBlueCreditCardChargeTransactionInput
+  extends AcceptBlueChargeTransactionInputAmount {
+  card: string;
+  expiry_month: number;
+  expiry_year: number;
+}
+
+export interface AcceptBlueCheckChargeTransactionInput
+  extends AcceptBlueChargeTransactionInputAmount {
+  routing_number: string;
+  account_number: string;
+  name: string;
+}
+
+export type AcceptBlueChargeTransactionInput =
+  | AcceptBlueTokenizedCreditCardChargeTransactionInput
+  | AcceptBlueCreditCardChargeTransactionInput
+  | AcceptBlueCheckChargeTransactionInput;
 
 /** ++++++ Refunds ++++++ */
 
