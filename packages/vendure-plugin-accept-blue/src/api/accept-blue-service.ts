@@ -313,8 +313,7 @@ export class AcceptBlueService {
         async ([orderLineId, subscriptionIds]) => {
           const orderLine = order.lines.find((l) => l.id === orderLineId);
           if (orderLine) {
-            orderLine.customFields.subscriptionIds =
-              subscriptionsPerOrderLine.get(orderLineId) ?? [];
+            orderLine.customFields.subscriptionIds = subscriptionIds;
             await this.connection.getRepository(ctx, OrderLine).save(orderLine);
           }
         }
