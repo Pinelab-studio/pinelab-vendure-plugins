@@ -13,12 +13,6 @@ interface MaskedCardInput {
   expiry_year: number;
 }
 
-interface ObfuscatedCard {
-  last4: string;
-  expiry_month: number;
-  expiry_year: number;
-}
-
 interface CheckInput {
   name: string;
   routing_number: string;
@@ -39,7 +33,7 @@ interface ObfuscatedCheck {
 
 export function isSameCard(
   input: CardInput | MaskedCardInput,
-  card: ObfuscatedCard
+  card: MaskedCardInput
 ): boolean {
   if ((input as any).card) {
     return (
