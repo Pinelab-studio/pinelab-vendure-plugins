@@ -17,7 +17,7 @@ import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { ChangeOrderCustomerPlugin } from '../src/change-order-customer.plugin';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { addItem } from '../../test/src/shop-utils';
+import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 
 require('dotenv').config();
 
@@ -67,5 +67,5 @@ require('dotenv').config();
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 5,
   });
-  await addItem(shopClient, 'T_1', 1);
+  await createSettledOrder(shopClient, 1);
 })();

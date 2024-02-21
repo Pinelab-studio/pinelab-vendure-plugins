@@ -37,14 +37,13 @@ export class ChangeOrderCustomerService {
       result = await this.customerService.createOrUpdate(ctx, input);
     } else {
       result = await this.customerService.findOne(ctx, input);
+      if (!result) {
+        throw new UserInputError(`Couldn't find Customer with id ${input}`);
+      }
     }
 
     if (isGraphQlErrorResult(result)) {
       throw new UserInputError(result.message);
-    }
-
-    if (!result) {
-      throw new UserInputError(`Couldn't find Customer with id ${input}`);
     }
 
     const order = await this.orderService.findOne(ctx, orderId);

@@ -14,12 +14,13 @@ export default [
         .fromComponent(SelectCustomerDialogComponent)
         .subscribe((result) => {
           if (!(result as any).id) {
+            // This means successful
             context.dataService
               .mutate(CHANGE_ORDER_CUSTOMER, { orderId, input: result })
               .subscribe((result: any) => {
                 if (result.setCustomerForOrder?.id) {
                   context.notificationService.success(
-                    'Customer changed successfully'
+                    `${result.setCustomerForOrder.customer.emailAddress} set as Customer`
                   );
                 } else {
                   context.notificationService.error(
