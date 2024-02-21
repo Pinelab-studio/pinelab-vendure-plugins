@@ -13,22 +13,8 @@ export default [
       modalService
         .fromComponent(SelectCustomerDialogComponent)
         .subscribe((result) => {
-          if (!(result as any).id) {
-            // This means successful
-            context.dataService
-              .mutate(CHANGE_ORDER_CUSTOMER, { orderId, input: result })
-              .subscribe((result: any) => {
-                if (result.setCustomerForOrder?.id) {
-                  context.notificationService.success(
-                    `${result.setCustomerForOrder.customer.emailAddress} set as Customer`
-                  );
-                } else {
-                  context.notificationService.error(
-                    'Failed to change Customer'
-                  );
-                }
-              });
-          } else if (result) {
+          if ((result as any).id) {
+            // this means that the customer was selected from the list
             context.dataService
               .mutate(CHANGE_ORDER_CUSTOMER, {
                 orderId,
@@ -37,7 +23,22 @@ export default [
               .subscribe((result: any) => {
                 if (result.setCustomerForOrder?.id) {
                   context.notificationService.success(
-                    'Customer changed successfully'
+                    `${result.setCustomerForOrder.customer.emailAddress} set as customer`
+                  );
+                } else {
+                  context.notificationService.error(
+                    'Failed to change Customer'
+                  );
+                }
+              });
+          } else if (result) {
+            // This means we create a new customer based on given input
+            context.dataService
+              .mutate(CHANGE_ORDER_CUSTOMER, { orderId, input: result })
+              .subscribe((result: any) => {
+                if (result.setCustomerForOrder?.id) {
+                  context.notificationService.success(
+                    `Created '${result.setCustomerForOrder.customer.emailAddress}' as customer for this order.`
                   );
                 } else {
                   context.notificationService.error(
@@ -46,7 +47,8 @@ export default [
                 }
               });
           } else {
-            throw new Error('Not Implemented');
+            // Should never happen, but the type system says the result from the customer dialog can be undefined
+            throw new Error('No customer selected!');
           }
         });
     },
