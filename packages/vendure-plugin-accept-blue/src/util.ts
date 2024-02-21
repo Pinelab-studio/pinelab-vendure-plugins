@@ -1,5 +1,5 @@
 import { Subscription } from '../../util/src/subscription/subscription-strategy';
-import { Frequency } from './types';
+import { AccountType, Frequency } from './types';
 
 interface CardInput {
   card: string;
@@ -7,17 +7,55 @@ interface CardInput {
   expiry_year: number;
 }
 
-interface CardToCheck {
+interface MaskedCardInput {
   last4: string;
   expiry_month: number;
   expiry_year: number;
 }
 
-export function isSameCard(input: CardInput, card: CardToCheck): boolean {
+interface CheckInput {
+  name: string;
+  routing_number: string;
+  account_number: string;
+  account_type?: AccountType;
+  sec_code?: string;
+}
+
+interface ObfuscatedCheck {
+  last4: string;
+  expiry_month: number;
+  expiry_year: number;
+  name: string;
+  routing_number: string;
+  account_type?: AccountType;
+  sec_code?: string;
+}
+
+export function isSameCard(
+  input: CardInput | MaskedCardInput,
+  card: MaskedCardInput
+): boolean {
+  if ((input as CardInput).card) {
+    return (
+      (input as CardInput).card.endsWith(card.last4) &&
+      input.expiry_month === card.expiry_month &&
+      input.expiry_year === card.expiry_year
+    );
+  }
+
   return (
-    input.card.endsWith(card.last4) &&
+    (input as MaskedCardInput).last4 === card.last4 &&
     input.expiry_month === card.expiry_month &&
     input.expiry_year === card.expiry_year
+  );
+}
+export function isSameCheck(input: CheckInput, check: ObfuscatedCheck) {
+  return (
+    input.name === check.name &&
+    input.routing_number === check.routing_number &&
+    input.account_number.endsWith(check.last4) &&
+    input.account_type === check.account_type &&
+    input.sec_code === check.sec_code
   );
 }
 /**

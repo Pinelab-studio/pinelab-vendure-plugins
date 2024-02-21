@@ -82,6 +82,7 @@
           "admin-ui-helpers",
           "all-plugins",
           "anonymized-order",
+          "change-order-customer",
           "coinbase",
           "customer-managed-groups",
           "docs-website",

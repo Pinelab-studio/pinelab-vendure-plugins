@@ -29,8 +29,8 @@ export const commonApiExtensions = gql`
     endDate: DateTime
   }
 
-  type AcceptBluePaymentMethod {
-    id: ID!
+  type AcceptBlueCardPaymentMethod {
+    id: Int!
     created_at: DateTime!
     avs_address: String
     avs_zip: String
@@ -41,6 +41,24 @@ export const commonApiExtensions = gql`
     card_type: String
     last4: String
   }
+
+  type AcceptBlueCheckPaymentMethod {
+    id: Int!
+    customer_id: Int
+    created_at: DateTime!
+    name: String
+    payment_method_type: String
+    last4: String
+    account_number: String
+
+    routing_number: String
+    account_type: String
+    sec_code: String
+  }
+
+  union AcceptBluePaymentMethod =
+      AcceptBlueCardPaymentMethod
+    | AcceptBlueCheckPaymentMethod
 
   extend type PaymentMethodQuote {
     acceptBlueHostedTokenizationKey: String
