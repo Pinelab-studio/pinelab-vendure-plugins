@@ -1,6 +1,6 @@
-# 1.5.0 (2023-10-24)
+# 1.4.1 (2023-10-24)
 
-- Fixed issue #367
+- Fixed issue when creating a new product in Vendure (#367)
 
 # 1.4.0 (2023-10-24)
 
