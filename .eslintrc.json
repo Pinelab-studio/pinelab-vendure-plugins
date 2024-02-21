@@ -68,6 +68,7 @@
     "packages/vendure-plugin-anonymized-order",
     "packages/pinelab-plugin-admin-components",
     "packages/vendure-plugin-shipping-extensions",
-    "packages/vendure-plugin-picklist"
+    "packages/vendure-plugin-picklist",
+    "packages/vendure-plugin-change-order-customer"
   ]
 }

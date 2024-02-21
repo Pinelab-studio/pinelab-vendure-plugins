@@ -3,15 +3,21 @@ import axios, { AxiosInstance } from 'axios';
 import { loggerCtx } from '../constants';
 import {
   AcceptBlueCardPaymentMethod,
+  AcceptBlueChargeTransaction,
+  AcceptBlueChargeTransactionInput,
   AcceptBlueCustomer,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleInput,
   AcceptBlueRefundInput,
   AcceptBlueTransaction,
+  BaseCardPaymentInput,
+  CheckPaymentInput,
   CreditCardPaymentInput,
+  TokenBasedPaymentInput,
+  TokenPaymentMethodInput,
 } from '../types';
-import { isSameCard } from '../util';
+import { isSameCard, isSameCheck } from '../util';
 import util from 'util';
 
 export class AcceptBlueClient {
@@ -81,13 +87,28 @@ export class AcceptBlueClient {
     return result;
   }
 
-  async getOrCreatePaymentMethod(
+  async getOrCreateCardPaymentMethod(
     acceptBlueCustomerId: number,
     input: CreditCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(acceptBlueCustomerId);
     const existing = methods.find((method) =>
       isSameCard(input, method as AcceptBlueCardPaymentMethod)
+    );
+    if (existing) {
+      return existing;
+    } else {
+      return await this.createPaymentMethod(acceptBlueCustomerId, input);
+    }
+  }
+
+  async getOrCreateCheckPaymentMethod(
+    acceptBlueCustomerId: number,
+    input: CheckPaymentInput
+  ): Promise<AcceptBluePaymentMethod> {
+    const methods = await this.getPaymentMethods(acceptBlueCustomerId);
+    const existing = methods.find((method) =>
+      isSameCheck(input, method as any)
     );
     if (existing) {
       return existing;
@@ -111,8 +132,11 @@ export class AcceptBlueClient {
 
   async createPaymentMethod(
     acceptBlueCustomerId: number,
-    input: CreditCardPaymentInput
+    input: BaseCardPaymentInput
   ): Promise<AcceptBluePaymentMethod> {
+    if ((input as any).account_type) {
+      (input as any).account_type = (input as any).account_type.toLowerCase();
+    }
     const result: AcceptBluePaymentMethod = await this.request(
       'post',
       `customers/${acceptBlueCustomerId}/payment-methods`,
@@ -142,6 +166,26 @@ export class AcceptBlueClient {
     );
     Logger.info(
       `Created recurring schedule ${result.id} for customer '${result.customer_id}'`,
+      loggerCtx
+    );
+    return result;
+  }
+
+  async createCharge(
+    input: AcceptBlueChargeTransactionInput
+  ): Promise<AcceptBlueChargeTransaction> {
+    input.amount /= 100;
+    const result = await this.request('post', `transactions/charge`, input);
+    if (
+      (result as any).status === 'Error' ||
+      (result as any).status === 'Declined'
+    ) {
+      throw new Error(
+        `One time charge creation failed: ${result.error_message} (${result.error_code})`
+      );
+    }
+    Logger.info(
+      `Created charge ${input.amount} with id '${result.transaction.id}'`,
       loggerCtx
     );
     return result;
