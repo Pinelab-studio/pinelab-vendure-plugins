@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-change-order-customer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "This plugin allows you to change the customer of an order",
   "icon": "account-circle",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",

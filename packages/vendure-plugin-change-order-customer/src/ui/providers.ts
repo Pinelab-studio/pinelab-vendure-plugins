@@ -22,12 +22,10 @@ export default [
               })
               .subscribe((result: any) => {
                 if (result.setCustomerForOrder?.id) {
-                  context.notificationService.success(
-                    `${result.setCustomerForOrder.customer.emailAddress} set as customer`
-                  );
+                  context.notificationService.success(`Assigned new customer`);
                 } else {
                   context.notificationService.error(
-                    'Failed to change Customer'
+                    'Failed to change customer'
                   );
                 }
               });
@@ -38,11 +36,11 @@ export default [
               .subscribe((result: any) => {
                 if (result.setCustomerForOrder?.id) {
                   context.notificationService.success(
-                    `Created '${result.setCustomerForOrder.customer.emailAddress}' as customer for this order.`
+                    `Created new customer for this order`
                   );
                 } else {
                   context.notificationService.error(
-                    'Failed to change Customer'
+                    'Failed to change customer'
                   );
                 }
               });
