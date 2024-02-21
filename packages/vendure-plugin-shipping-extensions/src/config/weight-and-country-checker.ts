@@ -129,7 +129,6 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
           injector
         );
     } else {
-      console.log('selam lalem');
       totalOrderWeight = calculateOrderWeight(order);
     }
     return totalOrderWeight <= maxWeight && totalOrderWeight >= minWeight;
