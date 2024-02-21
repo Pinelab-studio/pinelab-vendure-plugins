@@ -65,12 +65,12 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
       },
     },
   },
-  async init(injector) {
-    entityHydrator = injector.get(EntityHydrator);
-    injector = injector;
+  async init(_injector) {
+    entityHydrator = _injector.get(EntityHydrator);
+    injector = _injector;
     const ctx = RequestContext.empty();
     // Populate the countries arg list
-    const countries = await injector.get(CountryService).findAll(ctx);
+    const countries = await _injector.get(CountryService).findAll(ctx);
     this.args.countries.ui.options = countries.items.map((c) => ({
       value: c.code,
       label: [
