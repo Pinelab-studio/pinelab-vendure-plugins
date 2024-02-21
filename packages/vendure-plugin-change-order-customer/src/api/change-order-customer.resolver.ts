@@ -1,5 +1,13 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import { Ctx, ID, Order, RequestContext, Transaction } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  ID,
+  Order,
+  Permission,
+  RequestContext,
+  Transaction,
+} from '@vendure/core';
 import { CreateCustomerInput } from '@vendure/common/lib/generated-types';
 import { ChangeOrderCustomerService } from './change-order-customer.service';
 @Resolver()
@@ -8,6 +16,7 @@ export class ChangeOrderCustomerResolver {
 
   @Mutation()
   @Transaction()
+  @Allow(Permission.UpdateOrder)
   async setCustomerForOrder(
     @Ctx() ctx: RequestContext,
     @Args()
