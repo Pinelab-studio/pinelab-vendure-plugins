@@ -1,27 +1,16 @@
 import gql from 'graphql-tag';
 
 export const schema = gql`
-  type InvoiceConfig {
+  type PicklistConfig {
     id: ID!
-    enabled: Boolean!
-    templateString: String
-  }
-
-  input InvoicesListInput {
-    page: Int!
-    itemsPerPage: Int!
-  }
-
-  input InvoiceConfigInput {
-    enabled: Boolean!
     templateString: String
   }
 
   extend type Mutation {
-    upsertInvoiceConfig(input: InvoiceConfigInput): InvoiceConfig!
+    upsertPicklistConfig(templateString: String!): PicklistConfig!
   }
 
   extend type Query {
-    invoiceConfig: InvoiceConfig
+    picklistConfig: PicklistConfig
   }
 `;

@@ -2,9 +2,9 @@ import { Column, Entity, ColumnType } from 'typeorm';
 import { DeepPartial, Logger, VendureEntity } from '@vendure/core';
 import { loggerCtx } from '../constants';
 
-@Entity('invoice_config')
-export class InvoiceConfigEntity extends VendureEntity {
-  constructor(input?: DeepPartial<InvoiceConfigEntity>) {
+@Entity('picklist_config')
+export class PicklistConfigEntity extends VendureEntity {
+  constructor(input?: DeepPartial<PicklistConfigEntity>) {
     super(input);
   }
 
@@ -22,7 +22,7 @@ export class InvoiceConfigEntity extends VendureEntity {
  * Resolve column type based on the DB engine
  */
 function resolveTemplateColumnType(): ColumnType {
-  const dbEngine = process.env.INVOICES_PLUGIN_DB_ENGINE;
+  const dbEngine = process.env.PICKLISTS_PLUGIN_DB_ENGINE;
   if (!dbEngine) {
     return 'text';
   } else if (dbEngine === 'mysql' || 'mariadb') {

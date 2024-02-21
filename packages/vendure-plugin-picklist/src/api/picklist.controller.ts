@@ -23,7 +23,7 @@ import { picklistPermission } from './picklist.resolver';
 @Controller('picklists')
 export class PicklistController {
   constructor(
-    private readonly invoiceService: PicklistService,
+    private readonly picklistService: PicklistService,
     private readonly orderService: OrderService
   ) {}
 
@@ -41,20 +41,20 @@ export class PicklistController {
     if (!body?.template || !body?.template.trim()) {
       throw new BadRequestException('No template given');
     }
-    const stream = await this.invoiceService.previewInvoiceWithTemplate(
+    const stream = await this.picklistService.previewPicklistWithTemplate(
       ctx,
       body.template,
       orderCode
     );
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="preview-invoice.pdf"`,
+      'Content-Disposition': `inline; filename="preview-picklist.pdf"`,
     });
     return stream.pipe(res);
   }
 
   @Allow(picklistPermission.Permission)
-  @Get('/download/:orderCodes')
+  @Get('/download/:orderCode')
   async download(
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
@@ -67,10 +67,10 @@ export class PicklistController {
     if (!order) {
       throw new UserInputError(`No order with code ${orderCode} found`);
     }
-    const stream = await this.invoiceService.downloadPicklist(ctx, order);
+    const stream = await this.picklistService.downloadPicklist(ctx, order);
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="preview-invoice.pdf"`,
+      'Content-Disposition': `inline; filename="preview-picklist.pdf"`,
     });
     return stream.pipe(res);
   }
@@ -95,13 +95,13 @@ export class PicklistController {
     if (!orders?.length) {
       throw new UserInputError(`No order with codes ${orderCodes} found`);
     }
-    const stream = await this.invoiceService.downloadMultiplePicklists(
+    const stream = await this.picklistService.downloadMultiplePicklists(
       ctx,
       orders
     );
     res.set({
       'Content-Type': 'application/zip',
-      'Content-Disposition': `inline; filename="invoices-${orders.length}.zip"`,
+      'Content-Disposition': `inline; filename="picklists-${orders.length}.zip"`,
     });
     return stream.pipe(res);
   }

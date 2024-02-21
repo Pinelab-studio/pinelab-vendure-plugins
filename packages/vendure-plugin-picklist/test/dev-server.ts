@@ -20,6 +20,7 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { PicklistPlugin } from '../src/plugin';
 import { PicklistService } from '../src/api/picklist.service';
+import { defaultTemplate } from '../src/api/default-template';
 
 require('dotenv').config();
 
@@ -62,7 +63,7 @@ require('dotenv').config();
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });
-  await server.app.get(PicklistService).upsertConfig(ctx, { enabled: true });
+  await server.app.get(PicklistService).upsertConfig(ctx, defaultTemplate);
   // Add a testorders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient as any, 'manual-fulfillment');

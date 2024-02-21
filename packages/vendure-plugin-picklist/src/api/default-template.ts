@@ -57,15 +57,15 @@ export const defaultTemplate = `
 
 <body style="font-family: IBM Plex Mono, Arial, Helvetica, sans-serif; width: 100%;">
 
-        <!-- INVOICE INFO + LOGO -->
+        <!-- PICKLIST INFO + LOGO -->
 
         <table style="width: 96%">
             <tr>
                 <td id="invoice-info">
-                    <h2>Invoice</h2>
+                    <h2>Picklist</h2>
                     <h5>Date: <h20>{{ orderDate }}</h20></h5>
                     <h5>Order: <h20>{{ order.code }}</h20></h5>
-                    <h5>Invoice Number: <h20>{{ invoiceNumber }}</h20></h5>  
+                    <h5>Picklist Number: <h20>{{ invoiceNumber }}</h20></h5>  
                 </td>    
                 <td id="logo">
                     <a href="https://pinelab.studio">

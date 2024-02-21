@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import {
-  JobQueue,
   Order,
   OrderService,
   RequestContext,
@@ -8,21 +7,16 @@ import {
   translateEntity,
   UserInputError,
 } from '@vendure/core';
-
-import { InvoiceConfigInput } from '../ui/generated/graphql';
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
-import { InvoiceConfigEntity } from './invoice-config.entity';
+import { PicklistConfigEntity } from './picklist-config.entity';
 import { createReadStream, ReadStream } from 'fs';
 import { createTempFile, zipFiles, ZippableFile } from './file.util';
 import { SortOrder } from '@vendure/common/lib/generated-shop-types';
-import { InvoiceData } from './types';
+import { PicklistData } from './types';
 
 @Injectable()
 export class PicklistService {
-  jobQueue: JobQueue<{ channelToken: string; orderCode: string }> | undefined;
-  retries = 10;
-
   constructor(
     private readonly connection: TransactionalConnection,
     private readonly orderService: OrderService
@@ -37,17 +31,17 @@ export class PicklistService {
 
   async upsertConfig(
     ctx: RequestContext,
-    input: InvoiceConfigInput
-  ): Promise<InvoiceConfigEntity> {
-    const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
+    templateString: string
+  ): Promise<PicklistConfigEntity> {
+    const configRepo = this.connection.getRepository(ctx, PicklistConfigEntity);
     const existing = await configRepo.findOne({
       where: { channelId: ctx.channelId as string },
     });
     if (existing) {
-      await configRepo.update(existing.id, input);
+      await configRepo.update(existing.id, { templateString });
     } else {
       await configRepo.insert({
-        ...input,
+        templateString,
         channelId: ctx.channelId as string,
       });
     }
@@ -58,8 +52,8 @@ export class PicklistService {
 
   async getConfig(
     ctx: RequestContext
-  ): Promise<InvoiceConfigEntity | undefined> {
-    const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
+  ): Promise<PicklistConfigEntity | undefined> {
+    const configRepo = this.connection.getRepository(ctx, PicklistConfigEntity);
     let config = await configRepo.findOne({
       where: { channelId: ctx.channelId as string },
     });
@@ -80,7 +74,7 @@ export class PicklistService {
   }
 
   /**
-   * Generates an invoice for the latest placed order and the given template
+   * Generates an picklist for the latest placed order and the given template
    */
   async downloadPicklist(
     ctx: RequestContext,
@@ -90,7 +84,7 @@ export class PicklistService {
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const { tempFilePath } = await this.generateInvoice(
+    const { tempFilePath } = await this.generatePicklist(
       ctx,
       config.templateString ?? defaultTemplate,
       order
@@ -115,7 +109,7 @@ export class PicklistService {
         throw new UserInputError(`No Order with code ${order.code} found`);
       }
       tmpFilesPromises.push(
-        this.generateInvoice(
+        this.generatePicklist(
           ctx,
           config.templateString ?? defaultTemplate,
           hydaratedOrder
@@ -135,7 +129,7 @@ export class PicklistService {
   /**
    * Just generates PDF, no storing in DB
    */
-  async generateInvoice(
+  async generatePicklist(
     ctx: RequestContext,
     templateString: string,
     order: Order
@@ -166,9 +160,9 @@ export class PicklistService {
   }
 
   /**
-   * Generates an invoice for the latest placed order and the given template
+   * Generates an picklist for the latest placed order and the given template
    */
-  async previewInvoiceWithTemplate(
+  async previewPicklistWithTemplate(
     ctx: RequestContext,
     template: string,
     orderCode?: string
@@ -196,15 +190,15 @@ export class PicklistService {
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const { tempFilePath } = await this.generateInvoice(ctx, template, order);
+    const { tempFilePath } = await this.generatePicklist(ctx, template, order);
     return createReadStream(tempFilePath);
   }
 
   async getData(
     ctx: RequestContext,
     order: Order,
-    latestInvoiceNumber?: number
-  ): Promise<InvoiceData> {
+    latestPicklistNumber?: number
+  ): Promise<PicklistData> {
     order.lines.forEach((line) => {
       line.productVariant = translateEntity(
         line.productVariant,
@@ -214,7 +208,7 @@ export class PicklistService {
     if (!order.customer?.emailAddress) {
       throw Error(`Order doesnt have a customer.email set!`);
     }
-    let nr = latestInvoiceNumber;
+    let nr = latestPicklistNumber;
     if (nr) {
       nr += 1;
     } else {
@@ -224,7 +218,7 @@ export class PicklistService {
       orderDate: order.orderPlacedAt
         ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
         : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt),
-      invoiceNumber: nr,
+      picklistNumber: nr,
       customerEmail: order.customer.emailAddress,
       order,
     };

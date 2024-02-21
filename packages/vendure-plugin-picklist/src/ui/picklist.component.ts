@@ -8,9 +8,9 @@ import {
 } from '@vendure/admin-ui/core';
 import { getConfigQuery, upsertConfigMutation } from './queries.graphql';
 import {
-  InvoiceConfigQuery,
-  UpsertInvoiceConfigMutation,
-  UpsertInvoiceConfigMutationVariables,
+  PicklistConfigQuery,
+  UpsertPicklistConfigMutation,
+  UpsertPicklistConfigMutationVariables,
 } from './generated/graphql';
 import { firstValueFrom } from 'rxjs';
 import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
@@ -34,11 +34,6 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
       <vdr-page-block>
         <vdr-card>
           <form class="form" [formGroup]="form">
-            <vdr-form-field label="Generate invoices on" for="enabled">
-              <clr-checkbox-wrapper>
-                <input type="checkbox" clrCheckbox formControlName="enabled" />
-              </clr-checkbox-wrapper>
-            </vdr-form-field>
             <vdr-form-field label="HTML template" for="templateString">
               <vdr-dynamic-form-input
                 *ngIf="renderNow"
@@ -50,7 +45,7 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
               >
               </vdr-dynamic-form-input>
             </vdr-form-field>
-            <vdr-form-field label="Order Code" for="enabled">
+            <vdr-form-field label="Order Code">
               <clr-input-container>
                 <input type="text" clrInput formControlName="orderCode" />
               </clr-input-container>
@@ -58,7 +53,7 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
             <button
               class="btn btn-primary preview-button"
               (click)="testDownload()"
-              [disabled]="invoicePreviewLoading"
+              [disabled]="picklistPreviewLoading"
             >
               Preview Template
             </button>
@@ -72,7 +67,7 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
 export class PicklistComponent implements OnInit {
   form: FormGroup;
   serverPath: string;
-  invoicePreviewLoading: boolean = false;
+  picklistPreviewLoading: boolean = false;
   renderNow = false;
   htmlFormInputConfigArgsDef: ConfigArgDefinition = {
     name: 'templateString',
@@ -90,7 +85,6 @@ export class PicklistComponent implements OnInit {
     private localStorageService: LocalStorageService
   ) {
     this.form = this.formBuilder.group({
-      enabled: ['enabled'],
       templateString: ['templateString'],
       orderCode: [''],
     });
@@ -99,10 +93,9 @@ export class PicklistComponent implements OnInit {
 
   async ngOnInit(): Promise<void> {
     this.dataService
-      .query<InvoiceConfigQuery>(getConfigQuery)
-      .mapStream((d) => d.invoiceConfig)
+      .query<PicklistConfigQuery>(getConfigQuery)
+      .mapStream((d) => d.picklistConfig)
       .subscribe((config) => {
-        this.form.controls['enabled'].setValue(config?.enabled);
         this.form.controls['templateString'].setValue(config?.templateString);
         this.renderNow = true;
         this.changeDetector.markForCheck();
@@ -114,26 +107,22 @@ export class PicklistComponent implements OnInit {
       if (this.form.dirty) {
         const formValue = this.form.value;
         const result$ = await this.dataService.mutate<
-          UpsertInvoiceConfigMutation,
-          UpsertInvoiceConfigMutationVariables
+          UpsertPicklistConfigMutation,
+          UpsertPicklistConfigMutationVariables
         >(upsertConfigMutation, {
-          input: {
-            enabled: formValue.enabled,
-            templateString: formValue.templateString,
-          },
+          templateString: formValue.templateString,
         });
-        const { upsertInvoiceConfig: result } = await firstValueFrom(result$);
-        this.form.controls['enabled'].setValue(result.enabled);
+        const { upsertPicklistConfig: result } = await firstValueFrom(result$);
         this.form.controls['templateString'].setValue(result.templateString);
       }
       this.form.markAsPristine();
       this.changeDetector.markForCheck();
       this.notificationService.success('common.notify-update-success', {
-        entity: 'InvoiceConfig',
+        entity: 'PicklistConfig',
       });
     } catch (e: any) {
       this.notificationService.error('common.notify-update-error', {
-        entity: 'InvoiceConfig',
+        entity: 'PicklistConfig',
       });
     }
   }
@@ -142,7 +131,7 @@ export class PicklistComponent implements OnInit {
     try {
       const template = this.form.value.templateString;
       const orderCode = this.form.value.orderCode;
-      this.invoicePreviewLoading = true;
+      this.picklistPreviewLoading = true;
       this.changeDetector.markForCheck();
       const res = await fetch(
         `${this.serverPath}/picklists/preview/${orderCode}`,
@@ -160,12 +149,12 @@ export class PicklistComponent implements OnInit {
         throw Error(json?.message);
       }
       const blob = await res.blob();
-      await this.downloadBlob(blob, 'test-invoice.pdf', true);
+      await this.downloadBlob(blob, 'test-picklist.pdf', true);
     } catch (err: any) {
       console.error(err);
       this.notificationService.error(err?.message);
     }
-    this.invoicePreviewLoading = false;
+    this.picklistPreviewLoading = false;
     this.changeDetector.markForCheck();
   }
 

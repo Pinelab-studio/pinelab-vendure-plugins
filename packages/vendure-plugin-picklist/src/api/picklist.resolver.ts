@@ -5,8 +5,7 @@ import {
   PermissionDefinition,
   RequestContext,
 } from '@vendure/core';
-import { InvoiceConfigInput } from '../ui/generated/graphql';
-import { InvoiceConfigEntity } from './invoice-config.entity';
+import { PicklistConfigEntity } from './picklist-config.entity';
 import { PicklistService } from './picklist.service';
 
 export const picklistPermission = new PermissionDefinition({
@@ -20,18 +19,18 @@ export class PicklistResolver {
 
   @Mutation()
   @Allow(picklistPermission.Permission)
-  async upsertInvoiceConfig(
+  async upsertPicklistConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: InvoiceConfigInput
-  ): Promise<InvoiceConfigEntity> {
-    return await this.service.upsertConfig(ctx, input);
+    @Args('templateString') templateString: string
+  ): Promise<PicklistConfigEntity> {
+    return await this.service.upsertConfig(ctx, templateString);
   }
 
   @Query()
   @Allow(picklistPermission.Permission)
-  async invoiceConfig(
+  async picklistConfig(
     @Ctx() ctx: RequestContext
-  ): Promise<InvoiceConfigEntity | undefined> {
+  ): Promise<PicklistConfigEntity | undefined> {
     return await this.service.getConfig(ctx);
   }
 }

@@ -14,9 +14,9 @@ import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { defaultTemplate } from '../src/api/default-template';
 import {
-  InvoiceConfigQuery,
-  MutationUpsertInvoiceConfigArgs,
-  UpsertInvoiceConfigMutation,
+  PicklistConfigQuery,
+  MutationUpsertPicklistConfigArgs,
+  UpsertPicklistConfigMutation,
 } from '../src/ui/generated/graphql';
 import {
   getConfigQuery,
@@ -71,22 +71,20 @@ describe('Picklists plugin', function () {
   it('Upserts config', async () => {
     await adminClient.asSuperAdmin();
     const result = await adminClient.query<
-      UpsertInvoiceConfigMutation,
-      MutationUpsertInvoiceConfigArgs
+      UpsertPicklistConfigMutation,
+      MutationUpsertPicklistConfigArgs
     >(upsertConfigMutation, {
-      input: { enabled: true, templateString: defaultTemplate },
+      templateString: defaultTemplate,
     });
-    expect(result.upsertInvoiceConfig.id).toBeDefined();
-    expect(result.upsertInvoiceConfig.enabled).toBe(true);
-    expect(result.upsertInvoiceConfig.templateString).toBe(defaultTemplate);
+    expect(result.upsertPicklistConfig.id).toBeDefined();
+    expect(result.upsertPicklistConfig.templateString).toBe(defaultTemplate);
   });
 
   it('Gets config', async () => {
     await adminClient.asSuperAdmin();
-    const result = await adminClient.query<InvoiceConfigQuery>(getConfigQuery);
-    expect(result.invoiceConfig?.id).toBeDefined();
-    expect(result.invoiceConfig?.enabled).toBe(true);
-    expect(result.invoiceConfig?.templateString).toBe(defaultTemplate);
+    const result = await adminClient.query<PicklistConfigQuery>(getConfigQuery);
+    expect(result.picklistConfig?.id).toBeDefined();
+    expect(result.picklistConfig?.templateString).toBe(defaultTemplate);
   });
 
   it('Preview fails for unauthenticated calls', async () => {

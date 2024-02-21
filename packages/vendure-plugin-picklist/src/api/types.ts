@@ -1,4 +1,4 @@
-export interface InvoiceData {
-  invoiceNumber: number;
+export interface PicklistData {
+  picklistNumber: number;
   [key: string]: any;
 }

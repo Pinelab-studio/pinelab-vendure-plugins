@@ -1,20 +1,18 @@
 import gql from 'graphql-tag';
 
 export const upsertConfigMutation = gql`
-  mutation upsertInvoiceConfig($input: InvoiceConfigInput!) {
-    upsertInvoiceConfig(input: $input) {
+  mutation upsertPicklistConfig($templateString: String!) {
+    upsertPicklistConfig(templateString: $templateString) {
       id
-      enabled
       templateString
     }
   }
 `;
 
 export const getConfigQuery = gql`
-  query invoiceConfig {
-    invoiceConfig {
+  query picklistConfig {
+    picklistConfig {
       id
-      enabled
       templateString
     }
   }

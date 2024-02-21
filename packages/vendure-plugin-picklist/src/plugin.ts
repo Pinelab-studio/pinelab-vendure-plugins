@@ -5,7 +5,7 @@ import {
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { InvoiceConfigEntity } from './api/invoice-config.entity';
+import { PicklistConfigEntity } from './api/picklist-config.entity';
 import { PicklistService } from './api/picklist.service';
 import { PicklistResolver, picklistPermission } from './api/picklist.resolver';
 import { schema } from './api/schema.graphql';
@@ -13,7 +13,7 @@ import { PicklistController } from './api/picklist.controller';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [InvoiceConfigEntity],
+  entities: [PicklistConfigEntity],
   providers: [PicklistService],
   controllers: [PicklistController],
   adminApiExtensions: {

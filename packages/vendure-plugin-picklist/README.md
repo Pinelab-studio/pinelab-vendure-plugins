@@ -23,11 +23,11 @@ import {PicklistPlugin} from '@pinelab/vendure-plugin-picklist';
     ],
 ```
 
-## Increase invoice template DB storage
+## Increase picklist template DB storage
 
-By default, the plugin uses TypeOrm's `text` to store the template in the DB. This might not be enough, for example when you'd like to add base64 encoded images to your invoices. This will result in the error `ER_DATA_TOO_LONG: Data too long for column 'templateString'`. You can specify your DB engine with an env variable, and the plugin will resolve the correct column type:
+By default, the plugin uses TypeOrm's `text` to store the template in the DB. This might not be enough, for example when you'd like to add base64 encoded images to your picklists. This will result in the error `ER_DATA_TOO_LONG: Data too long for column 'templateString'`. You can specify your DB engine with an env variable, and the plugin will resolve the correct column type:
 
 ```shell
 # E.g. For mysql the column type 'longtext' will be used, which supports up to 4gb
-INVOICES_PLUGIN_DB_ENGINE=mysql
+PICKLISTS_PLUGIN_DB_ENGINE=mysql
 ```
