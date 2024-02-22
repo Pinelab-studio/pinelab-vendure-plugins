@@ -1,6 +1,6 @@
 # 2.5.0 (2024-02-19)
 
-- Made `ShippingExtensionsOptions.weightCalculationFunction` async and accept `Injector` as an argument
+- Made `ShippingExtensionsOptions.weightCalculationFunction` async and accept `Injector` as an additional argument
 
 # 2.4.1 (2024-02-22)
 
