@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { OnInit } from '@angular/core';
 import {
@@ -10,6 +10,7 @@ import {
 import { DataService } from '@vendure/admin-ui/core';
 import { gql } from 'graphql-tag';
 import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 @Component({
   template: `
     <select
@@ -24,19 +25,26 @@ import { ActivatedRoute } from '@angular/router';
   `,
 })
 export class SelectPrimaryCollectionComponent
-  implements FormInputComponent<IntCustomFieldConfig>, OnInit
+  implements FormInputComponent<IntCustomFieldConfig>, OnInit, OnDestroy
 {
   readonly!: boolean;
   config!: IntCustomFieldConfig;
   formControl!: FormControl;
   productsCollections!: CollectionFragment[];
   productsCollectionsAreLoading = true;
+  productCollectionSubscription: Subscription;
   id!: string | null;
   constructor(
     private dataService: DataService,
     private cdr: ChangeDetectorRef,
     private activatedRoute: ActivatedRoute
   ) {}
+  ngOnDestroy(): void {
+    if (this.productCollectionSubscription) {
+      this.productCollectionSubscription.unsubscribe();
+    }
+  }
+  isListInput?: boolean | undefined;
   ngOnInit(): void {
     this.formControl.parent?.parent?.statusChanges.subscribe((s) => {
       if (
@@ -51,8 +59,7 @@ export class SelectPrimaryCollectionComponent
     });
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
     if (this.id && this.id !== 'create') {
-      this.dataService.collection.getCollectionContents(this.id);
-      this.dataService
+      this.productCollectionSubscription = this.dataService
         .query(
           gql`
             query ProductsCollection($id: ID) {
