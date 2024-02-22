@@ -26,7 +26,7 @@ export const defaultTemplate = `
             h3 {
                 font-size: 1.2rem;
             }
-            h20 {
+            div {
                 font-size: 0.8rem;
                 color: #00000080;
                 font-weight: normal;
@@ -63,9 +63,9 @@ export const defaultTemplate = `
             <tr>
                 <td id="invoice-info">
                     <h2>Picklist</h2>
-                    <h5>Date: <h20>{{ orderDate }}</h20></h5>
-                    <h5>Order: <h20>{{ order.code }}</h20></h5>
-                    <h5>Picklist Number: <h20>{{ invoiceNumber }}</h20></h5>  
+                    <h5>Date: <div>{{ orderDate }}</div></h5>
+                    <h5>Order: <div>{{ order.code }}</div></h5>
+                    <h5>Picklist Number: <div>{{ invoiceNumber }}</div></h5>  
                 </td>    
                 <td id="logo">
                     <a href="https://pinelab.studio">
@@ -86,19 +86,19 @@ export const defaultTemplate = `
             <tr>
                 <td id="shipping-info">
                     <h4>Shipping Info</h4>
-                    <h20>{{#with order.shippingAddress }}
+                    <div>{{#with order.shippingAddress }}
                     {{ fullName }}<br />
                     {{#if company}} {{ company }}<br />
                     {{/if}} {{#if streetLine1}} {{ streetLine1 }} {{ streetLine2 }}<br />
                     {{/if}} {{#if postalCode}} {{ postalCode }}, {{ city }}<br />
                     {{/if}} {{#if country}} {{ country }}<br />
                     {{/if}} {{/with}}
-                    {{ customerEmail }}<br /></h20>
+                    {{ customerEmail }}<br /></div>
                 </td>
                 <td id="billing-info">
                     {{#if order.billingAddress.streetLine1}}
                         <h4>Billing Info</h4>
-                        <h20>{{#with order.billingAddress }}
+                        <div>{{#with order.billingAddress }}
                         <br />
                         {{#if company}} {{ company }}<br />
                         {{/if}} {{#if streetLine1}} {{ streetLine1 }} {{ streetLine2 }}<br />
@@ -106,7 +106,7 @@ export const defaultTemplate = `
                         {{/if}} {{#if country}} {{ country }}<br />
                         {{/if}} 
                         {{/with}} 
-                        {{ customerEmail }} <br /> </h20>
+                        {{ customerEmail }} <br /> </div>
                     {{/if}}
                 </td>
             </tr>
@@ -161,9 +161,9 @@ export const defaultTemplate = `
             {{#each order.shippingLines }}
             <tr>
                 <td class="quantity-info"></td>
-                <td class="product-info"><h20>Shipping costs</h20></td>
+                <td class="product-info"><div>Shipping costs</div></td>
                 <td class="vat-info"></td>
-                <td class="amount-info"><h20>&dollar;{{ formatMoney priceWithTax }}</h20></td>
+                <td class="amount-info"><div>&dollar;{{ formatMoney priceWithTax }}</div></td>
             </tr>
             {{/each}}
 
@@ -172,9 +172,9 @@ export const defaultTemplate = `
             {{#each order.discounts }}
             <tr>
                 <td class="quantity-info"></td>
-                <td class="product-info"><h20>{{ description }}</h20></td>
+                <td class="product-info"><div>{{ description }}</div></td>
                 <td class="vat-info"></td>
-                <td class="amount-info"><h20>&dollar;{{ formatMoney amountWithTax }}</h20></td>
+                <td class="amount-info"><div>&dollar;{{ formatMoney amountWithTax }}</div></td>
             </tr>
             {{/each}}
         </table>
@@ -215,15 +215,15 @@ export const defaultTemplate = `
                   <h5>Company details</h5>
               </tr>
               <td id="company-details" style="width: 50%">
-                  <h4>CoC:<h20> 123456789</h20></h4>
-                  <h4>VAT:<h20> 121212121212</h20></h4>
-                  <h4>IBAN:<h20> NL20INGB12345678910</h20></h4>  
-                  <h4>Email Address:<h20> plugins@pinelab.studio</h20></h4> 
+                  <h4>CoC:<div> 123456789</div></h4>
+                  <h4>VAT:<div> 121212121212</div></h4>
+                  <h4>IBAN:<div> NL20INGB12345678910</div></h4>  
+                  <h4>Email Address:<div> plugins@pinelab.studio</div></h4> 
               </td>
               <td>   
-                  <h4>Mobile Number:<h20> +31 6 12345678</h20></h4> 
-                  <h4>Address:<h20> Cornelis Trooststraat 48,
-                  8932 BR Leeuwarden, Friesland, The Netherlands </h20></h4>
+                  <h4>Mobile Number:<div> +31 6 12345678</div></h4> 
+                  <h4>Address:<div> Cornelis Trooststraat 48,
+                  8932 BR Leeuwarden, Friesland, The Netherlands </div></h4>
               </td>  
           </tr>
       </table>

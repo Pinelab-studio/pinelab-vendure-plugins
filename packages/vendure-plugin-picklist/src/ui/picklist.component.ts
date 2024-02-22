@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, OnInit } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import {
   DataService,
@@ -12,7 +12,7 @@ import {
   UpsertPicklistConfigMutation,
   UpsertPicklistConfigMutationVariables,
 } from './generated/graphql';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
 @Component({
   selector: 'vdr-picklist-component',
@@ -24,7 +24,11 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
             <button
               class="btn btn-primary"
               (click)="save()"
-              [disabled]="form.invalid || form.get('templateString')?.pristine"
+              [disabled]="
+                form.invalid ||
+                form.get('templateString')?.pristine ||
+                saveInProgress
+              "
             >
               {{ 'common.update' | translate }}
             </button>
@@ -64,11 +68,13 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
   `,
   styleUrls: ['./picklist.component.scss'],
 })
-export class PicklistComponent implements OnInit {
+export class PicklistComponent implements OnInit, OnDestroy {
   form: FormGroup;
   serverPath: string;
   picklistPreviewLoading: boolean = false;
   renderNow = false;
+  picklistConfigQuerySubscription: Subscription;
+  saveInProgress: boolean = false;
   htmlFormInputConfigArgsDef: ConfigArgDefinition = {
     name: 'templateString',
     type: 'text',
@@ -90,9 +96,12 @@ export class PicklistComponent implements OnInit {
     });
     this.serverPath = getServerLocation();
   }
+  ngOnDestroy(): void {
+    this.picklistConfigQuerySubscription.unsubscribe();
+  }
 
   async ngOnInit(): Promise<void> {
-    this.dataService
+    this.picklistConfigQuerySubscription = this.dataService
       .query<PicklistConfigQuery>(getConfigQuery)
       .mapStream((d) => d.picklistConfig)
       .subscribe((config) => {
@@ -104,7 +113,8 @@ export class PicklistComponent implements OnInit {
 
   async save() {
     try {
-      if (this.form.dirty) {
+      if (this.form.dirty && !this.saveInProgress) {
+        this.saveInProgress = true;
         const formValue = this.form.value;
         const result$ = await this.dataService.mutate<
           UpsertPicklistConfigMutation,
@@ -114,12 +124,14 @@ export class PicklistComponent implements OnInit {
         });
         const { upsertPicklistConfig: result } = await firstValueFrom(result$);
         this.form.controls['templateString'].setValue(result.templateString);
+        this.form.markAsPristine();
+        this.changeDetector.markForCheck();
+        this.notificationService.success('common.notify-update-success', {
+          entity: 'PicklistConfig',
+        });
+        this.saveInProgress = false;
+        this.changeDetector.markForCheck();
       }
-      this.form.markAsPristine();
-      this.changeDetector.markForCheck();
-      this.notificationService.success('common.notify-update-success', {
-        entity: 'PicklistConfig',
-      });
     } catch (e: any) {
       this.notificationService.error('common.notify-update-error', {
         entity: 'PicklistConfig',

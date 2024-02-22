@@ -6,6 +6,7 @@ import {
   getServerLocation,
   LocalStorageService,
   registerBulkAction,
+  NotificationService,
 } from '@vendure/admin-ui/core';
 import { gql } from 'graphql-tag';
 import { firstValueFrom } from 'rxjs';
@@ -58,6 +59,7 @@ import { downloadBlob, getHeaders } from './helpers';
         if (!res.ok) {
           const json = await res.json();
           (event.target as HTMLButtonElement).disabled = false;
+          context.notificationService.error('Unable to download picklists');
           throw Error(json?.message);
         }
         const blob = await res.blob();
@@ -74,6 +76,7 @@ import { downloadBlob, getHeaders } from './helpers';
         (event.target as HTMLButtonElement).disabled = true;
         const orderCodes = selection.map((s) => s.code);
         const localStorageService = injector.get(LocalStorageService);
+        const notificationService = injector.get(NotificationService);
         const headers = getHeaders(localStorageService);
         const serverPath = getServerLocation();
         const res = await fetch(
@@ -86,6 +89,7 @@ import { downloadBlob, getHeaders } from './helpers';
         if (!res.ok) {
           const json = await res.json();
           (event.target as HTMLButtonElement).disabled = false;
+          notificationService.error('Unable to download picklists');
           throw Error(json?.message);
         }
         const blob = await res.blob();
