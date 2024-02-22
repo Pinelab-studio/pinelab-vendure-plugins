@@ -4,7 +4,7 @@ import { OrderAddress } from '@vendure/common/lib/generated-shop-types';
 export interface OrderAddressToGeolocationConversionStrategy {
   getGeoLocationForAddress: (
     orderAddress: OrderAddress
-  ) => Promise<GeoLocation>;
+  ) => Promise<GeoLocation | undefined>;
 }
 
 export interface GeoLocation {

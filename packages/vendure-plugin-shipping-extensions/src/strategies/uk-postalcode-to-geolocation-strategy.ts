@@ -11,21 +11,21 @@ export class UKPostalCodeToGelocationConversionStrategy
 {
   async getGeoLocationForAddress(
     orderAddress: OrderAddress
-  ): Promise<GeoLocation> {
+  ): Promise<GeoLocation | undefined> {
     if (!orderAddress?.postalCode) {
-      throw new Error(`Order Shipping Address postal code not found`);
+      return undefined;
     }
     const url = `${POSTCODES_URL}/${encodeURIComponent(
       orderAddress.postalCode
     )}`;
     const response = await fetch(url);
+    if (response.status === 404) {
+      return undefined;
+    }
     if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      throw new Error(`${response.status}: ${await response.text()}`);
     }
     const responseBody: any = await response.json();
-    if (responseBody?.status !== 200) {
-      throw new Error(responseBody?.error);
-    }
     return {
       latitude: responseBody.result.latitude,
       longitude: responseBody.result.longitude,

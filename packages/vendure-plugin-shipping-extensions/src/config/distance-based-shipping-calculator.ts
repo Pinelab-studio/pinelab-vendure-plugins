@@ -83,6 +83,9 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         await pluginOptions.orderAddressToGeolocationStrategy.getGeoLocationForAddress(
           order.shippingAddress
         );
+      if (!shippingAddressGeoLocation) {
+        return minimumPrice;
+      }
       const distance = getDistanceBetweenPointsInKMs(
         shippingAddressGeoLocation,
         storeGeoLocation
