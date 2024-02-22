@@ -1,0 +1,36 @@
+{
+  "name": "@pinelab/vendure-plugin-picklist",
+  "version": "1.0.0",
+  "description": "Vendure plugin that provides picklists per order that won't be saved in the database",
+  "icon": "receipt",
+  "author": "Surafel Tariku <surafelmelese09@gmail.com>",
+  "homepage": "https://pinelab-plugins.com/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "serve": "yarn start && nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
+    "start": "ts-node test/dev-server.ts",
+    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "test": "vitest run",
+    "generate": "graphql-codegen"
+  },
+  "dependencies": {
+    "adm-zip": "0.5.9",
+    "pdf-creator-node": "2.3.4",
+    "tmp": "0.2.1"
+  },
+  "devDependencies": {
+    "@types/adm-zip": "0.4.34"
+  }
+}
