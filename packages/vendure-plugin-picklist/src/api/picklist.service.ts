@@ -18,7 +18,6 @@ import {
   ZippableFile,
 } from './file.util';
 import { PicklistConfigEntity } from './picklist-config.entity';
-import { PicklistData } from './types';
 
 @Injectable()
 export class PicklistService {
@@ -202,11 +201,7 @@ export class PicklistService {
     return stream;
   }
 
-  async getData(
-    ctx: RequestContext,
-    order: Order,
-    latestPicklistNumber?: number
-  ): Promise<PicklistData> {
+  async getData(ctx: RequestContext, order: Order): Promise<any> {
     order.lines.forEach((line) => {
       line.productVariant = translateEntity(
         line.productVariant,
@@ -216,17 +211,10 @@ export class PicklistService {
     if (!order.customer?.emailAddress) {
       throw Error(`Order doesnt have a customer.email set!`);
     }
-    let nr = latestPicklistNumber;
-    if (nr) {
-      nr += 1;
-    } else {
-      nr = Math.floor(Math.random() * 90000) + 10000;
-    }
     return {
       orderDate: order.orderPlacedAt
         ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
         : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt),
-      picklistNumber: nr,
       customerEmail: order.customer.emailAddress,
       order,
     };
