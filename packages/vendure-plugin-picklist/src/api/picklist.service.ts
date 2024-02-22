@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { SortOrder } from '@vendure/common/lib/generated-shop-types';
 import {
   Order,
   OrderService,
@@ -7,12 +8,16 @@ import {
   translateEntity,
   UserInputError,
 } from '@vendure/core';
+import { createReadStream, ReadStream } from 'fs';
 import Handlebars from 'handlebars';
 import { defaultTemplate } from './default-template';
+import {
+  createTempFile,
+  safeRemoveFile,
+  zipFiles,
+  ZippableFile,
+} from './file.util';
 import { PicklistConfigEntity } from './picklist-config.entity';
-import { createReadStream, ReadStream } from 'fs';
-import { createTempFile, zipFiles, ZippableFile } from './file.util';
-import { SortOrder } from '@vendure/common/lib/generated-shop-types';
 import { PicklistData } from './types';
 
 @Injectable()
@@ -89,7 +94,9 @@ export class PicklistService {
       config.templateString ?? defaultTemplate,
       order
     );
-    return createReadStream(tempFilePath);
+    const stream = createReadStream(tempFilePath);
+    stream.on('finish', () => safeRemoveFile(tempFilePath));
+    return stream;
   }
 
   async downloadMultiplePicklists(ctx: RequestContext, orders: Order[]) {
@@ -119,7 +126,9 @@ export class PicklistService {
       name: picklist.orderCode + '.pdf',
     }));
     const zipFile = await zipFiles(zippableFiles);
-    return createReadStream(zipFile);
+    const stream = createReadStream(zipFile);
+    stream.on('finish', () => safeRemoveFile(zipFile));
+    return stream;
   }
 
   /**
@@ -188,7 +197,9 @@ export class PicklistService {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
     const { tempFilePath } = await this.generatePicklist(ctx, template, order);
-    return createReadStream(tempFilePath);
+    const stream = createReadStream(tempFilePath);
+    stream.on('finish', () => safeRemoveFile(tempFilePath));
+    return stream;
   }
 
   async getData(
