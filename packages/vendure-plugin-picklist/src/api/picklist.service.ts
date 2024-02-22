@@ -101,17 +101,19 @@ export class PicklistService {
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const picklistData = await Promise.all(orders.map(async (order) => {
-      const hydratedOrder = await this.orderService.findOne(ctx, order.id, ['shippingLines.shippingMethod']);
-      if (!hydratedOrder) {
-        throw new UserInputError(`No Order with code ${order.code} found`);
-      }
-      return await this.generatePicklist(
-        ctx,
-        config.templateString ?? defaultTemplate,
-        hydratedOrder
-      )
-    }));
+    const picklistData = await Promise.all(
+      orders.map(async (order) => {
+        const hydratedOrder = await this.orderService.findOne(ctx, order.id);
+        if (!hydratedOrder) {
+          throw new UserInputError(`No Order with code ${order.code} found`);
+        }
+        return await this.generatePicklist(
+          ctx,
+          config.templateString ?? defaultTemplate,
+          hydratedOrder
+        );
+      })
+    );
     const zippableFiles: ZippableFile[] = picklistData.map((picklist) => ({
       path: picklist.tempFilePath,
       name: picklist.orderCode + '.pdf',
@@ -163,7 +165,7 @@ export class PicklistService {
   ): Promise<ReadStream> {
     let order: Order | undefined;
     if (orderCode) {
-      order = await this.orderService.findOneByCode(ctx, orderCode, ['shippingLines.shippingMethod']);
+      order = await this.orderService.findOneByCode(ctx, orderCode);
     } else {
       const orderId = (
         await this.orderService.findAll(
@@ -175,6 +177,7 @@ export class PicklistService {
           []
         )
       )?.items[0].id;
+      // Refetch needed for relations to work
       order = await this.orderService.findOne(ctx, orderId);
     }
     if (!order) {
