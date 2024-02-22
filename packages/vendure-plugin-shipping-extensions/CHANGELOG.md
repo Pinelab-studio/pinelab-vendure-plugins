@@ -1,3 +1,8 @@
+# 2.4.1 (2024-02-22)
+
+- Don't log errors when invalid postalcode for UK strategy
+- Distance based strategies are allowed to return an undefined geolocation
+
 # 2.4.0 (2024-02-14)
 
 - Added `orderInCountryPromotionCondition`, which checks if the order's shipping country matches one of the configured countries
