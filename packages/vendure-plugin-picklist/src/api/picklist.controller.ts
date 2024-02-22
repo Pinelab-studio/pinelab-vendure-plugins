@@ -63,7 +63,7 @@ export class PicklistController {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
     }
-    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    const order = await this.orderService.findOneByCode(ctx, orderCode, ['shippingLines.shippingMethod']);
     if (!order) {
       throw new UserInputError(`No order with code ${orderCode} found`);
     }

@@ -93,31 +93,25 @@ export class PicklistService {
   }
 
   async downloadMultiplePicklists(ctx: RequestContext, orders: Order[]) {
+    // This is currently done in main thread, so a max of 10 orders is allowed
+    if (orders.length > 10) {
+      throw new UserInputError(`Max 10 orders allowed`);
+    }
     const config = await this.getConfig(ctx);
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const tmpFilesPromises: Array<
-      Promise<{
-        tempFilePath: string;
-        orderCode: string;
-      }>
-    > = [];
-    for (const order of orders) {
-      const hydaratedOrder = await this.orderService.findOne(ctx, order.id);
-      if (!hydaratedOrder) {
+    const picklistData = await Promise.all(orders.map(async (order) => {
+      const hydratedOrder = await this.orderService.findOne(ctx, order.id, ['shippingLines.shippingMethod']);
+      if (!hydratedOrder) {
         throw new UserInputError(`No Order with code ${order.code} found`);
       }
-      tmpFilesPromises.push(
-        this.generatePicklist(
-          ctx,
-          config.templateString ?? defaultTemplate,
-          hydaratedOrder
-        )
-      );
-    }
-
-    const picklistData = await Promise.all(tmpFilesPromises);
+      return await this.generatePicklist(
+        ctx,
+        config.templateString ?? defaultTemplate,
+        hydratedOrder
+      )
+    }));
     const zippableFiles: ZippableFile[] = picklistData.map((picklist) => ({
       path: picklist.tempFilePath,
       name: picklist.orderCode + '.pdf',
@@ -169,7 +163,7 @@ export class PicklistService {
   ): Promise<ReadStream> {
     let order: Order | undefined;
     if (orderCode) {
-      order = await this.orderService.findOneByCode(ctx, orderCode);
+      order = await this.orderService.findOneByCode(ctx, orderCode, ['shippingLines.shippingMethod']);
     } else {
       const orderId = (
         await this.orderService.findAll(
