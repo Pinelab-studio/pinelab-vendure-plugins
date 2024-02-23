@@ -8,6 +8,7 @@ import {
 import {
   DefaultLogger,
   DefaultSearchPlugin,
+  JobQueueService,
   LogLevel,
   mergeConfig,
   RequestContextService,
@@ -103,13 +104,13 @@ require('dotenv').config();
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
+  const jobQueueService = server.app.get(JobQueueService);
+  await jobQueueService.start();
   // add default Config
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });
-  await server.app
-    .get(InvoiceService)
-    .upsertConfig(ctx, { enabled: true, createCreditInvoices: true });
+  await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
   // Add a test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient as any, 'manual-fulfillment');

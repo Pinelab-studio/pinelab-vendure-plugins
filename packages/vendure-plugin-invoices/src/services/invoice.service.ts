@@ -40,6 +40,7 @@ import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import { SortOrder } from '@vendure/common/lib/generated-shop-types';
 
 interface DownloadInput {
   customerEmail: string;
@@ -264,9 +265,24 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   async previewInvoiceWithTemplate(
     ctx: RequestContext,
     template: string,
-    orderCode: string
+    orderCode?: string
   ): Promise<ReadStream> {
-    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    let order: Order | undefined;
+    if (orderCode) {
+      order = await this.orderService.findOneByCode(ctx, orderCode);
+    } else {
+      const orderId = (
+        await this.orderService.findAll(
+          ctx,
+          {
+            take: 1,
+            sort: { createdAt: SortOrder.DESC },
+          },
+          []
+        )
+      )?.items[0].id;
+      order = await this.orderService.findOne(ctx, orderId);
+    }
     if (!order) {
       throw new UserInputError(`No order found with code ${orderCode}`);
     }

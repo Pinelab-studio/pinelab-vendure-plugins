@@ -32,12 +32,12 @@ export class InvoiceController {
   ) {}
 
   @Allow(invoicePermission.Permission)
-  @Post('/preview/:orderCode')
+  @Post('/preview/:orderCode?')
   async preview(
     @Ctx() ctx: RequestContext,
-    @Param('orderCode') orderCode: string,
     @Res() res: Response,
-    @Body() body: { template: string }
+    @Body() body: { template: string },
+    @Param('orderCode') orderCode?: string
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');

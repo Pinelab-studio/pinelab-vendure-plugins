@@ -19,67 +19,62 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
   selector: 'invoices-component',
   template: `
     <div class="page-block">
-      <clr-accordion>
-        <clr-accordion-panel>
-          <clr-accordion-title>Settings</clr-accordion-title>
-          <clr-accordion-content *clrIfExpanded>
-            <section class="form-block">
-              <form class="form" [formGroup]="form">
-                <vdr-form-field label="Generate invoices on" for="enabled">
-                  <clr-checkbox-wrapper>
-                    <input
-                      type="checkbox"
-                      clrCheckbox
-                      formControlName="enabled"
-                    />
-                  </clr-checkbox-wrapper>
-                </vdr-form-field>
-                <vdr-form-field label="HTML template" for="templateString">
-                  <vdr-dynamic-form-input
-                    formControlName="templateString"
-                    [readonly]="false"
-                    [def]="htmlFormInputConfigArgsDef"
-                    [control]="form.get('templateString')"
-                    style="max-width: 100%;"
-                  >
-                  </vdr-dynamic-form-input>
-                </vdr-form-field>
-                <vdr-form-field label="Order Code" for="enabled">
-                  <clr-input-container>
-                    <input type="text" clrInput formControlName="orderCode" />
-                  </clr-input-container>
-                </vdr-form-field>
-                <button
-                  class="btn btn-primary"
-                  (click)="save()"
-                  [disabled]="form.invalid || form.pristine"
-                >
-                  Save
-                </button>
-                <button
-                  class="btn btn-secondary"
-                  (click)="testDownload()"
-                  [disabled]="
-                    !form.get('orderCode')?.value || invoicePreviewLoading
-                  "
-                >
-                  Preview
-                </button>
-                <vdr-help-tooltip
-                  content="Preview the HTML template. Uses the most recent placed order. Just a preview, it doesn't save any invoices!"
-                ></vdr-help-tooltip>
-              </form>
-            </section>
-          </clr-accordion-content>
-        </clr-accordion-panel>
-      </clr-accordion>
+      <vdr-page-block>
+        <vdr-action-bar>
+          <vdr-ab-right>
+            <button
+              class="btn btn-primary"
+              (click)="save()"
+              [disabled]="form.invalid || form.get('templateString')?.pristine"
+            >
+              {{ 'common.update' | translate }}
+            </button>
+          </vdr-ab-right>
+        </vdr-action-bar>
+      </vdr-page-block>
+      <vdr-page-block>
+        <vdr-card>
+          <form class="form" [formGroup]="form">
+            <vdr-form-field label="Generate invoices on" for="enabled">
+              <clr-checkbox-wrapper>
+                <input type="checkbox" clrCheckbox formControlName="enabled" />
+              </clr-checkbox-wrapper>
+            </vdr-form-field>
+            <vdr-form-field label="HTML template" for="templateString">
+              <vdr-dynamic-form-input
+                *ngIf="renderNow"
+                formControlName="templateString"
+                [readonly]="false"
+                [def]="htmlFormInputConfigArgsDef"
+                [control]="form.get('templateString')"
+                style="max-width: 100%;"
+              >
+              </vdr-dynamic-form-input>
+            </vdr-form-field>
+            <vdr-form-field label="Order Code" for="enabled">
+              <clr-input-container>
+                <input type="text" clrInput formControlName="orderCode" />
+              </clr-input-container>
+            </vdr-form-field>
+            <button
+              class="btn btn-primary preview-button"
+              (click)="testDownload()"
+              [disabled]="invoicePreviewLoading"
+            >
+              Preview Template
+            </button>
+          </form>
+        </vdr-card>
+      </vdr-page-block>
     </div>
   `,
+  styleUrls: ['./invoices.component.scss'],
 })
 export class InvoicesComponent implements OnInit {
   form: FormGroup;
   serverPath: string;
   invoicePreviewLoading: boolean = false;
+  renderNow = false;
   htmlFormInputConfigArgsDef: ConfigArgDefinition = {
     name: 'templateString',
     type: 'text',
@@ -109,6 +104,7 @@ export class InvoicesComponent implements OnInit {
       .mapStream((d) => d.invoiceConfig)
       .subscribe((config) => {
         this.form.controls['enabled'].setValue(config?.enabled);
+        this.renderNow = true;
         this.form.controls['templateString'].setValue(config?.templateString);
       });
   }
