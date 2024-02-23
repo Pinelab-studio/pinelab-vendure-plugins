@@ -1,6 +1,7 @@
 import {
   CountryService,
   EntityHydrator,
+  Injector,
   LanguageCode,
   Order,
   RequestContext,
@@ -20,6 +21,7 @@ export function calculateOrderWeight(order: Order): number {
 }
 
 let entityHydrator: EntityHydrator;
+let injector: Injector;
 export const weightAndCountryChecker = new ShippingEligibilityChecker({
   code: 'shipping-by-weight-and-country',
   description: [
@@ -63,11 +65,12 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
       },
     },
   },
-  async init(injector) {
-    entityHydrator = injector.get(EntityHydrator);
+  async init(_injector) {
+    entityHydrator = _injector.get(EntityHydrator);
+    injector = _injector;
     const ctx = RequestContext.empty();
     // Populate the countries arg list
-    const countries = await injector.get(CountryService).findAll(ctx);
+    const countries = await _injector.get(CountryService).findAll(ctx);
     this.args.countries.ui.options = countries.items.map((c) => ({
       value: c.code,
       label: [
@@ -121,7 +124,10 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     let totalOrderWeight = 0;
     if (ShippingExtensionsPlugin.options?.weightCalculationFunction) {
       totalOrderWeight =
-        ShippingExtensionsPlugin.options.weightCalculationFunction(order);
+        await ShippingExtensionsPlugin.options.weightCalculationFunction(
+          order,
+          injector
+        );
     } else {
       totalOrderWeight = calculateOrderWeight(order);
     }
