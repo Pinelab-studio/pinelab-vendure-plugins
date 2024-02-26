@@ -3,6 +3,7 @@ import {
   LanguageCode,
   Order,
   PluginCommonModule,
+  RequestContext,
   VendurePlugin,
 } from '@vendure/core';
 import { weightAndCountryChecker } from './config/weight-and-country-checker';
@@ -30,6 +31,7 @@ export interface ShippingExtensionsOptions {
    * By default the shipping eligibility checker will use the weight custom fields.
    */
   weightCalculationFunction?: (
+    ctx: RequestContext,
     order: Order,
     injector: Injector
   ) => Promise<number>;
