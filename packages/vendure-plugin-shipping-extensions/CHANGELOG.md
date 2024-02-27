@@ -1,3 +1,7 @@
+# 2.5.1 (2024-02-26)
+
+- Include `RequestContext` as an additional argument to `ShippingExtensionsOptions.weightCalculationFunction`
+
 # 2.5.0 (2024-02-19)
 
 - Made `ShippingExtensionsOptions.weightCalculationFunction` async and accept `Injector` as an additional argument

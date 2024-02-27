@@ -125,6 +125,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     if (ShippingExtensionsPlugin.options?.weightCalculationFunction) {
       totalOrderWeight =
         await ShippingExtensionsPlugin.options.weightCalculationFunction(
+          ctx,
           order,
           injector
         );
