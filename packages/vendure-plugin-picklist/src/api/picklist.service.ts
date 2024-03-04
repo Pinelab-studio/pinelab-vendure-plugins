@@ -1,11 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { SortOrder } from '@vendure/common/lib/generated-shop-types';
+import { ModuleRef } from '@nestjs/core';
 import {
+  Injector,
   Order,
   OrderService,
   RequestContext,
   TransactionalConnection,
-  translateEntity,
   UserInputError,
 } from '@vendure/core';
 import { createReadStream, ReadStream } from 'fs';
@@ -18,12 +19,16 @@ import {
   ZippableFile,
 } from './file.util';
 import { PicklistConfigEntity } from './picklist-config.entity';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
+import { PicklistPluginConfig } from '../plugin';
 
 @Injectable()
 export class PicklistService {
   constructor(
     private readonly connection: TransactionalConnection,
-    private readonly orderService: OrderService
+    private readonly orderService: OrderService,
+    private moduleRef: ModuleRef,
+    @Inject(PLUGIN_INIT_OPTIONS) private pluginInitOptions: PicklistPluginConfig
   ) {
     Handlebars.registerHelper('formatMoney', (amount?: number) => {
       if (amount == null) {
@@ -139,7 +144,11 @@ export class PicklistService {
     order: Order
   ): Promise<{ tempFilePath: string; orderCode: string }> {
     const pdf = require('pdf-creator-node');
-    const data = await this.getData(ctx, order);
+    const data = await this.pluginInitOptions.loadDataFn!(
+      ctx,
+      new Injector(this.moduleRef),
+      order
+    );
     const tmpFilePath = await createTempFile('.pdf');
     const html = templateString;
     const options = {
@@ -199,24 +208,5 @@ export class PicklistService {
     const stream = createReadStream(tempFilePath);
     stream.on('finish', () => safeRemoveFile(tempFilePath));
     return stream;
-  }
-
-  async getData(ctx: RequestContext, order: Order): Promise<any> {
-    order.lines.forEach((line) => {
-      line.productVariant = translateEntity(
-        line.productVariant,
-        ctx.languageCode
-      );
-    });
-    if (!order.customer?.emailAddress) {
-      throw Error(`Order doesnt have a customer.email set!`);
-    }
-    return {
-      orderDate: order.orderPlacedAt
-        ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
-        : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt),
-      customerEmail: order.customer.emailAddress,
-      order,
-    };
   }
 }

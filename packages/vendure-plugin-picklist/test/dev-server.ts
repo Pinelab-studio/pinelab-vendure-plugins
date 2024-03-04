@@ -29,7 +29,7 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Info }),
     plugins: [
-      PicklistPlugin,
+      PicklistPlugin.init(),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,

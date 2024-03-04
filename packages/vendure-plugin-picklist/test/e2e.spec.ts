@@ -40,7 +40,7 @@ describe('Picklists plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [PicklistPlugin],
+      plugins: [PicklistPlugin.init()],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },

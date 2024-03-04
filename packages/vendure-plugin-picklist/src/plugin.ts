@@ -1,6 +1,7 @@
 import {
   PluginCommonModule,
   RuntimeVendureConfig,
+  Type,
   VendurePlugin,
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
@@ -10,11 +11,23 @@ import { PicklistService } from './api/picklist.service';
 import { PicklistResolver, picklistPermission } from './api/picklist.resolver';
 import { schema } from './api/schema.graphql';
 import { PicklistController } from './api/picklist.controller';
+import { LoadDataFn, defaultLoadDataFn } from './load-data-fn';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+
+export interface PicklistPluginConfig {
+  /**
+   * Load custom data that is passed in to your HTML/handlebars template
+   */
+  loadDataFn?: LoadDataFn;
+}
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   entities: [PicklistConfigEntity],
-  providers: [PicklistService],
+  providers: [
+    PicklistService,
+    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => PicklistPlugin.config },
+  ],
   controllers: [PicklistController],
   adminApiExtensions: {
     schema: schema as any,
@@ -26,6 +39,15 @@ import { PicklistController } from './api/picklist.controller';
   },
 })
 export class PicklistPlugin {
+  static config: PicklistPluginConfig;
+  static init(
+    config?: Partial<PicklistPluginConfig>
+  ): Type<PicklistPluginConfig> {
+    PicklistPlugin.config = {
+      loadDataFn: config?.loadDataFn || defaultLoadDataFn,
+    };
+    return this;
+  }
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
     ngModules: [
