@@ -44,6 +44,9 @@ require('dotenv').config();
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
+    apiOptions: {
+      adminApiPlayground: true,
+    },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
