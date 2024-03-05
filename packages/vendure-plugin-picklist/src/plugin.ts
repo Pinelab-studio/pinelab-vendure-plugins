@@ -40,9 +40,7 @@ export interface PicklistPluginConfig {
 })
 export class PicklistPlugin {
   static config: PicklistPluginConfig;
-  static init(
-    config?: Partial<PicklistPluginConfig>
-  ): Type<PicklistPluginConfig> {
+  static init(config?: Partial<PicklistPluginConfig>): Type<PicklistPlugin> {
     PicklistPlugin.config = {
       loadDataFn: config?.loadDataFn || defaultLoadDataFn,
     };
