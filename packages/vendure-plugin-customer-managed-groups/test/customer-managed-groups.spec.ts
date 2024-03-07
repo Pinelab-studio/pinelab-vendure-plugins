@@ -33,16 +33,6 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { Address } from '../../test/src/generated/shop-graphql';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
 
-function deleteDirectory(directoryPath) {
-  if (fs.existsSync(directoryPath)) {
-    // Check if the directory exists before attempting to delete
-    fs.rmdirSync(directoryPath, { recursive: true });
-    console.log(`Directory ${directoryPath} deleted successfully.`);
-  } else {
-    console.log(`Directory ${directoryPath} does not exist.`);
-  }
-}
-
 describe('Customer managed groups', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -50,7 +40,6 @@ describe('Customer managed groups', function () {
   let serverStarted = false;
 
   beforeAll(async () => {
-    deleteDirectory(path.join(__dirname, '../__data__'));
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
