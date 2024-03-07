@@ -182,7 +182,6 @@ export interface AcceptBlueCardPaymentMethod {
   name: string;
   payment_method_type: 'card';
   last4: string;
-
   avs_address: string;
   avs_zip: string;
   expiry_month: number;
@@ -197,8 +196,6 @@ export interface AcceptBlueCheckPaymentMethod {
   name: string;
   payment_method_type: 'check';
   last4: string;
-  account_number: string;
-
   routing_number: string;
   account_type: AccountType;
   sec_code: SecCode;
@@ -214,15 +211,25 @@ export interface BaseCardPaymentMethodInput {
   avs_zip?: string;
 }
 
-export interface CreditCardPaymentMethodInput
-  extends BaseCardPaymentMethodInput {
+export interface CreditCardPaymentMethodInput {
   card: string;
   expiry_month: number;
   expiry_year: number;
+  avs_zip: string;
   cvv2?: string;
+  name?: string;
+  avs_address?: string;
 }
 
-export interface TokenPaymentMethodInput extends BaseCardPaymentMethodInput {
+export interface CheckPaymentMethodInput {
+  name: string;
+  routing_number: string;
+  account_number: string;
+  account_type: AccountType;
+  sec_code: SecCode;
+}
+
+export interface NoncePaymentMethodInput {
   /*
    * The appropriate prefix must be used:
    * Reference number: ref-
@@ -237,109 +244,21 @@ export interface TokenPaymentMethodInput extends BaseCardPaymentMethodInput {
 }
 
 export interface CheckPaymentMethodInput {
-  name: string;
   routing_number: string;
   account_number: string;
+  name: string;
   account_type: AccountType;
   sec_code: SecCode;
 }
 
-/** +++++ Pay +++++ */
-
-interface BasePayment {
-  amount: number;
-
-  amount_details?: AcceptBlueAmountInput;
-  transaction_details?: ChargeTransactionDetails;
-  line_items?: AcceptBlueLineItem[];
-  billing_info?: AcceptBlueAddress;
-  shipping_info?: AcceptBlueAddress;
-  custom_fields?: CustomFields;
-  ignore_duplicates?: boolean;
-  customer?: ChargeCustomer;
-  transaction_flags?: TransactionFlags;
-}
-
-export interface BaseCardPaymentInput extends BasePayment {
-  name?: string;
-  avs_address?: string;
-  avs_zip?: string;
-
-  '3d_secure'?: AcceptBlue3DSecure;
-
-  capture?: boolean;
-  save_card?: boolean;
-}
-
-export interface TokenBasedPaymentInput extends BaseCardPaymentInput {
-  /*
-   * The appropriate prefix must be used:
-   * Reference number: ref-
-   * Payment method ID: pm-
-   * Token: tkn-
-   * Nonce token: nonce-
-   */
-  source: string;
-}
-
-export interface MagStripePaymentInput extends BasePayment {
-  /* Mag stripe does not support 3d secure */
-  magstripe: string;
-
-  name?: string;
-  avs_address?: string;
-  avs_zip?: string;
-
-  capture?: boolean;
-  save_card?: boolean;
-}
-
-export interface CreditCardPaymentInput extends BaseCardPaymentInput {
-  name?: string;
-  card: string;
-  expiry_month: number;
-  expiry_year: number;
-
-  cvv2?: string;
-}
-
-export type PaymentInput =
-  | CreditCardPaymentInput
-  | CheckPaymentInput
-  | TokenPaymentMethodInput;
-
-export interface WalletPaymentInput extends BaseCardPaymentInput {
-  source: 'applepay' | 'googlepay';
-  token: string;
-}
-
-export interface CheckPaymentInput extends BasePayment {
-  routing_number: string;
-  account_number: string;
-  name: string;
-  account_type?: AccountType;
-
-  sec_code?: SecCode;
-}
-
-export interface SavedMethodInput {
-  paymentMethodId: number;
-}
-
-export type AddPaymentInput =
-  | CreditCardPaymentInput
-  | SavedMethodInput
-  | MagStripePaymentInput
-  | TokenBasedPaymentInput
-  | WalletPaymentInput
-  | CheckPaymentInput;
-
 export interface HandlePaymentResult {
   customerId: string;
   paymentMethodId: string | number;
-  // TODO define type
-  recurringScheduleResult: any;
-  chargeResult: any;
+  recurringScheduleResult: AcceptBlueRecurringSchedule[];
+  /**
+   * If the amount is 0, no one time charge was created
+   */
+  chargeResult?: AcceptBlueChargeTransaction;
 }
 
 /** +++++ Recurring ++++++ */

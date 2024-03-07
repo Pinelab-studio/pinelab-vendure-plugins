@@ -26,6 +26,7 @@ import {
   TRANSITION_ORDER_TO,
 } from './helpers';
 import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin';
+import { AcceptBlueClient } from '../src/api/accept-blue-client';
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
  * The value of this key can be retrieved from the dashboard Accept Blue (Control Panel > Sources > Create Key, and choose "Tokenization" from the Source Key Type dropdown.)
@@ -99,71 +100,76 @@ import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin
   console.log('\n------------------------');
   console.log('========================\n\n');
 
-  // Create Accept Blue payment method
-  await adminClient.asSuperAdmin();
-  await adminClient.query(CREATE_PAYMENT_METHOD, {
-    input: {
-      code: 'accept-blue-credit-card',
-      enabled: true,
-      handler: {
-        code: acceptBluePaymentHandler.code,
-        arguments: [
-          { name: 'apiKey', value: process.env.API_KEY },
-          { name: 'pin', value: process.env.PIN },
-          {
-            name: 'tokenizationSourceKey',
-            value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
-          },
-        ],
-      },
-      translations: [
-        {
-          languageCode: LanguageCode.en,
-          name: 'Accept blue test payment',
-        },
-      ],
-    },
-  });
-  console.log(`Created paymentMethod`);
-  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '1',
-    quantity: 1,
-  });
-  console.log(`Added item`);
-  await shopClient.query(SET_SHIPPING_METHOD, {
-    id: [1],
-  });
-  console.log(`Shipping method set`);
-  const { transitionOrderToState } = await shopClient.query(
-    TRANSITION_ORDER_TO,
-    {
-      state: 'ArrangingPayment',
-    }
-  );
+  const client = new AcceptBlueClient(process.env.API_KEY!, process.env.PIN!);
+  // const res = await client.createPaymentMethod(181937, {source: 'nonce-bu1p25xhi3ggzj94ezmw', expiry_month: 3, expiry_year: 2030});
+  const res = await client.createCharge(15713, 1000);
+  console.log(JSON.stringify(res, null, 2));
 
-  // Create Payment method with Accept blue
-  // No guest checkouts allowed
+  // // Create Accept Blue payment method
+  // await adminClient.asSuperAdmin();
+  // await adminClient.query(CREATE_PAYMENT_METHOD, {
+  //   input: {
+  //     code: 'accept-blue-credit-card',
+  //     enabled: true,
+  //     handler: {
+  //       code: acceptBluePaymentHandler.code,
+  //       arguments: [
+  //         { name: 'apiKey', value: process.env.API_KEY },
+  //         { name: 'pin', value: process.env.PIN },
+  //         {
+  //           name: 'tokenizationSourceKey',
+  //           value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
+  //         },
+  //       ],
+  //     },
+  //     translations: [
+  //       {
+  //         languageCode: LanguageCode.en,
+  //         name: 'Accept blue test payment',
+  //       },
+  //     ],
+  //   },
+  // });
+  // console.log(`Created paymentMethod`);
+  // await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  // await shopClient.query(ADD_ITEM_TO_ORDER, {
+  //   productVariantId: '1',
+  //   quantity: 1,
+  // });
+  // console.log(`Added item`);
+  // await shopClient.query(SET_SHIPPING_METHOD, {
+  //   id: [1],
+  // });
+  // console.log(`Shipping method set`);
+  // const { transitionOrderToState } = await shopClient.query(
+  //   TRANSITION_ORDER_TO,
+  //   {
+  //     state: 'ArrangingPayment',
+  //   }
+  // );
 
-  // Get available Accept blue payment methods
+  // // Create Payment method with Accept blue
+  // // No guest checkouts allowed
 
-  console.log(`Transitioned to ArrangingPayment`, transitionOrderToState);
+  // // Get available Accept blue payment methods
 
-  const metadata: CreditCardPaymentMethodInput = {
-    // acceptBluePaymentMethod: 1,
-    card: '4761530001111118',
-    expiry_year: 2025,
-    expiry_month: 1,
-    avs_address: 'Testing address',
-    avs_zip: '12345',
-    name: 'Hayden Zieme',
-  };
+  // console.log(`Transitioned to ArrangingPayment`, transitionOrderToState);
 
-  const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
-    input: {
-      method: 'accept-blue-credit-card',
-      metadata,
-    },
-  });
-  console.log(JSON.stringify(addPaymentToOrder));
+  // const metadata: CreditCardPaymentMethodInput = {
+  //   // acceptBluePaymentMethod: 1,
+  //   card: '4761530001111118',
+  //   expiry_year: 2025,
+  //   expiry_month: 1,
+  //   avs_address: 'Testing address',
+  //   avs_zip: '12345',
+  //   name: 'Hayden Zieme',
+  // };
+
+  // const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
+  //   input: {
+  //     method: 'accept-blue-credit-card',
+  //     metadata,
+  //   },
+  // });
+  // console.log(JSON.stringify(addPaymentToOrder));
 })();

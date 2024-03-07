@@ -1,11 +1,10 @@
 import { Subscription } from '../../util/src/subscription/subscription-strategy';
-import { AccountType, Frequency } from './types';
-
-interface CardInput {
-  card: string;
-  expiry_month: number;
-  expiry_year: number;
-}
+import {
+  AccountType,
+  CheckPaymentMethodInput,
+  Frequency,
+  NoncePaymentMethodInput,
+} from './types';
 
 interface MaskedCardInput {
   last4: string;
@@ -23,8 +22,6 @@ interface CheckInput {
 
 interface ObfuscatedCheck {
   last4: string;
-  expiry_month: number;
-  expiry_year: number;
   name: string;
   routing_number: string;
   account_type?: AccountType;
@@ -32,23 +29,16 @@ interface ObfuscatedCheck {
 }
 
 export function isSameCard(
-  input: CardInput | MaskedCardInput,
-  card: MaskedCardInput
+  card1: MaskedCardInput,
+  card2: MaskedCardInput
 ): boolean {
-  if ((input as CardInput).card) {
-    return (
-      (input as CardInput).card.endsWith(card.last4) &&
-      input.expiry_month === card.expiry_month &&
-      input.expiry_year === card.expiry_year
-    );
-  }
-
   return (
-    (input as MaskedCardInput).last4 === card.last4 &&
-    input.expiry_month === card.expiry_month &&
-    input.expiry_year === card.expiry_year
+    card1.last4 === card2.last4 &&
+    card1.expiry_month === card2.expiry_month &&
+    card1.expiry_year === card2.expiry_year
   );
 }
+
 export function isSameCheck(input: CheckInput, check: ObfuscatedCheck) {
   return (
     input.name === check.name &&
@@ -135,5 +125,25 @@ export function isToday(date: Date): boolean {
     date.getDate() === today.getDate() &&
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear()
+  );
+}
+
+export function isNoncePaymentMethod(input: NoncePaymentMethodInput): boolean {
+  return !!(
+    input.source &&
+    input.expiry_year &&
+    input.expiry_year &&
+    input.last4
+  );
+}
+
+export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
+  return !!(
+    input.account_number &&
+    input.routing_number &&
+    input.name &&
+    input.sec_code &&
+    input.account_type &&
+    input.sec_code
   );
 }
