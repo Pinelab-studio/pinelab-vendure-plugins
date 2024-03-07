@@ -24,6 +24,7 @@ import {
   CheckPaymentMethodInput,
   HandlePaymentResult,
   NoncePaymentMethodInput,
+  SavedPaymentMethodInput,
 } from '../types';
 import {
   getNrOfBillingCyclesLeft,
@@ -65,7 +66,10 @@ export class AcceptBlueService {
     order: Order,
     amount: number,
     client: AcceptBlueClient,
-    input: NoncePaymentMethodInput | CheckPaymentMethodInput
+    input:
+      | NoncePaymentMethodInput
+      | CheckPaymentMethodInput
+      | SavedPaymentMethodInput
   ): Promise<HandlePaymentResult> {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
@@ -82,23 +86,29 @@ export class AcceptBlueService {
       id: order.customer?.id,
       customFields: { acceptBlueCustomerId: acceptBlueCustomer.id },
     });
-    const paymentMethod = await client.getOrCreatePaymentMethod(
-      acceptBlueCustomer.id,
-      input
-    );
+    let paymentMethodId: number | undefined;
+    if ((input as SavedPaymentMethodInput).paymentMethodId) {
+      paymentMethodId = (input as SavedPaymentMethodInput).paymentMethodId;
+    } else {
+      const paymentMethod = await client.getOrCreatePaymentMethod(
+        acceptBlueCustomer.id,
+        input as NoncePaymentMethodInput | CheckPaymentMethodInput
+      );
+      paymentMethodId = paymentMethod.id;
+    }
     const recurringSchedules = await this.createRecurringSchedule(
       ctx,
       order,
       client,
-      paymentMethod.id
+      paymentMethodId
     );
     let chargeResult: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
-      chargeResult = await client.createCharge(paymentMethod.id, amount);
+      chargeResult = await client.createCharge(paymentMethodId, amount);
     }
     return {
       customerId: String(acceptBlueCustomer.id),
-      paymentMethodId: paymentMethod.id,
+      paymentMethodId: paymentMethodId,
       recurringScheduleResult: recurringSchedules,
       chargeResult,
     };

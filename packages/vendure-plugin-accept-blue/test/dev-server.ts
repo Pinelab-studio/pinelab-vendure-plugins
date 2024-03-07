@@ -131,17 +131,18 @@ import { NoncePaymentMethodInput } from '../src/types';
   );
 
   // Create Payment method with Accept blue
-  const metadata: NoncePaymentMethodInput = {
-    source: 'nonce-z5frsiogt4kce2paljeb',
-    last4: '1115',
-    expiry_year: 2030,
-    expiry_month: 3,
-  };
+  // const metadata: NoncePaymentMethodInput = {
+  //   source: 'nonce-z5frsiogt4kce2paljeb',
+  //   last4: '1115',
+  //   expiry_year: 2030,
+  //   expiry_month: 3,
+  // };
   try {
     const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
       input: {
         method: 'accept-blue-credit-card',
-        metadata,
+        // metadata,
+        metadata: { paymentMethodId: 15713 },
       },
     });
     console.log(JSON.stringify(addPaymentToOrder));

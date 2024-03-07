@@ -215,6 +215,10 @@ export interface NoncePaymentMethodInput {
   last4: string;
 }
 
+export interface SavedPaymentMethodInput {
+  paymentMethodId: number;
+}
+
 export interface CheckPaymentMethodInput {
   routing_number: string;
   account_number: string;

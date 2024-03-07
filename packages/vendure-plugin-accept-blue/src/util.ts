@@ -4,6 +4,7 @@ import {
   CheckPaymentMethodInput,
   Frequency,
   NoncePaymentMethodInput,
+  SavedPaymentMethodInput,
 } from './types';
 
 interface MaskedCardInput {
@@ -146,4 +147,8 @@ export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
     input.account_type &&
     input.sec_code
   );
+}
+
+export function isSavedPaymentMethod(input: SavedPaymentMethodInput): boolean {
+  return !!input.paymentMethodId;
 }

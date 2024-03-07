@@ -9,8 +9,16 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
-import { CheckPaymentMethodInput, NoncePaymentMethodInput } from '../types';
-import { isCheckPaymentMethod, isNoncePaymentMethod } from '../util';
+import {
+  CheckPaymentMethodInput,
+  NoncePaymentMethodInput,
+  SavedPaymentMethodInput,
+} from '../types';
+import {
+  isCheckPaymentMethod,
+  isNoncePaymentMethod,
+  isSavedPaymentMethod,
+} from '../util';
 import { AcceptBlueClient } from './accept-blue-client';
 import { AcceptBlueService } from './accept-blue-service';
 
@@ -59,14 +67,19 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
   ): Promise<CreatePaymentResult> {
     if (
       !isNoncePaymentMethod(metadata as any) &&
-      !isCheckPaymentMethod(metadata as any)
+      !isCheckPaymentMethod(metadata as any) &&
+      !isSavedPaymentMethod(metadata as any)
     ) {
-      throw new UserInputError(`You either need to provide nonce input or check input.
-       Check requires the fields: name, routing_number, account_number, account_type and sec_code
-       Nonce requires the fields: source, expiry_month, expiry_year and last4
+      throw new UserInputError(`You either need to provide nonce input, check input or a saved payment method ID.
+        Check requires the fields: name, routing_number, account_number, account_type and sec_code.
+        Nonce requires the fields: source, expiry_month, expiry_year and last4.
+        Saved payment method requires the field paymentMethodId
       `);
     }
-    const input = metadata as CheckPaymentMethodInput | NoncePaymentMethodInput;
+    const input = metadata as
+      | CheckPaymentMethodInput
+      | NoncePaymentMethodInput
+      | SavedPaymentMethodInput;
     const client = new AcceptBlueClient(args.apiKey, args.pin);
     const result = await service.handlePaymentForOrder(
       ctx,
@@ -77,7 +90,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     );
     const chargeTransactionId = result.chargeResult?.transaction?.id;
     Logger.info(
-      `Settled payment for order '${order.code}', for Accept Blue customer '${result.customerId}' and one time charge '${chargeTransactionId}'`,
+      `Settled payment for order '${order.code}', for Accept Blue customer '${result.customerId}' and one time charge transaction '${chargeTransactionId}'`,
       loggerCtx
     );
     return {
