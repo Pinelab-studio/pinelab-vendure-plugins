@@ -110,10 +110,15 @@ export class AcceptBlueClient {
   ): Promise<AcceptBluePaymentMethod[]> {
     const result = await this.request(
       'get',
-      `customers/${acceptBlueCustomerId}/payment-methods`
+      `customers/${acceptBlueCustomerId}/payment-methods?limit=100`
     );
     if (!result) {
       return [];
+    }
+    if (result.length === 100) {
+      throw Error(
+        `Customer has more than 100 payment methods. Pagination is not implemented yet...`
+      );
     }
     return result;
   }

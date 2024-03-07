@@ -145,33 +145,11 @@ export interface AcceptBlueCustomer {
   active: boolean;
 }
 
-/** +++++ Order +++++ */
-
-export interface AcceptBlueLineItem {
-  sku: string;
-  name: string;
-  description: string;
-  cost: number;
-  quantity: number;
-  tax_rate: number;
-  tax_amount: number;
-  unit_of_measure: 'WK' | 'H' | 'EA';
-  commodity_code: string;
-  discount_rate: number;
-  discount_amount: number;
-}
-
 /** +++++ Payment +++++ */
 
 type CardType = 'Visa' | 'MasterCard' | 'Discover' | 'Amex' | 'JCB' | 'Diners';
 export type AccountType = 'Checking' | 'Savings';
 export type SecCode = 'PPD' | 'CCD' | 'TEL' | 'WEB';
-
-interface AcceptBlue3DSecure {
-  eci: string;
-  cavv: string;
-  ds_trans_id: string;
-}
 
 /** +++++ Customer Payment Methods +++++ */
 
@@ -204,12 +182,6 @@ export interface AcceptBlueCheckPaymentMethod {
 export type AcceptBluePaymentMethod =
   | AcceptBlueCardPaymentMethod
   | AcceptBlueCheckPaymentMethod;
-
-export interface BaseCardPaymentMethodInput {
-  name?: string;
-  avs_address?: string;
-  avs_zip?: string;
-}
 
 export interface CreditCardPaymentMethodInput {
   card: string;
@@ -308,33 +280,6 @@ export interface AcceptBlueRecurringScheduleInput {
   receipt_email?: string;
   use_this_source_key?: boolean;
 }
-
-export interface AcceptBlueChargeTransactionInputAmount {
-  amount: number;
-}
-export interface AcceptBlueTokenizedCreditCardChargeTransactionInput
-  extends AcceptBlueChargeTransactionInputAmount {
-  source: string;
-}
-
-export interface AcceptBlueCreditCardChargeTransactionInput
-  extends AcceptBlueChargeTransactionInputAmount {
-  card: string;
-  expiry_month: number;
-  expiry_year: number;
-}
-
-export interface AcceptBlueCheckChargeTransactionInput
-  extends AcceptBlueChargeTransactionInputAmount {
-  routing_number: string;
-  account_number: string;
-  name: string;
-}
-
-export type AcceptBlueChargeTransactionInput =
-  | AcceptBlueTokenizedCreditCardChargeTransactionInput
-  | AcceptBlueCreditCardChargeTransactionInput
-  | AcceptBlueCheckChargeTransactionInput;
 
 /** ++++++ Refunds ++++++ */
 

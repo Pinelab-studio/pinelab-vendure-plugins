@@ -70,17 +70,20 @@ export class AcceptBlueService {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
     }
-    const customer = await client.getOrCreateCustomer(
+    if (!ctx.activeUserId) {
+      throw new UserInputError(
+        `We can only handle Accept Blue payments for logged in users, because we need to save the payment methods on Accept Blue customers`
+      );
+    }
+    const acceptBlueCustomer = await client.getOrCreateCustomer(
       order.customer.emailAddress
     );
-    if (!order.customer?.customFields?.acceptBlueCustomerId) {
-      await this.customerService.update(ctx, {
-        id: order.customer?.id,
-        customFields: { acceptBlueCustomerId: customer.id },
-      });
-    }
+    await this.customerService.update(ctx, {
+      id: order.customer?.id,
+      customFields: { acceptBlueCustomerId: acceptBlueCustomer.id },
+    });
     const paymentMethod = await client.getOrCreatePaymentMethod(
-      customer.id,
+      acceptBlueCustomer.id,
       input
     );
     const recurringSchedules = await this.createRecurringSchedule(
@@ -94,7 +97,7 @@ export class AcceptBlueService {
       chargeResult = await client.createCharge(paymentMethod.id, amount);
     }
     return {
-      customerId: `${order?.customer?.customFields.acceptBlueCustomerId}`,
+      customerId: String(acceptBlueCustomer.id),
       paymentMethodId: paymentMethod.id,
       recurringScheduleResult: recurringSchedules,
       chargeResult,
