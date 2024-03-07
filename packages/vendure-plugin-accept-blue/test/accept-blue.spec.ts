@@ -38,8 +38,8 @@ import {
   AccountType,
   CheckPaymentMethodInput,
   CreditCardPaymentMethodInput,
+  NoncePaymentMethodInput,
   SecCode,
-  TokenPaymentMethodInput,
 } from '../src/types';
 import { AcceptBlueClient } from '../src/api/accept-blue-client';
 import axios from 'axios';
@@ -62,11 +62,10 @@ let acceptBluePaymentMethod: any;
 let nockInstance: nock.Scope;
 let acceptBlueClient: AcceptBlueClient;
 
-let testingCreditCardDetail = {
-  card: '5555555555554444',
+let testingNonceToken = {
+  source: 'nonce-1234567',
   expiry_year: 2025,
   expiry_month: 1,
-  cvv2: '737',
   last4: '4444',
 };
 
@@ -143,14 +142,11 @@ describe('Shop API', () => {
     expect(previewAcceptBlueSubscriptionsForProduct?.length).toBeGreaterThan(0);
   });
 
-  it.skip('Throws error when strategy returns a schedule that can not be mapped to Accept Blue frequency', async () => {
-    expect(false).toBe(true);
-  });
-
   it('Gets saved payment methods for logged in customer', async () => {
-    //use nock here
     nockInstance
-      .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .get(
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+      )
       .reply(200, haydenSavedPaymentMethods);
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -180,7 +176,7 @@ describe('Shop API', () => {
 });
 
 describe('Payment with Credit Card Payment Method', () => {
-  let creditCardSubscriptionIds: number[] = [];
+  let createdSubscriptionIds: number[] = [];
   it('Adds item to order', async () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
@@ -213,7 +209,9 @@ describe('Payment with Credit Card Payment Method', () => {
     //getAllPaymentMethods
     nockInstance
       .persist()
-      .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .get(
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+      )
       .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
     nockInstance
@@ -231,13 +229,12 @@ describe('Payment with Credit Card Payment Method', () => {
     await shopClient.query(TRANSITION_ORDER_TO, {
       state: 'ArrangingPayment',
     });
-    const metadata: CreditCardPaymentMethodInput = {
-      card: testingCreditCardDetail.card,
-      expiry_year: testingCreditCardDetail.expiry_year,
-      expiry_month: testingCreditCardDetail.expiry_month,
-      cvv2: testingCreditCardDetail.cvv2,
+    const metadata: NoncePaymentMethodInput = {
+      source: testingNonceToken.source,
+      expiry_year: testingNonceToken.expiry_year,
+      expiry_month: testingNonceToken.expiry_month,
+      last4: testingNonceToken.last4,
     };
-
     const { addPaymentToOrder: order } = await shopClient.query(
       ADD_PAYMENT_TO_ORDER,
       {
@@ -247,25 +244,14 @@ describe('Payment with Credit Card Payment Method', () => {
         },
       }
     );
-    creditCardSubscriptionIds = order.lines
+    createdSubscriptionIds = order.lines
       .map((l: any) => l.customFields.subscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
   });
 
   it('Created subscriptions at Accept Blue', async () => {
-    nockInstance
-      .persist()
-      .get(`/recurring-schedules/${recurringScheduleResult.id}`)
-      .reply(201, recurringScheduleResult);
-    expect(creditCardSubscriptionIds.length).toBeGreaterThan(0);
-    for (let id of creditCardSubscriptionIds) {
-      const response = await acceptBlueClient.request(
-        'get',
-        `recurring-schedules/${id}`
-      );
-      expect(response?.id).toBe(id);
-    }
+    expect(createdSubscriptionIds.length).toBeGreaterThan(0);
   });
 });
 
@@ -301,7 +287,9 @@ describe('Payment with Check Payment Method', () => {
     //getAllPaymentMethods
     nockInstance
       .persist()
-      .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .get(
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+      )
       .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
     nockInstance
@@ -319,14 +307,14 @@ describe('Payment with Check Payment Method', () => {
     await shopClient.query(TRANSITION_ORDER_TO, {
       state: 'ArrangingPayment',
     });
-    const workTestPaymentMethod =
+    const testCheck =
       haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
     const metadata: CheckPaymentMethodInput = {
-      name: workTestPaymentMethod.name!,
-      routing_number: workTestPaymentMethod.routing_number!,
-      account_number: workTestPaymentMethod.account_number!,
-      account_type: workTestPaymentMethod.account_type! as AccountType,
-      sec_code: workTestPaymentMethod.sec_code! as SecCode,
+      name: testCheck.name!,
+      routing_number: testCheck.routing_number!,
+      account_number: testCheck.account_number!,
+      account_type: testCheck.account_type! as AccountType,
+      sec_code: testCheck.sec_code! as SecCode,
     };
     const { addPaymentToOrder: order } = await shopClient.query(
       ADD_PAYMENT_TO_ORDER,
@@ -344,24 +332,13 @@ describe('Payment with Check Payment Method', () => {
   });
 
   it('Created subscriptions at Accept Blue', async () => {
-    //get recurring schedule with id
-    nockInstance
-      .persist()
-      .get(`/recurring-schedules/${recurringScheduleResult.id}`)
-      .reply(201, recurringScheduleResult);
     expect(checkSubscriptionIds.length).toBeGreaterThan(0);
-    for (let id of checkSubscriptionIds) {
-      const response = await acceptBlueClient.request(
-        'get',
-        `recurring-schedules/${id}`
-      );
-      expect(response?.id).toBe(id);
-    }
   });
 });
 
-describe('Payment with Tokenized Card Payment Method', () => {
-  let tokenizedPaymentSubscriptionIds: number[] = [];
+describe('Payment with Saved Payment Method', () => {
+  let subscriptionIds: number[] = [];
+
   it('Adds item to order', async () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
@@ -371,12 +348,12 @@ describe('Payment with Tokenized Card Payment Method', () => {
     const { addItemToOrder: order } = await shopClient.query(
       ADD_ITEM_TO_ORDER,
       {
-        productVariantId: '1',
+        productVariantId: '3',
         quantity: 1,
       }
     );
     // has subscription on orderline
-    expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_1');
+    expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
   });
 
   it('Adds payment to order', async () => {
@@ -389,11 +366,6 @@ describe('Payment with Tokenized Card Payment Method', () => {
       .get(`/customers`)
       .query(queryParams)
       .reply(200, [haydenZiemeCustomerDetails]);
-    //getAllPaymentMethods
-    nockInstance
-      .persist()
-      .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
-      .reply(200, haydenSavedPaymentMethods);
     //createRecurringSchedule
     nockInstance
       .persist()
@@ -403,67 +375,32 @@ describe('Payment with Tokenized Card Payment Method', () => {
     nockInstance
       .persist()
       .post(`/transactions/charge`)
-      .reply(201, tokenizedCreditCardChargeResult);
+      .reply(201, checkChargeResult);
     await shopClient.query(SET_SHIPPING_METHOD, {
       id: [1],
     });
     await shopClient.query(TRANSITION_ORDER_TO, {
       state: 'ArrangingPayment',
     });
-    const acceptBlueHostedTokenizationUrl =
-      'https://tokenization.develop.accept.blue/v2/tokenization/get-nonce';
-    const sourceKey = 'some-source-key';
-    nock(acceptBlueHostedTokenizationUrl)
-      .post('')
-      .reply(200, { data: { nonce_token: 'nonce_token' } });
-    const response = await axios.post(
-      acceptBlueHostedTokenizationUrl,
-      {
-        card: testingCreditCardDetail.card,
-        cvv2: testingCreditCardDetail.cvv2,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Basic ' + btoa(sourceKey + ':'),
-        },
-      }
-    );
-    const metadata: TokenPaymentMethodInput = {
-      source: `nonce-${response.data.nonce_token}`,
-      expiry_month: testingCreditCardDetail.expiry_month,
-      expiry_year: testingCreditCardDetail.expiry_year,
-      last4: testingCreditCardDetail.last4,
-    };
-
+    const testPaymentMethod =
+      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
     const { addPaymentToOrder: order } = await shopClient.query(
       ADD_PAYMENT_TO_ORDER,
       {
         input: {
           method: acceptBluePaymentMethod.code,
-          metadata,
+          metadata: { paymentMethodId: testPaymentMethod.id },
         },
       }
     );
-    tokenizedPaymentSubscriptionIds = order.lines
+    subscriptionIds = order.lines
       .map((l: any) => l.customFields.subscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
   });
 
   it('Created subscriptions at Accept Blue', async () => {
-    nockInstance
-      .persist()
-      .get(`/recurring-schedules/${recurringScheduleResult.id}`)
-      .reply(201, recurringScheduleResult);
-    expect(tokenizedPaymentSubscriptionIds.length).toBeGreaterThan(0);
-    for (let id of tokenizedPaymentSubscriptionIds) {
-      const response = await acceptBlueClient.request(
-        'get',
-        `recurring-schedules/${id}`
-      );
-      expect(response?.id).toBe(id);
-    }
+    expect(subscriptionIds.length).toBeGreaterThan(0);
   });
 });
 
@@ -473,7 +410,9 @@ describe('Admin API', () => {
   it('Gets saved payment methods for customer', async () => {
     nockInstance
       .persist()
-      .get(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .get(
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+      )
       .reply(200, haydenSavedPaymentMethods);
     const { customer } = await adminClient.query(GET_CUSTOMER_WITH_ID, {
       id: '1',

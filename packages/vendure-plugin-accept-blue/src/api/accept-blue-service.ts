@@ -18,21 +18,16 @@ import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
-  AcceptBlueCardPaymentMethod,
   AcceptBlueChargeTransaction,
-  AcceptBlueCheckChargeTransactionInput,
-  AcceptBlueCreditCardChargeTransactionInput,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
-  AcceptBlueTokenizedCreditCardChargeTransactionInput,
-  CheckPaymentInput,
-  CreditCardPaymentInput,
+  CheckPaymentMethodInput,
   HandlePaymentResult,
-  TokenPaymentMethodInput,
+  NoncePaymentMethodInput,
+  SavedPaymentMethodInput,
 } from '../types';
 import {
   getNrOfBillingCyclesLeft,
-  isSameCard,
   isToday,
   toAcceptBlueFrequency,
 } from '../util';
@@ -62,174 +57,65 @@ export class AcceptBlueService {
   readonly subscriptionHelper: SubscriptionHelper;
 
   /**
-   * Handles credit card payments for order
+   * Handles payments for order for either Nonce or Checks
    * 1. Get or Create customer
    * 2. Create payment method
-   * Call payWithCardPaymentMethodDetails() to do the actual payment
    */
-  async payWithCreditCard(
+  async handlePaymentForOrder(
     ctx: RequestContext,
     order: Order,
     amount: number,
     client: AcceptBlueClient,
-    ccDetails: CreditCardPaymentInput
+    input:
+      | NoncePaymentMethodInput
+      | CheckPaymentMethodInput
+      | SavedPaymentMethodInput
   ): Promise<HandlePaymentResult> {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
     }
-    const customer = await client.getOrCreateCustomer(
-      order.customer.emailAddress
-    );
-    if (!order.customer?.customFields?.acceptBlueCustomerId) {
-      await this.customerService.update(ctx, {
-        id: order.customer?.id,
-        customFields: { acceptBlueCustomerId: customer.id },
-      });
-    }
-    const paymentMethod = await client.getOrCreateCardPaymentMethod(
-      customer.id,
-      ccDetails
-    );
-    const recurringSchedules = await this.createRecurringSchedule(
-      ctx,
-      order,
-      client,
-      paymentMethod.id
-    );
-    const chargeResult = this.createOneTimePayment(client, amount, ccDetails);
-    return {
-      customerId: `${order?.customer?.customFields.acceptBlueCustomerId}`,
-      paymentMethodId: paymentMethod.id,
-      recurringScheduleResult: recurringSchedules,
-      chargeResult,
-    };
-  }
-
-  async payWithToken(
-    ctx: RequestContext,
-    order: Order,
-    amount: number,
-    client: AcceptBlueClient,
-    checkDetails: TokenPaymentMethodInput
-  ): Promise<HandlePaymentResult> {
-    if (!order.customer) {
-      throw new UserInputError(`Order must have a customer`);
-    }
-    const customer = await client.getOrCreateCustomer(
-      order.customer.emailAddress
-    );
-    if (!order.customer?.customFields?.acceptBlueCustomerId) {
-      await this.customerService.update(ctx, {
-        id: order.customer?.id,
-        customFields: { acceptBlueCustomerId: customer.id },
-      });
-    }
-    // Save payment method
-    const methods = await client.getPaymentMethods(
-      order.customer.customFields.acceptBlueCustomerId
-    );
-    const paymentMethod = methods.find((method) =>
-      isSameCard(checkDetails, method as AcceptBlueCardPaymentMethod)
-    );
-    if (!paymentMethod) {
+    if (!ctx.activeUserId) {
       throw new UserInputError(
-        'No Saved Credit Card with this tokenized nonce code'
+        `We can only handle Accept Blue payments for logged in users, because we need to save the payment methods on Accept Blue customers`
       );
     }
-    const recurringSchedules = await this.createRecurringSchedule(
-      ctx,
-      order,
-      client,
-      paymentMethod.id
-    );
-    const chargeResult = this.createOneTimePayment(
-      client,
-      amount,
-      checkDetails
-    );
-    return {
-      customerId: `${order?.customer?.customFields.acceptBlueCustomerId}`,
-      paymentMethodId: paymentMethod.id,
-      recurringScheduleResult: recurringSchedules,
-      chargeResult,
-    };
-  }
-
-  async payWithCheck(
-    ctx: RequestContext,
-    order: Order,
-    amount: number,
-    client: AcceptBlueClient,
-    checkDetails: CheckPaymentInput
-  ): Promise<HandlePaymentResult> {
-    if (!order.customer) {
-      throw new UserInputError(`Order must have a customer`);
-    }
-    const customer = await client.getOrCreateCustomer(
+    const acceptBlueCustomer = await client.getOrCreateCustomer(
       order.customer.emailAddress
     );
-    if (!order.customer?.customFields?.acceptBlueCustomerId) {
-      await this.customerService.update(ctx, {
-        id: order.customer?.id,
-        customFields: { acceptBlueCustomerId: customer.id },
-      });
+    await this.customerService.update(ctx, {
+      id: order.customer?.id,
+      customFields: { acceptBlueCustomerId: acceptBlueCustomer.id },
+    });
+    let paymentMethodId: number | undefined;
+    if ((input as SavedPaymentMethodInput).paymentMethodId) {
+      paymentMethodId = (input as SavedPaymentMethodInput).paymentMethodId;
+    } else {
+      const paymentMethod = await client.getOrCreatePaymentMethod(
+        acceptBlueCustomer.id,
+        input as NoncePaymentMethodInput | CheckPaymentMethodInput
+      );
+      paymentMethodId = paymentMethod.id;
     }
-    // Save payment method
-    const paymentMethod = await client.getOrCreateCheckPaymentMethod(
-      customer.id,
-      checkDetails
-    );
     const recurringSchedules = await this.createRecurringSchedule(
       ctx,
       order,
       client,
-      paymentMethod.id
+      paymentMethodId
     );
-    const creditCardChargeInput: AcceptBlueCheckChargeTransactionInput = {
-      amount,
-      routing_number: checkDetails.routing_number,
-      account_number: checkDetails.account_number,
-      name: checkDetails.name,
-    };
-    const chargeResult = await client.createCharge(creditCardChargeInput);
+    let chargeResult: AcceptBlueChargeTransaction | undefined;
+    if (amount > 0) {
+      chargeResult = await client.createCharge(paymentMethodId, amount);
+    }
     return {
-      customerId: `${order?.customer?.customFields.acceptBlueCustomerId}`,
-      paymentMethodId: paymentMethod.id,
+      customerId: String(acceptBlueCustomer.id),
+      paymentMethodId: paymentMethodId,
       recurringScheduleResult: recurringSchedules,
       chargeResult,
     };
-  }
-
-  async createOneTimePayment(
-    client: AcceptBlueClient,
-    amountDueNow: number,
-    ccDetails: CreditCardPaymentInput | TokenPaymentMethodInput
-  ): Promise<AcceptBlueChargeTransaction> {
-    let creditCardChargeInput:
-      | AcceptBlueCreditCardChargeTransactionInput
-      | AcceptBlueTokenizedCreditCardChargeTransactionInput;
-    if ((ccDetails as any).card) {
-      creditCardChargeInput = {
-        amount: amountDueNow,
-        card: (ccDetails as CreditCardPaymentInput).card,
-        expiry_month: ccDetails.expiry_month,
-        expiry_year: ccDetails.expiry_year,
-      };
-    } else if ((ccDetails as any).source) {
-      creditCardChargeInput = {
-        amount: amountDueNow,
-        source: (ccDetails as TokenPaymentMethodInput).source,
-        expiry_month: ccDetails.expiry_month,
-        expiry_year: ccDetails.expiry_year,
-      };
-    } else {
-      throw new Error('Not Implemented');
-    }
-    return await client.createCharge(creditCardChargeInput);
   }
 
   /**
-   * Create recurring schedule for customer + with the saved payment method
+   * Create recurring schedule for customer with the saved payment method
    */
   async createRecurringSchedule(
     ctx: RequestContext,
@@ -339,7 +225,6 @@ export class AcceptBlueService {
     return await client.getPaymentMethods(
       customer.customFields.acceptBlueCustomerId
     );
-    // throw new Error('NOT IMPLEMENT');
   }
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {

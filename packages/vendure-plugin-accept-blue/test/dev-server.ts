@@ -1,23 +1,23 @@
-//  https://sandbox.emeraldworldpayments.com/login
-//seems to be running to compile error without the next line
-import * as sth from '../src/api/custom-field-types';
+// This import is needed to accept custom field types
+import {} from '../src/api/custom-field-types';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
   LanguageCode,
   LogLevel,
-  VendureConfig,
   mergeConfig,
+  VendureConfig,
 } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
+import readline from 'readline';
 import { AcceptBluePlugin } from '../src';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
-import { CreditCardPaymentMethodInput } from '../src/types';
+import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -25,7 +25,9 @@ import {
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
 } from './helpers';
-import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin';
+import { NoncePaymentMethodInput } from '../src/types';
+import { add } from 'date-fns';
+
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
  * The value of this key can be retrieved from the dashboard Accept Blue (Control Panel > Sources > Create Key, and choose "Tokenization" from the Source Key Type dropdown.)
@@ -80,24 +82,8 @@ import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin
   });
 
   const port = config.apiOptions?.port ?? '';
-  console.log('\n\n========================');
   console.log(`Vendure server now running on port ${port}`);
-  console.log('------------------------');
-  console.log(
-    'shopApi',
-    `http://localhost:${port}/${config.apiOptions?.shopApiPath ?? ''}`
-  );
-  console.log(
-    'adminApi',
-    `http://localhost:${port}/${config.apiOptions?.adminApiPath ?? ''}`
-  );
-  // console.log('Asset server', `http://localhost:${port}/assets`);
-  // console.log('Dev mailbox', `http://localhost:${port}/mailbox`);
-  console.log('admin UI', `http://localhost:${port}/admin`);
-  console.log('------------------------\n');
   console.log('Accept blue checkout form', `http://localhost:${port}/checkout`);
-  console.log('\n------------------------');
-  console.log('========================\n\n');
 
   // Create Accept Blue payment method
   await adminClient.asSuperAdmin();
@@ -141,29 +127,30 @@ import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin
       state: 'ArrangingPayment',
     }
   );
+  console.log(
+    `Transitioned order '${transitionOrderToState.code}' to ArrangingPayment`
+  );
 
   // Create Payment method with Accept blue
-  // No guest checkouts allowed
-
-  // Get available Accept blue payment methods
-
-  console.log(`Transitioned to ArrangingPayment`, transitionOrderToState);
-
-  const metadata: CreditCardPaymentMethodInput = {
-    // acceptBluePaymentMethod: 1,
-    card: '4761530001111118',
-    expiry_year: 2025,
-    expiry_month: 1,
-    avs_address: 'Testing address',
-    avs_zip: '12345',
-    name: 'Hayden Zieme',
+  const metadata: NoncePaymentMethodInput = {
+    source: 'nonce-z5frsiogt4kce2paljeb',
+    last4: '1115',
+    expiry_year: 2030,
+    expiry_month: 3,
   };
-
-  const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
-    input: {
-      method: 'accept-blue-credit-card',
-      metadata,
-    },
-  });
-  console.log(JSON.stringify(addPaymentToOrder));
+  try {
+    const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
+      input: {
+        method: 'accept-blue-credit-card',
+        metadata,
+        //metadata: { paymentMethodId: 15713 }, // Use a saved payment method
+      },
+    });
+    console.log(
+      `Successfully transitioned order to ${addPaymentToOrder.state}`
+    );
+  } catch (e) {
+    // Catch to prevent server from terminating
+    console.error(e);
+  }
 })();
