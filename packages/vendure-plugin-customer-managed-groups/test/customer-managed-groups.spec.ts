@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -12,17 +14,34 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { CustomerManagedGroupsPlugin } from '../src';
 import {
   activeCustomerManagedGroupMemberQuery,
-  addCustomerToGroupMutation,
+  adminCreateCustomerManagedGroupMutation,
+  addCustomer,
   createCustomerManagedGroupMutation,
   getOrdersForMyCustomerManagedGroup,
   makeCustomerAdminOfCustomerManagedGroupMutation,
   myCustomerManagedGroupQuery,
   removeCustomerFromGroupMutation,
   updateCustomerManagedGroupMemberMutation,
+  adminCustomerManagedGroupQuery,
+  adminMakeCustomerAdminOfGroupMutation,
+  addCustomerToMyCustomerManagedGroupMutation,
+  adminAddCustomersToGroupMutation,
+  customers,
+  adminGetOrdersForCustomerManagedGroup,
 } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { Address } from '../../test/src/generated/shop-graphql';
 import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
+
+function deleteDirectory(directoryPath) {
+  if (fs.existsSync(directoryPath)) {
+    // Check if the directory exists before attempting to delete
+    fs.rmdirSync(directoryPath, { recursive: true });
+    console.log(`Directory ${directoryPath} deleted successfully.`);
+  } else {
+    console.log(`Directory ${directoryPath} does not exist.`);
+  }
+}
 
 describe('Customer managed groups', function () {
   let server: TestServer;
@@ -31,6 +50,7 @@ describe('Customer managed groups', function () {
   let serverStarted = false;
 
   beforeAll(async () => {
+    deleteDirectory(path.join(__dirname, '../__data__'));
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
@@ -60,40 +80,44 @@ describe('Customer managed groups', function () {
     });
 
     ({ server, adminClient, shopClient } = createTestEnvironment(config));
-    await server.init({
-      initialData: {
-        ...initialData,
-        paymentMethods: [
-          {
-            name: testPaymentMethod.code,
-            handler: { code: testPaymentMethod.code, arguments: [] },
-          },
-        ],
-      },
-      productsCsvPath: '../test/src/products-import.csv',
-      customerCount: 5,
-    });
+    try {
+      await server.init({
+        initialData: {
+          ...initialData,
+          paymentMethods: [
+            {
+              name: testPaymentMethod.code,
+              handler: { code: testPaymentMethod.code, arguments: [] },
+            },
+          ],
+        },
+        productsCsvPath: '../test/src/products-import.csv',
+        customerCount: 5,
+      });
+    } catch (err) {
+      console.log('Error init server', err);
+    }
   }, 60000);
 
-  async function authorizeAsGroupAdmin(): Promise<void> {
-    await shopClient.asUserWithCredentials(
+  function authorizeAsGroupAdmin(): Promise<void> {
+    return shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
     );
   }
 
-  async function authorizeAsGroupParticipant(): Promise<void> {
-    await shopClient.asUserWithCredentials('eliezer56@yahoo.com', 'test');
+  function authorizeAsGroupParticipant(): Promise<void> {
+    return shopClient.asUserWithCredentials('eliezer56@yahoo.com', 'test');
   }
 
   it('Should start successfully', async () => {
-    expect(server.app.getHttpServer).toBeDefined;
+    expect(server.app.getHttpServer).toBeDefined();
   });
 
   it('Fails for unauthenticated calls', async () => {
     expect.assertions(1);
     try {
-      await shopClient.query(addCustomerToGroupMutation, {
+      await shopClient.query(addCustomerToMyCustomerManagedGroupMutation, {
         input: {
           emailAddress: 'marques.sawayn@hotmail.com',
         },
@@ -107,6 +131,7 @@ describe('Customer managed groups', function () {
 
   it('Returns undefined for myCustomerManagedGroup when not in a group', async () => {
     await authorizeAsGroupAdmin();
+
     const { myCustomerManagedGroup: group } = await shopClient.query(
       myCustomerManagedGroupQuery
     );
@@ -124,7 +149,7 @@ describe('Customer managed groups', function () {
   it('Adds a customer to my group', async () => {
     await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
-      await shopClient.query(addCustomerToGroupMutation, {
+      await shopClient.query(addCustomerToMyCustomerManagedGroupMutation, {
         input: {
           emailAddress: 'marques.sawayn@hotmail.com',
         },
@@ -159,7 +184,7 @@ describe('Customer managed groups', function () {
   it('Adds another customer to my group', async () => {
     await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
-      await shopClient.query(addCustomerToGroupMutation, {
+      await shopClient.query(addCustomerToMyCustomerManagedGroupMutation, {
         input: {
           emailAddress: 'eliezer56@yahoo.com',
         },
@@ -190,7 +215,7 @@ describe('Customer managed groups', function () {
     expect.assertions(1);
     await authorizeAsGroupParticipant();
     try {
-      await shopClient.query(addCustomerToGroupMutation, {
+      await shopClient.query(addCustomerToMyCustomerManagedGroupMutation, {
         input: {
           emailAddress: 'marques.sawayn@hotmail.com',
         },
@@ -278,7 +303,7 @@ describe('Customer managed groups', function () {
   it('Adds another group admin to my group', async () => {
     await authorizeAsGroupAdmin();
     const { addCustomerToMyCustomerManagedGroup: group } =
-      await shopClient.query(addCustomerToGroupMutation, {
+      await shopClient.query(addCustomerToMyCustomerManagedGroupMutation, {
         input: {
           emailAddress: 'marques.sawayn@hotmail.com',
           isGroupAdmin: true,
@@ -535,6 +560,7 @@ describe('Customer managed groups', function () {
       )
     ).toBeDefined();
   });
+
   it('Administrators can update custom fields', async () => {
     await authorizeAsGroupAdmin();
     const { myCustomerManagedGroup: group } = await shopClient.query(
@@ -555,6 +581,187 @@ describe('Customer managed groups', function () {
       (c: any) => c.isGroupAdministrator
     );
     expect(authorizedCustomerUpdated.customFields.birthday).toBe(adminBirthDay);
+  });
+
+  it('Admin: creates customer managed group', async () => {
+    await adminClient.asSuperAdmin();
+    const { createCustomer } = await adminClient.query(addCustomer, {
+      input: {
+        firstName: 'test',
+        lastName: 'last',
+        emailAddress: `test${Math.floor(Math.random() * 1000) + 1}@hotmail.com`,
+      },
+    });
+
+    const { createCustomerManagedGroup: group } = await adminClient.query(
+      adminCreateCustomerManagedGroupMutation,
+      {
+        customerId: createCustomer.id,
+      }
+    );
+    const customer = group.customers.find(
+      (c: any) => c.customerId === createCustomer.id
+    );
+
+    expect(customer).toBeDefined();
+    expect(customer.isGroupAdministrator).toBe(true);
+  });
+
+  it('Admin: get customer managed group', async () => {
+    await adminClient.asSuperAdmin();
+    const { createCustomer } = await adminClient.query(addCustomer, {
+      input: {
+        firstName: 'test',
+        lastName: 'last',
+        emailAddress: `test${Math.floor(Math.random() * 1000) + 1}@hotmail.com`,
+      },
+    });
+
+    const { createCustomerManagedGroup: group } = await adminClient.query(
+      adminCreateCustomerManagedGroupMutation,
+      {
+        customerId: createCustomer.id,
+      }
+    );
+
+    const { customerGroup } = await adminClient.query(
+      adminCustomerManagedGroupQuery,
+      {
+        id: group.id,
+      }
+    );
+
+    expect(customerGroup).toMatchObject({
+      id: group.id,
+    });
+  });
+
+  it('Admin: add customer to customer managed group', async () => {
+    await adminClient.asSuperAdmin();
+
+    const { createCustomer } = await adminClient.query(addCustomer, {
+      input: {
+        firstName: 'test',
+        lastName: 'last',
+        emailAddress: `test${Math.floor(Math.random() * 1000) + 1}@hotmail.com`,
+      },
+    });
+    const { createCustomer: customer2 } = await adminClient.query(addCustomer, {
+      input: {
+        firstName: 'child',
+        lastName: 'last',
+        emailAddress: `test${Math.floor(Math.random() * 1000) + 1}@hotmail.com`,
+      },
+    });
+
+    expect(createCustomer).toMatchObject({
+      id: expect.anything(),
+    });
+
+    const { createCustomerManagedGroup: group } = await adminClient.query(
+      adminCreateCustomerManagedGroupMutation,
+      {
+        customerId: createCustomer.id,
+      }
+    );
+
+    const { addCustomersToGroup: updatedGroup } = await adminClient.query(
+      adminAddCustomersToGroupMutation,
+      {
+        customerGroupId: group.id,
+        customerIds: [customer2.id],
+      }
+    );
+
+    expect(updatedGroup.customers.items).toHaveLength(2);
+  });
+
+  it('Admin: make customer admin of customer managed group', async () => {
+    // adminMakeCustomerAdminOfGroupMutation
+    await adminClient.asSuperAdmin();
+
+    const { createCustomer } = await adminClient.query(addCustomer, {
+      input: {
+        firstName: 'test',
+        lastName: 'last',
+        emailAddress: `test${Math.floor(Math.random() * 1000) + 1}@hotmail.com`,
+      },
+    });
+    const { createCustomer: customer2 } = await adminClient.query(addCustomer, {
+      input: {
+        firstName: 'child',
+        lastName: 'last',
+        emailAddress: `test${Math.floor(Math.random() * 1000) + 1}@hotmail.com`,
+      },
+    });
+
+    expect(createCustomer).toMatchObject({
+      id: expect.anything(),
+    });
+
+    const { createCustomerManagedGroup: group } = await adminClient.query(
+      adminCreateCustomerManagedGroupMutation,
+      {
+        customerId: createCustomer.id,
+      }
+    );
+
+    await adminClient.query(adminAddCustomersToGroupMutation, {
+      customerGroupId: group.id,
+      customerIds: [customer2.id],
+    });
+
+    const { makeCustomerAdminOfCustomerManagedGroup: updatedGroup } =
+      await adminClient.query(adminMakeCustomerAdminOfGroupMutation, {
+        groupId: group.id,
+        customerId: customer2.id,
+      });
+
+    const updatedCustomer = updatedGroup.customers.find(
+      (c) => c.customerId === customer2.id
+    );
+    expect(updatedCustomer).toBeDefined();
+    expect(updatedCustomer.isGroupAdministrator).toBeTruthy();
+  });
+
+  it('Admin: gets orders for customer managed group', async () => {
+    await adminClient.asSuperAdmin();
+    const customersRes = await adminClient.query(customers, {
+      filter: {
+        emailAddress: {
+          eq: 'hayden.zieme12@hotmail.com',
+        },
+      },
+    });
+    const hayden = customersRes.customers.items[0];
+    expect(hayden).toBeDefined();
+    const group = hayden.groups.find((g) => g.customFields.isCustomerManaged);
+    // This is dependent on earlier unit tests
+    // const { createCustomerManagedGroup: group } = await adminClient.query(
+    //   adminCreateCustomerManagedGroupMutation,
+    //   {
+    //     customerId: hayden.id,
+    //   }
+    // );
+    expect(group).toBeDefined();
+    const { ordersForCustomerManagedGroup } = await adminClient.query(
+      adminGetOrdersForCustomerManagedGroup,
+      {
+        customerManagedGroupId: group.id,
+      }
+    );
+    // This is dependent on earlier unit tests
+    expect(ordersForCustomerManagedGroup.totalItems).toBe(2);
+    expect(ordersForCustomerManagedGroup.items[0].code).toBeDefined();
+    expect(ordersForCustomerManagedGroup.items[0].lines.length).toBeGreaterThan(
+      0
+    );
+    expect(
+      ordersForCustomerManagedGroup.items[0].payments.length
+    ).toBeGreaterThan(0);
+    expect(ordersForCustomerManagedGroup.items[0].customFields.testing).toBe(
+      'just a test'
+    );
   });
 
   afterAll(async () => {

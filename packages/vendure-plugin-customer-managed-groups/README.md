@@ -121,3 +121,7 @@ extend type Query {
   myCustomerManagedGroup: CustomerManagedGroup
 }
 ```
+
+### Contributions
+
+Thanks [@mschipperheyn](https://github.com/mschipperheyn) for his contributions on this plugin.
