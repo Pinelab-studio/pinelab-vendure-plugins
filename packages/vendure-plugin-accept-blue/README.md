@@ -33,23 +33,14 @@ Create recurring subscriptions with the Accept Blue platform.
 
 These are the different payment methods you can use to pay for an order. Keep in mind that these examples use sample input data.
 
-### Pay with Credit Card
+### Pay with Saved Payment Method
+
+If a customer already has a payment method saved in Accept Blue, you can use that to pay for an order.
 
 ```graphql
 mutation {
   addPaymentToOrder(
-    input: {
-      method: "accept-blue"
-      metadata: {
-        card: "4761530001111118"
-        expiry_year: 2025
-        expiry_month: 1
-        cvv2: "737"
-        avs_address: "Testing address"
-        avs_zip: "12345"
-        name: "Hayden Zieme"
-      }
-    }
+    input: { method: "accept-blue", metadata: { paymentMethodId: 15087 } }
   ) {
     ... on Order {
       id
@@ -83,7 +74,10 @@ mutation {
 }
 ```
 
-### Pay with Tokenized card
+### Pay with Nonce/Tokenized card
+
+With the hosted tokenization form, you can obtain a token that represents a credit card, and use that to pay for an order.
+More info on hosted tokenization here: https://docs.accept.blue/tokenization/v0.2
 
 ```graphql
 mutation {
@@ -91,10 +85,10 @@ mutation {
     input: {
       method: "accept-blue"
       metadata: {
-        source: "nonce-nonce-token"
-        expiry_month: 1
-        expiry_year: 2025
-        last4: 4444
+        source: "nonce-z5frsiogt4kce2paljeb"
+        last4: "1115"
+        expiry_year: 2030
+        expiry_month: 3
       }
     }
   ) {

@@ -26,6 +26,7 @@ import {
   TRANSITION_ORDER_TO,
 } from './helpers';
 import { NoncePaymentMethodInput } from '../src/types';
+import { add } from 'date-fns';
 
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
@@ -131,21 +132,23 @@ import { NoncePaymentMethodInput } from '../src/types';
   );
 
   // Create Payment method with Accept blue
-  // const metadata: NoncePaymentMethodInput = {
-  //   source: 'nonce-z5frsiogt4kce2paljeb',
-  //   last4: '1115',
-  //   expiry_year: 2030,
-  //   expiry_month: 3,
-  // };
+  const metadata: NoncePaymentMethodInput = {
+    source: 'nonce-z5frsiogt4kce2paljeb',
+    last4: '1115',
+    expiry_year: 2030,
+    expiry_month: 3,
+  };
   try {
     const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
       input: {
         method: 'accept-blue-credit-card',
-        // metadata,
-        metadata: { paymentMethodId: 15713 },
+        metadata,
+        //metadata: { paymentMethodId: 15713 }, // Use a saved payment method
       },
     });
-    console.log(JSON.stringify(addPaymentToOrder));
+    console.log(
+      `Successfully transitioned order to ${addPaymentToOrder.state}`
+    );
   } catch (e) {
     // Catch to prevent server from terminating
     console.error(e);
