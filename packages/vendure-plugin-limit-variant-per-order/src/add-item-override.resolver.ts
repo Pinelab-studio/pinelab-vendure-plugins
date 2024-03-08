@@ -70,7 +70,7 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
     const onlyAllowPer = orderLine.productVariant.customFields.onlyAllowPer;
     if (
       (maxPerOrder && orderLine.quantity > maxPerOrder) ||
-      (onlyAllowPer && orderLine.quantity % onlyAllowPer === 1)
+      (onlyAllowPer && orderLine.quantity % onlyAllowPer !== 0)
     ) {
       const maxPerOrderMessage = maxPerOrder ? `max ${maxPerOrder}` : '';
       const and = maxPerOrder && onlyAllowPer ? ' and ' : '';

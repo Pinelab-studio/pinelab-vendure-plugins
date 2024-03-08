@@ -140,7 +140,7 @@ describe('Limit variants per order plugin', function () {
     expect(order.lines[0].quantity).toBe(quantity);
   });
 
-  it('Should fail to  adjust orderLine to quantity(3) not multiple of onlyAllowPer', async () => {
+  it('Should fail to  adjust orderLine to quantity(3) which is not multiple of onlyAllowPer', async () => {
     const quantity = 3;
     const promise = shopClient.query(
       gql`
@@ -159,7 +159,7 @@ describe('Limit variants per order plugin', function () {
     await expect(promise).rejects.toThrow(errorMessage);
   });
 
-  it('Should fail to  adjust orderLine to quantity(7) greater than maxPerOrder', async () => {
+  it('Should fail to  adjust orderLine to quantity(7) which is greater than maxPerOrder', async () => {
     const quantity = 7;
     const promise = shopClient.query(
       gql`
