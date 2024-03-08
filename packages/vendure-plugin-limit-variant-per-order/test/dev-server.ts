@@ -1,3 +1,4 @@
+import '../src/types';
 import { initialData } from '../../test/src/initial-data';
 import {
   createTestEnvironment,
