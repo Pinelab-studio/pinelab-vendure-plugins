@@ -40,7 +40,7 @@ import { AddItemOverrideResolver } from './add-item-override.resolver';
       label: [
         {
           languageCode: LanguageCode.en,
-          value: 'Only Allow per order',
+          value: 'Multiple of per order',
         },
       ],
       description: [
