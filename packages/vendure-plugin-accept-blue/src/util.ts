@@ -133,7 +133,7 @@ export function isNoncePaymentMethod(input: NoncePaymentMethodInput): boolean {
   return !!(
     input.source &&
     input.expiry_year &&
-    input.expiry_year &&
+    input.expiry_month &&
     input.last4
   );
 }
@@ -144,8 +144,7 @@ export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
     input.routing_number &&
     input.name &&
     input.sec_code &&
-    input.account_type &&
-    input.sec_code
+    input.account_type
   );
 }
 
