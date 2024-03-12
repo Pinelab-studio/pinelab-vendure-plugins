@@ -1,6 +1,10 @@
+# 1.1.0 (2024-03-12)
+
+- Refactored order line custom field `subscriptionIds` to `acceptBlueSubscriptionIds` to avoid conflicts with for example the Stripe Plugin
+
 # 1.0.1 (2024-03-08)
 
-- Correctly check
+- Correctly check given input types
 
 # 1.0.0 (2024-03-07)
 

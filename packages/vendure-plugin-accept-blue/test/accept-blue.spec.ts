@@ -245,7 +245,7 @@ describe('Payment with Credit Card Payment Method', () => {
       }
     );
     createdSubscriptionIds = order.lines
-      .map((l: any) => l.customFields.subscriptionIds)
+      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
   });
@@ -326,7 +326,7 @@ describe('Payment with Check Payment Method', () => {
       }
     );
     checkSubscriptionIds = order.lines
-      .map((l: any) => l.customFields.subscriptionIds)
+      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
   });
@@ -394,7 +394,7 @@ describe('Payment with Saved Payment Method', () => {
       }
     );
     subscriptionIds = order.lines
-      .map((l: any) => l.customFields.subscriptionIds)
+      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
   });

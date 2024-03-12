@@ -199,7 +199,7 @@ export class AcceptBlueService {
         async ([orderLineId, subscriptionIds]) => {
           const orderLine = order.lines.find((l) => l.id === orderLineId);
           if (orderLine) {
-            orderLine.customFields.subscriptionIds = subscriptionIds;
+            orderLine.customFields.acceptBlueSubscriptionIds = subscriptionIds;
             await this.connection.getRepository(ctx, OrderLine).save(orderLine);
           }
         }
