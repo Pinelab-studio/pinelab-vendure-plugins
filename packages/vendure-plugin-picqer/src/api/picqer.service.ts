@@ -278,7 +278,6 @@ export class PicqerService implements OnApplicationBootstrap {
       input.body.event === 'products.free_stock_changed' ||
       input.body.event === 'products.assembled_stock_changed'
     ) {
-      const data = input.body.data;
       await this.updateStockBySkus(ctx, [input.body.data]);
     } else if (input.body.event === 'orders.status_changed') {
       await this.handleOrderStatusChanged(ctx, input.body.data);
@@ -590,7 +589,22 @@ export class PicqerService implements OnApplicationBootstrap {
       vendureVariants.map(async (variant) => {
         const picqerProduct = picqerProducts.find(
           (p) => p.productcode === variant.sku
-        )!; // safe non-null assertion, because we fetched variants based on the Picqer skus
+        );
+        if (!picqerProduct) {
+          // Should never happen, because we only fetch variants that were given in the Picqer products payload
+          Logger.error(
+            `No Picqer product found for variant ${variant.sku}`,
+            loggerCtx
+          );
+          return;
+        }
+        if (picqerProduct.unlimitedstock) {
+          Logger.info(
+            `Not updating stock of variant '${variant.sku}', because it has unlimited stock in Picqer`,
+            loggerCtx
+          );
+          return;
+        }
         // Fields from picqer that should be added to the variant
         let additionalVariantFields = {};
         try {
