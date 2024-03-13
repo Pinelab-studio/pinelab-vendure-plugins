@@ -13,4 +13,4 @@ import { PublicCustomerGroupsPlugin } from '@pinelab/vendure-plugin-public-custo
 plugins: [PublicCustomerGroupsPlugin];
 ```
 
-And your good to go with just that.
+And you're good to go with just that.

@@ -25,6 +25,9 @@ export class PublicCustomerGroupsResolver {
     return customerGroups.filter((group) => !!group.customFields.isPublic);
   }
 
+  /**
+   * Resolve group.customers to empty array, to prevent exposure of other customers in the Shop API
+   */
   @ResolveField('customers')
   @Resolver('CustomerGroup')
   async customers(
