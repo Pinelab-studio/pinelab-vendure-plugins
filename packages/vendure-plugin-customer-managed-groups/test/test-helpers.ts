@@ -43,12 +43,140 @@ export const customerManagedGroupFragment = gql`
   }
 `;
 
-export const addCustomerToGroupMutation = gql`
+export const adminGetOrdersForCustomerManagedGroup = gql`
+  query ordersForCustomerManagedGroup($customerManagedGroupId: ID!) {
+    ordersForCustomerManagedGroup(
+      customerManagedGroupId: $customerManagedGroupId
+    ) {
+      items {
+        id
+        code
+        customer {
+          emailAddress
+        }
+        payments {
+          id
+          transactionId
+          state
+          errorMessage
+        }
+        lines {
+          id
+          unitPriceWithTax
+          linePriceWithTax
+        }
+        customFields {
+          testing
+        }
+      }
+      totalItems
+    }
+  }
+`;
+
+export const customers = gql`
+  query customers($options: CustomerListOptions) {
+    customers(options: $options) {
+      items {
+        id
+        groups {
+          id
+          customFields {
+            groupAdmins {
+              id
+            }
+            isCustomerManaged
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const addCustomer = gql`
+  mutation createCustomer($input: CreateCustomerInput!, $password: String) {
+    createCustomer(input: $input, password: $password) {
+      ... on Customer {
+        id
+        groups {
+          id
+          customFields {
+            groupAdmins {
+              id
+            }
+            isCustomerManaged
+          }
+        }
+      }
+      ... on ErrorResult {
+        errorCode
+      }
+    }
+  }
+`;
+
+export const adminGetCustomerGroupQuery = gql`
+  query customerGroup($id: ID!) {
+    customerGroup(id: $id) {
+      id
+      name
+      customers {
+        items {
+          id
+        }
+      }
+      customFields {
+        groupAdmins {
+          id
+        }
+        isCustomerManaged
+      }
+    }
+  }
+`;
+
+export const adminCreateCustomerManagedGroupMutation = gql`
   ${customerManagedGroupFragment}
-  mutation AddCustomerToGroup(
-    $input: AddCustomerToMyCustomerManagedGroupInput!
+  mutation createCustomerManagedGroup($customerId: ID!) {
+    createCustomerManagedGroup(customerId: $customerId) {
+      ...CustomerManagedGroupFragment
+    }
+  }
+`;
+
+export const adminAddCustomersToGroupMutation = gql`
+  mutation AddCustomersToGroup($customerGroupId: ID!, $customerIds: [ID!]!) {
+    addCustomersToGroup(
+      customerGroupId: $customerGroupId
+      customerIds: $customerIds
+    ) {
+      id
+      name
+      customers {
+        items {
+          id
+        }
+      }
+      customFields {
+        groupAdmins {
+          id
+        }
+        isCustomerManaged
+      }
+    }
+  }
+`;
+
+export const adminMakeCustomerAdminOfGroupMutation = gql`
+  ${customerManagedGroupFragment}
+  mutation makeCustomerAdminOfCustomerManagedGroup(
+    $groupId: ID!
+    $customerId: ID!
   ) {
-    addCustomerToMyCustomerManagedGroup(input: $input) {
+    makeCustomerAdminOfCustomerManagedGroup(
+      groupId: $groupId
+      customerId: $customerId
+    ) {
       ...CustomerManagedGroupFragment
     }
   }
@@ -59,6 +187,21 @@ export const myCustomerManagedGroupQuery = gql`
   query myCustomerManagedGroup {
     myCustomerManagedGroup {
       ...CustomerManagedGroupFragment
+    }
+  }
+`;
+
+export const adminCustomerManagedGroupQuery = gql`
+  query customerGroup($id: ID!) {
+    customerGroup(id: $id) {
+      id
+      name
+      customFields {
+        groupAdmins {
+          id
+        }
+        isCustomerManaged
+      }
     }
   }
 `;
@@ -90,6 +233,22 @@ export const createCustomerManagedGroupMutation = gql`
   mutation createCustomerManagedGroup {
     createCustomerManagedGroup {
       ...CustomerManagedGroupFragment
+    }
+  }
+`;
+
+export const addCustomerToMyCustomerManagedGroupMutation = gql`
+  mutation addCustomerToMyCustomerManagedGroup(
+    $input: AddCustomerToMyCustomerManagedGroupInput!
+  ) {
+    addCustomerToMyCustomerManagedGroup(input: $input) {
+      id
+      name
+      customers {
+        customerId
+        emailAddress
+        isGroupAdministrator
+      }
     }
   }
 `;

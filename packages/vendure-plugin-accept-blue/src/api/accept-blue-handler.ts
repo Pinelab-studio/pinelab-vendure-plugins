@@ -10,11 +10,15 @@ import {
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import {
-  CheckPaymentInput,
-  CreditCardPaymentInput,
-  PaymentInput,
-  TokenPaymentMethodInput,
+  CheckPaymentMethodInput,
+  NoncePaymentMethodInput,
+  SavedPaymentMethodInput,
 } from '../types';
+import {
+  isCheckPaymentMethod,
+  isNoncePaymentMethod,
+  isSavedPaymentMethod,
+} from '../util';
 import { AcceptBlueClient } from './accept-blue-client';
 import { AcceptBlueService } from './accept-blue-service';
 
@@ -61,71 +65,44 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     args,
     metadata
   ): Promise<CreatePaymentResult> {
-    const ccMetadata = metadata as PaymentInput;
-    const client = new AcceptBlueClient(args.apiKey, args.pin);
-    if (isCardPaymentInputMetadata(ccMetadata as any)) {
-      const result = await service.payWithCreditCard(
-        ctx,
-        order,
-        amount,
-        client,
-        ccMetadata as CreditCardPaymentInput
-      );
-      Logger.info(
-        `Created payment with manual card credentials for order ${order.code}`,
-        loggerCtx
-      );
-      return {
-        amount,
-        state: 'Settled',
-        transactionId: result.chargeResult?.transaction?.id,
-        metadata: result,
-      };
-    } else if (isCheckPaymentInputMetaData(ccMetadata as any)) {
-      const result = await service.payWithCheck(
-        ctx,
-        order,
-        amount,
-        client,
-        ccMetadata as CheckPaymentInput
-      );
-      Logger.info(
-        `Created payment with manual card credentials for order ${order.code}`,
-        loggerCtx
-      );
-      return {
-        amount,
-        state: 'Settled',
-        transactionId: result.chargeResult?.transaction?.id,
-        metadata: result,
-      };
-    } else if (isTokenizedCardPaymentMetadata(ccMetadata as any)) {
-      const result = await service.payWithToken(
-        ctx,
-        order,
-        amount,
-        client,
-        ccMetadata as TokenPaymentMethodInput
-      );
-      Logger.info(
-        `Created payment with manual card credentials for order ${order.code}`,
-        loggerCtx
-      );
-      return {
-        amount,
-        state: 'Settled',
-        transactionId: result.chargeResult?.transaction?.id,
-        metadata: result,
-      };
-    } else {
-      // Invalid input
-      throw new UserInputError(
-        `You need to supply a 'paymentMethodId' or metadata with relevant fields`
-      );
+    if (
+      !isNoncePaymentMethod(metadata as any) &&
+      !isCheckPaymentMethod(metadata as any) &&
+      !isSavedPaymentMethod(metadata as any)
+    ) {
+      throw new UserInputError(`You either need to provide nonce input, check input or a saved payment method ID.
+        Check requires the fields: name, routing_number, account_number, account_type and sec_code.
+        Nonce requires the fields: source, expiry_month, expiry_year and last4.
+        Saved payment method requires the field paymentMethodId
+      `);
     }
+    const input = metadata as
+      | CheckPaymentMethodInput
+      | NoncePaymentMethodInput
+      | SavedPaymentMethodInput;
+    const client = new AcceptBlueClient(args.apiKey, args.pin);
+    const result = await service.handlePaymentForOrder(
+      ctx,
+      order,
+      amount,
+      client,
+      input
+    );
+    const chargeTransactionId = result.chargeResult?.transaction?.id;
+    Logger.info(
+      `Settled payment for order '${order.code}', for Accept Blue customer '${result.customerId}' and one time charge transaction '${chargeTransactionId}'`,
+      loggerCtx
+    );
+    return {
+      amount,
+      state: 'Settled',
+      transactionId: chargeTransactionId
+        ? String(chargeTransactionId)
+        : undefined,
+      metadata: result,
+    };
   },
   settlePayment(): SettlePaymentResult {
-    // TODO capture payment
     return {
       success: true,
     };
@@ -140,34 +117,5 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     args
   ): Promise<CreateRefundResult> {
     throw Error(`not implemented`);
-    // TODO
-    // Logger.info(
-    //   `Refund of ${amount} created for payment ${payment.transactionId} for order ${order.id}`,
-    //   loggerCtx
-    // );
-    // // Log order history
-    // return {
-    //   state: 'Settled',
-    //   // metadata: refund,
-    // };
   },
 });
-
-export function isCardPaymentInputMetadata(ccMetadata: any) {
-  return ccMetadata.card && ccMetadata.expiry_year && ccMetadata.expiry_month;
-}
-
-export function isCheckPaymentInputMetaData(ccMetadata: any) {
-  return (
-    ccMetadata.routing_number && ccMetadata.account_number && ccMetadata.name
-  );
-}
-
-export function isTokenizedCardPaymentMetadata(ccMetadata: any) {
-  return (
-    ccMetadata.source &&
-    ccMetadata.last4 &&
-    ccMetadata.expiry_year &&
-    ccMetadata.expiry_month
-  );
-}

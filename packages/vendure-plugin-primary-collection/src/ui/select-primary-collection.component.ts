@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { OnInit } from '@angular/core';
 import {
@@ -9,7 +9,8 @@ import {
 } from '@vendure/admin-ui/core';
 import { DataService } from '@vendure/admin-ui/core';
 import { gql } from 'graphql-tag';
-import { ActivatedRoute, Params } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
+import { Subscription } from 'rxjs';
 @Component({
   template: `
     <select
@@ -24,33 +25,41 @@ import { ActivatedRoute, Params } from '@angular/router';
   `,
 })
 export class SelectPrimaryCollectionComponent
-  implements FormInputComponent<IntCustomFieldConfig>, OnInit
+  implements FormInputComponent<IntCustomFieldConfig>, OnInit, OnDestroy
 {
   readonly!: boolean;
   config!: IntCustomFieldConfig;
   formControl!: FormControl;
   productsCollections!: CollectionFragment[];
   productsCollectionsAreLoading = true;
-  id!: string;
+  productCollectionSubscription: Subscription;
+  id!: string | null;
   constructor(
     private dataService: DataService,
     private cdr: ChangeDetectorRef,
     private activatedRoute: ActivatedRoute
   ) {}
+  ngOnDestroy(): void {
+    if (this.productCollectionSubscription) {
+      this.productCollectionSubscription.unsubscribe();
+    }
+  }
+  isListInput?: boolean | undefined;
   ngOnInit(): void {
     this.formControl.parent?.parent?.statusChanges.subscribe((s) => {
       if (
         this.formControl.pristine &&
         !this.formControl.value &&
-        (this.productsCollections.length || this.productsCollectionsAreLoading)
+        (this.productsCollections?.length ||
+          this.productsCollectionsAreLoading) &&
+        this.id !== 'create'
       ) {
         this.formControl.parent?.parent?.markAsPristine();
       }
     });
-    this.activatedRoute.params.subscribe((params: Params) => {
-      this.id = params.id;
-      this.dataService.collection.getCollectionContents(params.id);
-      this.dataService
+    this.id = this.activatedRoute.snapshot.paramMap.get('id');
+    if (this.id && this.id !== 'create') {
+      this.productCollectionSubscription = this.dataService
         .query(
           gql`
             query ProductsCollection($id: ID) {
@@ -62,14 +71,14 @@ export class SelectPrimaryCollectionComponent
             }
             ${COLLECTION_FRAGMENT}
           `,
-          { id: params.id }
+          { id: this.id }
         )
         .single$.subscribe((d: any) => {
-          this.productsCollections = d.product.collections;
+          this.productsCollections = d?.product?.collections;
           this.productsCollectionsAreLoading = false;
           this.cdr.markForCheck();
         });
-    });
+    }
   }
 
   compareFn(a: any, b: any) {

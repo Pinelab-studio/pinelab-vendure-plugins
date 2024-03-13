@@ -92,7 +92,7 @@ export const ADD_PAYMENT_TO_ORDER = gql`
         lines {
           id
           customFields {
-            subscriptionIds
+            acceptBlueSubscriptionIds
           }
         }
       }
