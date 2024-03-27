@@ -14,6 +14,6 @@ plugins: [LimitVariantPerOrderPlugin];
 ```
 
 2. Start Vendure, login and go to the product you want to limit.
-3. Set the custom field `Maximum amount per order` on a variant and update the product
+3. Set the custom field `Maximum amount per order` and `Multiple of per order` on a variant and update the product
 4. Customers can now only buy X amount of the variant per order. The same customer can still order the product again in
    a new order.
