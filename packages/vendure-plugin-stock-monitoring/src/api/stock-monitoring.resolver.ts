@@ -33,7 +33,7 @@ export class StockMonitoringResolver {
       })
       .andWhere('variant.deletedAt IS NULL')
       .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
-      .limit(50)
+      .limit(100)
       .orderBy('stockOnHand', 'ASC')
       .getMany();
   }
