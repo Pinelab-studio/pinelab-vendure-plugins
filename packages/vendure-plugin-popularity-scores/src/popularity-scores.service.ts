@@ -153,7 +153,7 @@ export class PopularityScoresService implements OnModuleInit {
           const summedProductsValue = await productSummingQuery
             .andWhere('product.id IN (:...ids)', { ids: uniqueProductIdsSlice })
             .getRawOne();
-          score += summedProductsValue.productScoreSum ?? 0;
+          score += Number(summedProductsValue.productScoreSum) ?? 0;
         }
         productScoreSums.push({
           id: col.collection_id,
