@@ -1,6 +1,6 @@
 # 1.6.1 (2024-03-29)
 
-- Fix error when calculating popularity scores for colletions (#386)
+- Fix error when calculating popularity scores for collections (#386)
 
 # 1.6.0 (2024-01-21)
 
