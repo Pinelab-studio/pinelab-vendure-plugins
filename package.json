@@ -109,7 +109,8 @@
           "variant-bulk-update",
           "vendure-order-client",
           "webhook",
-          "picklist"
+          "picklist",
+          "public-customer-groups"
         ]
       ]
     }
