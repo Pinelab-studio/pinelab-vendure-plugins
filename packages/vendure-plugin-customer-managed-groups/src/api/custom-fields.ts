@@ -41,7 +41,6 @@ export const customFields: CustomFields = {
       type: 'boolean',
       public: false,
       nullable: true,
-      readonly: true,
       label: [
         {
           languageCode: LanguageCode.en,
