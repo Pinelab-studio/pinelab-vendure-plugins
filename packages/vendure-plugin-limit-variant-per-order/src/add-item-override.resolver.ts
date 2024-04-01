@@ -66,15 +66,23 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
     const orderLine = order.lines.find(
       (line) => line.productVariant.id == variantId
     )!;
-    const maxPerOrder = (orderLine.productVariant.customFields as any)
-      .maxPerOrder;
-    if (maxPerOrder && orderLine.quantity > maxPerOrder) {
+    const maxPerOrder = orderLine.productVariant.customFields.maxPerOrder;
+    const onlyAllowPer = orderLine.productVariant.customFields.onlyAllowPer;
+    if (
+      (maxPerOrder && orderLine.quantity > maxPerOrder) ||
+      (onlyAllowPer && orderLine.quantity % onlyAllowPer !== 0)
+    ) {
+      const maxPerOrderMessage = maxPerOrder ? `max ${maxPerOrder}` : '';
+      const and = maxPerOrder && onlyAllowPer ? ' and ' : '';
+      const onlyAllowMultipleOfMessage = onlyAllowPer
+        ? `a multiple of ${onlyAllowPer}`
+        : '';
       Logger.warn(
-        `There can be only max ${maxPerOrder} of ${orderLine.productVariant.name} per order, throwing error to prevent this item from being added.`,
+        `There can be only ${maxPerOrderMessage}${and}${onlyAllowMultipleOfMessage} of ${orderLine.productVariant.name} per order, throwing error to prevent this item from being added.`,
         loggerCtx
       );
       throw new GraphQLError(
-        `You are only allowed to order max ${maxPerOrder} of ${orderLine.productVariant.name}`,
+        `You are only allowed to order ${maxPerOrderMessage}${and}${onlyAllowMultipleOfMessage} of ${orderLine.productVariant.name}`,
         { extensions: { code: maxItemsErrorCode } }
       );
       // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added

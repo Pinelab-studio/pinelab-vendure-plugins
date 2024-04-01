@@ -31,7 +31,25 @@ import { AddItemOverrideResolver } from './add-item-override.resolver';
             'Limit how many of this product can be bought in a single order. Empty or 0 means a customer can order as many as he wants',
         },
       ],
-      //      ui: { tab: "pickup" }
+    });
+    config.customFields.ProductVariant.push({
+      name: 'onlyAllowPer',
+      type: 'int',
+      public: true,
+      nullable: true,
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Multiple of per order',
+        },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value:
+            'The customer will only be allowed to add a multiple of "onlyAllowPer" of this product per order. Empty or 0 means a customer can order as many as he wants',
+        },
+      ],
     });
     return config;
   },
