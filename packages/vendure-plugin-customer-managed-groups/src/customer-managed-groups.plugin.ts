@@ -31,14 +31,14 @@ import {
   compatibility: '^2.0.0',
 })
 export class CustomerManagedGroupsPlugin {
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'shared',
-        ngModuleFileName: 'customer-group-extension.shared-module.ts',
-        ngModuleName: 'CustomerGroupExtensionSharedModule',
-      },
-    ],
-  };
+  // static ui: AdminUiExtension = {
+  //   extensionPath: path.join(__dirname, 'ui'),
+  //   ngModules: [
+  //     {
+  //       type: 'shared',
+  //       ngModuleFileName: 'customer-group-extension.shared-module.ts',
+  //       ngModuleName: 'CustomerGroupExtensionSharedModule',
+  //     },
+  //   ],
+  // };
 }

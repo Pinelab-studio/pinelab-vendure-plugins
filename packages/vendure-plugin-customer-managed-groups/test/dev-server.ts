@@ -38,7 +38,7 @@ require('dotenv').config();
         route: 'admin',
         app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [CustomerManagedGroupsPlugin.ui],
+          extensions: [],
           devMode: true,
         }),
       }),
