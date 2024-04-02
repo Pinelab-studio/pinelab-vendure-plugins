@@ -21,7 +21,8 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "start": "yarn ts-node ./test/dev-server"
+    "start": "yarn ts-node ./test/dev-server",
+    "lint": "echo 'No linting configured'"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

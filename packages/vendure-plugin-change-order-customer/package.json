@@ -24,6 +24,7 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "vitest run --bail 1"
+    "test": "vitest run --bail 1",
+    "lint": "echo 'No linting configured'"
   }
 }

@@ -21,7 +21,8 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "start": "yarn ts-node test/dev-server.ts"
+    "start": "yarn ts-node test/dev-server.ts",
+    "lint": "echo 'No linting configured'"
   },
   "dependencies": {
     "@google-cloud/storage": "^5.18.2",

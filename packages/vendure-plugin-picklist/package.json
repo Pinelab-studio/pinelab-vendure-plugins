@@ -23,7 +23,8 @@
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
-    "generate": "graphql-codegen"
+    "generate": "graphql-codegen",
+    "lint": "echo 'No linting configured'"
   },
   "dependencies": {
     "adm-zip": "0.5.9",

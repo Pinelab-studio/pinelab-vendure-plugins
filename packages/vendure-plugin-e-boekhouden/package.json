@@ -23,7 +23,8 @@
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
-    "generate-soap-client": "rimraf src/client/eboekhoudenwsdl &&  wsdl-tsclient ./src/client/e-boekhouden-wsdl.xml -o ./src/client/"
+    "generate-soap-client": "rimraf src/client/eboekhoudenwsdl &&  wsdl-tsclient ./src/client/e-boekhouden-wsdl.xml -o ./src/client/",
+    "lint": "echo 'No linting configured'"
   },
   "dependencies": {
     "soap": "^0.43.0"
