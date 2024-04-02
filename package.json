@@ -12,13 +12,12 @@
   "scripts": {
     "postinstall": "yarn husky install",
     "build": "yarn lerna run build --concurrency 1",
-    "loading-message": "echo \"\\033[0;36mLinting... This might take a minute\\033[0m\"",
-    "lint": "yarn loading-message && NODE_OPTIONS=\"--max-old-space-size=8192\" yarn eslint",
-    "lint:check": "yarn prettier --check . &&  yarn lint .",
-    "lint:fix": "yarn prettier --write . && yarn lint --fix .",
+    "prettier:check": "yarn prettier --check .",
+    "prettier:fix": "yarn prettier --write .",
     "upgrade:vendure": "yarn lerna exec --concurrency 1 \"yarn upgrade --pattern @vendure --latest\"",
     "remove-node-modules": "find . -name 'node_modules' -type d -prune -exec rm -rf '{}' +",
-    "bump-all-versions": "lerna version --no-git-tag-version"
+    "bump-all-versions": "lerna version --no-git-tag-version",
+    "lint": "echo '❌ Linting can only be done in the individual packages' && exit 1"
   },
   "devDependencies": {
     "@commitlint/cli": "17.2.0",
@@ -30,7 +29,6 @@
     "@graphql-codegen/typescript-document-nodes": "2.2.8",
     "@graphql-codegen/typescript-operations": "2.3.5",
     "@nestjs/cli": "8.2.4",
-    "@rollup/plugin-typescript": "11.0.0",
     "@swc/core": "1.3.59",
     "@types/localtunnel": "^2.0.4",
     "@types/sharp": "0.28.0",
@@ -48,9 +46,6 @@
     "eslint": "8.0.1",
     "eslint-config-prettier": "8.8.0",
     "eslint-config-standard-with-typescript": "34.0.1",
-    "eslint-plugin-import": "2.25.2",
-    "eslint-plugin-n": "15.0.0",
-    "eslint-plugin-promise": "6.0.0",
     "graphql-tag": "2.12.6",
     "husky": "8.0.2",
     "lerna": "6.0.3",
