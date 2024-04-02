@@ -21,6 +21,7 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "echo 'No linting configured'"
   }
 }

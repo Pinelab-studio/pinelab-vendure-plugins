@@ -100,12 +100,19 @@ export class GoogleAuthStrategy
       }
       Logger.info(`Admin '${email}' logged in`, loggerCtx);
       return user;
-    } catch (error: any) {
-      Logger.error(
-        `Error authenticating with Google login: ${error}`,
-        loggerCtx,
-        error?.stack
-      );
+    } catch (error) {
+      if (error instanceof Error) {
+        Logger.error(
+          `Error authenticating with Google login: ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+      } else {
+        Logger.error(
+          `Unknown error authenticating with Google login: ${String(error)}`,
+          loggerCtx
+        );
+      }
       return false;
     }
   }

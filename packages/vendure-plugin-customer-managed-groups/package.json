@@ -24,7 +24,8 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && yarn graphql-codegen && tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "echo 'No linting configured'"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }
