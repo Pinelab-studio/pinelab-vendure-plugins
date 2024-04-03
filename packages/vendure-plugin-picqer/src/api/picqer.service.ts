@@ -131,13 +131,11 @@ export class PicqerService implements OnApplicationBootstrap {
           });
         } else if (data.action === 'push-order') {
           const order = await this.orderService.findOne(ctx, data.orderId);
-          await this.handlePushOrderToPicqer(ctx, data.orderId).catch(
-            (e: any) => {
-              throw Error(
-                `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
-              );
-            }
-          );
+          await this.handlePushOrderJob(ctx, data.orderId).catch((e: any) => {
+            throw Error(
+              `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
+            );
+          });
         } else {
           Logger.error(
             `Invalid job action: ${(data as any).action}`,
@@ -667,10 +665,7 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Fulfil the order first, then pushes the order to Picqer
    */
-  async handlePushOrderToPicqer(
-    ctx: RequestContext,
-    orderId: ID
-  ): Promise<void> {
+  async handlePushOrderJob(ctx: RequestContext, orderId: ID): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
       // This means Picqer is not configured, so ignore this job
@@ -679,6 +674,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const order = await this.orderService.findOne(ctx, orderId, [
       'lines',
       'lines.productVariant',
+      'lines.productVariant.translations',
       'lines.productVariant.taxCategory',
       'customer',
       'customer.addresses',
@@ -702,24 +698,22 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
-    if (!order.customer) {
-      Logger.error(
-        `Order ${order.code} doesn't have a customer. Something is wrong, ignoring this order...`,
-        loggerCtx
-      );
-      return;
-    }
     // Push the order to Picqer
     await this.pushOrderToPicqer(ctx, order, client);
   }
 
+  /**
+   * Push the given order to Picqer
+   */
   async pushOrderToPicqer(
     ctx: RequestContext,
     order: Order,
     picqerClient: PicqerClient
   ): Promise<void> {
     if (!order.customer) {
-      throw Error(`Cannot push order to picqer without an order.customer`);
+      throw Error(
+        `Cannot push order '${order.code}' to picqer without an order.customer`
+      );
     }
     let picqerCustomer: CustomerData | undefined = undefined;
     if (order.customer.user) {
