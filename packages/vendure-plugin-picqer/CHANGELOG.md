@@ -1,3 +1,7 @@
+# 2.4.3 (2024-04-03)
+
+- Correctly set product name in Picqer based on Vendure variant name. Falls back to first translation available before falling back to using SKU as name.
+
 # 2.4.2 (2024-03-13)
 
 - Don't update stock of products in Vendure that have `unlimitedstock=true` in Picqer
