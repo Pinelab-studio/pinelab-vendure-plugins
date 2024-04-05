@@ -1,10 +1,4 @@
-import {
-  ChannelService,
-  DefaultLogger,
-  LogLevel,
-  RequestContext,
-  mergeConfig,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -154,8 +148,12 @@ describe('Product Primary Collection', function () {
         productId: 'T_3',
       }
     );
-    expect(t1Product.primaryCollection.name).toBe('Electronics');
-    expect(t2Product.primaryCollection).not.toBeNull();
+    //Although Product(1),Laptop, belongs to the Collection Electronics, since Electronics is a private collection, we dont expect it to be it's Primary Collection
+    expect(t1Product.primaryCollection.name).not.toBe('Electronics');
+    expect(t1Product.primaryCollection.name).toBe('Computers');
+    //The Product(2), Cars, only belongs to the private Collection Electronics
+    expect(t2Product.primaryCollection).toBeNull();
+    //The Product(3), Motors, belongs to the  non-private Collection Others
     expect(t3Product.primaryCollection).not.toBeNull();
   });
 

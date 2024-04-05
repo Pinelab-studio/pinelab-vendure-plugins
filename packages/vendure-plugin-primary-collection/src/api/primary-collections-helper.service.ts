@@ -15,6 +15,7 @@ export class PrimaryCollectionHelperService {
       .createQueryBuilder('product')
       .leftJoinAndSelect('product.variants', 'variant')
       .leftJoinAndSelect('variant.collections', 'collection')
+      .where('not collection.isPrivate')
       .getMany();
     const updatedProducts: Partial<Product>[] = [];
     for (let product of allProducts) {
