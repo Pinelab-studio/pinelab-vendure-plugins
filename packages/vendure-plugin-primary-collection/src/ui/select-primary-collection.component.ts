@@ -74,7 +74,9 @@ export class SelectPrimaryCollectionComponent
           { id: this.id }
         )
         .single$.subscribe((d: any) => {
-          this.productsCollections = d?.product?.collections;
+          this.productsCollections = d?.product?.collections.filter(
+            (c) => !c.isPrivate
+          );
           this.productsCollectionsAreLoading = false;
           this.cdr.markForCheck();
         });

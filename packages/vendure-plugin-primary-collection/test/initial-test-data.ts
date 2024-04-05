@@ -41,6 +41,7 @@ export const initialTestData: InitialData = {
           args: { facetValueNames: ['electronics'], containsAny: false },
         },
       ],
+      private: true,
     },
     {
       name: 'Others',
