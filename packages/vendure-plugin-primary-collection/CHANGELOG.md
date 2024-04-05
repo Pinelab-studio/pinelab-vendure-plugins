@@ -1,4 +1,4 @@
-# 1.4.1 (2023-10-24)
+# 1.4.2 (2023-10-24)
 
 - Primary collection filter should hide Private collections (#395)
 
