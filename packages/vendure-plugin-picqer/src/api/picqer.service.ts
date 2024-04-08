@@ -1109,8 +1109,7 @@ export class PicqerService implements OnApplicationBootstrap {
       invoicename: invoicename ?? deliveryname ?? customerFullname,
       invoicecontactname,
       invoiceaddress:
-        this.getFullAddress(billingAddress) ??
-        this.getFullAddress(shippingAddress),
+        this.getFullAddress(billingAddress),
       invoicezipcode: billingAddress?.postalCode,
       invoicecity: billingAddress?.city,
       invoicecountry: order.billingAddress?.countryCode?.toUpperCase(),
