@@ -1,6 +1,6 @@
 # 2.4.4 (2024-04-09)
 
-- Don't fallback to shipping address when passing billing address to Picqer
+Don't fall back to shipping address when passing billing address to Picqer
 
 # 2.4.3 (2024-04-03)
 
