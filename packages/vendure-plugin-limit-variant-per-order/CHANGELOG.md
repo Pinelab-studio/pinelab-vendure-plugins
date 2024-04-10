@@ -1,3 +1,7 @@
+# 1.3.0 (2024-04-10)
+
+- Added support for chanel aware `onlyAllowPer` value per ProductVariant
+
 # 1.2.0 (2024-03-08)
 
 - Added support for adding a multiple of `onlyAllowPer` of a `ProductVariant` per `Order`
