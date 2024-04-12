@@ -147,32 +147,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     // Create a credit invoice first, if an invoice already exists and config.createCreditInvoices is true
     let creditInvoice: InvoiceEntity | undefined;
     if (previousInvoiceForOrder && config.createCreditInvoices) {
-      // Reverse order totals of previous invoice, because creditInvoice
-      const reversedOrderTotals = reverseOrderTotals(
-        previousInvoiceForOrder.orderTotals
-      );
-      const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
+      creditInvoice = await this.generateCreditInvoice(
         ctx,
-        config.templateString!,
         order,
-        {
-          previousInvoice: previousInvoiceForOrder,
-          reversedOrderTotals,
-        }
+        previousInvoiceForOrder,
+        config,
+        channelToken
       );
-      const storageReference = await this.config.storageStrategy.save(
-        invoiceTmpFile,
-        invoiceNumber,
-        channelToken,
-        true
-      );
-      creditInvoice = await this.saveInvoice(ctx, {
-        channelId: ctx.channelId as string,
-        invoiceNumber,
-        orderId: order.id as string,
-        storageReference,
-        orderTotals: reversedOrderTotals,
-      });
     }
     // Generate normal/debit invoice
     const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
@@ -207,6 +188,41 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       )
     );
     return newInvoice;
+  }
+
+  async generateCreditInvoice(
+    ctx: RequestContext,
+    order: Order,
+    previousInvoiceForOrder: InvoiceEntity,
+    config: InvoiceConfigEntity,
+    channelToken: string
+  ) {
+    // Reverse order totals of previous invoice, because creditInvoice
+    const reversedOrderTotals = reverseOrderTotals(
+      previousInvoiceForOrder.orderTotals
+    );
+    const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
+      ctx,
+      config.templateString!,
+      order,
+      {
+        previousInvoice: previousInvoiceForOrder,
+        reversedOrderTotals,
+      }
+    );
+    const storageReference = await this.config.storageStrategy.save(
+      invoiceTmpFile,
+      invoiceNumber,
+      channelToken,
+      true
+    );
+    return await this.saveInvoice(ctx, {
+      channelId: ctx.channelId as string,
+      invoiceNumber,
+      orderId: order.id as string,
+      storageReference,
+      orderTotals: reversedOrderTotals,
+    });
   }
 
   /**
