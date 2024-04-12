@@ -1,3 +1,7 @@
+# 2.2.0 (2024-04-12)
+
+- When an order is cancelled, generate credit invoice, and no invoice regeneration after that
+
 # 2.1.0 (2024-02-14)
 
 - Work on ui improvements as described in #352
