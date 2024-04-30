@@ -496,7 +496,7 @@ export class GoedgepicktService
       this.getVariants(ctx),
     ]);
     Logger.info(
-      `Pusing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
+      `Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
       loggerCtx
     );
     // Create update stocklevel jobs
