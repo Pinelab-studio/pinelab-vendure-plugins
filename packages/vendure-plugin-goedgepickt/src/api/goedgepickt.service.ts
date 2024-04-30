@@ -294,9 +294,7 @@ export class GoedgepicktService
     productSku: string,
     ggStock: number
   ): Promise<void> {
-    const { items: variants } = await this.variantService.findAll(ctx, {
-      filter: { sku: { eq: productSku } },
-    });
+    const variants = await this.getVariants(ctx, productSku);
     await this.createStockUpdateJobs(
       ctx,
       [{ sku: productSku, stockLevel: ggStock }],
@@ -501,7 +499,7 @@ export class GoedgepicktService
     }
     const [ggProducts, variants] = await Promise.all([
       client.getAllProducts(),
-      this.getAllVariants(ctx),
+      this.getVariants(ctx),
     ]);
     Logger.info(
       `Pusing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
@@ -701,35 +699,38 @@ export class GoedgepicktService
     return variants;
   }
 
-  private async getAllVariants(
-    ctx: RequestContext
+  private async getVariants(
+    ctx: RequestContext,
+    sku?: string
   ): Promise<VariantWithImage[]> {
     const translatedVariants: VariantWithImage[] = [];
     const take = 100;
     let skip = 0;
     let hasMore = true;
     while (hasMore) {
-      const variants = await this.listQueryBuilder
-        .build(
-          ProductVariant,
-          {
-            skip,
-            take,
-          },
-          {
-            relations: [
-              'featuredAsset',
-              'channels',
-              'product',
-              'product.featuredAsset',
-              'taxCategory',
-            ],
-            channelId: ctx.channelId,
-            where: { deletedAt: IsNull() },
-            ctx,
-          }
-        )
-        .getMany();
+      const query = this.listQueryBuilder.build(
+        ProductVariant,
+        {
+          skip,
+          take,
+        },
+        {
+          relations: [
+            'featuredAsset',
+            'channels',
+            'product',
+            'product.featuredAsset',
+            'taxCategory',
+          ],
+          channelId: ctx.channelId,
+          where: { deletedAt: IsNull() },
+          ctx,
+        }
+      );
+      if (sku) {
+        query.andWhere('productVariant.sku = :sku', { sku });
+      }
+      const variants = await query.getMany();
       hasMore = !!variants.length;
       skip += take;
       const variantsWithPrice = await Promise.all(
