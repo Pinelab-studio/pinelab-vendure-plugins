@@ -5,7 +5,6 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
-  Channel,
   ChannelService,
   ConfigService,
   EntityHydrator,
@@ -14,7 +13,6 @@ import {
   ID,
   JobQueue,
   JobQueueService,
-  Json,
   ListQueryBuilder,
   Logger,
   Order,
@@ -31,11 +29,14 @@ import {
   Translated,
   translateDeep,
 } from '@vendure/core';
-import {
-  CreateProductVariantInput,
-  UpdateProductVariantInput,
-} from '@vendure/common/lib/generated-types';
+import { IsNull } from 'typeorm';
+import util from 'util';
+import { transitionToDelivered } from '../../../util/src';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PickupPointCustomFields } from './custom-fields';
+import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
 import { GoedgepicktClient } from './goedgepickt.client';
+import { goedgepicktHandler } from './goedgepickt.handler';
 import {
   GoedgepicktEvent,
   GoedgepicktPluginConfig,
@@ -45,13 +46,6 @@ import {
   OrderStatus,
   ProductInput,
 } from './goedgepickt.types';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import { transitionToDelivered } from '../../../util/src';
-import { goedgepicktHandler } from './goedgepickt.handler';
-import { PickupPointCustomFields } from './custom-fields';
-import { IsNull } from 'typeorm';
-import util from 'util';
 
 interface StockInput {
   variantId: string;
