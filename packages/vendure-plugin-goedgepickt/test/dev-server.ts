@@ -43,11 +43,11 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [GoedgepicktPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [GoedgepicktPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
   });
@@ -80,5 +80,5 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     fulfillmentHandler: goedgepicktHandler.code,
     translations: [],
   });
-  await createSettledOrder(shopClient, 1);
+  // await createSettledOrder(shopClient, 1);
 })();
