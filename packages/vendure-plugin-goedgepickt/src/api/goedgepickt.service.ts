@@ -138,6 +138,16 @@ export class GoedgepicktService
             );
           }
         } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.includes('Too Many Attempts')
+          ) {
+            Logger.info(
+              `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
+              loggerCtx
+            );
+            throw error;
+          }
           // Loggable job data without entire request context
           const loggableData = {
             ...data,

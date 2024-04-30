@@ -1,3 +1,7 @@
+# 1.1.3 (2024-04-30)
+
+- Log rate limit exceeded as info statements and retry.
+
 # 1.1.2 (2024-04-30)
 
 - Fix related to stock not updating when a variant with the same SKU has been deleted before.
