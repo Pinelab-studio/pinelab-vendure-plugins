@@ -102,7 +102,7 @@ mutation {
 
 ## Refunds, Transactions and Subscriptions for placed orders
 
-After an order is placed, the `order.lines.acceptBlueSubscriptions` is populated with the actual subscription values from the Accept Blue platform, so it will not call your strategy anymore. This is to better reflect the subscription that was actually created t the time of ordering.
+After an order is placed, the `order.lines.acceptBlueSubscriptions` is populated with the actual subscription values from the Accept Blue platform, so it will not call your strategy anymore. This is to better reflect the subscription that was actually created at the time of ordering.
 
 This means you can now also get the transactions per subscriptions with the field `order.lines.acceptBlueSubscriptions.transactions`. To refund a transaction, you first need to get the transaction id.
 

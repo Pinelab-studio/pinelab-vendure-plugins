@@ -224,7 +224,7 @@ export class AcceptBlueService {
     order: Order
   ): Promise<AcceptBlueSubscription[]> {
     if (order.orderPlacedAt) {
-      // return actual created subscriptions for placed orders
+      // Return actual created subscriptions for placed orders
       const client = await this.getClientForChannel(ctx);
       const subscriptionIds =
         orderLine.customFields.acceptBlueSubscriptionIds ?? [];
