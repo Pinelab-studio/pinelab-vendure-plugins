@@ -28,11 +28,16 @@ export class AcceptBlueCommonResolver {
     @Args()
     { productVariantId, customInputs }: QueryPreviewAcceptBlueSubscriptionsArgs
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptions']> {
-    return await this.acceptBlueService.subscriptionHelper.previewSubscription(
-      ctx,
-      productVariantId,
-      customInputs
-    );
+    const subscriptions =
+      await this.acceptBlueService.subscriptionHelper.previewSubscription(
+        ctx,
+        productVariantId,
+        customInputs
+      );
+    return subscriptions.map((sub) => ({
+      ...sub,
+      transactions: [], // No transactions exist for a preview subscription
+    }));
   }
 
   @Query()
@@ -44,11 +49,16 @@ export class AcceptBlueCommonResolver {
       customInputs,
     }: QueryPreviewAcceptBlueSubscriptionsForProductArgs
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptionsForProduct']> {
-    return await this.acceptBlueService.subscriptionHelper.previewSubscriptionsForProduct(
-      ctx,
-      productId,
-      customInputs
-    );
+    const subscriptions =
+      await this.acceptBlueService.subscriptionHelper.previewSubscriptionsForProduct(
+        ctx,
+        productId,
+        customInputs
+      );
+    return subscriptions.map((sub) => ({
+      ...sub,
+      transactions: [], // No transactions exist for a preview subscription
+    }));
   }
 
   @ResolveField('acceptBlueHostedTokenizationKey')
@@ -74,18 +84,16 @@ export class AcceptBlueCommonResolver {
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLine
   ): Promise<AcceptBlueSubscription[]> {
-    await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
-    const subscriptionsForOrderLine =
-      await this.acceptBlueService.subscriptionHelper.getSubscriptionsForOrderLine(
-        ctx,
-        orderLine,
-        orderLine.order
-      );
-    return subscriptionsForOrderLine.map((s) => ({
-      ...s,
-      variantId: orderLine.productVariant.id,
-    }));
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant', 'order'],
+    });
+    return this.acceptBlueService.getSubscriptionsForOrderLine(
+      ctx,
+      orderLine,
+      orderLine.order
+    );
   }
+
   @ResolveField()
   @Resolver('AcceptBluePaymentMethod')
   __resolveType(value: any): string {
