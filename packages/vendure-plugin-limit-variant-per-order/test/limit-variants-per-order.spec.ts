@@ -28,7 +28,6 @@ describe('Limit variants per order plugin', function () {
   let order: Order;
   let onlyAllowPer = 2;
   let maxPerOrder = 6;
-  let errorMessage = `You are only allowed to order max ${maxPerOrder} and a multiple of ${onlyAllowPer} of Laptop 13 inch 8GB`;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -109,6 +108,7 @@ describe('Limit variants per order plugin', function () {
       {
         product(id: 1) {
           variants {
+            id
             customFields {
               maxPerOrder
               onlyAllowPer
@@ -122,17 +122,9 @@ describe('Limit variants per order plugin', function () {
         (v: any) => v.customFields.maxPerOrder === maxPerOrder
       )
     ).toBeDefined();
-    expect(
-      product.variants.find((v: any) => {
-        const onlyAllowPers = v.customFields.onlyAllowPer;
-        const channelValue = onlyAllowPers
-          .map((v) => JSON.parse(v) as ChannelAwareIntValue)
-          .find((channelValue) =>
-            idsAreEqual(channelValue.channelId, 1)
-          )?.value;
-        return !!channelValue;
-      })
-    ).toBeDefined();
+    const variant = product.variants.find((v) => idsAreEqual(v.id, 1));
+    const onlyAllowPer = JSON.parse(variant.customFields.onlyAllowPer[0]);
+    expect(onlyAllowPer.value).toBe(2);
   });
 
   it('Should add 2 to cart', async () => {
@@ -142,7 +134,9 @@ describe('Limit variants per order plugin', function () {
 
   it("Can't add 1 more to cart, which would make the total quantity 3", async () => {
     const promise = addItem(shopClient, '1', 1);
-    await expect(promise).rejects.toThrow(errorMessage);
+    await expect(promise).rejects.toThrow(
+      'You are only allowed to order a multiple of 2 Laptop 13 inch 8GBs'
+    );
   });
 
   it('Can add 2 more to cart, which would make the total quantity 4', async () => {
@@ -185,7 +179,9 @@ describe('Limit variants per order plugin', function () {
       `,
       { quantity }
     );
-    await expect(promise).rejects.toThrow(errorMessage);
+    await expect(promise).rejects.toThrow(
+      'You are only allowed to order a multiple of 2 Laptop 13 inch 8GBs'
+    );
   });
 
   it('Should fail to  adjust orderLine to quantity(7) which is greater than maxPerOrder', async () => {
@@ -204,7 +200,9 @@ describe('Limit variants per order plugin', function () {
       `,
       { quantity }
     );
-    await expect(promise).rejects.toThrow(errorMessage);
+    await expect(promise).rejects.toThrow(
+      'You are only allowed to order max 6 Laptop 13 inch 8GBs'
+    );
   });
 
   afterAll(() => {

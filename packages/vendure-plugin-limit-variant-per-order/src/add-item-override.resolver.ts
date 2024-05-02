@@ -81,24 +81,26 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
         .map((v) => JSON.parse(v) as ChannelAwareIntValue)
         .find((channelValue) => idsAreEqual(channelValue.channelId, channelId))
         ?.value ?? 0;
-    if (
-      (maxPerOrder && orderLine.quantity > maxPerOrder) ||
-      (onlyAllowPer && orderLine.quantity % onlyAllowPer !== 0)
-    ) {
-      const maxPerOrderMessage = maxPerOrder ? `max ${maxPerOrder}` : '';
-      const and = maxPerOrder && onlyAllowPer ? ' and ' : '';
-      const onlyAllowMultipleOfMessage = onlyAllowPer
-        ? `a multiple of ${onlyAllowPer}`
-        : '';
+    if (maxPerOrder && orderLine.quantity > maxPerOrder) {
       Logger.warn(
-        `There can be only ${maxPerOrderMessage}${and}${onlyAllowMultipleOfMessage} of ${orderLine.productVariant.name} per order, throwing error to prevent this item from being added.`,
+        `There can be only max ${maxPerOrder} of ${orderLine.productVariant.name}s per order, throwing error to prevent this item from being added.`,
         loggerCtx
       );
       throw new GraphQLError(
-        `You are only allowed to order ${maxPerOrderMessage}${and}${onlyAllowMultipleOfMessage} of ${orderLine.productVariant.name}`,
+        `You are only allowed to order max ${maxPerOrder} ${orderLine.productVariant.name}s`,
         { extensions: { code: maxItemsErrorCode } }
       );
-      // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added
     }
+    if (onlyAllowPer && orderLine.quantity % onlyAllowPer !== 0) {
+      Logger.warn(
+        `There can be only a multiple of ${onlyAllowPer} of ${orderLine.productVariant.name}s per order, throwing error to prevent this item from being added.`,
+        loggerCtx
+      );
+      throw new GraphQLError(
+        `You are only allowed to order a multiple of ${onlyAllowPer} ${orderLine.productVariant.name}s`,
+        { extensions: { code: maxItemsErrorCode } }
+      );
+    }
+    // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added
   }
 }
