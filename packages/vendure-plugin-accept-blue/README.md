@@ -100,6 +100,61 @@ mutation {
 }
 ```
 
+## Refunds, Transactions and Subscriptions for placed orders
+
+After an order is placed, the `order.lines.acceptBlueSubscriptions` is populated with the actual subscription values from the Accept Blue platform, so it will not call your strategy anymore. This is to better reflect the subscription that was actually created t the time of ordering.
+
+This means you can now also get the transactions per subscriptions with the field `order.lines.acceptBlueSubscriptions.transactions`. To refund a transaction, you first need to get the transaction id.
+
+// TODO refund mutation
+
+```graphql
+# Sample query
+{
+  orderByCode(code: "NQWHJ7FNYV7M348Z") {
+    id
+    code
+    lines {
+      acceptBlueSubscriptions {
+        name
+        variantId
+        amountDueNow
+        priceIncludesTax
+        recurring {
+          amount
+          interval
+          intervalCount
+          startDate
+          endDate
+        }
+        transactions {
+          id
+          createdAt
+          settledAt
+          amount
+          status
+          errorCode
+          errorMessage
+          checkDetails {
+            # This object is populated when the transaction was made with Check
+            name
+            routingNumber
+            last4
+          }
+          cardDetails {
+            # This object is populated when the transaction was made with a Credit Card
+            name
+            last4
+            expiryMonth
+            expiryYear
+          }
+        }
+      }
+    }
+  }
+}
+```
+
 ## CORS
 
 If you run into CORS issues loading the Accept Blue hosted tokenization javascript library, you might need to remove the `cross-origin` key on your `script` tag.

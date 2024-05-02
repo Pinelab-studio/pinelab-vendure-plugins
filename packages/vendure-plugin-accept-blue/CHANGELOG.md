@@ -1,3 +1,8 @@
+# 1.2.0 (2024-05-02)
+
+- `Order.lines.acceptBlueSubscriptions` now fetches created subscriptions from Accept Blue for placed orders, instead of calling your subscription strategy
+- `Order.lines.acceptBlueSubscriptions.transactions` shows the transactions made for the given subscriptions
+
 # 1.1.0 (2024-03-12)
 
 - Refactored order line custom field `subscriptionIds` to `acceptBlueSubscriptionIds` to avoid conflicts with for example the Stripe Plugin

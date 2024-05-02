@@ -84,6 +84,34 @@ export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
 }
 
 /**
+ * Revert a frequency from Accept Blue back to an interval and interval count
+ */
+export function toSubscriptionInterval(frequency: Frequency): {
+  interval: 'week' | 'month' | 'year';
+  intervalCount: number;
+} {
+  if (frequency === 'weekly') {
+    return { interval: 'week', intervalCount: 1 };
+  } else if (frequency === 'biweekly') {
+    return { interval: 'week', intervalCount: 2 };
+  } else if (frequency === 'monthly') {
+    return { interval: 'month', intervalCount: 1 };
+  } else if (frequency === 'bimonthly') {
+    return { interval: 'month', intervalCount: 2 };
+  } else if (frequency === 'quarterly') {
+    return { interval: 'month', intervalCount: 3 };
+  } else if (frequency === 'annually') {
+    return { interval: 'year', intervalCount: 1 };
+  } else if (frequency === 'biannually') {
+    return { interval: 'year', intervalCount: 2 };
+  } else {
+    throw Error(
+      `Frequency '${frequency}' cannot be mapped to an interval and interval count`
+    );
+  }
+}
+
+/**
  * Get the number of billing cycles between start and end date for the given frequency
  */
 export function getNrOfBillingCyclesLeft(
