@@ -1,3 +1,7 @@
+# 1.1.4 (2024-04-30)
+
+- Query by SKU fix for MySQL. `sku = :sku` instead of `productVariant.sku = :sku`
+
 # 1.1.3 (2024-04-30)
 
 - Log rate limit exceeded as info statements and retry.

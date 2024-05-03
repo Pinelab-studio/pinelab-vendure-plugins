@@ -732,7 +732,7 @@ export class GoedgepicktService
         }
       );
       if (sku) {
-        query.andWhere('productVariant.sku = :sku', { sku });
+        query.andWhere('sku = :sku', { sku });
       }
       const variants = await query.getMany();
       hasMore = !!variants.length;

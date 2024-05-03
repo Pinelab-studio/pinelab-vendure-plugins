@@ -23,6 +23,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 (async () => {
+  require('dotenv').config();
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
@@ -68,7 +69,6 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
   const goedgepicktService = server.app.get(GoedgepicktService);
   const connection = server.app.get(TransactionalConnection);
   //set config
-  require('dotenv').config();
   await connection.getRepository(GoedgepicktConfigEntity).insert({
     channelToken: 'e2e-default-channel',
     apiKey: process.env.GOEDGEPICKT_APIKEY!,
@@ -80,5 +80,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     fulfillmentHandler: goedgepicktHandler.code,
     translations: [],
   });
+  await goedgepicktService.setWebhooks(ctx);
+  await goedgepicktService.processStockUpdateEvent(ctx, 'L2201308', 5);
   // await createSettledOrder(shopClient, 1);
 })();
