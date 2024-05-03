@@ -528,20 +528,22 @@ export class GoedgepicktService
       productInputs.push(this.mapToProductInput(variant, existing?.uuid));
     }
     const pushBatches = this.getBatches(productInputs, 15); // Batch of 15, so we stay under the 60 per minute limit in a single job
-    for (const batch of pushBatches) {
-      await this.jobQueue.add(
-        {
-          action: 'push-product',
-          ctx: ctx.serialize(),
-          products: batch,
-        },
-        { retries: 20 }
-      );
-      Logger.info(
-        `Created PushProducts job for ${batch.length} variants for channel ${channelToken}`,
-        loggerCtx
-      );
-    }
+    await Promise.all(
+      pushBatches.map(async (batch) => {
+        await this.jobQueue.add(
+          {
+            action: 'push-product',
+            ctx: ctx.serialize(),
+            products: batch,
+          },
+          { retries: 20 }
+        );
+        Logger.info(
+          `Created PushProducts job for ${batch.length} variants for channel ${channelToken}`,
+          loggerCtx
+        );
+      })
+    );
   }
 
   /**
@@ -668,20 +670,22 @@ export class GoedgepicktService
     }
     // Create jobs per 100 variants
     const stockBatches = this.getBatches(stockPerVariant, 100);
-    for (const batch of stockBatches) {
-      await this.jobQueue.add(
-        {
-          action: 'update-stock',
-          stock: batch,
-          ctx: ctx.serialize(),
-        },
-        { retries: 10 }
-      );
-      Logger.info(
-        `Created stocklevel update job for ${batch.length} variants`,
-        loggerCtx
-      );
-    }
+    await Promise.all(
+      stockBatches.map(async (batch) => {
+        await this.jobQueue.add(
+          {
+            action: 'update-stock',
+            stock: batch,
+            ctx: ctx.serialize(),
+          },
+          { retries: 10 }
+        );
+        Logger.info(
+          `Created stocklevel update job for ${batch.length} variants`,
+          loggerCtx
+        );
+      })
+    );
   }
 
   private async handleStockUpdateJob(

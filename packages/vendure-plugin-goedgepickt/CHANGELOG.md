@@ -1,3 +1,7 @@
+# 1.1.5 (2024-04-30)
+
+- Push jobs to queue with promise.all(), so that the fullsync webhook finishes faster, and all jobs are in queue.
+
 # 1.1.4 (2024-04-30)
 
 - Query by SKU fix for MySQL. `sku = :sku` instead of `productVariant.sku = :sku`
