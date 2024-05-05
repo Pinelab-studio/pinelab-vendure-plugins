@@ -5,6 +5,8 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { AddItemOverrideResolver } from './add-item-override.resolver';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -31,10 +33,35 @@ import { AddItemOverrideResolver } from './add-item-override.resolver';
             'Limit how many of this product can be bought in a single order. Empty or 0 means a customer can order as many as he wants',
         },
       ],
-      //      ui: { tab: "pickup" }
+    });
+    config.customFields.ProductVariant.push({
+      name: 'onlyAllowPer',
+      type: 'text',
+      public: true,
+      list: true,
+      defaultValue: [],
+      ui: { component: 'channel-aware-int-form-input' },
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Multiple of per order',
+        },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value:
+            'The customer will only be allowed to add a multiple of "onlyAllowPer" of this product per order. Empty or 0 means a customer can order as many as he wants',
+        },
+      ],
     });
     return config;
   },
   compatibility: '^2.0.0',
 })
-export class LimitVariantPerOrderPlugin {}
+export class LimitVariantPerOrderPlugin {
+  public static uiExtensions: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    providers: ['providers.ts'],
+  };
+}

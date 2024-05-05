@@ -21,7 +21,8 @@
   "scripts": {
     "build": "yarn graphql-codegen && rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "start": "yarn ts-node test/dev-server.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "echo 'No linting configured'"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

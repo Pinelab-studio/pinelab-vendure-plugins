@@ -1,11 +1,11 @@
 import { Subscription } from '../../util/src/subscription/subscription-strategy';
-import { AccountType, Frequency } from './types';
-
-interface CardInput {
-  card: string;
-  expiry_month: number;
-  expiry_year: number;
-}
+import {
+  AccountType,
+  CheckPaymentMethodInput,
+  Frequency,
+  NoncePaymentMethodInput,
+  SavedPaymentMethodInput,
+} from './types';
 
 interface MaskedCardInput {
   last4: string;
@@ -23,8 +23,6 @@ interface CheckInput {
 
 interface ObfuscatedCheck {
   last4: string;
-  expiry_month: number;
-  expiry_year: number;
   name: string;
   routing_number: string;
   account_type?: AccountType;
@@ -32,23 +30,16 @@ interface ObfuscatedCheck {
 }
 
 export function isSameCard(
-  input: CardInput | MaskedCardInput,
-  card: MaskedCardInput
+  card1: MaskedCardInput,
+  card2: MaskedCardInput
 ): boolean {
-  if ((input as CardInput).card) {
-    return (
-      (input as CardInput).card.endsWith(card.last4) &&
-      input.expiry_month === card.expiry_month &&
-      input.expiry_year === card.expiry_year
-    );
-  }
-
   return (
-    (input as MaskedCardInput).last4 === card.last4 &&
-    input.expiry_month === card.expiry_month &&
-    input.expiry_year === card.expiry_year
+    card1.last4 === card2.last4 &&
+    card1.expiry_month === card2.expiry_month &&
+    card1.expiry_year === card2.expiry_year
   );
 }
+
 export function isSameCheck(input: CheckInput, check: ObfuscatedCheck) {
   return (
     input.name === check.name &&
@@ -90,6 +81,34 @@ export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
   throw new Error(
     `Subscription interval '${interval}' and intervalCount '${intervalCount}' cannot be mapped to any of these frequencies: weekly, biweekly, monthly, bimonthly, quarterly, annually or biannually`
   );
+}
+
+/**
+ * Revert a frequency from Accept Blue back to an interval and interval count
+ */
+export function toSubscriptionInterval(frequency: Frequency): {
+  interval: 'week' | 'month' | 'year';
+  intervalCount: number;
+} {
+  if (frequency === 'weekly') {
+    return { interval: 'week', intervalCount: 1 };
+  } else if (frequency === 'biweekly') {
+    return { interval: 'week', intervalCount: 2 };
+  } else if (frequency === 'monthly') {
+    return { interval: 'month', intervalCount: 1 };
+  } else if (frequency === 'bimonthly') {
+    return { interval: 'month', intervalCount: 2 };
+  } else if (frequency === 'quarterly') {
+    return { interval: 'month', intervalCount: 3 };
+  } else if (frequency === 'annually') {
+    return { interval: 'year', intervalCount: 1 };
+  } else if (frequency === 'biannually') {
+    return { interval: 'year', intervalCount: 2 };
+  } else {
+    throw Error(
+      `Frequency '${frequency}' cannot be mapped to an interval and interval count`
+    );
+  }
 }
 
 /**
@@ -136,4 +155,27 @@ export function isToday(date: Date): boolean {
     date.getMonth() === today.getMonth() &&
     date.getFullYear() === today.getFullYear()
   );
+}
+
+export function isNoncePaymentMethod(input: NoncePaymentMethodInput): boolean {
+  return !!(
+    input.source &&
+    input.expiry_year &&
+    input.expiry_month &&
+    input.last4
+  );
+}
+
+export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
+  return !!(
+    input.account_number &&
+    input.routing_number &&
+    input.name &&
+    input.sec_code &&
+    input.account_type
+  );
+}
+
+export function isSavedPaymentMethod(input: SavedPaymentMethodInput): boolean {
+  return !!input.paymentMethodId;
 }

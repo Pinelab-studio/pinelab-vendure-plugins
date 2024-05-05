@@ -66,8 +66,7 @@ import {
 interface PushVariantsJob {
   action: 'push-variants';
   ctx: SerializedRequestContext;
-  variantIds?: ID[];
-  productId?: ID;
+  variantIds: ID[];
 }
 
 /**
@@ -99,7 +98,6 @@ export class PicqerService implements OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private connection: TransactionalConnection,
     private variantService: ProductVariantService,
-    private productService: ProductService,
     private assetService: AssetService,
     private configService: ConfigService,
     private entityHydrator: EntityHydrator,
@@ -116,17 +114,15 @@ export class PicqerService implements OnApplicationBootstrap {
       process: async ({ data }) => {
         const ctx = RequestContext.deserialize(data.ctx);
         if (data.action === 'push-variants') {
-          await this.handlePushVariantsJob(
-            ctx,
-            data.variantIds,
-            data.productId
-          ).catch((e: any) => {
-            throw Error(
-              `Failed to push variants to Picqer (variants: ${data.variantIds?.join(
-                ','
-              )}, product: ${data.productId} }): ${e?.message}`
-            );
-          });
+          await this.handlePushVariantsJob(ctx, data.variantIds).catch(
+            (e: any) => {
+              throw Error(
+                `Failed to push variants to Picqer (variants: ${data.variantIds?.join(
+                  ','
+                )}): ${e?.message}`
+              );
+            }
+          );
         } else if (data.action === 'pull-stock-levels') {
           await this.handlePullStockLevelsJob(ctx).catch((e: any) => {
             throw Error(
@@ -135,13 +131,11 @@ export class PicqerService implements OnApplicationBootstrap {
           });
         } else if (data.action === 'push-order') {
           const order = await this.orderService.findOne(ctx, data.orderId);
-          await this.handlePushOrderToPicqer(ctx, data.orderId).catch(
-            (e: any) => {
-              throw Error(
-                `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
-              );
-            }
-          );
+          await this.handlePushOrderJob(ctx, data.orderId).catch((e: any) => {
+            throw Error(
+              `Failed to push order ${order?.code} (${data.orderId}) to Picqer: ${e?.message}`
+            );
+          });
         } else {
           Logger.error(
             `Invalid job action: ${(data as any).action}`,
@@ -278,7 +272,6 @@ export class PicqerService implements OnApplicationBootstrap {
       input.body.event === 'products.free_stock_changed' ||
       input.body.event === 'products.assembled_stock_changed'
     ) {
-      const data = input.body.data;
       await this.updateStockBySkus(ctx, [input.body.data]);
     } else if (input.body.event === 'orders.status_changed') {
       await this.handleOrderStatusChanged(ctx, input.body.data);
@@ -414,29 +407,20 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async addPushVariantsJob(
     ctx: RequestContext,
-    variantIds?: ID[],
-    productId?: ID
+    variantIds: ID[]
   ): Promise<void> {
     await this.jobQueue.add(
       {
         action: 'push-variants',
         ctx: ctx.serialize(),
         variantIds,
-        productId,
       },
       { retries: 10 }
     );
-    if (variantIds) {
-      Logger.info(
-        `Added job to the 'push-variants' queue for ${variantIds.length} variants for channel ${ctx.channel.token}`,
-        loggerCtx
-      );
-    } else {
-      Logger.info(
-        `Added job to the 'push-variants' queue for product ${productId} and channel ${ctx.channel.token}`,
-        loggerCtx
-      );
-    }
+    Logger.info(
+      `Added job to the 'push-variants' queue for ${variantIds.length} variants for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
   }
 
   /**
@@ -590,7 +574,22 @@ export class PicqerService implements OnApplicationBootstrap {
       vendureVariants.map(async (variant) => {
         const picqerProduct = picqerProducts.find(
           (p) => p.productcode === variant.sku
-        )!; // safe non-null assertion, because we fetched variants based on the Picqer skus
+        );
+        if (!picqerProduct) {
+          // Should never happen, because we only fetch variants that were given in the Picqer products payload
+          Logger.error(
+            `No Picqer product found for variant ${variant.sku}`,
+            loggerCtx
+          );
+          return;
+        }
+        if (picqerProduct.unlimitedstock) {
+          Logger.info(
+            `Not updating stock of variant '${variant.sku}', because it has unlimited stock in Picqer`,
+            loggerCtx
+          );
+          return;
+        }
         // Fields from picqer that should be added to the variant
         let additionalVariantFields = {};
         try {
@@ -666,10 +665,7 @@ export class PicqerService implements OnApplicationBootstrap {
   /**
    * Fulfil the order first, then pushes the order to Picqer
    */
-  async handlePushOrderToPicqer(
-    ctx: RequestContext,
-    orderId: ID
-  ): Promise<void> {
+  async handlePushOrderJob(ctx: RequestContext, orderId: ID): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
       // This means Picqer is not configured, so ignore this job
@@ -678,6 +674,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const order = await this.orderService.findOne(ctx, orderId, [
       'lines',
       'lines.productVariant',
+      'lines.productVariant.translations',
       'lines.productVariant.taxCategory',
       'customer',
       'customer.addresses',
@@ -701,24 +698,22 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
-    if (!order.customer) {
-      Logger.error(
-        `Order ${order.code} doesn't have a customer. Something is wrong, ignoring this order...`,
-        loggerCtx
-      );
-      return;
-    }
     // Push the order to Picqer
     await this.pushOrderToPicqer(ctx, order, client);
   }
 
+  /**
+   * Push the given order to Picqer
+   */
   async pushOrderToPicqer(
     ctx: RequestContext,
     order: Order,
     picqerClient: PicqerClient
   ): Promise<void> {
     if (!order.customer) {
-      throw Error(`Cannot push order to picqer without an order.customer`);
+      throw Error(
+        `Cannot push order '${order.code}' to picqer without an order.customer`
+      );
     }
     let picqerCustomer: CustomerData | undefined = undefined;
     if (order.customer.user) {
@@ -817,40 +812,14 @@ export class PicqerService implements OnApplicationBootstrap {
    */
   async handlePushVariantsJob(
     userCtx: RequestContext,
-    variantIds?: ID[],
-    productId?: ID
+    variantIds: ID[]
   ): Promise<void> {
     const ctx = this.createDefaultLanguageContext(userCtx);
     const client = await this.getClient(ctx);
     if (!client) {
       return;
     }
-    // Get variants by ID or by ProductId
-    let variants: ProductVariant[] | undefined;
-    if (variantIds) {
-      variants = await this.variantService.findByIds(ctx, variantIds);
-    } else if (productId) {
-      const product = await this.productService.findOne(ctx, productId);
-      if (!product) {
-        Logger.warn(
-          `Could not find product with id ${productId} for push-variants job`,
-          loggerCtx
-        );
-        return;
-      }
-      // Separate hydration is needed for taxRateApplied and variant prices
-      await this.entityHydrator.hydrate(ctx, product, {
-        relations: ['variants'],
-        applyProductVariantPrices: true,
-      });
-      variants = product.variants;
-      if (!product.enabled) {
-        // Disable all variants if the product is disabled
-        variants.forEach((v) => (v.enabled = false));
-      }
-    } else {
-      throw Error('No variantIds or productId provided');
-    }
+    const variants = await this.variantService.findByIds(ctx, variantIds);
     const vatGroups = await client.getVatGroups();
     await Promise.all(
       variants.map(async (variant) => {
@@ -1090,10 +1059,18 @@ export class PicqerService implements OnApplicationBootstrap {
     if (!variant.sku) {
       throw Error(`Variant with ID ${variant.id} has no SKU`);
     }
+    let name = variant.name || variant.translations[0]?.name;
+    if (!name) {
+      Logger.info(
+        `Variant ${variant.sku} has no name, using SKU as name for Picqer product`,
+        loggerCtx
+      );
+      name = variant.sku;
+    }
     return {
       ...additionalFields,
       idvatgroup: vatGroupId,
-      name: variant.name || variant.sku, // use SKU if no name set
+      name,
       price: currency(variant.price / 100).value, // Convert to float with 2 decimals
       productcode: variant.sku,
       active: true,
@@ -1131,9 +1108,7 @@ export class PicqerService implements OnApplicationBootstrap {
       // use billing if available, otherwise fallback to shipping address
       invoicename: invoicename ?? deliveryname ?? customerFullname,
       invoicecontactname,
-      invoiceaddress:
-        this.getFullAddress(billingAddress) ??
-        this.getFullAddress(shippingAddress),
+      invoiceaddress: this.getFullAddress(billingAddress),
       invoicezipcode: billingAddress?.postalCode,
       invoicecity: billingAddress?.city,
       invoicecountry: order.billingAddress?.countryCode?.toUpperCase(),

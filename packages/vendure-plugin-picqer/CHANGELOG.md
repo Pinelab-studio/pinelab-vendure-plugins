@@ -1,3 +1,15 @@
+# 2.4.4 (2024-04-09)
+
+- Don't fall back to shipping address when passing billing address to Picqer
+
+# 2.4.3 (2024-04-03)
+
+- Correctly set product name in Picqer based on Vendure variant name. Falls back to first translation available before falling back to using SKU as name.
+
+# 2.4.2 (2024-03-13)
+
+- Don't update stock of products in Vendure that have `unlimitedstock=true` in Picqer
+
 # 2.4.1 (2024-01-29)
 
 - Fix types of pushing and pulling Picqer data

@@ -19,6 +19,7 @@ export const commonApiExtensions = gql`
     amountDueNow: Int!
     priceIncludesTax: Boolean!
     recurring: AcceptBlueSubscriptionRecurringPayment!
+    transactions: [AcceptBlueTransaction!]!
   }
 
   type AcceptBlueSubscriptionRecurringPayment {
@@ -50,10 +51,35 @@ export const commonApiExtensions = gql`
     payment_method_type: String
     last4: String
     account_number: String
-
     routing_number: String
     account_type: String
     sec_code: String
+  }
+
+  type AcceptBlueTransaction {
+    id: ID!
+    createdAt: DateTime!
+    settledAt: DateTime
+    amount: Int!
+    status: String!
+    errorCode: String
+    errorMessage: String
+    checkDetails: AcceptBlueCheckDetails
+    cardDetails: AcceptBlueCardDetails
+  }
+
+  type AcceptBlueCheckDetails {
+    name: String!
+    routingNumber: String!
+    last4: String!
+  }
+
+  type AcceptBlueCardDetails {
+    name: String!
+    last4: String!
+    expiryMonth: Int!
+    expiryYear: Int!
+    cardType: String!
   }
 
   union AcceptBluePaymentMethod =

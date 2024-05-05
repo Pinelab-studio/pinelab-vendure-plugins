@@ -33,7 +33,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(acceptBluePaymentHandler);
     config.customFields.OrderLine.push({
-      name: 'subscriptionIds',
+      name: 'acceptBlueSubscriptionIds',
       type: 'int',
       list: true,
     });

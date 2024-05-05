@@ -1,24 +1,18 @@
 import { Logger } from '@vendure/core';
 import axios, { AxiosInstance } from 'axios';
+import util from 'util';
 import { loggerCtx } from '../constants';
 import {
-  AcceptBlueCardPaymentMethod,
   AcceptBlueChargeTransaction,
-  AcceptBlueChargeTransactionInput,
   AcceptBlueCustomer,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleInput,
-  AcceptBlueRefundInput,
-  AcceptBlueTransaction,
-  BaseCardPaymentInput,
-  CheckPaymentInput,
-  CreditCardPaymentInput,
-  TokenBasedPaymentInput,
-  TokenPaymentMethodInput,
+  AcceptBlueRecurringScheduleTransaction,
+  CheckPaymentMethodInput,
+  NoncePaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
-import util from 'util';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -36,7 +30,7 @@ export class AcceptBlueClient {
     }
     this.instance = axios.create({
       baseURL: `${this.endpoint}`,
-      timeout: 5000,
+      timeout: 20000,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Basic ${Buffer.from(
@@ -87,34 +81,43 @@ export class AcceptBlueClient {
     return result;
   }
 
-  async getOrCreateCardPaymentMethod(
+  async getOrCreatePaymentMethod(
     acceptBlueCustomerId: number,
-    input: CreditCardPaymentInput
+    input: NoncePaymentMethodInput | CheckPaymentMethodInput
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(acceptBlueCustomerId);
-    const existing = methods.find((method) =>
-      isSameCard(input, method as AcceptBlueCardPaymentMethod)
-    );
+    const existing = methods.find((method) => {
+      if (
+        (input as NoncePaymentMethodInput).source &&
+        method.payment_method_type === 'card'
+      ) {
+        return isSameCard(input as NoncePaymentMethodInput, method);
+      } else if (
+        (input as CheckPaymentMethodInput).account_number &&
+        method.payment_method_type === 'check'
+      ) {
+        return isSameCheck(input as CheckPaymentMethodInput, method);
+      }
+      return false;
+    });
     if (existing) {
       return existing;
-    } else {
-      return await this.createPaymentMethod(acceptBlueCustomerId, input);
     }
+    return await this.createPaymentMethod(acceptBlueCustomerId, input);
   }
 
-  async getOrCreateCheckPaymentMethod(
-    acceptBlueCustomerId: number,
-    input: CheckPaymentInput
-  ): Promise<AcceptBluePaymentMethod> {
-    const methods = await this.getPaymentMethods(acceptBlueCustomerId);
-    const existing = methods.find((method) =>
-      isSameCheck(input, method as any)
+  async getRecurringSchedules(
+    ids: number[]
+  ): Promise<AcceptBlueRecurringSchedule[]> {
+    return await Promise.all(
+      ids.map(async (id) => this.request('get', `recurring-schedules/${id}`))
     );
-    if (existing) {
-      return existing;
-    } else {
-      return await this.createPaymentMethod(acceptBlueCustomerId, input);
-    }
+  }
+
+  async getTransactionsForRecurringSchedule(
+    id: number
+  ): Promise<AcceptBlueRecurringScheduleTransaction[]> {
+    return await this.request('get', `recurring-schedules/${id}/transactions`);
   }
 
   async getPaymentMethods(
@@ -122,21 +125,23 @@ export class AcceptBlueClient {
   ): Promise<AcceptBluePaymentMethod[]> {
     const result = await this.request(
       'get',
-      `customers/${acceptBlueCustomerId}/payment-methods`
+      `customers/${acceptBlueCustomerId}/payment-methods?limit=100`
     );
     if (!result) {
       return [];
+    }
+    if (result.length === 100) {
+      throw Error(
+        `Customer has more than 100 payment methods. Pagination is not implemented yet...`
+      );
     }
     return result;
   }
 
   async createPaymentMethod(
     acceptBlueCustomerId: number,
-    input: BaseCardPaymentInput
+    input: NoncePaymentMethodInput | CheckPaymentMethodInput
   ): Promise<AcceptBluePaymentMethod> {
-    if ((input as any).account_type) {
-      (input as any).account_type = (input as any).account_type.toLowerCase();
-    }
     const result: AcceptBluePaymentMethod = await this.request(
       'post',
       `customers/${acceptBlueCustomerId}/payment-methods`,
@@ -171,11 +176,21 @@ export class AcceptBlueClient {
     return result;
   }
 
+  /**
+   * Only supports charge with saved payment method id
+   */
   async createCharge(
-    input: AcceptBlueChargeTransactionInput
+    /**
+     * ID without the `pm-` prefix
+     */
+    paymentMethodId: number,
+    amountInCents: number
   ): Promise<AcceptBlueChargeTransaction> {
-    input.amount /= 100;
-    const result = await this.request('post', `transactions/charge`, input);
+    const amount = amountInCents / 100;
+    const result = await this.request('post', `transactions/charge`, {
+      source: `pm-${paymentMethodId}`,
+      amount,
+    });
     if (
       (result as any).status === 'Error' ||
       (result as any).status === 'Declined'
@@ -185,31 +200,9 @@ export class AcceptBlueClient {
       );
     }
     Logger.info(
-      `Created charge ${input.amount} with id '${result.transaction.id}'`,
+      `Created charge of '${amount}' with id '${result.transaction.id}'`,
       loggerCtx
     );
-    return result;
-  }
-
-  async createRefund(
-    input: AcceptBlueRefundInput
-  ): Promise<AcceptBlueTransaction> {
-    const result: AcceptBlueTransaction = await this.request(
-      'post',
-      `transactions/refund`,
-      input
-    );
-    if (result.error_code) {
-      Logger.error(
-        `Failed creating refund for reference '${input.reference_number}'`,
-        loggerCtx
-      );
-    } else {
-      Logger.info(
-        `Created refund with status '${result.status}' for reference '${input.reference_number}'`,
-        loggerCtx
-      );
-    }
     return result;
   }
 

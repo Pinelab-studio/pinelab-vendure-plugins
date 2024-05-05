@@ -92,13 +92,57 @@ export const ADD_PAYMENT_TO_ORDER = gql`
         lines {
           id
           customFields {
-            subscriptionIds
+            acceptBlueSubscriptionIds
           }
         }
       }
       ... on ErrorResult {
         errorCode
         message
+      }
+    }
+  }
+`;
+
+export const GET_ORDER_BY_CODE = gql`
+  query GetOrderByCode($code: String!) {
+    orderByCode(code: $code) {
+      id
+      code
+      lines {
+        acceptBlueSubscriptions {
+          name
+          variantId
+          amountDueNow
+          priceIncludesTax
+          recurring {
+            amount
+            interval
+            intervalCount
+            startDate
+            endDate
+          }
+          transactions {
+            id
+            createdAt
+            settledAt
+            amount
+            status
+            errorCode
+            errorMessage
+            checkDetails {
+              name
+              routingNumber
+              last4
+            }
+            cardDetails {
+              name
+              last4
+              expiryMonth
+              expiryYear
+            }
+          }
+        }
       }
     }
   }

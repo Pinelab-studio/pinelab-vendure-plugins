@@ -1,3 +1,4 @@
+import '../src/types';
 import { initialData } from '../../test/src/initial-data';
 import {
   createTestEnvironment,
@@ -6,6 +7,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
+  AutoIncrementIdStrategy,
   ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
@@ -15,6 +17,8 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { LimitVariantPerOrderPlugin } from '../src/limit-variant-per-order.plugin';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 require('dotenv').config();
 
@@ -28,6 +32,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, './__admin-ui'),
+          extensions: [LimitVariantPerOrderPlugin.uiExtensions],
+          devMode: true,
+        }),
       }),
     ],
     apiOptions: {
@@ -35,6 +44,9 @@ require('dotenv').config();
     },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
+    },
+    entityOptions: {
+      entityIdStrategy: new AutoIncrementIdStrategy(),
     },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);

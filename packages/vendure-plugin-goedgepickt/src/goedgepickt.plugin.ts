@@ -37,6 +37,7 @@ import { customFields } from './api/custom-fields';
     config.shippingOptions.fulfillmentHandlers.push(goedgepicktHandler);
     config.authOptions.customPermissions.push(goedgepicktPermission);
     config.customFields.Order.push(...customFields.Order!);
+
     return config;
   },
   compatibility: '^2.0.0',

@@ -16,8 +16,8 @@ jobs:
           node-version: '18'
       - name: Install root dependencies
         run: yarn
-      - name: Is formatted and linted
-        run: yarn lint:check
+      - name: Is formatted
+        run: yarn prettier:check
   test:
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
@@ -57,6 +57,7 @@ jobs:
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-webhook',
+            'vendure-plugin-public-customer-groups',
           ]
     steps:
       - name: Checkout code

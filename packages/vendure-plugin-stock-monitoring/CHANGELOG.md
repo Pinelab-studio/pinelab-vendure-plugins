@@ -1,3 +1,7 @@
+# 1.3.2 (2024-02-27)
+
+- Show max 100 out of stock items instead of 50
+
 # 1.3.1 (2023-11-21)
 
 - Fixed link to products from stock widget

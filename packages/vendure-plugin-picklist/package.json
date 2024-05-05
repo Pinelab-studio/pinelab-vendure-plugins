@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-picklist",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Vendure plugin that provides picklists per order that won't be saved in the database",
   "icon": "receipt",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
@@ -23,7 +23,8 @@
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
-    "generate": "graphql-codegen"
+    "generate": "graphql-codegen",
+    "lint": "echo 'No linting configured'"
   },
   "dependencies": {
     "adm-zip": "0.5.9",

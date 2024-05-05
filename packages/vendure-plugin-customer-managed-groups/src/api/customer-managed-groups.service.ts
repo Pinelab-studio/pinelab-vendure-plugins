@@ -5,6 +5,7 @@ import {
   CustomerGroupService,
   CustomerService,
   EntityHydrator,
+  EntityNotFoundError,
   ForbiddenError,
   ID,
   Logger,
@@ -20,17 +21,20 @@ import {
   UpdateAddressInput,
   CreateAddressInput,
 } from '@vendure/common/lib/generated-types';
-import { loggerCtx } from './constants';
+import { loggerCtx } from '../constants';
 import {
   CustomerGroupWithCustomFields,
   CustomerWithCustomFields,
 } from './custom-fields';
 import {
   AddCustomerToMyCustomerManagedGroupInput,
+  UpdateCustomerManagedGroupMemberInput,
+} from './generated/shop-graphql';
+import {
   CustomerManagedGroup,
   CustomerManagedGroupMember,
-  UpdateCustomerManagedGroupMemberInput,
-} from './generated/graphql';
+} from './generated/admin-graphql';
+
 @Injectable()
 export class CustomerManagedGroupsService {
   constructor(
@@ -42,15 +46,24 @@ export class CustomerManagedGroupsService {
   ) {}
 
   async getOrdersForCustomer(
-    ctx: RequestContext
+    ctx: RequestContext,
+    customerId?: ID
   ): Promise<PaginatedList<Order>> {
-    const userId = this.getOrThrowUserId(ctx);
-    const customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    let customer;
+    if (customerId) {
+      customer = await this.getOrThrowCustomer(ctx, customerId);
+    } else {
+      const userId = this.getOrThrowUserId(ctx);
+      customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    }
     const customerManagedGroup = this.getCustomerManagedGroup(customer);
     if (!customerManagedGroup) {
       throw new UserInputError(`You are not in a customer managed group`);
     }
-    const isAdmin = this.isAdministratorOfGroup(userId, customerManagedGroup);
+    const isAdmin = this.isAdministratorOfGroup(
+      customer.user!.id,
+      customerManagedGroup
+    );
     const orders: Order[] = [];
     // If not admin, only fetch orders for the current user
     const customers = isAdmin ? customerManagedGroup.customers : [customer];
@@ -210,7 +223,7 @@ export class CustomerManagedGroupsService {
     const customerWithGroupsData = await customerRepo
       .createQueryBuilder('customer')
       .leftJoin('customer.channels', 'customer_channel')
-      .leftJoin('customer.user', 'user')
+      .leftJoinAndSelect('customer.user', 'user')
       .leftJoinAndSelect('customer.addresses', 'customerAddress')
       .leftJoinAndSelect('customerAddress.country', 'customerCountry')
       .leftJoinAndSelect('customer.groups', 'groups')
@@ -259,6 +272,26 @@ export class CustomerManagedGroupsService {
       throw new ForbiddenError();
     }
     return ctx.activeUserId;
+  }
+
+  /**
+   * Get customer from customerId
+   */
+  async getOrThrowCustomer(
+    ctx: RequestContext,
+    customerId: ID
+  ): Promise<Customer> {
+    const customer = await this.customerService.findOne(ctx, customerId, [
+      'user',
+      'groups',
+      'groups.customers',
+      'groups.customFields.groupAdmins',
+      'groups.customFields.groupAdmins.user',
+    ]);
+    if (!customer) {
+      throw new EntityNotFoundError('Customer', customerId);
+    }
+    return customer;
   }
 
   throwIfNotAdministratorOfGroup(
@@ -335,15 +368,21 @@ export class CustomerManagedGroupsService {
   }
 
   async createCustomerManagedGroup(
-    ctx: RequestContext
+    ctx: RequestContext,
+    customerId?: ID
   ): Promise<CustomerManagedGroup> {
-    const userId = this.getOrThrowUserId(ctx);
-    const currentCustomer = await this.getOrThrowCustomerByUserId(ctx, userId);
-    let customerManagedGroup = this.getCustomerManagedGroup(currentCustomer);
+    let customer;
+    if (customerId) {
+      customer = await this.getOrThrowCustomer(ctx, customerId);
+    } else {
+      const userId = this.getOrThrowUserId(ctx);
+      customer = await this.getOrThrowCustomerByUserId(ctx, userId);
+    }
+    let customerManagedGroup = this.getCustomerManagedGroup(customer);
     if (customerManagedGroup) {
       throw new UserInputError(`You are already in a customer managed group`);
     }
-    customerManagedGroup = await this.createGroup(ctx, currentCustomer);
+    customerManagedGroup = await this.createGroup(ctx, customer);
     await this.hydrator.hydrate(ctx, customerManagedGroup, {
       relations: ['customers'],
     });
@@ -498,7 +537,8 @@ export class CustomerManagedGroupsService {
   async makeAdminOfGroup(
     ctx: RequestContext,
     groupId: ID,
-    customerId: ID
+    customerId: ID,
+    isAdmin?: boolean
   ): Promise<CustomerManagedGroup> {
     const customerGroup = await this.customerGroupService.findOne(
       ctx,
@@ -515,6 +555,7 @@ export class CustomerManagedGroupsService {
       );
     }
     if (
+      !isAdmin &&
       !(customerGroup.customFields as any).groupAdmins.find(
         (admin: Customer) => admin.user?.id === ctx.activeUserId
       )

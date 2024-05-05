@@ -1,11 +1,24 @@
-schema: 'src/**/api-extensions.ts'
-# documents: 'src/**/*.graphql.ts'
+overwrite: true
 generates:
-  ./src/generated/graphql.ts:
+  src/api/generated/admin-graphql.ts:
+    schema:
+      - 'src/api/common-graphql.ts'
+      - 'src/api/admin-graphql.ts'
     plugins:
       - typescript
       - typescript-operations
     config:
       avoidOptionals: false
       scalars:
-        ID: number | string
+        ID: string | number
+  src/api/generated/shop-graphql.ts:
+    schema:
+      - 'src/api/common-graphql.ts'
+      - 'src/api/shop-graphql.ts'
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      avoidOptionals: false
+      scalars:
+        ID: string | number

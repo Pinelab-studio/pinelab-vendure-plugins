@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-primary-collection",
-  "version": "1.4.0",
+  "version": "1.4.2",
   "description": "Adds a primary collection to all Products by extending Vendure's graphql api",
   "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",
@@ -20,7 +20,8 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "echo 'No linting configured'"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

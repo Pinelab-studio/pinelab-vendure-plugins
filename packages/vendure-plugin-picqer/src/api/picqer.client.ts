@@ -275,7 +275,7 @@ export class PicqerClient {
     }
     const productId = product.idproduct;
     Logger.debug(
-      `Existing product '${productId}' found, updating product ${productId} in Picqer`,
+      `Existing product '${productId}' found for sku '${sku}', updating product in Picqer`,
       loggerCtx
     );
     return this.updateProduct(productId, input);
