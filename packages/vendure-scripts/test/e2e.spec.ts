@@ -89,7 +89,7 @@ describe('Vendure Scripts', function () {
       newChannelId
     );
     const superadminContextInTargetChannel =
-      await getSuperadminContextInChannel(server.app, targetChannel!);
+      await getSuperadminContextInChannel(injector, targetChannel!);
     const sourceChannelProducts = (
       await server.app
         .get(ProductService)

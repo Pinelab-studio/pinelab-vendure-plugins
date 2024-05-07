@@ -7,6 +7,7 @@ import {
   TransactionalConnection,
   User,
   Channel,
+  Injector,
 } from '@vendure/core';
 import { INestApplicationContext } from '@nestjs/common';
 import { SimpleGraphQLClient } from '@vendure/testing';
@@ -197,11 +198,11 @@ export async function createPromotion(
 }
 
 export async function getSuperadminContextInChannel(
-  app: INestApplicationContext,
+  injector: Injector,
   channel: Channel
 ): Promise<RequestContext> {
-  const connection = app.get(TransactionalConnection);
-  const configService = app.get(ConfigService);
+  const connection = injector.get(TransactionalConnection);
+  const configService = injector.get(ConfigService);
   const { superadminCredentials } = configService.authOptions;
   const superAdminUser = await connection
     .getRepository(User)
