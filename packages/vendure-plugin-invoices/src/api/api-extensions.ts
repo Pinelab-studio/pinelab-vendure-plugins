@@ -26,11 +26,33 @@ export const shopSchemaExtensions = gql`
 export const adminSchemaExtensions = gql`
   ${commonSchemaExtensions}
 
+  type Invoice implements Node {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    channelId: ID!
+    orderId: ID!
+    invoiceNumber: Int!
+    storageReference: String!
+  }
+
+  type InvoiceOrderTotals {
+    taxSummaries: [OrderTaxSummary]
+    total: Money!
+    totalWithTax: Money!
+  }
+
   type InvoiceConfig {
     id: ID!
     enabled: Boolean!
     createCreditInvoices: Boolean!
     templateString: String!
+    orderTotals: InvoiceOrderTotals!
+  }
+
+  type InvoiceList implements PaginatedList {
+    items: [Invoice!]!
+    totalItems: Int!
   }
 
   input InvoiceConfigInput {
