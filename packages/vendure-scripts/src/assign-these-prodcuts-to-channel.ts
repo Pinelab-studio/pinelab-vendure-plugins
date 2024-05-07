@@ -44,7 +44,7 @@ export async function assignTheseProductsToChannel(
     targetChannel!
   );
   await Promise.all([
-    //we will first assign the product variants, which will also assign the associated products and variants assets
+    //we will first assign the product variants, which will also assign the associated products and variants' assets
     productVariantService.assignProductVariantsToChannel(ctx, {
       channelId: targetChannelId,
       productVariantIds: variantIds,

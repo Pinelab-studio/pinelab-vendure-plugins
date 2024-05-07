@@ -90,23 +90,28 @@ describe('Vendure Scripts', function () {
     );
     const superadminContextInTargetChannel =
       await getSuperadminContextInChannel(injector, targetChannel!);
-    const sourceChannelProducts = (
-      await server.app
-        .get(ProductService)
-        .findAll(superadminContextInSourceChannel)
-    ).items;
     const targetChannelProducts = (
       await server.app
         .get(ProductService)
-        .findAll(superadminContextInTargetChannel)
+        .findAll(superadminContextInTargetChannel, undefined, [
+          'featuredAsset',
+          'assets',
+          'channels',
+          'facetValues',
+          'facetValues.facet',
+          'variants',
+        ])
     ).items;
-    for (let sourceChannelProduct of sourceChannelProducts) {
-      expect(
-        targetChannelProducts.find(
-          (targetChannelProduct) =>
-            targetChannelProduct.id === sourceChannelProduct.id
-        )
-      ).toBeDefined();
-    }
+    expect(targetChannelProducts[0].id).toBe(1);
+    //check variants
+    expect(targetChannelProducts[0].variants[0].id).toBe(1);
+    expect(targetChannelProducts[0].variants[1].id).toBe(2);
+    expect(targetChannelProducts[0].variants[2].id).toBe(3);
+    expect(targetChannelProducts[0].variants[3].id).toBe(4);
+    //check facets
+    expect(targetChannelProducts[0].facetValues[0].id).toBe(1);
+    expect(targetChannelProducts[0].facetValues[0].facetId).toBe(1);
+    expect(targetChannelProducts[0].facetValues[1].id).toBe(2);
+    expect(targetChannelProducts[0].facetValues[1].facetId).toBe(2);
   });
 });

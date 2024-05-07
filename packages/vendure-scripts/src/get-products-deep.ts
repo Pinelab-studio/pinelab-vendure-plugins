@@ -9,7 +9,12 @@ import { FindOptionsWhere } from 'typeorm';
 export async function getProductsDeep(
   ctx: RequestContext,
   injector: Injector,
-  condition: FindOptionsWhere<Product> | FindOptionsWhere<Product>[] | undefined
+  condition:
+    | FindOptionsWhere<Product>
+    | FindOptionsWhere<Product>[]
+    | undefined,
+  take: number = 10,
+  skip: number = 0
 ) {
   const conn = injector.get(TransactionalConnection);
   const productRepo = conn.getRepository(ctx, Product);
@@ -26,6 +31,6 @@ export async function getProductsDeep(
     .leftJoin('product.facetValues', 'facetValue')
     .leftJoin('facetValue.facet', 'facet')
     .leftJoin('product.assets', 'asset')
-    .setFindOptions({ where: condition })
+    .setFindOptions({ where: condition, take, skip })
     .getMany();
 }
