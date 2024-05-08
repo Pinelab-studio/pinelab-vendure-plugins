@@ -45,6 +45,8 @@ import { InvoiceCreatedEvent } from './invoice-created-event';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { SortOrder } from '@vendure/common/lib/generated-shop-types';
 
+import { In } from 'typeorm';
+
 interface DownloadInput {
   customerEmail: string;
   orderCode: string;
@@ -136,11 +138,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const result = await this.listQueryBuilder
       .build(InvoiceEntity, options, {
         ctx,
-        relations: ['order'],
-        customPropertyMap: {
-          customerLastName: 'customer.lastName',
-          transactionId: 'payments.transactionId',
-        },
       })
       .getManyAndCount()
       .then(([items, totalItems]) => {
@@ -177,6 +174,30 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       });
     }
     return { items, totalItems: result.totalItems };
+  }
+
+  async downloadMultiple(
+    ctx: RequestContext,
+    invoiceNumbers: string[],
+    res: Response
+  ): Promise<ReadStream> {
+    const nrSelectors = invoiceNumbers.map((i) => ({
+      invoiceNumber: i,
+      channelId: ctx.channelId,
+    }));
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const invoices = await invoiceRepo.find({
+      where: {
+        channelId: In(nrSelectors.map((i) => i.channelId)),
+        invoiceNumber: In(nrSelectors.map((i) => i.invoiceNumber)),
+      },
+    });
+    if (!invoices) {
+      throw Error(
+        `No invoices found for channel ${ctx.channelId} and invoiceNumbers ${invoiceNumbers}`
+      );
+    }
+    return this.config.storageStrategy.streamMultiple(invoices, res);
   }
 
   /**

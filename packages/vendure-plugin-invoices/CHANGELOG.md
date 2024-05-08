@@ -1,3 +1,7 @@
+# 2.2.0 (2024-05-08)
+
+- Invoice list page and bulk download
+
 # 2.1.0 (2024-02-14)
 
 - Work on ui improvements as described in #352

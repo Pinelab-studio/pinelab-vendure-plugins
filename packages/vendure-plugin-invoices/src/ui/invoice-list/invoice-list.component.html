@@ -41,6 +41,20 @@
       </a>
     </ng-template>
   </vdr-dt2-column>
+  <vdr-dt2-column
+    id="isCreditInvoice"
+    heading="Is Credit Invoice"
+    [optional]="false"
+  >
+    <ng-template let-invoice="item">
+      <clr-icon
+        *ngIf="invoice.isCreditInvoice"
+        shape="check"
+        class="color-success-700"
+      ></clr-icon>
+      <clr-icon *ngIf="!invoice.isCreditInvoice" shape="times"></clr-icon>
+    </ng-template>
+  </vdr-dt2-column>
   <vdr-dt2-column id="downloadUrl" heading="Download" [optional]="false">
     <ng-template let-invoice="item">
       <a [href]="invoice.downloadUrl" target="_blank">

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-invoices",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Vendure plugin for invoice generation",
   "icon": "receipt",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -26,6 +26,7 @@
     "lint": "echo 'No linting configured'"
   },
   "dependencies": {
+    "adm-zip": "0.5.9",
     "pdf-creator-node": "2.3.4",
     "tmp": "0.2.1"
   },
