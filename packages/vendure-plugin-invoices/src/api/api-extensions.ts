@@ -6,11 +6,13 @@ const scalars = gql`
 `;
 
 const commonSchemaExtensions = gql`
-  type Invoice {
+  type Invoice implements Node {
     id: ID!
     createdAt: DateTime
     invoiceNumber: Int!
     downloadUrl: String!
+    orderCode: String!
+    orderId: String!
     isCreditInvoice: Boolean!
   }
 
@@ -25,29 +27,11 @@ export const shopSchemaExtensions = gql`
 
 export const adminSchemaExtensions = gql`
   ${commonSchemaExtensions}
-
-  type Invoice implements Node {
-    id: ID!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    channelId: ID!
-    orderId: ID!
-    invoiceNumber: Int!
-    storageReference: String!
-  }
-
-  type InvoiceOrderTotals {
-    taxSummaries: [OrderTaxSummary]
-    total: Money!
-    totalWithTax: Money!
-  }
-
   type InvoiceConfig {
     id: ID!
     enabled: Boolean!
     createCreditInvoices: Boolean!
     templateString: String!
-    orderTotals: InvoiceOrderTotals!
   }
 
   type InvoiceList implements PaginatedList {
@@ -69,7 +53,10 @@ export const adminSchemaExtensions = gql`
     createInvoice(orderId: ID!): Invoice!
   }
 
+  input InvoiceListOptions
+
   extend type Query {
     invoiceConfig: InvoiceConfig
+    invoices(options: InvoiceListOptions): InvoiceList
   }
 `;

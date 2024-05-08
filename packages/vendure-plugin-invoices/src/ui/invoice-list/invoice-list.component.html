@@ -1,0 +1,51 @@
+<vdr-data-table-2
+  id="invoice-list"
+  [items]="items$ | async"
+  [itemsPerPage]="itemsPerPage$ | async"
+  [totalItems]="totalItems$ | async"
+  [currentPage]="currentPage$ | async"
+  [filters]="filters"
+  (pageChange)="setPageNumber($event)"
+  (itemsPerPageChange)="setItemsPerPage($event)"
+>
+  <vdr-bulk-action-menu
+    locationId="invoice-list"
+    [hostComponent]="this"
+    [selectionManager]="selectionManager"
+  />
+
+  <vdr-dt2-column
+    id="id"
+    [heading]="'common.id' | translate"
+    [hiddenByDefault]="true"
+  >
+    <ng-template let-invoice="item">
+      {{ invoice.id }}
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
+    id="created-at"
+    [heading]="'common.created-at' | translate"
+    [hiddenByDefault]="true"
+    [sort]="sorts.get('createdAt')"
+  >
+    <ng-template let-invoice="item">
+      {{ invoice.createdAt | localeDate : 'short' }}
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="invoiceNumber" heading="Order" [optional]="false">
+    <ng-template let-invoice="item">
+      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"
+        ><span>{{ invoice.orderCode }}</span>
+        <clr-icon shape="arrow right"></clr-icon>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="downloadUrl" heading="Download" [optional]="false">
+    <ng-template let-invoice="item">
+      <a [href]="invoice.downloadUrl" target="_blank">
+        <clr-icon shape="download"></clr-icon>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+</vdr-data-table-2>

@@ -11,15 +11,18 @@ import {
   Injector,
   JobQueue,
   JobQueueService,
+  ListQueryBuilder,
+  ListQueryOptions,
   Logger,
   Order,
   OrderPlacedEvent,
   OrderService,
+  PaginatedList,
   RequestContext,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { InvoiceConfigInput } from '../ui/generated/graphql';
+import { Invoice, InvoiceConfigInput } from '../ui/generated/graphql';
 import { ModuleRef } from '@nestjs/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
@@ -59,6 +62,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     private jobService: JobQueueService,
     private orderService: OrderService,
     private channelService: ChannelService,
+    private listQueryBuilder: ListQueryBuilder,
     private moduleRef: ModuleRef,
     private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
@@ -116,6 +120,63 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     });
+  }
+
+  async findAll(
+    ctx: RequestContext,
+    options?: ListQueryOptions<InvoiceEntity>
+  ): Promise<PaginatedList<Invoice>> {
+    options = {
+      ...options,
+      filter: {
+        ...options?.filter,
+        channelId: { eq: ctx.channelId.toString() },
+      },
+    };
+    const result = await this.listQueryBuilder
+      .build(InvoiceEntity, options, {
+        ctx,
+        relations: ['order'],
+        customPropertyMap: {
+          customerLastName: 'customer.lastName',
+          transactionId: 'payments.transactionId',
+        },
+      })
+      .getManyAndCount()
+      .then(([items, totalItems]) => {
+        return {
+          items,
+          totalItems,
+        };
+      });
+    const items: Invoice[] = [];
+    for (let invoiceEntity of result.items) {
+      const order = await this.connection
+        .getRepository(ctx, Order)
+        .createQueryBuilder('order')
+        .select('order.id')
+        .addSelect('order.code')
+        .addSelect('customer.emailAddress')
+        .leftJoin('order.customer', 'customer')
+        .setFindOptions({ where: { id: invoiceEntity.orderId } })
+        .getOne();
+      if (!order?.customer) {
+        throw new UserInputError(`No order with id ${invoiceEntity.orderId}`);
+      }
+      items.push({
+        ...invoiceEntity,
+        orderId: order.id,
+        orderCode: order.code,
+        isCreditInvoice: invoiceEntity.isCreditInvoice,
+        downloadUrl: this.getDownloadUrl(
+          ctx,
+          invoiceEntity,
+          order.code,
+          order.customer.emailAddress
+        ),
+      });
+    }
+    return { items, totalItems: result.totalItems };
   }
 
   /**

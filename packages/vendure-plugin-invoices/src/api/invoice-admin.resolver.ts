@@ -5,6 +5,7 @@ import {
   Ctx,
   ID,
   OrderService,
+  PaginatedList,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
@@ -51,6 +52,8 @@ export class InvoiceAdminResolver {
     return {
       ...invoice,
       isCreditInvoice: invoice.isCreditInvoice,
+      orderId: order.id,
+      orderCode: order.code,
       downloadUrl: this.invoiceService.getDownloadUrl(
         ctx,
         invoice,
@@ -66,5 +69,14 @@ export class InvoiceAdminResolver {
     @Ctx() ctx: RequestContext
   ): Promise<InvoiceConfigEntity | undefined> {
     return this.invoiceService.getConfig(ctx);
+  }
+
+  @Query()
+  @Allow(invoicePermission.Permission)
+  async invoices(
+    @Ctx() ctx: RequestContext,
+    @Args() args: any
+  ): Promise<PaginatedList<Invoice>> {
+    return this.invoiceService.findAll(ctx, args.options);
   }
 }
