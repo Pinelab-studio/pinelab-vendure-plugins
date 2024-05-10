@@ -3,16 +3,18 @@ import gql from 'graphql-tag';
 // This is only used by codegen so it knows DateTime is a custom scalar
 const scalars = gql`
   scalar DateTime
+  scalar JSON
+  scalar LogicalOperator
 `;
 
 const commonSchemaExtensions = gql`
-  type Invoice implements Node {
+  type Invoice {
     id: ID!
     createdAt: DateTime
     invoiceNumber: Int!
     downloadUrl: String!
     orderCode: String!
-    orderId: String!
+    orderId: ID!
     isCreditInvoice: Boolean!
   }
 
@@ -34,7 +36,7 @@ export const adminSchemaExtensions = gql`
     templateString: String!
   }
 
-  type InvoiceList implements PaginatedList {
+  type InvoiceList {
     items: [Invoice!]!
     totalItems: Int!
   }
@@ -45,6 +47,14 @@ export const adminSchemaExtensions = gql`
     templateString: String
   }
 
+  input InvoiceListOptions {
+    skip: Int
+    take: Int
+    filter: JSON
+    filterOperator: LogicalOperator
+    sort: JSON
+  }
+
   extend type Mutation {
     upsertInvoiceConfig(input: InvoiceConfigInput): InvoiceConfig!
     """
@@ -52,8 +62,6 @@ export const adminSchemaExtensions = gql`
     """
     createInvoice(orderId: ID!): Invoice!
   }
-
-  input InvoiceListOptions
 
   extend type Query {
     invoiceConfig: InvoiceConfig

@@ -12,7 +12,11 @@ import {
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoicePluginConfig } from '../index';
 import { InvoiceService } from '../services/invoice.service';
-import { Invoice, InvoiceConfigInput } from '../ui/generated/graphql';
+import {
+  Invoice,
+  InvoiceConfigInput,
+  QueryInvoicesArgs,
+} from '../ui/generated/graphql';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
 import { invoicePermission } from './invoice-common.resolver';
 
@@ -75,8 +79,8 @@ export class InvoiceAdminResolver {
   @Allow(invoicePermission.Permission)
   async invoices(
     @Ctx() ctx: RequestContext,
-    @Args() args: any
+    @Args() args: QueryInvoicesArgs
   ): Promise<PaginatedList<Invoice>> {
-    return this.invoiceService.findAll(ctx, args.options);
+    return this.invoiceService.findAll(ctx, args.options || undefined);
   }
 }
