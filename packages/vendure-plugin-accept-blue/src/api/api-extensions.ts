@@ -108,4 +108,12 @@ export const commonApiExtensions = gql`
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
   }
+
+  extend type Mutation {
+    refundAcceptBlueTransaction(
+      transactionId: Int!
+      amount: Int
+      cvv2: String
+    ): [AcceptBlueSubscription!]!
+  }
 `;

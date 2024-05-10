@@ -206,6 +206,37 @@ export class AcceptBlueClient {
     return result;
   }
 
+  /**
+   * Refund a transaction
+   * @param transactionId The transaction ID to refund
+   * @param amountToRefundInCents Optionally provide an amount to refund
+   * @param cvv2 Optionally provide the CVV/CVC code to prevent fraud detection
+   * @returns
+   */
+  async refund(
+    transactionId: number,
+    amountToRefundInCents?: number,
+    cvv2?: string
+  ) {
+    const options: any = {};
+    if (amountToRefundInCents) {
+      options.amount = amountToRefundInCents / 100;
+    }
+    if (cvv2) {
+      options.cvv2 = cvv2;
+    }
+    const result = await this.request('post', `transactions/refund`, {
+      reference_number: transactionId,
+      ...options,
+    });
+    console.log(JSON.stringify(result, null, 2));
+    if ((result as any).status === 'Error') {
+      throw new Error(`${result.error_code}: ${result.error_message} `);
+    }
+    Logger.info(`Refunded transaction ${transactionId}`, loggerCtx);
+    return result;
+  }
+
   async request(
     method: 'get' | 'post' | 'patch' | 'delete',
     path: string,

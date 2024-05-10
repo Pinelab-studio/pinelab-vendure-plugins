@@ -283,6 +283,17 @@ export class AcceptBlueService {
     );
   }
 
+  async refund(
+    ctx: RequestContext,
+    transactionId: number,
+    amount?: number,
+    cvv2?: string
+  ): Promise<any> {
+    // FIXME
+    const client = await this.getClientForChannel(ctx);
+    return await client.refund(transactionId, amount, cvv2);
+  }
+
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
     const apiKey = acceptBlueMethod.handler.args.find(
