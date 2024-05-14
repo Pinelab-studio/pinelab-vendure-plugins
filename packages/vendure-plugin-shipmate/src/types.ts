@@ -164,26 +164,26 @@ export interface Parcels {
   /**
    * The weight of the Parcel in grammes
    */
-  weight?: number;
+  weight: number;
   /**
    * The width of the Parcel in centimetres
    */
-  width?: number;
+  width: number;
   /**
    * The length of the Parcel in centimetres
    */
-  length?: number;
+  length: number;
   /**
    * The depth of the Parcel in centimetres
    */
-  depth?: number;
+  depth: number;
   /**
    * upto to 2 decimal places
    */
   value: string;
   items: Items[];
-  customs_declaration: CustomsDeclarations;
-  custom_fields: JSONLike;
+  customs_declaration?: CustomsDeclarations;
+  custom_fields?: JSONLike;
 }
 
 export interface Shipment {
@@ -201,7 +201,7 @@ export interface Shipment {
   to_address: ShipmateAddress;
   parcels: Parcels[];
   delivery_instructions: string;
-  custom_fields: JSONLike;
+  custom_fields?: JSONLike;
   /**
    * optional for domestic Shipments.
    */
@@ -225,5 +225,38 @@ export interface Shipment {
   /**
    * print_labels must be set to true when setting this attribute
    */
-  print_to_user: string;
+  print_to_user?: string;
+}
+
+export interface CreateShipmentResponse {
+  message: string;
+  data: NewShipment[];
+}
+
+export interface NewShipmentAddress {
+  delivery_name: string;
+  line_1: string;
+  line_2: string;
+  line_3: string;
+  city: string;
+  county: string;
+  postcode: string;
+  country: string;
+}
+
+export interface NewShipment {
+  shipment_reference: string;
+  parcel_reference: string;
+  carrier: string;
+  service_name: string;
+  tracking_reference: string;
+  created_by: string;
+  created_with: string;
+  created_at: string;
+  price: string;
+  estimated_delivery_date: string;
+  to_address: NewShipmentAddress;
+  pdf: string;
+  zpl: string;
+  png: string;
 }
