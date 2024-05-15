@@ -18,7 +18,8 @@ The plugin follows these principles:
 Add the plugin to your `vendure-config.ts`
 
 ```ts
-import {PicqerPlugin} from '@pinelab/vendure-plugin-picqer'
+import { PicqerPlugin } from '@pinelab/vendure-plugin-picqer';
+import { configureDefaultOrderProcess } from '@vendure/core';
 
 ...
 // Make sure Picqer can transition to 'Delivered' without the need of fulfillment
