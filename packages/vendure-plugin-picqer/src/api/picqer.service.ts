@@ -365,7 +365,7 @@ export class PicqerService implements OnApplicationBootstrap {
         Logger.error(
           `Failed to cancel order ${order.code}: ${
             (result as ErrorResult).message
-          }. Did you configure the order process with "checkFulfillmentStates: false"?`,
+          }. Ensure the order process is configured with "checkFulfillmentStates: false"`,
           loggerCtx,
           util.inspect(result)
         );
