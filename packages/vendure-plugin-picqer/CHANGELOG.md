@@ -1,3 +1,7 @@
+# 3.0.0 (2024-05-15)
+
+- The Picqer plugin now requires manual installation of the default order process with `checkFulfillment: false` to prevent overriding other custom order processes in the consuming projects.
+
 # 2.4.4 (2024-04-09)
 
 - Don't fall back to shipping address when passing billing address to Picqer

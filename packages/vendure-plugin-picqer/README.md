@@ -21,7 +21,14 @@ Add the plugin to your `vendure-config.ts`
 import {PicqerPlugin} from '@pinelab/vendure-plugin-picqer'
 
 ...
+// Make sure Picqer can transition to 'Delivered' without the need of fulfillment
+orderOptions: {
+  process: [
+    configureDefaultOrderProcess({ checkFulfillmentStates: false })
+  ]
+},
 plugins: [
+  // Add Picqer as plugin
   PicqerPlugin.init({
           enabled: true,
           vendureHost: 'https://example-vendure.io',
@@ -77,7 +84,7 @@ curl -H "Authorization: Bearer abcde-your-apikey" `http://localhost:3000/picqer/
 
 ### Order process override
 
-This plugin installs the default order process with `checkFulfillmentStates: false` configured, so that orders can be transitioned to Shipped and Delivered without the need of fulfillment. Fulfillment is the responsibility of Picqer, so we won't handle that in Vendure when using this plugin.
+This plugin requires the default order process to be configured with `checkFulfillmentStates: false`, so that orders can be transitioned to Shipped and Delivered without the need of fulfillment. Fulfillment is the responsibility of Picqer, so we won't handle that in Vendure when using this plugin.
 
 ![!image](https://www.plantuml.com/plantuml/png/VOv1IyD048Nl-HNl1rH9Uog1I8iNRnQYtfVCn0nkPkFk1F7VIvgjfb2yBM_VVEyx97FHfi4NZrvO3NSFU6EbANA58n4iO0Sn7jBy394u5hbmrUrTmhP4ij1-87JBoIteoNt3AI6ncUT_Y4VlG-kCB_lL0d_M9wTKRyiDN6vGlLiJJj9-SgpGiDB2XuMSuaki3vEXctmdVc2r8l-ijvjv2TD8ytuNcSz1lR_7wvA9NifmwKfil_OgRy5VejCa9a7_x9fUnf5fy-lNHdOc-fv5pwQfECoCmVy0)
 
