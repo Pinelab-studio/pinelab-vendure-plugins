@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-picqer",
-  "version": "2.4.4",
+  "version": "3.0.0",
   "description": "Vendure plugin syncing to orders and stock with Picqer",
   "icon": "truck",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
