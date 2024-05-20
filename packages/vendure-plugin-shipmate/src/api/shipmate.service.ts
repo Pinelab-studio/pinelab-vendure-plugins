@@ -1,31 +1,28 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject, HttpStatus } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import {
   GetTokenRespose,
-  Items,
-  Parcels,
-  ShipmateAddress,
-  Shipment,
   CreateShipmentResponse,
+  EventPayload,
 } from '../types';
 import {
-  Customer,
   EventBus,
   Logger,
   Order,
   OrderEvent,
-  OrderLine,
   OrderPlacedEvent,
   OrderService,
+  OrderState,
   RequestContext,
+  TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
-import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
 import { ShipmateConfigService } from './shipmate-config.service';
 import { filter } from 'rxjs';
+import { parseOrder } from './util';
 
 export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
 export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
@@ -38,7 +35,8 @@ export class ShipmateService implements OnModuleInit {
     @Inject(PLUGIN_INIT_OPTIONS) private config: ShipmatePluginConfig,
     private shipmateConfigService: ShipmateConfigService,
     private orderService: OrderService,
-    private eventBus: EventBus
+    private eventBus: EventBus,
+    private connection: TransactionalConnection
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -114,7 +112,7 @@ export class ShipmateService implements OnModuleInit {
 
   async createShipment(ctx: RequestContext, order: Order) {
     const shipmateReference = Math.random().toString(36).substring(2, 8);
-    const payload = this.parseOrder(order, shipmateReference);
+    const payload = parseOrder(order, shipmateReference);
     try {
       const result = await firstValueFrom(
         this.httpService.post<CreateShipmentResponse>(
@@ -134,10 +132,7 @@ export class ShipmateService implements OnModuleInit {
   }
 
   async updateShipmate(order: Order) {
-    const payload = this.parseOrder(
-      order,
-      order.customFields.shipmateReference
-    );
+    const payload = parseOrder(order, order.customFields.shipmateReference);
     try {
       const result = await firstValueFrom(
         this.httpService.put<CreateShipmentResponse>(
@@ -152,67 +147,41 @@ export class ShipmateService implements OnModuleInit {
     }
   }
 
-  parseOrder(order: Order, shipmateReference: string): Shipment {
-    return {
-      shipment_reference: shipmateReference,
-      order_reference: order.code,
-      to_address: this.parseAddress(order.shippingAddress, order.customer),
-      parcels: [this.parseParcels(order)],
-      delivery_instructions: '',
-      print_labels: false,
-    };
-  }
-
-  parseAddress(address: OrderAddress, customer?: Customer): ShipmateAddress {
-    return {
-      name: this.getRecepientName(
-        address.fullName,
-        customer?.firstName,
-        customer?.lastName
-      ),
-      company_name: address.company ?? '',
-      telephone: customer?.phoneNumber ?? '',
-      email_address: customer?.emailAddress ?? '',
-      line_1: address?.streetLine1 ?? '',
-      line_2: address?.streetLine2 ?? '',
-      line_3: '',
-      city: address?.city ?? '',
-      county: address.province ?? '',
-      postcode: address.postalCode ?? '',
-      country: address.countryCode ?? '',
-    };
-  }
-
-  parseParcels(order: Order): Parcels {
-    return {
-      reference: Math.random().toString(36).substring(2, 8),
-      value: `${order.totalWithTax / 100}`,
-      items: order.lines.map((line) => this.parseOrderLine(line)),
-      weight: 30,
-      width: 20,
-      length: 10,
-      depth: 10,
-    };
-  }
-
-  parseOrderLine(line: OrderLine): Items {
-    return {
-      item_quantity: line.quantity,
-      item_value: line.proratedUnitPriceWithTax,
-    };
-  }
-
-  getRecepientName(
-    fullName?: string,
-    customerFirstName?: string,
-    customerLastName?: string
-  ) {
-    if (fullName) {
-      return fullName;
+  async updateOrderState(
+    ctx: RequestContext,
+    payload: EventPayload
+  ): Promise<HttpStatus> {
+    const orderRepo = this.connection.getRepository(ctx, Order);
+    //Using TransactionalConnection may be an anitpattern, but not using OrderService.findOneByCode saves us the extra join queries that it does in the background
+    const shipmentOrder = await orderRepo.findOne({
+      where: { code: payload.order_reference },
+      select: ['id'],
+    });
+    if (!shipmentOrder) {
+      Logger.error(
+        `No Order with order reference ${payload.order_reference}`,
+        loggerCtx
+      );
+      return HttpStatus.BAD_REQUEST;
     }
-    if (customerFirstName && customerLastName) {
-      return `${customerFirstName} ${customerLastName}`;
+    if (payload.event === 'TRACKING_COLLECTED') {
+      await this.orderService.transitionToState(
+        ctx,
+        shipmentOrder.id,
+        'Shipped'
+      );
+    } else if (payload.event === 'TRACKING_DELIVERED') {
+      await this.orderService.transitionToState(
+        ctx,
+        shipmentOrder.id,
+        'Delivered'
+      );
+    } else {
+      Logger.info(
+        `${payload.event} event received for Order with code ${payload.order_reference}`,
+        loggerCtx
+      );
     }
-    return '';
+    return HttpStatus.OK;
   }
 }
