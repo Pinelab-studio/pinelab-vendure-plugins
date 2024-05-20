@@ -1,4 +1,10 @@
-import { ID, Injector, Product, RequestContext } from '@vendure/core';
+import {
+  ID,
+  Injector,
+  Product,
+  RequestContext,
+  TransactionalConnection,
+} from '@vendure/core';
 import { assignTheseProductsToChannel } from './assign-these-prodcuts-to-channel';
 import { getProductsDeep } from './get-products-deep';
 
@@ -11,6 +17,8 @@ export async function assignAllProductsToChannel(
 ): Promise<void> {
   let totalCount = 0;
   let products: Product[];
+  const conn = injector.get(TransactionalConnection);
+  await conn.startTransaction(ctx);
   do {
     // get all products of the source channel
     products = await getProductsDeep(
@@ -31,4 +39,5 @@ export async function assignAllProductsToChannel(
       ctx
     );
   } while (products.length);
+  await conn.commitOpenTransaction(ctx);
 }

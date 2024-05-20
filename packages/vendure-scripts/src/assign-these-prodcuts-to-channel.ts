@@ -12,15 +12,15 @@ import {
 } from '@vendure/core';
 import { getSuperadminContextInChannel } from '../../test/src/admin-utils';
 
+/**
+ * This function should be used with batches of Products
+ */
 export async function assignTheseProductsToChannel(
   targetChannelId: ID,
   injector: Injector,
   products: Product[],
   ctx: RequestContext
 ): Promise<void> {
-  // start the transaction
-  const conn = injector.get(TransactionalConnection);
-  await conn.startTransaction(ctx);
   // assign them to target channel
   const productVariantService = injector.get(ProductVariantService);
   const assetService = injector.get(AssetService);
@@ -58,5 +58,4 @@ export async function assignTheseProductsToChannel(
     }),
     searchService.reindex(superadminContextInTargetChannel),
   ]);
-  await conn.commitOpenTransaction(ctx);
 }
