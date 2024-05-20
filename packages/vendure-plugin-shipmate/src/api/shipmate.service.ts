@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import {
@@ -14,37 +14,34 @@ import {
   EventBus,
   Logger,
   Order,
+  OrderEvent,
   OrderLine,
   OrderPlacedEvent,
+  OrderService,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
-import { loggerCtx } from '../constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
+import { ShipmatePluginConfig } from '../shipmate.plugin';
+import { ShipmateConfigService } from './shipmate-config.service';
+import { filter } from 'rxjs';
 
 export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
 export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
 
 @Injectable()
-export class ShipmateService implements OnModuleInit, OnModuleDestroy {
+export class ShipmateService implements OnModuleInit {
   tokens: Map<string, string> = new Map();
-  constructor(private httpService: HttpService, private eventBus: EventBus) {}
-  async onModuleDestroy() {
-    if (
-      this.httpService.axiosRef.defaults.headers.common[
-        SHIPMATE_TOKEN_HEADER_KEY
-      ]
-    ) {
-      await firstValueFrom(
-        this.httpService.delete(`${process.env.SHIPMATE_BASE_URL}/tokens`)
-      );
-    }
-  }
+  constructor(
+    private httpService: HttpService,
+    @Inject(PLUGIN_INIT_OPTIONS) private config: ShipmatePluginConfig,
+    private shipmateConfigService: ShipmateConfigService,
+    private orderService: OrderService,
+    private eventBus: EventBus
+  ) {}
 
   async onModuleInit(): Promise<void> {
-    this.httpService.axiosRef.defaults.headers.common[
-      SHIPMATE_API_KEY_HEADER_KEY
-    ] = process.env.SHIPMATE_API_KEY;
     this.httpService.axiosRef.defaults.headers.common[
       'Accept'
     ] = `application/json`;
@@ -52,30 +49,57 @@ export class ShipmateService implements OnModuleInit, OnModuleDestroy {
       'Content-Type'
     ] = `application/json`;
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      let shipmateTokenForTheCurrentChannel = this.tokens.get(
-        process.env.SHIPMATE_API_KEY as string
-      );
-      if (!shipmateTokenForTheCurrentChannel) {
-        shipmateTokenForTheCurrentChannel = await this.getShipmentToken();
-        this.tokens.set(
-          process.env.SHIPMATE_API_KEY as string,
-          shipmateTokenForTheCurrentChannel
-        );
-      }
-      this.httpService.axiosRef.defaults.headers.common[
-        SHIPMATE_TOKEN_HEADER_KEY
-      ] = shipmateTokenForTheCurrentChannel;
+      await this.setupRequestHeaders(ctx);
       await this.createShipment(ctx, order);
     });
+    this.eventBus
+      .ofType(OrderEvent)
+      .pipe(
+        filter(
+          (event) =>
+            event.type === 'updated' &&
+            !!event.order.customFields?.shipmateReference
+        )
+      )
+      .subscribe(async ({ ctx, order }) => {
+        await this.setupRequestHeaders(ctx);
+        await this.updateShipmate(order);
+      });
   }
 
-  async getShipmentToken(): Promise<string> {
+  async setupRequestHeaders(ctx: RequestContext) {
+    const shipmateConfig = await this.shipmateConfigService.getConfig(ctx);
+    if (!shipmateConfig) {
+      return;
+    }
+    let shipmateTokenForTheCurrentChannel = this.tokens.get(
+      shipmateConfig.apiKey
+    );
+    if (!shipmateTokenForTheCurrentChannel) {
+      shipmateTokenForTheCurrentChannel = await this.getShipmentToken(
+        shipmateConfig.username,
+        shipmateConfig.password
+      );
+      this.tokens.set(shipmateConfig.apiKey, shipmateTokenForTheCurrentChannel);
+    }
+    this.httpService.axiosRef.defaults.headers.common[
+      SHIPMATE_TOKEN_HEADER_KEY
+    ] = shipmateTokenForTheCurrentChannel;
+    this.httpService.axiosRef.defaults.headers.common[
+      SHIPMATE_API_KEY_HEADER_KEY
+    ] = shipmateConfig.apiKey;
+  }
+
+  async getShipmentToken(
+    shipmateUsername: string,
+    shipmatePassword: string
+  ): Promise<string> {
     const response = await firstValueFrom(
       this.httpService.post<GetTokenRespose>(
-        `${process.env.SHIPMATE_BASE_URL}/tokens`,
+        `${this.config.shipmateApiUrl}/tokens`,
         {
-          username: process.env.SHIPMATE_USERNAME,
-          password: process.env.SHIPMATE_PASSWORD,
+          username: shipmateUsername,
+          password: shipmatePassword,
         }
       )
     );
@@ -89,26 +113,48 @@ export class ShipmateService implements OnModuleInit, OnModuleDestroy {
   }
 
   async createShipment(ctx: RequestContext, order: Order) {
-    const payload = this.parseOrder(order);
-    console.log(payload, 'payload');
+    const shipmateReference = Math.random().toString(36).substring(2, 8);
+    const payload = this.parseOrder(order, shipmateReference);
     try {
       const result = await firstValueFrom(
         this.httpService.post<CreateShipmentResponse>(
-          `${process.env.SHIPMATE_BASE_URL}/shipments`,
+          `${this.config.shipmateApiUrl}/shipments`,
           payload
         )
       );
-      console.log(result.data.data);
       Logger.info(result.data.message, loggerCtx);
+      await this.orderService.updateCustomFields(ctx, order.id, {
+        ...order.customFields,
+        shipmateReference,
+      });
     } catch (error: any) {
-      console.log(error.response.data.data);
-      return;
+      const message = error.response.data.message;
+      Logger.error(message, loggerCtx);
     }
   }
 
-  parseOrder(order: Order): Shipment {
+  async updateShipmate(order: Order) {
+    const payload = this.parseOrder(
+      order,
+      order.customFields.shipmateReference
+    );
+    try {
+      const result = await firstValueFrom(
+        this.httpService.put<CreateShipmentResponse>(
+          `${this.config.shipmateApiUrl}/shipments/${order.customFields.shipmateReference}`,
+          payload
+        )
+      );
+      Logger.info(result.data.message, loggerCtx);
+    } catch (error: any) {
+      const message = error.response.data.message;
+      Logger.error(message, loggerCtx);
+    }
+  }
+
+  parseOrder(order: Order, shipmateReference: string): Shipment {
     return {
-      shipment_reference: Math.random().toString(36).substring(2, 8),
+      shipment_reference: shipmateReference,
       order_reference: order.code,
       to_address: this.parseAddress(order.shippingAddress, order.customer),
       parcels: [this.parseParcels(order)],
@@ -125,7 +171,7 @@ export class ShipmateService implements OnModuleInit, OnModuleDestroy {
         customer?.lastName
       ),
       company_name: address.company ?? '',
-      telephone: '+251921733550', //address.phoneNumber??'+251921733550',
+      telephone: customer?.phoneNumber ?? '',
       email_address: customer?.emailAddress ?? '',
       line_1: address?.streetLine1 ?? '',
       line_2: address?.streetLine2 ?? '',

@@ -12,4 +12,10 @@ export class ShipmateConfigEntity extends VendureEntity {
 
   @Column()
   apiKey!: string;
+
+  @Column()
+  username!: string;
+
+  @Column()
+  password!: string;
 }

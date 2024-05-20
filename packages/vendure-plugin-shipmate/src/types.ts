@@ -1,4 +1,11 @@
 import { CurrencyCode } from '@vendure/core';
+import { CustomOrderFields } from '@vendure/core/dist/entity/custom-entity-fields';
+
+declare module '@vendure/core/dist/entity/custom-entity-fields' {
+  interface CustomOrderFields {
+    shipmateReference: string;
+  }
+}
 
 type JSONLike = {
   [key in string]: string;
@@ -259,4 +266,48 @@ export interface NewShipment {
   pdf: string;
   zpl: string;
   png: string;
+}
+
+//-----------Event Payloads---------------
+
+export interface EventPayload {
+  auth_token: string;
+  request_token: string;
+  event:
+    | 'SHIPMENT_CREATED'
+    | 'SHIPMENT_CANCELLED'
+    | 'TRACKING_UPDATED'
+    | 'TRACKING_COLLECTED'
+    | 'TRACKING_IN_TRANSIT'
+    | 'TRACKING_OUT_FOR_DELIVERY'
+    | 'TRACKING_DELIVERED'
+    | 'TRACKING_DELIVERY_FAILED';
+  shipment_reference: string;
+  source: string;
+  order_reference: string;
+  carrier: string;
+  carrier_account: string;
+}
+
+export interface TrackingEventPayload extends EventPayload {
+  parcel_reference: string;
+  tracking_number: string;
+  tracking_event_code: string;
+  tracking_event_type: string;
+  tracking_event_name: string;
+  tracking_event_description: string;
+  tracking_event_time: string;
+  tracking_url: string;
+  tracking_url_carrier: string;
+}
+
+export interface ShipmentEventPayload extends EventPayload {
+  parcel_references: string;
+  tracking_numbers: string;
+}
+
+export interface LabelEventPayload extends EventPayload {
+  parcel_references: string;
+  tracking_numbers: string;
+  labels: string;
 }

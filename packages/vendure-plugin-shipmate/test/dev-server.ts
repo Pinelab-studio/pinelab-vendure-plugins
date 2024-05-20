@@ -6,11 +6,12 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
+  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
-  InitialData,
   LogLevel,
   mergeConfig,
+  RequestContext,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { VendureShipmatePlugin } from '../src/shipmate.plugin';
@@ -18,12 +19,15 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler/';
 import path from 'path';
+import { ShipmateConfigService } from '../src/api/shipmate-config.service';
 
 (async () => {
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      VendureShipmatePlugin,
+      VendureShipmatePlugin.init({
+        shipmateApiUrl: process.env.SHIPMATE_BASE_URL as string,
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -61,4 +65,19 @@ import path from 'path';
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 5,
   });
+  const channel = await server.app.get(ChannelService).getDefaultChannel();
+  const ctx = new RequestContext({
+    apiType: 'admin',
+    isAuthorized: true,
+    authorizedAsOwnerOnly: false,
+    channel,
+  });
+  await server.app
+    .get(ShipmateConfigService)
+    .upsertConfig(
+      ctx,
+      process.env.SHIPMATE_API_KEY!,
+      process.env.SHIPMATE_USERNAME!,
+      process.env.SHIPMATE_PASSWORD!
+    );
 })();

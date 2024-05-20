@@ -17,9 +17,13 @@ export const shipmatePermission = new PermissionDefinition({
 export const adminSchema = gql`
   input ShipmateConfigInput {
     apiKey: String
+    username: String
+    password: String
   }
   type ShipmateConfig {
     apiKey: String
+    username: String
+    password: String
   }
   extend type Mutation {
     updateShipmateConfig(input: ShipmateConfigInput!): ShipmateConfig
@@ -45,8 +49,14 @@ export class ShipmateAdminResolver {
   @Allow(shipmatePermission.Permission)
   async updateShipmateConfig(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: { apiKey: string }
+    @Args('input')
+    input: { apiKey?: string; username?: string; password?: string }
   ): Promise<ShipmateConfigEntity | null> {
-    return this.service.upsertConfig(ctx, input.apiKey);
+    return this.service.upsertConfig(
+      ctx,
+      input.apiKey,
+      input.username,
+      input.password
+    );
   }
 }
