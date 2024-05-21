@@ -51,7 +51,6 @@ export class InvoiceAdminResolver {
     return {
       ...invoice,
       isCreditInvoice: invoice.isCreditInvoice,
-      orderCode: order.code,
       downloadUrl: this.invoiceService.getDownloadUrl(
         ctx,
         invoice,
