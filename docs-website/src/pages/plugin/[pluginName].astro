@@ -15,9 +15,12 @@ const plugin: Plugin = Astro.props.plugin;
 
 <MainLayout title={plugin.name}>
   <div class="content">
-    Run
-    <code>yarn add {plugin.npmName}</code>
-    to install this plugin.
+    <pre>
+    <code class="hljs language-shell">
+    <span class="hljs-comment"># Install this plugin</span>
+    <span class="hljs-attr">yarn</span> add {plugin.npmName}
+    </code>
+    </pre>
   </div>
 
   <!-- Badges -->

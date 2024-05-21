@@ -1,3 +1,7 @@
+# 2.5.2 (2024-05-07)
+
+- Fix #417
+
 # 2.5.1 (2024-02-26)
 
 - Include `RequestContext` as an additional argument to `ShippingExtensionsOptions.weightCalculationFunction`
