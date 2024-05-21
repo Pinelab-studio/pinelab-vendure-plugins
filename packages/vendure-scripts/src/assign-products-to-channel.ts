@@ -6,7 +6,7 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import { In } from 'typeorm';
-import { assignTheseProductsToChannel } from './assign-these-prodcuts-to-channel';
+import { assignTheseProductsToChannel } from './assign-these-products-to-channel';
 import { getProductsDeep } from './get-products-deep';
 
 export async function assignProductsToChannel(

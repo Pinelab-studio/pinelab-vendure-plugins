@@ -5,7 +5,7 @@ import {
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { assignTheseProductsToChannel } from './assign-these-prodcuts-to-channel';
+import { assignTheseProductsToChannel } from './assign-these-products-to-channel';
 import { getProductsDeep } from './get-products-deep';
 
 export async function assignAllProductsToChannel(

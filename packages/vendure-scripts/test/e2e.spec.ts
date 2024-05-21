@@ -21,7 +21,7 @@ import { CREATE_CHANNEL, createChannelInput } from './test-helpers';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { ModuleRef } from '@nestjs/core';
 import { assignAllProductsToChannel } from '../src/assign-all-products-to-channel';
-import { getSuperadminContextInChannel } from '../../test/src/admin-utils';
+import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
 
 describe('Vendure Scripts', function () {
   let server: TestServer;

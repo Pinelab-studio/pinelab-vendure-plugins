@@ -2,14 +2,7 @@ import { Fulfillment } from '@vendure/common/lib/generated-types';
 import {
   defaultShippingCalculator,
   defaultShippingEligibilityChecker,
-  ConfigService,
-  RequestContext,
-  TransactionalConnection,
-  User,
-  Channel,
-  Injector,
 } from '@vendure/core';
-import { INestApplicationContext } from '@nestjs/common';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
   ConfigArgInput,
@@ -195,34 +188,4 @@ export async function createPromotion(
     },
   });
   return createPromotion as Promotion;
-}
-
-export async function getSuperadminContextInChannel(
-  injector: Injector,
-  channel: Channel
-): Promise<RequestContext> {
-  const connection = injector.get(TransactionalConnection);
-  const configService = injector.get(ConfigService);
-  const { superadminCredentials } = configService.authOptions;
-  const superAdminUser = await connection
-    .getRepository(User)
-    .findOneOrFail({ where: { identifier: superadminCredentials.identifier } });
-  return new RequestContext({
-    channel,
-    apiType: 'admin',
-    isAuthorized: true,
-    authorizedAsOwnerOnly: false,
-    session: {
-      id: '',
-      token: '',
-      expires: new Date(),
-      cacheExpiry: 999999,
-      user: {
-        id: superAdminUser.id,
-        identifier: superAdminUser.identifier,
-        verified: true,
-        channelPermissions: [],
-      },
-    },
-  });
 }

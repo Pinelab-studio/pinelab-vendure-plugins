@@ -8,9 +8,8 @@ import {
   ProductVariantService,
   RequestContext,
   SearchService,
-  TransactionalConnection,
 } from '@vendure/core';
-import { getSuperadminContextInChannel } from '../../test/src/admin-utils';
+import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
 
 /**
  * This function should be used with batches of Products
