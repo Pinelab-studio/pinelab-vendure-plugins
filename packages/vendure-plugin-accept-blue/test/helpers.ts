@@ -104,6 +104,27 @@ export const ADD_PAYMENT_TO_ORDER = gql`
   }
 `;
 
+export const REFUND_TRANSACTION = gql`
+  mutation RefundAcceptBlueTransaction(
+    $transactionId: Int!
+    $amount: Int
+    $cvv2: String
+  ) {
+    refundAcceptBlueTransaction(
+      transactionId: $transactionId
+      amount: $amount
+      cvv2: $cvv2
+    ) {
+      referenceNumber
+      version
+      status
+      errorMessage
+      errorCode
+      errorDetails
+    }
+  }
+`;
+
 export const GET_ORDER_BY_CODE = gql`
   query GetOrderByCode($code: String!) {
     orderByCode(code: $code) {
