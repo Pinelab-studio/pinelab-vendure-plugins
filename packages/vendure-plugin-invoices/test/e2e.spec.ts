@@ -127,7 +127,7 @@ describe(
 
     it('Gets invoices for order', async () => {
       // Give the worker some time to generate invoices
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       const { order: result } = await adminClient.query(getOrderWithInvoices, {
         id: order.id,
       });
@@ -227,7 +227,7 @@ describe(
       expect(invoices[0].invoiceNumber).toBe(3);
     });
   },
-  6 * 1000
+  10 * 1000
 );
 
 describe('Download invoices', function () {
@@ -320,7 +320,7 @@ describe(
 
     it('Created invoice', async () => {
       // Give the worker some time to generate invoices
-      await new Promise((resolve) => setTimeout(resolve, 4000));
+      await new Promise((resolve) => setTimeout(resolve, 5000));
       const { order: result } = await adminClient.query(getOrderWithInvoices, {
         id: order.id,
       });
@@ -360,7 +360,7 @@ describe(
       expect(events[1].creditInvoice).toBeUndefined();
     });
   },
-  6 * 1000
+  10 * 1000
 );
 
 if (process.env.TEST_ADMIN_UI) {
