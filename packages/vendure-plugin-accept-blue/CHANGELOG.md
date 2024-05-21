@@ -1,3 +1,7 @@
+# 1.3.0 (2024-05-21)
+
+- Allow refunding a transaction via `refundAcceptBlueTransaction` mutation.
+
 # 1.2.0 (2024-05-02)
 
 - `Order.lines.acceptBlueSubscriptions` now fetches created subscriptions from Accept Blue for placed orders, instead of calling your subscription strategy

@@ -115,7 +115,12 @@ export const REFUND_TRANSACTION = gql`
       amount: $amount
       cvv2: $cvv2
     ) {
-      name
+      referenceNumber
+      version
+      status
+      errorMessage
+      errorCode
+      errorDetails
     }
   }
 `;

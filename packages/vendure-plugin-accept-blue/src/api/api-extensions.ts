@@ -68,6 +68,22 @@ export const commonApiExtensions = gql`
     cardDetails: AcceptBlueCardDetails
   }
 
+  enum AcceptBlueRefundStatus {
+    Approved
+    PartiallyApproved
+    Declined
+    Error
+  }
+
+  type AcceptBlueRefundResult {
+    referenceNumber: Int!
+    version: String!
+    status: AcceptBlueRefundStatus!
+    errorMessage: String
+    errorCode: String
+    errorDetails: String
+  }
+
   type AcceptBlueCheckDetails {
     name: String!
     routingNumber: String!
@@ -114,6 +130,6 @@ export const commonApiExtensions = gql`
       transactionId: Int!
       amount: Int
       cvv2: String
-    ): [AcceptBlueSubscription!]!
+    ): AcceptBlueRefundResult!
   }
 `;

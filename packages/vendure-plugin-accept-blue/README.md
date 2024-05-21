@@ -100,13 +100,11 @@ mutation {
 }
 ```
 
-## Refunds, Transactions and Subscriptions for placed orders
+## Fetching Transactions and Subscriptions for placed orders
 
 After an order is placed, the `order.lines.acceptBlueSubscriptions` is populated with the actual subscription values from the Accept Blue platform, so it will not call your strategy anymore. This is to better reflect the subscription that was actually created at the time of ordering.
 
 This means you can now also get the transactions per subscriptions with the field `order.lines.acceptBlueSubscriptions.transactions`. To refund a transaction, you first need to get the transaction id.
-
-// TODO refund mutation
 
 ```graphql
 # Sample query
@@ -151,6 +149,26 @@ This means you can now also get the transactions per subscriptions with the fiel
         }
       }
     }
+  }
+}
+```
+
+## Refunding
+
+Only the initial payment is handled as a Vendure payment, any other refunds are done via a dedicated mutation:
+
+1. Fetch transactions for a customer or a subscription as explained above
+2. Use the transaction ID to create a refund:
+
+```graphql
+mutation {
+  refundAcceptBlueTransaction(transactionId: 123, amount: 4567, cvv2: "999") {
+    referenceNumber
+    version
+    status
+    errorMessage
+    errorCode
+    errorDetails
   }
 }
 ```

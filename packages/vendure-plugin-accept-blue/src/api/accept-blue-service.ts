@@ -32,11 +32,13 @@ import {
   getNrOfBillingCyclesLeft,
   isToday,
   toAcceptBlueFrequency,
+  toGraphqlRefundStatus,
   toSubscriptionInterval,
 } from '../util';
 import { AcceptBlueClient } from './accept-blue-client';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
 import {
+  AcceptBlueRefundResult,
   AcceptBlueSubscription,
   AcceptBlueTransaction,
 } from './generated/graphql';
@@ -288,10 +290,24 @@ export class AcceptBlueService {
     transactionId: number,
     amount?: number,
     cvv2?: string
-  ): Promise<any> {
-    // FIXME
+  ): Promise<AcceptBlueRefundResult> {
     const client = await this.getClientForChannel(ctx);
-    return await client.refund(transactionId, amount, cvv2);
+    const refundResult = await client.refund(transactionId, amount, cvv2);
+    let errorDetails: string | undefined = undefined;
+    if (refundResult.error_details) {
+      errorDetails =
+        typeof refundResult.error_details === 'object'
+          ? JSON.stringify(refundResult.error_details)
+          : refundResult.error_details;
+    }
+    return {
+      version: refundResult.version,
+      referenceNumber: refundResult.reference_number,
+      status: toGraphqlRefundStatus(refundResult.status),
+      errorCode: refundResult.error_code,
+      errorMessage: refundResult.error_message,
+      errorDetails,
+    };
   }
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {

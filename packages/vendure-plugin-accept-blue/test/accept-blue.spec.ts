@@ -31,6 +31,7 @@ import {
   GET_USER_SAVED_PAYMENT_METHOD,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
   PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
+  REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
   UPDATE_CUSTOMER_BLUE_ID,
@@ -428,8 +429,39 @@ describe('Refunds and transactions', () => {
   });
 
   it('Refunds a transaction', async () => {
-    // TODO implement
-    expect(true).toBe(true);
+    let refundRequest: any;
+    nockInstance
+      .post(`/transactions/refund`, (body) => {
+        refundRequest = body;
+        return true;
+      })
+      .reply(200, {
+        version: 'version1',
+        status: 'Partially Approved',
+        error_message: 'Some error message',
+        error_code: 'E100',
+        error_details: { detail: 'An error detail object' },
+        reference_number: 123,
+      });
+    const { refundAcceptBlueTransaction } = await shopClient.query(
+      REFUND_TRANSACTION,
+      {
+        transactionId: 123,
+        amount: 4567,
+        cvv2: '999',
+      }
+    );
+    expect(refundRequest.reference_number).toBe(123);
+    expect(refundRequest.amount).toBe(45.67);
+    expect(refundRequest.cvv2).toBe('999');
+    expect(refundAcceptBlueTransaction.referenceNumber).toBe(123);
+    expect(refundAcceptBlueTransaction.version).toBe('version1');
+    expect(refundAcceptBlueTransaction.status).toBe('PartiallyApproved');
+    expect(refundAcceptBlueTransaction.errorMessage).toBe('Some error message');
+    expect(refundAcceptBlueTransaction.errorCode).toBe('E100');
+    expect(refundAcceptBlueTransaction.errorDetails).toBe(
+      '{"detail":"An error detail object"}'
+    ); // Should be stringified
   });
 });
 
