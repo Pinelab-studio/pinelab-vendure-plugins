@@ -5,6 +5,7 @@ import {
   CustomerService,
   EntityHydrator,
   ID,
+  Logger,
   Order,
   OrderLine,
   PaymentMethod,
@@ -300,6 +301,10 @@ export class AcceptBlueService {
           ? JSON.stringify(refundResult.error_details)
           : refundResult.error_details;
     }
+    Logger.info(
+      `Attempted refund of transaction '${transactionId}' by user '${ctx.activeUserId}' resulted in status '${refundResult.status}'`,
+      loggerCtx
+    );
     return {
       version: refundResult.version,
       referenceNumber: refundResult.reference_number,

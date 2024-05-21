@@ -463,6 +463,21 @@ describe('Refunds and transactions', () => {
       '{"detail":"An error detail object"}'
     ); // Should be stringified
   });
+
+  it('Fails to refund when not logged in', async () => {
+    await shopClient.asAnonymousUser();
+    let error: any;
+    try {
+      await shopClient.query(REFUND_TRANSACTION, {
+        transactionId: 123,
+        amount: 4567,
+        cvv2: '999',
+      });
+    } catch (e) {
+      error = e;
+    }
+    expect(error?.response?.errors?.[0]?.extensions.code).toEqual('FORBIDDEN');
+  });
 });
 
 describe('Admin API', () => {

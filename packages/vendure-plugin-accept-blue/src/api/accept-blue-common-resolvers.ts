@@ -7,10 +7,12 @@ import {
   Mutation,
 } from '@nestjs/graphql';
 import {
+  Allow,
   Ctx,
   Customer,
   EntityHydrator,
   OrderLine,
+  Permission,
   RequestContext,
 } from '@vendure/core';
 import { AcceptBluePaymentMethod } from '../types';
@@ -71,6 +73,7 @@ export class AcceptBlueCommonResolver {
   }
 
   @Mutation()
+  @Allow(Permission.Authenticated)
   async refundAcceptBlueTransaction(
     @Ctx() ctx: RequestContext,
     @Args()
