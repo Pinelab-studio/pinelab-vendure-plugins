@@ -36,13 +36,3 @@ This plugin exposes an endpoint that can be periodically called: `/popularity-sc
 6. It then calculates the popularity of collections, based on the product scores and it's child collections
 7. Collection scores are stored on `Collection.customFields.popularityScore`
 8. Both the Product and Collection popularity scores are publicly available in the GraphQL Shop API.
-
-## Development
-
-Run `yarn start` to start the server. The following will be available after startup:
-
-- `http://localhost:3050/admin` you can login with superadmin/superadmin
-- `http://localhost:3050/admin-api` Admin GraphQL playground
-- `http://localhost:3050/shop-api` Shop GraphQL playground
-
-Run `yarn test` to run the testcases defined in `test/e2e.spec.ts`
