@@ -23,7 +23,6 @@ import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { StorageStrategy } from './strategies/storage-strategy';
 import { InvoiceService } from './services/invoice.service';
-import { creditInvoiceGenerationProcess } from './credit-invoice-generation.process';
 
 export interface InvoicePluginConfig {
   /**
@@ -79,7 +78,6 @@ export class InvoicePlugin {
     config: RuntimeVendureConfig
   ): Promise<RuntimeVendureConfig> {
     config.authOptions.customPermissions.push(invoicePermission);
-    config.orderOptions.process.push(creditInvoiceGenerationProcess);
     if (this.config.storageStrategy) {
       await this.config.storageStrategy.init();
     }

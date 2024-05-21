@@ -15,6 +15,7 @@ import {
   Order,
   OrderPlacedEvent,
   OrderService,
+  OrderStateTransitionEvent,
   RequestContext,
   TransactionalConnection,
   UserInputError,
@@ -41,6 +42,7 @@ import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { SortOrder } from '@vendure/common/lib/generated-shop-types';
+import { filter } from 'rxjs';
 
 interface DownloadInput {
   customerEmail: string;
@@ -51,7 +53,13 @@ interface DownloadInput {
 
 @Injectable()
 export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
-  jobQueue: JobQueue<{ channelToken: string; orderCode: string }> | undefined;
+  jobQueue:
+    | JobQueue<{
+        channelToken: string;
+        orderCode: string;
+        creditInvoiceOnly: boolean;
+      }>
+    | undefined;
   retries = 10;
 
   constructor(
@@ -75,8 +83,20 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     // Init jobQueue
     this.jobQueue = await this.jobService.createQueue({
       name: 'generate-invoice',
-      process: async (job) =>
-        this.createAndSaveInvoice(
+      process: async (job) => {
+        if (job.data.creditInvoiceOnly) {
+          return this.createCreditInvoiceForCancelledOrder(
+            job.data.channelToken,
+            job.data.orderCode
+          ).catch(async (error) => {
+            Logger.warn(
+              `Failed to generate credit invoice for ${job.data.orderCode}: ${error?.message}`,
+              loggerCtx
+            );
+            throw error;
+          });
+        }
+        return this.createAndSaveInvoice(
           job.data.channelToken,
           job.data.orderCode
         ).catch(async (error) => {
@@ -85,7 +105,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
             loggerCtx
           );
           throw error;
-        }),
+        });
+      },
     });
   }
 
@@ -94,28 +115,72 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   onApplicationBootstrap(): void {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      if (!this.jobQueue) {
-        return Logger.error(`Invoice jobQueue not initialized`, loggerCtx);
-      }
-      const enabled = await this.isInvoicePluginEnabled(ctx);
-      if (!enabled) {
-        return Logger.debug(
-          `Invoice generation not enabled for order ${order.code} in channel ${ctx.channel.token}`,
-          loggerCtx
-        );
-      }
-      await this.jobQueue.add(
-        {
-          channelToken: ctx.channel.token,
-          orderCode: order.code,
-        },
-        { retries: this.retries }
-      );
-      return Logger.info(
-        `Added invoice job to queue for order ${order.code}`,
+      await this.handleOrderEvents(ctx, order.code, false);
+    });
+    this.eventBus
+      .ofType(OrderStateTransitionEvent)
+      .pipe(filter((event) => event.toState === 'Cancelled'))
+      .subscribe(async ({ ctx, order }) => {
+        await this.handleOrderEvents(ctx, order.code, true);
+      });
+  }
+
+  private async handleOrderEvents(
+    ctx: RequestContext,
+    orderCode: string,
+    creditInvoiceOnly: boolean
+  ) {
+    if (!this.jobQueue) {
+      return Logger.error(`Invoice jobQueue not initialized`, loggerCtx);
+    }
+    const enabled = await this.isInvoicePluginEnabled(ctx);
+    if (!enabled) {
+      return Logger.debug(
+        `Invoice generation not enabled for order ${orderCode} in channel ${ctx.channel.token}`,
         loggerCtx
       );
-    });
+    }
+    await this.jobQueue.add(
+      {
+        channelToken: ctx.channel.token,
+        orderCode: orderCode,
+        creditInvoiceOnly,
+      },
+      { retries: this.retries }
+    );
+    return Logger.info(
+      `Added invoice job to queue for order ${orderCode}`,
+      loggerCtx
+    );
+  }
+
+  async createCreditInvoiceForCancelledOrder(
+    channelToken: string,
+    orderCode: string
+  ) {
+    const ctx = await this.createCtx(channelToken);
+    const previousInvoiceForOrder = await this.getMostRecentInvoiceForOrder(
+      ctx,
+      orderCode
+    );
+    if (!previousInvoiceForOrder) {
+      Logger.error(
+        `Unable to create credit invoice for order ${orderCode} as no previous invoices exist`
+      );
+      return;
+    }
+    const invoiceConfig = await this.getConfig(ctx);
+
+    if (invoiceConfig) {
+      await this.createAndSaveCreditInvoice(
+        ctx,
+        orderCode,
+        previousInvoiceForOrder,
+        invoiceConfig,
+        ctx.channel.token
+      );
+    }
+    return;
   }
 
   /**
@@ -147,9 +212,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     // Create a credit invoice first, if an invoice already exists and config.createCreditInvoices is true
     let creditInvoice: InvoiceEntity | undefined;
     if (previousInvoiceForOrder && config.createCreditInvoices) {
-      creditInvoice = await this.generateCreditInvoice(
+      creditInvoice = await this.createAndSaveCreditInvoice(
         ctx,
-        order,
+        orderCode,
         previousInvoiceForOrder,
         config,
         channelToken
@@ -190,13 +255,17 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return newInvoice;
   }
 
-  async generateCreditInvoice(
+  async createAndSaveCreditInvoice(
     ctx: RequestContext,
-    order: Order,
+    orderCode: string,
     previousInvoiceForOrder: InvoiceEntity,
     config: InvoiceConfigEntity,
     channelToken: string
   ) {
+    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!order) {
+      throw new UserInputError(`No order with code ${orderCode}`);
+    }
     // Reverse order totals of previous invoice, because creditInvoice
     const reversedOrderTotals = reverseOrderTotals(
       previousInvoiceForOrder.orderTotals
@@ -401,7 +470,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const result = await invoiceRepo.findOne({
       where: [{ channelId: ctx.channelId as string }],
       select: ['invoiceNumber'],
-      order: { invoiceNumber: 'DESC' },
+      order: { createdAt: 'DESC' },
       cache: false,
     });
     return result?.invoiceNumber;
