@@ -28,15 +28,14 @@ plugins: [
 
 This plugin exposes an endpoint that can be periodically called: `/popularity-scores/:yourchanneltoken/:yoursecret`. This will push a job named `calculate-popularity` to the worker. The worker will handle this message and do the following:
 
-1. Get all orders from the past 12 months. The amount of months should be configurable.
+1. Get all orders from the past 12 months.
 2. Calculate the amount of times each Variant has been sold.
 3. It then calculates the sum of all variants per Product, so that we have the amount of times a Product has been sold in the past 12 months.
 4. It normalizes this value to a score of 0 to 10000, because we don't want to expose our number of sales publicly.
 5. The normalized score will the be stored on `Product.customFields.popularityScore`
-6. It then calculates the popularity of collections, based on the product scores. The collection scores do not have to be normalized again.
-7. The score of a parent collection should include the scores of all its subcollections
-8. Collection scores should be stored on `Collection.customFields.popularityScore`
-9. Both the Product and Collection popularity scores should be publicly available in the GraphQL Shop API.
+6. It then calculates the popularity of collections, based on the product scores and it's child collections
+7. Collection scores are stored on `Collection.customFields.popularityScore`
+8. Both the Product and Collection popularity scores are publicly available in the GraphQL Shop API.
 
 ## Development
 
