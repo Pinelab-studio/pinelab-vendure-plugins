@@ -8,6 +8,7 @@ import {
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleInput,
+  AcceptBlueRecurringScheduleTransaction,
   CheckPaymentMethodInput,
   NoncePaymentMethodInput,
 } from '../types';
@@ -29,7 +30,7 @@ export class AcceptBlueClient {
     }
     this.instance = axios.create({
       baseURL: `${this.endpoint}`,
-      timeout: 5000,
+      timeout: 20000,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Basic ${Buffer.from(
@@ -103,6 +104,20 @@ export class AcceptBlueClient {
       return existing;
     }
     return await this.createPaymentMethod(acceptBlueCustomerId, input);
+  }
+
+  async getRecurringSchedules(
+    ids: number[]
+  ): Promise<AcceptBlueRecurringSchedule[]> {
+    return await Promise.all(
+      ids.map(async (id) => this.request('get', `recurring-schedules/${id}`))
+    );
+  }
+
+  async getTransactionsForRecurringSchedule(
+    id: number
+  ): Promise<AcceptBlueRecurringScheduleTransaction[]> {
+    return await this.request('get', `recurring-schedules/${id}/transactions`);
   }
 
   async getPaymentMethods(

@@ -5,6 +5,7 @@ import {
   LanguageCode,
   LogLevel,
   mergeConfig,
+  Order,
 } from '@vendure/core';
 
 // @ts-ignore
@@ -26,6 +27,7 @@ import {
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
   GET_CUSTOMER_WITH_ID,
+  GET_ORDER_BY_CODE,
   GET_USER_SAVED_PAYMENT_METHOD,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
   PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
@@ -50,6 +52,7 @@ import {
   haydenSavedPaymentMethods,
   recurringScheduleResult,
   tokenizedCreditCardChargeResult,
+  mockCardTransaction,
 } from './nock-helpers';
 
 let server: TestServer;
@@ -61,6 +64,7 @@ let serverStarted = false;
 let acceptBluePaymentMethod: any;
 let nockInstance: nock.Scope;
 let acceptBlueClient: AcceptBlueClient;
+let placedOrder: Order | undefined;
 
 let testingNonceToken = {
   source: 'nonce-1234567',
@@ -393,6 +397,7 @@ describe('Payment with Saved Payment Method', () => {
         },
       }
     );
+    placedOrder = order;
     subscriptionIds = order.lines
       .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
       .flat();
@@ -401,6 +406,30 @@ describe('Payment with Saved Payment Method', () => {
 
   it('Created subscriptions at Accept Blue', async () => {
     expect(subscriptionIds.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Refunds and transactions', () => {
+  it('Has transactions per subscription', async () => {
+    nockInstance
+      .get(`/recurring-schedules/6014`)
+      .reply(200, recurringScheduleResult);
+    nockInstance
+      .get(`/recurring-schedules/6014/transactions`)
+      .reply(200, [mockCardTransaction]);
+    const { orderByCode } = await shopClient.query(GET_ORDER_BY_CODE, {
+      code: placedOrder?.code,
+    });
+    const transaction =
+      orderByCode.lines[0].acceptBlueSubscriptions[0].transactions[0];
+    expect(transaction.status).toBe('settled');
+    expect(transaction.cardDetails).toBeDefined();
+    expect(transaction.amount).toBeDefined();
+  });
+
+  it('Refunds a transaction', async () => {
+    // TODO implement
+    expect(true).toBe(true);
   });
 });
 

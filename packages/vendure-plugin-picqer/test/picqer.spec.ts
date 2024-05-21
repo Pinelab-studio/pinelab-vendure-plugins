@@ -1,4 +1,10 @@
-import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
+import {
+  configureDefaultOrderProcess,
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  Order,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -60,6 +66,11 @@ beforeAll(async () => {
         }),
       }),
     ],
+    orderOptions: {
+      process: [
+        configureDefaultOrderProcess({ checkFulfillmentStates: false }),
+      ],
+    },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },

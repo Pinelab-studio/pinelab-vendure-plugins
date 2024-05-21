@@ -1,6 +1,7 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
+  configureDefaultOrderProcess,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -31,6 +32,11 @@ import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.hand
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
+    },
+    orderOptions: {
+      process: [
+        configureDefaultOrderProcess({ checkFulfillmentStates: false }),
+      ],
     },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],

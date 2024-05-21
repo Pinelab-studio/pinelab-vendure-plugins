@@ -80,12 +80,6 @@ interface TransactionDetails {
   signature: string;
 }
 
-interface ChargeTransactionDetails extends TransactionDetails {
-  invoice_number: string;
-  po_number: string;
-  order_number: string;
-}
-
 export interface AcceptBlueAmountInput {
   tax: number;
   surcharge: number;
@@ -95,6 +89,7 @@ export interface AcceptBlueAmountInput {
 }
 
 export interface AcceptBlueAmountDetails extends AcceptBlueAmountInput {
+  amount: number;
   subtotal: number;
   original_requested_amount: number;
   original_authorized_amount: number;
@@ -283,6 +278,36 @@ export interface AcceptBlueRecurringScheduleInput {
   active?: boolean;
   receipt_email?: string;
   use_this_source_key?: boolean;
+}
+
+export interface AcceptBlueRecurringScheduleTransaction {
+  id: number;
+  created_at: Date;
+  settled_date: Date;
+  amount_details: AcceptBlueAmountDetails;
+  transaction_details: TransactionDetails;
+  customer: TransactionCustomer;
+  billing_info: AcceptBlueAddress;
+  shipping_info: AcceptBlueAddress;
+  custom_fields: CustomFields;
+  status_details: {
+    error_code: string;
+    error_message: string;
+    status: string;
+  };
+  card_details?: {
+    name: string;
+    last4: string;
+    expiry_month: number;
+    expiry_year: number;
+    card_type: string;
+  };
+  check_details?: {
+    name: string;
+    routing_number: string;
+    account_number_last4: string;
+    account_type: number;
+  };
 }
 
 /** ++++++ Refunds ++++++ */

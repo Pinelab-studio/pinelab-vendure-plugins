@@ -5,7 +5,6 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
-  Channel,
   ChannelService,
   ConfigService,
   EntityHydrator,
@@ -14,7 +13,6 @@ import {
   ID,
   JobQueue,
   JobQueueService,
-  Json,
   ListQueryBuilder,
   Logger,
   Order,
@@ -31,7 +29,14 @@ import {
   Translated,
   translateDeep,
 } from '@vendure/core';
+import { IsNull } from 'typeorm';
+import util from 'util';
+import { transitionToDelivered } from '../../../util/src';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PickupPointCustomFields } from './custom-fields';
+import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
 import { GoedgepicktClient } from './goedgepickt.client';
+import { goedgepicktHandler } from './goedgepickt.handler';
 import {
   GoedgepicktEvent,
   GoedgepicktPluginConfig,
@@ -41,11 +46,6 @@ import {
   OrderStatus,
   ProductInput,
 } from './goedgepickt.types';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
-import { transitionToDelivered } from '../../../util/src';
-import { goedgepicktHandler } from './goedgepickt.handler';
-import { PickupPointCustomFields } from './custom-fields';
 
 interface StockInput {
   variantId: string;
@@ -138,8 +138,26 @@ export class GoedgepicktService
             );
           }
         } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message.includes('Too Many Attempts')
+          ) {
+            Logger.info(
+              `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
+              loggerCtx
+            );
+            throw error;
+          }
+          // Loggable job data without entire request context
+          const loggableData = {
+            ...data,
+
+            ctx: undefined,
+          };
           Logger.warn(
-            `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
+            `Failed to process job ${data.action} (${id}) for channel ${
+              data.ctx._channel.token
+            }: ${error}. Job data: ${util.inspect(loggableData, false, 5)}`,
             loggerCtx
           );
           throw error;
@@ -162,24 +180,26 @@ export class GoedgepicktService
     // Listen for Variant changes
     this.eventBus
       .ofType(ProductVariantEvent)
-      .subscribe(async ({ ctx, variants, type }) => {
-        if (type === 'created' || type === 'updated') {
-          // Batch per 15 because of the Goedgepickt limit
-          const batches = this.getBatches(variants, 15);
-          for (const batch of batches) {
-            await this.jobQueue.add(
-              {
-                action: 'push-product-by-variants',
-                ctx: ctx.serialize(),
-                variants: batch,
-              },
-              { retries: 20 }
-            );
-            Logger.info(
-              `Added ${variants.length} to 'push-product-by-variants' queue, because they were ${type}`,
-              loggerCtx
-            );
-          }
+      .subscribe(async ({ ctx, entity, type, input }) => {
+        if (type !== 'created' && type !== 'updated') {
+          // Only handle created and updated events
+          return;
+        }
+        // Batch per 15 because of the Goedgepickt limit
+        const batches = this.getBatches(entity, 15);
+        for (const batch of batches) {
+          await this.jobQueue.add(
+            {
+              action: 'push-product-by-variants',
+              ctx: ctx.serialize(),
+              variants: batch,
+            },
+            { retries: 20 }
+          );
+          Logger.info(
+            `Added ${entity.length} to 'push-product-by-variants' queue, because they were ${type}`,
+            loggerCtx
+          );
         }
       });
   }
@@ -268,6 +288,26 @@ export class GoedgepicktService
       orderWebhookKey: orderSecret,
       stockWebhookKey: stockSecret,
     });
+  }
+
+  /**
+   * Update stock in Vendure based on Goedgepickt webhook event
+   */
+  async processStockUpdateEvent(
+    ctx: RequestContext,
+    productSku: string,
+    ggStock: number
+  ): Promise<void> {
+    const variants = await this.getVariants(ctx, productSku);
+    await this.createStockUpdateJobs(
+      ctx,
+      [{ sku: productSku, stockLevel: ggStock }],
+      variants
+    );
+    Logger.info(
+      `Created stock update job for ${productSku} to ${ggStock} via incoming event`,
+      loggerCtx
+    );
   }
 
   /**
@@ -409,28 +449,6 @@ export class GoedgepicktService
   }
 
   /**
-   * Update stock in Vendure based on Goedgepickt webhook event
-   */
-  async processStockUpdateEvent(
-    ctx: RequestContext,
-    productSku: string,
-    ggStock: number
-  ): Promise<void> {
-    const { items: variants } = await this.variantService.findAll(ctx, {
-      filter: { sku: { eq: productSku } },
-    });
-    await this.createStockUpdateJobs(
-      ctx,
-      [{ sku: productSku, stockLevel: ggStock }],
-      variants
-    );
-    Logger.info(
-      `Created stock update job for ${productSku} to ${ggStock} via incoming event`,
-      loggerCtx
-    );
-  }
-
-  /**
    * Returns undefined if plugin is disabled
    */
   async getClientForChannel(
@@ -485,8 +503,22 @@ export class GoedgepicktService
     }
     const [ggProducts, variants] = await Promise.all([
       client.getAllProducts(),
-      this.getAllVariants(ctx),
+      this.getVariants(ctx),
     ]);
+    Logger.info(
+      `Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
+      loggerCtx
+    );
+    // Create update stocklevel jobs
+    const stockLevelInputs = ggProducts.map((p) => ({
+      sku: p.sku,
+      stockLevel: p.stock?.freeStock,
+    }));
+    await this.createStockUpdateJobs(ctx, stockLevelInputs, variants);
+    Logger.info(
+      `Created stock update jobs for ${stockLevelInputs.length} Vendure variants via fullsync`,
+      loggerCtx
+    );
     // Create product push jobs. 30 products per job
     const productInputs: ProductInput[] = [];
     for (const variant of variants) {
@@ -496,29 +528,21 @@ export class GoedgepicktService
       productInputs.push(this.mapToProductInput(variant, existing?.uuid));
     }
     const pushBatches = this.getBatches(productInputs, 15); // Batch of 15, so we stay under the 60 per minute limit in a single job
-    for (const batch of pushBatches) {
-      await this.jobQueue.add(
-        {
-          action: 'push-product',
-          ctx: ctx.serialize(),
-          products: batch,
-        },
-        { retries: 20 }
-      );
-      Logger.info(
-        `Created PushProducts job for ${batch.length} variants for channel ${channelToken}`,
-        loggerCtx
-      );
-    }
-    // Create update stocklevel jobs
-    const inputs = ggProducts.map((p) => ({
-      sku: p.sku,
-      stockLevel: p.stock?.freeStock,
-    }));
-    await this.createStockUpdateJobs(ctx, inputs, variants);
-    Logger.info(
-      `Created stock update jobs for ${inputs.length} products via fullsync`,
-      loggerCtx
+    await Promise.all(
+      pushBatches.map(async (batch) => {
+        await this.jobQueue.add(
+          {
+            action: 'push-product',
+            ctx: ctx.serialize(),
+            products: batch,
+          },
+          { retries: 20 }
+        );
+        Logger.info(
+          `Created PushProducts job for ${batch.length} variants for channel ${channelToken}`,
+          loggerCtx
+        );
+      })
     );
   }
 
@@ -634,7 +658,11 @@ export class GoedgepicktService
         ctx,
         variant.id
       );
-      const newStock = ggStock + availableStock.stockAllocated;
+      let newStock = ggStock + availableStock.stockAllocated;
+      if (newStock < 0) {
+        // Prevent negative stock
+        newStock = 0;
+      }
       stockPerVariant.push({
         variantId: variant.id as string,
         stock: newStock,
@@ -642,20 +670,22 @@ export class GoedgepicktService
     }
     // Create jobs per 100 variants
     const stockBatches = this.getBatches(stockPerVariant, 100);
-    for (const batch of stockBatches) {
-      await this.jobQueue.add(
-        {
-          action: 'update-stock',
-          stock: batch,
-          ctx: ctx.serialize(),
-        },
-        { retries: 10 }
-      );
-      Logger.info(
-        `Created stocklevel update job for ${batch.length} variants`,
-        loggerCtx
-      );
-    }
+    await Promise.all(
+      stockBatches.map(async (batch) => {
+        await this.jobQueue.add(
+          {
+            action: 'update-stock',
+            stock: batch,
+            ctx: ctx.serialize(),
+          },
+          { retries: 10 }
+        );
+        Logger.info(
+          `Created stocklevel update job for ${batch.length} variants`,
+          loggerCtx
+        );
+      })
+    );
   }
 
   private async handleStockUpdateJob(
@@ -667,42 +697,48 @@ export class GoedgepicktService
       stockOnHand: input.stock,
     }));
     const variants = await this.variantService.update(ctx, variantsWithStock);
+    const skus = variants.map((v) => v.sku);
     Logger.info(
-      `Updated stock of ${variantsWithStock.length} variants for channel ${ctx.channel.token}`,
+      `Updated stock of variants for channel ${ctx.channel.token}: ${skus.join(
+        ','
+      )}`,
       loggerCtx
     );
     return variants;
   }
 
-  private async getAllVariants(
-    ctx: RequestContext
+  private async getVariants(
+    ctx: RequestContext,
+    sku?: string
   ): Promise<VariantWithImage[]> {
     const translatedVariants: VariantWithImage[] = [];
     const take = 100;
     let skip = 0;
     let hasMore = true;
     while (hasMore) {
-      const variants = await this.listQueryBuilder
-        .build(
-          ProductVariant,
-          {
-            skip,
-            take,
-          },
-          {
-            relations: [
-              'featuredAsset',
-              'channels',
-              'product',
-              'product.featuredAsset',
-              'taxCategory',
-            ],
-            channelId: ctx.channelId,
-            where: { deletedAt: undefined },
-            ctx,
-          }
-        )
-        .getMany();
+      const query = this.listQueryBuilder.build(
+        ProductVariant,
+        {
+          skip,
+          take,
+        },
+        {
+          relations: [
+            'featuredAsset',
+            'channels',
+            'product',
+            'product.featuredAsset',
+            'taxCategory',
+          ],
+          channelId: ctx.channelId,
+          where: { deletedAt: IsNull() },
+          ctx,
+        }
+      );
+      if (sku) {
+        query.andWhere('sku = :sku', { sku });
+      }
+      const variants = await query.getMany();
       hasMore = !!variants.length;
       skip += take;
       const variantsWithPrice = await Promise.all(
