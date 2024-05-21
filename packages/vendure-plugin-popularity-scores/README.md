@@ -6,6 +6,8 @@ This plugin periodically scores products and categories based on the amount of t
 
 ## Getting started
 
+1. Install the plugin in your `vendure-config.ts`
+
 ```ts
 import { PopularityScoresPlugin } from 'vendure-plugin-popularity-scores'
 
@@ -17,6 +19,8 @@ plugins: [
    ...
 ];
 ```
+
+2. [Run a database migration](https://docs.vendure.io/guides/developer-guide/migrations/) to create the custom fields needed for this plugin
 
 ## How it works
 
