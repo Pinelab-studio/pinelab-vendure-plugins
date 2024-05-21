@@ -10,19 +10,18 @@ import {
   EventBus,
   Logger,
   Order,
-  OrderEvent,
   OrderPlacedEvent,
   OrderService,
-  OrderState,
   RequestContext,
   TransactionalConnection,
   UserInputError,
+  isGraphQlErrorResult,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
 import { ShipmateConfigService } from './shipmate-config.service';
-import { filter } from 'rxjs';
 import { parseOrder } from './util';
+import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 
 export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
 export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
@@ -50,19 +49,6 @@ export class ShipmateService implements OnModuleInit {
       await this.setupRequestHeaders(ctx);
       await this.createShipment(ctx, order);
     });
-    this.eventBus
-      .ofType(OrderEvent)
-      .pipe(
-        filter(
-          (event) =>
-            event.type === 'updated' &&
-            !!event.order.customFields?.shipmateReference
-        )
-      )
-      .subscribe(async ({ ctx, order }) => {
-        await this.setupRequestHeaders(ctx);
-        await this.updateShipmate(order);
-      });
   }
 
   async setupRequestHeaders(ctx: RequestContext) {
@@ -111,7 +97,7 @@ export class ShipmateService implements OnModuleInit {
   }
 
   async createShipment(ctx: RequestContext, order: Order) {
-    const shipmateReference = Math.random().toString(36).substring(2, 8);
+    const shipmateReference = generatePublicId();
     const payload = parseOrder(order, shipmateReference);
     try {
       const result = await firstValueFrom(
@@ -125,22 +111,6 @@ export class ShipmateService implements OnModuleInit {
         ...order.customFields,
         shipmateReference,
       });
-    } catch (error: any) {
-      const message = error.response.data.message;
-      Logger.error(message, loggerCtx);
-    }
-  }
-
-  async updateShipmate(order: Order) {
-    const payload = parseOrder(order, order.customFields.shipmateReference);
-    try {
-      const result = await firstValueFrom(
-        this.httpService.put<CreateShipmentResponse>(
-          `${this.config.shipmateApiUrl}/shipments/${order.customFields.shipmateReference}`,
-          payload
-        )
-      );
-      Logger.info(result.data.message, loggerCtx);
     } catch (error: any) {
       const message = error.response.data.message;
       Logger.error(message, loggerCtx);
@@ -165,17 +135,25 @@ export class ShipmateService implements OnModuleInit {
       return HttpStatus.BAD_REQUEST;
     }
     if (payload.event === 'TRACKING_COLLECTED') {
-      await this.orderService.transitionToState(
+      const result = await this.orderService.transitionToState(
         ctx,
         shipmentOrder.id,
         'Shipped'
       );
+      if (isGraphQlErrorResult(result)) {
+        Logger.error(result.transitionError, loggerCtx);
+        return HttpStatus.INTERNAL_SERVER_ERROR;
+      }
     } else if (payload.event === 'TRACKING_DELIVERED') {
-      await this.orderService.transitionToState(
+      const result = await this.orderService.transitionToState(
         ctx,
         shipmentOrder.id,
         'Delivered'
       );
+      if (isGraphQlErrorResult(result)) {
+        Logger.error(result.transitionError, loggerCtx);
+        return HttpStatus.INTERNAL_SERVER_ERROR;
+      }
     } else {
       Logger.info(
         `${payload.event} event received for Order with code ${payload.order_reference}`,
