@@ -173,6 +173,8 @@ mutation {
 }
 ```
 
+The arguments `amount` and `cvv2` are optional, see [the Accept Blue Docs for more info](https://docs.accept.blue/api/v2#tag/processing-credit/paths/~1transactions~1refund).
+
 ## CORS
 
 If you run into CORS issues loading the Accept Blue hosted tokenization javascript library, you might need to remove the `cross-origin` key on your `script` tag.
