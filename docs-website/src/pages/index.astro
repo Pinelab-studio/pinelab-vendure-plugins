@@ -1,74 +1,95 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPlugins } from '../api/plugins';
 
 const plugins = await getPlugins();
 ---
 
-<MainLayout>
-  <div class="container">
-    <div class="columns is-justify-content-space-between is-align-items-center">
-      <div
-        class="column is-7-desktop has-text-centered-mobile has-text-centered-tablet has-text-left-desktop"
-      >
-        <h1 class="mb-4">
-          Battle tested <br />
-          <span class="is-blue">Vendure</span> plugins
-        </h1><p class="mb-4">
+<BaseLayout>
+  <section>
+    <div
+      class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 mt-24 z-50 items-center"
+    >
+      <div class="lg:pr-24 md:pr-12 pb-12 lg:pb-0 max-w-xl">
+        <span class="text-sm uppercase font-medium tracking-wide text-blue-600"
+          >OPEN SOURCE 4 LIFE</span
+        >
+        <h2
+          class="text-purple-900 font-semibold mt-6 text-4xl lg:text-7xl tracking-tight"
+        >
+        Battle tested
+        Vendure plugins
+        </h2>
+        <p class="text-slate-500 mt-5 lg:text-balance">
           Vendure plugins built by <a
+            class="text-blue-600"
             href="https://pinelab.studio"
-            target="_blank">Pinelab</a
+            target="_blank"
+            >Pinelab</a
           >, used for solving real problems for our clients.
         </p>
-      </div><div class="column is-4-desktop is-hidden-mobile has-text-right">
-        <img
-          src="/silver-partner.svg"
-          alt="Made by a Vendure Silver Partner!"
-          class="img-fluid"
-          style="max-height: 300px;"
-        />
       </div>
     </div>
-  </div>
-  <br />
-  <br />
 
-  <div class="columns is-multiline custom-grid">
-    {
-      plugins.map((plugin) => (
-        <div class="column is-4-widescreen is-6-tablet">
-          <div class="plugin-block has-text-centered bordered">
-            <a href={`/plugin/${plugin.slug}`}>
-              <i class={`mdi mdi-${plugin.icon} mdi-36px`} />
-              <h5>{plugin.name}</h5>
-              <p>{plugin.description}</p>
-            </a>
+    <section>
+      <div
+        class="h-64 justify-center lg:px-0 max-h-full md:px-12 overflow-hidden relativ -skew-y-[16deg] transform mb-24"
+      >
+        <div class="bg-white block lg:flex-1 lg:relative sm:contents">
+          <div class="bg-white absolute h-full inset-0 object-cover w-full">
+            <video
+              autoplay=""
+              class="bg-white absolute max-w-none min-h-full min-w-full w-auto z-10"
+              loop=""
+              muted=""
+              ><source src="/gradientB.mp4" type="video/mp4" />Your browser does
+              not support the video tag.</video
+            >
           </div>
         </div>
-      ))
-    }
-  </div>
-</MainLayout>
-
-<style>
-  .plugin-block {
-    padding: 50px 40px;
-    border-radius: 10px;
-    height: 100%;
-  }
-  .plugin-block a {
-    color: unset;
-    text-decoration: none;
-  }
-  .plugin-block i {
-    color: #3dc685;
-    text-decoration: none;
-  }
-  .plugin-block i {
-    width: 70px;
-    height: 70px;
-    text-align: center;
-    border-radius: 10px;
-    display: inline-block;
-  }
-</style>
+      </div>
+    </section>
+  </section>
+  <section id="contact">
+    <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 py-24 mb-12">
+      <div class="mx-auto text-center">
+        <h1
+          class="text-purple-900 font-semibold mt-6 text-4xl lg:text-6xl tracking-tight"
+        >
+          Under construction
+        </h1>
+        <div class="mx-auto max-w-xl lg:mt-8">
+          <p class="text-slate-500">
+            Get in touch with us to learn more about our services
+          </p>
+        </div>
+        <form
+          action="https://formspree.io/f/xdopwkwl"
+          method="POST"
+          class="mt-8 sm:flex max-w-xl mx-auto"
+          aria-label="Email Subscription Form"
+        >
+          <label for="email-address" class="sr-only">Email address</label>
+          <input
+            id="email-address"
+            name="email"
+            type="email"
+            autocomplete="email"
+            required
+            class="w-full focus:outline-none border focus:border-slate-200 py-3 appearance-none block border-transparent focus:bg-white bg-slate-50 px-3 rounded-xl text-purple-900"
+            placeholder="Enter your email"
+            aria-label="Enter your email address"
+          />
+          <div class="mt-3 rounded-md sm:mt-0 sm:ml-3 sm:flex-shrink-0">
+            <button
+              type="submit"
+              class="text-white items-center font-medium gap-3 inline-flex focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none justify-center px-6 lg:px-8 ring-2 ring-transparent focus:ring-offset-2 focus:ring-blue-500 duration-200 py-3.5 rounded-full active:bg-blue-800 active:text-white bg-blue-500 hover:bg-blue-600 w-auto"
+            >
+              Get in touch
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
