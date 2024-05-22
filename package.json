@@ -111,6 +111,7 @@
           "vendure-order-client",
           "webhook",
           "picklist",
+          "vendure-scripts",
           "public-customer-groups"
         ]
       ]
