@@ -3,6 +3,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPlugins } from '../api/plugins';
 
 const plugins = await getPlugins();
+
+// https://spaziobianco.lexingtonthemes.com/jobs/home/
 ---
 
 <BaseLayout>
@@ -17,78 +19,101 @@ const plugins = await getPlugins();
         <h2
           class="text-purple-900 font-semibold mt-6 text-4xl lg:text-7xl tracking-tight"
         >
-        Battle tested
-        Vendure plugins
+          Battle tested Vendure plugins
         </h2>
         <p class="text-slate-500 mt-5 lg:text-balance">
           Vendure plugins built by <a
             class="text-blue-600"
             href="https://pinelab.studio"
-            target="_blank"
-            >Pinelab</a
+            target="_blank">Pinelab</a
           >, used for solving real problems for our clients.
         </p>
       </div>
     </div>
+  </section>
 
-    <section>
-      <div
-        class="h-64 justify-center lg:px-0 max-h-full md:px-12 overflow-hidden relativ -skew-y-[16deg] transform mb-24"
-      >
-        <div class="bg-white block lg:flex-1 lg:relative sm:contents">
-          <div class="bg-white absolute h-full inset-0 object-cover w-full">
-            <video
-              autoplay=""
-              class="bg-white absolute max-w-none min-h-full min-w-full w-auto z-10"
-              loop=""
-              muted=""
-              ><source src="/gradientB.mp4" type="video/mp4" />Your browser does
-              not support the video tag.</video
-            >
-          </div>
+  <section>
+    <div
+      class="h-64 justify-center lg:px-0 max-h-full md:px-12 overflow-hidden relativ -skew-y-[16deg] transform mb-24"
+    >
+      <div class="bg-white block lg:flex-1 lg:relative sm:contents">
+        <div class="bg-white absolute h-full inset-0 object-cover w-full">
+          <video
+            autoplay=""
+            class="bg-white absolute max-w-none min-h-full min-w-full w-auto z-10"
+            loop=""
+            muted=""
+            ><source src="/gradientB.mp4" type="video/mp4" />Your browser does
+            not support the video tag.</video
+          >
         </div>
       </div>
-    </section>
+    </div>
   </section>
-  <section id="contact">
+
+  <section id="plugins">
     <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 py-24 mb-12">
-      <div class="mx-auto text-center">
-        <h1
-          class="text-purple-900 font-semibold mt-6 text-4xl lg:text-6xl tracking-tight"
-        >
-          Under construction
-        </h1>
-        <div class="mx-auto max-w-xl lg:mt-8">
-          <p class="text-slate-500">
-            Get in touch with us to learn more about our services
-          </p>
-        </div>
-        <form
-          action="https://formspree.io/f/xdopwkwl"
-          method="POST"
-          class="mt-8 sm:flex max-w-xl mx-auto"
-          aria-label="Email Subscription Form"
-        >
-          <label for="email-address" class="sr-only">Email address</label>
-          <input
-            id="email-address"
-            name="email"
-            type="email"
-            autocomplete="email"
-            required
-            class="w-full focus:outline-none border focus:border-slate-200 py-3 appearance-none block border-transparent focus:bg-white bg-slate-50 px-3 rounded-xl text-purple-900"
-            placeholder="Enter your email"
-            aria-label="Enter your email address"
-          />
-          <div class="mt-3 rounded-md sm:mt-0 sm:ml-3 sm:flex-shrink-0">
-            <button
-              type="submit"
-              class="text-white items-center font-medium gap-3 inline-flex focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none justify-center px-6 lg:px-8 ring-2 ring-transparent focus:ring-offset-2 focus:ring-blue-500 duration-200 py-3.5 rounded-full active:bg-blue-800 active:text-white bg-blue-500 hover:bg-blue-600 w-auto"
-            >
-              Get in touch
-            </button>
-          </div>
-        </form>
+      <div
+        class="gap-x-2 gap-y-14 lg:gap-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 mt-12"
+      >
+        {
+          plugins.map((plugin) => (
+            <div>
+              <div class="space-y-3">
+                <div class="lg:inline-flex lg:items-center lg:gap-3">
+                  <div class="flex items-center justify-center size-8 text-blue-500 rounded-full bg-slate-100">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke-width="1.5"
+                      stroke="currentColor"
+                      class="size-5"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"
+                      />
+                    </svg>
+                  </div>
+                  <a 
+                    aria-label={plugin.name}
+                    href={`/plugin/${plugin.slug}`}
+                    title={plugin.name}
+                    class="mt-5 font-semibold text-purple-900 lg:mt-0">
+                    {plugin.name}
+                  </a>
+                </div>
+                <p class="text-sm text-slate-500 mt-5">{plugin.description}</p>
+                <div class="mt-5">
+                  {' '}
+                  <a
+                    aria-label={plugin.name}
+                    href={`/plugin/${plugin.slug}`}
+                    title={plugin.name}
+                    class="text-blue-500 hover:text-blue-600 inline-flex items-center group"
+                  >
+                    Learn more
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      class="size-4 ml-3 group-hover:translate-x-2 transition duration-500 ease-in-out transform"
+                    >
+                      {' '}
+                      <path
+                        fill-rule="evenodd"
+                        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                        clip-rule="evenodd"
+                      />{' '}
+                    </svg>{' '}
+                  </a>{' '}
+                </div>
+              </div>
+            </div>
+          ))
+        }
       </div>
     </div>
   </section>
