@@ -5,9 +5,14 @@ import {
   GetTokenRespose,
   CreateShipmentResponse,
   EventPayload,
+  TrackingEventPayload,
 } from '../types';
 import {
+  Channel,
+  ChannelService,
+  EntityHydrator,
   EventBus,
+  FulfillmentState,
   Logger,
   Order,
   OrderPlacedEvent,
@@ -16,12 +21,14 @@ import {
   TransactionalConnection,
   UserInputError,
   isGraphQlErrorResult,
+  manualFulfillmentHandler,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
 import { ShipmateConfigService } from './shipmate-config.service';
 import { parseOrder } from './util';
 import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
+import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
 
 export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
 export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
@@ -35,7 +42,9 @@ export class ShipmateService implements OnModuleInit {
     private shipmateConfigService: ShipmateConfigService,
     private orderService: OrderService,
     private eventBus: EventBus,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
+    private entityHydrator: EntityHydrator,
+    private channelService: ChannelService
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -54,6 +63,10 @@ export class ShipmateService implements OnModuleInit {
   async setupRequestHeaders(ctx: RequestContext) {
     const shipmateConfig = await this.shipmateConfigService.getConfig(ctx);
     if (!shipmateConfig) {
+      Logger.error(
+        `Shipmate credentials not configured for channel ${ctx.channel.code}`,
+        loggerCtx
+      );
       return;
     }
     let shipmateTokenForTheCurrentChannel = this.tokens.get(
@@ -117,49 +130,113 @@ export class ShipmateService implements OnModuleInit {
     }
   }
 
-  async updateOrderState(
-    ctx: RequestContext,
-    payload: EventPayload
-  ): Promise<HttpStatus> {
-    const orderRepo = this.connection.getRepository(ctx, Order);
-    //Using TransactionalConnection may be an anitpattern, but not using OrderService.findOneByCode saves us the extra join queries that it does in the background
-    const shipmentOrder = await orderRepo.findOne({
-      where: { code: payload.order_reference },
-      select: ['id'],
-    });
-    if (!shipmentOrder) {
+  async updateOrderState(payload: EventPayload): Promise<HttpStatus> {
+    const ctx = await this.createCtx(payload.auth_token);
+    if (!ctx) {
       Logger.error(
-        `No Order with order reference ${payload.order_reference}`,
+        `No registered ShipmentConfigEntity with this auth_token`,
         loggerCtx
       );
       return HttpStatus.BAD_REQUEST;
     }
+    const shipmentOrder = await this.orderService.findOne(
+      ctx,
+      payload.order_reference
+    );
+    if (!shipmentOrder) {
+      Logger.error(`No Order with code ${payload.order_reference}`, loggerCtx);
+      return HttpStatus.BAD_REQUEST;
+    }
+    Logger.info(
+      `${payload.event} event received for Order with code ${payload.order_reference}`,
+      loggerCtx
+    );
     if (payload.event === 'TRACKING_COLLECTED') {
-      const result = await this.orderService.transitionToState(
-        ctx,
-        shipmentOrder.id,
-        'Shipped'
-      );
-      if (isGraphQlErrorResult(result)) {
-        Logger.error(result.transitionError, loggerCtx);
-        return HttpStatus.INTERNAL_SERVER_ERROR;
-      }
+      await this.updateFulFillment(ctx, shipmentOrder, payload, 'Shipped');
     } else if (payload.event === 'TRACKING_DELIVERED') {
-      const result = await this.orderService.transitionToState(
-        ctx,
-        shipmentOrder.id,
-        'Delivered'
-      );
-      if (isGraphQlErrorResult(result)) {
-        Logger.error(result.transitionError, loggerCtx);
-        return HttpStatus.INTERNAL_SERVER_ERROR;
-      }
+      await this.updateFulFillment(ctx, shipmentOrder, payload, 'Delivered');
     } else {
       Logger.info(
-        `${payload.event} event received for Order with code ${payload.order_reference}`,
+        `No configured handler for event "${payload.event}"`,
         loggerCtx
       );
     }
     return HttpStatus.OK;
+  }
+
+  async updateFulFillment(
+    ctx: RequestContext,
+    order: Order,
+    payload: EventPayload,
+    state: FulfillmentState
+  ) {
+    await this.entityHydrator.hydrate(ctx, order, {
+      relations: ['fulfillments'],
+    });
+    if (!order.fulfillments.length) {
+      const fulfillmentInputs = this.createFulfillOrderInput(order, payload);
+      await this.orderService.createFulfillment(ctx, fulfillmentInputs);
+      await this.entityHydrator.hydrate(ctx, order, {
+        relations: ['fulfillments'],
+      });
+    }
+    for (const fulfillment of order.fulfillments) {
+      const transitionResult =
+        await this.orderService.transitionFulfillmentToState(
+          ctx,
+          fulfillment.id,
+          state
+        );
+      if (isGraphQlErrorResult(transitionResult)) {
+        console.log(transitionResult);
+        throw transitionResult.transitionError;
+      }
+    }
+  }
+
+  createFulfillOrderInput(
+    order: Order,
+    payload: EventPayload
+  ): FulfillOrderInput {
+    return {
+      handler: {
+        arguments: [
+          { name: 'method', value: manualFulfillmentHandler.code },
+          {
+            name: 'trackingCode',
+            value: (payload as TrackingEventPayload).tracking_number,
+          },
+        ],
+        code: manualFulfillmentHandler.code,
+      },
+      lines: order.lines.map((line) => {
+        return {
+          orderLineId: line.id,
+          quantity: line.quantity,
+        };
+      }),
+    };
+  }
+
+  private async createCtx(
+    channelToken: string
+  ): Promise<RequestContext | undefined> {
+    const config =
+      await this.shipmateConfigService.getConfigWithWebhookAuthToken(
+        channelToken
+      );
+    if (!config) {
+      Logger.info(`No channel with this webhooks auth token`, loggerCtx);
+      return;
+    }
+    const channel = (await this.connection
+      .getRepository(Channel)
+      .findOne({ where: { id: config.channelId } })) as Channel;
+    return new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel,
+    });
   }
 }

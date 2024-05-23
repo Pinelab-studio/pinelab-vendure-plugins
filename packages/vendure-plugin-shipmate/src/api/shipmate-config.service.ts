@@ -11,11 +11,20 @@ export class ShipmateConfigService {
       .findOne({ where: { channelId: ctx.channelId as string } });
   }
 
+  async getConfigWithWebhookAuthToken(
+    webhookAuthToken: string
+  ): Promise<ShipmateConfigEntity | null> {
+    return this.connection
+      .getRepository(ShipmateConfigEntity)
+      .findOne({ where: { webhookAuthTokens: webhookAuthToken } });
+  }
+
   async upsertConfig(
     ctx: RequestContext,
     apiKey?: string,
     username?: string,
-    password?: string
+    password?: string,
+    webhookAuthTokens?: string[]
   ): Promise<ShipmateConfigEntity | null> {
     const existing = await this.connection
       .getRepository(ctx, ShipmateConfigEntity)
@@ -24,6 +33,7 @@ export class ShipmateConfigService {
       (!apiKey || apiKey === '') &&
       (!username || username === '') &&
       (!password || password === '') &&
+      !webhookAuthTokens?.length &&
       existing
     ) {
       await this.connection
@@ -34,14 +44,13 @@ export class ShipmateConfigService {
         .getRepository(ctx, ShipmateConfigEntity)
         .update(existing.id, { apiKey: apiKey, username, password });
     } else {
-      await this.connection
-        .getRepository(ctx, ShipmateConfigEntity)
-        .insert({
-          apiKey,
-          channelId: ctx.channelId as string,
-          username,
-          password,
-        });
+      await this.connection.getRepository(ctx, ShipmateConfigEntity).insert({
+        apiKey,
+        channelId: ctx.channelId as string,
+        username,
+        password,
+        webhookAuthTokens,
+      });
     }
     return this.connection
       .getRepository(ctx, ShipmateConfigEntity)

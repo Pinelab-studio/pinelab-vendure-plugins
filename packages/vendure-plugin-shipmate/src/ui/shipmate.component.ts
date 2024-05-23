@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder, FormGroup, FormArray, FormControl } from '@angular/forms';
 import {
   DataService,
   NotificationService,
@@ -26,6 +26,67 @@ import { firstValueFrom } from 'rxjs';
                 formControlName="password"
               ></vdr-password-form-input>
             </vdr-form-field>
+            <vdr-form-field label="Webhook auth tokens" for="webhookAuthToken">
+              <table class="facet-values-list table">
+                <thead>
+                  <tr>
+                    <th>Token</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody formArrayName="webhookAuthTokens">
+                  <ng-container
+                    *ngFor="
+                      let item of form.get('webhookAuthTokens')?.controls;
+                      let i = index
+                    "
+                  >
+                    <tr class="facet-value">
+                      <td>
+                        <vdr-password-form-input
+                          [formControlName]="i"
+                        ></vdr-password-form-input>
+                      </td>
+                      <td class="align-middle">
+                        <vdr-dropdown>
+                          <button
+                            type="button"
+                            class="icon-button"
+                            vdrDropdownTrigger
+                          >
+                            <clr-icon shape="ellipsis-vertical"></clr-icon>
+                          </button>
+                          <vdr-dropdown-menu vdrPosition="bottom-right">
+                            <button
+                              type="button"
+                              class="delete-button"
+                              (click)="deleteAuthToken(i)"
+                              vdrDropdownItem
+                            >
+                              <clr-icon
+                                shape="trash"
+                                class="is-danger"
+                              ></clr-icon>
+                              {{ 'common.delete' | translate }}
+                            </button>
+                          </vdr-dropdown-menu>
+                        </vdr-dropdown>
+                      </td>
+                    </tr>
+                  </ng-container>
+                </tbody>
+                <div>
+                  <button
+                    type="button"
+                    class="button m-3"
+                    (click)="addAuthToken()"
+                  >
+                    <clr-icon shape="add"></clr-icon>
+                    Add Token
+                  </button>
+                </div>
+              </table>
+            </vdr-form-field>
             <button
               class="btn btn-primary"
               (click)="save()"
@@ -43,7 +104,6 @@ import { firstValueFrom } from 'rxjs';
 })
 export class ShipmateComponent implements OnInit {
   form: FormGroup;
-
   constructor(
     private formBuilder: FormBuilder,
     protected dataService: DataService,
@@ -54,6 +114,7 @@ export class ShipmateComponent implements OnInit {
       apiKey: ['your-api-key'],
       username: [''],
       password: [''],
+      webhookAuthTokens: new FormArray([]),
     });
   }
 
@@ -62,11 +123,41 @@ export class ShipmateComponent implements OnInit {
       .query(getShipmateConfig)
       .mapStream((d: any) => d.shipmateConfig)
       .subscribe((config) => {
-        console.log(config, '++++++++');
         this.form.controls['apiKey'].setValue(config.apiKey);
         this.form.controls['username'].setValue(config.username);
         this.form.controls['password'].setValue(config.password);
+        for (let authTokenIndex in config.webhookAuthTokens ?? []) {
+          const authToken = config.webhookAuthTokens[authTokenIndex];
+          (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+            parseInt(authTokenIndex),
+            new FormControl([authToken])
+          );
+        }
+        if (!config.webhookAuthTokens?.length) {
+          (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+            0,
+            new FormControl([''])
+          );
+        }
       });
+  }
+
+  addAuthToken() {
+    const webhookAuthTokensFormArray = this.form.controls[
+      'webhookAuthTokens'
+    ] as FormArray;
+    webhookAuthTokensFormArray.setControl(
+      webhookAuthTokensFormArray.length,
+      new FormControl([''])
+    );
+    this.changeDetector.markForCheck();
+  }
+
+  deleteAuthToken(index: number) {
+    const webhookAuthTokensFormArray = this.form.controls[
+      'webhookAuthTokens'
+    ] as FormArray;
+    webhookAuthTokensFormArray.removeAt(index);
   }
 
   async save(): Promise<void> {
@@ -79,6 +170,7 @@ export class ShipmateComponent implements OnInit {
               apiKey: formValue.apiKey,
               username: formValue.username,
               password: formValue.password,
+              webhookAuthTokens: formValue.webhookAuthTokens,
             },
           })
         );

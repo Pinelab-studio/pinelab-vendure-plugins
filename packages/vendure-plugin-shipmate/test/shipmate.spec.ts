@@ -68,7 +68,8 @@ describe('Picklists plugin', function () {
         ctx,
         'SHIPMATE_API_KEY',
         'SHIPMATE_USERNAME',
-        'SHIPMATE_PASSWORD'
+        'SHIPMATE_PASSWORD',
+        ['SHIPMATE_WEBHOOK_AUTH_TOKEN']
       );
     nock(nockBaseUrl)
       .post('/tokens', (reqBody) => {

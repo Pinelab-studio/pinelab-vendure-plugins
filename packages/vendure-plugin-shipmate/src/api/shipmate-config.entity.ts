@@ -13,6 +13,9 @@ export class ShipmateConfigEntity extends VendureEntity {
   @Column()
   apiKey!: string;
 
+  @Column('simple-json')
+  webhookAuthTokens!: string[];
+
   @Column()
   username!: string;
 

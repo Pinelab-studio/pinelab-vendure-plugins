@@ -78,6 +78,7 @@ import { ShipmateConfigService } from '../src/api/shipmate-config.service';
       ctx,
       process.env.SHIPMATE_API_KEY!,
       process.env.SHIPMATE_USERNAME!,
-      process.env.SHIPMATE_PASSWORD!
+      process.env.SHIPMATE_PASSWORD!,
+      [process.env.SHIPMATE_WEBHOOK_AUTH_TOKEN as string]
     );
 })();

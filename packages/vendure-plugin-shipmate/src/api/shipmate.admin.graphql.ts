@@ -19,11 +19,13 @@ export const adminSchema = gql`
     apiKey: String
     username: String
     password: String
+    webhookAuthTokens: [String!]
   }
   type ShipmateConfig {
     apiKey: String
     username: String
     password: String
+    webhookAuthTokens: [String!]
   }
   extend type Mutation {
     updateShipmateConfig(input: ShipmateConfigInput!): ShipmateConfig
@@ -50,13 +52,19 @@ export class ShipmateAdminResolver {
   async updateShipmateConfig(
     @Ctx() ctx: RequestContext,
     @Args('input')
-    input: { apiKey?: string; username?: string; password?: string }
+    input: {
+      apiKey?: string;
+      username?: string;
+      password?: string;
+      webhookAuthTokens?: string[];
+    }
   ): Promise<ShipmateConfigEntity | null> {
     return this.service.upsertConfig(
       ctx,
       input.apiKey,
       input.username,
-      input.password
+      input.password,
+      input.webhookAuthTokens
     );
   }
 }

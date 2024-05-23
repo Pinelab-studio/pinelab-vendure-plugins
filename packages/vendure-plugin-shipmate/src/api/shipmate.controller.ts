@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { EventPayload } from '../types';
 import { Ctx, RequestContext } from '@vendure/core';
 import { ShipmateService } from './shipmate.service';
@@ -7,7 +7,7 @@ import { ShipmateService } from './shipmate.service';
 export class ShipmateController {
   constructor(private shipmentService: ShipmateService) {}
   @Post()
-  event(@Ctx() ctx: RequestContext, @Body() payload: EventPayload) {
-    return this.shipmentService.updateOrderState(ctx, payload);
+  event(@Body() payload: EventPayload) {
+    return this.shipmentService.updateOrderState(payload);
   }
 }
