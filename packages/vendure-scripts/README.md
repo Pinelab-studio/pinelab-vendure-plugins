@@ -28,7 +28,7 @@ import('../src/vendure-config').then(async ({ config }) => {
   const ctx = await getSuperadminContext(app);
 
   console.log(
-    `[${process.env.APP_ENV}] Assigning all products from ${sourceChannel.code} to ${targetChannel.code}`
+    `Assigning all products from ${sourceChannel.code} to ${targetChannel.code}`
   );
 
   await assignAllProductsToChannel(
