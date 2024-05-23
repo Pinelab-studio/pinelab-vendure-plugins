@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-scripts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Scripts that can be used with Vendure projects",
   "icon": "script",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",

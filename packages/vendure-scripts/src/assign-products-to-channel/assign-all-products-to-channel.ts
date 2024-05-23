@@ -7,6 +7,7 @@ import {
 } from '@vendure/core';
 import { assignTheseProductsToChannel } from './assign-these-products-to-channel';
 import { getProductsDeep } from './get-products-deep';
+import { IsNull } from 'typeorm';
 
 export async function assignAllProductsToChannel(
   sourceChannelId: ID,
@@ -26,6 +27,7 @@ export async function assignAllProductsToChannel(
       injector,
       {
         channels: { id: sourceChannelId },
+        deletedAt: IsNull(),
       },
       batch,
       totalCount

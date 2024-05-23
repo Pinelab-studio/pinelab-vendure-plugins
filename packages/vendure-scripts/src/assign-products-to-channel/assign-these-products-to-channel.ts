@@ -9,7 +9,7 @@ import {
   RequestContext,
   SearchService,
 } from '@vendure/core';
-import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
+import { getSuperadminContextInChannel } from '../../../util/src/superadmin-request-context';
 
 /**
  * This function should be used with batches of Products
