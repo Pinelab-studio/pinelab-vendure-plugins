@@ -310,22 +310,6 @@ export interface AcceptBlueRecurringScheduleTransaction {
   };
 }
 
-/** ++++++ Refunds ++++++ */
-
-export interface AcceptBlueRefundInput {
-  reference_number: number;
-  terminal_id?: string;
-  /*
-   * Ommitting the refund amount refunds the entire transaction
-   */
-  amount?: number;
-  cvv2?: string;
-  customer?: ChargeCustomer;
-  transaction_details?: TransactionDetails;
-  transaction_flags?: TransactionFlags;
-  custom_fields?: CustomFields;
-}
-
 /** +++++ Events / webhooks +++++ */
 
 export interface CardTransaction {
@@ -351,7 +335,7 @@ export interface AcceptBlueTransaction {
   error_message: string;
   error_code: string;
   error_details: string | any;
-  reference_number: number | null;
+  reference_number: number;
 }
 
 export interface AcceptBlueChargeTransaction extends AcceptBlueTransaction {

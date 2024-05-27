@@ -11,6 +11,7 @@ import {
   AcceptBlueRecurringScheduleTransaction,
   CheckPaymentMethodInput,
   NoncePaymentMethodInput,
+  AcceptBlueTransaction,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
@@ -203,6 +204,46 @@ export class AcceptBlueClient {
       `Created charge of '${amount}' with id '${result.transaction.id}'`,
       loggerCtx
     );
+    return result;
+  }
+
+  /**
+   * Refund a transaction
+   * @param transactionId The transaction ID to refund
+   * @param amountToRefundInCents Optionally provide an amount to refund
+   * @param cvv2 Optionally provide the CVV/CVC code to prevent fraud detection
+   * @returns
+   */
+  async refund(
+    transactionId: number,
+    amountToRefundInCents?: number,
+    cvv2?: string
+  ): Promise<AcceptBlueTransaction> {
+    const options: any = {};
+    if (amountToRefundInCents) {
+      options.amount = amountToRefundInCents / 100;
+    }
+    if (cvv2) {
+      options.cvv2 = cvv2;
+    }
+    const result = (await this.request('post', `transactions/refund`, {
+      reference_number: transactionId,
+      ...options,
+    })) as AcceptBlueTransaction;
+    if (
+      result.status === 'Approved' ||
+      result.status === 'Partially Approved'
+    ) {
+      Logger.info(
+        `Refunded transaction ${transactionId}. Status: ${result.status}`,
+        loggerCtx
+      );
+    } else {
+      Logger.info(
+        `Failed to refund transaction ${transactionId}: [${result.error_code}] ${result.error_message}. Status: ${result.status}`,
+        loggerCtx
+      );
+    }
     return result;
   }
 
