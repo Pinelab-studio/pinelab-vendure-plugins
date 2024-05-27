@@ -43,8 +43,7 @@ export class ShipmateService implements OnModuleInit {
     private orderService: OrderService,
     private eventBus: EventBus,
     private connection: TransactionalConnection,
-    private entityHydrator: EntityHydrator,
-    private channelService: ChannelService
+    private entityHydrator: EntityHydrator
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -139,7 +138,8 @@ export class ShipmateService implements OnModuleInit {
       );
       return HttpStatus.BAD_REQUEST;
     }
-    const shipmentOrder = await this.orderService.findOne(
+    await this.connection.startTransaction(ctx);
+    const shipmentOrder = await this.orderService.findOneByCode(
       ctx,
       payload.order_reference
     );
@@ -161,6 +161,7 @@ export class ShipmateService implements OnModuleInit {
         loggerCtx
       );
     }
+    await this.connection.commitOpenTransaction(ctx);
     return HttpStatus.OK;
   }
 
@@ -175,7 +176,30 @@ export class ShipmateService implements OnModuleInit {
     });
     if (!order.fulfillments.length) {
       const fulfillmentInputs = this.createFulfillOrderInput(order, payload);
-      await this.orderService.createFulfillment(ctx, fulfillmentInputs);
+      const createFulfillmentResult = await this.orderService.createFulfillment(
+        ctx,
+        fulfillmentInputs
+      );
+      if (isGraphQlErrorResult(createFulfillmentResult)) {
+        Logger.info(
+          `Unable to create Fulfillment for order ${order.code}: ${createFulfillmentResult.message}`,
+          loggerCtx
+        );
+        throw createFulfillmentResult.message;
+      }
+      const transitionResult =
+        await this.orderService.transitionFulfillmentToState(
+          ctx,
+          createFulfillmentResult.id,
+          state
+        );
+      if (isGraphQlErrorResult(transitionResult)) {
+        Logger.info(
+          `Unable to transition Fulfillment ${createFulfillmentResult.id} to ${state}: ${transitionResult.transitionError}`,
+          loggerCtx
+        );
+        throw transitionResult.transitionError;
+      }
       await this.entityHydrator.hydrate(ctx, order, {
         relations: ['fulfillments'],
       });
@@ -188,7 +212,10 @@ export class ShipmateService implements OnModuleInit {
           state
         );
       if (isGraphQlErrorResult(transitionResult)) {
-        console.log(transitionResult);
+        Logger.info(
+          `Unable to transition Fulfillment ${fulfillment.id} to ${state}: ${transitionResult.transitionError}`,
+          loggerCtx
+        );
         throw transitionResult.transitionError;
       }
     }
@@ -219,19 +246,20 @@ export class ShipmateService implements OnModuleInit {
   }
 
   private async createCtx(
-    channelToken: string
+    authToken: string
   ): Promise<RequestContext | undefined> {
     const config =
-      await this.shipmateConfigService.getConfigWithWebhookAuthToken(
-        channelToken
-      );
+      await this.shipmateConfigService.getConfigWithWebhookAuthToken(authToken);
     if (!config) {
       Logger.info(`No channel with this webhooks auth token`, loggerCtx);
       return;
     }
     const channel = (await this.connection
       .getRepository(Channel)
-      .findOne({ where: { id: config.channelId } })) as Channel;
+      .findOne({
+        where: { id: config.channelId },
+        relations: ['defaultTaxZone', 'defaultShippingZone'],
+      })) as Channel;
     return new RequestContext({
       apiType: 'admin',
       isAuthorized: true,

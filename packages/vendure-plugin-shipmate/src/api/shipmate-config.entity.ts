@@ -13,7 +13,7 @@ export class ShipmateConfigEntity extends VendureEntity {
   @Column()
   apiKey!: string;
 
-  @Column('simple-json')
+  @Column('simple-array')
   webhookAuthTokens!: string[];
 
   @Column()

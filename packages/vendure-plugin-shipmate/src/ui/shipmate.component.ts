@@ -13,7 +13,7 @@ import { firstValueFrom } from 'rxjs';
   template: `
     <div class="clr-row">
       <div class="clr-col">
-        <form class="form" [formGroup]="form">
+        <form class="form" [formGroup]="form" *ngIf="dataHasLoaded">
           <section class="form-block">
             <vdr-form-field label="Shipmate apikey" for="apiKey">
               <input id="apiKey" type="text" formControlName="apiKey" />
@@ -22,9 +22,7 @@ import { firstValueFrom } from 'rxjs';
               <input id="username" type="text" formControlName="username" />
             </vdr-form-field>
             <vdr-form-field label="Shipmate password" for="password">
-              <vdr-password-form-input
-                formControlName="password"
-              ></vdr-password-form-input>
+              <input type="password" [formControl]="form.get('password')" />
             </vdr-form-field>
             <vdr-form-field label="Webhook auth tokens" for="webhookAuthToken">
               <table class="facet-values-list table">
@@ -43,9 +41,7 @@ import { firstValueFrom } from 'rxjs';
                   >
                     <tr class="facet-value">
                       <td>
-                        <vdr-password-form-input
-                          [formControlName]="i"
-                        ></vdr-password-form-input>
+                        <input type="password" [formControlName]="i" />
                       </td>
                       <td class="align-middle">
                         <vdr-dropdown>
@@ -87,13 +83,7 @@ import { firstValueFrom } from 'rxjs';
                 </div>
               </table>
             </vdr-form-field>
-            <button
-              class="btn btn-primary"
-              (click)="save()"
-              [disabled]="form.invalid || form.pristine"
-            >
-              Save
-            </button>
+            <button class="btn btn-primary" (click)="save()">Save</button>
           </section>
         </form>
       </div>
@@ -103,7 +93,9 @@ import { firstValueFrom } from 'rxjs';
   imports: [SharedModule],
 })
 export class ShipmateComponent implements OnInit {
+  // [disabled]="form.invalid || form.pristine"
   form: FormGroup;
+  dataHasLoaded: boolean = false;
   constructor(
     private formBuilder: FormBuilder,
     protected dataService: DataService,
@@ -130,15 +122,17 @@ export class ShipmateComponent implements OnInit {
           const authToken = config.webhookAuthTokens[authTokenIndex];
           (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
             parseInt(authTokenIndex),
-            new FormControl([authToken])
+            new FormControl(authToken)
           );
         }
         if (!config.webhookAuthTokens?.length) {
           (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
             0,
-            new FormControl([''])
+            new FormControl('')
           );
         }
+        this.dataHasLoaded = true;
+        this.changeDetector.markForCheck();
       });
   }
 
@@ -148,7 +142,7 @@ export class ShipmateComponent implements OnInit {
     ] as FormArray;
     webhookAuthTokensFormArray.setControl(
       webhookAuthTokensFormArray.length,
-      new FormControl([''])
+      new FormControl('')
     );
     this.changeDetector.markForCheck();
   }
@@ -162,19 +156,17 @@ export class ShipmateComponent implements OnInit {
 
   async save(): Promise<void> {
     try {
-      if (this.form.dirty) {
-        const formValue = this.form.value;
-        await firstValueFrom(
-          this.dataService.mutate(updateShipmateConfig, {
-            input: {
-              apiKey: formValue.apiKey,
-              username: formValue.username,
-              password: formValue.password,
-              webhookAuthTokens: formValue.webhookAuthTokens,
-            },
-          })
-        );
-      }
+      const formValue = this.form.value;
+      await firstValueFrom(
+        this.dataService.mutate(updateShipmateConfig, {
+          input: {
+            apiKey: formValue.apiKey,
+            username: formValue.username,
+            password: formValue.password,
+            webhookAuthTokens: formValue.webhookAuthTokens,
+          },
+        })
+      );
       this.form.markAsPristine();
       this.changeDetector.markForCheck();
       this.notificationService.success('common.notify-update-success', {

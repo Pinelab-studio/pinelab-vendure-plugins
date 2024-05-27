@@ -16,7 +16,11 @@ export class ShipmateConfigService {
   ): Promise<ShipmateConfigEntity | null> {
     return this.connection
       .getRepository(ShipmateConfigEntity)
-      .findOne({ where: { webhookAuthTokens: webhookAuthToken } });
+      .createQueryBuilder('config')
+      .where('FIND_IN_SET(:webhookAuthToken, config.webhookAuthTokens)', {
+        webhookAuthToken,
+      })
+      .getOne();
   }
 
   async upsertConfig(
@@ -42,7 +46,7 @@ export class ShipmateConfigService {
     } else if (existing) {
       await this.connection
         .getRepository(ctx, ShipmateConfigEntity)
-        .update(existing.id, { apiKey: apiKey, username, password });
+        .update(existing.id, { apiKey, username, password, webhookAuthTokens });
     } else {
       await this.connection.getRepository(ctx, ShipmateConfigEntity).insert({
         apiKey,

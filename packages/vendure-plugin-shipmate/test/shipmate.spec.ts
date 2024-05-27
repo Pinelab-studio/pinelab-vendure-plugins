@@ -1,4 +1,5 @@
 import {
+  AutoIncrementIdStrategy,
   DefaultLogger,
   LogLevel,
   OrderService,
@@ -23,6 +24,13 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { ShipmateConfigService } from '../src/api/shipmate-config.service';
+import axios from 'axios';
+import { TrackingEventPayload } from '../src/types';
+import { authToken, testShipmateConfig } from './test-helpers';
+
+vi.mock('@vendure/core/dist/common/generate-public-id', () => ({
+  generatePublicId: vi.fn().mockImplementation(() => 'FBJYSHC7WTRQEA14'),
+}));
 
 vi.mock('@vendure/core/dist/common/generate-public-id', () => ({
   generatePublicId: vi.fn().mockImplementation(() => 'FBJYSHC7WTRQEA14'),
@@ -32,11 +40,15 @@ describe('Picklists plugin', function () {
   let server: TestServer;
   let shopClient: SimpleGraphQLClient;
   let ctx: RequestContext;
+  const port = 3105;
   const nockBaseUrl = 'https://api-staging.shipmate.co.uk/v1.2';
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
+      apiOptions: {
+        port,
+      },
       plugins: [
         VendureShipmatePlugin.init({
           shipmateApiUrl: nockBaseUrl,
@@ -69,7 +81,7 @@ describe('Picklists plugin', function () {
         'SHIPMATE_API_KEY',
         'SHIPMATE_USERNAME',
         'SHIPMATE_PASSWORD',
-        ['SHIPMATE_WEBHOOK_AUTH_TOKEN']
+        [authToken]
       );
     nock(nockBaseUrl)
       .post('/tokens', (reqBody) => {
@@ -82,13 +94,19 @@ describe('Picklists plugin', function () {
         },
       })
       .persist();
+    const shipmateConfigService = server.app.get(ShipmateConfigService);
+    //this was needed because FIND_IN_SET doesn't exist in an sqljs database
+    vi.spyOn(
+      shipmateConfigService,
+      'getConfigWithWebhookAuthToken'
+    ).mockResolvedValue(testShipmateConfig);
   }, 60000);
 
   it('Should start successfully', () => {
     expect(server.app.getHttpServer()).toBeDefined();
   });
 
-  it('Should create a shipment when an Order is placed', async () => {
+  it('Should create a Shipment when an Order is placed', async () => {
     nock(nockBaseUrl)
       .post('/shipments', (reqBody) => {
         return true;
@@ -102,6 +120,38 @@ describe('Picklists plugin', function () {
     expect(detailedOrder?.customFields?.shipmateReference).toBe(
       newShipment.shipment_reference
     );
+  });
+
+  it('Should mark Order as Shipped when receiving "TRACKING_COLLECTED" event', async () => {
+    const result = await axios.post(`http://localhost:${port}/shipmate`, <
+      TrackingEventPayload
+    >{
+      auth_token: authToken,
+      event: 'TRACKING_COLLECTED',
+      shipment_reference: newShipment.shipment_reference,
+    });
+    expect(result.status).toBe(201);
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    const orderService = server.app.get(OrderService);
+    const detailedOrder = await orderService.findOne(ctx, 1, ['fulfillments']);
+    expect(detailedOrder?.state).toBe('Shipped');
+    expect(detailedOrder?.fulfillments?.length).toBeGreaterThan(0);
+  });
+
+  it('Should mark Order as Delivered when receiving "TRACKING_DELIVERED" event', async () => {
+    const result = await axios.post(`http://localhost:${port}/shipmate`, <
+      TrackingEventPayload
+    >{
+      auth_token: authToken,
+      event: 'TRACKING_DELIVERED',
+      shipment_reference: newShipment.shipment_reference,
+    });
+    expect(result.status).toBe(201);
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+    const orderService = server.app.get(OrderService);
+    const detailedOrder = await orderService.findOne(ctx, 1, ['fulfillments']);
+    expect(detailedOrder?.state).toBe('Delivered');
+    expect(detailedOrder?.fulfillments?.length).toBeGreaterThan(0);
   });
 
   afterAll(() => {

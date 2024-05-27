@@ -1,6 +1,5 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { EventPayload } from '../types';
-import { Ctx, RequestContext } from '@vendure/core';
 import { ShipmateService } from './shipmate.service';
 
 @Controller('shipmate')
