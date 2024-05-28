@@ -48,12 +48,10 @@ export class ShipmateService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.httpService.axiosRef.defaults.headers.common[
-      'Accept'
-    ] = `application/json`;
-    this.httpService.axiosRef.defaults.headers.common[
-      'Content-Type'
-    ] = `application/json`;
+    this.httpService.axiosRef.defaults.headers.common['Accept'] =
+      'application/json';
+    this.httpService.axiosRef.defaults.headers.common['Content-Type'] =
+      'application/json';
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       await this.setupRequestHeaders(ctx);
       await this.createShipment(ctx, order);

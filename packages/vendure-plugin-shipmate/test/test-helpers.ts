@@ -1,5 +1,4 @@
-import { ShipmateConfigEntity } from '../src/api/shipmate-config.entity';
-
+import type { ShipmateConfigEntity } from '../src/api/shipmate-config.entity';
 export const authToken = 'SHIPMATE_WEBHOOK_AUTH_TOKEN';
 
 export const newShipment = {

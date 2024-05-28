@@ -1,6 +1,6 @@
-import { Order, Customer, OrderLine } from '@vendure/core';
-import { Shipment, ShipmateAddress, Parcels, Items } from '../types';
-import { OrderAddress } from '@vendure/common/lib/generated-types';
+import type { Order, Customer, OrderLine } from '@vendure/core';
+import type { Shipment, ShipmateAddress, Parcels, Items } from '../types';
+import type { OrderAddress } from '@vendure/common/lib/generated-types';
 
 export function parseOrder(order: Order, shipmateReference: string): Shipment {
   return {

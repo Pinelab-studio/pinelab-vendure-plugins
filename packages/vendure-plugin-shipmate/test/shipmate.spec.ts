@@ -1,10 +1,9 @@
 import {
-  AutoIncrementIdStrategy,
+  mergeConfig,
   DefaultLogger,
   LogLevel,
   OrderService,
   RequestContext,
-  mergeConfig,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -32,7 +31,7 @@ vi.mock('@vendure/core/dist/common/generate-public-id', () => ({
   generatePublicId: vi.fn().mockImplementation(() => 'FBJYSHC7WTRQEA14'),
 }));
 
-describe('Picklists plugin', function () {
+describe('Shipmate plugin', async () => {
   let server: TestServer;
   let shopClient: SimpleGraphQLClient;
   let ctx: RequestContext;
