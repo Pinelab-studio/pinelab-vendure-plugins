@@ -1,12 +1,13 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, Res } from '@nestjs/common';
 import { EventPayload } from '../types';
 import { ShipmateService } from './shipmate.service';
+import { Response } from 'express';
 
 @Controller('shipmate')
 export class ShipmateController {
   constructor(private shipmentService: ShipmateService) {}
   @Post()
-  event(@Body() payload: EventPayload) {
-    return this.shipmentService.updateOrderState(payload);
+  async event(@Res() res: Response, @Body() payload: EventPayload) {
+    await this.shipmentService.updateOrderState(payload, res);
   }
 }

@@ -29,6 +29,7 @@ import { ShipmateConfigService } from './shipmate-config.service';
 import { parseOrder } from './util';
 import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
+import { Response } from 'express';
 
 export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
 export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
@@ -129,14 +130,13 @@ export class ShipmateService implements OnModuleInit {
     }
   }
 
-  async updateOrderState(payload: EventPayload): Promise<HttpStatus> {
+  async updateOrderState(payload: EventPayload, res: Response): Promise<void> {
     const ctx = await this.createCtx(payload.auth_token);
     if (!ctx) {
-      Logger.error(
-        `No registered ShipmentConfigEntity with this auth_token`,
-        loggerCtx
-      );
-      return HttpStatus.BAD_REQUEST;
+      const message = `No registered ShipmentConfigEntity with this auth_token`;
+      Logger.error(message, loggerCtx);
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
+      return;
     }
     await this.connection.startTransaction(ctx);
     const shipmentOrder = await this.orderService.findOneByCode(
@@ -144,8 +144,10 @@ export class ShipmateService implements OnModuleInit {
       payload.order_reference
     );
     if (!shipmentOrder) {
-      Logger.error(`No Order with code ${payload.order_reference}`, loggerCtx);
-      return HttpStatus.BAD_REQUEST;
+      const message = `No Order with code ${payload.order_reference}`;
+      Logger.error(message, loggerCtx);
+      res.status(HttpStatus.BAD_REQUEST).json({ message });
+      return;
     }
     Logger.info(
       `${payload.event} event received for Order with code ${payload.order_reference}`,
@@ -153,8 +155,14 @@ export class ShipmateService implements OnModuleInit {
     );
     if (payload.event === 'TRACKING_COLLECTED') {
       await this.updateFulFillment(ctx, shipmentOrder, payload, 'Shipped');
+      res
+        .status(HttpStatus.CREATED)
+        .json({ message: `Order state updated to Shipped successfully` });
     } else if (payload.event === 'TRACKING_DELIVERED') {
       await this.updateFulFillment(ctx, shipmentOrder, payload, 'Delivered');
+      res
+        .status(HttpStatus.CREATED)
+        .json({ message: `Order state updated to Delivered successfully` });
     } else {
       Logger.info(
         `No configured handler for event "${payload.event}"`,
@@ -162,7 +170,7 @@ export class ShipmateService implements OnModuleInit {
       );
     }
     await this.connection.commitOpenTransaction(ctx);
-    return HttpStatus.OK;
+    return;
   }
 
   async updateFulFillment(
@@ -254,12 +262,10 @@ export class ShipmateService implements OnModuleInit {
       Logger.info(`No channel with this webhooks auth token`, loggerCtx);
       return;
     }
-    const channel = (await this.connection
-      .getRepository(Channel)
-      .findOne({
-        where: { id: config.channelId },
-        relations: ['defaultTaxZone', 'defaultShippingZone'],
-      })) as Channel;
+    const channel = (await this.connection.getRepository(Channel).findOne({
+      where: { id: config.channelId },
+      relations: ['defaultTaxZone', 'defaultShippingZone'],
+    })) as Channel;
     return new RequestContext({
       apiType: 'admin',
       isAuthorized: true,

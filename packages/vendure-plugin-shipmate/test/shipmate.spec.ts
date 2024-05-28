@@ -120,8 +120,9 @@ describe('Picklists plugin', function () {
       event: 'TRACKING_COLLECTED',
       shipment_reference: newShipment.shipment_reference,
     });
+    //shipmate's api expects a status of 201
     expect(result.status).toBe(201);
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    // await new Promise((resolve) => setTimeout(resolve, 4000));
     const orderService = server.app.get(OrderService);
     const detailedOrder = await orderService.findOne(ctx, 1, ['fulfillments']);
     expect(detailedOrder?.state).toBe('Shipped');
@@ -136,8 +137,9 @@ describe('Picklists plugin', function () {
       event: 'TRACKING_DELIVERED',
       shipment_reference: newShipment.shipment_reference,
     });
+    //shipmate's api expects a status of 201
     expect(result.status).toBe(201);
-    await new Promise((resolve) => setTimeout(resolve, 4000));
+    // await new Promise((resolve) => setTimeout(resolve, 4000));
     const orderService = server.app.get(OrderService);
     const detailedOrder = await orderService.findOne(ctx, 1, ['fulfillments']);
     expect(detailedOrder?.state).toBe('Delivered');
