@@ -155,12 +155,12 @@ export class ShipmateService implements OnModuleInit {
       await this.updateFulFillment(ctx, shipmentOrder, payload, 'Shipped');
       res
         .status(HttpStatus.CREATED)
-        .json({ message: `Order state updated to Shipped successfully` });
+        .json({ message: `Order marked as  Shipped successfully` });
     } else if (payload.event === 'TRACKING_DELIVERED') {
       await this.updateFulFillment(ctx, shipmentOrder, payload, 'Delivered');
       res
         .status(HttpStatus.CREATED)
-        .json({ message: `Order state updated to Delivered successfully` });
+        .json({ message: `Order marked as Delivered successfully` });
     } else {
       Logger.info(
         `No configured handler for event "${payload.event}"`,
@@ -180,7 +180,7 @@ export class ShipmateService implements OnModuleInit {
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['fulfillments'],
     });
-    if (!order.fulfillments.length) {
+    if (!order.fulfillments?.length) {
       const fulfillmentInputs = this.createFulfillOrderInput(order, payload);
       const createFulfillmentResult = await this.orderService.createFulfillment(
         ctx,
@@ -206,9 +206,6 @@ export class ShipmateService implements OnModuleInit {
         );
         throw transitionResult.transitionError;
       }
-      await this.entityHydrator.hydrate(ctx, order, {
-        relations: ['fulfillments'],
-      });
     }
     for (const fulfillment of order.fulfillments) {
       const transitionResult =
