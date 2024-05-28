@@ -32,10 +32,6 @@ vi.mock('@vendure/core/dist/common/generate-public-id', () => ({
   generatePublicId: vi.fn().mockImplementation(() => 'FBJYSHC7WTRQEA14'),
 }));
 
-vi.mock('@vendure/core/dist/common/generate-public-id', () => ({
-  generatePublicId: vi.fn().mockImplementation(() => 'FBJYSHC7WTRQEA14'),
-}));
-
 describe('Picklists plugin', function () {
   let server: TestServer;
   let shopClient: SimpleGraphQLClient;
@@ -94,12 +90,6 @@ describe('Picklists plugin', function () {
         },
       })
       .persist();
-    const shipmateConfigService = server.app.get(ShipmateConfigService);
-    //this was needed because FIND_IN_SET doesn't exist in an sqljs database
-    vi.spyOn(
-      shipmateConfigService,
-      'getConfigWithWebhookAuthToken'
-    ).mockResolvedValue(testShipmateConfig);
   }, 60000);
 
   it('Should start successfully', () => {

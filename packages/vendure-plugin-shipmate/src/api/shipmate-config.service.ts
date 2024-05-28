@@ -17,8 +17,8 @@ export class ShipmateConfigService {
     return this.connection
       .getRepository(ShipmateConfigEntity)
       .createQueryBuilder('config')
-      .where('FIND_IN_SET(:webhookAuthToken, config.webhookAuthTokens)', {
-        webhookAuthToken,
+      .where('config.webhookAuthTokens like :token', {
+        token: `%${webhookAuthToken}%`,
       })
       .getOne();
   }
