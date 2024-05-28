@@ -25,8 +25,8 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { ShipmateConfigService } from '../src/api/shipmate-config.service';
 import axios from 'axios';
-import { TrackingEventPayload } from '../src/types';
-import { authToken, testShipmateConfig } from './test-helpers';
+import type { TrackingEventPayload } from '../src/types';
+import { authToken } from './test-helpers';
 
 vi.mock('@vendure/core/dist/common/generate-public-id', () => ({
   generatePublicId: vi.fn().mockImplementation(() => 'FBJYSHC7WTRQEA14'),

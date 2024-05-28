@@ -112,7 +112,8 @@
           "webhook",
           "picklist",
           "vendure-scripts",
-          "public-customer-groups"
+          "public-customer-groups",
+          "shipmate"
         ]
       ]
     }

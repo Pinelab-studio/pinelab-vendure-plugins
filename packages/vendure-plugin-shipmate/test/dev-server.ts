@@ -18,7 +18,7 @@ import { VendureShipmatePlugin } from '../src/shipmate.plugin';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler/';
-import path from 'path';
+import path from 'node:path';
 import { ShipmateConfigService } from '../src/api/shipmate-config.service';
 
 (async () => {
