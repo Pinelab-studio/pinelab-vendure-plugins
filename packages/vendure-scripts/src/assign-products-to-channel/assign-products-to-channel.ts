@@ -1,14 +1,7 @@
-import {
-  ID,
-  Injector,
-  Product,
-  RequestContext,
-  TransactionalConnection,
-} from '@vendure/core';
+import { ID, Injector, RequestContext } from '@vendure/core';
 import { In } from 'typeorm';
-import { assignTheseProductsToChannel } from './assign-these-products-to-channel';
-import { getProductsDeep } from './get-products-deep';
 import { IsNull } from 'typeorm';
+import { assignProductsInBatch } from './batch-assign-products';
 
 export async function assignProductsToChannel(
   targetChannelId: ID,
@@ -17,29 +10,14 @@ export async function assignProductsToChannel(
   ctx: RequestContext,
   batch: number = 10
 ): Promise<void> {
-  let totalCount = 0;
-  let products: Product[];
-  const conn = injector.get(TransactionalConnection);
-  await conn.startTransaction(ctx);
-  do {
-    // get products of the source channel with id productIds
-    products = await getProductsDeep(
-      ctx,
-      injector,
-      {
-        id: In(productIds),
-        deletedAt: IsNull(),
-      },
-      batch,
-      totalCount
-    );
-    totalCount += products.length;
-    await assignTheseProductsToChannel(
-      targetChannelId,
-      injector,
-      products,
-      ctx
-    );
-  } while (products.length);
-  await conn.commitOpenTransaction(ctx);
+  await assignProductsInBatch(
+    targetChannelId,
+    {
+      id: In(productIds),
+      deletedAt: IsNull(),
+    },
+    injector,
+    ctx,
+    batch
+  );
 }
