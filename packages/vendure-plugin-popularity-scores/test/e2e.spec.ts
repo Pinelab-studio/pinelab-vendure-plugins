@@ -1,4 +1,11 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  EventBus,
+  ID,
+  LogLevel,
+  ProductVariantEvent,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -8,7 +15,10 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { createCollection, getAllOrders } from '../../test/src/admin-utils';
-import { LanguageCode } from '../../test/src/generated/admin-graphql';
+import {
+  CreateCollectionMutation,
+  LanguageCode,
+} from '../../test/src/generated/admin-graphql';
 import { initialTestData } from './initial-test-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -16,14 +26,17 @@ import { PopularityScoresPlugin } from '../src';
 import {
   GET_COLLECTIONS_WITH_POPULARITY_SCORE,
   GET_PRODUCTS_WITH_POPULARITY_SCORES,
-} from './helpers';
+} from './queries';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
+import { getRootCollection, updateCollectionParent } from './helpers';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 
 describe('Sort by Popularity Plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
+  let collection: CreateCollectionMutation['createCollection'];
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -66,7 +79,7 @@ describe('Sort by Popularity Plugin', function () {
   });
 
   it('Creates an empty collection', async () => {
-    const collection = await createCollection(adminClient, {
+    collection = await createCollection(adminClient, {
       translations: [
         {
           languageCode: LanguageCode.En,
@@ -75,10 +88,39 @@ describe('Sort by Popularity Plugin', function () {
           description: '',
         },
       ],
-      filters: [],
+      filters: [
+        {
+          code: 'variant-id-filter',
+          arguments: [
+            { name: 'variantIds', value: '["T_8","T_2"]' },
+            { name: 'combineWithAnd', value: 'false' },
+          ],
+        },
+      ],
+      parentId: '1',
       customFields: {},
     });
+    const eventBus = server.app.get(EventBus);
+    const ctx = await getSuperadminContext(server.app);
+    //the following call is so that ProductVariants T_8 and T_2 get assigned to the new collection
+    eventBus.publish(new ProductVariantEvent(ctx, [], 'updated'));
+    await new Promise((r) => setTimeout(r, 2000));
     expect(collection.name).toBe('test');
+  });
+
+  it('Make the new collection parent of "Computers" and "Electronics"', async () => {
+    const updatedComputerCollection = await updateCollectionParent(
+      adminClient,
+      2,
+      collection.id
+    );
+    expect(updatedComputerCollection.parent.id).toBe(collection.id);
+    const updatedElectronicsCollection = await updateCollectionParent(
+      adminClient,
+      3,
+      collection.id
+    );
+    expect(updatedElectronicsCollection.parent.id).toBe(collection.id);
   });
 
   it('Should place a test orders', async () => {
@@ -134,11 +176,15 @@ describe('Sort by Popularity Plugin', function () {
     const electronics = collections.find(
       (col: any) => col.name === 'Electronics'
     );
+    const rootCollection = await getRootCollection(adminClient);
     const computers = collections.find((col: any) => col.name === 'Computers');
     const testCol = collections.find((col: any) => col.name === 'test');
+    const others = collections.find((col: any) => col.name === 'Others');
     expect(electronics.customFields.popularityScore).toBe(1245);
     expect(computers.customFields.popularityScore).toBe(1070);
-    expect(testCol.customFields.popularityScore).toBe(0);
+    expect(others.customFields.popularityScore).toBe(175);
+    expect(testCol.customFields.popularityScore).toBe(1245 + 1070);
+    expect(rootCollection.customFields.popularityScore).toBe(1245 + 1070 + 175);
   });
 
   afterAll(async () => {
