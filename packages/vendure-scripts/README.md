@@ -2,13 +2,14 @@
 
 ## [Official documentation here](https://pinelab-plugins.com/plugin/vendure-scripts)
 
-This 'plugin' contains generic scripts that can be used with `Vendure` projects.
+This 'plugin' contains generic scripts that can be used with `Vendure` projects. The following scripts are available:
+
+- `assignAllProductsToChannel`: assigns all `Products`, `ProductVariants`,`Facets` and `FacetValues` from the source channel to the target channel.
+- `assignProductsToChannel`: assigns specified `Products` with their related `ProductVariants`,`Facets` and `FacetValues` from the source channel to the target channel.
+- `assignCustomersToChannel`: assigns all `Customers` from the source channel to the target channel.
+- `assignOrdersToChannel`: assigns all `Orders` from the source channel to the target channel.
 
 ## Getting started
-
-### Assign all Products to Channel
-
-This script assigns `Products` from the source channel to the target channel.
 
 ```ts
 import { ModuleRef } from '@nestjs/core';
