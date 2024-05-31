@@ -120,14 +120,21 @@ export class PopularityScoresService implements OnModuleInit {
       .where('collection.isRoot = :isRoot', { isRoot: true })
       .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
       .getOne();
+    if (!channelRootCollection) {
+      Logger.warn('No root collection found for the channel', loggerCtx);
+      return;
+    }
     const channelCollectionsTree = await collectionTreeRepo.findDescendantsTree(
-      channelRootCollection!
+      channelRootCollection
     );
     const allCollections: Collection[] = [];
-    const depthFirstTraversal = async (node: Collection): Promise<number> => {
+    const traverseDepthFirstAndUpdateScore = async (
+      node: Collection
+    ): Promise<number> => {
       if (node.children?.length) {
         for (const child of node.children) {
-          node.customFields.popularityScore += await depthFirstTraversal(child);
+          node.customFields.popularityScore +=
+            await traverseDepthFirstAndUpdateScore(child);
         }
       } else {
         node.customFields.popularityScore =
@@ -137,7 +144,7 @@ export class PopularityScoresService implements OnModuleInit {
       return node.customFields.popularityScore;
     };
 
-    await depthFirstTraversal(channelCollectionsTree);
+    await traverseDepthFirstAndUpdateScore(channelCollectionsTree);
     await collectionsRepo.save(allCollections);
   }
 
