@@ -10,7 +10,7 @@ import {
 import { FindOptionsWhere } from 'typeorm';
 import { getSuperadminContextInChannel } from '../../../util/src/superadmin-request-context';
 import { assignTheseProductsToChannel } from './assign-these-products-to-channel';
-import { getProductsDeep } from './get-products-deep';
+import { getProductsDeep } from '../helpers/get-products-deep';
 
 export async function assignProductsInBatch(
   targetChannelId: ID,
