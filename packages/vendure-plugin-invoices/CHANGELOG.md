@@ -1,3 +1,7 @@
+# 2.1.1 (2024-06-04)
+
+- Prevent the possibility of connecting the wrong invoice file to an order with concurrent invoice generation. See #433
+
 # 2.1.0 (2024-02-14)
 
 - Work on ui improvements as described in #352
