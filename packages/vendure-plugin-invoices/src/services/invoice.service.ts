@@ -493,7 +493,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Creates a new invoice row in the database, so we can be sure that we have reserved the given invoiceNumber.
+   * Save storage reference on the invoice entity in the DB
    */
   private async saveStorageReference(
     ctx: RequestContext,
