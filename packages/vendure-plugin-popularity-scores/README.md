@@ -22,7 +22,7 @@ plugins: [
 
 2. [Run a database migration](https://docs.vendure.io/guides/developer-guide/migrations/) to create the custom fields needed for this plugin
 3. Start your vendure server
-4. Go to `http://localhost:3000/popularity-scores/<YOUR CHANNEL TOKEN>/<YOUR ENDPOINT SECRET>` to calculate the popularity scores of products and collections. Ideally you would do this periodically, like once a week or so.
+4. Go to `http://localhost:3000/popularity-scores/<YOUR CHANNEL TOKEN>/<YOUR ENDPOINT SECRET>` to calculate the popularity scores of products and collections. You can also use the default channel's token to generate scores for all channels. Ideally you would do this periodically, like once a week or so.
 
 ## How it works
 

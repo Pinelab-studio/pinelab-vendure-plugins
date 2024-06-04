@@ -22,6 +22,8 @@ import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
+  GET_ORDER_BY_CODE,
+  REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
 } from './helpers';
@@ -153,6 +155,15 @@ import { add } from 'date-fns';
     console.log(
       `Successfully transitioned order to ${addPaymentToOrder.state}`
     );
+
+    // Attempt a refund
+    const { refundAcceptBlueTransaction } = await shopClient.query(
+      REFUND_TRANSACTION,
+      {
+        transactionId: 354653,
+      }
+    );
+    console.log(`Refunded transaction: ${refundAcceptBlueTransaction}`);
   } catch (e) {
     // Catch to prevent server from terminating
     console.error(e);

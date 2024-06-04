@@ -46,8 +46,12 @@ export class InvoiceAdminResolver {
     }
     const invoice = await this.invoiceService.createAndSaveInvoice(
       ctx.channel.token,
-      order.code
+      order.code,
+      false
     );
+    if (!invoice) {
+      throw Error('Could not create invoice');
+    }
     return {
       ...invoice,
       isCreditInvoice: invoice.isCreditInvoice,

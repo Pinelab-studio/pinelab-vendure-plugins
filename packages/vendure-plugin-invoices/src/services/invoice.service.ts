@@ -84,21 +84,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     this.jobQueue = await this.jobService.createQueue({
       name: 'generate-invoice',
       process: async (job) => {
-        if (job.data.creditInvoiceOnly) {
-          return this.createCreditInvoiceForCancelledOrder(
-            job.data.channelToken,
-            job.data.orderCode
-          ).catch(async (error) => {
-            Logger.warn(
-              `Failed to generate credit invoice for ${job.data.orderCode}: ${error?.message}`,
-              loggerCtx
-            );
-            throw error;
-          });
-        }
-        return this.createAndSaveInvoice(
+        await this.createAndSaveInvoice(
           job.data.channelToken,
-          job.data.orderCode
+          job.data.orderCode,
+          job.data.creditInvoiceOnly
         ).catch(async (error) => {
           Logger.warn(
             `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
@@ -115,83 +104,70 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   onApplicationBootstrap(): void {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      await this.handleOrderEvents(ctx, order.code, false);
+      this.createInvoiceGenerationJobs(ctx, order.code, 'order-placed');
     });
     this.eventBus
       .ofType(OrderStateTransitionEvent)
       .pipe(filter((event) => event.toState === 'Cancelled'))
       .subscribe(async ({ ctx, order }) => {
-        await this.handleOrderEvents(ctx, order.code, true);
+        await this.createInvoiceGenerationJobs(
+          ctx,
+          order.code,
+          'order-cancelled'
+        );
       });
   }
 
-  private async handleOrderEvents(
+  /**
+   * Create jobs to generate invoices for orders
+   */
+  private async createInvoiceGenerationJobs(
     ctx: RequestContext,
     orderCode: string,
-    creditInvoiceOnly: boolean
+    event: 'order-cancelled' | 'order-placed'
   ) {
     if (!this.jobQueue) {
       return Logger.error(`Invoice jobQueue not initialized`, loggerCtx);
     }
-    const enabled = await this.isInvoicePluginEnabled(ctx);
-    if (!enabled) {
-      return Logger.debug(
-        `Invoice generation not enabled for order ${orderCode} in channel ${ctx.channel.token}`,
+    try {
+      const enabled = await this.isInvoicePluginEnabled(ctx);
+      if (!enabled) {
+        return Logger.debug(
+          `Invoice generation not enabled for order ${orderCode} in channel ${ctx.channel.token}`,
+          loggerCtx
+        );
+      }
+      const creditInvoiceOnly = event === 'order-cancelled'; // Only create credit invoice when an order is cancelled
+      await this.jobQueue.add(
+        {
+          channelToken: ctx.channel.token,
+          orderCode: orderCode,
+          creditInvoiceOnly,
+        },
+        { retries: this.retries }
+      );
+      return Logger.info(
+        `Added invoice job to queue for order ${orderCode}`,
+        loggerCtx
+      );
+    } catch (error) {
+      Logger.error(
+        `Failed to add invoice job to queue: ${(error as any)?.message}`,
         loggerCtx
       );
     }
-    await this.jobQueue.add(
-      {
-        channelToken: ctx.channel.token,
-        orderCode: orderCode,
-        creditInvoiceOnly,
-      },
-      { retries: this.retries }
-    );
-    return Logger.info(
-      `Added invoice job to queue for order ${orderCode}`,
-      loggerCtx
-    );
-  }
-
-  async createCreditInvoiceForCancelledOrder(
-    channelToken: string,
-    orderCode: string
-  ) {
-    const ctx = await this.createCtx(channelToken);
-    const previousInvoiceForOrder = await this.getMostRecentInvoiceForOrder(
-      ctx,
-      orderCode
-    );
-    if (!previousInvoiceForOrder) {
-      Logger.error(
-        `Unable to create credit invoice for order ${orderCode} as no previous invoices exist`
-      );
-      return;
-    }
-    const invoiceConfig = await this.getConfig(ctx);
-
-    if (invoiceConfig) {
-      await this.createAndSaveCreditInvoice(
-        ctx,
-        orderCode,
-        previousInvoiceForOrder,
-        invoiceConfig,
-        ctx.channel.token
-      );
-    }
-    return;
   }
 
   /**
-   * Creates an invoice and save it to DB
-   * This method can also be used for re-generating an invoice.
-   * Re-generating an invoice will also create a credit invoice, if createCreditInvoices is enabled
+   * Creates an invoice and save it to DB.
+   * If enabled, this will also generate a credit invoice if a previous invoice is enabled.
+   * Specifying `createCreditInvoiceOnly` will only generate a credit invoice.
    */
   async createAndSaveInvoice(
     channelToken: string,
-    orderCode: string
-  ): Promise<InvoiceEntity> {
+    orderCode: string,
+    createCreditInvoiceOnly: boolean
+  ): Promise<InvoiceEntity | undefined> {
     const ctx = await this.createCtx(channelToken);
     let [order, previousInvoiceForOrder, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode),
@@ -209,89 +185,108 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     } else if (!order) {
       throw Error(`No order found with code ${orderCode}`);
     }
-    // Create a credit invoice first, if an invoice already exists and config.createCreditInvoices is true
     let creditInvoice: InvoiceEntity | undefined;
     if (previousInvoiceForOrder && config.createCreditInvoices) {
+      // Create a credit invoice first
       creditInvoice = await this.createAndSaveCreditInvoice(
         ctx,
-        orderCode,
-        previousInvoiceForOrder,
-        config,
-        channelToken
+        order,
+        config.templateString!,
+        previousInvoiceForOrder
       );
+      if (createCreditInvoiceOnly) {
+        // Don't generate normal invoice, so we emit an event now and return
+        this.eventBus.publish(
+          new InvoiceCreatedEvent(
+            ctx,
+            order,
+            creditInvoice,
+            previousInvoiceForOrder
+          )
+        );
+        return;
+      }
     }
-    // Generate normal/debit invoice
+    if (!createCreditInvoiceOnly) {
+      // Generate normal/debit invoice
+      const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
+        ctx,
+        config.templateString!,
+        order
+      );
+      // First create row in the DB, then save the file, then save the storageReference in the created row
+      const newInvoiceId = await this.createInvoiceRow(ctx, {
+        invoiceNumber,
+        orderId: order.id as string,
+        orderTotals: {
+          taxSummaries: order.taxSummary,
+          total: order.total,
+          totalWithTax: order.totalWithTax,
+        },
+      });
+      const storageReference = await this.config.storageStrategy.save(
+        invoiceTmpFile,
+        invoiceNumber,
+        channelToken,
+        false
+      );
+      const newInvoice = await this.saveStorageReference(
+        ctx,
+        newInvoiceId,
+        storageReference
+      );
+      this.eventBus.publish(
+        new InvoiceCreatedEvent(
+          ctx,
+          order,
+          newInvoice,
+          previousInvoiceForOrder,
+          creditInvoice
+        )
+      );
+      return newInvoice;
+    }
+  }
+
+  /**
+   * Create and save a credit invoice only for the given order
+   */
+  private async createAndSaveCreditInvoice(
+    ctx: RequestContext,
+    order: Order,
+    templatString: string,
+    previousInvoice: InvoiceEntity
+  ): Promise<InvoiceEntity> {
     const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
       ctx,
-      config.templateString!,
-      order
+      templatString,
+      order,
+      {
+        previousInvoice,
+        reversedOrderTotals: reverseOrderTotals(previousInvoice.orderTotals),
+      }
     );
-    const storageReference = await this.config.storageStrategy.save(
-      invoiceTmpFile,
-      invoiceNumber,
-      channelToken,
-      false
-    );
-    const newInvoice = await this.saveInvoice(ctx, {
-      channelId: ctx.channelId as string,
+    // First create row in the DB, then save the file, then save the storageReference in the created row
+    const creditInvoiceId = await this.createInvoiceRow(ctx, {
       invoiceNumber,
       orderId: order.id as string,
-      storageReference,
       orderTotals: {
         taxSummaries: order.taxSummary,
         total: order.total,
         totalWithTax: order.totalWithTax,
       },
     });
-    this.eventBus.publish(
-      new InvoiceCreatedEvent(
-        ctx,
-        order,
-        newInvoice,
-        previousInvoiceForOrder,
-        creditInvoice
-      )
-    );
-    return newInvoice;
-  }
-
-  async createAndSaveCreditInvoice(
-    ctx: RequestContext,
-    orderCode: string,
-    previousInvoiceForOrder: InvoiceEntity,
-    config: InvoiceConfigEntity,
-    channelToken: string
-  ) {
-    const order = await this.orderService.findOneByCode(ctx, orderCode);
-    if (!order) {
-      throw new UserInputError(`No order with code ${orderCode}`);
-    }
-    // Reverse order totals of previous invoice, because creditInvoice
-    const reversedOrderTotals = reverseOrderTotals(
-      previousInvoiceForOrder.orderTotals
-    );
-    const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
-      ctx,
-      config.templateString!,
-      order,
-      {
-        previousInvoice: previousInvoiceForOrder,
-        reversedOrderTotals,
-      }
-    );
     const storageReference = await this.config.storageStrategy.save(
       invoiceTmpFile,
       invoiceNumber,
-      channelToken,
+      ctx.channel.token,
       true
     );
-    return await this.saveInvoice(ctx, {
-      channelId: ctx.channelId as string,
-      invoiceNumber,
-      orderId: order.id as string,
-      storageReference,
-      orderTotals: reversedOrderTotals,
-    });
+    return await this.saveStorageReference(
+      ctx,
+      creditInvoiceId,
+      storageReference
+    );
   }
 
   /**
@@ -337,7 +332,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       Logger.warn(`Failed to generate invoice: ${e?.message}`, loggerCtx);
       throw e;
     }
-
     return {
       invoiceTmpFile: tmpFilePath,
       invoiceNumber: data.invoiceNumber,
@@ -546,15 +540,40 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return !!result?.enabled;
   }
 
-  private async saveInvoice(
+  /**
+   * Creates a new invoice row in the database, so we can be sure that we have reserved the given invoiceNumber.
+   */
+  private async createInvoiceRow(
     ctx: RequestContext,
     invoice: Omit<
       InvoiceEntity,
-      'id' | 'createdAt' | 'updatedAt' | 'isCreditInvoice'
+      | 'id'
+      | 'channelId'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'isCreditInvoice'
+      | 'storageReference'
     >
+  ): Promise<ID> {
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const { id } = await invoiceRepo.save({
+      ...invoice,
+      channelId: ctx.channelId as string,
+      storageReference: '', // This will be updated when the invoice is saved
+    });
+    return id;
+  }
+
+  /**
+   * Save storage reference on the invoice entity in the DB
+   */
+  private async saveStorageReference(
+    ctx: RequestContext,
+    id: ID,
+    storageReference: string
   ): Promise<InvoiceEntity> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    const { id } = await invoiceRepo.save(invoice);
+    await invoiceRepo.update(id, { storageReference });
     return invoiceRepo.findOneOrFail({ where: { id } });
   }
 
