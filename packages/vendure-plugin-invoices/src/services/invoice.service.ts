@@ -160,19 +160,23 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           reversedOrderTotals,
         }
       );
+      // First create row in the DB, then save the file, then save the storageReference in the created row
+      const creditInvoiceId = await this.createInvoiceRow(ctx, {
+        invoiceNumber,
+        orderId: order.id as string,
+        orderTotals: reversedOrderTotals,
+      });
       const storageReference = await this.config.storageStrategy.save(
         invoiceTmpFile,
         invoiceNumber,
         channelToken,
         true
       );
-      creditInvoice = await this.saveInvoice(ctx, {
-        channelId: ctx.channelId as string,
-        invoiceNumber,
-        orderId: order.id as string,
-        storageReference,
-        orderTotals: reversedOrderTotals,
-      });
+      creditInvoice = await this.saveStorageReference(
+        ctx,
+        creditInvoiceId,
+        storageReference
+      );
     }
     // Generate normal/debit invoice
     const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
@@ -180,23 +184,27 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       config.templateString!,
       order
     );
-    const storageReference = await this.config.storageStrategy.save(
-      invoiceTmpFile,
-      invoiceNumber,
-      channelToken,
-      false
-    );
-    const newInvoice = await this.saveInvoice(ctx, {
-      channelId: ctx.channelId as string,
+    // First create row in the DB, then save the file, then save the storageReference in the created row
+    const newInvoiceId = await this.createInvoiceRow(ctx, {
       invoiceNumber,
       orderId: order.id as string,
-      storageReference,
       orderTotals: {
         taxSummaries: order.taxSummary,
         total: order.total,
         totalWithTax: order.totalWithTax,
       },
     });
+    const storageReference = await this.config.storageStrategy.save(
+      invoiceTmpFile,
+      invoiceNumber,
+      channelToken,
+      false
+    );
+    const newInvoice = await this.saveStorageReference(
+      ctx,
+      newInvoiceId,
+      storageReference
+    );
     this.eventBus.publish(
       new InvoiceCreatedEvent(
         ctx,
@@ -252,7 +260,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       Logger.warn(`Failed to generate invoice: ${e?.message}`, loggerCtx);
       throw e;
     }
-
     return {
       invoiceTmpFile: tmpFilePath,
       invoiceNumber: data.invoiceNumber,
@@ -461,15 +468,40 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return !!result?.enabled;
   }
 
-  private async saveInvoice(
+  /**
+   * Creates a new invoice row in the database, so we can be sure that we have reserved the given invoiceNumber.
+   */
+  private async createInvoiceRow(
     ctx: RequestContext,
     invoice: Omit<
       InvoiceEntity,
-      'id' | 'createdAt' | 'updatedAt' | 'isCreditInvoice'
+      | 'id'
+      | 'channelId'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'isCreditInvoice'
+      | 'storageReference'
     >
+  ): Promise<ID> {
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const { id } = await invoiceRepo.save({
+      ...invoice,
+      channelId: ctx.channelId as string,
+      storageReference: '', // This will be updated when the invoice is saved
+    });
+    return id;
+  }
+
+  /**
+   * Creates a new invoice row in the database, so we can be sure that we have reserved the given invoiceNumber.
+   */
+  private async saveStorageReference(
+    ctx: RequestContext,
+    id: ID,
+    storageReference: string
   ): Promise<InvoiceEntity> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    const { id } = await invoiceRepo.save(invoice);
+    await invoiceRepo.update(id, { storageReference });
     return invoiceRepo.findOneOrFail({ where: { id } });
   }
 
