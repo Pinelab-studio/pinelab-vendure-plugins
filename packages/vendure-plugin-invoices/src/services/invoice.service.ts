@@ -215,7 +215,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
             previousInvoiceForOrder
           )
         );
-        return;
+        return creditInvoice;
       }
     }
     if (!createCreditInvoiceOnly) {
