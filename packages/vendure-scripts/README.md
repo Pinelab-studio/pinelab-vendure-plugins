@@ -8,7 +8,7 @@ This 'plugin' contains generic scripts that can be used with `Vendure` projects.
 
 ### Assign all Products to Channel
 
-This script assigns `Products` from the source channel to the target channel.
+This script assigns all `Products` from the source channel to the target channel.
 
 ```ts
 import { ModuleRef } from '@nestjs/core';
