@@ -11,16 +11,19 @@ import {
   Injector,
   JobQueue,
   JobQueueService,
+  ListQueryBuilder,
+  ListQueryOptions,
   Logger,
   Order,
   OrderPlacedEvent,
   OrderService,
   OrderStateTransitionEvent,
+  PaginatedList,
   RequestContext,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { InvoiceConfigInput } from '../ui/generated/graphql';
+import { Invoice, InvoiceConfigInput } from '../ui/generated/graphql';
 import { ModuleRef } from '@nestjs/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
@@ -42,6 +45,8 @@ import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { SortOrder } from '@vendure/common/lib/generated-shop-types';
+
+import { In } from 'typeorm';
 import { filter } from 'rxjs';
 
 interface DownloadInput {
@@ -67,6 +72,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     private jobService: JobQueueService,
     private orderService: OrderService,
     private channelService: ChannelService,
+    private listQueryBuilder: ListQueryBuilder,
     private moduleRef: ModuleRef,
     private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
@@ -156,6 +162,82 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
+  }
+
+  async findAll(
+    ctx: RequestContext,
+    options?: ListQueryOptions<InvoiceEntity>
+  ): Promise<PaginatedList<Invoice>> {
+    options = {
+      ...options,
+      filter: {
+        ...options?.filter,
+        channelId: { eq: ctx.channelId.toString() },
+      },
+    };
+    const result = await this.listQueryBuilder
+      .build(InvoiceEntity, options, {
+        ctx,
+      })
+      .getManyAndCount()
+      .then(([items, totalItems]) => {
+        return {
+          items,
+          totalItems,
+        };
+      });
+    const items: Invoice[] = [];
+    for (let invoiceEntity of result.items) {
+      const order = await this.connection
+        .getRepository(ctx, Order)
+        .createQueryBuilder('order')
+        .select('order.id')
+        .addSelect('order.code')
+        .addSelect('customer.emailAddress')
+        .leftJoin('order.customer', 'customer')
+        .setFindOptions({ where: { id: invoiceEntity.orderId } })
+        .getOne();
+      if (!order?.customer) {
+        throw new UserInputError(`No order with id ${invoiceEntity.orderId}`);
+      }
+      items.push({
+        ...invoiceEntity,
+        orderId: order.id,
+        orderCode: order.code,
+        isCreditInvoice: invoiceEntity.isCreditInvoice,
+        downloadUrl: this.getDownloadUrl(
+          ctx,
+          invoiceEntity,
+          order.code,
+          order.customer.emailAddress
+        ),
+      });
+    }
+    return { items, totalItems: result.totalItems };
+  }
+
+  async downloadMultiple(
+    ctx: RequestContext,
+    invoiceNumbers: string[],
+    res: Response
+  ): Promise<ReadStream> {
+    const nrSelectors = invoiceNumbers.map((i) => ({
+      invoiceNumber: i,
+      channelId: ctx.channelId,
+    }));
+    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+    const invoices = await invoiceRepo.find({
+      where: {
+        channelId: In(nrSelectors.map((i) => i.channelId)),
+        invoiceNumber: In(nrSelectors.map((i) => i.invoiceNumber)),
+      },
+    });
+    if (!invoices) {
+      throw Error(
+        `No invoices found for channel ${ctx.channelId} and invoiceNumbers ${invoiceNumbers}`
+      );
+    }
+    return this.config.storageStrategy.streamMultiple(invoices, res);
   }
 
   /**
@@ -333,6 +415,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     try {
       await pdf.create(document, options);
     } catch (e: any) {
+      console.log(e);
       // Warning, because this will be retried, or is returned to the user
       Logger.warn(`Failed to generate invoice: ${e?.message}`, loggerCtx);
       throw e;

@@ -1,7 +1,14 @@
 import { Logger } from '@vendure/core';
-import { readFile } from 'fs/promises';
+import { Response } from 'express';
+import { readFile, writeFile } from 'fs/promises';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { safeRemove } from '../util/file.util';
+import {
+  safeRemove,
+  ZippableFile,
+  createTempFile,
+  zipFiles,
+} from '../util/file.util';
+import { createReadStream, ReadStream } from 'fs';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 export interface Config {
@@ -64,5 +71,27 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     }).promise();
     safeRemove(tmpFile);
     return Key;
+  }
+
+  async streamMultiple(
+    invoices: InvoiceEntity[],
+    res: Response<any, Record<string, any>>
+  ): Promise<ReadStream> {
+    const files: ZippableFile[] = await Promise.all(
+      invoices.map(async (invoice) => {
+        const tmpFile = await createTempFile('.pdf');
+        const object = await this.s3!.getObject({
+          Bucket: this.bucket,
+          Key: invoice.storageReference,
+        }).promise();
+        await writeFile(tmpFile, object.Body?.toString()!);
+        return {
+          path: tmpFile,
+          name: invoice.invoiceNumber + '.pdf',
+        };
+      })
+    );
+    const zipFile = await zipFiles(files);
+    return createReadStream(zipFile);
   }
 }

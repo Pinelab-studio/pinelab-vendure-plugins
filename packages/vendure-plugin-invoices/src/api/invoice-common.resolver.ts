@@ -39,8 +39,9 @@ export class InvoiceCommonResolver {
     }
     return invoices.map((invoice) => ({
       ...invoice,
-      isCreditInvoice: invoice.isCreditInvoice,
       orderCode: order.code,
+      orderId: order.id,
+      isCreditInvoice: invoice.isCreditInvoice,
       downloadUrl: this.invoiceService.getDownloadUrl(
         ctx,
         invoice,

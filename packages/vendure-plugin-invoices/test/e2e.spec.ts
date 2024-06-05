@@ -329,7 +329,7 @@ describe('Generate without credit invoicing', function () {
 
   it('Created invoice', async () => {
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 5000));
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });

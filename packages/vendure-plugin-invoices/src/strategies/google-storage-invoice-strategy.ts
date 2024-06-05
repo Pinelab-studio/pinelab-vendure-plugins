@@ -1,6 +1,13 @@
 import { Logger } from '@vendure/core';
+import { Response } from 'express';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { safeRemove } from '../util/file.util';
+import { createReadStream, ReadStream } from 'fs';
+import {
+  ZippableFile,
+  createTempFile,
+  safeRemove,
+  zipFiles,
+} from '../util/file.util';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 interface GoogleInvoiceConfig {
@@ -62,5 +69,30 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
     });
     safeRemove(tmpFile);
     return fullPath;
+  }
+
+  async streamMultiple(
+    invoices: InvoiceEntity[],
+    res: Response
+  ): Promise<ReadStream> {
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `inline; filename="invoices-${invoices.length}.zip"`,
+    });
+    const files: ZippableFile[] = await Promise.all(
+      invoices.map(async (invoice) => {
+        const tmpFile = await createTempFile('.pdf');
+        await this.storage
+          .bucket(this.bucketName)
+          .file(invoice.storageReference)
+          .download({ destination: tmpFile });
+        return {
+          path: tmpFile,
+          name: invoice.invoiceNumber + '.pdf',
+        };
+      })
+    );
+    const zipFile = await zipFiles(files);
+    return createReadStream(zipFile);
   }
 }

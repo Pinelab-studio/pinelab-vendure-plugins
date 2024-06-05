@@ -1,3 +1,7 @@
+# 2.3.0 (2024-06-05)
+
+- Invoice listing page and bulk download of invoices
+
 # 2.2.0 (2024-06-04)
 
 - When an order is cancelled, generate credit invoice, and no invoice regeneration after that

@@ -26,6 +26,7 @@
     "lint": "echo 'No linting configured'"
   },
   "dependencies": {
+    "adm-zip": "0.5.9",
     "pdf-creator-node": "2.3.4",
     "tmp": "0.2.1"
   },
