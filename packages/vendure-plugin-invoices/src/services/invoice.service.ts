@@ -203,7 +203,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         idsAreEqual(order.id, invoiceEntity.orderId)
       );
       if (!order) {
-        throw new UserInputError(`No order with id ${invoiceEntity.orderId}`);
+        throw new UserInputError(
+          `No order with id ${invoiceEntity.orderId} found for invoice ${invoiceEntity.invoiceNumber}`
+        );
       }
       if (!order.customer) {
         throw new UserInputError(
