@@ -174,17 +174,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       this.getMostRecentInvoiceForOrder(ctx, orderCode),
       this.getConfig(ctx),
     ]);
-    if (createCreditInvoiceOnly) {
-      Logger.info(
-        `Creating credit invoice only for order ${orderCode}`,
-        loggerCtx
-      );
-    } else {
-      Logger.info(
-        `Creating invoice (and possibly credit invoice) for order ${orderCode}`,
-        loggerCtx
-      );
-    }
     if (!config) {
       throw Error(
         `Cannot generate invoice for ${orderCode}, because no config was found`
@@ -195,6 +184,27 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
     } else if (!order) {
       throw Error(`No order found with code ${orderCode}`);
+    }
+    if (createCreditInvoiceOnly && !config?.createCreditInvoices) {
+      throw new UserInputError(
+        `Cannot generate credit invoice only with "createCreditInvoiceOnly=true" for order ${orderCode}, because credit invoices are disabled in the config.`
+      );
+    }
+    if (createCreditInvoiceOnly && !previousInvoiceForOrder) {
+      throw new UserInputError(
+        `"createCreditInvoiceOnly=true" was supplied, but no previous invoice exists for order ${orderCode}, so we can not generate a credit invoice.`
+      );
+    }
+    if (createCreditInvoiceOnly) {
+      Logger.info(
+        `Creating credit invoice only for order ${orderCode}`,
+        loggerCtx
+      );
+    } else {
+      Logger.info(
+        `Creating invoice (and possibly credit invoice) for order ${orderCode}`,
+        loggerCtx
+      );
     }
     let creditInvoice: InvoiceEntity | undefined;
     if (previousInvoiceForOrder && config.createCreditInvoices) {
@@ -218,27 +228,22 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         return creditInvoice;
       }
     }
-    if (!createCreditInvoiceOnly) {
-      // Generate normal/debit invoice
-      const newInvoice = await this.createAndSaveInvoice(
+    // Generate normal/debit invoice
+    const newInvoice = await this.createAndSaveInvoice(
+      ctx,
+      order,
+      config.templateString!
+    );
+    this.eventBus.publish(
+      new InvoiceCreatedEvent(
         ctx,
         order,
-        config.templateString!
-      );
-      this.eventBus.publish(
-        new InvoiceCreatedEvent(
-          ctx,
-          order,
-          newInvoice,
-          previousInvoiceForOrder,
-          creditInvoice
-        )
-      );
-      return newInvoice;
-    }
-    throw Error(
-      `No credit or debit invoice was generated for order ${orderCode} with "creditInvoiceOnly=${createCreditInvoiceOnly}"`
+        newInvoice,
+        previousInvoiceForOrder,
+        creditInvoice
+      )
     );
+    return newInvoice;
   }
 
   /**
