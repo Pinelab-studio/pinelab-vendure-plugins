@@ -1,3 +1,7 @@
+# 2.3.1 (2024-06-05)
+
+- Sort invoices by created at
+
 # 2.3.0 (2024-06-05)
 
 - Invoice listing page and bulk download of invoices

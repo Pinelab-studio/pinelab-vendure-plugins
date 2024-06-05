@@ -24,15 +24,6 @@
     </ng-template>
   </vdr-dt2-column>
   <vdr-dt2-column
-    id="created-at"
-    [heading]="'common.created-at' | translate"
-    [hiddenByDefault]="true"
-  >
-    <ng-template let-invoice="item">
-      {{ invoice.createdAt | localeDate : 'short' }}
-    </ng-template>
-  </vdr-dt2-column>
-  <vdr-dt2-column
     id="invoiceNumber"
     heading="Invoice number"
     [optional]="false"
@@ -44,6 +35,11 @@
           }}<span *ngIf="invoice.isCreditInvoice"> (CREDIT)</span>
         </span>
       </a>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="created-at" [heading]="'common.created-at' | translate">
+    <ng-template let-invoice="item">
+      {{ invoice.createdAt | localeDate : 'short' }}
     </ng-template>
   </vdr-dt2-column>
   <vdr-dt2-column id="order" heading="For order" [optional]="false">

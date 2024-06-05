@@ -171,6 +171,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   ): Promise<PaginatedList<Invoice>> {
     options = {
       ...options,
+      sort: options?.sort ?? { updatedAt: SortOrder.DESC },
       filter: {
         ...options?.filter,
         channelId: { eq: ctx.channelId.toString() },
