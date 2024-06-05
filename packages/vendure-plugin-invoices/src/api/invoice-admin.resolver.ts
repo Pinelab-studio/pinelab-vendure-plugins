@@ -49,9 +49,10 @@ export class InvoiceAdminResolver {
         `Can not generate invoice for an order without 'customer.emailAddress'`
       );
     }
-    const invoice = await this.invoiceService.createAndSaveInvoice(
+    const invoice = await this.invoiceService.createInvoicesForOrder(
       ctx.channel.token,
-      order.code
+      order.code,
+      false
     );
     return {
       ...invoice,

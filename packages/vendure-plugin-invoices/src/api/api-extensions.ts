@@ -1,5 +1,4 @@
 import gql from 'graphql-tag';
-
 // This is only used by codegen so it knows DateTime is a custom scalar
 const scalars = gql`
   scalar DateTime
@@ -17,12 +16,10 @@ const commonSchemaExtensions = gql`
     orderId: ID!
     isCreditInvoice: Boolean!
   }
-
   extend type Order {
     invoices: [Invoice!]!
   }
 `;
-
 export const shopSchemaExtensions = gql`
   ${commonSchemaExtensions}
 `;
@@ -35,18 +32,15 @@ export const adminSchemaExtensions = gql`
     createCreditInvoices: Boolean!
     templateString: String!
   }
-
   type InvoiceList {
     items: [Invoice!]!
     totalItems: Int!
   }
-
   input InvoiceConfigInput {
     enabled: Boolean!
     createCreditInvoices: Boolean
     templateString: String
   }
-
   input InvoiceListOptions {
     skip: Int
     take: Int
@@ -54,7 +48,6 @@ export const adminSchemaExtensions = gql`
     filterOperator: LogicalOperator
     sort: JSON
   }
-
   extend type Mutation {
     upsertInvoiceConfig(input: InvoiceConfigInput): InvoiceConfig!
     """
@@ -62,7 +55,6 @@ export const adminSchemaExtensions = gql`
     """
     createInvoice(orderId: ID!): Invoice!
   }
-
   extend type Query {
     invoiceConfig: InvoiceConfig
     invoices(options: InvoiceListOptions): InvoiceList

@@ -1,5 +1,10 @@
 import { Subscription } from '../../util/src/subscription/subscription-strategy';
 import {
+  AcceptBlueRefundResult,
+  AcceptBlueRefundStatus,
+} from './api/generated/graphql';
+import {
+  AcceptBlueTransaction,
   AccountType,
   CheckPaymentMethodInput,
   Frequency,
@@ -178,4 +183,15 @@ export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
 
 export function isSavedPaymentMethod(input: SavedPaymentMethodInput): boolean {
   return !!input.paymentMethodId;
+}
+
+export function toGraphqlRefundStatus(
+  status: AcceptBlueTransaction['status']
+): AcceptBlueRefundResult['status'] {
+  switch (status) {
+    case 'Partially Approved':
+      return 'PartiallyApproved';
+    default:
+      return status;
+  }
 }

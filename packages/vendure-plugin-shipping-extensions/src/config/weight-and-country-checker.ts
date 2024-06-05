@@ -114,13 +114,12 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     }
     // Shipping country is allowed, continue checking order weight
     const productIds = order.lines.map((line) => line.productVariant.productId);
-    await entityHydrator.hydrate(ctx, order, {
-      relations: [
-        'lines',
-        'lines.productVariant',
-        'lines.productVariant.product',
-      ],
-    });
+    await entityHydrator.hydrate(ctx, order, { relations: ['lines'] });
+    for (let line of order.lines) {
+      await entityHydrator.hydrate(ctx, line, {
+        relations: ['productVariant', 'productVariant.product'],
+      });
+    }
     let totalOrderWeight = 0;
     if (ShippingExtensionsPlugin.options?.weightCalculationFunction) {
       totalOrderWeight =
