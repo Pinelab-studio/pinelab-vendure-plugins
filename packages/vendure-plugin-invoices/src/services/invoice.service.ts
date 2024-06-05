@@ -221,6 +221,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     invoiceNumbers: string[],
     res: Response
   ): Promise<ReadStream> {
+    if (invoiceNumbers.length > 10) {
+      // For performance reasons
+      throw new UserInputError(`You can only download 10 invoices at a time`);
+    }
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     const invoices = await invoiceRepo.find({
       where: {
