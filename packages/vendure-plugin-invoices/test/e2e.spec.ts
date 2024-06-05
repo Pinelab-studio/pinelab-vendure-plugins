@@ -37,6 +37,7 @@ import {
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
 import { getOrderWithInvoices } from '../src/ui/invoices-detail-view/invoices-detail-view';
+import { TransitionToState, TransitionToStateMutation, TransitionToStateMutationVariables } from '../../test/src/generated/shop-graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -226,8 +227,21 @@ describe(
       // First invoice
       expect(invoices[0].invoiceNumber).toBe(3);
     });
+
+    it('Creates credit invoice on order cancellation', async () => {
+      const { transitionOrderToState } = await adminClient.query<
+        TransitionToStateMutation,
+        TransitionToStateMutationVariables
+      >(TransitionToState, { state: 'Cancelled' });
+      expect(transitionOrderToState?.__typename).toBe('Order'); // Expect successful cancellation
+      const { order: result } = await adminClient.query(getOrderWithInvoices, {
+        id: order.id,
+      });
+      const invoices: Invoice[] = result.invoices;
+      // Latest invoice
+      expect(invoices.length).toBe(3);
+    });
   },
-  10 * 1000
 );
 
 describe('Download invoices', function () {

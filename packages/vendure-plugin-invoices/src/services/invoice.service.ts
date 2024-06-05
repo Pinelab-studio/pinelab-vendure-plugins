@@ -84,7 +84,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     this.jobQueue = await this.jobService.createQueue({
       name: 'generate-invoice',
       process: async (job) => {
-        await this.createAndSaveInvoice(
+        await this.createInvoicesForOrder(
           job.data.channelToken,
           job.data.orderCode,
           job.data.creditInvoiceOnly
@@ -159,15 +159,20 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Creates an invoice and save it to DB.
-   * If enabled, this will also generate a credit invoice if a previous invoice is enabled.
-   * Specifying `createCreditInvoiceOnly` will only generate a credit invoice.
+   * Creates an invoice and credit invoice (if enabled) for the given order
+   * This will also generate a credit invoice if a previous invoice is available and credit invoices are enabled.
+   * Specifying `createCreditInvoiceOnly` will only generate a credit invoice and no new debit invoice.
    */
-  async createAndSaveInvoice(
+  async createInvoicesForOrder(
     channelToken: string,
     orderCode: string,
     createCreditInvoiceOnly: boolean
   ): Promise<InvoiceEntity | undefined> {
+    if (createCreditInvoiceOnly) {
+      Logger.info(`Creating credit invoice only for order ${orderCode}`, loggerCtx);
+    } else {
+      Logger.info(`Creating invoice (and possibly credit invoice) for order ${orderCode}`, loggerCtx);
+    }
     const ctx = await this.createCtx(channelToken);
     let [order, previousInvoiceForOrder, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode),
@@ -188,7 +193,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     let creditInvoice: InvoiceEntity | undefined;
     if (previousInvoiceForOrder && config.createCreditInvoices) {
       // Create a credit invoice first
-      creditInvoice = await this.createAndSaveCreditInvoice(
+      creditInvoice = await this.createAndSaveInvoice(
         ctx,
         order,
         config.templateString!,
@@ -209,32 +214,38 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     }
     if (!createCreditInvoiceOnly) {
       // Generate normal/debit invoice
-      const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
+      const newInvoice = await this.createAndSaveInvoice(
         ctx,
+        order,
         config.templateString!,
-        order
       );
-      // First create row in the DB, then save the file, then save the storageReference in the created row
-      const newInvoiceId = await this.createInvoiceRow(ctx, {
-        invoiceNumber,
-        orderId: order.id as string,
-        orderTotals: {
-          taxSummaries: order.taxSummary,
-          total: order.total,
-          totalWithTax: order.totalWithTax,
-        },
-      });
-      const storageReference = await this.config.storageStrategy.save(
-        invoiceTmpFile,
-        invoiceNumber,
-        channelToken,
-        false
-      );
-      const newInvoice = await this.saveStorageReference(
-        ctx,
-        newInvoiceId,
-        storageReference
-      );
+      // const { invoiceNumber, invoiceTmpFile } = await this.generatePdfFile(
+      //   ctx,
+      //   config.templateString!,
+      //   order
+      // );
+      // // First create row in the DB, then save the file, then save the storageReference in the created row
+      // const newInvoiceId = await this.createInvoiceRow(ctx, {
+      //   invoiceNumber,
+      //   orderId: order.id as string,
+      //   isCreditInvoice: false,
+      //   orderTotals: {
+      //     taxSummaries: order.taxSummary,
+      //     total: order.total,
+      //     totalWithTax: order.totalWithTax,
+      //   },
+      // });
+      // const storageReference = await this.config.storageStrategy.save(
+      //   invoiceTmpFile,
+      //   invoiceNumber,
+      //   channelToken,
+      //   false
+      // );
+      // await this.saveStorageReference(
+      //   ctx,
+      //   newInvoiceId,
+      //   storageReference
+      // );
       this.eventBus.publish(
         new InvoiceCreatedEvent(
           ctx,
@@ -249,50 +260,59 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Create and save a credit invoice only for the given order
+   * Create an invoice and save it's reference on an order in the database. 
+   * Passing a `previousInvoice` will generate a credit invoice.
    */
-  private async createAndSaveCreditInvoice(
+  private async createAndSaveInvoice(
     ctx: RequestContext,
     order: Order,
     templatString: string,
-    previousInvoice: InvoiceEntity
+    previousInvoice?: InvoiceEntity
   ): Promise<InvoiceEntity> {
-    const { invoiceNumber, invoiceTmpFile } = await this.generateInvoice(
+    const isCreditInvoice = !!previousInvoice; // If previous invoice, this is a credit invoice
+    let orderTotals = {
+      taxSummaries: order.taxSummary,
+      total: order.total,
+      totalWithTax: order.totalWithTax,
+    };
+    if (isCreditInvoice) {
+      orderTotals = reverseOrderTotals(previousInvoice.orderTotals);
+    }
+    const { invoiceNumber, invoiceTmpFile } = await this.generatePdfFile(
       ctx,
       templatString,
       order,
-      {
+      // Pass reverse order totals and previous invoice if we are creating a credit invoice
+      previousInvoice ? {
         previousInvoice,
-        reversedOrderTotals: reverseOrderTotals(previousInvoice.orderTotals),
-      }
+        reversedOrderTotals: orderTotals
+      } : undefined
     );
+
     // First create row in the DB, then save the file, then save the storageReference in the created row
-    const creditInvoiceId = await this.createInvoiceRow(ctx, {
+    const invoiceRowId = await this.createInvoiceRow(ctx, {
       invoiceNumber,
       orderId: order.id as string,
-      orderTotals: {
-        taxSummaries: order.taxSummary,
-        total: order.total,
-        totalWithTax: order.totalWithTax,
-      },
+      isCreditInvoice,
+      orderTotals,
     });
     const storageReference = await this.config.storageStrategy.save(
       invoiceTmpFile,
       invoiceNumber,
       ctx.channel.token,
-      true
+      isCreditInvoice
     );
     return await this.saveStorageReference(
       ctx,
-      creditInvoiceId,
+      invoiceRowId,
       storageReference
     );
   }
 
   /**
-   * Just generates PDF, no storing in DB
+   * Just generates PDF, doesn't store or save anything
    */
-  async generateInvoice(
+  async generatePdfFile(
     ctx: RequestContext,
     templateString: string,
     order: Order,
@@ -369,7 +389,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (!config) {
       throw Error(`No config found for channel ${ctx.channel.token}`);
     }
-    const { invoiceTmpFile } = await this.generateInvoice(ctx, template, order);
+    const { invoiceTmpFile } = await this.generatePdfFile(ctx, template, order);
     return createReadStream(invoiceTmpFile);
   }
 
@@ -551,17 +571,16 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       | 'channelId'
       | 'createdAt'
       | 'updatedAt'
-      | 'isCreditInvoice'
       | 'storageReference'
     >
   ): Promise<ID> {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    const { id } = await invoiceRepo.save({
+    const entity = await invoiceRepo.save({
       ...invoice,
       channelId: ctx.channelId as string,
       storageReference: '', // This will be updated when the invoice is saved
     });
-    return id;
+    return entity.id;
   }
 
   /**
