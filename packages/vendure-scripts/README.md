@@ -1,6 +1,6 @@
-# Vendure Script
+# Vendure Scripts
 
-## [Official documentation here](https://pinelab-plugins.com/plugin/vendure-scripts)
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-scripts)
 
 This 'plugin' contains generic scripts that can be used with `Vendure` projects.
 
