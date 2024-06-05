@@ -19,7 +19,7 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import fetch from 'node-fetch';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { addShippingMethod } from '../../test/src/admin-utils';
+import { addShippingMethod, cancelOrder } from '../../test/src/admin-utils';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -31,12 +31,12 @@ import {
   MutationUpsertInvoiceConfigArgs,
 } from '../src';
 import { InvoiceCreatedEvent } from '../src/services/invoice-created-event';
+import { getOrderWithInvoices } from '../src/ui/invoices-detail-view/invoices-detail-view';
 import {
   createInvoice as createInvoiceMutation,
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
-import { getOrderWithInvoices } from '../src/ui/invoices-detail-view/invoices-detail-view';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -84,7 +84,7 @@ beforeAll(async () => {
     .get(EventBus)
     .ofType(InvoiceCreatedEvent)
     .subscribe((event) => events.push(event));
-}, 60000);
+}, 30000);
 
 it('Should start successfully', async () => {
   await expect(serverStarted).toBe(true);
@@ -125,7 +125,7 @@ describe('Generate with credit invoicing enabled', function () {
 
   it('Gets invoices for order', async () => {
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });
@@ -224,6 +224,21 @@ describe('Generate with credit invoicing enabled', function () {
     // First invoice
     expect(invoices[0].invoiceNumber).toBe(3);
   });
+
+  it('Cancels order and creates credit invoice', async () => {
+    await cancelOrder(adminClient, order as any);
+    // Give the worker some time to generate invoices
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+    const { order: result } = await adminClient.query(getOrderWithInvoices, {
+      id: order.id,
+    });
+    expect(result.state).toBe('Cancelled');
+    expect(result.invoices.length).toBe(4);
+    expect(result.invoices[0].isCreditInvoice).toBe(true);
+    // Event for credit invoice should be emitted
+    expect(events[2].creditInvoice).toBeUndefined();
+    expect(events[2].newInvoice.isCreditInvoice).toBe(true);
+  });
 });
 
 describe('Download invoices', function () {
@@ -314,17 +329,17 @@ describe('Generate without credit invoicing', function () {
 
   it('Created invoice', async () => {
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 3000));
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });
     latestInvoice = result.invoices[0];
     expect(latestInvoice.id).toBeDefined();
     expect(latestInvoice.createdAt).toBeDefined();
-    expect(latestInvoice.invoiceNumber).toBe(4);
+    expect(latestInvoice.invoiceNumber).toBe(5);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/4?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/5?email=hayden.zieme12%40hotmail.com`
     );
   });
 
@@ -340,10 +355,10 @@ describe('Generate without credit invoicing', function () {
       orderId: order.id,
     });
     latestInvoice = result.createInvoice;
-    expect(latestInvoice.invoiceNumber).toBe(5);
+    expect(latestInvoice.invoiceNumber).toBe(6);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/5?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/6?email=hayden.zieme12%40hotmail.com`
     );
   });
 

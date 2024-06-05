@@ -11,7 +11,9 @@ export class InvoiceCreatedEvent extends VendureEvent {
     public ctx: RequestContext,
     public order: Order,
     /**
-     * The new invoice that was created
+     * The new invoice that was created.
+     * This can be a credit invoice, if only a credit invoice was generated and no new debit invoice.
+     * This happens for example when an order is cancelled
      */
     public newInvoice: InvoiceEntity,
     /**

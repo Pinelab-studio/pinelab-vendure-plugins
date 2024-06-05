@@ -1,3 +1,7 @@
+# 2.2.0 (2024-06-04)
+
+- When an order is cancelled, generate credit invoice, and no invoice regeneration after that
+
 # 2.1.1 (2024-06-04)
 
 - Prevent the possibility of connecting the wrong invoice file to an order with concurrent invoice generation. See #433

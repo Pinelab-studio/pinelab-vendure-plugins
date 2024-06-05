@@ -1990,6 +1990,29 @@ export type InvalidFulfillmentHandlerError = ErrorResult & {
   message: Scalars['String'];
 };
 
+export type Invoice = {
+  __typename?: 'Invoice';
+  createdAt?: Maybe<Scalars['DateTime']>;
+  downloadUrl: Scalars['String'];
+  id: Scalars['ID'];
+  invoiceNumber: Scalars['Int'];
+  isCreditInvoice: Scalars['Boolean'];
+};
+
+export type InvoiceConfig = {
+  __typename?: 'InvoiceConfig';
+  createCreditInvoices: Scalars['Boolean'];
+  enabled: Scalars['Boolean'];
+  id: Scalars['ID'];
+  templateString: Scalars['String'];
+};
+
+export type InvoiceConfigInput = {
+  createCreditInvoices?: InputMaybe<Scalars['Boolean']>;
+  enabled: Scalars['Boolean'];
+  templateString?: InputMaybe<Scalars['String']>;
+};
+
 /** Returned if the specified items are already part of a Fulfillment */
 export type ItemsAlreadyFulfilledError = ErrorResult & {
   __typename?: 'ItemsAlreadyFulfilledError';
@@ -2477,6 +2500,36 @@ export type ManualPaymentStateError = ErrorResult & {
   message: Scalars['String'];
 };
 
+export enum MetricInterval {
+  Daily = 'Daily'
+}
+
+export type MetricSummary = {
+  __typename?: 'MetricSummary';
+  entries: Array<MetricSummaryEntry>;
+  interval: MetricInterval;
+  title: Scalars['String'];
+  type: MetricType;
+};
+
+export type MetricSummaryEntry = {
+  __typename?: 'MetricSummaryEntry';
+  label: Scalars['String'];
+  value: Scalars['Float'];
+};
+
+export type MetricSummaryInput = {
+  interval: MetricInterval;
+  refresh?: InputMaybe<Scalars['Boolean']>;
+  types: Array<MetricType>;
+};
+
+export enum MetricType {
+  AverageOrderValue = 'AverageOrderValue',
+  OrderCount = 'OrderCount',
+  OrderTotal = 'OrderTotal'
+}
+
 export type MimeTypeError = ErrorResult & {
   __typename?: 'MimeTypeError';
   errorCode: ErrorCode;
@@ -2600,6 +2653,8 @@ export type Mutation = {
   createFacet: Facet;
   /** Create one or more FacetValues */
   createFacetValues: Array<FacetValue>;
+  /** Generate a new invoice for the given order. Creates a credit invoice if the order already has an invoice. */
+  createInvoice: Invoice;
   /** Create existing PaymentMethod */
   createPaymentMethod: PaymentMethod;
   /** Create a new Product */
@@ -2832,6 +2887,7 @@ export type Mutation = {
   updateTaxRate: TaxRate;
   /** Update an existing Zone */
   updateZone: Zone;
+  upsertInvoiceConfig: InvoiceConfig;
 };
 
 
@@ -3012,6 +3068,11 @@ export type MutationCreateFacetArgs = {
 
 export type MutationCreateFacetValuesArgs = {
   input: Array<CreateFacetValueInput>;
+};
+
+
+export type MutationCreateInvoiceArgs = {
+  orderId: Scalars['ID'];
 };
 
 
@@ -3647,6 +3708,11 @@ export type MutationUpdateZoneArgs = {
   input: UpdateZoneInput;
 };
 
+
+export type MutationUpsertInvoiceConfigArgs = {
+  input?: InputMaybe<InvoiceConfigInput>;
+};
+
 export type NativeAuthInput = {
   password: Scalars['String'];
   username: Scalars['String'];
@@ -3737,6 +3803,7 @@ export type Order = Node & {
   fulfillments?: Maybe<Array<Fulfillment>>;
   history: HistoryEntryList;
   id: Scalars['ID'];
+  invoices: Array<Invoice>;
   lines: Array<OrderLine>;
   modifications: Array<OrderModification>;
   nextStates: Array<Scalars['String']>;
@@ -4175,6 +4242,8 @@ export type PaymentStateTransitionError = ErrorResult & {
  * @docsCategory common
  */
 export enum Permission {
+  /** Allow this user to enable invoice generation */
+  AllowInvoicesPermission = 'AllowInvoicesPermission',
   /** Authenticated means simply that the user is logged in */
   Authenticated = 'Authenticated',
   /** Grants permission to create Administrator */
@@ -4850,12 +4919,15 @@ export type Query = {
   facets: FacetList;
   fulfillmentHandlers: Array<ConfigurableOperationDefinition>;
   globalSettings: GlobalSettings;
+  invoiceConfig?: Maybe<InvoiceConfig>;
   job?: Maybe<Job>;
   jobBufferSize: Array<JobBufferSize>;
   jobQueues: Array<JobQueue>;
   jobs: JobList;
   jobsById: Array<Job>;
   me?: Maybe<CurrentUser>;
+  /** Get metrics for the given interval and metric types. */
+  metricSummary: Array<MetricSummary>;
   order?: Maybe<Order>;
   orders: OrderList;
   paymentMethod?: Maybe<PaymentMethod>;
@@ -5013,6 +5085,11 @@ export type QueryJobsArgs = {
 
 export type QueryJobsByIdArgs = {
   jobIds: Array<Scalars['ID']>;
+};
+
+
+export type QueryMetricSummaryArgs = {
+  input?: InputMaybe<MetricSummaryInput>;
 };
 
 
@@ -6444,6 +6521,13 @@ export type CreatePromotionMutationVariables = Exact<{
 
 export type CreatePromotionMutation = { __typename?: 'Mutation', createPromotion: { __typename?: 'MissingConditionsError' } | { __typename?: 'Promotion', id: string, name: string, couponCode?: string | null } };
 
+export type CancelOrderMutationVariables = Exact<{
+  input: CancelOrderInput;
+}>;
+
+
+export type CancelOrderMutation = { __typename?: 'Mutation', cancelOrder: { __typename?: 'CancelActiveOrderError' } | { __typename?: 'EmptyOrderLineSelectionError' } | { __typename?: 'MultipleOrderError' } | { __typename?: 'Order', id: string, code: string, state: string, active: boolean, total: any, totalWithTax: any, shippingWithTax: any, customer?: { __typename?: 'Customer', emailAddress: string } | null, shippingAddress?: { __typename?: 'OrderAddress', fullName?: string | null } | null, fulfillments?: Array<{ __typename?: 'Fulfillment', id: string, state: string, method: string, trackingCode?: string | null, customFields?: any | null }> | null, lines: Array<{ __typename?: 'OrderLine', id: string, quantity: number, productVariant: { __typename?: 'ProductVariant', id: string, sku: string }, discounts: Array<{ __typename?: 'Discount', adjustmentSource: string, amount: any, amountWithTax: any, description: string, type: AdjustmentType }> }> } | { __typename?: 'OrderStateTransitionError' } | { __typename?: 'QuantityTooGreatError' } };
+
 export const OrderFields = gql`
     fragment OrderFields on Order {
   id
@@ -6609,3 +6693,10 @@ export const CreatePromotion = gql`
   }
 }
     `;
+export const CancelOrder = gql`
+    mutation CancelOrder($input: CancelOrderInput!) {
+  cancelOrder(input: $input) {
+    ...OrderFields
+  }
+}
+    ${OrderFields}`;

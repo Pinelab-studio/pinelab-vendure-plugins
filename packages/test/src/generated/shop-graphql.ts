@@ -1260,6 +1260,15 @@ export type InvalidCredentialsError = ErrorResult & {
   message: Scalars['String'];
 };
 
+export type Invoice = {
+  __typename?: 'Invoice';
+  createdAt?: Maybe<Scalars['DateTime']>;
+  downloadUrl: Scalars['String'];
+  id: Scalars['ID'];
+  invoiceNumber: Scalars['Int'];
+  isCreditInvoice: Scalars['Boolean'];
+};
+
 /**
  * @description
  * Languages in the form of a ISO 639-1 language code with optional
@@ -1947,6 +1956,7 @@ export type Order = Node & {
   fulfillments?: Maybe<Array<Fulfillment>>;
   history: HistoryEntryList;
   id: Scalars['ID'];
+  invoices: Array<Invoice>;
   lines: Array<OrderLine>;
   /**
    * The date & time that the Order was placed, i.e. the Customer
@@ -2331,6 +2341,8 @@ export type PaymentMethodTranslation = {
  * @docsCategory common
  */
 export enum Permission {
+  /** Allow this user to enable invoice generation */
+  AllowInvoicesPermission = 'AllowInvoicesPermission',
   /** Authenticated means simply that the user is logged in */
   Authenticated = 'Authenticated',
   /** Grants permission to create Administrator */
