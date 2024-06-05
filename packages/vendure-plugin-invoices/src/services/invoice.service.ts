@@ -8,6 +8,7 @@ import {
   ChannelService,
   EventBus,
   ID,
+  idsAreEqual,
   Injector,
   JobQueue,
   JobQueueService,
@@ -186,19 +187,28 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           totalItems,
         };
       });
+    const orderIds = result.items.map((invoice) => invoice.orderId);
+    const orders = await this.connection
+      .getRepository(ctx, Order)
+      .createQueryBuilder('order')
+      .select('order.id')
+      .addSelect('order.code')
+      .addSelect('customer.emailAddress')
+      .leftJoin('order.customer', 'customer')
+      .setFindOptions({ where: { id: In(orderIds) } })
+      .getMany();
     const items: Invoice[] = [];
     for (let invoiceEntity of result.items) {
-      const order = await this.connection
-        .getRepository(ctx, Order)
-        .createQueryBuilder('order')
-        .select('order.id')
-        .addSelect('order.code')
-        .addSelect('customer.emailAddress')
-        .leftJoin('order.customer', 'customer')
-        .setFindOptions({ where: { id: invoiceEntity.orderId } })
-        .getOne();
-      if (!order?.customer) {
+      const order = orders.find((order) =>
+        idsAreEqual(order.id, invoiceEntity.orderId)
+      );
+      if (!order) {
         throw new UserInputError(`No order with id ${invoiceEntity.orderId}`);
+      }
+      if (!order.customer) {
+        throw new UserInputError(
+          `Order "${order.code}" has no customer. A customer is needed to get the download URL for an invoice`
+        );
       }
       items.push({
         ...invoiceEntity,
@@ -415,7 +425,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     try {
       await pdf.create(document, options);
     } catch (e: any) {
-      console.log(e);
       // Warning, because this will be retried, or is returned to the user
       Logger.warn(`Failed to generate invoice: ${e?.message}`, loggerCtx);
       throw e;
