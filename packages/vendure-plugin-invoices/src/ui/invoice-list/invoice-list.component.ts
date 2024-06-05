@@ -59,10 +59,6 @@ export class InvoiceListComponent extends TypedBaseListComponent<
         options: {
           skip,
           take,
-          filter: {
-            ...this.filters.createFilterInput(),
-          },
-          sort: this.sorts.createSortInput(),
         },
       }),
       refreshListOnChanges: [

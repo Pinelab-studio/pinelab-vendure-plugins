@@ -8,6 +8,7 @@ import {
   ChannelService,
   EventBus,
   ID,
+  idsAreEqual,
   Injector,
   JobQueue,
   JobQueueService,
@@ -186,19 +187,30 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           totalItems,
         };
       });
+    const orderIds = result.items.map((invoice) => invoice.orderId);
+    const orders = await this.connection
+      .getRepository(ctx, Order)
+      .createQueryBuilder('order')
+      .select('order.id')
+      .addSelect('order.code')
+      .addSelect('customer.emailAddress')
+      .leftJoin('order.customer', 'customer')
+      .setFindOptions({ where: { id: In(orderIds) } })
+      .getMany();
     const items: Invoice[] = [];
     for (let invoiceEntity of result.items) {
-      const order = await this.connection
-        .getRepository(ctx, Order)
-        .createQueryBuilder('order')
-        .select('order.id')
-        .addSelect('order.code')
-        .addSelect('customer.emailAddress')
-        .leftJoin('order.customer', 'customer')
-        .setFindOptions({ where: { id: invoiceEntity.orderId } })
-        .getOne();
-      if (!order?.customer) {
-        throw new UserInputError(`No order with id ${invoiceEntity.orderId}`);
+      const order = orders.find((order) =>
+        idsAreEqual(order.id, invoiceEntity.orderId)
+      );
+      if (!order) {
+        throw new UserInputError(
+          `No order with id ${invoiceEntity.orderId} found for invoice ${invoiceEntity.invoiceNumber}`
+        );
+      }
+      if (!order.customer) {
+        throw new UserInputError(
+          `Order "${order.code}" has no customer. A customer is needed to get the download URL for an invoice`
+        );
       }
       items.push({
         ...invoiceEntity,
@@ -221,15 +233,15 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     invoiceNumbers: string[],
     res: Response
   ): Promise<ReadStream> {
-    const nrSelectors = invoiceNumbers.map((i) => ({
-      invoiceNumber: i,
-      channelId: ctx.channelId,
-    }));
+    if (invoiceNumbers.length > 10) {
+      // For performance reasons
+      throw new UserInputError(`You can only download 10 invoices at a time`);
+    }
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     const invoices = await invoiceRepo.find({
       where: {
-        channelId: In(nrSelectors.map((i) => i.channelId)),
-        invoiceNumber: In(nrSelectors.map((i) => i.invoiceNumber)),
+        channelId: String(ctx.channelId),
+        invoiceNumber: In(invoiceNumbers),
       },
     });
     if (!invoices) {
@@ -415,7 +427,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     try {
       await pdf.create(document, options);
     } catch (e: any) {
-      console.log(e);
       // Warning, because this will be retried, or is returned to the user
       Logger.warn(`Failed to generate invoice: ${e?.message}`, loggerCtx);
       throw e;

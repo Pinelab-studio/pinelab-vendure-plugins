@@ -27,32 +27,30 @@
     id="created-at"
     [heading]="'common.created-at' | translate"
     [hiddenByDefault]="true"
-    [sort]="sorts.get('createdAt')"
   >
     <ng-template let-invoice="item">
       {{ invoice.createdAt | localeDate : 'short' }}
     </ng-template>
   </vdr-dt2-column>
-  <vdr-dt2-column id="invoiceNumber" heading="Order" [optional]="false">
-    <ng-template let-invoice="item">
-      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"
-        ><span>{{ invoice.orderCode }}</span>
-        <clr-icon shape="arrow right"></clr-icon>
-      </a>
-    </ng-template>
-  </vdr-dt2-column>
   <vdr-dt2-column
-    id="isCreditInvoice"
-    heading="Is Credit Invoice"
+    id="invoiceNumber"
+    heading="Invoice number"
     [optional]="false"
   >
     <ng-template let-invoice="item">
-      <clr-icon
-        *ngIf="invoice.isCreditInvoice"
-        shape="check"
-        class="color-success-700"
-      ></clr-icon>
-      <clr-icon *ngIf="!invoice.isCreditInvoice" shape="times"></clr-icon>
+      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"
+        ><span
+          >{{ invoice.invoiceNumber
+          }}<span *ngIf="invoice.isCreditInvoice"> (CREDIT)</span>
+        </span>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="order" heading="For order" [optional]="false">
+    <ng-template let-invoice="item">
+      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"
+        ><span>{{ invoice.orderCode }}</span>
+      </a>
     </ng-template>
   </vdr-dt2-column>
   <vdr-dt2-column id="downloadUrl" heading="Download" [optional]="false">
