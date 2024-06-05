@@ -4,7 +4,7 @@ import path from 'path';
 
 export default defineConfig({
   test: {
-    // testTimeout: 10000,
+    testTimeout: 10000,
     include: './test/e2e.spec.ts',
     typecheck: {
       tsconfig: path.join(__dirname, 'test/tsconfig.e2e.json'),

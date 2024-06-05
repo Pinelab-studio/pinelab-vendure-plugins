@@ -65,6 +65,16 @@ import { map } from 'rxjs';
             (event.target as HTMLButtonElement).disabled = false;
           });
       },
+      buttonState: (context) => {
+        const orderId = context.route.snapshot.params['id'];
+        const order$ = context.dataService.order.getOrder(orderId);
+        return order$.stream$.pipe(
+          map(({ order }) => ({
+            disabled: order?.state === 'Cancelled',
+            visible: true,
+          }))
+        );
+      },
     }),
   ],
 })
