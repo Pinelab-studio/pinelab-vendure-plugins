@@ -221,15 +221,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     invoiceNumbers: string[],
     res: Response
   ): Promise<ReadStream> {
-    const nrSelectors = invoiceNumbers.map((i) => ({
-      invoiceNumber: i,
-      channelId: ctx.channelId,
-    }));
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     const invoices = await invoiceRepo.find({
       where: {
-        channelId: In(nrSelectors.map((i) => i.channelId)),
-        invoiceNumber: In(nrSelectors.map((i) => i.invoiceNumber)),
+        channelId: String(ctx.channelId),
+        invoiceNumber: In(invoiceNumbers),
       },
     });
     if (!invoices) {
