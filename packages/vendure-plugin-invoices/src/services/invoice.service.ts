@@ -167,7 +167,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     channelToken: string,
     orderCode: string,
     createCreditInvoiceOnly: boolean
-  ): Promise<InvoiceEntity | undefined> {
+  ): Promise<InvoiceEntity> {
     const ctx = await this.createCtx(channelToken);
     let [order, previousInvoiceForOrder, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode),
@@ -236,6 +236,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
       return newInvoice;
     }
+    throw Error(
+      `No credit or debit invoice was generated for order ${orderCode} with "creditInvoiceOnly=${createCreditInvoiceOnly}"`
+    );
   }
 
   /**

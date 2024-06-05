@@ -49,9 +49,6 @@ export class InvoiceAdminResolver {
       order.code,
       false
     );
-    if (!invoice) {
-      throw Error('Could not create invoice');
-    }
     return {
       ...invoice,
       isCreditInvoice: invoice.isCreditInvoice,
