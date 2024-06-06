@@ -369,6 +369,7 @@ export class AcceptBlueService {
       subscription.frequency
     );
     return {
+      id: subscription.id,
       amountDueNow: 0,
       name: subscription.title,
       priceIncludesTax: true,
