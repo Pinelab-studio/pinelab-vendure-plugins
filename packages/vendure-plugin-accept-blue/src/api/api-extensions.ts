@@ -14,6 +14,10 @@ export const commonApiExtensions = gql`
   }
 
   type AcceptBlueSubscription {
+    """
+    This ID might not be available yet when an order hasn't been placed yet
+    """
+    id: ID
     name: String!
     variantId: ID!
     amountDueNow: Int!
