@@ -131,7 +131,8 @@ export class PopularityScoresService implements OnModuleInit {
     const traverseDepthFirstAndUpdateScore = async (
       node: Collection
     ): Promise<number> => {
-      if (node.children?.length) {
+      node.customFields.popularityScore = 0;
+      if (node?.children?.length) {
         for (const child of node.children) {
           node.customFields.popularityScore +=
             await traverseDepthFirstAndUpdateScore(child);
