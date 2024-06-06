@@ -3,6 +3,7 @@ import type { Dirent } from 'node:fs';
 import path from 'path';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
+import { getIcon } from './icons';
 
 interface PackageJson {
   name: string;
@@ -67,12 +68,13 @@ export async function getPlugins(): Promise<Plugin[]> {
       const name = readme.split('\n')[0].replace('#', '').trim();
       const readmeHtml = parseReadme(readme);
       const nrOfDownloads = await getNrOfDownloads(packageJson.name);
+      const slug = packageJson.name.replace('@pinelab/', '');
       plugins.push({
         name,
         npmName: packageJson.name,
-        slug: packageJson.name.replace('@pinelab/', ''),
+        slug,
         description: packageJson.description,
-        icon: packageJson.icon ?? 'package-variant-closed',
+        icon: getIcon(slug),
         markdownContent: readmeHtml,
         nrOfDownloads,
       });
