@@ -1,5 +1,6 @@
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, OneToMany } from 'typeorm';
 import { DeepPartial, VendureEntity } from '@vendure/core';
+import { ShipmateWebhookTokenEntity } from './shipmate-webhook-token.entitiy';
 
 @Entity()
 export class ShipmateConfigEntity extends VendureEntity {
@@ -13,8 +14,11 @@ export class ShipmateConfigEntity extends VendureEntity {
   @Column()
   apiKey!: string;
 
-  @Column('simple-array')
-  webhookAuthTokens!: string[];
+  @OneToMany(
+    () => ShipmateWebhookTokenEntity,
+    (shipmateConfig) => shipmateConfig.shipmateConfig
+  )
+  webhookAuthTokens!: ShipmateWebhookTokenEntity[];
 
   @Column()
   username!: string;

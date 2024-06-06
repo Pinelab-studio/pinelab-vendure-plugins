@@ -12,6 +12,7 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { ShipmateController } from './api/shipmate.controller';
+import { ShipmateWebhookTokenEntity } from './api/shipmate-webhook-token.entitiy';
 
 export interface ShipmatePluginConfig {
   shipmateApiUrl: string;
@@ -28,7 +29,7 @@ export interface ShipmatePluginConfig {
     },
     ShipmateConfigService,
   ],
-  entities: [ShipmateConfigEntity],
+  entities: [ShipmateConfigEntity, ShipmateWebhookTokenEntity],
   configuration: (config) => {
     config.authOptions.customPermissions.push(shipmatePermission);
     config.customFields.Order.push({

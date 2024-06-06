@@ -119,7 +119,7 @@ export class ShipmateComponent implements OnInit {
         this.form.controls['username'].setValue(config.username);
         this.form.controls['password'].setValue(config.password);
         for (let authTokenIndex in config.webhookAuthTokens ?? []) {
-          const authToken = config.webhookAuthTokens[authTokenIndex];
+          const authToken = config.webhookAuthTokens[authTokenIndex].token;
           (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
             parseInt(authTokenIndex),
             new FormControl(authToken)

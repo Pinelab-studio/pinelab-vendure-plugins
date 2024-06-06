@@ -6,7 +6,9 @@ export const updateShipmateConfig = gql`
       apiKey
       username
       password
-      webhookAuthTokens
+      webhookAuthTokens {
+        token
+      }
     }
   }
 `;
@@ -17,7 +19,9 @@ export const getShipmateConfig = gql`
       apiKey
       username
       password
-      webhookAuthTokens
+      webhookAuthTokens {
+        token
+      }
     }
   }
 `;

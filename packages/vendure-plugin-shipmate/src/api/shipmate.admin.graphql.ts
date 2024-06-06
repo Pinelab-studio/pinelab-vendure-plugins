@@ -21,12 +21,19 @@ export const adminSchema = gql`
     password: String
     webhookAuthTokens: [String!]
   }
+
+  type ShipmateWebhookToken {
+    token: String
+    shipmateConfig: ShipmateConfig
+  }
+
   type ShipmateConfig {
     apiKey: String
     username: String
     password: String
-    webhookAuthTokens: [String!]
+    webhookAuthTokens: [ShipmateWebhookToken!]
   }
+
   extend type Mutation {
     updateShipmateConfig(input: ShipmateConfigInput!): ShipmateConfig
   }
