@@ -52,32 +52,37 @@ export async function getPlugins(): Promise<Plugin[]> {
   const plugins: Plugin[] = [];
   await Promise.all(
     pluginDirectories.map(async (r) => {
-      const packageJsonFilePath = path.join(
-        pluginDirName,
-        r.name,
-        'package.json'
-      );
-      const packageJson: PackageJson = JSON.parse(
-        await readFile(packageJsonFilePath, 'utf8')
-      );
-      const readmeFilePath = path.join(pluginDirName, r.name, 'README.md');
-      let readme: string = await readFile(readmeFilePath, 'utf8');
-      // Remove official docs link from readme
-      readme = readme.replace(/^### \[Official.*$/gm, '');
-      // Get title from first line
-      const name = readme.split('\n')[0].replace('#', '').trim();
-      const readmeHtml = parseReadme(readme);
-      const nrOfDownloads = await getNrOfDownloads(packageJson.name);
-      const slug = packageJson.name.replace('@pinelab/', '');
-      plugins.push({
-        name,
-        npmName: packageJson.name,
-        slug,
-        description: packageJson.description,
-        icon: getIcon(slug),
-        markdownContent: readmeHtml,
-        nrOfDownloads,
-      });
+      try {
+        const packageJsonFilePath = path.join(
+          pluginDirName,
+          r.name,
+          'package.json'
+        );
+        const packageJson: PackageJson = JSON.parse(
+          await readFile(packageJsonFilePath, 'utf8')
+        );
+        const readmeFilePath = path.join(pluginDirName, r.name, 'README.md');
+        let readme: string = await readFile(readmeFilePath, 'utf8');
+        // Remove official docs link from readme
+        readme = readme.replace(/^### \[Official.*$/gm, '');
+        // Get title from first line
+        const name = readme.split('\n')[0].replace('#', '').trim();
+        const readmeHtml = parseReadme(readme);
+        const nrOfDownloads = await getNrOfDownloads(packageJson.name);
+        const slug = packageJson.name.replace('@pinelab/', '');
+        plugins.push({
+          name,
+          npmName: packageJson.name,
+          slug,
+          description: packageJson.description,
+          icon: getIcon(slug),
+          markdownContent: readmeHtml,
+          nrOfDownloads,
+        });
+      } catch (e) {
+        console.error(`Error reading plugin ${r.name}`, e);
+        return;
+      }
     })
   );
   const pluginsSortedByDownloads = plugins.sort(
