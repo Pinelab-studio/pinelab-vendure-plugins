@@ -8,12 +8,11 @@ import {
   ChannelService,
   EventBus,
   ID,
-  idsAreEqual,
+  ListQueryOptions,
   Injector,
   JobQueue,
   JobQueueService,
   ListQueryBuilder,
-  ListQueryOptions,
   Logger,
   Order,
   OrderPlacedEvent,
@@ -24,7 +23,12 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { Invoice, InvoiceConfigInput } from '../ui/generated/graphql';
+import {
+  Invoice,
+  InvoiceConfigInput,
+  InvoiceListFilter,
+  InvoiceListOptions,
+} from '../ui/generated/graphql';
 import { ModuleRef } from '@nestjs/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
@@ -33,7 +37,7 @@ import Handlebars from 'handlebars';
 import * as pdf from 'pdf-creator-node';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
-import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoiceEntity, InvoiceOrderTotals } from '../entities/invoice.entity';
 import { InvoicePluginConfig } from '../invoice.plugin';
 import { CreditInvoiceInput } from '../strategies/load-data-fn';
 import {
@@ -45,10 +49,15 @@ import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
-import { SortOrder } from '@vendure/common/lib/generated-shop-types';
+import {
+  SortOrder,
+  LogicalOperator,
+} from '@vendure/common/lib/generated-shop-types';
 
-import { In } from 'typeorm';
+import { In, Brackets } from 'typeorm';
 import { filter } from 'rxjs';
+
+import { parseFilterParams } from '@vendure/core/dist/service/helpers/list-query-builder/parse-filter-params';
 
 interface DownloadInput {
   customerEmail: string;
@@ -167,66 +176,116 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
 
   async findAll(
     ctx: RequestContext,
-    options?: ListQueryOptions<InvoiceEntity>
+    options?: InvoiceListOptions
   ): Promise<PaginatedList<Invoice>> {
-    options = {
+    const entityOptions: ListQueryOptions<InvoiceEntity> = {
       ...options,
-      sort: options?.sort ?? { updatedAt: SortOrder.DESC },
-      filter: {
-        ...options?.filter,
-        channelId: { eq: ctx.channelId.toString() },
-      },
+      ...(options?.filter?.invoiceNumber
+        ? { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
+        : { filter: {} }),
+      sort: { updatedAt: SortOrder.DESC },
     };
-    const result = await this.listQueryBuilder
-      .build(InvoiceEntity, options, {
-        ctx,
-      })
-      .getManyAndCount()
-      .then(([items, totalItems]) => {
-        return {
-          items,
-          totalItems,
-        };
-      });
-    const orderIds = result.items.map((invoice) => invoice.orderId);
-    const orders = await this.connection
-      .getRepository(ctx, Order)
-      .createQueryBuilder('order')
-      .select('order.id')
-      .addSelect('order.code')
-      .addSelect('customer.emailAddress')
-      .leftJoin('order.customer', 'customer')
-      .setFindOptions({ where: { id: In(orderIds) } })
-      .getMany();
-    const items: Invoice[] = [];
-    for (let invoiceEntity of result.items) {
-      const order = orders.find((order) =>
-        idsAreEqual(order.id, invoiceEntity.orderId)
+    const qb = this.listQueryBuilder.build(InvoiceEntity, entityOptions, {
+      ctx,
+      where: {
+        channelId: ctx.channelId.toString(),
+      },
+      entityAlias: 'invoice',
+    });
+    qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
+    qb.addSelect(['order.id', 'order.code']);
+    // console.log(options?.filter?.orderCode,"\n\n")
+    if (options?.filter?.orderCode) {
+      const filter = parseFilterParams(
+        qb.connection,
+        Order,
+        { code: { ...options?.filter?.orderCode } },
+        undefined,
+        'order'
       );
-      if (!order) {
+      console.log(filter, 'filter');
+      const condition = filter[0];
+      // qb.andWhere(
+      //     new Brackets(qb1 => {
+      if (options.filterOperator === LogicalOperator.AND) {
+        qb.andWhere(condition.clause, condition.parameters);
+      } else {
+        qb.orWhere(condition.clause, condition.parameters);
+      }
+      //     }
+      //   ),
+      // );
+    }
+    qb.innerJoin('order.customer', 'customer');
+    qb.addSelect(['customer.id', 'customer.emailAddress']);
+    qb.printSql();
+    const totalItems = await qb.getCount();
+    const result = await qb.getRawMany();
+
+    console.log(result.length, '+++++++++', totalItems);
+    // const orderIds = result.items.map((invoice) => invoice.orderId);
+    // const orders = await this.connection
+    //   .getRepository(ctx, Order)
+    //   .createQueryBuilder('order')
+    //   .select('order.id')
+    //   .addSelect('order.code')
+    //   .addSelect('customer.emailAddress')
+    //   .leftJoin('order.customer', 'customer')
+    //   .setFindOptions({ where: { id: In(orderIds)} })
+    //   .getMany();
+    const items: Invoice[] = [];
+    for (let invoiceEntity of result) {
+      // const order = orders.find((order) =>
+      //   idsAreEqual(order.id, invoiceEntity.orderId)
+      // );
+      // const order= (invoiceEntity as any).order_id
+      if (!invoiceEntity.order_id) {
         throw new UserInputError(
           `No order with id ${invoiceEntity.orderId} found for invoice ${invoiceEntity.invoiceNumber}`
         );
       }
-      if (!order.customer) {
+      if (!invoiceEntity.customer_id) {
         throw new UserInputError(
-          `Order "${order.code}" has no customer. A customer is needed to get the download URL for an invoice`
+          `Order "${invoiceEntity.order_code}" has no customer. A customer is needed to get the download URL for an invoice`
         );
       }
+      const orderTotals = JSON.parse(
+        invoiceEntity.invoice_orderTotals
+      ) as InvoiceOrderTotals;
       items.push({
-        ...invoiceEntity,
-        orderId: order.id,
-        orderCode: order.code,
-        isCreditInvoice: invoiceEntity.isCreditInvoice,
+        createdAt: new Date(invoiceEntity.invoice_createdAt),
+        id: invoiceEntity.invoice_id,
+        invoiceNumber: invoiceEntity.invoice_invoiceNumber,
+        orderId: invoiceEntity.order_id,
+        orderCode: invoiceEntity.order_code,
+        isCreditInvoice: orderTotals.total < 0,
         downloadUrl: this.getDownloadUrl(
           ctx,
           invoiceEntity,
-          order.code,
-          order.customer.emailAddress
+          invoiceEntity.order_code,
+          invoiceEntity.customer_emailAddress
         ),
       });
     }
-    return { items, totalItems: result.totalItems };
+    return { items, totalItems };
+  }
+
+  parseFilter(filter: InvoiceListFilter | undefined) {
+    let filterInput = {};
+    if (filter?.invoiceNumber) {
+      filterInput = {
+        invoiceNumber: filter?.invoiceNumber,
+      };
+    }
+    if (filter?.orderCode) {
+      filterInput = {
+        ...filterInput,
+        order: {
+          code: filter?.orderCode,
+        },
+      };
+    }
+    return filterInput;
   }
 
   async downloadMultiple(

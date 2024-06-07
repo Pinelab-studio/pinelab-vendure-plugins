@@ -7,6 +7,7 @@ import {
   OrderService,
   PaginatedList,
   RequestContext,
+  Transaction,
   UserInputError,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
@@ -29,6 +30,7 @@ export class InvoiceAdminResolver {
   ) {}
 
   @Mutation()
+  @Transaction()
   @Allow(invoicePermission.Permission)
   async upsertInvoiceConfig(
     @Ctx() ctx: RequestContext,
@@ -38,6 +40,7 @@ export class InvoiceAdminResolver {
   }
 
   @Mutation()
+  @Transaction()
   @Allow(invoicePermission.Permission)
   async createInvoice(
     @Ctx() ctx: RequestContext,
