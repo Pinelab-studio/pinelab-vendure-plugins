@@ -1,6 +1,4 @@
-import { Injectable, OnModuleInit, Inject, HttpStatus } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import {
   GetTokenRespose,
   CreateShipmentResponse,
@@ -9,7 +7,6 @@ import {
 } from '../types';
 import {
   Channel,
-  ChannelService,
   EntityHydrator,
   EventBus,
   FulfillmentState,
@@ -27,9 +24,9 @@ import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
 import { ShipmateConfigService } from './shipmate-config.service';
 import { parseOrder } from './util';
-import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
-import { Response } from 'express';
+import axios, { AxiosInstance } from 'axios';
+import { ShipmateConfigEntity } from './shipmate-config.entity';
 
 export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
 export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
@@ -38,7 +35,6 @@ export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
 export class ShipmateService implements OnModuleInit {
   tokens: Map<string, string> = new Map();
   constructor(
-    private httpService: HttpService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: ShipmatePluginConfig,
     private shipmateConfigService: ShipmateConfigService,
     private orderService: OrderService,
@@ -48,17 +44,24 @@ export class ShipmateService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    this.httpService.axiosRef.defaults.headers.common['Accept'] =
-      'application/json';
-    this.httpService.axiosRef.defaults.headers.common['Content-Type'] =
-      'application/json';
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      await this.setupRequestHeaders(ctx);
-      await this.createShipment(ctx, order);
+      const client = axios.create({
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      });
+      const headers = await this.setupAxiosInstance(ctx, client);
+      if (headers) {
+        await this.createShipment(ctx, order, client, headers);
+      }
     });
   }
 
-  async setupRequestHeaders(ctx: RequestContext) {
+  async setupAxiosInstance(
+    ctx: RequestContext,
+    client: AxiosInstance
+  ): Promise<any> {
     const shipmateConfig = await this.shipmateConfigService.getConfig(ctx);
     if (!shipmateConfig) {
       Logger.error(
@@ -67,36 +70,39 @@ export class ShipmateService implements OnModuleInit {
       );
       return;
     }
-    let shipmateTokenForTheCurrentChannel = this.tokens.get(
-      shipmateConfig.apiKey
-    );
+    const key = this.tokeStoreKey(shipmateConfig);
+    let shipmateTokenForTheCurrentChannel = this.tokens.get(key);
     if (!shipmateTokenForTheCurrentChannel) {
       shipmateTokenForTheCurrentChannel = await this.getShipmentToken(
         shipmateConfig.username,
-        shipmateConfig.password
+        shipmateConfig.password,
+        client
       );
-      this.tokens.set(shipmateConfig.apiKey, shipmateTokenForTheCurrentChannel);
+      this.tokens.set(key, shipmateTokenForTheCurrentChannel);
     }
-    this.httpService.axiosRef.defaults.headers.common[
-      SHIPMATE_TOKEN_HEADER_KEY
-    ] = shipmateTokenForTheCurrentChannel;
-    this.httpService.axiosRef.defaults.headers.common[
-      SHIPMATE_API_KEY_HEADER_KEY
-    ] = shipmateConfig.apiKey;
+    return {
+      'X-SHIPMATE-TOKEN': shipmateTokenForTheCurrentChannel,
+      'X-SHIPMATE-API-KEY': shipmateConfig.apiKey,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    };
+  }
+
+  tokeStoreKey(shipmateConfig: ShipmateConfigEntity) {
+    return `${shipmateConfig.apiKey}-${shipmateConfig.channelId}`;
   }
 
   async getShipmentToken(
     shipmateUsername: string,
-    shipmatePassword: string
+    shipmatePassword: string,
+    client: AxiosInstance
   ): Promise<string> {
-    const response = await firstValueFrom(
-      this.httpService.post<GetTokenRespose>(
-        `${this.config.shipmateApiUrl}/tokens`,
-        {
-          username: shipmateUsername,
-          password: shipmatePassword,
-        }
-      )
+    const response = await client.post<GetTokenRespose>(
+      `${this.config.shipmateApiUrl}/tokens`,
+      {
+        username: shipmateUsername,
+        password: shipmatePassword,
+      }
     );
     if (response.data.data?.token) {
       Logger.info('Successfully authenticated with Shipmate API', loggerCtx);
@@ -107,34 +113,38 @@ export class ShipmateService implements OnModuleInit {
     }
   }
 
-  async createShipment(ctx: RequestContext, order: Order) {
-    const shipmateReference = generatePublicId();
-    const payload = parseOrder(order, shipmateReference);
+  async createShipment(
+    ctx: RequestContext,
+    order: Order,
+    client: AxiosInstance,
+    headers: any
+  ) {
+    const payload = parseOrder(order, order.code);
     try {
-      const result = await firstValueFrom(
-        this.httpService.post<CreateShipmentResponse>(
-          `${this.config.shipmateApiUrl}/shipments`,
-          payload
-        )
+      const result = await client.post<CreateShipmentResponse>(
+        `${this.config.shipmateApiUrl}/shipments`,
+        payload,
+        {
+          headers,
+        }
       );
       Logger.info(result.data.message, loggerCtx);
       await this.orderService.updateCustomFields(ctx, order.id, {
         ...order.customFields,
-        shipmateReference,
+        shipmateReference: order.code,
       });
     } catch (error: any) {
       const message = error.response.data.message;
-      Logger.error(message, loggerCtx);
+      Logger.error(JSON.stringify(error.response.data), loggerCtx);
     }
   }
 
-  async updateOrderState(payload: EventPayload, res: Response): Promise<void> {
+  async updateOrderState(payload: EventPayload): Promise<string> {
     const ctx = await this.createCtx(payload.auth_token);
     if (!ctx) {
       const message = `No registered ShipmentConfigEntity with this auth_token`;
       Logger.error(message, loggerCtx);
-      res.status(HttpStatus.BAD_REQUEST).json({ message });
-      return;
+      throw new UserInputError(message);
     }
     await this.connection.startTransaction(ctx);
     const shipmentOrder = await this.orderService.findOneByCode(
@@ -142,25 +152,20 @@ export class ShipmateService implements OnModuleInit {
       payload.order_reference
     );
     if (!shipmentOrder) {
-      const message = `No Order with code ${payload.order_reference}`;
+      const message = `No Order with code ${payload.order_reference} in channel ${ctx.channel.code}`;
       Logger.error(message, loggerCtx);
-      res.status(HttpStatus.BAD_REQUEST).json({ message });
-      return;
+      throw new UserInputError(message);
     }
     Logger.info(
-      `${payload.event} event received for Order with code ${payload.order_reference}`,
+      `${payload.event} event received for Order with code ${payload.order_reference} in channel ${ctx.channel.code}`,
       loggerCtx
     );
     if (payload.event === 'TRACKING_COLLECTED') {
       await this.updateFulFillment(ctx, shipmentOrder, payload, 'Shipped');
-      res
-        .status(HttpStatus.CREATED)
-        .json({ message: `Order marked as  Shipped successfully` });
+      return `Order successfully marked as  Shipped`;
     } else if (payload.event === 'TRACKING_DELIVERED') {
       await this.updateFulFillment(ctx, shipmentOrder, payload, 'Delivered');
-      res
-        .status(HttpStatus.CREATED)
-        .json({ message: `Order marked as Delivered successfully` });
+      return `Order successfully marked as Delivered`;
     } else {
       Logger.info(
         `No configured handler for event "${payload.event}"`,
@@ -168,9 +173,12 @@ export class ShipmateService implements OnModuleInit {
       );
     }
     await this.connection.commitOpenTransaction(ctx);
-    return;
+    return `No configured handler for event "${payload.event}"`;
   }
 
+  /**
+   * Update Vedure Fulfillments
+   */
   async updateFulFillment(
     ctx: RequestContext,
     order: Order,
@@ -224,6 +232,9 @@ export class ShipmateService implements OnModuleInit {
     }
   }
 
+  /**
+   * Create Vedure Fulfillments
+   */
   createFulfillOrderInput(
     order: Order,
     payload: EventPayload
@@ -254,7 +265,7 @@ export class ShipmateService implements OnModuleInit {
     const config =
       await this.shipmateConfigService.getConfigWithWebhookAuthToken(authToken);
     if (!config) {
-      Logger.info(`No channel with this webhooks auth token`, loggerCtx);
+      Logger.error(`No channel with this webhooks auth token`, loggerCtx);
       return;
     }
     const channel = (await this.connection.getRepository(Channel).findOne({

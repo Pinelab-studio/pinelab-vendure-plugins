@@ -113,23 +113,26 @@ export class ShipmateComponent implements OnInit {
   async ngOnInit(): Promise<void> {
     await this.dataService
       .query(getShipmateConfig)
+      .refetchOnChannelChange()
       .mapStream((d: any) => d.shipmateConfig)
       .subscribe((config) => {
-        this.form.controls['apiKey'].setValue(config.apiKey);
-        this.form.controls['username'].setValue(config.username);
-        this.form.controls['password'].setValue(config.password);
-        for (let authTokenIndex in config.webhookAuthTokens ?? []) {
-          const authToken = config.webhookAuthTokens[authTokenIndex].token;
-          (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
-            parseInt(authTokenIndex),
-            new FormControl(authToken)
-          );
-        }
-        if (!config.webhookAuthTokens?.length) {
-          (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
-            0,
-            new FormControl('')
-          );
+        if (config) {
+          this.form.controls['apiKey'].setValue(config.apiKey);
+          this.form.controls['username'].setValue(config.username);
+          this.form.controls['password'].setValue(config.password);
+          for (let authTokenIndex in config.webhookAuthTokens ?? []) {
+            const authToken = config.webhookAuthTokens[authTokenIndex].token;
+            (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+              parseInt(authTokenIndex),
+              new FormControl(authToken)
+            );
+          }
+          if (!config.webhookAuthTokens?.length) {
+            (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+              0,
+              new FormControl('')
+            );
+          }
         }
         this.dataHasLoaded = true;
         this.changeDetector.markForCheck();

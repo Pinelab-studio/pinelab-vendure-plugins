@@ -26,10 +26,13 @@ import { ShipmateConfigService } from '../src/api/shipmate-config.service';
 import axios from 'axios';
 import type { TrackingEventPayload } from '../src/types';
 import { authToken } from './test-helpers';
+import { OrderCodeStrategy } from '@vendure/core';
 
-vi.mock('@vendure/core/dist/common/generate-public-id', () => ({
-  generatePublicId: vi.fn().mockImplementation(() => 'FBJYSHC7WTRQEA14'),
-}));
+class MockOrderCodeStrategy implements OrderCodeStrategy {
+  generate(ctx: RequestContext): string | Promise<string> {
+    return newShipment.shipment_reference;
+  }
+}
 
 describe('Shipmate plugin', async () => {
   let server: TestServer;
@@ -51,6 +54,9 @@ describe('Shipmate plugin', async () => {
       ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
+      },
+      orderOptions: {
+        orderCodeStrategy: new MockOrderCodeStrategy(),
       },
     });
 

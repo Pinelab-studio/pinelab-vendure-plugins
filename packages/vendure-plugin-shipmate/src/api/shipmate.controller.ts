@@ -7,7 +7,7 @@ import { Response } from 'express';
 export class ShipmateController {
   constructor(private shipmentService: ShipmateService) {}
   @Post()
-  async event(@Res() res: Response, @Body() payload: EventPayload) {
-    await this.shipmentService.updateOrderState(payload, res);
+  async event(@Body() payload: EventPayload) {
+    await this.shipmentService.updateOrderState(payload);
   }
 }

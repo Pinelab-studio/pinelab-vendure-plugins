@@ -1,7 +1,7 @@
 import type { ShipmateConfigEntity } from '../src/api/shipmate-config.entity';
 export const authToken = 'SHIPMATE_WEBHOOK_AUTH_TOKEN';
 
-export const newShipment = {
+const newShipment = {
   id: '4e084315-f87f-4d9f-994e-9b25f6b9844d',
   shipment_reference: 'FBJYSHC7WTRQEA14',
   parcel_reference: 'rai10d',
@@ -89,13 +89,23 @@ export const newShipment = {
   png: '',
 };
 
-export const testShipmateConfig: ShipmateConfigEntity = {
+const testShipmateConfig: ShipmateConfigEntity = {
   channelId: '1',
   apiKey: 'SHIPMATE_API_KEY',
-  webhookAuthTokens: [authToken],
+  webhookAuthTokens: [],
   id: 1,
   username: 'SHIPMATE_USERNAME',
   password: 'SHIPMATE_PASSWORD',
   createdAt: new Date(),
   updatedAt: new Date(),
 };
+
+testShipmateConfig.webhookAuthTokens.push({
+  token: authToken,
+  shipmateConfig: testShipmateConfig,
+  id: '1',
+  createdAt: new Date(),
+  updatedAt: new Date(),
+});
+
+export { testShipmateConfig, newShipment };
