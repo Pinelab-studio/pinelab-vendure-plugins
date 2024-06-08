@@ -194,7 +194,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     });
     qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
     qb.addSelect(['order.id', 'order.code']);
-    // console.log(options?.filter?.orderCode,"\n\n")
     if (options?.filter?.orderCode) {
       const filter = parseFilterParams(
         qb.connection,
@@ -203,42 +202,21 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         undefined,
         'order'
       );
-      console.log(filter, 'filter');
       const condition = filter[0];
-      // qb.andWhere(
-      //     new Brackets(qb1 => {
+      condition.clause = condition.clause.replace('arg1', 'arg2');
+      const parameters = { arg2: condition.parameters['arg1'] };
       if (options.filterOperator === LogicalOperator.AND) {
-        qb.andWhere(condition.clause, condition.parameters);
+        qb.andWhere(condition.clause, parameters);
       } else {
-        qb.orWhere(condition.clause, condition.parameters);
+        qb.orWhere(condition.clause, parameters);
       }
-      //     }
-      //   ),
-      // );
     }
     qb.innerJoin('order.customer', 'customer');
     qb.addSelect(['customer.id', 'customer.emailAddress']);
-    qb.printSql();
     const totalItems = await qb.getCount();
     const result = await qb.getRawMany();
-
-    console.log(result.length, '+++++++++', totalItems);
-    // const orderIds = result.items.map((invoice) => invoice.orderId);
-    // const orders = await this.connection
-    //   .getRepository(ctx, Order)
-    //   .createQueryBuilder('order')
-    //   .select('order.id')
-    //   .addSelect('order.code')
-    //   .addSelect('customer.emailAddress')
-    //   .leftJoin('order.customer', 'customer')
-    //   .setFindOptions({ where: { id: In(orderIds)} })
-    //   .getMany();
     const items: Invoice[] = [];
     for (let invoiceEntity of result) {
-      // const order = orders.find((order) =>
-      //   idsAreEqual(order.id, invoiceEntity.orderId)
-      // );
-      // const order= (invoiceEntity as any).order_id
       if (!invoiceEntity.order_id) {
         throw new UserInputError(
           `No order with id ${invoiceEntity.orderId} found for invoice ${invoiceEntity.invoiceNumber}`
@@ -261,7 +239,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         isCreditInvoice: orderTotals.total < 0,
         downloadUrl: this.getDownloadUrl(
           ctx,
-          invoiceEntity,
+          invoiceEntity.invoice_invoiceNumber,
           invoiceEntity.order_code,
           invoiceEntity.customer_emailAddress
         ),
@@ -636,12 +614,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   getDownloadUrl(
     ctx: RequestContext,
-    invoice: InvoiceEntity,
+    invoiceNumber: number,
     orderCode: string,
     customerEmail: string
   ): string {
     const emailAddress = encodeURIComponent(customerEmail);
-    return `${this.config.vendureHost}/invoices/${ctx.channel.token}/${orderCode}/${invoice.invoiceNumber}?email=${emailAddress}`;
+    return `${this.config.vendureHost}/invoices/${ctx.channel.token}/${orderCode}/${invoiceNumber}?email=${emailAddress}`;
   }
 
   async upsertConfig(

@@ -64,7 +64,7 @@ export class InvoiceAdminResolver {
       orderCode: order.code,
       downloadUrl: this.invoiceService.getDownloadUrl(
         ctx,
-        invoice,
+        invoice.invoiceNumber,
         order.code,
         order.customer.emailAddress
       ),
