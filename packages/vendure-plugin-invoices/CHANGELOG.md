@@ -1,3 +1,7 @@
+# 2.3.2 (2024-06-08)
+
+- Allow searching by invoice number in Invoices list
+
 # 2.3.1 (2024-06-05)
 
 - Sort invoices by created at
