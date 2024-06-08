@@ -1,4 +1,4 @@
-import { Column, ManyToOne, Entity } from 'typeorm';
+import { Column, ManyToOne, Entity, Index } from 'typeorm';
 import { DeepPartial, VendureEntity } from '@vendure/core';
 import { ShipmateConfigEntity } from './shipmate-config.entity';
 
@@ -9,6 +9,7 @@ export class ShipmateWebhookTokenEntity extends VendureEntity {
   }
 
   @Column({ unique: true })
+  @Index()
   token!: string;
 
   @ManyToOne(
