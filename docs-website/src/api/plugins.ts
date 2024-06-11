@@ -4,6 +4,8 @@ import path from 'path';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import { getIcon } from './icons';
+import { rehype } from 'rehype';
+import rehypeAutolinkHeadings from 'rehype-autolink-headings';
 
 interface PackageJson {
   name: string;
@@ -67,7 +69,7 @@ export async function getPlugins(): Promise<Plugin[]> {
         readme = readme.replace(/^### \[Official.*$/gm, '');
         // Get title from first line
         const name = readme.split('\n')[0].replace('#', '').trim();
-        const readmeHtml = parseReadme(readme);
+        const readmeHtml = await parseReadme(readme);
         const nrOfDownloads = await getNrOfDownloads(packageJson.name);
         const slug = packageJson.name.replace('@pinelab/', '');
         plugins.push({
@@ -94,7 +96,7 @@ export async function getPlugins(): Promise<Plugin[]> {
 /**
  * Parse raw Readme.md string to HTML
  */
-export function parseReadme(readmeString: string): string {
+export async function parseReadme(readmeString: string): Promise<string> {
   // `highlight` example uses https://highlightjs.org
   marked.setOptions({
     renderer: new marked.Renderer(),
@@ -111,7 +113,15 @@ export function parseReadme(readmeString: string): string {
     smartypants: false,
     xhtml: false,
   });
-  return marked.parse(readmeString);
+  const html = marked.parse(readmeString);
+  // Add anchor links to headings
+  const result = await rehype()
+    .data('settings', { fragment: true })
+    .use(rehypeAutolinkHeadings, {
+      behavior: 'wrap',
+    })
+    .process(html);
+  return String(result);
 }
 
 export async function getNrOfDownloads(
