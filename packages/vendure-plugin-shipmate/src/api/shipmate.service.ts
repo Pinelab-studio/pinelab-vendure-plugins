@@ -27,6 +27,7 @@ import { parseOrder } from './util';
 import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
 import axios, { AxiosInstance } from 'axios';
 import { ShipmateConfigEntity } from './shipmate-config.entity';
+import { ShipmateClient } from './shipmate-client';
 
 export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
 export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
@@ -45,23 +46,14 @@ export class ShipmateService implements OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      const client = axios.create({
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
-      const headers = await this.setupAxiosInstance(ctx, client);
+      const headers = await this.getShipmateAuthHeaders(ctx);
       if (headers) {
-        await this.createShipment(ctx, order, client, headers);
+        await this.createShipment(ctx, order, headers);
       }
     });
   }
 
-  async setupAxiosInstance(
-    ctx: RequestContext,
-    client: AxiosInstance
-  ): Promise<any> {
+  async getShipmateAuthHeaders(ctx: RequestContext): Promise<any> {
     const shipmateConfig = await this.shipmateConfigService.getConfig(ctx);
     if (!shipmateConfig) {
       Logger.error(
@@ -75,16 +67,13 @@ export class ShipmateService implements OnModuleInit {
     if (!shipmateTokenForTheCurrentChannel) {
       shipmateTokenForTheCurrentChannel = await this.getShipmentToken(
         shipmateConfig.username,
-        shipmateConfig.password,
-        client
+        shipmateConfig.password
       );
       this.tokens.set(key, shipmateTokenForTheCurrentChannel);
     }
     return {
       'X-SHIPMATE-TOKEN': shipmateTokenForTheCurrentChannel,
       'X-SHIPMATE-API-KEY': shipmateConfig.apiKey,
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
     };
   }
 
@@ -94,9 +83,14 @@ export class ShipmateService implements OnModuleInit {
 
   async getShipmentToken(
     shipmateUsername: string,
-    shipmatePassword: string,
-    client: AxiosInstance
+    shipmatePassword: string
   ): Promise<string> {
+    const client = axios.create({
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
     const response = await client.post<GetTokenRespose>(
       `${this.config.shipmateApiUrl}/tokens`,
       {
@@ -113,29 +107,15 @@ export class ShipmateService implements OnModuleInit {
     }
   }
 
-  async createShipment(
-    ctx: RequestContext,
-    order: Order,
-    client: AxiosInstance,
-    headers: any
-  ) {
+  async createShipment(ctx: RequestContext, order: Order, headers: any) {
     const payload = parseOrder(order, order.code);
-    try {
-      const result = await client.post<CreateShipmentResponse>(
-        `${this.config.shipmateApiUrl}/shipments`,
-        payload,
-        {
-          headers,
-        }
-      );
-      Logger.info(result.data.message, loggerCtx);
+    const client = new ShipmateClient(headers, this.config.shipmateApiUrl);
+    const newShipments = await client.createShipment(payload);
+    if (newShipments?.length) {
       await this.orderService.updateCustomFields(ctx, order.id, {
         ...order.customFields,
         shipmateReference: order.code,
       });
-    } catch (error: any) {
-      const message = error.response.data.message;
-      Logger.error(JSON.stringify(error.response.data), loggerCtx);
     }
   }
 
@@ -146,7 +126,6 @@ export class ShipmateService implements OnModuleInit {
       Logger.error(message, loggerCtx);
       throw new UserInputError(message);
     }
-    await this.connection.startTransaction(ctx);
     const shipmentOrder = await this.orderService.findOneByCode(
       ctx,
       payload.order_reference
@@ -172,7 +151,6 @@ export class ShipmateService implements OnModuleInit {
         loggerCtx
       );
     }
-    await this.connection.commitOpenTransaction(ctx);
     return `No configured handler for event "${payload.event}"`;
   }
 
