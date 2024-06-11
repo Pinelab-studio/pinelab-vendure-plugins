@@ -15,7 +15,9 @@ import { ShipmateController } from './api/shipmate.controller';
 import { ShipmateWebhookTokenEntity } from './api/shipmate-webhook-token.entitiy';
 
 export interface ShipmatePluginConfig {
-  shipmateApiUrl: string;
+  shipmateApiUrl:
+    | 'https://api.shipmate.co.uk/v1.2'
+    | 'https://api-staging.shipmate.co.uk/v1.2';
 }
 
 @VendurePlugin({

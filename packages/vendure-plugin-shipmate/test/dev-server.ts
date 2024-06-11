@@ -26,7 +26,7 @@ import { ShipmateConfigService } from '../src/api/shipmate-config.service';
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
       VendureShipmatePlugin.init({
-        shipmateApiUrl: process.env.SHIPMATE_BASE_URL as string,
+        shipmateApiUrl: process.env.SHIPMATE_BASE_URL as any,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

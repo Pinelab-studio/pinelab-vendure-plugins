@@ -1,32 +1,82 @@
-import { RequestContext, Order, Logger } from '@vendure/core';
-import { loggerCtx } from '../constants';
-import { CreateShipmentResponse, NewShipment, Shipment } from '../types';
-import { parseOrder } from './util';
+import { Logger } from '@vendure/core';
 import axios, { AxiosInstance } from 'axios';
+import { loggerCtx } from '../constants';
+import {
+  CreateShipmentResponse,
+  GetTokenRespose,
+  NewShipment,
+  Shipment,
+} from '../types';
+
+interface ShipmateClientInput {
+  apiUrl: string;
+  username: string;
+  password: string;
+  apiKey: string;
+}
 
 export class ShipmateClient {
   client: AxiosInstance;
 
-  constructor(headers: any, baseURL: string) {
+  /**
+   * Auth token used to identify as user
+   */
+  private token: string | undefined;
+
+  constructor(private input: ShipmateClientInput) {
     this.client = axios.create({
       headers: {
-        ...headers,
+        'X-SHIPMATE-API-KEY': input.apiKey,
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
-      baseURL,
+      baseURL: input.apiUrl,
     });
   }
-  async createShipment(payload: Shipment): Promise<NewShipment[] | undefined> {
+
+  async createShipment(shipment: Shipment): Promise<NewShipment[] | undefined> {
     try {
       const result = await this.client.post<CreateShipmentResponse>(
         `/shipments`,
-        payload
+        shipment
       );
       Logger.info(result.data.message, loggerCtx);
       return result.data?.data;
     } catch (error: any) {
       Logger.error(JSON.stringify(error.response?.data), loggerCtx);
+      throw error;
     }
+  }
+
+  async getShipmentToken(
+    shipmateUsername: string,
+    shipmatePassword: string
+  ): Promise<string> {
+    const response = await this.client.post<GetTokenRespose>(`/tokens`, {
+      username: shipmateUsername,
+      password: shipmatePassword,
+    });
+    if (!response.data.data?.token) {
+      Logger.error(
+        response.data.message,
+        loggerCtx,
+        JSON.stringify(response.data)
+      );
+      throw new Error(response.data.message);
+    }
+    return response.data.data.token;
+  }
+
+  /**
+   * Get a token to authenticate as given user, and set it as header in our axios instance
+   */
+  private async setToken(): Promise<void> {
+    if (!this.token) {
+      this.token = await this.getShipmentToken(
+        this.input.username,
+        this.input.password
+      );
+    }
+    this.client.defaults.headers.common['X-SHIPMATE-TOKEN'] = this.token;
   }
 }

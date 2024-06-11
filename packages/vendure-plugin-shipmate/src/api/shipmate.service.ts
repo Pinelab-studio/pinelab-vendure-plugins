@@ -1,115 +1,93 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import {
-  GetTokenRespose,
-  CreateShipmentResponse,
-  EventPayload,
-  TrackingEventPayload,
-} from '../types';
+  Inject,
+  Injectable,
+  OnModuleInit,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
+import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
 import {
   Channel,
   EntityHydrator,
   EventBus,
   FulfillmentState,
+  isGraphQlErrorResult,
+  JobQueue,
+  JobQueueService,
   Logger,
+  manualFulfillmentHandler,
   Order,
   OrderPlacedEvent,
   OrderService,
   RequestContext,
+  SerializedRequestContext,
   TransactionalConnection,
   UserInputError,
-  isGraphQlErrorResult,
-  manualFulfillmentHandler,
 } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
+import { EventPayload, TrackingEventPayload } from '../types';
+import { ShipmateClient } from './shipmate-client';
 import { ShipmateConfigService } from './shipmate-config.service';
 import { parseOrder } from './util';
-import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
-import axios, { AxiosInstance } from 'axios';
-import { ShipmateConfigEntity } from './shipmate-config.entity';
-import { ShipmateClient } from './shipmate-client';
+import util from 'util';
 
-export const SHIPMATE_TOKEN_HEADER_KEY = 'X-SHIPMATE-TOKEN';
-export const SHIPMATE_API_KEY_HEADER_KEY = 'X-SHIPMATE-API-KEY';
+interface JobData {
+  ctx: SerializedRequestContext;
+  orderCode: string;
+}
 
 @Injectable()
-export class ShipmateService implements OnModuleInit {
-  tokens: Map<string, string> = new Map();
+export class ShipmateService implements OnApplicationBootstrap {
+  jobQueue!: JobQueue<JobData>;
+
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS) private config: ShipmatePluginConfig,
     private shipmateConfigService: ShipmateConfigService,
     private orderService: OrderService,
     private eventBus: EventBus,
     private connection: TransactionalConnection,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
+    private jobQueueService: JobQueueService
   ) {}
 
-  async onModuleInit(): Promise<void> {
+  async onApplicationBootstrap(): Promise<void> {
+    this.jobQueue = await this.jobQueueService.createQueue({
+      name: 'shipmate',
+      process: async (job) => {
+        const ctx = RequestContext.deserialize(job.data.ctx);
+        await this.createShipment(ctx, job.data.orderCode);
+      },
+    });
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      const headers = await this.getShipmateAuthHeaders(ctx);
-      if (headers) {
-        await this.createShipment(ctx, order, headers);
-      }
+      await this.jobQueue
+        .add({
+          ctx: ctx.serialize(),
+          orderCode: order.code,
+        })
+        .catch((err) => {
+          Logger.error(
+            `Error adding OrderPlacedEvent job to queue: ${err?.message}`,
+            loggerCtx,
+            util.inspect(err)
+          );
+        });
     });
   }
 
-  async getShipmateAuthHeaders(ctx: RequestContext): Promise<any> {
-    const shipmateConfig = await this.shipmateConfigService.getConfig(ctx);
-    if (!shipmateConfig) {
-      Logger.error(
-        `Shipmate credentials not configured for channel ${ctx.channel.code}`,
+  async createShipment(ctx: RequestContext, orderCode: string) {
+    const client = await this.getClient(ctx);
+    if (!client) {
+      Logger.info(
+        `Can not create shipment for '${ctx.channel.code}'. Shipmate is not enabled`,
         loggerCtx
       );
       return;
     }
-    const key = this.tokeStoreKey(shipmateConfig);
-    let shipmateTokenForTheCurrentChannel = this.tokens.get(key);
-    if (!shipmateTokenForTheCurrentChannel) {
-      shipmateTokenForTheCurrentChannel = await this.getShipmentToken(
-        shipmateConfig.username,
-        shipmateConfig.password
-      );
-      this.tokens.set(key, shipmateTokenForTheCurrentChannel);
+    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!order) {
+      throw Error(`[${loggerCtx}] Order with code ${orderCode} not found`);
     }
-    return {
-      'X-SHIPMATE-TOKEN': shipmateTokenForTheCurrentChannel,
-      'X-SHIPMATE-API-KEY': shipmateConfig.apiKey,
-    };
-  }
-
-  tokeStoreKey(shipmateConfig: ShipmateConfigEntity) {
-    return `${shipmateConfig.apiKey}-${shipmateConfig.channelId}`;
-  }
-
-  async getShipmentToken(
-    shipmateUsername: string,
-    shipmatePassword: string
-  ): Promise<string> {
-    const client = axios.create({
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    });
-    const response = await client.post<GetTokenRespose>(
-      `${this.config.shipmateApiUrl}/tokens`,
-      {
-        username: shipmateUsername,
-        password: shipmatePassword,
-      }
-    );
-    if (response.data.data?.token) {
-      Logger.info('Successfully authenticated with Shipmate API', loggerCtx);
-      return response.data.data.token;
-    } else {
-      Logger.error(response.data.message, loggerCtx);
-      throw new UserInputError(response.data.message);
-    }
-  }
-
-  async createShipment(ctx: RequestContext, order: Order, headers: any) {
     const payload = parseOrder(order, order.code);
-    const client = new ShipmateClient(headers, this.config.shipmateApiUrl);
     const newShipments = await client.createShipment(payload);
     if (newShipments?.length) {
       await this.orderService.updateCustomFields(ctx, order.id, {
@@ -119,8 +97,11 @@ export class ShipmateService implements OnModuleInit {
     }
   }
 
+  /**
+   * Update Vendure order state by incoming Shipment event
+   */
   async updateOrderState(payload: EventPayload): Promise<string> {
-    const ctx = await this.createCtx(payload.auth_token);
+    const ctx = await this.createCtxForWebhookToken(payload.auth_token);
     if (!ctx) {
       const message = `No registered ShipmentConfigEntity with this auth_token`;
       Logger.error(message, loggerCtx);
@@ -155,7 +136,7 @@ export class ShipmateService implements OnModuleInit {
   }
 
   /**
-   * Update Vedure Fulfillments
+   * Update Vendure Fulfillments. Creates fulfilments if none exist yet
    */
   async updateFulFillment(
     ctx: RequestContext,
@@ -167,27 +148,26 @@ export class ShipmateService implements OnModuleInit {
       relations: ['fulfillments'],
     });
     if (!order.fulfillments?.length) {
+      // Create fulfillments first if none exist
       const fulfillmentInputs = this.createFulfillOrderInput(order, payload);
-      const createFulfillmentResult = await this.orderService.createFulfillment(
-        ctx,
-        fulfillmentInputs
-      );
-      if (isGraphQlErrorResult(createFulfillmentResult)) {
+      const createdFulfillmentResult =
+        await this.orderService.createFulfillment(ctx, fulfillmentInputs);
+      if (isGraphQlErrorResult(createdFulfillmentResult)) {
         Logger.info(
-          `Unable to create Fulfillment for order ${order.code}: ${createFulfillmentResult.message}`,
+          `Unable to create Fulfillment for order ${order.code}: ${createdFulfillmentResult.message}`,
           loggerCtx
         );
-        throw createFulfillmentResult.message;
+        throw createdFulfillmentResult.message;
       }
       const transitionResult =
         await this.orderService.transitionFulfillmentToState(
           ctx,
-          createFulfillmentResult.id,
+          createdFulfillmentResult.id,
           state
         );
       if (isGraphQlErrorResult(transitionResult)) {
-        Logger.info(
-          `Unable to transition Fulfillment ${createFulfillmentResult.id} to ${state}: ${transitionResult.transitionError}`,
+        Logger.error(
+          `Unable to transition Fulfillment ${createdFulfillmentResult.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
           loggerCtx
         );
         throw transitionResult.transitionError;
@@ -201,8 +181,8 @@ export class ShipmateService implements OnModuleInit {
           state
         );
       if (isGraphQlErrorResult(transitionResult)) {
-        Logger.info(
-          `Unable to transition Fulfillment ${fulfillment.id} to ${state}: ${transitionResult.transitionError}`,
+        Logger.error(
+          `Unable to transition Fulfillment ${fulfillment.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
           loggerCtx
         );
         throw transitionResult.transitionError;
@@ -237,11 +217,36 @@ export class ShipmateService implements OnModuleInit {
     };
   }
 
-  private async createCtx(
-    authToken: string
+  /**
+   * If no client is returned, Shipmate is not configured for the channel
+   */
+  async getClient(ctx: RequestContext): Promise<ShipmateClient | undefined> {
+    const shipmateConfig = await this.shipmateConfigService.getConfig(ctx);
+    if (!shipmateConfig) {
+      Logger.info(
+        `Shipmate credentials not configured for channel ${ctx.channel.code}`,
+        loggerCtx
+      );
+      return;
+    }
+    return new ShipmateClient({
+      apiKey: shipmateConfig.apiKey,
+      username: shipmateConfig.username,
+      password: shipmateConfig.password,
+      apiUrl: this.config.shipmateApiUrl,
+    });
+  }
+
+  /**
+   * Create RequestContext or the given Shipmate auth token
+   */
+  private async createCtxForWebhookToken(
+    webhookAuthToken: string
   ): Promise<RequestContext | undefined> {
     const config =
-      await this.shipmateConfigService.getConfigWithWebhookAuthToken(authToken);
+      await this.shipmateConfigService.getConfigWithWebhookAuthToken(
+        webhookAuthToken
+      );
     if (!config) {
       Logger.error(`No channel with this webhooks auth token`, loggerCtx);
       return;

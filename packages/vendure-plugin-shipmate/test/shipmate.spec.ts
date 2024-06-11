@@ -18,7 +18,7 @@ import { initialData } from '../../test/src/initial-data';
 import nock from 'nock';
 
 import { VendureShipmatePlugin } from '../src/shipmate.plugin';
-import { newShipment } from './test-helpers';
+import { mockShipment } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
@@ -30,7 +30,8 @@ import { OrderCodeStrategy } from '@vendure/core';
 
 class MockOrderCodeStrategy implements OrderCodeStrategy {
   generate(ctx: RequestContext): string | Promise<string> {
-    return newShipment.shipment_reference;
+    // Mock order code as 'FBJYSHC7WTRQEA14', as defined in the mock object
+    return mockShipment.shipment_reference;
   }
 }
 
@@ -106,14 +107,14 @@ describe('Shipmate plugin', async () => {
       .post('/shipments', (reqBody) => {
         return true;
       })
-      .reply(200, { data: [newShipment], message: 'Shipment Created' })
+      .reply(200, { data: [mockShipment], message: 'Shipment Created' })
       .persist();
     await createSettledOrder(shopClient, 'T_1');
     const orderService = server.app.get(OrderService);
     await new Promise((resolve) => setTimeout(resolve, 2000));
     const detailedOrder = await orderService.findOne(ctx, 1);
     expect(detailedOrder?.customFields?.shipmateReference).toBe(
-      newShipment.shipment_reference
+      mockShipment.shipment_reference
     );
   });
 
@@ -123,7 +124,7 @@ describe('Shipmate plugin', async () => {
     >{
       auth_token: authToken,
       event: 'TRACKING_COLLECTED',
-      shipment_reference: newShipment.shipment_reference,
+      shipment_reference: mockShipment.shipment_reference,
     });
     //shipmate's api expects a status of 201
     expect(result.status).toBe(201);
@@ -140,7 +141,7 @@ describe('Shipmate plugin', async () => {
     >{
       auth_token: authToken,
       event: 'TRACKING_DELIVERED',
-      shipment_reference: newShipment.shipment_reference,
+      shipment_reference: mockShipment.shipment_reference,
     });
     //shipmate's api expects a status of 201
     expect(result.status).toBe(201);

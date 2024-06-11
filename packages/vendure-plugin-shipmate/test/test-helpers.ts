@@ -1,7 +1,7 @@
 import type { ShipmateConfigEntity } from '../src/api/shipmate-config.entity';
 export const authToken = 'SHIPMATE_WEBHOOK_AUTH_TOKEN';
 
-const newShipment = {
+const mockShipment = {
   id: '4e084315-f87f-4d9f-994e-9b25f6b9844d',
   shipment_reference: 'FBJYSHC7WTRQEA14',
   parcel_reference: 'rai10d',
@@ -108,4 +108,4 @@ testShipmateConfig.webhookAuthTokens.push({
   updatedAt: new Date(),
 });
 
-export { testShipmateConfig, newShipment };
+export { testShipmateConfig, mockShipment };

@@ -2,10 +2,10 @@ import type { Order, Customer, OrderLine } from '@vendure/core';
 import type { Shipment, ShipmateAddress, Parcels, Items } from '../types';
 import type { OrderAddress } from '@vendure/common/lib/generated-types';
 
-export function parseOrder(order: Order, shipmateReference: string): Shipment {
+export function parseOrder(order: Order, shipmateReference?: string): Shipment {
   return {
-    shipment_reference: shipmateReference,
-    //Make sure this never changes since ShipmateService.updateOrderState depends on it
+    shipment_reference: shipmateReference || order.code,
+    // Make sure this never changes since ShipmateService.updateOrderState depends on it
     order_reference: order.code,
     to_address: parseAddress(order.shippingAddress, order.customer),
     parcels: [parseParcels(order)],
