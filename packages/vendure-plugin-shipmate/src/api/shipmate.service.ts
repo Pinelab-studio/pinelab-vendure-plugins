@@ -1,9 +1,4 @@
-import {
-  Inject,
-  Injectable,
-  OnModuleInit,
-  OnApplicationBootstrap,
-} from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { FulfillOrderInput } from '@vendure/common/lib/generated-types';
 import {
   Channel,
@@ -23,13 +18,13 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
+import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
 import { EventPayload, TrackingEventPayload } from '../types';
 import { ShipmateClient } from './shipmate-client';
 import { ShipmateConfigService } from './shipmate-config.service';
 import { parseOrder } from './util';
-import util from 'util';
 
 interface JobData {
   ctx: SerializedRequestContext;
@@ -74,7 +69,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     });
   }
 
-  async createShipment(ctx: RequestContext, orderCode: string) {
+  async createShipment(ctx: RequestContext, orderCode: string): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
       Logger.info(
@@ -87,13 +82,30 @@ export class ShipmateService implements OnApplicationBootstrap {
     if (!order) {
       throw Error(`[${loggerCtx}] Order with code ${orderCode} not found`);
     }
-    const payload = parseOrder(order, order.code);
-    const newShipments = await client.createShipment(payload);
-    if (newShipments?.length) {
-      await this.orderService.updateCustomFields(ctx, order.id, {
-        ...order.customFields,
-        shipmateReference: order.code,
-      });
+    try {
+      const payload = parseOrder(order, order.code);
+      const newShipments = await client.createShipment(payload);
+      if (newShipments?.length) {
+        await this.orderService.updateCustomFields(ctx, order.id, {
+          ...order.customFields,
+          shipmateReference: order.code,
+        });
+      }
+    } catch (err: any) {
+      // Log error as history entry for admins
+      await this.orderService
+        .addNoteToOrder(ctx, {
+          id: order.id,
+          isPublic: false,
+          note: `Failed to send to Shipmate: ${err?.message}`,
+        })
+        .catch((err) =>
+          Logger.error(
+            `Error creating history entryfor ${order.code}: ${err.message}`,
+            loggerCtx
+          )
+        );
+      throw err;
     }
   }
 
@@ -103,9 +115,9 @@ export class ShipmateService implements OnApplicationBootstrap {
   async updateOrderState(payload: EventPayload): Promise<string> {
     const ctx = await this.createCtxForWebhookToken(payload.auth_token);
     if (!ctx) {
-      const message = `No registered ShipmentConfigEntity with this auth_token`;
+      const message = `No Shipmate config found with webhook auth token '${payload.auth_token}'`;
       Logger.error(message, loggerCtx);
-      throw new UserInputError(message);
+      throw new Error(message);
     }
     const shipmentOrder = await this.orderService.findOneByCode(
       ctx,
@@ -114,7 +126,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     if (!shipmentOrder) {
       const message = `No Order with code ${payload.order_reference} in channel ${ctx.channel.code}`;
       Logger.error(message, loggerCtx);
-      throw new UserInputError(message);
+      throw new Error(message);
     }
     Logger.info(
       `${payload.event} event received for Order with code ${payload.order_reference} in channel ${ctx.channel.code}`,
@@ -233,7 +245,7 @@ export class ShipmateService implements OnApplicationBootstrap {
       apiKey: shipmateConfig.apiKey,
       username: shipmateConfig.username,
       password: shipmateConfig.password,
-      apiUrl: this.config.shipmateApiUrl,
+      apiUrl: this.config.apiUrl,
     });
   }
 

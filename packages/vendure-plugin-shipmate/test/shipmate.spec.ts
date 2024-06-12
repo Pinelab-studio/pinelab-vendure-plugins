@@ -17,7 +17,7 @@ import { afterAll, beforeAll, expect, it, describe, vi } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import nock from 'nock';
 
-import { VendureShipmatePlugin } from '../src/shipmate.plugin';
+import { ShipmatePlugin } from '../src/shipmate.plugin';
 import { mockShipment } from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -49,8 +49,8 @@ describe('Shipmate plugin', async () => {
         port,
       },
       plugins: [
-        VendureShipmatePlugin.init({
-          shipmateApiUrl: nockBaseUrl,
+        ShipmatePlugin.init({
+          apiUrl: nockBaseUrl,
         }),
       ],
       paymentOptions: {
@@ -85,6 +85,13 @@ describe('Shipmate plugin', async () => {
         'SHIPMATE_PASSWORD',
         [authToken]
       );
+  }, 60000);
+
+  it('Should start successfully', () => {
+    expect(server.app.getHttpServer()).toBeDefined();
+  });
+
+  it('Should create a Shipment when an Order is placed', async () => {
     nock(nockBaseUrl)
       .post('/tokens', (reqBody) => {
         return true;
@@ -94,24 +101,15 @@ describe('Shipmate plugin', async () => {
         data: {
           token: '749a75e3c1048965c498017efae8051f',
         },
-      })
-      .persist();
-  }, 60000);
-
-  it('Should start successfully', () => {
-    expect(server.app.getHttpServer()).toBeDefined();
-  });
-
-  it('Should create a Shipment when an Order is placed', async () => {
+      });
     nock(nockBaseUrl)
       .post('/shipments', (reqBody) => {
         return true;
       })
-      .reply(200, { data: [mockShipment], message: 'Shipment Created' })
-      .persist();
+      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
     await createSettledOrder(shopClient, 'T_1');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     const detailedOrder = await orderService.findOne(ctx, 1);
     expect(detailedOrder?.customFields?.shipmateReference).toBe(
       mockShipment.shipment_reference

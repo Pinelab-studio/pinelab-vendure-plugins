@@ -36,6 +36,7 @@ export class ShipmateClient {
 
   async createShipment(shipment: Shipment): Promise<NewShipment[] | undefined> {
     try {
+      await this.setToken();
       const result = await this.client.post<CreateShipmentResponse>(
         `/shipments`,
         shipment
@@ -44,6 +45,9 @@ export class ShipmateClient {
       return result.data?.data;
     } catch (error: any) {
       Logger.error(JSON.stringify(error.response?.data), loggerCtx);
+      if (error.response?.data) {
+        throw Error(JSON.stringify(error.response.data));
+      }
       throw error;
     }
   }

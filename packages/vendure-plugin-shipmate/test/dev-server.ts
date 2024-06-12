@@ -14,29 +14,30 @@ import {
   RequestContext,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
-import { VendureShipmatePlugin } from '../src/shipmate.plugin';
+import { ShipmatePlugin } from '../src/shipmate.plugin';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler/';
 import path from 'node:path';
 import { ShipmateConfigService } from '../src/api/shipmate-config.service';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 (async () => {
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      VendureShipmatePlugin.init({
-        shipmateApiUrl: process.env.SHIPMATE_BASE_URL as any,
+      ShipmatePlugin.init({
+        apiUrl: process.env.SHIPMATE_BASE_URL as any,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [VendureShipmatePlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [ShipmatePlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     apiOptions: {
@@ -51,7 +52,7 @@ import { ShipmateConfigService } from '../src/api/shipmate-config.service';
     },
   });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const { server } = createTestEnvironment(config);
+  const { server, shopClient } = createTestEnvironment(config);
   await server.init({
     initialData: {
       ...initialData,
@@ -72,13 +73,35 @@ import { ShipmateConfigService } from '../src/api/shipmate-config.service';
     authorizedAsOwnerOnly: false,
     channel,
   });
-  await server.app
+  const result = await server.app
     .get(ShipmateConfigService)
     .upsertConfig(
       ctx,
       process.env.SHIPMATE_API_KEY!,
       process.env.SHIPMATE_USERNAME!,
       process.env.SHIPMATE_PASSWORD!,
-      [process.env.SHIPMATE_WEBHOOK_AUTH_TOKEN as string]
+      [
+        process.env.SHIPMATE_WEBHOOK_AUTH_TOKEN1!,
+        process.env.SHIPMATE_WEBHOOK_AUTH_TOKEN2!,
+      ]
     );
+  console.log('Created Shipmate Config');
+  const res = await createSettledOrder(
+    shopClient,
+    1,
+    true,
+    undefined,
+    undefined,
+    {
+      input: {
+        fullName: 'Martinho Pinelabio',
+        streetLine1: 'Verzetsstraat',
+        streetLine2: '12a',
+        city: 'Liwwa',
+        postalCode: 'SA35 0AE',
+        countryCode: 'GB',
+      },
+    }
+  );
+  console.log(`Placed order ${res.code}`);
 })();

@@ -15,7 +15,7 @@ import { ShipmateController } from './api/shipmate.controller';
 import { ShipmateWebhookTokenEntity } from './api/shipmate-webhook-token.entitiy';
 
 export interface ShipmatePluginConfig {
-  shipmateApiUrl:
+  apiUrl:
     | 'https://api.shipmate.co.uk/v1.2'
     | 'https://api-staging.shipmate.co.uk/v1.2';
 }
@@ -27,7 +27,7 @@ export interface ShipmatePluginConfig {
     ShipmateService,
     {
       provide: PLUGIN_INIT_OPTIONS,
-      useFactory: () => VendureShipmatePlugin.config,
+      useFactory: () => ShipmatePlugin.config,
     },
     ShipmateConfigService,
   ],
@@ -47,11 +47,11 @@ export interface ShipmatePluginConfig {
     resolvers: [ShipmateAdminResolver],
   },
 })
-export class VendureShipmatePlugin {
+export class ShipmatePlugin {
   static config: ShipmatePluginConfig;
-  static init(config: ShipmatePluginConfig): typeof VendureShipmatePlugin {
+  static init(config: ShipmatePluginConfig): typeof ShipmatePlugin {
     this.config = config;
-    return VendureShipmatePlugin;
+    return ShipmatePlugin;
   }
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),

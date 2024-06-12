@@ -80,7 +80,10 @@ export class ShipmateConfigService {
     }
     return this.connection
       .getRepository(ctx, ShipmateConfigEntity)
-      .findOne({ where: { channelId: ctx.channelId as string } });
+      .findOne({
+        where: { channelId: ctx.channelId as string },
+        relations: ['webhookAuthTokens'],
+      });
   }
 
   private async getShipmateWebhookTokenEntities(
