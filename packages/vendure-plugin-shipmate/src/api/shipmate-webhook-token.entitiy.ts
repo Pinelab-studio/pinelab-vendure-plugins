@@ -9,7 +9,6 @@ export class ShipmateWebhookTokenEntity extends VendureEntity {
   }
 
   @Column({ unique: true })
-  @Index()
   token!: string;
 
   @ManyToOne(

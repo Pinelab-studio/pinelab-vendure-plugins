@@ -1,3 +1,7 @@
+# 1.0.4 (2024-06-12)
+
+- Removed unused @Index(), because a unique constraint was already present
+
 # 1.0.3 (2024-06-12)
 
 - Removed unused custom field `order.shipmateReference`
