@@ -78,12 +78,10 @@ export class ShipmateConfigService {
         )) as never[];
       await shipmateConfigRepo.save(newShipmateConfig);
     }
-    return this.connection
-      .getRepository(ctx, ShipmateConfigEntity)
-      .findOne({
-        where: { channelId: ctx.channelId as string },
-        relations: ['webhookAuthTokens'],
-      });
+    return this.connection.getRepository(ctx, ShipmateConfigEntity).findOne({
+      where: { channelId: ctx.channelId as string },
+      relations: ['webhookAuthTokens'],
+    });
   }
 
   private async getShipmateWebhookTokenEntities(
