@@ -1,3 +1,7 @@
+# 1.3.1 (2024-06-06)
+
+- Return subscription id in Graphql type for created Accept Blue subscriptions
+
 # 1.3.0 (2024-05-21)
 
 - Allow refunding a transaction via `refundAcceptBlueTransaction` mutation.

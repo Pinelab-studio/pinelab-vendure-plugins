@@ -8,6 +8,7 @@ import {
 import { In } from 'typeorm';
 import { assignTheseProductsToChannel } from './assign-these-products-to-channel';
 import { getProductsDeep } from './get-products-deep';
+import { IsNull } from 'typeorm';
 
 export async function assignProductsToChannel(
   targetChannelId: ID,
@@ -25,7 +26,10 @@ export async function assignProductsToChannel(
     products = await getProductsDeep(
       ctx,
       injector,
-      { id: In(productIds) },
+      {
+        id: In(productIds),
+        deletedAt: IsNull(),
+      },
       batch,
       totalCount
     );

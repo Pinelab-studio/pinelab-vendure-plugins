@@ -5,6 +5,9 @@ import {
 } from '@vendure/core';
 import { SimpleGraphQLClient } from '@vendure/testing';
 import {
+  CancelOrder,
+  CancelOrderMutation,
+  CancelOrderMutationVariables,
   ConfigArgInput,
   CreateCollection,
   CreateCollectionInput,
@@ -188,4 +191,26 @@ export async function createPromotion(
     },
   });
   return createPromotion as Promotion;
+}
+
+/**
+ * Cancel all order lines and thus the order
+ */
+export async function cancelOrder(
+  adminClient: SimpleGraphQLClient,
+  orderWithLines: { id: string; lines: Array<{ id: string; quantity: number }> }
+): Promise<CancelOrderMutation['cancelOrder']> {
+  const { cancelOrder } = await adminClient.query<
+    CancelOrderMutation,
+    CancelOrderMutationVariables
+  >(CancelOrder, {
+    input: {
+      orderId: orderWithLines.id,
+      lines: orderWithLines.lines.map((line) => ({
+        orderLineId: line.id,
+        quantity: line.quantity,
+      })),
+    },
+  });
+  return cancelOrder;
 }

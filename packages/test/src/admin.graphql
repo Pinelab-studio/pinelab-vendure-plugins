@@ -161,3 +161,9 @@ mutation CreatePromotion($input: CreatePromotionInput!) {
     }
   }
 }
+
+mutation CancelOrder($input: CancelOrderInput!) {
+  cancelOrder(input: $input) {
+    ...OrderFields
+  }
+}

@@ -20,7 +20,7 @@ import { describe, beforeAll, it, expect } from 'vitest';
 import { CREATE_CHANNEL, createChannelInput } from './test-helpers';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { ModuleRef } from '@nestjs/core';
-import { assignAllProductsToChannel } from '../src/assign-all-products-to-channel';
+import { assignAllProductsToChannel } from '../src';
 import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
 
 describe('Vendure Scripts', function () {

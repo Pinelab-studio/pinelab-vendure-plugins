@@ -33,7 +33,7 @@ export async function getPluginDirectories(): Promise<Dirent[]> {
   return (
     (await readdir(pluginDirName, { withFileTypes: true }))
       .filter((dir) => dir.isDirectory())
-      .filter((dir) => dir.name.startsWith('vendure-plugin'))
+      .filter((dir) => dir.name.startsWith('vendure-'))
       // Sort alphabetically
       .sort((a, b) => {
         const nameA = a.name.toLowerCase();
