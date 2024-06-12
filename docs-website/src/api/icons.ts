@@ -34,6 +34,7 @@ const icons: Record<string, string> = {
   'vendure-plugin-e-boekhouden': 'e-boekhouden.png',
   'vendure-plugin-coinbase': 'coinbase.png',
   'vendure-plugin-public-customer-groups': 'undraw_camera.svg',
+  'vendure-plugin-shipmate': 'shipmate.jpg',
 };
 
 export function getIcon(pluginName: string): string {
