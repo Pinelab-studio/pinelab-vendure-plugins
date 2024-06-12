@@ -1,4 +1,4 @@
-# 1.0.1 (2024-06-12)
+# 1.0.2 (2024-06-12)
 
 - Exporting plugin, services and entities in the main package
 
