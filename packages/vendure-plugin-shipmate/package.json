@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-shipmate",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vendure plugin for integration with Shipmate",
   "icon": "truck",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -11,15 +11,15 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "dist/vendure-plugin-shipmate/src/index.js",
-  "types": "dist/vendure-plugin-shipmate/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "README.md",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-shipmate/src/",
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
     "lint": "echo 'No linting configured'"
