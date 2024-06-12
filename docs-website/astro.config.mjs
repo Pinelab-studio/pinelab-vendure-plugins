@@ -6,9 +6,6 @@ import sitemap from '@astrojs/sitemap';
 export default defineConfig({
   markdown: {
     drafts: true,
-    shikiConfig: {
-      theme: 'css-variables',
-    },
   },
   site: 'https://pinelab.studio',
   integrations: [tailwind(), sitemap()],
