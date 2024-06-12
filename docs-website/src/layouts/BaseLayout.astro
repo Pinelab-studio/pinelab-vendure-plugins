@@ -1,0 +1,52 @@
+---
+import '../styles/global.css';
+import Metas from '../components/Metas.astro';
+import Favicons from '../components/Favicons.astro';
+import Navigation from '../components/Navigation.astro';
+import Footer from '../components/Footer.astro';
+
+const {
+  title = 'Pinelab Plugins',
+  description = 'Your Vendue e-commerce implementation partner. We help you build and run your online store.',
+  url,
+  socialImage = '/pinelab.png',
+  twitterImage = '/pinelab.png',
+  author = 'Pinelab',
+} = Astro.props;
+---
+
+<html
+  lang="en"
+  class="scroll-smooth selection:bg-blue-500 selection:text-white"
+>
+  <head>
+    <Metas
+      title={title}
+      description={description.substring(0, 100)}
+      url={`${Astro.site}/${url}`}
+      image={socialImage}
+      author={author}
+      twitterImage={twitterImage}
+    />
+    <Favicons />
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=jet-brains-mono@1,2&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <!---- Alpine integrations -->
+    <script defer src="https://unpkg.com/@alpinejs/focus@3.10.3/dist/cdn.min.js"
+    ></script>
+    <script defer src="https://unpkg.com/alpinejs@3.10.3/dist/cdn.min.js"
+    ></script>
+  </head>
+
+  <body class="bg-white flex flex-col min-h-screen">
+    <Navigation />
+    <main class="grow">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

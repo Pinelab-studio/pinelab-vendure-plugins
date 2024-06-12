@@ -2,7 +2,6 @@
   "name": "@pinelab/vendure-plugin-limit-variant-per-order",
   "version": "2.0.0",
   "description": "Vendure plugin to limit the amount of a specific product that can be ordered, or only allow purchases in bulk",
-  "icon": "shield-lock",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
