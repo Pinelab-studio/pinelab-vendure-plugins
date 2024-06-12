@@ -2,7 +2,6 @@
   "name": "@pinelab/vendure-plugin-variant-bulk-update",
   "version": "1.1.0",
   "description": "Vendure plugin to bulk update all variants of a product",
-  "icon": "tag-multiple",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
