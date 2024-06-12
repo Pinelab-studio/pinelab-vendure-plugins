@@ -10,7 +10,6 @@ Create shipments in Shipmate on every order placed, to automate your order fulfi
 
 ```ts
 import { ShipmatePlugin } from '@pinelab/vendure-plugin-shipmate';
-import { configureDefaultOrderProcess } from '@vendure/core';
 
 ...
 plugins: [
