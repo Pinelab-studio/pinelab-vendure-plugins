@@ -4,6 +4,13 @@ module.exports = {
   content: ["./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}"],
   theme: {
     extend: {
+      typography: {
+        DEFAULT: {
+          css: {
+            maxWidth: '100%', // Use max width of parent container
+          }
+        }
+      },
       colors: {
         purple: {
           // This is now 'dark green' but we keep it as purple, for easier reference with the original theme

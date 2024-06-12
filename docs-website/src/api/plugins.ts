@@ -118,7 +118,7 @@ export async function parseReadme(readmeString: string): Promise<string> {
   const result = await rehype()
     .data('settings', { fragment: true })
     .use(rehypeAutolinkHeadings, {
-      behavior: 'wrap',
+      behavior: 'append',
     })
     .process(html);
   return String(result);

@@ -24,6 +24,12 @@ code {
   border-radius: 10px;
 }
 
+.icon-link:before {
+  content: '#';
+  margin-left: 10px;
+  text-decoration: none;
+}
+
 :root {
   --astro-code-color-text: theme('colors.white');
   --astro-code-color-background: #14162c;
