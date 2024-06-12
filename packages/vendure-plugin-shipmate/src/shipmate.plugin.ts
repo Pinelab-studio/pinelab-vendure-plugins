@@ -34,12 +34,6 @@ export interface ShipmatePluginConfig {
   entities: [ShipmateConfigEntity, ShipmateWebhookTokenEntity],
   configuration: (config) => {
     config.authOptions.customPermissions.push(shipmatePermission);
-    config.customFields.Order.push({
-      name: 'shipmateReference',
-      type: 'string',
-      nullable: true,
-      readonly: true,
-    });
     return config;
   },
   adminApiExtensions: {

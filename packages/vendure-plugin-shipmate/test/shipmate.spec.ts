@@ -102,8 +102,10 @@ describe('Shipmate plugin', async () => {
           token: '749a75e3c1048965c498017efae8051f',
         },
       });
+    let shipmentRequest: any;
     nock(nockBaseUrl)
       .post('/shipments', (reqBody) => {
+        shipmentRequest = reqBody;
         return true;
       })
       .reply(200, { data: [mockShipment], message: 'Shipment Created' });
@@ -111,9 +113,7 @@ describe('Shipmate plugin', async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
     const detailedOrder = await orderService.findOne(ctx, 1);
-    expect(detailedOrder?.customFields?.shipmateReference).toBe(
-      mockShipment.shipment_reference
-    );
+    expect(shipmentRequest?.shipment_reference).toBe(detailedOrder?.code);
   });
 
   it('Should mark Order as Shipped when receiving "TRACKING_COLLECTED" event', async () => {

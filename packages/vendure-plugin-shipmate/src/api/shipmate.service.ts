@@ -84,13 +84,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     }
     try {
       const payload = parseOrder(order, order.code);
-      const newShipments = await client.createShipment(payload);
-      if (newShipments?.length) {
-        await this.orderService.updateCustomFields(ctx, order.id, {
-          ...order.customFields,
-          shipmateReference: order.code,
-        });
-      }
+      await client.createShipment(payload);
     } catch (err: any) {
       // Log error as history entry for admins
       await this.orderService
