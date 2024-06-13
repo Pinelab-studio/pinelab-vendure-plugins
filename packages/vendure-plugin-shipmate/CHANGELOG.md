@@ -1,3 +1,7 @@
+# 1.0.5 (2024-06-13)
+
+- Don't throw errors when an order doesn't exist, but log and return. This can happen because shipments are also manually created in Shipmate.
+
 # 1.0.4 (2024-06-12)
 
 - Removed unused @Index(), because a unique constraint was already present
