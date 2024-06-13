@@ -106,39 +106,43 @@ export class ShipmateService implements OnApplicationBootstrap {
   /**
    * Update Vendure order state by incoming Shipment event
    */
-  async updateOrderState(payload: EventPayload): Promise<string> {
+  async updateOrderState(payload: EventPayload): Promise<void> {
     const ctx = await this.createCtxForWebhookToken(payload.auth_token);
     if (!ctx) {
-      const message = `No Shipmate config found with webhook auth token '${payload.auth_token}'`;
-      Logger.error(message, loggerCtx);
-      throw new Error(message);
+      Logger.warn(
+        `No Shipmate config found with webhook auth token '${payload.auth_token}'`,
+        loggerCtx
+      );
+      return;
     }
-    const shipmentOrder = await this.orderService.findOneByCode(
+    const order = await this.orderService.findOneByCode(
       ctx,
       payload.order_reference
     );
-    if (!shipmentOrder) {
-      const message = `No Order with code ${payload.order_reference} in channel ${ctx.channel.code}`;
-      Logger.error(message, loggerCtx);
-      throw new Error(message);
+    if (!order) {
+      Logger.warn(
+        `No Order with code ${payload.order_reference} in channel ${ctx.channel.code}`,
+        loggerCtx
+      );
+      return;
     }
     Logger.info(
       `${payload.event} event received for Order with code ${payload.order_reference} in channel ${ctx.channel.code}`,
       loggerCtx
     );
     if (payload.event === 'TRACKING_COLLECTED') {
-      await this.updateFulFillment(ctx, shipmentOrder, payload, 'Shipped');
-      return `Order successfully marked as  Shipped`;
+      await this.updateFulFillment(ctx, order, payload, 'Shipped');
+      Logger.info(`Order successfully marked as  Shipped`, loggerCtx);
+      return;
     } else if (payload.event === 'TRACKING_DELIVERED') {
-      await this.updateFulFillment(ctx, shipmentOrder, payload, 'Delivered');
-      return `Order successfully marked as Delivered`;
-    } else {
-      Logger.info(
-        `No configured handler for event "${payload.event}"`,
-        loggerCtx
-      );
+      await this.updateFulFillment(ctx, order, payload, 'Delivered');
+      Logger.info(`Order successfully marked as Delivered`, loggerCtx);
+      return;
     }
-    return `No configured handler for event "${payload.event}"`;
+    Logger.info(
+      `No configured handler for event "${payload.event}"`,
+      loggerCtx
+    );
   }
 
   /**

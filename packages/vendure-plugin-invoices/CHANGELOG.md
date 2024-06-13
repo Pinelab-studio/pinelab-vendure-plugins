@@ -1,3 +1,7 @@
+# 2.3.2 (2024-06-13)
+
+- Don't throw errors when a cancelled invoice doesn't have a previous invoice, but log and return instead.
+
 # 2.3.1 (2024-06-05)
 
 - Sort invoices by created at
