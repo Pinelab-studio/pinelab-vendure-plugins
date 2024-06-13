@@ -1,6 +1,6 @@
 # 1.2.2 (2024-06-13)
 
-- Added better logging for incoming webhooks
+- Added better logging for failing incoming webhooks
 
 # 1.2.1 (2023-01-16)
 
