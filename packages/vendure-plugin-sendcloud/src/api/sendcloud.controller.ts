@@ -18,15 +18,24 @@ export class SendcloudController {
     @Param('channelToken') channelToken: string
   ): Promise<unknown> {
     let body: IncomingWebhookBody;
-    try {
-      body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
-    } catch (e: any) {
-      Logger.error(
-        `Error parsing incoming webhook body: ${e?.message ?? e}`,
-        loggerCtx,
-        req.body.toString()
+    if (!Buffer.isBuffer(req.body)) {
+      Logger.warn(
+        `Incoming webhook body is not a Buffer. This means the body was already parsed by some other middleware. This might cause problems when validating the incoming webhook signature.`,
+        loggerCtx
       );
-      return;
+      body = req.body as IncomingWebhookBody;
+    } else {
+      // Else we try and parse the body
+      try {
+        body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
+      } catch (e: any) {
+        Logger.error(
+          `Error parsing incoming webhook body: ${e?.message ?? e}`,
+          loggerCtx,
+          req.body.toString()
+        );
+        return;
+      }
     }
     const rawBody = (req as any).rawBody;
     const ctx = await this.sendcloudService.createContext(channelToken);

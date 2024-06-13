@@ -1,3 +1,7 @@
+# 1.2.4 (2024-06-13)
+
+- Check if incoming request is a Buffer or already parsed by other middleware
+
 # 1.2.3 (2024-06-13)
 
 - Log request body, instead of util.inspect
