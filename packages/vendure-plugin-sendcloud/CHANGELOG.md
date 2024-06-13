@@ -1,3 +1,7 @@
+# 1.2.3 (2024-06-13)
+
+- Log request body, instead of util.inspect
+
 # 1.2.2 (2024-06-13)
 
 - Added better logging for failing incoming webhooks
