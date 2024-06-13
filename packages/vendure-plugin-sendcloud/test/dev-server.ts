@@ -70,11 +70,12 @@ export class AllocateStockOnSettlementStrategy
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [SendcloudPlugin.ui],
-          devMode: true,
-        }),
+        // Uncomment the following line to also run the Admin Ui customization
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [SendcloudPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     paymentOptions: {
@@ -96,8 +97,7 @@ export class AllocateStockOnSettlementStrategy
     productsCsvPath: '../test/src/products-import.csv',
     customerCount: 2,
   });
-  //FIX ME
-  await addShippingMethod(adminClient as any, sendcloudHandler.code);
+  await addShippingMethod(adminClient, sendcloudHandler.code);
   await adminClient.asSuperAdmin();
   await updateSendCloudConfig(
     adminClient,
@@ -105,14 +105,10 @@ export class AllocateStockOnSettlementStrategy
     process.env.PUBLIC!,
     '058123456789'
   );
-  //FIX ME
-  updateVariants(adminClient as any, [
+  await updateVariants(adminClient, [
     { id: 'T_1', trackInventory: GlobalFlag.True },
   ]);
   await new Promise((resolve) => setTimeout(resolve, 20000)); // Gives us time to check stock in admin before order placement
-  //FIX ME
-  await createSettledOrder(shopClient as any, 1, true, [
-    { id: 'T_1', quantity: 1 },
-  ]);
+  await createSettledOrder(shopClient, 1, true, [{ id: 'T_1', quantity: 1 }]);
   console.log('created test order');
 })();

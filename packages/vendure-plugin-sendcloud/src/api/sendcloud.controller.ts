@@ -6,6 +6,7 @@ import { Logger } from '@vendure/core';
 import { loggerCtx } from './constants';
 import { IncomingWebhookBody } from './types/sendcloud-api.types';
 import { sendcloudStates } from './types/sendcloud.types';
+import { inspect } from 'util';
 
 @Controller('sendcloud')
 export class SendcloudController {
@@ -17,7 +18,17 @@ export class SendcloudController {
     @Headers(SendcloudClient.signatureHeader) signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<unknown> {
-    const body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
+    let body: IncomingWebhookBody;
+    try {
+      body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
+    } catch (e: any) {
+      Logger.error(
+        `Error parsing incoming webhook body: ${e?.message ?? e}`,
+        loggerCtx,
+        inspect(req.body)
+      );
+      return;
+    }
     const rawBody = (req as any).rawBody;
     const ctx = await this.sendcloudService.createContext(channelToken);
     const { client } = await this.sendcloudService.getClient(ctx);

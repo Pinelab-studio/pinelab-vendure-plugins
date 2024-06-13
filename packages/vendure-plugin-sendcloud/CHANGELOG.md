@@ -1,4 +1,8 @@
-# 1.2.1 (2022-01-16)
+# 1.2.2 (2024-06-13)
+
+- Added better logging for incoming webhooks
+
+# 1.2.1 (2023-01-16)
 
 - Correctly transition order to Delivered after it has been Shipped
 
