@@ -1,5 +1,9 @@
 # 1.2.4 (2024-06-13)
 
+- Using util.inspect again to log the incoming webhook body
+
+# 1.2.4 (2024-06-13)
+
 - Check if incoming request is a Buffer or already parsed by other middleware
 
 # 1.2.3 (2024-06-13)

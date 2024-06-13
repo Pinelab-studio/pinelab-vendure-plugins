@@ -6,6 +6,7 @@ import { Logger } from '@vendure/core';
 import { loggerCtx } from './constants';
 import { IncomingWebhookBody } from './types/sendcloud-api.types';
 import { sendcloudStates } from './types/sendcloud.types';
+import { inspect } from 'util';
 
 @Controller('sendcloud')
 export class SendcloudController {
@@ -32,7 +33,7 @@ export class SendcloudController {
         Logger.error(
           `Error parsing incoming webhook body: ${e?.message ?? e}`,
           loggerCtx,
-          req.body.toString()
+          inspect(req.body)
         );
         return;
       }
