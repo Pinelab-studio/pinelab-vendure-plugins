@@ -1,16 +1,16 @@
 import {
+  LanguageCode,
   PluginCommonModule,
   Type,
-  VendureEvent,
   VendurePlugin,
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { adminSchema } from './api/api-extension';
 import {
+  webhookPermission,
   WebhookRequestTransformerResolver,
   WebhookResolver,
-  webhookPermission,
 } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
 import {
@@ -19,6 +19,7 @@ import {
 } from './api/request-transformer';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { Webhook } from './api/webhook.entity';
+import { generateToken } from './util';
 
 export interface WebhookPluginOptions {
   /**
@@ -41,6 +42,10 @@ export interface WebhookPluginOptions {
    * Disable the plugin. Default is false
    */
   disabled?: boolean;
+  /**
+   * Use the authorization header for webhook requests. Default is false
+   */
+  useAuthorizationHeader?: boolean;
 }
 
 /**
@@ -60,6 +65,16 @@ export interface WebhookPluginOptions {
   },
   configuration: (config) => {
     config.authOptions.customPermissions.push(webhookPermission);
+    config.customFields.GlobalSettings.push({
+      type: 'string',
+      name: 'webhookToken',
+      defaultValue: generateToken(),
+      public: false,
+      label: [
+        { languageCode: LanguageCode.en, value: 'Webhook Token' },
+        { languageCode: LanguageCode.de, value: 'Webhook Token' },
+      ],
+    });
     return config;
   },
   compatibility: '^2.0.0',
