@@ -41,6 +41,11 @@ export const OrderFieldsFragment = gql`
       productVariant {
         id
       }
+      order {
+        customer {
+          id
+        }
+      }
       discounts {
         adjustmentSource
         amount

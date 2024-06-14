@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-anonymized-order",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "This plugin facilitates the retrieval of anonymized customer orders",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",

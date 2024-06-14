@@ -8,13 +8,7 @@ Add the plugin to your config:
 
 ```ts
 import { AnonymizedOrderPlugin } from '@pinelab/vendure-plugin-anonymized-order';
-plugins: [
-  AnonymizedOrderPlugin.init({
-    anonymizeOrderFn: (order) => {
-      order.lines = [];
-    },
-  }),
-];
+plugins: [AnonymizedOrderPlugin.init({})];
 ```
 
 ## Displaying placed order without requiring the customer to log in
@@ -36,3 +30,22 @@ In the order confirmation email, you could have a link like `https://my-storefro
 ```
 
 This will then return the order without `shippingAddress`, `billingAddress` and `customer` fields.
+
+## Customizing what data is removed
+
+You can supply your own strategy for anonymizing a given order. In that case, **the plugin will not remove any data from the order** for you.
+
+The example below will only remove the customer, but still expose shipping and billing address:
+
+```ts
+import { AnonymizedOrderPlugin } from '@pinelab/vendure-plugin-anonymized-order';
+plugins: [
+  AnonymizedOrderPlugin.init({
+    anonymizeOrderFn: (order) => {
+      order.customer = {};
+    },
+  }),
+];
+```
+
+You should be cautious about what to return, because of the relational nature of GraphQL. For example, exposing the `order.customer`, will also allow the client to query `order.customer.orders`, thus exposing all orders of that customer.
