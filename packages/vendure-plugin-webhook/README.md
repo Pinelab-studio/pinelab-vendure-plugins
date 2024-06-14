@@ -38,6 +38,10 @@ plugins: [
      * If no transformers are specified
      */
     requestTransformers: [],
+    /**
+     * Use the authorization header for webhook requests. Default is false
+     */
+    useAuthorizationHeader: true,
   }),
   AdminUiPlugin.init({
     port: 3002,
@@ -54,6 +58,7 @@ plugins: [
 3. Run a DB migration to create the custom entities.
 4. Start the server and assign the permission `SetWebhook` to administrators who should be able to configure webhooks.
 5. Go to `settings > webhook` to configure webhooks
+6. (optional) Go to `settings > Global Settings` to get the webhook token for authorization.
 
 ### Custom transformers
 
@@ -66,11 +71,12 @@ import { RequestTransformer } from '@pinelab/vendure-plugin-webhook';
 export const stringifyProductTransformer = new RequestTransformer({
   name: 'Stringify Product events',
   supportedEvents: [ProductEvent],
-  transform: (event, injector) => {
+  transform: (event, injector, webhook) => {
     if (event instanceof ProductEvent) {
       return {
-        body: JSON.stringify(event),
+        body: JSON.stringify({ event: webhook.event, ...event }), // Pass the event name to the body
         headers: {
+          authorization: 'Bearer MyTokenOverwrite', // this will overwrite the token from settings
           'x-custom-header': 'custom-example-header',
           'content-type': 'application/json',
         },
