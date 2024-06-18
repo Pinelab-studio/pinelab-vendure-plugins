@@ -1,4 +1,4 @@
-# 1.2.0 (2024-06-14)
+# 1.1.2 (2024-06-14)
 
 - Extended transformer function with webhook entity to make the event name accessible
 
