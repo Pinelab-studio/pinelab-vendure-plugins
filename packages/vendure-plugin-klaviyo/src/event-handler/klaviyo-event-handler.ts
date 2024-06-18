@@ -4,7 +4,7 @@ import {
   RequestContext,
   Type,
   VendureEvent,
-} from "@vendure/core";
+} from '@vendure/core';
 
 export declare type EventWithContext = VendureEvent & {
   ctx: RequestContext;
@@ -61,7 +61,7 @@ export interface KlaviyoGenericEvent {
  * https://developers.klaviyo.com/en/docs/guide_to_integrating_a_platform_without_a_pre_built_klaviyo_integration#placed-order
  */
 export interface KlaviyoOrderPlacedEvent extends KlaviyoGenericEvent {
-  eventName: "Order Placed";
+  eventName: 'Order Placed';
   orderId: string;
   orderPlacedAt: Date;
   /**
@@ -77,10 +77,10 @@ export interface KlaviyoOrderPlacedEvent extends KlaviyoGenericEvent {
  */
 export type KlaviyoEventMapFn<
   EventType extends EventWithContext,
-  ReturnType,
+  ReturnType
 > = (
   event: EventType,
-  injector: Injector,
+  injector: Injector
 ) => Promise<ReturnType | false> | ReturnType | false;
 
 export interface KlaviyoEventHandler<T extends EventWithContext> {

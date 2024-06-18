@@ -1,5 +1,5 @@
-import { Inject, OnApplicationBootstrap } from "@nestjs/common";
-import { ModuleRef } from "@nestjs/core";
+import { Inject, OnApplicationBootstrap } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
   Injector,
@@ -9,32 +9,32 @@ import {
   OrderPlacedEvent,
   RequestContext,
   SerializedRequestContext,
-} from "@vendure/core";
-import { ApiKeySession, EventCreateQueryV2, EventsApi } from "klaviyo-api";
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from "./constants";
+} from '@vendure/core';
+import { ApiKeySession, EventCreateQueryV2, EventsApi } from 'klaviyo-api';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
 import {
   EventWithContext,
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
   KlaviyoOrderPlacedEvent,
   KlaviyoOrderPlacedEventHandler,
-} from "./event-handler/klaviyo-event-handler";
-import { KlaviyoPluginOptions } from "./klaviyo.plugin";
+} from './event-handler/klaviyo-event-handler';
+import { KlaviyoPluginOptions } from './klaviyo.plugin';
 import {
   mapToKlaviyoEventInput,
   mapToKlaviyoOrderPlacedInput,
   mapToOrderedProductEvent,
-} from "./util/map-to-klaviyo-input";
-import { isAxiosError } from "axios";
+} from './util/map-to-klaviyo-input';
+import { isAxiosError } from 'axios';
 
 interface GenericEventJobData {
-  action: "handle-event";
+  action: 'handle-event';
   ctx: SerializedRequestContext;
   event: KlaviyoGenericEvent;
 }
 
 interface OrderEventJobData {
-  action: "handle-order-event";
+  action: 'handle-order-event';
   ctx: SerializedRequestContext;
   event: KlaviyoOrderPlacedEvent;
 }
@@ -49,29 +49,29 @@ export class KlaviyoService implements OnApplicationBootstrap {
     private readonly jobQueueService: JobQueueService,
     private readonly moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS) private readonly options: KlaviyoPluginOptions,
-    private readonly eventBus: EventBus,
+    private readonly eventBus: EventBus
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     // Create JobQueue and handlers
     this.jobQueue = await this.jobQueueService.createQueue({
-      name: "klaviyo",
+      name: 'klaviyo',
       process: async ({ data: _data }) => {
         const data = _data as JobData;
         const ctx = RequestContext.deserialize(data.ctx);
         try {
-          if (data.action === "handle-event") {
+          if (data.action === 'handle-event') {
             await this.handleGenericEvent(ctx, data.event);
-          } else if (data.action === "handle-order-event") {
+          } else if (data.action === 'handle-order-event') {
             await this.handleOrderEvent(ctx, data.event);
           }
           Logger.info(`Successfully handled job '${data.action}'`, loggerCtx);
         } catch (e) {
           Logger.warn(
-            `Failed to handle job '${
-              data.action
-            }': ${(e as Error).message}. Job data: ${JSON.stringify(data.event)}`,
-            loggerCtx,
+            `Failed to handle job '${data.action}': ${
+              (e as Error).message
+            }. Job data: ${JSON.stringify(data.event)}`,
+            loggerCtx
           );
           throw e;
         }
@@ -80,7 +80,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
     if (this.options.eventHandlers.length === 0) {
       Logger.error(
         `No event handlers configured for Klaviyo. No events will be sent to Klaviyo. This means the plugin isn't doing anything.`,
-        loggerCtx,
+        loggerCtx
       );
       return;
     }
@@ -91,7 +91,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
         Logger.error(
           `Error creating order event job: ${err}`,
           loggerCtx,
-          (err as Error)?.stack,
+          (err as Error)?.stack
         );
       });
     });
@@ -107,16 +107,16 @@ export class KlaviyoService implements OnApplicationBootstrap {
           Logger.error(
             `Error creating event job for '${event.constructor.name}': ${err}`,
             loggerCtx,
-            (err as Error)?.stack,
+            (err as Error)?.stack
           );
         });
       });
     });
     Logger.info(
-      `Listening for events: ${this.options.eventHandlers.map(
-        (e) => e.vendureEvent.name,
-      ).join(", ")}`,
-      loggerCtx,
+      `Listening for events: ${this.options.eventHandlers
+        .map((e) => e.vendureEvent.name)
+        .join(', ')}`,
+      loggerCtx
     );
   }
 
@@ -126,15 +126,15 @@ export class KlaviyoService implements OnApplicationBootstrap {
    */
   async createOrderEventJob(
     orderPlacedEvent: OrderPlacedEvent,
-    retries = 10,
+    retries = 10
   ): Promise<void> {
     const orderPlacedHandler = this.options.eventHandlers.find(
-      (handler) => handler.vendureEvent === OrderPlacedEvent,
+      (handler) => handler.vendureEvent === OrderPlacedEvent
     );
     if (!orderPlacedHandler) {
       Logger.warn(
         `No order placed event mapper configured for Klaviyo, not sending Placed Order and Ordered Product events`,
-        loggerCtx,
+        loggerCtx
       );
       return;
     }
@@ -143,7 +143,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
     ).mapToKlaviyoEvent(orderPlacedEvent, new Injector(this.moduleRef));
     if (event) {
       const jobData: OrderEventJobData = {
-        action: "handle-order-event",
+        action: 'handle-order-event',
         ctx: orderPlacedEvent.ctx.serialize(),
         event,
       };
@@ -158,15 +158,15 @@ export class KlaviyoService implements OnApplicationBootstrap {
   async createEventJob<T extends EventWithContext>(
     vendureEvent: T,
     eventHandler: KlaviyoEventHandler<T>,
-    retries = 10,
+    retries = 10
   ): Promise<void> {
     const event = await eventHandler.mapToKlaviyoEvent(
       vendureEvent,
-      new Injector(this.moduleRef),
+      new Injector(this.moduleRef)
     );
     if (event) {
       const jobData: GenericEventJobData = {
-        action: "handle-event",
+        action: 'handle-event',
         ctx: vendureEvent.ctx.serialize(),
         event,
       };
@@ -180,25 +180,25 @@ export class KlaviyoService implements OnApplicationBootstrap {
    */
   async handleOrderEvent(
     ctx: RequestContext,
-    event: KlaviyoOrderPlacedEvent,
+    event: KlaviyoOrderPlacedEvent
   ): Promise<void> {
     const klaviyoApi = await this.getKlaviyoApi(ctx);
     await this.createEvent(klaviyoApi, mapToKlaviyoOrderPlacedInput(event));
     Logger.info(
       `Sent' Placed Order' event to Klaviyo for order ${event.orderId}`,
-      loggerCtx,
+      loggerCtx
     );
     for (const [index, orderItem] of event.orderItems.entries()) {
       const orderedProductEvent = mapToOrderedProductEvent(
         orderItem,
         index,
-        event,
+        event
       );
       await this.createEvent(klaviyoApi, orderedProductEvent);
     }
     Logger.info(
       `Sent 'Ordered Product' event to Klaviyo for order ${event.orderId} for ${event.orderItems.length} order lines`,
-      loggerCtx,
+      loggerCtx
     );
   }
 
@@ -207,13 +207,13 @@ export class KlaviyoService implements OnApplicationBootstrap {
    */
   async handleGenericEvent(
     ctx: RequestContext,
-    event: KlaviyoGenericEvent,
+    event: KlaviyoGenericEvent
   ): Promise<void> {
     const klaviyoApi = await this.getKlaviyoApi(ctx);
     await this.createEvent(klaviyoApi, mapToKlaviyoEventInput(event));
     Logger.info(
       `Sent '${event.eventName}' event with event ID '${event.uniqueId}' to Klaviyo.`,
-      loggerCtx,
+      loggerCtx
     );
   }
 
@@ -228,7 +228,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
    */
   async createEvent(
     klaviyoApi: EventsApi,
-    event: EventCreateQueryV2,
+    event: EventCreateQueryV2
   ): Promise<void> {
     try {
       const {
@@ -236,17 +236,17 @@ export class KlaviyoService implements OnApplicationBootstrap {
       } = await klaviyoApi.createEvent(event);
       if (status < 200 || status > 299) {
         throw new Error(
-          `[${loggerCtx}]: Failed to create event '${event.data.attributes.metric.data.attributes.name}': ${statusText} (${status})`,
+          `[${loggerCtx}]: Failed to create event '${event.data.attributes.metric.data.attributes.name}': ${statusText} (${status})`
         );
       }
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (isAxiosError(e) && e.response?.data?.errors[0]?.detail) {
         // Throw more specific Klaviyo error if available
-        
+
         throw Error(
           // eslint-disable-next-line
-          e.response?.data.errors.map((error: any) => (error)?.detail)?.join(", "),
+          e.response?.data.errors.map((error: any) => error?.detail)?.join(', ')
         );
       } else {
         throw e;

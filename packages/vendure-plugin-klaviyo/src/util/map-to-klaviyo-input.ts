@@ -1,17 +1,17 @@
-import { uniq } from "lodash";
+import { uniq } from 'lodash';
 import {
   KlaviyoGenericEvent,
   KlaviyoOrderItem,
   KlaviyoOrderPlacedEvent,
-} from "../event-handler/klaviyo-event-handler";
+} from '../event-handler/klaviyo-event-handler';
 import {
   EventCreateQueryV2,
   EventCreateQueryV2ResourceObjectAttributesProfile,
   OnsiteProfileCreateQueryResourceObjectAttributes,
-} from "klaviyo-api";
-import { phone } from "phone";
-import { Logger } from "@vendure/core";
-import { loggerCtx } from "../constants";
+} from 'klaviyo-api';
+import { phone } from 'phone';
+import { Logger } from '@vendure/core';
+import { loggerCtx } from '../constants';
 
 /**
  * Returns a valid E.164 formatted phone number, or undefined if we can't format the phonenumber to E.164.
@@ -19,7 +19,7 @@ import { loggerCtx } from "../constants";
  */
 function getE164PhoneNumber(
   phoneNumberString?: string,
-  countryCode = "NL",
+  countryCode = 'NL'
 ): string | undefined {
   if (!phoneNumberString) {
     return undefined;
@@ -32,7 +32,7 @@ function getE164PhoneNumber(
   }
   Logger.info(
     `Not sending invalid phone number '${phoneNumberString}' to Klaviyo`,
-    loggerCtx,
+    loggerCtx
   );
 }
 
@@ -40,7 +40,7 @@ function getE164PhoneNumber(
  * Map the profile defined by the plugin consumer to the expected Klaviyo API input
  */
 function mapToProfile(
-  eventProfile: KlaviyoGenericEvent["profile"],
+  eventProfile: KlaviyoGenericEvent['profile']
 ): EventCreateQueryV2ResourceObjectAttributesProfile {
   const profile: OnsiteProfileCreateQueryResourceObjectAttributes = {
     email: eventProfile.emailAddress,
@@ -49,7 +49,7 @@ function mapToProfile(
     lastName: eventProfile.lastName,
     phoneNumber: getE164PhoneNumber(
       eventProfile.phoneNumber,
-      eventProfile.address?.countryCode,
+      eventProfile.address?.countryCode
     ),
     properties: {
       ...eventProfile.customProperties,
@@ -61,7 +61,7 @@ function mapToProfile(
   };
   return {
     data: {
-      type: "profile",
+      type: 'profile',
       attributes: profile,
     },
   };
@@ -71,16 +71,16 @@ function mapToProfile(
  * Map the KlaviyoOrderPlacedEvent defined by the plugin consumer to the expected Klaviyo API input
  */
 export function mapToKlaviyoOrderPlacedInput(
-  event: KlaviyoOrderPlacedEvent,
+  event: KlaviyoOrderPlacedEvent
 ): EventCreateQueryV2 {
   const collections = uniq(
     event.orderItems
       .map((item) => item.Categories)
       .flat()
-      .filter(Boolean),
+      .filter(Boolean)
   );
   const brands = uniq(
-    event.orderItems.map((item) => item.Brand).filter(Boolean),
+    event.orderItems.map((item) => item.Brand).filter(Boolean)
   );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orderProperties: Record<string, any> = {
@@ -99,7 +99,7 @@ export function mapToKlaviyoOrderPlacedInput(
   }
   return {
     data: {
-      type: "event",
+      type: 'event',
       attributes: {
         uniqueId: event.uniqueId,
         properties: orderProperties,
@@ -107,9 +107,9 @@ export function mapToKlaviyoOrderPlacedInput(
         value: event.totalOrderValue,
         metric: {
           data: {
-            type: "metric",
+            type: 'metric',
             attributes: {
-              name: "Placed Order",
+              name: 'Placed Order',
             },
           },
         },
@@ -123,17 +123,17 @@ export function mapToKlaviyoOrderPlacedInput(
  * Map the consumer defined event to the expected Klaviyo API event input
  */
 export function mapToKlaviyoEventInput(
-  event: KlaviyoGenericEvent,
+  event: KlaviyoGenericEvent
 ): EventCreateQueryV2 {
   return {
     data: {
-      type: "event",
+      type: 'event',
       attributes: {
         uniqueId: event.uniqueId,
         profile: mapToProfile(event.profile),
         metric: {
           data: {
-            type: "metric",
+            type: 'metric',
             attributes: {
               name: event.eventName,
             },
@@ -154,11 +154,11 @@ export function mapToOrderedProductEvent(
    * Used to identify (and make unique) the order item in the context of the order
    */
   orderItemNr: number,
-  orderEvent: KlaviyoOrderPlacedEvent,
+  orderEvent: KlaviyoOrderPlacedEvent
 ): EventCreateQueryV2 {
   return {
     data: {
-      type: "event",
+      type: 'event',
       attributes: {
         uniqueId: `${orderEvent.uniqueId}_${orderItemNr}`,
         properties: {
@@ -170,9 +170,9 @@ export function mapToOrderedProductEvent(
         value: orderItem.RowTotal,
         metric: {
           data: {
-            type: "metric",
+            type: 'metric',
             attributes: {
-              name: "Ordered Product",
+              name: 'Ordered Product',
             },
           },
         },

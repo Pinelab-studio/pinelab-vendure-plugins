@@ -4,47 +4,46 @@ import {
   EntityHydrator,
   Logger,
   OrderPlacedEvent,
-  translateDeep
-} from "@vendure/core";
-import { loggerCtx } from "../constants";
-import { toKlaviyoMoney } from "../util/to-klaviyo-money";
-import { KlaviyoOrderPlacedEventHandler } from "./klaviyo-event-handler";
+  translateDeep,
+} from '@vendure/core';
+import { loggerCtx } from '../constants';
+import { toKlaviyoMoney } from '../util/to-klaviyo-money';
+import { KlaviyoOrderPlacedEventHandler } from './klaviyo-event-handler';
 
 export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
   vendureEvent: OrderPlacedEvent,
   mapToKlaviyoEvent: async ({ order, ctx }, injector) => {
     await injector.get(EntityHydrator).hydrate(ctx, order, {
       relations: [
-        "lines.productVariant.product.facetValues.facet",
-        "lines.productVariant.product.translations",
-        "lines.productVariant.collections.children",
-        "lines.productVariant.featuredAsset",
-        "shippingLines.shippingMethod",
-        "customer.addresses.country",
-        "customer.user",
+        'lines.productVariant.product.facetValues.facet',
+        'lines.productVariant.product.translations',
+        'lines.productVariant.collections.children',
+        'lines.productVariant.featuredAsset',
+        'shippingLines.shippingMethod',
+        'customer.addresses.country',
+        'customer.user',
       ],
     });
     order.lines.forEach((line) => {
       line.productVariant.product = translateDeep(
         line.productVariant.product,
-        ctx.languageCode,
+        ctx.languageCode
       );
     });
     if (!order.customer) {
       Logger.error(
         `Can not send Order placed Event to Klaviyo, because order ${order.code} has no customer`,
-        loggerCtx,
+        loggerCtx
       );
       return false;
     }
-    let address: Address | OrderAddress | undefined = order.customer.addresses.find(
-      (a) => a.defaultShippingAddress,
-    );
+    let address: Address | OrderAddress | undefined =
+      order.customer.addresses.find((a) => a.defaultShippingAddress);
     if (!address) {
-      address = order.shippingAddress
+      address = order.shippingAddress;
     }
     return {
-      eventName: "Order Placed",
+      eventName: 'Order Placed',
       uniqueId: order.code,
       orderId: order.code,
       orderPlacedAt: order.orderPlacedAt ?? order.updatedAt,
@@ -60,7 +59,9 @@ export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
           address2: address?.streetLine2,
           city: address?.city,
           postalCode: address?.postalCode,
-          countryCode: (address as OrderAddress).countryCode ?? (address as Address)?.country?.code,
+          countryCode:
+            (address as OrderAddress).countryCode ??
+            (address as Address)?.country?.code,
         },
       },
       orderItems: order.lines.map((line) => ({
