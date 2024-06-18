@@ -1,6 +1,5 @@
 # 1.2.0 (2024-06-14)
 
-- Added a default webhook token to GlobalSettings used in a default authorization header
 - Extended transformer function with webhook entity to make the event name accessible
 
 # 1.1.1 (2023-12-14)

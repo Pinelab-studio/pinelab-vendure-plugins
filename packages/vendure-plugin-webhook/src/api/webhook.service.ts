@@ -1,19 +1,15 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
-  createSelfRefreshingCache,
   EventBus,
-  GlobalSettingsEvent,
-  GlobalSettingsService,
   ID,
   Injector,
   Logger,
   RequestContext,
-  SelfRefreshingCache,
   TransactionalConnection,
 } from '@vendure/core';
 import { Webhook } from './webhook.entity';
-import fetch, { HeadersInit } from 'node-fetch';
+import fetch from 'node-fetch';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { EventWithContext, RequestTransformer } from './request-transformer';
 import { WebhookPluginOptions } from '../webhook.plugin';
@@ -31,15 +27,9 @@ export class WebhookService implements OnApplicationBootstrap {
    */
   webhookQueue = new Map<ID, Webhook>();
 
-  private webhookToken!: SelfRefreshingCache<
-    string | undefined,
-    [RequestContext]
-  >;
-
   constructor(
     private eventBus: EventBus,
     private connection: TransactionalConnection,
-    private globalSettingsService: GlobalSettingsService,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS) private options: WebhookPluginOptions
   ) {}
@@ -79,32 +69,6 @@ export class WebhookService implements OnApplicationBootstrap {
         }
       });
       Logger.info(`Listening for ${configuredEvent.name}`, loggerCtx);
-    });
-
-    // Cache webhook token
-    this.webhookToken = await createSelfRefreshingCache({
-      name: 'Webhook Token',
-      ttl: 60 * 60 * 24, // daily refresh
-      refresh: {
-        fn: (ctx) => {
-          Logger.debug('Refreshing webhook token', loggerCtx);
-          return this.globalSettingsService
-            .getSettings(ctx)
-            .then((settings) => {
-              return 'webhookToken' in settings.customFields
-                ? settings.customFields.webhookToken?.toString()
-                : undefined;
-            });
-        },
-        defaultArgs: [RequestContext.empty()],
-      },
-    });
-
-    // Refresh token cache on settings update
-    this.eventBus.ofType(GlobalSettingsEvent).subscribe((event) => {
-      if (event.type === 'updated') {
-        this.webhookToken.refresh(event.ctx);
-      }
     });
   }
 
@@ -213,56 +177,32 @@ export class WebhookService implements OnApplicationBootstrap {
    * Call the actual webhook with the configured Transformer for given Event
    */
   async callWebhook(webhook: Webhook, event: EventWithContext): Promise<void> {
-    let headers: HeadersInit = {};
-
-    // Add default authorization header if configured
-    if (this.options.useAuthorizationHeader) {
-      const token = await this.webhookToken.value();
-      if (token) {
-        headers['authorization'] = token;
-      } else {
-        Logger.error(
-          `Could not get webhook token but 'useAuthorizationHeader' is enabled.`,
-          loggerCtx
-        );
-      }
-    }
-
-    // Call the webhook without transformer
     if (!webhook.transformerName) {
-      await fetch(webhook.url, { method: 'POST', headers: headers });
-      Logger.info(
+      // No transformer, just call webhook without body
+      await fetch(webhook.url, { method: 'POST' });
+      return Logger.info(
         `Successfully triggered webhook for event ${webhook.event} for channel ${webhook.channelId} without transformer`,
         loggerCtx
       );
-      return;
     }
-
-    // Find and apply the configured transformer
+    // Have the configured transformer construct the request
     const transformer = this.getAvailableTransformers().find(
       (transformer) => transformer.name === webhook.transformerName
     );
-
     if (!transformer) {
       throw Error(`Could not find transformer ${webhook.transformerName}`);
     }
-
     const request = await transformer.transform(
       event,
       new Injector(this.moduleRef),
       webhook
     );
 
-    headers = {
-      ...headers,
-      ...request.headers,
-    };
-
     // Call the webhook with the constructed request
     try {
       await fetch(webhook.url, {
         method: 'POST',
-        headers: headers,
+        headers: request.headers,
         body: request.body,
       });
       Logger.info(
