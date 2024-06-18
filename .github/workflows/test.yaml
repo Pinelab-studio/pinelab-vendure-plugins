@@ -29,8 +29,8 @@ jobs:
         package:
           [
             'vendure-plugin-accept-blue',
-            'vendure-plugin-admin-ui-helpers',
             'vendure-plugin-admin-social-auth',
+            'vendure-plugin-admin-ui-helpers',
             'vendure-plugin-anonymized-order',
             'vendure-plugin-change-order-customer',
             'vendure-plugin-coinbase',
@@ -42,6 +42,7 @@ jobs:
             'vendure-plugin-google-cloud-tasks',
             'vendure-plugin-google-storage-assets',
             'vendure-plugin-invoices',
+            'vendure-plugin-klaviyo',
             'vendure-plugin-limit-variant-per-order',
             'vendure-plugin-metrics',
             'vendure-plugin-modify-customer-orders',
@@ -51,14 +52,14 @@ jobs:
             'vendure-plugin-picqer',
             'vendure-plugin-popularity-scores',
             'vendure-plugin-primary-collection',
+            'vendure-plugin-public-customer-groups',
             'vendure-plugin-sendcloud',
-            'vendure-plugin-stock-monitoring',
+            'vendure-plugin-shipmate',
             'vendure-plugin-shipping-extensions',
+            'vendure-plugin-stock-monitoring',
             'vendure-plugin-stripe-subscription',
             'vendure-plugin-variant-bulk-update',
             'vendure-plugin-webhook',
-            'vendure-plugin-public-customer-groups',
-            'vendure-plugin-shipmate',
           ]
     steps:
       - name: Checkout code
