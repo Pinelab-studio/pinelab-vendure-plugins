@@ -1,12 +1,11 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { KlaviyoService } from './klaviyo.service';
+import { defaultOrderPlacedEventHandler } from './event-handler/default-order-placed-event-handler';
 import {
-  EventWithContext,
   KlaviyoEventHandler,
   KlaviyoOrderPlacedEventHandler,
 } from './event-handler/klaviyo-event-handler';
-import { defaultOrderPlacedEventHandler } from './event-handler/default-order-placed-event-handler';
+import { KlaviyoService } from './klaviyo.service';
 
 interface KlaviyoPluginOptionsInput {
   /**
@@ -18,7 +17,7 @@ interface KlaviyoPluginOptionsInput {
    */
   eventHandlers?: Array<
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    KlaviyoOrderPlacedEventHandler | KlaviyoEventHandler<EventWithContext>
+    KlaviyoOrderPlacedEventHandler | KlaviyoEventHandler<any>
   >;
 }
 

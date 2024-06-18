@@ -102,10 +102,13 @@ export class KlaviyoService implements OnApplicationBootstrap {
         return;
       }
       this.eventBus.ofType(handler.vendureEvent).subscribe((event) => {
-        Logger.info(`Creating job for '${event.constructor.name}'`, loggerCtx);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        Logger.info(`Creating job for '${event?.constructor.name}'`, loggerCtx);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         this.createEventJob(event, handler).catch((err) => {
           Logger.error(
-            `Error creating event job for '${event.constructor.name}': ${err}`,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            `Error creating event job for '${event?.constructor.name}': ${err}`,
             loggerCtx,
             (err as Error)?.stack
           );
