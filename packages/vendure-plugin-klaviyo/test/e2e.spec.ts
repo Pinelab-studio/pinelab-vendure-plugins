@@ -13,7 +13,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { KlaviyoPlugin } from '../src';
+import { defaultOrderPlacedEventHandler, KlaviyoPlugin } from '../src';
+import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -26,6 +27,8 @@ beforeAll(async () => {
     plugins: [
       KlaviyoPlugin.init({
         apiKey: 'some_private_api_key',
+        // You can have multiple 'Order Placed' handlers, but it makes more sense to have 1. This is just for testing
+        eventHandlers: [defaultOrderPlacedEventHandler, mockOrderPlacedHandler],
       }),
     ],
     paymentOptions: {
@@ -110,5 +113,50 @@ describe('Klaviyo', () => {
     expect(profile.location.address2).toBe('12a');
     expect(profile.location.city).toBe('Liwwa');
     expect(profile.location.country).toBe('NL');
+  });
+
+  it("Has sent 'Ordered Product' to Klaviyo", () => {
+    const productEvent = klaviyoRequests.filter(
+      (r) => r.data.attributes.metric.data.attributes.name === 'Ordered Product'
+    );
+    const orderItem1 = productEvent[0].data.attributes.properties as any;
+    const orderItem2 = productEvent[1].data.attributes.properties as any;
+    expect(orderItem1).toEqual({
+      ProductID: '1',
+      SKU: 'L2201308',
+      ProductName: 'Laptop 13 inch 8GB',
+      Quantity: 1,
+      ItemPrice: 1558.8,
+      RowTotal: 1558.8,
+    });
+    expect(orderItem2).toEqual({
+      ProductID: '2',
+      SKU: 'L2201508',
+      ProductName: 'Laptop 15 inch 8GB',
+      Quantity: 2,
+      ItemPrice: 1678.8,
+      RowTotal: 3357.6,
+    });
+  });
+
+  it("Has sent custom 'Order Placed' event to Klaviyo", () => {
+    const orderEvents = klaviyoRequests.filter(
+      (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
+    );
+    const orderEvent = orderEvents[orderEvents.length - 1]; // Last one should be our custom event
+    const properties = orderEvent.data.attributes.properties as any;
+    // Only test custom and new properties here
+    expect(properties.Categories).toEqual(['Some mock category']);
+    expect(properties.Brands).toEqual(['Test Brand']);
+    expect(properties.CustomProperties).toEqual({
+      customOrderProp: 'my custom order value',
+    });
+    expect(properties.Items[0].customProperties).toEqual({
+      customOrderItemProp: 'my custom order item value',
+    });
+    expect(properties.Items[0].ProductURL).toBe(
+      'https://pinelab.studio/product/some-product'
+    );
+    expect(properties.Items[0].ImageURL).toBe('custom-image-url.png');
   });
 });

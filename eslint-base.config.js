@@ -14,7 +14,7 @@ export default tseslint.config(
       'dist',
       'node_modules',
       '**/*/dev-server.ts',
-      '**/*/*.spec.ts',
+      '**/test/**',
     ],
   }
 );
