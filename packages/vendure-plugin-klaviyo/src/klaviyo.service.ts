@@ -131,26 +131,28 @@ export class KlaviyoService implements OnApplicationBootstrap {
     orderPlacedEvent: OrderPlacedEvent,
     retries = 10
   ): Promise<void> {
-    const orderPlacedHandler = this.options.eventHandlers.find(
+    const orderPlacedHandlers = this.options.eventHandlers.filter(
       (handler) => handler.vendureEvent === OrderPlacedEvent
     );
-    if (!orderPlacedHandler) {
+    if (!orderPlacedHandlers.length) {
       Logger.warn(
         `No order placed event mapper configured for Klaviyo, not sending Placed Order and Ordered Product events`,
         loggerCtx
       );
       return;
     }
-    const event = await (
-      orderPlacedHandler as KlaviyoOrderPlacedEventHandler
-    ).mapToKlaviyoEvent(orderPlacedEvent, new Injector(this.moduleRef));
-    if (event) {
-      const jobData: OrderEventJobData = {
-        action: 'handle-order-event',
-        ctx: orderPlacedEvent.ctx.serialize(),
-        event,
-      };
-      await this.jobQueue.add(jobData, { retries });
+    for (const handler of orderPlacedHandlers) {
+      const event = await (
+        handler as KlaviyoOrderPlacedEventHandler
+      ).mapToKlaviyoEvent(orderPlacedEvent, new Injector(this.moduleRef));
+      if (event) {
+        const jobData: OrderEventJobData = {
+          action: 'handle-order-event',
+          ctx: orderPlacedEvent.ctx.serialize(),
+          event,
+        };
+        await this.jobQueue.add(jobData, { retries });
+      }
     }
   }
 

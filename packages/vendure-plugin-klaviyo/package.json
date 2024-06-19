@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-klaviyo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vendure plugin for communicating e-commerce events to the Klaviyo platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
