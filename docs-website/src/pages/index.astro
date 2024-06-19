@@ -1,8 +1,14 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPlugins } from '../api/plugins';
+import {
+  getPluginsContributors,
+  Contributor as ContributorType,
+} from '../api/contributors';
+import Contributor from '../components/Contributor.astro';
 
 const plugins = await getPlugins();
+const contributors = await getPluginsContributors();
 
 // https://spaziobianco.lexingtonthemes.com/jobs/home/
 ---
@@ -109,4 +115,33 @@ const plugins = await getPlugins();
       </div>
     </div>
   </section>
+
+  <div>
+    {
+      contributors.length > 0 && (
+        <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 pb-12 mb-12 ">
+          <h2 class="text-center font-bold text-gray-600 text-4xl mb-16">
+            Contributors
+          </h2>
+          <div class="flex flex-wrap gap-x-4 sm:gap-x-16 gap-y-4 sm:gap-y-12 items-center justify-center">
+            {contributors.map((c: ContributorType) => {
+              return (
+                <>
+                  <a href={c.html_url} target="_blank">
+                    <div class="flex justify-center">
+                      <Contributor
+                        name={c.login}
+                        image={c.avatar_url}
+                        contributions={c.contributions}
+                      />
+                    </div>
+                  </a>
+                </>
+              );
+            })}
+          </div>
+        </div>
+      )
+    }
+  </div>
 </BaseLayout>
