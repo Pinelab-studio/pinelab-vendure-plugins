@@ -2,7 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-invoices)
 
-Am extensible plugin for sending placed orders to the Klaviyo marketing platform.
+An extensible plugin for sending placed orders to the Klaviyo marketing platform.
 
 ## Getting started
 
