@@ -127,7 +127,8 @@ export async function createSettledOrder(
     { id: 'T_2', quantity: 2 },
   ],
   billingAddress?: SetBillingAddressMutationVariables,
-  shippingAddress?: SetShippingAddressMutationVariables
+  shippingAddress?: SetShippingAddressMutationVariables,
+  paymentMethodCode: string = testPaymentMethod.code
 ): Promise<SettledOrder> {
   if (authorizeFirst) {
     await shopClient.asUserWithCredentials(
@@ -161,7 +162,7 @@ export async function createSettledOrder(
     console.error(JSON.stringify(res));
     throw Error((res as ErrorResult).errorCode);
   }
-  const order = await addPaymentToOrder(shopClient, testPaymentMethod.code);
+  const order = await addPaymentToOrder(shopClient, paymentMethodCode);
   if ((order as ErrorResult).errorCode) {
     throw new Error(
       `Failed to create settled order: ${(order as ErrorResult).message}`
