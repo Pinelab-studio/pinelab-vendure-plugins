@@ -20,8 +20,8 @@ import { initialData } from '../../test/src/initial-data';
 import { PaymentExtensionsPlugin } from '../src/payment-extensions-plugin';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { settleWithoutPaymentHandler } from '../src/settle-without-payment-handler';
-import { settleWithoutPaymentChecker } from '../src/settle-without-payment-checker';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { isCustomerInGroupPaymentChecker } from '../src/is-customer-In-group-payment-checker';
 
 let server: TestServer;
 let shopClient: SimpleGraphQLClient;
@@ -51,7 +51,7 @@ beforeAll(async () => {
       customerIds: ['1'],
     }
   );
-  //create a payment method settleWithoutPaymentChecker and settleWithoutPaymentHandler
+  //create a payment method with isCustomerInGroupPaymentChecker and settleWithoutPaymentHandler
   settleWithoutPaymentMethod = await paymentMethodService.create(ctx, {
     code: 'settle-without-payment',
     enabled: false,
@@ -66,7 +66,7 @@ beforeAll(async () => {
           value: JSON.stringify(settleWithoutPaymentCustomerGroup.id),
         },
       ],
-      code: settleWithoutPaymentChecker.code,
+      code: isCustomerInGroupPaymentChecker.code,
     },
     translations: [
       {

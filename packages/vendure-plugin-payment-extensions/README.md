@@ -4,7 +4,7 @@
 
 This `Vendure` plugin allows an `Order` to be settled without upfront payment.
 
-- `settleWithoutPaymentChecker`: Verifies if the logged-in customer belongs to a specified group, making them eligible for payment.
+- `isCustomerInGroupPaymentChecker`: Verifies if the logged-in customer belongs to a specified group, making them eligible for payment.
 - `settleWithoutPaymentHandler`: This handler simply transitions the `Payment` to settled state.
 
 ## Getting started
@@ -23,7 +23,7 @@ plugins: [
 ```
 
 2. Start Vendure, log in, and navigate to Settings > Payment Methods
-3. Choose `settleWithoutPaymentChecker` as the `Payment eligibility checker`, and then select the `CustomerGroup` whose members are expected to be eligible for this `PaymentMethod`.
+3. Choose `isCustomerInGroupPaymentChecker` as the `Payment eligibility checker`, and then select the `CustomerGroup` whose members are expected to be eligible for this `PaymentMethod`.
 
 4. Choose `settleWithoutPaymentHandler` as `Payment handler`
 5. Click `Save`

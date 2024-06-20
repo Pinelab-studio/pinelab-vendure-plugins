@@ -1,6 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { settleWithoutPaymentHandler } from './settle-without-payment-handler';
-import { settleWithoutPaymentChecker } from './settle-without-payment-checker';
+import { isCustomerInGroupPaymentChecker } from './is-customer-In-group-payment-checker';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -10,11 +10,11 @@ import { settleWithoutPaymentChecker } from './settle-without-payment-checker';
     );
     if (config.paymentOptions.paymentMethodEligibilityCheckers?.length) {
       config.paymentOptions.paymentMethodEligibilityCheckers.push(
-        settleWithoutPaymentChecker
+        isCustomerInGroupPaymentChecker
       );
     } else {
       config.paymentOptions.paymentMethodEligibilityCheckers = [
-        settleWithoutPaymentChecker,
+        isCustomerInGroupPaymentChecker,
       ];
     }
     return config;
