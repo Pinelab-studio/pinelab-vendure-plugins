@@ -19,7 +19,7 @@ export const settleWithoutPaymentHandler = new PaymentMethodHandler({
     return {
       amount,
       state: 'Settled',
-      metadata: { public: 'Settled as purchase order' },
+      metadata: { note: 'Settled without payment' },
     };
   },
   settlePayment: () => ({
