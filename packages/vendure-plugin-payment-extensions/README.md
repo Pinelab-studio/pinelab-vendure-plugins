@@ -2,10 +2,10 @@
 
 ## [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-payment-extensions)
 
-This `Vendure` plugin allows an `Order` to be settled without requiring the customer to make a payment upfront.
+This `Vendure` plugin allows an `Order` to be settled without upfront payment.
 
-- `settleWithoutPaymentChecker`: This checker checks if the logged in customer is in a given group, so that only its members are eligible for payment.
-- `settleWithoutPaymentHandler`: This handler simply transitions the `Payment` to settled.
+- `settleWithoutPaymentChecker`: Verifies if the logged-in customer belongs to a specified group, making them eligible for payment.
+- `settleWithoutPaymentHandler`: This handler simply transitions the `Payment` to settled state.
 
 ## Getting started
 
