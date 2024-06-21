@@ -1,3 +1,7 @@
+# 1.4.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.3.0 (2024-03-29)
 
 - Make `isCustomerManagedGroup` editable from admin-ui

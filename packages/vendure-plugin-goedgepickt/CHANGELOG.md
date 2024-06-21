@@ -1,3 +1,7 @@
+# 1.2.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.1.5 (2024-04-30)
 
 - Push jobs to queue with promise.all(), so that the fullsync webhook finishes faster, and all jobs are in queue.

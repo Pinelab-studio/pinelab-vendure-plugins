@@ -1,3 +1,7 @@
+# 1.3.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.2.0 (2024-01-15)
 
 - Add shipmentStrategy

@@ -1,3 +1,7 @@
+# 1.2.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.1.1 (2024-01-23)
 
 - MySQL bugfix and use stock level service for resolving stock

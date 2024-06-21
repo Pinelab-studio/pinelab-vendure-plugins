@@ -1,3 +1,7 @@
+# 2.4.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 2.3.2 (2024-06-13)
 
 - Don't throw errors when a cancelled invoice doesn't have a previous invoice, but log and return instead.

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-shipping-extensions",
-  "version": "2.5.2",
+  "version": "2.6.0",
   "description": "Vendure plugin for configurable shipping calculators and eligibility checkers.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

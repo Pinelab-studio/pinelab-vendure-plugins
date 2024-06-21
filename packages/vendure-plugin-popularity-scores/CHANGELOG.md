@@ -1,3 +1,7 @@
+# 1.7.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.6.2 (2024-03-29)
 
 - Work on #423 and optimizing popularity score calculation

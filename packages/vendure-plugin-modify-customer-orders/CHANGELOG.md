@@ -1,3 +1,7 @@
+# 1.3.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.2.0 (2024-02-01)
 
 - Place the transition logic into its own service class as suggested in #343

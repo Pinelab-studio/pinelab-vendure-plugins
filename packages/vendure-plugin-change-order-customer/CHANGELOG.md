@@ -1,3 +1,7 @@
+# 1.1.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.0.2 (2024-02-14)
 
 - Message typo fix

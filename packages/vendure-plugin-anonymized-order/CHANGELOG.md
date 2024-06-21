@@ -1,3 +1,7 @@
+# 1.2.0 (2024-07-21)
+
+- Updated vendure to 2.2.6
+
 # 1.1.0 (2024-06-14)
 
 - Allow overriding the default removal of fields with the custom strategy
