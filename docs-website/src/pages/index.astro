@@ -120,9 +120,12 @@ const contributors = await getPluginsContributors();
     {
       contributors.length > 0 && (
         <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 pb-12 mb-12 ">
-          <h2 class="text-center font-bold text-gray-600 text-4xl mb-16">
+          <h2 class="text-center font-bold text-gray-600 text-4xl">
             Contributors
           </h2>
+          <p class="text-slate-500 mb-16 text-center">
+            Thanks to everyone who contributed to our plugins!
+          </p>
           <div class="flex flex-wrap gap-x-4 sm:gap-x-16 gap-y-4 sm:gap-y-12 items-center justify-center">
             {contributors.map((c: ContributorType) => {
               return (
