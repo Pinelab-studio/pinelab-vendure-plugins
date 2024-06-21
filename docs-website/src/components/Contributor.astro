@@ -16,11 +16,10 @@ const { name, contributions, image } = Astro.props;
     <div class="flex items-center min-w-[100%] hover:cursor-pointer peer">
       <div>
         <p class="text-gray-700 whitespace-nowrap">
-          <span class="font-bold mr-1">Username:</span>{name}
+          {name}
         </p>
-        <p class="text-gray-700 whitespace-nowrap">
-          <span class="font-bold mr-1">Contributions:</span>
-          {contributions}
+        <p class="text-gray-700 whitespace-nowrap text-xs">
+          {contributions} contributions
         </p>
       </div>
     </div>
