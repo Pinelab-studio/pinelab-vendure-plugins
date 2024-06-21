@@ -1,0 +1,28 @@
+---
+const { name, contributions, image } = Astro.props;
+---
+
+<div class="relative">
+  <div class="flex items-center hover:cursor-pointer peer">
+    <img
+      class="rounded-full w-12 sm:w-20 aspect-square border-4 border-blue-200 ml-2"
+      src={image}
+      alt=""
+    />
+  </div>
+  <div
+    class="hidden peer-hover:flex hover:flex flex-col bg-gray-100 drop-shadow-lg absolute z-10 p-2 border mt-[2px]"
+  >
+    <div class="flex items-center min-w-[100%] hover:cursor-pointer peer">
+      <div>
+        <p class="text-gray-700 whitespace-nowrap">
+          <span class="font-bold mr-1">Username:</span>{name}
+        </p>
+        <p class="text-gray-700 whitespace-nowrap">
+          <span class="font-bold mr-1">Contributions:</span>
+          {contributions}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
