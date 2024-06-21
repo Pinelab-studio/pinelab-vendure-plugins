@@ -18,7 +18,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "build": "yarn add sharp --ignore-engines && rimraf dist && tsc",
     "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
     "lint": "echo 'No linting configured'"
