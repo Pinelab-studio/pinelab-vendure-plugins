@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^5.18.2",
+    "sharp": "^0.33.4",
     "tmp": "^0.2.1"
   },
   "peerDependencies": {
