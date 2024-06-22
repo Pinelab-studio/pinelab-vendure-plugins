@@ -301,7 +301,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     channelToken: string,
     orderCode: string,
     createCreditInvoiceOnly: boolean
-  ): Promise<InvoiceEntity> {
+  ): Promise<InvoiceEntity | undefined> {
     const ctx = await this.createCtx(channelToken);
     let [order, previousInvoiceForOrder, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode),
@@ -309,25 +309,35 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       this.getConfig(ctx),
     ]);
     if (!config) {
-      throw Error(
-        `Cannot generate invoice for ${orderCode}, because no config was found`
+      Logger.warn(
+        `Cannot generate invoice for ${orderCode}, because no config was found`,
+        loggerCtx
       );
-    } else if (!config.enabled) {
-      throw Error(
-        `Not generating invoice for ${orderCode} for channel ${channelToken}, because invoice generation is disabled in the config.`
+      return;
+    }
+    if (!config.enabled) {
+      Logger.info(
+        `Not generating invoice for ${orderCode} for channel ${channelToken}, because invoice generation is disabled in the config.`,
+        loggerCtx
       );
-    } else if (!order) {
-      throw Error(`No order found with code ${orderCode}`);
+      return;
+    }
+    if (!order) {
+      throw new UserInputError(`No order found with code ${orderCode}`);
     }
     if (createCreditInvoiceOnly && !config?.createCreditInvoices) {
-      throw new UserInputError(
-        `Cannot generate credit invoice only with "createCreditInvoiceOnly=true" for order ${orderCode}, because credit invoices are disabled in the config.`
+      Logger.info(
+        `Cannot generate credit invoice only with "createCreditInvoiceOnly=true" for order ${orderCode}, because credit invoices are disabled in the config.`,
+        loggerCtx
       );
+      return;
     }
     if (createCreditInvoiceOnly && !previousInvoiceForOrder) {
-      throw new UserInputError(
-        `"createCreditInvoiceOnly=true" was supplied, but no previous invoice exists for order ${orderCode}, so we can not generate a credit invoice.`
+      Logger.info(
+        `"createCreditInvoiceOnly=true" was supplied, but no previous invoice exists for order ${orderCode}, so we can not generate a credit invoice.`,
+        loggerCtx
       );
+      return;
     }
     if (createCreditInvoiceOnly) {
       Logger.info(

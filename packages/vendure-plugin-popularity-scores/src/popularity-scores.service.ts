@@ -16,6 +16,12 @@ import {
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
 import { PopularityScoresPluginConfig } from './popularity-scores.plugin';
 import { sliceArray } from './utils';
+
+declare module '@vendure/core/dist/entity/custom-entity-fields' {
+  interface CustomCollectionFields {
+    popularityScore: number;
+  }
+}
 @Injectable()
 export class PopularityScoresService implements OnModuleInit {
   private jobQueue!: JobQueue<{
@@ -63,7 +69,6 @@ export class PopularityScoresService implements OnModuleInit {
       .innerJoin('orderLine.order', 'order')
       .innerJoin('productVariant.product', 'product')
       .addSelect(['product.id'])
-      .leftJoin('productVariant.collections', 'collection')
       .innerJoin('order.channels', 'order_channel')
       .andWhere('order.orderPlacedAt > :ordersAfter', {
         ordersAfter: ordersAfter.toISOString(),
@@ -100,109 +105,89 @@ export class PopularityScoresService implements OnModuleInit {
     await this.assignScoreValuesToCollections(ctx);
     Logger.info(`Finished calculating popularity scores`, loggerCtx);
   }
-  async assignScoreValuesToCollections(ctx: RequestContext) {
-    const allCollectionsScores = await this.getEachCollectionsScore(ctx);
-    await this.addUpTheTreeAndSave(allCollectionsScores, ctx);
-  }
 
   /**
-   * This calculates the score of a collection based on its products.
-   * Does not include scores of subcollections yet
+   * This calculates the score of a collection based on its products and subcollections.
    * @param ctx
-   * @returns Array of collection ids and their corresponding popularity scores not including subcollections
    */
-  async getEachCollectionsScore(
-    ctx: RequestContext
-  ): Promise<{ id: string; score: number }[]> {
+  async assignScoreValuesToCollections(ctx: RequestContext) {
+    const collectionsRepo = this.connection.getRepository(ctx, Collection);
+    const collectionTreeRepo =
+      this.connection.rawConnection.manager.getTreeRepository(Collection);
+    const channelRootCollection = await collectionsRepo
+      .createQueryBuilder('collection')
+      .leftJoin('collection.channels', 'channel')
+      .where('collection.isRoot = :isRoot', { isRoot: true })
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .getOne();
+    if (!channelRootCollection) {
+      Logger.warn('No root collection found for the channel', loggerCtx);
+      return;
+    }
+    const channelCollectionsTree = await collectionTreeRepo.findDescendantsTree(
+      channelRootCollection
+    );
+    const allCollections: Collection[] = [];
+    const traverseDepthFirstAndUpdateScore = async (
+      node: Collection
+    ): Promise<number> => {
+      node.customFields.popularityScore = 0;
+      if (node?.children?.length) {
+        for (const child of node.children) {
+          node.customFields.popularityScore +=
+            await traverseDepthFirstAndUpdateScore(child);
+        }
+      } else {
+        node.customFields.popularityScore =
+          await this.getSummedProductScoreCalculation(ctx, node);
+      }
+      allCollections.push(node);
+      return node.customFields.popularityScore;
+    };
+
+    await traverseDepthFirstAndUpdateScore(channelCollectionsTree);
+    await collectionsRepo.save(allCollections);
+  }
+
+  private async getSummedProductScoreCalculation(
+    ctx: RequestContext,
+    collection: Collection
+  ): Promise<number> {
     const collectionsRepo = this.connection.getRepository(ctx, Collection);
     const productsRepo = this.connection.getRepository(ctx, Product);
-    const allCollectionIds = await collectionsRepo
-      .createQueryBuilder('collection')
-      .innerJoin('collection.channels', 'collection_channel')
-      .andWhere('collection_channel.id = :id', { id: ctx.channelId })
-      .getRawMany();
-    const productScoreSums: { id: string; score: number }[] = [];
-    const variantsPartialInfoQuery = collectionsRepo
+    const variantsPartialInfoResults = await collectionsRepo
       .createQueryBuilder('collection')
       .leftJoin('collection.productVariants', 'productVariant')
       .innerJoin('productVariant.product', 'product')
-      .addSelect(['product.customFields.popularityScore', 'product.id']);
-    const productSummingQuery = productsRepo
-      .createQueryBuilder('product')
-      .select('SUM(product.customFields.popularityScore) AS productScoreSum');
-    for (const col of allCollectionIds) {
-      const variantsPartialInfo = await variantsPartialInfoQuery.andWhere(
-        'collection.id= :id',
-        { id: col.collection_id }
+      .addSelect(['product.customFields.popularityScore', 'product.id'])
+      .where('collection.id= :id', { id: collection.id.toString() })
+      .getRawMany();
+
+    const productIds = variantsPartialInfoResults
+      .filter((i) => i.product_id != null)
+      .map((i) => i.product_id);
+
+    const uniqueProductIds = [...new Set(productIds)];
+    if (uniqueProductIds.length) {
+      let score = 0;
+      const chunkedProductIds = sliceArray(
+        uniqueProductIds,
+        this.config.chunkSize ?? 100
       );
-
-      const variantsPartialInfoResults = await variantsPartialInfo.getRawMany();
-
-      const productIds = variantsPartialInfoResults
-        .filter((i) => i.product_id != null)
-        .map((i) => i.product_id);
-
-      const uniqueProductIds = [...new Set(productIds)];
-      if (uniqueProductIds.length) {
-        let score = 0;
-        const chunkedProductIds = sliceArray(
-          uniqueProductIds,
-          this.config.chunkSize ?? 100
-        );
-        for (let uniqueProductIdsSlice of chunkedProductIds) {
-          const summedProductsValue = await productSummingQuery
-            .andWhere('product.id IN (:...ids)', { ids: uniqueProductIdsSlice })
-            .getRawOne();
-          // Convert to number to ensure correct arithmetic operation
-          score += Number(summedProductsValue.productScoreSum) ?? 0;
-        }
-        productScoreSums.push({
-          id: col.collection_id,
-          score,
-        });
+      for (let uniqueProductIdsSlice of chunkedProductIds) {
+        const summedProductsValue = await productsRepo
+          .createQueryBuilder('product')
+          .select(
+            'SUM(product.customFields.popularityScore) AS productScoreSum'
+          )
+          .andWhere('product.id IN (:...ids)', { ids: uniqueProductIdsSlice })
+          .getRawOne();
+        // Convert to number to ensure correct arithmetic operation
+        score += Number(summedProductsValue.productScoreSum) ?? 0;
       }
+      return score;
     }
-    await collectionsRepo.save(
-      productScoreSums.map((collection) => {
-        return {
-          id: collection.id,
-          customFields: {
-            popularityScore: collection.score ?? 0,
-          },
-        };
-      })
-    );
-    return productScoreSums;
-  }
-
-  /**
-   *
-   * @param input Array of collection ids and their corresponding popularity scores not including subcollections
-   * @param ctx The current RequestContext
-   */
-  async addUpTheTreeAndSave(
-    input: { id: string; score: number }[],
-    ctx: RequestContext
-  ) {
-    const collectionsRepo = this.connection.getRepository(ctx, Collection);
-    for (const colIndex in input) {
-      const desc: number = (
-        await this.collectionService.getDescendants(ctx, input[colIndex].id)
-      )
-        .map((d) => (d.customFields as any).popularityScore)
-        .reduce((partialSum: number, a: number) => partialSum + a, 0);
-      input[colIndex].score += desc;
-    }
-    await collectionsRepo.save(
-      input.map((collection) => {
-        return {
-          id: collection.id,
-          customFields: {
-            popularityScore: collection.score ?? 0,
-          },
-        };
-      })
-    );
+    return 0;
   }
 
   addScoreCalculatingJobToQueue(channelToken: string, ctx: RequestContext) {

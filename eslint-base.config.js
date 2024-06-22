@@ -9,6 +9,12 @@ export default tseslint.config(
   // Prevent formatting conflicts between eslint and Prettier. Always apply last
   eslintConfigPrettier,
   {
-    ignores: ['*.config.js', 'dist', 'node_modules', '**/*/dev-server.ts'],
+    ignores: [
+      '*.config.js',
+      'dist',
+      'node_modules',
+      '**/*/dev-server.ts',
+      '**/test/**',
+    ],
   }
 );

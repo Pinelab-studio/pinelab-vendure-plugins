@@ -57,6 +57,11 @@ export class InvoiceAdminResolver {
       order.code,
       false
     );
+    if (!invoice) {
+      throw new UserInputError(
+        `Could not generate invoice for order. Please check the logs for more information.`
+      );
+    }
     return {
       ...invoice,
       isCreditInvoice: invoice.isCreditInvoice,
