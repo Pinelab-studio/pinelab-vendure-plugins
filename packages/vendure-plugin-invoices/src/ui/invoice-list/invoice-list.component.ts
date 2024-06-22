@@ -78,10 +78,10 @@ export class InvoiceListComponent extends TypedBaseListComponent<
     if (searchTerm) {
       filterInput = {
         invoiceNumber: {
-          eq: searchTerm,
+          contains: searchTerm,
         },
         orderCode: {
-          eq: searchTerm,
+          contains: searchTerm,
         },
       };
     }

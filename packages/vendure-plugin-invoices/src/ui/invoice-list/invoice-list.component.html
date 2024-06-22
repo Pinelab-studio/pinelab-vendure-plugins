@@ -4,7 +4,6 @@
   [itemsPerPage]="itemsPerPage$ | async"
   [totalItems]="totalItems$ | async"
   [currentPage]="currentPage$ | async"
-  [filters]="filters"
   (pageChange)="setPageNumber($event)"
   (itemsPerPageChange)="setItemsPerPage($event)"
 >
