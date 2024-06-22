@@ -11,8 +11,9 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialTestData } from './initial-test-data';
 import { PopularityScoresPlugin } from '../src';
+import { initialTestData } from './initial-test-data';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 require('dotenv').config();
 
@@ -30,6 +31,9 @@ require('dotenv').config();
         route: 'admin',
       }),
     ],
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
     apiOptions: {
       shopApiPlayground: true,
       adminApiPlayground: true,
@@ -37,7 +41,16 @@ require('dotenv').config();
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
-    initialData: initialTestData,
+    initialData: {
+      ...initialTestData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
+
     productsCsvPath: './test/products.csv',
   });
 })();

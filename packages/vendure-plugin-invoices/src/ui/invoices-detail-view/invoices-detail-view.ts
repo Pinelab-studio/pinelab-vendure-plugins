@@ -16,6 +16,7 @@ export const getOrderWithInvoices = gql`
     order(id: $id) {
       id
       code
+      state
       invoices {
         ...invoiceFields
       }

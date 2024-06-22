@@ -1,0 +1,71 @@
+<div class="w-full mx-auto">
+  <div
+    x-data="{ open: false }"
+    class="relative flex flex-col w-full p-5 mx-auto md:items-center md:justify-between md:flex-row max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24"
+  >
+    <div class="flex flex-row items-center justify-between lg:justify-start">
+      <a
+        title="link to your page"
+        aria-label="your label"
+        href="/"
+        class="text-xl text-purple-900 font-semibold tracking-tight inline-flex gap-2 items-center"
+      >
+        <img src="/pinelab.png" class="h-5" />
+        Pinelab.studio
+      </a>
+      <button
+        @click="open = !open"
+        class="inline-flex items-center justify-center p-2 text-slate-400 hover:text-purple-900 focus:outline-none focus:text-purple-900 md:hidden"
+      >
+        <svg
+          class="size-6"
+          stroke="currentColor"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            :class="{'hidden': open, 'inline-flex': !open }"
+            class="inline-flex"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 6h16M4 12h16M4 18h16"></path>
+          <path
+            :class="{'hidden': !open, 'inline-flex': open }"
+            class="hidden"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <nav
+      :class="{'flex': open, 'hidden': !open}"
+      class="flex-col flex-grow hidden py-12 lg:py-0 md:flex md:justify-end md:flex-row"
+    >
+      <ul class="gap-2 list-none items-center md:flex-row flex-col flex">
+        <li>
+          <a
+            title="Vendure plugins"
+            aria-label="your label"
+            href="/#plugins"
+            class="px-2 lg:px-6 py-10 md:px-3 text-sm font-semibold text-slate-600 hover:text-purple-900"
+          >
+            Vendure Plugins
+          </a>
+        </li>
+        <li>
+          <a
+            title="Schedule a call"
+            aria-label="Schedule a call"
+            href="https://calendly.com/pinelab-martijn/how-can-we-help"
+            class="text-blue-600 items-center font-medium gap-3 text-sm inline-flex focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none justify-center px-6 ring-2 ring-transparent focus:ring-offset-2 focus:ring-blue-500 duration-200 py-2.5 rounded-full active:bg-blue-800 active:text-white bg-blue-50 hover:bg-blue-100 w-auto"
+          >
+            Get in touch
+          </a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>

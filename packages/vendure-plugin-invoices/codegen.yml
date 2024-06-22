@@ -10,3 +10,5 @@ generates:
       avoidOptionals: false
       scalars:
         ID: number | string
+        Node: any
+        PaginatedList: any

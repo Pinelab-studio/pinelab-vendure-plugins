@@ -92,6 +92,7 @@
           "google-cloud-tasks",
           "google-storage-assets",
           "invoices",
+          "klaviyo",
           "limit-variant",
           "metrics",
           "modify-customer-orders",
@@ -112,7 +113,8 @@
           "webhook",
           "picklist",
           "vendure-scripts",
-          "public-customer-groups"
+          "public-customer-groups",
+          "shipmate"
         ]
       ]
     }
