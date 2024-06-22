@@ -1,3 +1,7 @@
+# 2.3.3 (2024-06-22)
+
+- Allow searching by invoice number in Invoices list
+
 # 2.3.2 (2024-06-13)
 
 - Don't throw errors when a cancelled invoice doesn't have a previous invoice, but log and return instead.
