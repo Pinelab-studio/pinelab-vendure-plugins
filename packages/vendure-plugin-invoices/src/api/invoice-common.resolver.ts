@@ -44,7 +44,7 @@ export class InvoiceCommonResolver {
       isCreditInvoice: invoice.isCreditInvoice,
       downloadUrl: this.invoiceService.getDownloadUrl(
         ctx,
-        invoice,
+        invoice.invoiceNumber,
         order.code,
         order.customer!.emailAddress
       ),
