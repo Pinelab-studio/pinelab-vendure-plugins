@@ -119,32 +119,37 @@ export class ShipmateComponent implements OnInit {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       .subscribe((config) => {
         if (config) {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          this.form.controls['apiKey'].setValue(config.apiKey);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          this.form.controls['username'].setValue(config.username);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          this.form.controls['password'].setValue(config.password);
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          for (const authTokenIndex in config.webhookAuthTokens ?? []) {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-            const authToken = config.webhookAuthTokens[authTokenIndex].token;
-            (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
-              parseInt(authTokenIndex),
-              new FormControl(authToken)
-            );
-          }
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          if (!config.webhookAuthTokens?.length) {
-            (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
-              0,
-              new FormControl('')
-            );
-          }
+          this.updateFormControl(config);
         }
         this.dataHasLoaded = true;
         this.changeDetector.markForCheck();
       });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updateFormControl(config: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    this.form.controls['apiKey'].setValue(config.apiKey);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    this.form.controls['username'].setValue(config.username);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    this.form.controls['password'].setValue(config.password);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    for (const authTokenIndex in config.webhookAuthTokens ?? []) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const authToken = config.webhookAuthTokens[authTokenIndex].token;
+      (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+        parseInt(authTokenIndex),
+        new FormControl(authToken)
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (!config.webhookAuthTokens?.length) {
+      (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+        0,
+        new FormControl('')
+      );
+    }
   }
 
   addAuthToken() {

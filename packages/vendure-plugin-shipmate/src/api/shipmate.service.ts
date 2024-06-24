@@ -74,12 +74,7 @@ export class ShipmateService implements OnApplicationBootstrap {
             { retries: 2 }
           )
           .catch((err) => {
-            Logger.error(
-              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-              `Error adding OrderPlacedEvent job to queue: ${err?.message}`,
-              loggerCtx,
-              util.inspect(err)
-            );
+            this.logError(`OrderPlacedEvent`, err);
           });
       });
     this.eventBus
@@ -104,15 +99,20 @@ export class ShipmateService implements OnApplicationBootstrap {
               { retries: 2 }
             )
             .catch((err) => {
-              Logger.error(
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                `Error adding OrderStateTransitionEvent job to queue: ${err?.message}`,
-                loggerCtx,
-                util.inspect(err)
-              );
+              this.logError(`OrderStateTransitionEvent`, err);
             });
         }
       });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  logError(eventName: string, err: any) {
+    Logger.error(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      `Error adding ${eventName} job to queue: ${err?.message}`,
+      loggerCtx,
+      util.inspect(err)
+    );
   }
 
   async upsertShipment(
