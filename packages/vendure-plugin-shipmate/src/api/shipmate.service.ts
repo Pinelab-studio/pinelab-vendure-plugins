@@ -61,6 +61,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     void this.eventBus
       .ofType(OrderPlacedEvent)
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       .subscribe(async ({ ctx, order }) => {
         await this.jobQueue
           .add(
