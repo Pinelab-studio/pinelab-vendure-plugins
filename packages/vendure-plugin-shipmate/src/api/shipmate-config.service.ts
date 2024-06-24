@@ -93,7 +93,6 @@ export class ShipmateConfigService {
       ctx,
       ShipmateWebhookTokenEntity
     );
-    const configRepo = this.connection.getRepository(ctx, ShipmateConfigEntity);
     const existingAndKept = shipmateConfig.webhookAuthTokens.filter(
       (webhookToken) => !!tokens.find((token) => token === webhookToken.token)
     );

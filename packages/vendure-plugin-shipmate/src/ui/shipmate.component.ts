@@ -110,33 +110,46 @@ export class ShipmateComponent implements OnInit {
     });
   }
 
-  async ngOnInit(): Promise<void> {
-    await this.dataService
+  ngOnInit(): void {
+    this.dataService
       .query(getShipmateConfig)
       .refetchOnChannelChange()
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
       .mapStream((d: any) => d.shipmateConfig)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       .subscribe((config) => {
         if (config) {
-          this.form.controls['apiKey'].setValue(config.apiKey);
-          this.form.controls['username'].setValue(config.username);
-          this.form.controls['password'].setValue(config.password);
-          for (let authTokenIndex in config.webhookAuthTokens ?? []) {
-            const authToken = config.webhookAuthTokens[authTokenIndex].token;
-            (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
-              parseInt(authTokenIndex),
-              new FormControl(authToken)
-            );
-          }
-          if (!config.webhookAuthTokens?.length) {
-            (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
-              0,
-              new FormControl('')
-            );
-          }
+          this.updateFormControl(config);
         }
         this.dataHasLoaded = true;
         this.changeDetector.markForCheck();
       });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  updateFormControl(config: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    this.form.controls['apiKey'].setValue(config.apiKey);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    this.form.controls['username'].setValue(config.username);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    this.form.controls['password'].setValue(config.password);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    for (const authTokenIndex in config.webhookAuthTokens ?? []) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+      const authToken = config.webhookAuthTokens[authTokenIndex].token;
+      (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+        parseInt(authTokenIndex),
+        new FormControl(authToken)
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (!config.webhookAuthTokens?.length) {
+      (this.form.controls['webhookAuthTokens'] as FormArray).setControl(
+        0,
+        new FormControl('')
+      );
+    }
   }
 
   addAuthToken() {
@@ -159,13 +172,18 @@ export class ShipmateComponent implements OnInit {
 
   async save(): Promise<void> {
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const formValue = this.form.value;
       await firstValueFrom(
         this.dataService.mutate(updateShipmateConfig, {
           input: {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             apiKey: formValue.apiKey,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             username: formValue.username,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             password: formValue.password,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
             webhookAuthTokens: formValue.webhookAuthTokens,
           },
         })
