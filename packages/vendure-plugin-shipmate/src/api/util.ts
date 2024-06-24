@@ -53,6 +53,8 @@ export function parseOrderLine(line: OrderLine): Items {
   return {
     item_quantity: line.quantity,
     item_value: line.proratedUnitPriceWithTax,
+    full_description: line.productVariant?.product?.description,
+    short_description: line.productVariant?.name,
   };
 }
 

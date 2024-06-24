@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import { loggerCtx } from '../constants';
 import {
   CreateShipmentResponse,
+  DeleteShipmentResponse,
   GetTokenRespose,
   NewShipment,
   Shipment,
@@ -44,12 +45,28 @@ export class ShipmateClient {
       Logger.info(result.data.message, loggerCtx);
       return result.data?.data;
     } catch (error: any) {
-      Logger.error(JSON.stringify(error.response?.data), loggerCtx);
-      if (error.response?.data) {
-        throw Error(JSON.stringify(error.response.data));
-      }
-      throw error;
+      this.handleShipmateAPIError(error);
     }
+  }
+
+  async cancelShipment(shipment_reference: string): Promise<void> {
+    try {
+      await this.setToken();
+      const result = await this.client.delete<DeleteShipmentResponse>(
+        `/shipments/${shipment_reference}`
+      );
+      Logger.info(result.data.message, loggerCtx);
+    } catch (error: any) {
+      this.handleShipmateAPIError(error);
+    }
+  }
+
+  private handleShipmateAPIError(error: any) {
+    Logger.error(JSON.stringify(error.response?.data), loggerCtx);
+    if (error.response?.data) {
+      throw Error(JSON.stringify(error.response.data));
+    }
+    throw error;
   }
 
   async getShipmentToken(

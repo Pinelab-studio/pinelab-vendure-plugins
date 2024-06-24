@@ -234,6 +234,11 @@ export interface CreateShipmentResponse {
   data: NewShipment[];
 }
 
+export interface DeleteShipmentResponse {
+  message: string;
+  data: null;
+}
+
 export interface NewShipmentAddress {
   delivery_name: string;
   line_1: string;

@@ -13,10 +13,10 @@ import {
   Order,
   OrderPlacedEvent,
   OrderService,
+  OrderStateTransitionEvent,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
-  UserInputError,
 } from '@vendure/core';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
@@ -29,6 +29,7 @@ import { parseOrder } from './util';
 interface JobData {
   ctx: SerializedRequestContext;
   orderCode: string;
+  cancelExistingFirst: boolean;
 }
 
 @Injectable()
@@ -50,15 +51,24 @@ export class ShipmateService implements OnApplicationBootstrap {
       name: 'shipmate',
       process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
-        await this.createShipment(ctx, job.data.orderCode);
+        await this.upsertShipment(
+          ctx,
+          job.data.orderCode,
+          job.data.cancelExistingFirst
+        );
       },
     });
     this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
       await this.jobQueue
-        .add({
-          ctx: ctx.serialize(),
-          orderCode: order.code,
-        })
+        .add(
+          {
+            ctx: ctx.serialize(),
+            orderCode: order.code,
+            //prior to the Order being placed, there won't be any Shipments associated with it in Shipmate
+            cancelExistingFirst: false,
+          },
+          { retries: 2 }
+        )
         .catch((err) => {
           Logger.error(
             `Error adding OrderPlacedEvent job to queue: ${err?.message}`,
@@ -67,9 +77,42 @@ export class ShipmateService implements OnApplicationBootstrap {
           );
         });
     });
+    this.eventBus
+      .ofType(OrderStateTransitionEvent)
+      .subscribe(async ({ ctx, order, fromState }) => {
+        await this.entityHydrator.hydrate(ctx, order, {
+          relations: ['fulfillments'],
+        });
+        if (
+          fromState === 'Modifying' &&
+          order.orderPlacedAt &&
+          !order.fulfillments?.length
+        ) {
+          await this.jobQueue
+            .add(
+              {
+                ctx: ctx.serialize(),
+                orderCode: order.code,
+                cancelExistingFirst: true,
+              },
+              { retries: 2 }
+            )
+            .catch((err) => {
+              Logger.error(
+                `Error adding OrderStateTransitionEvent job to queue: ${err?.message}`,
+                loggerCtx,
+                util.inspect(err)
+              );
+            });
+        }
+      });
   }
 
-  async createShipment(ctx: RequestContext, orderCode: string): Promise<void> {
+  async upsertShipment(
+    ctx: RequestContext,
+    orderCode: string,
+    cancelExistingFirst: boolean
+  ): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
       Logger.info(
@@ -82,7 +125,35 @@ export class ShipmateService implements OnApplicationBootstrap {
     if (!order) {
       throw Error(`[${loggerCtx}] Order with code ${orderCode} not found`);
     }
+    if (cancelExistingFirst) {
+      try {
+        //the following line assumes that an Order code will be used as the shipment_refrence
+        //but this won't be true once we start implementing many Shipments per Order
+        await client.cancelShipment(order.code);
+      } catch (err: any) {
+        // Log error as history entry for admins
+        await this.orderService
+          .addNoteToOrder(ctx, {
+            id: order.id,
+            isPublic: false,
+            note: `Failed to cancel Shipmate Shipment: ${err?.message}`,
+          })
+          .catch((err) =>
+            Logger.error(
+              `Error creating history entryfor ${order.code}: ${err.message}`,
+              loggerCtx
+            )
+          );
+        throw err;
+      }
+    }
     try {
+      await this.entityHydrator.hydrate(ctx, order, { relations: ['lines'] });
+      for (const line of order.lines) {
+        await this.entityHydrator.hydrate(ctx, line, {
+          relations: ['productVariant.product'],
+        });
+      }
       const payload = parseOrder(order, order.code);
       await client.createShipment(payload);
     } catch (err: any) {
@@ -167,35 +238,54 @@ export class ShipmateService implements OnApplicationBootstrap {
           `Unable to create Fulfillment for order ${order.code}: ${createdFulfillmentResult.message}`,
           loggerCtx
         );
+        await this.orderService.addNoteToOrder(ctx, {
+          id: order.id,
+          isPublic: false,
+          note: `Failed to create Fullfillment: ${createdFulfillmentResult.message}`,
+        });
         throw createdFulfillmentResult.message;
       }
-      const transitionResult =
-        await this.orderService.transitionFulfillmentToState(
-          ctx,
-          createdFulfillmentResult.id,
-          state
-        );
-      if (isGraphQlErrorResult(transitionResult)) {
-        Logger.error(
-          `Unable to transition Fulfillment ${createdFulfillmentResult.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
-          loggerCtx
-        );
-        throw transitionResult.transitionError;
+      if (createdFulfillmentResult.state !== state) {
+        const transitionResult =
+          await this.orderService.transitionFulfillmentToState(
+            ctx,
+            createdFulfillmentResult.id,
+            state
+          );
+        if (isGraphQlErrorResult(transitionResult)) {
+          Logger.error(
+            `Unable to transition Fulfillment ${createdFulfillmentResult.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
+            loggerCtx
+          );
+          await this.orderService.addNoteToOrder(ctx, {
+            id: order.id,
+            isPublic: false,
+            note: `Failed to transition Fullfillment ${createdFulfillmentResult.id} from ${transitionResult.fromState} to ${transitionResult.toState}`,
+          });
+          throw transitionResult.transitionError;
+        }
       }
     }
     for (const fulfillment of order.fulfillments) {
-      const transitionResult =
-        await this.orderService.transitionFulfillmentToState(
-          ctx,
-          fulfillment.id,
-          state
-        );
-      if (isGraphQlErrorResult(transitionResult)) {
-        Logger.error(
-          `Unable to transition Fulfillment ${fulfillment.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
-          loggerCtx
-        );
-        throw transitionResult.transitionError;
+      if (fulfillment.state !== state) {
+        const transitionResult =
+          await this.orderService.transitionFulfillmentToState(
+            ctx,
+            fulfillment.id,
+            state
+          );
+        if (isGraphQlErrorResult(transitionResult)) {
+          Logger.error(
+            `Unable to transition Fulfillment ${fulfillment.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
+            loggerCtx
+          );
+          await this.orderService.addNoteToOrder(ctx, {
+            id: order.id,
+            isPublic: false,
+            note: `Failed to transition Fullfillment(${fulfillment.id}) from ${transitionResult.fromState} to ${transitionResult.toState}`,
+          });
+          throw transitionResult.transitionError;
+        }
       }
     }
   }
