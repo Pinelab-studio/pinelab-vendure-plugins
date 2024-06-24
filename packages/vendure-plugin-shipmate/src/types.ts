@@ -1,6 +1,4 @@
 import { CurrencyCode } from '@vendure/core';
-import { CustomOrderFields } from '@vendure/core/dist/entity/custom-entity-fields';
-
 type JSONLike = {
   [key in string]: string;
 };

@@ -58,27 +58,32 @@ export class ShipmateService implements OnApplicationBootstrap {
         );
       },
     });
-    this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      await this.jobQueue
-        .add(
-          {
-            ctx: ctx.serialize(),
-            orderCode: order.code,
-            //prior to the Order being placed, there won't be any Shipments associated with it in Shipmate
-            cancelExistingFirst: false,
-          },
-          { retries: 2 }
-        )
-        .catch((err) => {
-          Logger.error(
-            `Error adding OrderPlacedEvent job to queue: ${err?.message}`,
-            loggerCtx,
-            util.inspect(err)
-          );
-        });
-    });
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    void this.eventBus
+      .ofType(OrderPlacedEvent)
+      .subscribe(async ({ ctx, order }) => {
+        await this.jobQueue
+          .add(
+            {
+              ctx: ctx.serialize(),
+              orderCode: order.code,
+              //prior to the Order being placed, there won't be any Shipments associated with it in Shipmate
+              cancelExistingFirst: false,
+            },
+            { retries: 2 }
+          )
+          .catch((err) => {
+            Logger.error(
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+              `Error adding OrderPlacedEvent job to queue: ${err?.message}`,
+              loggerCtx,
+              util.inspect(err)
+            );
+          });
+      });
     this.eventBus
       .ofType(OrderStateTransitionEvent)
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       .subscribe(async ({ ctx, order, fromState }) => {
         await this.entityHydrator.hydrate(ctx, order, {
           relations: ['fulfillments'],
@@ -99,6 +104,7 @@ export class ShipmateService implements OnApplicationBootstrap {
             )
             .catch((err) => {
               Logger.error(
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 `Error adding OrderStateTransitionEvent job to queue: ${err?.message}`,
                 loggerCtx,
                 util.inspect(err)
@@ -130,16 +136,19 @@ export class ShipmateService implements OnApplicationBootstrap {
         //the following line assumes that an Order code will be used as the shipment_refrence
         //but this won't be true once we start implementing many Shipments per Order
         await client.cancelShipment(order.code);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
         // Log error as history entry for admins
         await this.orderService
           .addNoteToOrder(ctx, {
             id: order.id,
             isPublic: false,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             note: `Failed to cancel Shipment on Shipmate: ${err?.message}`,
           })
           .catch((err) =>
             Logger.error(
+              // eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access
               `Error creating history entryfor ${order.code}: ${err.message}`,
               loggerCtx
             )
@@ -156,16 +165,19 @@ export class ShipmateService implements OnApplicationBootstrap {
       }
       const payload = parseOrder(order, order.code);
       await client.createShipment(payload);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       // Log error as history entry for admins
       await this.orderService
         .addNoteToOrder(ctx, {
           id: order.id,
           isPublic: false,
+          // eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access
           note: `Failed to send to Shipmate: ${err?.message}`,
         })
         .catch((err) =>
           Logger.error(
+            // eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access
             `Error creating history entryfor ${order.code}: ${err.message}`,
             loggerCtx
           )

@@ -22,7 +22,7 @@
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@nestjs/axios": "^3.0.2"

@@ -44,7 +44,7 @@ export class ShipmateClient {
       );
       Logger.info(result.data.message, loggerCtx);
       return result.data?.data;
-    } catch (error: any) {
+    } catch (error) {
       this.handleShipmateAPIError(error);
     }
   }
@@ -56,14 +56,18 @@ export class ShipmateClient {
         `/shipments/${shipment_reference}`
       );
       Logger.info(result.data.message, loggerCtx);
-    } catch (error: any) {
+    } catch (error) {
       this.handleShipmateAPIError(error);
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleShipmateAPIError(error: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     Logger.error(JSON.stringify(error.response?.data), loggerCtx);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (error.response?.data) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       throw Error(JSON.stringify(error.response.data));
     }
     throw error;
