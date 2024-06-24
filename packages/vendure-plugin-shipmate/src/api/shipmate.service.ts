@@ -136,7 +136,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           .addNoteToOrder(ctx, {
             id: order.id,
             isPublic: false,
-            note: `Failed to cancel Shipmate Shipment: ${err?.message}`,
+            note: `Failed to cancel Shipment on Shipmate: ${err?.message}`,
           })
           .catch((err) =>
             Logger.error(

@@ -1,3 +1,6 @@
+# 1.1.0 (2024-06-24)
+
+- Cancel and Recreate Shipment when Order is modified
 # 1.0.5 (2024-06-13)
 
 - Don't throw errors when an order doesn't exist, but log and return. This can happen because shipments are also manually created in Shipmate.
