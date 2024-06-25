@@ -30,5 +30,8 @@
   "peerDependencies": {
     "sharp": "*"
   },
-  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
+  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
+  "devDependencies": {
+    "@types/tmp": "^0.2.6"
+  }
 }
