@@ -29,5 +29,8 @@
   },
   "peerDependencies": {
     "sharp": "*"
+  },
+  "devDependencies": {
+    "@types/tmp": "^0.2.6"
   }
 }
