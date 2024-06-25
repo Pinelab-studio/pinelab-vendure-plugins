@@ -4,6 +4,7 @@ const scalars = gql`
   scalar DateTime
   scalar JSON
   scalar LogicalOperator
+  scalar StringOperators
 `;
 
 const commonSchemaExtensions = gql`
@@ -26,28 +27,38 @@ export const shopSchemaExtensions = gql`
 
 export const adminSchemaExtensions = gql`
   ${commonSchemaExtensions}
+
   type InvoiceConfig {
     id: ID!
     enabled: Boolean!
     createCreditInvoices: Boolean!
     templateString: String!
   }
+
   type InvoiceList {
     items: [Invoice!]!
     totalItems: Int!
   }
+
   input InvoiceConfigInput {
     enabled: Boolean!
     createCreditInvoices: Boolean
     templateString: String
   }
+
+  input InvoiceListFilter {
+    orderCode: StringOperators
+    invoiceNumber: StringOperators
+  }
+
   input InvoiceListOptions {
     skip: Int
     take: Int
-    filter: JSON
+    filter: InvoiceListFilter
     filterOperator: LogicalOperator
     sort: JSON
   }
+
   extend type Mutation {
     upsertInvoiceConfig(input: InvoiceConfigInput): InvoiceConfig!
     """
@@ -55,6 +66,7 @@ export const adminSchemaExtensions = gql`
     """
     createInvoice(orderId: ID!): Invoice!
   }
+
   extend type Query {
     invoiceConfig: InvoiceConfig
     invoices(options: InvoiceListOptions): InvoiceList

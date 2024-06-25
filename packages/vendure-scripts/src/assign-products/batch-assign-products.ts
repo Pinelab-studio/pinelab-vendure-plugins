@@ -1,17 +1,23 @@
 import {
+  ChannelService,
   ID,
   Injector,
   Product,
   RequestContext,
+  SearchService,
   TransactionalConnection,
 } from '@vendure/core';
+import { FindOptionsWhere } from 'typeorm';
+import { getSuperadminContextInChannel } from '../../../util/src/superadmin-request-context';
 import { assignTheseProductsToChannel } from './assign-these-products-to-channel';
-import { getProductsDeep } from './get-products-deep';
-import { IsNull } from 'typeorm';
+import { getProductsDeep } from '../helpers/get-products-deep';
 
-export async function assignAllProductsToChannel(
-  sourceChannelId: ID,
+export async function assignProductsInBatch(
   targetChannelId: ID,
+  condition:
+    | FindOptionsWhere<Product>
+    | FindOptionsWhere<Product>[]
+    | undefined,
   injector: Injector,
   ctx: RequestContext,
   batch: number = 10
@@ -19,16 +25,22 @@ export async function assignAllProductsToChannel(
   let totalCount = 0;
   let products: Product[];
   const conn = injector.get(TransactionalConnection);
+  const channelService = injector.get(ChannelService);
+
+  const targetChannel = await channelService.findOne(ctx, targetChannelId);
+
+  const ctxInTargetChannel = await getSuperadminContextInChannel(
+    injector,
+    targetChannel!
+  );
+  const searchService = injector.get(SearchService);
   await conn.startTransaction(ctx);
   do {
     // get all products of the source channel
     products = await getProductsDeep(
       ctx,
       injector,
-      {
-        channels: { id: sourceChannelId },
-        deletedAt: IsNull(),
-      },
+      condition,
       batch,
       totalCount
     );
@@ -41,5 +53,6 @@ export async function assignAllProductsToChannel(
       ctx
     );
   } while (products.length);
-  await conn.commitOpenTransaction(ctx);
+  await searchService.reindex(ctxInTargetChannel),
+    await conn.commitOpenTransaction(ctx);
 }

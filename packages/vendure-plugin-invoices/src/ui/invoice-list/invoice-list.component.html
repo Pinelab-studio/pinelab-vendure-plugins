@@ -4,7 +4,6 @@
   [itemsPerPage]="itemsPerPage$ | async"
   [totalItems]="totalItems$ | async"
   [currentPage]="currentPage$ | async"
-  [filters]="filters"
   (pageChange)="setPageNumber($event)"
   (itemsPerPageChange)="setItemsPerPage($event)"
 >
@@ -12,6 +11,11 @@
     locationId="invoice-list"
     [hostComponent]="this"
     [selectionManager]="selectionManager"
+  />
+
+  <vdr-dt2-search
+    [searchTermControl]="searchTermControl"
+    searchTermPlaceholder="Search by Invoice Number / Order Code"
   />
 
   <vdr-dt2-column
