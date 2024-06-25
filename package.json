@@ -32,8 +32,6 @@
     "@nestjs/cli": "8.2.4",
     "@swc/core": "1.4.6",
     "@types/localtunnel": "^2.0.4",
-    "@types/sharp": "0.28.0",
-    "@types/tmp": "0.2.3",
     "@vendure/admin-ui-plugin": "2.2.6",
     "@vendure/asset-server-plugin": "2.2.6",
     "@vendure/core": "2.2.6",
@@ -56,6 +54,7 @@
     "prettier-plugin-astro": "^0.10.0",
     "rimraf": "3.0.2",
     "rollup": "3.19.0",
+    "sharp": "^0.33.4",
     "ts-node": "^10.9.0",
     "typescript": "5.3.3",
     "typescript-eslint": "^7.5.0",
@@ -118,8 +117,5 @@
         ]
       ]
     }
-  },
-  "dependencies": {
-    "sharp": "^0.33.4"
   }
 }
