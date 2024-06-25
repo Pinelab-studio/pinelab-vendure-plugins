@@ -18,7 +18,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "yarn --ignore-engines && rimraf dist && tsc",
+    "build": "yarn add -D sharp --ignore-engines && rimraf dist && tsc",
     "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
     "lint": "echo 'No linting configured'"
@@ -29,9 +29,5 @@
   },
   "peerDependencies": {
     "sharp": "*"
-  },
-  "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
-  "devDependencies": {
-    "@types/tmp": "^0.2.6"
   }
 }
