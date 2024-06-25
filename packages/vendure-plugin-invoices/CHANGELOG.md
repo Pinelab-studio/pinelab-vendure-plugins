@@ -1,3 +1,7 @@
+# 2.4.0 (2024-07-21)
+
+- Updated Vendure to 2.2.6
+
 # 2.3.3 (2024-06-22)
 
 - Allow searching by invoice number in Invoices list

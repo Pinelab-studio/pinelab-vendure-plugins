@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-picklist",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Vendure plugin that provides picklists per order that won't be saved in the database",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",

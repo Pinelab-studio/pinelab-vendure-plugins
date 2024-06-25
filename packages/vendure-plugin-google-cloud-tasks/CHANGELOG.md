@@ -1,3 +1,7 @@
+# 1.6.0 (2024-07-21)
+
+- Updated Vendure to 2.2.6
+
 # 1.5.0 (2024-01-30)
 
 - Don't store `job.data` when it's too big for MySQL text column

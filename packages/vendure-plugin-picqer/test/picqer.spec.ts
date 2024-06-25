@@ -4,6 +4,7 @@ import {
   LogLevel,
   mergeConfig,
   Order,
+  OrderProcess,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -68,7 +69,9 @@ beforeAll(async () => {
     ],
     orderOptions: {
       process: [
-        configureDefaultOrderProcess({ checkFulfillmentStates: false }),
+        configureDefaultOrderProcess({
+          checkFulfillmentStates: false,
+        }) as OrderProcess<any>,
       ],
     },
     paymentOptions: {

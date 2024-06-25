@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-facet-suggestions",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A vendure plugin that allows you to define suggested facets for all products, or suggested facets based on other facets.",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",

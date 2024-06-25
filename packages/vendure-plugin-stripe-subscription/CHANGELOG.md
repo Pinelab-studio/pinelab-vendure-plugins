@@ -1,3 +1,7 @@
+# 2.5.0 (2024-07-21)
+
+- Updated Vendure to 2.2.6
+
 # 2.4.4 (2024-02-02)
 
 - Refactored subscription logic into helper, to make it reusable between Accept Blue and Stripe plugin
