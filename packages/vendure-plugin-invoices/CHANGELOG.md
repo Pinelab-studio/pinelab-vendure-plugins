@@ -1,6 +1,6 @@
 # 2.4.0 (2024-07-21)
 
-- Updated vendure to 2.2.6
+- Updated Vendure to 2.2.6
 
 # 2.3.2 (2024-06-13)
 
