@@ -9,7 +9,6 @@
     </vdr-ab-right>
   </vdr-action-bar>
 
-
   <clr-modal [(clrModalOpen)]="showMessage">
     <h3 class="modal-title">Add Webhook</h3>
     <div class="modal-body">
@@ -62,7 +61,11 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-outline" (click)="showMessage = false">
+      <button
+        type="button"
+        class="btn btn-outline"
+        (click)="showMessage = false"
+      >
         Cancel
       </button>
       <button class="btn btn-primary" (click)="create()">Submit</button>
