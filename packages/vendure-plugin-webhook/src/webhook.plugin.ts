@@ -1,16 +1,11 @@
-import {
-  PluginCommonModule,
-  Type,
-  VendureEvent,
-  VendurePlugin,
-} from '@vendure/core';
+import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { adminSchema } from './api/api-extension';
 import {
+  webhookPermission,
   WebhookRequestTransformerResolver,
   WebhookResolver,
-  webhookPermission,
 } from './api/webhook.resolver';
 import { WebhookService } from './api/webhook.service';
 import {
