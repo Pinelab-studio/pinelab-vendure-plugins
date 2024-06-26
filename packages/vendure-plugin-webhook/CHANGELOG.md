@@ -1,6 +1,10 @@
-# 1.1.2 (2024-06-14)
+# 1.2.1 (2024-06-26)
 
 - Extended transformer function with webhook entity to make the event name accessible
+
+# 1.2.0 (2024-06-21)
+
+- Updated Vendure to 2.2.6
 
 # 1.1.1 (2023-12-14)
 

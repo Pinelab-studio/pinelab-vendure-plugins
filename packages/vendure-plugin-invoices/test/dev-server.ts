@@ -113,10 +113,10 @@ require('dotenv').config();
   await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
   // Add a test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
-  await addShippingMethod(adminClient as any, 'manual-fulfillment');
-  const orders = 1;
+  await addShippingMethod(adminClient, 'manual-fulfillment');
+  const orders = 10;
   for (let i = 1; i <= orders; i++) {
-    await createSettledOrder(shopClient as any, 3);
+    await createSettledOrder(shopClient, 3);
   }
   console.log(`Created ${orders} orders`);
 })();

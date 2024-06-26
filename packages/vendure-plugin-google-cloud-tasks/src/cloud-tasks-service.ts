@@ -114,7 +114,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
       new JobRecord({
         id: job.id,
         queueName: queueName,
-        data: job.data,
+        data: job.data as any,
         attempts: job.attempts,
         state: JobState.PENDING,
         startedAt: job.startedAt,

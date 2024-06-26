@@ -1,3 +1,7 @@
+# 1.3.0 (2024-07-21)
+
+- Updated Vendure to 2.2.6
+
 # 1.2.4 (2024-06-13)
 
 - Using util.inspect again to log the incoming webhook body

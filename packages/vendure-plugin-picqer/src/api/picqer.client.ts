@@ -136,7 +136,18 @@ export class PicqerClient {
    * Get all registered webhooks
    */
   async getWebhooks(): Promise<WebhookData[]> {
-    return this.rawRequest('get', `/hooks`);
+    const allHooks = [];
+    let hasMore = true;
+    let offset = 0;
+    while (hasMore) {
+      const webhooks = await this.rawRequest('get', `/hooks?offset=${offset}`);
+      allHooks.push(...webhooks);
+      if (webhooks.length < this.responseLimit) {
+        hasMore = false;
+      }
+      offset += this.responseLimit;
+    }
+    return allHooks;
   }
 
   /**
