@@ -126,7 +126,7 @@ describe('Plugin setup', function () {
   const createdHooks: any[] = [];
 
   it('Should update Picqer config via admin api', async () => {
-    nock(nockBaseUrl).get('/hooks').reply(200, []).persist();
+    nock(nockBaseUrl).get('/hooks?offset=0').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
         createdHooks.push(reqBody);

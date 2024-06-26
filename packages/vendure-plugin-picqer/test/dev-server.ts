@@ -67,11 +67,11 @@ import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.hand
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [PicqerPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [PicqerPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
   });
