@@ -1,74 +1,150 @@
 ---
-import MainLayout from '../layouts/MainLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPlugins } from '../api/plugins';
+import {
+  getPluginsContributors,
+  Contributor as ContributorType,
+} from '../api/contributors';
+import Contributor from '../components/Contributor.astro';
 
 const plugins = await getPlugins();
+const contributors = await getPluginsContributors();
+
+// https://spaziobianco.lexingtonthemes.com/jobs/home/
 ---
 
-<MainLayout>
-  <div class="container">
-    <div class="columns is-justify-content-space-between is-align-items-center">
-      <div
-        class="column is-7-desktop has-text-centered-mobile has-text-centered-tablet has-text-left-desktop"
-      >
-        <h1 class="mb-4">
-          Battle tested <br />
-          <span class="is-blue">Vendure</span> plugins
-        </h1><p class="mb-4">
+<BaseLayout>
+  <section>
+    <div
+      class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 mt-24 z-50 items-center"
+    >
+      <div class="lg:pr-24 md:pr-12 pb-12 lg:pb-0 max-w-xl">
+        <span class="text-sm uppercase font-medium tracking-wide text-blue-600"
+          >OPEN SOURCE 4 LIFE</span
+        >
+        <h2
+          class="text-purple-900 font-semibold mt-6 text-4xl lg:text-7xl tracking-tight"
+        >
+          Battle tested Vendure plugins
+        </h2>
+        <p class="text-slate-500 mt-5 lg:text-balance">
           Vendure plugins built by <a
+            class="text-blue-600"
             href="https://pinelab.studio"
             target="_blank">Pinelab</a
           >, used for solving real problems for our clients.
         </p>
-      </div><div class="column is-4-desktop is-hidden-mobile has-text-right">
-        <img
-          src="/silver-partner.svg"
-          alt="Made by a Vendure Silver Partner!"
-          class="img-fluid"
-          style="max-height: 300px;"
-        />
+        <a
+          href="#plugins"
+          class="text-blue-500 mt-8 hover:text-blue-600 inline-flex items-center group"
+        >
+          Go to plugins ↓
+        </a>
       </div>
     </div>
-  </div>
-  <br />
-  <br />
+  </section>
 
-  <div class="columns is-multiline custom-grid">
+  <section>
+    <div
+      class="h-64 justify-center lg:px-0 max-h-full md:px-12 overflow-hidden relativ -skew-y-[16deg] transform mb-24"
+    >
+      <div class="bg-white block lg:flex-1 lg:relative sm:contents">
+        <div class="bg-white absolute h-full inset-0 object-cover w-full">
+          <video
+            autoplay=""
+            class="bg-white absolute max-w-none min-h-full min-w-full w-auto z-10"
+            loop=""
+            muted=""
+            ><source src="/gradientB.mp4" type="video/mp4" />Your browser does
+            not support the video tag.</video
+          >
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="plugins">
+    <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 py-24 mb-12">
+      <div
+        class="gap-x-2 gap-y-14 lg:gap-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 mt-12"
+      >
+        {
+          plugins.map((plugin) => (
+            <div>
+              <div class="space-y-3">
+                <div class="lg:inline-flex lg:items-center lg:gap-3">
+                  <div class="flex items-center justify-center size-10 text-blue-500 rounded-full">
+                    <img src={plugin.icon} class="rounded" />
+                  </div>
+                  <a
+                    aria-label={plugin.name}
+                    href={`/plugin/${plugin.slug}`}
+                    title={plugin.name}
+                    class="mt-5 font-semibold text-purple-900 lg:mt-0"
+                  >
+                    {plugin.name}
+                  </a>
+                </div>
+                <p class="text-sm text-slate-500 mt-5">{plugin.description}</p>
+                <div class="mt-5">
+                  <a
+                    aria-label={plugin.name}
+                    href={`/plugin/${plugin.slug}`}
+                    title={plugin.name}
+                    class="text-blue-500 hover:text-blue-600 inline-flex items-center group"
+                  >
+                    Learn more
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      class="size-4 ml-3 group-hover:translate-x-2 transition duration-500 ease-in-out transform"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <div>
     {
-      plugins.map((plugin) => (
-        <div class="column is-4-widescreen is-6-tablet">
-          <div class="plugin-block has-text-centered bordered">
-            <a href={`/plugin/${plugin.slug}`}>
-              <i class={`mdi mdi-${plugin.icon} mdi-36px`} />
-              <h5>{plugin.name}</h5>
-              <p>{plugin.description}</p>
-            </a>
+      contributors.length > 0 && (
+        <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 ">
+          <h2 class="text-center font-bold text-gray-600 text-4xl">
+            Contributors
+          </h2>
+          <p class="text-slate-500 mb-16 text-center">
+            Thanks to everyone who contributed to our plugins!
+          </p>
+          <div class="flex flex-wrap gap-x-4 sm:gap-x-16 gap-y-4 sm:gap-y-12 items-center justify-center">
+            {contributors.map((c: ContributorType) => {
+              return (
+                <>
+                  <a href={c.html_url} target="_blank">
+                    <div class="flex justify-center">
+                      <Contributor
+                        name={c.login}
+                        image={c.avatar_url}
+                        contributions={c.contributions}
+                      />
+                    </div>
+                  </a>
+                </>
+              );
+            })}
           </div>
         </div>
-      ))
+      )
     }
   </div>
-</MainLayout>
-
-<style>
-  .plugin-block {
-    padding: 50px 40px;
-    border-radius: 10px;
-    height: 100%;
-  }
-  .plugin-block a {
-    color: unset;
-    text-decoration: none;
-  }
-  .plugin-block i {
-    color: #3dc685;
-    text-decoration: none;
-  }
-  .plugin-block i {
-    width: 70px;
-    height: 70px;
-    text-align: center;
-    border-radius: 10px;
-    display: inline-block;
-  }
-</style>
+</BaseLayout>

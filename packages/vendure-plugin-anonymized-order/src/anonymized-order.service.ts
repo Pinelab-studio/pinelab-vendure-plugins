@@ -21,16 +21,15 @@ export class AnonymizeOrderService {
     orderCode: string,
     emailAddress: string
   ): Promise<Order> {
-    const order = await this.orderService.findOneByCode(ctx, orderCode);
+    let order = await this.orderService.findOneByCode(ctx, orderCode);
     if (order && order.customer?.emailAddress === emailAddress) {
-      order.customer = undefined;
-      order.shippingAddress = {};
-      order.billingAddress = {};
-      for (let line of order.lines) {
-        line.order = new Order();
-      }
       if (this.options?.anonymizeOrderFn) {
         this.options.anonymizeOrderFn(order);
+      } else {
+        order.customer = undefined;
+        order.customerId = undefined;
+        order.shippingAddress = {};
+        order.billingAddress = {};
       }
       return order;
     }

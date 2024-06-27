@@ -1,4 +1,4 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
+import { Args, Query, Resolver, Info } from '@nestjs/graphql';
 import { Ctx, Order, RequestContext } from '@vendure/core';
 import { AnonymizeOrderService } from './anonymized-order.service';
 
@@ -9,7 +9,8 @@ export class AnonymizeOrderShopResolver {
   @Query()
   async anonymizedOrder(
     @Ctx() ctx: RequestContext,
-    @Args() args: { orderCode: string; emailAddress: string }
+    @Args() args: { orderCode: string; emailAddress: string },
+    @Info() info: any
   ): Promise<Order> {
     return await this.anonymizeOrderService.getAnonymizedOrder(
       ctx,

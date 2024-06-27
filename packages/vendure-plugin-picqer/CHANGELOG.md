@@ -1,3 +1,16 @@
+# 3.1.1 (2024-07-26)
+
+- Get the correct variant translation based on the channel's default language
+- Fetch all registered webhooks when there are more than 100 using pagination
+
+# 3.1.0 (2024-07-21)
+
+- Updated Vendure to 2.2.6
+
+# 3.0.0 (2024-05-15)
+
+- The Picqer plugin now requires manual installation of the default order process with `checkFulfillment: false` to prevent overriding other custom order processes in the consuming projects.
+
 # 2.4.4 (2024-04-09)
 
 - Don't fall back to shipping address when passing billing address to Picqer

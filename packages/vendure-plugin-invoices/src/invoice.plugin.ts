@@ -99,5 +99,7 @@ export class InvoicePlugin {
         ngModuleName: 'InvoicesNavModule',
       },
     ],
+    routes: [{ filePath: 'routes.ts', route: 'invoice-list' }],
+    providers: ['providers.ts'],
   };
 }

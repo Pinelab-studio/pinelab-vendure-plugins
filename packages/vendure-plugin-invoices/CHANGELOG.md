@@ -1,3 +1,35 @@
+# 2.4.1 (2024-07-27)
+
+- Hide invoices component on order detail when user doesn't have permission
+
+# 2.4.0 (2024-07-21)
+
+- Updated Vendure to 2.2.6
+
+# 2.3.3 (2024-06-22)
+
+- Allow searching by invoice number in Invoices list
+
+# 2.3.2 (2024-06-13)
+
+- Don't throw errors when a cancelled invoice doesn't have a previous invoice, but log and return instead.
+
+# 2.3.1 (2024-06-05)
+
+- Sort invoices by created at
+
+# 2.3.0 (2024-06-05)
+
+- Invoice listing page and bulk download of invoices
+
+# 2.2.0 (2024-06-04)
+
+- When an order is cancelled, generate credit invoice, and no invoice regeneration after that
+
+# 2.1.1 (2024-06-04)
+
+- Prevent the possibility of connecting the wrong invoice file to an order with concurrent invoice generation. See #433
+
 # 2.1.0 (2024-02-14)
 
 - Work on ui improvements as described in #352

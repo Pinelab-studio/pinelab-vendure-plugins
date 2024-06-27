@@ -3,6 +3,8 @@ import fs from 'fs/promises';
 import * as tmp from 'tmp';
 import { loggerCtx } from '../constants';
 
+import AdmZip = require('adm-zip');
+
 export async function createTempFile(postfix: string): Promise<string> {
   return new Promise((resolve, reject) => {
     tmp.file({ postfix }, (err, path, fd, cleanupCallback) => {
@@ -13,6 +15,11 @@ export async function createTempFile(postfix: string): Promise<string> {
       }
     });
   });
+}
+
+export interface ZippableFile {
+  name: string;
+  path: string;
 }
 
 export async function exists(path: string): Promise<boolean> {
@@ -37,4 +44,14 @@ export function safeRemove(path: string): void {
       err?.stack
     );
   });
+}
+
+export async function zipFiles(files: ZippableFile[]): Promise<string> {
+  const zip = new AdmZip();
+  for (const file of files) {
+    zip.addLocalFile(file.path, undefined, file.name);
+  }
+  const tmpFilePath = await createTempFile('.zip');
+  await zip.writeZip(tmpFilePath);
+  return tmpFilePath;
 }

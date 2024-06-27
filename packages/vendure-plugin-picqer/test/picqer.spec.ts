@@ -1,4 +1,11 @@
-import { DefaultLogger, LogLevel, mergeConfig, Order } from '@vendure/core';
+import {
+  configureDefaultOrderProcess,
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  Order,
+  OrderProcess,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -60,6 +67,13 @@ beforeAll(async () => {
         }),
       }),
     ],
+    orderOptions: {
+      process: [
+        configureDefaultOrderProcess({
+          checkFulfillmentStates: false,
+        }) as OrderProcess<any>,
+      ],
+    },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
@@ -112,7 +126,7 @@ describe('Plugin setup', function () {
   const createdHooks: any[] = [];
 
   it('Should update Picqer config via admin api', async () => {
-    nock(nockBaseUrl).get('/hooks').reply(200, []).persist();
+    nock(nockBaseUrl).get('/hooks?offset=0').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
         createdHooks.push(reqBody);

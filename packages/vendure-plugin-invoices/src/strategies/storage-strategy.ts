@@ -23,6 +23,12 @@ interface BaseStorageStrategy {
   ): Promise<string>;
 
   init(): Promise<void>;
+
+  /**
+   * Bundles multiple files by invoiceNumbers in zipFile for download via admin UI
+   * Will only be called by admins
+   */
+  streamMultiple(invoices: InvoiceEntity[], res: Response): Promise<ReadStream>;
 }
 
 export interface RemoteStorageStrategy extends BaseStorageStrategy {

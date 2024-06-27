@@ -1,9 +1,18 @@
-import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import {
+  Args,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+  Mutation,
+} from '@nestjs/graphql';
+import {
+  Allow,
   Ctx,
   Customer,
   EntityHydrator,
   OrderLine,
+  Permission,
   RequestContext,
 } from '@vendure/core';
 import { AcceptBluePaymentMethod } from '../types';
@@ -11,8 +20,10 @@ import { AcceptBlueService } from './accept-blue-service';
 import {
   AcceptBlueSubscription,
   Query as GraphqlQuery,
+  Mutation as GraphqlMutation,
   QueryPreviewAcceptBlueSubscriptionsArgs,
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
+  MutationRefundAcceptBlueTransactionArgs,
 } from './generated/graphql';
 
 @Resolver()
@@ -28,11 +39,16 @@ export class AcceptBlueCommonResolver {
     @Args()
     { productVariantId, customInputs }: QueryPreviewAcceptBlueSubscriptionsArgs
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptions']> {
-    return await this.acceptBlueService.subscriptionHelper.previewSubscription(
-      ctx,
-      productVariantId,
-      customInputs
-    );
+    const subscriptions =
+      await this.acceptBlueService.subscriptionHelper.previewSubscription(
+        ctx,
+        productVariantId,
+        customInputs
+      );
+    return subscriptions.map((sub) => ({
+      ...sub,
+      transactions: [], // No transactions exist for a preview subscription
+    }));
   }
 
   @Query()
@@ -44,10 +60,30 @@ export class AcceptBlueCommonResolver {
       customInputs,
     }: QueryPreviewAcceptBlueSubscriptionsForProductArgs
   ): Promise<GraphqlQuery['previewAcceptBlueSubscriptionsForProduct']> {
-    return await this.acceptBlueService.subscriptionHelper.previewSubscriptionsForProduct(
+    const subscriptions =
+      await this.acceptBlueService.subscriptionHelper.previewSubscriptionsForProduct(
+        ctx,
+        productId,
+        customInputs
+      );
+    return subscriptions.map((sub) => ({
+      ...sub,
+      transactions: [], // No transactions exist for a preview subscription
+    }));
+  }
+
+  @Mutation()
+  @Allow(Permission.Authenticated)
+  async refundAcceptBlueTransaction(
+    @Ctx() ctx: RequestContext,
+    @Args()
+    { transactionId, amount, cvv2 }: MutationRefundAcceptBlueTransactionArgs
+  ): Promise<GraphqlMutation['refundAcceptBlueTransaction']> {
+    return await this.acceptBlueService.refund(
       ctx,
-      productId,
-      customInputs
+      transactionId,
+      amount ?? undefined,
+      cvv2 ?? undefined
     );
   }
 
@@ -74,18 +110,16 @@ export class AcceptBlueCommonResolver {
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLine
   ): Promise<AcceptBlueSubscription[]> {
-    await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
-    const subscriptionsForOrderLine =
-      await this.acceptBlueService.subscriptionHelper.getSubscriptionsForOrderLine(
-        ctx,
-        orderLine,
-        orderLine.order
-      );
-    return subscriptionsForOrderLine.map((s) => ({
-      ...s,
-      variantId: orderLine.productVariant.id,
-    }));
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant', 'order'],
+    });
+    return this.acceptBlueService.getSubscriptionsForOrderLine(
+      ctx,
+      orderLine,
+      orderLine.order
+    );
   }
+
   @ResolveField()
   @Resolver('AcceptBluePaymentMethod')
   __resolveType(value: any): string {

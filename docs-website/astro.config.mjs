@@ -1,8 +1,12 @@
 import { defineConfig } from 'astro/config';
+import tailwind from '@astrojs/tailwind';
+import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: [],
-  // Process images with sharp: https://docs.astro.build/en/guides/assets/#using-sharp
-  image: { service: { entrypoint: 'astro/assets/services/sharp' } },
+  markdown: {
+    drafts: true,
+  },
+  site: 'https://pinelab.studio',
+  integrations: [tailwind(), sitemap()],
 });

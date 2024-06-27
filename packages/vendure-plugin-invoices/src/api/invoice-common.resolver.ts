@@ -6,7 +6,6 @@ import {
   Order,
   PermissionDefinition,
   RequestContext,
-  UserInputError,
 } from '@vendure/core';
 import { InvoiceService } from '../services/invoice.service';
 import { Invoice } from '../ui/generated/graphql';
@@ -40,10 +39,12 @@ export class InvoiceCommonResolver {
     }
     return invoices.map((invoice) => ({
       ...invoice,
+      orderCode: order.code,
+      orderId: order.id,
       isCreditInvoice: invoice.isCreditInvoice,
       downloadUrl: this.invoiceService.getDownloadUrl(
         ctx,
-        invoice,
+        invoice.invoiceNumber,
         order.code,
         order.customer!.emailAddress
       ),

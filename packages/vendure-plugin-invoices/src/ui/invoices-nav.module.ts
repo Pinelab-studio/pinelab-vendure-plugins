@@ -4,12 +4,16 @@ import {
   SharedModule,
   addActionBarItem,
 } from '@vendure/admin-ui/core';
-import { registerCustomDetailComponent } from '@vendure/admin-ui/core';
+import {
+  registerCustomDetailComponent,
+  ActionBarButtonState,
+} from '@vendure/admin-ui/core';
 
 import { InvoiceDetailViewComponent } from './invoices-detail-view/invoices-detail-view.component';
 import { createInvoice } from './queries.graphql';
 import { catchError } from 'rxjs/operators';
 import { ApolloCache } from '@apollo/client/cache';
+import { map } from 'rxjs';
 
 @NgModule({
   imports: [SharedModule],
@@ -32,6 +36,7 @@ import { ApolloCache } from '@apollo/client/cache';
       id: 'regenerate-invoice',
       label: 'Regenerate Invoice',
       locationId: 'order-detail',
+      requiresPermission: ['AllowInvoicesPermission'],
       onClick: (event, context) => {
         const orderId = context.route.snapshot.params['id'];
         (event.target as HTMLButtonElement).disabled = true;
@@ -60,6 +65,16 @@ import { ApolloCache } from '@apollo/client/cache';
             }
             (event.target as HTMLButtonElement).disabled = false;
           });
+      },
+      buttonState: (context) => {
+        const orderId = context.route.snapshot.params['id'];
+        const order$ = context.dataService.order.getOrder(orderId);
+        return order$.stream$.pipe(
+          map(({ order }) => ({
+            disabled: order?.state === 'Cancelled',
+            visible: true,
+          }))
+        );
       },
     }),
   ],

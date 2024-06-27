@@ -6,6 +6,7 @@ import { Logger } from '@vendure/core';
 import { loggerCtx } from './constants';
 import { IncomingWebhookBody } from './types/sendcloud-api.types';
 import { sendcloudStates } from './types/sendcloud.types';
+import { inspect } from 'util';
 
 @Controller('sendcloud')
 export class SendcloudController {
@@ -17,7 +18,26 @@ export class SendcloudController {
     @Headers(SendcloudClient.signatureHeader) signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<unknown> {
-    const body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
+    let body: IncomingWebhookBody;
+    if (!Buffer.isBuffer(req.body)) {
+      Logger.warn(
+        `Incoming webhook body is not a Buffer. This means the body was already parsed by some other middleware. This might cause problems when validating the incoming webhook signature.`,
+        loggerCtx
+      );
+      body = req.body as IncomingWebhookBody;
+    } else {
+      // Else we try and parse the body
+      try {
+        body = JSON.parse(req.body.toString()) as IncomingWebhookBody;
+      } catch (e: any) {
+        Logger.error(
+          `Error parsing incoming webhook body: ${e?.message ?? e}`,
+          loggerCtx,
+          inspect(req.body)
+        );
+        return;
+      }
+    }
     const rawBody = (req as any).rawBody;
     const ctx = await this.sendcloudService.createContext(channelToken);
     const { client } = await this.sendcloudService.getClient(ctx);

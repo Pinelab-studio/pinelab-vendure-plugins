@@ -32,6 +32,27 @@ export class InvoiceController {
   ) {}
 
   @Allow(invoicePermission.Permission)
+  @Get('/download')
+  async downloadMultipleInvoices(
+    @Ctx() ctx: RequestContext,
+    @Query('nrs') numbers: string,
+    @Req() req: Request,
+    @Res() res: Response
+  ) {
+    if (!ctx.channelId) {
+      throw Error(`Channel id is needed to download invoices`);
+    }
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const stream = await this.invoiceService.downloadMultiple(
+      ctx,
+      numbers.split(','),
+      res
+    );
+    Logger.info(`Invoices ${numbers} downloaded from ${ip}`, loggerCtx);
+    stream.pipe(res);
+  }
+
+  @Allow(invoicePermission.Permission)
   @Post('/preview/:orderCode?')
   async preview(
     @Ctx() ctx: RequestContext,

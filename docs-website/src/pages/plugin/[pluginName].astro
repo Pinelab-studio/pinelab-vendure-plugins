@@ -1,6 +1,7 @@
 ---
 import { getPlugins, type Plugin } from '../../api/plugins';
-import MainLayout from '../../layouts/MainLayout.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import 'highlight.js/styles/github-dark-dimmed.css';
 
 export async function getStaticPaths() {
   const plugins = await getPlugins();
@@ -13,22 +14,31 @@ export async function getStaticPaths() {
 const plugin: Plugin = Astro.props.plugin;
 ---
 
-<MainLayout title={plugin.name}>
-  <div class="content">
-    Run
-    <code>yarn add {plugin.npmName}</code>
-    to install this plugin.
-  </div>
+<BaseLayout title={plugin.name}>
+  <section>
+    <div
+      class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 z-50 items-center"
+    >
+      <pre>
+    <code class="hljs language-shell">
+    <span class="hljs-comment"># Install this plugin</span>
+    <span class="hljs-attr">yarn</span> add {plugin.npmName}
+    </code>
+    </pre>
 
-  <!-- Badges -->
-  <img
-    src={`https://img.shields.io/npm/v/${encodeURIComponent(
-      plugin.npmName
-    )}?label=version&color=%233dc685`}
-  />
-  <img
-    src="https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure&color=%2317C1FF"
-  />
+      <!-- Badges -->
+      <img
+        class="inline-block"
+        src={`https://img.shields.io/npm/v/${encodeURIComponent(
+          plugin.npmName
+        )}?label=version&color=%233dc685`}
+      />
+      <img
+        class="inline-block"
+        src="https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure&color=%2317C1FF"
+      />
 
-  <div class="content" set:html={plugin.markdownContent} />
-</MainLayout>
+      <div class="prose" set:html={plugin.markdownContent} />
+    </div>
+  </section>
+</BaseLayout>

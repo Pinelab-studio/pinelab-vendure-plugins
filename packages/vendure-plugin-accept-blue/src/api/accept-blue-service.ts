@@ -5,22 +5,25 @@ import {
   CustomerService,
   EntityHydrator,
   ID,
+  Logger,
   Order,
   OrderLine,
   PaymentMethod,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
+  Transaction,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { SubscriptionHelper } from '../';
+import { Subscription, SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
   AcceptBlueChargeTransaction,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
+  AcceptBlueRecurringScheduleTransaction,
   CheckPaymentMethodInput,
   HandlePaymentResult,
   NoncePaymentMethodInput,
@@ -30,9 +33,16 @@ import {
   getNrOfBillingCyclesLeft,
   isToday,
   toAcceptBlueFrequency,
+  toGraphqlRefundStatus,
+  toSubscriptionInterval,
 } from '../util';
 import { AcceptBlueClient } from './accept-blue-client';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
+import {
+  AcceptBlueRefundResult,
+  AcceptBlueSubscription,
+  AcceptBlueTransaction,
+} from './generated/graphql';
 
 @Injectable()
 export class AcceptBlueService {
@@ -209,6 +219,55 @@ export class AcceptBlueService {
   }
 
   /**
+   * Resolve the subscriptions for an order line. For a placed order, this will also fetch transactions per subscription
+   */
+  async getSubscriptionsForOrderLine(
+    ctx: RequestContext,
+    orderLine: OrderLine,
+    order: Order
+  ): Promise<AcceptBlueSubscription[]> {
+    if (order.orderPlacedAt) {
+      // Return actual created subscriptions for placed orders
+      const client = await this.getClientForChannel(ctx);
+      const subscriptionIds =
+        orderLine.customFields.acceptBlueSubscriptionIds ?? [];
+      const createdSubscriptions = await client.getRecurringSchedules(
+        subscriptionIds
+      );
+      return await Promise.all(
+        createdSubscriptions.map(async (s) => {
+          const transactions = await client.getTransactionsForRecurringSchedule(
+            s.id
+          );
+          // Map to Graphql Transaction type
+          const graphqlTransactions = transactions.map((t) =>
+            this.mapToGraphqlTransaction(t)
+          );
+          return this.mapToGraphqlSubscription(
+            s,
+            orderLine.productVariant.id,
+            graphqlTransactions
+          );
+        })
+      );
+    }
+    // If the order is not placed, we dynamically generate subscriptions
+    const subscriptionsForOrderLine =
+      await this.subscriptionHelper.getSubscriptionsForOrderLine(
+        ctx,
+        orderLine,
+        orderLine.order
+      );
+    return subscriptionsForOrderLine.map((s) => {
+      return {
+        ...s,
+        variantId: orderLine.productVariant.id,
+        transactions: [],
+      };
+    });
+  }
+
+  /**
    * Get the payment methods stored in Accept Blue for the given customer
    */
   async getSavedPaymentMethods(
@@ -225,6 +284,35 @@ export class AcceptBlueService {
     return await client.getPaymentMethods(
       customer.customFields.acceptBlueCustomerId
     );
+  }
+
+  async refund(
+    ctx: RequestContext,
+    transactionId: number,
+    amount?: number,
+    cvv2?: string
+  ): Promise<AcceptBlueRefundResult> {
+    const client = await this.getClientForChannel(ctx);
+    const refundResult = await client.refund(transactionId, amount, cvv2);
+    let errorDetails: string | undefined = undefined;
+    if (refundResult.error_details) {
+      errorDetails =
+        typeof refundResult.error_details === 'object'
+          ? JSON.stringify(refundResult.error_details)
+          : refundResult.error_details;
+    }
+    Logger.info(
+      `Attempted refund of transaction '${transactionId}' by user '${ctx.activeUserId}' resulted in status '${refundResult.status}'`,
+      loggerCtx
+    );
+    return {
+      version: refundResult.version,
+      referenceNumber: refundResult.reference_number,
+      status: toGraphqlRefundStatus(refundResult.status),
+      errorCode: refundResult.error_code,
+      errorMessage: refundResult.error_message,
+      errorDetails,
+    };
   }
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
@@ -267,5 +355,66 @@ export class AcceptBlueService {
       );
     }
     return acceptBlueMethod;
+  }
+
+  /**
+   * Map a subscription from Accept Blue to the GraphQL Subscription type
+   */
+  private mapToGraphqlSubscription(
+    subscription: AcceptBlueRecurringSchedule,
+    variantId: ID,
+    transactions: AcceptBlueTransaction[] = []
+  ): AcceptBlueSubscription {
+    const { interval, intervalCount } = toSubscriptionInterval(
+      subscription.frequency
+    );
+    return {
+      id: subscription.id,
+      amountDueNow: 0,
+      name: subscription.title,
+      priceIncludesTax: true,
+      variantId,
+      recurring: {
+        amount: subscription.amount,
+        interval,
+        intervalCount,
+        startDate: subscription.created_at,
+      },
+      transactions,
+    };
+  }
+  /**
+   * Map a transaction from Accept Blue to the GraphQL Transaction type
+   */
+  private mapToGraphqlTransaction(
+    transaction: AcceptBlueRecurringScheduleTransaction
+  ): AcceptBlueTransaction {
+    return {
+      id: transaction.id,
+      amount: transaction.amount_details.amount,
+      createdAt: transaction.created_at,
+      settledAt: transaction.settled_date
+        ? new Date(transaction.settled_date)
+        : undefined,
+      cardDetails: transaction.card_details
+        ? {
+            name: transaction.card_details.name,
+            cardType: transaction.card_details.card_type,
+            expiryMonth: transaction.card_details.expiry_month,
+            expiryYear: transaction.card_details.expiry_year,
+            last4: transaction.card_details.last4,
+          }
+        : undefined,
+      checkDetails: transaction.check_details
+        ? {
+            name: transaction.check_details.name,
+            last4: transaction.check_details.account_number_last4,
+            routingNumber: transaction.check_details.routing_number,
+          }
+        : undefined,
+      status: transaction.status_details.status,
+      errorCode: transaction.status_details.error_code,
+      errorMessage: transaction.status_details.error_message,
+    };
   }
 }

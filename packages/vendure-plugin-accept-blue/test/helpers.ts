@@ -104,6 +104,71 @@ export const ADD_PAYMENT_TO_ORDER = gql`
   }
 `;
 
+export const REFUND_TRANSACTION = gql`
+  mutation RefundAcceptBlueTransaction(
+    $transactionId: Int!
+    $amount: Int
+    $cvv2: String
+  ) {
+    refundAcceptBlueTransaction(
+      transactionId: $transactionId
+      amount: $amount
+      cvv2: $cvv2
+    ) {
+      referenceNumber
+      version
+      status
+      errorMessage
+      errorCode
+      errorDetails
+    }
+  }
+`;
+
+export const GET_ORDER_BY_CODE = gql`
+  query GetOrderByCode($code: String!) {
+    orderByCode(code: $code) {
+      id
+      code
+      lines {
+        acceptBlueSubscriptions {
+          name
+          variantId
+          amountDueNow
+          priceIncludesTax
+          recurring {
+            amount
+            interval
+            intervalCount
+            startDate
+            endDate
+          }
+          transactions {
+            id
+            createdAt
+            settledAt
+            amount
+            status
+            errorCode
+            errorMessage
+            checkDetails {
+              name
+              routingNumber
+              last4
+            }
+            cardDetails {
+              name
+              last4
+              expiryMonth
+              expiryYear
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const SET_SHIPPING_METHOD = gql`
   mutation SetShippingMethod($id: [ID!]!) {
     setOrderShippingMethod(shippingMethodId: $id) {

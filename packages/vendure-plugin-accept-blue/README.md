@@ -100,6 +100,81 @@ mutation {
 }
 ```
 
+## Fetching Transactions and Subscriptions for placed orders
+
+After an order is placed, the `order.lines.acceptBlueSubscriptions` is populated with the actual subscription values from the Accept Blue platform, so it will not call your strategy anymore. This is to better reflect the subscription that was actually created at the time of ordering.
+
+This means you can now also get the transactions per subscriptions with the field `order.lines.acceptBlueSubscriptions.transactions`. To refund a transaction, you first need to get the transaction id.
+
+```graphql
+# Sample query
+{
+  orderByCode(code: "NQWHJ7FNYV7M348Z") {
+    id
+    code
+    lines {
+      acceptBlueSubscriptions {
+        name
+        variantId
+        amountDueNow
+        priceIncludesTax
+        recurring {
+          amount
+          interval
+          intervalCount
+          startDate
+          endDate
+        }
+        transactions {
+          id
+          createdAt
+          settledAt
+          amount
+          status
+          errorCode
+          errorMessage
+          checkDetails {
+            # This object is populated when the transaction was made with Check
+            name
+            routingNumber
+            last4
+          }
+          cardDetails {
+            # This object is populated when the transaction was made with a Credit Card
+            name
+            last4
+            expiryMonth
+            expiryYear
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+## Refunding
+
+Only the initial payment is handled as a Vendure payment, any other refunds are done via a dedicated mutation:
+
+1. Fetch transactions for a customer or a subscription as explained above
+2. Use the transaction ID to create a refund:
+
+```graphql
+mutation {
+  refundAcceptBlueTransaction(transactionId: 123, amount: 4567, cvv2: "999") {
+    referenceNumber
+    version
+    status
+    errorMessage
+    errorCode
+    errorDetails
+  }
+}
+```
+
+The arguments `amount` and `cvv2` are optional, see [the Accept Blue Docs for more info](https://docs.accept.blue/api/v2#tag/processing-credit/paths/~1transactions~1refund).
+
 ## CORS
 
 If you run into CORS issues loading the Accept Blue hosted tokenization javascript library, you might need to remove the `cross-origin` key on your `script` tag.

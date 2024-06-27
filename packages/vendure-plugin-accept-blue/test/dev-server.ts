@@ -22,6 +22,8 @@ import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
+  GET_ORDER_BY_CODE,
+  REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
 } from './helpers';
@@ -52,6 +54,9 @@ import { add } from 'date-fns';
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config: Required<VendureConfig> = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    dbConnectionOptions: {
+      autoSave: true, // Uncomment this line to persist the database between restarts
+    },
     authOptions: {
       cookieOptions: {
         secret: '123',
@@ -113,7 +118,7 @@ import { add } from 'date-fns';
   console.log(`Created paymentMethod`);
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await shopClient.query(ADD_ITEM_TO_ORDER, {
-    productVariantId: '1',
+    productVariantId: '3',
     quantity: 1,
   });
   console.log(`Added item`);
@@ -131,24 +136,34 @@ import { add } from 'date-fns';
     `Transitioned order '${transitionOrderToState.code}' to ArrangingPayment`
   );
 
-  // Create Payment method with Accept blue
+  // Use this metadata in AddpaymentToOrder to use a one time nonce for payment method creation
   const metadata: NoncePaymentMethodInput = {
-    source: 'nonce-z5frsiogt4kce2paljeb',
+    source: 'nonce-h301nyq2kycko8b6v6sr',
     last4: '1115',
     expiry_year: 2030,
     expiry_month: 3,
   };
+
   try {
     const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
       input: {
         method: 'accept-blue-credit-card',
-        metadata,
-        //metadata: { paymentMethodId: 15713 }, // Use a saved payment method
+        // metadata,
+        metadata: { paymentMethodId: 14556 }, // Use a saved payment method
       },
     });
     console.log(
       `Successfully transitioned order to ${addPaymentToOrder.state}`
     );
+
+    // Attempt a refund
+    const { refundAcceptBlueTransaction } = await shopClient.query(
+      REFUND_TRANSACTION,
+      {
+        transactionId: 354653,
+      }
+    );
+    console.log(`Refunded transaction: ${refundAcceptBlueTransaction}`);
   } catch (e) {
     // Catch to prevent server from terminating
     console.error(e);

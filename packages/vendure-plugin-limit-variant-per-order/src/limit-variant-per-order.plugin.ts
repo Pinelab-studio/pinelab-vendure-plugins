@@ -5,6 +5,8 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { AddItemOverrideResolver } from './add-item-override.resolver';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -34,9 +36,11 @@ import { AddItemOverrideResolver } from './add-item-override.resolver';
     });
     config.customFields.ProductVariant.push({
       name: 'onlyAllowPer',
-      type: 'int',
+      type: 'text',
       public: true,
-      nullable: true,
+      list: true,
+      defaultValue: [],
+      ui: { component: 'channel-aware-int-form-input' },
       label: [
         {
           languageCode: LanguageCode.en,
@@ -55,4 +59,9 @@ import { AddItemOverrideResolver } from './add-item-override.resolver';
   },
   compatibility: '^2.0.0',
 })
-export class LimitVariantPerOrderPlugin {}
+export class LimitVariantPerOrderPlugin {
+  public static uiExtensions: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    providers: ['providers.ts'],
+  };
+}
