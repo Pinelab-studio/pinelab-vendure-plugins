@@ -30,7 +30,16 @@ export class InvoiceDetailViewComponent
     this.serverPath = getServerLocation();
   }
   async ngOnInit(): Promise<void> {
-    await this.getOrderInvoices();
+    this.dataService.client
+      .userStatus()
+      .mapStream((data) => data.userStatus.permissions)
+      .subscribe(async (permissions) => {
+        if (permissions.includes('AllowInvoicesPermission' as any)) {
+          await this.getOrderInvoices();
+        } else {
+          console.warn('Current user doesnt have permission to view invoices');
+        }
+      });
   }
 
   async getOrderInvoices(): Promise<void> {
