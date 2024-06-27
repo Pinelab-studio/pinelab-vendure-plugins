@@ -1,4 +1,4 @@
-# Vendure Order Payment Extensions
+# Vendure Payment Extensions
 
 ## [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-payment-extensions)
 
