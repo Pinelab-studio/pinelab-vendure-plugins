@@ -4,7 +4,7 @@
 
 This `Vendure` plugin allows an `Order` to be settled without upfront payment.
 
-- `isCustomerInGroupPaymentChecker`: Verifies if the logged-in customer belongs to a specified group, making them eligible for payment.
+- `isCustomerInGroupPaymentChecker`: Verifies if the customer attached to an order belongs to a specified group to allow configured payment method.
 - `settleWithoutPaymentHandler`: This handler simply transitions the `Payment` to settled state.
 
 ## Getting started
