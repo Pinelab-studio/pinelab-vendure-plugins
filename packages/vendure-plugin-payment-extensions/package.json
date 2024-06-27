@@ -1,0 +1,27 @@
+{
+  "name": "@pinelab/vendure-plugin-payment-extensions",
+  "version": "0.0.1",
+  "description": "Vendure plugin for allowing customers to 'pay' for an order without actually paying",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://pinelab-plugins.com/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
+    "start": "ts-node test/dev-server.ts",
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "test": "vitest run",
+    "lint": "eslint ."
+  }
+}
