@@ -14,6 +14,7 @@ import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/jo
 import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { CloudTaskMessage, CloudTaskOptions } from './types';
+import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 
 type QueueProcessFunction = (job: Job) => Promise<any>;
 
@@ -133,6 +134,9 @@ export class CloudTasksService implements OnApplicationBootstrap {
     };
     const parent = this.getQueuePath(queueName);
     const task = {
+      name: `projects/${this.options.projectId}/locations/${
+        this.options.location
+      }/queues/${queueName}/tasks/${generatePublicId()}`,
       httpRequest: {
         httpMethod: 'POST' as const,
         headers: {
@@ -147,8 +151,19 @@ export class CloudTasksService implements OnApplicationBootstrap {
     let currentAttempt = 0;
     while (true) {
       try {
-        const res = await this.client.createTask(request, {
-          maxRetries: cloudTaskMessage.maxRetries,
+        Logger.debug(
+          `Adding job (${cloudTaskMessage.id}) with retries=${cloudTaskMessage.maxRetries} to queue ${queueName} for ${task.httpRequest?.url}`,
+          loggerCtx
+        );
+        await this.client.createTask(request, {
+          retry: {
+            backoffSettings: {
+              maxRetries: this.options.createTaskRetries,
+              initialRetryDelayMillis: 500,
+              maxRetryDelayMillis: 10000,
+              retryDelayMultiplier: 1.5,
+            },
+          },
         });
         Logger.debug(
           `Added job (${cloudTaskMessage.id}) with retries=${cloudTaskMessage.maxRetries} to queue ${queueName} for ${task.httpRequest.url}`,
@@ -351,7 +366,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
       });
       this.LIVE_QUEUES.add(queueName);
     } catch (error: any) {
-      if (error?.message?.indexOf('ALREADY_EXISTS') > -1) {
+      if (error?.message?.indexOf('Queue already exists') > -1) {
         this.LIVE_QUEUES.add(queueName);
         Logger.debug(`Queue ${queueName} already exists`, loggerCtx);
       } else {
