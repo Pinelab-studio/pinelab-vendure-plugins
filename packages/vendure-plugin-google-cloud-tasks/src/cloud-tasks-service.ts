@@ -156,14 +156,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
           loggerCtx
         );
         await this.client.createTask(request, {
-          retry: {
-            backoffSettings: {
-              maxRetries: this.options.createTaskRetries,
-              initialRetryDelayMillis: 500,
-              maxRetryDelayMillis: 10000,
-              retryDelayMultiplier: 1.5,
-            },
-          },
+          maxRetries: cloudTaskMessage.maxRetries,
         });
         Logger.debug(
           `Added job (${cloudTaskMessage.id}) with retries=${cloudTaskMessage.maxRetries} to queue ${queueName} for ${task.httpRequest.url}`,
