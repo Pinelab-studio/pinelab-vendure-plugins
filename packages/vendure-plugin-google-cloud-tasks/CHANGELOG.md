@@ -1,3 +1,9 @@
+# 1.7.0 (2024-09-06)
+
+- Updated `@google-cloud/tasks` to `"^5.4.0"`
+- Introduced retry backoff mechanism for better handling of transient errors
+- Generates a unique task name; this reduces the latency during creation of the task
+
 # 1.6.0 (2024-07-21)
 
 - Updated Vendure to 2.2.6
