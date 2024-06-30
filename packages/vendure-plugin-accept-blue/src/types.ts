@@ -1,3 +1,4 @@
+import type { Request } from 'express';
 interface CustomFields {
   custom1: string;
   custom2: string;
@@ -78,6 +79,16 @@ interface TransactionDetails {
   terminal: string;
   client_ip: string;
   signature: string;
+  invoice_number: string;
+  po_number: string;
+  order_number: string;
+  batch_id: number;
+  source: string;
+  terminal_name: string;
+  username: string;
+  type: 'charge' | 'credit';
+  reference_number: number;
+  schedule_id: number;
 }
 
 export interface AcceptBlueAmountInput {
@@ -410,4 +421,22 @@ export interface BatchEvent {
   id: string;
   timestamp: string;
   data: BatchObject;
+}
+
+export interface AcceptBlueWebhookInput {
+  webhook_url: string;
+  description: string;
+  active: true;
+}
+
+export interface AcceptBlueWebhook {
+  id: number;
+  signature: string;
+  webhook_url: string;
+  description: string;
+  active: boolean;
+}
+
+export interface RequestWithRawBody extends Request {
+  rawBody: Buffer;
 }

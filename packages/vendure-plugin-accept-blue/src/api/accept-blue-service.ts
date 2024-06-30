@@ -1,22 +1,23 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   Customer,
   CustomerService,
   EntityHydrator,
+  EventBus,
   ID,
   Logger,
   Order,
   OrderLine,
   PaymentMethod,
+  PaymentMethodEvent,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
-  Transaction,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { Subscription, SubscriptionHelper } from '../';
+import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
@@ -24,6 +25,7 @@ import {
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleTransaction,
+  AcceptBlueWebhook,
   CheckPaymentMethodInput,
   HandlePaymentResult,
   NoncePaymentMethodInput,
@@ -43,15 +45,17 @@ import {
   AcceptBlueSubscription,
   AcceptBlueTransaction,
 } from './generated/graphql';
+import { filter } from 'rxjs';
 
 @Injectable()
-export class AcceptBlueService {
+export class AcceptBlueService implements OnApplicationBootstrap {
   constructor(
     private readonly productVariantService: ProductVariantService,
     private readonly paymentMethodService: PaymentMethodService,
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
     private connection: TransactionalConnection,
+    private eventBus: EventBus,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AcceptBluePluginOptions
@@ -65,6 +69,43 @@ export class AcceptBlueService {
   }
 
   readonly subscriptionHelper: SubscriptionHelper;
+
+  async onApplicationBootstrap() {
+    if (this.options.syncWebhookOnStartup) {
+      this.eventBus
+        .ofType(PaymentMethodEvent)
+        .pipe(
+          filter(
+            (data) => data.entity.handler.code === acceptBluePaymentHandler.code
+          )
+        )
+        .subscribe(async ({ ctx, entity }) => {
+          await this.createWebhook(ctx, entity);
+        });
+    }
+  }
+
+  async createWebhook(ctx: RequestContext, paymentMethod: PaymentMethod) {
+    const client = await this.getClientForChannel(ctx);
+    let webhook: AcceptBlueWebhook;
+    try {
+      webhook = await client.createWebhook(this.options.vendureHost);
+    } catch (e: any) {
+      Logger.error(e.message);
+      return;
+    }
+    //let's save the signature on the acceptBluePaymentHandler's args
+    const paymentMethodRepo = this.connection.getRepository(ctx, PaymentMethod);
+    paymentMethod.handler.args.push({
+      name: 'signature',
+      value: webhook.signature,
+    });
+    await paymentMethodRepo.save(paymentMethod);
+    Logger.info(
+      `The AcceptBlue PaymentMethod(${paymentMethod.code})'s webhook signature has been updated`,
+      loggerCtx
+    );
+  }
 
   /**
    * Handles payments for order for either Nonce or Checks

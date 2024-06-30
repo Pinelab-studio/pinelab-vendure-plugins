@@ -12,6 +12,7 @@ import {
   CheckPaymentMethodInput,
   NoncePaymentMethodInput,
   AcceptBlueTransaction,
+  AcceptBlueWebhookInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
@@ -40,6 +41,10 @@ export class AcceptBlueClient {
       },
       validateStatus: () => true,
     });
+  }
+
+  async getTransaction(id: number): Promise<AcceptBlueChargeTransaction> {
+    return await this.request('get', `transactions/${id}`);
   }
 
   async getOrCreateCustomer(emailAddress: string): Promise<AcceptBlueCustomer> {
@@ -278,5 +283,19 @@ export class AcceptBlueClient {
    */
   toDateString(date: Date): string {
     return date.toISOString().split('T')[0];
+  }
+
+  async createWebhook(vendureHost: string) {
+    //strip the trailing slash if exists
+    if (vendureHost.endsWith('/')) {
+      vendureHost = vendureHost.slice(0, vendureHost.length - 1);
+    }
+    const input: AcceptBlueWebhookInput = {
+      webhook_url: `${vendureHost}/accept-blue/update-status`,
+      description: 'A generic webhook for all emitted events',
+      active: true,
+    };
+    const result = await this.request('post', 'webhooks', input);
+    return result;
   }
 }
