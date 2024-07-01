@@ -1,11 +1,11 @@
 {
-  "name": "@pinelab/vendure-plugin-invoices",
-  "version": "2.4.1",
-  "description": "Vendure plugin for invoice generation",
+  "name": "@vendure-hub/pinelab-invoices",
+  "version": "3.0.0",
+  "description": "Vendure plugin for PDF invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
-  "license": "MIT",
+  "license": "SEE LICENSE IN 'LICENSE'",
   "private": false,
   "publishConfig": {
     "access": "public"
