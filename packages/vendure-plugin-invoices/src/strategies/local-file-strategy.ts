@@ -6,8 +6,8 @@ import { exists, zipFiles, ZippableFile } from '../util/file.util';
 import { LocalStorageStrategy } from './storage-strategy';
 
 /**
- * Default storage strategy just stores file on local disk with sync operations
- * Use this strategy just for testing
+ * @description
+ * This default storage strategy stores file on local disk with sync operations
  */
 export class LocalFileStrategy implements LocalStorageStrategy {
   invoiceDir = 'invoices';

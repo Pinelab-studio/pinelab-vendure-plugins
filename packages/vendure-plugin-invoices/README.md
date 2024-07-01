@@ -1,20 +1,24 @@
-# Vendure Plugin for generating invoices
+# Vendure Plugin for generating PDF invoices
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-invoices)
 
-A plugin for generating PDF invoices for orders. Allows for manual regeneration of new invoices or credit invoices.
+A plugin for generating customizable PDF invoices for orders. Supports incremental invoice numbering, credit invoices, and customizable Handlebars templates.
 
 ## Getting started
 
-1. Add the following config to your `vendure-config.ts`:
+1. Install the plugin with `yarn add @vendure-hub/pinelab-invoice-plugin`
+2. Add the following config to your `vendure-config.ts`:
 
 ```ts
+import { InvoicePlugin } from '@vendure-hub/pinelab-invoice-plugin';
+
 plugins: [
   InvoicePlugin.init({
     // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
+    licenseKey: '<Vendure Hub license key>',
   }),
-  // Add the invoices page to the admin ui
+  // Add the invoices UI components to the admin ui
   AdminUiPlugin.init({
     port: 3002,
     route: 'admin',
@@ -26,36 +30,13 @@ plugins: [
 ];
 ```
 
-2. Run a [migration](https://www.vendure.io/docs/developer-guide/migrations/), to add the Invoice and InvoiceConfig
-   entities to the database.
+2. Run a [migration](https://www.vendure.io/docs/developer-guide/migrations/), to add the Invoice and InvoiceConfig entities to the database.
 3. Start Vendure and login to the admin dashboard
 4. Make sure you have the permission `AllowInvoicesPermission`
 5. Go to `Sales > Invoices`.
 6. Unfold the `Settings` accordion.
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
-
-## Migrating from V1 to V2 of this plugin
-
-1. Always create a backup of your database
-2. Install the plugin and generate a migration
-3. In your migration file, add the function `migrateInvoices(queryRunner)` to the bottom of the `up` function in your migration file, like so
-
-```ts
-import {migrateInvoices} from "@pinelab/vendure-plugin-invoices";
-
-   public async up(queryRunner: QueryRunner): Promise<any> {
-        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `orderCode`", undefined);
-        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `customerEmail`", undefined);
-        await queryRunner.query("ALTER TABLE `invoice_config` ADD `createCreditInvoices` tinyint NOT NULL DEFAULT 1", undefined);
-        await queryRunner.query("ALTER TABLE `invoice` ADD `orderTotals` text NULL", undefined);
-
-        // Add this line
-        await migrateInvoices(queryRunner);
-   }
-```
-
-4. Run the migration.
 
 ## Adding invoices to your order-confirmation email
 
@@ -91,7 +72,7 @@ this.eventBus.ofType(InvoiceCreatedEvent).subscribe((event) => {
 });
 ```
 
-**Credit invoices use the same template as regular invoices, so make sure to handle credit invoice data. Checkout the default template for an example on credit invoices.**
+**Credit invoices use the same template as regular invoices, so make sure to handle credit invoice data. Checkout the default template for an example on how to use it for credit invoices.**
 
 Credit invoices will receive additional data with the default `loadDataFn()`. This data is needed to create valid credit invoices:
 
@@ -321,3 +302,25 @@ You can access this data in your HTML template using Handlebars.js:
 ```html
 <h1>{{ someCustomField }}</h1>
 ```
+
+## Migrating from V1 to V2 of this plugin
+
+1. Always create a backup of your database
+2. Install the plugin and generate a migration
+3. In your migration file, add the function `migrateInvoices(queryRunner)` to the bottom of the `up` function in your migration file, like so
+
+```ts
+import {migrateInvoices} from "@pinelab/vendure-plugin-invoices";
+
+   public async up(queryRunner: QueryRunner): Promise<any> {
+        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `orderCode`", undefined);
+        await queryRunner.query("ALTER TABLE `invoice` DROP COLUMN `customerEmail`", undefined);
+        await queryRunner.query("ALTER TABLE `invoice_config` ADD `createCreditInvoices` tinyint NOT NULL DEFAULT 1", undefined);
+        await queryRunner.query("ALTER TABLE `invoice` ADD `orderTotals` text NULL", undefined);
+
+        // Add this line
+        await migrateInvoices(queryRunner);
+   }
+```
+
+4. Run the migration.

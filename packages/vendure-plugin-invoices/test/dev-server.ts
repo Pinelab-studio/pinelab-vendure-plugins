@@ -32,7 +32,7 @@ require('dotenv').config();
         vendureHost: 'http://localhost:3050',
         storageStrategy: new LocalFileStrategy(),
         // licenseKey: process.env.LICENSE_KEY!,
-        licenseKey: 'false license kye',
+        licenseKey: 'false license key',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

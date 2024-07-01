@@ -85,7 +85,7 @@ export class InvoicePlugin implements OnApplicationBootstrap {
     this.licenseService
       .checkLicenseKey(
         InvoicePlugin.config.licenseKey,
-        '@vendure-hub/pinelab-invoices'
+        '@vendure-hub/pinelab-invoice-plugin'
       )
       .then((result) => {
         if (!result.valid) {
