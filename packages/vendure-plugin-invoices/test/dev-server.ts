@@ -31,55 +31,18 @@ require('dotenv').config();
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
         storageStrategy: new LocalFileStrategy(),
-        loadDataFn: async (
-          ctx,
-          injector,
-          order,
-          mostRecentInvoiceNumber?,
-          shouldGenerateCreditInvoice?
-        ) => {
-          // Increase order number
-          let newInvoiceNumber = mostRecentInvoiceNumber || 0;
-          newInvoiceNumber += 1;
-          const orderDate = order.orderPlacedAt
-            ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
-            : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
-          if (shouldGenerateCreditInvoice) {
-            // Create credit invoice
-            const { previousInvoice, reversedOrderTotals } =
-              shouldGenerateCreditInvoice;
-            return {
-              orderDate,
-              invoiceNumber: newInvoiceNumber,
-              isCreditInvoice: true,
-              // Reference to original invoice because this is a credit invoice
-              originalInvoiceNumber: previousInvoice.invoiceNumber,
-              order: {
-                ...order,
-                total: reversedOrderTotals.total,
-                totalWithTax: reversedOrderTotals.totalWithTax,
-                taxSummary: reversedOrderTotals.taxSummaries,
-              },
-            };
-          } else {
-            // Normal debit invoice
-            return {
-              orderDate,
-              invoiceNumber: newInvoiceNumber,
-              order: order,
-            };
-          }
-        },
+        // licenseKey: process.env.LICENSE_KEY!,
+        licenseKey: 'false license kye',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [InvoicePlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [InvoicePlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     paymentOptions: {
