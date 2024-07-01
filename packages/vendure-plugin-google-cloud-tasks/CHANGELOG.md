@@ -3,7 +3,7 @@
 - Updated `@google-cloud/tasks` to `"^5.4.0"`
 - Generates a unique task name; this reduces the latency during creation of the task
 
-# 1.6.0 (2024-07-21)
+# 1.6.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
 

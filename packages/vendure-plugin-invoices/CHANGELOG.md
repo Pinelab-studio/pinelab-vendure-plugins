@@ -1,8 +1,8 @@
-# 2.4.1 (2024-07-27)
+# 2.4.1 (2024-06-27)
 
 - Hide invoices component on order detail when user doesn't have permission
 
-# 2.4.0 (2024-07-21)
+# 2.4.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
 
