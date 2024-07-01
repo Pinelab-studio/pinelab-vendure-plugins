@@ -29,6 +29,7 @@ export class AcceptBlueController {
     @Req() request: Request,
     @Headers('X-Signature') xSignatureHeader: string
   ) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     const rawBody = (request as any).rawBody as Buffer;
     const body = JSON.parse(rawBody.toString('utf-8')) as AcceptBlueEvent;
     const scheduleId = body.data.transaction?.transaction_details?.schedule_id;

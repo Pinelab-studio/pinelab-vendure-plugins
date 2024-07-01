@@ -63,6 +63,7 @@ interface AcceptBlueTerminal {
   print_capability: boolean;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface TransactionFlags {
   allow_partial_approval: boolean;
   is_recurring: boolean;
@@ -113,6 +114,7 @@ interface TransactionCustomer {
   customer_id: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface ChargeCustomer extends TransactionCustomer {
   send_receipt: boolean;
 }
@@ -345,6 +347,7 @@ export interface AcceptBlueTransaction {
   status_code: 'A' | 'P' | 'D' | 'E';
   error_message: string;
   error_code: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-redundant-type-constituents
   error_details: string | any;
   reference_number: number;
 }

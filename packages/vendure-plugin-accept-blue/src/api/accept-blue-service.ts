@@ -70,7 +70,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
 
   readonly subscriptionHelper: SubscriptionHelper;
 
-  async onApplicationBootstrap() {
+  onApplicationBootstrap() {
     if (this.options.syncWebhookOnStartup) {
       this.eventBus
         .ofType(PaymentMethodEvent)
@@ -79,8 +79,10 @@ export class AcceptBlueService implements OnApplicationBootstrap {
             (data) => data.entity.handler.code === acceptBluePaymentHandler.code
           )
         )
-        .subscribe(async ({ ctx, entity }) => {
-          await this.createWebhook(ctx, entity);
+        .subscribe(({ ctx, entity }) => {
+          void (async () => {
+            await this.createWebhook(ctx, entity);
+          })();
         });
     }
   }
@@ -89,8 +91,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const client = await this.getClientForChannel(ctx);
     let webhook: AcceptBlueWebhook;
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       webhook = await client.createWebhook(this.options.vendureHost);
     } catch (e: any) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
       Logger.error(e.message);
       return;
     }
@@ -101,6 +106,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       value: webhook.signature,
     });
     await paymentMethodRepo.save(paymentMethod);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     Logger.info(
       `The AcceptBlue PaymentMethod(${paymentMethod.code})'s webhook signature has been updated`,
       loggerCtx
@@ -334,9 +340,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     cvv2?: string
   ): Promise<AcceptBlueRefundResult> {
     const client = await this.getClientForChannel(ctx);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const refundResult = await client.refund(transactionId, amount, cvv2);
     let errorDetails: string | undefined = undefined;
     if (refundResult.error_details) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       errorDetails =
         typeof refundResult.error_details === 'object'
           ? JSON.stringify(refundResult.error_details)

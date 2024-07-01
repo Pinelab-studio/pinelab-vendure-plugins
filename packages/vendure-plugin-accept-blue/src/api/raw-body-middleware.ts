@@ -12,6 +12,7 @@ export const rawBodyMiddleware = raw({
     req: RequestWithRawBody,
     res: http.ServerResponse,
     buf: Buffer,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     encoding: string
   ) {
     if (Buffer.isBuffer(buf)) {
