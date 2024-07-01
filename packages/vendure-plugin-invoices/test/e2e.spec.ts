@@ -56,6 +56,7 @@ beforeAll(async () => {
     plugins: [
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3106',
+        licenseKey: 'BogusLicenseKey',
       }),
     ],
     paymentOptions: {

@@ -3,13 +3,14 @@ import { ReadStream } from 'fs';
 import { InvoiceEntity } from '../entities/invoice.entity';
 
 /**
- * The invoice plugin will first try to use getPublicUrl, when that function is
- * not implemented, it will try to stream the file to the client
+ * @description
+ * Strategy for storing and retrieving invoice files
  */
 export type StorageStrategy = RemoteStorageStrategy | LocalStorageStrategy;
 
 interface BaseStorageStrategy {
   /**
+   * @description
    * Store the given file where you want and return a reference
    * that can later be used to retrieve the same file
    * You receive the path to the created
@@ -25,6 +26,7 @@ interface BaseStorageStrategy {
   init(): Promise<void>;
 
   /**
+   * @description
    * Bundles multiple files by invoiceNumbers in zipFile for download via admin UI
    * Will only be called by admins
    */
@@ -33,7 +35,8 @@ interface BaseStorageStrategy {
 
 export interface RemoteStorageStrategy extends BaseStorageStrategy {
   /**
-   * Returns a downloadlink where  user can download the Invoice file.
+   * @description
+   * Returns a download link where  user can download the Invoice file.
    * For example an downloadLink to a Google storage bucket
    * or Amazon S3 instance
    */
@@ -42,6 +45,7 @@ export interface RemoteStorageStrategy extends BaseStorageStrategy {
 
 export interface LocalStorageStrategy extends BaseStorageStrategy {
   /**
+   * @description
    * Stream the file via the server to the client.
    * Use res.set() to set content-type
    * and content-disposition

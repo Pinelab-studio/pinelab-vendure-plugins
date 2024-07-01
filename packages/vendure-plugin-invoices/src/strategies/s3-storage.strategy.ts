@@ -21,6 +21,10 @@ export interface Config {
   signatureVersion?: string;
 }
 
+/**
+ * @description
+ * Store invoice files in an Amazon S3 bucket
+ */
 export class S3StorageStrategy implements RemoteStorageStrategy {
   private s3?: import('aws-sdk').S3;
   private readonly bucket: string;

@@ -18,6 +18,10 @@ interface GoogleInvoiceConfig {
   storageOptions?: import('@google-cloud/storage').StorageOptions;
 }
 
+/**
+ * @description
+ * Store invoice files in a Google Cloud Storage bucket
+ */
 export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
   private storage!: import('@google-cloud/storage').Storage;
   private bucketName: string;
