@@ -32,19 +32,28 @@ import {
 
 export interface InvoicePluginConfig {
   /**
-   * Hostname to use for download links, can be the Vendure instance,
-   * but also the worker instance if you want.
+   * @description
+   * Hostname to use for download links, can be the main or worker instance.
    * Make sure to include protocol and no trailing slash, e.g. https://vendure.myshop.com
    */
   vendureHost: string;
   /**
+   * @description
+   * License key obtained from the Vendure Hub
+   */
+  licenseKey: string;
+  /**
+   * @description
    * Load custom data that is passed in to your HTML/handlebars template
    */
   loadDataFn: LoadDataFn;
   storageStrategy: StorageStrategy;
-  licenseKey: string;
 }
 
+/**
+ * @description
+ * Vendure plugin to generate PDF invoices for orders.
+ */
 @VendurePlugin({
   imports: [PluginCommonModule, VendureHubPlugin],
   entities: [InvoiceConfigEntity, InvoiceEntity],
