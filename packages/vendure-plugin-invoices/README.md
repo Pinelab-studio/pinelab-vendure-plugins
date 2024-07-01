@@ -4,6 +4,8 @@
 
 A plugin for generating customizable PDF invoices for orders. Supports incremental invoice numbering, credit invoices, and customizable Handlebars templates.
 
+This is a paid plugin. For production use, please purchase a license at https://vendure.io/marketplace.
+
 ## Getting started
 
 1. Install the plugin with `yarn add @vendure-hub/pinelab-invoice-plugin`
