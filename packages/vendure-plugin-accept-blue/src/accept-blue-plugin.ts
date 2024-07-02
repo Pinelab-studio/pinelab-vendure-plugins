@@ -1,14 +1,21 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { DefaultSubscriptionStrategy } from '.';
+import { WebhookSubscriptionStrategy } from '.';
 import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
 import { AcceptBlueService } from './api/accept-blue-service';
 import { acceptBluePaymentHandler } from './api/accept-blue-handler';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { commonApiExtensions } from './api/api-extensions';
 import { AcceptBlueCommonResolver } from './api/accept-blue-common-resolvers';
+import { AcceptBlueController } from './api/accept-blue-controller';
+import { rawBodyMiddleware } from './api/raw-body-middleware';
 
 interface AcceptBluePluginOptionsInput {
   subscriptionStrategy?: SubscriptionStrategy;
+  vendureHost: string;
+  /**
+   * Create webhook in AcceptBlue platform on Vendure startup or not
+   */
+  syncWebhookOnStartup?: boolean;
 }
 
 export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
@@ -23,6 +30,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
     schema: commonApiExtensions,
     resolvers: [AcceptBlueCommonResolver],
   },
+  controllers: [AcceptBlueController],
   providers: [
     AcceptBlueService,
     {
@@ -32,6 +40,11 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
   ],
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(acceptBluePaymentHandler);
+    config.apiOptions.middleware.push({
+      route: '/accept-blue/*',
+      handler: rawBodyMiddleware,
+      beforeListen: true,
+    });
     config.customFields.OrderLine.push({
       name: 'acceptBlueSubscriptionIds',
       type: 'int',
@@ -46,8 +59,8 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
   compatibility: '^2.0.0',
 })
 export class AcceptBluePlugin {
-  static options: AcceptBluePluginOptions = {
-    subscriptionStrategy: new DefaultSubscriptionStrategy(),
+  static options: Partial<AcceptBluePluginOptions> = {
+    subscriptionStrategy: new WebhookSubscriptionStrategy(),
   };
 
   static init(options: AcceptBluePluginOptionsInput): AcceptBluePlugin {

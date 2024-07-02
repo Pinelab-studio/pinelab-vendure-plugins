@@ -66,8 +66,11 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     metadata
   ): Promise<CreatePaymentResult> {
     if (
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
       !isNoncePaymentMethod(metadata as any) &&
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
       !isCheckPaymentMethod(metadata as any) &&
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
       !isSavedPaymentMethod(metadata as any)
     ) {
       throw new UserInputError(`You either need to provide nonce input, check input or a saved payment method ID.
@@ -81,11 +84,13 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       | NoncePaymentMethodInput
       | SavedPaymentMethodInput;
     const client = new AcceptBlueClient(args.apiKey, args.pin);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
     const result = await service.handlePaymentForOrder(
       ctx,
       order,
       amount,
       client,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       input
     );
     const chargeTransactionId = result.chargeResult?.transaction?.id;
@@ -108,14 +113,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     };
   },
 
-  async createRefund(
-    ctx,
-    input,
-    amount,
-    order,
-    payment,
-    args
-  ): Promise<CreateRefundResult> {
+  createRefund(): Promise<CreateRefundResult> {
     throw Error(`not implemented`);
   },
 });

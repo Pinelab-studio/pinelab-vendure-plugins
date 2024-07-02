@@ -68,7 +68,10 @@ import { add } from 'date-fns';
     },
     plugins: [
       AcceptBlueTestCheckoutPlugin,
-      AcceptBluePlugin.init({}),
+      AcceptBluePlugin.init({
+        vendureHost: process.env.VENDURE_HOST as string,
+        syncWebhookOnStartup: true,
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
