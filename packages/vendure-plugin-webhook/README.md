@@ -69,7 +69,13 @@ export const stringifyProductTransformer = new RequestTransformer({
   transform: (event, injector, webhook) => {
     if (event instanceof ProductEvent) {
       return {
-        body: JSON.stringify({ event: webhook.event, ...event }), // Pass the event name to the body
+        body: JSON.stringify({
+          type: webhook.event, // Name of the event ("ProductEvent")
+          event: {
+            ...event,
+            ctx: undefined, // Remove ctx or use event.ctx.serialize()
+          },
+        }),
         headers: {
           authorization: 'Bearer MyToken',
           'x-custom-header': 'custom-example-header',
