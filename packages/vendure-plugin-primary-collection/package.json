@@ -21,7 +21,7 @@
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint ."
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

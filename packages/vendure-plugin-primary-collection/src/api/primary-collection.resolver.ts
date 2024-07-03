@@ -25,7 +25,8 @@ export class PrimaryCollectionPluginResolver {
   ): Promise<Translated<Collection> | undefined> {
     const collectionId = getProductPrimaryCollectionIDInChannel(
       ctx,
-      (product.customFields as any).primaryCollection
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+      (product.customFields as any).primaryCollection as string[]
     );
     if (collectionId) {
       return this.collectionService.findOne(ctx, collectionId);

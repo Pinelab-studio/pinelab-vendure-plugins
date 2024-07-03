@@ -34,6 +34,7 @@ export class PrimaryCollectionHelperService {
     const updatedProducts: Partial<Product>[] = [];
     for (const product of allProducts) {
       const primaryCollections = parseProductPrimaryCollectionCustomField(
+        // eslint-disable-next-line  @typescript-eslint/no-explicit-any,@typescript-eslint/no-unsafe-argument,@typescript-eslint/no-unsafe-member-access
         (product.customFields as any)?.primaryCollection
       );
       const updatedPrimaryCollectionList: ProductPrimaryCollection[] = [];
