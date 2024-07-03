@@ -9,7 +9,7 @@ This plugin periodically scores products and categories based on the amount of t
 1. Install the plugin in your `vendure-config.ts`
 
 ```ts
-import { PopularityScoresPlugin } from 'vendure-plugin-popularity-scores'
+import { PopularityScoresPlugin } from '@pinelab/vendure-plugin-popularity-scores'
 
 ...
 plugins: [
@@ -22,7 +22,7 @@ plugins: [
 
 2. [Run a database migration](https://docs.vendure.io/guides/developer-guide/migrations/) to create the custom fields needed for this plugin
 3. Start your vendure server
-4. Go to `http://localhost:3000/popularity-scores/<YOUR CHANNEL TOKEN>/<YOUR ENDPOINT SECRET>` to calculate the popularity scores of products and collections. You can also use the default channel's token to generate scores for all channels. Ideally you would do this periodically, like once a week or so.
+4. Go to `http://localhost:3000/popularity-scores/calculate-scores/<YOUR CHANNEL TOKEN>/<YOUR ENDPOINT SECRET>` to calculate the popularity scores of products and collections. You can also use the default channel's token to generate scores for all channels. Ideally you would do this periodically, like once a week or so.
 
 ## How it works
 
