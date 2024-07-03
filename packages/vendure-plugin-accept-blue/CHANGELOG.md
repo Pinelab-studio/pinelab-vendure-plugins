@@ -1,3 +1,7 @@
+# 1.4.0 (2024-06-21)
+
+- Update Version to 2.2.6
+
 # 1.3.1 (2024-06-06)
 
 - Return subscription id in Graphql type for created Accept Blue subscriptions

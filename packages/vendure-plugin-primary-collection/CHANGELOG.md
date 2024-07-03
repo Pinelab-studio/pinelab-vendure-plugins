@@ -1,3 +1,7 @@
+# 1.5.0 (2024-06-21)
+
+- Updated Vendure to 2.2.6
+
 # 1.4.2 (2023-10-24)
 
 - Primary collection filter should hide Private collections (#395)

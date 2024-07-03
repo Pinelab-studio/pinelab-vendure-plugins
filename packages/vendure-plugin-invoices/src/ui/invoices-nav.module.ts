@@ -36,6 +36,7 @@ import { map } from 'rxjs';
       id: 'regenerate-invoice',
       label: 'Regenerate Invoice',
       locationId: 'order-detail',
+      requiresPermission: ['AllowInvoicesPermission'],
       onClick: (event, context) => {
         const orderId = context.route.snapshot.params['id'];
         (event.target as HTMLButtonElement).disabled = true;

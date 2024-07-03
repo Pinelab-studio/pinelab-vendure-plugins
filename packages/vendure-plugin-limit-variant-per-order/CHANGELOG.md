@@ -1,3 +1,7 @@
+# 2.1.0 (2024-06-21)
+
+- Updated Vendure to 2.2.6
+
 # 2.0.0 (2024-04-10)
 
 - Added support for channel aware `onlyAllowPer` value per ProductVariant

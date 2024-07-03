@@ -1,3 +1,7 @@
+# 1.4.0 (2024-06-21)
+
+- Updated Vendure to 2.2.6
+
 # 1.3.2 (2024-02-27)
 
 - Show max 100 out of stock items instead of 50

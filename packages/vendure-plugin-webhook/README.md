@@ -66,11 +66,18 @@ import { RequestTransformer } from '@pinelab/vendure-plugin-webhook';
 export const stringifyProductTransformer = new RequestTransformer({
   name: 'Stringify Product events',
   supportedEvents: [ProductEvent],
-  transform: (event, injector) => {
+  transform: (event, injector, webhook) => {
     if (event instanceof ProductEvent) {
       return {
-        body: JSON.stringify(event),
+        body: JSON.stringify({
+          type: webhook.event, // Name of the event ("ProductEvent")
+          event: {
+            ...event,
+            ctx: undefined, // Remove ctx or use event.ctx.serialize()
+          },
+        }),
         headers: {
+          authorization: 'Bearer MyToken',
           'x-custom-header': 'custom-example-header',
           'content-type': 'application/json',
         },

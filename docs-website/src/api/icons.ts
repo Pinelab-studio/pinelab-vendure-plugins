@@ -36,6 +36,7 @@ const icons: Record<string, string> = {
   'vendure-plugin-public-customer-groups': 'undraw_camera.svg',
   'vendure-plugin-shipmate': 'shipmate.jpg',
   'vendure-plugin-klaviyo': 'klaviyo.png',
+  'vendure-plugin-payment-extension': 'undraw_check.svg',
 };
 
 export function getIcon(pluginName: string): string {

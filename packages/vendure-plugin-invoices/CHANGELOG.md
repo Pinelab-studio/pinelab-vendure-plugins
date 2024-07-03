@@ -1,3 +1,11 @@
+# 2.4.1 (2024-06-27)
+
+- Hide invoices component on order detail when user doesn't have permission
+
+# 2.4.0 (2024-06-21)
+
+- Updated Vendure to 2.2.6
+
 # 2.3.3 (2024-06-22)
 
 - Allow searching by invoice number in Invoices list

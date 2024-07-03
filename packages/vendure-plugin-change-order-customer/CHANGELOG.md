@@ -1,3 +1,7 @@
+# 1.1.0 (2024-06-21)
+
+- Updated Vendure to 2.2.6
+
 # 1.0.2 (2024-02-14)
 
 - Message typo fix

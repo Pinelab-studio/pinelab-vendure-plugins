@@ -207,10 +207,10 @@ export class PicqerService implements OnApplicationBootstrap {
       'products.free_stock_changed',
       'products.assembled_stock_changed',
     ];
+    const webhooks = await client.getWebhooks();
     for (const hookEvent of eventsToRegister) {
       // Use first 4 digits of webhook secret as name, so we can identify the hook
       const webhookName = `Vendure ${client.webhookSecret.slice(0, 4)}`;
-      const webhooks = await client.getWebhooks();
       let hook = webhooks.find(
         (h) =>
           h.event === hookEvent && h.address === hookUrl && h.active === true
@@ -741,7 +741,7 @@ export class PicqerService implements OnApplicationBootstrap {
       }
       const picqerProduct = await picqerClient.createOrUpdateProduct(
         line.productVariant.sku,
-        this.mapToProductInput(line.productVariant, vatGroup.idvatgroup)
+        this.mapToProductInput(ctx, line.productVariant, vatGroup.idvatgroup)
       );
       productInputs.push({
         idproduct: picqerProduct.idproduct,
@@ -835,6 +835,7 @@ export class PicqerService implements OnApplicationBootstrap {
         }
         try {
           const productInput = this.mapToProductInput(
+            ctx,
             variant,
             vatGroup.idvatgroup
           );
@@ -1053,13 +1054,22 @@ export class PicqerService implements OnApplicationBootstrap {
     };
   }
 
-  mapToProductInput(variant: ProductVariant, vatGroupId: number): ProductInput {
+  mapToProductInput(
+    ctx: RequestContext,
+    variant: ProductVariant,
+    vatGroupId: number
+  ): ProductInput {
     const additionalFields =
       this.options.pushProductVariantFields?.(variant) || {};
     if (!variant.sku) {
       throw Error(`Variant with ID ${variant.id} has no SKU`);
     }
-    let name = variant.name || variant.translations[0]?.name;
+    let name: string =
+      variant.name ??
+      variant.translations?.find(
+        (t) => t.languageCode === ctx.channel.defaultLanguageCode
+      )?.name ??
+      variant.translations?.[0]?.name;
     if (!name) {
       Logger.info(
         `Variant ${variant.sku} has no name, using SKU as name for Picqer product`,

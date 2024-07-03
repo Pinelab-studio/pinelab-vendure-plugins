@@ -27,6 +27,7 @@ export class AnonymizeOrderService {
         this.options.anonymizeOrderFn(order);
       } else {
         order.customer = undefined;
+        order.customerId = undefined;
         order.shippingAddress = {};
         order.billingAddress = {};
       }

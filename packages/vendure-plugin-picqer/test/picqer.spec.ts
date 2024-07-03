@@ -4,6 +4,7 @@ import {
   LogLevel,
   mergeConfig,
   Order,
+  OrderProcess,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -68,7 +69,9 @@ beforeAll(async () => {
     ],
     orderOptions: {
       process: [
-        configureDefaultOrderProcess({ checkFulfillmentStates: false }),
+        configureDefaultOrderProcess({
+          checkFulfillmentStates: false,
+        }) as OrderProcess<any>,
       ],
     },
     paymentOptions: {
@@ -123,7 +126,7 @@ describe('Plugin setup', function () {
   const createdHooks: any[] = [];
 
   it('Should update Picqer config via admin api', async () => {
-    nock(nockBaseUrl).get('/hooks').reply(200, []).persist();
+    nock(nockBaseUrl).get('/hooks?offset=0').reply(200, []).persist();
     nock(nockBaseUrl)
       .post('/hooks', (reqBody) => {
         createdHooks.push(reqBody);
