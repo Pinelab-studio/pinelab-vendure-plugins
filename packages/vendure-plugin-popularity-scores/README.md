@@ -36,3 +36,11 @@ This plugin exposes an endpoint that can be periodically called: `/popularity-sc
 6. It then calculates the popularity of collections, based on the product scores and it's child collections
 7. Collection scores are stored on `Collection.customFields.popularityScore`
 8. Both the Product and Collection popularity scores are publicly available in the GraphQL Shop API.
+
+### Popularity scores
+
+Popularity scores should only be used to sort products and collections. The actual values are normalized and don't have any absolute meaning.
+
+Scores of products are based on the amount sold of the past 12 months and normalized to a score of 0 to 1000. Collection popularity scores are just the sum of their products scores.
+
+You can compare popularity scores of products with those of other products, but it doesn't really make sense to compare collection scores, because each collection will have a different amount of products in them.
