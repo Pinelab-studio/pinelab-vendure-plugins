@@ -41,6 +41,8 @@ This plugin exposes an endpoint that can be periodically called: `/popularity-sc
 
 Popularity scores should only be used to sort products and collections. The actual values are normalized and don't have any absolute meaning.
 
-Scores of products are based on the amount sold of the past 12 months and normalized to a score of 0 to 1000. Collection popularity scores are just the sum of their products scores.
+Scores of products are based on the amount sold of the past 12 months and normalized to a score of 0 to 1000.
+
+For collections, only the leaf collection scores are normalized. Any parent collection scores are just the sum of their sub-collections. This is to keep the popularity relation between parent/child collection in tact. I.e. a parent's score should be much higher, because it inherits all popularity from it's child collections.
 
 You can compare popularity scores of products with those of other products, but it doesn't really make sense to compare collection scores, because each collection will have a different amount of products in them.
