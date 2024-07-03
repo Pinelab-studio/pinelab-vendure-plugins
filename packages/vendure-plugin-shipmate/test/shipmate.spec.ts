@@ -101,6 +101,8 @@ describe('Shipmate plugin', async () => {
     expect(server.app.getHttpServer()).toBeDefined();
   });
 
+  let order: Order | undefined;
+
   it('Should create a Shipment when an Order is placed', async () => {
     nock(nockBaseUrl)
       .post('/tokens', (reqBody) => {
@@ -123,20 +125,27 @@ describe('Shipmate plugin', async () => {
     await createSettledOrder(shopClient, 'T_1');
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
-    const detailedOrder = await orderService.findOne(ctx, 1);
-    expect(shipmentRequest?.shipment_reference).toBe(detailedOrder?.code);
+    order = await orderService.findOne(ctx, 1);
+    expect(shipmentRequest?.shipment_reference).toBe(order?.code);
   });
 
   it('Should cancel and recreate order on Order Modification', async () => {
     const cancelShipmentScope = nock(nockBaseUrl)
-      .delete(`/shipments/${mockShipment.shipment_reference}`, (reqBody) => {
-        return true;
-      })
+      .delete(`/shipments/${mockShipment.shipment_reference}`)
       .reply(200, cancelShipmentResponse)
       .persist(true);
+
+    let shipmentRequest: any;
+    nock(nockBaseUrl)
+      .post('/shipments', (reqBody) => {
+        shipmentRequest = reqBody;
+        return true;
+      })
+      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
     const orderService = server.app.get(OrderService);
     const ctx = await getSuperadminContext(server.app);
     await adminClient.asSuperAdmin();
+    // Modify an order to retrigger shipment creation/update
     try {
       const modifyOrderInput: ModifyOrderInput = {
         dryRun: true,
@@ -170,11 +179,14 @@ describe('Shipmate plugin', async () => {
         throw transitionArrangingAdditionalPaymentResult.transitionError;
       }
     } catch (e) {
+      // Log why modifying order failed
       console.error(e);
-      expect(1).toBe(0);
+      throw e;
     }
     await new Promise((resolve) => setTimeout(resolve, 1 * 1000));
     expect(cancelShipmentScope.isDone()).toBe(true);
+    // Created the shipment again
+    expect(shipmentRequest?.shipment_reference).toBe(order?.code);
   });
 
   it('Should mark Order as Shipped when receiving "TRACKING_COLLECTED" event', async () => {
