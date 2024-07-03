@@ -5,6 +5,7 @@ import {
   OrderService,
   RequestContext,
   isGraphQlErrorResult,
+  Order,
 } from '@vendure/core';
 import {
   createTestEnvironment,
