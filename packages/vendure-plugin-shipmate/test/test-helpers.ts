@@ -1,4 +1,5 @@
 import type { ShipmateConfigEntity } from '../src/api/shipmate-config.entity';
+import { gql } from 'graphql-tag';
 export const authToken = 'SHIPMATE_WEBHOOK_AUTH_TOKEN';
 
 const mockShipment = {
@@ -89,6 +90,11 @@ const mockShipment = {
   png: '',
 };
 
+const cancelShipmentResponse = {
+  message: 'Shipment Cancelled',
+  data: null,
+};
+
 const testShipmateConfig: ShipmateConfigEntity = {
   channelId: '1',
   apiKey: 'SHIPMATE_API_KEY',
@@ -108,4 +114,25 @@ testShipmateConfig.webhookAuthTokens.push({
   updatedAt: new Date(),
 });
 
-export { testShipmateConfig, mockShipment };
+const MODIFY_ORDER = gql`
+  mutation modifyOrder($input: ModifyOrderInput!) {
+    modifyOrder(input: $input) {
+      ... on Order {
+        id
+        code
+        state
+      }
+      ... on ErrorResult {
+        message
+        errorCode
+      }
+    }
+  }
+`;
+
+export {
+  testShipmateConfig,
+  mockShipment,
+  cancelShipmentResponse,
+  MODIFY_ORDER,
+};

@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import { loggerCtx } from '../constants';
 import {
   CreateShipmentResponse,
+  DeleteShipmentResponse,
   GetTokenRespose,
   NewShipment,
   Shipment,
@@ -43,13 +44,33 @@ export class ShipmateClient {
       );
       Logger.info(result.data.message, loggerCtx);
       return result.data?.data;
-    } catch (error: any) {
-      Logger.error(JSON.stringify(error.response?.data), loggerCtx);
-      if (error.response?.data) {
-        throw Error(JSON.stringify(error.response.data));
-      }
-      throw error;
+    } catch (error) {
+      this.handleShipmateAPIError(error);
     }
+  }
+
+  async cancelShipment(shipment_reference: string): Promise<void> {
+    try {
+      await this.setToken();
+      const result = await this.client.delete<DeleteShipmentResponse>(
+        `/shipments/${shipment_reference}`
+      );
+      Logger.info(result.data.message, loggerCtx);
+    } catch (error) {
+      this.handleShipmateAPIError(error);
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private handleShipmateAPIError(error: any) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    Logger.error(JSON.stringify(error.response?.data), loggerCtx);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (error.response?.data) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      throw Error(JSON.stringify(error.response.data));
+    }
+    throw error;
   }
 
   async getShipmentToken(

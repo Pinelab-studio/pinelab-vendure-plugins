@@ -4,6 +4,8 @@ import {
   LogLevel,
   OrderService,
   RequestContext,
+  isGraphQlErrorResult,
+  Order,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -18,7 +20,11 @@ import { initialData } from '../../test/src/initial-data';
 import nock from 'nock';
 
 import { ShipmatePlugin } from '../src/shipmate.plugin';
-import { mockShipment } from './test-helpers';
+import {
+  MODIFY_ORDER,
+  cancelShipmentResponse,
+  mockShipment,
+} from './test-helpers';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
@@ -27,6 +33,10 @@ import axios from 'axios';
 import type { TrackingEventPayload } from '../src/types';
 import { authToken } from './test-helpers';
 import { OrderCodeStrategy } from '@vendure/core';
+import {
+  ModifyOrderInput,
+  MutationModifyOrderArgs,
+} from '@vendure/common/lib/generated-types';
 
 class MockOrderCodeStrategy implements OrderCodeStrategy {
   generate(ctx: RequestContext): string | Promise<string> {
@@ -38,6 +48,7 @@ class MockOrderCodeStrategy implements OrderCodeStrategy {
 describe('Shipmate plugin', async () => {
   let server: TestServer;
   let shopClient: SimpleGraphQLClient;
+  let adminClient: SimpleGraphQLClient;
   let ctx: RequestContext;
   const port = 3105;
   const nockBaseUrl = 'https://api-staging.shipmate.co.uk/v1.2';
@@ -61,7 +72,7 @@ describe('Shipmate plugin', async () => {
       },
     });
 
-    ({ server, shopClient } = createTestEnvironment(config));
+    ({ server, shopClient, adminClient } = createTestEnvironment(config));
     await server.init({
       initialData: {
         ...initialData,
@@ -91,6 +102,8 @@ describe('Shipmate plugin', async () => {
     expect(server.app.getHttpServer()).toBeDefined();
   });
 
+  let order: Order | undefined;
+
   it('Should create a Shipment when an Order is placed', async () => {
     nock(nockBaseUrl)
       .post('/tokens', (reqBody) => {
@@ -101,7 +114,8 @@ describe('Shipmate plugin', async () => {
         data: {
           token: '749a75e3c1048965c498017efae8051f',
         },
-      });
+      })
+      .persist(true);
     let shipmentRequest: any;
     nock(nockBaseUrl)
       .post('/shipments', (reqBody) => {
@@ -112,8 +126,68 @@ describe('Shipmate plugin', async () => {
     await createSettledOrder(shopClient, 'T_1');
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
-    const detailedOrder = await orderService.findOne(ctx, 1);
-    expect(shipmentRequest?.shipment_reference).toBe(detailedOrder?.code);
+    order = await orderService.findOne(ctx, 1);
+    expect(shipmentRequest?.shipment_reference).toBe(order?.code);
+  });
+
+  it('Should cancel and recreate order on Order Modification', async () => {
+    const cancelShipmentScope = nock(nockBaseUrl)
+      .delete(`/shipments/${mockShipment.shipment_reference}`)
+      .reply(200, cancelShipmentResponse)
+      .persist(true);
+
+    let shipmentRequest: any;
+    nock(nockBaseUrl)
+      .post('/shipments', (reqBody) => {
+        shipmentRequest = reqBody;
+        return true;
+      })
+      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
+    const orderService = server.app.get(OrderService);
+    const ctx = await getSuperadminContext(server.app);
+    await adminClient.asSuperAdmin();
+    // Modify an order to retrigger shipment creation/update
+    try {
+      const modifyOrderInput: ModifyOrderInput = {
+        dryRun: true,
+        orderId: 1,
+        addItems: [
+          {
+            productVariantId: 3,
+            quantity: 3,
+          },
+        ],
+      };
+      const transitionToModifyingResult = await orderService.transitionToState(
+        ctx,
+        1,
+        'Modifying'
+      );
+      if (isGraphQlErrorResult(transitionToModifyingResult)) {
+        throw transitionToModifyingResult.transitionError;
+      }
+      await adminClient.query<any, MutationModifyOrderArgs>(MODIFY_ORDER, {
+        input: modifyOrderInput,
+      });
+      //transition Order From Modifying to ArrangingAdditionalPayment
+      const transitionArrangingAdditionalPaymentResult =
+        await orderService.transitionToState(
+          ctx,
+          1,
+          'ArrangingAdditionalPayment'
+        );
+      if (isGraphQlErrorResult(transitionArrangingAdditionalPaymentResult)) {
+        throw transitionArrangingAdditionalPaymentResult.transitionError;
+      }
+    } catch (e) {
+      // Log why modifying order failed
+      console.error(e);
+      throw e;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1 * 1000));
+    expect(cancelShipmentScope.isDone()).toBe(true);
+    // Created the shipment again
+    expect(shipmentRequest?.shipment_reference).toBe(order?.code);
   });
 
   it('Should mark Order as Shipped when receiving "TRACKING_COLLECTED" event', async () => {
