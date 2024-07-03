@@ -18,9 +18,9 @@ export function getProductPrimaryCollectionIDInChannel(
   ctx: RequestContext,
   primaryCollection: string[] | undefined
 ): ID | undefined {
-  const productPriamryCollections =
+  const productPrimaryCollections =
     parseProductPrimaryCollectionCustomField(primaryCollection);
-  return productPriamryCollections.find((primaryCollection) =>
+  return productPrimaryCollections.find((primaryCollection) =>
     idsAreEqual(primaryCollection.channelId, ctx.channelId)
   )?.collectionId;
 }
