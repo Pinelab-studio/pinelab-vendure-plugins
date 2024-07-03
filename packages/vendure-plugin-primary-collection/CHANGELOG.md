@@ -1,3 +1,7 @@
+# 1.6.0 (2024-06-21)
+
+- Make `primaryCollection` custom field channel aware.
+
 # 1.5.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
