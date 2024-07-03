@@ -52,6 +52,15 @@ export const initialTestData: InitialData = {
         },
       ],
     },
+    {
+      name: 'Hardware',
+      filters: [
+        {
+          code: 'facet-value-filter',
+          args: { facetValueNames: ['hardware'], containsAny: false },
+        },
+      ],
+    },
   ],
   paymentMethods: [],
 };
