@@ -6,6 +6,8 @@ A plugin for generating customizable PDF invoices for orders. Supports increment
 
 This is a paid plugin. For production use, please purchase a license at https://vendure.io/marketplace.
 
+![Invoice plugin screens](https://pinelab-plugins.com/plugin-images/invoices-screenshots.gif 'Invoice plugin screens')
+
 ## Getting started
 
 1. Install the plugin with `yarn add @vendure-hub/pinelab-invoice-plugin`

@@ -31,8 +31,8 @@ require('dotenv').config();
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
         storageStrategy: new LocalFileStrategy(),
-        // licenseKey: process.env.LICENSE_KEY!,
-        licenseKey: 'false license key',
+        licenseKey: process.env.LICENSE_KEY!,
+        // licenseKey: 'false license key',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
