@@ -37,6 +37,7 @@ import {
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
+import nock from 'nock';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;

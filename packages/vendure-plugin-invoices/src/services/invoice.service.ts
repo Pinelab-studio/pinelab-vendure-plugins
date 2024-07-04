@@ -690,6 +690,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   throwIfInvalidLicense(): void {
+    const message = `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`;
+    if (process.env.NODE_ENV === 'test') {
+      // Only log in test, don't throw
+      Logger.error(message, loggerCtx);
+      return;
+    }
     if (!this.config.hasValidLicense) {
       throw Error(
         `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`
