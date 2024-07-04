@@ -38,6 +38,10 @@ export async function getPluginDirectories(): Promise<Dirent[]> {
       .sort((a, b) => {
         const nameA = a.name.toLowerCase();
         const nameB = b.name.toLowerCase();
+        // Move invoicing plugin to the top
+        if (nameA.indexOf('invoic') > -1) {
+          return -1;
+        }
         if (nameA < nameB) {
           return -1;
         }
@@ -71,7 +75,9 @@ export async function getPlugins(): Promise<Plugin[]> {
         const name = readme.split('\n')[0].replace('#', '').trim();
         const readmeHtml = await parseReadme(readme);
         const nrOfDownloads = await getNrOfDownloads(packageJson.name);
-        const slug = packageJson.name.replace('@pinelab/', '');
+        const slug = packageJson.name
+          .replace('@pinelab/', '')
+          .replace('@vendure-hub/', '');
         plugins.push({
           name,
           npmName: packageJson.name,

@@ -14,6 +14,7 @@ export interface InvoiceData {
 export interface CreditInvoiceInput {
   previousInvoice: InvoiceEntity;
   /**
+   * @description
    * The reversed (i.e. negative) order totals of the previous invoice
    */
   reversedOrderTotals: InvoiceEntity['orderTotals'];
@@ -25,6 +26,7 @@ export type LoadDataFn = (
   order: Order,
   mostRecentInvoiceNumber?: number,
   /**
+   * @description
    * When shouldGenerateCreditInvoice is given, it means that the current invoice
    * needs to be a credit invoice for the given previous invoice
    */
