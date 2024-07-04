@@ -1,7 +1,8 @@
 # 3.0.0 (2024-07-01)
 
 - Consumers must supply a valid license key. See LICENSE for more details
-- Moved to Vendure Hub registry: https://vendure.io/marketplace.
+- Without valid license key, the admin UI functionality is restricted, but invoice generation will still continue
+- Publishing to Vendure Hub registry from now on: https://registry.next.vendure.io/
 
 # 2.4.1 (2024-06-27)
 
