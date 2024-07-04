@@ -17,6 +17,7 @@ interface PackageJson {
 export interface Plugin {
   name: string;
   npmName: string;
+  version: string;
   slug: string;
   description: string;
   icon: string;
@@ -25,32 +26,15 @@ export interface Plugin {
 }
 
 const pluginDirName = '../packages/';
+const topPlugins = [''];
 
 /**
  * Get all plugin directories starting with `vendure-plugin`
  */
 export async function getPluginDirectories(): Promise<Dirent[]> {
-  return (
-    (await readdir(pluginDirName, { withFileTypes: true }))
-      .filter((dir) => dir.isDirectory())
-      .filter((dir) => dir.name.startsWith('vendure-'))
-      // Sort alphabetically
-      .sort((a, b) => {
-        const nameA = a.name.toLowerCase();
-        const nameB = b.name.toLowerCase();
-        // Move invoicing plugin to the top
-        if (nameA.indexOf('invoic') > -1) {
-          return -1;
-        }
-        if (nameA < nameB) {
-          return -1;
-        }
-        if (nameA > nameB) {
-          return 1;
-        }
-        return 0;
-      })
-  );
+  return (await readdir(pluginDirName, { withFileTypes: true }))
+    .filter((dir) => dir.isDirectory())
+    .filter((dir) => dir.name.startsWith('vendure-'));
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
@@ -81,6 +65,7 @@ export async function getPlugins(): Promise<Plugin[]> {
         plugins.push({
           name,
           npmName: packageJson.name,
+          version: packageJson.version,
           slug,
           description: packageJson.description,
           icon: getIcon(slug),
@@ -93,9 +78,13 @@ export async function getPlugins(): Promise<Plugin[]> {
       }
     })
   );
-  const pluginsSortedByDownloads = plugins.sort(
-    (a, b) => b.nrOfDownloads - a.nrOfDownloads
-  );
+  const pluginsSortedByDownloads = plugins.sort((a, b) => {
+    // Move vendure-hub packages to the top
+    if (a.npmName.indexOf('@vendure-hub') > -1) {
+      return -1;
+    }
+    return b.nrOfDownloads - a.nrOfDownloads;
+  });
   return pluginsSortedByDownloads;
 }
 
