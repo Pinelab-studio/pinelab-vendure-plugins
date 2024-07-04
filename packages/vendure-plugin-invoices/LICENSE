@@ -1,5 +1,5 @@
 Checkout https://www.tldrlegal.com/license/business-source-license-bsl-1-1 
-for a short summary of this license. 
+for a short summary of the BSL 1.1 license. 
 Disclaimer: the link above is only a short summary of the Full Text. The license below is leading.
 
 --------------------------------------------------------------------------------
@@ -9,10 +9,23 @@ Licensor:             Pinelab
 Licensed Work:        Pinelab Invoices Plugin for Vendure
                       The Licensed Work is Copyright © 2024 Pinelab
 
-Additional Use Grant: You may use the Licensed Work in production if you are in 
-                      possesion of a valid license key. A license key can be 
-                      obtained via the Vendure Hub, currently available on 
-                      https://vendure.io/marketplace
+Additional Use Grant: 1. License Purchase Requirement: The right to use the 
+                      Licensed Work in a production environment is granted only 
+                      when a valid license has been purchased from the 
+                      Vendure Plugin Marketplace. Proof of purchase must be 
+                      maintained and provided upon request by the Licensor.
+
+                      2. Single Project Restriction: You are permitted to use 
+                      the Licensed Work in the production environment of only one 
+                      project. For the purposes of this License, a "project" is 
+                      defined as one or more server instances of the Vendure 
+                      application connected to a single production database. 
+                      Use of the Licensed Work in multiple projects or multiple 
+                      production databases is prohibited without obtaining an 
+                      additional license from the Licensor.
+                      
+                      The terms of the License will be governed by and construed 
+                      in accordance with Dutch law of the Netherlands.
 
 Change License:       GNU General Public License (GPL) v3
 
