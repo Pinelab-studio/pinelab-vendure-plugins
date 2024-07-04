@@ -26,7 +26,6 @@ export interface Plugin {
 }
 
 const pluginDirName = '../packages/';
-const topPlugins = [''];
 
 /**
  * Get all plugin directories starting with `vendure-plugin`
