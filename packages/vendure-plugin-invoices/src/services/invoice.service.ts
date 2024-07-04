@@ -689,6 +689,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return !!result?.enabled;
   }
 
+  throwIfInvalidLicense(): void {
+    if (!this.config.hasValidLicense) {
+      throw Error(
+        `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`
+      );
+    }
+  }
+
   /**
    * Creates a new invoice row in the database, so we can be sure that we have reserved the given invoiceNumber.
    */

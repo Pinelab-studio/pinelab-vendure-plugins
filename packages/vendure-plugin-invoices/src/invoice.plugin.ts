@@ -30,7 +30,7 @@ import {
   VendureHubPlugin,
 } from '@vendure-hub/vendure-hub-plugin';
 
-export interface InvoicePluginConfig {
+export interface InvoicePluginConfigInput {
   /**
    * @description
    * Hostname to use for download links, can be the main or worker instance.
@@ -46,8 +46,14 @@ export interface InvoicePluginConfig {
    * @description
    * Load custom data that is passed in to your HTML/handlebars template
    */
+  loadDataFn?: LoadDataFn;
+  storageStrategy?: StorageStrategy;
+}
+
+export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   loadDataFn: LoadDataFn;
   storageStrategy: StorageStrategy;
+  hasValidLicense: boolean;
 }
 
 /**
@@ -59,6 +65,7 @@ export interface InvoicePluginConfig {
   entities: [InvoiceConfigEntity, InvoiceEntity],
   providers: [
     InvoiceService,
+    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
   ],
   controllers: [InvoiceController],
@@ -90,27 +97,28 @@ export class InvoicePlugin implements OnApplicationBootstrap {
       .then((result) => {
         if (!result.valid) {
           Logger.error(
-            `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin.`,
+            `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin. Viewing invoices is disabled. Invoice generation will continue as usual.`,
             loggerCtx
           );
+        } else {
+          InvoicePlugin.config.hasValidLicense = true;
         }
       })
       .catch((err) => {
-        Logger.error(`Error checking license key: ${err?.message}`, loggerCtx);
+        Logger.error(
+          `Error checking license key: ${err?.message}. Viewing invoices is disabled. Invoice generation will continue as usual.`,
+          loggerCtx
+        );
       });
   }
 
-  static init(
-    config: Partial<InvoicePluginConfig> & {
-      vendureHost: string;
-      licenseKey: string;
-    }
-  ): Type<InvoicePlugin> {
+  static init(config: InvoicePluginConfigInput): Type<InvoicePlugin> {
     InvoicePlugin.config = {
       vendureHost: config.vendureHost,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
       licenseKey: config.licenseKey,
+      hasValidLicense: false,
     };
     return this;
   }
