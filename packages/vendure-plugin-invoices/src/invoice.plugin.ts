@@ -48,12 +48,17 @@ export interface InvoicePluginConfigInput {
    */
   loadDataFn?: LoadDataFn;
   storageStrategy?: StorageStrategy;
+  /**
+   * Start counting invoices from this number onwards
+   */
+  startInvoiceNumber?: number;
 }
 
 export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   loadDataFn: LoadDataFn;
   storageStrategy: StorageStrategy;
   hasValidLicense: boolean;
+  startInvoiceNumber: number;
 }
 
 /**
@@ -119,6 +124,7 @@ export class InvoicePlugin implements OnApplicationBootstrap {
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
       licenseKey: config.licenseKey,
       hasValidLicense: false,
+      startInvoiceNumber: config.startInvoiceNumber || 10000,
     };
     return this;
   }
