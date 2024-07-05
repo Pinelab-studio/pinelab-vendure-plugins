@@ -33,6 +33,7 @@ require('dotenv').config();
         storageStrategy: new LocalFileStrategy(),
         licenseKey: process.env.LICENSE_KEY!,
         // licenseKey: 'false license key',
+        startInvoiceNumber: 10000,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -79,7 +80,32 @@ require('dotenv').config();
   await addShippingMethod(adminClient, 'manual-fulfillment');
   const orders = 10;
   for (let i = 1; i <= orders; i++) {
-    await createSettledOrder(shopClient, 3);
+    await createSettledOrder(
+      shopClient,
+      3,
+      undefined,
+      undefined,
+      {
+        input: {
+          fullName: 'Pinelab Finance Department',
+          streetLine1: 'Bankstreet',
+          streetLine2: '899',
+          city: 'Leeuwarden',
+          postalCode: '233 DE',
+          countryCode: 'NL',
+        },
+      },
+      {
+        input: {
+          fullName: 'Martijn Pinelab',
+          streetLine1: 'Pinestreet',
+          streetLine2: '16',
+          city: 'Leeuwarden',
+          postalCode: '736 XX',
+          countryCode: 'NL',
+        },
+      }
+    );
   }
   console.log(`Created ${orders} orders`);
 })();

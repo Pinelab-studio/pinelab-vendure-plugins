@@ -1,3 +1,8 @@
+# 3.1.0 (2024-07-05)
+
+- Improved default HTML template
+- Allow setting a start invoice number, from where the counting should start
+
 # 3.0.0 (2024-07-01)
 
 - Consumers must supply a valid license key. See LICENSE for more details

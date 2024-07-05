@@ -63,6 +63,12 @@ export const defaultLoadDataFn: LoadDataFn = async (
       ctx.languageCode
     );
   });
+  order.shippingLines.forEach((line) => {
+    line.shippingMethod = translateEntity(
+      line.shippingMethod,
+      ctx.languageCode
+    );
+  });
   if (!shouldGenerateCreditInvoice) {
     // Normal debit invoice
     return {
