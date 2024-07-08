@@ -1,3 +1,7 @@
+# 1.4.2 (2024-07-08)
+
+- Convert `biannually` to every 6 months instead of once every 2 years
+
 # 1.4.0 (2024-06-21)
 
 - Update Version to 2.2.6
