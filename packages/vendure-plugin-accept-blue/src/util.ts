@@ -80,7 +80,7 @@ export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
   if (interval === 'year' && intervalCount === 1) {
     return 'annually';
   }
-  if (interval === 'year' && intervalCount === 2) {
+  if (interval === 'month' && intervalCount === 6) {
     return 'biannually';
   }
   throw new Error(
