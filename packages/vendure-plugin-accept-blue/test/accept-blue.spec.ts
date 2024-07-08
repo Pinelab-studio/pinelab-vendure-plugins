@@ -7,7 +7,7 @@ import {
   mergeConfig,
   Order,
 } from '@vendure/core';
-
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 // @ts-ignore
 import nock from 'nock';
 
@@ -19,7 +19,7 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { AcceptBluePlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
 import {
@@ -55,6 +55,7 @@ import {
   tokenizedCreditCardChargeResult,
   mockCardTransaction,
 } from './nock-helpers';
+import { AcceptBlueService } from '../src/api/accept-blue-service';
 
 let server: TestServer;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars --- FIXME
@@ -96,10 +97,55 @@ beforeAll(async () => {
 
 afterEach(async () => {
   nock.cleanAll();
+  vi.unstubAllEnvs();
 });
 
 it('Should start successfully', async () => {
   expect(serverStarted).toBe(true);
+});
+
+it('Selects dev mode if args.testMode=true', () => {
+  const acceptBlueClient = new AcceptBlueClient(
+    'process.env.API_KEY',
+    '',
+    true
+  );
+  expect(acceptBlueClient.endpoint).toContain('develop');
+});
+
+it('Selects dev mode if process.env.ACCEPT_BLUE_TEST_MODE=true', async () => {
+  await adminClient.asSuperAdmin();
+  vi.stubEnv('ACCEPT_BLUE_TEST_MODE', 'true');
+  ({ createPaymentMethod: acceptBluePaymentMethod } = await adminClient.query(
+    CREATE_PAYMENT_METHOD,
+    {
+      input: {
+        code: 'accept-blue',
+        enabled: true,
+        handler: {
+          code: acceptBluePaymentHandler.code,
+          arguments: [
+            { name: 'apiKey', value: 'process.env.API_KEY' },
+            {
+              name: 'tokenizationSourceKey',
+              value: 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY',
+            },
+            {
+              name: 'tokenizationSourceKey',
+              value: 'process.env.ACCEPT_BLUE_TEST_MODE',
+            },
+          ],
+        },
+        translations: [
+          { languageCode: LanguageCode.en, name: 'Accept Blue Payment Method' },
+        ],
+      },
+    }
+  ));
+  const acceptBlueService = server.app.get(AcceptBlueService);
+  const ctx = await getSuperadminContext(server.app);
+  const acceptBlue = await acceptBlueService.getClientForChannel(ctx);
+  expect(acceptBlue.endpoint).toContain('develop');
 });
 
 it('Creates Accept Blue payment method', async () => {

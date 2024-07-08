@@ -1,3 +1,7 @@
+# 1.4.1 (2024-07-08)
+
+- Allow test mode to be set at payment method level
+
 # 1.4.0 (2024-06-21)
 
 - Update Version to 2.2.6
