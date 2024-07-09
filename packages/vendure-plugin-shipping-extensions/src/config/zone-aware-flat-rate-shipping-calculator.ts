@@ -73,6 +73,7 @@ export const zoneAwareFlatRateShippingCalculator = new ShippingCalculator({
     return {
       price: args.rate,
       taxRate,
+      //eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
       priceIncludesTax: getPriceIncludesTax(ctx, args.includesTax as any),
     };
   },

@@ -101,7 +101,9 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         metadata: { shippingAddressGeoLocation, storeGeoLocation },
       };
     } catch (e: any) {
+      //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       Logger.error(
+        //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed to calculate shipping for ${method.name}: ${e.message}`,
         loggerCtx
       );
