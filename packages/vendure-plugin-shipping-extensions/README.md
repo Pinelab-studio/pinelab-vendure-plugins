@@ -27,7 +27,17 @@ plugins: [
        * This can be an existing tab
        */
       customFieldsTab: "Physical properties",
-    })
+    }),
+    AdminUiPlugin.init({
+        ...
+        app: compileUiExtensions({
+          extensions: [
+            ...
+            ShippingExtensionsPlugin.ui
+            ],
+          ...
+        }),
+      })
   ...
 ]
 ```
@@ -88,3 +98,7 @@ export class USStreetLineToGeolocationConversionStrategy implements OrderAddress
    }
 }
 ```
+
+## Zone aware shipping tax calculation
+
+To calculate a shipping tax(`TaxRate`) based on the shipping or billing country of an order and a configurable `TaxCategory`, you can use the `zone-aware-flat-rate-shipping-calculator` included with this plugin.
