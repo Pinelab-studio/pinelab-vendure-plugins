@@ -221,10 +221,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         qb.orWhere(condition.clause, parameters);
       }
     }
-    // qb.innerJoin('order.customer', 'customer');
-    // qb.addSelect(['customer.id', 'customer.emailAddress']);
     const [invoices, totalItems] = await qb.getManyAndCount();
-    // We now fetch the orders + customers for the results in a separate query. We do this because we cant
+    // We now fetch the orders + customers for the results in a separate query.
+    // We do this because we wan't to avoid getRawMany and the performance hit it brings
     const orderIds = invoices.map((i) => i.orderId);
     const orders = await this.orderService.findAll(
       ctx,
