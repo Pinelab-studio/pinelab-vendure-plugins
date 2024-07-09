@@ -23,6 +23,7 @@ import {
   TransactionalConnection,
   UserInputError,
   EntityRelationPaths,
+  idsAreEqual,
 } from '@vendure/core';
 import {
   Invoice,
@@ -198,9 +199,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       },
       entityAlias: 'invoice',
     });
-    qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
-    qb.addSelect(['order.id', 'order.code']);
     if (options?.filter?.orderCode) {
+      // Order join needed for order code filtering
+      qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
+      qb.addSelect(['order.id', 'order.code']);
       const filter = parseFilterParams(
         qb.connection,
         Order,
@@ -219,37 +221,45 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         qb.orWhere(condition.clause, parameters);
       }
     }
-    qb.innerJoin('order.customer', 'customer');
-    qb.addSelect(['customer.id', 'customer.emailAddress']);
-    const totalItems = await qb.getCount();
-    const result = await qb.getRawMany();
+    const [invoices, totalItems] = await qb.getManyAndCount();
+    // We now fetch the orders + customers for the results in a separate query.
+    // We do this because we wan't to avoid getRawMany and the performance hit it brings
+    const orderIds = invoices.map((i) => i.orderId);
+    const orders = await this.orderService.findAll(
+      ctx,
+      { filter: { id: { in: orderIds } } },
+      ['customer']
+    );
     const items: Invoice[] = [];
-    for (let invoiceEntity of result) {
-      if (!invoiceEntity.order_id) {
-        throw new UserInputError(
-          `No order with id ${invoiceEntity.orderId} found for invoice ${invoiceEntity.invoiceNumber}`
+    for (let invoice of invoices) {
+      const order = orders.items.find((o) =>
+        idsAreEqual(o.id, invoice.orderId)
+      );
+      if (!order) {
+        Logger.error(
+          `No order with id '${invoice.orderId}' found for invoice '${invoice.invoiceNumber}'. Omitting this invoice from the results`,
+          loggerCtx
         );
+        continue;
       }
-      if (!invoiceEntity.customer_id) {
-        throw new UserInputError(
-          `Order "${invoiceEntity.order_code}" has no customer. A customer is needed to get the download URL for an invoice`
+      if (!order.customer?.emailAddress) {
+        Logger.error(
+          `Order '${order.id}' for invoice '${invoice.invoiceNumber}' has no customer. Omitting this invoice from the results`,
+          loggerCtx
         );
+        continue;
       }
-      const orderTotals = JSON.parse(
-        invoiceEntity.invoice_orderTotals
-      ) as InvoiceOrderTotals;
+
       items.push({
-        createdAt: new Date(invoiceEntity.invoice_createdAt),
-        id: invoiceEntity.invoice_id,
-        invoiceNumber: invoiceEntity.invoice_invoiceNumber,
-        orderId: invoiceEntity.order_id,
-        orderCode: invoiceEntity.order_code,
-        isCreditInvoice: orderTotals.total < 0,
+        ...invoice,
+        orderCode: order.code,
+        orderId: order.id,
+        isCreditInvoice: invoice.isCreditInvoice,
         downloadUrl: this.getDownloadUrl(
           ctx,
-          invoiceEntity.invoice_invoiceNumber,
-          invoiceEntity.order_code,
-          invoiceEntity.customer_emailAddress
+          invoice.invoiceNumber,
+          order.code,
+          order.customer.emailAddress
         ),
       });
     }
