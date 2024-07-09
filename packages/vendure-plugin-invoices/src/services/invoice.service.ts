@@ -199,10 +199,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       },
       entityAlias: 'invoice',
     });
-    // Order join needed for order code filtering
-    qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
-    qb.addSelect(['order.id', 'order.code']);
     if (options?.filter?.orderCode) {
+      // Order join needed for order code filtering
+      qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
+      qb.addSelect(['order.id', 'order.code']);
       const filter = parseFilterParams(
         qb.connection,
         Order,
