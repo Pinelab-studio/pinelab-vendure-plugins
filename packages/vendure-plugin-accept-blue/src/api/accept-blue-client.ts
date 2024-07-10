@@ -24,7 +24,7 @@ export class AcceptBlueClient {
     public readonly pin: string = '',
     public readonly testMode?: boolean
   ) {
-    if (this.testMode || process.env.ACCEPT_BLUE_TEST_MODE === 'true') {
+    if (this.testMode) {
       this.endpoint = 'https://api.develop.accept.blue/api/v2/';
       Logger.warn(`Using Accept Blue in test mode`, loggerCtx);
     } else {

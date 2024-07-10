@@ -1,6 +1,7 @@
-# 1.4.1 (2024-07-08)
+# 1.5.0 (2024-07-08)
 
-- Allow test mode to be set at payment method level
+- Allow test mode to be set at payment method level.
+- Removed the usage of env var ACCEPT_BLUE_TEST_MODE for test mode. Use the setting on payment method.
 
 # 1.4.0 (2024-06-21)
 

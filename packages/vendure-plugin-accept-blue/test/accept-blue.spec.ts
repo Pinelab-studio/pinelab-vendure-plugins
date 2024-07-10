@@ -7,7 +7,6 @@ import {
   mergeConfig,
   Order,
 } from '@vendure/core';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 // @ts-ignore
 import nock from 'nock';
 
@@ -19,9 +18,17 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
-import { AcceptBluePlugin } from '../src';
+import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
+import { AcceptBluePlugin } from '../src';
+import { AcceptBlueClient } from '../src/api/accept-blue-client';
+import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
+import {
+  AccountType,
+  CheckPaymentMethodInput,
+  NoncePaymentMethodInput,
+  SecCode,
+} from '../src/types';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -36,26 +43,14 @@ import {
   TRANSITION_ORDER_TO,
   UPDATE_CUSTOMER_BLUE_ID,
 } from './helpers';
-import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
-import {
-  AccountType,
-  CheckPaymentMethodInput,
-  CreditCardPaymentMethodInput,
-  NoncePaymentMethodInput,
-  SecCode,
-} from '../src/types';
-import { AcceptBlueClient } from '../src/api/accept-blue-client';
-import axios from 'axios';
 import {
   checkChargeResult,
   creditCardChargeResult,
-  haydenZiemeCustomerDetails,
   haydenSavedPaymentMethods,
-  recurringScheduleResult,
-  tokenizedCreditCardChargeResult,
+  haydenZiemeCustomerDetails,
   mockCardTransaction,
+  recurringScheduleResult,
 } from './nock-helpers';
-import { AcceptBlueService } from '../src/api/accept-blue-service';
 
 let server: TestServer;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars --- FIXME
@@ -97,7 +92,6 @@ beforeAll(async () => {
 
 afterEach(async () => {
   nock.cleanAll();
-  vi.unstubAllEnvs();
 });
 
 it('Should start successfully', async () => {
@@ -111,41 +105,6 @@ it('Selects dev mode if args.testMode=true', () => {
     true
   );
   expect(acceptBlueClient.endpoint).toContain('develop');
-});
-
-it('Selects dev mode if process.env.ACCEPT_BLUE_TEST_MODE=true', async () => {
-  await adminClient.asSuperAdmin();
-  vi.stubEnv('ACCEPT_BLUE_TEST_MODE', 'true');
-  ({ createPaymentMethod: acceptBluePaymentMethod } = await adminClient.query(
-    CREATE_PAYMENT_METHOD,
-    {
-      input: {
-        code: 'accept-blue',
-        enabled: true,
-        handler: {
-          code: acceptBluePaymentHandler.code,
-          arguments: [
-            { name: 'apiKey', value: 'process.env.API_KEY' },
-            {
-              name: 'tokenizationSourceKey',
-              value: 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY',
-            },
-            {
-              name: 'tokenizationSourceKey',
-              value: 'process.env.ACCEPT_BLUE_TEST_MODE',
-            },
-          ],
-        },
-        translations: [
-          { languageCode: LanguageCode.en, name: 'Accept Blue Payment Method' },
-        ],
-      },
-    }
-  ));
-  const acceptBlueService = server.app.get(AcceptBlueService);
-  const ctx = await getSuperadminContext(server.app);
-  const acceptBlue = await acceptBlueService.getClientForChannel(ctx);
-  expect(acceptBlue.endpoint).toContain('develop');
 });
 
 it('Creates Accept Blue payment method', async () => {
