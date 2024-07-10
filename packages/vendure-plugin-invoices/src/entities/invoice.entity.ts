@@ -1,6 +1,6 @@
 import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
 import { DeepPartial, VendureEntity } from '@vendure/core';
-import { Column, Entity, Unique } from 'typeorm';
+import { Column, Entity, Unique, Index } from 'typeorm';
 
 /**
  * The order totals that were used to generate the invoice.
@@ -19,9 +19,11 @@ export class InvoiceEntity extends VendureEntity {
     super(input);
   }
 
+  @Index()
   @Column()
   channelId!: string; // Channel id is needed here to ensure uniqueness of invoiceNumber
 
+  @Index()
   @Column({ nullable: false })
   orderId!: string;
 
