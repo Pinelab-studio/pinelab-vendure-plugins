@@ -27,7 +27,7 @@ Create recurring subscriptions with the Accept Blue platform.
 2. Start the server, create a payment method and select Accept Blue as handler
 3. Place an order and use one of the payment methods below:
 
-:warning: Set `ACCEPT_BLUE_TEST_MODE=true` in your `.env` to use Accept Blue in test mode.
+:warning: Set `Use test mode` in your payment handler in the admin UI to use Accept Blue in test mode.
 
 ## Payment methods
 

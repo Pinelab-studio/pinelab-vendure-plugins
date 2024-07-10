@@ -52,6 +52,13 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       label: [{ languageCode: LanguageCode.en, value: 'PIN' }],
       ui: { component: 'password-form-input' },
     },
+    testMode: {
+      type: 'boolean',
+      required: false,
+      defaultValue: false,
+      label: [{ languageCode: LanguageCode.en, value: 'Use test mode' }],
+      ui: { component: 'boolean-form-input' },
+    },
   },
 
   init(injector: Injector) {
@@ -80,7 +87,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       | CheckPaymentMethodInput
       | NoncePaymentMethodInput
       | SavedPaymentMethodInput;
-    const client = new AcceptBlueClient(args.apiKey, args.pin);
+    const client = new AcceptBlueClient(args.apiKey, args.pin, args.testMode);
     const result = await service.handlePaymentForOrder(
       ctx,
       order,
