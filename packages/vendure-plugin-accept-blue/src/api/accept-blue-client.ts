@@ -13,6 +13,7 @@ import {
   NoncePaymentMethodInput,
   AcceptBlueTransaction,
   AcceptBlueWebhookInput,
+  AcceptBlueWebhook,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
@@ -30,6 +31,7 @@ export class AcceptBlueClient {
       Logger.warn(`Using Accept Blue in test mode`, loggerCtx);
     } else {
       this.endpoint = 'https://api.accept.blue/api/v2/';
+      Logger.debug(`Using Accept Blue in live mode`, loggerCtx);
     }
     this.instance = axios.create({
       baseURL: `${this.endpoint}`,
@@ -276,6 +278,22 @@ export class AcceptBlueClient {
     return result;
   }
 
+  async createWebhook(
+    input: AcceptBlueWebhookInput
+  ): Promise<AcceptBlueWebhook> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result = await this.request('post', 'webhooks', input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return result;
+  }
+
+  async getWebhooks(): Promise<AcceptBlueWebhook[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result = await this.request('get', 'webhooks');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return result;
+  }
+
   async request(
     method: 'get' | 'post' | 'patch' | 'delete',
     path: string,
@@ -310,21 +328,5 @@ export class AcceptBlueClient {
    */
   toDateString(date: Date): string {
     return date.toISOString().split('T')[0];
-  }
-
-  async createWebhook(vendureHost: string) {
-    //strip the trailing slash if exists
-    if (vendureHost.endsWith('/')) {
-      vendureHost = vendureHost.slice(0, vendureHost.length - 1);
-    }
-    const input: AcceptBlueWebhookInput = {
-      webhook_url: `${vendureHost}/accept-blue/update-status`,
-      description: 'A generic webhook for all emitted events',
-      active: true,
-    };
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const result = await this.request('post', 'webhooks', input);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return result;
   }
 }

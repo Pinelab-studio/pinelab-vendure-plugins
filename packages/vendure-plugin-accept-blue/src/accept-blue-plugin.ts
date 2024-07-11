@@ -1,5 +1,4 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { WebhookSubscriptionStrategy } from '.';
 import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
 import { AcceptBlueService } from './api/accept-blue-service';
 import { acceptBluePaymentHandler } from './api/accept-blue-handler';
@@ -7,15 +6,12 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
 import { commonApiExtensions } from './api/api-extensions';
 import { AcceptBlueCommonResolver } from './api/accept-blue-common-resolvers';
 import { AcceptBlueController } from './api/accept-blue-controller';
-import { rawBodyMiddleware } from './api/raw-body-middleware';
+import { DefaultSubscriptionStrategy } from '../../util/src/subscription/default-subscription-strategy';
+import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 
 interface AcceptBluePluginOptionsInput {
   subscriptionStrategy?: SubscriptionStrategy;
   vendureHost: string;
-  /**
-   * Create webhook in AcceptBlue platform on Vendure startup or not
-   */
-  syncWebhookOnStartup?: boolean;
 }
 
 export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
@@ -59,14 +55,18 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
   compatibility: '^2.0.0',
 })
 export class AcceptBluePlugin {
-  static options: Partial<AcceptBluePluginOptions> = {
-    subscriptionStrategy: new WebhookSubscriptionStrategy(),
-  };
+  static options: AcceptBluePluginOptions;
 
   static init(options: AcceptBluePluginOptionsInput): AcceptBluePlugin {
+    let vendureHost = options.vendureHost;
+    // Strip trailing slash
+    if (vendureHost.endsWith('/')) {
+      vendureHost = vendureHost.slice(0, vendureHost.length - 1);
+    }
     this.options = {
-      ...this.options,
-      ...options,
+      subscriptionStrategy:
+        options.subscriptionStrategy ?? new DefaultSubscriptionStrategy(),
+      vendureHost,
     };
     return AcceptBluePlugin;
   }

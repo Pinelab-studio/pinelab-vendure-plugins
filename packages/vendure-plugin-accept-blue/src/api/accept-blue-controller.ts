@@ -1,5 +1,5 @@
-import { Controller, Post, Headers, Req } from '@nestjs/common';
-import { AcceptBlueEvent } from '../types';
+import { Controller, Post, Headers, Req, Body } from '@nestjs/common';
+import { Request } from 'express';
 import {
   RequestContext,
   TransactionalConnection,
@@ -15,6 +15,7 @@ import { TransactionEvent } from './events';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
 import crypto from 'node:crypto';
 import { loggerCtx } from '../constants';
+import { AcceptBlueEvent } from '../types';
 
 @Controller('accept-blue')
 export class AcceptBlueController {
@@ -23,7 +24,11 @@ export class AcceptBlueController {
     private entityHydrator: EntityHydrator,
     private eventBus: EventBus
   ) {}
-  @Post('update-status')
+
+  /**
+   * Endpoint for all incoming events from Accept Blue
+   */
+  @Post('webhook')
   async events(
     @Ctx() ctx: RequestContext,
     @Req() request: Request,
@@ -31,8 +36,14 @@ export class AcceptBlueController {
   ) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
     const rawBody = (request as any).rawBody as Buffer;
-    const body = JSON.parse(rawBody.toString('utf-8')) as AcceptBlueEvent;
-    const scheduleId = body.data.transaction?.transaction_details?.schedule_id;
+    const body = JSON.parse(rawBody.toString('utf-8')) as AcceptBlueEvent; // We have to parse it ourselves, because of the rawBody middleware
+    console.log('BODY', JSON.stringify(body));
+
+    // TODO verify
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const scheduleId = request?.body?.data?.transaction?.transaction_details
+      ?.schedule_id as string;
     if (!scheduleId) {
       Logger.info(
         `A webhook event with an empty recurring schedule ID received`,
@@ -83,19 +94,19 @@ export class AcceptBlueController {
     if (!savedWebhookSignature) {
       return;
     }
-    //we need to verify the request here
-    if (this.checkSignature(savedWebhookSignature, rawBody, xSignatureHeader)) {
-      const event = new TransactionEvent(
-        new Date(),
-        body.data,
-        body.type,
-        scheduleId,
-        orderLine.id,
-        orderLine.order,
-        body.data.transaction?.id
-      );
-      await this.eventBus.publish(event);
-    }
+    // // we need to verify the request here
+    // if (this.checkSignature(savedWebhookSignature, rawBody, xSignatureHeader)) {
+    //   const event = new TransactionEvent(
+    //     new Date(),
+    //     request.body?.data,
+    //     body.type,
+    //     scheduleId,
+    //     orderLine.id,
+    //     orderLine.order,
+    //     body.data.transaction?.id
+    //   );
+    //   await this.eventBus.publish(event);
+    // }
   }
 
   checkSignature(

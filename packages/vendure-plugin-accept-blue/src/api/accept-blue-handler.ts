@@ -44,13 +44,24 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       label: [
         { languageCode: LanguageCode.en, value: 'Hosted tokenization key' },
       ],
-      ui: { component: 'password-form-input' },
     },
     pin: {
       type: 'string',
       required: false,
       label: [{ languageCode: LanguageCode.en, value: 'PIN' }],
       ui: { component: 'password-form-input' },
+    },
+    webhookSignature: {
+      type: 'string',
+      required: false,
+      label: [{ languageCode: LanguageCode.en, value: 'Webhook signature' }],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value:
+            'Automatically filled when webhooks are created on payment method creation or update.',
+        },
+      ],
     },
     testMode: {
       type: 'boolean',

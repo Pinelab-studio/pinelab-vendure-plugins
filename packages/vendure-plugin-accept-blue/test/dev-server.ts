@@ -55,7 +55,7 @@ import { add } from 'date-fns';
   const config: Required<VendureConfig> = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     dbConnectionOptions: {
-      autoSave: true, // Uncomment this line to persist the database between restarts
+      // autoSave: true, // Uncomment this line to persist the database between restarts
     },
     authOptions: {
       cookieOptions: {
@@ -70,7 +70,6 @@ import { add } from 'date-fns';
       AcceptBlueTestCheckoutPlugin,
       AcceptBluePlugin.init({
         vendureHost: process.env.VENDURE_HOST as string,
-        syncWebhookOnStartup: true,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -97,13 +96,14 @@ import { add } from 'date-fns';
   await adminClient.asSuperAdmin();
   await adminClient.query(CREATE_PAYMENT_METHOD, {
     input: {
-      code: 'accept-blue-credit-card',
+      code: 'accept-blue',
       enabled: true,
       handler: {
         code: acceptBluePaymentHandler.code,
         arguments: [
           { name: 'apiKey', value: process.env.API_KEY },
           { name: 'pin', value: process.env.PIN },
+          { name: 'testMode', value: 'true' },
           {
             name: 'tokenizationSourceKey',
             value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
@@ -119,6 +119,7 @@ import { add } from 'date-fns';
     },
   });
   console.log(`Created paymentMethod`);
+
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '3',
@@ -150,7 +151,7 @@ import { add } from 'date-fns';
   try {
     const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
       input: {
-        method: 'accept-blue-credit-card',
+        method: 'accept-blue',
         // metadata,
         metadata: { paymentMethodId: 14556 }, // Use a saved payment method
       },

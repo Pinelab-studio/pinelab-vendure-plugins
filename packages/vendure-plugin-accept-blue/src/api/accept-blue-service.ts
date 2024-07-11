@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
@@ -46,6 +47,7 @@ import {
   AcceptBlueTransaction,
 } from './generated/graphql';
 import { filter } from 'rxjs';
+import * as util from 'util';
 
 @Injectable()
 export class AcceptBlueService implements OnApplicationBootstrap {
@@ -71,44 +73,65 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   readonly subscriptionHelper: SubscriptionHelper;
 
   onApplicationBootstrap() {
-    if (this.options.syncWebhookOnStartup) {
-      this.eventBus
-        .ofType(PaymentMethodEvent)
-        .pipe(
-          filter(
-            (data) => data.entity.handler.code === acceptBluePaymentHandler.code
-          )
+    this.eventBus
+      .ofType(PaymentMethodEvent)
+      .pipe(
+        filter(
+          (data) => data.entity.handler.code === acceptBluePaymentHandler.code
         )
-        .subscribe(({ ctx, entity }) => {
-          void (async () => {
-            await this.createWebhook(ctx, entity);
-          })();
+      )
+      .subscribe(({ ctx, entity }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.registerWebhook(ctx, entity).catch((err: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+          Logger.error(
+            `Failed to register webhook: ${err?.message}`,
+            loggerCtx,
+            util.inspect(err)
+          );
         });
-    }
+      });
   }
 
-  async createWebhook(ctx: RequestContext, paymentMethod: PaymentMethod) {
+  /**
+   * Register a webhook with the Accept Blue platform
+   */
+  async registerWebhook(ctx: RequestContext, paymentMethod: PaymentMethod) {
     const client = await this.getClientForChannel(ctx);
-    let webhook: AcceptBlueWebhook;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      webhook = await client.createWebhook(this.options.vendureHost);
-    } catch (e: any) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
-      Logger.error(e.message);
-      return;
+    const webhookUrl = `${this.options.vendureHost}/accept-blue/webhook`;
+    const existingHooks = await client.getWebhooks();
+    const existingHook = existingHooks.find(
+      (hook) => hook.webhook_url === webhookUrl
+    );
+    let webhookSignature: string;
+    if (existingHook) {
+      Logger.info(`Webhook for this server is already registered`, loggerCtx);
+      webhookSignature = existingHook.signature;
+    } else {
+      // Create a new hook if none exists yet
+      const webhook = await client.createWebhook({
+        webhook_url: webhookUrl,
+        description: 'Notify Vendure of any events on the Accept Blue platform',
+        active: true,
+      });
+      webhookSignature = webhook.signature;
     }
-    //let's save the signature on the acceptBluePaymentHandler's args
-    const paymentMethodRepo = this.connection.getRepository(ctx, PaymentMethod);
-    paymentMethod.handler.args.push({
-      name: 'signature',
-      value: webhook.signature,
-    });
-    await paymentMethodRepo.save(paymentMethod);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    const signatureArg = paymentMethod.handler.args.find(
+      (a) => a.name === 'webhookSignature'
+    );
+    if (signatureArg) {
+      // Set value if signature arg already present
+      signatureArg.value = webhookSignature;
+    } else {
+      // Otherwise push signature arg to handler args
+      paymentMethod.handler.args.push({
+        name: 'webhookSignature',
+        value: webhookSignature,
+      });
+    }
+    await this.connection.getRepository(ctx, PaymentMethod).save(paymentMethod);
     Logger.info(
-      `The AcceptBlue PaymentMethod(${paymentMethod.code})'s webhook signature has been updated`,
+      `The AcceptBlue PaymentMethod (${paymentMethod.code})'s webhook signature has been updated`,
       loggerCtx
     );
   }
@@ -375,7 +398,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const testMode = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'testMode'
     )?.value as boolean | undefined;
-
     if (!apiKey) {
       throw new Error(
         `No apiKey or pin found on configured Accept Blue payment method`
