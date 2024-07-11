@@ -1,22 +1,24 @@
-import { Inject, Injectable } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   Customer,
   CustomerService,
   EntityHydrator,
+  EventBus,
   ID,
   Logger,
   Order,
   OrderLine,
   PaymentMethod,
+  PaymentMethodEvent,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
-  Transaction,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { Subscription, SubscriptionHelper } from '../';
+import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
@@ -24,6 +26,7 @@ import {
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleTransaction,
+  AcceptBlueWebhook,
   CheckPaymentMethodInput,
   HandlePaymentResult,
   NoncePaymentMethodInput,
@@ -43,15 +46,18 @@ import {
   AcceptBlueSubscription,
   AcceptBlueTransaction,
 } from './generated/graphql';
+import { filter } from 'rxjs';
+import * as util from 'util';
 
 @Injectable()
-export class AcceptBlueService {
+export class AcceptBlueService implements OnApplicationBootstrap {
   constructor(
     private readonly productVariantService: ProductVariantService,
     private readonly paymentMethodService: PaymentMethodService,
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
     private connection: TransactionalConnection,
+    private eventBus: EventBus,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AcceptBluePluginOptions
@@ -65,6 +71,70 @@ export class AcceptBlueService {
   }
 
   readonly subscriptionHelper: SubscriptionHelper;
+
+  onApplicationBootstrap() {
+    this.eventBus
+      .ofType(PaymentMethodEvent)
+      .pipe(
+        filter(
+          (data) => data.entity.handler.code === acceptBluePaymentHandler.code
+        )
+      )
+      .subscribe(({ ctx, entity }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.registerWebhook(ctx, entity).catch((err: any) => {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+          Logger.error(
+            `Failed to register webhook: ${err?.message}`,
+            loggerCtx,
+            util.inspect(err)
+          );
+        });
+      });
+  }
+
+  /**
+   * Register a webhook with the Accept Blue platform
+   */
+  async registerWebhook(ctx: RequestContext, paymentMethod: PaymentMethod) {
+    const client = await this.getClientForChannel(ctx);
+    const webhookUrl = `${this.options.vendureHost}/accept-blue/webhook`;
+    const existingHooks = await client.getWebhooks();
+    const existingHook = existingHooks.find(
+      (hook) => hook.webhook_url === webhookUrl
+    );
+    let webhookSignature: string;
+    if (existingHook) {
+      Logger.info(`Webhook for this server is already registered`, loggerCtx);
+      webhookSignature = existingHook.signature;
+    } else {
+      // Create a new hook if none exists yet
+      const webhook = await client.createWebhook({
+        webhook_url: webhookUrl,
+        description: 'Notify Vendure of any events on the Accept Blue platform',
+        active: true,
+      });
+      webhookSignature = webhook.signature;
+    }
+    const signatureArg = paymentMethod.handler.args.find(
+      (a) => a.name === 'webhookSignature'
+    );
+    if (signatureArg) {
+      // Set value if signature arg already present
+      signatureArg.value = webhookSignature;
+    } else {
+      // Otherwise push signature arg to handler args
+      paymentMethod.handler.args.push({
+        name: 'webhookSignature',
+        value: webhookSignature,
+      });
+    }
+    await this.connection.getRepository(ctx, PaymentMethod).save(paymentMethod);
+    Logger.info(
+      `The AcceptBlue PaymentMethod (${paymentMethod.code})'s webhook signature has been updated`,
+      loggerCtx
+    );
+  }
 
   /**
    * Handles payments for order for either Nonce or Checks
@@ -293,9 +363,11 @@ export class AcceptBlueService {
     cvv2?: string
   ): Promise<AcceptBlueRefundResult> {
     const client = await this.getClientForChannel(ctx);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const refundResult = await client.refund(transactionId, amount, cvv2);
     let errorDetails: string | undefined = undefined;
     if (refundResult.error_details) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       errorDetails =
         typeof refundResult.error_details === 'object'
           ? JSON.stringify(refundResult.error_details)
@@ -326,7 +398,6 @@ export class AcceptBlueService {
     const testMode = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'testMode'
     )?.value as boolean | undefined;
-
     if (!apiKey) {
       throw new Error(
         `No apiKey or pin found on configured Accept Blue payment method`

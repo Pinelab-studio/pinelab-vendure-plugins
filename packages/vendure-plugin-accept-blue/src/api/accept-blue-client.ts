@@ -12,6 +12,8 @@ import {
   CheckPaymentMethodInput,
   NoncePaymentMethodInput,
   AcceptBlueTransaction,
+  AcceptBlueWebhookInput,
+  AcceptBlueWebhook,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
@@ -29,6 +31,7 @@ export class AcceptBlueClient {
       Logger.warn(`Using Accept Blue in test mode`, loggerCtx);
     } else {
       this.endpoint = 'https://api.accept.blue/api/v2/';
+      Logger.debug(`Using Accept Blue in live mode`, loggerCtx);
     }
     this.instance = axios.create({
       baseURL: `${this.endpoint}`,
@@ -41,6 +44,11 @@ export class AcceptBlueClient {
       },
       validateStatus: () => true,
     });
+  }
+
+  async getTransaction(id: number): Promise<AcceptBlueChargeTransaction> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.request('get', `transactions/${id}`);
   }
 
   async getOrCreateCustomer(emailAddress: string): Promise<AcceptBlueCustomer> {
@@ -56,16 +64,20 @@ export class AcceptBlueClient {
   async getCustomer(
     emailAddress: string
   ): Promise<AcceptBlueCustomer | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const customers = await this.request(
       'get',
       `customers?active=true&customer_number=${emailAddress}`
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (customers.length > 1) {
       throw Error(
         `Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one.`
       );
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (customers[0]) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
       return customers[0];
     }
     return undefined;
@@ -78,8 +90,10 @@ export class AcceptBlueClient {
       email: emailAddress,
       active: true,
     };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request('post', 'customers', customer);
     Logger.info(`Created new customer '${emailAddress}'`, loggerCtx);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result;
   }
 
@@ -111,6 +125,7 @@ export class AcceptBlueClient {
   async getRecurringSchedules(
     ids: number[]
   ): Promise<AcceptBlueRecurringSchedule[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await Promise.all(
       ids.map(async (id) => this.request('get', `recurring-schedules/${id}`))
     );
@@ -119,12 +134,14 @@ export class AcceptBlueClient {
   async getTransactionsForRecurringSchedule(
     id: number
   ): Promise<AcceptBlueRecurringScheduleTransaction[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.request('get', `recurring-schedules/${id}/transactions`);
   }
 
   async getPaymentMethods(
     acceptBlueCustomerId: number
   ): Promise<AcceptBluePaymentMethod[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request(
       'get',
       `customers/${acceptBlueCustomerId}/payment-methods?limit=100`
@@ -132,11 +149,13 @@ export class AcceptBlueClient {
     if (!result) {
       return [];
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (result.length === 100) {
       throw Error(
         `Customer has more than 100 payment methods. Pagination is not implemented yet...`
       );
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result;
   }
 
@@ -144,6 +163,7 @@ export class AcceptBlueClient {
     acceptBlueCustomerId: number,
     input: NoncePaymentMethodInput | CheckPaymentMethodInput
   ): Promise<AcceptBluePaymentMethod> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result: AcceptBluePaymentMethod = await this.request(
       'post',
       `customers/${acceptBlueCustomerId}/payment-methods`,
@@ -160,6 +180,7 @@ export class AcceptBlueClient {
     customerId: number,
     input: AcceptBlueRecurringScheduleInput
   ): Promise<AcceptBlueRecurringSchedule> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result: AcceptBlueRecurringSchedule = await this.request(
       'post',
       `customers/${customerId}/recurring-schedules`,
@@ -189,22 +210,28 @@ export class AcceptBlueClient {
     amountInCents: number
   ): Promise<AcceptBlueChargeTransaction> {
     const amount = amountInCents / 100;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request('post', `transactions/charge`, {
       source: `pm-${paymentMethodId}`,
       amount,
     });
     if (
-      (result as any).status === 'Error' ||
-      (result as any).status === 'Declined'
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      result.status === 'Error' ||
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      result.status === 'Declined'
     ) {
       throw new Error(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `One time charge creation failed: ${result.error_message} (${result.error_code})`
       );
     }
     Logger.info(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       `Created charge of '${amount}' with id '${result.transaction.id}'`,
       loggerCtx
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result;
   }
 
@@ -220,11 +247,14 @@ export class AcceptBlueClient {
     amountToRefundInCents?: number,
     cvv2?: string
   ): Promise<AcceptBlueTransaction> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const options: any = {};
     if (amountToRefundInCents) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       options.amount = amountToRefundInCents / 100;
     }
     if (cvv2) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       options.cvv2 = cvv2;
     }
     const result = (await this.request('post', `transactions/refund`, {
@@ -248,11 +278,29 @@ export class AcceptBlueClient {
     return result;
   }
 
+  async createWebhook(
+    input: AcceptBlueWebhookInput
+  ): Promise<AcceptBlueWebhook> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result = await this.request('post', 'webhooks', input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return result;
+  }
+
+  async getWebhooks(): Promise<AcceptBlueWebhook[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result = await this.request('get', 'webhooks');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return result;
+  }
+
   async request(
     method: 'get' | 'post' | 'patch' | 'delete',
     path: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any
-  ): Promise<any | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any> {
     const result = await this.instance[method](`/${path}`, data);
     if (result.status === 404) {
       Logger.debug(
@@ -271,6 +319,7 @@ export class AcceptBlueClient {
       );
       throw Error(result.statusText);
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result.data;
   }
 

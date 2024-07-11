@@ -122,7 +122,9 @@ export class AcceptBlueCommonResolver {
 
   @ResolveField()
   @Resolver('AcceptBluePaymentMethod')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   __resolveType(value: any): string {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     return value.payment_method_type === 'card'
       ? 'AcceptBlueCardPaymentMethod'
       : 'AcceptBlueCheckPaymentMethod';
