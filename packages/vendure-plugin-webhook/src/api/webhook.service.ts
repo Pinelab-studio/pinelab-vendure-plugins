@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationBootstrap, Inject } from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
@@ -10,7 +10,7 @@ import {
 } from '@vendure/core';
 import { Webhook } from './webhook.entity';
 import fetch from 'node-fetch';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { EventWithContext, RequestTransformer } from './request-transformer';
 import { WebhookPluginOptions } from '../webhook.plugin';
 import { WebhookInput } from '../generated/graphql-types';
@@ -194,17 +194,26 @@ export class WebhookService implements OnApplicationBootstrap {
     }
     const request = await transformer.transform(
       event,
-      new Injector(this.moduleRef)
+      new Injector(this.moduleRef),
+      webhook
     );
+
     // Call the webhook with the constructed request
-    await fetch(webhook.url, {
-      method: 'POST',
-      headers: request.headers,
-      body: request.body,
-    });
-    Logger.info(
-      `Successfully triggered webhook for event ${event.constructor.name} for channel ${webhook.channelId} with transformer "${webhook.transformerName}"`,
-      loggerCtx
-    );
+    try {
+      await fetch(webhook.url, {
+        method: 'POST',
+        headers: request.headers,
+        body: request.body,
+      });
+      Logger.info(
+        `Successfully triggered webhook for event ${event.constructor.name} for channel ${webhook.channelId} with transformer "${webhook.transformerName}"`,
+        loggerCtx
+      );
+    } catch (error) {
+      Logger.error(
+        `Failed to call webhook for event ${webhook.event} channel ${webhook.channelId}: ${error}`,
+        loggerCtx
+      );
+    }
   }
 }

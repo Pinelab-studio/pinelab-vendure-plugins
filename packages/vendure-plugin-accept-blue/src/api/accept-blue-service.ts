@@ -372,13 +372,16 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const pin = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'pin'
     )?.value;
+    const testMode = acceptBlueMethod.handler.args.find(
+      (a) => a.name === 'testMode'
+    )?.value as boolean | undefined;
 
     if (!apiKey) {
       throw new Error(
         `No apiKey or pin found on configured Accept Blue payment method`
       );
     }
-    return new AcceptBlueClient(apiKey, pin);
+    return new AcceptBlueClient(apiKey, pin, testMode);
   }
 
   async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {

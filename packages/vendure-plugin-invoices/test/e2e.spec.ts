@@ -56,6 +56,7 @@ beforeAll(async () => {
     plugins: [
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3106',
+        licenseKey: 'BogusLicenseKey',
       }),
     ],
     paymentOptions: {
@@ -132,10 +133,10 @@ describe('Generate with credit invoicing enabled', function () {
     latestInvoice = result.invoices[0];
     expect(latestInvoice.id).toBeDefined();
     expect(latestInvoice.createdAt).toBeDefined();
-    expect(latestInvoice.invoiceNumber).toBe(1);
+    expect(latestInvoice.invoiceNumber).toBe(10001);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
     );
   });
 
@@ -144,7 +145,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(newInvoice.createdAt).toBeDefined();
     expect(newInvoice.channelId).toBeDefined();
     expect(newInvoice.id).toBeDefined();
-    expect(newInvoice.invoiceNumber).toBe(1);
+    expect(newInvoice.invoiceNumber).toBe(10001);
     expect(newInvoice.isCreditInvoice).toBe(false);
     expect(newInvoice.orderTotals.total).toBe(order.total);
     expect(newInvoice.orderTotals.totalWithTax).toBe(order.totalWithTax);
@@ -180,10 +181,10 @@ describe('Generate with credit invoicing enabled', function () {
       orderId: order.id,
     });
     latestInvoice = result.createInvoice;
-    expect(latestInvoice.invoiceNumber).toBe(3); // credit invoice is #2
+    expect(latestInvoice.invoiceNumber).toBe(10003); // credit invoice is #2
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/3?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10003?email=hayden.zieme12%40hotmail.com`
     );
   });
 
@@ -191,9 +192,9 @@ describe('Generate with credit invoicing enabled', function () {
     const newInvoice = events[1].newInvoice;
     const creditInvoice = events[1].creditInvoice!;
     const previousInvoice = events[1].previousInvoice!;
-    expect(previousInvoice.invoiceNumber).toBe(1);
-    expect(creditInvoice.invoiceNumber).toBe(2);
-    expect(newInvoice.invoiceNumber).toBe(3);
+    expect(previousInvoice.invoiceNumber).toBe(10001);
+    expect(creditInvoice.invoiceNumber).toBe(10002);
+    expect(newInvoice.invoiceNumber).toBe(10003);
     expect(creditInvoice?.isCreditInvoice).toBe(true);
     expect(previousInvoice.isCreditInvoice).toBe(false);
     expect(newInvoice.isCreditInvoice).toBe(false);
@@ -217,12 +218,12 @@ describe('Generate with credit invoicing enabled', function () {
     const invoices: Invoice[] = result.invoices;
     // Latest invoice
     expect(invoices.length).toBe(3);
-    expect(invoices[2].invoiceNumber).toBe(1);
+    expect(invoices[2].invoiceNumber).toBe(10001);
     // Credit invoice
-    expect(invoices[1].invoiceNumber).toBe(2);
+    expect(invoices[1].invoiceNumber).toBe(10002);
     expect(invoices[1].isCreditInvoice).toBe(true);
     // First invoice
-    expect(invoices[0].invoiceNumber).toBe(3);
+    expect(invoices[0].invoiceNumber).toBe(10003);
   });
 
   it('Cancels order and creates credit invoice', async () => {
@@ -253,7 +254,7 @@ describe('Download invoices', function () {
 
   it('Downloads a pdf via URL with invoice number', async () => {
     const res = await fetch(
-      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/1?email=hayden.zieme12%40hotmail.com`
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
     );
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-type')).toBe('application/pdf');
@@ -336,10 +337,10 @@ describe('Generate without credit invoicing', function () {
     latestInvoice = result.invoices[0];
     expect(latestInvoice.id).toBeDefined();
     expect(latestInvoice.createdAt).toBeDefined();
-    expect(latestInvoice.invoiceNumber).toBe(5);
+    expect(latestInvoice.invoiceNumber).toBe(10005);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/5?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10005?email=hayden.zieme12%40hotmail.com`
     );
   });
 
@@ -355,10 +356,10 @@ describe('Generate without credit invoicing', function () {
       orderId: order.id,
     });
     latestInvoice = result.createInvoice;
-    expect(latestInvoice.invoiceNumber).toBe(6);
+    expect(latestInvoice.invoiceNumber).toBe(10006);
     expect(latestInvoice.isCreditInvoice).toBe(false);
     expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/6?email=hayden.zieme12%40hotmail.com`
+      `/invoices/e2e-default-channel/${order.code}/10006?email=hayden.zieme12%40hotmail.com`
     );
   });
 

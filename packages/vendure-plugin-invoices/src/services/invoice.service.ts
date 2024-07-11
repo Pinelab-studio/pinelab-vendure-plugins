@@ -22,6 +22,8 @@ import {
   RequestContext,
   TransactionalConnection,
   UserInputError,
+  EntityRelationPaths,
+  idsAreEqual,
 } from '@vendure/core';
 import {
   Invoice,
@@ -76,6 +78,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       }>
     | undefined;
   retries = 10;
+  orderRelations: EntityRelationPaths<Order>[] = [
+    'lines.productVariant.product',
+    'shippingLines.shippingMethod',
+    'payments',
+    'customer',
+  ];
 
   constructor(
     private eventBus: EventBus,
@@ -192,9 +200,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       },
       entityAlias: 'invoice',
     });
-    qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
-    qb.addSelect(['order.id', 'order.code']);
     if (options?.filter?.orderCode) {
+      // Order join needed for order code filtering
+      qb.innerJoin(Order, 'order', 'order.id = invoice.orderId');
+      qb.addSelect(['order.id', 'order.code']);
       const filter = parseFilterParams(
         qb.connection,
         Order,
@@ -213,37 +222,45 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         qb.orWhere(condition.clause, parameters);
       }
     }
-    qb.innerJoin('order.customer', 'customer');
-    qb.addSelect(['customer.id', 'customer.emailAddress']);
-    const totalItems = await qb.getCount();
-    const result = await qb.getRawMany();
+    const [invoices, totalItems] = await qb.getManyAndCount();
+    // We now fetch the orders + customers for the results in a separate query.
+    // We do this because we wan't to avoid getRawMany and the performance hit it brings
+    const orderIds = invoices.map((i) => i.orderId);
+    const orders = await this.orderService.findAll(
+      ctx,
+      { filter: { id: { in: orderIds } } },
+      ['customer']
+    );
     const items: Invoice[] = [];
-    for (let invoiceEntity of result) {
-      if (!invoiceEntity.order_id) {
-        throw new UserInputError(
-          `No order with id ${invoiceEntity.orderId} found for invoice ${invoiceEntity.invoiceNumber}`
+    for (let invoice of invoices) {
+      const order = orders.items.find((o) =>
+        idsAreEqual(o.id, invoice.orderId)
+      );
+      if (!order) {
+        Logger.error(
+          `No order with id '${invoice.orderId}' found for invoice '${invoice.invoiceNumber}'. Omitting this invoice from the results`,
+          loggerCtx
         );
+        continue;
       }
-      if (!invoiceEntity.customer_id) {
-        throw new UserInputError(
-          `Order "${invoiceEntity.order_code}" has no customer. A customer is needed to get the download URL for an invoice`
+      if (!order.customer?.emailAddress) {
+        Logger.error(
+          `Order '${order.id}' for invoice '${invoice.invoiceNumber}' has no customer. Omitting this invoice from the results`,
+          loggerCtx
         );
+        continue;
       }
-      const orderTotals = JSON.parse(
-        invoiceEntity.invoice_orderTotals
-      ) as InvoiceOrderTotals;
+
       items.push({
-        createdAt: new Date(invoiceEntity.invoice_createdAt),
-        id: invoiceEntity.invoice_id,
-        invoiceNumber: invoiceEntity.invoice_invoiceNumber,
-        orderId: invoiceEntity.order_id,
-        orderCode: invoiceEntity.order_code,
-        isCreditInvoice: orderTotals.total < 0,
+        ...invoice,
+        orderCode: order.code,
+        orderId: order.id,
+        isCreditInvoice: invoice.isCreditInvoice,
         downloadUrl: this.getDownloadUrl(
           ctx,
-          invoiceEntity.invoice_invoiceNumber,
-          invoiceEntity.order_code,
-          invoiceEntity.customer_emailAddress
+          invoice.invoiceNumber,
+          order.code,
+          order.customer.emailAddress
         ),
       });
     }
@@ -304,7 +321,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   ): Promise<InvoiceEntity | undefined> {
     const ctx = await this.createCtx(channelToken);
     let [order, previousInvoiceForOrder, config] = await Promise.all([
-      this.orderService.findOneByCode(ctx, orderCode),
+      this.orderService.findOneByCode(ctx, orderCode, this.orderRelations),
       this.getMostRecentInvoiceForOrder(ctx, orderCode),
       this.getConfig(ctx),
     ]);
@@ -452,7 +469,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       ctx,
       new Injector(this.moduleRef),
       order,
-      latestInvoiceNumber,
+      latestInvoiceNumber ?? this.config.startInvoiceNumber,
       shouldGenerateCreditInvoice
     );
     const tmpFilePath = await createTempFile('.pdf');
@@ -497,7 +514,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   ): Promise<ReadStream> {
     let order: Order | undefined;
     if (orderCode) {
-      order = await this.orderService.findOneByCode(ctx, orderCode);
+      order = await this.orderService.findOneByCode(
+        ctx,
+        orderCode,
+        this.orderRelations
+      );
     } else {
       const orderId = (
         await this.orderService.findAll(
@@ -509,7 +530,11 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           []
         )
       )?.items[0].id;
-      order = await this.orderService.findOne(ctx, orderId);
+      order = await this.orderService.findOne(
+        ctx,
+        orderId,
+        this.orderRelations
+      );
     }
     if (!order) {
       throw new UserInputError(`No order found with code ${orderCode}`);
@@ -687,6 +712,19 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       where: { channelId: ctx.channelId as string },
     });
     return !!result?.enabled;
+  }
+
+  throwIfInvalidLicense(): void {
+    if (this.config.hasValidLicense) {
+      return;
+    }
+    const message = `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`;
+    Logger.error(message, loggerCtx);
+    if (process.env.NODE_ENV === 'test') {
+      // Only log in test, don't throw
+      return;
+    }
+    throw Error(message);
   }
 
   /**

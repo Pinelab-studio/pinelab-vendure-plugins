@@ -1,4 +1,27 @@
-# 2.4.0 (2024-07-21)
+# 3.1.2 (2024-07-09)
+
+- Fetch customer relation for orders by default
+
+# 3.1.1 (2024-07-09)
+
+- Important performance improvement for projects with larger amounts (> 60000) of invoices
+
+# 3.1.0 (2024-07-05)
+
+- Improved default HTML template
+- Allow setting a start invoice number, from where the counting should start
+
+# 3.0.0 (2024-07-01)
+
+- Consumers must supply a valid license key. See LICENSE for more details
+- Without valid license key, the admin UI functionality is restricted, but invoice generation will still continue
+- Publishing to Vendure Hub registry from now on: https://registry.next.vendure.io/
+
+# 2.4.1 (2024-06-27)
+
+- Hide invoices component on order detail when user doesn't have permission
+
+# 2.4.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
 

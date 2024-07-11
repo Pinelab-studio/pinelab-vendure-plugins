@@ -1,17 +1,10 @@
-import {
-  CollectionModificationEvent,
-  Injector,
-  OrderPlacedEvent,
-  OrderStateTransitionEvent,
-  RequestContext,
-  Type,
-  VendureEvent,
-} from '@vendure/core';
-import { WebhookPlugin } from '../webhook.plugin';
+import { Injector, RequestContext, Type, VendureEvent } from '@vendure/core';
+import { Webhook } from './webhook.entity';
 
 export type TransformFn<T extends EventWithContext> = (
   event: T,
-  injector: Injector
+  injector: Injector,
+  webhook: Webhook
 ) => WebhookRequest | Promise<WebhookRequest>;
 
 export type EventWithContext = VendureEvent & {

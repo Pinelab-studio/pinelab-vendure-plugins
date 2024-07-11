@@ -1,9 +1,11 @@
 import {
+  Logger,
   PluginCommonModule,
   RuntimeVendureConfig,
   Type,
   VendurePlugin,
 } from '@vendure/core';
+import { OnApplicationBootstrap } from '@nestjs/common';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import {
@@ -18,31 +20,57 @@ import {
 import { InvoiceController } from './api/invoice.controller';
 import { defaultLoadDataFn, LoadDataFn } from './strategies/load-data-fn';
 import { LocalFileStrategy } from './strategies/local-file-strategy';
-import { PLUGIN_INIT_OPTIONS } from './constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
 import { StorageStrategy } from './strategies/storage-strategy';
 import { InvoiceService } from './services/invoice.service';
+import {
+  LicenseService,
+  VendureHubPlugin,
+} from '@vendure-hub/vendure-hub-plugin';
 
-export interface InvoicePluginConfig {
+export interface InvoicePluginConfigInput {
   /**
-   * Hostname to use for download links, can be the Vendure instance,
-   * but also the worker instance if you want.
+   * @description
+   * Hostname to use for download links, can be the main or worker instance.
    * Make sure to include protocol and no trailing slash, e.g. https://vendure.myshop.com
    */
   vendureHost: string;
   /**
+   * @description
+   * License key obtained from the Vendure Hub
+   */
+  licenseKey: string;
+  /**
+   * @description
    * Load custom data that is passed in to your HTML/handlebars template
    */
-  loadDataFn: LoadDataFn;
-  storageStrategy: StorageStrategy;
+  loadDataFn?: LoadDataFn;
+  storageStrategy?: StorageStrategy;
+  /**
+   * Start counting invoices from this number onwards
+   */
+  startInvoiceNumber?: number;
 }
 
+export interface InvoicePluginConfig extends InvoicePluginConfigInput {
+  loadDataFn: LoadDataFn;
+  storageStrategy: StorageStrategy;
+  hasValidLicense: boolean;
+  startInvoiceNumber: number;
+}
+
+/**
+ * @description
+ * Vendure plugin to generate PDF invoices for orders.
+ */
 @VendurePlugin({
-  imports: [PluginCommonModule],
+  imports: [PluginCommonModule, VendureHubPlugin],
   entities: [InvoiceConfigEntity, InvoiceEntity],
   providers: [
     InvoiceService,
+    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
   ],
   controllers: [InvoiceController],
@@ -54,34 +82,51 @@ export interface InvoicePluginConfig {
     schema: shopSchemaExtensions,
     resolvers: [InvoiceCommonResolver],
   },
-  compatibility: '^2.0.0',
+  compatibility: '^2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
     InvoicePlugin.configure(config);
     return config;
   },
 })
-export class InvoicePlugin {
+export class InvoicePlugin implements OnApplicationBootstrap {
   static config: InvoicePluginConfig;
 
-  static init(
-    config: Partial<InvoicePluginConfig> & { vendureHost: string }
-  ): Type<InvoicePlugin> {
+  constructor(private licenseService: LicenseService) {}
+
+  onApplicationBootstrap(): void {
+    this.licenseService
+      .checkLicenseKey(
+        InvoicePlugin.config.licenseKey,
+        '@vendure-hub/pinelab-invoice-plugin'
+      )
+      .then((result) => {
+        if (!result.valid) {
+          Logger.error(
+            `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin. Viewing invoices is disabled. Invoice generation will continue as usual.`,
+            loggerCtx
+          );
+        } else {
+          InvoicePlugin.config.hasValidLicense = true;
+        }
+      })
+      .catch((err) => {
+        Logger.error(
+          `Error checking license key: ${err?.message}. Viewing invoices is disabled. Invoice generation will continue as usual.`,
+          loggerCtx
+        );
+      });
+  }
+
+  static init(config: InvoicePluginConfigInput): Type<InvoicePlugin> {
     InvoicePlugin.config = {
       vendureHost: config.vendureHost,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
+      licenseKey: config.licenseKey,
+      hasValidLicense: false,
+      startInvoiceNumber: config.startInvoiceNumber || 10000,
     };
     return this;
-  }
-
-  static async configure(
-    config: RuntimeVendureConfig
-  ): Promise<RuntimeVendureConfig> {
-    config.authOptions.customPermissions.push(invoicePermission);
-    if (this.config.storageStrategy) {
-      await this.config.storageStrategy.init();
-    }
-    return config;
   }
 
   static ui: AdminUiExtension = {
@@ -102,4 +147,14 @@ export class InvoicePlugin {
     routes: [{ filePath: 'routes.ts', route: 'invoice-list' }],
     providers: ['providers.ts'],
   };
+
+  private static async configure(
+    config: RuntimeVendureConfig
+  ): Promise<RuntimeVendureConfig> {
+    config.authOptions.customPermissions.push(invoicePermission);
+    if (this.config.storageStrategy) {
+      await this.config.storageStrategy.init();
+    }
+    return config;
+  }
 }

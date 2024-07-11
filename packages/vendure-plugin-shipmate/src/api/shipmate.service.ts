@@ -5,21 +5,22 @@ import {
   EntityHydrator,
   EventBus,
   FulfillmentState,
-  isGraphQlErrorResult,
+  ID,
   JobQueue,
   JobQueueService,
   Logger,
-  manualFulfillmentHandler,
   Order,
   OrderPlacedEvent,
   OrderService,
+  OrderStateTransitionEvent,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
-  UserInputError,
+  isGraphQlErrorResult,
+  manualFulfillmentHandler,
 } from '@vendure/core';
 import util from 'util';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { ShipmatePluginConfig } from '../shipmate.plugin';
 import { EventPayload, TrackingEventPayload } from '../types';
 import { ShipmateClient } from './shipmate-client';
@@ -29,6 +30,7 @@ import { parseOrder } from './util';
 interface JobData {
   ctx: SerializedRequestContext;
   orderCode: string;
+  cancelExistingFirst: boolean;
 }
 
 @Injectable()
@@ -50,26 +52,79 @@ export class ShipmateService implements OnApplicationBootstrap {
       name: 'shipmate',
       process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
-        await this.createShipment(ctx, job.data.orderCode);
+        await this.upsertShipment(
+          ctx,
+          job.data.orderCode,
+          job.data.cancelExistingFirst
+        );
       },
     });
-    this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      await this.jobQueue
-        .add({
-          ctx: ctx.serialize(),
-          orderCode: order.code,
-        })
-        .catch((err) => {
-          Logger.error(
-            `Error adding OrderPlacedEvent job to queue: ${err?.message}`,
-            loggerCtx,
-            util.inspect(err)
-          );
-        });
+    this.eventBus.ofType(OrderPlacedEvent).subscribe((event) => {
+      this.addJob(event).catch((e) => {
+        Logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          `Error adding job to queue: ${e?.message}`,
+          loggerCtx,
+          util.inspect(e)
+        );
+      });
+    });
+    this.eventBus.ofType(OrderStateTransitionEvent).subscribe((event) => {
+      this.addJob(event).catch((e) => {
+        Logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          `Error adding job to queue: ${e?.message}`,
+          loggerCtx,
+          util.inspect(e)
+        );
+      });
     });
   }
 
-  async createShipment(ctx: RequestContext, orderCode: string): Promise<void> {
+  /**
+   * Created a job in the job queue to send the order to Shipmate
+   */
+  async addJob(
+    event: OrderStateTransitionEvent | OrderPlacedEvent
+  ): Promise<void> {
+    const { ctx, order, fromState, toState } = event;
+    if (event instanceof OrderPlacedEvent) {
+      await this.jobQueue.add(
+        {
+          ctx: ctx.serialize(),
+          orderCode: order.code,
+          cancelExistingFirst: false,
+        },
+        { retries: 10 }
+      );
+      return;
+    }
+    if (
+      toState === 'Shipped' ||
+      toState === 'Delivered' ||
+      toState === 'Cancelled'
+    ) {
+      // Don't recreate shipment if order is already shipped or delivered
+      return;
+    }
+    if (fromState === 'Modifying') {
+      // Order was modified, so it was sent to shipmate before, which means we have to cancel the existing shipment first
+      await this.jobQueue.add(
+        {
+          ctx: ctx.serialize(),
+          orderCode: order.code,
+          cancelExistingFirst: true,
+        },
+        { retries: 10 }
+      );
+    }
+  }
+
+  async upsertShipment(
+    ctx: RequestContext,
+    orderCode: string,
+    cancelExistingFirst: boolean
+  ): Promise<void> {
     const client = await this.getClient(ctx);
     if (!client) {
       Logger.info(
@@ -82,25 +137,71 @@ export class ShipmateService implements OnApplicationBootstrap {
     if (!order) {
       throw Error(`[${loggerCtx}] Order with code ${orderCode} not found`);
     }
+    if (cancelExistingFirst) {
+      try {
+        // The following line assumes that an Order code will be used as the shipment_refrence
+        await client.cancelShipment(order.code);
+        Logger.info(
+          `Cancelled shipment for order '${order.code}', because we will create a new update shipment.`,
+          loggerCtx
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (err: any) {
+        // Log error as history entry for admins
+        await this.logErrorAndAddNote(
+          ctx,
+          order.id,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          `Failed to cancel Shipment for order '${order.code}' on Shipmate: ${err?.message}`,
+          err
+        );
+      }
+    }
     try {
+      await this.entityHydrator.hydrate(ctx, order, { relations: ['lines'] });
+      for (const line of order.lines) {
+        await this.entityHydrator.hydrate(ctx, line, {
+          relations: ['productVariant.product'],
+        });
+      }
       const payload = parseOrder(order, order.code);
       await client.createShipment(payload);
+      Logger.info(`Created shipment for order '${order.code}'`, loggerCtx);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      // Log error as history entry for admins
-      await this.orderService
-        .addNoteToOrder(ctx, {
-          id: order.id,
-          isPublic: false,
-          note: `Failed to send to Shipmate: ${err?.message}`,
-        })
-        .catch((err) =>
-          Logger.error(
-            `Error creating history entryfor ${order.code}: ${err.message}`,
-            loggerCtx
-          )
-        );
-      throw err;
+      await this.logErrorAndAddNote(
+        ctx,
+        order.id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        `Failed to send order '${order.code}' to Shipmate: ${err?.message}`,
+        err
+      );
     }
+  }
+
+  /**
+   * Add error as note to order and log the error.
+   */
+  async logErrorAndAddNote(
+    ctx: RequestContext,
+    orderId: ID,
+    message: string,
+    err: unknown
+  ): Promise<void> {
+    await this.orderService
+      .addNoteToOrder(ctx, {
+        id: orderId,
+        isPublic: false,
+        note: message,
+      })
+      .catch((err) =>
+        Logger.error(
+          // eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access
+          `Error adding note to order ${orderId}: ${err?.message}`,
+          loggerCtx
+        )
+      );
+    Logger.error(message, loggerCtx, util.inspect(err));
   }
 
   /**
@@ -163,39 +264,52 @@ export class ShipmateService implements OnApplicationBootstrap {
       const createdFulfillmentResult =
         await this.orderService.createFulfillment(ctx, fulfillmentInputs);
       if (isGraphQlErrorResult(createdFulfillmentResult)) {
-        Logger.info(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        await this.logErrorAndAddNote(
+          ctx,
+          order.id,
           `Unable to create Fulfillment for order ${order.code}: ${createdFulfillmentResult.message}`,
-          loggerCtx
+          createdFulfillmentResult
         );
         throw createdFulfillmentResult.message;
       }
-      const transitionResult =
-        await this.orderService.transitionFulfillmentToState(
-          ctx,
-          createdFulfillmentResult.id,
-          state
-        );
-      if (isGraphQlErrorResult(transitionResult)) {
-        Logger.error(
-          `Unable to transition Fulfillment ${createdFulfillmentResult.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
-          loggerCtx
-        );
-        throw transitionResult.transitionError;
+      if (createdFulfillmentResult.state !== state) {
+        const transitionResult =
+          await this.orderService.transitionFulfillmentToState(
+            ctx,
+            createdFulfillmentResult.id,
+            state
+          );
+        if (isGraphQlErrorResult(transitionResult)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          await this.logErrorAndAddNote(
+            ctx,
+            order.id,
+            `Unable to transition Fulfillment ${createdFulfillmentResult.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
+            createdFulfillmentResult
+          );
+          throw transitionResult.transitionError;
+        }
       }
     }
     for (const fulfillment of order.fulfillments) {
-      const transitionResult =
-        await this.orderService.transitionFulfillmentToState(
-          ctx,
-          fulfillment.id,
-          state
-        );
-      if (isGraphQlErrorResult(transitionResult)) {
-        Logger.error(
-          `Unable to transition Fulfillment ${fulfillment.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
-          loggerCtx
-        );
-        throw transitionResult.transitionError;
+      if (fulfillment.state !== state) {
+        const transitionResult =
+          await this.orderService.transitionFulfillmentToState(
+            ctx,
+            fulfillment.id,
+            state
+          );
+        if (isGraphQlErrorResult(transitionResult)) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          await this.logErrorAndAddNote(
+            ctx,
+            order.id,
+            `Unable to transition Fulfillment ${fulfillment.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
+            transitionResult
+          );
+          throw transitionResult.transitionError;
+        }
       }
     }
   }

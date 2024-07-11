@@ -1,4 +1,8 @@
-# 1.1.0 (2024-07-21)
+# 1.2.0 (2024-07-03)
+
+- Cancel and Recreate Shipment when Order is modified
+
+# 1.1.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
 

@@ -31,45 +31,9 @@ require('dotenv').config();
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
         storageStrategy: new LocalFileStrategy(),
-        loadDataFn: async (
-          ctx,
-          injector,
-          order,
-          mostRecentInvoiceNumber?,
-          shouldGenerateCreditInvoice?
-        ) => {
-          // Increase order number
-          let newInvoiceNumber = mostRecentInvoiceNumber || 0;
-          newInvoiceNumber += 1;
-          const orderDate = order.orderPlacedAt
-            ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
-            : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt);
-          if (shouldGenerateCreditInvoice) {
-            // Create credit invoice
-            const { previousInvoice, reversedOrderTotals } =
-              shouldGenerateCreditInvoice;
-            return {
-              orderDate,
-              invoiceNumber: newInvoiceNumber,
-              isCreditInvoice: true,
-              // Reference to original invoice because this is a credit invoice
-              originalInvoiceNumber: previousInvoice.invoiceNumber,
-              order: {
-                ...order,
-                total: reversedOrderTotals.total,
-                totalWithTax: reversedOrderTotals.totalWithTax,
-                taxSummary: reversedOrderTotals.taxSummaries,
-              },
-            };
-          } else {
-            // Normal debit invoice
-            return {
-              orderDate,
-              invoiceNumber: newInvoiceNumber,
-              order: order,
-            };
-          }
-        },
+        licenseKey: process.env.LICENSE_KEY!,
+        // licenseKey: 'false license key',
+        startInvoiceNumber: 10000,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -116,7 +80,32 @@ require('dotenv').config();
   await addShippingMethod(adminClient, 'manual-fulfillment');
   const orders = 10;
   for (let i = 1; i <= orders; i++) {
-    await createSettledOrder(shopClient, 3);
+    await createSettledOrder(
+      shopClient,
+      3,
+      undefined,
+      undefined,
+      {
+        input: {
+          fullName: 'Pinelab Finance Department',
+          streetLine1: 'Bankstreet',
+          streetLine2: '899',
+          city: 'Leeuwarden',
+          postalCode: '233 DE',
+          countryCode: 'NL',
+        },
+      },
+      {
+        input: {
+          fullName: 'Martijn Pinelab',
+          streetLine1: 'Pinestreet',
+          streetLine2: '16',
+          city: 'Leeuwarden',
+          postalCode: '736 XX',
+          countryCode: 'NL',
+        },
+      }
+    );
   }
   console.log(`Created ${orders} orders`);
 })();

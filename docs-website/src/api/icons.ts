@@ -1,7 +1,7 @@
 // Icons are from https://handcrafts.undraw.co/app and set the color to #05C787
 // But, most of them should already be in public/icons, along with some others
 const icons: Record<string, string> = {
-  'vendure-plugin-invoices': 'sticky-note.svg',
+  'pinelab-invoice-plugin': 'sticky-note.svg',
   'vendure-plugin-google-storage-assets': 'google_cloud.png',
   'vendure-plugin-facet-suggestions': 'undraw_chat-text.svg',
   'vendure-plugin-stripe-subscription': 'stripe.webp',
@@ -36,6 +36,7 @@ const icons: Record<string, string> = {
   'vendure-plugin-public-customer-groups': 'undraw_camera.svg',
   'vendure-plugin-shipmate': 'shipmate.jpg',
   'vendure-plugin-klaviyo': 'klaviyo.png',
+  'vendure-plugin-payment-extension': 'undraw_check.svg',
 };
 
 export function getIcon(pluginName: string): string {

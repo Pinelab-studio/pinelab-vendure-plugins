@@ -9,7 +9,7 @@ This plugin periodically scores products and categories based on the amount of t
 1. Install the plugin in your `vendure-config.ts`
 
 ```ts
-import { PopularityScoresPlugin } from 'vendure-plugin-popularity-scores'
+import { PopularityScoresPlugin } from '@pinelab/vendure-plugin-popularity-scores'
 
 ...
 plugins: [
@@ -22,7 +22,7 @@ plugins: [
 
 2. [Run a database migration](https://docs.vendure.io/guides/developer-guide/migrations/) to create the custom fields needed for this plugin
 3. Start your vendure server
-4. Go to `http://localhost:3000/popularity-scores/<YOUR CHANNEL TOKEN>/<YOUR ENDPOINT SECRET>` to calculate the popularity scores of products and collections. You can also use the default channel's token to generate scores for all channels. Ideally you would do this periodically, like once a week or so.
+4. Go to `http://localhost:3000/popularity-scores/calculate-scores/<YOUR CHANNEL TOKEN>/<YOUR ENDPOINT SECRET>` to calculate the popularity scores of products and collections. You can also use the default channel's token to generate scores for all channels. Ideally you would do this periodically, like once a week or so.
 
 ## How it works
 
@@ -36,3 +36,13 @@ This plugin exposes an endpoint that can be periodically called: `/popularity-sc
 6. It then calculates the popularity of collections, based on the product scores and it's child collections
 7. Collection scores are stored on `Collection.customFields.popularityScore`
 8. Both the Product and Collection popularity scores are publicly available in the GraphQL Shop API.
+
+### Popularity scores
+
+Popularity scores should only be used to sort products and collections. The actual values are normalized and don't have any absolute meaning.
+
+Scores of products are based on the amount sold of the past 12 months and normalized to a score of 0 to 1000.
+
+For collections, only the leaf collection scores are normalized. Any parent collection scores are just the sum of their sub-collections. This is to keep the popularity relation between parent/child collection in tact. I.e. a parent's score should be much higher, because it inherits all popularity from it's child collections.
+
+You can compare popularity scores of products with those of other products, but it doesn't really make sense to compare collection scores, because each collection will have a different amount of products in them.
