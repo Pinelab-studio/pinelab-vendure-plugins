@@ -117,7 +117,7 @@ describe('Product Primary Collection', function () {
   const updatePrimaryCollectionMutation = gql`
     mutation UpdateProuductPrimaryCollection(
       $productId: ID!
-      $primaryCollection: [String!]
+      $primaryCollection: String
     ) {
       updateProduct(
         input: {
