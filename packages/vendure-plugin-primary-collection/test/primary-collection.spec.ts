@@ -28,7 +28,7 @@ import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { gql } from 'graphql-tag';
 import { PrimaryCollectionHelperService } from '../src/api/primary-collections-helper.service';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-import { ProductPrimaryCollection } from '../src/util';
+import { ProductPrimaryCollection } from '../src/util/helpers';
 
 describe('Product Primary Collection', function () {
   let server: TestServer;
@@ -140,12 +140,12 @@ describe('Product Primary Collection', function () {
       updatePrimaryCollectionMutation,
       {
         productId: 1,
-        primaryCollection: [
-          JSON.stringify({
+        primaryCollection: JSON.stringify([
+          {
             channelId: 1,
             collectionId: 3,
-          } as ProductPrimaryCollection),
-        ],
+          } as ProductPrimaryCollection,
+        ]),
       }
     );
     expect(product.name).toBe('Laptop');

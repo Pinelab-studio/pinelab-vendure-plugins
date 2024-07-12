@@ -1,4 +1,4 @@
-# 1.6.0 (2024-06-21)
+# 2.0.0 (2024-06-21)
 
 - Make `primaryCollection` custom field channel aware.
 

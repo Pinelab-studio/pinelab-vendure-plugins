@@ -35,7 +35,6 @@ export interface PrimaryCollectionPluginConfig {
     config.customFields.Product.push({
       name: 'primaryCollection',
       type: 'string',
-      list: true,
       ui: {
         component: 'select-primary-collection',
         tab: PrimaryCollectionPlugin?.config?.customFieldUITabName,

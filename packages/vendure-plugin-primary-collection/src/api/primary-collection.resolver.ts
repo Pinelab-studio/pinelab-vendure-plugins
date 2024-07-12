@@ -8,8 +8,9 @@ import {
   Translated,
   Channel,
   EntityHydrator,
+  ID,
 } from '@vendure/core';
-import { getProductPrimaryCollectionIDInChannel } from '../util';
+import { getProductPrimaryCollectionIDInChannel } from '../util/helpers';
 
 @Resolver()
 export class PrimaryCollectionPluginResolver {
@@ -26,11 +27,25 @@ export class PrimaryCollectionPluginResolver {
     const collectionId = getProductPrimaryCollectionIDInChannel(
       ctx,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-      (product.customFields as any).primaryCollection as string[]
+      (product.customFields as any).primaryCollection as string
     );
     if (collectionId) {
       return this.collectionService.findOne(ctx, collectionId);
     }
+  }
+
+  @ResolveField('breadcrumbs')
+  @Resolver('Product')
+  productBreadcrumb(@Parent() product: Product): {
+    name: string;
+    id: ID;
+    slug: string;
+  } {
+    return {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+    };
   }
 
   @ResolveField('channels')

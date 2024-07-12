@@ -8,7 +8,7 @@ import {
 import {
   ProductPrimaryCollection,
   parseProductPrimaryCollectionCustomField,
-} from '../util';
+} from '../util/helpers';
 
 @Injectable()
 export class PrimaryCollectionHelperService {
@@ -62,9 +62,7 @@ export class PrimaryCollectionHelperService {
       updatedProducts.push({
         id: product.id,
         customFields: {
-          primaryCollection: updatedPrimaryCollectionList.map(
-            (primaryCollection) => JSON.stringify(primaryCollection)
-          ),
+          primaryCollection: JSON.stringify(updatedPrimaryCollectionList),
         },
       });
     }

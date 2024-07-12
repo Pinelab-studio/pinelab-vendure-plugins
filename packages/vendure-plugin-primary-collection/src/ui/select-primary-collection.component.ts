@@ -59,9 +59,8 @@ export class SelectPrimaryCollectionComponent
   implements FormInputComponent<StringCustomFieldConfig>, OnInit, OnDestroy
 {
   readonly!: boolean;
-  isListInput = true;
   config!: StringCustomFieldConfig;
-  formControl!: FormControl<string[]>;
+  formControl!: FormControl<string>;
   primaryCollectionFormControl: FormControl;
   productsCollections!: Collection[];
   productsCollectionsAreLoading = true;
@@ -111,7 +110,7 @@ export class SelectPrimaryCollectionComponent
       ).pipe(
         map(([activeChannel, product]) => {
           //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          this.productsCollections = this.getCandidatePrimaryCollections(
+          this.productsCollections = this.getEligiblePrimaryCollections(
             product,
             //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             activeChannel.id
@@ -143,11 +142,9 @@ export class SelectPrimaryCollectionComponent
     activeChannelId: ID,
     selectedPrimaryCollectionId: ID
   ): void => {
-    const allPrimaryCollectionsList =
-      this.formControl.value?.map(
-        (primaryCollectionInChannel) =>
-          JSON.parse(primaryCollectionInChannel) as ProductPrimaryCollection
-      ) ?? [];
+    const allPrimaryCollectionsList = JSON.parse(
+      this.formControl.value ?? '[]'
+    ) as ProductPrimaryCollection[];
     let valueUpdated = false;
     for (const primaryCollectionDetail of allPrimaryCollectionsList) {
       if (idsAreEqual(primaryCollectionDetail.channelId, activeChannelId)) {
@@ -161,13 +158,11 @@ export class SelectPrimaryCollectionComponent
         collectionId: selectedPrimaryCollectionId,
       });
     }
-    this.formControl.setValue(
-      allPrimaryCollectionsList.map((v) => JSON.stringify(v))
-    );
+    this.formControl.setValue(JSON.stringify(allPrimaryCollectionsList));
     this.formControl.markAsDirty();
   };
 
-  getCandidatePrimaryCollections(
+  getEligiblePrimaryCollections(
     product: ProductWithPrimaryCollection,
     activeChannelId: ID
   ): Collection[] {

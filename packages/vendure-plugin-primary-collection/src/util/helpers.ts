@@ -6,17 +6,15 @@ export type ProductPrimaryCollection = {
 };
 
 export function parseProductPrimaryCollectionCustomField(
-  primaryCollection: string[] | undefined
+  primaryCollection: string | undefined
 ): ProductPrimaryCollection[] {
-  return (primaryCollection ?? []).map(
-    (primaryCollectionInChannel) =>
-      JSON.parse(primaryCollectionInChannel) as ProductPrimaryCollection
-  );
+  //eslint-disable-next-line @typescript-eslint/no-unsafe-return
+  return JSON.parse(primaryCollection ?? '[]');
 }
 
 export function getProductPrimaryCollectionIDInChannel(
   ctx: RequestContext,
-  primaryCollection: string[] | undefined
+  primaryCollection: string | undefined
 ): ID | undefined {
   const productPrimaryCollections =
     parseProductPrimaryCollectionCustomField(primaryCollection);
