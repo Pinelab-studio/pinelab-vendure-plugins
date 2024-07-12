@@ -176,6 +176,7 @@ export class ShipmateService implements OnApplicationBootstrap {
         `Failed to send order '${order.code}' to Shipmate: ${err?.message}`,
         err
       );
+      throw err;
     }
   }
 
