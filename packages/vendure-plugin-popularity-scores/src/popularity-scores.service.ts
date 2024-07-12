@@ -44,6 +44,7 @@ export class PopularityScoresService implements OnModuleInit {
           job.data.channelToken
         ).catch((e) => {
           Logger.warn(
+            //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             `Failed to handle popularity calculation job: ${e?.message}`,
             loggerCtx
           );
@@ -81,6 +82,7 @@ export class PopularityScoresService implements OnModuleInit {
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
+    //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const maxCount = groupedOrderLines?.[0]?.count;
     if (!maxCount) {
       Logger.warn(
@@ -95,8 +97,10 @@ export class PopularityScoresService implements OnModuleInit {
     await productRepository.save(
       groupedOrderLines.map((gols) => {
         return {
+          //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
           id: gols.product_id,
           customFields: {
+            //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             popularityScore: Math.round((gols.count / maxCount) * maxValue),
           },
         };
@@ -164,17 +168,20 @@ export class PopularityScoresService implements OnModuleInit {
       .getRawMany();
 
     const productIds = variantsPartialInfoResults
+      //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       .filter((i) => i.product_id != null)
-      .map((i) => i.product_id);
+      //eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
+      .map((i) => i.product_id as ID);
 
-    const uniqueProductIds = [...new Set(productIds)];
+    const uniqueProductIds: ID[] = [...new Set(productIds)];
     if (uniqueProductIds.length) {
       let score = 0;
       const chunkedProductIds = sliceArray(
         uniqueProductIds,
         this.config.chunkSize ?? 100
       );
-      for (let uniqueProductIdsSlice of chunkedProductIds) {
+      for (const uniqueProductIdsSlice of chunkedProductIds) {
+        //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const summedProductsValue = await productsRepo
           .createQueryBuilder('product')
           .select(
@@ -183,6 +190,7 @@ export class PopularityScoresService implements OnModuleInit {
           .andWhere('product.id IN (:...ids)', { ids: uniqueProductIdsSlice })
           .getRawOne();
         // Convert to number to ensure correct arithmetic operation
+        //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         score += Number(summedProductsValue.productScoreSum) ?? 0;
       }
       return score;

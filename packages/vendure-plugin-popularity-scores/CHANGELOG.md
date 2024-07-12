@@ -1,3 +1,7 @@
+# 1.7.1 (2024-06-21)
+
+- Allow specifying a UI tab for the `popularityScore` custom field
+
 # 1.7.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
