@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-primary-collection",
-  "version": "1.6.0",
+  "version": "2.0.0",
   "description": "Adds a primary collection to all Products by extending Vendure's graphql api",
   "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",
