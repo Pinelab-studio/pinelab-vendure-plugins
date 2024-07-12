@@ -70,12 +70,12 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
     variantId: string | number,
     channelId: ID
   ): void {
-    const orderLine = order.lines.find(
-      (line) => line.productVariant.id == variantId
+    const orderLine = order.lines.find((line) =>
+      idsAreEqual(line.productVariant.id, variantId)
     )!;
     const maxPerOrder = orderLine.productVariant.customFields.maxPerOrder;
     const onlyAllowPersList =
-      orderLine.productVariant.customFields.onlyAllowPer;
+      orderLine.productVariant.customFields.onlyAllowPer ?? [];
     const onlyAllowPer =
       onlyAllowPersList
         .map((v) => JSON.parse(v) as ChannelAwareIntValue)

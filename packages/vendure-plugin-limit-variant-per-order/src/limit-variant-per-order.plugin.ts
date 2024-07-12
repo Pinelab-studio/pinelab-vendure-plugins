@@ -1,9 +1,4 @@
-import {
-  LanguageCode,
-  PluginCommonModule,
-  Type,
-  VendurePlugin,
-} from '@vendure/core';
+import { LanguageCode, PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { AddItemOverrideResolver } from './add-item-override.resolver';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
@@ -39,7 +34,6 @@ import path from 'path';
       type: 'text',
       public: true,
       list: true,
-      defaultValue: [],
       ui: { component: 'channel-aware-int-form-input' },
       label: [
         {
