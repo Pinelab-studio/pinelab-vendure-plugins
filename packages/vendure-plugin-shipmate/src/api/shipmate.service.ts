@@ -155,6 +155,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           `Failed to cancel Shipment for order '${order.code}' on Shipmate: ${err?.message}`,
           err
         );
+        throw err;
       }
     }
     try {
