@@ -29,3 +29,26 @@ plugins: [
 ```
 
 And your good to go with just that.
+
+## Migrating from `1.6.0` to `2.0.0`
+
+1. Always create a backup of your database
+2. Install the plugin and generate a migration
+3. In your migration file, add the function `exportCurrentPrimaryCollections(queryRunner)` to the top and `savePrimaryCollection(queryRunner)` to the bottom of the `up` function in your migration file, like so
+
+```ts
+import { exportCurrentPrimaryCollections, savePrimaryCollection } from "@pinelab/vendure-plugin-primary-collection";
+
+   public async up(queryRunner: QueryRunner): Promise<any> {
+        // add this line
+        await exportCurrentPrimaryCollections(queryRunner)
+        await queryRunner.query("ALTER TABLE `product` DROP FOREIGN KEY `FK_5e6c3c845407ccaa497eca1a865`", undefined);
+        await queryRunner.query("ALTER TABLE `product` CHANGE `customFieldsPrimarycollectionid` `customFieldsPrimarycollection` int NULL", undefined);
+        await queryRunner.query("ALTER TABLE `product` DROP COLUMN `customFieldsPrimarycollection`", undefined);
+        await queryRunner.query("ALTER TABLE `product` ADD `customFieldsPrimarycollection` varchar(255) NULL", undefined);
+        //...and this line
+        await savePrimaryCollection(queryRunner)
+   }
+```
+
+4. Run the migration.
