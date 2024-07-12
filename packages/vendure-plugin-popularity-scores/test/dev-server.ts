@@ -24,6 +24,8 @@ require('dotenv').config();
     plugins: [
       PopularityScoresPlugin.init({
         endpointSecret: 'test',
+        productFieldUiTab: 'Scores',
+        collectionFieldUiTab: 'Scores',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
