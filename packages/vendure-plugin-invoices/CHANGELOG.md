@@ -1,3 +1,11 @@
+# 3.1.2 (2024-07-09)
+
+- Fetch customer relation for orders by default
+
+# 3.1.1 (2024-07-09)
+
+- Important performance improvement for projects with larger amounts (> 60000) of invoices
+
 # 3.1.0 (2024-07-05)
 
 - Improved default HTML template

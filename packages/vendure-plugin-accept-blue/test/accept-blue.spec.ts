@@ -7,7 +7,6 @@ import {
   mergeConfig,
   Order,
 } from '@vendure/core';
-
 // @ts-ignore
 import nock from 'nock';
 
@@ -20,8 +19,16 @@ import {
   TestServer,
 } from '@vendure/testing';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { AcceptBluePlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
+import { AcceptBluePlugin } from '../src';
+import { AcceptBlueClient } from '../src/api/accept-blue-client';
+import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
+import {
+  AccountType,
+  CheckPaymentMethodInput,
+  NoncePaymentMethodInput,
+  SecCode,
+} from '../src/types';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -36,24 +43,13 @@ import {
   TRANSITION_ORDER_TO,
   UPDATE_CUSTOMER_BLUE_ID,
 } from './helpers';
-import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
-import {
-  AccountType,
-  CheckPaymentMethodInput,
-  CreditCardPaymentMethodInput,
-  NoncePaymentMethodInput,
-  SecCode,
-} from '../src/types';
-import { AcceptBlueClient } from '../src/api/accept-blue-client';
-import axios from 'axios';
 import {
   checkChargeResult,
   creditCardChargeResult,
-  haydenZiemeCustomerDetails,
   haydenSavedPaymentMethods,
-  recurringScheduleResult,
-  tokenizedCreditCardChargeResult,
+  haydenZiemeCustomerDetails,
   mockCardTransaction,
+  recurringScheduleResult,
 } from './nock-helpers';
 
 let server: TestServer;
@@ -100,6 +96,15 @@ afterEach(async () => {
 
 it('Should start successfully', async () => {
   expect(serverStarted).toBe(true);
+});
+
+it('Selects dev mode if args.testMode=true', () => {
+  const acceptBlueClient = new AcceptBlueClient(
+    'process.env.API_KEY',
+    '',
+    true
+  );
+  expect(acceptBlueClient.endpoint).toContain('develop');
 });
 
 it('Creates Accept Blue payment method', async () => {
