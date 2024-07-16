@@ -55,6 +55,8 @@ These scripts allow you to copy all data from a source database to a target data
 2. Optional: Copy over the Vendure assets to your test environment. For Google Cloud we use a [transfer job](https://console.cloud.google.com/transfer/jobs) to copy assets to the test bucket.
 3. Don't forget to disable any syncs to external platforms in your test env. For example, disable sending placed orders to Shipmate to prevent test orders ending up in production third party platforms.
 
+Both `exportDbToFile` and `insertIntoDb` will prompt you to proceed first, before actually doing anything.
+
 ```ts
 import {
   exportDbToFile,
