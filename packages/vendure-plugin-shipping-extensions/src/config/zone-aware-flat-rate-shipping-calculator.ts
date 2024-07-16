@@ -65,7 +65,7 @@ export const zoneAwareFlatRateShippingCalculator = new ShippingCalculator({
   },
   calculate: async (ctx, order, args) => {
     const taxRate =
-      (await zoneAwareShippingTaxCalculationService.getTaxRateWithCategory(
+      (await zoneAwareShippingTaxCalculationService.getTaxRateForCategory(
         ctx,
         order,
         args.taxCategoryId

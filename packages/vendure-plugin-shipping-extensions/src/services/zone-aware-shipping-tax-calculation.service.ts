@@ -13,7 +13,11 @@ import { loggerCtx } from '../constants';
 export class ZoneAwareShippingTaxCalculationService {
   constructor(private readonly connection: TransactionalConnection) {}
 
-  async getTaxRateWithCategory(
+  /**
+   * This resolves the given tax category to a tax rate based on the orders billing Address.
+   * If no billing address, it used the shipping address
+   */
+  async getTaxRateForCategory(
     ctx: RequestContext,
     order: Order,
     taxCategoryId: ID
