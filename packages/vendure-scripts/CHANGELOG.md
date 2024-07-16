@@ -1,3 +1,7 @@
+# 1.4.0 (2024-06-21)
+
+- Added script for copying Production database to a Test database with mysqldump
+
 # 1.3.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
