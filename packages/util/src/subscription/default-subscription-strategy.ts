@@ -44,8 +44,7 @@ export class DefaultSubscriptionStrategy implements SubscriptionStrategy {
         amount: price,
         interval: 'month',
         intervalCount: 1,
-        // startDate: this.getOneMonthFromNow(),
-        startDate: new Date(new Date().getTime() + 5000), // 5s from now
+        startDate: this.getOneMonthFromNow(),
       },
     };
   }

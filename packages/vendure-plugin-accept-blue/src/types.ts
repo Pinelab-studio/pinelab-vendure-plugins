@@ -1,25 +1,6 @@
 import type { Request } from 'express';
-interface CustomFields {
-  custom1: string;
-  custom2: string;
-  custom3: string;
-  custom4: string;
-  custom5: string;
-  custom6: string;
-  custom7: string;
-  custom8: string;
-  custom9: string;
-  custom10: string;
-  custom11: string;
-  custom12: string;
-  custom13: string;
-  custom14: string;
-  custom15: string;
-  custom16: string;
-  custom17: string;
-  custom18: string;
-  custom19: string;
-  custom20: string;
+export interface CustomFields {
+  custom1?: string;
 }
 
 enum AcceptBlueAVSResultCode {
@@ -363,7 +344,7 @@ export interface AcceptBlueChargeTransaction extends AcceptBlueTransaction {
   last_4: string;
   card_ref: string | null;
   bin_type?: AcceptBlueBinType;
-  transaction: CardTransaction | null;
+  transaction?: CardTransaction;
 }
 
 export interface AcceptBlueEvent {

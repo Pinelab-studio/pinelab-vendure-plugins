@@ -18,15 +18,19 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
+import crypto from 'node:crypto';
+import { filter } from 'rxjs';
+import { In } from 'typeorm';
+import * as util from 'util';
 import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import {
   AcceptBlueChargeTransaction,
+  AcceptBlueEvent,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleTransaction,
-  AcceptBlueWebhook,
   CheckPaymentMethodInput,
   HandlePaymentResult,
   NoncePaymentMethodInput,
@@ -46,13 +50,12 @@ import {
   AcceptBlueSubscription,
   AcceptBlueTransaction,
 } from './generated/graphql';
-import { filter } from 'rxjs';
-import * as util from 'util';
+import { AcceptBlueTransactionEvent } from './accept-blue-transaction-event';
 
 @Injectable()
 export class AcceptBlueService implements OnApplicationBootstrap {
   constructor(
-    private readonly productVariantService: ProductVariantService,
+    productVariantService: ProductVariantService,
     private readonly paymentMethodService: PaymentMethodService,
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
@@ -98,15 +101,15 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    */
   async registerWebhook(ctx: RequestContext, paymentMethod: PaymentMethod) {
     const client = await this.getClientForChannel(ctx);
-    const webhookUrl = `${this.options.vendureHost}/accept-blue/webhook`;
+    const webhookUrl = `${this.options.vendureHost}/accept-blue/webhook/${ctx.channel.token}`;
     const existingHooks = await client.getWebhooks();
     const existingHook = existingHooks.find(
       (hook) => hook.webhook_url === webhookUrl
     );
-    let webhookSignature: string;
+    let webhookSecret: string;
     if (existingHook) {
       Logger.info(`Webhook for this server is already registered`, loggerCtx);
-      webhookSignature = existingHook.signature;
+      webhookSecret = existingHook.signature;
     } else {
       // Create a new hook if none exists yet
       const webhook = await client.createWebhook({
@@ -114,19 +117,19 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         description: 'Notify Vendure of any events on the Accept Blue platform',
         active: true,
       });
-      webhookSignature = webhook.signature;
+      webhookSecret = webhook.signature;
     }
     const signatureArg = paymentMethod.handler.args.find(
-      (a) => a.name === 'webhookSignature'
+      (a) => a.name === 'webhookSecret'
     );
     if (signatureArg) {
       // Set value if signature arg already present
-      signatureArg.value = webhookSignature;
+      signatureArg.value = webhookSecret;
     } else {
       // Otherwise push signature arg to handler args
       paymentMethod.handler.args.push({
-        name: 'webhookSignature',
-        value: webhookSignature,
+        name: 'webhookSecret',
+        value: webhookSecret,
       });
     }
     await this.connection.getRepository(ctx, PaymentMethod).save(paymentMethod);
@@ -184,7 +187,14 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     );
     let chargeResult: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
-      chargeResult = await client.createCharge(paymentMethodId, amount);
+      const subscriptionOrderLines =
+        await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
+      chargeResult = await client.createCharge(paymentMethodId, amount, {
+        // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+        custom1: this.stringifyOrderLineCustomField(
+          subscriptionOrderLines.map((l) => l.id)
+        ),
+      });
     }
     return {
       customerId: String(acceptBlueCustomer.id),
@@ -420,15 +430,162 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         enabled: { eq: true },
       },
     });
-    const acceptBlueMethod = methods.items.find(
+    const acceptBlueMethod = methods.items.filter(
       (m) => m.handler.code === acceptBluePaymentHandler.code
     );
-    if (!acceptBlueMethod) {
+    if (acceptBlueMethod.length > 1) {
+      throw Error(
+        `More than one enabled payment method found with code ${acceptBluePaymentHandler.code}. There should be only 1 per channel`
+      );
+    }
+    if (acceptBlueMethod.length === 0) {
       throw new Error(
         `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
       );
     }
-    return acceptBlueMethod;
+    return acceptBlueMethod[0];
+  }
+
+  /**
+   * Handle incoming webhooks from Accept Blue
+   */
+  async handleIncomingWebhook(
+    ctx: RequestContext,
+    event: AcceptBlueEvent,
+    rawBody: Buffer,
+    incomingSignature: string
+  ): Promise<void> {
+    Logger.info(
+      `Handling incoming webhook '${event.subType}' '${event.event}' '${event.type}' (${event.id}) ...`,
+      loggerCtx
+    );
+    const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    const savedSecret = acceptBlueMethod.handler.args.find(
+      (a) => a.name === 'webhookSecret'
+    )?.value;
+    if (!savedSecret) {
+      throw new Error(
+        'No webhook secret found on Accept Blue payment method, can not validate incoming webhook'
+      );
+    }
+    if (!this.isValidSignature(savedSecret, rawBody, incomingSignature)) {
+      throw new Error('Incoming webhook has invalid signature');
+    }
+    // Get corresponding order lines
+    const scheduleId = event.data.transaction?.transaction_details?.schedule_id;
+    const orderLineIds = this.parseOrderLineCustomField(
+      event.data.transaction?.custom_fields?.custom1
+    );
+    let orderLines: OrderLine[] = [];
+    if (scheduleId) {
+      // Get orderLine by scheduleId
+      const orderLine = await this.findOrderLineByScheduleId(ctx, scheduleId);
+      orderLines = [orderLine];
+    } else {
+      // Find by ID's
+      orderLines = await this.connection
+        .getRepository(ctx, OrderLine)
+        .find({ where: { id: In(orderLineIds) } });
+    }
+    if (!orderLines.length) {
+      Logger.warn(
+        'No order lines found for incoming webhook, we can not connect this event to an order line.',
+        loggerCtx
+      );
+      await this.eventBus.publish(
+        new AcceptBlueTransactionEvent(
+          event.type,
+          event,
+          event.data.transaction?.id
+        )
+      );
+      Logger.debug(
+        `Published AcceptBlueTransactionEvent (${event.id}) without orderLine`,
+        loggerCtx
+      );
+      return;
+    }
+    for (const orderLine of orderLines) {
+      // Hydrate sensible relations
+      await this.entityHydrator.hydrate(ctx, orderLine, {
+        relations: ['order', 'order.customer'],
+      });
+      await this.eventBus.publish(
+        new AcceptBlueTransactionEvent(
+          event.type,
+          event,
+          event.data.transaction?.id,
+          orderLine
+        )
+      );
+      Logger.debug(
+        `Published AcceptBlueTransactionEvent (${event.id}) for orderLine ${orderLine.id}`,
+        loggerCtx
+      );
+    }
+    Logger.info(
+      `Successfully handled incoming webhook '${event.subType}' '${event.event}' '${event.type}' (${event.id})`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Find an order line based on the Accept Blue schedule ID that was saved during order placement
+   */
+  async findOrderLineByScheduleId(
+    ctx: RequestContext,
+    scheduleId: number
+  ): Promise<OrderLine> {
+    const orderLine = await this.connection
+      .getRepository(ctx, OrderLine)
+      .findOne({
+        where: {
+          customFields: {
+            acceptBlueSubscriptionIds: In([scheduleId]),
+          },
+        },
+      });
+    if (!orderLine) {
+      throw Error(`No order line found with scheduleId ${scheduleId}`);
+    }
+    return orderLine;
+  }
+
+  /**
+   * Validate if the incoming webhook is signed with the secret we have saved.
+   */
+  isValidSignature(
+    savedSecret: string,
+    rawBody: Buffer,
+    incomingSignature: string
+  ): boolean {
+    const hash = crypto
+      .createHmac('sha256', savedSecret)
+      .update(rawBody)
+      .digest('hex');
+    return hash === incomingSignature;
+  }
+
+  /**
+   * Parse orderLine Ids from the incoming Accept Blue custom field
+   */
+  parseOrderLineCustomField(customField1?: string): ID[] {
+    if (!customField1) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const orderLineIds = JSON.parse(customField1);
+    if (!Array.isArray(orderLineIds)) {
+      throw new Error(`Given custom field is not an array`);
+    }
+    return orderLineIds as ID[];
+  }
+
+  /**
+   * Stringify orderLine id's, so that we can pass it as custom field to Accept Blue
+   */
+  stringifyOrderLineCustomField(orderLineIds: ID[]): string {
+    return JSON.stringify(orderLineIds);
   }
 
   /**

@@ -20,7 +20,7 @@ Create recurring subscriptions with the Accept Blue platform.
 
 ```ts
   AcceptBluePlugin.init({
-   subscriptionStrategy: new DefaultSubscriptionStrategy()
+   vendureHost: 'https://my-vendure-backend.io'
   }),
 ```
 
@@ -178,3 +178,18 @@ The arguments `amount` and `cvv2` are optional, see [the Accept Blue Docs for mo
 ## CORS
 
 If you run into CORS issues loading the Accept Blue hosted tokenization javascript library, you might need to remove the `cross-origin` key on your `script` tag.
+
+## Incoming events and webhooks
+
+This plugin emits an `AcceptBlueTransactionEvent` whenever it receives a webhook with a transaction update from Accept Blue.
+
+```ts
+import { AcceptBlueTransactionEvent } from '@pinelab/vendure-plugin-accept-blue';
+
+// In your project's application bootstrap
+this.eventBus.ofType(AcceptBlueTransactionEvent).subscribe((event) => {
+  // Do your magic here
+  // Please see the JS docs of `AcceptBlueTransactionEvent` for more information on this object.
+  // Event.orderLine may be undefined, for example when refund transactions come in. Refunds are currently not connected to an orderLine
+});
+```

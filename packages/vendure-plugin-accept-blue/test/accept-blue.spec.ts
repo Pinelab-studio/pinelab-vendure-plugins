@@ -77,6 +77,7 @@ beforeAll(async () => {
     plugins: [
       AcceptBluePlugin.init({
         // TODO create TestStrategy that creates invalid subscription
+        vendureHost: 'https://my-vendure-backend.io',
       }),
     ],
   });

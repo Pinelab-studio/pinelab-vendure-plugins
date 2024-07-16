@@ -14,6 +14,7 @@ import {
   AcceptBlueTransaction,
   AcceptBlueWebhookInput,
   AcceptBlueWebhook,
+  CustomFields,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
@@ -207,13 +208,15 @@ export class AcceptBlueClient {
      * ID without the `pm-` prefix
      */
     paymentMethodId: number,
-    amountInCents: number
+    amountInCents: number,
+    customFields: CustomFields
   ): Promise<AcceptBlueChargeTransaction> {
     const amount = amountInCents / 100;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request('post', `transactions/charge`, {
       source: `pm-${paymentMethodId}`,
       amount,
+      custom_fields: customFields,
     });
     if (
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

@@ -51,10 +51,10 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       label: [{ languageCode: LanguageCode.en, value: 'PIN' }],
       ui: { component: 'password-form-input' },
     },
-    webhookSignature: {
+    webhookSecret: {
       type: 'string',
       required: false,
-      label: [{ languageCode: LanguageCode.en, value: 'Webhook signature' }],
+      label: [{ languageCode: LanguageCode.en, value: 'Webhook secret' }],
       description: [
         {
           languageCode: LanguageCode.en,
