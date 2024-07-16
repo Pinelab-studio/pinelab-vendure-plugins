@@ -13,14 +13,17 @@ export interface DBConfig {
  */
 export async function exportDbToFile(
   config: DBConfig,
-  exportFile = `/tmp/db_export.sql`
+  exportFile = `/tmp/db_export.sql`,
+  requiresPrompt = true
 ): Promise<string> {
-  const promptCommand = new Confirm(
-    `Downloading database ${config.databaseName} (${config.host}) to "${exportFile}". Proceed?`
-  );
-  const accept = await promptCommand.run();
-  if (!accept) {
-    process.exit(0);
+  if (requiresPrompt) {
+    const promptCommand = new Confirm(
+      `Downloading database ${config.databaseName} (${config.host}) to "${exportFile}". Proceed?`
+    );
+    const accept = await promptCommand.run();
+    if (!accept) {
+      process.exit(0);
+    }
   }
   await execute(
     `mysqldump -v --set-gtid-purged=OFF --column-statistics=0 -u ${config.username} -h ${config.host} --password='${config.password}' ${config.databaseName} > ${exportFile}`
@@ -33,17 +36,20 @@ export async function exportDbToFile(
  */
 export async function insertIntoDb(
   config: DBConfig,
-  sqlFile: string
+  sqlFile: string,
+  requiresPrompt = true
 ): Promise<void> {
-  const promptCommand = new Confirm(
-    `Inserting "${sqlFile}" into database ${config.databaseName} (${config.host}). Proceed?`
-  );
-  const accept = await promptCommand.run();
-  if (!accept) {
-    process.exit(0);
+  if (requiresPrompt) {
+    const promptCommand = new Confirm(
+      `Inserting "${sqlFile}" into database ${config.databaseName} (${config.host}). Proceed?`
+    );
+    const accept = await promptCommand.run();
+    if (!accept) {
+      process.exit(0);
+    }
   }
   await execute(
-    `mysql -u ${config.username} -h ${config.host} --password='${config.password}' ${config.databaseName} < ${sqlFile}`
+    `mysql --verbose -u ${config.username} -h ${config.host} --password='${config.password}' ${config.databaseName} < ${sqlFile}`
   );
 }
 

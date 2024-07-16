@@ -1,3 +1,8 @@
+# 1.5.0 (2024-07-16)
+
+- Allow running the scripts without prompts
+- Made mysql import command verbose
+
 # 1.4.1 (2024-07-16)
 
 - Included dependency 'prompt-confirm'
