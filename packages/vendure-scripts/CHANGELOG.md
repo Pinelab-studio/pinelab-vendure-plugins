@@ -1,4 +1,8 @@
-# 1.4.0 (2024-06-21)
+# 1.4.1 (2024-07-16)
+
+- Included dependency 'prompt-confirm'
+
+# 1.4.0 (2024-07-16)
 
 - Added script for copying Production database to a Test database with mysqldump
 
