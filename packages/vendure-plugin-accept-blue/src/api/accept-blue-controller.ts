@@ -26,12 +26,12 @@ export class AcceptBlueController {
     const body = JSON.parse(rawBody.toString('utf-8')) as AcceptBlueEvent; // We have to parse it ourselves, because of the rawBody middleware
     console.log(JSON.stringify(body));
     const ctx = await this.getCtxForChannel(channelToken);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await this.acceptBlueService
       .handleIncomingWebhook(ctx, body, rawBody, signature)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .catch((e: any) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         Logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error handling Accept Blue webhook event: ${e?.message}`,
           loggerCtx
         );
