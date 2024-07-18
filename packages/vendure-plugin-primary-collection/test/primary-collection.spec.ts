@@ -110,12 +110,17 @@ describe('Product Primary Collection', function () {
           id
           name
         }
+        breadcrumbs {
+          id
+          name
+          slug
+        }
       }
     }
   `;
 
   const updatePrimaryCollectionMutation = gql`
-    mutation UpdateProuductPrimaryCollection(
+    mutation UpdateProductPrimaryCollection(
       $productId: ID!
       $primaryCollection: String
     ) {
@@ -185,8 +190,20 @@ describe('Product Primary Collection', function () {
     expect(anotherProduct.primaryCollection).toBeNull();
   });
 
+  it('Has breadcrumbs set on a product', async () => {
+    const { product } = await shopClient.query(primaryCollectionQuery, {
+      productId: 1,
+    });
+    expect(product.breadcrumbs).toEqual([
+      { id: '1', name: '__root_collection__', slug: '__root_collection__' },
+      { id: '3', name: 'Electronics', slug: 'electronics' },
+      { id: '1', name: 'Laptop', slug: 'laptop' },
+    ]);
+  });
+
   it(`Should assign primaryCollection to all products after running the "setPrimaryCollectionForAllProducts" function, 
   while preserving the values for those products who already had `, async () => {
+    // This test might require you to clear __data__ folder before running it
     const ctx = await getSuperadminContext(server.app);
     await server.app
       .get(PrimaryCollectionHelperService)

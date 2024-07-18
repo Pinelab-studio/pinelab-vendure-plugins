@@ -10,7 +10,14 @@ import {
   EntityHydrator,
   ID,
 } from '@vendure/core';
+import { CollectionBreadcrumb } from '@vendure/common/lib/generated-types';
 import { getProductPrimaryCollectionIDInChannel } from '../util/helpers';
+
+interface ProductBreadcrumb {
+  name: string;
+  id: ID;
+  slug: string;
+}
 
 @Resolver()
 export class PrimaryCollectionPluginResolver {
@@ -18,6 +25,7 @@ export class PrimaryCollectionPluginResolver {
     private collectionService: CollectionService,
     private entityHydrator: EntityHydrator
   ) {}
+
   @ResolveField('primaryCollection')
   @Resolver('Product')
   async primaryCollection(
@@ -36,16 +44,29 @@ export class PrimaryCollectionPluginResolver {
 
   @ResolveField('breadcrumbs')
   @Resolver('Product')
-  productBreadcrumb(@Parent() product: Product): {
-    name: string;
-    id: ID;
-    slug: string;
-  } {
-    return {
+  async productBreadcrumb(
+    @Ctx() ctx: RequestContext,
+    @Parent() product: Product
+  ): Promise<ProductBreadcrumb[]> {
+    const primaryCollection = await this.primaryCollection(ctx, product);
+    const productBreadcrumb = {
       id: product.id,
       name: product.name,
       slug: product.slug,
     };
+    if (!primaryCollection) {
+      // No parent collection, so return only the product breadcrumb
+      return [productBreadcrumb];
+    } else {
+      // eslint-disable-next-line -- See https://github.com/vendure-ecommerce/vendure/pull/2960
+      const parentCollectionbreadcrumb =
+        (await this.collectionService.getBreadcrumbs(
+          ctx,
+          primaryCollection
+        )) as CollectionBreadcrumb[];
+      // Append product breadcrumb to it's parent breadcrumbs, so that we get Product > Parent Collection > Root Collection
+      return [...parentCollectionbreadcrumb, productBreadcrumb];
+    }
   }
 
   @ResolveField('channels')

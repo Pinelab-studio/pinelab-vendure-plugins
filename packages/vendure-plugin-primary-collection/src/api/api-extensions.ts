@@ -2,7 +2,7 @@ import { gql } from 'graphql-tag';
 export const apiExtensions = gql`
   extend type Product {
     primaryCollection: Collection
-    breadcrumbs: ProductBreadcrumb
+    breadcrumbs: [ProductBreadcrumb!]!
   }
 
   type ProductBreadcrumb {
