@@ -1,4 +1,3 @@
-import { Address } from '@vendure/core';
 import { OrderAddress } from '@vendure/common/lib/generated-shop-types';
 
 export interface OrderAddressToGeolocationConversionStrategy {

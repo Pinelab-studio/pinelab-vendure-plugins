@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-shipping-extensions",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "Vendure plugin for configurable shipping calculators and eligibility checkers.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -22,7 +22,7 @@
     "start": "ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest run",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint ."
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }
