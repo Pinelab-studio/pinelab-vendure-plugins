@@ -1,3 +1,7 @@
+# 1.7.1 (2024-07-22)
+
+- Fixed issue where in some projects a collection's parentId was set to null. See #478
+
 # 1.7.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6
