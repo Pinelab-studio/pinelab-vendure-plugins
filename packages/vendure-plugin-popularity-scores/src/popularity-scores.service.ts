@@ -146,7 +146,16 @@ export class PopularityScoresService implements OnModuleInit {
     };
 
     await traverseDepthFirstAndUpdateScore(channelCollectionsTree);
-    await collectionsRepo.save(allCollections);
+    for (const updateCollection of allCollections) {
+      await collectionsRepo.update(
+        { id: updateCollection.id },
+        {
+          customFields: {
+            popularityScore: updateCollection.customFields.popularityScore,
+          },
+        }
+      );
+    }
   }
 
   private async getSummedProductScoreCalculation(
