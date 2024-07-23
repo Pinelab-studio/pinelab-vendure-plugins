@@ -24,16 +24,16 @@ export function parseAddress(
       customer?.firstName,
       customer?.lastName
     ),
-    company_name: address.company ?? '',
-    telephone: customer?.phoneNumber ?? '',
-    email_address: customer?.emailAddress ?? '',
-    line_1: address?.streetLine1 ?? '',
-    line_2: address?.streetLine2 ?? '',
+    company_name: address.company?.substring(0, 40) ?? '',
+    telephone: customer?.phoneNumber?.substring(0, 40) ?? '',
+    email_address: customer?.emailAddress?.substring(0, 40) ?? '',
+    line_1: address?.streetLine1?.substring(0, 40) ?? '',
+    line_2: address?.streetLine2?.substring(0, 40) ?? '',
     line_3: '',
-    city: address?.city ?? '',
-    county: address.province ?? '',
-    postcode: address.postalCode ?? '',
-    country: address.countryCode ?? '',
+    city: address?.city?.substring(0, 40) ?? '',
+    county: address.province?.substring(0, 40) ?? '',
+    postcode: address.postalCode?.substring(0, 40) ?? '',
+    country: address.countryCode?.substring(0, 40) ?? '',
   };
 }
 
@@ -53,8 +53,11 @@ export function parseOrderLine(line: OrderLine): Items {
   return {
     item_quantity: line.quantity,
     item_value: line.proratedUnitPriceWithTax,
-    full_description: line.productVariant?.product?.description,
-    short_description: line.productVariant?.name,
+    full_description: line.productVariant?.product?.description?.substring(
+      0,
+      40
+    ),
+    short_description: line.productVariant?.name?.substring(0, 40),
   };
 }
 
@@ -64,10 +67,10 @@ export function getRecepientName(
   customerLastName?: string
 ) {
   if (fullName) {
-    return fullName;
+    return fullName.substring(0, 40);
   }
   if (customerFirstName && customerLastName) {
-    return `${customerFirstName} ${customerLastName}`;
+    return `${customerFirstName} ${customerLastName}`.substring(0, 40);
   }
   return '';
 }
