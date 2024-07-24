@@ -12,7 +12,6 @@ import {
   mergeConfig,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { VariantBulkUpdatePlugin } from '../src/variant-bulk-update.plugin';
 
 require('dotenv').config();
@@ -24,8 +23,25 @@ require('dotenv').config();
     apiOptions: {
       adminApiPlayground: {},
     },
+    customFields: {
+      Product: [
+        {
+          name: 'unavailable',
+          type: 'boolean',
+        },
+      ],
+      ProductVariant: [
+        {
+          name: 'unavailable',
+          type: 'boolean',
+        },
+      ],
+    },
     plugins: [
-      VariantBulkUpdatePlugin,
+      VariantBulkUpdatePlugin.init({
+        enablePriceBulkUpdate: true,
+        bulkUpdateCustomFields: ['unavailable'],
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
