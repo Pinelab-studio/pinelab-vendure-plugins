@@ -55,7 +55,8 @@ export class BulkUpdateService implements OnApplicationBootstrap {
       }
       // Bulk update custom fields
       const shouldUpdateCustomFields = this.options.bulkUpdateCustomFields.find(
-        (customFieldName) => product.customFields?.[customFieldName]
+        (customFieldName) =>
+          product.customFields?.[customFieldName] !== undefined
       );
       if (shouldUpdateCustomFields) {
         await this.updateCustomFieldsOfVariants(ctx, product).catch((e) => {
@@ -105,7 +106,7 @@ export class BulkUpdateService implements OnApplicationBootstrap {
     // First construct the custom fields update object for each configured field
     const customFields: Record<string, any> = {};
     for (const customFieldName of this.options.bulkUpdateCustomFields) {
-      if (updatedProduct.customFields?.[customFieldName]) {
+      if (updatedProduct.customFields?.[customFieldName] !== undefined) {
         customFields[customFieldName] =
           updatedProduct.customFields[customFieldName];
       }

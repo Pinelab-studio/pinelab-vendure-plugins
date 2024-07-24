@@ -91,6 +91,36 @@ describe('Limit variants per order plugin', function () {
     expect(product.variants[1].customFields.unavailable).toBe(true);
   });
 
+  it('Updates custom fields back to false', async () => {
+    await adminClient.asSuperAdmin();
+    await adminClient.query(gql`
+      mutation {
+        updateProduct(
+          input: { id: "T_1", customFields: { unavailable: false } }
+        ) {
+          ... on Product {
+            id
+          }
+        }
+      }
+    `);
+    await new Promise((resolve) => setTimeout(resolve, 300)); // Let the worker do its work
+    const { product } = await adminClient.query(gql`
+      query {
+        product(id: "T_1") {
+          variants {
+            price
+            customFields {
+              unavailable
+            }
+          }
+        }
+      }
+    `);
+    expect(product.variants[0].customFields.unavailable).toBe(false);
+    expect(product.variants[1].customFields.unavailable).toBe(false);
+  });
+
   afterAll(() => {
     return server.destroy();
   });
