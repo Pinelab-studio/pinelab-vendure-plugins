@@ -15,6 +15,7 @@ import path from 'path';
       type: 'int',
       public: true,
       nullable: true,
+      ui: { tab: 'Limitations' },
       label: [
         {
           languageCode: LanguageCode.en,
@@ -34,7 +35,7 @@ import path from 'path';
       type: 'text',
       public: true,
       list: true,
-      ui: { component: 'channel-aware-int-form-input' },
+      ui: { component: 'channel-aware-int-form-input', tab: 'Limitations' },
       label: [
         {
           languageCode: LanguageCode.en,

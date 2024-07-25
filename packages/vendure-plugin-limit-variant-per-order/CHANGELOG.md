@@ -1,6 +1,10 @@
+# 2.2.0 (2024-07-25)
+
+- Moved custom fields to their own tab 'Limitations'
+
 # 2.1.1 (2024-06-21)
 
-- fixes #470
+- Bugfix related to unable to add items: #470
 
 # 2.1.0 (2024-06-21)
 
