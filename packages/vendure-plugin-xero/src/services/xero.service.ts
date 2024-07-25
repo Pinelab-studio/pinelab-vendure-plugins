@@ -73,14 +73,5 @@ export class XeroService implements OnModuleInit {
 
     async getClient(ctx: RequestContext): Promise<XeroClient> {
         // TODO create client based on this channels config
-        const xero = new XeroClient({
-            clientId: 'YOUR_CLIENT_ID',
-            clientSecret: 'YOUR_CLIENT_SECRET',
-            redirectUris: [`http://localhost:${port}/callback`],
-            scopes: 'openid profile email accounting.transactions offline_access'.split(" "),
-            state: 'returnPage=my-sweet-dashboard', // custom params (optional)
-            httpTimeout: 3000, // ms (optional)
-            clockTolerance: 10 // seconds (optional)
-          });
     }
 }
