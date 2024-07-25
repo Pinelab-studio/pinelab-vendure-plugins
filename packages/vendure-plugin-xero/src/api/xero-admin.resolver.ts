@@ -1,4 +1,4 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { Permission } from '@vendure/common/lib/generated-types';
 import { ID } from '@vendure/common/lib/shared-types';
 import { Allow, Ctx, RequestContext, Transaction } from '@vendure/core';
@@ -13,8 +13,9 @@ export class XeroAdminResolver {
   @Allow(Permission.SuperAdmin)
   async sendOrdersToXero(
     @Ctx() ctx: RequestContext,
-    @Args() args: { id: ID }
+    @Args() args: { orderIds: ID[] }
   ): Promise<boolean> {
-    return this.xeroService.myNewMutation(ctx, args.id);
+    await this.xeroService.createSendToXeroJobs(ctx, args.orderIds);
+    return true;
   }
 }

@@ -16,6 +16,8 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { XeroPlugin } from '../src';
 import { XeroService } from '../src/services/xero.service';
+import gql from 'graphql-tag';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 (async () => {
   require('dotenv').config();
@@ -26,6 +28,9 @@ import { XeroService } from '../src/services/xero.service';
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
+    },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
     },
     plugins: [
       DefaultSearchPlugin,
@@ -41,13 +46,27 @@ import { XeroService } from '../src/services/xero.service';
       XeroPlugin,
     ],
   });
-  const { server, shopClient } = createTestEnvironment(config);
+  const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
 
   await createSettledOrder(shopClient, 1);
 
-  await server.app.get(XeroService).sendOrders();
+  await adminClient.asSuperAdmin();
+  const result = await adminClient.query(gql`
+    mutation {
+      sendOrdersToXero(orderIds: [1])
+    }
+      `);
+    console.log(result);
 })();
