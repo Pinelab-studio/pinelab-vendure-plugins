@@ -9,6 +9,7 @@ import {
   Transaction,
   ID,
   idsAreEqual,
+  OrderLine,
 } from '@vendure/core';
 import { ErrorResultUnion } from '@vendure/core/dist/common/error/error-result';
 import { Order } from '@vendure/core/dist/entity/order/order.entity';
@@ -39,7 +40,12 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
       return result;
     }
     const order = result as Order;
-    this.validate(order, args.productVariantId, ctx.channelId);
+    const orderLine = order.lines.find(
+      (line) => line.productVariant.id == args.productVariantId
+    );
+    if (orderLine) {
+      this.validate(orderLine, ctx.channelId);
+    }
     return result;
   }
 
@@ -57,22 +63,15 @@ export class AddItemOverrideResolver extends ShopOrderResolver {
     const order = result as Order;
     const orderLine = order.lines.find((line) => line.id == args.orderLineId);
     if (orderLine) {
-      this.validate(order, orderLine.productVariant.id, ctx.channelId);
+      this.validate(orderLine, ctx.channelId);
     }
     return result;
   }
 
   /**
-   * Throw an error if quantity is over maxPerOrder
+   * Throw an error if quantity is over maxPerOrder or if it is not a multiple of onlyAllowPer
    */
-  private validate(
-    order: Order,
-    variantId: string | number,
-    channelId: ID
-  ): void {
-    const orderLine = order.lines.find((line) =>
-      idsAreEqual(line.productVariant.id, variantId)
-    )!;
+  private validate(orderLine: OrderLine, channelId: ID): void {
     const maxPerOrder = orderLine.productVariant.customFields.maxPerOrder;
     const onlyAllowPersList =
       orderLine.productVariant.customFields.onlyAllowPer ?? [];
