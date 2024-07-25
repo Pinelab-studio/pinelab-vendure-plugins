@@ -27,13 +27,15 @@ export class ChannelAwareIntCustomFieldComponent
   implements FormInputComponent<IntCustomFieldConfig>, OnInit
 {
   isListInput?: boolean | undefined = true;
-  readonly: boolean;
-  activeChannel$: Observable<Pick<Channel, 'id' | 'defaultCurrencyCode'>>;
-  config: IntCustomFieldConfig;
-  formControl: FormControl;
-  values: ChannelAwareIntValue[];
-  valueFormControl: FormControl<number | null>;
-  activeChannelId: ID;
+  readonly!: boolean;
+  activeChannel$!: Observable<{
+    activeChannel: Pick<Channel, 'id' | 'defaultCurrencyCode'>;
+  }>;
+  config!: IntCustomFieldConfig;
+  formControl!: FormControl<string[]>;
+  values!: ChannelAwareIntValue[];
+  valueFormControl!: FormControl<number | null>;
+  activeChannelId!: ID;
   constructor(
     private dataService: DataService,
     private cdr: ChangeDetectorRef,
@@ -41,7 +43,7 @@ export class ChannelAwareIntCustomFieldComponent
   ) {}
 
   ngOnInit(): void {
-    this.route.params.subscribe((s: any) => {
+    this.route.params.subscribe(() => {
       setTimeout(() => this.parseFormControlValue(), 10);
     });
   }
@@ -55,9 +57,10 @@ export class ChannelAwareIntCustomFieldComponent
       this.values = [];
     }
 
-    this.activeChannel$ =
-      this.dataService.query<any>(GET_ACTIVE_CHANNEL).stream$;
-    this.activeChannel$.subscribe((data: any) => {
+    this.activeChannel$ = this.dataService.query<{
+      activeChannel: Pick<Channel, 'id' | 'defaultCurrencyCode'>;
+    }>(GET_ACTIVE_CHANNEL).stream$;
+    this.activeChannel$.subscribe((data) => {
       this.activeChannelId = data.activeChannel.id;
       const channelValue = this.values.find((v) =>
         this.idsAreEqual(v.channelId, this.activeChannelId)
