@@ -13,4 +13,6 @@ import { PublicCustomerGroupsPlugin } from '@pinelab/vendure-plugin-public-custo
 plugins: [PublicCustomerGroupsPlugin];
 ```
 
-And you're good to go with just that.
+Run a database migration to add the `isPublic` custom field to Customer Group.
+
+In the admin UI, under customer groups, you can now expose a customer group by setting `isPublic=true`.
