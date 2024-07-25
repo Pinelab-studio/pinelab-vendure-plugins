@@ -1,6 +1,5 @@
 import {
   CountryService,
-  Injector,
   LanguageCode,
   PromotionCondition,
   RequestContext,
@@ -47,7 +46,7 @@ export const orderInCountryPromotionCondition = new PromotionCondition({
       ],
     }));
   },
-  async check(ctx, order, args) {
+  check(ctx, order, args) {
     if (!order.shippingAddress?.countryCode) {
       return false;
     }
