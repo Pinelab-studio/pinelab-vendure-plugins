@@ -1,101 +1,74 @@
 import {
-  EventBus,
   LanguageCode,
-  Logger,
+  PLUGIN_INIT_OPTIONS,
   PluginCommonModule,
-  ProductEvent,
-  ProductVariant,
-  ProductVariantEvent,
-  ProductVariantPrice,
-  ProductVariantService,
-  TransactionalConnection,
-  Type,
   VendurePlugin,
 } from '@vendure/core';
-import { OnModuleInit } from '@nestjs/common';
-import { filter } from 'rxjs/operators';
-import { In } from 'typeorm';
+import { BulkUpdateService } from './bulk-update-service';
+import { OnApplicationBootstrap } from '@nestjs/common';
 
-type ProductEventWithCustomFields = ProductEvent & {
-  product: {
-    customFields: {
-      price: number;
-    };
-  };
-};
-
-const loggerCtx = 'VariantBulkUpdatePlugin';
+export interface BulkUpdateOptions {
+  /**
+   * Add's a customfield 'price' to the product, which will update a variants price
+   */
+  enablePriceBulkUpdate: boolean;
+  /**
+   * Updates the defined custom fields all variants of the product when the product's custom field is updated.
+   * This requires your project to have the same custom field definitions on both the Product and the Variant
+   */
+  bulkUpdateCustomFields: string[];
+}
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  providers: [],
+  providers: [
+    BulkUpdateService,
+    {
+      provide: PLUGIN_INIT_OPTIONS,
+      useFactory: () => VariantBulkUpdatePlugin.options,
+    },
+  ],
   configuration: (config) => {
-    config.customFields.Product.push({
-      name: 'price',
-      type: 'int',
-      public: true,
-      nullable: true,
-      label: [
-        {
-          languageCode: LanguageCode.en,
-          value: 'Price',
-        },
-      ],
-      description: [
-        {
-          languageCode: LanguageCode.en,
-          value:
-            'Setting this field will update the variant prices everytime you update the product',
-        },
-      ],
-      ui: { tab: 'Bulk update', component: 'currency-form-input' },
-    });
+    if (VariantBulkUpdatePlugin.options?.enablePriceBulkUpdate) {
+      // Only add customField if the price update is enabled
+      config.customFields.Product.push({
+        name: 'price',
+        type: 'int',
+        public: true,
+        nullable: true,
+        label: [
+          {
+            languageCode: LanguageCode.en,
+            value: 'Price',
+          },
+        ],
+        description: [
+          {
+            languageCode: LanguageCode.en,
+            value:
+              'Setting this field will update the variant prices every time you update the product',
+          },
+        ],
+        ui: { tab: 'Bulk update', component: 'currency-form-input' },
+      });
+    }
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
-export class VariantBulkUpdatePlugin implements OnModuleInit {
-  constructor(
-    private eventBus: EventBus,
-    private variantService: ProductVariantService,
-    private connection: TransactionalConnection
-  ) {}
+export class VariantBulkUpdatePlugin implements OnApplicationBootstrap {
+  static options: BulkUpdateOptions;
 
-  async onModuleInit(): Promise<void> {
-    this.eventBus
-      .ofType(ProductEvent)
-      .pipe(
-        filter((event) => event.type === 'updated' || event.type === 'created')
-      )
-      .subscribe(async (event) => {
-        const { product, ctx } = event as ProductEventWithCustomFields;
-        if (product.customFields?.price) {
-          const variants = await this.connection
-            .getRepository(ctx, ProductVariant)
-            .createQueryBuilder('variant')
-            .select(['variant.id'])
-            .where('variant.productId = :productId', { productId: product.id })
-            .getMany();
-          const variantIds = variants.map((v) => v.id);
-          const res = await this.connection
-            .getRepository(ctx, ProductVariantPrice)
-            .createQueryBuilder('price')
-            .update({
-              price: product.customFields.price,
-            })
-            .where({
-              variant: In(variantIds),
-              channelId: ctx.channelId,
-            })
-            .execute();
-          Logger.info(
-            `Updated prices of ${res.affected} variants of product ${product.id} to ${product.customFields.price}`,
-            loggerCtx
-          );
-          this.eventBus.publish(
-            new ProductVariantEvent(ctx, variants, 'updated')
-          );
-        }
-      });
+  static init(options: BulkUpdateOptions): typeof VariantBulkUpdatePlugin {
+    this.options = options;
+    return VariantBulkUpdatePlugin;
+  }
+
+  onApplicationBootstrap() {
+    if (!VariantBulkUpdatePlugin.options) {
+      throw Error(
+        'Please use VariantBulkUpdatePlugin.init({ // options }) to initialize this plugin. See the README for more information'
+      );
+    }
   }
 }

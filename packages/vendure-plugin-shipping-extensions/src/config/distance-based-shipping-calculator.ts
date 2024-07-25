@@ -8,8 +8,10 @@ import {
 import { ShippingExtensionsOptions } from '../shipping-extensions.plugin';
 import { loggerCtx, PLUGIN_OPTIONS } from '../constants';
 import { getDistanceBetweenPointsInKMs } from '../util/get-distance-between-points';
+import { ZoneAwareShippingTaxCalculationService } from '../services/zone-aware-shipping-tax-calculation.service';
 
 let pluginOptions: ShippingExtensionsOptions;
+let zoneAwareShippingTaxCalculationService: ZoneAwareShippingTaxCalculationService;
 export const distanceBasedShippingCalculator = new ShippingCalculator({
   code: 'distance-based-shipping-calculator',
   description: [
@@ -44,14 +46,17 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         },
       ],
     },
-    taxRate: {
-      type: 'float',
-      ui: { component: 'number-form-input', suffix: '%', min: 0, max: 100 },
-      label: [{ languageCode: LanguageCode.en, value: 'Tax rate' }],
+    taxCategoryId: {
+      type: 'ID',
+      ui: { component: 'tax-category-id-form-input' },
+      label: [{ languageCode: LanguageCode.en, value: 'Tax Category' }],
     },
   },
   init(injector: Injector) {
     pluginOptions = injector.get<ShippingExtensionsOptions>(PLUGIN_OPTIONS);
+    zoneAwareShippingTaxCalculationService = injector.get(
+      ZoneAwareShippingTaxCalculationService
+    );
   },
   calculate: async (ctx, order, args, method) => {
     if (!pluginOptions?.orderAddressToGeolocationStrategy) {
@@ -59,6 +64,12 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         'OrderAddress to geolocation conversion strategy not configured'
       );
     }
+    const taxRate =
+      (await zoneAwareShippingTaxCalculationService.getTaxRateForCategory(
+        ctx,
+        order,
+        args.taxCategoryId
+      )) ?? 0;
     const storeGeoLocation = {
       latitude: args.storeLatitude,
       longitude: args.storeLongitude,
@@ -67,7 +78,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
     const minimumPrice = {
       price: args.minPrice,
       priceIncludesTax: ctx.channel.pricesIncludeTax,
-      taxRate: args.taxRate,
+      taxRate,
       metadata: { storeGeoLocation },
     };
     if (
@@ -97,11 +108,13 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       return {
         price,
         priceIncludesTax: ctx.channel.pricesIncludeTax,
-        taxRate: args.taxRate,
+        taxRate,
         metadata: { shippingAddressGeoLocation, storeGeoLocation },
       };
     } catch (e: any) {
+      //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       Logger.error(
+        //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed to calculate shipping for ${method.name}: ${e.message}`,
         loggerCtx
       );

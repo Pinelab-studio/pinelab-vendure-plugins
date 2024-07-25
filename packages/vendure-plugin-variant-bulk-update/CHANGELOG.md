@@ -1,3 +1,11 @@
+# 1.3.1 (2024-07-24)
+
+- Fixed updating of boolean value 'false' on custom fields
+
+# 1.3.0 (2024-07-24)
+
+- Allow bulk updating custom fields
+
 # 1.2.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6

@@ -1,3 +1,7 @@
+# 1.2.1 (2024-07-03)
+
+- Slice all string fields in Shipmate payload to 40 characters
+
 # 1.2.0 (2024-07-03)
 
 - Cancel and Recreate Shipment when Order is modified

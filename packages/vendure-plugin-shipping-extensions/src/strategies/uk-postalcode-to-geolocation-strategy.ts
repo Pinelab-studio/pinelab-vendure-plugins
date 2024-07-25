@@ -1,4 +1,3 @@
-import { UserInputError } from '@vendure/core';
 import {
   OrderAddressToGeolocationConversionStrategy,
   GeoLocation,
@@ -25,9 +24,12 @@ export class UKPostalCodeToGelocationConversionStrategy
     if (!response.ok) {
       throw new Error(`${response.status}: ${await response.text()}`);
     }
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const responseBody: any = await response.json();
     return {
+      //eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       latitude: responseBody.result.latitude,
+      //eslint-disable-next-line  @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
       longitude: responseBody.result.longitude,
     };
   }

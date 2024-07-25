@@ -181,7 +181,7 @@ export class StripeSubscriptionService {
     this.eventBus.ofType(PaymentMethodEvent).subscribe(async (event) => {
       if (event.type === 'created' || event.type === 'updated') {
         const paymentMethod = event.entity;
-        if (paymentMethod.handler.code === stripeSubscriptionHandler.code) {
+        if (paymentMethod.handler?.code === stripeSubscriptionHandler.code) {
           await this.registerWebhooks(event.ctx, paymentMethod).catch((e) => {
             Logger.error(
               `Failed to register webhooks for channel ${event.ctx.channel.token}: ${e}`,
