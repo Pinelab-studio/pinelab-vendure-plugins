@@ -1,0 +1,31 @@
+{
+  "name": "@pinelab/vendure-plugin-xero",
+  "version": "1.0.0",
+  "description": "Plugin to send orders to Xero",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "repository": "https://github.com/vendure-ecommerce/plugin-template",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "start": "yarn ts-node test/dev-server.ts",
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "xero-node": "^9.0.0"
+  }
+}
