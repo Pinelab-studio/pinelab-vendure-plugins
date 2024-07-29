@@ -34,6 +34,7 @@
     "@types/localtunnel": "^2.0.4",
     "@vendure/admin-ui-plugin": "2.2.6",
     "@vendure/asset-server-plugin": "2.2.6",
+    "@vendure/cli": "^3.0.0",
     "@vendure/core": "2.2.6",
     "@vendure/email-plugin": "2.2.6",
     "@vendure/payments-plugin": "2.2.6",
