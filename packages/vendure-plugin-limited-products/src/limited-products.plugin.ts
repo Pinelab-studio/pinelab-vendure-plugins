@@ -10,10 +10,7 @@ import { LimitFieldsResolver } from './api/limit-fields.resolver';
   providers: [],
   shopApiExtensions: {
     schema: shopSchemaExtensions,
-    resolvers: [
-      AddItemOverrideResolver,
-      LimitFieldsResolver
-    ],
+    resolvers: [AddItemOverrideResolver, LimitFieldsResolver],
   },
   configuration: (config) => {
     config.customFields.Product.push({

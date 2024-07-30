@@ -4,7 +4,7 @@ import {
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
-  mergeConfig
+  mergeConfig,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -66,21 +66,11 @@ require('dotenv').config();
 
   //Set max per order
   await adminClient.asSuperAdmin();
-  const {
-    updateProduct
-  } = await adminClient.query(
+  const { updateProduct } = await adminClient.query(
     gql`
-      mutation updateProduct(
-        $onlyAllowPer: [String!]
-      ) {
+      mutation updateProduct($onlyAllowPer: [String!]) {
         updateProduct(
-          input: 
-            {
-              id: "1"
-              customFields: {
-                onlyAllowPer: $onlyAllowPer
-              }
-            }
+          input: { id: "1", customFields: { onlyAllowPer: $onlyAllowPer } }
         ) {
           ... on Product {
             customFields {
@@ -92,9 +82,7 @@ require('dotenv').config();
       }
     `,
     {
-      onlyAllowPer: [
-        JSON.stringify({ channelId: '1', value: 2 }),
-      ],
+      onlyAllowPer: [JSON.stringify({ channelId: '1', value: 2 })],
     }
   );
 })();

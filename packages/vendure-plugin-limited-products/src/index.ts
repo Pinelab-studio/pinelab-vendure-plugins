@@ -1,1 +1,1 @@
-export * from "./limited-products.plugin"
+export * from './limited-products.plugin';

@@ -15,14 +15,14 @@ This plugin allows you to:
 ```ts
 import { LimitedProductsPlugin } from "@pinelab/vendure-plugin-limited-products"
 
-plugins: [ 
+plugins: [
    LimitedProductsPlugin,
    AdminUiPlugin.init({
     port: 3002,
     route: 'admin',
     app: compileUiExtensions({
       outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [ 
+      extensions: [
          // Include the admin UI extensions of this plugin
          LimitedProductsPlugin.uiExtensions
       ],
@@ -46,4 +46,3 @@ V3 removes the fields from the variant and places them on a Product, in a differ
 1. Back up all values of the variants before installing the plugin.
 2. Install V4 of this plugin, and run a database migration.
 3. Start the server and set the values on the parent products via the Admin UI
-

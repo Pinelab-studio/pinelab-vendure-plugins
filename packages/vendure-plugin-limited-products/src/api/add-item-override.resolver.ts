@@ -14,25 +14,23 @@ import {
   Permission,
   RequestContext,
   Transaction,
-  UserInputError
+  UserInputError,
 } from '@vendure/core';
 import { ShopOrderResolver } from '@vendure/core/dist/api/resolvers/shop/shop-order.resolver';
 import { ErrorResultUnion } from '@vendure/core/dist/common/error/error-result';
 import { Order } from '@vendure/core/dist/entity/order/order.entity';
 import { getChannelAwareValue } from '../util';
 
-
 /**
  * Resolver that overrides the default addItemToOrder mutation
  */
 @Resolver()
 export class AddItemOverrideResolver {
-
   private injector: Injector;
 
   constructor(
     private readonly entityHydrator: EntityHydrator,
-    moduleRef: ModuleRef,
+    moduleRef: ModuleRef
   ) {
     this.injector = new Injector(moduleRef);
   }
@@ -44,7 +42,9 @@ export class AddItemOverrideResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationAddItemToOrderArgs
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
-    const result = await this.injector.get(ShopOrderResolver).addItemToOrder(ctx, args);
+    const result = await this.injector
+      .get(ShopOrderResolver)
+      .addItemToOrder(ctx, args);
     if (!(result as Order).code) {
       return result;
     }
@@ -65,7 +65,9 @@ export class AddItemOverrideResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationAdjustOrderLineArgs
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
-    const result = await this.injector.get(ShopOrderResolver).adjustOrderLine(ctx, args);
+    const result = await this.injector
+      .get(ShopOrderResolver)
+      .adjustOrderLine(ctx, args);
     if (!(result as Order).code) {
       return result;
     }
@@ -80,10 +82,21 @@ export class AddItemOverrideResolver {
   /**
    * Throw an error if quantity is over maxPerOrder or if it is not a multiple of onlyAllowPer
    */
-  private async validate(ctx: RequestContext, orderLine: OrderLine): Promise<void> {
-    await this.entityHydrator.hydrate(ctx, orderLine.productVariant, { relations: ['product'] });
-    const maxPerOrder = getChannelAwareValue(ctx, orderLine.productVariant.product.customFields.maxPerOrder);
-    const onlyAllowPer = getChannelAwareValue(ctx, orderLine.productVariant.product.customFields.onlyAllowPer);
+  private async validate(
+    ctx: RequestContext,
+    orderLine: OrderLine
+  ): Promise<void> {
+    await this.entityHydrator.hydrate(ctx, orderLine.productVariant, {
+      relations: ['product'],
+    });
+    const maxPerOrder = getChannelAwareValue(
+      ctx,
+      orderLine.productVariant.product.customFields.maxPerOrder
+    );
+    const onlyAllowPer = getChannelAwareValue(
+      ctx,
+      orderLine.productVariant.product.customFields.onlyAllowPer
+    );
     if (maxPerOrder && orderLine.quantity > maxPerOrder) {
       throw new UserInputError(
         `You are only allowed to order max ${maxPerOrder} of item '${orderLine.productVariant.name}'`
@@ -91,7 +104,7 @@ export class AddItemOverrideResolver {
     }
     if (onlyAllowPer && orderLine.quantity % onlyAllowPer !== 0) {
       throw new UserInputError(
-        `You are only allowed to order a multiple of ${onlyAllowPer} item '${orderLine.productVariant.name}'`,
+        `You are only allowed to order a multiple of ${onlyAllowPer} item '${orderLine.productVariant.name}'`
       );
     }
     // Throwing an error is sufficient, because it prevents the transaction form being committed, so no items are added

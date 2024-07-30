@@ -1,9 +1,5 @@
 import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
-import {
-    Ctx,
-    Product,
-    RequestContext
-} from '@vendure/core';
+import { Ctx, Product, RequestContext } from '@vendure/core';
 import { getChannelAwareValue } from '../util';
 
 /**
@@ -11,14 +7,15 @@ import { getChannelAwareValue } from '../util';
  */
 @Resolver()
 export class LimitFieldsResolver {
-
   @ResolveField('maxQuantityPerOrder')
   @Resolver('Product')
   maxQuantityPerOrder(
     @Ctx() ctx: RequestContext,
     @Parent() product: Product
   ): number | undefined {
-    return getChannelAwareValue(ctx, product.customFields.maxPerOrder) || undefined;
+    return (
+      getChannelAwareValue(ctx, product.customFields.maxPerOrder) || undefined
+    );
   }
 
   @ResolveField('limitPurchasePerMultipleOf')
@@ -27,6 +24,8 @@ export class LimitFieldsResolver {
     @Ctx() ctx: RequestContext,
     @Parent() product: Product
   ): number | undefined {
-    return getChannelAwareValue(ctx, product.customFields.onlyAllowPer) || undefined;
+    return (
+      getChannelAwareValue(ctx, product.customFields.onlyAllowPer) || undefined
+    );
   }
 }
