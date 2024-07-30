@@ -20,6 +20,7 @@ import { LimitedProductsPlugin } from '../src/limited-products.plugin';
 import { addItem } from '../../test/src/shop-utils';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { ChannelAwareIntValue } from '../src/types';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 describe('Limit variants per order plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -57,23 +58,20 @@ describe('Limit variants per order plugin', function () {
 
   it('Sets maxPerOrder to 6, and onlyAllowPer to 2', async () => {
     await adminClient.asSuperAdmin();
-    const {
-      updateProduct: product,
-    } = await adminClient.query(
+    const { updateProduct: product } = await adminClient.query(
       gql`
         mutation updateProduct(
           $maxPerOrder: [String!]
           $onlyAllowPer: [String!]
         ) {
           updateProduct(
-            input:
-              {
-                id: "1"
-                customFields: {
-                  maxPerOrder: $maxPerOrder
-                  onlyAllowPer: $onlyAllowPer
-                }
+            input: {
+              id: "1"
+              customFields: {
+                maxPerOrder: $maxPerOrder
+                onlyAllowPer: $onlyAllowPer
               }
+            }
           ) {
             ... on Product {
               customFields {
@@ -89,8 +87,12 @@ describe('Limit variants per order plugin', function () {
         onlyAllowPer: [JSON.stringify({ value: 2, channelId: '1' })],
       }
     );
-    expect(product.customFields.maxPerOrder).toEqual([JSON.stringify({ value: 6, channelId: '1' })]);
-    expect(product.customFields.onlyAllowPer).toEqual([JSON.stringify({ value: 2, channelId: '1' })]);
+    expect(product.customFields.maxPerOrder).toEqual([
+      JSON.stringify({ value: 6, channelId: '1' }),
+    ]);
+    expect(product.customFields.onlyAllowPer).toEqual([
+      JSON.stringify({ value: 2, channelId: '1' }),
+    ]);
   });
 
   it('Exposes the limits via the shop api', async () => {
@@ -121,7 +123,7 @@ describe('Limit variants per order plugin', function () {
     const order = await addItem(shopClient, '1', 2);
     expect(order.lines[0].quantity).toBe(4);
   });
-  
+
   it("Can't adjust order line to 3, because only multiples of 2 are allowed", async () => {
     const promise = shopClient.query(
       gql`
@@ -155,7 +157,7 @@ describe('Limit variants per order plugin', function () {
           }
         }
       `,
-      { quantity: 2  }
+      { quantity: 2 }
     );
     expect(order.lines[0].quantity).toBe(2);
   });
@@ -179,6 +181,16 @@ describe('Limit variants per order plugin', function () {
       "You are only allowed to order max 6 of item 'Laptop 13 inch 8GB'"
     );
   });
+
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin', async () => {
+      const files = await getFilesInAdminUiFolder(
+        __dirname,
+        LimitedProductsPlugin.uiExtensions
+      );
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 
   afterAll(() => {
     return server.destroy();
