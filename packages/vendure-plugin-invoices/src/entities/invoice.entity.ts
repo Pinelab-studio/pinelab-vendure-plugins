@@ -33,9 +33,8 @@ export class InvoiceEntity extends VendureEntity {
   @Column({ nullable: false })
   storageReference!: string;
 
-  get isCreditInvoice(): boolean {
-    return this.orderTotals.total < 0;
-  }
+  @Column({ nullable: false, default: false })
+  isCreditInvoice!: boolean;
 
   /**
    * The order totals that were used to generate the invoice.

@@ -1,8 +1,8 @@
 import { Response } from 'express';
 import { createReadStream, promises as fs, ReadStream } from 'fs';
 import path from 'path';
-import { InvoiceEntity } from '../entities/invoice.entity';
-import { exists, zipFiles, ZippableFile } from '../util/file.util';
+import { InvoiceEntity } from '../../entities/invoice.entity';
+import { exists, zipFiles, ZippableFile } from '../../util/file.util';
 import { LocalStorageStrategy } from './storage-strategy';
 
 /**

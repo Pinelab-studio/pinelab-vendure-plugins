@@ -1,3 +1,7 @@
+# 4.0.0 (2024-07-29)
+
+- Introduced exporting invoices to external Accounting platforms
+
 # 3.1.2 (2024-07-09)
 
 - Fetch customer relation for orders by default

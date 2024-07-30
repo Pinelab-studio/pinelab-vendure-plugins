@@ -1,13 +1,13 @@
 import { Logger } from '@vendure/core';
 import { Response } from 'express';
-import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoiceEntity } from '../../entities/invoice.entity';
 import { createReadStream, ReadStream } from 'fs';
 import {
   ZippableFile,
   createTempFile,
   safeRemove,
   zipFiles,
-} from '../util/file.util';
+} from '../../util/file.util';
 import { RemoteStorageStrategy } from './storage-strategy';
 
 interface GoogleInvoiceConfig {

@@ -45,7 +45,7 @@ import { CreditInvoiceInput } from '../strategies/load-data-fn';
 import {
   LocalStorageStrategy,
   RemoteStorageStrategy,
-} from '../strategies/storage-strategy';
+} from '../strategies/storage/storage-strategy';
 import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';

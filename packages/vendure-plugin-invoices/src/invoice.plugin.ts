@@ -19,11 +19,11 @@ import {
 } from './api/invoice-common.resolver';
 import { InvoiceController } from './api/invoice.controller';
 import { defaultLoadDataFn, LoadDataFn } from './strategies/load-data-fn';
-import { LocalFileStrategy } from './strategies/local-file-strategy';
+import { LocalFileStrategy } from './strategies/storage/local-file-strategy';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
-import { StorageStrategy } from './strategies/storage-strategy';
+import { StorageStrategy } from './strategies/storage/storage-strategy';
 import { InvoiceService } from './services/invoice.service';
 import {
   LicenseService,

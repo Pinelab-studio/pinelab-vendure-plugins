@@ -8,6 +8,14 @@ This is a paid plugin. For production use, please purchase a license at https://
 
 ![Invoice plugin screens](https://pinelab-plugins.com/plugin-images/invoices-screenshots.gif 'Invoice plugin screens')
 
+## Migration from V3.x to V4.0.0
+
+In v4 the field `invoice.isCreditInvoice` was changed from a getter to a physical database column. To populate the column you need to:
+
+1. Back uop your database!
+2. Install the invoices plugin v4.x and generate+run a database migration. This introduced the new database field `isCreditInvoice` where all values are 'false'.
+3. Run the query `UPDATE invoice SET isCreditInvoice = 1 WHERE orderTotals LIKE '%total":-%';` to set the value to 'true' for invoices that have a negative total.
+
 ## Getting started
 
 1. Install the plugin with `yarn add @vendure-hub/pinelab-invoice-plugin`
@@ -306,6 +314,23 @@ You can access this data in your HTML template using Handlebars.js:
 ```html
 <h1>{{ someCustomField }}</h1>
 ```
+
+## Exporting to external accounting platforms
+
+// TODO
+
+### Xero
+
+This strategy exports each invoice to Xero. To get started:
+
+1. Create an OAuth app by clicking 'New app' here: https://developer.xero.com/app/manage
+2.
+
+// TODO strategy, install xero node
+
+### Custom strategy
+
+// TODO
 
 ## Migrating from V1 to V2 of this plugin
 

@@ -1,13 +1,13 @@
 import { Logger } from '@vendure/core';
 import { Response } from 'express';
 import { readFile, writeFile } from 'fs/promises';
-import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoiceEntity } from '../../entities/invoice.entity';
 import {
   safeRemove,
   ZippableFile,
   createTempFile,
   zipFiles,
-} from '../util/file.util';
+} from '../../util/file.util';
 import { createReadStream, ReadStream } from 'fs';
 import { RemoteStorageStrategy } from './storage-strategy';
 

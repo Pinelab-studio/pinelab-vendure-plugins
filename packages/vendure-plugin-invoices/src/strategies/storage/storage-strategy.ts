@@ -1,6 +1,6 @@
 import { Response } from 'express';
 import { ReadStream } from 'fs';
-import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoiceEntity } from '../../entities/invoice.entity';
 
 /**
  * @description
