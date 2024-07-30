@@ -1,11 +1,11 @@
 import { ID } from '@vendure/core';
 //eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { CustomProductVariantFields } from '@vendure/core/dist/entity/custom-entity-fields';
+import { CustomProductFields } from '@vendure/core/dist/entity/custom-entity-fields';
 
 declare module '@vendure/core' {
-  interface CustomProductVariantFields {
-    maxPerOrder: number;
-    onlyAllowPer: string[];
+  interface CustomProductFields {
+    maxPerOrder?: string[];
+    onlyAllowPer?: string[];
   }
 }
 
