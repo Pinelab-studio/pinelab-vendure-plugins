@@ -1,24 +1,24 @@
-import '../src/types';
-import { initialData } from '../../test/src/initial-data';
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import {
+  AutoIncrementIdStrategy,
+  DefaultLogger,
+  DefaultSearchPlugin,
+  LogLevel,
+  mergeConfig
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import {
-  AutoIncrementIdStrategy,
-  ChannelService,
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { LimitVariantPerOrderPlugin } from '../src/limit-variant-per-order.plugin';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import gql from 'graphql-tag';
 import path from 'path';
+import { initialData } from '../../test/src/initial-data';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { LimitedProductsPlugin } from '../src';
+import '../src/types';
 
 require('dotenv').config();
 
@@ -27,20 +27,21 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      LimitVariantPerOrderPlugin,
+      LimitedProductsPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
         app: compileUiExtensions({
           outputPath: path.join(__dirname, './__admin-ui'),
-          extensions: [LimitVariantPerOrderPlugin.uiExtensions],
+          extensions: [LimitedProductsPlugin.uiExtensions],
           devMode: true,
         }),
       }),
     ],
     apiOptions: {
       shopApiPlayground: true,
+      adminApiPlayground: true,
     },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
@@ -62,5 +63,38 @@ require('dotenv').config();
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  const channel = await server.app.get(ChannelService).getDefaultChannel();
+
+  //Set max per order
+  await adminClient.asSuperAdmin();
+  const {
+    updateProduct
+  } = await adminClient.query(
+    gql`
+      mutation updateProduct(
+        $onlyAllowPer: [String!]
+      ) {
+        updateProduct(
+          input: 
+            {
+              id: "1"
+              customFields: {
+                onlyAllowPer: $onlyAllowPer
+              }
+            }
+        ) {
+          ... on Product {
+            customFields {
+              maxPerOrder
+              onlyAllowPer
+            }
+          }
+        }
+      }
+    `,
+    {
+      onlyAllowPer: [
+        JSON.stringify({ channelId: '1', value: 2 }),
+      ],
+    }
+  );
 })();

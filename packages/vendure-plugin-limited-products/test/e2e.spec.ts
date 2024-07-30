@@ -16,7 +16,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import gql from 'graphql-tag';
-import { LimitVariantPerOrderPlugin } from '../src/limit-variant-per-order.plugin';
+import { LimitedProductsPlugin } from '../src/limited-products.plugin';
 import { addItem } from '../../test/src/shop-utils';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import { ChannelAwareIntValue } from '../src/types';
@@ -25,9 +25,6 @@ describe('Limit variants per order plugin', function () {
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  let order: Order;
-  let onlyAllowPer = 2;
-  let maxPerOrder = 6;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -36,7 +33,7 @@ describe('Limit variants per order plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [LimitVariantPerOrderPlugin],
+      plugins: [LimitedProductsPlugin],
       entityOptions: {
         entityIdStrategy: new AutoIncrementIdStrategy(),
       },
@@ -58,19 +55,18 @@ describe('Limit variants per order plugin', function () {
     await expect(serverStarted).toBe(true);
   });
 
-  it('Sets max variants to 2', async () => {
+  it('Sets maxPerOrder to 6, and onlyAllowPer to 2', async () => {
     await adminClient.asSuperAdmin();
-    const allChannelValue = [{ value: onlyAllowPer, channelId: '1' }];
     const {
-      updateProductVariants: [variant],
+      updateProduct: product,
     } = await adminClient.query(
       gql`
-        mutation updateProductVariants(
-          $maxPerOrder: Int
+        mutation updateProduct(
+          $maxPerOrder: [String!]
           $onlyAllowPer: [String!]
         ) {
-          updateProductVariants(
-            input: [
+          updateProduct(
+            input:
               {
                 id: "1"
                 customFields: {
@@ -78,9 +74,8 @@ describe('Limit variants per order plugin', function () {
                   onlyAllowPer: $onlyAllowPer
                 }
               }
-            ]
           ) {
-            ... on ProductVariant {
+            ... on Product {
               customFields {
                 maxPerOrder
                 onlyAllowPer
@@ -90,62 +85,64 @@ describe('Limit variants per order plugin', function () {
         }
       `,
       {
-        maxPerOrder,
-        onlyAllowPer: allChannelValue.map((v) => JSON.stringify(v)),
+        maxPerOrder: [JSON.stringify({ value: 6, channelId: '1' })],
+        onlyAllowPer: [JSON.stringify({ value: 2, channelId: '1' })],
       }
     );
-    expect(variant.customFields.maxPerOrder).toBe(maxPerOrder);
-    const channelValue =
-      variant.customFields.onlyAllowPer
-        .map((v) => JSON.parse(v) as ChannelAwareIntValue)
-        .find((channelValue) => idsAreEqual(channelValue.channelId, 1))
-        ?.value ?? 0;
-    expect(channelValue).toBe(onlyAllowPer);
+    expect(product.customFields.maxPerOrder).toEqual([JSON.stringify({ value: 6, channelId: '1' })]);
+    expect(product.customFields.onlyAllowPer).toEqual([JSON.stringify({ value: 2, channelId: '1' })]);
   });
 
-  it('Exposes MaxPerOrder and OnlyAllowPer in shop api', async () => {
+  it('Exposes the limits via the shop api', async () => {
     const { product } = await shopClient.query(gql`
       {
         product(id: 1) {
-          variants {
-            id
-            customFields {
-              maxPerOrder
-              onlyAllowPer
-            }
-          }
+          maxQuantityPerOrder
+          limitPurchasePerMultipleOf
         }
       }
     `);
-    expect(
-      product.variants.find(
-        (v: any) => v.customFields.maxPerOrder === maxPerOrder
-      )
-    ).toBeDefined();
-    const variant = product.variants.find((v) => idsAreEqual(v.id, 1));
-    const onlyAllowPer = JSON.parse(variant.customFields.onlyAllowPer[0]);
-    expect(onlyAllowPer.value).toBe(2);
+    expect(product.maxQuantityPerOrder).toBe(6);
+    expect(product.limitPurchasePerMultipleOf).toBe(2);
   });
 
-  it('Should add 2 to cart', async () => {
+  it('Can add 2 to cart', async () => {
     const order = await addItem(shopClient, '1', 2);
     expect(order.lines[0].quantity).toBe(2);
   });
 
-  it("Can't add 1 more to cart, which would make the total quantity 3", async () => {
-    const promise = addItem(shopClient, '1', 1);
-    await expect(promise).rejects.toThrow(
-      'You are only allowed to order a multiple of 2 Laptop 13 inch 8GBs'
+  it("Can't add 1 more to cart, because only multiples of 2 are allowed", async () => {
+    await expect(addItem(shopClient, '1', 1)).rejects.toThrow(
+      "You are only allowed to order a multiple of 2 item 'Laptop 13 inch 8GB'"
     );
   });
 
-  it('Can add 2 more to cart, which would make the total quantity 4', async () => {
+  it('Can add 2 more to cart, because the total will be a multiple of 2', async () => {
     const order = await addItem(shopClient, '1', 2);
     expect(order.lines[0].quantity).toBe(4);
   });
+  
+  it("Can't adjust order line to 3, because only multiples of 2 are allowed", async () => {
+    const promise = shopClient.query(
+      gql`
+        mutation adjustOrderLine($quantity: Int!) {
+          adjustOrderLine(orderLineId: 1, quantity: $quantity) {
+            ... on Order {
+              lines {
+                quantity
+              }
+            }
+          }
+        }
+      `,
+      { quantity: 3 }
+    );
+    await expect(promise).rejects.toThrow(
+      "You are only allowed to order a multiple of 2 item 'Laptop 13 inch 8GB'"
+    );
+  });
 
-  it('Should adjust orderLine', async () => {
-    const quantity = 2;
+  it('Can adjust order line to 2', async () => {
     const { adjustOrderLine: order } = await shopClient.query(
       gql`
         mutation adjustOrderLine($quantity: Int!) {
@@ -158,13 +155,12 @@ describe('Limit variants per order plugin', function () {
           }
         }
       `,
-      { quantity }
+      { quantity: 2  }
     );
-    expect(order.lines[0].quantity).toBe(quantity);
+    expect(order.lines[0].quantity).toBe(2);
   });
 
-  it('Should fail to  adjust orderLine to quantity(3) which is not multiple of onlyAllowPer', async () => {
-    const quantity = 3;
+  it('Fails to  adjust order line to 7, because that is greater than maxQuantityPerOrder', async () => {
     const promise = shopClient.query(
       gql`
         mutation adjustOrderLine($quantity: Int!) {
@@ -177,31 +173,10 @@ describe('Limit variants per order plugin', function () {
           }
         }
       `,
-      { quantity }
+      { quantity: 7 }
     );
     await expect(promise).rejects.toThrow(
-      'You are only allowed to order a multiple of 2 Laptop 13 inch 8GBs'
-    );
-  });
-
-  it('Should fail to  adjust orderLine to quantity(7) which is greater than maxPerOrder', async () => {
-    const quantity = 7;
-    const promise = shopClient.query(
-      gql`
-        mutation adjustOrderLine($quantity: Int!) {
-          adjustOrderLine(orderLineId: 1, quantity: $quantity) {
-            ... on Order {
-              lines {
-                quantity
-              }
-            }
-          }
-        }
-      `,
-      { quantity }
-    );
-    await expect(promise).rejects.toThrow(
-      'You are only allowed to order max 6 Laptop 13 inch 8GBs'
+      "You are only allowed to order max 6 of item 'Laptop 13 inch 8GB'"
     );
   });
 

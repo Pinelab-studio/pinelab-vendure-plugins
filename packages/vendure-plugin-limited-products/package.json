@@ -1,7 +1,7 @@
 {
-  "name": "@pinelab/vendure-plugin-limit-variant-per-order",
-  "version": "2.2.0",
-  "description": "Vendure plugin to limit the amount of a specific product that can be ordered, or only allow purchases in bulk",
+  "name": "@pinelab/vendure-plugin-limited-products",
+  "version": "3.0.0",
+  "description": "Limit the maximum quantity of a product that can be ordered at a time, or require that purchases be made in bulk quantities, such as in multiples of 6 items.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
@@ -10,8 +10,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "dist/limit-variant-per-order.plugin.js",
-  "types": "dist/limit-variant-per-order.plugin.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "README.md",

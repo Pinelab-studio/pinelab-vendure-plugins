@@ -1,21 +1,28 @@
 import { LanguageCode, PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { AddItemOverrideResolver } from './add-item-override.resolver';
+import { AddItemOverrideResolver } from './api/add-item-override.resolver';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
+import { shopSchemaExtensions } from './api/api-extensions';
+import { LimitFieldsResolver } from './api/limit-fields.resolver';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   providers: [],
   shopApiExtensions: {
-    resolvers: [AddItemOverrideResolver],
+    schema: shopSchemaExtensions,
+    resolvers: [
+      AddItemOverrideResolver,
+      LimitFieldsResolver
+    ],
   },
   configuration: (config) => {
-    config.customFields.ProductVariant.push({
+    config.customFields.Product.push({
       name: 'maxPerOrder',
-      type: 'int',
-      public: true,
+      type: 'text',
+      list: true,
+      public: false,
       nullable: true,
-      ui: { tab: 'Limitations' },
+      ui: { component: 'channel-aware-int-form-input', tab: 'Limitations' },
       label: [
         {
           languageCode: LanguageCode.en,
@@ -30,10 +37,10 @@ import path from 'path';
         },
       ],
     });
-    config.customFields.ProductVariant.push({
+    config.customFields.Product.push({
       name: 'onlyAllowPer',
       type: 'text',
-      public: true,
+      public: false,
       list: true,
       ui: { component: 'channel-aware-int-form-input', tab: 'Limitations' },
       label: [
@@ -54,7 +61,7 @@ import path from 'path';
   },
   compatibility: '^2.0.0',
 })
-export class LimitVariantPerOrderPlugin {
+export class LimitedProductsPlugin {
   public static uiExtensions: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
     providers: ['providers.ts'],
