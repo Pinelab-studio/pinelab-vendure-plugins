@@ -1,3 +1,7 @@
+# 3.1.3 (2024-08-01)
+
+- Show `Regenerate invoice` button with warning when order total is greater than the total of the latest invoice ( see #485)
+
 # 3.1.2 (2024-07-09)
 
 - Fetch customer relation for orders by default

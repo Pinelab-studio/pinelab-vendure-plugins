@@ -1,13 +1,22 @@
 import gql from 'graphql-tag';
 // This is only used by codegen so it knows DateTime is a custom scalar
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const scalars = gql`
   scalar DateTime
   scalar JSON
   scalar LogicalOperator
   scalar StringOperators
+  scalar OrderTaxSummary
+  scalar Money
 `;
 
 const commonSchemaExtensions = gql`
+  type InvoiceOrderTotals {
+    taxSummaries: [OrderTaxSummary]
+    total: Money
+    totalWithTax: Money
+  }
+
   type Invoice {
     id: ID!
     createdAt: DateTime
@@ -16,7 +25,9 @@ const commonSchemaExtensions = gql`
     orderCode: String!
     orderId: ID!
     isCreditInvoice: Boolean!
+    orderTotals: InvoiceOrderTotals
   }
+
   extend type Order {
     invoices: [Invoice!]!
   }

@@ -7,7 +7,7 @@ import AdmZip = require('adm-zip');
 
 export async function createTempFile(postfix: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    tmp.file({ postfix }, (err, path, fd, cleanupCallback) => {
+    tmp.file({ postfix }, (err, path) => {
       if (err) {
         reject(err);
       } else {
@@ -37,11 +37,14 @@ export async function exists(path: string): Promise<boolean> {
  * Attempt deletion of file, but swallow any errors.
  */
 export function safeRemove(path: string): void {
-  fs.unlink(path).catch((err: any | undefined) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  fs.unlink(path).catch((err: any) => {
     Logger.error(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       `Could not remove file ${path}: ${err?.message}`,
       loggerCtx,
-      err?.stack
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      JSON.stringify(err?.stack)
     );
   });
 }
@@ -52,6 +55,6 @@ export async function zipFiles(files: ZippableFile[]): Promise<string> {
     zip.addLocalFile(file.path, undefined, file.name);
   }
   const tmpFilePath = await createTempFile('.zip');
-  await zip.writeZip(tmpFilePath);
+  zip.writeZip(tmpFilePath);
   return tmpFilePath;
 }

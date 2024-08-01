@@ -42,6 +42,7 @@ export class InvoiceCommonResolver {
       orderCode: order.code,
       orderId: order.id,
       isCreditInvoice: invoice.isCreditInvoice,
+      orderTotals: invoice.orderTotals,
       downloadUrl: this.invoiceService.getDownloadUrl(
         ctx,
         invoice.invoiceNumber,

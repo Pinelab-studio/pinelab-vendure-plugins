@@ -35,11 +35,12 @@ import { ModuleRef } from '@nestjs/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
 import Handlebars from 'handlebars';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as pdf from 'pdf-creator-node';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
-import { InvoiceEntity, InvoiceOrderTotals } from '../entities/invoice.entity';
+import { InvoiceEntity } from '../entities/invoice.entity';
 import { InvoicePluginConfig } from '../invoice.plugin';
 import { CreditInvoiceInput } from '../strategies/load-data-fn';
 import {
@@ -56,7 +57,7 @@ import {
   LogicalOperator,
 } from '@vendure/common/lib/generated-shop-types';
 
-import { In, Brackets } from 'typeorm';
+import { In } from 'typeorm';
 import { filter } from 'rxjs';
 
 import { parseFilterParams } from '@vendure/core/dist/service/helpers/list-query-builder/parse-filter-params';
@@ -112,8 +113,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           job.data.channelToken,
           job.data.orderCode,
           job.data.creditInvoiceOnly
-        ).catch(async (error) => {
+        ).catch((error) => {
           Logger.warn(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
             loggerCtx
           );
@@ -127,12 +129,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    * Listen for OrderPlacedEvents. When an event occures, place generate-invoice job in queue
    */
   onApplicationBootstrap(): void {
-    this.eventBus.ofType(OrderPlacedEvent).subscribe(async ({ ctx, order }) => {
-      this.createInvoiceGenerationJobs(ctx, order.code, 'order-placed');
+    this.eventBus.ofType(OrderPlacedEvent).subscribe(({ ctx, order }) => {
+      void this.createInvoiceGenerationJobs(ctx, order.code, 'order-placed');
     });
     this.eventBus
       .ofType(OrderStateTransitionEvent)
       .pipe(filter((event) => event.toState === 'Cancelled'))
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       .subscribe(async ({ ctx, order }) => {
         await this.createInvoiceGenerationJobs(
           ctx,
@@ -176,7 +179,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
     } catch (error) {
       Logger.error(
-        `Failed to add invoice job to queue: ${(error as any)?.message}`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        `Failed to add invoice job to queue: ${JSON.stringify(
+          (error as any)?.message
+        )}`,
         loggerCtx
       );
     }
@@ -189,7 +195,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const entityOptions: ListQueryOptions<InvoiceEntity> = {
       ...options,
       ...(options?.filter?.invoiceNumber
-        ? { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
+        ? // eslint-disable-next-line  @typescript-eslint/no-unsafe-assignment
+          { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
         : { filter: {} }),
       sort: { updatedAt: SortOrder.DESC },
     };
@@ -207,6 +214,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       const filter = parseFilterParams(
         qb.connection,
         Order,
+        // eslint-disable-next-line  @typescript-eslint/no-unsafe-assignment
         { code: { ...options?.filter?.orderCode } },
         undefined,
         'order'
@@ -232,7 +240,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       ['customer']
     );
     const items: Invoice[] = [];
-    for (let invoice of invoices) {
+    for (const invoice of invoices) {
       const order = orders.items.find((o) =>
         idsAreEqual(o.id, invoice.orderId)
       );
@@ -271,14 +279,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     let filterInput = {};
     if (filter?.invoiceNumber) {
       filterInput = {
-        invoiceNumber: filter?.invoiceNumber,
+        invoiceNumber: filter?.invoiceNumber as string,
       };
     }
     if (filter?.orderCode) {
       filterInput = {
         ...filterInput,
         order: {
-          code: filter?.orderCode,
+          code: filter?.orderCode as string,
         },
       };
     }
@@ -303,7 +311,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     });
     if (!invoices) {
       throw Error(
-        `No invoices found for channel ${ctx.channelId} and invoiceNumbers ${invoiceNumbers}`
+        `No invoices found for channel ${
+          ctx.channelId
+        } and invoiceNumbers ${JSON.stringify(invoiceNumbers)}`
       );
     }
     return this.config.storageStrategy.streamMultiple(invoices, res);
@@ -320,7 +330,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     createCreditInvoiceOnly: boolean
   ): Promise<InvoiceEntity | undefined> {
     const ctx = await this.createCtx(channelToken);
-    let [order, previousInvoiceForOrder, config] = await Promise.all([
+    const [order, previousInvoiceForOrder, config] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode, this.orderRelations),
       this.getMostRecentInvoiceForOrder(ctx, orderCode),
       this.getConfig(ctx),
@@ -378,7 +388,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
       if (createCreditInvoiceOnly) {
         // Don't generate normal invoice, so we emit an event now and return
-        this.eventBus.publish(
+        void this.eventBus.publish(
           new InvoiceCreatedEvent(
             ctx,
             order,
@@ -395,7 +405,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       order,
       config.templateString!
     );
-    this.eventBus.publish(
+    void this.eventBus.publish(
       new InvoiceCreatedEvent(
         ctx,
         order,
@@ -418,7 +428,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     previousInvoice?: InvoiceEntity
   ): Promise<InvoiceEntity> {
     const isCreditInvoice = !!previousInvoice; // If previous invoice, this is a credit invoice
-    let orderTotals = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let orderTotals: any = {
       taxSummaries: order.taxSummary,
       total: order.total,
       totalWithTax: order.totalWithTax,
@@ -434,6 +445,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       previousInvoice
         ? {
             previousInvoice,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             reversedOrderTotals: orderTotals,
           }
         : undefined
@@ -444,6 +456,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       invoiceNumber,
       orderId: order.id as string,
       isCreditInvoice,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       orderTotals,
     });
     const storageReference = await this.config.storageStrategy.save(
@@ -492,10 +505,16 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       type: '',
     };
     try {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       await pdf.create(document, options);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       // Warning, because this will be retried, or is returned to the user
-      Logger.warn(`Failed to generate invoice: ${e?.message}`, loggerCtx);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      Logger.warn(
+        `Failed to generate invoice: ${JSON.stringify(e?.message)}`,
+        loggerCtx
+      );
       throw e;
     }
     return {
@@ -665,7 +684,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   ): Promise<InvoiceConfigEntity> {
     const configRepo = this.connection.getRepository(ctx, InvoiceConfigEntity);
     const existing = await configRepo.findOne({
-      where: { channelId: String(ctx!.channelId) },
+      where: { channelId: String(ctx.channelId) },
     });
     if (existing) {
       await configRepo.update(
