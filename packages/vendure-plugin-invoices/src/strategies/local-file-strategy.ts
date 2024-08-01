@@ -1,6 +1,5 @@
 import { Response } from 'express';
 import { createReadStream, promises as fs, ReadStream } from 'fs';
-import path from 'path';
 import { InvoiceEntity } from '../entities/invoice.entity';
 import { exists, zipFiles, ZippableFile } from '../util/file.util';
 import { LocalStorageStrategy } from './storage-strategy';
@@ -48,11 +47,11 @@ export class LocalFileStrategy implements LocalStorageStrategy {
     return createReadStream(zipFile);
   }
 
-  async streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream> {
+  streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream> {
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${invoice.invoiceNumber}.pdf"`,
     });
-    return createReadStream(invoice.storageReference);
+    return Promise.resolve(createReadStream(invoice.storageReference));
   }
 }

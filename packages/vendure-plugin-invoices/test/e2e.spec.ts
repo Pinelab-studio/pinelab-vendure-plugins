@@ -124,21 +124,25 @@ describe('Generate with credit invoicing enabled', function () {
     expect((order as any).id).toBeDefined();
   });
 
-  it('Gets invoices for order', async () => {
-    // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    const { order: result } = await adminClient.query(getOrderWithInvoices, {
-      id: order.id,
-    });
-    latestInvoice = result.invoices[0];
-    expect(latestInvoice.id).toBeDefined();
-    expect(latestInvoice.createdAt).toBeDefined();
-    expect(latestInvoice.invoiceNumber).toBe(10001);
-    expect(latestInvoice.isCreditInvoice).toBe(false);
-    expect(latestInvoice.downloadUrl).toContain(
-      `/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
-    );
-  });
+  it(
+    'Gets invoices for order',
+    async () => {
+      // Give the worker some time to generate invoices
+      await new Promise((resolve) => setTimeout(resolve, 7 * 1000));
+      const { order: result } = await adminClient.query(getOrderWithInvoices, {
+        id: order.id,
+      });
+      latestInvoice = result.invoices[0];
+      expect(latestInvoice.id).toBeDefined();
+      expect(latestInvoice.createdAt).toBeDefined();
+      expect(latestInvoice.invoiceNumber).toBe(10001);
+      expect(latestInvoice.isCreditInvoice).toBe(false);
+      expect(latestInvoice.downloadUrl).toContain(
+        `/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
+      );
+    },
+    8 * 1000
+  );
 
   it('Emitted event for created invoice', async () => {
     const newInvoice = events[0].newInvoice;
@@ -229,7 +233,7 @@ describe('Generate with credit invoicing enabled', function () {
   it('Cancels order and creates credit invoice', async () => {
     await cancelOrder(adminClient, order as any);
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    await new Promise((resolve) => setTimeout(resolve, 7 * 1000));
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });

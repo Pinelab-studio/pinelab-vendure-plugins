@@ -36,10 +36,12 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
       this.storage = this.config.storageOptions
         ? new storage.Storage(this.config.storageOptions)
         : new storage.Storage();
+      // eslint-disable-next-line  @typescript-eslint/no-explicit-any
     } catch (err: any) {
       Logger.error(
         `Could not find the "@google-cloud/storage" package. Make sure it is installed`,
         GoogleStorageInvoiceStrategy.name,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         err.stack
       );
     }

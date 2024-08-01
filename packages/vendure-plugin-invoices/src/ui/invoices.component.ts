@@ -14,6 +14,7 @@ import {
 } from './generated/graphql';
 import { firstValueFrom } from 'rxjs';
 import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
+import { downloadBlob, getHeaders } from './providers';
 
 @Component({
   selector: 'invoices-component',
@@ -98,7 +99,7 @@ export class InvoicesComponent implements OnInit {
     this.serverPath = getServerLocation();
   }
 
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.dataService
       .query<InvoiceConfigQuery>(getConfigQuery)
       .mapStream((d) => d.invoiceConfig)
@@ -112,14 +113,17 @@ export class InvoicesComponent implements OnInit {
   async save() {
     try {
       if (this.form.dirty) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const formValue = this.form.value;
-        const result$ = await this.dataService.mutate<
+        const result$ = this.dataService.mutate<
           UpsertInvoiceConfigMutation,
           UpsertInvoiceConfigMutationVariables
         >(upsertConfigMutation, {
           input: {
-            enabled: formValue.enabled,
-            templateString: formValue.templateString,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            enabled: formValue.enabled as boolean,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            templateString: formValue.templateString as string,
           },
         });
         const { upsertInvoiceConfig: result } = await firstValueFrom(result$);
@@ -131,6 +135,7 @@ export class InvoicesComponent implements OnInit {
       this.notificationService.success('common.notify-update-success', {
         entity: 'InvoiceConfig',
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       this.notificationService.error('common.notify-update-error', {
         entity: 'InvoiceConfig',
@@ -140,15 +145,17 @@ export class InvoicesComponent implements OnInit {
 
   async testDownload() {
     try {
-      const template = this.form.value.templateString;
-      const orderCode = this.form.value.orderCode;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const template = this.form.value.templateString as string;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      const orderCode = this.form.value.orderCode as string;
       this.invoicePreviewLoading = true;
       this.changeDetector.markForCheck();
       const res = await fetch(
         `${this.serverPath}/invoices/preview/${orderCode}`,
         {
           headers: {
-            ...this.getHeaders(),
+            ...getHeaders(this.localStorageService),
             'Content-Type': 'application/json',
           },
           method: 'POST',
@@ -157,45 +164,17 @@ export class InvoicesComponent implements OnInit {
       );
       if (!res.ok) {
         const json = await res.json();
-        throw Error(json?.message);
+        throw Error(JSON.stringify(json?.message));
       }
       const blob = await res.blob();
-      await this.downloadBlob(blob, 'test-invoice.pdf', true);
+      downloadBlob(blob, 'test-invoice.pdf', true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      console.error(err);
-      this.notificationService.error(err?.message);
+      console.error(JSON.stringify(err));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      this.notificationService.error(JSON.stringify(err?.message));
     }
     this.invoicePreviewLoading = false;
     this.changeDetector.markForCheck();
-  }
-
-  private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {};
-    const channelToken = this.localStorageService.get('activeChannelToken');
-    if (channelToken) {
-      headers['vendure-token'] = channelToken;
-    }
-    const authToken = this.localStorageService.get('authToken');
-    if (authToken) {
-      headers.authorization = `Bearer ${authToken}`;
-    }
-    return headers;
-  }
-
-  private async downloadBlob(
-    blob: Blob,
-    fileName: string,
-    openInNewTab = false
-  ): Promise<void> {
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    document.body.appendChild(a);
-    a.setAttribute('hidden', 'true');
-    a.href = blobUrl;
-    if (!openInNewTab) {
-      a.download = fileName;
-    }
-    a.setAttribute('target', '_blank');
-    a.click();
   }
 }

@@ -8,6 +8,7 @@ import {
 import { Observable } from 'rxjs';
 import { Invoice } from '../generated/graphql';
 import { getOrderWithInvoices } from './invoices-detail-view';
+import { Permission, Order } from '@vendure/admin-ui/core';
 
 @Component({
   selector: 'invoices-detail-view',
@@ -16,7 +17,7 @@ import { getOrderWithInvoices } from './invoices-detail-view';
 export class InvoiceDetailViewComponent
   implements CustomDetailComponent, OnInit
 {
-  entity$: Observable<any>;
+  entity$: Observable<Order>;
   detailForm: UntypedFormGroup;
   invoicesList: Invoice[] | undefined;
   itemsPerPage = 10;
@@ -29,26 +30,27 @@ export class InvoiceDetailViewComponent
   ) {
     this.serverPath = getServerLocation();
   }
-  async ngOnInit(): Promise<void> {
+  ngOnInit(): void {
     this.dataService.client
       .userStatus()
       .mapStream((data) => data.userStatus.permissions)
-      .subscribe(async (permissions) => {
-        if (permissions.includes('AllowInvoicesPermission' as any)) {
-          await this.getOrderInvoices();
+      .subscribe((permissions) => {
+        if (permissions.includes('AllowInvoicesPermission' as Permission)) {
+          this.getOrderInvoices();
         } else {
           console.warn('Current user doesnt have permission to view invoices');
         }
       });
   }
 
-  async getOrderInvoices(): Promise<void> {
-    this.entity$.subscribe((order: any) => {
+  getOrderInvoices(): void {
+    this.entity$.subscribe((order: Order) => {
       this.dataService
         .query(getOrderWithInvoices, {
           id: order?.id,
         })
-        .mapStream((r: any) => r.order.invoices)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        .mapStream((r: any) => r.order.invoices as Invoice[])
         .subscribe((result) => {
           this.invoicesList = result;
           this.cdr.markForCheck();
@@ -56,14 +58,14 @@ export class InvoiceDetailViewComponent
     });
   }
 
-  async setPageNumber(page: number) {
+  setPageNumber(page: number) {
     this.page = page;
-    await this.getOrderInvoices();
+    this.getOrderInvoices();
   }
 
-  async setItemsPerPage(nrOfItems: number) {
+  setItemsPerPage(nrOfItems: number) {
     this.page = 1;
     this.itemsPerPage = Number(nrOfItems);
-    await this.getOrderInvoices();
+    this.getOrderInvoices();
   }
 }

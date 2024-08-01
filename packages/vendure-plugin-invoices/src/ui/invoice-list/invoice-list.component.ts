@@ -74,6 +74,7 @@ export class InvoiceListComponent extends TypedBaseListComponent<
     take: number,
     searchTerm: string | null
   ): { options: InvoiceListOptions } {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     let filterInput = this.filters.createFilterInput();
     if (searchTerm) {
       filterInput = {
@@ -89,6 +90,7 @@ export class InvoiceListComponent extends TypedBaseListComponent<
       options: {
         skip,
         take,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         filter: {
           ...(filterInput ?? {}),
         },

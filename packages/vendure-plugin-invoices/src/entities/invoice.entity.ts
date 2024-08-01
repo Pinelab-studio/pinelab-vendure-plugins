@@ -6,7 +6,7 @@ import { Column, Entity, Unique, Index } from 'typeorm';
  * The order totals that were used to generate the invoice.
  * These can be used to generate credit invoices.
  */
-export interface InvoiceOrderTotals {
+interface InvoiceOrderTotals {
   taxSummaries: OrderTaxSummary[];
   total: number;
   totalWithTax: number;

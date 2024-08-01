@@ -8,6 +8,7 @@ import { InvoiceEntity } from '../entities/invoice.entity';
 
 export interface InvoiceData {
   invoiceNumber: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -46,7 +47,7 @@ interface CreditInvoiceData extends DefaultInvoiceData {
 
 export type DefaultInvoiceDataResponse = DefaultInvoiceData | CreditInvoiceData;
 
-export const defaultLoadDataFn: LoadDataFn = async (
+export const defaultLoadDataFn: LoadDataFn = (
   ctx: RequestContext,
   injector: Injector,
   order: Order,
@@ -71,15 +72,15 @@ export const defaultLoadDataFn: LoadDataFn = async (
   });
   if (!shouldGenerateCreditInvoice) {
     // Normal debit invoice
-    return {
+    return Promise.resolve({
       orderDate,
       invoiceNumber: newInvoiceNumber,
       order: order,
-    };
+    });
   }
   // Create credit invoice
   const { previousInvoice, reversedOrderTotals } = shouldGenerateCreditInvoice;
-  return {
+  return Promise.resolve({
     orderDate,
     invoiceNumber: newInvoiceNumber,
     isCreditInvoice: true,
@@ -91,5 +92,5 @@ export const defaultLoadDataFn: LoadDataFn = async (
       totalWithTax: reversedOrderTotals.totalWithTax,
       taxSummary: reversedOrderTotals.taxSummaries,
     },
-  };
+  });
 };
