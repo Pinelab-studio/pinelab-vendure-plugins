@@ -1,4 +1,9 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import {
+  LanguageCode,
+  PluginCommonModule,
+  Type,
+  VendurePlugin,
+} from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { OrderByPopularityController } from './popularity.controller';
@@ -15,6 +20,8 @@ export interface PopularityScoresPluginConfig {
    * @default 100
    */
   chunkSize?: number;
+  productFieldUiTab?: string;
+  collectionFieldUiTab?: string;
 }
 
 @VendurePlugin({
@@ -39,11 +46,19 @@ export interface PopularityScoresPluginConfig {
       name: 'popularityScore',
       type: 'int',
       defaultValue: 0,
+      ui: {
+        tab: PopularityScoresPlugin?.config?.productFieldUiTab,
+      },
+      label: [{ languageCode: LanguageCode.en, value: 'Popularity Score' }],
     });
     config.customFields.Collection.push({
       name: 'popularityScore',
       type: 'int',
       defaultValue: 0,
+      ui: {
+        tab: PopularityScoresPlugin?.config?.collectionFieldUiTab,
+      },
+      label: [{ languageCode: LanguageCode.en, value: 'Popularity Score' }],
     });
     return config;
   },
