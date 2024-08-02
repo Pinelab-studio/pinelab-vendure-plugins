@@ -1638,6 +1638,23 @@
     "@cds/city" "^1.1.0"
     modern-normalize "1.1.0"
 
+"@clack/core@^0.3.3":
+  version "0.3.4"
+  resolved "https://registry.yarnpkg.com/@clack/core/-/core-0.3.4.tgz#375e82fc8fe46650b37cab2f2ea8752c6b7f0450"
+  integrity sha512-H4hxZDXgHtWTwV3RAVenqcC4VbJZNegbBjlPvzOzCouXtS2y3sDvlO3IsbrPNWuLWPPlYVYPghQdSF64683Ldw==
+  dependencies:
+    picocolors "^1.0.0"
+    sisteransi "^1.0.5"
+
+"@clack/prompts@^0.7.0":
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/@clack/prompts/-/prompts-0.7.0.tgz#6aaef48ea803d91cce12bc80811cfcb8de2e75ea"
+  integrity sha512-0MhX9/B4iL6Re04jPrttDm+BsP8y6mS7byuv0BvXgdXhbV5PdlsHt55dvNsuBCPZ7xq1oTAOOuotR9NFbQyMSA==
+  dependencies:
+    "@clack/core" "^0.3.3"
+    picocolors "^1.0.0"
+    sisteransi "^1.0.5"
+
 "@clr/angular@^17.0.1":
   version "17.2.0"
   resolved "https://registry.npmjs.org/@clr/angular/-/angular-17.2.0.tgz"
@@ -4923,6 +4940,16 @@
     mkdirp "^1.0.4"
     path-browserify "^1.0.1"
 
+"@ts-morph/common@~0.22.0":
+  version "0.22.0"
+  resolved "https://registry.yarnpkg.com/@ts-morph/common/-/common-0.22.0.tgz#8951d451622a26472fbc3a227d6c3a90e687a683"
+  integrity sha512-HqNBuV/oIlMKdkLshXd1zKBqNQCsuPEsgQOkfFQ/eUKjRlwndXW1AjN9LVkBEIukm00gGXSRmfkl0Wv5VXLnlw==
+  dependencies:
+    fast-glob "^3.3.2"
+    minimatch "^9.0.3"
+    mkdirp "^3.0.1"
+    path-browserify "^1.0.1"
+
 "@tsconfig/node10@^1.0.7":
   version "1.0.11"
   resolved "https://registry.npmjs.org/@tsconfig/node10/-/node10-1.0.11.tgz"
@@ -5450,10 +5477,31 @@
     fs-extra "^11.2.0"
     sharp "~0.33.2"
 
+"@vendure/cli@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@vendure/cli/-/cli-3.0.0.tgz#82eeb09f7b3c118eab6099a190ee17b875192285"
+  integrity sha512-fzy8yvqhP7epgwvSHkV6lp/mV8yTfSMiUgGYpKKSQcBJBpZv5+saL0esRrS6v5O9FML3HbQ9pu8wPnAUf4pVkg==
+  dependencies:
+    "@clack/prompts" "^0.7.0"
+    "@vendure/common" "^3.0.0"
+    change-case "^4.1.2"
+    commander "^11.0.0"
+    dotenv "^16.4.5"
+    fs-extra "^11.2.0"
+    picocolors "^1.0.0"
+    ts-morph "^21.0.1"
+    ts-node "^10.9.2"
+    tsconfig-paths "^4.2.0"
+
 "@vendure/common@^2.2.6":
   version "2.2.6"
   resolved "https://registry.npmjs.org/@vendure/common/-/common-2.2.6.tgz"
   integrity sha512-8Xuj6omD4ynSVlpdmAxkmEhgZi/OwcrKEoTRZ3rVM22I9tC4rxV+JigMPQRL9OVkSHISjYuLJrylUB+DWESrdA==
+
+"@vendure/common@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@vendure/common/-/common-3.0.0.tgz#ed2ead0b3dc19f1430493b88dc82a12e0cdf9631"
+  integrity sha512-ZTAAA1NL4xwvrOlikYkJ/MAq19txQtnUEbHRvJUP8ojllPfjR3eSddprkePUnTlyOEvWRR/Y8+QcLxzARePggg==
 
 "@vendure/core@2.2.6":
   version "2.2.6"
@@ -7522,6 +7570,11 @@ code-block-writer@^10.1.1:
   resolved "https://registry.npmjs.org/code-block-writer/-/code-block-writer-10.1.1.tgz"
   integrity sha512-67ueh2IRGst/51p0n6FvPrnRjAGHY5F8xdjkgrYE7DDzpJe6qA07RYQ9VcoUeo5ATOjSOiWpSL3SWBRRbempMw==
 
+code-block-writer@^12.0.0:
+  version "12.0.0"
+  resolved "https://registry.yarnpkg.com/code-block-writer/-/code-block-writer-12.0.0.tgz#4dd58946eb4234105aff7f0035977b2afdc2a770"
+  integrity sha512-q4dMFMlXtKR3XNBHyMHt/3pwYNA69EDk00lloMOaaUMKPUXBw6lpXtbu3MMVG6/uOihGnRDOlkyqsONEUj60+w==
+
 codejar@^4.2.0:
   version "4.2.0"
   resolved "https://registry.npmjs.org/codejar/-/codejar-4.2.0.tgz"
@@ -7614,6 +7667,11 @@ commander@^10.0.0:
   version "10.0.1"
   resolved "https://registry.npmjs.org/commander/-/commander-10.0.1.tgz"
   integrity sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug==
+
+commander@^11.0.0:
+  version "11.1.0"
+  resolved "https://registry.yarnpkg.com/commander/-/commander-11.1.0.tgz#62fdce76006a68e5c1ab3314dc92e800eb83d906"
+  integrity sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==
 
 commander@^2.19.0, commander@^2.20.0, commander@^2.20.3:
   version "2.20.3"
@@ -8507,7 +8565,7 @@ dot-prop@^6.0.1:
   dependencies:
     is-obj "^2.0.0"
 
-dotenv@^16.0.0, dotenv@^16.0.3:
+dotenv@^16.0.0, dotenv@^16.0.3, dotenv@^16.4.5:
   version "16.4.5"
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-16.4.5.tgz"
   integrity sha512-ZmdL2rui+eB2YwhsWzjInR8LldtZHGDoQ1ugH85ppHKwpUHL7j7rN0Ti9NCnGiQbhaZ11FpR+7ao1dNsmduNUg==
@@ -9206,7 +9264,7 @@ fast-glob@3.2.7:
     merge2 "^1.3.0"
     micromatch "^4.0.4"
 
-fast-glob@3.3.2, fast-glob@^3.2.11, fast-glob@^3.2.5, fast-glob@^3.2.9, fast-glob@^3.3.0:
+fast-glob@3.3.2, fast-glob@^3.2.11, fast-glob@^3.2.5, fast-glob@^3.2.9, fast-glob@^3.3.0, fast-glob@^3.3.2:
   version "3.3.2"
   resolved "https://registry.npmjs.org/fast-glob/-/fast-glob-3.3.2.tgz"
   integrity sha512-oX2ruAFQwf/Orj8m737Y5adxDQO0LAB7/S5MnxCdTNDd4p6BsyIVsv9JQsATbTSq8KHRpLwIHbVlUNatxd+1Ow==
@@ -11013,6 +11071,11 @@ is-unicode-supported@^0.1.0:
   resolved "https://registry.npmjs.org/is-unicode-supported/-/is-unicode-supported-0.1.0.tgz"
   integrity sha512-knxG2q4UC3u8stRGyAVJCOdxFmv5DZiRcdlIaAQXAbSfJya+OhopNotLQrstBhququ4ZpuKbDc/8S6mgXgPFPw==
 
+is-unicode-supported@^1.3.0:
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/is-unicode-supported/-/is-unicode-supported-1.3.0.tgz#d824984b616c292a2e198207d4a609983842f714"
+  integrity sha512-43r2mRvz+8JRIKnWJ+3j8JtjRKZ6GmjzfaE/qiBJnikNnYv/6bagRJ1kUhNk8R5EX/GkobD+r+sfxCPJsiKBLQ==
+
 is-upper-case@^2.0.2:
   version "2.0.2"
   resolved "https://registry.npmjs.org/is-upper-case/-/is-upper-case-2.0.2.tgz"
@@ -12762,6 +12825,11 @@ mkdirp@^2.1.3:
   version "2.1.6"
   resolved "https://registry.npmjs.org/mkdirp/-/mkdirp-2.1.6.tgz"
   integrity sha512-+hEnITedc8LAtIP9u3HJDFIdcLV2vXP33sqLLIzkv1Db1zO/1OxbvYf0Y1OC/S/Qo5dxHXepofhmxL02PsKe+A==
+
+mkdirp@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-3.0.1.tgz#e44e4c5607fb279c168241713cc6e0fea9adcb50"
+  integrity sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==
 
 mlly@^1.4.2, mlly@^1.7.0:
   version "1.7.1"
@@ -15664,6 +15732,11 @@ simple-swizzle@^0.2.2:
   dependencies:
     is-arrayish "^0.3.1"
 
+sisteransi@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/sisteransi/-/sisteransi-1.0.5.tgz#134d681297756437cc05ca01370d3a7a571075ed"
+  integrity sha512-bLGGlR1QxBcynn2d5YmDX4MGjlZvy2MRBDRNHLJ8VI6l6+9FUiyTFNJ0IveOSP0bcXgVDPRcfGqA0pjaqUpfVg==
+
 slash@^3.0.0:
   version "3.0.0"
   resolved "https://registry.npmjs.org/slash/-/slash-3.0.0.tgz"
@@ -16571,7 +16644,15 @@ ts-morph@^11.0.0:
     "@ts-morph/common" "~0.10.1"
     code-block-writer "^10.1.1"
 
-ts-node@^10.8.1, ts-node@^10.9.0:
+ts-morph@^21.0.1:
+  version "21.0.1"
+  resolved "https://registry.yarnpkg.com/ts-morph/-/ts-morph-21.0.1.tgz#712302a0f6e9dbf1aa8d9cf33a4386c4b18c2006"
+  integrity sha512-dbDtVdEAncKctzrVZ+Nr7kHpHkv+0JDJb2MjjpBaj8bFeCkePU9rHfMklmhuLFnpeq/EJZk2IhStY6NzqgjOkg==
+  dependencies:
+    "@ts-morph/common" "~0.22.0"
+    code-block-writer "^12.0.0"
+
+ts-node@^10.8.1, ts-node@^10.9.0, ts-node@^10.9.2:
   version "10.9.2"
   resolved "https://registry.npmjs.org/ts-node/-/ts-node-10.9.2.tgz"
   integrity sha512-f0FFpIdcHgn8zcPSbf1dRevwt047YMnaiJM3u2w2RewrB+fob/zePZcrOyQoLMMO7aBIddLcQIEK5dYjkLnGrQ==
@@ -16619,7 +16700,7 @@ tsconfig-paths@^3.9.0:
     minimist "^1.2.6"
     strip-bom "^3.0.0"
 
-tsconfig-paths@^4.1.2:
+tsconfig-paths@^4.1.2, tsconfig-paths@^4.2.0:
   version "4.2.0"
   resolved "https://registry.npmjs.org/tsconfig-paths/-/tsconfig-paths-4.2.0.tgz"
   integrity sha512-NoZ4roiN7LnbKn9QqE1amc9DJfzvZXxF4xDavcOWt1BPkdx+m+0gJuPM+S0vCe7zTJMYUP0R8pO2XMr+Y8oLIg==
