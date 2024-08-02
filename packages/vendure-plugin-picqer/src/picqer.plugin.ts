@@ -1,5 +1,4 @@
 import {
-  configureDefaultOrderProcess,
   Order,
   PluginCommonModule,
   ProductVariant,
@@ -52,7 +51,9 @@ export interface PicqerOptions {
    * @example
    * pushPicqerOrderFields: (order) => {customer_remarks: 'Please don't package my order in plastic'})
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pushPicqerOrderFields?: (order: Order) => any;
+  shouldSyncOnProperties?: string[];
 }
 
 @VendurePlugin({

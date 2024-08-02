@@ -1,7 +1,15 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup } from '@angular/forms';
+import { FormBuilder } from '@angular/forms';
 import { DataService, NotificationService } from '@vendure/admin-ui/core';
 import { FULL_SYNC, GET_CONFIG, TEST, UPSERT_CONFIG } from './queries';
+import {
+  IsPicqerConfigValidQuery,
+  IsPicqerConfigValidQueryVariables,
+  PicqerConfigQuery,
+  PicqerConfigQueryVariables,
+  UpsertPicqerConfigMutation,
+  UpsertPicqerConfigMutationVariables,
+} from './generated/graphql';
 
 /**
  * Component for updating Picqer configuration.
@@ -62,42 +70,44 @@ import { FULL_SYNC, GET_CONFIG, TEST, UPSERT_CONFIG } from './queries';
   `,
 })
 export class PicqerConfigComponent implements OnInit {
-  enabled: true;
-  apiKey: '';
-  apiEndpoint: '';
-  storefrontUrl: '';
-  supportEmail: '';
+  enabled: boolean = true;
+  apiKey: string = '';
+  apiEndpoint: string = '';
+  storefrontUrl: string = '';
+  supportEmail: string = '';
 
   isValid?: boolean = undefined;
 
   isSaving = false;
 
   constructor(
-    private formBuilder: FormBuilder,
     protected dataService: DataService,
-    private changeDetector: ChangeDetectorRef,
     private notificationService: NotificationService
   ) {}
 
-  async ngOnInit(): Promise<void> {
-    await this.dataService
-      .query(GET_CONFIG)
-      .mapStream((r: any) => r.picqerConfig)
+  ngOnInit(): void {
+    this.dataService
+      .query<PicqerConfigQuery, PicqerConfigQueryVariables>(GET_CONFIG)
+      .mapStream((r) => r.picqerConfig)
       .subscribe((config) => {
         if (config) {
-          this.enabled = config.enabled;
-          this.apiKey = config.apiKey;
-          this.apiEndpoint = config.apiEndpoint;
-          this.storefrontUrl = config.storefrontUrl;
-          this.supportEmail = config.supportEmail;
+          this.enabled = config.enabled as boolean;
+          this.apiKey = config.apiKey as string;
+          this.apiEndpoint = config.apiEndpoint as string;
+          this.storefrontUrl = config.storefrontUrl as string;
+          this.supportEmail = config.supportEmail as string;
         }
       });
   }
 
   async save(): Promise<void> {
-    const { upsertPicqerConfig: result } = await this.tryAndNotify(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const { upsertPicqerConfig: result } = (await this.tryAndNotify(
       this.dataService
-        .mutate(UPSERT_CONFIG, {
+        .mutate<
+          UpsertPicqerConfigMutation,
+          UpsertPicqerConfigMutationVariables
+        >(UPSERT_CONFIG, {
           input: {
             enabled: this.enabled,
             apiKey: this.apiKey,
@@ -109,13 +119,13 @@ export class PicqerConfigComponent implements OnInit {
         .toPromise(),
       'Saved',
       'Failed to save'
-    );
+    )) as UpsertPicqerConfigMutation;
     if (result) {
-      this.enabled = result.enabled;
-      this.apiKey = result.apiKey;
-      this.apiEndpoint = result.apiEndpoint;
-      this.storefrontUrl = result.storefrontUrl;
-      this.supportEmail = result.supportEmail;
+      this.enabled = result.enabled as boolean;
+      this.apiKey = result.apiKey as string;
+      this.apiEndpoint = result.apiEndpoint as string;
+      this.storefrontUrl = result.storefrontUrl as string;
+      this.supportEmail = result.supportEmail as string;
     }
   }
 
@@ -127,18 +137,21 @@ export class PicqerConfigComponent implements OnInit {
     );
   }
 
-  async test(): Promise<void> {
+  test(): void {
     this.isValid = undefined;
-    const result = this.dataService
-      .query(TEST, {
-        input: {
-          apiKey: this.apiKey,
-          apiEndpoint: this.apiEndpoint,
-          storefrontUrl: this.storefrontUrl,
-          supportEmail: this.supportEmail,
-        },
-      })
-      .mapSingle((r: any) => r.isPicqerConfigValid)
+    this.dataService
+      .query<IsPicqerConfigValidQuery, IsPicqerConfigValidQueryVariables>(
+        TEST,
+        {
+          input: {
+            apiKey: this.apiKey,
+            apiEndpoint: this.apiEndpoint,
+            storefrontUrl: this.storefrontUrl,
+            supportEmail: this.supportEmail,
+          },
+        }
+      )
+      .mapSingle((r) => r.isPicqerConfigValid)
       .subscribe((isValid: boolean) => (this.isValid = isValid));
   }
 
@@ -146,13 +159,17 @@ export class PicqerConfigComponent implements OnInit {
    * Wrap in try catch with notifications
    */
   private async tryAndNotify(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     promise: Promise<any>,
     successmessage: string,
     failedMessage: string
-  ): Promise<any | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): Promise<any> {
     try {
+      // eslint-disable-next-line  @typescript-eslint/no-unsafe-assignment
       const res = await promise;
       this.notificationService.success(successmessage);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return res;
     } catch (e) {
       this.notificationService.error(failedMessage);

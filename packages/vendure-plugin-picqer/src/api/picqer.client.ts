@@ -49,13 +49,17 @@ export class PicqerClient {
     this.apiKey = apiKey;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async getStats(): Promise<any> {
     return this.rawRequest('get', '/stats');
   }
 
   async getVatGroups(): Promise<VatGroup[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.rawRequest('get', '/vatgroups');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     this.logIfLimitExceeded(result, '/vatgroups');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result;
   }
 
@@ -65,6 +69,7 @@ export class PicqerClient {
   async getProductByCode(
     productCode: string
   ): Promise<ProductData | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const [activeProducts, inactiveProducts] = await Promise.all([
       this.rawRequest(
         'get',
@@ -75,12 +80,15 @@ export class PicqerClient {
         `/products?productcode=${encodeURIComponent(productCode)}&inactive`
       ),
     ]);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
     const result = [...activeProducts, ...inactiveProducts];
     if (result.length > 1) {
       Logger.warn(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Picqer returned multiple products for product code ${productCode}, using the first result (${result[0].idproduct})`
       );
     }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result?.[0];
   }
 
@@ -92,12 +100,16 @@ export class PicqerClient {
     let hasMore = true;
     let offset = 0;
     while (hasMore) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const products = await this.rawRequest(
         'get',
         `/products?offset=${offset}`
       );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       Logger.info(`Fetched ${products.length} products`, loggerCtx);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       allProducts.push(...products);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (products.length < this.responseLimit) {
         hasMore = false;
       } else {
@@ -110,14 +122,16 @@ export class PicqerClient {
   }
 
   async createProduct(input: ProductInput): Promise<ProductData> {
-    return this.rawRequest('post', '/products', input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('post', '/products', input);
   }
 
   async updateProduct(
     productId: string | number,
     input: ProductInput
   ): Promise<ProductData> {
-    return this.rawRequest('put', `/products/${productId}`, input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('put', `/products/${productId}`, input);
   }
 
   /**
@@ -127,7 +141,8 @@ export class PicqerClient {
     productId: string | number,
     base64EncodedImage: string
   ): Promise<ProductData> {
-    return this.rawRequest('post', `/products/${productId}/images`, {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('post', `/products/${productId}/images`, {
       image: base64EncodedImage,
     });
   }
@@ -140,39 +155,46 @@ export class PicqerClient {
     let hasMore = true;
     let offset = 0;
     while (hasMore) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const webhooks = await this.rawRequest('get', `/hooks?offset=${offset}`);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       allHooks.push(...webhooks);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (webhooks.length < this.responseLimit) {
         hasMore = false;
       }
       offset += this.responseLimit;
     }
-    return allHooks;
+    return allHooks as WebhookData[];
   }
 
   /**
    * Create new webhook
    */
   async createWebhook(input: WebhookInput): Promise<WebhookData> {
-    return this.rawRequest('post', `/hooks`, input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('post', `/hooks`, input);
   }
 
   async deactivateHook(id: number): Promise<void> {
-    await this.rawRequest('delete', `/hooks/${id}`);
+    await await this.rawRequest('delete', `/hooks/${id}`);
   }
 
   async createOrder(input: OrderInput): Promise<OrderData> {
-    return this.rawRequest('post', `/orders/`, input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('post', `/orders/`, input);
   }
 
   /**
    * Update the order to 'processing' in Picqer
    */
   async processOrder(id: number): Promise<OrderData> {
-    return this.rawRequest('post', `/orders/${id}/process`);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('post', `/orders/${id}/process`);
   }
 
   async getCustomer(emailAddress: string): Promise<CustomerData | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const customers: CustomerData[] = await this.rawRequest(
       'get',
       `/customers?search=${encodeURIComponent(emailAddress)}`
@@ -196,6 +218,7 @@ export class PicqerClient {
     let hasMore = true;
     let offset = 0;
     while (hasMore) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const warehouses: Warehouse[] = await this.rawRequest(
         'get',
         `/warehouses?offset=${offset}`
@@ -217,14 +240,16 @@ export class PicqerClient {
   }
 
   async createCustomer(input: CustomerInput): Promise<CustomerData> {
-    return this.rawRequest('post', `/customers/`, input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('post', `/customers/`, input);
   }
 
   async updateCustomer(
     id: number,
     input: CustomerInput
   ): Promise<CustomerData> {
-    return this.rawRequest('put', `/customers/${id}`, input);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.rawRequest('put', `/customers/${id}`, input);
   }
 
   /**
@@ -298,11 +323,15 @@ export class PicqerClient {
   async rawRequest(
     method: 'post' | 'get' | 'put' | 'delete',
     url: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ): Promise<any> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     const result = await this.instance({ method, url, data }).catch((e: any) =>
       this.handleError(e, url)
     );
+    // eslint-disable-next-line  @typescript-eslint/no-unsafe-return
     return result?.data;
   }
 
@@ -327,8 +356,11 @@ export class PicqerClient {
   /**
    * Throw Picqer specific error messages
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handleError(e: any, url: string): void {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (e.response?.data?.error_message) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       throw new Error(`${url}: ${e.response.data.error_message}`);
     } else {
       throw e;

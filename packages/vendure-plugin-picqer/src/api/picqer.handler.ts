@@ -1,8 +1,4 @@
-import { FulfillmentHandler, LanguageCode, Logger } from '@vendure/core';
-import { loggerCtx } from '../constants';
-import { PicqerService } from './picqer.service';
-
-let service: PicqerService;
+import { FulfillmentHandler, LanguageCode } from '@vendure/core';
 
 export const picqerHandler = new FulfillmentHandler({
   code: 'picqer',
@@ -13,10 +9,8 @@ export const picqerHandler = new FulfillmentHandler({
     },
   ],
   args: {},
-  init: (injector) => {
-    service = injector.get(PicqerService);
-  },
-  createFulfillment: async (ctx, orders, orderItems, args) => {
+  init: () => {},
+  createFulfillment: () => {
     throw Error(
       `Don't use fulfillment with Picqer. Directly transition to Shipped or Delivered instead.`
     );

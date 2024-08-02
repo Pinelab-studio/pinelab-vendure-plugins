@@ -7,7 +7,6 @@ import {
   PermissionDefinition,
   RequestContext,
 } from '@vendure/core';
-import { all } from 'axios';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PicqerOptions } from '../picqer.plugin';
 import {
