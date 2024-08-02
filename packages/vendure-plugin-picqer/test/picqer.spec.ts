@@ -68,7 +68,7 @@ beforeAll(async () => {
             id: '901892834',
           },
         }),
-        shouldSyncOnProperties: ['height'],
+        shouldSyncOnProductVariantCustomFields: ['height'],
       }),
     ],
     orderOptions: {

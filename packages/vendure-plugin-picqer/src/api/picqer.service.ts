@@ -167,7 +167,7 @@ export class PicqerService implements OnApplicationBootstrap {
             v.translations ??
             v.price ??
             v.taxCategoryId ??
-            (this.options.shouldSyncOnProperties ?? []).some(
+            (this.options.shouldSyncOnProductVariantCustomFields ?? []).some(
               (customFieldName) =>
                 v.customFields ? v.customFields[customFieldName] : false
             )

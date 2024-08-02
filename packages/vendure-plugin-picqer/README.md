@@ -44,6 +44,7 @@ plugins: [
               id: '901892834',
             },
           }),
+          shouldSyncOnProductVariantCustomFields: ['productVariantCustomField']
         }),
   AdminUiPlugin.init({
     port: 3002,

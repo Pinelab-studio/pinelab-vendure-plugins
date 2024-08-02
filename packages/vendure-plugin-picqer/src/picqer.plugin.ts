@@ -53,7 +53,7 @@ export interface PicqerOptions {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pushPicqerOrderFields?: (order: Order) => any;
-  shouldSyncOnProperties?: string[];
+  shouldSyncOnProductVariantCustomFields?: string[];
 }
 
 @VendurePlugin({
