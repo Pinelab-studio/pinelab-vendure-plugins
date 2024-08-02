@@ -1,3 +1,7 @@
+# 3.1.2 (2024-08-02)
+
+- Changes to ProductVariant custom fields will trigger sync (#484)
+
 # 3.1.1 (2024-06-26)
 
 - Get the correct variant translation based on the channel's default language
