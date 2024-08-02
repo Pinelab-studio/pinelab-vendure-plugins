@@ -1,11 +1,13 @@
 import {
+  Injector,
   Logger,
   PluginCommonModule,
   RuntimeVendureConfig,
   Type,
   VendurePlugin,
 } from '@vendure/core';
-import { OnApplicationBootstrap } from '@nestjs/common';
+import { OnApplicationBootstrap, OnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import {
@@ -29,6 +31,7 @@ import {
   LicenseService,
   VendureHubPlugin,
 } from '@vendure-hub/vendure-hub-plugin';
+import { AccountingExportStrategy } from './strategies/accounting/accounting-export-strategy';
 
 export interface InvoicePluginConfigInput {
   /**
@@ -52,6 +55,10 @@ export interface InvoicePluginConfigInput {
    * Start counting invoices from this number onwards
    */
   startInvoiceNumber?: number;
+  /**
+   * You can supply accounting export strategies per channel, which will export the invoices to your accounting software.
+   */
+  accountingExports?: AccountingExportStrategy[];
 }
 
 export interface InvoicePluginConfig extends InvoicePluginConfigInput {
@@ -71,7 +78,6 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   providers: [
     InvoiceService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
-    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
   ],
   controllers: [InvoiceController],
   adminApiExtensions: {
@@ -84,16 +90,40 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   },
   compatibility: '^2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
-    InvoicePlugin.configure(config);
+    config.authOptions.customPermissions.push(invoicePermission);
     return config;
   },
 })
-export class InvoicePlugin implements OnApplicationBootstrap {
+export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
   static config: InvoicePluginConfig;
 
-  constructor(private licenseService: LicenseService) {}
+  constructor(
+    private licenseService: LicenseService,
+    private moduleRef: ModuleRef
+  ) {}
 
-  onApplicationBootstrap(): void {
+  async onModuleInit(): Promise<void> {
+    // Initialize accounting export strategies, if they define an init function
+    for (const strategy of InvoicePlugin.config.accountingExports || []) {
+      if (strategy.init) {
+        await strategy.init(new Injector(this.moduleRef));
+        Logger.info(
+          `Initialized accounting export strategy: ${strategy.constructor.name}`,
+          loggerCtx
+        );
+      }
+    }
+    // Initialize storage strategy
+    if (InvoicePlugin.config.storageStrategy) {
+      await InvoicePlugin.config.storageStrategy.init();
+      Logger.info(
+        `Initialized storage strategy: ${InvoicePlugin.config.storageStrategy.constructor.name}`,
+        loggerCtx
+      );
+    }
+  }
+
+  async onApplicationBootstrap(): Promise<void> {
     this.licenseService
       .checkLicenseKey(
         InvoicePlugin.config.licenseKey,
@@ -119,10 +149,9 @@ export class InvoicePlugin implements OnApplicationBootstrap {
 
   static init(config: InvoicePluginConfigInput): Type<InvoicePlugin> {
     InvoicePlugin.config = {
-      vendureHost: config.vendureHost,
+      ...config,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
-      licenseKey: config.licenseKey,
       hasValidLicense: false,
       startInvoiceNumber: config.startInvoiceNumber || 10000,
     };
@@ -147,14 +176,4 @@ export class InvoicePlugin implements OnApplicationBootstrap {
     routes: [{ filePath: 'routes.ts', route: 'invoice-list' }],
     providers: ['providers.ts'],
   };
-
-  private static async configure(
-    config: RuntimeVendureConfig
-  ): Promise<RuntimeVendureConfig> {
-    config.authOptions.customPermissions.push(invoicePermission);
-    if (this.config.storageStrategy) {
-      await this.config.storageStrategy.init();
-    }
-    return config;
-  }
 }

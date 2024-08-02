@@ -16,7 +16,12 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
-import { InvoicePlugin, InvoiceService, LocalFileStrategy } from '../src';
+import {
+  InvoicePlugin,
+  InvoiceService,
+  LocalFileStrategy,
+  XeroAccountingExportStrategy,
+} from '../src';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -26,7 +31,7 @@ require('dotenv').config();
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devConfig = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Info }),
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
@@ -34,16 +39,22 @@ require('dotenv').config();
         licenseKey: process.env.LICENSE_KEY!,
         // licenseKey: 'false license key',
         startInvoiceNumber: 10000,
+        accountingExports: [
+          new XeroAccountingExportStrategy({
+            clientId: process.env.XERO_CLIENT_ID!,
+            clientSecret: process.env.XERO_CLIENT_SECRET!,
+          }),
+        ],
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [InvoicePlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [InvoicePlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     paymentOptions: {
@@ -78,7 +89,7 @@ require('dotenv').config();
   // Add a test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient, 'manual-fulfillment');
-  const orders = 10;
+  const orders = 1;
   for (let i = 1; i <= orders; i++) {
     await createSettledOrder(
       shopClient,

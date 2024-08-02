@@ -324,11 +324,15 @@ You can access this data in your HTML template using Handlebars.js:
 This strategy exports each invoice to Xero. To get started:
 
 1. Create an OAuth app by clicking 'New app' here: https://developer.xero.com/app/manage
-2.
+2. This integration uses 'Custom connection', because we are syncing data from machine to machine. See [this page](https://developer.xero.com/documentation/guides/oauth2/overview/) for more details on app types.
+3. Select the scopes `accounting.transactions` and `accounting.contacts`.
+4.
+
+If you are getting `{ error: 'invalid_client' }` during startup, you might have to recreate your Xero app on https://developer.xero.com/app/manage.
 
 // TODO strategy, install xero node
 
-### Custom strategy
+### Custom accounting strategy
 
 // TODO
 

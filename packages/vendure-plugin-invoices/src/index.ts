@@ -10,6 +10,7 @@ export * from './strategies/storage/local-file-strategy';
 export * from './strategies/storage/s3-storage.strategy';
 export * from './strategies/storage/storage-strategy';
 export * from './strategies/accounting/accounting-export-strategy';
+export * from './strategies/accounting/xero-accounting-export-strategy';
 export * from './util/file.util';
 export * from './util/order-calculations';
 export * from './util/default-template';
