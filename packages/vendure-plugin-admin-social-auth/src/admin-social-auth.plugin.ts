@@ -34,6 +34,7 @@ export interface AdminSocialAuthPluginOptions {
     }
     return config;
   },
+  compatibility: '>=2.2.0',
 })
 export class AdminSocialAuthPlugin {
   static options: AdminSocialAuthPluginOptions;

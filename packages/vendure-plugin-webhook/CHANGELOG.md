@@ -1,3 +1,7 @@
+# 1.2.2 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 1.2.1 (2024-06-26)
 
 - Extended transformer function with webhook entity to make the event name accessible

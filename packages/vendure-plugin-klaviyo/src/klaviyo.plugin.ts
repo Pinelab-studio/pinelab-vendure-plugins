@@ -32,6 +32,7 @@ export type KlaviyoPluginOptions = Required<KlaviyoPluginOptionsInput>;
     },
     KlaviyoService,
   ],
+  compatibility: '>=2.2.0',
 })
 export class KlaviyoPlugin {
   static options: KlaviyoPluginOptions;

@@ -40,6 +40,7 @@ export interface ShipmatePluginConfig {
     schema: adminSchema,
     resolvers: [ShipmateAdminResolver],
   },
+  compatibility: '>=2.2.0',
 })
 export class ShipmatePlugin {
   static config: ShipmatePluginConfig;

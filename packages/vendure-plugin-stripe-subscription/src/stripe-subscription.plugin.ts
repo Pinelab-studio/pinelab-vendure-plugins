@@ -68,7 +68,7 @@ export interface StripeSubscriptionPluginOptions {
       new SubscriptionOrderItemCalculation();
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class StripeSubscriptionPlugin {
   static options: StripeSubscriptionPluginOptions = {

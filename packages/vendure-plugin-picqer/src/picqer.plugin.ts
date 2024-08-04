@@ -80,7 +80,7 @@ export interface PicqerOptions {
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class PicqerPlugin {
   static options: PicqerOptions;

@@ -1,3 +1,7 @@
+# 3.0.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 3.0.0 (2024-07-30)
 
 - Refactored this plugin to 'Limited Products'
