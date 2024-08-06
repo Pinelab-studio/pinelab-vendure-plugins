@@ -1,4 +1,8 @@
-# 3.1.2 (2024-08-04)
+# 3.2.0 (2024-08-04)
+
+- Allow configuration to trigger sync on custom field updates (#484)
+
+# 3.1.2 (2024-08-02)
 
 - Update compatibility range (#480)
 

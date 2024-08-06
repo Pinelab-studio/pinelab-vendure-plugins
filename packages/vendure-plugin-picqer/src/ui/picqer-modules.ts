@@ -1,7 +1,6 @@
 import { NgModule } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
-import { Extension } from '@vendure/ui-devkit/compiler';
 import { PicqerConfigComponent } from './picqer-config.component';
 
 /**
