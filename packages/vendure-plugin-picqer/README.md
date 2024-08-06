@@ -44,7 +44,9 @@ plugins: [
               id: '901892834',
             },
           }),
-          shouldSyncOnProductVariantCustomFields: ['productVariantCustomField']
+          // This will also push variants to Picqer when you change the `noLongerAvailable` example custom field.
+          // By default custom field updates will not trigger a sync to picqer
+          shouldSyncOnProductVariantCustomFields: ['noLongerAvailable']
         }),
   AdminUiPlugin.init({
     port: 3002,

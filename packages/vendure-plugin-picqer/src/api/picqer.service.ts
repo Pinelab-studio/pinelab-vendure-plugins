@@ -162,13 +162,13 @@ export class PicqerService implements OnApplicationBootstrap {
         }
         // Only update in Picqer if one of these fields was updated
         const shouldUpdate = (input as UpdateProductVariantInput[])?.some(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           (v) =>
             v.translations ??
             v.price ??
             v.taxCategoryId ??
             (this.options.shouldSyncOnProductVariantCustomFields ?? []).some(
               (customFieldName) =>
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                 v.customFields ? v.customFields[customFieldName] : false
             )
         );
