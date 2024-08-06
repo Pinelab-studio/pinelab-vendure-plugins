@@ -16,5 +16,6 @@ import { shopApiExtensions } from './schema';
     resolvers: [PublicCustomerGroupsResolver],
     schema: shopApiExtensions,
   },
+  compatibility: '>=2.2.0',
 })
 export class PublicCustomerGroupsPlugin {}

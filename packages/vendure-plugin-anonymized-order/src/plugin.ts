@@ -18,6 +18,7 @@ import { anonymizeOrderShopSchema } from './api-extensions';
     schema: anonymizeOrderShopSchema,
   },
   imports: [PluginCommonModule],
+  compatibility: '>=2.2.0',
 })
 export class AnonymizedOrderPlugin {
   static options: AnonymizeOrderPluginOptions | undefined;

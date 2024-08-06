@@ -1,3 +1,7 @@
+# 3.1.3 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 3.1.2 (2024-07-09)
 
 - Fetch customer relation for orders by default

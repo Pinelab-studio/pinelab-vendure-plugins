@@ -103,7 +103,7 @@ export interface ShippingExtensionsOptions {
     );
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
   exports: [ZoneAwareShippingTaxCalculationService],
 })
 export class ShippingExtensionsPlugin {

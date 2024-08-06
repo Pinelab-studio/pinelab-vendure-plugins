@@ -82,7 +82,7 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
     schema: shopSchemaExtensions,
     resolvers: [InvoiceCommonResolver],
   },
-  compatibility: '^2.2.0',
+  compatibility: '>=2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
     InvoicePlugin.configure(config);
     return config;

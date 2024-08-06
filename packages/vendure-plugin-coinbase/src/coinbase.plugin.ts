@@ -20,7 +20,7 @@ import { CoinbaseService } from './coinbase.service';
     `,
     resolvers: [CoinbaseResolver],
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
     config.paymentOptions.paymentMethodHandlers.push(coinbaseHandler);
     return config;
