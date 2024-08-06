@@ -1,6 +1,6 @@
 # 3.1.2 (2024-08-02)
 
-- Changes to ProductVariant custom fields will trigger sync (#484)
+- Allow configuration to trigger sync on custom field updates (#484)
 
 # 3.1.1 (2024-06-26)
 
