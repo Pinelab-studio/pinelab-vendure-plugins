@@ -12,7 +12,7 @@ import { AssetThumbnailResolvers } from './asset-thumbnail.resolvers';
     schema: assetThumbnailSchema,
     resolvers: [AssetThumbnailResolvers],
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class GoogleStoragePlugin {
   context = 'GoogleStoragePlugin';

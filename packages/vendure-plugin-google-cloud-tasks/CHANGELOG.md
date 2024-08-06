@@ -1,3 +1,7 @@
+# 1.7.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 1.7.0 (2024-09-06)
 
 - Updated `@google-cloud/tasks` to `"^5.4.0"`

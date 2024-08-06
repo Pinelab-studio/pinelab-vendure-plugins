@@ -24,5 +24,6 @@ export interface GiftPluginOptions {
     config.customFields.OrderLine.push(...orderLineCustomFields);
     return config;
   },
+  compatibility: '>=2.2.0',
 })
 export class SelectableGiftsPlugin {}

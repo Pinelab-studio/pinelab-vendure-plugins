@@ -43,7 +43,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
     });
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class AcceptBluePlugin {
   static options: AcceptBluePluginOptions = {

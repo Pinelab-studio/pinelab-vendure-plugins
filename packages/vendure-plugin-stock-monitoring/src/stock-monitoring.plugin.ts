@@ -23,7 +23,7 @@ export interface StockMonitoringPlugin {
     `,
     resolvers: [StockMonitoringResolver],
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class StockMonitoringPlugin {
   static ui: AdminUiExtension = {

@@ -1,3 +1,7 @@
+# 2.0.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 2.0.0 (2024-06-21)
 
 - Make `primaryCollection` custom field channel aware.
