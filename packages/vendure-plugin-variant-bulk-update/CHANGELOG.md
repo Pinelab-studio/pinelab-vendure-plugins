@@ -1,3 +1,7 @@
+# 1.3.3 (2024-08-07)
+
+- Send updated input with ProductVariantEvent
+
 # 1.3.2 (2024-08-04)
 
 - Update compatibility range (#480)

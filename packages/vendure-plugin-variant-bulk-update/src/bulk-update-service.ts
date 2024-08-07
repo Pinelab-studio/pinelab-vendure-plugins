@@ -16,6 +16,7 @@ import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { loggerCtx } from './constants';
 import type { BulkUpdateOptions } from './variant-bulk-update.plugin';
 import { In } from 'typeorm';
+import { UpdateProductVariantInput } from '@vendure/common/lib/generated-types';
 
 type ProductWithCustomFields = Product & {
   customFields?: Record<string, any>;
@@ -133,8 +134,12 @@ export class BulkUpdateService implements OnApplicationBootstrap {
       )}' of ${res.affected} variants of product ${updatedProduct.id}`,
       loggerCtx
     );
+    const inputs: UpdateProductVariantInput[] = variants.map((v) => ({
+      id: v.id,
+      customFields,
+    }));
     await this.eventBus.publish(
-      new ProductVariantEvent(ctx, variants, 'updated')
+      new ProductVariantEvent(ctx, variants, 'updated', inputs)
     );
   }
 
