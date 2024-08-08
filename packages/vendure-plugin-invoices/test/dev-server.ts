@@ -20,7 +20,7 @@ import {
   InvoicePlugin,
   InvoiceService,
   LocalFileStrategy,
-  XeroAccountingExportStrategy,
+  XeroUKExportStrategy,
 } from '../src';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
@@ -40,9 +40,11 @@ require('dotenv').config();
         // licenseKey: 'false license key',
         startInvoiceNumber: 10000,
         accountingExports: [
-          new XeroAccountingExportStrategy({
+          new XeroUKExportStrategy({
             clientId: process.env.XERO_CLIENT_ID!,
             clientSecret: process.env.XERO_CLIENT_SECRET!,
+            accountCode: '000',
+            getReference: (order) => `${order.code} | PO NUMBER`,
           }),
         ],
       }),

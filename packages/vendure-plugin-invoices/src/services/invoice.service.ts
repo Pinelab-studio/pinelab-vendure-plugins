@@ -141,7 +141,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           job.data.orderCode
         ).catch(async (error) => {
           Logger.warn(
-            `Failed to generate invoice for ${job.data.orderCode}: ${error?.message}`,
+            `Failed to export invoice to accounting platform for '${job.data.orderCode}': ${error?.message}`,
             loggerCtx
           );
           throw error;
@@ -447,7 +447,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       accountingReference: reference,
     });
     Logger.info(
-      `Exported invoice '${invoiceNumber}' for order '${orderCode}' to accounting system '${strategy.constructor.name}'`,
+      `Exported invoice '${invoiceNumber}' for order '${orderCode}' to accounting system '${strategy.constructor.name}' with reference '${reference.link}'`,
       loggerCtx
     );
   }
@@ -463,11 +463,16 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         Logger.debug(`No accounting export strategies configured`, loggerCtx);
         return;
       }
-      await this.accountingExportQueue.add({
-        ctx: ctx.serialize(),
-        invoiceNumber,
-        orderCode,
-      });
+      await this.accountingExportQueue.add(
+        {
+          ctx: ctx.serialize(),
+          invoiceNumber,
+          orderCode,
+        },
+        {
+          retries: 10,
+        }
+      );
       Logger.info(
         `Added accounting export job for invoice '${invoiceNumber}' for order '${orderCode}'`,
         loggerCtx
