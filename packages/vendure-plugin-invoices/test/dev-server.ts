@@ -44,7 +44,11 @@ require('dotenv').config();
             clientId: process.env.XERO_CLIENT_ID!,
             clientSecret: process.env.XERO_CLIENT_SECRET!,
             accountCode: '000',
-            getReference: (order) => `${order.code} | PO NUMBER`,
+            getReference: (order) =>
+              `${order.code} | PO NUMBER | ${order.payments
+                .filter((p) => p.state === 'Settled')
+                .map((p) => p.transactionId)
+                .join(',')}`,
           }),
         ],
       }),

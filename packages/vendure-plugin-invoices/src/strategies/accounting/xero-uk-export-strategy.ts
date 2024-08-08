@@ -51,7 +51,6 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
   // For custom connections tenantId needs to be an empty string
   readonly tenantId = '';
 
-
   constructor(private config: Config) {
     this.channelToken = config.channelToken;
   }
@@ -76,7 +75,11 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     try {
       this.taxRates = await this.getTaxRates();
     } catch (e: any) {
-      Logger.error(`Failed initialize: Could not get tax rates from Xero: ${e?.message}`, loggerCtx, util.inspect(e, false, 5));
+      Logger.error(
+        `Failed initialize: Could not get tax rates from Xero: ${e?.message}`,
+        loggerCtx,
+        util.inspect(e, false, 5)
+      );
     }
   }
 
@@ -96,7 +99,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         'lines.productVariant.translations',
         'shippingLines.shippingMethod',
         'payments',
-      ]
+      ],
     });
     if (!order.customer) {
       throw Error(
@@ -110,32 +113,40 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       invoiceNumber: String(invoice.invoiceNumber),
       type: 'ACCREC' as any,
       contact: {
-        contactID: contact.contactID
+        contactID: contact.contactID,
       },
       date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
       lineItems: this.getLineItems(ctx, order),
       reference,
-      payments: order.payments.filter(p => p.state === 'Settled').map((payment) => {
-        return {
-          amount: this.toMoney(payment.amount),
-          date: this.toDate(payment.createdAt),
-          reference: payment.transactionId,
-        }
-      }),
       status: 'DRAFT' as any,
     };
     const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
     try {
-      const response = await this.xero.accountingApi.createInvoices(this.tenantId, { invoices: [xeroInvoice] }, true, undefined, idempotencyKey);
+      const response = await this.xero.accountingApi.createInvoices(
+        this.tenantId,
+        { invoices: [xeroInvoice] },
+        true,
+        undefined,
+        idempotencyKey
+      );
       const invoiceId = response.body.invoices?.[0].invoiceID;
-      Logger.info(`Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID (${invoiceId})`, loggerCtx);
+      Logger.info(
+        `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID (${invoiceId})`,
+        loggerCtx
+      );
       return {
         reference: invoiceId!,
-        link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${invoiceId}`
+        link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${invoiceId}`,
       };
     } catch (err: any) {
-      const errorMessage = JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]?.Message || JSON.parse(err)?.response?.body?.Message;
-      Logger.error(`Failed to create Xero invoice for order '${order.code}': ${errorMessage}`, loggerCtx, util.inspect(err, false, 5));
+      const errorMessage =
+        JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
+          ?.Message || JSON.parse(err)?.response?.body?.Message;
+      Logger.error(
+        `Failed to create Xero invoice for order '${order.code}': ${errorMessage}`,
+        loggerCtx,
+        util.inspect(err, false, 5)
+      );
       throw Error(errorMessage);
     }
   }
@@ -192,55 +203,77 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
    * Construct line items from the order.
    * Also includes shipping lines and surcharges
    */
-  getLineItems(ctx: RequestContext, order: Order): import('xero-node').LineItem[] {
+  getLineItems(
+    ctx: RequestContext,
+    order: Order
+  ): import('xero-node').LineItem[] {
     // Map line items
-    const lineItems: import('xero-node').LineItem[] = order.lines.map((line) => {
-      return {
-        description: translateDeep(line.productVariant, ctx.channel.defaultLanguageCode).name,
-        quantity: line.quantity,
-        unitAmount: this.toMoney(line.proratedUnitPrice),
-        accountCode: this.config.accountCode,
-        taxType: this.getTaxType(line.taxRate, order.code),
+    const lineItems: import('xero-node').LineItem[] = order.lines.map(
+      (line) => {
+        return {
+          description: translateDeep(
+            line.productVariant,
+            ctx.channel.defaultLanguageCode
+          ).name,
+          quantity: line.quantity,
+          unitAmount: this.toMoney(line.proratedUnitPrice),
+          accountCode: this.config.accountCode,
+          taxType: this.getTaxType(line.taxRate, order.code),
+        };
       }
-    });
+    );
     // Map shipping lines
-    lineItems.push(...order.shippingLines.map((shippingLine) => {
-      return {
-        description: shippingLine.shippingMethod.name,
-        quantity: 1,
-        unitAmount: this.toMoney(shippingLine.discountedPrice),
-        accountCode: this.config.accountCode,
-        taxType: this.getTaxType(shippingLine.taxRate, order.code),
-      }
-    }));
+    lineItems.push(
+      ...order.shippingLines.map((shippingLine) => {
+        return {
+          description: shippingLine.shippingMethod.name,
+          quantity: 1,
+          unitAmount: this.toMoney(shippingLine.discountedPrice),
+          accountCode: this.config.accountCode,
+          taxType: this.getTaxType(shippingLine.taxRate, order.code),
+        };
+      })
+    );
     // Map surcharges
-    lineItems.push(...order.surcharges.map((surcharge) => {
-      return {
-        description: surcharge.description,
-        quantity: 1,
-        unitAmount: this.toMoney(surcharge.price),
-        accountCode: this.config.accountCode,
-        taxType: this.getTaxType(surcharge.taxRate, order.code),
-      }
-    }));
+    lineItems.push(
+      ...order.surcharges.map((surcharge) => {
+        return {
+          description: surcharge.description,
+          quantity: 1,
+          unitAmount: this.toMoney(surcharge.price),
+          accountCode: this.config.accountCode,
+          taxType: this.getTaxType(surcharge.taxRate, order.code),
+        };
+      })
+    );
     return lineItems;
   }
 
-  getTaxType(rate: number, orderCode: string): string | undefined{
-    const taxType = this.taxRates.find((xeroRate) => xeroRate.rate == rate)?.type;
-    console.log('taxType', taxType);
+  getTaxType(rate: number, orderCode: string): string | undefined {
+    const taxType = this.taxRates.find(
+      (xeroRate) => xeroRate.rate == rate
+    )?.type;
     if (taxType) {
       return taxType;
     }
-    Logger.error(`No tax rate found in Xero with tax rate '${rate}'. No rate set for order '${orderCode}'`, loggerCtx,
-      `Available tax rates: ${this.taxRates.map(r => `${r.type}=${r.rate}`).join(', ')}`);
+    Logger.error(
+      `No tax rate found in Xero with tax rate '${rate}'. No rate set for order '${orderCode}'`,
+      loggerCtx,
+      `Available tax rates: ${this.taxRates
+        .map((r) => `${r.type}=${r.rate}`)
+        .join(', ')}`
+    );
   }
 
   async getTaxRates(): Promise<TaxRate[]> {
     const rates = await this.xero.accountingApi.getTaxRates(this.tenantId);
-    return rates.body.taxRates?.map((rate) => ({ rate: rate.effectiveRate, type: rate.taxType })) || [];
+    return (
+      rates.body.taxRates?.map((rate) => ({
+        rate: rate.effectiveRate,
+        type: rate.taxType,
+      })) || []
+    );
   }
-
 
   private toDate(date: Date): string {
     return date.toISOString().split('T')[0];
@@ -270,7 +303,8 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
               util.inspect(e, false, 5)
             );
             throw Error(
-              `Failed to get access_token for Xero: ${e?.message
+              `Failed to get access_token for Xero: ${
+                e?.message
               }: ${JSON.stringify(e?.response?.data)}`
             );
           }

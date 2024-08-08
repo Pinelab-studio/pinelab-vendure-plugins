@@ -447,7 +447,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       accountingReference: reference,
     });
     Logger.info(
-      `Exported invoice '${invoiceNumber}' for order '${orderCode}' to accounting system '${strategy.constructor.name}' with reference '${reference.link}'`,
+      `Exported invoice '${invoiceNumber}' for order '${orderCode}' to accounting system '${strategy.constructor.name}' with reference '${reference.reference}'`,
       loggerCtx
     );
   }
