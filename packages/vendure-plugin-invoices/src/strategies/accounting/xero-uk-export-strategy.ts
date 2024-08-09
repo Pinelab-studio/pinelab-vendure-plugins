@@ -22,7 +22,8 @@ const loggerCtx = 'XeroUKAccountingExport';
 interface Config {
   clientId: string;
   clientSecret: string;
-  accountCode: number;
+  itemAccountCode: number;
+  shippingAccountCode: number;
   channelToken?: string;
   /**
    * Construct a reference based on the given order object
