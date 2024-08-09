@@ -15,18 +15,23 @@ import {
   ExternalReference,
 } from './accounting-export-strategy';
 import { InvoiceEntity } from '../../entities/invoice.entity';
-import { loggerCtx } from '../../constants';
 import util from 'util';
+
+const loggerCtx = 'XeroUKAccountingExport';
 
 interface Config {
   clientId: string;
   clientSecret: string;
-  accountCode: string;
+  accountCode: number;
   channelToken?: string;
   /**
    * Construct a reference based on the given order object
    */
-  getReference?: (order: Order) => string;
+  getReference?: (
+    order: Order,
+    invoice: InvoiceEntity,
+    isCreditInvoiceFor?: number
+  ) => string;
 }
 
 interface TaxRate {
@@ -37,8 +42,7 @@ interface TaxRate {
 let injector: Injector;
 
 /**
- * This class is responsible for exporting invoices to Xero UK.
- * It's is UK specific, because it uses predefined tax rates
+ * This class is responsible for exporting invoices as Draft to Xero UK.
  */
 export class XeroUKExportStrategy implements AccountingExportStrategy {
   readonly channelToken?: string;
@@ -89,7 +93,8 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
   async exportInvoice(
     ctx: RequestContext,
     invoice: InvoiceEntity,
-    order: Order
+    order: Order,
+    isCreditInvoiceFor?: number
   ): Promise<ExternalReference> {
     await injector.get(EntityHydrator).hydrate(ctx, order, {
       relations: [
@@ -106,14 +111,48 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         `Cannot export invoice of order '${order.code}' to Xero without a customer`
       );
     }
+    try {
+      const contact = await this.getOrCreateContact(order.customer);
+      if (!invoice.isCreditInvoice) {
+        return await this.createInvoice(ctx, order, invoice, contact.contactID);
+      } else {
+        return await this.createCreditNote(
+          ctx,
+          order,
+          invoice,
+          isCreditInvoiceFor,
+          contact.contactID
+        );
+      }
+    } catch (err: any) {
+      const errorMessage =
+        JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
+          ?.Message || JSON.parse(err)?.response?.body?.Message;
+      Logger.error(
+        `Failed to export to Xero for order '${order.code}': ${errorMessage}`,
+        loggerCtx,
+        util.inspect(err, false, 5)
+      );
+      throw Error(errorMessage);
+    }
+  }
+
+  /**
+   * Create normal invoice in Xero
+   */
+  async createInvoice(
+    ctx: RequestContext,
+    order: Order,
+    invoice: InvoiceEntity,
+    contactId?: string
+  ): Promise<ExternalReference> {
     await this.tokenCache.value(); // Always get a token before making a request
-    const contact = await this.getOrCreateContact(order.customer);
-    const reference = this.config.getReference?.(order) || order.code;
+    const reference = this.config.getReference?.(order, invoice) || order.code;
     const xeroInvoice: import('xero-node').Invoice = {
       invoiceNumber: String(invoice.invoiceNumber),
       type: 'ACCREC' as any,
       contact: {
-        contactID: contact.contactID,
+        contactID: contactId,
       },
       date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
       lineItems: this.getLineItems(ctx, order),
@@ -121,34 +160,66 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       status: 'DRAFT' as any,
     };
     const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
-    try {
-      const response = await this.xero.accountingApi.createInvoices(
-        this.tenantId,
-        { invoices: [xeroInvoice] },
-        true,
-        undefined,
-        idempotencyKey
-      );
-      const invoiceId = response.body.invoices?.[0].invoiceID;
-      Logger.info(
-        `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID (${invoiceId})`,
-        loggerCtx
-      );
-      return {
-        reference: invoiceId!,
-        link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${invoiceId}`,
-      };
-    } catch (err: any) {
-      const errorMessage =
-        JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
-          ?.Message || JSON.parse(err)?.response?.body?.Message;
-      Logger.error(
-        `Failed to create Xero invoice for order '${order.code}': ${errorMessage}`,
-        loggerCtx,
-        util.inspect(err, false, 5)
-      );
-      throw Error(errorMessage);
-    }
+    const response = await this.xero.accountingApi.createInvoices(
+      this.tenantId,
+      { invoices: [xeroInvoice] },
+      true,
+      undefined,
+      idempotencyKey
+    );
+    const invoiceId = response.body.invoices?.[0].invoiceID;
+    Logger.info(
+      `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID (${invoiceId})`,
+      loggerCtx
+    );
+    return {
+      reference: invoiceId!,
+      link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${invoiceId}`,
+    };
+  }
+
+  /**
+   * Credit notes are a separate entity in Xero, so we have a separate method for them
+   */
+  async createCreditNote(
+    ctx: RequestContext,
+    order: Order,
+    invoice: InvoiceEntity,
+    isCreditInvoiceFor?: number,
+    contactId?: string
+  ): Promise<ExternalReference> {
+    await this.tokenCache.value(); // Always get a token before making a request
+    const reference =
+      this.config.getReference?.(order, invoice, isCreditInvoiceFor) ||
+      `Credit note for ${isCreditInvoiceFor}`;
+    const creditNote: import('xero-node').CreditNote = {
+      creditNoteNumber: `${invoice.invoiceNumber} (CN)`,
+      type: 'ACCRECCREDIT' as any,
+      contact: {
+        contactID: contactId,
+      },
+      date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
+      lineItems: this.getCreditLineItems(invoice),
+      reference,
+      status: 'DRAFT' as any,
+    };
+    const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
+    const response = await this.xero.accountingApi.createCreditNotes(
+      this.tenantId,
+      { creditNotes: [creditNote] },
+      true,
+      undefined,
+      idempotencyKey
+    );
+    const creditNoteID = response.body.creditNotes?.[0].creditNoteID;
+    Logger.info(
+      `Created credit note '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID (${creditNoteID})`,
+      loggerCtx
+    );
+    return {
+      reference: creditNoteID!,
+      link: `https://go.xero.com/AccountsReceivable/EditCreditNote.aspx?creditNoteID=${creditNoteID}`,
+    };
   }
 
   async getOrCreateContact(
@@ -199,11 +270,21 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     return createdContacts.body.contacts![0];
   }
 
+  async getTaxRates(): Promise<TaxRate[]> {
+    const rates = await this.xero.accountingApi.getTaxRates(this.tenantId);
+    return (
+      rates.body.taxRates?.map((rate) => ({
+        rate: rate.effectiveRate,
+        type: rate.taxType,
+      })) || []
+    );
+  }
+
   /**
    * Construct line items from the order.
    * Also includes shipping lines and surcharges
    */
-  getLineItems(
+  private getLineItems(
     ctx: RequestContext,
     order: Order
   ): import('xero-node').LineItem[] {
@@ -217,7 +298,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           ).name,
           quantity: line.quantity,
           unitAmount: this.toMoney(line.proratedUnitPrice),
-          accountCode: this.config.accountCode,
+          accountCode: String(this.config.accountCode),
           taxType: this.getTaxType(line.taxRate, order.code),
         };
       }
@@ -229,7 +310,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           description: shippingLine.shippingMethod.name,
           quantity: 1,
           unitAmount: this.toMoney(shippingLine.discountedPrice),
-          accountCode: this.config.accountCode,
+          accountCode: String(this.config.accountCode),
           taxType: this.getTaxType(shippingLine.taxRate, order.code),
         };
       })
@@ -241,7 +322,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           description: surcharge.description,
           quantity: 1,
           unitAmount: this.toMoney(surcharge.price),
-          accountCode: this.config.accountCode,
+          accountCode: String(this.config.accountCode),
           taxType: this.getTaxType(surcharge.taxRate, order.code),
         };
       })
@@ -249,7 +330,29 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     return lineItems;
   }
 
-  getTaxType(rate: number, orderCode: string): string | undefined {
+  private getCreditLineItems(
+    invoice: InvoiceEntity
+  ): import('xero-node').LineItem[] {
+    if (!invoice.isCreditInvoice) {
+      throw Error(
+        `Cannot create credit line items for non-credit invoice '${invoice.invoiceNumber}'`
+      );
+    }
+    return invoice.orderTotals.taxSummaries.map((taxSummary) => {
+      return {
+        description: `Credit of all line items with '${taxSummary.description}'`,
+        quantity: 1,
+        unitAmount: this.toMoney(Math.abs(taxSummary.taxBase)), // Make positive number for Xero
+        accountCode: String(this.config.accountCode),
+        taxType: this.getTaxType(taxSummary.taxRate, invoice.invoiceNumber),
+      };
+    });
+  }
+
+  private getTaxType(
+    rate: number,
+    orderOrInvoice: string | number
+  ): string | undefined {
     const taxType = this.taxRates.find(
       (xeroRate) => xeroRate.rate == rate
     )?.type;
@@ -257,21 +360,11 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       return taxType;
     }
     Logger.error(
-      `No tax rate found in Xero with tax rate '${rate}'. No rate set for order '${orderCode}'`,
+      `No tax rate found in Xero with tax rate '${rate}'. No rate set for '${orderOrInvoice}'`,
       loggerCtx,
       `Available tax rates: ${this.taxRates
         .map((r) => `${r.type}=${r.rate}`)
         .join(', ')}`
-    );
-  }
-
-  async getTaxRates(): Promise<TaxRate[]> {
-    const rates = await this.xero.accountingApi.getTaxRates(this.tenantId);
-    return (
-      rates.body.taxRates?.map((rate) => ({
-        rate: rate.effectiveRate,
-        type: rate.taxType,
-      })) || []
     );
   }
 

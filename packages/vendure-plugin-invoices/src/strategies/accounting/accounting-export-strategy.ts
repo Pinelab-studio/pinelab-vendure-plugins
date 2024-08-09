@@ -32,6 +32,10 @@ export interface AccountingExportStrategy {
   exportInvoice(
     ctx: RequestContext,
     invoice: InvoiceEntity,
-    order: Order
+    order: Order,
+    /**
+     * If the invoice is a credit invoice, this will be the original invoice that the credit invoice is for.
+     */
+    isCreditInvoiceFor?: number
   ): Promise<ExternalReference>;
 }

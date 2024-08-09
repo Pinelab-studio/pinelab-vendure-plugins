@@ -38,17 +38,22 @@ require('dotenv').config();
         storageStrategy: new LocalFileStrategy(),
         licenseKey: process.env.LICENSE_KEY!,
         // licenseKey: 'false license key',
-        startInvoiceNumber: 10000,
+        startInvoiceNumber: Math.floor(100000 + Math.random() * 900000), // Random 6 digit number to prevent duplicates in Xero
         accountingExports: [
           new XeroUKExportStrategy({
             clientId: process.env.XERO_CLIENT_ID!,
             clientSecret: process.env.XERO_CLIENT_SECRET!,
-            accountCode: '000',
-            getReference: (order) =>
-              `${order.code} | PO NUMBER | ${order.payments
-                .filter((p) => p.state === 'Settled')
-                .map((p) => p.transactionId)
-                .join(',')}`,
+            accountCode: 270,
+            getReference: (order, invoice, isCreditInvoiceFor) => {
+              if (isCreditInvoiceFor) {
+                return `Credit note for ${isCreditInvoiceFor}`;
+              } else {
+                return `${order.code} | PO NUMBER | ${order.payments
+                  .filter((p) => p.state === 'Settled')
+                  .map((p) => p.transactionId)
+                  .join(',')}`;
+              }
+            },
           }),
         ],
       }),
@@ -95,7 +100,7 @@ require('dotenv').config();
   // Add a test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient, 'manual-fulfillment');
-  const orders = 1;
+  const orders = 5;
   for (let i = 1; i <= orders; i++) {
     await createSettledOrder(
       shopClient,
