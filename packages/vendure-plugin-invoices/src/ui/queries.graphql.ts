@@ -29,6 +29,10 @@ export const invoiceFragment = gql`
     invoiceNumber
     isCreditInvoice
     downloadUrl
+    accountingReference {
+      reference
+      link
+    }
   }
 `;
 

@@ -18,6 +18,10 @@ const GET_INVOICES_QUERY = gql`
         isCreditInvoice
         orderCode
         orderId
+        accountingReference {
+          reference
+          link
+        }
       }
       totalItems
     }

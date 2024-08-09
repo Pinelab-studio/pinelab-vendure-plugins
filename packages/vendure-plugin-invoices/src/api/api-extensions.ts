@@ -16,9 +16,14 @@ const commonSchemaExtensions = gql`
     orderCode: String!
     orderId: ID!
     isCreditInvoice: Boolean!
+    accountingReference: InvoiceAccountingReference
   }
   extend type Order {
     invoices: [Invoice!]!
+  }
+  type InvoiceAccountingReference {
+    reference: String!
+    link: String
   }
 `;
 export const shopSchemaExtensions = gql`
