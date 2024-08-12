@@ -1,3 +1,5 @@
+import './api/custom-field-types';
+
 interface CustomFields {
   custom1: string;
   custom2: string;
