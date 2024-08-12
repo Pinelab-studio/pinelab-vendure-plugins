@@ -1,3 +1,7 @@
+# 1.6.2 (2024-08-12)
+
+- Add getAllTransactions method on client api
+
 # 1.6.1 (2024-08-04)
 
 - Update compatibility range (#480)

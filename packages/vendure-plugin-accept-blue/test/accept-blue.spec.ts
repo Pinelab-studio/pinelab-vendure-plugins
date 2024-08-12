@@ -107,6 +107,26 @@ it('Selects dev mode if args.testMode=true', () => {
   expect(acceptBlueClient.endpoint).toContain('develop');
 });
 
+it('Processes query args', () => {
+  const acceptBlueClient = new AcceptBlueClient(
+    'process.env.API_KEY',
+    '',
+    true
+  );
+  expect(acceptBlueClient.toQueryString({})).toEqual('');
+  expect(
+    acceptBlueClient.toQueryString({
+      order: 'asc',
+      status: 'expired',
+      payment_type: 'credit_card',
+      limit: 12,
+      offset: 1,
+    })
+  ).toEqual(
+    'order=asc&status=expired&payment_type=credit_card&limit=12&offset=1'
+  );
+});
+
 it('Creates Accept Blue payment method', async () => {
   await adminClient.asSuperAdmin();
   ({ createPaymentMethod: acceptBluePaymentMethod } = await adminClient.query(

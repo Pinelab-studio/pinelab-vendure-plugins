@@ -122,6 +122,33 @@ export class AcceptBlueClient {
     return await this.request('get', `recurring-schedules/${id}/transactions`);
   }
 
+  async getAllTransactions(options?: {
+    order?: 'asc' | 'desc';
+    status?:
+      | 'captured'
+      | 'pending'
+      | 'reserve'
+      | 'originated'
+      | 'returned'
+      | 'cancelled'
+      | 'queued'
+      | 'declined'
+      | 'error'
+      | 'settled'
+      | 'voided'
+      | 'approved'
+      | 'blocked'
+      | 'expired';
+    payment_type?: 'credit_card' | 'check';
+    date_from?: number | string;
+    date_to?: number | string;
+    limit?: number;
+    offset?: number;
+  }): Promise<AcceptBlueRecurringScheduleTransaction[]> {
+    const qry = this.toQueryString(options ?? {});
+    return this.request('get', `transactions${qry.length ? `?${qry}` : ''}`);
+  }
+
   async getPaymentMethods(
     acceptBlueCustomerId: number
   ): Promise<AcceptBluePaymentMethod[]> {
@@ -279,5 +306,12 @@ export class AcceptBlueClient {
    */
   toDateString(date: Date): string {
     return date.toISOString().split('T')[0];
+  }
+
+  toQueryString(obj: any) {
+    return Object.keys(obj)
+      .filter((key) => obj[key] !== undefined && obj[key] !== null)
+      .map((key) => key + '=' + encodeURIComponent(obj[key]))
+      .join('&');
   }
 }
