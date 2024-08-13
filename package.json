@@ -92,7 +92,7 @@
           "google-storage-assets",
           "invoices",
           "klaviyo",
-          "limit-variant",
+          "limited-products",
           "metrics",
           "modify-customer-orders",
           "multiserver-db-sessioncache",

@@ -34,7 +34,7 @@ export interface ModifyCustomerOrdersPluginOptions {
     config.orderOptions.process.push(convertToDraft);
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
   exports: [ModifyCustomerOrderService],
 })
 export class ModifyCustomerOrdersPlugin {

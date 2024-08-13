@@ -28,7 +28,7 @@ import {
     };
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class CustomerManagedGroupsPlugin {
   // static ui: AdminUiExtension = {

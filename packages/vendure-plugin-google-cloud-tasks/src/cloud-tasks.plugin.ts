@@ -26,7 +26,7 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
     config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy();
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class CloudTasksPlugin {
   static options: CloudTaskOptions;

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-popularity-scores",
-  "version": "1.7.1",
+  "version": "1.7.3",
   "description": "Sort products and collections by popularity based on previously placed orders",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -21,7 +21,7 @@
     "start": "yarn ts-node test/dev-server.ts",
     "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint ."
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

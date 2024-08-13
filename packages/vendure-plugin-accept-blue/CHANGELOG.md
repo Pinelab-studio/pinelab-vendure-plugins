@@ -1,3 +1,7 @@
+# 1.6.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 1.6.0 (2024-07-10)
 
 - Convert `biannually` to every 6 months instead of once every 2 years

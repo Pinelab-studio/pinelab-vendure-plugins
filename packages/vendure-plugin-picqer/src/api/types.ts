@@ -1,5 +1,4 @@
-import { ProductVariant } from '@vendure/core';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export interface ProductInput {
   name: string;
   idvatgroup: number;

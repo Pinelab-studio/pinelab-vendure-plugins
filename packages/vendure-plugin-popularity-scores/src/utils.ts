@@ -1,4 +1,6 @@
-export const sliceArray = (arr: number[], chunkSize: number): number[][] => {
+import { ID } from '@vendure/core';
+
+export const sliceArray = (arr: ID[], chunkSize: number): ID[][] => {
   const result = [];
   for (let i = 0; i < arr.length; i += chunkSize) {
     if (i + chunkSize < arr.length) {

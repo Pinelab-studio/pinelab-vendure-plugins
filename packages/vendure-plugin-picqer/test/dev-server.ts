@@ -44,6 +44,15 @@ import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.hand
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
+    customFields: {
+      // Sample custom field to test the custom fields config behavior
+      ProductVariant: [
+        {
+          name: 'noLongerAvailable',
+          type: 'string',
+        },
+      ],
+    },
     plugins: [
       PicqerPlugin.init({
         enabled: true,
@@ -58,6 +67,7 @@ import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.hand
             id: '901892834',
           },
         }),
+        shouldSyncOnProductVariantCustomFields: ['noLongerAvailable'],
       }),
       AssetServerPlugin.init({
         assetUploadDir: path.join(__dirname, '../__data__/assets'),

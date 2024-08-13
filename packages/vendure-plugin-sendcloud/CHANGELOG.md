@@ -1,3 +1,7 @@
+# 1.3.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 1.3.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6

@@ -1,3 +1,13 @@
+# 3.0.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
+# 3.0.0 (2024-07-30)
+
+- Refactored this plugin to 'Limited Products'
+- Moved the limitation custom fields to the product level instead of variant
+- Made maxPerOrder also channel aware
+
 # 2.2.0 (2024-07-25)
 
 - Moved custom fields to their own tab 'Limitations'
