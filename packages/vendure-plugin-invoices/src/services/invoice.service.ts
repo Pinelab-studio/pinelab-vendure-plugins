@@ -468,7 +468,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   ): Promise<void> {
     try {
       if (!this.config.accountingExports?.length) {
-        console.log(this.config.accountingExports);
         Logger.debug(`No accounting export strategies configured`, loggerCtx);
         return;
       }
