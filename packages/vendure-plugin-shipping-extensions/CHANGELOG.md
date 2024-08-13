@@ -1,3 +1,7 @@
+# 2.7.2 (2024-08-12)
+
+- Resolve to channels default tax zone if no tax rate found
+
 # 2.7.1 (2024-08-04)
 
 - Update compatibility range (#480)
