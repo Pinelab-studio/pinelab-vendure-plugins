@@ -181,6 +181,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       Logger.error(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
         `Failed to add invoice job to queue: ${JSON.stringify(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
           (error as any)?.message
         )}`,
         loggerCtx
@@ -512,6 +513,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       // Warning, because this will be retried, or is returned to the user
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       Logger.warn(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed to generate invoice: ${JSON.stringify(e?.message)}`,
         loggerCtx
       );

@@ -51,6 +51,7 @@ export function getRegenerateInvoiceButton(isStyled: boolean) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
       const order$ = context.dataService.query<any, GetOrderQueryVariables>(
         GET_ORDER,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         { id: orderId }
       );
       return order$.stream$.pipe(
@@ -59,6 +60,7 @@ export function getRegenerateInvoiceButton(isStyled: boolean) {
           const latestInvoice = order?.invoices[0];
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const orderTotalMatches =
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             latestInvoice.orderTotals.totalWithTax === order?.totalWithTax;
           const showButton = isStyled !== orderTotalMatches;
           return {

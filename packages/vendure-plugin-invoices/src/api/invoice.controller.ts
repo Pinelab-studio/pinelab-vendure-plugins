@@ -134,9 +134,10 @@ export class InvoiceController {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       Logger.warn(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed invoice download attempt from ${JSON.stringify(ip)} for ${
           req.path
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         }: ${error.message}`,
         loggerCtx
       );
