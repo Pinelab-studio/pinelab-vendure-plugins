@@ -60,14 +60,14 @@
   >
     <ng-template let-invoice="item">
       <a
-        *ngIf="invoice.accountingReference.link"
+        *ngIf="invoice.accountingReference?.link"
         class="button-ghost"
-        href="{{ invoice.accountingReference.link }}"
+        href="{{ invoice.accountingReference?.link }}"
         target="_blank"
       >
         <span>{{ invoice.accountingReference?.reference }}</span>
       </a>
-      <span *ngIf="!invoice.accountingReference.link">{{
+      <span *ngIf="!invoice.accountingReference?.link">{{
         invoice.accountingReference?.reference
       }}</span>
     </ng-template>
