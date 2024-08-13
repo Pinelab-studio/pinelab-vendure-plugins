@@ -30,7 +30,7 @@ export interface PrimaryCollectionPluginConfig {
     resolvers: [PrimaryCollectionPluginResolver],
   },
   exports: [PrimaryCollectionHelperService],
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
     config.customFields.Product.push({
       name: 'primaryCollection',

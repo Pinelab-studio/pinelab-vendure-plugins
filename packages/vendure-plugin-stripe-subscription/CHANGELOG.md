@@ -1,3 +1,7 @@
+# 2.5.2 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 2.5.1 (2024-07-23)
 
 - Fix Vendure crash on payment method with "just" enabled: true/false update

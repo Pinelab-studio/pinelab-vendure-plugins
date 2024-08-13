@@ -28,8 +28,10 @@ export class PicqerController {
     @Headers('X-Picqer-Signature') signature: string,
     @Param('channelToken') channelToken: string
   ): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
     const body = JSON.parse(request.body.toString()) as IncomingWebhook;
-    const rawBody = (request as any).rawBody;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+    const rawBody = (request as any).rawBody as string;
     Logger.info(
       `Incoming hook ${body.event} for channel ${channelToken}`,
       loggerCtx
@@ -41,9 +43,12 @@ export class PicqerController {
         rawBody,
         signature,
       });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
-      const orderCode = (body as any)?.data?.reference;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+      const orderCode = (body as any)?.data?.reference as string;
       Logger.error(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Error handling incoming hook '${body.event}' (order code: ${orderCode}): ${e.message}`,
         loggerCtx,
         util.inspect(e)

@@ -1,3 +1,7 @@
+# 2.7.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 2.7.0 (2024-06-21)
 
 - Added zone aware shipping calculator and tax category form input component

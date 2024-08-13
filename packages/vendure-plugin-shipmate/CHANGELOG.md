@@ -1,3 +1,7 @@
+# 1.2.2 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 1.2.1 (2024-07-03)
 
 - Slice all string fields in Shipmate payload to 40 characters
