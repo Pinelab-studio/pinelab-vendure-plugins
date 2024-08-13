@@ -12,8 +12,8 @@ This is a paid plugin. For production use, please purchase a license at https://
 
 In v4 the field `invoice.isCreditInvoice` was changed from a getter to a physical database column. To populate the column you need to:
 
-1. Back uop your database!
-2. Install the invoices plugin v4.x and generate+run a database migration. This introduced the new database field `isCreditInvoice` where all values are 'false'.
+1. Back up your database!
+2. Install the invoices plugin v4.x and generate + run a database migration. This introduced the new database field `isCreditInvoice` where all values are 'false'.
 3. Run the query `UPDATE invoice SET isCreditInvoice = 1 WHERE orderTotals LIKE '%total":-%';` to set the value to 'true' for invoices that have a negative total.
 
 ## Getting started
@@ -317,24 +317,53 @@ You can access this data in your HTML template using Handlebars.js:
 
 ## Exporting to external accounting platforms
 
-// TODO
+You can automatically export each created invoice to an accounting platform by including an accounting strategy in the plugin. See one of the examples below for more details.
 
-### Xero
+### Xero UK
 
-This strategy exports each invoice to Xero. To get started:
+This strategy exports each invoice to Xero (UK only). To get started:
 
 1. Create an OAuth app by clicking 'New app' here: https://developer.xero.com/app/manage
 2. This integration uses 'Custom connection', because we are syncing data from machine to machine. See [this page](https://developer.xero.com/documentation/guides/oauth2/overview/) for more details on app types.
 3. Select the scopes `accounting.transactions`,`accounting.contacts` and `accounting.settings.read`.
-4.
+4. Get your client ID and client secret, and pass them into the plugin like so:
+
+```ts
+InvoicePlugin.init({
+        vendureHost: 'http://localhost:3050',
+        storageStrategy: new LocalFileStrategy(),
+        licenseKey: process.env.LICENSE_KEY!,
+        accountingExports: [
+          // Export each invoice to Xero
+          new XeroUKExportStrategy({
+            clientId: process.env.XERO_CLIENT_ID,
+            clientSecret: process.env.XERO_CLIENT_SECRET,
+            // The Xero account number for shipping costs
+            shippingAccountCode: '0103',
+            // The Xero account number for product sales
+            salesAccountCode: '0102',
+            // You can customize the "reference" field for the Xero entry with this function
+            getReference: (order, invoice, isCreditInvoiceFor) => {
+              if (isCreditInvoiceFor) {
+                return `Credit note for ${isCreditInvoiceFor}`;
+              } else {
+                return `some custom reference`
+              }
+            },
+            // Specifying a channel token will only use this strategy for that channel
+            channelToken: 'your-channel-token'
+          }),
+        ],
+      }),
+```
+
+5. `npm install xero-node` to install the Xero NodeJS client.
 
 If you are getting `{ error: 'invalid_client' }` during startup, you might have to recreate your Xero app on https://developer.xero.com/app/manage.
 
-// TODO strategy, install xero node
-
 ### Custom accounting strategy
 
-// TODO
+You can implement your own export strategy to export invoices to your custom accounting platform. Take a look at the included `XeroUKExportStrategy` as an example.
 
 ## Migrating from V1 to V2 of this plugin
 

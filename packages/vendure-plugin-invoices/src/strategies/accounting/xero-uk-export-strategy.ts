@@ -22,8 +22,14 @@ const loggerCtx = 'XeroUKAccountingExport';
 interface Config {
   clientId: string;
   clientSecret: string;
-  itemAccountCode: number;
-  shippingAccountCode: number;
+  /**
+   * The account code in Xero for shipping costs
+   */
+  shippingAccountCode: string;
+  /**
+   * The account code in Xero for sold products
+   */
+  salesAccountCode: string;
   channelToken?: string;
   /**
    * Construct a reference based on the given order object
@@ -299,7 +305,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           ).name,
           quantity: line.quantity,
           unitAmount: this.toMoney(line.proratedUnitPrice),
-          accountCode: String(this.config.accountCode),
+          accountCode: this.config.salesAccountCode,
           taxType: this.getTaxType(line.taxRate, order.code),
         };
       }
@@ -311,7 +317,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           description: shippingLine.shippingMethod.name,
           quantity: 1,
           unitAmount: this.toMoney(shippingLine.discountedPrice),
-          accountCode: String(this.config.accountCode),
+          accountCode: this.config.shippingAccountCode,
           taxType: this.getTaxType(shippingLine.taxRate, order.code),
         };
       })
@@ -323,7 +329,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           description: surcharge.description,
           quantity: 1,
           unitAmount: this.toMoney(surcharge.price),
-          accountCode: String(this.config.accountCode),
+          accountCode: this.config.salesAccountCode,
           taxType: this.getTaxType(surcharge.taxRate, order.code),
         };
       })
@@ -344,7 +350,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         description: `Credit of all line items with '${taxSummary.description}'`,
         quantity: 1,
         unitAmount: this.toMoney(Math.abs(taxSummary.taxBase)), // Make positive number for Xero
-        accountCode: String(this.config.accountCode),
+        accountCode: this.config.salesAccountCode,
         taxType: this.getTaxType(taxSummary.taxRate, invoice.invoiceNumber),
       };
     });

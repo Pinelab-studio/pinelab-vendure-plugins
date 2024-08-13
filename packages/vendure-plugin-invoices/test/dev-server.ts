@@ -43,7 +43,8 @@ require('dotenv').config();
           new XeroUKExportStrategy({
             clientId: process.env.XERO_CLIENT_ID!,
             clientSecret: process.env.XERO_CLIENT_SECRET!,
-            accountCode: 270,
+            shippingAccountCode: '0103',
+            salesAccountCode: '0102',
             getReference: (order, invoice, isCreditInvoiceFor) => {
               if (isCreditInvoiceFor) {
                 return `Credit note for ${isCreditInvoiceFor}`;
