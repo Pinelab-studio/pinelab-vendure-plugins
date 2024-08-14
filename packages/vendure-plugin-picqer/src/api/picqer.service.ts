@@ -1146,7 +1146,12 @@ export class PicqerService implements OnApplicationBootstrap {
       deliverycity: shippingAddress.city,
       deliverycountry: shippingAddress.countryCode?.toUpperCase(),
       // use billing if available, otherwise fallback to shipping address
-      invoicename: invoicename ?? deliveryname ?? customerFullname,
+      invoicename:
+        invoicename?.trim() ||
+        deliveryname?.trim() ||
+        customerFullname ||
+        order.customer?.emailAddress ||
+        'Unknown',
       invoicecontactname,
       invoiceaddress: this.getFullAddress(billingAddress),
       invoicezipcode: billingAddress?.postalCode,

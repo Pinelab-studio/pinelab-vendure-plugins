@@ -28,7 +28,6 @@ import {
   GetVariantsQuery,
   GlobalFlag,
 } from '../../test/src/generated/admin-graphql';
-import { AddPaymentToOrderMutation } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
