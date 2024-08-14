@@ -227,8 +227,8 @@ describe('Order placement', function () {
       [{ id: 'T_1', quantity: 3 }],
       {
         input: {
-          fullName: '',
-          company: '',
+          fullName: 'Martinho Pinelab',
+          company: ' ',
           streetLine1: 'Remote location',
           streetLine2: '123',
           city: 'Faraway',
@@ -250,8 +250,9 @@ describe('Order placement', function () {
     expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
     expect(picqerOrderRequest.deliverycity).toBeDefined();
     expect(picqerOrderRequest.deliverycountry).toBe('NL');
-    expect(picqerOrderRequest.invoicename).toBe('Pinelab');
-    expect(picqerOrderRequest.invoicecontactname).toBe("Martinho's friend");
+    // Fallback to full name if company is empty string
+    expect(picqerOrderRequest.invoicename).toBe('Martinho Pinelab');
+    expect(picqerOrderRequest.invoicecontactname).toBeUndefined();
     expect(picqerOrderRequest.invoicecountry).toBe('NL');
     expect(picqerOrderRequest.invoiceaddress).toBe('Remote location 123');
     expect(picqerOrderRequest.invoicezipcode).toBe('1111AB');
@@ -278,7 +279,7 @@ describe('Order placement', function () {
             amount: 3,
           },
         ],
-      },
+      }
     } as Partial<IncomingOrderStatusWebhook>;
     await adminClient.fetch(
       `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,

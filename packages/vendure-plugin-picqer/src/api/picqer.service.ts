@@ -1182,11 +1182,11 @@ export class PicqerService implements OnApplicationBootstrap {
    * Otherwise, use the full name as name and no explicit contact name
    */
   private getAddressName(
-    address?: OrderAddress
+    address?: Pick<OrderAddress, 'company' | 'fullName'>
   ): [string | undefined, string | undefined] {
     let name;
     let contactname;
-    if (address?.company) {
+    if (address?.company?.trim()) {
       name = address.company;
       contactname = address.fullName;
     } else {
