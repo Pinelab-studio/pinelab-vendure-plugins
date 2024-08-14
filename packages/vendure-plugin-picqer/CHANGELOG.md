@@ -1,3 +1,7 @@
+# 3.2.1 (2024-08-14)
+
+- Check for empty strings when sending `invoicename` to Picqer. Fallback to customer email address to make sure orders are sent to Picqer.
+
 # 3.2.0 (2024-08-04)
 
 - Allow configuration to trigger sync on custom field updates (#484)

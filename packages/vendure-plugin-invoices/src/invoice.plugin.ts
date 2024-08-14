@@ -84,7 +84,9 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   },
   compatibility: '>=2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
-    void InvoicePlugin.configure(config);
+    InvoicePlugin.configure(config).catch((e) => {
+      Logger.error(JSON.stringify(e), loggerCtx);
+    });
     return config;
   },
 })
