@@ -279,7 +279,7 @@ describe('Order placement', function () {
             amount: 3,
           },
         ],
-      }
+      },
     } as Partial<IncomingOrderStatusWebhook>;
     await adminClient.fetch(
       `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,

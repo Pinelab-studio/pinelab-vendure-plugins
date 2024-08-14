@@ -1,4 +1,4 @@
-# 3.2.0 (2024-08-14)
+# 3.2.1 (2024-08-14)
 
 - Check for empty strings when sending `invoicename` to Picqer. Fallback to customer email address to make sure orders are sent to Picqer.
 
