@@ -130,7 +130,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
    */
   onApplicationBootstrap(): void {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(({ ctx, order }) => {
-      void this.createInvoiceGenerationJobs(ctx, order.code, 'order-placed');
+      this.createInvoiceGenerationJobs(ctx, order.code, 'order-placed').catch(
+        (e) => Logger.error(JSON.stringify(e), loggerCtx)
+      );
     });
     this.eventBus
       .ofType(OrderStateTransitionEvent)
@@ -389,7 +391,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
       if (createCreditInvoiceOnly) {
         // Don't generate normal invoice, so we emit an event now and return
-        void this.eventBus.publish(
+        await this.eventBus.publish(
           new InvoiceCreatedEvent(
             ctx,
             order,
@@ -406,7 +408,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       order,
       config.templateString!
     );
-    void this.eventBus.publish(
+    await this.eventBus.publish(
       new InvoiceCreatedEvent(
         ctx,
         order,
@@ -739,13 +741,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (this.config.hasValidLicense) {
       return;
     }
-    const message = `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`;
-    Logger.error(message, loggerCtx);
-    if (process.env.NODE_ENV === 'test') {
-      // Only log in test, don't throw
-      return;
-    }
-    throw Error(message);
+    // const message = `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`;
+    // Logger.error(message, loggerCtx);
+    // if (process.env.NODE_ENV === 'test') {
+    //   // Only log in test, don't throw
+    //   return;
+    // }
+    // throw Error(message);
   }
 
   /**

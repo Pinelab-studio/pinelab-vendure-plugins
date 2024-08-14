@@ -47,11 +47,11 @@ export class LocalFileStrategy implements LocalStorageStrategy {
     return createReadStream(zipFile);
   }
 
-  streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream> {
+  streamFile(invoice: InvoiceEntity, res: Response): ReadStream {
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${invoice.invoiceNumber}.pdf"`,
     });
-    return Promise.resolve(createReadStream(invoice.storageReference));
+    return createReadStream(invoice.storageReference);
   }
 }

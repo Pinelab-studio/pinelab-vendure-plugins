@@ -1,6 +1,6 @@
-# 3.1.4 (2024-08-01)
+# 3.2.0 (2024-08-01)
 
-- Show `Regenerate invoice` button with warning when order total is greater than the total of the latest invoice ( see #485)
+- Show `Regenerate invoice` button with warning when order total differs from the latest invoice total ( see #485)
 
 # 3.1.3 (2024-08-04)
 

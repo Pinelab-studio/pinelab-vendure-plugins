@@ -8,7 +8,7 @@ import { InvoiceOrderTotals } from '../ui/generated/graphql';
 export function reverseOrderTotals(
   orderTotal: InvoiceOrderTotals
 ): InvoiceOrderTotals {
-  const summaries = orderTotal.taxSummaries?.map((summary) => {
+  const summaries = orderTotal.taxSummaries.map((summary) => {
     return {
       ...summary,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

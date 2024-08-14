@@ -51,14 +51,12 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     }
   }
 
-  getPublicUrl(invoice: InvoiceEntity): Promise<string> {
-    return Promise.resolve(
-      this.s3!.getSignedUrl('getObject', {
-        Key: invoice.storageReference,
-        Bucket: this.bucket,
-        Expires: this.expiresInSeconds,
-      })
-    );
+  getPublicUrl(invoice: InvoiceEntity): string {
+    return this.s3!.getSignedUrl('getObject', {
+      Key: invoice.storageReference,
+      Bucket: this.bucket,
+      Expires: this.expiresInSeconds,
+    });
   }
 
   async save(

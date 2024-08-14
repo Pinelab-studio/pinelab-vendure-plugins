@@ -5,14 +5,14 @@ import { ApolloCache } from '@apollo/client/cache';
 import { map } from 'rxjs';
 import { GET_ORDER } from './helpers';
 import { GetOrderQueryVariables } from '@vendure/admin-ui/core';
-export function getRegenerateInvoiceButton(isStyled: boolean) {
+export function getRegenerateInvoiceButton(isWarningButton: boolean) {
   return addActionBarItem({
-    id: isStyled ? 'regenerate-invoice-styled' : 'regenerate-invoice',
+    id: isWarningButton ? 'regenerate-invoice-styled' : 'regenerate-invoice',
     label: 'Regenerate Invoice',
     locationId: 'order-detail',
     requiresPermission: ['AllowInvoicesPermission'],
-    buttonColor: isStyled ? 'warning' : 'primary',
-    buttonStyle: isStyled ? 'solid' : 'outline',
+    buttonColor: isWarningButton ? 'warning' : 'primary',
+    buttonStyle: isWarningButton ? 'solid' : 'outline',
     onClick: (event, context) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const orderId = context.route.snapshot.params['id'];
@@ -57,12 +57,12 @@ export function getRegenerateInvoiceButton(isStyled: boolean) {
       return order$.stream$.pipe(
         map(({ order }) => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          const latestInvoice = order?.invoices[0];
+          const latestInvoice = order.invoices[0];
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           const orderTotalMatches =
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             latestInvoice.orderTotals.totalWithTax === order?.totalWithTax;
-          const showButton = isStyled !== orderTotalMatches;
+          const showButton = isWarningButton !== orderTotalMatches;
           return {
             // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
             disabled: order?.state === 'Cancelled',

@@ -12,9 +12,9 @@ const scalars = gql`
 
 const commonSchemaExtensions = gql`
   type InvoiceOrderTotals {
-    taxSummaries: [OrderTaxSummary]
-    total: Money
-    totalWithTax: Money
+    taxSummaries: [OrderTaxSummary]!
+    total: Money!
+    totalWithTax: Money!
   }
 
   type Invoice {

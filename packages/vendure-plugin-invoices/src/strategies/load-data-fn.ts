@@ -32,7 +32,7 @@ export type LoadDataFn = (
    * needs to be a credit invoice for the given previous invoice
    */
   shouldGenerateCreditInvoice?: CreditInvoiceInput
-) => Promise<InvoiceData>;
+) => Promise<InvoiceData> | InvoiceData;
 
 interface DefaultInvoiceData {
   orderDate: string;
@@ -53,7 +53,7 @@ export const defaultLoadDataFn: LoadDataFn = (
   order: Order,
   mostRecentInvoiceNumber?: number,
   shouldGenerateCreditInvoice?: CreditInvoiceInput
-): Promise<DefaultInvoiceDataResponse> => {
+): DefaultInvoiceDataResponse => {
   // Increase order number
   let newInvoiceNumber = mostRecentInvoiceNumber || 0;
   newInvoiceNumber += 1;
@@ -72,15 +72,15 @@ export const defaultLoadDataFn: LoadDataFn = (
   });
   if (!shouldGenerateCreditInvoice) {
     // Normal debit invoice
-    return Promise.resolve({
+    return {
       orderDate,
       invoiceNumber: newInvoiceNumber,
       order: order,
-    });
+    };
   }
   // Create credit invoice
   const { previousInvoice, reversedOrderTotals } = shouldGenerateCreditInvoice;
-  return Promise.resolve({
+  return {
     orderDate,
     invoiceNumber: newInvoiceNumber,
     isCreditInvoice: true,
@@ -92,5 +92,5 @@ export const defaultLoadDataFn: LoadDataFn = (
       totalWithTax: reversedOrderTotals.totalWithTax,
       taxSummary: reversedOrderTotals.taxSummaries,
     },
-  });
+  };
 };
