@@ -25,18 +25,10 @@ import {
   mapToOrderedProductEvent,
 } from './util/map-to-klaviyo-input';
 
-interface EventJobData {
+type JobData = {
   ctx: SerializedRequestContext;
   event: KlaviyoGenericEvent;
-}
-
-interface OrderEventJobData {
-  action: 'handle-order-event';
-  ctx: SerializedRequestContext;
-  event: KlaviyoOrderPlacedEvent;
-}
-
-type JobData = EventJobData | OrderEventJobData;
+};
 
 export class KlaviyoService implements OnApplicationBootstrap {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Weird TS error, but our JobData is JSON compatible
@@ -116,7 +108,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
       new Injector(this.moduleRef)
     );
     if (event) {
-      const jobData: EventJobData = {
+      const jobData: JobData = {
         ctx: vendureEvent.ctx.serialize(),
         event,
       };
@@ -206,4 +198,4 @@ export class KlaviyoService implements OnApplicationBootstrap {
       }
     }
   }
-}
+};
