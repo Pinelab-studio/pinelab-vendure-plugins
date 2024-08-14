@@ -227,8 +227,8 @@ describe('Order placement', function () {
       [{ id: 'T_1', quantity: 3 }],
       {
         input: {
-          fullName: "Martinho's friend",
-          company: 'Pinelab',
+          fullName: '',
+          company: '',
           streetLine1: 'Remote location',
           streetLine2: '123',
           city: 'Faraway',
