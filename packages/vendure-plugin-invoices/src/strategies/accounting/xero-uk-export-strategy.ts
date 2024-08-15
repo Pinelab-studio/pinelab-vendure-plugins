@@ -135,10 +135,9 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       const errorMessage =
         JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
           ?.Message || JSON.parse(err)?.response?.body?.Message;
-      Logger.error(
+      Logger.warn(
         `Failed to export to Xero for order '${order.code}': ${errorMessage}`,
-        loggerCtx,
-        util.inspect(err, false, 5)
+        loggerCtx
       );
       throw Error(errorMessage);
     }
