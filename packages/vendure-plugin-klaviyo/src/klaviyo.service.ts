@@ -198,4 +198,4 @@ export class KlaviyoService implements OnApplicationBootstrap {
       }
     }
   }
-};
+}
