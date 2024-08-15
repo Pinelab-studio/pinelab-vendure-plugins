@@ -22,6 +22,10 @@ export interface KlaviyoOrderItem {
   Categories?: string[];
   Brand?: string;
   customProperties?: CustomProperties;
+  /**
+   * Setting this to true will exclude this item from being sent as Ordered Product event to Klaviyo.
+   */
+  excludeFromOrderedProductEvent?: boolean;
 }
 
 type CustomProperties = Record<string, string | string[] | number | boolean>;
