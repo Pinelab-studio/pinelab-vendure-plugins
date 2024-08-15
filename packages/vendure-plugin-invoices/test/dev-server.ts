@@ -62,11 +62,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [InvoicePlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [InvoicePlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     paymentOptions: {
@@ -101,7 +101,7 @@ require('dotenv').config();
   // Add a test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient, 'manual-fulfillment');
-  const orders = 5;
+  const orders = 1;
   for (let i = 1; i <= orders; i++) {
     await createSettledOrder(
       shopClient,

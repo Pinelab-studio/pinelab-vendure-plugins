@@ -277,13 +277,18 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     return createdContacts.body.contacts![0];
   }
 
+  /**
+   * Get tax rates applicable to Revenue
+   */
   async getTaxRates(): Promise<TaxRate[]> {
     const rates = await this.xero.accountingApi.getTaxRates(this.tenantId);
     return (
-      rates.body.taxRates?.map((rate) => ({
-        rate: rate.effectiveRate,
-        type: rate.taxType,
-      })) || []
+      rates.body.taxRates
+        ?.filter((rate) => rate.canApplyToRevenue)
+        .map((rate) => ({
+          rate: rate.effectiveRate,
+          type: rate.taxType,
+        })) || []
     );
   }
 
