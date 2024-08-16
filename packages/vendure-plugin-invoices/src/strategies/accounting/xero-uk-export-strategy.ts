@@ -39,6 +39,10 @@ interface Config {
     invoice: InvoiceEntity,
     isCreditInvoiceFor?: number
   ) => string;
+  /**
+   * Construct a URL that links to the order in Vendure Admin
+   */
+  getVendureUrl?: (order: Order, invoice: InvoiceEntity) => string;
 }
 
 interface TaxRate {
@@ -101,7 +105,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     ctx: RequestContext,
     invoice: InvoiceEntity,
     order: Order,
-    isCreditInvoiceFor?: number
+    isCreditInvoiceFor?: InvoiceEntity
   ): Promise<ExternalReference> {
     await injector.get(EntityHydrator).hydrate(ctx, order, {
       relations: [
@@ -127,7 +131,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           ctx,
           order,
           invoice,
-          isCreditInvoiceFor,
+          isCreditInvoiceFor?.invoiceNumber,
           contact.contactID
         );
       }
@@ -164,6 +168,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       lineItems: this.getLineItems(ctx, order),
       reference,
       status: 'DRAFT' as any,
+      url: this.config.getVendureUrl?.(order, invoice),
     };
     const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
     const response = await this.xero.accountingApi.createInvoices(

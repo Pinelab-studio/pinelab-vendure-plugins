@@ -1,7 +1,8 @@
-# 4.0.0 (2024-08-15)
+# 4.0.0 (2024-08-16)
 
 - Introduced exporting invoices to external Accounting platforms
 - Added `isCreditInvoice` as column in the DB in an Invoice
+- Created a reference to parent invoice for credit invoices `invoice.isCreditInvoiceFor`. This is only populated for invoices generated with V4.
 
 # 3.1.3 (2024-08-04)
 

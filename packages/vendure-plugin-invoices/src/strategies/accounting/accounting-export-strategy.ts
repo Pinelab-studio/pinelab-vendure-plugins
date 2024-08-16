@@ -23,7 +23,7 @@ export interface AccountingExportStrategy {
    */
   channelToken?: string;
 
-  init?(injector: Injector): Promise<void>;
+  init?(injector: Injector): Promise<void> | void;
 
   /**
    * Export the given Invoice to the external accounting system.
@@ -36,6 +36,6 @@ export interface AccountingExportStrategy {
     /**
      * If the invoice is a credit invoice, this will be the original invoice that the credit invoice is for.
      */
-    isCreditInvoiceFor?: number
-  ): Promise<ExternalReference>;
+    isCreditInvoiceFor?: InvoiceEntity
+  ): Promise<ExternalReference> | ExternalReference;
 }

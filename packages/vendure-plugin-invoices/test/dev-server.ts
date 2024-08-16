@@ -55,6 +55,8 @@ require('dotenv').config();
                   .join(',')}`;
               }
             },
+            getVendureUrl: (order) =>
+              `https://pinelab.studio/order/${order.code}`,
           }),
         ],
       }),

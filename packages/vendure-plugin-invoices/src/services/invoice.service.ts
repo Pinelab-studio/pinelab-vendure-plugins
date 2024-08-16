@@ -87,7 +87,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     ctx: SerializedRequestContext;
     orderCode: string;
     invoiceNumber: number;
-    isCreditInvoiceFor?: number;
   }>;
   orderRelations: EntityRelationPaths<Order>[] = [
     'lines.productVariant.product',
@@ -139,8 +138,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         await this.handleAccountingExportJob(
           RequestContext.deserialize(job.data.ctx),
           job.data.invoiceNumber,
-          job.data.orderCode,
-          job.data.isCreditInvoiceFor
+          job.data.orderCode
         ).catch(async (error) => {
           Logger.warn(
             `Failed to export invoice to accounting platform for '${job.data.orderCode}': ${error?.message}`,
@@ -370,12 +368,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       if (createCreditInvoiceOnly) {
         // Don't generate normal invoice, so we emit an event now and return
         await this.eventBus.publish(
-          new InvoiceCreatedEvent(
+          new InvoiceCreatedEvent({
             ctx,
             order,
-            creditInvoice,
-            previousInvoiceForOrder
-          )
+            newInvoice: creditInvoice,
+            previousInvoice: previousInvoiceForOrder,
+          })
         );
         await this.createAccountingExportJob(
           ctx,
@@ -393,13 +391,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       config.templateString!
     );
     await this.eventBus.publish(
-      new InvoiceCreatedEvent(
+      new InvoiceCreatedEvent({
         ctx,
         order,
         newInvoice,
-        previousInvoiceForOrder,
-        creditInvoice
-      )
+        previousInvoice: previousInvoiceForOrder,
+        creditInvoice,
+      })
     );
     if (creditInvoice) {
       // Create a job to export the credit invoice to the accounting system first
@@ -420,8 +418,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   async handleAccountingExportJob(
     ctx: RequestContext,
     invoiceNumber: number,
-    orderCode: string,
-    isCreditInvoiceFor?: number
+    orderCode: string
   ): Promise<void> {
     // Find strategy for channel. If strategy.channelToken is undefined, it can be used for all channels
     const strategy = (this.config.accountingExports || []).find(
@@ -437,7 +434,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const invoiceRepository = this.connection.getRepository(ctx, InvoiceEntity);
     const [order, invoice] = await Promise.all([
       this.orderService.findOneByCode(ctx, orderCode, this.orderRelations),
-      invoiceRepository.findOne({ where: { invoiceNumber } }),
+      invoiceRepository.findOne({
+        where: { invoiceNumber },
+        relations: ['isCreditInvoiceFor'],
+      }),
     ]);
     if (!order) {
       throw Error(`[${loggerCtx}] No order found with code ${orderCode}`);
@@ -449,7 +449,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       ctx,
       invoice,
       order,
-      isCreditInvoiceFor
+      invoice.isCreditInvoiceFor
     );
     await invoiceRepository.update(invoice.id, {
       accountingReference: reference,
@@ -476,7 +476,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           ctx: ctx.serialize(),
           invoiceNumber,
           orderCode,
-          isCreditInvoiceFor,
         },
         {
           retries: 10,
@@ -543,25 +542,24 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     order: Order,
     templateString: string,
-    previousInvoice?: InvoiceEntity
+    isCreditInvoiceFor?: InvoiceEntity
   ): Promise<InvoiceEntity> {
-    const isCreditInvoice = !!previousInvoice; // If previous invoice, this is a credit invoice
     let orderTotals = {
       taxSummaries: order.taxSummary,
       total: order.total,
       totalWithTax: order.totalWithTax,
     };
-    if (isCreditInvoice) {
-      orderTotals = reverseOrderTotals(previousInvoice.orderTotals);
+    if (isCreditInvoiceFor) {
+      orderTotals = reverseOrderTotals(isCreditInvoiceFor.orderTotals);
     }
     const { invoiceNumber, invoiceTmpFile } = await this.generatePdfFile(
       ctx,
       templateString,
       order,
       // Pass reverse order totals and previous invoice if we are creating a credit invoice
-      previousInvoice
+      isCreditInvoiceFor
         ? {
-            previousInvoice,
+            previousInvoice: isCreditInvoiceFor,
             reversedOrderTotals: orderTotals,
           }
         : undefined
@@ -571,21 +569,22 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const invoiceRowId = await this.createInvoiceRow(ctx, {
       invoiceNumber,
       orderId: order.id as string,
-      isCreditInvoice,
+      isCreditInvoice: !!isCreditInvoiceFor,
       orderTotals,
+      isCreditInvoiceFor,
     });
     const storageReference = await this.config.storageStrategy.save(
       invoiceTmpFile,
       invoiceNumber,
       ctx.channel.token,
-      isCreditInvoice
+      !!isCreditInvoiceFor
     );
     // Save storage reference on the invoice row
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     await invoiceRepo.update(invoiceRowId, { storageReference });
     Logger.info(
       `Created ${
-        isCreditInvoice ? 'credit ' : ' '
+        isCreditInvoiceFor ? 'credit ' : ' '
       }invoice ${invoiceNumber} for order ${order.code}`,
       loggerCtx
     );

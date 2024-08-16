@@ -6,6 +6,7 @@ import {
   mergeConfig,
   Order,
   OrderService,
+  RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import {
@@ -18,7 +19,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import fetch from 'node-fetch';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { addShippingMethod, cancelOrder } from '../../test/src/admin-utils';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
@@ -27,6 +28,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   defaultTemplate,
   Invoice,
+  InvoiceEntity,
   InvoicePlugin,
   MutationUpsertInvoiceConfigArgs,
 } from '../src';
@@ -37,6 +39,7 @@ import {
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
+import { MockAccountingStrategy } from './mock-accounting-strategy';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -45,6 +48,15 @@ let serverStarted = false;
 let latestInvoice: Invoice;
 let order: Order;
 let events: InvoiceCreatedEvent[] = [];
+
+// Accounting strategy
+const mockAccountingStrategy = new MockAccountingStrategy(
+  'e2e-default-channel'
+);
+const mockAccountingStrategySpy = {
+  init: vi.spyOn(mockAccountingStrategy, 'init'),
+  exportInvoice: vi.spyOn(mockAccountingStrategy, 'exportInvoice'),
+};
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -57,6 +69,7 @@ beforeAll(async () => {
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3106',
         licenseKey: 'BogusLicenseKey',
+        accountingExports: [mockAccountingStrategy],
       }),
     ],
     paymentOptions: {
@@ -89,6 +102,10 @@ beforeAll(async () => {
 
 it('Should start successfully', async () => {
   await expect(serverStarted).toBe(true);
+});
+
+it('Initialized accounting export strategies', async () => {
+  expect(mockAccountingStrategySpy.init).toHaveBeenCalledTimes(1);
 });
 
 describe('Generate with credit invoicing enabled', function () {
@@ -155,6 +172,16 @@ describe('Generate with credit invoicing enabled', function () {
     expect(events[1]).toBeUndefined();
   });
 
+  it('Triggered accounting export strategy', async () => {
+    const [ctx, invoice, order] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[0];
+    expect(mockAccountingStrategySpy.exportInvoice).toHaveBeenCalledTimes(1);
+    expect(ctx).toBeInstanceOf(RequestContext);
+    expect(invoice).toBeInstanceOf(InvoiceEntity);
+    expect(invoice.isCreditInvoiceFor).toBe(null);
+    expect(order).toBeInstanceOf(Order);
+  });
+
   it('Modifies order', async () => {
     // Modify order total
     const ctx = await getSuperadminContext(server.app);
@@ -209,6 +236,25 @@ describe('Generate with credit invoicing enabled', function () {
     expect(newInvoice.orderTotals.total).toBe(1234);
     expect(newInvoice.orderTotals.totalWithTax).toBe(1480);
     expect(events[2]).toBeUndefined();
+  });
+
+  it('Triggered accounting export strategy for credit invoice', async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const [ctx, invoice, order, isCreditInvoiceFor] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[1];
+    expect(ctx).toBeInstanceOf(RequestContext);
+    expect(invoice).toBeInstanceOf(InvoiceEntity);
+    expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);
+    expect(order).toBeInstanceOf(Order);
+  });
+
+  it('Triggered accounting export strategy for new invoice after credit invoice', async () => {
+    const [ctx, invoice, order, isCreditInvoiceFor] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[2];
+    expect(ctx).toBeInstanceOf(RequestContext);
+    expect(invoice).toBeInstanceOf(InvoiceEntity);
+    expect(order).toBeInstanceOf(Order);
+    expect(isCreditInvoiceFor).toBe(null);
   });
 
   it('Returns all invoices for order', async () => {
@@ -365,7 +411,7 @@ describe('Generate without credit invoicing', function () {
 
   it('Emitted event without credit invoice', async () => {
     expect(events[1].newInvoice).toBeDefined();
-    // Previous should be defined, but credit is empty because we disabled the createCreditInvocies config
+    // Previous should be defined, but credit is empty because we disabled the createCreditInvoices config
     expect(events[1].previousInvoice).toBeDefined();
     expect(events[1].creditInvoice).toBeUndefined();
   });

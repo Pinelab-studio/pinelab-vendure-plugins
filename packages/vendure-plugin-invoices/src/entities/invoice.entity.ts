@@ -1,6 +1,6 @@
 import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
 import { DeepPartial, VendureEntity } from '@vendure/core';
-import { Column, Entity, Unique, Index } from 'typeorm';
+import { Column, Entity, Unique, Index, OneToMany, ManyToOne } from 'typeorm';
 import { ExternalReference } from '../strategies/accounting/accounting-export-strategy';
 
 /**
@@ -36,6 +36,12 @@ export class InvoiceEntity extends VendureEntity {
 
   @Column({ nullable: false, default: false })
   isCreditInvoice!: boolean;
+
+  @OneToMany((type) => InvoiceEntity, (invoice) => invoice.isCreditInvoiceFor)
+  creditInvoices?: InvoiceEntity[];
+
+  @ManyToOne((type) => InvoiceEntity, (invoice) => invoice.creditInvoices)
+  isCreditInvoiceFor: InvoiceEntity | undefined;
 
   /**
    * The order totals that were used to generate the invoice.
