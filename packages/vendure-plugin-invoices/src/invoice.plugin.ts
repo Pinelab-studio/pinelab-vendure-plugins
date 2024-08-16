@@ -84,7 +84,9 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   },
   compatibility: '>=2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
-    InvoicePlugin.configure(config);
+    InvoicePlugin.configure(config).catch((e) => {
+      Logger.error(JSON.stringify(e), loggerCtx);
+    });
     return config;
   },
 })
@@ -111,6 +113,7 @@ export class InvoicePlugin implements OnApplicationBootstrap {
       })
       .catch((err) => {
         Logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error checking license key: ${err?.message}. Viewing invoices is disabled. Invoice generation will continue as usual.`,
           loggerCtx
         );

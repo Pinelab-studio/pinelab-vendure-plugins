@@ -1,16 +1,6 @@
-import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
 import { DeepPartial, VendureEntity } from '@vendure/core';
 import { Column, Entity, Unique, Index } from 'typeorm';
-
-/**
- * The order totals that were used to generate the invoice.
- * These can be used to generate credit invoices.
- */
-export interface InvoiceOrderTotals {
-  taxSummaries: OrderTaxSummary[];
-  total: number;
-  totalWithTax: number;
-}
+import { InvoiceOrderTotals } from '../ui/generated/graphql';
 
 @Entity('invoice')
 @Unique(['channelId', 'invoiceNumber'])
