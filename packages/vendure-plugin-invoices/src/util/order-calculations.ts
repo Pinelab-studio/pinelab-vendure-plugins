@@ -11,7 +11,7 @@ export function reverseOrderTotals(
   const reversedSummaries = orderTotal.taxSummaries.map((summary) => {
     return {
       description: summary.description,
-      taxRate: -summary.taxRate,
+      taxRate: summary.taxRate,
       taxBase: -summary.taxBase,
       taxTotal: -summary.taxTotal,
     };
