@@ -30,6 +30,7 @@ import {
   InvoiceConfigInput,
   InvoiceListFilter,
   InvoiceListOptions,
+  InvoiceOrderTotals,
 } from '../ui/generated/graphql';
 import { ModuleRef } from '@nestjs/core';
 import { Response } from 'express';
@@ -131,18 +132,31 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   onApplicationBootstrap(): void {
     this.eventBus.ofType(OrderPlacedEvent).subscribe(({ ctx, order }) => {
       this.createInvoiceGenerationJobs(ctx, order.code, 'order-placed').catch(
-        (e) => Logger.error(JSON.stringify(e), loggerCtx)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        (e) =>
+          Logger.error(
+            `Failed to create invoice jobs for 'order-placed': ${e?.message}`,
+            loggerCtx,
+            JSON.stringify(e)
+          )
       );
     });
     this.eventBus
       .ofType(OrderStateTransitionEvent)
       .pipe(filter((event) => event.toState === 'Cancelled'))
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      .subscribe(async ({ ctx, order }) => {
-        await this.createInvoiceGenerationJobs(
+      .subscribe(({ ctx, order }) => {
+        this.createInvoiceGenerationJobs(
           ctx,
           order.code,
           'order-cancelled'
+        ).catch(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          (e) =>
+            Logger.error(
+              `Failed to create invoice jobs for 'order-cancelled': ${e?.message}`,
+              loggerCtx,
+              JSON.stringify(e)
+            )
         );
       });
   }
@@ -282,14 +296,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     let filterInput = {};
     if (filter?.invoiceNumber) {
       filterInput = {
-        invoiceNumber: filter?.invoiceNumber as string,
+        invoiceNumber: String(filter?.invoiceNumber),
       };
     }
     if (filter?.orderCode) {
       filterInput = {
         ...filterInput,
         order: {
-          code: filter?.orderCode as string,
+          code: String(filter?.orderCode),
         },
       };
     }
@@ -431,9 +445,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     previousInvoice?: InvoiceEntity
   ): Promise<InvoiceEntity> {
     const isCreditInvoice = !!previousInvoice; // If previous invoice, this is a credit invoice
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let orderTotals: any = {
-      taxSummaries: order.taxSummary,
+    let orderTotals: InvoiceOrderTotals = {
+      taxSummaries: order.taxSummary.map((t) => ({
+        description: t.description,
+        taxRate: t.taxRate,
+        taxBase: t.taxBase,
+        taxTotal: t.taxTotal,
+      })),
       total: order.total,
       totalWithTax: order.totalWithTax,
     };
@@ -448,7 +466,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       previousInvoice
         ? {
             previousInvoice,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             reversedOrderTotals: orderTotals,
           }
         : undefined
@@ -741,13 +758,13 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (this.config.hasValidLicense) {
       return;
     }
-    // const message = `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`;
-    // Logger.error(message, loggerCtx);
-    // if (process.env.NODE_ENV === 'test') {
-    //   // Only log in test, don't throw
-    //   return;
-    // }
-    // throw Error(message);
+    const message = `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`;
+    Logger.error(message, loggerCtx);
+    if (process.env.NODE_ENV === 'test') {
+      // Only log in test, don't throw
+      return;
+    }
+    throw Error(message);
   }
 
   /**
