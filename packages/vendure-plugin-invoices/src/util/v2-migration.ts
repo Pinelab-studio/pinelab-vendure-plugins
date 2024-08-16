@@ -40,7 +40,14 @@ export async function migrateInvoices(queryRunner: QueryRunner): Promise<void> {
     }
     const invoicesWithTotals = orders.map((order) => {
       order.invoice.orderTotals = {
-        taxSummaries: order.taxSummary,
+        taxSummaries: order.taxSummary.map((t) => {
+          return {
+            description: t.description,
+            taxRate: t.taxRate,
+            taxBase: t.taxBase,
+            taxTotal: t.taxTotal,
+          };
+        }),
         total: order.total,
         totalWithTax: order.totalWithTax,
       };

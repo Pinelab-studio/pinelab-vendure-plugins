@@ -12,3 +12,4 @@ generates:
         ID: number | string
         Node: any
         PaginatedList: any
+        Money: number

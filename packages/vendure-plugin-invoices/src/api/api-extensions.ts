@@ -6,13 +6,23 @@ const scalars = gql`
   scalar JSON
   scalar LogicalOperator
   scalar StringOperators
-  scalar OrderTaxSummary
   scalar Money
 `;
 
 const commonSchemaExtensions = gql`
+  type InvoiceTaxSummary {
+    description: String!
+    taxBase: Money!
+    taxRate: Money!
+    taxTotal: Money!
+  }
+
+  """
+  The order totals that were used to generate the invoice.
+  These are used to generate credit invoices.
+  """
   type InvoiceOrderTotals {
-    taxSummaries: [OrderTaxSummary]!
+    taxSummaries: [InvoiceTaxSummary!]!
     total: Money!
     totalWithTax: Money!
   }
@@ -25,7 +35,7 @@ const commonSchemaExtensions = gql`
     orderCode: String!
     orderId: ID!
     isCreditInvoice: Boolean!
-    orderTotals: InvoiceOrderTotals
+    orderTotals: InvoiceOrderTotals!
   }
 
   extend type Order {

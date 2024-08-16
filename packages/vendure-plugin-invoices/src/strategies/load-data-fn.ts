@@ -5,6 +5,7 @@ import {
   translateEntity,
 } from '@vendure/core';
 import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoiceOrderTotals } from '../ui/generated/graphql';
 
 export interface InvoiceData {
   invoiceNumber: number;
@@ -18,7 +19,7 @@ export interface CreditInvoiceInput {
    * @description
    * The reversed (i.e. negative) order totals of the previous invoice
    */
-  reversedOrderTotals: InvoiceEntity['orderTotals'];
+  reversedOrderTotals: InvoiceOrderTotals;
 }
 
 export type LoadDataFn = (
@@ -90,7 +91,14 @@ export const defaultLoadDataFn: LoadDataFn = (
       ...order,
       total: reversedOrderTotals.total,
       totalWithTax: reversedOrderTotals.totalWithTax,
-      taxSummary: reversedOrderTotals.taxSummaries,
+      taxSummary: reversedOrderTotals.taxSummaries.map((t) => {
+        return {
+          description: t.description,
+          taxBase: t.taxBase,
+          taxRate: t.taxRate,
+          taxTotal: t.taxTotal,
+        };
+      }),
     },
   };
 };
