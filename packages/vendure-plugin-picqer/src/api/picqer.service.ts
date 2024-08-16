@@ -1122,12 +1122,14 @@ export class PicqerService implements OnApplicationBootstrap {
     products: OrderProductInput[],
     customerId?: number
   ): OrderInput {
+    if (!order.customer) {
+      throw Error(
+        `Cannot map order '${order.code}' to Picqer order without order.customer`
+      );
+    }
     const shippingAddress = order.shippingAddress;
     const billingAddress = order.billingAddress;
-    const customerFullname = [
-      order.customer?.firstName,
-      order.customer?.lastName,
-    ]
+    const customerFullname = [order.customer.firstName, order.customer.lastName]
       .join(' ')
       .trim();
     const [deliveryname, deliverycontactname] =
@@ -1137,16 +1139,20 @@ export class PicqerService implements OnApplicationBootstrap {
     return {
       idcustomer: customerId, // If none given, this creates a guest order
       reference: order.code,
-      emailaddress: order.customer?.emailAddress ?? '',
-      telephone: order.customer?.phoneNumber ?? '',
+      emailaddress: order.customer.emailAddress,
+      telephone: order.customer.phoneNumber,
       deliveryname: deliveryname ?? customerFullname,
       deliverycontactname,
       deliveryaddress: this.getFullAddress(shippingAddress),
       deliveryzipcode: shippingAddress.postalCode,
       deliverycity: shippingAddress.city,
       deliverycountry: shippingAddress.countryCode?.toUpperCase(),
-      // use billing if available, otherwise fallback to shipping address
-      invoicename: invoicename ?? deliveryname ?? customerFullname,
+      // use billing if available, otherwise fallback to shipping address or email address
+      invoicename:
+        invoicename?.trim() ||
+        deliveryname?.trim() ||
+        customerFullname ||
+        order.customer.emailAddress,
       invoicecontactname,
       invoiceaddress: this.getFullAddress(billingAddress),
       invoicezipcode: billingAddress?.postalCode,
@@ -1177,11 +1183,11 @@ export class PicqerService implements OnApplicationBootstrap {
    * Otherwise, use the full name as name and no explicit contact name
    */
   private getAddressName(
-    address?: OrderAddress
+    address?: Pick<OrderAddress, 'company' | 'fullName'>
   ): [string | undefined, string | undefined] {
     let name;
     let contactname;
-    if (address?.company) {
+    if (address?.company?.trim()) {
       name = address.company;
       contactname = address.fullName;
     } else {

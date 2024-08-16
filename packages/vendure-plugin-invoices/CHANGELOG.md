@@ -4,6 +4,10 @@
 - Added `isCreditInvoice` as column in the DB in an Invoice
 - Created a reference to parent invoice for credit invoices `invoice.isCreditInvoiceFor`. This is only populated for invoices generated with V4.
 
+# 3.2.0 (2024-08-01)
+
+- Show `Regenerate invoice` as warning button when order total differs from the latest invoice total ( see #485)
+
 # 3.1.3 (2024-08-04)
 
 - Update compatibility range (#480)

@@ -1,5 +1,4 @@
 import { Logger } from '@vendure/core';
-import { Response } from 'express';
 import { readFile, writeFile } from 'fs/promises';
 import { InvoiceEntity } from '../../entities/invoice.entity';
 import {
@@ -15,8 +14,10 @@ export interface Config {
   expiresInSeconds: number;
   bucket: string;
   region?: string;
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   endpoint?: any;
   s3ForcePathStyle?: boolean;
+  // eslint-disable-next-line  @typescript-eslint/no-explicit-any
   credentials?: any;
   signatureVersion?: string;
 }
@@ -37,18 +38,21 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
   async init(): Promise<void> {
     try {
       const AWS = await import('aws-sdk');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
       this.s3 = new AWS.S3(this.config as any);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Logger.error(
         `Could not find the "aws-sdk" package. Make sure it is installed`,
         S3StorageStrategy.name,
-        e.stack
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        JSON.stringify(e.stack)
       );
     }
   }
 
-  async getPublicUrl(invoice: InvoiceEntity): Promise<string> {
-    return await this.s3!.getSignedUrl('getObject', {
+  getPublicUrl(invoice: InvoiceEntity): string {
+    return this.s3!.getSignedUrl('getObject', {
       Key: invoice.storageReference,
       Bucket: this.bucket,
       Expires: this.expiresInSeconds,
@@ -77,10 +81,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     return Key;
   }
 
-  async streamMultiple(
-    invoices: InvoiceEntity[],
-    res: Response<any, Record<string, any>>
-  ): Promise<ReadStream> {
+  async streamMultiple(invoices: InvoiceEntity[]): Promise<ReadStream> {
     const files: ZippableFile[] = await Promise.all(
       invoices.map(async (invoice) => {
         const tmpFile = await createTempFile('.pdf');
@@ -88,7 +89,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
           Bucket: this.bucket,
           Key: invoice.storageReference,
         }).promise();
-        await writeFile(tmpFile, object.Body?.toString()!);
+        await writeFile(tmpFile, object.Body?.toString() as string);
         return {
           path: tmpFile,
           name: invoice.invoiceNumber + '.pdf',

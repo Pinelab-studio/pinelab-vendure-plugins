@@ -81,7 +81,7 @@ beforeAll(async () => {
   const zoneService = server.app.get(ZoneService);
   const taxRateService = server.app.get(TaxRateService);
   const noTaxZone = await zoneService.create(ctx, {
-    name: 'Tax Exempt',
+    name: 'NL No Tax Zone',
     memberIds: [8], //NL
   });
   await taxRateService.create(ctx, {

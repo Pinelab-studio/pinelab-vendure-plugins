@@ -1,17 +1,6 @@
-import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
 import { DeepPartial, VendureEntity } from '@vendure/core';
 import { Column, Entity, Unique, Index, OneToMany, ManyToOne } from 'typeorm';
-import { ExternalReference } from '../strategies/accounting/accounting-export-strategy';
-
-/**
- * The order totals that were used to generate the invoice.
- * These can be used to generate credit invoices.
- */
-export interface InvoiceOrderTotals {
-  taxSummaries: OrderTaxSummary[];
-  total: number;
-  totalWithTax: number;
-}
+import { InvoiceOrderTotals } from '../ui/generated/graphql';
 
 @Entity('invoice')
 @Unique(['channelId', 'invoiceNumber'])
@@ -37,10 +26,10 @@ export class InvoiceEntity extends VendureEntity {
   @Column({ nullable: false, default: false })
   isCreditInvoice!: boolean;
 
-  @OneToMany((type) => InvoiceEntity, (invoice) => invoice.isCreditInvoiceFor)
+  @OneToMany(() => InvoiceEntity, (invoice) => invoice.isCreditInvoiceFor)
   creditInvoices?: InvoiceEntity[];
 
-  @ManyToOne((type) => InvoiceEntity, (invoice) => invoice.creditInvoices)
+  @ManyToOne(() => InvoiceEntity, (invoice) => invoice.creditInvoices)
   isCreditInvoiceFor: InvoiceEntity | undefined;
 
   /**
@@ -51,5 +40,11 @@ export class InvoiceEntity extends VendureEntity {
   orderTotals!: InvoiceOrderTotals;
 
   @Column({ nullable: true, type: 'simple-json' })
-  accountingReference: ExternalReference | undefined;
+  accountingReference:
+    | {
+        reference: string;
+        link?: string;
+        errorMessage?: string;
+      }
+    | undefined;
 }

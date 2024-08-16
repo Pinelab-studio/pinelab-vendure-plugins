@@ -28,7 +28,7 @@ function resolveTemplateColumnType(): ColumnType {
   const dbEngine = process.env.INVOICES_PLUGIN_DB_ENGINE;
   if (!dbEngine) {
     return 'text';
-  } else if (dbEngine === 'mysql' || 'mariadb') {
+  } else if (dbEngine === 'mysql' || dbEngine === 'mariadb') {
     return 'longtext'; // up to 4GB
   } else if (dbEngine === 'postgres') {
     return 'text'; // Up to 1GB

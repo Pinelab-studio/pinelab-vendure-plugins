@@ -21,10 +21,13 @@ export default [
     location: 'invoice-list',
     label: 'Download',
     icon: 'download',
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     onClick: async ({ injector, selection }) => {
-      const notificationService = injector.get(NotificationService);
+      const notificationService =
+        injector.get<NotificationService>(NotificationService);
       try {
-        const nrs = selection.map((i) => i.invoiceNumber).join(',');
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        const nrs = selection.map((i) => i.invoiceNumber as string).join(',');
         const localStorageService = injector.get(LocalStorageService);
         const serverPath = getServerLocation();
         const res = await fetch(`${serverPath}/invoices/download?nrs=${nrs}`, {
@@ -32,14 +35,16 @@ export default [
         });
         if (!res.ok) {
           const json = await res.json();
-          notificationService.error(json?.message);
-          throw Error(json?.message);
+          notificationService.error(JSON.stringify(json?.message));
+          throw Error(JSON.stringify(json?.message));
         }
         const blob = await res.blob();
-        await downloadBlob(blob, 'invoices.zip');
+        downloadBlob(blob, 'invoices.zip');
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
       } catch (err: any) {
-        notificationService.error(err?.message);
-        throw Error(err);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        notificationService.error(JSON.stringify(err?.message));
+        throw Error(JSON.stringify(err));
       }
     },
   }),
@@ -60,19 +65,27 @@ export function getHeaders(
   return headers;
 }
 
-export async function downloadBlob(
+export function downloadBlob(
   blob: Blob,
   fileName: string,
   openInNewTab = false
-): Promise<void> {
+): void {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   const blobUrl = window.URL.createObjectURL(blob);
+  // eslint-disable-next-line  @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   const a = document.createElement('a');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   document.body.appendChild(a);
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   a.setAttribute('hidden', 'true');
+  //  eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
   a.href = blobUrl;
   if (!openInNewTab) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     a.download = fileName;
   }
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   a.setAttribute('target', '_blank');
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
   a.click();
 }

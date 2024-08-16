@@ -5,7 +5,7 @@ export interface ExternalReference {
   /**
    * This can be an ID or string that references the created entry in your accounting system
    */
-  reference: string;
+  reference?: string;
   /**
    * You can optionally provide a link to the entry in your accounting system.
    * This will be displayed on an invoice in Vendure, so that admins can see the corresponding accounting invoice.

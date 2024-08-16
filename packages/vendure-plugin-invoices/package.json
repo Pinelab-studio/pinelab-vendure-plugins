@@ -23,7 +23,7 @@
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "test": "vitest --bail 1 run",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@vendure-hub/vendure-hub-plugin": "^0.0.2",

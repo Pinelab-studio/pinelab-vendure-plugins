@@ -123,7 +123,7 @@ export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
     }
   }
 
-  async onApplicationBootstrap(): Promise<void> {
+  onApplicationBootstrap(): void {
     this.licenseService
       .checkLicenseKey(
         InvoicePlugin.config.licenseKey,
@@ -141,6 +141,7 @@ export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
       })
       .catch((err) => {
         Logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Error checking license key: ${err?.message}. Viewing invoices is disabled. Invoice generation will continue as usual.`,
           loggerCtx
         );

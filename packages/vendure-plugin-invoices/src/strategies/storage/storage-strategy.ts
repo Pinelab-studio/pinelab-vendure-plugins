@@ -40,7 +40,7 @@ export interface RemoteStorageStrategy extends BaseStorageStrategy {
    * For example an downloadLink to a Google storage bucket
    * or Amazon S3 instance
    */
-  getPublicUrl(invoice: InvoiceEntity): Promise<string>;
+  getPublicUrl(invoice: InvoiceEntity): Promise<string> | string;
 }
 
 export interface LocalStorageStrategy extends BaseStorageStrategy {
@@ -50,5 +50,8 @@ export interface LocalStorageStrategy extends BaseStorageStrategy {
    * Use res.set() to set content-type
    * and content-disposition
    */
-  streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream>;
+  streamFile(
+    invoice: InvoiceEntity,
+    res: Response
+  ): Promise<ReadStream> | ReadStream;
 }

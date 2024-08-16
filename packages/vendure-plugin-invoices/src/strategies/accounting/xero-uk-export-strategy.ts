@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
   RequestContext,
   createSelfRefreshingCache,
@@ -7,7 +10,6 @@ import {
   Customer,
   Injector,
   EntityHydrator,
-  OrderLine,
   translateDeep,
 } from '@vendure/core';
 import {
@@ -75,8 +77,10 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     try {
       // Test if package is installed
       await import('xero-node');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       throw Error(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Could not find the "xero-node" package. Make sure it is installed: ${e?.message}`
       );
     }
@@ -89,8 +93,10 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     this.tokenCache = await this.createCache();
     try {
       this.taxRates = await this.getTaxRates();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Logger.error(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         `Failed initialize: Could not get tax rates from Xero: ${e?.message}`,
         loggerCtx,
         util.inspect(e, false, 5)
@@ -135,6 +141,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           contact.contactID
         );
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       const errorMessage =
         JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
@@ -160,6 +167,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     const reference = this.config.getReference?.(order, invoice) || order.code;
     const xeroInvoice: import('xero-node').Invoice = {
       invoiceNumber: String(invoice.invoiceNumber),
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       type: 'ACCREC' as any,
       contact: {
         contactID: contactId,
@@ -167,6 +175,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
       lineItems: this.getLineItems(ctx, order),
       reference,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       status: 'DRAFT' as any,
       url: this.config.getVendureUrl?.(order, invoice),
     };
@@ -205,6 +214,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       `Credit note for ${isCreditInvoiceFor}`;
     const creditNote: import('xero-node').CreditNote = {
       creditNoteNumber: `${invoice.invoiceNumber} (CN)`,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       type: 'ACCRECCREDIT' as any,
       contact: {
         contactID: contactId,
@@ -212,6 +222,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
       lineItems: this.getCreditLineItems(invoice),
       reference,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       status: 'DRAFT' as any,
     };
     const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
@@ -249,7 +260,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       customer.emailAddress
     );
     if ((contacts.body?.contacts?.length ?? 0) > 1) {
-      const contact = contacts.body!.contacts![0];
+      const contact = contacts.body.contacts![0];
       Logger.info(
         `Found multiple contacts in Xero with email address "${customer.emailAddress}". Using ${contact.contactID}`,
         loggerCtx
@@ -257,7 +268,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       return contact;
     } else if ((contacts.body?.contacts?.length ?? 0) === 1) {
       // Return only contact
-      return contacts.body!.contacts![0];
+      return contacts.body.contacts![0];
     }
     // Else, create a new contact
     const createdContacts = await this.xero.accountingApi.createContacts(
@@ -405,6 +416,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         fn: async () => {
           try {
             return await this.xero.getClientCredentialsToken();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
           } catch (e: any) {
             Logger.error(
               `Failed to get access_token for Xero: ${e?.message}`,
