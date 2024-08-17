@@ -32,6 +32,7 @@ export const invoiceFragment = gql`
     accountingReference {
       reference
       link
+      errorMessage
     }
   }
 `;

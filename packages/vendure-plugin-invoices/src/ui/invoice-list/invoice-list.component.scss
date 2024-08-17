@@ -1,0 +1,13 @@
+.error-message {
+  color: var(--color-chip-error-text);
+}
+
+.success {
+  border-color: var(--color-chip-success-border);
+  color: var(--color-chip-success-text) !important;
+  background-color: var(--color-chip-success-bg);
+}
+
+.success:hover {
+  background-color: var(--color-button-ghost-bg);
+}

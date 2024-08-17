@@ -59,17 +59,28 @@
     [optional]="true"
   >
     <ng-template let-invoice="item">
-      <a
-        *ngIf="invoice.accountingReference?.link"
-        class="button-ghost"
-        href="{{ invoice.accountingReference?.link }}"
-        target="_blank"
-      >
-        <span>{{ invoice.accountingReference?.reference }}</span>
-      </a>
-      <span *ngIf="!invoice.accountingReference?.link">{{
-        invoice.accountingReference?.reference
-      }}</span>
+      <div *ngIf="invoice.accountingReference?.reference; else showError">
+        <a
+          *ngIf="invoice.accountingReference?.link"
+          class="button-ghost success"
+          href="{{ invoice.accountingReference?.link }}"
+          target="_blank"
+        >
+          <span>Exported</span>
+          <clr-icon shape="arrow right" />
+        </a>
+        <span *ngIf="!invoice.accountingReference?.link">{{
+          invoice.accountingReference?.reference
+        }}</span>
+      </div>
+      <ng-template #showError>
+        <span
+          *ngIf="invoice.accountingReference?.errorMessage"
+          class="error-message"
+        >
+          Failed: {{ invoice.accountingReference?.errorMessage }}
+        </span>
+      </ng-template>
     </ng-template>
   </vdr-dt2-column>
   <vdr-dt2-column id="downloadUrl" heading="Download" [optional]="false">

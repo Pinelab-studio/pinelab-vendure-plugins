@@ -43,8 +43,9 @@ const commonSchemaExtensions = gql`
     invoices: [Invoice!]!
   }
   type InvoiceAccountingReference {
-    reference: String!
+    reference: String
     link: String
+    errorMessage: String
   }
 `;
 export const shopSchemaExtensions = gql`

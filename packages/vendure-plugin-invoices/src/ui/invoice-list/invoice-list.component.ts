@@ -21,6 +21,7 @@ const GET_INVOICES_QUERY = gql`
         accountingReference {
           reference
           link
+          errorMessage
         }
       }
       totalItems
