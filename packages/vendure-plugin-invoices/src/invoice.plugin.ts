@@ -138,11 +138,6 @@ export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
             loggerCtx
           );
           InvoicePlugin.config.hasValidLicense = false;
-          // Make property immutable
-          Object.defineProperty(InvoicePlugin.config, 'hasValidLicense', {
-            writable: false,
-            configurable: false,
-          });
         } else {
           InvoicePlugin.config.hasValidLicense = true;
         }
@@ -154,11 +149,6 @@ export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
           loggerCtx
         );
         InvoicePlugin.config.hasValidLicense = false;
-        // Make property immutable
-        Object.defineProperty(InvoicePlugin.config, 'hasValidLicense', {
-          writable: false,
-          configurable: false,
-        });
       });
   }
 
