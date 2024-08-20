@@ -79,8 +79,8 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   providers: [
     InvoiceService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
-      AccountingService,
-],
+    AccountingService,
+  ],
   controllers: [InvoiceController],
   adminApiExtensions: {
     schema: adminSchemaExtensions,

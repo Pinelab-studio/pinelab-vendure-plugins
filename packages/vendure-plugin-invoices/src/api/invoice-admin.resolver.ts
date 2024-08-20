@@ -38,7 +38,10 @@ export class InvoiceAdminResolver {
     @Args('invoiceNumber') invoiceNumber: number
   ): Promise<boolean> {
     this.invoiceService.throwIfInvalidLicense();
-    await this.accountingService.exportInvoiceToAccountingPlatform(ctx, invoiceNumber);
+    await this.accountingService.exportInvoiceToAccountingPlatform(
+      ctx,
+      invoiceNumber
+    );
     return true;
   }
 

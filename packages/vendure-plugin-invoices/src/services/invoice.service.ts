@@ -24,7 +24,7 @@ import {
   PaginatedList,
   RequestContext,
   TransactionalConnection,
-  UserInputError
+  UserInputError,
 } from '@vendure/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
@@ -58,7 +58,7 @@ import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
 import puppeteer from 'puppeteer';
-import {Browser} from 'puppeteer';
+import { Browser } from 'puppeteer';
 
 import { filter } from 'rxjs';
 import { In } from 'typeorm';
@@ -171,7 +171,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       ...options,
       ...(options?.filter?.invoiceNumber
         ? // eslint-disable-next-line  @typescript-eslint/no-unsafe-assignment
-        { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
+          { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
         : { filter: {} }),
       sort: { updatedAt: SortOrder.DESC },
     };
@@ -286,7 +286,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     });
     if (!invoices) {
       throw Error(
-        `No invoices found for channel ${ctx.channelId
+        `No invoices found for channel ${
+          ctx.channelId
         } and invoiceNumbers ${JSON.stringify(invoiceNumbers)}`
       );
     }
@@ -483,9 +484,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       // Pass reverse order totals and previous invoice if we are creating a credit invoice
       isCreditInvoiceFor
         ? {
-          previousInvoice: isCreditInvoiceFor,
-          reversedOrderTotals: orderTotals,
-        }
+            previousInvoice: isCreditInvoiceFor,
+            reversedOrderTotals: orderTotals,
+          }
         : undefined
     );
 
@@ -507,7 +508,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
     await invoiceRepo.update(invoiceRowId, { storageReference });
     Logger.info(
-      `Created ${isCreditInvoiceFor ? 'credit ' : ' '
+      `Created ${
+        isCreditInvoiceFor ? 'credit ' : ' '
       }invoice ${invoiceNumber} for order ${order.code}`,
       loggerCtx
     );
@@ -538,11 +540,15 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       browser = await puppeteer.launch({
         headless: true,
         // We are not using puppeteer to fetch any external resources, so we dont care about the security concerns here
-        args: ["--no-sandbox"]
+        args: ['--no-sandbox'],
       });
       const page = await browser.newPage();
       await page.setContent(compiledHtml);
-      const pdf = await page.pdf({ path: tmpFilePath, format: 'A4', margin: {bottom: 100, top: 100, left: 50, right: 50} });
+      const pdf = await page.pdf({
+        path: tmpFilePath,
+        format: 'A4',
+        margin: { bottom: 100, top: 100, left: 50, right: 50 },
+      });
     } catch (e) {
       // Warning, because this will be retried, or is returned to the user
       Logger.warn(
@@ -551,7 +557,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
       throw e;
     } finally {
-      if(browser) {
+      if (browser) {
         // Prevent memory leaks
         browser.close();
       }
