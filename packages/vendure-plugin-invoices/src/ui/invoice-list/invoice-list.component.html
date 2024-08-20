@@ -94,10 +94,9 @@
     <ng-template let-invoice="item">
       <a
         (click)="exportToAccounting(invoice.invoiceNumber)"
-        *ngIf="!invoice.accountingReference?.reference"
         style="cursor: pointer"
       >
-        <clr-icon shape="detail-expand"></clr-icon>
+        <clr-icon shape="redo"></clr-icon>
       </a>
     </ng-template>
   </vdr-dt2-column>

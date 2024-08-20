@@ -331,10 +331,23 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       }
     );
     // Map shipping lines
+    console.log(
+      JSON.stringify(order.shippingLines.map((s) => s.shippingMethod))
+    );
     lineItems.push(
       ...order.shippingLines.map((shippingLine) => {
+        console.log(
+          '==================',
+          translateDeep(
+            shippingLine.shippingMethod,
+            ctx.channel.defaultLanguageCode
+          ).name
+        );
         return {
-          description: shippingLine.shippingMethod.name,
+          description: translateDeep(
+            shippingLine.shippingMethod,
+            ctx.channel.defaultLanguageCode
+          ).name,
           quantity: 1,
           unitAmount: this.toMoney(shippingLine.discountedPrice),
           accountCode: this.config.shippingAccountCode,
