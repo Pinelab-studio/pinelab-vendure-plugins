@@ -35,11 +35,17 @@ const commonSchemaExtensions = gql`
     orderCode: String!
     orderId: ID!
     isCreditInvoice: Boolean!
+    accountingReference: InvoiceAccountingReference
     orderTotals: InvoiceOrderTotals!
   }
 
   extend type Order {
     invoices: [Invoice!]!
+  }
+  type InvoiceAccountingReference {
+    reference: String
+    link: String
+    errorMessage: String
   }
 `;
 export const shopSchemaExtensions = gql`
@@ -86,6 +92,11 @@ export const adminSchemaExtensions = gql`
     Generate a new invoice for the given order. Creates a credit invoice if the order already has an invoice.
     """
     createInvoice(orderId: ID!): Invoice!
+    """
+    Export the given invoice to the configured accounting platform.
+    This is done via the Job Queue, so monitor invoice.accountingReference to see if the export succeeded.
+    """
+    exportInvoiceToAccountingPlatform(invoiceNumber: Int!): Boolean!
   }
 
   extend type Query {

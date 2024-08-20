@@ -46,17 +46,57 @@
       {{ invoice.createdAt | localeDate : 'short' }}
     </ng-template>
   </vdr-dt2-column>
-  <vdr-dt2-column id="order" heading="For order" [optional]="false">
+  <vdr-dt2-column id="order" heading="Order" [optional]="false">
     <ng-template let-invoice="item">
       <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"
         ><span>{{ invoice.orderCode }}</span>
       </a>
     </ng-template>
   </vdr-dt2-column>
+  <vdr-dt2-column
+    id="accounting"
+    heading="Exported to accounting"
+    [optional]="true"
+  >
+    <ng-template let-invoice="item">
+      <div *ngIf="invoice.accountingReference?.reference; else showError">
+        <a
+          *ngIf="invoice.accountingReference?.link"
+          class="button-ghost success"
+          href="{{ invoice.accountingReference?.link }}"
+          target="_blank"
+        >
+          <span>Exported</span>
+          <clr-icon shape="arrow right" />
+        </a>
+        <span *ngIf="!invoice.accountingReference?.link">{{
+          invoice.accountingReference?.reference
+        }}</span>
+      </div>
+      <ng-template #showError>
+        <span
+          *ngIf="invoice.accountingReference?.errorMessage"
+          class="error-message"
+        >
+          Failed: {{ invoice.accountingReference?.errorMessage }}
+        </span>
+      </ng-template>
+    </ng-template>
+  </vdr-dt2-column>
   <vdr-dt2-column id="downloadUrl" heading="Download" [optional]="false">
     <ng-template let-invoice="item">
       <a [href]="invoice.downloadUrl" target="_blank">
         <clr-icon shape="download"></clr-icon>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="exportToAccounting" heading="Export" [optional]="false">
+    <ng-template let-invoice="item">
+      <a
+        (click)="exportToAccounting(invoice.invoiceNumber)"
+        style="cursor: pointer"
+      >
+        <clr-icon shape="redo"></clr-icon>
       </a>
     </ng-template>
   </vdr-dt2-column>

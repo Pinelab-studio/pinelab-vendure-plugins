@@ -1,5 +1,5 @@
 import { DeepPartial, VendureEntity } from '@vendure/core';
-import { Column, Entity, Unique, Index } from 'typeorm';
+import { Column, Entity, Unique, Index, OneToMany, ManyToOne } from 'typeorm';
 import { InvoiceOrderTotals } from '../ui/generated/graphql';
 
 @Entity('invoice')
@@ -23,9 +23,14 @@ export class InvoiceEntity extends VendureEntity {
   @Column({ nullable: false })
   storageReference!: string;
 
-  get isCreditInvoice(): boolean {
-    return this.orderTotals.total < 0;
-  }
+  @Column({ nullable: false, default: false })
+  isCreditInvoice!: boolean;
+
+  @OneToMany(() => InvoiceEntity, (invoice) => invoice.isCreditInvoiceFor)
+  creditInvoices?: InvoiceEntity[];
+
+  @ManyToOne(() => InvoiceEntity, (invoice) => invoice.creditInvoices)
+  isCreditInvoiceFor: InvoiceEntity | undefined;
 
   /**
    * The order totals that were used to generate the invoice.
@@ -33,4 +38,13 @@ export class InvoiceEntity extends VendureEntity {
    */
   @Column({ nullable: true, type: 'simple-json' })
   orderTotals!: InvoiceOrderTotals;
+
+  @Column({ nullable: true, type: 'simple-json' })
+  accountingReference:
+    | {
+        reference: string;
+        link?: string;
+        errorMessage?: string;
+      }
+    | undefined;
 }

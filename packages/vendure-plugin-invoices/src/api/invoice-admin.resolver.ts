@@ -20,14 +20,30 @@ import {
 } from '../ui/generated/graphql';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
 import { invoicePermission } from './invoice-common.resolver';
+import { AccountingService } from '../services/accounting.service';
 
 @Resolver()
 export class InvoiceAdminResolver {
   constructor(
     private invoiceService: InvoiceService,
+    private accountingService: AccountingService,
     private orderService: OrderService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: InvoicePluginConfig
   ) {}
+
+  @Mutation()
+  @Allow(invoicePermission.Permission)
+  async exportInvoiceToAccountingPlatform(
+    @Ctx() ctx: RequestContext,
+    @Args('invoiceNumber') invoiceNumber: number
+  ): Promise<boolean> {
+    this.invoiceService.throwIfInvalidLicense();
+    await this.accountingService.exportInvoiceToAccountingPlatform(
+      ctx,
+      invoiceNumber
+    );
+    return true;
+  }
 
   @Mutation()
   @Transaction()

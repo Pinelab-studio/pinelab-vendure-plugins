@@ -1,11 +1,13 @@
 import {
+  Injector,
   Logger,
   PluginCommonModule,
   RuntimeVendureConfig,
   Type,
   VendurePlugin,
 } from '@vendure/core';
-import { OnApplicationBootstrap } from '@nestjs/common';
+import { OnApplicationBootstrap, OnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import {
@@ -19,16 +21,18 @@ import {
 } from './api/invoice-common.resolver';
 import { InvoiceController } from './api/invoice.controller';
 import { defaultLoadDataFn, LoadDataFn } from './strategies/load-data-fn';
-import { LocalFileStrategy } from './strategies/local-file-strategy';
+import { LocalFileStrategy } from './strategies/storage/local-file-strategy';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
-import { StorageStrategy } from './strategies/storage-strategy';
+import { StorageStrategy } from './strategies/storage/storage-strategy';
 import { InvoiceService } from './services/invoice.service';
 import {
   LicenseService,
   VendureHubPlugin,
 } from '@vendure-hub/vendure-hub-plugin';
+import { AccountingExportStrategy } from './strategies/accounting/accounting-export-strategy';
+import { AccountingService } from './services/accounting.service';
 
 export interface InvoicePluginConfigInput {
   /**
@@ -52,6 +56,10 @@ export interface InvoicePluginConfigInput {
    * Start counting invoices from this number onwards
    */
   startInvoiceNumber?: number;
+  /**
+   * You can supply accounting export strategies per channel, which will export the invoices to your accounting software.
+   */
+  accountingExports?: AccountingExportStrategy[];
 }
 
 export interface InvoicePluginConfig extends InvoicePluginConfigInput {
@@ -71,7 +79,7 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   providers: [
     InvoiceService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
-    { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
+    AccountingService,
   ],
   controllers: [InvoiceController],
   adminApiExtensions: {
@@ -84,16 +92,38 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   },
   compatibility: '>=2.2.0',
   configuration: (config: RuntimeVendureConfig) => {
-    InvoicePlugin.configure(config).catch((e) => {
-      Logger.error(JSON.stringify(e), loggerCtx);
-    });
+    config.authOptions.customPermissions.push(invoicePermission);
     return config;
   },
 })
-export class InvoicePlugin implements OnApplicationBootstrap {
+export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
   static config: InvoicePluginConfig;
 
-  constructor(private licenseService: LicenseService) {}
+  constructor(
+    private licenseService: LicenseService,
+    private moduleRef: ModuleRef
+  ) {}
+
+  async onModuleInit(): Promise<void> {
+    // Initialize accounting export strategies, if they define an init function
+    for (const strategy of InvoicePlugin.config.accountingExports || []) {
+      if (strategy.init) {
+        await strategy.init(new Injector(this.moduleRef));
+        Logger.info(
+          `Initialized accounting export strategy: ${strategy.constructor.name}`,
+          loggerCtx
+        );
+      }
+    }
+    // Initialize storage strategy
+    if (InvoicePlugin.config.storageStrategy) {
+      await InvoicePlugin.config.storageStrategy.init();
+      Logger.info(
+        `Initialized storage strategy: ${InvoicePlugin.config.storageStrategy.constructor.name}`,
+        loggerCtx
+      );
+    }
+  }
 
   onApplicationBootstrap(): void {
     this.licenseService
@@ -107,6 +137,7 @@ export class InvoicePlugin implements OnApplicationBootstrap {
             `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin. Viewing invoices is disabled. Invoice generation will continue as usual.`,
             loggerCtx
           );
+          InvoicePlugin.config.hasValidLicense = false;
         } else {
           InvoicePlugin.config.hasValidLicense = true;
         }
@@ -117,15 +148,15 @@ export class InvoicePlugin implements OnApplicationBootstrap {
           `Error checking license key: ${err?.message}. Viewing invoices is disabled. Invoice generation will continue as usual.`,
           loggerCtx
         );
+        InvoicePlugin.config.hasValidLicense = false;
       });
   }
 
   static init(config: InvoicePluginConfigInput): Type<InvoicePlugin> {
     InvoicePlugin.config = {
-      vendureHost: config.vendureHost,
+      ...config,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
-      licenseKey: config.licenseKey,
       hasValidLicense: false,
       startInvoiceNumber: config.startInvoiceNumber || 10000,
     };
@@ -150,14 +181,4 @@ export class InvoicePlugin implements OnApplicationBootstrap {
     routes: [{ filePath: 'routes.ts', route: 'invoice-list' }],
     providers: ['providers.ts'],
   };
-
-  private static async configure(
-    config: RuntimeVendureConfig
-  ): Promise<RuntimeVendureConfig> {
-    config.authOptions.customPermissions.push(invoicePermission);
-    if (this.config.storageStrategy) {
-      await this.config.storageStrategy.init();
-    }
-    return config;
-  }
 }

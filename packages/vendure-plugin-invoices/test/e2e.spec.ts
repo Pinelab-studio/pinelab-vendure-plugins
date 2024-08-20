@@ -6,6 +6,7 @@ import {
   mergeConfig,
   Order,
   OrderService,
+  RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
 import {
@@ -18,7 +19,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import fetch from 'node-fetch';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { addShippingMethod, cancelOrder } from '../../test/src/admin-utils';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
@@ -27,6 +28,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   defaultTemplate,
   Invoice,
+  InvoiceEntity,
   InvoicePlugin,
   MutationUpsertInvoiceConfigArgs,
 } from '../src';
@@ -37,6 +39,16 @@ import {
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
+import { MockAccountingStrategy } from './mock-accounting-strategy';
+import gql from 'graphql-tag';
+
+/**
+ * Await PDF generation. You can make this timeout longer depending on your system speed.
+ * 3000ms should be enough in most cases
+ */
+async function wait() {
+  await new Promise((resolve) => setTimeout(resolve, 4000));
+}
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -45,6 +57,15 @@ let serverStarted = false;
 let latestInvoice: Invoice;
 let order: Order;
 let events: InvoiceCreatedEvent[] = [];
+
+// Accounting strategy
+const mockAccountingStrategy = new MockAccountingStrategy(
+  'e2e-default-channel'
+);
+const mockAccountingStrategySpy = {
+  init: vi.spyOn(mockAccountingStrategy, 'init'),
+  exportInvoice: vi.spyOn(mockAccountingStrategy, 'exportInvoice'),
+};
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -57,6 +78,7 @@ beforeAll(async () => {
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3106',
         licenseKey: 'BogusLicenseKey',
+        accountingExports: [mockAccountingStrategy],
       }),
     ],
     paymentOptions: {
@@ -89,6 +111,13 @@ beforeAll(async () => {
 
 it('Should start successfully', async () => {
   await expect(serverStarted).toBe(true);
+});
+
+it('Initialized accounting export strategies', async () => {
+  // Has been called at least once. During test DB init its called twice, after that once
+  expect(
+    mockAccountingStrategySpy.init.mock.calls.length
+  ).toBeGreaterThanOrEqual(1);
 });
 
 describe('Generate with credit invoicing enabled', function () {
@@ -128,7 +157,7 @@ describe('Generate with credit invoicing enabled', function () {
     'Gets invoices for order',
     async () => {
       // Give the worker some time to generate invoices
-      await new Promise((resolve) => setTimeout(resolve, 7 * 1000));
+      await wait();
       const { order: result } = await adminClient.query(getOrderWithInvoices, {
         id: order.id,
       });
@@ -157,6 +186,16 @@ describe('Generate with credit invoicing enabled', function () {
     expect(events[0].creditInvoice).toBeUndefined();
     expect(events[0].previousInvoice).toBeUndefined();
     expect(events[1]).toBeUndefined();
+  });
+
+  it('Triggered accounting export strategy', async () => {
+    const [ctx, invoice, order] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[0];
+    expect(mockAccountingStrategySpy.exportInvoice).toHaveBeenCalledTimes(1);
+    expect(ctx).toBeInstanceOf(RequestContext);
+    expect(invoice).toBeInstanceOf(InvoiceEntity);
+    expect(invoice.isCreditInvoiceFor).toBe(null);
+    expect(order).toBeInstanceOf(Order);
   });
 
   it('Modifies order', async () => {
@@ -215,6 +254,25 @@ describe('Generate with credit invoicing enabled', function () {
     expect(events[2]).toBeUndefined();
   });
 
+  it('Triggered accounting export strategy for credit invoice', async () => {
+    await wait();
+    const [ctx, invoice, order, isCreditInvoiceFor] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[1];
+    expect(ctx).toBeInstanceOf(RequestContext);
+    expect(invoice).toBeInstanceOf(InvoiceEntity);
+    expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);
+    expect(order).toBeInstanceOf(Order);
+  });
+
+  it('Triggered accounting export strategy for new invoice after credit invoice', async () => {
+    const [ctx, invoice, order, isCreditInvoiceFor] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[2];
+    expect(ctx).toBeInstanceOf(RequestContext);
+    expect(invoice).toBeInstanceOf(InvoiceEntity);
+    expect(order).toBeInstanceOf(Order);
+    expect(isCreditInvoiceFor).toBe(null);
+  });
+
   it('Returns all invoices for order', async () => {
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
@@ -230,10 +288,24 @@ describe('Generate with credit invoicing enabled', function () {
     expect(invoices[0].invoiceNumber).toBe(10003);
   });
 
+  it('Exports invoice to accounting again via mutation', async () => {
+    const { exportInvoiceToAccountingPlatform } = await adminClient.query(gql`
+      mutation {
+        exportInvoiceToAccountingPlatform(invoiceNumber: 10002)
+      }
+    `);
+    await wait();
+    const [ctx, invoice, order, isCreditInvoiceFor] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[3];
+    expect(exportInvoiceToAccountingPlatform).toBe(true);
+    expect(invoice.invoiceNumber).toBe(10002);
+    expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);
+  });
+
   it('Cancels order and creates credit invoice', async () => {
     await cancelOrder(adminClient, order as any);
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 7 * 1000));
+    await wait();
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });
@@ -334,7 +406,7 @@ describe('Generate without credit invoicing', function () {
 
   it('Created invoice', async () => {
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await wait();
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });
@@ -369,7 +441,7 @@ describe('Generate without credit invoicing', function () {
 
   it('Emitted event without credit invoice', async () => {
     expect(events[1].newInvoice).toBeDefined();
-    // Previous should be defined, but credit is empty because we disabled the createCreditInvocies config
+    // Previous should be defined, but credit is empty because we disabled the createCreditInvoices config
     expect(events[1].previousInvoice).toBeDefined();
     expect(events[1].creditInvoice).toBeUndefined();
   });

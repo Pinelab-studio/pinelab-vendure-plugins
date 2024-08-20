@@ -3,8 +3,32 @@ import { createInvoice } from './queries.graphql';
 import { catchError } from 'rxjs/operators';
 import { ApolloCache } from '@apollo/client/cache';
 import { map } from 'rxjs';
-import { GET_ORDER } from './helpers';
-import { GetOrderQueryVariables } from '@vendure/admin-ui/core';
+import { GetOrderQueryVariables, GetOrderQuery } from '@vendure/admin-ui/core';
+
+import gql from 'graphql-tag';
+export const GET_ORDER = gql`
+  query GetOrder($id: ID!) {
+    order(id: $id) {
+      id
+      orderPlacedAt
+      invoices {
+        id
+        createdAt
+        invoiceNumber
+        downloadUrl
+        orderCode
+        orderId
+        isCreditInvoice
+        orderTotals {
+          totalWithTax
+        }
+      }
+      state
+      totalWithTax
+    }
+  }
+`;
+
 export function getRegenerateInvoiceButton(isWarningButton: boolean) {
   return addActionBarItem({
     id: isWarningButton ? 'regenerate-invoice-styled' : 'regenerate-invoice',
@@ -56,18 +80,29 @@ export function getRegenerateInvoiceButton(isWarningButton: boolean) {
       );
       return order$.stream$.pipe(
         map(({ order }) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-          const latestInvoice = order.invoices[0];
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          if (!order?.orderPlacedAt || order?.state === 'Cancelled') {
+            return {
+              // Don't show any button for non-placed orders or cancelled orders
+              disabled: true,
+              visible: false,
+            };
+          }
           const orderTotalMatches =
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            latestInvoice.orderTotals.totalWithTax === order?.totalWithTax;
-          const showButton = isWarningButton !== orderTotalMatches;
-          return {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            disabled: order?.state === 'Cancelled',
-            visible: showButton,
-          };
+            order?.invoices?.[0]?.orderTotals.totalWithTax ===
+            order?.totalWithTax;
+          if (isWarningButton) {
+            // Show the Warning Button when order totals don't match (urgent!)
+            return {
+              disabled: false,
+              visible: !orderTotalMatches,
+            };
+          } else {
+            // Show the normal outlined button when order totals match (not urgent).
+            return {
+              disabled: false,
+              visible: orderTotalMatches,
+            };
+          }
         })
       );
     },

@@ -8,6 +8,15 @@ This is a paid plugin. For production use, please purchase a license at https://
 
 ![Invoice plugin screens](https://pinelab-plugins.com/plugin-images/invoices-screenshots.gif 'Invoice plugin screens')
 
+## Migration from V3.x to V4.0.0
+
+In v4 the field `invoice.isCreditInvoice` was changed from a getter to a physical database column. To populate the column you need to:
+
+1. Back up your database!
+2. Install the invoices plugin v4.x and generate + run a database migration. This introduced the new database field `isCreditInvoice` where all values are 'false'.
+3. Run the query `UPDATE invoice SET isCreditInvoice = 1 WHERE orderTotals LIKE '%total":-%';` to set the value to 'true' for invoices that have a negative total.
+4. :warning: The plugin now uses Puppeteer, so your Docker image might need additional dependencies installed. See Getting Started below!
+
 ## Getting started
 
 1. Install the plugin with `yarn add @vendure-hub/pinelab-invoice-plugin`
@@ -41,6 +50,38 @@ plugins: [
 6. Unfold the `Settings` accordion.
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
+
+### Docker
+
+To make Puppeteer work on Docker, you need some additional steps in your Dockerfile. This is the Dockerfile we use ourselves:
+
+```Dockerfile
+FROM node:18
+
+# Set Puppeteer home dir
+ENV PUPPETEER_CACHE_DIR=/usr/src/app/
+# Install puppeteer dependencies as defined in https://github.com/puppeteer/puppeteer/blob/main/docker/Dockerfile
+RUN apt-get update \
+    && apt-get install -y wget gnupg \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] https://dl-ssl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
+      --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r pptruser && useradd -rm -g pptruser -G audio,video pptruser
+
+# Create app directory
+WORKDIR /usr/src/app
+
+COPY . .
+RUN npm install
+RUN npm run build
+
+
+# Run the web service on container startup.
+CMD [ "npm", "run", "start" ]
+```
 
 ## Adding invoices to your order-confirmation email
 
@@ -306,6 +347,56 @@ You can access this data in your HTML template using Handlebars.js:
 ```html
 <h1>{{ someCustomField }}</h1>
 ```
+
+## Exporting to external accounting platforms
+
+You can automatically export each created invoice to an accounting platform by including an accounting strategy in the plugin. See one of the examples below for more details.
+
+### Xero UK
+
+This strategy exports each invoice to Xero (UK only). To get started:
+
+1. Create an OAuth app by clicking 'New app' here: https://developer.xero.com/app/manage
+2. This integration uses 'Custom connection', because we are syncing data from machine to machine. See [this page](https://developer.xero.com/documentation/guides/oauth2/overview/) for more details on app types.
+3. Select the scopes `accounting.transactions`,`accounting.contacts` and `accounting.settings.read`.
+4. Get your client ID and client secret, and pass them into the plugin like so:
+
+```ts
+InvoicePlugin.init({
+        vendureHost: 'http://localhost:3050',
+        storageStrategy: new LocalFileStrategy(),
+        licenseKey: process.env.LICENSE_KEY!,
+        accountingExports: [
+          // Export each invoice to Xero
+          new XeroUKExportStrategy({
+            clientId: process.env.XERO_CLIENT_ID,
+            clientSecret: process.env.XERO_CLIENT_SECRET,
+            // The Xero account number for shipping costs
+            shippingAccountCode: '0103',
+            // The Xero account number for product sales
+            salesAccountCode: '0102',
+            // You can customize the "reference" field for the Xero entry with this function
+            getReference: (order, invoice, isCreditInvoiceFor) => {
+              if (isCreditInvoiceFor) {
+                return `Credit note for ${isCreditInvoiceFor}`;
+              } else {
+                return `some custom reference`
+              }
+            },
+            // Specifying a channel token will only use this strategy for that channel
+            channelToken: 'your-channel-token'
+          }),
+        ],
+      }),
+```
+
+5. `npm install xero-node` to install the Xero NodeJS client.
+
+If you are getting `{ error: 'invalid_client' }` during startup, you might have to recreate your Xero app on https://developer.xero.com/app/manage.
+
+### Custom accounting strategy
+
+You can implement your own export strategy to export invoices to your custom accounting platform. Take a look at the included `XeroUKExportStrategy` as an example.
 
 ## Migrating from V1 to V2 of this plugin
 
