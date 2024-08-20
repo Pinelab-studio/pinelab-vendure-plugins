@@ -40,6 +40,15 @@ import {
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
 import { MockAccountingStrategy } from './mock-accounting-strategy';
+import gql from 'graphql-tag';
+
+/**
+ * Await PDF generation. You can make this timeout longer depending on your system speed.
+ * 3000ms should be enough in most cases
+ */
+async function wait() {
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+}
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -148,7 +157,7 @@ describe('Generate with credit invoicing enabled', function () {
     'Gets invoices for order',
     async () => {
       // Give the worker some time to generate invoices
-      await new Promise((resolve) => setTimeout(resolve, 7 * 1000));
+      await wait();
       const { order: result } = await adminClient.query(getOrderWithInvoices, {
         id: order.id,
       });
@@ -246,7 +255,7 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Triggered accounting export strategy for credit invoice', async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await wait();
     const [ctx, invoice, order, isCreditInvoiceFor] =
       mockAccountingStrategySpy.exportInvoice.mock.calls[1];
     expect(ctx).toBeInstanceOf(RequestContext);
@@ -279,10 +288,24 @@ describe('Generate with credit invoicing enabled', function () {
     expect(invoices[0].invoiceNumber).toBe(10003);
   });
 
+  it('Exports invoice to accounting again via mutation', async () => {
+    const { exportInvoiceToAccountingPlatform } = await adminClient.query(gql`
+      mutation {
+        exportInvoiceToAccountingPlatform(invoiceNumber: 10002)
+      }
+    `);
+    await wait();
+    const [ctx, invoice, order, isCreditInvoiceFor] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[3];
+    expect(exportInvoiceToAccountingPlatform).toBe(true);
+    expect(invoice.invoiceNumber).toBe(10002);
+    expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);
+  });
+
   it('Cancels order and creates credit invoice', async () => {
     await cancelOrder(adminClient, order as any);
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 7 * 1000));
+    await wait();
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });
@@ -383,7 +406,7 @@ describe('Generate without credit invoicing', function () {
 
   it('Created invoice', async () => {
     // Give the worker some time to generate invoices
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await wait();
     const { order: result } = await adminClient.query(getOrderWithInvoices, {
       id: order.id,
     });

@@ -1,41 +1,19 @@
-<vdr-data-table-2
-  id="invoice-list"
-  [items]="items$ | async"
-  [itemsPerPage]="itemsPerPage$ | async"
-  [totalItems]="totalItems$ | async"
-  [currentPage]="currentPage$ | async"
-  (pageChange)="setPageNumber($event)"
-  (itemsPerPageChange)="setItemsPerPage($event)"
->
-  <vdr-bulk-action-menu
-    locationId="invoice-list"
-    [hostComponent]="this"
-    [selectionManager]="selectionManager"
-  />
+<vdr-data-table-2 id="invoice-list" [items]="items$ | async" [itemsPerPage]="itemsPerPage$ | async"
+  [totalItems]="totalItems$ | async" [currentPage]="currentPage$ | async" (pageChange)="setPageNumber($event)"
+  (itemsPerPageChange)="setItemsPerPage($event)">
+  <vdr-bulk-action-menu locationId="invoice-list" [hostComponent]="this" [selectionManager]="selectionManager" />
 
-  <vdr-dt2-search
-    [searchTermControl]="searchTermControl"
-    searchTermPlaceholder="Search by Invoice Number / Order Code"
-  />
+  <vdr-dt2-search [searchTermControl]="searchTermControl"
+    searchTermPlaceholder="Search by Invoice Number / Order Code" />
 
-  <vdr-dt2-column
-    id="id"
-    [heading]="'common.id' | translate"
-    [hiddenByDefault]="true"
-  >
+  <vdr-dt2-column id="id" [heading]="'common.id' | translate" [hiddenByDefault]="true">
     <ng-template let-invoice="item">
       {{ invoice.id }}
     </ng-template>
   </vdr-dt2-column>
-  <vdr-dt2-column
-    id="invoiceNumber"
-    heading="Invoice number"
-    [optional]="false"
-  >
+  <vdr-dt2-column id="invoiceNumber" heading="Invoice number" [optional]="false">
     <ng-template let-invoice="item">
-      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"
-        ><span
-          >{{ invoice.invoiceNumber
+      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"><span>{{ invoice.invoiceNumber
           }}<span *ngIf="invoice.isCreditInvoice"> (CREDIT)</span>
         </span>
       </a>
@@ -48,36 +26,24 @@
   </vdr-dt2-column>
   <vdr-dt2-column id="order" heading="Order" [optional]="false">
     <ng-template let-invoice="item">
-      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"
-        ><span>{{ invoice.orderCode }}</span>
+      <a class="button-ghost" [routerLink]="['../../orders', invoice.orderId]"><span>{{ invoice.orderCode }}</span>
       </a>
     </ng-template>
   </vdr-dt2-column>
-  <vdr-dt2-column
-    id="accounting"
-    heading="Exported to accounting"
-    [optional]="true"
-  >
+  <vdr-dt2-column id="accounting" heading="Exported to accounting" [optional]="true">
     <ng-template let-invoice="item">
       <div *ngIf="invoice.accountingReference?.reference; else showError">
-        <a
-          *ngIf="invoice.accountingReference?.link"
-          class="button-ghost success"
-          href="{{ invoice.accountingReference?.link }}"
-          target="_blank"
-        >
+        <a *ngIf="invoice.accountingReference?.link" class="button-ghost success"
+          href="{{ invoice.accountingReference?.link }}" target="_blank">
           <span>Exported</span>
           <clr-icon shape="arrow right" />
         </a>
         <span *ngIf="!invoice.accountingReference?.link">{{
           invoice.accountingReference?.reference
-        }}</span>
+          }}</span>
       </div>
       <ng-template #showError>
-        <span
-          *ngIf="invoice.accountingReference?.errorMessage"
-          class="error-message"
-        >
+        <span *ngIf="invoice.accountingReference?.errorMessage" class="error-message">
           Failed: {{ invoice.accountingReference?.errorMessage }}
         </span>
       </ng-template>
@@ -87,6 +53,13 @@
     <ng-template let-invoice="item">
       <a [href]="invoice.downloadUrl" target="_blank">
         <clr-icon shape="download"></clr-icon>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="exportToAccounting" heading="Export" [optional]="false">
+    <ng-template let-invoice="item">
+      <a (click)="exportToAccounting(invoice.invoiceNumber)" *ngIf="!invoice.accountingReference?.reference" style="cursor: pointer">
+        <clr-icon shape="detail-expand"></clr-icon>
       </a>
     </ng-template>
   </vdr-dt2-column>

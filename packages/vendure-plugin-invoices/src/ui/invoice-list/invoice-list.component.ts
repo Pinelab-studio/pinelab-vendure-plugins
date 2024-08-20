@@ -3,9 +3,12 @@ import {
   TypedBaseListComponent,
   SharedModule,
   LogicalOperator,
+  NotificationService,
+  DataService
 } from '@vendure/admin-ui/core';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { Invoice, InvoiceListOptions } from '../generated/graphql';
+import { ExportInvoiceToAccountingPlatformMutation, Invoice, InvoiceListOptions } from '../generated/graphql';
+import { exportToAccounting } from '../queries.graphql';
 
 const GET_INVOICES_QUERY = gql`
   query InvoiceList($options: InvoiceListOptions) {
@@ -45,6 +48,8 @@ export class InvoiceListComponent extends TypedBaseListComponent<
   typeof typedDocumentNode,
   'invoices'
 > {
+
+
   // Here we set up the filters that will be available
   // to use in the data table
   readonly filters = this.createFilterCollection()
@@ -62,7 +67,9 @@ export class InvoiceListComponent extends TypedBaseListComponent<
     })
     .connectToRoute(this.route);
 
-  constructor() {
+  constructor(
+    protected dataService: DataService, private notificationService: NotificationService
+  ) {
     super();
     super.configure({
       document: typedDocumentNode,
@@ -70,6 +77,14 @@ export class InvoiceListComponent extends TypedBaseListComponent<
       setVariables: (skip, take) =>
         this.createQueryOptions(skip, take, this.searchTermControl.value),
       refreshListOnChanges: [this.filters.valueChanges],
+    });
+  }
+
+  exportToAccounting(invoiceNumber: number) {
+    this.dataService
+    .mutate<ExportInvoiceToAccountingPlatformMutation>(exportToAccounting, {invoiceNumber})
+    .subscribe(() => {
+      this.notificationService.success(`Started export`);
     });
   }
 

@@ -45,3 +45,9 @@ export const createInvoice = gql`
     }
   }
 `;
+
+export const exportToAccounting = gql`
+  mutation exportInvoiceToAccountingPlatform($invoiceNumber: Int!) {
+    exportInvoiceToAccountingPlatform(invoiceNumber: $invoiceNumber)
+  }
+`;

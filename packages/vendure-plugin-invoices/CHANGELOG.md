@@ -3,6 +3,7 @@
 - Introduced exporting invoices to external Accounting platforms
 - Added `isCreditInvoice` as column in the DB in an Invoice
 - Created a reference to parent invoice for credit invoices `invoice.isCreditInvoiceFor`. This is only populated for invoices generated with V4.
+- Replaced pdf-creator-node (which uses PhantomJS) with Puppeteer, because PhantomJS is deprecated.
 
 # 3.2.0 (2024-08-01)
 

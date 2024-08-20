@@ -32,6 +32,7 @@ import {
   VendureHubPlugin,
 } from '@vendure-hub/vendure-hub-plugin';
 import { AccountingExportStrategy } from './strategies/accounting/accounting-export-strategy';
+import { AccountingService } from './services/accounting.service';
 
 export interface InvoicePluginConfigInput {
   /**
@@ -78,7 +79,8 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   providers: [
     InvoiceService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => InvoicePlugin.config },
-  ],
+      AccountingService,
+],
   controllers: [InvoiceController],
   adminApiExtensions: {
     schema: adminSchemaExtensions,
