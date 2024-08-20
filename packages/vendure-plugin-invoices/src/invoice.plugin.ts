@@ -137,6 +137,12 @@ export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
             `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin. Viewing invoices is disabled. Invoice generation will continue as usual.`,
             loggerCtx
           );
+          InvoicePlugin.config.hasValidLicense = false;
+          // Make property immutable
+          Object.defineProperty(InvoicePlugin.config, 'hasValidLicense', {
+            writable: false,
+            configurable: false,
+          });
         } else {
           InvoicePlugin.config.hasValidLicense = true;
         }
@@ -147,6 +153,12 @@ export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
           `Error checking license key: ${err?.message}. Viewing invoices is disabled. Invoice generation will continue as usual.`,
           loggerCtx
         );
+        InvoicePlugin.config.hasValidLicense = false;
+        // Make property immutable
+        Object.defineProperty(InvoicePlugin.config, 'hasValidLicense', {
+          writable: false,
+          configurable: false,
+        });
       });
   }
 
