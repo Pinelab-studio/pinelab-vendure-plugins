@@ -47,7 +47,7 @@ import gql from 'graphql-tag';
  * 3000ms should be enough in most cases
  */
 async function wait() {
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 4000));
 }
 
 let server: TestServer;
