@@ -1,3 +1,7 @@
+# 1.2.3 (2024-08-20)
+
+- Log warning when failed to cancel a shipment in Shipmate
+
 # 1.2.2 (2024-08-04)
 
 - Update compatibility range (#480)
