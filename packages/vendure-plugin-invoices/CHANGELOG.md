@@ -1,4 +1,4 @@
-# 4.0.0 (2024-08-16)
+# 4.0.0 (2024-08-20)
 
 - Introduced exporting invoices to external Accounting platforms
 - Added `isCreditInvoice` as column in the DB in an Invoice
