@@ -28,8 +28,7 @@
   "dependencies": {
     "@vendure-hub/vendure-hub-plugin": "^0.0.2",
     "adm-zip": "0.5.9",
-    "catch-unknown": "^2.0.0",
-    "puppeteer": "^23.1.0",
+    "puppeteer": "23.1.0",
     "tmp": "0.2.1"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",

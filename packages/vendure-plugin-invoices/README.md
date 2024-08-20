@@ -15,6 +15,7 @@ In v4 the field `invoice.isCreditInvoice` was changed from a getter to a physica
 1. Back up your database!
 2. Install the invoices plugin v4.x and generate + run a database migration. This introduced the new database field `isCreditInvoice` where all values are 'false'.
 3. Run the query `UPDATE invoice SET isCreditInvoice = 1 WHERE orderTotals LIKE '%total":-%';` to set the value to 'true' for invoices that have a negative total.
+4. :warning: The plugin now uses Puppeteer, so your Docker image might need additional dependencies installed. See Getting Started below!
 
 ## Getting started
 
@@ -49,6 +50,38 @@ plugins: [
 6. Unfold the `Settings` accordion.
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
+
+### Docker
+
+To make Puppeteer work on Docker, you need some additional steps in your Dockerfile. This is the Dockerfile we use ourselves:
+
+```Dockerfile
+FROM node:18
+
+# Set Puppeteer home dir
+ENV PUPPETEER_CACHE_DIR=/usr/src/app/
+# Install puppeteer dependencies as defined in https://github.com/puppeteer/puppeteer/blob/main/docker/Dockerfile
+RUN apt-get update \
+    && apt-get install -y wget gnupg \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] https://dl-ssl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
+      --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r pptruser && useradd -rm -g pptruser -G audio,video pptruser
+
+# Create app directory
+WORKDIR /usr/src/app
+
+COPY . .
+RUN npm install
+RUN npm run build
+
+
+# Run the web service on container startup.
+CMD [ "npm", "run", "start" ]
+```
 
 ## Adding invoices to your order-confirmation email
 
