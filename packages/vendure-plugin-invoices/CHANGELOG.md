@@ -1,3 +1,7 @@
+# 4.0.1 (2024-08-22)
+
+- Return error to Admin when Accounting Export job couldn't be created
+
 # 4.0.0 (2024-08-20)
 
 - Introduced exporting invoices to external Accounting platforms

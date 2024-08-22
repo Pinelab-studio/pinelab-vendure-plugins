@@ -148,34 +148,24 @@ export class AccountingService implements OnModuleInit {
     invoiceNumber: number,
     orderCode: string
   ): Promise<void> {
-    try {
-      if (!this.findAccountingExportStrategyForChannel(ctx)) {
-        Logger.debug(`No accounting export strategies configured`, loggerCtx);
-        return;
-      }
-      await this.accountingExportQueue.add(
-        {
-          ctx: ctx.serialize(),
-          invoiceNumber,
-          orderCode,
-        },
-        {
-          retries: 10,
-        }
-      );
-      Logger.info(
-        `Added accounting export job for invoice '${invoiceNumber}' for order '${orderCode}'`,
-        loggerCtx
-      );
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      Logger.error(
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        `Failed to create accounting export job: ${error?.message}`,
-        loggerCtx,
-        util.inspect(error, false, 5)
-      );
+    if (!this.findAccountingExportStrategyForChannel(ctx)) {
+      Logger.debug(`No accounting export strategies configured`, loggerCtx);
+      return;
     }
+    await this.accountingExportQueue.add(
+      {
+        ctx: ctx.serialize(),
+        invoiceNumber,
+        orderCode,
+      },
+      {
+        retries: 10,
+      }
+    );
+    Logger.info(
+      `Added accounting export job for invoice '${invoiceNumber}' for order '${orderCode}'`,
+      loggerCtx
+    );
   }
 
   private async getInvoiceByNumber(

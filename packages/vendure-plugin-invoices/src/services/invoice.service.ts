@@ -65,6 +65,7 @@ import { In } from 'typeorm';
 
 import { parseFilterParams } from '@vendure/core/dist/service/helpers/list-query-builder/parse-filter-params';
 import { AccountingService } from './accounting.service';
+import util from 'util';
 
 interface DownloadInput {
   customerEmail: string;
@@ -373,7 +374,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
             previousInvoice: previousInvoiceForOrder,
           })
         );
-        await this.accountingService.createAccountingExportJob(
+        await this.createAccountingExportJob(
           ctx,
           creditInvoice.invoiceNumber,
           orderCode
@@ -398,18 +399,38 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     );
     if (creditInvoice) {
       // Create a job to export the credit invoice to the accounting system first
-      await this.accountingService.createAccountingExportJob(
+      await this.createAccountingExportJob(
         ctx,
         creditInvoice.invoiceNumber,
         orderCode
       );
     }
-    await this.accountingService.createAccountingExportJob(
+    await this.createAccountingExportJob(
       ctx,
       newInvoice.invoiceNumber,
       orderCode
     );
     return newInvoice;
+  }
+
+  /**
+   * Create accounting export jobs without throwing, to prevent retries of the JobQueue
+   */
+  private async createAccountingExportJob(
+    ctx: RequestContext,
+    invoiceNumber: number,
+    orderCode: string
+  ) {
+    await this.accountingService
+      .createAccountingExportJob(ctx, invoiceNumber, orderCode)
+      .catch((e) => {
+        Logger.error(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          `Failed to create accounting export job: ${e?.message}`,
+          loggerCtx,
+          util.inspect(e, false, 5)
+        );
+      });
   }
 
   /**
