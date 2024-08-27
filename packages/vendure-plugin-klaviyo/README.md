@@ -15,11 +15,9 @@ The default setup will only send placed orders to Klaviyo
 import { KlaviyoPlugin } from '@pinelab/vendure-plugin-klaviyo';
 
 plugins: [
-        plugins: [
-            KlaviyoPlugin.init({
-                apiKey: 'some_private_api_key'
-            })
-        ],
+  KlaviyoPlugin.init({
+    apiKey: 'some_private_api_key',
+  }),
 ];
 ```
 
