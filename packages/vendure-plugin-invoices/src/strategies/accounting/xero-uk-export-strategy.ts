@@ -194,7 +194,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     );
     return {
       reference: createdInvoice?.invoiceID,
-      link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${invoiceId}`,
+      link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${createdInvoice?.invoiceID}`,
     };
   }
 
