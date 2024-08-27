@@ -1,3 +1,7 @@
+# 4.0.2 (2024-08-27)
+
+- Log created credit note and invoice totals when creation succeeded
+
 # 4.0.1 (2024-08-22)
 
 - Return error to Admin when Accounting Export job couldn't be created

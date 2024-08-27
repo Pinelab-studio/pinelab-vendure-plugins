@@ -187,13 +187,13 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       undefined,
       idempotencyKey
     );
-    const invoiceId = response.body.invoices?.[0].invoiceID;
+    const createdInvoice = response.body.invoices?.[0];
     Logger.info(
-      `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID (${invoiceId})`,
+      `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${createdInvoice?.invoiceID}' with a total Incl. Tax of ${createdInvoice?.total}`,
       loggerCtx
     );
     return {
-      reference: invoiceId!,
+      reference: createdInvoice?.invoiceID,
       link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${invoiceId}`,
     };
   }
@@ -233,14 +233,14 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       undefined,
       idempotencyKey
     );
-    const creditNoteID = response.body.creditNotes?.[0].creditNoteID;
+    const creditNoteResponse = response.body.creditNotes?.[0];
     Logger.info(
-      `Created credit note '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID (${creditNoteID})`,
+      `Created credit note '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${creditNoteResponse?.creditNoteID}' with a total Incl. Tax of ${creditNoteResponse?.total}`,
       loggerCtx
     );
     return {
-      reference: creditNoteID!,
-      link: `https://go.xero.com/AccountsReceivable/EditCreditNote.aspx?creditNoteID=${creditNoteID}`,
+      reference: creditNoteResponse?.creditNoteID,
+      link: `https://go.xero.com/AccountsReceivable/EditCreditNote.aspx?creditNoteID=${creditNoteResponse?.creditNoteID}`,
     };
   }
 
