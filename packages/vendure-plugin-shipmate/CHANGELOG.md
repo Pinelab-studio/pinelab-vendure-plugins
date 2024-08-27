@@ -1,3 +1,7 @@
+# 1.2.4 (2024-08-27)
+
+- Don't throw erros from `/shipmate` endpoint (#509)
+
 # 1.2.3 (2024-08-20)
 
 - Log warning when failed to cancel a shipment in Shipmate
