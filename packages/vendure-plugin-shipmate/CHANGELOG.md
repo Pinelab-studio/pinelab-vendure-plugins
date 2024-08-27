@@ -1,3 +1,7 @@
+# 1.3.0 (2024-08-27)
+
+- Add `ShipmatePluginConfig.shouldSendOrder` (#498)
+
 # 1.2.3 (2024-08-20)
 
 - Log warning when failed to cancel a shipment in Shipmate
