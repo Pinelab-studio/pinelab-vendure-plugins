@@ -6,6 +6,7 @@ import {
   RequestContext,
   isGraphQlErrorResult,
   Order,
+  DefaultOrderCodeStrategy,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -39,7 +40,7 @@ import {
 } from '@vendure/common/lib/generated-types';
 
 class MockOrderCodeStrategy implements OrderCodeStrategy {
-  generate(ctx: RequestContext): string | Promise<string> {
+  generate(ctx: RequestContext): string {
     // Mock order code as 'FBJYSHC7WTRQEA14', as defined in the mock object
     return mockShipment.shipment_reference;
   }
@@ -62,13 +63,17 @@ describe('Shipmate plugin', async () => {
       plugins: [
         ShipmatePlugin.init({
           apiUrl: nockBaseUrl,
+          //only send order if the total quantity is less than 5
+          shouldSendOrder: function (
+            ctx: RequestContext,
+            order: Order
+          ): Promise<boolean> | boolean {
+            return order.totalQuantity < 5;
+          },
         }),
       ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
-      },
-      orderOptions: {
-        orderCodeStrategy: new MockOrderCodeStrategy(),
       },
     });
 
@@ -104,7 +109,33 @@ describe('Shipmate plugin', async () => {
 
   let order: Order | undefined;
 
+  it('Should not create a Shipment when an Order.totalQuantity is >= 5', async () => {
+    nock(nockBaseUrl)
+      .post('/tokens', (reqBody) => {
+        return true;
+      })
+      .reply(200, {
+        message: 'Login Successful',
+        data: {
+          token: '749a75e3c1048965c498017efae8051f',
+        },
+      })
+      .persist(true);
+    let shipmentRequest: any;
+    await createSettledOrder(shopClient, 'T_1', true, [
+      { id: 'T_1', quantity: 2 },
+      { id: 'T_2', quantity: 3 },
+    ]);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    const orderService = server.app.get(OrderService);
+    order = await orderService.findOne(ctx, 1);
+    expect(shipmentRequest?.shipment_reference).toBeUndefined();
+  });
+
   it('Should create a Shipment when an Order is placed', async () => {
+    vi.spyOn(DefaultOrderCodeStrategy.prototype, 'generate').mockImplementation(
+      () => mockShipment.shipment_reference
+    );
     nock(nockBaseUrl)
       .post('/tokens', (reqBody) => {
         return true;
@@ -123,10 +154,11 @@ describe('Shipmate plugin', async () => {
         return true;
       })
       .reply(200, { data: [mockShipment], message: 'Shipment Created' });
+    await shopClient.asAnonymousUser();
     await createSettledOrder(shopClient, 'T_1');
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
-    order = await orderService.findOne(ctx, 1);
+    order = await orderService.findOne(ctx, 2);
     expect(shipmentRequest?.shipment_reference).toBe(order?.code);
   });
 
@@ -150,7 +182,7 @@ describe('Shipmate plugin', async () => {
     try {
       const modifyOrderInput: ModifyOrderInput = {
         dryRun: true,
-        orderId: 1,
+        orderId: 2,
         addItems: [
           {
             productVariantId: 3,
@@ -160,7 +192,7 @@ describe('Shipmate plugin', async () => {
       };
       const transitionToModifyingResult = await orderService.transitionToState(
         ctx,
-        1,
+        2,
         'Modifying'
       );
       if (isGraphQlErrorResult(transitionToModifyingResult)) {
@@ -173,7 +205,7 @@ describe('Shipmate plugin', async () => {
       const transitionArrangingAdditionalPaymentResult =
         await orderService.transitionToState(
           ctx,
-          1,
+          2,
           'ArrangingAdditionalPayment'
         );
       if (isGraphQlErrorResult(transitionArrangingAdditionalPaymentResult)) {
@@ -196,13 +228,14 @@ describe('Shipmate plugin', async () => {
     >{
       auth_token: authToken,
       event: 'TRACKING_COLLECTED',
+      order_reference: mockShipment.shipment_reference,
       shipment_reference: mockShipment.shipment_reference,
     });
     //shipmate's api expects a status of 201
     expect(result.status).toBe(201);
     // await new Promise((resolve) => setTimeout(resolve, 4000));
     const orderService = server.app.get(OrderService);
-    const detailedOrder = await orderService.findOne(ctx, 1, ['fulfillments']);
+    const detailedOrder = await orderService.findOne(ctx, 2, ['fulfillments']);
     expect(detailedOrder?.state).toBe('Shipped');
     expect(detailedOrder?.fulfillments?.length).toBeGreaterThan(0);
   });
@@ -213,13 +246,14 @@ describe('Shipmate plugin', async () => {
     >{
       auth_token: authToken,
       event: 'TRACKING_DELIVERED',
+      order_reference: mockShipment.shipment_reference,
       shipment_reference: mockShipment.shipment_reference,
     });
     //shipmate's api expects a status of 201
     expect(result.status).toBe(201);
     // await new Promise((resolve) => setTimeout(resolve, 4000));
     const orderService = server.app.get(OrderService);
-    const detailedOrder = await orderService.findOne(ctx, 1, ['fulfillments']);
+    const detailedOrder = await orderService.findOne(ctx, 2, ['fulfillments']);
     expect(detailedOrder?.state).toBe('Delivered');
     expect(detailedOrder?.fulfillments?.length).toBeGreaterThan(0);
   });
