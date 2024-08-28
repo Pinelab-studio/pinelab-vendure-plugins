@@ -59,7 +59,7 @@ export async function createShippingMethod(
         ],
       },
       calculator: {
-        code: 'default-shipping-calculator',
+        code: 'zone-aware-flat-rate-shipping-calculator',
         arguments: [
           {
             name: 'rate',
@@ -70,8 +70,8 @@ export async function createShippingMethod(
             value: 'exclude',
           },
           {
-            name: 'taxRate',
-            value: '0',
+            name: 'taxCategoryId',
+            value: '3',
           },
         ],
       },

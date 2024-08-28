@@ -28,7 +28,6 @@ import {
   GetVariantsQuery,
   GlobalFlag,
 } from '../../test/src/generated/admin-graphql';
-import { AddPaymentToOrderMutation } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -54,7 +53,10 @@ beforeAll(async () => {
         enabled: true,
         vendureHost: 'https://example-vendure.io',
         // Dummy data for testing purposes
-        pushProductVariantFields: (variant) => ({ barcode: variant.sku }),
+        pushProductVariantFields: (variant) => ({
+          barcode: variant.sku,
+          height: (variant.customFields as any).height,
+        }),
         pullPicqerProductFields: (picqerProd) => ({
           outOfStockThreshold: 123,
         }),
@@ -65,6 +67,7 @@ beforeAll(async () => {
             id: '901892834',
           },
         }),
+        shouldSyncOnProductVariantCustomFields: ['height'],
       }),
     ],
     orderOptions: {
@@ -224,8 +227,8 @@ describe('Order placement', function () {
       [{ id: 'T_1', quantity: 3 }],
       {
         input: {
-          fullName: "Martinho's friend",
-          company: 'Pinelab',
+          fullName: 'Martinho Pinelab',
+          company: ' ',
           streetLine1: 'Remote location',
           streetLine2: '123',
           city: 'Faraway',
@@ -247,8 +250,9 @@ describe('Order placement', function () {
     expect(picqerOrderRequest.deliveryzipcode).toBeDefined();
     expect(picqerOrderRequest.deliverycity).toBeDefined();
     expect(picqerOrderRequest.deliverycountry).toBe('NL');
-    expect(picqerOrderRequest.invoicename).toBe('Pinelab');
-    expect(picqerOrderRequest.invoicecontactname).toBe("Martinho's friend");
+    // Fallback to full name if company is empty string
+    expect(picqerOrderRequest.invoicename).toBe('Martinho Pinelab');
+    expect(picqerOrderRequest.invoicecontactname).toBeUndefined();
     expect(picqerOrderRequest.invoicecountry).toBe('NL');
     expect(picqerOrderRequest.invoiceaddress).toBe('Remote location 123');
     expect(picqerOrderRequest.invoicezipcode).toBe('1111AB');
@@ -409,6 +413,31 @@ describe('Product synchronization', function () {
     await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
     expect(variant?.price).toBe(12345);
     expect(updatedProduct!.price).toBe(123.45);
+  });
+
+  it('Should push product to Picqer when custom field updated in Vendure', async () => {
+    let updatedProduct: any;
+    // Mock vatgroups GET
+    nock(nockBaseUrl)
+      .get('/vatgroups')
+      .reply(200, [{ idvatgroup: 12, percentage: 20 }] as VatGroup[]);
+    // Mock products GET multiple times
+    nock(nockBaseUrl)
+      .get(/.products*/)
+      .reply(200, [])
+      .persist();
+    // Mock product POST once
+    nock(nockBaseUrl)
+      .post(/.products*/, (reqBody) => {
+        updatedProduct = reqBody;
+        return true;
+      })
+      .reply(200, { idproduct: 'mockId' });
+    const [variant] = await updateVariants(adminClient, [
+      { id: 'T_1', customFields: { height: 100 } },
+    ]);
+    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    expect(updatedProduct!.height).toBe(100);
   });
 
   it('Should update stock level on incoming "free_stock" webhook', async () => {

@@ -1,3 +1,16 @@
+# 1.5.0 (2024-07-16)
+
+- Allow running the scripts without prompts
+- Made mysql import command verbose
+
+# 1.4.1 (2024-07-16)
+
+- Included dependency 'prompt-confirm'
+
+# 1.4.0 (2024-07-16)
+
+- Added script for copying Production database to a Test database with mysqldump
+
 # 1.3.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6

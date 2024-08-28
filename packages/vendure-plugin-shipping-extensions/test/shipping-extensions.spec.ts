@@ -1,11 +1,14 @@
 import {
   DefaultLogger,
+  DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
   ProductService,
   ProductVariantService,
   RequestContext,
   roundMoney,
+  TaxRateService,
+  ZoneService,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -13,7 +16,6 @@ import {
   SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
-  clearAllTables,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
@@ -53,6 +55,7 @@ beforeAll(async () => {
         orderAddressToGeolocationStrategy:
           new UKPostalCodeToGelocationConversionStrategy(),
       }),
+      DefaultSearchPlugin.init({}),
     ],
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
@@ -75,6 +78,19 @@ beforeAll(async () => {
   });
   serverStarted = true;
   ctx = await getSuperadminContext(server.app);
+  const zoneService = server.app.get(ZoneService);
+  const taxRateService = server.app.get(TaxRateService);
+  const noTaxZone = await zoneService.create(ctx, {
+    name: 'NL No Tax Zone',
+    memberIds: [8], //NL
+  });
+  await taxRateService.create(ctx, {
+    categoryId: 3,
+    enabled: true,
+    name: 'Tax Exempt Country (Export)',
+    value: 0,
+    zoneId: noTaxZone.id,
+  });
 }, 60000);
 
 it('Should start successfully', async () => {
@@ -121,13 +137,15 @@ describe('Shipping by weight and country', function () {
   it('Is eligible for method 1 with country NL and weight 0', async () => {
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
-    expect(order.shippingWithTax).toBe(111);
+    expect(order.shipping).toBe(111);
+    expect(order.shipping).toBe(order.shippingWithTax);
   });
 
   it('Is eligible for method 3 with country NL and weight 200', async () => {
     const order = await createSettledOrder(shopClient, 3);
     expect(order.state).toBe('PaymentSettled');
-    expect(order.shippingWithTax).toBe(333);
+    expect(order.shipping).toBe(333);
+    expect(order.shipping).toBe(order.shippingWithTax);
   });
 
   it('Is eligible for method 1 with country NL and product weight 100', async () => {
@@ -138,7 +156,8 @@ describe('Shipping by weight and country', function () {
 
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
-    expect(order.shippingWithTax).toBe(111);
+    expect(order.shipping).toBe(111);
+    expect(order.shipping).toBe(order.shippingWithTax);
   });
 
   it('Is eligible for method 1 with country NL and product weight 25 variant weight 50', async () => {
@@ -155,7 +174,8 @@ describe('Shipping by weight and country', function () {
 
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
-    expect(order.shippingWithTax).toBe(111);
+    expect(order.shipping).toBe(111);
+    expect(order.shipping).toBe(order.shippingWithTax);
   });
 
   it('Is eligible for method 1 with country NL and product weight 50 variant weight 0', async () => {
@@ -171,7 +191,8 @@ describe('Shipping by weight and country', function () {
     expect((productVariants[0].customFields as any).weight).toBe(0);
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
-    expect(order.shippingWithTax).toBe(111);
+    expect(order.shipping).toBe(111);
+    expect(order.shipping).toBe(order.shippingWithTax);
   });
 
   it('Is NOT eligible for method 2 with country NL', async () => {

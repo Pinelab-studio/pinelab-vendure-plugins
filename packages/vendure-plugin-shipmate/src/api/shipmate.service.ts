@@ -147,14 +147,12 @@ export class ShipmateService implements OnApplicationBootstrap {
         );
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (err: any) {
-        // Log error as history entry for admins
-        await this.logErrorAndAddNote(
-          ctx,
-          order.id,
+        Logger.warn(
           // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           `Failed to cancel Shipment for order '${order.code}' on Shipmate: ${err?.message}`,
-          err
+          loggerCtx
         );
+        throw err;
       }
     }
     try {
@@ -176,6 +174,7 @@ export class ShipmateService implements OnApplicationBootstrap {
         `Failed to send order '${order.code}' to Shipmate: ${err?.message}`,
         err
       );
+      throw err;
     }
   }
 

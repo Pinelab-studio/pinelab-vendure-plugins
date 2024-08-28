@@ -14,6 +14,7 @@ import {
 import { PopularityScoresPlugin } from '../src';
 import { initialTestData } from './initial-test-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 require('dotenv').config();
 
@@ -24,6 +25,8 @@ require('dotenv').config();
     plugins: [
       PopularityScoresPlugin.init({
         endpointSecret: 'test',
+        productFieldUiTab: 'Scores',
+        collectionFieldUiTab: 'Scores',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -53,4 +56,9 @@ require('dotenv').config();
 
     productsCsvPath: './test/products.csv',
   });
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
 })();

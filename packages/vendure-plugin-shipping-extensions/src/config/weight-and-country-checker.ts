@@ -11,8 +11,11 @@ import { ShippingExtensionsPlugin } from '../shipping-extensions.plugin';
 
 export function calculateOrderWeight(order: Order): number {
   return order.lines.reduce((acc, line) => {
+    //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const weight =
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       (line.productVariant.customFields as any).weight ??
+      //eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
       (line.productVariant.product?.customFields as any).weight ??
       0;
     const lineWeight = weight * line.quantity;
@@ -113,9 +116,8 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
       return false;
     }
     // Shipping country is allowed, continue checking order weight
-    const productIds = order.lines.map((line) => line.productVariant.productId);
     await entityHydrator.hydrate(ctx, order, { relations: ['lines'] });
-    for (let line of order.lines) {
+    for (const line of order.lines) {
       await entityHydrator.hydrate(ctx, line, {
         relations: ['productVariant', 'productVariant.product'],
       });

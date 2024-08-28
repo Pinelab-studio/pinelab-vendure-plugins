@@ -11,7 +11,7 @@ type OrderWithInvoice = Order & { invoice: InvoiceEntity };
 export async function migrateInvoices(queryRunner: QueryRunner): Promise<void> {
   const orderRepo = queryRunner.manager.getRepository(Order);
   const invoiceRepo = queryRunner.manager.getRepository(InvoiceEntity);
-  let take = 100;
+  const take = 100;
   let hasMore = true;
   let migratedInvoices = 0;
   let total: number | undefined = undefined;
@@ -28,6 +28,7 @@ export async function migrateInvoices(queryRunner: QueryRunner): Promise<void> {
       .where('invoice.orderTotals IS NULL')
       .take(take)
       .getManyAndCount();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
     const orders: OrderWithInvoice[] = items as any;
     if (!total) {
       // Set initial total invoices
@@ -39,7 +40,14 @@ export async function migrateInvoices(queryRunner: QueryRunner): Promise<void> {
     }
     const invoicesWithTotals = orders.map((order) => {
       order.invoice.orderTotals = {
-        taxSummaries: order.taxSummary,
+        taxSummaries: order.taxSummary.map((t) => {
+          return {
+            description: t.description,
+            taxRate: t.taxRate,
+            taxBase: t.taxBase,
+            taxTotal: t.taxTotal,
+          };
+        }),
         total: order.total,
         totalWithTax: order.totalWithTax,
       };

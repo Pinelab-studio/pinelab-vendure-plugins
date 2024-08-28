@@ -1,3 +1,15 @@
+# 2.7.2 (2024-08-12)
+
+- Resolve to channels default tax zone if no tax rate found
+
+# 2.7.1 (2024-08-04)
+
+- Update compatibility range (#480)
+
+# 2.7.0 (2024-06-21)
+
+- Added zone aware shipping calculator and tax category form input component
+
 # 2.6.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6

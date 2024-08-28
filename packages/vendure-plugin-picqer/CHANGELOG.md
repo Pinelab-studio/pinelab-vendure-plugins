@@ -1,3 +1,15 @@
+# 3.2.1 (2024-08-14)
+
+- Check for empty strings when sending `invoicename` to Picqer. Fallback to customer email address to make sure orders are sent to Picqer.
+
+# 3.2.0 (2024-08-04)
+
+- Allow configuration to trigger sync on custom field updates (#484)
+
+# 3.1.2 (2024-08-02)
+
+- Update compatibility range (#480)
+
 # 3.1.1 (2024-06-26)
 
 - Get the correct variant translation based on the channel's default language

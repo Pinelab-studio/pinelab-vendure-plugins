@@ -19,5 +19,6 @@ import { isCustomerInGroupPaymentChecker } from './is-customer-In-group-payment-
     }
     return config;
   },
+  compatibility: '>=2.2.0',
 })
 export class PaymentExtensionsPlugin {}

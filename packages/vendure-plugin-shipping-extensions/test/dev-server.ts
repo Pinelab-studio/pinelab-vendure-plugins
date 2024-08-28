@@ -4,6 +4,7 @@ import {
   SqljsInitializer,
 } from '@vendure/testing';
 import {
+  AutoIncrementIdStrategy,
   DefaultLogger,
   DefaultSearchPlugin,
   LanguageCode,
@@ -14,6 +15,8 @@ import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { ShippingExtensionsPlugin } from '../src/shipping-extensions.plugin';
 import { UKPostalCodeToGelocationConversionStrategy } from '../src/strategies/uk-postalcode-to-geolocation-strategy';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 (async () => {
   require('dotenv').config();
@@ -27,6 +30,9 @@ import { UKPostalCodeToGelocationConversionStrategy } from '../src/strategies/uk
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
+    },
+    entityOptions: {
+      entityIdStrategy: new AutoIncrementIdStrategy(),
     },
     customFields: {
       Product: [
@@ -49,6 +55,11 @@ import { UKPostalCodeToGelocationConversionStrategy } from '../src/strategies/uk
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [ShippingExtensionsPlugin.ui],
+          devMode: true,
+        }),
       }),
       ShippingExtensionsPlugin.init({
         weightUnit: 'kg',

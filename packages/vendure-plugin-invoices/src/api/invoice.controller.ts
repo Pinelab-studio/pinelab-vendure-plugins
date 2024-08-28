@@ -21,7 +21,6 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
-import { ReadStream } from 'fs';
 import { invoicePermission } from './invoice-common.resolver';
 
 @Controller('invoices')
@@ -48,6 +47,7 @@ export class InvoiceController {
       numbers.split(','),
       res
     );
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     Logger.info(`Invoices ${numbers} downloaded from ${ip}`, loggerCtx);
     stream.pipe(res);
   }
@@ -86,12 +86,12 @@ export class InvoiceController {
     @Param('invoiceNumber') invoiceNumber: string | number | undefined,
     @Query('email') encodedCustomerEmail: string,
     @Req() req: Request,
-    @Res() res: Response,
-    @Ctx() _ctx: RequestContext
+    @Res() res: Response
   ) {
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     if (!channelToken || !orderCode || !encodedCustomerEmail) {
       Logger.warn(
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         `Invalid invoice download attempt from ${ip} for ${req.path}`,
         loggerCtx
       );
@@ -119,18 +119,26 @@ export class InvoiceController {
         invoiceNumber,
         res,
       });
-      Logger.info(`Invoice downloaded from ${ip} for ${req.path}`, loggerCtx);
+      Logger.info(
+        `Invoice downloaded from ${JSON.stringify(ip)} for ${req.path}`,
+        loggerCtx
+      );
       if (
         typeof streamOrRedirect === 'string' ||
         streamOrRedirect instanceof String
       ) {
         return res.redirect(302, streamOrRedirect as string);
       } else {
-        return (streamOrRedirect as ReadStream).pipe(res);
+        return streamOrRedirect.pipe(res);
       }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       Logger.warn(
-        `Failed invoice download attempt from ${ip} for ${req.path}: ${error.message}`,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        `Failed invoice download attempt from ${JSON.stringify(ip)} for ${
+          req.path
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        }: ${error.message}`,
         loggerCtx
       );
       throw new ForbiddenException(

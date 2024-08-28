@@ -15,7 +15,7 @@ export default tseslint.config(
       'node_modules',
       '**/*/dev-server.ts',
       '**/test/**',
-      '**/*/graphql.ts',
+      '**/generated/graphql.ts',
     ],
   }
 );

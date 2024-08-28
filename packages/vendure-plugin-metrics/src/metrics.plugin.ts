@@ -23,7 +23,7 @@ export interface MetricsPluginOptions {
     MetricsService,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => MetricsPlugin.options },
   ],
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class MetricsPlugin {
   static options: MetricsPluginOptions = {

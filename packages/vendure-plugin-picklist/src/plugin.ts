@@ -37,6 +37,7 @@ export interface PicklistPluginConfig {
     config.authOptions.customPermissions.push(picklistPermission);
     return config;
   },
+  compatibility: '>=2.2.0',
 })
 export class PicklistPlugin {
   static config: PicklistPluginConfig;

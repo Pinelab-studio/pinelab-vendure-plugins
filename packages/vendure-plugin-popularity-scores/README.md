@@ -15,6 +15,8 @@ import { PopularityScoresPlugin } from '@pinelab/vendure-plugin-popularity-score
 plugins: [
    PopularityScoresPlugin.init({
      endpointSecret: 'test',
+      productFieldUiTab: 'Scores',
+      collectionFieldUiTab: 'Scores'
    }),
    ...
 ];

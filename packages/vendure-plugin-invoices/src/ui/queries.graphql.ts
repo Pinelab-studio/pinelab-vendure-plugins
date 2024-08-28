@@ -29,6 +29,11 @@ export const invoiceFragment = gql`
     invoiceNumber
     isCreditInvoice
     downloadUrl
+    accountingReference {
+      reference
+      link
+      errorMessage
+    }
   }
 `;
 
@@ -38,5 +43,11 @@ export const createInvoice = gql`
     createInvoice(orderId: $orderId) {
       ...invoiceFields
     }
+  }
+`;
+
+export const exportToAccounting = gql`
+  mutation exportInvoiceToAccountingPlatform($invoiceNumber: Int!) {
+    exportInvoiceToAccountingPlatform(invoiceNumber: $invoiceNumber)
   }
 `;

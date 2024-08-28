@@ -1,3 +1,15 @@
+# 1.2.3 (2024-08-20)
+
+- Log warning when failed to cancel a shipment in Shipmate
+
+# 1.2.2 (2024-08-04)
+
+- Update compatibility range (#480)
+
+# 1.2.1 (2024-07-03)
+
+- Slice all string fields in Shipmate payload to 40 characters
+
 # 1.2.0 (2024-07-03)
 
 - Cancel and Recreate Shipment when Order is modified

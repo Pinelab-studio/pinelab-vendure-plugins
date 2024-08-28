@@ -1,5 +1,4 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   DefaultLogger,
   DefaultSearchPlugin,
@@ -11,12 +10,11 @@ import {
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import path from 'path';
-import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { KlaviyoPlugin } from '../src';
+import { KlaviyoPlugin, defaultOrderPlacedEventHandler } from '../src';
+import { mockCustomEventHandler } from './mock-custom-event-handler';
 
 (async () => {
   require('dotenv').config();
@@ -34,10 +32,7 @@ import { KlaviyoPlugin } from '../src';
     plugins: [
       KlaviyoPlugin.init({
         apiKey: process.env.KLAVIYO_PRIVATE_API_KEY!,
-      }),
-      AssetServerPlugin.init({
-        assetUploadDir: path.join(__dirname, '../__data__/assets'),
-        route: 'assets',
+        eventHandlers: [defaultOrderPlacedEventHandler, mockCustomEventHandler],
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

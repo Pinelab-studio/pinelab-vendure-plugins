@@ -1,5 +1,4 @@
 import {
-  configureDefaultOrderProcess,
   Order,
   PluginCommonModule,
   ProductVariant,
@@ -52,7 +51,9 @@ export interface PicqerOptions {
    * @example
    * pushPicqerOrderFields: (order) => {customer_remarks: 'Please don't package my order in plastic'})
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pushPicqerOrderFields?: (order: Order) => any;
+  shouldSyncOnProductVariantCustomFields?: string[];
 }
 
 @VendurePlugin({
@@ -80,7 +81,7 @@ export interface PicqerOptions {
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class PicqerPlugin {
   static options: PicqerOptions;

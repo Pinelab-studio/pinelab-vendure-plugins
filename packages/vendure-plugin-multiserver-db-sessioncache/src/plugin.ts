@@ -9,6 +9,6 @@ import { MultiServerDbSessionCacheStrategy } from './session-cache.strategy';
       new MultiServerDbSessionCacheStrategy();
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class MultiServerDbSessionCachePlugin {}

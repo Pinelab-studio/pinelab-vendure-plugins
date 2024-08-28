@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-order-export",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Vendure plugin for exporting orders to a file",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

@@ -61,7 +61,7 @@ import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
     config.authOptions.customPermissions.push(sendcloudPermission);
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
 })
 export class SendcloudPlugin {
   private static options: SendcloudPluginOptions;

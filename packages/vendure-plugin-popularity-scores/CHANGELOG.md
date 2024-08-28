@@ -1,3 +1,15 @@
+# 1.7.3 (2024-08-04)
+
+- Update compatibility range (#480)
+
+# 1.7.2 (2024-07-25)
+
+- Allow specifying a UI tab for the `popularityScore` custom field
+
+# 1.7.1 (2024-07-22)
+
+- Fixed issue where in some projects a collection's parentId was set to null. See #478
+
 # 1.7.0 (2024-06-21)
 
 - Updated Vendure to 2.2.6

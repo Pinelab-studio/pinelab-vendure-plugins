@@ -1,3 +1,26 @@
+# 4.0.2 (2024-08-27)
+
+- Log created credit note and invoice totals when creation succeeded
+
+# 4.0.1 (2024-08-22)
+
+- Return error to Admin when Accounting Export job couldn't be created
+
+# 4.0.0 (2024-08-20)
+
+- Introduced exporting invoices to external Accounting platforms
+- Added `isCreditInvoice` as column in the DB in an Invoice
+- Created a reference to parent invoice for credit invoices `invoice.isCreditInvoiceFor`. This is only populated for invoices generated with V4.
+- Replaced pdf-creator-node (which uses PhantomJS) with Puppeteer, because PhantomJS is deprecated.
+
+# 3.2.0 (2024-08-01)
+
+- Show `Regenerate invoice` as warning button when order total differs from the latest invoice total ( see #485)
+
+# 3.1.3 (2024-08-04)
+
+- Update compatibility range (#480)
+
 # 3.1.2 (2024-07-09)
 
 - Fetch customer relation for orders by default

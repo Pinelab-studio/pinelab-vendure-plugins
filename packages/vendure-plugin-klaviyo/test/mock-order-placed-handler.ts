@@ -1,5 +1,10 @@
 import { EntityHydrator, OrderPlacedEvent, translateDeep } from '@vendure/core';
-import { KlaviyoEventHandler, KlaviyoOrderItem, toKlaviyoMoney } from '../src';
+import {
+  KlaviyoEventHandler,
+  KlaviyoOrderItem,
+  KlaviyoOrderPlacedEvent,
+  toKlaviyoMoney,
+} from '../src';
 
 /**
  * Mock custom Klaviyo handler to test custom and additional properties
@@ -27,8 +32,8 @@ export const mockOrderPlacedHandler: KlaviyoEventHandler<OrderPlacedEvent> = {
     if (!order.customer) {
       return false;
     }
-    return {
-      eventName: 'Custom Order Placed',
+    return <KlaviyoOrderPlacedEvent>{
+      eventName: 'Order Placed',
       uniqueId: order.code,
       orderId: order.code,
       orderPlacedAt: order.orderPlacedAt ?? order.updatedAt,
@@ -41,7 +46,7 @@ export const mockOrderPlacedHandler: KlaviyoEventHandler<OrderPlacedEvent> = {
         phoneNumber: order.customer.phoneNumber,
         address: {},
       },
-      orderItems: <KlaviyoOrderItem[]>order.lines.map((line) => ({
+      orderItems: <KlaviyoOrderItem[]>order.lines.map((line, index) => ({
         Brand: 'Test Brand',
         ProductURL: 'https://pinelab.studio/product/some-product',
         Categories: ['Some mock category'],
@@ -55,6 +60,7 @@ export const mockOrderPlacedHandler: KlaviyoEventHandler<OrderPlacedEvent> = {
         ItemPrice: toKlaviyoMoney(line.proratedUnitPriceWithTax),
         RowTotal: toKlaviyoMoney(line.proratedLinePriceWithTax),
         ImageURL: 'custom-image-url.png',
+        excludeFromOrderedProductEvent: true,
       })),
       customProperties: {
         customOrderProp: 'my custom order value',

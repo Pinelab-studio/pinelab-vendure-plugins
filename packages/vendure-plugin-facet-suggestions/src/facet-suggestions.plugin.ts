@@ -64,6 +64,7 @@ import { AdminResolver } from './api/admin.resolver';
     schema: adminApiExtensions,
     resolvers: [AdminResolver],
   },
+  compatibility: '>=2.2.0',
 })
 export class FacetSuggestionsPlugin {
   static ui: AdminUiExtension = {

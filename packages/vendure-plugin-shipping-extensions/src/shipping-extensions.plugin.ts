@@ -11,6 +11,10 @@ import { OrderAddressToGeolocationConversionStrategy } from './strategies/order-
 import { PLUGIN_OPTIONS } from './constants';
 import { distanceBasedShippingCalculator } from './config/distance-based-shipping-calculator';
 import { orderInCountryPromotionCondition } from './config/order-in-country-promotion-condition';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
+import { zoneAwareFlatRateShippingCalculator } from './config/zone-aware-flat-rate-shipping-calculator';
+import { ZoneAwareShippingTaxCalculationService } from './services/zone-aware-shipping-tax-calculation.service';
 
 export interface ShippingExtensionsOptions {
   /**
@@ -50,6 +54,7 @@ export interface ShippingExtensionsOptions {
       provide: PLUGIN_OPTIONS,
       useFactory: () => ShippingExtensionsPlugin.options,
     },
+    ZoneAwareShippingTaxCalculationService,
   ],
   configuration: (config) => {
     config.shippingOptions.shippingEligibilityCheckers.push(
@@ -93,11 +98,13 @@ export interface ShippingExtensionsOptions {
       type: 'int',
     });
     config.shippingOptions.shippingCalculators.push(
-      distanceBasedShippingCalculator
+      distanceBasedShippingCalculator,
+      zoneAwareFlatRateShippingCalculator
     );
     return config;
   },
-  compatibility: '^2.0.0',
+  compatibility: '>=2.2.0',
+  exports: [ZoneAwareShippingTaxCalculationService],
 })
 export class ShippingExtensionsPlugin {
   static options: ShippingExtensionsOptions;
@@ -111,4 +118,9 @@ export class ShippingExtensionsPlugin {
     this.options = options;
     return ShippingExtensionsPlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    providers: ['providers.ts'],
+  };
 }

@@ -1,5 +1,6 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
+  AutoIncrementIdStrategy,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -38,6 +39,9 @@ require('dotenv').config();
     apiOptions: {
       shopApiPlayground: true,
       adminApiPlayground: true,
+    },
+    entityOptions: {
+      entityIdStrategy: new AutoIncrementIdStrategy(),
     },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);

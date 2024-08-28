@@ -2,19 +2,50 @@ import { Component, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { FormControl } from '@angular/forms';
 import { OnInit } from '@angular/core';
 import {
-  IntCustomFieldConfig,
+  StringCustomFieldConfig,
   FormInputComponent,
-  CollectionFragment,
-  COLLECTION_FRAGMENT,
+  Collection,
+  Product,
+  Channel,
 } from '@vendure/admin-ui/core';
 import { DataService } from '@vendure/admin-ui/core';
-import { gql } from 'graphql-tag';
 import { ActivatedRoute } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { Subscription, combineLatest, Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
+import { ID } from '@vendure/common/lib/shared-types';
+import { GET_PRODUCT_DETAIL } from './select-primary-collection.graphql';
+
+export type ProductPrimaryCollection = {
+  channelId: ID;
+  collectionId: ID;
+};
+
+type CollectionWithChannel = Collection & {
+  channels: Channel[];
+};
+
+type ProductWithPrimaryCollection = Omit<Product, 'collections'> & {
+  primaryCollection: CollectionWithChannel;
+  collections: CollectionWithChannel[];
+};
+
+type CollectionFragment = Partial<Collection> & {
+  id: ID;
+  name: string;
+};
+
+function idsAreEqual(id1?: ID, id2?: ID): boolean {
+  if (id1 === undefined || id2 === undefined) {
+    return false;
+  }
+  return id1.toString() === id2.toString();
+}
+
 @Component({
   template: `
     <select
-      [formControl]="formControl"
+      *ngIf="!productsCollectionsAreLoading"
+      [formControl]="primaryCollectionFormControl"
       [vdrDisabled]="readonly"
       [compareWith]="compareFn"
     >
@@ -25,14 +56,16 @@ import { Subscription } from 'rxjs';
   `,
 })
 export class SelectPrimaryCollectionComponent
-  implements FormInputComponent<IntCustomFieldConfig>, OnInit, OnDestroy
+  implements FormInputComponent<StringCustomFieldConfig>, OnInit, OnDestroy
 {
   readonly!: boolean;
-  config!: IntCustomFieldConfig;
-  formControl!: FormControl;
-  productsCollections!: CollectionFragment[];
+  config!: StringCustomFieldConfig;
+  formControl!: FormControl<string>;
+  primaryCollectionFormControl: FormControl;
+  productsCollections!: Collection[];
   productsCollectionsAreLoading = true;
   productCollectionSubscription: Subscription;
+  productDetailInActiveChannel$: Observable<void>;
   id!: string | null;
   constructor(
     private dataService: DataService,
@@ -44,9 +77,8 @@ export class SelectPrimaryCollectionComponent
       this.productCollectionSubscription.unsubscribe();
     }
   }
-  isListInput?: boolean | undefined;
   ngOnInit(): void {
-    this.formControl.parent?.parent?.statusChanges.subscribe((s) => {
+    this.formControl.parent?.parent?.statusChanges.subscribe(() => {
       if (
         this.formControl.pristine &&
         !this.formControl.value &&
@@ -59,31 +91,88 @@ export class SelectPrimaryCollectionComponent
     });
     this.id = this.activatedRoute.snapshot.paramMap.get('id');
     if (this.id && this.id !== 'create') {
-      this.productCollectionSubscription = this.dataService
-        .query(
-          gql`
-            query ProductsCollection($id: ID) {
-              product(id: $id) {
-                collections {
-                  ...Collection
-                }
-              }
-            }
-            ${COLLECTION_FRAGMENT}
-          `,
+      const activeChannel$ = this.dataService.settings
+        .getActiveChannel()
+        .refetchOnChannelChange()
+        .mapStream((data) => data.activeChannel);
+      const productDetail$ = this.dataService
+        .query<{ product: ProductWithPrimaryCollection }, { id: string }>(
+          GET_PRODUCT_DETAIL,
           { id: this.id }
         )
-        .single$.subscribe((d: any) => {
-          this.productsCollections = d?.product?.collections.filter(
-            (c) => !c.isPrivate
+        .refetchOnChannelChange()
+        .mapSingle(
+          (data: { product: ProductWithPrimaryCollection }) => data.product
+        );
+      this.productDetailInActiveChannel$ = combineLatest(
+        activeChannel$,
+        productDetail$
+      ).pipe(
+        map(([activeChannel, product]) => {
+          //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          this.productsCollections = this.getEligiblePrimaryCollections(
+            product,
+            //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            activeChannel.id
           );
           this.productsCollectionsAreLoading = false;
+          this.primaryCollectionFormControl =
+            new FormControl<CollectionFragment>(product?.primaryCollection);
+          this.primaryCollectionFormControl.valueChanges.subscribe(
+            (selectedPrimaryCollection: CollectionFragment) => {
+              this.updateComponentFormControl(
+                activeChannel.id,
+                selectedPrimaryCollection.id
+              );
+            }
+          );
           this.cdr.markForCheck();
-        });
+        })
+      );
+      this.productCollectionSubscription =
+        this.productDetailInActiveChannel$.subscribe();
     }
   }
 
-  compareFn(a: any, b: any) {
+  compareFn(a: Partial<Collection>, b: Partial<Collection>): boolean {
     return a?.id === b?.id;
+  }
+
+  updateComponentFormControl = (
+    activeChannelId: ID,
+    selectedPrimaryCollectionId: ID
+  ): void => {
+    const allPrimaryCollectionsList = JSON.parse(
+      this.formControl.value ?? '[]'
+    ) as ProductPrimaryCollection[];
+    let valueUpdated = false;
+    for (const primaryCollectionDetail of allPrimaryCollectionsList) {
+      if (idsAreEqual(primaryCollectionDetail.channelId, activeChannelId)) {
+        primaryCollectionDetail.collectionId = selectedPrimaryCollectionId;
+        valueUpdated = true;
+      }
+    }
+    if (!valueUpdated) {
+      allPrimaryCollectionsList.push({
+        channelId: activeChannelId,
+        collectionId: selectedPrimaryCollectionId,
+      });
+    }
+    this.formControl.setValue(JSON.stringify(allPrimaryCollectionsList));
+    this.formControl.markAsDirty();
+  };
+
+  getEligiblePrimaryCollections(
+    product: ProductWithPrimaryCollection,
+    activeChannelId: ID
+  ): Collection[] {
+    return product?.collections.filter((collection) => {
+      return (
+        !collection.isPrivate &&
+        !!collection.channels.find((collectionChannel) =>
+          idsAreEqual(collectionChannel.id, activeChannelId)
+        )
+      );
+    });
   }
 }

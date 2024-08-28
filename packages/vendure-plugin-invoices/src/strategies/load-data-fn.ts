@@ -5,9 +5,11 @@ import {
   translateEntity,
 } from '@vendure/core';
 import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoiceOrderTotals } from '../ui/generated/graphql';
 
 export interface InvoiceData {
   invoiceNumber: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [key: string]: any;
 }
 
@@ -17,7 +19,7 @@ export interface CreditInvoiceInput {
    * @description
    * The reversed (i.e. negative) order totals of the previous invoice
    */
-  reversedOrderTotals: InvoiceEntity['orderTotals'];
+  reversedOrderTotals: InvoiceOrderTotals;
 }
 
 export type LoadDataFn = (
@@ -31,7 +33,7 @@ export type LoadDataFn = (
    * needs to be a credit invoice for the given previous invoice
    */
   shouldGenerateCreditInvoice?: CreditInvoiceInput
-) => Promise<InvoiceData>;
+) => Promise<InvoiceData> | InvoiceData;
 
 interface DefaultInvoiceData {
   orderDate: string;
@@ -46,13 +48,13 @@ interface CreditInvoiceData extends DefaultInvoiceData {
 
 export type DefaultInvoiceDataResponse = DefaultInvoiceData | CreditInvoiceData;
 
-export const defaultLoadDataFn: LoadDataFn = async (
+export const defaultLoadDataFn: LoadDataFn = (
   ctx: RequestContext,
   injector: Injector,
   order: Order,
   mostRecentInvoiceNumber?: number,
   shouldGenerateCreditInvoice?: CreditInvoiceInput
-): Promise<DefaultInvoiceDataResponse> => {
+): DefaultInvoiceDataResponse => {
   // Increase order number
   let newInvoiceNumber = mostRecentInvoiceNumber || 0;
   newInvoiceNumber += 1;
@@ -89,7 +91,14 @@ export const defaultLoadDataFn: LoadDataFn = async (
       ...order,
       total: reversedOrderTotals.total,
       totalWithTax: reversedOrderTotals.totalWithTax,
-      taxSummary: reversedOrderTotals.taxSummaries,
+      taxSummary: reversedOrderTotals.taxSummaries.map((t) => {
+        return {
+          description: t.description,
+          taxBase: t.taxBase,
+          taxRate: t.taxRate,
+          taxTotal: t.taxTotal,
+        };
+      }),
     },
   };
 };

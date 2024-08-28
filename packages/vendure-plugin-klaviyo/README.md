@@ -15,15 +15,13 @@ The default setup will only send placed orders to Klaviyo
 import { KlaviyoPlugin } from '@pinelab/vendure-plugin-klaviyo';
 
 plugins: [
-        plugins: [
-            KlaviyoPlugin.init({
-                apiKey: 'some_private_api_key'
-            })
-        ],
+  KlaviyoPlugin.init({
+    apiKey: 'some_private_api_key',
+  }),
 ];
 ```
 
-All placed orders will now be synced
+All placed orders will now be synced.
 
 ## Custom event handlers
 
@@ -33,7 +31,10 @@ If you want to send more events to Klaviyo, you can implement your own handlers.
 
    ```ts
    import { AccountVerifiedEvent } from '@vendure/core';
-   import { KlaviyoEventHandler } from '@pinelab/vendure-plugin-klaviyo';
+   import {
+     KlaviyoEventHandler,
+     KlaviyoGenericEvent,
+   } from '@pinelab/vendure-plugin-klaviyo';
 
    /**
     * Event handler to send Vendure's AccountVerifiedEvent to Klaviyo
@@ -43,7 +44,7 @@ If you want to send more events to Klaviyo, you can implement your own handlers.
        vendureEvent: AccountVerifiedEvent,
        mapToKlaviyoEvent: async (event, injector) => {
          const { customer } = event;
-         return {
+         return <KlaviyoGenericEvent>{
            // Unique ID per event to make the event idempotent
            uniqueId: `account-verified-${customer.id}-${Date.now()}`,
            eventName: 'Account Verified',
@@ -77,3 +78,17 @@ If you want to send more events to Klaviyo, you can implement your own handlers.
      }),
    ];
    ```
+
+## Custom data in Klaviyo's default Order Placed event
+
+If you'd like to send custom data in the Klaviyo native Order Placed event, you can also create a custom handler, but make sure to return a `KlaviyoOrderPlacedEvent` instead of a `KlaviyoGenericEvent`. The plugin will recognize your return type and handle it as an Order Placed event.
+
+Don't forget to exclude the default order placed handler if you do!
+
+```ts
+     KlaviyoPlugin.init({
+       apiKey: 'some_private_api_key',
+       // No defaultOrderPlacedHandler here!
+       eventHandlers: [customOrderPlacedHandler],
+     }),
+```

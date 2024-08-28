@@ -15,6 +15,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { defaultOrderPlacedEventHandler, KlaviyoPlugin } from '../src';
 import { mockOrderPlacedHandler } from './mock-order-placed-handler';
+import { mockCustomEventHandler } from './mock-custom-event-handler';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -27,8 +28,11 @@ beforeAll(async () => {
     plugins: [
       KlaviyoPlugin.init({
         apiKey: 'some_private_api_key',
-        // You can have multiple 'Order Placed' handlers, but it makes more sense to have 1. This is just for testing
-        eventHandlers: [defaultOrderPlacedEventHandler, mockOrderPlacedHandler],
+        eventHandlers: [
+          defaultOrderPlacedEventHandler,
+          mockOrderPlacedHandler,
+          mockCustomEventHandler,
+        ],
       }),
     ],
     paymentOptions: {
@@ -139,7 +143,7 @@ describe('Klaviyo', () => {
     });
   });
 
-  it("Has sent custom 'Order Placed' event to Klaviyo", () => {
+  it("Has sent 'Custom Order Placed' event to Klaviyo", () => {
     const orderEvents = klaviyoRequests.filter(
       (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
     );
@@ -158,5 +162,26 @@ describe('Klaviyo', () => {
       'https://pinelab.studio/product/some-product'
     );
     expect(properties.Items[0].ImageURL).toBe('custom-image-url.png');
+  });
+
+  it("Has not sent 'Ordered Product' events for our custom Order Placed handler", () => {
+    // Because we've set `excludeFromOrderedProductEvent=true` on all order items
+    const orderedProductEvents = klaviyoRequests.filter(
+      (r) =>
+        r.data.attributes.metric.data.attributes.name === 'Ordered Product' &&
+        r.data
+    );
+    // Only expect the 2 events from the default handler, no more
+    expect(orderedProductEvents.length).toBe(2);
+  });
+
+  it("Has sent 'Custom Order Placed' event to Klaviyo", () => {
+    const customEvent = klaviyoRequests.find(
+      (r) =>
+        r.data.attributes.metric.data.attributes.name === 'Custom Testing Event'
+    );
+    expect(
+      (customEvent?.data.attributes.properties as any).customTestEventProp
+    ).toEqual('some information');
   });
 });

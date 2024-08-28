@@ -1,5 +1,4 @@
-import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
-import { InvoiceOrderTotals } from '../entities/invoice.entity';
+import { InvoiceOrderTotals } from '../ui/generated/graphql';
 
 /**
  * Reverse the order total amounts.
@@ -9,9 +8,10 @@ import { InvoiceOrderTotals } from '../entities/invoice.entity';
 export function reverseOrderTotals(
   orderTotal: InvoiceOrderTotals
 ): InvoiceOrderTotals {
-  const summaries = orderTotal.taxSummaries.map((summary) => {
+  const reversedSummaries = orderTotal.taxSummaries.map((summary) => {
     return {
-      ...summary,
+      description: summary.description,
+      taxRate: summary.taxRate,
       taxBase: -summary.taxBase,
       taxTotal: -summary.taxTotal,
     };
@@ -19,6 +19,6 @@ export function reverseOrderTotals(
   return {
     total: -orderTotal.total,
     totalWithTax: -orderTotal.totalWithTax,
-    taxSummaries: summaries,
+    taxSummaries: reversedSummaries,
   };
 }

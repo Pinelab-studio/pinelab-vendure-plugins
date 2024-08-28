@@ -4,6 +4,6 @@
     "outDir": "dist",
     "types": ["node"]
   },
-  "include": ["src/", "src/index.ts"],
+  "include": ["src/", "src/index.ts", "test/xero-uk-export-strategy.spec.ts"],
   "exclude": ["src/ui"]
 }

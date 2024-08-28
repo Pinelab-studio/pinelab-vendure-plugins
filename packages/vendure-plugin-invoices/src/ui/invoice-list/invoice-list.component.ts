@@ -3,9 +3,16 @@ import {
   TypedBaseListComponent,
   SharedModule,
   LogicalOperator,
+  NotificationService,
+  DataService,
 } from '@vendure/admin-ui/core';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
-import { Invoice, InvoiceListOptions } from '../generated/graphql';
+import {
+  ExportInvoiceToAccountingPlatformMutation,
+  Invoice,
+  InvoiceListOptions,
+} from '../generated/graphql';
+import { exportToAccounting } from '../queries.graphql';
 
 const GET_INVOICES_QUERY = gql`
   query InvoiceList($options: InvoiceListOptions) {
@@ -18,6 +25,11 @@ const GET_INVOICES_QUERY = gql`
         isCreditInvoice
         orderCode
         orderId
+        accountingReference {
+          reference
+          link
+          errorMessage
+        }
       }
       totalItems
     }
@@ -57,7 +69,10 @@ export class InvoiceListComponent extends TypedBaseListComponent<
     })
     .connectToRoute(this.route);
 
-  constructor() {
+  constructor(
+    protected dataService: DataService,
+    private notificationService: NotificationService
+  ) {
     super();
     super.configure({
       document: typedDocumentNode,
@@ -68,12 +83,23 @@ export class InvoiceListComponent extends TypedBaseListComponent<
     });
   }
 
+  exportToAccounting(invoiceNumber: number) {
+    this.dataService
+      .mutate<ExportInvoiceToAccountingPlatformMutation>(exportToAccounting, {
+        invoiceNumber,
+      })
+      .subscribe(() => {
+        this.notificationService.success(`Started export`);
+      });
+  }
+
   private createQueryOptions(
     // eslint-disable-next-line @typescript-eslint/no-shadow
     skip: number,
     take: number,
     searchTerm: string | null
   ): { options: InvoiceListOptions } {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     let filterInput = this.filters.createFilterInput();
     if (searchTerm) {
       filterInput = {
@@ -89,6 +115,7 @@ export class InvoiceListComponent extends TypedBaseListComponent<
       options: {
         skip,
         take,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         filter: {
           ...(filterInput ?? {}),
         },
