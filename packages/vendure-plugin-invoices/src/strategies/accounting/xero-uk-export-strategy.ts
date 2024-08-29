@@ -129,7 +129,10 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       );
     }
     try {
-      const contact = await this.getOrCreateContact(order.customer);
+      const contact = await this.getOrCreateContact(
+        order.customer,
+        order.billingAddress?.company
+      );
       if (!invoice.isCreditInvoice) {
         return await this.createInvoice(ctx, order, invoice, contact.contactID);
       } else {
@@ -245,10 +248,13 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
   }
 
   async getOrCreateContact(
-    customer: Customer
+    customer: Customer,
+    companyName?: string
   ): Promise<import('xero-node').Contact> {
     await this.tokenCache.value(); // Always get a token before making a request
-    const contacts = await this.xero.accountingApi.getContacts(
+    // Find by contact name first
+    const contacName = this.getNormalizedContactName(customer, companyName);
+    let contacts = await this.xero.accountingApi.getContacts(
       this.tenantId,
       undefined,
       undefined,
@@ -257,8 +263,22 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       undefined,
       undefined,
       undefined,
-      customer.emailAddress
+      this.getNormalizedContactName(customer, companyName)
     );
+    if (!contacts.body.contacts?.length) {
+      // If no contacts, try to find by email
+      contacts = await this.xero.accountingApi.getContacts(
+        this.tenantId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        customer.emailAddress
+      );
+    }
     if ((contacts.body?.contacts?.length ?? 0) > 1) {
       const contact = contacts.body.contacts![0];
       Logger.info(
@@ -286,7 +306,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     );
     const createdContact = createdContacts.body.contacts?.[0];
     Logger.info(
-      `Created new contact in Xero with email address "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
+      `No contact found with name '${contacName}' or email '${customer.emailAddress}'. Created new contact with email "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
       loggerCtx
     );
     return createdContacts.body.contacts![0];
@@ -377,6 +397,20 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         taxType: this.getTaxType(taxSummary.taxRate, invoice.invoiceNumber),
       };
     });
+  }
+
+  /**
+   * Get the normalized contact name. Uses company or other wise customers full name.
+   * Trims and replaces duplicate spaces/tabs/newlines
+   */
+  private getNormalizedContactName(
+    customer: Customer,
+    companyName?: string
+  ): string {
+    const contactName =
+      companyName ||
+      [customer.firstName, customer.lastName].filter(Boolean).join(' ');
+    return contactName.trim().replace(/\s\s+/g, ' ');
   }
 
   private getTaxType(

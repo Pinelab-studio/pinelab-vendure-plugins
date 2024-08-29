@@ -1,3 +1,7 @@
+# 4.0.3 (2024-08-27)
+
+- Try to find Xero contact by name first, then by email address
+
 # 4.0.2 (2024-08-27)
 
 - Log created credit note and invoice totals when creation succeeded
