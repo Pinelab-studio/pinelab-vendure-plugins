@@ -37,8 +37,10 @@ export interface AccountingExportStrategy {
 
   /**
    * Export the given Credit Invoice to the external accounting system.
-   * You should use invoice.orderTotals for the credit invoice and NOT the data from the order, because that will have the new data.
-   * You can still use order.code and address details ion your credit invoice.
+   * You should use invoice.orderTotals for the credit invoice and NOT the data from the order, because that
+   * will be the current (modified) order object, not the credit invoice.
+   *
+   * You can still use order.code and address details from the order object, just not the prices.
    *
    * This function will be executed asynchronously in via the JobQueue.
    */
