@@ -162,7 +162,9 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         status: 'DRAFT' as any,
         url: this.config.getVendureUrl?.(order, invoice),
       };
-      const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
+      const idempotencyKey = `${ctx.channel.token}-${
+        invoice.invoiceNumber
+      }-${order.updatedAt.toISOString()}`;
       const response = await this.xero.accountingApi.createInvoices(
         this.tenantId,
         { invoices: [xeroInvoice] },
@@ -230,7 +232,9 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         status: 'DRAFT' as any,
       };
-      const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
+      const idempotencyKey = `${ctx.channel.token}-${
+        invoice.invoiceNumber
+      }-${order.updatedAt.toISOString()}`;
       const response = await this.xero.accountingApi.createCreditNotes(
         this.tenantId,
         { creditNotes: [creditNote] },
