@@ -32,10 +32,25 @@ export interface AccountingExportStrategy {
   exportInvoice(
     ctx: RequestContext,
     invoice: InvoiceEntity,
-    order: Order,
+    order: Order
+  ): Promise<ExternalReference> | ExternalReference;
+
+  /**
+   * Export the given Credit Invoice to the external accounting system.
+   * You should use invoice.orderTotals for the credit invoice and NOT the data from the order, because that
+   * will be the current (modified) order object, not the credit invoice.
+   *
+   * You can still use order.code and address details from the order object, just not the prices.
+   *
+   * This function will be executed asynchronously in via the JobQueue.
+   */
+  exportCreditInvoice(
+    ctx: RequestContext,
+    invoice: InvoiceEntity,
     /**
-     * If the invoice is a credit invoice, this will be the original invoice that the credit invoice is for.
+     * The original invoice that the credit invoice is for.
      */
-    isCreditInvoiceFor?: InvoiceEntity
+    isCreditInvoiceFor: InvoiceEntity,
+    order: Order
   ): Promise<ExternalReference> | ExternalReference;
 }
