@@ -187,13 +187,13 @@ export class AccountingService implements OnModuleInit {
    * Checks if the total and tax rates of the order still match the ones from the invoice.
    * When they differ, it means the order changed compared to the invoice.
    *
-   * Invoice totals are made absolute (Math.abs), because it could be about a credit invoice,
-   * which has the same amount but negative
+   * This should not be used with credit invoices, as their totals will mostly differ from the order,
+   * because a new invoice is created immediately
    */
   private orderMatchesInvoice(order: Order, invoice: InvoiceEntity): boolean {
     if (
-      order.total !== Math.abs(invoice.orderTotals.total) ||
-      order.totalWithTax !== Math.abs(invoice.orderTotals.totalWithTax)
+      order.total !== invoice.orderTotals.total ||
+      order.totalWithTax !== invoice.orderTotals.totalWithTax
     ) {
       // Totals don't match anymore
       return false;
@@ -203,7 +203,7 @@ export class AccountingService implements OnModuleInit {
       const matchingInvoiceSummary = invoice.orderTotals.taxSummaries.find(
         (invoiceSummary) =>
           invoiceSummary.taxRate === orderSummary.taxRate &&
-          Math.abs(invoiceSummary.taxBase) === orderSummary.taxBase
+          invoiceSummary.taxBase === orderSummary.taxBase
       );
       // If no matching tax summary is found, the order doesn't match the invoice
       return !!matchingInvoiceSummary;
