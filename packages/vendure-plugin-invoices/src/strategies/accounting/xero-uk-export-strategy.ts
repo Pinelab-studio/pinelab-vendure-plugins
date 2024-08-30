@@ -36,7 +36,7 @@ interface Config {
   /**
    * See https://central.xero.com/s/article/Add-edit-or-delete-custom-invoice-quote-templates
    */
-  invoiceBrandingThemeId: string;
+  invoiceBrandingThemeId?: string;
   /**
    * Construct a reference based on the given order object
    */
@@ -127,7 +127,6 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         'lines.productVariant',
         'lines.productVariant.translations',
         'shippingLines.shippingMethod',
-        'payments',
       ],
     });
     if (!order.customer) {
@@ -373,27 +372,20 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       }
     );
     // Map shipping lines
-    // lineItems.push(
-    //   ...order.shippingLines.map((shippingLine) => {
-    //     return {
-    //       description: translateDeep(
-    //         shippingLine.shippingMethod,
-    //         ctx.channel.defaultLanguageCode
-    //       ).name,
-    //       quantity: 1,
-    //       unitAmount: this.toMoney(shippingLine.discountedPrice),
-    //       accountCode: this.config.shippingAccountCode,
-    //       taxType: this.getTaxType(shippingLine.taxRate, order.code),
-    //     };
-    //   })
-    // );
-    // FIXME TEST
-    lineItems.push({
-      description: 'TEST',
-      quantity: 1,
-      unitAmount: this.toMoney(200),
-      accountCode: '0103',
-    });
+    lineItems.push(
+      ...order.shippingLines.map((shippingLine) => {
+        return {
+          description: translateDeep(
+            shippingLine.shippingMethod,
+            ctx.channel.defaultLanguageCode
+          ).name,
+          quantity: 1,
+          unitAmount: this.toMoney(shippingLine.discountedPrice),
+          accountCode: this.config.shippingAccountCode,
+          taxType: this.getTaxType(shippingLine.taxRate, order.code),
+        };
+      })
+    );
     // Map surcharges
     lineItems.push(
       ...order.surcharges.map((surcharge) => {

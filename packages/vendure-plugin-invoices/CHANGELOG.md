@@ -1,4 +1,4 @@
-# 4.1.0 (2024-08-29)
+# 4.1.0 (2024-08-30)
 
 - Exporting credit invoices via accounting strategies now have their own interface method
 - Don't allow accounting export when the order totals changed, to prevent mismatch between accounting export and invoice
