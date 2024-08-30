@@ -15,12 +15,23 @@ export class MockAccountingStrategy implements AccountingExportStrategy {
   exportInvoice(
     ctx: RequestContext,
     invoice: InvoiceEntity,
-    order: Order,
-    isCreditInvoiceFor?: InvoiceEntity
+    order: Order
   ): ExternalReference {
     return {
       reference: 'mockReference',
       link: 'mockLink',
+    };
+  }
+
+  exportCreditInvoice(
+    ctx: RequestContext,
+    invoice: InvoiceEntity,
+    isCreditInvoiceFor: InvoiceEntity,
+    order: Order
+  ): ExternalReference {
+    return {
+      reference: 'mockCreditReference',
+      link: 'mockCreditLink',
     };
   }
 }

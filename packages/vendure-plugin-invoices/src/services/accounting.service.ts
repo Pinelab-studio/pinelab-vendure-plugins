@@ -14,7 +14,10 @@ import {
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceEntity } from '../entities/invoice.entity';
 import { InvoicePluginConfig } from '../invoice.plugin';
-import { AccountingExportStrategy } from '../strategies/accounting/accounting-export-strategy';
+import {
+  AccountingExportStrategy,
+  ExternalReference,
+} from '../strategies/accounting/accounting-export-strategy';
 
 @Injectable()
 export class AccountingService implements OnModuleInit {
@@ -127,12 +130,17 @@ export class AccountingService implements OnModuleInit {
           `Order '${order.code}' has changed compared to the invoice. Can not export this invoice again!`
         );
       }
-      const reference = await strategy.exportInvoice(
-        ctx,
-        invoice,
-        order,
-        invoice.isCreditInvoiceFor
-      );
+      let reference: ExternalReference;
+      if (invoice.isCreditInvoice) {
+        reference = await strategy.exportCreditInvoice(
+          ctx,
+          invoice,
+          invoice.isCreditInvoiceFor!, // this is always defined when it's a creditInvoice
+          order
+        );
+      } else {
+        reference = await strategy.exportInvoice(ctx, invoice, order);
+      }
       await invoiceRepository.update(invoice.id, {
         accountingReference: reference,
       });

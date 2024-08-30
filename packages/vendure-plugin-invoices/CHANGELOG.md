@@ -1,6 +1,7 @@
-# 4.0.4 (2024-08-29)
+# 4.1.0 (2024-08-29)
 
-- Don't allow exporting to accounting when the order changed.
+- Exporting credit invoices now have their own accounting export interface
+- Don't allow accounting export when the order totals changed, to prevent mismatch between accounting export and invoice
 
 # 4.0.3 (2024-08-27)
 
