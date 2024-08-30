@@ -36,6 +36,7 @@ import { InvoiceCreatedEvent } from '../src/services/invoice-created-event';
 import { getOrderWithInvoices } from '../src/ui/invoices-detail-view/invoices-detail-view';
 import {
   createInvoice as createInvoiceMutation,
+  exportToAccounting,
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
@@ -217,6 +218,19 @@ describe('Generate with credit invoicing enabled', function () {
     );
     expect(order.total).toBe(1234);
     expect(order.totalWithTax).toBe(1480);
+  });
+
+  it('Fails to export to accounting, because order totals dont match the invoice anymore', async () => {
+    await adminClient.query(exportToAccounting, {
+      invoiceNumber: 10001,
+    });
+    await wait(); // Wait for async export via bob queue
+    const { order: result } = await adminClient.query(getOrderWithInvoices, {
+      id: 1,
+    });
+    expect(result.invoices[0].accountingReference.errorMessage).toContain(
+      'has changed compared to the invoice'
+    );
   });
 
   it('Creates credit and new invoice on createInvoice mutation', async () => {

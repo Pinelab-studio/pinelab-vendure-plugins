@@ -1,23 +1,20 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import {
   EntityRelationPaths,
-  ID,
   JobQueue,
   JobQueueService,
   Logger,
   Order,
   OrderService,
-  Product,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { AccountingExportStrategy } from '../strategies/accounting/accounting-export-strategy';
-import { InvoicePluginConfig } from '../invoice.plugin';
-import util from 'util';
 import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoicePluginConfig } from '../invoice.plugin';
+import { AccountingExportStrategy } from '../strategies/accounting/accounting-export-strategy';
 
 @Injectable()
 export class AccountingService implements OnModuleInit {
@@ -120,6 +117,17 @@ export class AccountingService implements OnModuleInit {
     }
     const invoiceRepository = this.connection.getRepository(ctx, InvoiceEntity);
     try {
+      if (
+        !this.orderMatchesInvoice(order, invoice) &&
+        !invoice.isCreditInvoice
+      ) {
+        // console.log('============= NO MATCH', invoice.invoiceNumber, order.total, order.totalWithTax, order.taxSummary, invoice.orderTotals)
+        // Throw an error when order totals don't match to prevent re-exporting wrong data.
+        // Credit invoices are allowed, because they use the reversed invoice.orderTotals instead of the order data itself
+        throw Error(
+          `Order '${order.code}' has changed compared to the invoice. Can not export this invoice again!`
+        );
+      }
       const reference = await strategy.exportInvoice(
         ctx,
         invoice,
@@ -166,6 +174,33 @@ export class AccountingService implements OnModuleInit {
       `Added accounting export job for invoice '${invoiceNumber}' for order '${orderCode}'`,
       loggerCtx
     );
+  }
+
+  /**
+   * Checks if the total and tax rates of the order still match the ones from the invoice.
+   * When they differ, it means the order changed compared to the invoice.
+   *
+   * Invoice totals are made absolute (Math.abs), because it could be about a credit invoice,
+   * which has the same amount but negative
+   */
+  private orderMatchesInvoice(order: Order, invoice: InvoiceEntity): boolean {
+    if (
+      order.total !== Math.abs(invoice.orderTotals.total) ||
+      order.totalWithTax !== Math.abs(invoice.orderTotals.totalWithTax)
+    ) {
+      // Totals don't match anymore
+      return false;
+    }
+    // All order tax summaries should have a matching invoice tax summary
+    return order.taxSummary.every((orderSummary) => {
+      const matchingInvoiceSummary = invoice.orderTotals.taxSummaries.find(
+        (invoiceSummary) =>
+          invoiceSummary.taxRate === orderSummary.taxRate &&
+          Math.abs(invoiceSummary.taxBase) === orderSummary.taxBase
+      );
+      // If no matching tax summary is found, the order doesn't match the invoice
+      return !!matchingInvoiceSummary;
+    });
   }
 
   private async getInvoiceByNumber(

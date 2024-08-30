@@ -1,3 +1,7 @@
+# 4.0.4 (2024-08-29)
+
+- Don't allow exporting to accounting when the order changed.
+
 # 4.0.3 (2024-08-27)
 
 - Try to find Xero contact by name first, then by email address
