@@ -121,7 +121,6 @@ export class AccountingService implements OnModuleInit {
         !this.orderMatchesInvoice(order, invoice) &&
         !invoice.isCreditInvoice
       ) {
-        // console.log('============= NO MATCH', invoice.invoiceNumber, order.total, order.totalWithTax, order.taxSummary, invoice.orderTotals)
         // Throw an error when order totals don't match to prevent re-exporting wrong data.
         // Credit invoices are allowed, because they use the reversed invoice.orderTotals instead of the order data itself
         throw Error(
