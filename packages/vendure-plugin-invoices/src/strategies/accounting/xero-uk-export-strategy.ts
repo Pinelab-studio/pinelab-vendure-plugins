@@ -34,6 +34,10 @@ interface Config {
   salesAccountCode: string;
   channelToken?: string;
   /**
+   * See https://central.xero.com/s/article/Add-edit-or-delete-custom-invoice-quote-templates
+   */
+  invoiceBrandingThemeId: string;
+  /**
    * Construct a reference based on the given order object
    */
   getReference?: (
@@ -44,7 +48,11 @@ interface Config {
   /**
    * Construct a URL that links to the order in Vendure Admin
    */
-  getVendureUrl?: (order: Order, invoice: InvoiceEntity) => string;
+  getVendureUrl?(order: Order, invoice: InvoiceEntity): string;
+  /**
+   * Get the due date for an invoice. Defaults to 30 days from now
+   */
+  getDueDate?(ctx: RequestContext, order: Order, invoice: InvoiceEntity): Date;
 }
 
 interface TaxRate {
@@ -134,6 +142,11 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       );
       const reference =
         this.config.getReference?.(order, invoice) || order.code;
+      const oneMonthLater = new Date();
+      oneMonthLater.setDate(oneMonthLater.getDate() + 30);
+      const dueDate = this.config.getDueDate
+        ? this.config.getDueDate(ctx, order, invoice)
+        : oneMonthLater;
       const xeroInvoice: import('xero-node').Invoice = {
         invoiceNumber: String(invoice.invoiceNumber),
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
@@ -141,6 +154,8 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         contact: {
           contactID: contact.contactID,
         },
+        dueDate: this.toDate(dueDate),
+        brandingThemeID: this.config.invoiceBrandingThemeId,
         date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
         lineItems: this.getLineItems(ctx, order),
         reference,
@@ -210,6 +225,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           contactID: contact.contactID,
         },
         date: this.toDate(order.updatedAt),
+        brandingThemeID: this.config.invoiceBrandingThemeId,
         lineItems: this.getCreditLineItems(invoice),
         reference,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -357,20 +373,27 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       }
     );
     // Map shipping lines
-    lineItems.push(
-      ...order.shippingLines.map((shippingLine) => {
-        return {
-          description: translateDeep(
-            shippingLine.shippingMethod,
-            ctx.channel.defaultLanguageCode
-          ).name,
-          quantity: 1,
-          unitAmount: this.toMoney(shippingLine.discountedPrice),
-          accountCode: this.config.shippingAccountCode,
-          taxType: this.getTaxType(shippingLine.taxRate, order.code),
-        };
-      })
-    );
+    // lineItems.push(
+    //   ...order.shippingLines.map((shippingLine) => {
+    //     return {
+    //       description: translateDeep(
+    //         shippingLine.shippingMethod,
+    //         ctx.channel.defaultLanguageCode
+    //       ).name,
+    //       quantity: 1,
+    //       unitAmount: this.toMoney(shippingLine.discountedPrice),
+    //       accountCode: this.config.shippingAccountCode,
+    //       taxType: this.getTaxType(shippingLine.taxRate, order.code),
+    //     };
+    //   })
+    // );
+    // FIXME TEST
+    lineItems.push({
+      description: 'TEST',
+      quantity: 1,
+      unitAmount: this.toMoney(200),
+      accountCode: '0103',
+    });
     // Map surcharges
     lineItems.push(
       ...order.surcharges.map((surcharge) => {

@@ -55,7 +55,7 @@ export class AccountingService implements OnModuleInit {
           job.data.orderCode
         ).catch((error: Error) => {
           Logger.warn(
-            `Failed to export invoice to accounting platform for '${job.data.orderCode}': ${error?.message}`,
+            `Failed to export invoice '${job.data.invoiceNumber}' to accounting platform for '${job.data.orderCode}': ${error?.message}`,
             loggerCtx
           );
           throw error;

@@ -1,7 +1,8 @@
 # 4.1.0 (2024-08-29)
 
-- Exporting credit invoices now have their own accounting export interface
+- Exporting credit invoices via accounting strategies now have their own interface method
 - Don't allow accounting export when the order totals changed, to prevent mismatch between accounting export and invoice
+- Added Due Date to Xero exports, which is needed for invoice approval
 
 # 4.0.3 (2024-08-27)
 

@@ -33,6 +33,6 @@
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
   "devDependencies": {
-    "xero-node": "^9.0.0"
+    "xero-node": "9.2.0"
   }
 }

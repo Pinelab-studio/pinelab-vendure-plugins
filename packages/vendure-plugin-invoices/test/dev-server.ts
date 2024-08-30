@@ -45,16 +45,8 @@ require('dotenv').config();
             clientSecret: process.env.XERO_CLIENT_SECRET!,
             shippingAccountCode: '0103',
             salesAccountCode: '0102',
-            getReference: (order, invoice, isCreditInvoiceFor) => {
-              if (isCreditInvoiceFor) {
-                return `Credit note for ${isCreditInvoiceFor}`;
-              } else {
-                return `${order.code} | PO NUMBER | ${order.payments
-                  .filter((p) => p.state === 'Settled')
-                  .map((p) => p.transactionId)
-                  .join(',')}`;
-              }
-            },
+            getReference: () =>
+              'THIS IS A TEST INVOICE, DONT APPROVE THIS PLEASE.',
             getVendureUrl: (order) =>
               `https://pinelab.studio/order/${order.code}`,
           }),
@@ -64,11 +56,11 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [InvoicePlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [InvoicePlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     paymentOptions: {
