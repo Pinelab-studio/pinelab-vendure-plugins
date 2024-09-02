@@ -80,7 +80,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       .ofType(PaymentMethodEvent)
       .pipe(
         filter(
-          (data) => data.entity.handler.code === acceptBluePaymentHandler.code
+          (data) => data.entity.handler?.code === acceptBluePaymentHandler.code
         )
       )
       .subscribe(({ ctx, entity }) => {
