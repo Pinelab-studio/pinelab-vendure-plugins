@@ -1,23 +1,23 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import {
   EntityRelationPaths,
-  ID,
   JobQueue,
   JobQueueService,
   Logger,
   Order,
   OrderService,
-  Product,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { AccountingExportStrategy } from '../strategies/accounting/accounting-export-strategy';
-import { InvoicePluginConfig } from '../invoice.plugin';
-import util from 'util';
 import { InvoiceEntity } from '../entities/invoice.entity';
+import { InvoicePluginConfig } from '../invoice.plugin';
+import {
+  AccountingExportStrategy,
+  ExternalReference,
+} from '../strategies/accounting/accounting-export-strategy';
 
 @Injectable()
 export class AccountingService implements OnModuleInit {
@@ -55,7 +55,7 @@ export class AccountingService implements OnModuleInit {
           job.data.orderCode
         ).catch((error: Error) => {
           Logger.warn(
-            `Failed to export invoice to accounting platform for '${job.data.orderCode}': ${error?.message}`,
+            `Failed to export invoice '${job.data.invoiceNumber}' to accounting platform for '${job.data.orderCode}': ${error?.message}`,
             loggerCtx
           );
           throw error;
@@ -120,12 +120,27 @@ export class AccountingService implements OnModuleInit {
     }
     const invoiceRepository = this.connection.getRepository(ctx, InvoiceEntity);
     try {
-      const reference = await strategy.exportInvoice(
-        ctx,
-        invoice,
-        order,
-        invoice.isCreditInvoiceFor
-      );
+      if (
+        !this.orderMatchesInvoice(order, invoice) &&
+        !invoice.isCreditInvoice
+      ) {
+        // Throw an error when order totals don't match to prevent re-exporting wrong data.
+        // Credit invoices are allowed, because they use the reversed invoice.orderTotals instead of the order data itself
+        throw Error(
+          `Order '${order.code}' has changed compared to the invoice. Can not export this invoice again!`
+        );
+      }
+      let reference: ExternalReference;
+      if (invoice.isCreditInvoice) {
+        reference = await strategy.exportCreditInvoice(
+          ctx,
+          invoice,
+          invoice.isCreditInvoiceFor!, // this is always defined when it's a creditInvoice
+          order
+        );
+      } else {
+        reference = await strategy.exportInvoice(ctx, invoice, order);
+      }
       await invoiceRepository.update(invoice.id, {
         accountingReference: reference,
       });
@@ -166,6 +181,33 @@ export class AccountingService implements OnModuleInit {
       `Added accounting export job for invoice '${invoiceNumber}' for order '${orderCode}'`,
       loggerCtx
     );
+  }
+
+  /**
+   * Checks if the total and tax rates of the order still match the ones from the invoice.
+   * When they differ, it means the order changed compared to the invoice.
+   *
+   * This should not be used with credit invoices, as their totals will mostly differ from the order,
+   * because a new invoice is created immediately
+   */
+  private orderMatchesInvoice(order: Order, invoice: InvoiceEntity): boolean {
+    if (
+      order.total !== invoice.orderTotals.total ||
+      order.totalWithTax !== invoice.orderTotals.totalWithTax
+    ) {
+      // Totals don't match anymore
+      return false;
+    }
+    // All order tax summaries should have a matching invoice tax summary
+    return order.taxSummary.every((orderSummary) => {
+      const matchingInvoiceSummary = invoice.orderTotals.taxSummaries.find(
+        (invoiceSummary) =>
+          invoiceSummary.taxRate === orderSummary.taxRate &&
+          invoiceSummary.taxBase === orderSummary.taxBase
+      );
+      // If no matching tax summary is found, the order doesn't match the invoice
+      return !!matchingInvoiceSummary;
+    });
   }
 
   private async getInvoiceByNumber(

@@ -1,3 +1,17 @@
+# 4.1.0 (2024-08-30)
+
+- Exporting credit invoices via accounting strategies now have their own method interface
+- Don't allow accounting export when the order totals changed, to prevent mismatch between accounting export and invoice
+- Added Due Date to Xero exports, which is needed for invoice approval
+
+# 4.0.3 (2024-08-27)
+
+- Try to find Xero contact by name first, then by email address
+
+# 4.0.2 (2024-08-27)
+
+- Log created credit note and invoice totals when creation succeeded
+
 # 4.0.1 (2024-08-22)
 
 - Return error to Admin when Accounting Export job couldn't be created
