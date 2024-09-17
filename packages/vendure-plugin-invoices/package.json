@@ -1,6 +1,6 @@
 {
   "name": "@vendure-hub/pinelab-invoice-plugin",
-  "version": "4.0.1",
+  "version": "4.1.0",
   "description": "Vendure plugin for PDF invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -33,6 +33,6 @@
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
   "devDependencies": {
-    "xero-node": "^9.0.0"
+    "xero-node": "9.2.0"
   }
 }

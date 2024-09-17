@@ -18047,10 +18047,10 @@ xdg-basedir@^4.0.0:
   resolved "https://registry.npmjs.org/xdg-basedir/-/xdg-basedir-4.0.0.tgz"
   integrity sha512-PSNhEJDejZYV7h50BohL09Er9VaIefr2LMAf3OEmpCkjOi34eYyQYAXUTjEQtZJTKcF0E2UKTh+osDLsgNim9Q==
 
-xero-node@^9.0.0:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/xero-node/-/xero-node-9.0.0.tgz#1f10e9d1f25c7f636997375c6d74f3ff09064548"
-  integrity sha512-+e0lVD63F/O7D+UPfbPmK5NfYlxx7Ew5+4mECQYba0+5BzW1btFei8RFyHiVlGeYGpH/WaELQKKPJCTndHTCgg==
+xero-node@9.2.0:
+  version "9.2.0"
+  resolved "https://registry.yarnpkg.com/xero-node/-/xero-node-9.2.0.tgz#6ea0979ac01c41019af1ac3451dec125d020ba5b"
+  integrity sha512-w5B/jntQ5SQmFdFrUuZyZPPF8opB/4I9LQjl3tic/KSgs+BjSTGh6rFFD6ce0feyHHbitZYtEIswkw4ZFp1v4w==
   dependencies:
     axios "^1.6.5"
     openid-client "5.6.5"
