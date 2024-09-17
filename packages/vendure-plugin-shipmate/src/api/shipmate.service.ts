@@ -88,6 +88,7 @@ export class ShipmateService implements OnApplicationBootstrap {
     event: OrderStateTransitionEvent | OrderPlacedEvent
   ): Promise<void> {
     if (!this.config.shouldSendOrder(event.ctx, event.order)) {
+      Logger.info(`Order ${event.order.code} not sent to shipmate`);
       return;
     }
     const { ctx, order, fromState, toState } = event;

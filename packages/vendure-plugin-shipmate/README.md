@@ -16,6 +16,7 @@ plugins: [
   ShipmatePlugin.init({
     apiUrl: 'https://api.shipmate.co.uk/v1.2', // Or https://api-staging.shipmate.co.uk/v1.2 for the testing environment
     shouldSendOrder: function ( ctx: RequestContext, order: Order): Promise<boolean> | boolean {
+      // Sample implementation that only sends orders with less than 5 items to Shipmate
       return order.totalQuantity < 5;
     }
   }),
