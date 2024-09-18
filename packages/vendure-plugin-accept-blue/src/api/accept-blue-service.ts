@@ -317,6 +317,11 @@ export class AcceptBlueService {
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    if (!acceptBlueMethod) {
+      throw new Error(
+        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
+      );
+    }
     const apiKey = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'apiKey'
     )?.value;
@@ -337,13 +342,20 @@ export class AcceptBlueService {
 
   async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    if (!acceptBlueMethod) {
+      throw new Error(
+        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
+      );
+    }
     const tokenizationSourceKey = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'tokenizationSourceKey'
     )?.value;
     return tokenizationSourceKey ?? null;
   }
 
-  async getAcceptBlueMethod(ctx: RequestContext): Promise<PaymentMethod> {
+  async getAcceptBlueMethod(
+    ctx: RequestContext
+  ): Promise<PaymentMethod | undefined> {
     const methods = await this.paymentMethodService.findAll(ctx, {
       filter: {
         enabled: { eq: true },
@@ -352,11 +364,6 @@ export class AcceptBlueService {
     const acceptBlueMethod = methods.items.find(
       (m) => m.handler.code === acceptBluePaymentHandler.code
     );
-    if (!acceptBlueMethod) {
-      throw new Error(
-        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
-      );
-    }
     return acceptBlueMethod;
   }
 
