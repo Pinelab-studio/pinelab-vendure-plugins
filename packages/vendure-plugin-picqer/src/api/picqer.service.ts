@@ -397,27 +397,39 @@ export class PicqerService implements OnApplicationBootstrap {
       order.state !== 'Delivered' &&
       order.state !== 'Cancelled'
     ) {
-      // Order should be transitioned to Delivered
-      const result = await this.orderService.transitionToState(
-        ctx,
-        order.id,
-        'Delivered'
-      );
-      const errorResult = result as OrderStateTransitionError;
-      if (errorResult.errorCode) {
-        Logger.error(
-          `Failed to transition order ${order.code} to Delivered: ${errorResult.message}`,
-          loggerCtx,
-          util.inspect(errorResult)
-        );
+      // Order should be transitioned to Shipped and then to Delivered
+      try {
+        await this.transitionToState(ctx, order, 'Shipped');
+        await this.transitionToState(ctx, order, 'Delivered');
+      } catch (e) {
         return;
       }
-      Logger.info(`Order ${order.code} transitioned to Delivered`, loggerCtx);
     }
     Logger.info(
       `Not handling incoming status '${data.status}' because order ${order.code} is already '${order.state}'`,
       loggerCtx
     );
+  }
+
+  async transitionToState(
+    ctx: RequestContext,
+    order: Order,
+    state: 'Shipped' | 'Delivered'
+  ) {
+    const result = await this.orderService.transitionToState(
+      ctx,
+      order.id,
+      state
+    );
+    const errorResult = result as OrderStateTransitionError;
+    if (errorResult.errorCode) {
+      Logger.error(
+        `Failed to transition order ${order.code} to ${state}: ${errorResult.message}`,
+        loggerCtx,
+        util.inspect(errorResult)
+      );
+      throw errorResult;
+    }
   }
 
   /**
