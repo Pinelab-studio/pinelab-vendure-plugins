@@ -109,19 +109,29 @@ describe('Shipmate plugin', async () => {
 
   let order: Order | undefined;
 
+  // Global tokens mock, neede before each API call
+  nock(nockBaseUrl)
+    .post('/tokens', (reqBody) => {
+      return true;
+    })
+    .reply(200, {
+      message: 'Login Successful',
+      data: {
+        token: '749a75e3c1048965c498017efae8051f',
+      },
+    })
+    .persist(true);
+
+  // Global mock for outgoing requests to Shipmate API
+  let shipmentRequests: any[] = [];
+  nock(nockBaseUrl)
+    .post('/shipments', (reqBody) => {
+      shipmentRequests.push(reqBody);
+      return true;
+    })
+    .reply(200, { data: [mockShipment], message: 'Shipment Created' });
+
   it('Should not create a Shipment when an Order.totalQuantity is >= 5', async () => {
-    nock(nockBaseUrl)
-      .post('/tokens', (reqBody) => {
-        return true;
-      })
-      .reply(200, {
-        message: 'Login Successful',
-        data: {
-          token: '749a75e3c1048965c498017efae8051f',
-        },
-      })
-      .persist(true);
-    let shipmentRequest: any;
     await createSettledOrder(shopClient, 'T_1', true, [
       { id: 'T_1', quantity: 2 },
       { id: 'T_2', quantity: 3 },
@@ -129,37 +139,21 @@ describe('Shipmate plugin', async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
     order = await orderService.findOne(ctx, 1);
-    expect(shipmentRequest?.shipment_reference).toBeUndefined();
+    // Should not have any shipments created
+    expect(shipmentRequests.length).toBe(0);
   });
 
   it('Should create a Shipment when an Order is placed', async () => {
     vi.spyOn(DefaultOrderCodeStrategy.prototype, 'generate').mockImplementation(
       () => mockShipment.shipment_reference
     );
-    nock(nockBaseUrl)
-      .post('/tokens', (reqBody) => {
-        return true;
-      })
-      .reply(200, {
-        message: 'Login Successful',
-        data: {
-          token: '749a75e3c1048965c498017efae8051f',
-        },
-      })
-      .persist(true);
-    let shipmentRequest: any;
-    nock(nockBaseUrl)
-      .post('/shipments', (reqBody) => {
-        shipmentRequest = reqBody;
-        return true;
-      })
-      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
     await shopClient.asAnonymousUser();
     await createSettledOrder(shopClient, 'T_1');
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
     order = await orderService.findOne(ctx, 2);
-    expect(shipmentRequest?.shipment_reference).toBe(order?.code);
+    expect(shipmentRequests.length).toBe(1);
+    expect(shipmentRequests[0]?.shipment_reference).toBe(order?.code);
   });
 
   it('Should cancel and recreate order on Order Modification', async () => {
