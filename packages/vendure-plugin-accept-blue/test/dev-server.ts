@@ -29,6 +29,7 @@ import {
 } from './helpers';
 import { NoncePaymentMethodInput } from '../src/types';
 import { add } from 'date-fns';
+import { TestSubscriptionStrategy } from './test-subscription-strategy';
 
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
@@ -73,6 +74,7 @@ import { add } from 'date-fns';
         // Our temp webhook to catch the webhook from Accept Blue. View on: https://webhook.site/#!/view/cdef50e0-0e6d-4e23-a4b1-6ffc9ca89df8/2077d0c4-7cfb-4c81-b966-370ba5a44d7e/1
         vendureHost:
           'https://webhook.site/cdef50e0-0e6d-4e23-a4b1-6ffc9ca89df8',
+        subscriptionStrategy: new TestSubscriptionStrategy(),
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -164,13 +166,13 @@ import { add } from 'date-fns';
     );
 
     // Attempt a refund
-    const { refundAcceptBlueTransaction } = await shopClient.query(
-      REFUND_TRANSACTION,
-      {
-        transactionId: 354653,
-      }
-    );
-    console.log(`Refunded transaction: ${refundAcceptBlueTransaction}`);
+    // const { refundAcceptBlueTransaction } = await shopClient.query(
+    //   REFUND_TRANSACTION,
+    //   {
+    //     transactionId: 354653,
+    //   }
+    // );
+    // console.log(`Refunded transaction: ${refundAcceptBlueTransaction}`);
   } catch (e) {
     // Catch to prevent server from terminating
     console.error(e);
