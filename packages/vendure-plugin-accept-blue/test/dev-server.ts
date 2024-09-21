@@ -69,7 +69,10 @@ import { add } from 'date-fns';
     plugins: [
       AcceptBlueTestCheckoutPlugin,
       AcceptBluePlugin.init({
-        vendureHost: process.env.VENDURE_HOST as string,
+        // vendureHost: process.env.VENDURE_HOST as string,
+        // Our temp webhook to catch the webhook from Accept Blue. View on: https://webhook.site/#!/view/cdef50e0-0e6d-4e23-a4b1-6ffc9ca89df8/2077d0c4-7cfb-4c81-b966-370ba5a44d7e/1
+        vendureHost:
+          'https://webhook.site/cdef50e0-0e6d-4e23-a4b1-6ffc9ca89df8',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
