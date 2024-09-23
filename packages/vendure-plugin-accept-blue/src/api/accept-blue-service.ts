@@ -478,29 +478,20 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     );
     let orderLines: OrderLine[] = [];
     if (scheduleId) {
-      // Get orderLine by scheduleId
+      // Transactions for a schedule will have a scheduleId
       const orderLine = await this.findOrderLineByScheduleId(ctx, scheduleId);
       orderLines = [orderLine];
     } else {
-      // Find by ID's
+      // Direct transactions from the checkout will have orderLineIds as custom field, and are not attached to a schedule
       orderLines = await this.connection
         .getRepository(ctx, OrderLine)
         .find({ where: { id: In(orderLineIds) } });
     }
     if (!orderLines.length) {
-      Logger.warn(
-        'No order lines found for incoming webhook, we can not connect this event to an order line.',
-        loggerCtx
-      );
-      await this.eventBus.publish(
-        new AcceptBlueTransactionEvent(
-          event.type,
-          event,
-          event.data.transaction?.id
-        )
-      );
-      Logger.debug(
-        `Published AcceptBlueTransactionEvent (${event.id}) without orderLine`,
+      Logger.error(
+        `No order lines found for incoming webhook, we can not connect this event to an order line: ${JSON.stringify(
+          event
+        )}`,
         loggerCtx
       );
       return;
@@ -514,8 +505,8 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         new AcceptBlueTransactionEvent(
           event.type,
           event,
-          event.data.transaction?.id,
-          orderLine
+          orderLine,
+          event.data.transaction?.id
         )
       );
       Logger.debug(

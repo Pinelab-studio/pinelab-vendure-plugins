@@ -51,6 +51,7 @@ import {
   mockCardTransaction,
   recurringScheduleResult,
 } from './helpers/nock-helpers';
+import { createMockWebhook, createSignature } from './helpers/mock-webhooks';
 
 let server: TestServer;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars --- FIXME
@@ -483,6 +484,19 @@ describe('Refunds and transactions', () => {
       error = e;
     }
     expect(error?.response?.errors?.[0]?.extensions.code).toEqual('FORBIDDEN');
+  });
+});
+
+describe('Transaction events', () => {
+  // TODO: listen for events, send mock webhook, test events received
+
+  it('Emits payment event on incoming transaction webhook', async () => {
+    const mockWebhook = createMockWebhook();
+    const signature = createSignature(
+      'tiUZY5EE5pllUiddIgrPhm1gSXNKnX0h',
+      mockWebhook
+    );
+    console.log(signature);
   });
 });
 

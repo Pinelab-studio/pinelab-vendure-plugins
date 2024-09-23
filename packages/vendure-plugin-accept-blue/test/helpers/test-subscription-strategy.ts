@@ -1,5 +1,5 @@
 import { Injector, Order, ProductVariant, RequestContext } from '@vendure/core';
-import { Subscription, SubscriptionStrategy } from '../src';
+import { Subscription, SubscriptionStrategy } from '../../src';
 
 /**
  * Just a test subscription strategy for testing purposes.

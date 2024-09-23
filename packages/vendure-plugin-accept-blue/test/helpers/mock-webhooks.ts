@@ -100,6 +100,9 @@ export function createMockWebhook() {
 /**
  * Create a valid signature for your mock webhook
  */
-export function createSignature(webhookSecret: string, body: any): string {
-  return crypto.createHmac('sha256', webhookSecret).update(body).digest('hex');
+export function createSignature(webhookSecret: string, body: Object): string {
+  return crypto
+    .createHmac('sha256', webhookSecret)
+    .update(JSON.stringify(body))
+    .digest('hex');
 }
