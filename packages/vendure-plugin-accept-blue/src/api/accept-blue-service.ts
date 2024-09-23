@@ -20,7 +20,7 @@ import {
 } from '@vendure/core';
 import crypto from 'node:crypto';
 import { filter } from 'rxjs';
-import { In } from 'typeorm';
+import { In, SelectQueryBuilder } from 'typeorm';
 import * as util from 'util';
 import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
@@ -536,15 +536,10 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext,
     scheduleId: number
   ): Promise<OrderLine> {
-    const orderLine = await this.connection
-      .getRepository(ctx, OrderLine)
-      .findOne({
-        where: {
-          customFields: {
-            acceptBlueSubscriptionIds: In([scheduleId]),
-          },
-        },
-      });
+    const orderLine = await this.mapSubscriptionScheduleFilter(
+      ctx,
+      scheduleId
+    ).getOne();
     if (!orderLine) {
       throw Error(`No order line found with scheduleId ${scheduleId}`);
     }
@@ -588,6 +583,49 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     return JSON.stringify(orderLineIds);
   }
 
+  private mapSubscriptionScheduleFilter(
+    ctx: RequestContext,
+    scheduleId: number
+  ): SelectQueryBuilder<OrderLine> {
+    const dbType = this.connection.rawConnection.driver.options.type;
+    const repo = this.connection.getRepository(ctx, OrderLine);
+    switch (dbType) {
+      case 'postgres':
+        return repo
+          .createQueryBuilder('orderLine')
+          .where(
+            ":scheduleId = ANY(string_to_array(orderLine.customFields.acceptBlueSubscriptionIds, ','))"
+          )
+          .setParameter('scheduleId', scheduleId);
+      case 'mysql':
+      case 'mssql':
+        return repo
+          .createQueryBuilder('orderLine')
+          .where(
+            'FIND_IN_SET(:scheduleId, orderLine.customFields->>"$.acceptBlueSubscriptionIds")'
+          )
+          .setParameter('scheduleId', scheduleId);
+      case 'sqljs':
+      case 'sqlite':
+        return repo
+          .createQueryBuilder('orderLine')
+          .where(
+            "INSTR(',' || orderLine.customFields.acceptBlueSubscriptionIds || ',', :scheduleId) > 0",
+            {
+              scheduleId: `,${scheduleId},`,
+            }
+          );
+      default:
+        return repo
+          .createQueryBuilder('orderLine')
+          .where(
+            "POSITION(',' || :scheduleId || ',' IN ',' || orderLine.customFields.acceptBlueSubscriptionIds || ',') > 0",
+            {
+              scheduleId: `${scheduleId}`,
+            }
+          );
+    }
+  }
   /**
    * Map a subscription from Accept Blue to the GraphQL Subscription type
    */
