@@ -42,7 +42,7 @@ import {
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
   UPDATE_CUSTOMER_BLUE_ID,
-} from './helpers';
+} from './helpers/graphql-helpers';
 import {
   checkChargeResult,
   creditCardChargeResult,
@@ -50,7 +50,7 @@ import {
   haydenZiemeCustomerDetails,
   mockCardTransaction,
   recurringScheduleResult,
-} from './nock-helpers';
+} from './helpers/nock-helpers';
 
 let server: TestServer;
 // eslint-disable-next-line @typescript-eslint/no-unused-vars --- FIXME

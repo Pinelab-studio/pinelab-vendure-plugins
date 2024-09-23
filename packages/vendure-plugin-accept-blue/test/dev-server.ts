@@ -17,7 +17,7 @@ import {
 import readline from 'readline';
 import { AcceptBluePlugin } from '../src';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
-import { AcceptBlueTestCheckoutPlugin } from './accept-blue-test-checkout.plugin';
+import { AcceptBlueTestCheckoutPlugin } from './helpers/accept-blue-test-checkout.plugin';
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
@@ -26,10 +26,10 @@ import {
   REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
-} from './helpers';
+} from './helpers/graphql-helpers';
 import { NoncePaymentMethodInput } from '../src/types';
 import { add } from 'date-fns';
-import { TestSubscriptionStrategy } from './test-subscription-strategy';
+import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
 
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
