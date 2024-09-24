@@ -4,6 +4,7 @@ import { Request } from 'express';
 import { loggerCtx } from '../constants';
 import { AcceptBlueEvent } from '../types';
 import { AcceptBlueService } from './accept-blue-service';
+import { asError } from 'catch-unknown';
 
 @Controller('accept-blue')
 export class AcceptBlueController {
@@ -27,13 +28,12 @@ export class AcceptBlueController {
     const ctx = await this.getCtxForChannel(channelToken);
     await this.acceptBlueService
       .handleIncomingWebhook(ctx, body, rawBody, signature)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .catch((e: any) => {
+      .catch((e) => {
         Logger.error(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          `Error handling Accept Blue webhook event: ${e?.message}`,
+          `Error handling Accept Blue webhook event: ${asError(e).message}`,
           loggerCtx
         );
+        throw e;
       });
   }
 

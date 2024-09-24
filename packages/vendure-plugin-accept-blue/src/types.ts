@@ -350,7 +350,7 @@ export interface AcceptBlueChargeTransaction extends AcceptBlueTransaction {
 export interface AcceptBlueEvent {
   type: 'succeeded' | 'updated' | 'declined' | 'error' | 'status';
   subType: string;
-  event: 'transaction';
+  event: 'transaction' | 'batch';
   id: string;
   timestamp: string;
   data: AcceptBlueChargeTransaction;

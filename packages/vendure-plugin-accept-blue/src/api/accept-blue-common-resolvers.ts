@@ -15,7 +15,11 @@ import {
   Permission,
   RequestContext,
 } from '@vendure/core';
-import { AcceptBluePaymentMethod } from '../types';
+import {
+  AcceptBlueCardPaymentMethod,
+  AcceptBlueCheckPaymentMethod,
+  AcceptBluePaymentMethod,
+} from '../types';
 import { AcceptBlueService } from './accept-blue-service';
 import {
   AcceptBlueSubscription,
@@ -122,9 +126,9 @@ export class AcceptBlueCommonResolver {
 
   @ResolveField()
   @Resolver('AcceptBluePaymentMethod')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  __resolveType(value: any): string {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+  __resolveType(
+    value: AcceptBlueCheckPaymentMethod | AcceptBlueCardPaymentMethod
+  ): string {
     return value.payment_method_type === 'card'
       ? 'AcceptBlueCardPaymentMethod'
       : 'AcceptBlueCheckPaymentMethod';

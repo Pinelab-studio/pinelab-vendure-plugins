@@ -6,6 +6,7 @@ import {
   CustomerService,
   EntityHydrator,
   EventBus,
+  ForbiddenError,
   ID,
   Logger,
   Order,
@@ -20,7 +21,8 @@ import {
 } from '@vendure/core';
 import crypto from 'node:crypto';
 import { filter } from 'rxjs';
-import { In, SelectQueryBuilder } from 'typeorm';
+import { In } from 'typeorm';
+import { asError } from 'catch-unknown';
 import * as util from 'util';
 import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
@@ -84,11 +86,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         )
       )
       .subscribe(({ ctx, entity }) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.registerWebhook(ctx, entity).catch((err: any) => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument
+        this.registerWebhook(ctx, entity).catch((err) => {
           Logger.error(
-            `Failed to register webhook: ${err?.message}`,
+            `Failed to register webhook: ${asError(err).message}`,
             loggerCtx,
             util.inspect(err)
           );
@@ -191,9 +191,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
       chargeResult = await client.createCharge(paymentMethodId, amount, {
         // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
-        custom1: this.stringifyOrderLineCustomField(
-          subscriptionOrderLines.map((l) => l.id)
-        ),
+        custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
       });
     }
     return {
@@ -455,6 +453,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     rawBody: Buffer,
     incomingSignature: string
   ): Promise<void> {
+    if (event.event === 'batch') {
+      Logger.info(
+        `Ignoring incoming webhook of type '${event.event}' '${event.type}' (${event.id})`,
+        loggerCtx
+      );
+      return;
+    }
     Logger.info(
       `Handling incoming webhook '${event.subType}' '${event.event}' '${event.type}' (${event.id}) ...`,
       loggerCtx
@@ -469,9 +474,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       );
     }
     if (!this.isValidSignature(savedSecret, rawBody, incomingSignature)) {
-      throw new Error('Incoming webhook has invalid signature');
+      throw new ForbiddenError();
     }
-    // Get corresponding order lines
+    // Get corresponding order lines based on the incoming webhook fields: Either schedule_id or custom_fields should be defined
     const scheduleId = event.data.transaction?.transaction_details?.schedule_id;
     const orderLineIds = this.parseOrderLineCustomField(
       event.data.transaction?.custom_fields?.custom1
@@ -480,7 +485,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     if (scheduleId) {
       // Transactions for a schedule will have a scheduleId
       const orderLine = await this.findOrderLineByScheduleId(ctx, scheduleId);
-      orderLines = [orderLine];
+      if (orderLine) {
+        orderLines = [orderLine];
+      }
     } else {
       // Direct transactions from the checkout will have orderLineIds as custom field, and are not attached to a schedule
       orderLines = await this.connection
@@ -526,15 +533,20 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   async findOrderLineByScheduleId(
     ctx: RequestContext,
     scheduleId: number
-  ): Promise<OrderLine> {
-    const orderLine = await this.mapSubscriptionScheduleFilter(
-      ctx,
-      scheduleId
-    ).getOne();
-    if (!orderLine) {
-      throw Error(`No order line found with scheduleId ${scheduleId}`);
-    }
-    return orderLine;
+  ): Promise<OrderLine | null | undefined> {
+    const result = await this.connection
+      .getRepository(ctx, OrderLine)
+      .createQueryBuilder('orderLine')
+      .where(
+        'orderLine.customFields.acceptBlueSubscriptionIds LIKE :scheduleId',
+        { scheduleId: `%${scheduleId}%` }
+      )
+      .getMany();
+    // We query with LIKE, because array custom fields are stored as simple-json in the database
+    // With LIKE, we can get false positives, so we check again if the parsed result contains the exact scheduleId
+    return result.find((orderLine) =>
+      orderLine.customFields.acceptBlueSubscriptionIds.includes(scheduleId)
+    );
   }
 
   /**
@@ -567,56 +579,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     return orderLineIds as ID[];
   }
 
-  /**
-   * Stringify orderLine id's, so that we can pass it as custom field to Accept Blue
-   */
-  stringifyOrderLineCustomField(orderLineIds: ID[]): string {
-    return JSON.stringify(orderLineIds);
-  }
-
-  private mapSubscriptionScheduleFilter(
-    ctx: RequestContext,
-    scheduleId: number
-  ): SelectQueryBuilder<OrderLine> {
-    const dbType = this.connection.rawConnection.driver.options.type;
-    const repo = this.connection.getRepository(ctx, OrderLine);
-    switch (dbType) {
-      case 'postgres':
-        return repo
-          .createQueryBuilder('orderLine')
-          .where(
-            ":scheduleId = ANY(string_to_array(orderLine.customFields.acceptBlueSubscriptionIds, ','))"
-          )
-          .setParameter('scheduleId', scheduleId);
-      case 'mysql':
-      case 'mssql':
-        return repo
-          .createQueryBuilder('orderLine')
-          .where(
-            'FIND_IN_SET(:scheduleId, orderLine.customFields->>"$.acceptBlueSubscriptionIds")'
-          )
-          .setParameter('scheduleId', scheduleId);
-      case 'sqljs':
-      case 'sqlite':
-        return repo
-          .createQueryBuilder('orderLine')
-          .where(
-            "INSTR(',' || orderLine.customFields.acceptBlueSubscriptionIds || ',', :scheduleId) > 0",
-            {
-              scheduleId: `,${scheduleId},`,
-            }
-          );
-      default:
-        return repo
-          .createQueryBuilder('orderLine')
-          .where(
-            "POSITION(',' || :scheduleId || ',' IN ',' || orderLine.customFields.acceptBlueSubscriptionIds || ',') > 0",
-            {
-              scheduleId: `${scheduleId}`,
-            }
-          );
-    }
-  }
   /**
    * Map a subscription from Accept Blue to the GraphQL Subscription type
    */
