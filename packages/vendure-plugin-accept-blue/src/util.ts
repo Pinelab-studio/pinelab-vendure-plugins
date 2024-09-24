@@ -56,7 +56,6 @@ export function isSameCheck(input: CheckInput, check: ObfuscatedCheck) {
  * 'biweekly' in this context means every two weeks
  */
 export function toAcceptBlueFrequency(subscription: Subscription): Frequency {
-  // FIXME this should have a unit test
   const {
     recurring: { interval, intervalCount },
   } = subscription;
