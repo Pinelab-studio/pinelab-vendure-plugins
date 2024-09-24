@@ -98,7 +98,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   }
 
   /**
-   * Register a webhook with the Accept Blue platform
+   * Register a webhook with the Accept Blue platform. Checks if a webhook for this host already exists, and creates one if not.
    */
   async registerWebhook(ctx: RequestContext, paymentMethod: PaymentMethod) {
     const client = await this.getClientForChannel(ctx);
