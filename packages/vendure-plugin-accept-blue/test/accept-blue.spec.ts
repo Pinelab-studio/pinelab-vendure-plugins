@@ -443,7 +443,7 @@ describe('Payment with Saved Payment Method', () => {
 describe('Refunds and transactions', () => {
   let orderLineWithSubscription: OrderLine;
 
-  it('Emits transaction event for schedule payments', async () => {
+  it('Emits transaction event for incoming schedule payments webhook', async () => {
     const events: AcceptBlueTransactionEvent[] = [];
     server.app
       .get(EventBus)
@@ -476,7 +476,7 @@ describe('Refunds and transactions', () => {
     expect(orderLine.order.customer?.emailAddress).toBeDefined();
   });
 
-  it('Emits transaction event for one-off payments', async () => {
+  it('Emits transaction event for incoming one-off payments webhook', async () => {
     const events: AcceptBlueTransactionEvent[] = [];
     server.app
       .get(EventBus)
