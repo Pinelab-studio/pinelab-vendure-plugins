@@ -78,6 +78,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   readonly subscriptionHelper: SubscriptionHelper;
 
   onApplicationBootstrap() {
+    // Register webhooks whenever an Accept Blue payment method is created or updated
     this.eventBus
       .ofType(PaymentMethodEvent)
       .pipe(
