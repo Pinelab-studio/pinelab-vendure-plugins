@@ -15,7 +15,11 @@ import {
   Permission,
   RequestContext,
 } from '@vendure/core';
-import { AcceptBluePaymentMethod } from '../types';
+import {
+  AcceptBlueCardPaymentMethod,
+  AcceptBlueCheckPaymentMethod,
+  AcceptBluePaymentMethod,
+} from '../types';
 import { AcceptBlueService } from './accept-blue-service';
 import {
   AcceptBlueSubscription,
@@ -122,7 +126,9 @@ export class AcceptBlueCommonResolver {
 
   @ResolveField()
   @Resolver('AcceptBluePaymentMethod')
-  __resolveType(value: any): string {
+  __resolveType(
+    value: AcceptBlueCheckPaymentMethod | AcceptBlueCardPaymentMethod
+  ): string {
     return value.payment_method_type === 'card'
       ? 'AcceptBlueCardPaymentMethod'
       : 'AcceptBlueCheckPaymentMethod';

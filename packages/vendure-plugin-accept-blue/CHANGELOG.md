@@ -1,3 +1,8 @@
+# 1.7 (2024-09-24)
+
+- Automatically register webhooks with Accept Blue on payment method creation and update
+- Emit `AcceptBlueTransactionEvent` on incoming webhooks from Accept Blue
+
 # 1.6.1 (2024-08-04)
 
 - Update compatibility range (#480)
