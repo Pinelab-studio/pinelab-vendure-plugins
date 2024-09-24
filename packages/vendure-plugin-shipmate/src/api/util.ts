@@ -52,7 +52,7 @@ export function parseParcels(order: Order): Parcels {
 export function parseOrderLine(line: OrderLine): Items {
   return {
     item_quantity: line.quantity,
-    item_value: line.proratedUnitPriceWithTax,
+    item_value: line.proratedUnitPriceWithTax / 100,
     full_description: line.productVariant?.product?.description?.substring(
       0,
       40

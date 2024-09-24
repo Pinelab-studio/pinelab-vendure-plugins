@@ -2,22 +2,22 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 import {
-  RequestContext,
   createSelfRefreshingCache,
-  SelfRefreshingCache,
+  Customer,
+  EntityHydrator,
+  Injector,
   Logger,
   Order,
-  Customer,
-  Injector,
-  EntityHydrator,
+  RequestContext,
+  SelfRefreshingCache,
   translateDeep,
 } from '@vendure/core';
+import util from 'util';
+import { InvoiceEntity } from '../../entities/invoice.entity';
 import {
   AccountingExportStrategy,
   ExternalReference,
 } from './accounting-export-strategy';
-import { InvoiceEntity } from '../../entities/invoice.entity';
-import util from 'util';
 
 const loggerCtx = 'XeroUKAccountingExport';
 
@@ -34,6 +34,10 @@ interface Config {
   salesAccountCode: string;
   channelToken?: string;
   /**
+   * See https://central.xero.com/s/article/Add-edit-or-delete-custom-invoice-quote-templates
+   */
+  invoiceBrandingThemeId?: string;
+  /**
    * Construct a reference based on the given order object
    */
   getReference?: (
@@ -44,7 +48,11 @@ interface Config {
   /**
    * Construct a URL that links to the order in Vendure Admin
    */
-  getVendureUrl?: (order: Order, invoice: InvoiceEntity) => string;
+  getVendureUrl?(order: Order, invoice: InvoiceEntity): string;
+  /**
+   * Get the due date for an invoice. Defaults to 30 days from now
+   */
+  getDueDate?(ctx: RequestContext, order: Order, invoice: InvoiceEntity): Date;
 }
 
 interface TaxRate {
@@ -110,8 +118,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
   async exportInvoice(
     ctx: RequestContext,
     invoice: InvoiceEntity,
-    order: Order,
-    isCreditInvoiceFor?: InvoiceEntity
+    order: Order
   ): Promise<ExternalReference> {
     await injector.get(EntityHydrator).hydrate(ctx, order, {
       relations: [
@@ -120,7 +127,6 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         'lines.productVariant',
         'lines.productVariant.translations',
         'shippingLines.shippingMethod',
-        'payments',
       ],
     });
     if (!order.customer) {
@@ -129,126 +135,141 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       );
     }
     try {
-      const contact = await this.getOrCreateContact(order.customer);
-      if (!invoice.isCreditInvoice) {
-        return await this.createInvoice(ctx, order, invoice, contact.contactID);
-      } else {
-        return await this.createCreditNote(
-          ctx,
-          order,
-          invoice,
-          isCreditInvoiceFor?.invoiceNumber,
-          contact.contactID
-        );
-      }
+      const contact = await this.getOrCreateContact(
+        order.customer,
+        order.billingAddress?.company
+      );
+      const reference =
+        this.config.getReference?.(order, invoice) || order.code;
+      const oneMonthLater = new Date();
+      oneMonthLater.setDate(oneMonthLater.getDate() + 30);
+      const dueDate = this.config.getDueDate
+        ? this.config.getDueDate(ctx, order, invoice)
+        : oneMonthLater;
+      const xeroInvoice: import('xero-node').Invoice = {
+        invoiceNumber: String(invoice.invoiceNumber),
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+        type: 'ACCREC' as any,
+        contact: {
+          contactID: contact.contactID,
+        },
+        dueDate: this.toDate(dueDate),
+        brandingThemeID: this.config.invoiceBrandingThemeId,
+        date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
+        lineItems: this.getLineItems(ctx, order),
+        reference,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+        status: 'DRAFT' as any,
+        url: this.config.getVendureUrl?.(order, invoice),
+      };
+      const idempotencyKey = `${ctx.channel.token}-${
+        invoice.invoiceNumber
+      }-${order.updatedAt.toISOString()}`;
+      const response = await this.xero.accountingApi.createInvoices(
+        this.tenantId,
+        { invoices: [xeroInvoice] },
+        true,
+        undefined,
+        idempotencyKey
+      );
+      const createdInvoice = response.body.invoices?.[0];
+      Logger.info(
+        `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${createdInvoice?.invoiceID}' with a total Incl. Tax of ${createdInvoice?.total}`,
+        loggerCtx
+      );
+      return {
+        reference: createdInvoice?.invoiceID,
+        link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${createdInvoice?.invoiceID}`,
+      };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      const errorMessage =
-        JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
-          ?.Message || JSON.parse(err)?.response?.body?.Message;
+      const errorMessage = this.getErrorMessage(err);
       Logger.warn(
-        `Failed to export to Xero for order '${order.code}': ${errorMessage}`,
+        `Failed to export invoice to Xero for order '${order.code}': ${errorMessage}`,
         loggerCtx
       );
       throw Error(errorMessage);
     }
   }
 
-  /**
-   * Create normal invoice in Xero
-   */
-  async createInvoice(
+  async exportCreditInvoice(
     ctx: RequestContext,
-    order: Order,
     invoice: InvoiceEntity,
-    contactId?: string
+    isCreditInvoiceFor: InvoiceEntity,
+    order: Order
   ): Promise<ExternalReference> {
     await this.tokenCache.value(); // Always get a token before making a request
-    const reference = this.config.getReference?.(order, invoice) || order.code;
-    const xeroInvoice: import('xero-node').Invoice = {
-      invoiceNumber: String(invoice.invoiceNumber),
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-      type: 'ACCREC' as any,
-      contact: {
-        contactID: contactId,
-      },
-      date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
-      lineItems: this.getLineItems(ctx, order),
-      reference,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-      status: 'DRAFT' as any,
-      url: this.config.getVendureUrl?.(order, invoice),
-    };
-    const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
-    const response = await this.xero.accountingApi.createInvoices(
-      this.tenantId,
-      { invoices: [xeroInvoice] },
-      true,
-      undefined,
-      idempotencyKey
-    );
-    const createdInvoice = response.body.invoices?.[0];
-    Logger.info(
-      `Created invoice '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${createdInvoice?.invoiceID}' with a total Incl. Tax of ${createdInvoice?.total}`,
-      loggerCtx
-    );
-    return {
-      reference: createdInvoice?.invoiceID,
-      link: `https://go.xero.com/AccountsReceivable/View.aspx?InvoiceID=${createdInvoice?.invoiceID}`,
-    };
-  }
-
-  /**
-   * Credit notes are a separate entity in Xero, so we have a separate method for them
-   */
-  async createCreditNote(
-    ctx: RequestContext,
-    order: Order,
-    invoice: InvoiceEntity,
-    isCreditInvoiceFor?: number,
-    contactId?: string
-  ): Promise<ExternalReference> {
-    await this.tokenCache.value(); // Always get a token before making a request
-    const reference =
-      this.config.getReference?.(order, invoice, isCreditInvoiceFor) ||
-      `Credit note for ${isCreditInvoiceFor}`;
-    const creditNote: import('xero-node').CreditNote = {
-      creditNoteNumber: `${invoice.invoiceNumber} (CN)`,
+    await injector
+      .get(EntityHydrator)
+      .hydrate(ctx, order, { relations: ['customer'] });
+    if (!order.customer) {
+      throw Error(
+        `Cannot export credit invoice of order '${order.code}' to Xero without a customer`
+      );
+    }
+    try {
+      const contact = await this.getOrCreateContact(
+        order.customer,
+        order.billingAddress?.company
+      );
+      const reference =
+        this.config.getReference?.(
+          order,
+          invoice,
+          isCreditInvoiceFor.invoiceNumber
+        ) || `Credit note for ${isCreditInvoiceFor}`;
+      const creditNote: import('xero-node').CreditNote = {
+        creditNoteNumber: `${invoice.invoiceNumber} (CN)`,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        type: 'ACCRECCREDIT' as any,
+        contact: {
+          contactID: contact.contactID,
+        },
+        date: this.toDate(order.updatedAt),
+        brandingThemeID: this.config.invoiceBrandingThemeId,
+        lineItems: this.getCreditLineItems(invoice),
+        reference,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        status: 'DRAFT' as any,
+      };
+      const idempotencyKey = `${ctx.channel.token}-${
+        invoice.invoiceNumber
+      }-${order.updatedAt.toISOString()}`;
+      const response = await this.xero.accountingApi.createCreditNotes(
+        this.tenantId,
+        { creditNotes: [creditNote] },
+        true,
+        undefined,
+        idempotencyKey
+      );
+      const creditNoteResponse = response.body.creditNotes?.[0];
+      Logger.info(
+        `Created credit note '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${creditNoteResponse?.creditNoteID}' with a total Incl. Tax of ${creditNoteResponse?.total}`,
+        loggerCtx
+      );
+      return {
+        reference: creditNoteResponse?.creditNoteID,
+        link: `https://go.xero.com/AccountsReceivable/EditCreditNote.aspx?creditNoteID=${creditNoteResponse?.creditNoteID}`,
+      };
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      type: 'ACCRECCREDIT' as any,
-      contact: {
-        contactID: contactId,
-      },
-      date: this.toDate(order.orderPlacedAt ?? order.updatedAt),
-      lineItems: this.getCreditLineItems(invoice),
-      reference,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      status: 'DRAFT' as any,
-    };
-    const idempotencyKey = `${ctx.channel.token}-${order.code}-${invoice.invoiceNumber}`;
-    const response = await this.xero.accountingApi.createCreditNotes(
-      this.tenantId,
-      { creditNotes: [creditNote] },
-      true,
-      undefined,
-      idempotencyKey
-    );
-    const creditNoteResponse = response.body.creditNotes?.[0];
-    Logger.info(
-      `Created credit note '${invoice.invoiceNumber}' for order '${order.code}' in Xero with ID '${creditNoteResponse?.creditNoteID}' with a total Incl. Tax of ${creditNoteResponse?.total}`,
-      loggerCtx
-    );
-    return {
-      reference: creditNoteResponse?.creditNoteID,
-      link: `https://go.xero.com/AccountsReceivable/EditCreditNote.aspx?creditNoteID=${creditNoteResponse?.creditNoteID}`,
-    };
+    } catch (err: any) {
+      const errorMessage = this.getErrorMessage(err);
+      Logger.warn(
+        `Failed to export Credit Invoice to Xero for order '${order.code}': ${errorMessage}`,
+        loggerCtx
+      );
+      throw Error(errorMessage);
+    }
   }
 
   async getOrCreateContact(
-    customer: Customer
+    customer: Customer,
+    companyName?: string
   ): Promise<import('xero-node').Contact> {
     await this.tokenCache.value(); // Always get a token before making a request
-    const contacts = await this.xero.accountingApi.getContacts(
+    // Find by contact name first
+    const contacName = this.getNormalizedContactName(customer, companyName);
+    let contacts = await this.xero.accountingApi.getContacts(
       this.tenantId,
       undefined,
       undefined,
@@ -257,8 +278,22 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       undefined,
       undefined,
       undefined,
-      customer.emailAddress
+      this.getNormalizedContactName(customer, companyName)
     );
+    if (!contacts.body.contacts?.length) {
+      // If no contacts, try to find by email
+      contacts = await this.xero.accountingApi.getContacts(
+        this.tenantId,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        customer.emailAddress
+      );
+    }
     if ((contacts.body?.contacts?.length ?? 0) > 1) {
       const contact = contacts.body.contacts![0];
       Logger.info(
@@ -286,7 +321,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     );
     const createdContact = createdContacts.body.contacts?.[0];
     Logger.info(
-      `Created new contact in Xero with email address "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
+      `No contact found with name '${contacName}' or email '${customer.emailAddress}'. Created new contact with email "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
       loggerCtx
     );
     return createdContacts.body.contacts![0];
@@ -304,6 +339,16 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           rate: rate.effectiveRate,
           type: rate.taxType,
         })) || []
+    );
+  }
+
+  /**
+   * Get the readable error message from the Xero response
+   */
+  private getErrorMessage(err: any): string {
+    return (
+      JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
+        ?.Message || JSON.parse(err)?.response?.body?.Message
     );
   }
 
@@ -377,6 +422,20 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
         taxType: this.getTaxType(taxSummary.taxRate, invoice.invoiceNumber),
       };
     });
+  }
+
+  /**
+   * Get the normalized contact name. Uses company or other wise customers full name.
+   * Trims and replaces duplicate spaces/tabs/newlines
+   */
+  private getNormalizedContactName(
+    customer: Customer,
+    companyName?: string
+  ): string {
+    const contactName =
+      companyName ||
+      [customer.firstName, customer.lastName].filter(Boolean).join(' ');
+    return contactName.trim().replace(/\s\s+/g, ' ');
   }
 
   private getTaxType(

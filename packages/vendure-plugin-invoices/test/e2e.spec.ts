@@ -36,6 +36,7 @@ import { InvoiceCreatedEvent } from '../src/services/invoice-created-event';
 import { getOrderWithInvoices } from '../src/ui/invoices-detail-view/invoices-detail-view';
 import {
   createInvoice as createInvoiceMutation,
+  exportToAccounting,
   getConfigQuery,
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
@@ -65,6 +66,7 @@ const mockAccountingStrategy = new MockAccountingStrategy(
 const mockAccountingStrategySpy = {
   init: vi.spyOn(mockAccountingStrategy, 'init'),
   exportInvoice: vi.spyOn(mockAccountingStrategy, 'exportInvoice'),
+  exportCreditInvoice: vi.spyOn(mockAccountingStrategy, 'exportCreditInvoice'),
 };
 
 beforeAll(async () => {
@@ -219,6 +221,19 @@ describe('Generate with credit invoicing enabled', function () {
     expect(order.totalWithTax).toBe(1480);
   });
 
+  it('Fails to export to accounting, because order totals dont match the invoice anymore', async () => {
+    await adminClient.query(exportToAccounting, {
+      invoiceNumber: 10001,
+    });
+    await wait(); // Wait for async export via bob queue
+    const { order: result } = await adminClient.query(getOrderWithInvoices, {
+      id: 1,
+    });
+    expect(result.invoices[0].accountingReference.errorMessage).toContain(
+      'has changed compared to the invoice'
+    );
+  });
+
   it('Creates credit and new invoice on createInvoice mutation', async () => {
     const result = await adminClient.query(createInvoiceMutation, {
       orderId: order.id,
@@ -256,8 +271,9 @@ describe('Generate with credit invoicing enabled', function () {
 
   it('Triggered accounting export strategy for credit invoice', async () => {
     await wait();
-    const [ctx, invoice, order, isCreditInvoiceFor] =
-      mockAccountingStrategySpy.exportInvoice.mock.calls[1];
+    console.log(mockAccountingStrategySpy.exportCreditInvoice.mock.calls);
+    const [ctx, invoice, isCreditInvoiceFor, order] =
+      mockAccountingStrategySpy.exportCreditInvoice.mock.calls[0];
     expect(ctx).toBeInstanceOf(RequestContext);
     expect(invoice).toBeInstanceOf(InvoiceEntity);
     expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);
@@ -265,12 +281,11 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Triggered accounting export strategy for new invoice after credit invoice', async () => {
-    const [ctx, invoice, order, isCreditInvoiceFor] =
-      mockAccountingStrategySpy.exportInvoice.mock.calls[2];
+    const [ctx, invoice, order] =
+      mockAccountingStrategySpy.exportInvoice.mock.calls[1];
     expect(ctx).toBeInstanceOf(RequestContext);
     expect(invoice).toBeInstanceOf(InvoiceEntity);
     expect(order).toBeInstanceOf(Order);
-    expect(isCreditInvoiceFor).toBe(null);
   });
 
   it('Returns all invoices for order', async () => {
@@ -288,15 +303,15 @@ describe('Generate with credit invoicing enabled', function () {
     expect(invoices[0].invoiceNumber).toBe(10003);
   });
 
-  it('Exports invoice to accounting again via mutation', async () => {
+  it('Exports the credit invoice to accounting again via mutation', async () => {
     const { exportInvoiceToAccountingPlatform } = await adminClient.query(gql`
       mutation {
         exportInvoiceToAccountingPlatform(invoiceNumber: 10002)
       }
     `);
     await wait();
-    const [ctx, invoice, order, isCreditInvoiceFor] =
-      mockAccountingStrategySpy.exportInvoice.mock.calls[3];
+    const [ctx, invoice, isCreditInvoiceFor] =
+      mockAccountingStrategySpy.exportCreditInvoice.mock.calls[1];
     expect(exportInvoiceToAccountingPlatform).toBe(true);
     expect(invoice.invoiceNumber).toBe(10002);
     expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);

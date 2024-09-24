@@ -1,10 +1,12 @@
 import {
   configureDefaultOrderProcess,
   DefaultLogger,
+  EventBus,
   LogLevel,
   mergeConfig,
   Order,
   OrderProcess,
+  OrderStateTransitionEvent,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -35,6 +37,7 @@ import { IncomingOrderStatusWebhook, PicqerPlugin, VatGroup } from '../src';
 import { picqerHandler } from '../src/api/picqer.handler';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
+import { filter } from 'rxjs';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -281,6 +284,20 @@ describe('Order placement', function () {
         ],
       },
     } as Partial<IncomingOrderStatusWebhook>;
+    const eventBus = server.app.get(EventBus);
+    let eventFired = false;
+    eventBus
+      .ofType(OrderStateTransitionEvent)
+      .pipe(
+        filter(
+          (event) =>
+            event.order.code === createdOrder?.code &&
+            event.toState === 'Shipped'
+        )
+      )
+      .subscribe((event) => {
+        eventFired = true;
+      });
     await adminClient.fetch(
       `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
       {
@@ -294,6 +311,8 @@ describe('Order placement', function () {
         },
       }
     );
+    await Promise.resolve((r) => setTimeout(r, 1000));
+    expect(eventFired).toBe(true);
     const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Delivered');
   });
