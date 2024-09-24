@@ -84,7 +84,6 @@ beforeAll(async () => {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
       AcceptBluePlugin.init({
-        // TODO create TestStrategy that creates invalid subscription
         vendureHost: 'https://my-vendure-backend.io',
       }),
     ],
