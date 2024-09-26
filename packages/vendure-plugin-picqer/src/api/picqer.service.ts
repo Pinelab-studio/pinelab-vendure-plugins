@@ -1107,10 +1107,10 @@ export class PicqerService implements OnApplicationBootstrap {
       throw Error(`Variant with ID ${variant.id} has no SKU`);
     }
     let name: string =
-      variant.name ??
       variant.translations?.find(
         (t) => t.languageCode === ctx.channel.defaultLanguageCode
       )?.name ??
+      variant.name ??
       variant.translations?.[0]?.name;
     if (!name) {
       Logger.info(
