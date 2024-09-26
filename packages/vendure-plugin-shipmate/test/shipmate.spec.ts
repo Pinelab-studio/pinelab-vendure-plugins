@@ -16,7 +16,16 @@ import {
   SimpleGraphQLClient,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { afterAll, beforeAll, expect, it, describe, vi } from 'vitest';
+import {
+  afterAll,
+  beforeAll,
+  expect,
+  it,
+  describe,
+  vi,
+  beforeEach,
+  afterEach,
+} from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import nock from 'nock';
 
@@ -53,6 +62,7 @@ describe('Shipmate plugin', async () => {
   let ctx: RequestContext;
   const port = 3105;
   const nockBaseUrl = 'https://api-staging.shipmate.co.uk/v1.2';
+  let shipmentRequest: any;
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
@@ -103,6 +113,19 @@ describe('Shipmate plugin', async () => {
       );
   }, 60000);
 
+  beforeEach(() => {
+    nock(nockBaseUrl)
+      .post('/shipments', (reqBody) => {
+        shipmentRequest = reqBody;
+        return true;
+      })
+      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
+  });
+
+  afterEach(() => {
+    shipmentRequest = undefined;
+  });
+
   it('Should start successfully', () => {
     expect(server.app.getHttpServer()).toBeDefined();
   });
@@ -121,7 +144,6 @@ describe('Shipmate plugin', async () => {
         },
       })
       .persist(true);
-    let shipmentRequest: any;
     await createSettledOrder(shopClient, 'T_1', true, [
       { id: 'T_1', quantity: 2 },
       { id: 'T_2', quantity: 3 },
@@ -147,13 +169,7 @@ describe('Shipmate plugin', async () => {
         },
       })
       .persist(true);
-    let shipmentRequest: any;
-    nock(nockBaseUrl)
-      .post('/shipments', (reqBody) => {
-        shipmentRequest = reqBody;
-        return true;
-      })
-      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
+
     await shopClient.asAnonymousUser();
     await createSettledOrder(shopClient, 'T_1');
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -167,14 +183,6 @@ describe('Shipmate plugin', async () => {
       .delete(`/shipments/${mockShipment.shipment_reference}`)
       .reply(200, cancelShipmentResponse)
       .persist(true);
-
-    let shipmentRequest: any;
-    nock(nockBaseUrl)
-      .post('/shipments', (reqBody) => {
-        shipmentRequest = reqBody;
-        return true;
-      })
-      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
     const orderService = server.app.get(OrderService);
     const ctx = await getSuperadminContext(server.app);
     await adminClient.asSuperAdmin();
