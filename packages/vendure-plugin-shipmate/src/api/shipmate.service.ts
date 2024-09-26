@@ -82,11 +82,15 @@ export class ShipmateService implements OnApplicationBootstrap {
   }
 
   /**
-   * Created a job in the job queue to send the order to Shipmate
+   * Creates a job in the job queue to send the order to Shipmate
    */
   async addJob(
     event: OrderStateTransitionEvent | OrderPlacedEvent
   ): Promise<void> {
+    if (!this.config.shouldSendOrder(event.ctx, event.order)) {
+      Logger.info(`Order ${event.order.code} not sent to shipmate`);
+      return;
+    }
     const { ctx, order, fromState, toState } = event;
     if (event instanceof OrderPlacedEvent) {
       await this.jobQueue.add(

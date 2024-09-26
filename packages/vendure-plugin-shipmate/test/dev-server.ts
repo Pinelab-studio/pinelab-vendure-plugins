@@ -11,6 +11,7 @@ import {
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
+  Order,
   RequestContext,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
@@ -28,6 +29,12 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     plugins: [
       ShipmatePlugin.init({
         apiUrl: process.env.SHIPMATE_BASE_URL as any,
+        shouldSendOrder: function (
+          ctx: RequestContext,
+          order: Order
+        ): Promise<boolean> | boolean {
+          return true;
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

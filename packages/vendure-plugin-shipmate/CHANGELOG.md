@@ -1,3 +1,7 @@
+# 1.3.0 (2024-08-27)
+
+- Add `ShipmatePluginConfig.shouldSendOrder` (#498)
+
 # 1.2.5 (2024-08-27)
 
 - Don't throw erros from `/shipmate` endpoint (#509)
