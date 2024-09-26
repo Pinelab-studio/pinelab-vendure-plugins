@@ -2,6 +2,11 @@
 
 - Add `ShipmatePluginConfig.shouldSendOrder` (#498)
 
+
+# 1.2.5 (2024-08-27)
+
+- Don't throw erros from `/shipmate` endpoint (#509)
+
 # 1.2.4 (2024-08-20)
 
 - Divide by 100 when passing `OrderLine.proratedUnitPriceWithTax` to `Items.item_value`

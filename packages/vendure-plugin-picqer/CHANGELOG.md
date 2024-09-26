@@ -1,3 +1,7 @@
+# 3.3.0 (2024-09-17)
+
+- Transition to `Shipped` state first (#504)
+
 # 3.2.1 (2024-08-14)
 
 - Check for empty strings when sending `invoicename` to Picqer. Fallback to customer email address to make sure orders are sent to Picqer.
