@@ -62,7 +62,6 @@ describe('Shipmate plugin', async () => {
   let ctx: RequestContext;
   const port = 3105;
   const nockBaseUrl = 'https://api-staging.shipmate.co.uk/v1.2';
-  let shipmentRequest: any;
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
@@ -113,37 +112,36 @@ describe('Shipmate plugin', async () => {
       );
   }, 60000);
 
-  beforeEach(() => {
-    nock(nockBaseUrl)
-      .post('/shipments', (reqBody) => {
-        shipmentRequest = reqBody;
-        return true;
-      })
-      .reply(200, { data: [mockShipment], message: 'Shipment Created' });
-  });
-
-  afterEach(() => {
-    shipmentRequest = undefined;
-  });
-
   it('Should start successfully', () => {
     expect(server.app.getHttpServer()).toBeDefined();
   });
 
   let order: Order | undefined;
 
+  // Global tokens mock, neede before each API call
+  nock(nockBaseUrl)
+    .post('/tokens', (reqBody) => {
+      return true;
+    })
+    .reply(200, {
+      message: 'Login Successful',
+      data: {
+        token: '749a75e3c1048965c498017efae8051f',
+      },
+    })
+    .persist(true);
+
+  // Global mock for outgoing requests to Shipmate API
+  let shipmentRequests: any[] = [];
+  nock(nockBaseUrl)
+    .post('/shipments', (reqBody) => {
+      shipmentRequests.push(reqBody);
+      return true;
+    })
+    .reply(200, { data: [mockShipment], message: 'Shipment Created' })
+    .persist(true);
+
   it('Should not create a Shipment when an Order.totalQuantity is >= 5', async () => {
-    nock(nockBaseUrl)
-      .post('/tokens', (reqBody) => {
-        return true;
-      })
-      .reply(200, {
-        message: 'Login Successful',
-        data: {
-          token: '749a75e3c1048965c498017efae8051f',
-        },
-      })
-      .persist(true);
     await createSettledOrder(shopClient, 'T_1', true, [
       { id: 'T_1', quantity: 2 },
       { id: 'T_2', quantity: 3 },
@@ -151,31 +149,21 @@ describe('Shipmate plugin', async () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
     order = await orderService.findOne(ctx, 1);
-    expect(shipmentRequest?.shipment_reference).toBeUndefined();
+    // Should not have any shipments created
+    expect(shipmentRequests.length).toBe(0);
   });
 
   it('Should create a Shipment when an Order is placed', async () => {
     vi.spyOn(DefaultOrderCodeStrategy.prototype, 'generate').mockImplementation(
       () => mockShipment.shipment_reference
     );
-    nock(nockBaseUrl)
-      .post('/tokens', (reqBody) => {
-        return true;
-      })
-      .reply(200, {
-        message: 'Login Successful',
-        data: {
-          token: '749a75e3c1048965c498017efae8051f',
-        },
-      })
-      .persist(true);
-
     await shopClient.asAnonymousUser();
     await createSettledOrder(shopClient, 'T_1');
     await new Promise((resolve) => setTimeout(resolve, 1000));
     const orderService = server.app.get(OrderService);
     order = await orderService.findOne(ctx, 2);
-    expect(shipmentRequest?.shipment_reference).toBe(order?.code);
+    expect(shipmentRequests.length).toBe(1);
+    expect(shipmentRequests[0]?.shipment_reference).toBe(order?.code);
   });
 
   it('Should cancel and recreate order on Order Modification', async () => {
@@ -183,6 +171,7 @@ describe('Shipmate plugin', async () => {
       .delete(`/shipments/${mockShipment.shipment_reference}`)
       .reply(200, cancelShipmentResponse)
       .persist(true);
+
     const orderService = server.app.get(OrderService);
     const ctx = await getSuperadminContext(server.app);
     await adminClient.asSuperAdmin();
@@ -227,7 +216,8 @@ describe('Shipmate plugin', async () => {
     await new Promise((resolve) => setTimeout(resolve, 1 * 1000));
     expect(cancelShipmentScope.isDone()).toBe(true);
     // Created the shipment again
-    expect(shipmentRequest?.shipment_reference).toBe(order?.code);
+    expect(shipmentRequests.length).toBe(2);
+    expect(shipmentRequests[1]?.shipment_reference).toBe(order?.code);
   });
 
   it('Should mark Order as Shipped when receiving "TRACKING_COLLECTED" event', async () => {
