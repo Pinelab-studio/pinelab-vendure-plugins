@@ -87,6 +87,13 @@ export class ShipmateService implements OnApplicationBootstrap {
   async addJob(
     event: OrderStateTransitionEvent | OrderPlacedEvent
   ): Promise<void> {
+    await this.entityHydrator.hydrate(event.ctx, event.order, {
+      relations: [
+        'shippingLines.shippingMethod',
+        'customer',
+        'lines.productVariant',
+      ],
+    });
     if (!this.config.shouldSendOrder(event.ctx, event.order)) {
       Logger.info(`Order ${event.order.code} not sent to shipmate`);
       return;

@@ -1,59 +1,47 @@
 import {
-  mergeConfig,
   DefaultLogger,
+  DefaultOrderCodeStrategy,
+  isGraphQlErrorResult,
   LogLevel,
+  mergeConfig,
+  Order,
   OrderService,
   RequestContext,
-  isGraphQlErrorResult,
-  Order,
-  DefaultOrderCodeStrategy,
 } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
+  SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
-  SimpleGraphQLClient,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import {
-  afterAll,
-  beforeAll,
-  expect,
-  it,
-  describe,
-  vi,
-  beforeEach,
-  afterEach,
-} from 'vitest';
-import { initialData } from '../../test/src/initial-data';
 import nock from 'nock';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
 
-import { ShipmatePlugin } from '../src/shipmate.plugin';
-import {
-  MODIFY_ORDER,
-  cancelShipmentResponse,
-  mockShipment,
-} from './test-helpers';
-import { createSettledOrder } from '../../test/src/shop-utils';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { ShipmateConfigService } from '../src/api/shipmate-config.service';
-import axios from 'axios';
-import type { TrackingEventPayload } from '../src/types';
-import { authToken } from './test-helpers';
-import { OrderCodeStrategy } from '@vendure/core';
 import {
   ModifyOrderInput,
   MutationModifyOrderArgs,
 } from '@vendure/common/lib/generated-types';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
+import axios from 'axios';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { ShipmateConfigService } from '../src/api/shipmate-config.service';
+import { ShipmatePlugin } from '../src/shipmate.plugin';
+import type { TrackingEventPayload } from '../src/types';
+import {
+  authToken,
+  cancelShipmentResponse,
+  mockShipment,
+  MODIFY_ORDER,
+} from './test-helpers';
 
-class MockOrderCodeStrategy implements OrderCodeStrategy {
-  generate(ctx: RequestContext): string {
-    // Mock order code as 'FBJYSHC7WTRQEA14', as defined in the mock object
-    return mockShipment.shipment_reference;
-  }
-}
+/**
+ * This is the order object that was passed into the `shouldSendOrder` strategy
+ */
+let orderFromShouldSendStrategy: Order | undefined;
 
 describe('Shipmate plugin', async () => {
   let server: TestServer;
@@ -77,6 +65,7 @@ describe('Shipmate plugin', async () => {
             ctx: RequestContext,
             order: Order
           ): Promise<boolean> | boolean {
+            orderFromShouldSendStrategy = order;
             return order.totalQuantity < 5;
           },
         }),
@@ -164,6 +153,16 @@ describe('Shipmate plugin', async () => {
     order = await orderService.findOne(ctx, 2);
     expect(shipmentRequests.length).toBe(1);
     expect(shipmentRequests[0]?.shipment_reference).toBe(order?.code);
+  });
+
+  it('Should pass the order with relations into "shouldSendOrder" strategy', async () => {
+    expect(orderFromShouldSendStrategy?.customer?.emailAddress).toBeDefined();
+    expect(
+      orderFromShouldSendStrategy?.lines[0].productVariant.name
+    ).toBeDefined();
+    expect(
+      orderFromShouldSendStrategy?.shippingLines[0].shippingMethod.name
+    ).toBeDefined();
   });
 
   it('Should cancel and recreate order on Order Modification', async () => {
