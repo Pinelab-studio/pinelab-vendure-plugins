@@ -68,9 +68,6 @@
       "prettier --write"
     ]
   },
-  "dependencies": {
-    "catch-unknown": "2.0.0"
-  },
   "commitlint": {
     "extends": [
       "@commitlint/config-conventional"

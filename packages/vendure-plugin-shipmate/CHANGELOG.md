@@ -1,3 +1,7 @@
+# 1.3.2 (2024-09-27)
+
+- Include catch-unknown dependency
+
 # 1.3.1 (2024-09-27)
 
 - Hydrate sensible relations before passing order into `shouldSendOrder`
