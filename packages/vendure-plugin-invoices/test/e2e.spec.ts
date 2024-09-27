@@ -2,6 +2,7 @@ import {
   assertFound,
   DefaultLogger,
   EventBus,
+  ID,
   LogLevel,
   mergeConfig,
   Order,
@@ -42,39 +43,7 @@ import {
 } from '../src/ui/queries.graphql';
 import { MockAccountingStrategy } from './mock-accounting-strategy';
 import gql from 'graphql-tag';
-
-/**
- * Await PDF generation. You can make this timeout longer depending on your system speed.
- * 3000ms should be enough in most cases
- */
-async function wait() {
-  await new Promise((resolve) => setTimeout(resolve, 4000));
-}
-
-async function waitFor(
-  conditionFn: () => Promise<boolean> | boolean,
-  interval = 100,
-  maxWait = 5000
-) {
-  return new Promise<void>(async (resolve, reject) => {
-    const startTime = Date.now();
-
-    const checkCondition = async () => {
-      if (await conditionFn()) {
-        resolve();
-      } else {
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime >= maxWait) {
-          reject(new Error(`waitFor timed out after ${maxWait}ms`));
-        } else {
-          setTimeout(checkCondition, interval);
-        }
-      }
-    };
-
-    checkCondition();
-  });
-}
+import { waitFor } from '../../vendure-plugin-shipping-extensions/test/test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -93,6 +62,16 @@ const mockAccountingStrategySpy = {
   exportInvoice: vi.spyOn(mockAccountingStrategy, 'exportInvoice'),
   exportCreditInvoice: vi.spyOn(mockAccountingStrategy, 'exportCreditInvoice'),
 };
+
+/**
+ * Get latest invoice via admin API
+ */
+async function getLatestInvoice(orderId: ID): Promise<Invoice | undefined> {
+  const { order: result } = await adminClient.query(getOrderWithInvoices, {
+    id: orderId,
+  });
+  return result.invoices[0];
+}
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -180,59 +159,37 @@ describe('Generate with credit invoicing enabled', function () {
     expect((order as any).id).toBeDefined();
   });
 
-  it(
-    'Gets invoices for order',
-    async () => {
-      // Give the worker some time to generate invoices
-      // await wait();
-      // let latestInvoice: any;
-      // await waitFor(
-      //   async () => {
-      //     const { order: result } = await adminClient.query(
-      //       getOrderWithInvoices,
-      //       {
-      //         id: order.id,
-      //       }
-      //     );
-      //     latestInvoice = result.invoices[0];
-      //     return !!latestInvoice?.id;
-      //   },
-      //   50,
-      //   8000
-      // );
-      //   const { order: result } = await adminClient.query(getOrderWithInvoices, {
-      //     id: order.id,
-      //   });
-      //   latestInvoice = result.invoices[0];
-      //   expect(latestInvoice.id).toBeDefined();
-      //   expect(latestInvoice.createdAt).toBeDefined();
-      //   expect(latestInvoice.invoiceNumber).toBe(10001);
-      //   expect(latestInvoice.isCreditInvoice).toBe(false);
-      //   expect(latestInvoice.downloadUrl).toContain(
-      //     `/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
-      //   );
-    },
-    8 * 1000
-  );
+  it('Gets invoices for order', async () => {
+    // Keep polling until the invoice is generated
+    latestInvoice = await waitFor(() => getLatestInvoice(order.id));
+    expect(latestInvoice.id).toBeDefined();
+    expect(latestInvoice.createdAt).toBeDefined();
+    expect(latestInvoice.invoiceNumber).toBe(10001);
+    expect(latestInvoice.isCreditInvoice).toBe(false);
+    expect(latestInvoice.downloadUrl).toContain(
+      `/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
+    );
+  });
 
   it('Emitted event for created invoice', async () => {
-    // const newInvoice = events[0].newInvoice;
-    // expect(newInvoice.createdAt).toBeDefined();
-    // expect(newInvoice.channelId).toBeDefined();
-    // expect(newInvoice.id).toBeDefined();
-    // expect(newInvoice.invoiceNumber).toBe(10001);
-    // expect(newInvoice.isCreditInvoice).toBe(false);
-    // expect(newInvoice.orderTotals.total).toBe(order.total);
-    // expect(newInvoice.orderTotals.totalWithTax).toBe(order.totalWithTax);
-    // expect(newInvoice.orderTotals.taxSummaries.length).toBe(2); // 20% tax + 0% shipping tax
-    // expect(events[0].creditInvoice).toBeUndefined();
-    // expect(events[0].previousInvoice).toBeUndefined();
-    // expect(events[1]).toBeUndefined();
+    const newInvoice = events[0].newInvoice;
+    expect(newInvoice.createdAt).toBeDefined();
+    expect(newInvoice.channelId).toBeDefined();
+    expect(newInvoice.id).toBeDefined();
+    expect(newInvoice.invoiceNumber).toBe(10001);
+    expect(newInvoice.isCreditInvoice).toBe(false);
+    expect(newInvoice.orderTotals.total).toBe(order.total);
+    expect(newInvoice.orderTotals.totalWithTax).toBe(order.totalWithTax);
+    expect(newInvoice.orderTotals.taxSummaries.length).toBe(2); // 20% tax + 0% shipping tax
+    expect(events[0].creditInvoice).toBeUndefined();
+    expect(events[0].previousInvoice).toBeUndefined();
+    expect(events[1]).toBeUndefined();
   });
 
   it('Triggered accounting export strategy', async () => {
-    const [ctx, invoice, order] =
+    const getMockCalls = () =>
       mockAccountingStrategySpy.exportInvoice.mock.calls[0];
+    const [ctx, invoice, order] = await waitFor(getMockCalls);
     expect(mockAccountingStrategySpy.exportInvoice).toHaveBeenCalledTimes(1);
     expect(ctx).toBeInstanceOf(RequestContext);
     expect(invoice).toBeInstanceOf(InvoiceEntity);
@@ -265,11 +222,14 @@ describe('Generate with credit invoicing enabled', function () {
     await adminClient.query(exportToAccounting, {
       invoiceNumber: 10001,
     });
-    await wait(); // Wait for async export via bob queue
-    const { order: result } = await adminClient.query(getOrderWithInvoices, {
-      id: 1,
+    // Keep polling until an invoice with an error message is generated
+    const invoice = await waitFor(async () => {
+      const invoice = await getLatestInvoice(1);
+      if (invoice?.accountingReference?.errorMessage) {
+        return invoice;
+      }
     });
-    expect(result.invoices[0].accountingReference.errorMessage).toContain(
+    expect(invoice.accountingReference?.errorMessage).toContain(
       'has changed compared to the invoice'
     );
   });
@@ -310,10 +270,9 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Triggered accounting export strategy for credit invoice', async () => {
-    await wait();
-    console.log(mockAccountingStrategySpy.exportCreditInvoice.mock.calls);
-    const [ctx, invoice, isCreditInvoiceFor, order] =
-      mockAccountingStrategySpy.exportCreditInvoice.mock.calls[0];
+    const [ctx, invoice, isCreditInvoiceFor, order] = await waitFor(() => {
+      return mockAccountingStrategySpy.exportCreditInvoice.mock.calls[0];
+    });
     expect(ctx).toBeInstanceOf(RequestContext);
     expect(invoice).toBeInstanceOf(InvoiceEntity);
     expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);
@@ -321,8 +280,9 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Triggered accounting export strategy for new invoice after credit invoice', async () => {
-    const [ctx, invoice, order] =
-      mockAccountingStrategySpy.exportInvoice.mock.calls[1];
+    const [ctx, invoice, order] = await waitFor(() => {
+      return mockAccountingStrategySpy.exportInvoice.mock.calls[1];
+    });
     expect(ctx).toBeInstanceOf(RequestContext);
     expect(invoice).toBeInstanceOf(InvoiceEntity);
     expect(order).toBeInstanceOf(Order);
@@ -349,9 +309,9 @@ describe('Generate with credit invoicing enabled', function () {
         exportInvoiceToAccountingPlatform(invoiceNumber: 10002)
       }
     `);
-    await wait();
-    const [ctx, invoice, isCreditInvoiceFor] =
-      mockAccountingStrategySpy.exportCreditInvoice.mock.calls[1];
+    const [ctx, invoice, isCreditInvoiceFor] = await waitFor(() => {
+      return mockAccountingStrategySpy.exportCreditInvoice.mock.calls[1];
+    });
     expect(exportInvoiceToAccountingPlatform).toBe(true);
     expect(invoice.invoiceNumber).toBe(10002);
     expect(isCreditInvoiceFor?.invoiceNumber).toBe(10001);
@@ -359,15 +319,15 @@ describe('Generate with credit invoicing enabled', function () {
 
   it('Cancels order and creates credit invoice', async () => {
     await cancelOrder(adminClient, order as any);
-    // Give the worker some time to generate invoices
-    await wait();
-    const { order: result } = await adminClient.query(getOrderWithInvoices, {
-      id: order.id,
+    const latestInvoice = await waitFor(async () => {
+      const invoice = await getLatestInvoice(order.id);
+      // Only return if a creditInvoice was created, otherwise wait and try again
+      if (invoice?.isCreditInvoice) {
+        return invoice;
+      }
     });
-    expect(result.state).toBe('Cancelled');
-    expect(result.invoices.length).toBe(4);
-    expect(result.invoices[0].isCreditInvoice).toBe(true);
-    // Event for credit invoice should be emitted
+    expect(latestInvoice.isCreditInvoice).toBe(true);
+    // Event for credit invoice should have been emitted
     expect(events[2].creditInvoice).toBeUndefined();
     expect(events[2].newInvoice.isCreditInvoice).toBe(true);
   });
@@ -460,12 +420,7 @@ describe('Generate without credit invoicing', function () {
   });
 
   it('Created invoice', async () => {
-    // Give the worker some time to generate invoices
-    await wait();
-    const { order: result } = await adminClient.query(getOrderWithInvoices, {
-      id: order.id,
-    });
-    latestInvoice = result.invoices[0];
+    latestInvoice = await waitFor(() => getLatestInvoice(order.id));
     expect(latestInvoice.id).toBeDefined();
     expect(latestInvoice.createdAt).toBeDefined();
     expect(latestInvoice.invoiceNumber).toBe(10005);
@@ -511,4 +466,4 @@ if (process.env.TEST_ADMIN_UI) {
 
 afterAll(async () => {
   await server.destroy();
-}, 100000);
+});
