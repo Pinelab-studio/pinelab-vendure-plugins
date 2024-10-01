@@ -1,26 +1,35 @@
-import { Inject, Injectable } from '@nestjs/common';
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   Customer,
   CustomerService,
   EntityHydrator,
+  EventBus,
+  ForbiddenError,
   ID,
   Logger,
   Order,
   OrderLine,
   PaymentMethod,
+  PaymentMethodEvent,
   PaymentMethodService,
   ProductVariantService,
   RequestContext,
-  Transaction,
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
-import { Subscription, SubscriptionHelper } from '../';
+import crypto from 'node:crypto';
+import { filter } from 'rxjs';
+import { In } from 'typeorm';
+import { asError } from 'catch-unknown';
+import * as util from 'util';
+import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import {
   AcceptBlueChargeTransaction,
+  AcceptBlueEvent,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleTransaction,
@@ -43,15 +52,17 @@ import {
   AcceptBlueSubscription,
   AcceptBlueTransaction,
 } from './generated/graphql';
+import { AcceptBlueTransactionEvent } from './accept-blue-transaction-event';
 
 @Injectable()
-export class AcceptBlueService {
+export class AcceptBlueService implements OnApplicationBootstrap {
   constructor(
-    private readonly productVariantService: ProductVariantService,
+    productVariantService: ProductVariantService,
     private readonly paymentMethodService: PaymentMethodService,
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
     private connection: TransactionalConnection,
+    private eventBus: EventBus,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AcceptBluePluginOptions
@@ -65,6 +76,69 @@ export class AcceptBlueService {
   }
 
   readonly subscriptionHelper: SubscriptionHelper;
+
+  onApplicationBootstrap() {
+    // Register webhooks whenever an Accept Blue payment method is created or updated
+    this.eventBus
+      .ofType(PaymentMethodEvent)
+      .pipe(
+        filter(
+          (data) => data.entity.handler?.code === acceptBluePaymentHandler.code
+        )
+      )
+      .subscribe(({ ctx, entity }) => {
+        this.registerWebhook(ctx, entity).catch((err) => {
+          Logger.error(
+            `Failed to register webhook: ${asError(err).message}`,
+            loggerCtx,
+            util.inspect(err)
+          );
+        });
+      });
+  }
+
+  /**
+   * Register a webhook with the Accept Blue platform. Checks if a webhook for this host already exists, and creates one if not.
+   */
+  async registerWebhook(ctx: RequestContext, paymentMethod: PaymentMethod) {
+    const client = await this.getClientForChannel(ctx);
+    const webhookUrl = `${this.options.vendureHost}/accept-blue/webhook/${ctx.channel.token}`;
+    const existingHooks = await client.getWebhooks();
+    const existingHook = existingHooks.find(
+      (hook) => hook.webhook_url === webhookUrl
+    );
+    let webhookSecret: string;
+    if (existingHook) {
+      Logger.info(`Webhook for this server is already registered`, loggerCtx);
+      webhookSecret = existingHook.signature;
+    } else {
+      // Create a new hook if none exists yet
+      const webhook = await client.createWebhook({
+        webhook_url: webhookUrl,
+        description: 'Notify Vendure of any events on the Accept Blue platform',
+        active: true,
+      });
+      webhookSecret = webhook.signature;
+    }
+    const signatureArg = paymentMethod.handler.args.find(
+      (a) => a.name === 'webhookSecret'
+    );
+    if (signatureArg) {
+      // Set value if signature arg already present
+      signatureArg.value = webhookSecret;
+    } else {
+      // Otherwise push signature arg to handler args
+      paymentMethod.handler.args.push({
+        name: 'webhookSecret',
+        value: webhookSecret,
+      });
+    }
+    await this.connection.getRepository(ctx, PaymentMethod).save(paymentMethod);
+    Logger.info(
+      `The AcceptBlue PaymentMethod (${paymentMethod.code})'s webhook signature has been updated`,
+      loggerCtx
+    );
+  }
 
   /**
    * Handles payments for order for either Nonce or Checks
@@ -114,7 +188,12 @@ export class AcceptBlueService {
     );
     let chargeResult: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
-      chargeResult = await client.createCharge(paymentMethodId, amount);
+      const subscriptionOrderLines =
+        await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
+      chargeResult = await client.createCharge(paymentMethodId, amount, {
+        // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+        custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
+      });
     }
     return {
       customerId: String(acceptBlueCustomer.id),
@@ -293,9 +372,11 @@ export class AcceptBlueService {
     cvv2?: string
   ): Promise<AcceptBlueRefundResult> {
     const client = await this.getClientForChannel(ctx);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const refundResult = await client.refund(transactionId, amount, cvv2);
     let errorDetails: string | undefined = undefined;
     if (refundResult.error_details) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       errorDetails =
         typeof refundResult.error_details === 'object'
           ? JSON.stringify(refundResult.error_details)
@@ -331,7 +412,6 @@ export class AcceptBlueService {
     const testMode = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'testMode'
     )?.value as boolean | undefined;
-
     if (!apiKey) {
       throw new Error(
         `No apiKey or pin found on configured Accept Blue payment method`
@@ -342,12 +422,7 @@ export class AcceptBlueService {
 
   async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
-    if (!acceptBlueMethod) {
-      throw new Error(
-        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
-      );
-    }
-    const tokenizationSourceKey = acceptBlueMethod.handler.args.find(
+    const tokenizationSourceKey = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'tokenizationSourceKey'
     )?.value;
     return tokenizationSourceKey ?? null;
@@ -361,10 +436,155 @@ export class AcceptBlueService {
         enabled: { eq: true },
       },
     });
-    const acceptBlueMethod = methods.items.find(
+    const acceptBlueMethod = methods.items.filter(
       (m) => m.handler.code === acceptBluePaymentHandler.code
     );
-    return acceptBlueMethod;
+    if (acceptBlueMethod.length > 1) {
+      throw Error(
+        `More than one enabled payment method found with code ${acceptBluePaymentHandler.code}. There should be only 1 per channel`
+      );
+    }
+    if (acceptBlueMethod.length === 0) {
+      throw new Error(
+        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
+      );
+    }
+    return acceptBlueMethod[0];
+  }
+
+  /**
+   * Handle incoming webhooks from Accept Blue
+   */
+  async handleIncomingWebhook(
+    ctx: RequestContext,
+    event: AcceptBlueEvent,
+    rawBody: Buffer,
+    incomingSignature: string
+  ): Promise<void> {
+    if (event.event === 'batch') {
+      Logger.info(
+        `Ignoring incoming webhook of type '${event.event}' '${event.type}' (${event.id})`,
+        loggerCtx
+      );
+      return;
+    }
+    Logger.info(
+      `Handling incoming webhook '${event.subType}' '${event.event}' '${event.type}' (${event.id}) ...`,
+      loggerCtx
+    );
+    const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    const savedSecret = acceptBlueMethod?.handler.args.find(
+      (a) => a.name === 'webhookSecret'
+    )?.value;
+    if (!savedSecret) {
+      throw new Error(
+        'No webhook secret found on Accept Blue payment method, can not validate incoming webhook'
+      );
+    }
+    if (!this.isValidSignature(savedSecret, rawBody, incomingSignature)) {
+      throw new ForbiddenError();
+    }
+    // Get corresponding order lines based on the incoming webhook fields: Either schedule_id or custom_fields should be defined
+    const scheduleId = event.data.transaction?.transaction_details?.schedule_id;
+    const orderLineIds = this.parseOrderLineCustomField(
+      event.data.transaction?.custom_fields?.custom1
+    );
+    let orderLines: OrderLine[] = [];
+    if (scheduleId) {
+      // Transactions for a schedule will have a scheduleId
+      const orderLine = await this.findOrderLineByScheduleId(ctx, scheduleId);
+      if (orderLine) {
+        orderLines = [orderLine];
+      }
+    } else {
+      // Direct transactions from the checkout will have orderLineIds as custom field, and are not attached to a schedule
+      orderLines = await this.connection
+        .getRepository(ctx, OrderLine)
+        .find({ where: { id: In(orderLineIds) } });
+    }
+    if (!orderLines.length) {
+      Logger.error(
+        `No order lines found for incoming webhook, we can not connect this event to an order line: ${JSON.stringify(
+          event
+        )}`,
+        loggerCtx
+      );
+      return;
+    }
+    for (const orderLine of orderLines) {
+      // Hydrate sensible relations
+      await this.entityHydrator.hydrate(ctx, orderLine, {
+        relations: ['order', 'order.customer'],
+      });
+      await this.eventBus.publish(
+        new AcceptBlueTransactionEvent(
+          event.type,
+          event,
+          orderLine,
+          event.data.transaction?.id
+        )
+      );
+      Logger.debug(
+        `Published AcceptBlueTransactionEvent (${event.id}) for orderLine ${orderLine.id}`,
+        loggerCtx
+      );
+    }
+    Logger.info(
+      `Successfully handled incoming webhook '${event.subType}' '${event.event}' '${event.type}' (${event.id})`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * Find an order line based on the Accept Blue schedule ID that was saved during order placement
+   */
+  async findOrderLineByScheduleId(
+    ctx: RequestContext,
+    scheduleId: number
+  ): Promise<OrderLine | null | undefined> {
+    const result = await this.connection
+      .getRepository(ctx, OrderLine)
+      .createQueryBuilder('orderLine')
+      .where(
+        'orderLine.customFields.acceptBlueSubscriptionIds LIKE :scheduleId',
+        { scheduleId: `%${scheduleId}%` }
+      )
+      .getMany();
+    // We query with LIKE, because array custom fields are stored as simple-json in the database
+    // With LIKE, we can get false positives, so we check again if the parsed result contains the exact scheduleId
+    return result.find((orderLine) =>
+      orderLine.customFields.acceptBlueSubscriptionIds.includes(scheduleId)
+    );
+  }
+
+  /**
+   * Validate if the incoming webhook is signed with the secret we have saved.
+   */
+  isValidSignature(
+    savedSecret: string,
+    rawBody: Buffer,
+    incomingSignature: string
+  ): boolean {
+    const hash = crypto
+      .createHmac('sha256', savedSecret)
+      .update(rawBody)
+      .digest('hex');
+    return hash === incomingSignature;
+  }
+
+  /**
+   * Parse orderLine Ids from the incoming Accept Blue custom field
+   */
+  parseOrderLineCustomField(customField1?: string): ID[] {
+    if (!customField1) {
+      return [];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const orderLineIds = JSON.parse(customField1);
+    if (!Array.isArray(orderLineIds)) {
+      throw new Error(`Given custom field is not an array`);
+    }
+    return orderLineIds as ID[];
   }
 
   /**

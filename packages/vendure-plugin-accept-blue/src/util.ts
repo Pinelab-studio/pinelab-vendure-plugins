@@ -1,8 +1,5 @@
 import { Subscription } from '../../util/src/subscription/subscription-strategy';
-import {
-  AcceptBlueRefundResult,
-  AcceptBlueRefundStatus,
-} from './api/generated/graphql';
+import { AcceptBlueRefundResult } from './api/generated/graphql';
 import {
   AcceptBlueTransaction,
   AccountType,

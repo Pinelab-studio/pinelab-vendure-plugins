@@ -2,16 +2,19 @@
 
 import {
   DefaultLogger,
+  EventBus,
   LanguageCode,
   LogLevel,
   mergeConfig,
   Order,
+  OrderLine,
 } from '@vendure/core';
 // @ts-ignore
 import nock from 'nock';
 
 import {
   createTestEnvironment,
+  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -24,6 +27,7 @@ import { AcceptBluePlugin } from '../src';
 import { AcceptBlueClient } from '../src/api/accept-blue-client';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
 import {
+  AcceptBlueWebhook,
   AccountType,
   CheckPaymentMethodInput,
   NoncePaymentMethodInput,
@@ -42,25 +46,29 @@ import {
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
   UPDATE_CUSTOMER_BLUE_ID,
-} from './helpers';
+} from './helpers/graphql-helpers';
 import {
   checkChargeResult,
   creditCardChargeResult,
   haydenSavedPaymentMethods,
   haydenZiemeCustomerDetails,
   mockCardTransaction,
-  recurringScheduleResult,
-} from './nock-helpers';
+  createMockRecurringScheduleResult,
+  createMockWebhook,
+  createSignature,
+} from './helpers/mocks';
+import { AcceptBlueTransactionEvent } from '../src/api/accept-blue-transaction-event';
 
 let server: TestServer;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars --- FIXME
 let adminClient: SimpleGraphQLClient;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars --- FIXME
 let shopClient: SimpleGraphQLClient;
 let serverStarted = false;
 let acceptBluePaymentMethod: any;
 let nockInstance: nock.Scope;
 let acceptBlueClient: AcceptBlueClient;
+/**
+ * Most recently placed test order
+ */
 let placedOrder: Order | undefined;
 
 let testingNonceToken = {
@@ -76,7 +84,7 @@ beforeAll(async () => {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
       AcceptBluePlugin.init({
-        // TODO create TestStrategy that creates invalid subscription
+        vendureHost: 'https://my-vendure-backend.io',
       }),
     ],
   });
@@ -108,6 +116,21 @@ it('Selects dev mode if args.testMode=true', () => {
 });
 
 it('Creates Accept Blue payment method', async () => {
+  // Mock webhook retrieval
+  nockInstance.get(`/webhooks`).reply(200, []);
+  // Mock webhook creation
+  let receivedWebhookCreation = false;
+  nockInstance
+    .post(`/webhooks`, () => {
+      receivedWebhookCreation = true;
+      return true;
+    })
+    .reply(200, <AcceptBlueWebhook>{
+      id: 1234,
+      active: true,
+      description: 'Test webhook',
+      signature: 'just-a-test-secret',
+    });
   await adminClient.asSuperAdmin();
   ({ createPaymentMethod: acceptBluePaymentMethod } = await adminClient.query(
     CREATE_PAYMENT_METHOD,
@@ -131,7 +154,9 @@ it('Creates Accept Blue payment method', async () => {
       },
     }
   ));
+  await new Promise((resolve) => setTimeout(resolve, 500));
   expect(acceptBluePaymentMethod.id).toBeDefined();
+  expect(receivedWebhookCreation).toBe(true);
 });
 
 describe('Shop API', () => {
@@ -227,7 +252,7 @@ describe('Payment with Credit Card Payment Method', () => {
     nockInstance
       .persist()
       .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
-      .reply(201, recurringScheduleResult);
+      .reply(201, createMockRecurringScheduleResult());
     //createCharge
     nockInstance
       .persist()
@@ -305,7 +330,7 @@ describe('Payment with Check Payment Method', () => {
     nockInstance
       .persist()
       .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
-      .reply(201, recurringScheduleResult);
+      .reply(201, createMockRecurringScheduleResult());
     //createCharge
     nockInstance
       .persist()
@@ -380,7 +405,7 @@ describe('Payment with Saved Payment Method', () => {
     nockInstance
       .persist()
       .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
-      .reply(201, recurringScheduleResult);
+      .reply(201, createMockRecurringScheduleResult(6014));
     //createCharge
     nockInstance
       .persist()
@@ -416,10 +441,72 @@ describe('Payment with Saved Payment Method', () => {
 });
 
 describe('Refunds and transactions', () => {
+  let orderLineWithSubscription: OrderLine;
+
+  it('Emits transaction event for incoming schedule payments webhook', async () => {
+    const events: AcceptBlueTransactionEvent[] = [];
+    server.app
+      .get(EventBus)
+      .ofType(AcceptBlueTransactionEvent)
+      .subscribe((event) => events.push(event));
+    // Get latest created subscription
+    const subscriptionId = placedOrder?.lines
+      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
+      .flat()?.[0];
+    const mockWebhook = createMockWebhook({ scheduleId: subscriptionId });
+    const signature = createSignature('just-a-test-secret', mockWebhook);
+    const result = await shopClient.fetch(
+      `http://localhost:3050/accept-blue/webhook/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockWebhook),
+        headers: {
+          'x-signature': signature,
+        },
+      }
+    );
+    expect(result.status).toBe(201);
+    expect(events.length).toBe(1);
+    orderLineWithSubscription = events[0].orderLine;
+    const orderLine = events[0].orderLine;
+    expect((orderLine.customFields as any).acceptBlueSubscriptionIds).toContain(
+      subscriptionId
+    );
+    expect(orderLine.order.code).toBe(placedOrder?.code);
+    expect(orderLine.order.customer?.emailAddress).toBeDefined();
+  });
+
+  it('Emits transaction event for incoming one-off payments webhook', async () => {
+    const events: AcceptBlueTransactionEvent[] = [];
+    server.app
+      .get(EventBus)
+      .ofType(AcceptBlueTransactionEvent)
+      .subscribe((event) => events.push(event));
+    const mockWebhook = createMockWebhook({
+      customFields: { custom1: JSON.stringify([orderLineWithSubscription.id]) },
+    });
+    const signature = createSignature('just-a-test-secret', mockWebhook);
+    const result = await shopClient.fetch(
+      `http://localhost:3050/accept-blue/webhook/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockWebhook),
+        headers: {
+          'x-signature': signature,
+        },
+      }
+    );
+    expect(result.status).toBe(201);
+    expect(events.length).toBe(1);
+    expect(events[0].orderLine.id).toBe(orderLineWithSubscription.id);
+    expect(events[0].orderLine.order.code).toBe(placedOrder?.code);
+    expect(events[0].orderLine.order.customer?.emailAddress).toBeDefined();
+  });
+
   it('Has transactions per subscription', async () => {
     nockInstance
       .get(`/recurring-schedules/6014`)
-      .reply(200, recurringScheduleResult);
+      .reply(200, createMockRecurringScheduleResult(6014));
     nockInstance
       .get(`/recurring-schedules/6014/transactions`)
       .reply(200, [mockCardTransaction]);

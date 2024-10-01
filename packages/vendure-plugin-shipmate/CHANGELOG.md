@@ -1,3 +1,19 @@
+# 1.3.2 (2024-09-27)
+
+- Include catch-unknown dependency
+
+# 1.3.1 (2024-09-27)
+
+- Hydrate sensible relations before passing order into `shouldSendOrder`
+
+# 1.3.0 (2024-09-27)
+
+- Add `ShipmatePluginConfig.shouldSendOrder` (#498)
+
+# 1.2.5 (2024-08-27)
+
+- Don't throw erros from `/shipmate` endpoint (#509)
+
 # 1.2.4 (2024-08-20)
 
 - Divide by 100 when passing `OrderLine.proratedUnitPriceWithTax` to `Items.item_value`

@@ -1,4 +1,9 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import {
+  Order,
+  PluginCommonModule,
+  RequestContext,
+  VendurePlugin,
+} from '@vendure/core';
 import { ShipmateService } from './api/shipmate.service';
 import { HttpModule } from '@nestjs/axios';
 import { ShipmateConfigEntity } from './api/shipmate-config.entity';
@@ -18,6 +23,10 @@ export interface ShipmatePluginConfig {
   apiUrl:
     | 'https://api.shipmate.co.uk/v1.2'
     | 'https://api-staging.shipmate.co.uk/v1.2';
+  shouldSendOrder(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<boolean> | boolean;
 }
 
 @VendurePlugin({

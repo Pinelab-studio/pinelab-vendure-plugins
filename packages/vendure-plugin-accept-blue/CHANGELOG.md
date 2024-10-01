@@ -1,6 +1,11 @@
-# 1.6.2 (2024-09-18)
+# 1.7.1 (2024-09-18)
 
-- Fix #452
+- Don't throw error while resolving `PaymentMethodQuote.acceptBlueHostedTokenizationKey` if there is no `AcceptBlue` method (#452)
+
+# 1.7 (2024-09-24)
+
+- Automatically register webhooks with Accept Blue on payment method creation and update
+- Emit `AcceptBlueTransactionEvent` on incoming webhooks from Accept Blue
 
 # 1.6.1 (2024-08-04)
 

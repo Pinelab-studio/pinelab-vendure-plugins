@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-shipmate",
-  "version": "1.2.4",
+  "version": "1.3.2",
   "description": "Vendure plugin for integration with Shipmate",
   "icon": "truck",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
@@ -25,7 +25,8 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@nestjs/axios": "^3.0.2"
+    "@nestjs/axios": "^3.0.2",
+    "catch-unknown": "2.0.0"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

@@ -1,6 +1,6 @@
 # 2.5.3 (2024-09-18)
 
-- Fix #452
+- Don't throw error while resolving `PaymentMethodQuote.stripeSubscriptionPublishableKey` if the stripe subscription publishable key is absent (#452)
 
 # 2.5.2 (2024-08-04)
 
