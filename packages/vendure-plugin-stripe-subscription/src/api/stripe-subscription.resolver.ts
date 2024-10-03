@@ -78,12 +78,7 @@ export class StripeSubscriptionCommonResolver {
       ctx,
       paymentMethodQuote.id
     );
-    if (!paymentMethod) {
-      throw new UserInputError(
-        `No payment method with id '${paymentMethodQuote.id}' found. Unable to resolve field"stripeSubscriptionPublishableKey"`
-      );
-    }
-    return paymentMethod.handler.args.find((a) => a.name === 'publishableKey')
+    return paymentMethod?.handler.args.find((a) => a.name === 'publishableKey')
       ?.value;
   }
 

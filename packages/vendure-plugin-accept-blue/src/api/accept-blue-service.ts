@@ -398,6 +398,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    if (!acceptBlueMethod) {
+      throw new Error(
+        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
+      );
+    }
     const apiKey = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'apiKey'
     )?.value;
@@ -417,13 +422,15 @@ export class AcceptBlueService implements OnApplicationBootstrap {
 
   async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
-    const tokenizationSourceKey = acceptBlueMethod.handler.args.find(
+    const tokenizationSourceKey = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'tokenizationSourceKey'
     )?.value;
     return tokenizationSourceKey ?? null;
   }
 
-  async getAcceptBlueMethod(ctx: RequestContext): Promise<PaymentMethod> {
+  async getAcceptBlueMethod(
+    ctx: RequestContext
+  ): Promise<PaymentMethod | undefined> {
     const methods = await this.paymentMethodService.findAll(ctx, {
       filter: {
         enabled: { eq: true },
@@ -466,7 +473,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       loggerCtx
     );
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
-    const savedSecret = acceptBlueMethod.handler.args.find(
+    const savedSecret = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'webhookSecret'
     )?.value;
     if (!savedSecret) {
