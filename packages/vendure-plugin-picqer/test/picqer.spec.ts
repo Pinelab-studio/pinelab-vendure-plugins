@@ -78,8 +78,8 @@ beforeAll(async () => {
             id: '901892834',
           },
         }),
-        pushPicqerOrderLineFields: (ctx, orderLine, lineIndex, order) => ({
-          remarks: `Test note on line number ${lineIndex} with id '${orderLine.id}' for order '${order.code}`,
+        pushPicqerOrderLineFields: (ctx, orderLine, order) => ({
+          remarks: `Test note on line ${orderLine.id} for order '${order.code}`,
         }),
         shouldSyncOnProductVariantCustomFields: ['height'],
       }),
@@ -280,7 +280,7 @@ describe('Order placement', function () {
       id: '901892834',
     });
     expect(picqerOrderRequest.products[0].remarks).toContain(
-      'Test note on line number'
+      'Test note on line'
     );
     expect(picqerOrderRequest.products[0].remarks).not.toContain('undefined'); // Undefined in string means some argument was not passed
   });

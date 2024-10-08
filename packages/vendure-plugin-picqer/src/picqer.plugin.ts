@@ -61,12 +61,11 @@ export interface PicqerOptions {
    * @example
    * pushPicqerOrderLineFields: (orderLine) => {remarks: 'Please write "Happy birthday" on the box of this item'})
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pushPicqerOrderLineFields?: (
     ctx: RequestContext,
     orderLine: OrderLine,
-    lineIndex: number,
     order: Order
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => any;
   shouldSyncOnProductVariantCustomFields?: string[];
 }
