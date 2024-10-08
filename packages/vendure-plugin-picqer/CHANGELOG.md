@@ -1,3 +1,7 @@
+# 3.4.0 (2024-10-08)
+
+- Allow specifying additional fields on order.products when pushing orders to Picqer
+
 # 3.3.1 (2024-09-26)
 
 - Find channel's default translation for products when sending to Picqer.

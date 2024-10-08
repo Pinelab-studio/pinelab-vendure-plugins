@@ -766,7 +766,7 @@ export class PicqerService implements OnApplicationBootstrap {
     const vatGroups = await picqerClient.getVatGroups();
     // Create or update each product of order
     const productInputs: OrderProductInput[] = [];
-    for (const line of order.lines) {
+    for (const [lineIndex, line] of order.lines.entries()) {
       const vatGroup = vatGroups.find(
         (vg) => vg.percentage === line.productVariant.taxRateApplied.value
       );
@@ -779,9 +779,15 @@ export class PicqerService implements OnApplicationBootstrap {
         line.productVariant.sku,
         this.mapToProductInput(ctx, line.productVariant, vatGroup.idvatgroup)
       );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      const additionalOrderLineFields =
+        this.options.pushPicqerOrderLineFields?.(ctx, line, lineIndex, order) ||
+        {};
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       productInputs.push({
         idproduct: picqerProduct.idproduct,
         amount: line.quantity,
+        ...additionalOrderLineFields,
       });
     }
     let orderInput = this.mapToOrderInput(

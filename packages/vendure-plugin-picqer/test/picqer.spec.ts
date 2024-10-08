@@ -18,7 +18,15 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import nock from 'nock';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest';
 import {
   addShippingMethod,
   getAllVariants,
@@ -69,6 +77,9 @@ beforeAll(async () => {
             carrier: 'dhl',
             id: '901892834',
           },
+        }),
+        pushPicqerOrderLineFields: (ctx, orderLine, lineIndex, order) => ({
+          remarks: `Test note on line number ${lineIndex} with id '${orderLine.id}' for order '${order.code}`,
         }),
         shouldSyncOnProductVariantCustomFields: ['height'],
       }),
@@ -268,6 +279,10 @@ describe('Order placement', function () {
       carrier: 'dhl',
       id: '901892834',
     });
+    expect(picqerOrderRequest.products[0].remarks).toContain(
+      'Test note on line number'
+    );
+    expect(picqerOrderRequest.products[0].remarks).not.toContain('undefined'); // Undefined in string means some argument was not passed
   });
 
   it('Should update to "Delivered" on incoming order status "completed"', async () => {

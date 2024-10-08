@@ -1,5 +1,4 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
   configureDefaultOrderProcess,
   DefaultLogger,
@@ -9,20 +8,17 @@ import {
   OrderProcess,
 } from '@vendure/core';
 import {
-  SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
+  SqljsInitializer,
 } from '@vendure/testing';
-import path from 'path';
-import { updateVariants, addShippingMethod } from '../../test/src/admin-utils';
-import { GlobalFlag } from '../../test/src/generated/admin-graphql';
+import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { PicqerPlugin } from '../src';
-import { FULL_SYNC, UPSERT_CONFIG } from '../src/ui/queries';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.handler';
+import { PicqerPlugin } from '../src';
+import { UPSERT_CONFIG } from '../src/ui/queries';
 
 (async () => {
   require('dotenv').config();
@@ -67,12 +63,17 @@ import { picqerHandler } from '../dist/vendure-plugin-picqer/src/api/picqer.hand
             id: '901892834',
           },
         }),
+        pushPicqerOrderLineFields: (ctx, orderLine, lineIndex, order) => ({
+          remarks: `Test note on line number ${lineIndex + 1} with id '${
+            orderLine.id
+          }' for order '${order.code}`,
+        }),
         shouldSyncOnProductVariantCustomFields: ['noLongerAvailable'],
       }),
-      AssetServerPlugin.init({
-        assetUploadDir: path.join(__dirname, '../__data__/assets'),
-        route: 'assets',
-      }),
+      // AssetServerPlugin.init({
+      //   assetUploadDir: path.join(__dirname, '../__data__/assets'),
+      //   route: 'assets',
+      // }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
