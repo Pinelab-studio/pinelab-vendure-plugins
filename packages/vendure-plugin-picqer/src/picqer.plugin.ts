@@ -1,7 +1,9 @@
 import {
   Order,
+  OrderLine,
   PluginCommonModule,
   ProductVariant,
+  RequestContext,
   VendurePlugin,
 } from '@vendure/core';
 import { ProductData } from './api/types';
@@ -53,6 +55,19 @@ export interface PicqerOptions {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pushPicqerOrderFields?: (order: Order) => any;
+  /**
+   * Map any Vendure fields to Order.products fields in Picqer.
+   * See https://picqer.com/en/api/orders#attributes for available Picqer fields
+   * @example
+   * pushPicqerOrderLineFields: (orderLine) => {remarks: 'Please write "Happy birthday" on the box of this item'})
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  pushPicqerOrderLineFields?: (
+    ctx: RequestContext,
+    orderLine: OrderLine,
+    lineIndex: number,
+    order: Order
+  ) => any;
   shouldSyncOnProductVariantCustomFields?: string[];
 }
 
