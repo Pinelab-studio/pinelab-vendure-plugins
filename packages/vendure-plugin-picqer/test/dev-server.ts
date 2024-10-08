@@ -63,10 +63,8 @@ import { UPSERT_CONFIG } from '../src/ui/queries';
             id: '901892834',
           },
         }),
-        pushPicqerOrderLineFields: (ctx, orderLine, lineIndex, order) => ({
-          remarks: `Test note on line number ${lineIndex + 1} with id '${
-            orderLine.id
-          }' for order '${order.code}`,
+        pushPicqerOrderLineFields: (ctx, orderLine, order) => ({
+          remarks: `Test note on line '${orderLine.id}' for order '${order.code}`,
         }),
         shouldSyncOnProductVariantCustomFields: ['noLongerAvailable'],
       }),

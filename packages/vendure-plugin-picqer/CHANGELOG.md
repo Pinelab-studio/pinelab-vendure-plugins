@@ -1,3 +1,7 @@
+# 3.4.1 (2024-10-08)
+
+- Removed unused order line index in `pushPicqerOrderLineFields` strategy
+
 # 3.4.0 (2024-10-08)
 
 - Allow specifying additional fields on order.products when pushing orders to Picqer
