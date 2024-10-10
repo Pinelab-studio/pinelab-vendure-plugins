@@ -83,7 +83,7 @@ export class GoogleAuthStrategy
       if (admins.totalItems === 0) {
         // No admins exist for this email address, not logging in
         Logger.warn(
-          `Attempted login with '${email}', but this is not an administrator`,
+          `Attempted login from user that is not an administrator`,
           loggerCtx
         );
         return false;

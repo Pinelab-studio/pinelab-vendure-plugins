@@ -13,7 +13,6 @@ import {
   AdministratorService,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import path from 'path';
 import { AdminSocialAuthPlugin } from '../src';
 import { initialData } from '../../test/src/initial-data';
@@ -25,10 +24,6 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      AssetServerPlugin.init({
-        assetUploadDir: path.join(__dirname, '__data__/assets'),
-        route: 'assets',
-      }),
       AdminSocialAuthPlugin.init({
         google: {
           oAuthClientId: process.env.GOOGLE_OAUTH_CLIENT_ID!,
@@ -44,15 +39,6 @@ require('dotenv').config();
           hideVendureBranding: false,
           hideVersion: false,
         },
-        /*      
-        TODO: uncomment this block to start the admin ui in dev mode
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, "__admin-ui"),
-          extensions: [
-            // TODO Add your plugin's UI here
-          ],
-          devMode: true
-        })*/
       }),
     ],
     apiOptions: {

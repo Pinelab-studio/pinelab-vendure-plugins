@@ -47,3 +47,22 @@ Administrators are managed via the default Vendure Admin UI. Just create an admi
 When an admin logs in with a social account for the first time, the social auth method will be added to the `user.authenticationMethods`.
 
 If you want to login with the `superadmin` username/password again, you will need to disable this plugin and remove the `adminUiConfig.loginUrl` setting from the AdminUiPlugin again.
+
+# Admin UI branding
+
+You can still hide the Vendure version and Vendure branding like you normally would:
+
+```ts
+      AdminUiPlugin.init({
+        port: 5001,
+        route: 'admin',
+        adminUiConfig: {
+          loginUrl: '/social-auth/login',
+          brand: 'Pinelab',
+          hideVendureBranding: false,
+          hideVersion: false,
+        },
+      }),
+```
+
+The same goes for customizing the logo on the login page: https://docs.vendure.io/guides/extending-the-admin-ui/admin-ui-theming-branding/#specifying-custom-logos
