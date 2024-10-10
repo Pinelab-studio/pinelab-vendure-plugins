@@ -6,10 +6,12 @@
     </title>
     <link rel="icon" type="image/x-icon" href="/admin/favicon.ico" />
     <script src="https://accounts.google.com/gsi/client" async></script>
+    <script src="//unpkg.com/alpinejs" defer></script>
   </head>
   <body>
     <br />
     <br />
+    <!-- Google Login -->
     <div style="text-align: center">
       <img src="/admin/assets/logo-login.webp" style="width: 100px" />
 
@@ -48,6 +50,55 @@
       <br />
       <br />
       <small id="errorMessage" style="color: red"></small>
+    </div>
+
+    <div class="footer">
+      <!-- Privacy Policy -->
+      <div x-data="{ open: false }">
+        <a @click="open = true" href="javascript:void(0)">Privacy Policy</a>
+
+        <!-- Privacy Policy Modal -->
+        <div
+          class="modal-container"
+          x-cloak
+          x-show="open"
+          @click="open = false"
+        >
+          <div class="modal">
+            <span class="close">&times;</span>
+            <h2>Privacy Policy</h2>
+            <div style="text-align: left">
+              This application uses OAuth login solely to verify whether your
+              email address is registered as an administrator in our system.
+              Please note the following:
+              <ul>
+                <li>
+                  Purpose of OAuth Login: The OAuth login is used only to check
+                  if your email address exists in our system as a registered
+                  administrator. No other personal information is accessed or
+                  collected during this process.
+                </li>
+                <li>
+                  Data Collection: If your email address is not registered as an
+                  administrator, it is not logged, stored, or saved in any way.
+                </li>
+                <li>
+                  Data Usage: The only data retrieved during the login process
+                  is your email address, and this is used strictly for the
+                  purpose of verifying administrator access.
+                </li>
+                <li>
+                  Security: We implement industry-standard security measures to
+                  protect your data and ensure it is handled safely and
+                  responsibly.
+                </li>
+              </ul>
+              By using this application, you consent to the handling of your
+              email address as described in this policy.
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script type="text/javascript">
@@ -96,6 +147,53 @@
       justify-content: center;
       align-items: center;
       text-align: center;
+    }
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: 0 auto;
+      text-align: center;
+      padding: 10px;
+    }
+
+    /* Privacy Policy */
+    .modal-container {
+      position: fixed;
+      z-index: 1; /* Sit on top */
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5); /* Grey out background */
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .modal {
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 80vw;
+      text-align: center;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    a {
+      color: #0e8dbb;
+    }
+    [x-cloak] {
+      display: none !important;
     }
   </style>
 </html>

@@ -1,3 +1,7 @@
+# 1.1.2 (2024-10-10)
+
+- Added privacy policy to the login page
+
 # 1.1.1 (2024-08-04)
 
 - Update compatibility range (#480)
