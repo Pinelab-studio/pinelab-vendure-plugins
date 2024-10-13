@@ -9,7 +9,7 @@ import {
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
-import { isAxiosError } from 'axios';
+import axios, { isAxiosError } from 'axios';
 import { ApiKeySession, EventCreateQueryV2, EventsApi } from 'klaviyo-api';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
 import {
@@ -24,6 +24,7 @@ import {
   mapToKlaviyoOrderPlacedInput,
   mapToOrderedProductEvent,
 } from './util/map-to-klaviyo-input';
+import { KlaviyoResponse } from '../src/ui/generated/graphql';
 
 type JobData = {
   ctx: SerializedRequestContext;
@@ -197,5 +198,19 @@ export class KlaviyoService implements OnApplicationBootstrap {
         throw e;
       }
     }
+  }
+
+  async getAllReviews(next?: string): Promise<KlaviyoResponse> {
+    const headers = {
+      accept: 'application/json',
+      revision: '2024-07-15.pre',
+      Authorization: `Klaviyo-API-Key ${this.options.apiKey}`,
+    };
+    let url: string = 'https://a.klaviyo.com/api/reviews/?page[size]=100';
+    if (next) {
+      url = next;
+    }
+    const response = await axios.get<KlaviyoResponse>(url, { headers });
+    return response.data;
   }
 }

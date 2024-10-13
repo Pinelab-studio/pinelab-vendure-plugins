@@ -92,3 +92,24 @@ Don't forget to exclude the default order placed handler if you do!
        eventHandlers: [customOrderPlacedHandler],
      }),
 ```
+
+## Get all reviews
+
+You can use the following query to fetch all reviews
+
+```graphql
+query getAllKlaviyoReviews {
+  getKlaviyoReviews {
+    data {
+      type
+      id
+      attributes {
+        email
+        product {
+          name
+        }
+      }
+    }
+  }
+}
+```
