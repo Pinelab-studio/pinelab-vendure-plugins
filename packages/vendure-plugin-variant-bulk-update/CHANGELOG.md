@@ -1,3 +1,7 @@
+# 1.3.4 (2024-10-17)
+
+- Clear product.price after bulk update, to prevent accidental future updates
+
 # 1.3.3 (2024-08-07)
 
 - Send updated input with ProductVariantEvent

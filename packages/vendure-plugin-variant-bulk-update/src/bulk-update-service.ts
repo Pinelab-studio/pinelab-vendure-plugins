@@ -36,36 +36,42 @@ export class BulkUpdateService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap(): Promise<void> {
     this.eventBus.ofType(ProductEvent).subscribe(async (event) => {
-      if (event.type !== 'updated' && event.type !== 'created') {
-        // We only handle updated and created events
-        return;
-      }
-      const { product, ctx } = event as ProductEventWithCustomFields;
-      // Bulk update price
-      if (this.options.enablePriceBulkUpdate && product.customFields?.price) {
-        await this.updatePriceOfVariants(
-          ctx,
-          product,
-          product.customFields.price
-        ).catch((e) => {
-          Logger.error(
-            `Error updating prices of variants for product '${product.id}': ${e?.message}`,
-            loggerCtx
+      try {
+        if (event.type !== 'updated' && event.type !== 'created') {
+          // We only handle updated and created events
+          return;
+        }
+        const { product, ctx } = event as ProductEventWithCustomFields;
+        // Bulk update price
+        if (this.options.enablePriceBulkUpdate && product.customFields?.price) {
+          await this.updatePriceOfVariants(
+            ctx,
+            product,
+            product.customFields.price
+          ).catch((e) => {
+            Logger.error(
+              `Error updating prices of variants for product '${product.id}': ${e?.message}`,
+              loggerCtx
+            );
+          });
+          await this.clearProductBulkPrice(ctx, product);
+        }
+        // Bulk update other custom fields
+        const shouldUpdateCustomFields =
+          this.options.bulkUpdateCustomFields.find(
+            (customFieldName) =>
+              product.customFields?.[customFieldName] !== undefined
           );
-        });
-      }
-      // Bulk update custom fields
-      const shouldUpdateCustomFields = this.options.bulkUpdateCustomFields.find(
-        (customFieldName) =>
-          product.customFields?.[customFieldName] !== undefined
-      );
-      if (shouldUpdateCustomFields) {
-        await this.updateCustomFieldsOfVariants(ctx, product).catch((e) => {
-          Logger.error(
-            `Error updating custom fields of variants for product '${product.id}': ${e?.message}`,
-            loggerCtx
-          );
-        });
+        if (shouldUpdateCustomFields) {
+          await this.updateCustomFieldsOfVariants(ctx, product).catch((e) => {
+            Logger.error(
+              `Error updating custom fields of variants for product '${product.id}': ${e?.message}`,
+              loggerCtx
+            );
+          });
+        }
+      } catch (e: any) {
+        Logger.error(e?.message, loggerCtx);
       }
     });
   }
@@ -95,6 +101,28 @@ export class BulkUpdateService implements OnApplicationBootstrap {
     await this.eventBus.publish(
       new ProductVariantEvent(ctx, variants, 'updated')
     );
+  }
+
+  /**
+   * After the custom field price was used to update prices of all variants, we need to clear the price on product again,
+   * to avoid accidental updates of prices after that
+   */
+  private async clearProductBulkPrice(
+    ctx: RequestContext,
+    product: ProductWithCustomFields
+  ): Promise<void> {
+    await this.connection
+      .getRepository(ctx, Product)
+      .createQueryBuilder('product')
+      .update({
+        customFields: {
+          price: null,
+        },
+      })
+      .where({
+        id: product.id,
+      })
+      .execute();
   }
 
   /**
