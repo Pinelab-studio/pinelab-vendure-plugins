@@ -39,6 +39,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
         vendureHost: process.env.WEBHOOK_ENDPOINT!,
         endpointSecret: 'test',
         setWebhook: true,
+        determineOrderStatus: async (ctx, order) => 'on_hold' as const,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -82,5 +83,5 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
   });
   await goedgepicktService.setWebhooks(ctx);
   await goedgepicktService.processStockUpdateEvent(ctx, 'L2201308', 5);
-  // await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
 })();

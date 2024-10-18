@@ -1,3 +1,5 @@
+import { RequestContext, Order as VendureOrder } from '@vendure/core';
+
 export interface GoedgepicktPluginConfig {
   vendureHost: string;
   /**
@@ -8,6 +10,14 @@ export interface GoedgepicktPluginConfig {
    * Set webhook in Goedgepickt when saving credentials
    */
   setWebhook?: boolean;
+  /**
+   * Determine order status based on order.
+   * Default is 'open', but in some cases you'd like to set an order to 'on_hold'
+   */
+  determineOrderStatus?: (
+    ctx: RequestContext,
+    order: VendureOrder
+  ) => Promise<OrderStatus> | OrderStatus;
 }
 
 export interface ProductInput {

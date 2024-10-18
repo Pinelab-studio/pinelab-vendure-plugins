@@ -21,6 +21,14 @@ plugins: [
     vendureHost: 'https://your-vendure-server.io/',
     endpointSecret: 'some-secret', // Used to validate incoming requests to /fullsync
     setWebhook: true // Automatically set webhooks in Goedgepickt or not
+    // You can optionally set orders 'on_hold' in Goedgepickt if you'd like
+    determineOrderStatus: (ctx, order) => {
+      if (order.state === 'PaymentAuthorized') {
+        return 'on_hold' as const;
+      } else {
+        return 'open' as const; // This is the default
+      }
+    }
   }),
   ...
 ]

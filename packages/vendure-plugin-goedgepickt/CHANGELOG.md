@@ -1,3 +1,7 @@
+# 1.3.0 (2024-10-18)
+
+- Allow setting custom order state in GoedGepickt
+
 # 1.2.1 (2024-08-04)
 
 - Update compatibility range (#480)

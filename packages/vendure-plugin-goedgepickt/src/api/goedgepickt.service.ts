@@ -350,11 +350,13 @@ export class GoedgepicktService
         GoedgepicktService.splitHouseNumberAndAddition(
           order.shippingAddress.streetLine2
         );
+      const orderStatus =
+        (await this.config.determineOrderStatus?.(ctx, order)) || 'open';
       const orderInput: OrderInput = {
         orderId: order.code,
         orderDisplayId: order.code,
         createDate: GoedgepicktService.toLocalTime(order.orderPlacedAt)!,
-        orderStatus: 'open',
+        orderStatus,
         orderItems,
         shippingFirstName: order.customer?.firstName,
         shippingLastName: order.customer?.lastName,
@@ -809,6 +811,7 @@ export class GoedgepicktService
         'shippingLines',
         'shippingLines.shippingMethod',
         'lines.productVariant',
+        'payments',
       ],
     });
     const hasGoedgepicktHandler = order.shippingLines.some(
