@@ -1,6 +1,6 @@
 import gql from 'graphql-tag';
 
-// Only used by graphql codegen
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Only used by graphql codegen
 const _scalars = gql`
   scalar DateTime
   scalar Money
