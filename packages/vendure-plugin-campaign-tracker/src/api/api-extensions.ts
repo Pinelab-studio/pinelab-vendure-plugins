@@ -2,6 +2,10 @@ import gql from 'graphql-tag';
 
 // Only used by graphql codegen
 const _scalars = gql`
+  scalar DateTime
+  scalar Money
+  scalar PaginatedList
+  scalar Order
   enum SortOrder {
     ASC
     DESC
@@ -15,10 +19,10 @@ const commonApiExtensions = gql`
     updatedAt: DateTime!
     code: String!
     name: String!
-    conversionLast7Days: Float!
-    revenueLast7days: Money!
-    revenueLast30days: Money!
-    revenueLast365Days: Money!
+    conversionLast7Days: Float
+    revenueLast7days: Money
+    revenueLast30days: Money
+    revenueLast365Days: Money
   }
 `;
 
@@ -30,7 +34,7 @@ export const shopApiExtensions = gql`
     Add a campaign code to the current order.
     Creates a new active order if none exists.
     """
-    addCampaignToOrder(code: String!): Order!
+    addCampaignToOrder(campaignOrder: String!): Order!
   }
 `;
 
