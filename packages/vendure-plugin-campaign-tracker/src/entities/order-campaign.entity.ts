@@ -1,28 +1,27 @@
-import {
-  DeepPartial,
-  LocaleString,
-  Translatable,
-  Translation,
-  VendureEntity,
-} from '@vendure/core';
-import { Column, Entity, OneToMany } from 'typeorm';
+import { DeepPartial, Order, VendureEntity } from '@vendure/core';
+import { Entity, ManyToOne } from 'typeorm';
+import { Campaign } from './campaign.entity';
 
-import { OrderCampaignTranslation } from './order-campaign-translation.entity';
-
+/**
+ * @description
+ * This entity represents the relation between an Order and a Campaign, including the connectedAt date
+ */
 @Entity()
-export class OrderCampaign extends VendureEntity implements Translatable {
+export class OrderCampaign extends VendureEntity {
   constructor(input?: DeepPartial<OrderCampaign>) {
     super(input);
   }
 
-  @Column()
-  code: string;
-  localizedName: LocaleString;
+  /**
+   * The date time at which the campaign was connected to the order
+   */
+  get connectedAt(): Date {
+    return this.updatedAt;
+  }
 
-  @OneToMany(
-    (type) => OrderCampaignTranslation,
-    (translation) => translation.base,
-    { eager: true }
-  )
-  translations: Array<Translation<OrderCampaign>>;
+  @ManyToOne(() => Order)
+  order!: Order;
+
+  @ManyToOne(() => Campaign, { eager: true })
+  campaign!: Campaign;
 }

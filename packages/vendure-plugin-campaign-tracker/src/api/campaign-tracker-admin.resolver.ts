@@ -3,7 +3,13 @@ import { Permission } from '@vendure/common/lib/generated-types';
 import { ID } from '@vendure/common/lib/shared-types';
 import { Allow, Ctx, RequestContext, Transaction } from '@vendure/core';
 import { CampaignTrackerService } from '../services/campaign-tracker.service';
-import { Campaign, MutationCreateCampaignArgs } from '../ui/generated/graphql';
+import {
+  Campaign,
+  CampaignList,
+  MutationCreateCampaignArgs,
+  MutationDeleteCampaignArgs,
+  QueryCampaignsArgs,
+} from '../ui/generated/graphql';
 
 @Resolver()
 export class CampaignTrackerAdminResolver {
@@ -11,11 +17,14 @@ export class CampaignTrackerAdminResolver {
 
   @Query()
   @Allow(Permission.SuperAdmin)
-  async myNewQuery(
+  async campaigns(
     @Ctx() ctx: RequestContext,
-    @Args() args: { id: ID }
-  ): Promise<boolean> {
-    return this.campaignTrackerService.myNewQuery(ctx, args.id);
+    @Args() { options }: QueryCampaignsArgs
+  ): Promise<CampaignList> {
+    return await this.campaignTrackerService.getCampaigns(
+      ctx,
+      options ?? undefined
+    );
   }
 
   @Mutation()
@@ -25,6 +34,17 @@ export class CampaignTrackerAdminResolver {
     @Ctx() ctx: RequestContext,
     @Args() { input }: MutationCreateCampaignArgs
   ): Promise<Campaign> {
-    return this.campaignTrackerService.createCampaign(ctx, input);
+    return await this.campaignTrackerService.createCampaign(ctx, input);
+  }
+
+  @Mutation()
+  @Transaction()
+  @Allow(Permission.SuperAdmin)
+  async deleteCampaign(
+    @Ctx() ctx: RequestContext,
+    @Args() { id }: MutationDeleteCampaignArgs
+  ): Promise<boolean> {
+    await this.campaignTrackerService.deleteCampaign(ctx, id);
+    return true;
   }
 }

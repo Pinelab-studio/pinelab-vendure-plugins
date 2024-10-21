@@ -9,3 +9,4 @@ generates:
       avoidOptionals: false
       scalars:
         DateTime: Date
+        ID: number | string

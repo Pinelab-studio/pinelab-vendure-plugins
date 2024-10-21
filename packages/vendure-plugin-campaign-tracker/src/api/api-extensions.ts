@@ -41,7 +41,7 @@ export const shopApiExtensions = gql`
 export const adminApiExtensions = gql`
   ${commonApiExtensions}
 
-  type CampaignList implements PaginatedList {
+  type CampaignList {
     items: [Campaign!]!
     totalItems: Int
   }
@@ -71,6 +71,7 @@ export const adminApiExtensions = gql`
   extend type Mutation {
     createCampaign(input: CampaignInput!): Campaign!
     updateCampaign(id: ID!, input: CampaignInput!): Campaign!
+    deleteCampaign(id: ID!): Boolean!
   }
 
   extend type Query {

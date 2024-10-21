@@ -1,4 +1,5 @@
-import { Order } from '@vendure/core';
+import { ID } from '@vendure/core';
+import { OrderCampaign } from './entities/order-campaign.entity';
 
 export interface PluginInitOptions {
   /**
@@ -10,29 +11,16 @@ export interface PluginInitOptions {
 
 /**
  * @description
- * A model that defines what attributions should be made for a specific order.
- * Attribution can be split between multiple campaigns, e.g. 0.5 campaign_a and 0.5 campaign_b
+ * A model that defines to what campaign(s) an order should be attributed.
+ * An order can be attributed to multiple campaigns, as long as the total sum is 1
+ * E.g. 0.6 for campaign_a and 0.4 campaign_b
  */
 export interface AttributionModel {
-  attributeTo(order: Order): Attribution[];
-}
-
-/**
- * @description
- * A campaign connected to this order.
- * C.q. a customer created an order while coming from a specific campaign.
- */
-export interface ConnectedCampaign {
-  campaignCode: string;
-  /**
-   * @description
-   * The moment this campaign code was connected to the order
-   */
-  connectedOn: Date;
+  attributeTo(orderCampaign: OrderCampaign): Attribution[];
 }
 
 export interface Attribution {
-  campaignCode: string;
+  campaignId: ID;
   /**
    * @description
    * The percentage of the sale that should be attributed to this campaign.

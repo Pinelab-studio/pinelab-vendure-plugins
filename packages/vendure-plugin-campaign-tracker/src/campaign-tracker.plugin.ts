@@ -7,7 +7,6 @@ import { CampaignTrackerAdminResolver } from './api/campaign-tracker-admin.resol
 import { adminApiExtensions } from './api/api-extensions';
 import { Campaign } from './entities/campaign.entity';
 import { OrderCampaign } from './entities/order-campaign.entity';
-import { OrderCampaignTranslation } from './entities/order-campaign-translation.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -19,18 +18,14 @@ import { OrderCampaignTranslation } from './entities/order-campaign-translation.
     CampaignTrackerService,
   ],
   configuration: (config) => {
-    // Plugin-specific configuration
-    // such as custom fields, custom permissions,
-    // strategies etc. can be configured here by
-    // modifying the `config` object.
     return config;
   },
-  compatibility: '^3.0.0',
+  compatibility: '>=3.0.0',
   adminApiExtensions: {
     schema: adminApiExtensions,
     resolvers: [CampaignTrackerAdminResolver],
   },
-  entities: [Campaign, OrderCampaign, OrderCampaignTranslation],
+  entities: [Campaign, OrderCampaign],
 })
 export class CampaignTrackerPlugin {
   static options: PluginInitOptions;
