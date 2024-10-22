@@ -6,6 +6,7 @@ import {
   JobQueueService,
   ListQueryBuilder,
   Order,
+  OrderService,
   PaginatedList,
   RequestContext,
   SerializedRequestContext,
@@ -22,6 +23,7 @@ import {
   CampaignListOptions,
   SortOrder,
 } from '../ui/generated/graphql';
+import { calculateRevenue, getOrdersPlacedInLastXDays } from './metric-util';
 
 interface JobData {
   ctx: SerializedRequestContext;
@@ -36,6 +38,7 @@ export class CampaignTrackerService implements OnModuleInit {
     @Inject(CAMPAIGN_TRACKER_PLUGIN_OPTIONS) private options: PluginInitOptions,
     private jobQueueService: JobQueueService,
     private activeOrderService: ActiveOrderService,
+    private orderService: OrderService,
     private listQueryBuilder: ListQueryBuilder
   ) {}
 
@@ -44,7 +47,7 @@ export class CampaignTrackerService implements OnModuleInit {
       name: 'campaign-tracker',
       process: (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
-        return this.calculateMetrics(ctx).catch((err: unknown) => {
+        return this.calculateAllMetrics(ctx).catch((err: unknown) => {
           Logger.warn(
             `Error in calculateCampaignMetrics: ${asError(err).message}`
           );
@@ -162,9 +165,65 @@ export class CampaignTrackerService implements OnModuleInit {
   }
 
   /**
+   * @description
    * Calculate metrics for all campaigns of a given channel
    */
-  async calculateMetrics(ctx: RequestContext): Promise<void> {}
+  async calculateAllMetrics(ctx: RequestContext): Promise<void> {
+    // Get all orders with this campaign
+  }
+
+  /**
+   * @description
+   * Calculate conversion of all campaigns of a given channel
+   */
+  async calculateConversions(ctx: RequestContext, nrOfDays = 7): Promise<void> {
+    // Get all orders with this campaign
+    // Get all orders with this campaign in the last 7 days
+    // Calculate conversion rate
+  }
+
+  /**
+   * Calculate Revenue of all campaigns for the last 7, 30 and 365 days
+   */
+  async calculateRevenue(ctx: RequestContext): Promise<void> {
+    const daysAgo365 = new Date();
+    daysAgo365.setDate(daysAgo365.getDate() - 365);
+    const allOrders: Order[] = [];
+    let hasMore = true;
+    while (hasMore) {
+      const { items, totalItems } = await this.orderService.findAll(ctx, {
+        take: 500,
+        skip: allOrders.length,
+        filter: {
+          orderPlacedAt: {
+            after: daysAgo365,
+          },
+        },
+        sort: {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
+          createdAt: SortOrder.Desc as any,
+        },
+      });
+      allOrders.push(...items);
+      if (allOrders.length >= totalItems) {
+        hasMore = false;
+      }
+    }
+
+    // WRONG FIXME: Needs calculation per campaign
+
+    // Calculate revenue for last 365 days
+    const last365DaysRevenue = calculateRevenue(allOrders);
+    // Get last 30 day orders and calculate revenue
+    const ordersFromLast30Days = getOrdersPlacedInLastXDays(allOrders, 30);
+    const last30DaysRevenue = calculateRevenue(ordersFromLast30Days);
+    // Get last 7 day orders and calculate revenue
+    const ordersFromLast7Days = getOrdersPlacedInLastXDays(
+      ordersFromLast30Days,
+      7
+    );
+    const last7DaysRevenue = calculateRevenue(ordersFromLast7Days);
+  }
 
   async triggerCalculateCampaignMetrics(ctx: RequestContext): Promise<void> {
     await this.jobQueue.add({

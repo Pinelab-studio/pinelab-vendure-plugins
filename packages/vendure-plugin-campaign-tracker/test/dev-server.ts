@@ -17,6 +17,13 @@ import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { CampaignTrackerPlugin } from '../src';
+import { CREATE_CAMPAIGN, GET_CAMPAIGNS } from '../src/ui/queries';
+import {
+  CreateCampaignMutation,
+  CreateCampaignMutationVariables,
+  GetCampaignsQuery,
+  GetCampaignsQueryVariables,
+} from '../src/ui/generated/graphql';
 
 (async () => {
   require('dotenv').config();
@@ -75,24 +82,22 @@ import { CampaignTrackerPlugin } from '../src';
     productsCsvPath: '../test/src/products-import.csv',
   });
   await adminClient.asSuperAdmin();
-  await addShippingMethod(adminClient, picqerHandler.code);
-  await adminClient.query(UPSERT_CONFIG, {
+  await adminClient.query<
+    CreateCampaignMutation,
+    CreateCampaignMutationVariables
+  >(CREATE_CAMPAIGN, {
     input: {
-      enabled: true,
-      apiKey: process.env.APIKEY,
-      apiEndpoint: process.env.ENDPOINT,
-      storefrontUrl: 'mystore.io',
-      supportEmail: 'support@mystore.io',
+      code: 'test_campaign',
+      name: 'Test Campaign',
     },
   });
-  // await adminClient.query(FULL_SYNC);
-  // const variants = await updateVariants(adminClient, [
-  //   { id: 'T_1', trackInventory: GlobalFlag.True },
-  //   { id: 'T_2', trackInventory: GlobalFlag.True },
-  //   { id: 'T_3', trackInventory: GlobalFlag.True },
-  //   { id: 'T_4', trackInventory: GlobalFlag.True },
+  const result = await adminClient.query<
+    GetCampaignsQuery,
+    GetCampaignsQueryVariables
+  >(GET_CAMPAIGNS);
+  console.log(result);
+
+  // const order = await createSettledOrder(shopClient, 3, true, [
+  //   { id: 'T_1', quantity: 3 },
   // ]);
-  const order = await createSettledOrder(shopClient, 3, true, [
-    { id: 'T_1', quantity: 3 },
-  ]);
 })();

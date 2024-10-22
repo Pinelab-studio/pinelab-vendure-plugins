@@ -1,7 +1,8 @@
 import { DeepPartial, ID, VendureEntity } from '@vendure/core';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, Unique } from 'typeorm';
 
 @Entity()
+@Unique(['channelId', 'code'])
 export class Campaign extends VendureEntity {
   constructor(input: DeepPartial<Campaign>) {
     super(input);
@@ -10,7 +11,7 @@ export class Campaign extends VendureEntity {
   @Column({ type: Date, nullable: true })
   deletedAt?: Date;
 
-  @Column()
+  @Column({ type: 'varchar' })
   channelId!: ID;
 
   @Column()
