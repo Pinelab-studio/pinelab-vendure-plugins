@@ -4,7 +4,7 @@ import { Column, Entity, Unique } from 'typeorm';
 @Entity()
 @Unique(['channelId', 'code'])
 export class Campaign extends VendureEntity {
-  constructor(input: DeepPartial<Campaign>) {
+  constructor(input?: DeepPartial<Campaign>) {
     super(input);
   }
 
@@ -20,15 +20,15 @@ export class Campaign extends VendureEntity {
   @Column()
   name!: string;
 
-  @Column({ nullable: true, type: 'float' })
-  conversionLast7Days?: number;
+  @Column({ default: 0, type: 'float' })
+  conversionLast7Days: number = 0;
 
-  @Column({ nullable: true, type: 'int' })
-  revenueLast7days?: number;
+  @Column({ default: 0, type: 'int' })
+  revenueLast7days: number = 0;
 
-  @Column({ nullable: true, type: 'int' })
-  revenueLast30days?: number;
+  @Column({ default: 0, type: 'int' })
+  revenueLast30days: number = 0;
 
-  @Column({ nullable: true, type: 'int' })
-  revenueLast365Days?: number;
+  @Column({ default: 0, type: 'int' })
+  revenueLast365Days: number = 0;
 }

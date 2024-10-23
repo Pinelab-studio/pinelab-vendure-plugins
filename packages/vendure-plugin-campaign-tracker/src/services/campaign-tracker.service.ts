@@ -1,10 +1,11 @@
-import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import {
   ActiveOrderService,
   ID,
   JobQueue,
   JobQueueService,
   ListQueryBuilder,
+  Logger,
   Order,
   OrderService,
   PaginatedList,
@@ -14,16 +15,16 @@ import {
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { IsNull } from 'typeorm';
-import { CAMPAIGN_TRACKER_PLUGIN_OPTIONS } from '../constants';
+import { CAMPAIGN_TRACKER_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { Campaign } from '../entities/campaign.entity';
 import { OrderCampaign } from '../entities/order-campaign.entity';
-import { PluginInitOptions } from '../types';
+import { CampaignTrackerOptions, OrderWithCampaigns } from '../types';
 import {
   CampaignInput,
   CampaignListOptions,
   SortOrder,
 } from '../ui/generated/graphql';
-import { calculateRevenue, getOrdersPlacedInLastXDays } from './metric-util';
+import { calculateRevenuePerCampaign } from './campaign-util';
 
 interface JobData {
   ctx: SerializedRequestContext;
@@ -35,7 +36,8 @@ export class CampaignTrackerService implements OnModuleInit {
 
   constructor(
     private connection: TransactionalConnection,
-    @Inject(CAMPAIGN_TRACKER_PLUGIN_OPTIONS) private options: PluginInitOptions,
+    @Inject(CAMPAIGN_TRACKER_PLUGIN_OPTIONS)
+    private options: CampaignTrackerOptions,
     private jobQueueService: JobQueueService,
     private activeOrderService: ActiveOrderService,
     private orderService: OrderService,
@@ -188,41 +190,46 @@ export class CampaignTrackerService implements OnModuleInit {
   async calculateRevenue(ctx: RequestContext): Promise<void> {
     const daysAgo365 = new Date();
     daysAgo365.setDate(daysAgo365.getDate() - 365);
-    const allOrders: Order[] = [];
+    const placedOrders: OrderWithCampaigns[] = [];
     let hasMore = true;
     while (hasMore) {
-      const { items, totalItems } = await this.orderService.findAll(ctx, {
-        take: 500,
-        skip: allOrders.length,
-        filter: {
-          orderPlacedAt: {
-            after: daysAgo365,
-          },
-        },
-        sort: {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
-          createdAt: SortOrder.Desc as any,
-        },
-      });
-      allOrders.push(...items);
-      if (allOrders.length >= totalItems) {
+      const [orders, total] = await this.connection
+        .getRepository(ctx, Order)
+        .createQueryBuilder('order')
+        .leftJoinAndSelect(
+          OrderCampaign,
+          'orderCampaign',
+          'order.id = orderCampaign.orderId'
+        )
+        .leftJoinAndSelect(
+          Campaign,
+          'campaign',
+          'order.id = orderCampaign.orderId'
+        )
+        .leftJoin('order.channels', 'channel')
+        .where('channel.id = :channelId', { channelId: ctx.channelId })
+        .andWhere('order.orderPlacedAt > :daysAgo365', { daysAgo365 })
+        .limit(5000)
+        .offset(placedOrders.length)
+        .getManyAndCount();
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any -- our custom join added the orderCampaings relations
+      placedOrders.push(...(orders as any));
+      if (placedOrders.length >= total) {
         hasMore = false;
       }
     }
-
-    // WRONG FIXME: Needs calculation per campaign
-
-    // Calculate revenue for last 365 days
-    const last365DaysRevenue = calculateRevenue(allOrders);
-    // Get last 30 day orders and calculate revenue
-    const ordersFromLast30Days = getOrdersPlacedInLastXDays(allOrders, 30);
-    const last30DaysRevenue = calculateRevenue(ordersFromLast30Days);
-    // Get last 7 day orders and calculate revenue
-    const ordersFromLast7Days = getOrdersPlacedInLastXDays(
-      ordersFromLast30Days,
-      7
+    const revenuePerCampaign = calculateRevenuePerCampaign(
+      this.options.attributionModel,
+      placedOrders
     );
-    const last7DaysRevenue = calculateRevenue(ordersFromLast7Days);
+    for (const [campaignId, campaign] of revenuePerCampaign.entries()) {
+      await this.connection.getRepository(ctx, Campaign).update(campaignId, {
+        revenueLast365Days: campaign.revenueLast365Days,
+        revenueLast30days: campaign.revenueLast30days,
+        revenueLast7days: campaign.revenueLast7days,
+      });
+      Logger.info(`Updated revenue for campaign ${campaignId}`, loggerCtx);
+    }
   }
 
   async triggerCalculateCampaignMetrics(ctx: RequestContext): Promise<void> {

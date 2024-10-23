@@ -1,12 +1,12 @@
-import { ID } from '@vendure/core';
+import { ID, Order } from '@vendure/core';
 import { OrderCampaign } from './entities/order-campaign.entity';
 
-export interface PluginInitOptions {
+export interface CampaignTrackerOptions {
   /**
    * @description
    * The attribution model used for calculating revenue per campaign
    */
-  attributionModel?: AttributionModel;
+  attributionModel: AttributionModel;
 }
 
 /**
@@ -16,7 +16,7 @@ export interface PluginInitOptions {
  * E.g. 0.6 for campaign_a and 0.4 campaign_b
  */
 export interface AttributionModel {
-  attributeTo(orderCampaign: OrderCampaign): Attribution[];
+  attributeTo(orderCampaigns: OrderCampaign[]): Attribution[];
 }
 
 export interface Attribution {
@@ -26,5 +26,7 @@ export interface Attribution {
    * The percentage of the sale that should be attributed to this campaign.
    * Should be between 0 and 1
    */
-  attribution: number;
+  attributionRate: number;
 }
+
+export type OrderWithCampaigns = Order & { orderCampaigns: OrderCampaign[] };
