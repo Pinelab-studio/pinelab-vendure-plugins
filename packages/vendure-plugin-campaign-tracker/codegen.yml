@@ -1,0 +1,12 @@
+schema: 'src/api/api-extensions.ts'
+documents: 'src/ui/queries.ts'
+generates:
+  ./src/ui/generated/graphql.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      avoidOptionals: false
+      scalars:
+        DateTime: Date
+        ID: number | string
