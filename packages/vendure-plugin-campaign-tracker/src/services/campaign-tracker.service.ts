@@ -252,15 +252,16 @@ export class CampaignTrackerService implements OnModuleInit {
       const query = this.connection
         .getRepository(ctx, Order)
         .createQueryBuilder('order')
+        .leftJoin('order.channels', 'channel')
         .leftJoinAndSelect(
           OrderCampaign,
           'orderCampaign',
           'order.id = orderCampaign.orderId'
         )
         .leftJoinAndSelect('orderCampaign.campaign', 'campaign')
-        .leftJoin('order.channels', 'channel')
         .where('channel.id = :channelId', { channelId: ctx.channelId })
         .andWhere(`order.${dateFilter} > :lastXDaysDate`, { lastXDaysDate })
+        .andWhere(`campaign.deletedAt IS NULL`)
         .limit(5000)
         .offset(allOrders.length);
       const orders: RawOrderQueryResult[] = await query.getRawMany();
