@@ -236,7 +236,7 @@ export class CampaignTrackerService implements OnModuleInit {
 
   /**
    * @description
-   * Find all orders of the current channel with campaigns attached of the last X days
+   * Find all orders of the last X days in the current channel with campaigns attached.
    * By filtering on 'orderPlacedAt' or 'updatedAt' you can differentiate between placed and all orders
    */
   async getOrdersWithCampaigns(
