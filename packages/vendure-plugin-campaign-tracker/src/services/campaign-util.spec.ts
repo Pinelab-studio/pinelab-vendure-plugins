@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { OrderWithCampaigns } from '../types';
 import { asError } from 'catch-unknown';
-import { calculateRevenuePerCampaign } from './campaign-util';
+import { calculateRevenuePerCampaign, isOlderThan } from './campaign-util';
 
 const attributionModel = {
   attributeTo: vi.fn(),
@@ -20,9 +20,11 @@ function createMockOrder(
   orderPlacedAt.setDate(orderPlacedAt.getDate() - wasPlacedDaysAgo);
   // eslint-disable-next-line @typescript-eslint/no-unsafe-return
   return {
-    total,
-    orderCampaigns: campaigns,
+    orderId: '1',
+    orderTotal: total,
+    connectedCampaigns: campaigns,
     orderPlacedAt,
+    orderUpdatedAt: orderPlacedAt,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
 }
@@ -114,5 +116,15 @@ describe('calculateRevenuePerCampaign', () => {
         "The sum of all attributions for an order should be 1, got '1.2'"
       );
     }
+  });
+});
+
+describe('isOlderThan', () => {
+  it('Says now is not older than 1000ms', () => {
+    expect(isOlderThan(new Date(), 1000)).toBe(false);
+  });
+
+  it('Says 2023 is older than 1000ms', () => {
+    expect(isOlderThan(new Date('2023-01-01'), 1000)).toBe(true);
   });
 });

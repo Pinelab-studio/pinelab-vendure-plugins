@@ -5,7 +5,11 @@ const _scalars = gql`
   scalar DateTime
   scalar Money
   scalar PaginatedList
-  scalar Order
+  type Order {
+    id: ID
+    code: String
+    total: Money
+  }
   enum SortOrder {
     ASC
     DESC
@@ -19,6 +23,7 @@ const commonApiExtensions = gql`
     updatedAt: DateTime!
     code: String!
     name: String!
+    metricsUpdatedAt: DateTime
     conversionLast7Days: Float
     revenueLast7days: Money
     revenueLast30days: Money
@@ -34,7 +39,7 @@ export const shopApiExtensions = gql`
     Add a campaign code to the current order.
     Creates a new active order if none exists.
     """
-    addCampaignToOrder(campaignOrder: String!): Order!
+    addCampaignToOrder(campaignCode: String!): Order!
   }
 `;
 

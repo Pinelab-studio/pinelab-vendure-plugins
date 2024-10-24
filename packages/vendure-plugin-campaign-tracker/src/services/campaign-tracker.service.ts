@@ -18,13 +18,17 @@ import { IsNull } from 'typeorm';
 import { CAMPAIGN_TRACKER_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { Campaign } from '../entities/campaign.entity';
 import { OrderCampaign } from '../entities/order-campaign.entity';
-import { CampaignTrackerOptions, OrderWithCampaigns } from '../types';
+import {
+  CampaignTrackerOptions,
+  OrderWithCampaigns,
+  RawOrderQueryResult,
+} from '../types';
 import {
   CampaignInput,
   CampaignListOptions,
   SortOrder,
 } from '../ui/generated/graphql';
-import { calculateRevenuePerCampaign } from './campaign-util';
+import { calculateRevenuePerCampaign, isOlderThan } from './campaign-util';
 
 interface JobData {
   ctx: SerializedRequestContext;
@@ -32,6 +36,7 @@ interface JobData {
 
 @Injectable()
 export class CampaignTrackerService implements OnModuleInit {
+  private readonly refreshMetricsAfter = 1000 * 60 * 60 * 12; // 24 hours
   private jobQueue!: JobQueue<JobData>;
 
   constructor(
@@ -123,11 +128,25 @@ export class CampaignTrackerService implements OnModuleInit {
         {
           ctx,
           relations: [],
-          channelId: ctx.channelId,
-          where: { deletedAt: IsNull() },
+          where: {
+            deletedAt: IsNull(),
+            channelId: ctx.channelId,
+          },
         }
       )
       .getManyAndCount();
+    // Trigger recalculation of metrics if any campaign is older than the refresh interval
+    campaigns.some((campaign) => {
+      if (isOlderThan(campaign.metricsUpdatedAt, this.refreshMetricsAfter)) {
+        this.triggerCalculateCampaignMetrics(ctx).catch((err) => {
+          Logger.error(
+            `Error creating recalculate-metrics job: ${err}`,
+            loggerCtx
+          );
+        });
+        return true;
+      }
+    });
     return {
       items: campaigns,
       totalItems: count,
@@ -151,7 +170,7 @@ export class CampaignTrackerService implements OnModuleInit {
     );
     const orderCampaignRepo = this.connection.getRepository(ctx, OrderCampaign);
     const existingOrderCampaign = await orderCampaignRepo.findOne({
-      where: { order, campaign },
+      where: { orderId: order.id, campaign: { id: campaign.id } },
     });
     if (existingOrderCampaign) {
       // Just update the updatedAt timestamp
@@ -161,7 +180,11 @@ export class CampaignTrackerService implements OnModuleInit {
       });
     } else {
       // Create new entry
-      await orderCampaignRepo.save({ order, campaign });
+      await orderCampaignRepo.save({ orderId: order.id, campaign });
+      Logger.info(
+        `Added campaign ${campaignCode} to order ${order.code}`,
+        loggerCtx
+      );
     }
     return order;
   }
@@ -171,7 +194,8 @@ export class CampaignTrackerService implements OnModuleInit {
    * Calculate metrics for all campaigns of a given channel
    */
   async calculateAllMetrics(ctx: RequestContext): Promise<void> {
-    // Get all orders with this campaign
+    await this.calculateConversions(ctx);
+    await this.calculateRevenue(ctx);
   }
 
   /**
@@ -182,6 +206,7 @@ export class CampaignTrackerService implements OnModuleInit {
     // Get all orders with this campaign
     // Get all orders with this campaign in the last 7 days
     // Calculate conversion rate
+    // Also update metricsUpdatedAt
   }
 
   /**
@@ -190,43 +215,21 @@ export class CampaignTrackerService implements OnModuleInit {
   async calculateRevenue(ctx: RequestContext): Promise<void> {
     const daysAgo365 = new Date();
     daysAgo365.setDate(daysAgo365.getDate() - 365);
-    const placedOrders: OrderWithCampaigns[] = [];
-    let hasMore = true;
-    while (hasMore) {
-      const [orders, total] = await this.connection
-        .getRepository(ctx, Order)
-        .createQueryBuilder('order')
-        .leftJoinAndSelect(
-          OrderCampaign,
-          'orderCampaign',
-          'order.id = orderCampaign.orderId'
-        )
-        .leftJoinAndSelect(
-          Campaign,
-          'campaign',
-          'order.id = orderCampaign.orderId'
-        )
-        .leftJoin('order.channels', 'channel')
-        .where('channel.id = :channelId', { channelId: ctx.channelId })
-        .andWhere('order.orderPlacedAt > :daysAgo365', { daysAgo365 })
-        .limit(5000)
-        .offset(placedOrders.length)
-        .getManyAndCount();
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any -- our custom join added the orderCampaings relations
-      placedOrders.push(...(orders as any));
-      if (placedOrders.length >= total) {
-        hasMore = false;
-      }
-    }
+    const placedOrders = await this.getOrdersWithCampaigns(
+      ctx,
+      'orderPlacedAt',
+      daysAgo365
+    );
     const revenuePerCampaign = calculateRevenuePerCampaign(
       this.options.attributionModel,
       placedOrders
     );
     for (const [campaignId, campaign] of revenuePerCampaign.entries()) {
       await this.connection.getRepository(ctx, Campaign).update(campaignId, {
-        revenueLast365Days: campaign.revenueLast365Days,
-        revenueLast30days: campaign.revenueLast30days,
-        revenueLast7days: campaign.revenueLast7days,
+        revenueLast365Days: Math.round(campaign.revenueLast365Days),
+        revenueLast30days: Math.round(campaign.revenueLast30days),
+        revenueLast7days: Math.round(campaign.revenueLast7days),
+        metricsUpdatedAt: new Date(),
       });
       Logger.info(`Updated revenue for campaign ${campaignId}`, loggerCtx);
     }
@@ -235,6 +238,95 @@ export class CampaignTrackerService implements OnModuleInit {
   async triggerCalculateCampaignMetrics(ctx: RequestContext): Promise<void> {
     await this.jobQueue.add({
       ctx: ctx.serialize(),
+    });
+    Logger.info(
+      `Added job to calculate campaign metrics for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
+  }
+
+  /**
+   * @description
+   * Find all orders of the current channel with campaigns attached of the last X days
+   * By filtering on 'orderPlacedAt' or 'updatedAt' you can differentiate between placed and all orders
+   */
+  async getOrdersWithCampaigns(
+    ctx: RequestContext,
+    dateFilter: 'orderPlacedAt' | 'updatedAt',
+    lastXDays: Date
+  ): Promise<OrderWithCampaigns[]> {
+    const allOrders: RawOrderQueryResult[] = [];
+    let hasMore = true;
+    while (hasMore) {
+      const query = this.connection
+        .getRepository(ctx, Order)
+        .createQueryBuilder('order')
+        .leftJoinAndSelect(
+          OrderCampaign,
+          'orderCampaign',
+          'order.id = orderCampaign.orderId'
+        )
+        .leftJoinAndSelect('orderCampaign.campaign', 'campaign')
+        .leftJoin('order.channels', 'channel')
+        .where('channel.id = :channelId', { channelId: ctx.channelId })
+        .andWhere(`order.${dateFilter} > :lastXDays`, { lastXDays })
+        .limit(5000)
+        .offset(allOrders.length);
+      const orders: RawOrderQueryResult[] = await query.getRawMany();
+      const total = await query.getCount();
+      allOrders.push(...orders);
+      if (allOrders.length >= total) {
+        hasMore = false;
+      }
+    }
+    return this.mapToOrderWithCampaigns(allOrders);
+  }
+
+  /**
+   * The raw order results from the DB hold the data in a flat structure, so a single order can have multiple rows.
+   * This function maps all campaigns to a single order object
+   */
+  private mapToOrderWithCampaigns(
+    rawOrderResults: RawOrderQueryResult[]
+  ): OrderWithCampaigns[] {
+    const campaignsPerOrder = new Map<ID, OrderWithCampaigns>();
+    rawOrderResults.forEach((o) => {
+      const campaign = new Campaign({
+        id: o.campaign_id,
+        code: o.campaign_code,
+        name: o.campaign_name,
+        channelId: o.campaign_channelId,
+        conversionLast7Days: o.campaign_conversionLast7Days,
+        revenueLast7days: o.campaign_revenueLast7days,
+        revenueLast30days: o.campaign_revenueLast30days,
+        revenueLast365Days: o.campaign_revenueLast365Days,
+        metricsUpdatedAt: o.campaign_metricsUpdatedAt,
+      });
+      const orderCampaign = new OrderCampaign({
+        id: o.orderCampaign_id,
+        createdAt: new Date(o.orderCampaign_createdAt),
+        updatedAt: new Date(o.orderCampaign_updatedAt),
+        orderId: o.order_id,
+        campaign: campaign,
+      });
+      const existingCampaigns =
+        campaignsPerOrder.get(o.order_id)?.connectedCampaigns || [];
+      campaignsPerOrder.set(o.order_id, {
+        orderId: o.order_id,
+        orderTotal: o.order_subTotal + o.order_shipping,
+        orderPlacedAt: o.order_orderPlacedAt
+          ? new Date(o.order_orderPlacedAt)
+          : undefined,
+        orderUpdatedAt: new Date(o.order_updatedAt),
+        connectedCampaigns: [...existingCampaigns, orderCampaign],
+      });
+    });
+    return Array.from(campaignsPerOrder.values()).map((o) => {
+      // Sort by connectedAt date in ascending order (most recent last)
+      o.connectedCampaigns.sort(
+        (a, b) => a.connectedAt.getTime() - b.connectedAt.getTime()
+      );
+      return o;
     });
   }
 }

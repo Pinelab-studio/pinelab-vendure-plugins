@@ -1,16 +1,12 @@
-import { ID, Order } from '@vendure/core';
-import { Attribution, AttributionModel, OrderWithCampaigns } from '../types';
+import { ID } from '@vendure/core';
 import { Campaign } from '../entities/campaign.entity';
+import { OrderWithCampaigns } from '../types';
+import { Attribution, AttributionModel } from './attribution-models';
 
-type OrderWithPlacedAt = Pick<Order, 'orderPlacedAt'>;
-
-function wasOrderPlacedInLastXDays(
-  order: OrderWithPlacedAt,
-  nrOfDays: number
-): boolean {
+function isDateInLastXDays(date: Date | undefined, nrOfDays: number): boolean {
   const xDaysAgo = new Date();
   xDaysAgo.setDate(xDaysAgo.getDate() - nrOfDays);
-  return (order.orderPlacedAt ?? 0) > xDaysAgo;
+  return (date ?? 0) > xDaysAgo;
 }
 
 /**
@@ -36,26 +32,38 @@ function validateAttributions(attributions: Attribution[]) {
 export function calculateRevenuePerCampaign(
   attributionModel: AttributionModel,
   placedOrders: OrderWithCampaigns[]
-): Map<ID, Partial<Campaign>> {
+): Map<ID, Campaign> {
   const revenuePerCampaign = new Map<ID, Campaign>();
   for (const order of placedOrders) {
-    const attributions = attributionModel.attributeTo(order.orderCampaigns);
+    const attributions = attributionModel.attributeTo(order.connectedCampaigns);
     validateAttributions(attributions);
     attributions.forEach((attribution) => {
       const campaign =
         revenuePerCampaign.get(attribution.campaignId) || new Campaign();
-      const revenue = order.total * attribution.attributionRate;
-      if (wasOrderPlacedInLastXDays(order, 365)) {
+      const revenue = order.orderTotal * attribution.attributionRate;
+      if (isDateInLastXDays(order.orderPlacedAt, 365)) {
         campaign.revenueLast365Days += revenue;
       }
-      if (wasOrderPlacedInLastXDays(order, 30)) {
+      if (isDateInLastXDays(order.orderPlacedAt, 30)) {
         campaign.revenueLast30days += revenue;
       }
-      if (wasOrderPlacedInLastXDays(order, 7)) {
+      if (isDateInLastXDays(order.orderPlacedAt, 7)) {
         campaign.revenueLast7days += revenue;
       }
       revenuePerCampaign.set(attribution.campaignId, campaign);
     });
   }
   return revenuePerCampaign;
+}
+
+export function isOlderThan(
+  givenDate: Date | undefined,
+  milliseconds: number
+): boolean {
+  if (!givenDate) {
+    // No date, so it's older than the given time
+    return true;
+  }
+  const now = new Date();
+  return now.getTime() - givenDate.getTime() > milliseconds;
 }

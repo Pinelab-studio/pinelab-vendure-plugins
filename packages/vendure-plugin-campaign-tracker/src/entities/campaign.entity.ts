@@ -31,4 +31,7 @@ export class Campaign extends VendureEntity {
 
   @Column({ default: 0, type: 'int' })
   revenueLast365Days: number = 0;
+
+  @Column({ type: Date, nullable: true })
+  metricsUpdatedAt?: Date;
 }

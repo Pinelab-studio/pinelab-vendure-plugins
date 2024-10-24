@@ -7,6 +7,7 @@ export const CAMPAIGN_FRAGMENT = gql`
     updatedAt
     code
     name
+    metricsUpdatedAt
     conversionLast7Days
     revenueLast7days
     revenueLast30days
@@ -33,4 +34,14 @@ export const GET_CAMPAIGNS = gql`
     }
   }
   ${CAMPAIGN_FRAGMENT}
+`;
+
+export const ADD_CAMPAIGN_TO_ORDER = gql`
+  mutation addCampaignToOrder($campaignCode: String!) {
+    addCampaignToOrder(campaignCode: $campaignCode) {
+      id
+      code
+      total
+    }
+  }
 `;

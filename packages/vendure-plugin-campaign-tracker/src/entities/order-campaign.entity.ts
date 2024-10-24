@@ -1,5 +1,5 @@
-import { DeepPartial, Order, VendureEntity } from '@vendure/core';
-import { Entity, ManyToOne } from 'typeorm';
+import { DeepPartial, ID, VendureEntity } from '@vendure/core';
+import { Column, Entity, ManyToOne } from 'typeorm';
 import { Campaign } from './campaign.entity';
 
 /**
@@ -19,8 +19,8 @@ export class OrderCampaign extends VendureEntity {
     return this.updatedAt;
   }
 
-  @ManyToOne(() => Order)
-  order!: Order;
+  @Column({ type: 'varchar' })
+  orderId!: ID;
 
   @ManyToOne(() => Campaign, { eager: true })
   campaign!: Campaign;

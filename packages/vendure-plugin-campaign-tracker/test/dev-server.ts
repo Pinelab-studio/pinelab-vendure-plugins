@@ -12,18 +12,24 @@ import {
   registerInitializer,
   SqljsInitializer,
 } from '@vendure/testing';
-import { addShippingMethod } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { CampaignTrackerPlugin } from '../src';
-import { CREATE_CAMPAIGN, GET_CAMPAIGNS } from '../src/ui/queries';
+import { CampaignTrackerPlugin, LastInteractionAttribution } from '../src';
 import {
+  AddCampaignToOrderMutation,
   CreateCampaignMutation,
   CreateCampaignMutationVariables,
   GetCampaignsQuery,
   GetCampaignsQueryVariables,
+  MutationAddCampaignToOrderArgs,
+  SortOrder,
 } from '../src/ui/generated/graphql';
+import {
+  ADD_CAMPAIGN_TO_ORDER,
+  CREATE_CAMPAIGN,
+  GET_CAMPAIGNS,
+} from '../src/ui/queries';
 
 (async () => {
   require('dotenv').config();
@@ -55,7 +61,9 @@ import {
       ],
     },
     plugins: [
-      CampaignTrackerPlugin.init({}),
+      CampaignTrackerPlugin.init({
+        attributionModel: new LastInteractionAttribution(),
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -82,7 +90,10 @@ import {
     productsCsvPath: '../test/src/products-import.csv',
   });
   await adminClient.asSuperAdmin();
-  await adminClient.query<
+  // await addShippingMethod(adminClient, 'manual-fulfillment');
+  const {
+    createCampaign: { code },
+  } = await adminClient.query<
     CreateCampaignMutation,
     CreateCampaignMutationVariables
   >(CREATE_CAMPAIGN, {
@@ -91,13 +102,51 @@ import {
       name: 'Test Campaign',
     },
   });
+  console.log(`Created campaign ${code}`);
+  const {
+    createCampaign: { code: code2 },
+  } = await adminClient.query<
+    CreateCampaignMutation,
+    CreateCampaignMutationVariables
+  >(CREATE_CAMPAIGN, {
+    input: {
+      code: 'campaign2',
+      name: 'Campaign 2',
+    },
+  });
+  console.log(`Created campaign ${code2}`);
+
+  await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  const { addCampaignToOrder } = await shopClient.query<
+    AddCampaignToOrderMutation,
+    MutationAddCampaignToOrderArgs
+  >(ADD_CAMPAIGN_TO_ORDER, { campaignCode: 'test_campaign' });
+  await new Promise((resolve) => setTimeout(resolve, 1200)); // Some time between adding codes
+  await shopClient.query<
+    AddCampaignToOrderMutation,
+    MutationAddCampaignToOrderArgs
+  >(ADD_CAMPAIGN_TO_ORDER, { campaignCode: 'campaign2' });
+  console.log(`Added campaigns to order ${addCampaignToOrder.code}`);
+
+  const order = await createSettledOrder(shopClient, 1, false);
+  console.log(`Settled order ${order.code}`);
+
+  // Fetching first should trigger the metrics calculation
+  await adminClient.query<GetCampaignsQuery, GetCampaignsQueryVariables>(
+    GET_CAMPAIGNS
+  );
+  console.log('Fetching campaigns, thus triggering metrics calculation');
+  // Await async metric processing
+  await new Promise((resolve) => setTimeout(resolve, 2000));
   const result = await adminClient.query<
     GetCampaignsQuery,
     GetCampaignsQueryVariables
-  >(GET_CAMPAIGNS);
-  console.log(result);
-
-  // const order = await createSettledOrder(shopClient, 3, true, [
-  //   { id: 'T_1', quantity: 3 },
-  // ]);
+  >(GET_CAMPAIGNS, {
+    options: {
+      sort: {
+        revenueLast7days: SortOrder.Desc,
+      },
+    },
+  });
+  console.log(`Campaign results: ${JSON.stringify(result, null, 2)}`);
 })();
