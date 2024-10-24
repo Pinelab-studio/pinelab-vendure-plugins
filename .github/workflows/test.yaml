@@ -32,7 +32,7 @@ jobs:
             'vendure-plugin-admin-social-auth',
             'vendure-plugin-admin-ui-helpers',
             'vendure-plugin-anonymized-order',
-            'vendure-plugin-coinbase',
+            'vendure-plugin-campaign-tracker',
             'vendure-plugin-coinbase',
             'vendure-plugin-customer-managed-groups',
             'vendure-plugin-dutch-postalcode',

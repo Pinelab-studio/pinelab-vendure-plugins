@@ -20,7 +20,7 @@ export class CampaignTrackerShopResolver {
   async addCampaignToOrder(
     @Ctx() ctx: RequestContext,
     @Args() { campaignCode }: MutationAddCampaignToOrderArgs
-  ): Promise<Order> {
+  ): Promise<Order | undefined> {
     return await this.campaignTrackerService.addCampaignToOrder(
       ctx,
       campaignCode

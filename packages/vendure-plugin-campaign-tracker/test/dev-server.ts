@@ -17,7 +17,6 @@ import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { CampaignTrackerPlugin, LastInteractionAttribution } from '../src';
 import {
-  AddCampaignToOrderMutation,
   CreateCampaignMutation,
   CreateCampaignMutationVariables,
   GetCampaignsQuery,
@@ -25,11 +24,8 @@ import {
   MutationAddCampaignToOrderArgs,
   SortOrder,
 } from '../src/ui/generated/graphql';
-import {
-  ADD_CAMPAIGN_TO_ORDER,
-  CREATE_CAMPAIGN,
-  GET_CAMPAIGNS,
-} from '../src/ui/queries';
+import { CREATE_CAMPAIGN, GET_CAMPAIGNS } from '../src/ui/queries';
+import { ADD_CAMPAIGN_TO_ORDER } from './queries';
 
 (async () => {
   require('dotenv').config();
@@ -117,17 +113,15 @@ import {
   console.log(`Created campaign ${code2}`);
 
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
-  const { addCampaignToOrder } = await shopClient.query<
-    AddCampaignToOrderMutation,
-    MutationAddCampaignToOrderArgs
-  >(ADD_CAMPAIGN_TO_ORDER, { campaignCode: 'test_campaign' });
+  // Add test campaign
+  const { addCampaignToOrder } = await shopClient.query(ADD_CAMPAIGN_TO_ORDER, {
+    campaignCode: 'test_campaign',
+  });
   await new Promise((resolve) => setTimeout(resolve, 1200)); // Some time between adding codes
-  await shopClient.query<
-    AddCampaignToOrderMutation,
-    MutationAddCampaignToOrderArgs
-  >(ADD_CAMPAIGN_TO_ORDER, { campaignCode: 'campaign2' });
+  // Add campaign2
+  await shopClient.query(ADD_CAMPAIGN_TO_ORDER, { campaignCode: 'campaign2' });
   console.log(`Added campaigns to order ${addCampaignToOrder.code}`);
-
+  // Place order
   const order = await createSettledOrder(shopClient, 1, false);
   console.log(`Settled order ${order.code}`);
 
@@ -135,8 +129,7 @@ import {
   await adminClient.query<GetCampaignsQuery, GetCampaignsQueryVariables>(
     GET_CAMPAIGNS
   );
-  console.log('Fetching campaigns, thus triggering metrics calculation');
-  // Await async metric processing
+  // Await async metric calculation
   await new Promise((resolve) => setTimeout(resolve, 2000));
   const result = await adminClient.query<
     GetCampaignsQuery,
@@ -144,7 +137,7 @@ import {
   >(GET_CAMPAIGNS, {
     options: {
       sort: {
-        revenueLast7days: SortOrder.Desc,
+        createdAt: SortOrder.Desc,
       },
     },
   });

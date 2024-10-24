@@ -20,9 +20,6 @@ export class Campaign extends VendureEntity {
   @Column()
   name!: string;
 
-  @Column({ default: 0, type: 'float' })
-  conversionLast7Days: number = 0;
-
   @Column({ default: 0, type: 'int' })
   revenueLast7days: number = 0;
 

@@ -54,7 +54,7 @@ export class CampaignTrackerService implements OnModuleInit {
       name: 'campaign-tracker',
       process: (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
-        return this.calculateAllMetrics(ctx).catch((err: unknown) => {
+        return this.calculateRevenue(ctx).catch((err: unknown) => {
           Logger.warn(
             `Error in calculateCampaignMetrics: ${asError(err).message}`
           );
@@ -93,8 +93,8 @@ export class CampaignTrackerService implements OnModuleInit {
   async getCampaignByCode(
     ctx: RequestContext,
     code: string
-  ): Promise<Campaign> {
-    return await this.connection.getRepository(ctx, Campaign).findOneOrFail({
+  ): Promise<Campaign | undefined | null> {
+    return await this.connection.getRepository(ctx, Campaign).findOne({
       where: {
         code,
         channelId: ctx.channelId,
@@ -161,8 +161,12 @@ export class CampaignTrackerService implements OnModuleInit {
   async addCampaignToOrder(
     ctx: RequestContext,
     campaignCode: string
-  ): Promise<Order> {
+  ): Promise<Order | undefined> {
     const campaign = await this.getCampaignByCode(ctx, campaignCode);
+    if (!campaign) {
+      Logger.warn(`No campaign found with code ${campaignCode}`, loggerCtx);
+      return; // No campaign found
+    }
     const order = await this.activeOrderService.getActiveOrder(
       ctx,
       undefined,
@@ -190,35 +194,13 @@ export class CampaignTrackerService implements OnModuleInit {
   }
 
   /**
-   * @description
-   * Calculate metrics for all campaigns of a given channel
-   */
-  async calculateAllMetrics(ctx: RequestContext): Promise<void> {
-    await this.calculateConversions(ctx);
-    await this.calculateRevenue(ctx);
-  }
-
-  /**
-   * @description
-   * Calculate conversion of all campaigns of a given channel
-   */
-  async calculateConversions(ctx: RequestContext, nrOfDays = 7): Promise<void> {
-    // Get all orders with this campaign
-    // Get all orders with this campaign in the last 7 days
-    // Calculate conversion rate
-    // Also update metricsUpdatedAt
-  }
-
-  /**
    * Calculate Revenue of all campaigns for the last 7, 30 and 365 days
    */
   async calculateRevenue(ctx: RequestContext): Promise<void> {
-    const daysAgo365 = new Date();
-    daysAgo365.setDate(daysAgo365.getDate() - 365);
     const placedOrders = await this.getOrdersWithCampaigns(
       ctx,
       'orderPlacedAt',
-      daysAgo365
+      365
     );
     const revenuePerCampaign = calculateRevenuePerCampaign(
       this.options.attributionModel,
@@ -229,10 +211,16 @@ export class CampaignTrackerService implements OnModuleInit {
         revenueLast365Days: Math.round(campaign.revenueLast365Days),
         revenueLast30days: Math.round(campaign.revenueLast30days),
         revenueLast7days: Math.round(campaign.revenueLast7days),
-        metricsUpdatedAt: new Date(),
       });
       Logger.info(`Updated revenue for campaign ${campaignId}`, loggerCtx);
     }
+    // Mark metrics as updated
+    await this.connection.getRepository(ctx, Campaign).update(
+      {
+        channelId: ctx.channelId,
+      },
+      { metricsUpdatedAt: new Date() }
+    );
   }
 
   async triggerCalculateCampaignMetrics(ctx: RequestContext): Promise<void> {
@@ -253,8 +241,10 @@ export class CampaignTrackerService implements OnModuleInit {
   async getOrdersWithCampaigns(
     ctx: RequestContext,
     dateFilter: 'orderPlacedAt' | 'updatedAt',
-    lastXDays: Date
+    lastXDays: number
   ): Promise<OrderWithCampaigns[]> {
+    const lastXDaysDate = new Date();
+    lastXDaysDate.setDate(lastXDaysDate.getDate() - lastXDays);
     const allOrders: RawOrderQueryResult[] = [];
     let hasMore = true;
     while (hasMore) {
@@ -269,7 +259,7 @@ export class CampaignTrackerService implements OnModuleInit {
         .leftJoinAndSelect('orderCampaign.campaign', 'campaign')
         .leftJoin('order.channels', 'channel')
         .where('channel.id = :channelId', { channelId: ctx.channelId })
-        .andWhere(`order.${dateFilter} > :lastXDays`, { lastXDays })
+        .andWhere(`order.${dateFilter} > :lastXDaysDate`, { lastXDaysDate })
         .limit(5000)
         .offset(allOrders.length);
       const orders: RawOrderQueryResult[] = await query.getRawMany();
@@ -296,7 +286,6 @@ export class CampaignTrackerService implements OnModuleInit {
         code: o.campaign_code,
         name: o.campaign_name,
         channelId: o.campaign_channelId,
-        conversionLast7Days: o.campaign_conversionLast7Days,
         revenueLast7days: o.campaign_revenueLast7days,
         revenueLast30days: o.campaign_revenueLast30days,
         revenueLast365Days: o.campaign_revenueLast365Days,

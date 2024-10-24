@@ -42,7 +42,6 @@ export interface RawOrderQueryResult {
   campaign_channelId: string;
   campaign_code: string;
   campaign_name: string;
-  campaign_conversionLast7Days: number;
   campaign_revenueLast7days: number;
   campaign_revenueLast30days: number;
   campaign_revenueLast365Days: number;

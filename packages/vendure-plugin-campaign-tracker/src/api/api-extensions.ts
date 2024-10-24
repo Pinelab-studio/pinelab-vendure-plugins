@@ -24,7 +24,6 @@ const commonApiExtensions = gql`
     code: String!
     name: String!
     metricsUpdatedAt: DateTime
-    conversionLast7Days: Float
     revenueLast7days: Money
     revenueLast30days: Money
     revenueLast365Days: Money
@@ -39,7 +38,7 @@ export const shopApiExtensions = gql`
     Add a campaign code to the current order.
     Creates a new active order if none exists.
     """
-    addCampaignToOrder(campaignCode: String!): Order!
+    addCampaignToOrder(campaignCode: String!): Order
   }
 `;
 
@@ -61,7 +60,6 @@ export const adminApiExtensions = gql`
     updatedAt: SortOrder
     code: SortOrder
     name: SortOrder
-    conversionLast7Days: SortOrder
     revenueLast7days: SortOrder
     revenueLast30days: SortOrder
     revenueLast365Days: SortOrder
