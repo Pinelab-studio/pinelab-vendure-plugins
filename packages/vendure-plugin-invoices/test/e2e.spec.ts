@@ -43,7 +43,7 @@ import {
 } from '../src/ui/queries.graphql';
 import { MockAccountingStrategy } from './mock-accounting-strategy';
 import gql from 'graphql-tag';
-import { waitFor } from '../../vendure-plugin-shipping-extensions/test/test-helpers';
+import { waitFor } from '../../test/src/test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
