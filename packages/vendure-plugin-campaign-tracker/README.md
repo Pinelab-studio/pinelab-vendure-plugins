@@ -22,14 +22,26 @@ plugins: [
     // Or, implement your own by implementing the AttributionModel interface
     attributionModel: new LastInteractionAttribution()
   }),
+  AdminUiPlugin.init({
+    port: 3002,
+    route: 'admin',
+    app: compileUiExtensions({
+      outputPath: path.join(__dirname, '__admin-ui'),
+      extensions: [
+        CampaignTrackerPlugin.ui,
+        ... // your other plugin UI extensions
+      ],
+    }),
+  }),
 ... // your other plugins
 ]
 ```
 
-1. Run a database migration
-2. Start Vendure, and navigate to 'Campaign' (below Promotions)
-3. Create a campaign, e.g. `my-first-campaign`.
-4. Make sure that every page on your storefront includes the following code:
+1. Run a database migration.
+2. Rebuild the admin UI
+3. Start Vendure, and navigate to 'Campaign' (below Promotions)
+4. Create a campaign, e.g. `my-first-campaign`.
+5. Make sure that every page on your storefront includes the following code:
 
 ```ts
 const url = new URL(window.location.href);
