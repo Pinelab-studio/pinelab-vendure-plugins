@@ -1,5 +1,18 @@
 import { ID } from '@vendure/core';
-import { OrderCampaign } from '../entities/order-campaign.entity';
+
+/**
+ * @description
+ * A campaign connected to an order
+ */
+export interface ConnectedCampaign {
+  id: ID;
+  name: string;
+  code: string;
+  createdAt: Date;
+  updatedAt: Date;
+  connectedAt: Date;
+  orderId: ID;
+}
 
 /**
  * @description
@@ -12,7 +25,7 @@ export interface AttributionModel {
    * OrderCampaigns are sorted by the connectedAt date in ascending order,
    * so the first campaign is the first one that was added to the order
    */
-  attributeTo(orderCampaigns: OrderCampaign[]): Attribution[];
+  attributeTo(orderCampaigns: ConnectedCampaign[]): Attribution[];
 }
 
 export interface Attribution {
@@ -30,7 +43,7 @@ export interface Attribution {
  * Attribute the entire revenue of an order to the most recently added campaign
  */
 export class LastInteractionAttribution implements AttributionModel {
-  attributeTo(orderCampaigns: OrderCampaign[]): Attribution[] {
+  attributeTo(orderCampaigns: ConnectedCampaign[]): Attribution[] {
     const mostRecentlyAddedCampaign = orderCampaigns[orderCampaigns.length - 1];
     return [
       {
@@ -46,7 +59,7 @@ export class LastInteractionAttribution implements AttributionModel {
  * Attribute the entire revenue of an order to the first campaign that was added to the order
  */
 export class FirstInteractionAttribution implements AttributionModel {
-  attributeTo(orderCampaigns: OrderCampaign[]): Attribution[] {
+  attributeTo(orderCampaigns: ConnectedCampaign[]): Attribution[] {
     const firstCampaign = orderCampaigns[0];
     return [
       {
@@ -62,7 +75,7 @@ export class FirstInteractionAttribution implements AttributionModel {
  * Equally attribute the revenue of an order to all campaigns that were added to the order
  */
 export class LinearAttribution implements AttributionModel {
-  attributeTo(orderCampaigns: OrderCampaign[]): Attribution[] {
+  attributeTo(orderCampaigns: ConnectedCampaign[]): Attribution[] {
     const totalCampaigns = orderCampaigns.length;
     return orderCampaigns.map((orderCampaign) => ({
       campaignId: orderCampaign.id,

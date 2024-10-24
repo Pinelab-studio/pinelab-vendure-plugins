@@ -1,7 +1,11 @@
 import { ID } from '@vendure/core';
 import { Campaign } from '../entities/campaign.entity';
 import { OrderWithCampaigns } from '../types';
-import { Attribution, AttributionModel } from './attribution-models';
+import {
+  Attribution,
+  AttributionModel,
+  ConnectedCampaign,
+} from './attribution-models';
 
 function isDateInLastXDays(date: Date | undefined, nrOfDays: number): boolean {
   const xDaysAgo = new Date();
@@ -35,7 +39,17 @@ export function calculateRevenuePerCampaign(
 ): Map<ID, Campaign> {
   const revenuePerCampaign = new Map<ID, Campaign>();
   for (const order of placedOrders) {
-    const attributions = attributionModel.attributeTo(order.connectedCampaigns);
+    const connectedCampaigns: ConnectedCampaign[] =
+      order.connectedCampaigns.map((c) => ({
+        id: c.campaign.id,
+        name: c.campaign.name,
+        code: c.campaign.code,
+        createdAt: c.campaign.createdAt,
+        updatedAt: c.campaign.updatedAt,
+        connectedAt: c.updatedAt,
+        orderId: c.orderId,
+      }));
+    const attributions = attributionModel.attributeTo(connectedCampaigns);
     validateAttributions(attributions);
     attributions.forEach((attribution) => {
       const campaign =

@@ -136,17 +136,17 @@ export class CampaignTrackerService implements OnModuleInit {
       )
       .getManyAndCount();
     // Trigger recalculation of metrics if any campaign is older than the refresh interval
-    campaigns.some((campaign) => {
-      if (isOlderThan(campaign.metricsUpdatedAt, this.refreshMetricsAfter)) {
-        this.triggerCalculateCampaignMetrics(ctx).catch((err) => {
-          Logger.error(
-            `Error creating recalculate-metrics job: ${err}`,
-            loggerCtx
-          );
-        });
-        return true;
-      }
-    });
+    const outDatedCampaign = campaigns.find((campaign) =>
+      isOlderThan(campaign.metricsUpdatedAt, this.refreshMetricsAfter)
+    );
+    if (outDatedCampaign) {
+      this.triggerCalculateCampaignMetrics(ctx).catch((err) => {
+        Logger.error(
+          `Error creating recalculate-metrics job: ${err}`,
+          loggerCtx
+        );
+      });
+    }
     return {
       items: campaigns,
       totalItems: count,
@@ -206,6 +206,7 @@ export class CampaignTrackerService implements OnModuleInit {
       this.options.attributionModel,
       placedOrders
     );
+
     for (const [campaignId, campaign] of revenuePerCampaign.entries()) {
       await this.connection.getRepository(ctx, Campaign).update(campaignId, {
         revenueLast365Days: Math.round(campaign.revenueLast365Days),
@@ -313,7 +314,7 @@ export class CampaignTrackerService implements OnModuleInit {
     return Array.from(campaignsPerOrder.values()).map((o) => {
       // Sort by connectedAt date in ascending order (most recent last)
       o.connectedCampaigns.sort(
-        (a, b) => a.connectedAt.getTime() - b.connectedAt.getTime()
+        (a, b) => a.updatedAt.getTime() - b.updatedAt.getTime()
       );
       return o;
     });

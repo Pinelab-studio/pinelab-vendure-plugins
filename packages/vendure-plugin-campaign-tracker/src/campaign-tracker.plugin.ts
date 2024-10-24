@@ -1,4 +1,5 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { CampaignTrackerAdminResolver } from './api/campaign-tracker-admin.resolver';
@@ -9,6 +10,7 @@ import { OrderCampaign } from './entities/order-campaign.entity';
 import { LastInteractionAttribution } from './services/attribution-models';
 import { CampaignTrackerService } from './services/campaign-tracker.service';
 import { CampaignTrackerOptions } from './types';
+import path from 'path';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -47,4 +49,9 @@ export class CampaignTrackerPlugin {
     };
     return CampaignTrackerPlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    ngModules: [],
+  };
 }

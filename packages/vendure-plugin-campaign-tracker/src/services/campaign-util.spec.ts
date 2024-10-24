@@ -35,8 +35,8 @@ describe('calculateRevenuePerCampaign', () => {
       description: 'Has revenue attributed to the 1 campaign',
       orderTotal: 100,
       orderPlacedDaysAgo: 0, // Today
-      orderCampaigns: [{ campaign: { id: 1 } }],
-      attributionRates: [{ campaignId: 1, attributionRate: 1 }],
+      orderCampaigns: [{ campaign: { id: 5 } }],
+      attributionRates: [{ campaignId: 5, attributionRate: 1 }],
       expectedRevenue365Days: 100,
       expectedRevenue30Days: 100,
       expectedRevenue7Days: 100,
@@ -45,8 +45,8 @@ describe('calculateRevenuePerCampaign', () => {
       description: 'Has revenue attributed only to 365 days revenue',
       orderTotal: 100,
       orderPlacedDaysAgo: 31,
-      orderCampaigns: [{ campaign: { id: 1 } }],
-      attributionRates: [{ campaignId: 1, attributionRate: 1 }],
+      orderCampaigns: [{ campaign: { id: 5 } }],
+      attributionRates: [{ campaignId: 5, attributionRate: 1 }],
       expectedRevenue365Days: 100,
       expectedRevenue30Days: 0,
       expectedRevenue7Days: 0,
@@ -55,9 +55,9 @@ describe('calculateRevenuePerCampaign', () => {
       description: 'Has revenue split over 2 campaigns',
       orderTotal: 100,
       orderPlacedDaysAgo: 0,
-      orderCampaigns: [{ campaign: { id: 1 } }, { campaign: { id: 2 } }],
+      orderCampaigns: [{ campaign: { id: 5 } }, { campaign: { id: 2 } }],
       attributionRates: [
-        { campaignId: 1, attributionRate: 0.6 },
+        { campaignId: 5, attributionRate: 0.6 },
         { campaignId: 2, attributionRate: 0.4 },
       ],
       expectedRevenue365Days: 60, // expect only 0.6 on the first campaign
@@ -95,9 +95,9 @@ describe('calculateRevenuePerCampaign', () => {
         mockOrder1,
         mockOrder2,
       ]);
-      expect(result.get(1)?.revenueLast365Days).toBe(expectedRevenue365Days);
-      expect(result.get(1)?.revenueLast30days).toBe(expectedRevenue30Days);
-      expect(result.get(1)?.revenueLast7days).toBe(expectedRevenue7Days);
+      expect(result.get(5)?.revenueLast365Days).toBe(expectedRevenue365Days);
+      expect(result.get(5)?.revenueLast30days).toBe(expectedRevenue30Days);
+      expect(result.get(5)?.revenueLast7days).toBe(expectedRevenue7Days);
     }
   );
 

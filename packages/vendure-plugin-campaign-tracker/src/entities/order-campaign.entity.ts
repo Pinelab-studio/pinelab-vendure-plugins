@@ -12,13 +12,6 @@ export class OrderCampaign extends VendureEntity {
     super(input);
   }
 
-  /**
-   * The date time at which the campaign was connected to the order
-   */
-  get connectedAt(): Date {
-    return this.updatedAt;
-  }
-
   @Column({ type: 'varchar' })
   orderId!: ID;
 
