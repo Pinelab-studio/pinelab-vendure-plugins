@@ -137,7 +137,11 @@
   <div class="modal-footer campaign">
     <vdr-action-bar>
       <vdr-ab-left>
-        <a class="btn btn-danger" (click)="delete()">
+        <a
+          *ngIf="modalAction === 'Edit'"
+          class="btn btn-danger"
+          (click)="delete()"
+        >
           <clr-icon shape="trash"></clr-icon>
           Delete
         </a>
