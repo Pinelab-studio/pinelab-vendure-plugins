@@ -20,16 +20,20 @@ function isDateInLastXDays(date: Date | undefined, nrOfDays: number): boolean {
  * @description
  * Validate that the sum of all attributions is 1
  */
-function validateAttributions(attributions: Attribution[]) {
+export function validateAttributions(
+  attributions: Pick<Attribution, 'attributionRate'>[]
+) {
   const sum = attributions.reduce(
     (total, attribution) => total + attribution.attributionRate,
     0
   );
-  if (sum !== 1) {
-    throw new Error(
-      `The sum of all attributions for an order should be 1, got '${sum}'`
-    );
+  if (sum >= 0.999 && sum <= 1.001) {
+    // Allow for floating point rounding errors
+    return true;
   }
+  throw new Error(
+    `The sum of all attributions for an order should be 1, got '${sum}'`
+  );
 }
 
 /**

@@ -1,7 +1,12 @@
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { OrderWithCampaigns } from '../types';
 import { asError } from 'catch-unknown';
-import { calculateRevenuePerCampaign, isOlderThan } from './campaign-util';
+import {
+  calculateRevenuePerCampaign,
+  isOlderThan,
+  validateAttributions,
+} from './campaign-util';
+import { Attribution } from './attribution-models';
 
 const attributionModel = {
   attributeTo: vi.fn(),
@@ -116,6 +121,32 @@ describe('calculateRevenuePerCampaign', () => {
         "The sum of all attributions for an order should be 1, got '1.2'"
       );
     }
+  });
+});
+
+describe('validateAttributions', () => {
+  it('Passes when attributions sum to exactly 1', () => {
+    const attributions = [
+      { attributionRate: 0.4 },
+      { attributionRate: 0.3 },
+      { attributionRate: 0.3 },
+    ];
+    expect(() => validateAttributions(attributions)).not.toThrow();
+  });
+
+  it('Throws an error when attributions do not sum to 1', () => {
+    const attributions = [{ attributionRate: 0.5 }, { attributionRate: 0.3 }];
+    expect(() => validateAttributions(attributions)).toThrow(
+      "The sum of all attributions for an order should be 1, got '0.8'"
+    );
+  });
+
+  it('Allows asumming up to 0.999', () => {
+    const attributions = [
+      { attributionRate: 0.666 },
+      { attributionRate: 0.333 },
+    ];
+    expect(() => validateAttributions(attributions)).not.toThrow();
   });
 });
 
