@@ -10,7 +10,7 @@ export const CAMPAIGN_FRAGMENT = gql`
     metricsUpdatedAt
     revenueLast7days
     revenueLast30days
-    revenueLast365Days
+    revenueLast365days
   }
 `;
 
@@ -21,6 +21,21 @@ export const CREATE_CAMPAIGN = gql`
     }
   }
   ${CAMPAIGN_FRAGMENT}
+`;
+
+export const UPDATE_CAMPAIGN = gql`
+  mutation UpdateCampaign($id: ID!, $input: CampaignInput!) {
+    updateCampaign(id: $id, input: $input) {
+      ...Campaign
+    }
+  }
+  ${CAMPAIGN_FRAGMENT}
+`;
+
+export const DELETE_CAMPAIGN = gql`
+  mutation DeleteCampaign($id: ID!) {
+    deleteCampaign(id: $id)
+  }
 `;
 
 export const GET_CAMPAIGNS = gql`

@@ -8,6 +8,7 @@ import {
   CampaignList,
   MutationCreateCampaignArgs,
   MutationDeleteCampaignArgs,
+  MutationUpdateCampaignArgs,
   QueryCampaignsArgs,
 } from '../ui/generated/graphql';
 
@@ -35,6 +36,16 @@ export class CampaignTrackerAdminResolver {
     @Args() { input }: MutationCreateCampaignArgs
   ): Promise<Campaign> {
     return await this.campaignTrackerService.createCampaign(ctx, input);
+  }
+
+  @Mutation()
+  @Transaction()
+  @Allow(Permission.SuperAdmin)
+  async updateCampaign(
+    @Ctx() ctx: RequestContext,
+    @Args() { id, input }: MutationUpdateCampaignArgs
+  ): Promise<Campaign> {
+    return await this.campaignTrackerService.updateCampaign(ctx, id, input);
   }
 
   @Mutation()

@@ -44,7 +44,7 @@ export interface RawOrderQueryResult {
   campaign_name: string;
   campaign_revenueLast7days: number;
   campaign_revenueLast30days: number;
-  campaign_revenueLast365Days: number;
+  campaign_revenueLast365days: number;
   campaign_metricsUpdatedAt?: string;
   campaign_id: ID;
 }

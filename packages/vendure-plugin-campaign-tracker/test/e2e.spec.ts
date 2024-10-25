@@ -12,13 +12,22 @@ import { CampaignTrackerPlugin, LastInteractionAttribution } from '../src';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { CREATE_CAMPAIGN, GET_CAMPAIGNS } from '../src/ui/queries';
+import {
+  CREATE_CAMPAIGN,
+  DELETE_CAMPAIGN,
+  GET_CAMPAIGNS,
+  UPDATE_CAMPAIGN,
+} from '../src/ui/queries';
 import {
   CreateCampaignMutation,
   CreateCampaignMutationVariables,
+  DeleteCampaignMutation,
+  DeleteCampaignMutationVariables,
   GetCampaignsQuery,
   GetCampaignsQueryVariables,
   SortOrder,
+  UpdateCampaignMutation,
+  UpdateCampaignMutationVariables,
 } from '../src/ui/generated/graphql';
 import { ADD_CAMPAIGN_TO_ORDER } from './queries';
 import { createSettledOrder, SettledOrder } from '../../test/src/shop-utils';
@@ -78,7 +87,7 @@ it('Creates 2 campaigns', async () => {
   >(CREATE_CAMPAIGN, {
     input: {
       code: 'campaign1',
-      name: 'Campaign 2',
+      name: 'Campaign 1',
     },
   });
   const { createCampaign: campaign2 } = await adminClient.query<
@@ -172,7 +181,7 @@ it('Has attributed order1 to campaign1', async () => {
   const campaign1 = campaigns.items.find((c) => c.code === 'campaign1');
   expect(campaign1?.revenueLast7days).toBe(order1.total);
   expect(campaign1?.revenueLast30days).toBe(order1.total);
-  expect(campaign1?.revenueLast365Days).toBe(order1.total);
+  expect(campaign1?.revenueLast365days).toBe(order1.total);
 });
 
 it('Has attributed order2 and order3 to campaign2', async () => {
@@ -184,7 +193,7 @@ it('Has attributed order2 and order3 to campaign2', async () => {
   const totalRevenue = order2.total + order3.total;
   expect(campaign2?.revenueLast7days).toBe(totalRevenue);
   expect(campaign2?.revenueLast30days).toBe(totalRevenue);
-  expect(campaign2?.revenueLast365Days).toBe(totalRevenue);
+  expect(campaign2?.revenueLast365days).toBe(totalRevenue);
 });
 
 it('Sorts by revenue ASC', async () => {
@@ -213,6 +222,32 @@ it('Sorts by revenue DESC', async () => {
   expect(campaigns[0]?.revenueLast7days).toBeGreaterThan(
     campaigns[1]?.revenueLast7days
   );
+});
+
+it('Updates a campaign name', async () => {
+  const { updateCampaign } = await adminClient.query<
+    UpdateCampaignMutation,
+    UpdateCampaignMutationVariables
+  >(UPDATE_CAMPAIGN, {
+    id: '1',
+    input: {
+      code: 'campaign1',
+      name: 'Updated Campaign 1',
+    },
+  });
+  expect(updateCampaign.id).toBe('T_1');
+  expect(updateCampaign.code).toBe('campaign1');
+  expect(updateCampaign.name).toBe('Updated Campaign 1');
+});
+
+it('Deletes a campaign', async () => {
+  const { deleteCampaign } = await adminClient.query<
+    DeleteCampaignMutation,
+    DeleteCampaignMutationVariables
+  >(DELETE_CAMPAIGN, {
+    id: '1',
+  });
+  expect(deleteCampaign).toBe(true);
 });
 
 if (process.env.TEST_ADMIN_UI) {

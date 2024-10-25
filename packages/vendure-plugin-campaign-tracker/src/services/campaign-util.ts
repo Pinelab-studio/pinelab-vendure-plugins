@@ -56,7 +56,7 @@ export function calculateRevenuePerCampaign(
         revenuePerCampaign.get(attribution.campaignId) || new Campaign();
       const revenue = order.orderTotal * attribution.attributionRate;
       if (isDateInLastXDays(order.orderPlacedAt, 365)) {
-        campaign.revenueLast365Days += revenue;
+        campaign.revenueLast365days += revenue;
       }
       if (isDateInLastXDays(order.orderPlacedAt, 30)) {
         campaign.revenueLast30days += revenue;

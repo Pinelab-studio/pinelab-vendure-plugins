@@ -26,6 +26,8 @@ import {
 } from '../src/ui/generated/graphql';
 import { CREATE_CAMPAIGN, GET_CAMPAIGNS } from '../src/ui/queries';
 import { ADD_CAMPAIGN_TO_ORDER } from './queries';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 (async () => {
   require('dotenv').config();
@@ -64,11 +66,11 @@ import { ADD_CAMPAIGN_TO_ORDER } from './queries';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [PicqerPlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [CampaignTrackerPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
   });
@@ -129,17 +131,4 @@ import { ADD_CAMPAIGN_TO_ORDER } from './queries';
   await adminClient.query<GetCampaignsQuery, GetCampaignsQueryVariables>(
     GET_CAMPAIGNS
   );
-  // Await async metric calculation
-  await new Promise((resolve) => setTimeout(resolve, 2000));
-  const result = await adminClient.query<
-    GetCampaignsQuery,
-    GetCampaignsQueryVariables
-  >(GET_CAMPAIGNS, {
-    options: {
-      sort: {
-        createdAt: SortOrder.Desc,
-      },
-    },
-  });
-  console.log(`Campaign results: ${JSON.stringify(result, null, 2)}`);
 })();

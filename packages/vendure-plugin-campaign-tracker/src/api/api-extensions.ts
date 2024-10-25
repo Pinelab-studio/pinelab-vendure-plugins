@@ -5,6 +5,7 @@ const _scalars = gql`
   scalar DateTime
   scalar Money
   scalar PaginatedList
+  scalar StringOperators
   type Order {
     id: ID
     code: String
@@ -26,7 +27,7 @@ const commonApiExtensions = gql`
     metricsUpdatedAt: DateTime
     revenueLast7days: Money
     revenueLast30days: Money
-    revenueLast365Days: Money
+    revenueLast365days: Money
   }
 `;
 
@@ -47,7 +48,7 @@ export const adminApiExtensions = gql`
 
   type CampaignList {
     items: [Campaign!]!
-    totalItems: Int
+    totalItems: Int!
   }
 
   input CampaignInput {
@@ -62,13 +63,19 @@ export const adminApiExtensions = gql`
     name: SortOrder
     revenueLast7days: SortOrder
     revenueLast30days: SortOrder
-    revenueLast365Days: SortOrder
+    revenueLast365days: SortOrder
+  }
+
+  input CampaignFilterParameter {
+    code: StringOperators
+    name: StringOperators
   }
 
   input CampaignListOptions {
     skip: Int
     take: Int
     sort: CampaignSortParameter
+    filter: CampaignFilterParameter
   }
 
   extend type Mutation {

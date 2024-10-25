@@ -13,6 +13,7 @@ import {
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
+import { LogicalOperator } from '@vendure/common/lib/generated-types';
 import { asError } from 'catch-unknown';
 import { IsNull } from 'typeorm';
 import { CAMPAIGN_TRACKER_PLUGIN_OPTIONS, loggerCtx } from '../constants';
@@ -124,6 +125,7 @@ export class CampaignTrackerService implements OnModuleInit {
         Campaign,
         {
           ...options,
+          filterOperator: LogicalOperator.OR,
         },
         {
           ctx,
@@ -209,7 +211,7 @@ export class CampaignTrackerService implements OnModuleInit {
 
     for (const [campaignId, campaign] of revenuePerCampaign.entries()) {
       await this.connection.getRepository(ctx, Campaign).update(campaignId, {
-        revenueLast365Days: Math.round(campaign.revenueLast365Days),
+        revenueLast365days: Math.round(campaign.revenueLast365days),
         revenueLast30days: Math.round(campaign.revenueLast30days),
         revenueLast7days: Math.round(campaign.revenueLast7days),
       });
@@ -290,7 +292,7 @@ export class CampaignTrackerService implements OnModuleInit {
         channelId: o.campaign_channelId,
         revenueLast7days: o.campaign_revenueLast7days,
         revenueLast30days: o.campaign_revenueLast30days,
-        revenueLast365Days: o.campaign_revenueLast365Days,
+        revenueLast365days: o.campaign_revenueLast365days,
         metricsUpdatedAt: o.campaign_metricsUpdatedAt,
       });
       const orderCampaign = new OrderCampaign({

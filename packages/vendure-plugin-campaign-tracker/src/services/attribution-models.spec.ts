@@ -3,12 +3,12 @@ import {
   LastInteractionAttribution,
   FirstInteractionAttribution,
   LinearAttribution,
+  ConnectedCampaign,
 } from './attribution-models';
-import { OrderCampaign } from '../entities/order-campaign.entity';
 
 describe('Attribution Models', () => {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-  const mockOrderCampaigns: OrderCampaign[] = [
+  const mockOrderCampaigns: ConnectedCampaign[] = [
     { id: 1 },
     { id: 2 },
     { id: 3 },

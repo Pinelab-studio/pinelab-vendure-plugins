@@ -95,7 +95,7 @@ describe('calculateRevenuePerCampaign', () => {
         mockOrder1,
         mockOrder2,
       ]);
-      expect(result.get(5)?.revenueLast365Days).toBe(expectedRevenue365Days);
+      expect(result.get(5)?.revenueLast365days).toBe(expectedRevenue365Days);
       expect(result.get(5)?.revenueLast30days).toBe(expectedRevenue30Days);
       expect(result.get(5)?.revenueLast7days).toBe(expectedRevenue7Days);
     }

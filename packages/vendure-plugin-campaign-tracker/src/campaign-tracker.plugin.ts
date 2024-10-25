@@ -51,7 +51,9 @@ export class CampaignTrackerPlugin {
   }
 
   static ui: AdminUiExtension = {
+    id: 'campaign-tracker',
     extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [],
+    routes: [{ route: 'campaigns', filePath: 'routes.ts' }],
+    providers: ['providers.ts'],
   };
 }
