@@ -177,7 +177,6 @@ export class CampaignListComponent extends TypedBaseListComponent<
         this.changeDetector.detectChanges();
         super.refresh();
       });
-    this.showModal = true;
   }
 
   clearCurrentCampaign() {
