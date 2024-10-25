@@ -37,7 +37,7 @@ interface JobData {
 
 @Injectable()
 export class CampaignTrackerService implements OnModuleInit {
-  private readonly refreshMetricsAfter = 1000 * 60 * 60 * 12; // 24 hours
+  private readonly refreshMetricsAfter = 1000 * 60 * 60 * 6;
   private jobQueue!: JobQueue<JobData>;
 
   constructor(
