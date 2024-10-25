@@ -1,0 +1,161 @@
+<vdr-page-block>
+  <vdr-action-bar>
+    <vdr-ab-left></vdr-ab-left>
+    <vdr-ab-right>
+      <a class="btn btn-primary" (click)="create()">
+        <clr-icon shape="plus"></clr-icon>
+        Create campaign
+      </a>
+    </vdr-ab-right>
+  </vdr-action-bar>
+</vdr-page-block>
+
+<!-- The data table -->
+<vdr-data-table-2
+  id="campaign-list"
+  [items]="items$ | async"
+  [itemsPerPage]="itemsPerPage$ | async"
+  [totalItems]="totalItems$ | async"
+  [currentPage]="currentPage$ | async"
+  (pageChange)="setPageNumber($event)"
+  (itemsPerPageChange)="setItemsPerPage($event)"
+>
+  <!-- Adds a search bar -->
+  <vdr-dt2-search
+    [searchTermControl]="searchTermControl"
+    searchTermPlaceholder="Filter by name or code"
+  />
+
+  <!-- Here we define all the available columns -->
+  <vdr-dt2-column
+    id="id"
+    [heading]="'common.id' | translate"
+    [hiddenByDefault]="true"
+  >
+    <ng-template let-campaign="item">
+      {{ campaign.id }}
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
+    id="created-at"
+    [heading]="'common.created-at' | translate"
+    [hiddenByDefault]="true"
+    [sort]="sorts.get('createdAt')"
+  >
+    <ng-template let-campaign="item">
+      {{ campaign.createdAt | localeDate : 'short' }}
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
+    id="updated-at"
+    [heading]="'common.updated-at' | translate"
+    [hiddenByDefault]="true"
+    [sort]="sorts.get('updatedAt')"
+  >
+    <ng-template let-campaign="item">
+      {{ campaign.updatedAt | localeDate : 'short' }}
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
+    id="name"
+    heading="Name"
+    [optional]="false"
+    [sort]="sorts.get('name')"
+  >
+    <ng-template let-campaign="item">
+      <a class="button-ghost" (click)="edit(campaign)">
+        <span>{{ campaign.name }}</span>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="code" heading="code" [sort]="sorts.get('code')">
+    <ng-template let-campaign="item">
+      <a class="button-ghost" (click)="edit(campaign)">
+        <span>{{ campaign.code }}</span>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
+    id="revenueLast7days"
+    heading="7 day revenue"
+    [sort]="sorts.get('revenueLast7days')"
+  >
+    <ng-template let-campaign="item">{{
+      campaign.revenueLast7days / 100 | currency : currencyCode
+    }}</ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
+    id="revenueLast30days"
+    heading="30 day revenue"
+    [sort]="sorts.get('revenueLast30days')"
+  >
+    <ng-template let-campaign="item">{{
+      campaign.revenueLast30days / 100 | currency : currencyCode
+    }}</ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column
+    id="revenueLast365days"
+    heading="12 month revenue"
+    [sort]="sorts.get('revenueLast365days')"
+  >
+    <ng-template let-campaign="item">{{
+      campaign.revenueLast365days / 100 | currency : currencyCode
+    }}</ng-template>
+  </vdr-dt2-column>
+</vdr-data-table-2>
+
+<clr-modal [(clrModalOpen)]="showModal">
+  <h3 class="modal-title">{{ modalAction }} Campaign</h3>
+  <div class="modal-body">
+    <div class="popupContainer">
+      <div class="card">
+        <div style="width: 100%">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <h4 class="card-title">Name *</h4>
+              <input
+                clrInput
+                name="input"
+                required
+                [(ngModel)]="currentCampaign.name"
+              />
+            </li>
+            <li class="list-group-item">
+              <h4 class="card-title">Code *</h4>
+              <input
+                clrInput
+                name="input"
+                required
+                [(ngModel)]="currentCampaign.code"
+              />
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer campaign">
+    <vdr-action-bar>
+      <vdr-ab-left>
+        <a
+          *ngIf="modalAction === 'Edit'"
+          class="btn btn-danger"
+          (click)="delete()"
+        >
+          <clr-icon shape="trash"></clr-icon>
+          Delete
+        </a>
+      </vdr-ab-left>
+      <vdr-ab-right>
+        <button
+          type="button"
+          class="btn btn-outline"
+          (click)="showModal = false"
+        >
+          Cancel
+        </button>
+        <button class="btn btn-primary" (click)="createOrUpdate()">Save</button>
+      </vdr-ab-right>
+    </vdr-action-bar>
+  </div>
+</clr-modal>
