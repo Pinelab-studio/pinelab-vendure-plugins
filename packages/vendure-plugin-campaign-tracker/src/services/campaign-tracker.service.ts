@@ -1,4 +1,5 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { LogicalOperator } from '@vendure/common/lib/generated-types';
 import {
   ActiveOrderService,
   ID,
@@ -7,14 +8,11 @@ import {
   ListQueryBuilder,
   Logger,
   Order,
-  OrderService,
   PaginatedList,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import { LogicalOperator } from '@vendure/common/lib/generated-types';
-import { asError } from 'catch-unknown';
 import { IsNull } from 'typeorm';
 import { CAMPAIGN_TRACKER_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { Campaign } from '../entities/campaign.entity';
