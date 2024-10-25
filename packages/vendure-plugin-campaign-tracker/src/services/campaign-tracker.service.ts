@@ -46,20 +46,15 @@ export class CampaignTrackerService implements OnModuleInit {
     private options: CampaignTrackerOptions,
     private jobQueueService: JobQueueService,
     private activeOrderService: ActiveOrderService,
-    private orderService: OrderService,
     private listQueryBuilder: ListQueryBuilder
   ) {}
 
   public async onModuleInit(): Promise<void> {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'campaign-tracker',
-      process: (job) => {
+      process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
-        return this.calculateRevenue(ctx).catch((err: unknown) => {
-          Logger.warn(
-            `Error in calculateCampaignMetrics: ${asError(err).message}`
-          );
-        });
+        return await this.calculateRevenue(ctx);
       },
     });
   }
