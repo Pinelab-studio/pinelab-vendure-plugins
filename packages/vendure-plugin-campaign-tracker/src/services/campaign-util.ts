@@ -8,9 +8,12 @@ import {
 } from './attribution-models';
 
 function isDateInLastXDays(date: Date | undefined, nrOfDays: number): boolean {
+  if (!date) {
+    return false;
+  }
   const xDaysAgo = new Date();
   xDaysAgo.setDate(xDaysAgo.getDate() - nrOfDays);
-  return (date ?? 0) > xDaysAgo;
+  return date > xDaysAgo;
 }
 
 /**
