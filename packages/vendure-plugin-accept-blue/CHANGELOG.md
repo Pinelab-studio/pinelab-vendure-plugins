@@ -1,3 +1,7 @@
+# 1.7.2 (2024-10-29)
+
+- Export `AcceptBlueTransactionEvent` from package
+
 # 1.7.1 (2024-09-18)
 
 - Don't throw error while resolving `PaymentMethodQuote.acceptBlueHostedTokenizationKey` if there is no `AcceptBlue` method (#452)
