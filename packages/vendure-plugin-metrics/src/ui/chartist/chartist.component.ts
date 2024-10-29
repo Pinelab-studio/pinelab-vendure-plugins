@@ -33,7 +33,7 @@ export interface ChartEntry {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
-  @Input() entries: ChartEntry;
+  @Input() entries: ChartEntry | undefined;
   @Input() options?: LineChartOptions = {};
   @ViewChild('chartistDiv', { static: true })
   private chartDivRef: ElementRef<HTMLDivElement>;
@@ -44,7 +44,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
   ngOnInit() {
     this.chart = new LineChart(
       this.chartDivRef.nativeElement,
-      this.entriesToLineChartData(this.entries ?? []),
+      this.entriesToLineChartData(this.entries),
       {
         low: 0,
         // showArea: true,
@@ -89,15 +89,17 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   formatCurrencyToValue(value: number) {
-    if (this.entries !== undefined) {
+    // Grab a local copy so typescript tracks the truthy check correctly
+    const entries = this.entries;
+    if (entries) {
       const localeFrom =
         localStorage.getItem('vnd__contentLanguageCode') ?? 'en';
       const formatter = new CurrencyPipe(
-        this.entries.formatOptions.locale ?? localeFrom,
-        this.entries.formatOptions.currencyCode
+        entries.formatOptions.locale ?? localeFrom,
+        entries.formatOptions.currencyCode
       );
       const format = (l: number) =>
-        this.entries.formatOptions.formatValueAs === 'currency'
+        entries.formatOptions.formatValueAs === 'currency'
           ? formatter.transform(l) ?? l
           : l;
       return format(value);
@@ -107,7 +109,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
 
   ngOnChanges(changes: SimpleChanges) {
     if ('entries' in changes && this.chart) {
-      this.chart.update(this.entriesToLineChartData(this.entries ?? []));
+      this.chart.update(this.entriesToLineChartData(this.entries));
     }
   }
 
@@ -115,8 +117,8 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
     this.chart?.detach();
   }
 
-  private entriesToLineChartData(entry: ChartEntry): LineChartData {
-    if (entry.summary?.labels?.length) {
+  private entriesToLineChartData(entry: ChartEntry | undefined): LineChartData {
+    if (entry?.summary.labels?.length) {
       const labels = entry.summary.labels;
       const series = entry.summary.series.map((s) => {
         return s.values.map((v) => {
