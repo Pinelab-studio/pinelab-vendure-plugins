@@ -29,10 +29,11 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   }
 
   toAbsoluteUrl(request: Request | undefined, identifier: string): string {
-    if (
-      this.useAssetServerForAdminUi &&
-      (request as any)?.vendureRequestContext?._apiType === 'admin'
-    ) {
+    // Vendure v3 has an extra 'default' property before we can access the apiType
+    const apiType =
+      (request as any)?.vendureRequestContext?.default?._apiType ||
+      (request as any)?.vendureRequestContext?._apiType;
+    if (this.useAssetServerForAdminUi && apiType === 'admin') {
       // go via assetServer if admin
       return `${request!.protocol}://${request!.get(
         'host'
@@ -82,6 +83,7 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
       destination: fileName,
     });
     if (fileName.startsWith('preview/')) {
+      // For each preview, we also generate a thumbnail version
       await this.writeThumbnail(fileName, tmpFile.name);
     }
     return fileName;
