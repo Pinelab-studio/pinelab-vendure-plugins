@@ -24,7 +24,7 @@ import path from 'path';
   configuration: (config) => {
     return config;
   },
-  compatibility: '>=3.0.0',
+  compatibility: '>=2.2.0',
   adminApiExtensions: {
     schema: adminApiExtensions,
     resolvers: [CampaignTrackerAdminResolver],
