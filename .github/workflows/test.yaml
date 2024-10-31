@@ -50,6 +50,7 @@ jobs:
             'vendure-plugin-myparcel',
             'vendure-plugin-order-export',
             'vendure-plugin-picqer',
+            'vendure-plugin-payment-extensions',
             'vendure-plugin-popularity-scores',
             'vendure-plugin-primary-collection',
             'vendure-plugin-public-customer-groups',
