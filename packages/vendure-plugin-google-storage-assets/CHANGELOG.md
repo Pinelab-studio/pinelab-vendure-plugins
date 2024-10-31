@@ -1,3 +1,7 @@
+# 1.2.2 (2024-10-31)
+
+- Use asset server for admin with Vendure V3 support
+
 # 1.2.1 (2024-08-04)
 
 - Update compatibility range (#480)
