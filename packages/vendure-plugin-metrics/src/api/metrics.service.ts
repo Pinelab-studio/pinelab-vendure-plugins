@@ -52,13 +52,13 @@ export class MetricsService {
     // For each metric strategy
     return Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
-        const cacheKey = {
+        const cacheKey = JSON.stringify({
           code: metricStrategy.code,
           from: today,
           to: oneYearAgo,
           channel: ctx.channel.token,
           variantIds: input?.variantIds?.sort() ?? [],
-        };
+        });
         // Return cached result if exists
         const cachedMetricSummary = this.cache.get(cacheKey);
         if (cachedMetricSummary) {
