@@ -1,3 +1,11 @@
+# 0.0.3 (2024-10-31)
+
+- Resolve relations for active order on `addCampaignToOrder` mutation
+
+# 0.0.2 (2024-10-31)
+
+- Compatibility for Vendure 2.2
+
 # 0.0.1 (2024-10-21)
 
 - Initial setup of this plugin

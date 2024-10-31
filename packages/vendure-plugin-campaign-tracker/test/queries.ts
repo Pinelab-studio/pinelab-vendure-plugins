@@ -6,6 +6,9 @@ export const ADD_CAMPAIGN_TO_ORDER = gql`
       id
       code
       total
+      taxSummary {
+        taxTotal
+      }
     }
   }
 `;

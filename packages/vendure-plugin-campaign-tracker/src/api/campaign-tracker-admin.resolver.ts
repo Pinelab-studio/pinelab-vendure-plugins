@@ -1,6 +1,5 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Permission } from '@vendure/common/lib/generated-types';
-import { ID } from '@vendure/common/lib/shared-types';
 import { Allow, Ctx, RequestContext, Transaction } from '@vendure/core';
 import { CampaignTrackerService } from '../services/campaign-tracker.service';
 import {

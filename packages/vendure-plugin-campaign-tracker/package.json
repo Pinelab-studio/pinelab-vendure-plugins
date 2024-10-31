@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-campaign-tracker",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Compare different campaign and ads sources with server side revenue tracking.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
