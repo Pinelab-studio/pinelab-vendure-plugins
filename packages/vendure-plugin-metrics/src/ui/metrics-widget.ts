@@ -1,4 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ChangeDetectorRef,
+  ViewChild,
+  ElementRef,
+} from '@angular/core';
 import {
   DataService,
   ModalService,
@@ -7,8 +13,9 @@ import {
 } from '@vendure/admin-ui/core';
 // import { AdvancedMetricInterval } from './generated/graphql';
 import { Observable } from 'rxjs';
-import { AdvancedChartEntry, MetricsUiService } from './metrics-ui.service';
+import { MetricsUiService } from './metrics-ui.service';
 import { ChartEntry } from './chartist/chartist.component';
+import { easings, LineChart, LineChartData, LineChartOptions } from 'chartist';
 
 @Component({
   selector: 'product-metrics-widget',
@@ -36,7 +43,7 @@ import { ChartEntry } from './chartist/chartist.component';
     </div>
     <br />
     <br />
-    <vdr-chartist [entries]="selectedMetrics" />
+    <vdr-chartist [entries]="selectedMetrics" style="padding-left: 50px; " />
     <br />
     <br />
     <div class="flex">
@@ -51,8 +58,6 @@ import { ChartEntry } from './chartist/chartist.component';
     </div>
   `,
   styles: [
-    '.chart-container { height: 200px; width: 33%; padding-right: 20px; display: inline-block; padding-top: 20px;}',
-    '@media screen and (max-width: 768px) { .chart-container { width: 100%; } }',
     `
       .circular-button {
         width: 16px !important;
@@ -93,10 +98,6 @@ export class MetricsWidgetComponent implements OnInit {
   selectedMetrics: ChartEntry | undefined;
   variantName: string;
   dropDownName = 'Select Variant';
-  // selection: AdvancedMetricInterval = AdvancedMetricInterval.Monthly;
-  // selection$ = new BehaviorSubject<AdvancedMetricInterval>(
-  //   AdvancedMetricInterval.Monthly
-  // );
   nrOfOrdersChart?: any;
   selectedVariantIds: string[] = [];
   selectedVariantNames: string[] = [];

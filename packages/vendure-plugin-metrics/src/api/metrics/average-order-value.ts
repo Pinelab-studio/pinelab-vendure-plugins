@@ -21,7 +21,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
   readonly code = 'aov';
 
   getTitle(ctx: RequestContext): string {
-    return `Average order value in ${ctx.channel.defaultCurrencyCode}`;
+    return `Average order value`;
   }
 
   getSortableField(entity: Order): Date {
@@ -54,8 +54,8 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
         .andWhere(`order.orderPlacedAt <= :to`, {
           to: to.toISOString(),
         })
-        .skip(skip)
-        .take(take);
+        .offset(skip)
+        .limit(take);
 
       if (variants.length) {
         query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
@@ -83,9 +83,16 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     entities: Order[],
     variants: ProductVariant[]
   ): NamedDatapoint[] {
-    const legendLabel = variants.length
-      ? `Orders with ${variants.map((v) => v.name).join(', ')}`
+    let legendLabel = variants.length
+      ? `Average order value of orders with ${variants
+          .map((v) => v.name)
+          .join(', ')}`
       : 'Average order value';
+    if (ctx.channel.pricesIncludeTax) {
+      legendLabel += ' (incl. tax)';
+    } else {
+      legendLabel += ' (excl. tax)';
+    }
     if (!entities.length) {
       // Return 0 as average if no orders
       return [
@@ -95,8 +102,11 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
         },
       ];
     }
+    const totalFieldName = ctx.channel.pricesIncludeTax
+      ? 'totalWithTax'
+      : 'total';
     const total = entities
-      .map((o) => o.totalWithTax)
+      .map((o) => o[totalFieldName])
       .reduce((total, current) => total + current, 0);
     const average = Math.round(total / entities.length) / 100;
     return [

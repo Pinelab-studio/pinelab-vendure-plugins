@@ -47,7 +47,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
       this.entriesToLineChartData(this.entries),
       {
         low: 0,
-        // showArea: true,
+        showArea: true,
         showLine: true,
         showPoint: true,
         fullWidth: true,
@@ -69,12 +69,12 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
       }
     );
 
-    this.chart.on('draw', (data) => {
+    this.chart?.on('draw', (data) => {
       if (data.type === 'line' || data.type === 'area') {
         data.element.animate({
           d: {
-            begin: 2000 * data.index,
-            dur: 2000,
+            begin: 1000 * data.index,
+            dur: 1000,
             from: data.path
               .clone()
               .scale(1, 0)
@@ -85,6 +85,28 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
           },
         });
       }
+    });
+    // Create the gradient definition on created event (always after chart re-render)
+    this.chart.on('created', (ctx) => {
+      const defs = ctx.svg.elem('defs');
+      defs
+        .elem('linearGradient', {
+          id: 'gradient',
+          x1: 0,
+          y1: 1,
+          x2: 0,
+          y2: 0,
+        })
+        .elem('stop', {
+          offset: 0,
+          'stop-color': 'var(--color-primary-400)',
+          'stop-opacity': 0.2,
+        })
+        .parent()
+        ?.elem('stop', {
+          offset: 1,
+          'stop-color': 'var(--color-primary-500)',
+        });
     });
   }
 
