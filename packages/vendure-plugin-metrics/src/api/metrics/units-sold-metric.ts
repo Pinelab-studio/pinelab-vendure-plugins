@@ -14,12 +14,12 @@ import { loggerCtx } from '../../constants';
  * Calculates the number of products sold per month.
  * calculates the sum of all items in an order if no variantIds are provided
  */
-export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
+export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
-  readonly code = 'sales-per-product';
+  readonly code = 'units-sold';
 
   getTitle(ctx: RequestContext): string {
-    return `Sales`;
+    return `Units sold`;
   }
 
   getSortableField(entity: OrderLine): Date {

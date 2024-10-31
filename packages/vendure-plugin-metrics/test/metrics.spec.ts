@@ -82,7 +82,7 @@ describe('Metrics', () => {
       (m) => m.code === 'revenue-per-product'
     )!;
     const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'sales-per-product'
+      (m) => m.code === 'units-sold'
     )!;
     expect(advancedMetricSummaries.length).toEqual(3);
     expect(averageOrderValue.series[0].values.length).toEqual(13);
@@ -121,7 +121,7 @@ describe('Metrics', () => {
     // Expect the first series (variant 2), to have 839400 revenue in last month
     expect(revenuePerProduct.series[1].values[12]).toEqual(8394);
     const salesPerProduct = advancedMetricSummaries.find(
-      (m) => m.code === 'sales-per-product'
+      (m) => m.code === 'units-sold'
     )!;
     // For sales per product we expect 2 series: one for each variant
     expect(salesPerProduct.series[0].values.length).toEqual(13);
