@@ -42,8 +42,6 @@ export class RevenuePerProduct implements MetricStrategy<OrderLine> {
         .get(TransactionalConnection)
         .getRepository(ctx, OrderLine)
         .createQueryBuilder('orderLine')
-        .leftJoin('orderLine.productVariant', 'productVariant')
-        .addSelect(['productVariant.sku', 'productVariant.id'])
         .leftJoinAndSelect('orderLine.order', 'order')
         .leftJoin('order.channels', 'channel')
         .where(`channel.id=:channelId`, { channelId: ctx.channelId })
@@ -56,9 +54,12 @@ export class RevenuePerProduct implements MetricStrategy<OrderLine> {
         .offset(skip)
         .limit(take);
       if (variants.length) {
-        query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
-          variantIds: variants.map((v) => v.id),
-        });
+        query = query
+          .leftJoin('orderLine.productVariant', 'productVariant')
+          .addSelect(['productVariant.sku', 'productVariant.id'])
+          .andWhere(`productVariant.id IN(:...variantIds)`, {
+            variantIds: variants.map((v) => v.id),
+          });
       }
       const [items, totalItems] = await query.getManyAndCount();
       lines.push(...items);

@@ -1,3 +1,7 @@
+# 1.4.1 (2024-10-31)
+
+- Only fetch relations from DB when variants are passed in for better performance
+
 # 1.4.0 (2024-10-31)
 
 - Added revenue (per variant) metric

@@ -45,8 +45,6 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
         .getRepository(ctx, Order)
         .createQueryBuilder('order')
         .leftJoin('order.channels', 'orderChannel')
-        .leftJoin('order.lines', 'orderLine')
-        .leftJoin('orderLine.productVariant', 'productVariant')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
         .andWhere(`order.orderPlacedAt >= :from`, {
           from: from.toISOString(),
@@ -58,9 +56,12 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
         .limit(take);
 
       if (variants.length) {
-        query = query.andWhere(`productVariant.id IN(:...variantIds)`, {
-          variantIds: variants.map((v) => v.id),
-        });
+        query = query
+          .leftJoin('order.lines', 'orderLine')
+          .leftJoin('orderLine.productVariant', 'productVariant')
+          .andWhere(`productVariant.id IN(:...variantIds)`, {
+            variantIds: variants.map((v) => v.id),
+          });
       }
       const [items, totalOrders] = await query.getManyAndCount();
       orders.push(...items);
