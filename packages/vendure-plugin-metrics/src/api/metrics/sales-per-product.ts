@@ -8,8 +8,7 @@ import {
 } from '@vendure/core';
 import { AdvancedMetricType } from '../../ui/generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../metric-strategy';
-
-const loggerCtx = 'SalesPerProductMetric';
+import { loggerCtx } from '../../constants';
 
 /**
  * Calculates the number of products sold per month.
@@ -64,9 +63,9 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
       const [items, totalItems] = await query.getManyAndCount();
       lines.push(...items);
       Logger.info(
-        `Fetched orderLines ${skip}-${skip + take} for channel ${
-          ctx.channel.token
-        }`,
+        `Fetched order lines ${skip}-${skip + take} for metric ${
+          this.code
+        } for channel${ctx.channel.token}`,
         loggerCtx
       );
       skip += items.length;

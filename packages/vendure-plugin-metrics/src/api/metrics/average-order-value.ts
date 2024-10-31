@@ -11,8 +11,8 @@ import {
   AdvancedMetricType,
 } from '../../ui/generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../metric-strategy';
+import { loggerCtx } from '../../constants';
 
-const loggerCtx = 'AverageOrderValueMetric';
 /**
  * Calculates the average order value per month
  */
@@ -65,9 +65,9 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
       const [items, totalOrders] = await query.getManyAndCount();
       orders.push(...items);
       Logger.info(
-        `Fetched orders ${skip}-${skip + take} for channel ${
-          ctx.channel.token
-        }`,
+        `Fetched orders ${skip}-${skip + take} for metric ${
+          this.code
+        } for channel${ctx.channel.token}`,
         loggerCtx
       );
       skip += items.length;
