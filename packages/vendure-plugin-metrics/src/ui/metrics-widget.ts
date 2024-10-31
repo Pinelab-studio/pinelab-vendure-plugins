@@ -15,46 +15,51 @@ import {
 import { Observable } from 'rxjs';
 import { MetricsUiService } from './metrics-ui.service';
 import { ChartEntry } from './chartist/chartist.component';
-import { easings, LineChart, LineChartData, LineChartOptions } from 'chartist';
 
 @Component({
   selector: 'product-metrics-widget',
   template: `
-    <div>
-      <button
-        (click)="openProductSelectionDialog()"
-        class="btn btn-sm btn-secondary"
-      >
-        {{
-          'common.items-selected-count'
-            | translate : { count: selectedVariantIds?.length ?? 0 }
-        }}...
-      </button>
-      <button
-        class="btn btn-sm circular-button"
-        [attr.disabled]="selectedVariantIds.length == 0 ? 'disabled' : null"
-        (click)="clearProductVariantSelection()"
-      >
-        <clr-icon shape="times"></clr-icon>
-      </button>
-      <small *ngIf="selectedVariantNames.length">
-        {{ selectedVariantNames.join(' + ') }}
-      </small>
-    </div>
-    <br />
-    <br />
-    <vdr-chartist [entries]="selectedMetrics" style="padding-left: 50px; " />
-    <br />
-    <br />
-    <div class="flex">
-      <button
-        *ngFor="let metric of metrics$ | async"
-        class="button-small"
-        (click)="selectedMetrics = metric"
-        [class.active]="selectedMetrics?.summary.code === metric.summary.code"
-      >
-        {{ metric.summary.title }}
-      </button>
+    <div style="position: relative;">
+      <div>
+        <div *ngIf="loading" class="spinner-overlay">
+          <div class="spinner">Loading...</div>
+        </div>
+
+        <button
+          (click)="openProductSelectionDialog()"
+          class="btn btn-sm btn-secondary"
+        >
+          {{
+            'common.items-selected-count'
+              | translate : { count: selectedVariantIds?.length ?? 0 }
+          }}...
+        </button>
+        <button
+          class="btn btn-sm circular-button"
+          [attr.disabled]="selectedVariantIds.length == 0 ? 'disabled' : null"
+          (click)="clearProductVariantSelection()"
+        >
+          <clr-icon shape="times"></clr-icon>
+        </button>
+        <small *ngIf="selectedVariantNames.length">
+          {{ selectedVariantNames.join(' + ') }}
+        </small>
+      </div>
+      <br />
+      <br />
+      <vdr-chartist [entries]="selectedMetrics" style="padding-left: 50px; " />
+      <br />
+      <br />
+      <div class="flex">
+        <button
+          *ngFor="let metric of metrics$ | async"
+          class="button-small"
+          (click)="selectedMetrics = metric"
+          [class.active]="selectedMetrics?.summary.code === metric.summary.code"
+        >
+          {{ metric.summary.title }}
+        </button>
+      </div>
     </div>
   `,
   styles: [
@@ -91,6 +96,20 @@ import { easings, LineChart, LineChartData, LineChartOptions } from 'chartist';
         gap: 0.5rem;
       }
     `,
+    `
+      .spinner-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 99;
+      }
+    `,
   ],
 })
 export class MetricsWidgetComponent implements OnInit {
@@ -101,6 +120,7 @@ export class MetricsWidgetComponent implements OnInit {
   nrOfOrdersChart?: any;
   selectedVariantIds: string[] = [];
   selectedVariantNames: string[] = [];
+  loading = true;
 
   constructor(
     private dataService: DataService,
@@ -148,12 +168,14 @@ export class MetricsWidgetComponent implements OnInit {
   }
 
   loadChartData() {
+    this.loading = true;
     this.metrics$ = this.metricsService.queryData(
       // this.selection$,
       this.selectedVariantIds
     );
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
+      this.loading = false;
       if (this.selectedMetrics) {
         this.selectedMetrics = metrics.find(
           (e) => e.summary.code == this.selectedMetrics?.summary.code

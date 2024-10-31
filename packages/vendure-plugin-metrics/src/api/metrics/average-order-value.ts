@@ -85,9 +85,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     variants: ProductVariant[]
   ): NamedDatapoint[] {
     let legendLabel = variants.length
-      ? `Average order value of orders with ${variants
-          .map((v) => v.name)
-          .join(', ')}`
+      ? `Average order value of orders with selected variants`
       : 'Average order value';
     if (ctx.channel.pricesIncludeTax) {
       legendLabel += ' (incl. tax)';

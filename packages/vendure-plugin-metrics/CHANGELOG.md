@@ -1,3 +1,7 @@
+# 1.4.2 (2024-10-31)
+
+- Loading state
+
 # 1.4.1 (2024-10-31)
 
 - Only fetch relations from DB when variants are passed in for better performance
