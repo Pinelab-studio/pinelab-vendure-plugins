@@ -1,3 +1,7 @@
+# 1.3.2 (2024-10-29)
+
+- Fix typescript build errors (#525)
+
 # 1.3.1 (2024-08-04)
 
 - Update compatibility range (#480)
