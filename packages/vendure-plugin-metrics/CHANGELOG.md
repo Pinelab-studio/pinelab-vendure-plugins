@@ -1,3 +1,10 @@
+# 1.4.0 (2024-10-31)
+
+- Added revenue (per variant) metric
+- Calculate with or without tax based on channel settings
+- Use number instead of currency formatting for Units Sold metric
+- Added a max cache age of 12 hours for metrics
+
 # 1.3.2 (2024-10-29)
 
 - Fix typescript build errors (#525)

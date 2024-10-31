@@ -6,8 +6,9 @@ import { MetricsResolver } from './api/metrics.resolver';
 import { MetricsService } from './api/metrics.service';
 import { MetricStrategy } from './api/metric-strategy';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { SalesPerProductMetric } from './api/metrics/sales-per-product';
+import { RevenuePerProduct } from './api/metrics/revenue-per-product';
 import { AverageOrderValueMetric } from './api/metrics/average-order-value';
+import { UnitsSoldMetric } from './api/metrics/units-sold-metric';
 
 export interface MetricsPluginOptions {
   metrics: MetricStrategy<any>[];
@@ -27,7 +28,11 @@ export interface MetricsPluginOptions {
 })
 export class MetricsPlugin {
   static options: MetricsPluginOptions = {
-    metrics: [new SalesPerProductMetric(), new AverageOrderValueMetric()],
+    metrics: [
+      new RevenuePerProduct(),
+      new AverageOrderValueMetric(),
+      new UnitsSoldMetric(),
+    ],
   };
 
   static init(options: MetricsPluginOptions): typeof MetricsPlugin {

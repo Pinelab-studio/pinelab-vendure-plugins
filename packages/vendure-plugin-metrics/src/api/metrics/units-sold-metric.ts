@@ -6,24 +6,20 @@ import {
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
-import {
-  AdvancedMetricSummaryInput,
-  AdvancedMetricType,
-} from '../../ui/generated/graphql';
+import { AdvancedMetricType } from '../../ui/generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../metric-strategy';
-
-const loggerCtx = 'SalesPerProductMetric';
+import { loggerCtx } from '../../constants';
 
 /**
  * Calculates the number of products sold per month.
  * calculates the sum of all items in an order if no variantIds are provided
  */
-export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
-  readonly metricType: AdvancedMetricType = AdvancedMetricType.Currency;
-  readonly code = 'sales-per-product';
+export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
+  readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
+  readonly code = 'units-sold';
 
   getTitle(ctx: RequestContext): string {
-    return `Sales per product`;
+    return `Units sold`;
   }
 
   getSortableField(entity: OrderLine): Date {
@@ -67,9 +63,9 @@ export class SalesPerProductMetric implements MetricStrategy<OrderLine> {
       const [items, totalItems] = await query.getManyAndCount();
       lines.push(...items);
       Logger.info(
-        `Fetched orderLines ${skip}-${skip + take} for channel ${
-          ctx.channel.token
-        }`,
+        `Fetched order lines ${skip}-${skip + take} for metric ${
+          this.code
+        } for channel${ctx.channel.token}`,
         loggerCtx
       );
       skip += items.length;
