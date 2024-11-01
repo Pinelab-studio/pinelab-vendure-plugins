@@ -4,10 +4,18 @@ import {
   Injector,
   LanguageCode,
   Logger,
+  Order,
+  Payment,
+  PaymentMethod,
   PaymentMethodHandler,
+  RequestContext,
   SettlePaymentResult,
   UserInputError,
 } from '@vendure/core';
+import {
+  ConfigArg,
+  RefundOrderInput,
+} from '@vendure/common/lib/generated-types';
 import { loggerCtx } from '../constants';
 import {
   CheckPaymentMethodInput,
@@ -131,7 +139,26 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     };
   },
 
-  createRefund(): Promise<CreateRefundResult> {
-    throw Error(`not implemented`);
+  async createRefund(
+    ctx: RequestContext,
+    input: RefundOrderInput,
+    amount: number,
+    order: Order,
+    payment: Payment
+  ): Promise<CreateRefundResult> {
+    const transactionId = Number(payment.transactionId); // All AC transactions are numbers
+    const refundResult = await service.refund(ctx, transactionId, input.amount);
+    if (refundResult.errorCode) {
+      return {
+        state: 'Failed',
+        transactionId: String(refundResult.referenceNumber),
+        metadata: refundResult,
+      };
+    }
+    return {
+      state: 'Failed',
+      transactionId: String(refundResult.referenceNumber),
+      metadata: refundResult,
+    };
   },
 });
