@@ -1,3 +1,7 @@
+# 1.8.0 (2024-11-01)
+
+- Implemented refunding via admin UI for initial AC transaction
+
 # 1.7.2 (2024-10-29)
 
 - Export `AcceptBlueTransactionEvent` from package
