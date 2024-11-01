@@ -1,3 +1,8 @@
+# 0.0.4 (2024-11-01)
+
+- Only fetch orders with connected campaigns for calculating revenue
+- Added logging for failed jobs
+
 # 0.0.3 (2024-10-31)
 
 - Resolve relations for active order on `addCampaignToOrder` mutation

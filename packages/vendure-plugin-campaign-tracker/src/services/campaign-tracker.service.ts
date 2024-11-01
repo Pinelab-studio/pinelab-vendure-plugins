@@ -28,6 +28,7 @@ import {
   SortOrder,
 } from '../ui/generated/graphql';
 import { calculateRevenuePerCampaign, isOlderThan } from './campaign-util';
+import { asError } from 'catch-unknown';
 
 interface JobData {
   ctx: SerializedRequestContext;
@@ -52,7 +53,12 @@ export class CampaignTrackerService implements OnModuleInit {
       name: 'campaign-tracker',
       process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
-        return await this.calculateRevenue(ctx);
+        return await this.calculateRevenue(ctx).catch((err) => {
+          Logger.error(
+            `Error calculating revenue: ${asError(err).message}`,
+            loggerCtx
+          );
+        });
       },
     });
   }
@@ -248,7 +254,7 @@ export class CampaignTrackerService implements OnModuleInit {
         .getRepository(ctx, Order)
         .createQueryBuilder('order')
         .leftJoin('order.channels', 'channel')
-        .leftJoinAndSelect(
+        .innerJoinAndSelect(
           OrderCampaign,
           'orderCampaign',
           'order.id = orderCampaign.orderId'
