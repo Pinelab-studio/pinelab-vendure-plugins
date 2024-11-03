@@ -167,7 +167,6 @@ export class MetricsWidgetComponent implements OnInit {
     );
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
-      await new Promise((r) => setTimeout(r, 5000));
       this.loading = false;
       if (this.selectedMetric) {
         this.selectedMetric = metrics.find(
