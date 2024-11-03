@@ -54,8 +54,8 @@ export class MetricsService {
       this.metricStrategies.map(async (metricStrategy) => {
         const cacheKeyObject = {
           code: metricStrategy.code,
-          from: today,
-          to: oneYearAgo,
+          from: today.toDateString(),
+          to: oneYearAgo.toDateString(),
           channel: ctx.channel.token,
           variantIds: [] as string[],
         };
