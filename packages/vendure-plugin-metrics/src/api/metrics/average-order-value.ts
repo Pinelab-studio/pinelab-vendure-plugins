@@ -32,7 +32,7 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     to: Date
   ): Promise<Order[]> {
     let skip = 0;
-    const take = 1000;
+    const take = 5000;
     let hasMoreOrders = true;
     const orders: Order[] = [];
     while (hasMoreOrders) {
@@ -42,11 +42,9 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
         .createQueryBuilder('order')
         .leftJoin('order.channels', 'orderChannel')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
-        .andWhere(`order.orderPlacedAt >= :from`, {
-          from: from.toISOString(),
-        })
-        .andWhere(`order.orderPlacedAt <= :to`, {
-          to: to.toISOString(),
+        .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+          fromDate: from.toISOString(),
+          toDate: to.toISOString(),
         })
         .offset(skip)
         .limit(take);

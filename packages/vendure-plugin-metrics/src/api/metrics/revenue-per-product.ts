@@ -46,11 +46,9 @@ export class RevenuePerProduct implements MetricStrategy<OrderLine> {
         .leftJoinAndSelect('orderLine.order', 'order')
         .leftJoin('order.channels', 'channel')
         .where(`channel.id=:channelId`, { channelId: ctx.channelId })
-        .andWhere(`order.orderPlacedAt >= :from`, {
-          from: from.toISOString(),
-        })
-        .andWhere(`order.orderPlacedAt <= :to`, {
-          to: to.toISOString(),
+        .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+          fromDate: from.toISOString(),
+          toDate: to.toISOString(),
         })
         .offset(skip)
         .limit(take);

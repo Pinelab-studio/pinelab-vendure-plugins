@@ -47,11 +47,9 @@ export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
         .addSelect(['order.id', 'order.orderPlacedAt'])
         .leftJoin('order.channels', 'channel')
         .where(`channel.id=:channelId`, { channelId: ctx.channelId })
-        .andWhere(`order.orderPlacedAt >= :from`, {
-          from: from.toISOString(),
-        })
-        .andWhere(`order.orderPlacedAt <= :to`, {
-          to: to.toISOString(),
+        .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+          fromDate: from.toISOString(),
+          toDate: to.toISOString(),
         })
         .skip(skip)
         .take(take);

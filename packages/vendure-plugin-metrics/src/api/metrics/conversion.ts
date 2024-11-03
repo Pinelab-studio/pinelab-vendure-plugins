@@ -13,7 +13,7 @@ import { MetricStrategy, NamedDatapoint } from '../metric-strategy';
 type OrderWithDates = Pick<Order, 'orderPlacedAt' | 'updatedAt'>;
 
 /**
- * Calculates the average order value per month
+ * Calculates the conversion per month
  */
 export class ConversionMetric implements MetricStrategy<OrderWithDates> {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
@@ -78,9 +78,9 @@ export class ConversionMetric implements MetricStrategy<OrderWithDates> {
     ctx: RequestContext,
     entities: OrderWithDates[]
   ): NamedDatapoint[] {
-    let legendLabel = 'Conversion %';
+    let legendLabel = 'Conversion % of created orders to placed orders';
     if (!entities.length) {
-      // Return 0 as average if no orders
+      // Return 0%
       return [
         {
           legendLabel,
