@@ -48,7 +48,7 @@ export class ConversionMetric implements MetricStrategy<OrderWithDates> {
         .select(['order.orderPlacedAt', 'order.updatedAt'])
         .leftJoin('order.channels', 'orderChannel')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
-        .where('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+        .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
           fromDate,
           toDate,
         })
