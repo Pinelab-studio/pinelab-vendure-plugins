@@ -15,7 +15,7 @@ import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { MetricsPlugin } from '../src/';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 
 (async () => {
   require('dotenv').config();
@@ -57,10 +57,15 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  //FIX ME
-  await createSettledOrder(shopClient as any, 1);
-  await createSettledOrder(shopClient as any, 1);
-  await createSettledOrder(shopClient as any, 1);
-  await createSettledOrder(shopClient as any, 1);
-  await createSettledOrder(shopClient as any, 1);
+  // Create placed orders
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  // Also create some non-finished orders for conversion metric
+  for (let i = 0; i < 10; i++) {
+    await shopClient.asAnonymousUser();
+    await addItem(shopClient, '1', 1);
+  }
 })();

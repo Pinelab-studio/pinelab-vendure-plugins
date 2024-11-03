@@ -17,6 +17,7 @@ import { loggerCtx } from '../../constants';
 export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
   readonly code = 'units-sold';
+  readonly allowProductSelection = true;
 
   getTitle(ctx: RequestContext): string {
     return `Units sold`;
@@ -46,11 +47,9 @@ export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
         .addSelect(['order.id', 'order.orderPlacedAt'])
         .leftJoin('order.channels', 'channel')
         .where(`channel.id=:channelId`, { channelId: ctx.channelId })
-        .andWhere(`order.orderPlacedAt >= :from`, {
-          from: from.toISOString(),
-        })
-        .andWhere(`order.orderPlacedAt <= :to`, {
-          to: to.toISOString(),
+        .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+          fromDate: from.toISOString(),
+          toDate: to.toISOString(),
         })
         .skip(skip)
         .take(take);
@@ -64,7 +63,7 @@ export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
       }
       const [items, totalItems] = await query.getManyAndCount();
       lines.push(...items);
-      Logger.info(
+      Logger.debug(
         `Fetched order lines ${skip}-${skip + take} for metric ${
           this.code
         } for channel${ctx.channel.token}`,

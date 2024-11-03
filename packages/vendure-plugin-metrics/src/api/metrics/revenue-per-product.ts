@@ -17,6 +17,7 @@ import { loggerCtx } from '../../constants';
 export class RevenuePerProduct implements MetricStrategy<OrderLine> {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Currency;
   readonly code = 'revenue-per-product';
+  readonly allowProductSelection = true;
 
   getTitle(ctx: RequestContext): string {
     return `Revenue`;
@@ -45,11 +46,9 @@ export class RevenuePerProduct implements MetricStrategy<OrderLine> {
         .leftJoinAndSelect('orderLine.order', 'order')
         .leftJoin('order.channels', 'channel')
         .where(`channel.id=:channelId`, { channelId: ctx.channelId })
-        .andWhere(`order.orderPlacedAt >= :from`, {
-          from: from.toISOString(),
-        })
-        .andWhere(`order.orderPlacedAt <= :to`, {
-          to: to.toISOString(),
+        .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+          fromDate: from.toISOString(),
+          toDate: to.toISOString(),
         })
         .offset(skip)
         .limit(take);
@@ -63,7 +62,7 @@ export class RevenuePerProduct implements MetricStrategy<OrderLine> {
       }
       const [items, totalItems] = await query.getManyAndCount();
       lines.push(...items);
-      Logger.info(
+      Logger.debug(
         `Fetched order lines ${skip}-${skip + take} for metric ${
           this.code
         } for channel${ctx.channel.token}`,

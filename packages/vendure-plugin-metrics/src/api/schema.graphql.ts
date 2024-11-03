@@ -5,6 +5,7 @@ export const schema = gql`
     code: String!
     title: String!
     type: AdvancedMetricType!
+    allowProductSelection: Boolean!
     # The number of labels always matches the number of values.
     # E.g [january, february, march] belong to values [10, 20, 30]
     labels: [String!]!
