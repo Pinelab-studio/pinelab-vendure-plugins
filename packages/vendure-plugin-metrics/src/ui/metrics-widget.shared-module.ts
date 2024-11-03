@@ -15,7 +15,7 @@ import { MetricsWidgetModule } from './metrics-widget.module';
       loadComponent: () =>
         import('./metrics-widget').then((m) => m.MetricsWidgetComponent),
     }),
-    setDashboardWidgetLayout([{ id: 'metrics', width: 12 }]),
+    setDashboardWidgetLayout([{ id: 'advanced-metrics', width: 12 }]),
   ],
 })
 export class MetricsWidgetSharedModule {}
