@@ -1,3 +1,4 @@
+import { RefundOrderInput } from '@vendure/common/lib/generated-types';
 import {
   CreatePaymentResult,
   CreateRefundResult,
@@ -6,16 +7,11 @@ import {
   Logger,
   Order,
   Payment,
-  PaymentMethod,
   PaymentMethodHandler,
   RequestContext,
   SettlePaymentResult,
   UserInputError,
 } from '@vendure/core';
-import {
-  ConfigArg,
-  RefundOrderInput,
-} from '@vendure/common/lib/generated-types';
 import { loggerCtx } from '../constants';
 import {
   CheckPaymentMethodInput,
@@ -156,7 +152,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       };
     }
     return {
-      state: 'Failed',
+      state: 'Settled',
       transactionId: String(refundResult.referenceNumber),
       metadata: refundResult,
     };

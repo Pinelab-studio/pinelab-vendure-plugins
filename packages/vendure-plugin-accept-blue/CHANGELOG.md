@@ -1,3 +1,7 @@
+# 1.8.1 (2024-11-03)
+
+- Bug fix: Return Settled state for successful refunds
+
 # 1.8.0 (2024-11-01)
 
 - Implemented refunding via admin UI for initial AC transaction
