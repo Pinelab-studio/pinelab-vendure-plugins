@@ -1,6 +1,12 @@
+# 1.5.0 (2024-11-03)
+
+- Allow specifying per metric if it's filterable by variant ID's
+- Added conversion metric
+- Fixed widget ID to prevent conflicts with Vendure's built in widget
+
 # 1.4.2 (2024-10-31)
 
-- Loading state
+- Added loading state for widget
 
 # 1.4.1 (2024-10-31)
 

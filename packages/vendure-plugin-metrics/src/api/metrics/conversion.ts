@@ -9,16 +9,19 @@ import { loggerCtx } from '../../constants';
 import { AdvancedMetricType } from '../../ui/generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../metric-strategy';
 
+// Minimal order with only the fields needed for the metric
+type OrderWithDates = Pick<Order, 'orderPlacedAt' | 'updatedAt'>;
+
 /**
  * Calculates the average order value per month
  */
-export class AverageOrderValueMetric implements MetricStrategy<Order> {
-  readonly metricType: AdvancedMetricType = AdvancedMetricType.Currency;
-  readonly code = 'aov';
+export class ConversionMetric implements MetricStrategy<OrderWithDates> {
+  readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
+  readonly code = 'conversion';
   readonly allowProductSelection = false;
 
   getTitle(ctx: RequestContext): string {
-    return `Average order value`;
+    return `Conversion`;
   }
 
   getSortableField(entity: Order): Date {
@@ -30,24 +33,29 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
     injector: Injector,
     from: Date,
     to: Date
-  ): Promise<Order[]> {
+  ): Promise<OrderWithDates[]> {
     let skip = 0;
-    const take = 1000;
+    const take = 5000;
     let hasMoreOrders = true;
     const orders: Order[] = [];
+    const fromDate = from.toISOString();
+    const toDate = to.toISOString();
     while (hasMoreOrders) {
       let query = injector
         .get(TransactionalConnection)
         .getRepository(ctx, Order)
         .createQueryBuilder('order')
+        .select(['order.orderPlacedAt', 'order.updatedAt'])
         .leftJoin('order.channels', 'orderChannel')
         .where(`orderChannel.id=:channelId`, { channelId: ctx.channelId })
-        .andWhere(`order.orderPlacedAt >= :from`, {
-          from: from.toISOString(),
+        .where('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+          fromDate,
+          toDate,
         })
-        .andWhere(`order.orderPlacedAt <= :to`, {
-          to: to.toISOString(),
-        })
+        .orWhere(
+          'order.orderPlacedAt IS NULL AND order.updatedAt BETWEEN :fromDate AND :toDate',
+          { fromDate, toDate }
+        )
         .offset(skip)
         .limit(take);
       const [items, totalOrders] = await query.getManyAndCount();
@@ -68,14 +76,9 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
 
   calculateDataPoints(
     ctx: RequestContext,
-    entities: Order[]
+    entities: OrderWithDates[]
   ): NamedDatapoint[] {
-    let legendLabel = 'Average order value';
-    if (ctx.channel.pricesIncludeTax) {
-      legendLabel += ' (incl. tax)';
-    } else {
-      legendLabel += ' (excl. tax)';
-    }
+    let legendLabel = 'Conversion %';
     if (!entities.length) {
       // Return 0 as average if no orders
       return [
@@ -85,17 +88,13 @@ export class AverageOrderValueMetric implements MetricStrategy<Order> {
         },
       ];
     }
-    const totalFieldName = ctx.channel.pricesIncludeTax
-      ? 'totalWithTax'
-      : 'total';
-    const total = entities
-      .map((o) => o[totalFieldName])
-      .reduce((total, current) => total + current, 0);
-    const average = Math.round(total / entities.length) / 100;
+    const totalOrders = entities.length;
+    const placedOrders = entities.filter((o) => o.orderPlacedAt).length;
+    const placedPercentage = (placedOrders / totalOrders) * 100;
     return [
       {
         legendLabel,
-        value: average,
+        value: Math.round(placedPercentage * 100) / 100,
       },
     ];
   }

@@ -17,6 +17,7 @@ import { loggerCtx } from '../../constants';
 export class RevenuePerProduct implements MetricStrategy<OrderLine> {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Currency;
   readonly code = 'revenue-per-product';
+  readonly allowProductSelection = true;
 
   getTitle(ctx: RequestContext): string {
     return `Revenue`;
@@ -63,7 +64,7 @@ export class RevenuePerProduct implements MetricStrategy<OrderLine> {
       }
       const [items, totalItems] = await query.getManyAndCount();
       lines.push(...items);
-      Logger.info(
+      Logger.debug(
         `Fetched order lines ${skip}-${skip + take} for metric ${
           this.code
         } for channel${ctx.channel.token}`,

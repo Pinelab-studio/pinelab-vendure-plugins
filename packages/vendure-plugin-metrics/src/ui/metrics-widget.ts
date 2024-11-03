@@ -1,20 +1,12 @@
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import {
-  Component,
-  OnInit,
-  ChangeDetectorRef,
-  ViewChild,
-  ElementRef,
-} from '@angular/core';
-import {
-  DataService,
   ModalService,
   ProductMultiSelectorDialogComponent,
-  // ChartEntry
 } from '@vendure/admin-ui/core';
 // import { AdvancedMetricInterval } from './generated/graphql';
 import { Observable } from 'rxjs';
-import { MetricsUiService } from './metrics-ui.service';
 import { ChartEntry } from './chartist/chartist.component';
+import { MetricsUiService } from './metrics-ui.service';
 
 @Component({
   selector: 'product-metrics-widget',
@@ -26,6 +18,7 @@ import { ChartEntry } from './chartist/chartist.component';
         </div>
 
         <button
+          [disabled]="!selectedMetric?.summary.allowProductSelection"
           (click)="openProductSelectionDialog()"
           class="btn btn-sm btn-secondary"
         >
@@ -47,15 +40,15 @@ import { ChartEntry } from './chartist/chartist.component';
       </div>
       <br />
       <br />
-      <vdr-chartist [entries]="selectedMetrics" style="padding-left: 50px; " />
+      <vdr-chartist [entries]="selectedMetric" style="padding-left: 50px; " />
       <br />
       <br />
       <div class="flex">
         <button
           *ngFor="let metric of metrics$ | async"
           class="button-small"
-          (click)="selectedMetrics = metric"
-          [class.active]="selectedMetrics?.summary.code === metric.summary.code"
+          (click)="selectedMetric = metric"
+          [class.active]="selectedMetric?.summary.code === metric.summary.code"
         >
           {{ metric.summary.title }}
         </button>
@@ -114,7 +107,7 @@ import { ChartEntry } from './chartist/chartist.component';
 })
 export class MetricsWidgetComponent implements OnInit {
   metrics$: Observable<ChartEntry[]> | undefined;
-  selectedMetrics: ChartEntry | undefined;
+  selectedMetric: ChartEntry | undefined;
   variantName: string;
   dropDownName = 'Select Variant';
   nrOfOrdersChart?: any;
@@ -123,7 +116,6 @@ export class MetricsWidgetComponent implements OnInit {
   loading = true;
 
   constructor(
-    private dataService: DataService,
     private changeDetectorRef: ChangeDetectorRef,
     private modalService: ModalService,
     private metricsService: MetricsUiService
@@ -175,13 +167,14 @@ export class MetricsWidgetComponent implements OnInit {
     );
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
+      await new Promise((r) => setTimeout(r, 5000));
       this.loading = false;
-      if (this.selectedMetrics) {
-        this.selectedMetrics = metrics.find(
-          (e) => e.summary.code == this.selectedMetrics?.summary.code
+      if (this.selectedMetric) {
+        this.selectedMetric = metrics.find(
+          (e) => e.summary.code == this.selectedMetric?.summary.code
         );
       } else {
-        this.selectedMetrics = metrics[0];
+        this.selectedMetric = metrics[0];
       }
       this.changeDetectorRef.detectChanges();
     });

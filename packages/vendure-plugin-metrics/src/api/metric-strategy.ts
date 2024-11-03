@@ -20,6 +20,12 @@ export interface MetricStrategy<T> {
   metricType: AdvancedMetricType;
 
   /**
+   * Setting to allow a user to select variants for the metrics.
+   * For some metrics, like conversion, it doesn't make sense to allow variant selection
+   */
+  allowProductSelection: boolean;
+
+  /**
    * Title to display on the chart.
    * Ctx can be used to localize the title
    */

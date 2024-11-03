@@ -9,9 +9,9 @@ import { MetricsWidgetModule } from './metrics-widget.module';
   imports: [MetricsWidgetModule],
   declarations: [],
   providers: [
-    registerDashboardWidget('metrics', {
-      title: 'Metrics',
-      supportedWidths: [4, 6, 8, 12],
+    registerDashboardWidget('advanced-metrics', {
+      title: 'Advanced metrics',
+      supportedWidths: [6, 8, 12],
       loadComponent: () =>
         import('./metrics-widget').then((m) => m.MetricsWidgetComponent),
     }),

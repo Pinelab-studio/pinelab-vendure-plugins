@@ -17,6 +17,7 @@ import { loggerCtx } from '../../constants';
 export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
   readonly code = 'units-sold';
+  readonly allowProductSelection = true;
 
   getTitle(ctx: RequestContext): string {
     return `Units sold`;
@@ -64,7 +65,7 @@ export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
       }
       const [items, totalItems] = await query.getManyAndCount();
       lines.push(...items);
-      Logger.info(
+      Logger.debug(
         `Fetched order lines ${skip}-${skip + take} for metric ${
           this.code
         } for channel${ctx.channel.token}`,

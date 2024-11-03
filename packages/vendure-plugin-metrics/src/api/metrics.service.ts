@@ -52,13 +52,18 @@ export class MetricsService {
     // For each metric strategy
     return Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
-        const cacheKey = JSON.stringify({
+        const cacheKeyObject = {
           code: metricStrategy.code,
           from: today,
           to: oneYearAgo,
           channel: ctx.channel.token,
-          variantIds: input?.variantIds?.sort() ?? [],
-        });
+          variantIds: [] as string[],
+        };
+        if (metricStrategy.allowProductSelection) {
+          // Only use variantIds for cache key if the strategy allows filtering by variants
+          cacheKeyObject.variantIds = input?.variantIds?.sort() ?? [];
+        }
+        const cacheKey = JSON.stringify(cacheKeyObject);
         // Return cached result if exists
         const cachedMetricSummary = this.cache.get(cacheKey);
         if (cachedMetricSummary) {
@@ -108,6 +113,7 @@ export class MetricsService {
         const summary: AdvancedMetricSummary = {
           code: metricStrategy.code,
           title: metricStrategy.getTitle(ctx),
+          allowProductSelection: metricStrategy.allowProductSelection,
           labels: monthNames,
           series: this.mapToSeries(dataPointsPerName),
           type: metricStrategy.metricType,
