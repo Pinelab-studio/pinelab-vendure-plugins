@@ -354,7 +354,9 @@ export class GoedgepicktService
       const orderInput: OrderInput = {
         orderId: order.code,
         orderDisplayId: order.code,
-        createDate: GoedgepicktService.toLocalTime(order.orderPlacedAt)!,
+        createDate: GoedgepicktService.toLocalTime(
+          order.orderPlacedAt || order.updatedAt
+        )!,
         orderStatus,
         orderItems,
         shippingFirstName: order.customer?.firstName,
@@ -869,10 +871,7 @@ export class GoedgepicktService
     };
   }
 
-  static toLocalTime(date?: Date) {
-    if (!date) {
-      return undefined;
-    }
+  static toLocalTime(date: Date) {
     const tzoffset = date.getTimezoneOffset() * 60000; //offset in milliseconds
     return new Date(date.getTime() - tzoffset).toISOString().slice(0, -1);
   }
