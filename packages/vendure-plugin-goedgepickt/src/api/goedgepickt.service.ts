@@ -331,11 +331,10 @@ export class GoedgepicktService
       }));
       if (
         !order.shippingAddress.streetLine2 ||
-        !order.shippingAddress.streetLine1 ||
-        !order.orderPlacedAt
+        !order.shippingAddress.streetLine1
       ) {
         throw Error(
-          `Missing required order fields streetLine1, streetLine2 or order.orderPlacedAt. Cannot push order to GoedGepickt`
+          `Missing required order fields streetLine1, streetLine2. Cannot push order to GoedGepickt`
         );
       }
       const { houseNumber, addition } =

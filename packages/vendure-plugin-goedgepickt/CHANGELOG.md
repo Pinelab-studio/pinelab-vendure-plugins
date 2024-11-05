@@ -1,3 +1,7 @@
+# 1.3.1 (2024-11-05)
+
+- `orderPlacedAt` field should not be mandatory to push to Picqer
+
 # 1.3.0 (2024-10-18)
 
 - Allow setting custom order state in GoedGepickt
