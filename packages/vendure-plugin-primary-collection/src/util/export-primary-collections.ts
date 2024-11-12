@@ -9,15 +9,10 @@ export type ExportedPrimaryCollectionData = {
   primaryCollectionId: ID;
 };
 
-type ProductPrimaryCollectionPartial = {
-  product_id: number;
-  primaryCollection_id: number;
-};
-
 export async function exportPrimaryCollections(queryRunner: QueryRunner) {
   try {
     const productRepo = queryRunner.manager.getRepository(Product);
-    const allProducts = (await productRepo
+    const allProducts = await productRepo
       .createQueryBuilder('product')
       .innerJoin(
         Collection,
@@ -25,11 +20,13 @@ export async function exportPrimaryCollections(queryRunner: QueryRunner) {
         'primaryCollection.id = product.customFieldsPrimarycollectionId'
       )
       .select(['product.id', 'primaryCollection.id'])
-      .getRawMany()) as ProductPrimaryCollectionPartial[];
+      .getRawMany();
     const data: ExportedPrimaryCollectionData[] = [];
     for (const product of allProducts) {
       data.push({
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         productId: product.product_id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
         primaryCollectionId: product.primaryCollection_id,
       });
     }
