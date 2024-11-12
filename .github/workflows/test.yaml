@@ -72,6 +72,8 @@ jobs:
         run: yarn
       - name: Build
         run: cd packages/${{ matrix.package }} && yarn build
+      - name: Lint
+        run: cd packages/${{ matrix.package }} && yarn lint
       - name: Test
         # TEST_ADMIN_UI=true enables Admin UI compilation in tests
         run: |
