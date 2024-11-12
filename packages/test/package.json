@@ -6,6 +6,9 @@
   "private": true,
   "scripts": {
     "generate": "graphql-codegen --config codegen.yml",
-    "start": "ts-node ./src/dev-server.ts"
+    "start": "ts-node ./src/dev-server.ts",
+    "build": "echo 'Not meant to be built'",
+    "lint": "echo 'Not meant to be linted'",
+    "test": "echo 'No test implemented'"
   }
 }
