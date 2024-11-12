@@ -54,6 +54,27 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
           })
         );
     }
+
+    if (this.processContext.isServer) {
+      Logger.info(
+        'Listening for convert to Draft transition, to set orders active to false',
+        loggerCtx
+      );
+      this.eventBus
+        .ofType(OrderStateTransitionEvent)
+        .pipe(
+          filter((event) => event.toState === 'Draft' && event.order.active)
+        )
+        .subscribe(({ ctx, order: draftOrder }) =>
+          this.deactivateOrder(ctx, draftOrder).catch((e: any) => {
+            Logger.error(
+              `Error setting draft order ${draftOrder.code} to active`,
+              loggerCtx,
+              e?.stack
+            );
+          })
+        );
+    }
   }
 
   async assignOrderToCustomer(
