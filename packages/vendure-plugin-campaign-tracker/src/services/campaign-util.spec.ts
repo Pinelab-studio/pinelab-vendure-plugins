@@ -6,7 +6,6 @@ import {
   isOlderThan,
   validateAttributions,
 } from './campaign-util';
-import { Attribution } from './attribution-models';
 
 const attributionModel = {
   attributeTo: vi.fn(),
