@@ -19,17 +19,17 @@ jobs:
       - name: Is formatted
         run: yarn prettier:check
   collect_dirs:
-    name: Collect all package names
+    name: Collect package names
     runs-on: ubuntu-latest
     outputs:
       dirs: ${{ steps.dirs.outputs.dirs }}
     steps:
       - id: dirs
         # This command will list all directories in the packages directory
-        run: echo "dirs=$(ls -d packages/*/ | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')" >> ${GITHUB_OUTPUT}
+        run: echo "dirs=$(ls -d ./packages/*/ | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')" >> ${GITHUB_OUTPUT}
   test:
     needs: collect_dirs
-    name: ${{ matrix.package }}
+    name: Test and lint ${{ matrix.package }}
     runs-on: ubuntu-latest
     defaults:
       run:
