@@ -7,6 +7,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
+import { getOrder } from '../../test/src/admin-utils';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -94,6 +95,21 @@ describe('Customer managed groups', function () {
         'Only active orders can be changed to a draft order'
       );
     }
+  });
+
+  it('Should de-activate transitioned Draft order', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const testActiveOrder = await addItem(shopClient, 'T_1', 1);
+    await adminClient.query(convertToDraftMutation, {
+      id: testActiveOrder.id,
+    });
+    const updatedOrder = await getOrder(adminClient, `${testActiveOrder.id}`);
+    expect(updatedOrder).not.toBeFalsy();
+    expect(updatedOrder!.state).toBe('Draft');
+    expect(updatedOrder!.active).toBe(false);
   });
 
   if (process.env.TEST_ADMIN_UI) {
