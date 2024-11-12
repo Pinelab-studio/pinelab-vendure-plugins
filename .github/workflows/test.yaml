@@ -19,7 +19,8 @@ jobs:
       - name: Is formatted
         run: yarn prettier:check
   collect_dirs:
-    name: Collect all package directory names
+    name: Collect all package names
+    runs-on: ubuntu-latest
     outputs:
       dirs: ${{ steps.dirs.outputs.dirs }}
     steps:
