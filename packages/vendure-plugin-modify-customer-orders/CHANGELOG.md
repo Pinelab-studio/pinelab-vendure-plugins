@@ -1,3 +1,7 @@
+# 1.3.2-beta (2024-11-12)
+
+- Ensure orders that transition from AddingItems to Draft also get de-activated
+
 # 1.3.1 (2024-08-04)
 
 - Update compatibility range (#480)

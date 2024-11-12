@@ -54,6 +54,29 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
           })
         );
     }
+
+    if (this.processContext.isServer) {
+      Logger.info(
+        'Listening for convert to Draft transition, to set orders active to false',
+        loggerCtx
+      );
+      this.eventBus
+        .ofType(OrderStateTransitionEvent)
+        .pipe(
+          filter((event) => event.toState === 'Draft' && event.order.active)
+        )
+        .subscribe(({ ctx, order: draftOrder }) =>
+          this.deactivateOrderAndRemoveCache(ctx, draftOrder).catch(
+            (e: any) => {
+              Logger.error(
+                `Error setting draft order ${draftOrder.code} to active`,
+                loggerCtx,
+                e?.stack
+              );
+            }
+          )
+        );
+    }
   }
 
   async assignOrderToCustomer(
@@ -86,6 +109,19 @@ export class OrderTransitionListenerService implements OnApplicationBootstrap {
       `Assigned draft order ${draftOrder.code} as active order to ${draftOrder.customer?.emailAddress}`,
       loggerCtx
     );
+  }
+
+  /**
+   * Remove order as active from session
+   * This functions presumes it may be called without an attached session in order to
+   * be able to de-activate an order from the admin
+   */
+  async deactivateOrderAndRemoveCache(ctx: RequestContext, order: Order) {
+    if (!order.active) {
+      Logger.warn(`Not an active order: ${order.code}. Returning`, loggerCtx);
+    }
+    await this.sessionService.deleteSessionsByActiveOrderId(ctx, order.id);
+    await this.deactivateOrder(ctx, order);
   }
 
   /**
