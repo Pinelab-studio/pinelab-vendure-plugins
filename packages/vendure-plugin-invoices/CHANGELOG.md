@@ -1,3 +1,9 @@
+# 4.1.1 (2024-11-12)
+
+- Better error message extraction from Xero API response
+- Limit search term for looking up contacts in Xero by max 50 characters, to prevent Xero API errors
+- Log unknown errors on invoice with timestamp when accounting export fails
+
 # 4.1.0 (2024-08-30)
 
 - Exporting credit invoices via accounting strategies now have their own method interface

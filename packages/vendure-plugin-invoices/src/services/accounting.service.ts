@@ -151,7 +151,9 @@ export class AccountingService implements OnModuleInit {
     } catch (e) {
       await invoiceRepository.update(invoice.id, {
         accountingReference: {
-          errorMessage: (e as Error)?.message,
+          errorMessage:
+            (e as Error)?.message ||
+            `Unknown error occured at ${new Date().toISOString()}`,
         },
       });
       throw e;

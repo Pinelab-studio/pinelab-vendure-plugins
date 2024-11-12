@@ -217,7 +217,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
           order,
           invoice,
           isCreditInvoiceFor.invoiceNumber
-        ) || `Credit note for ${isCreditInvoiceFor}`;
+        ) || `Credit note for ${isCreditInvoiceFor.invoiceNumber}`;
       const creditNote: import('xero-node').CreditNote = {
         creditNoteNumber: `${invoice.invoiceNumber} (CN)`,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -268,7 +268,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
   ): Promise<import('xero-node').Contact> {
     await this.tokenCache.value(); // Always get a token before making a request
     // Find by contact name first
-    const contacName = this.getNormalizedContactName(customer, companyName);
+    const contactName = this.getNormalizedContactName(customer, companyName);
     let contacts = await this.xero.accountingApi.getContacts(
       this.tenantId,
       undefined,
@@ -278,7 +278,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
       undefined,
       undefined,
       undefined,
-      this.getNormalizedContactName(customer, companyName)
+      contactName
     );
     if (!contacts.body.contacts?.length) {
       // If no contacts, try to find by email
@@ -321,7 +321,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     );
     const createdContact = createdContacts.body.contacts?.[0];
     Logger.info(
-      `No contact found with name '${contacName}' or email '${customer.emailAddress}'. Created new contact with email "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
+      `No contact found with name '${contactName}' or email '${customer.emailAddress}'. Created new contact with email "${createdContact?.emailAddress}" (${createdContact?.contactID})`,
       loggerCtx
     );
     return createdContacts.body.contacts![0];
@@ -345,10 +345,14 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
   /**
    * Get the readable error message from the Xero response
    */
-  private getErrorMessage(err: any): string {
+  private getErrorMessage(err: string): string {
+    const errorObj = JSON.parse(err);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return (
-      JSON.parse(err)?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]
-        ?.Message || JSON.parse(err)?.response?.body?.Message
+      errorObj?.response?.body?.Elements?.[0]?.ValidationErrors?.[0]?.Message ||
+      errorObj?.response?.body?.Message ||
+      errorObj?.response?.body ||
+      errorObj?.body
     );
   }
 
@@ -426,7 +430,8 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
 
   /**
    * Get the normalized contact name. Uses company or other wise customers full name.
-   * Trims and replaces duplicate spaces/tabs/newlines
+   * Trims and replaces duplicate spaces/tabs/newlines.
+   * Shortens to max 50 characters, because that is the max allowed for the Xero API
    */
   private getNormalizedContactName(
     customer: Customer,
@@ -435,7 +440,7 @@ export class XeroUKExportStrategy implements AccountingExportStrategy {
     const contactName =
       companyName ||
       [customer.firstName, customer.lastName].filter(Boolean).join(' ');
-    return contactName.trim().replace(/\s\s+/g, ' ');
+    return contactName.trim().replace(/\s\s+/g, ' ').substring(0, 50);
   }
 
   private getTaxType(
