@@ -28,7 +28,6 @@ import {
 } from '@vendure/core';
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
-import fs from 'fs/promises';
 import Handlebars from 'handlebars';
 import {
   Invoice,
@@ -565,7 +564,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       });
       const page = await browser.newPage();
       await page.setContent(compiledHtml);
-      const pdf = await page.pdf({
+      await page.pdf({
         path: tmpFilePath,
         format: 'A4',
         margin: { bottom: 100, top: 100, left: 50, right: 50 },
@@ -573,14 +572,19 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     } catch (e) {
       // Warning, because this will be retried, or is returned to the user
       Logger.warn(
-        `Failed to generate invoice: ${JSON.stringify((e as any)?.message)}`,
+        `Failed to generate invoice: ${JSON.stringify((e as Error)?.message)}`,
         loggerCtx
       );
       throw e;
     } finally {
       if (browser) {
         // Prevent memory leaks
-        browser.close();
+        browser.close().catch((e: Error) => {
+          Logger.error(
+            `Failed to close puppeteer browser: ${e?.message}`,
+            loggerCtx
+          );
+        });
       }
     }
     return {

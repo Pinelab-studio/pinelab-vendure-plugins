@@ -19,7 +19,8 @@
   ],
   "scripts": {
     "build": "rimraf dist && tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "echo 'No linting configured'"
   },
   "dependencies": {
     "prompt-confirm": "^2.0.4"

@@ -111,11 +111,13 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         taxRate,
         metadata: { shippingAddressGeoLocation, storeGeoLocation },
       };
-    } catch (e: any) {
+    } catch (e) {
       //eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any
       Logger.error(
         //eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        `Failed to calculate shipping for ${method.name}: ${e.message}`,
+        `Failed to calculate shipping for ${method.name}: ${
+          (e as Error)?.message
+        }`,
         loggerCtx
       );
       return minimumPrice;

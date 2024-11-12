@@ -3,5 +3,10 @@
   "version": "1.0.2",
   "main": "index.ts",
   "license": "MIT",
-  "private": true
+  "private": true,
+  "scripts": {
+    "build": "echo 'Not meant to be built'",
+    "lint": "echo 'Not meant to be linted'",
+    "test": "echo 'No test implemented'"
+  }
 }

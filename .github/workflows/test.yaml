@@ -2,8 +2,8 @@ name: Test packages
 on: ['pull_request']
 
 jobs:
-  lint:
-    name: Prettier formatting and linting check
+  format:
+    name: Prettier formatting
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -18,7 +18,19 @@ jobs:
         run: yarn
       - name: Is formatted
         run: yarn prettier:check
+  collect_dirs:
+    name: Collect package names
+    runs-on: ubuntu-latest
+    outputs:
+      dirs: ${{ steps.dirs.outputs.dirs }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - id: dirs
+        # This command will list all directories in the packages directory
+        run: echo "dirs=$(ls -d packages/*/ | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')" >> ${GITHUB_OUTPUT}
   test:
+    needs: collect_dirs
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
     defaults:
@@ -26,42 +38,7 @@ jobs:
         shell: bash
     strategy:
       matrix:
-        package:
-          [
-            'vendure-plugin-accept-blue',
-            'vendure-plugin-admin-social-auth',
-            'vendure-plugin-admin-ui-helpers',
-            'vendure-plugin-anonymized-order',
-            'vendure-plugin-campaign-tracker',
-            'vendure-plugin-coinbase',
-            'vendure-plugin-customer-managed-groups',
-            'vendure-plugin-dutch-postalcode',
-            'vendure-plugin-e-boekhouden',
-            'vendure-plugin-facet-suggestions',
-            'vendure-plugin-goedgepickt',
-            'vendure-plugin-google-cloud-tasks',
-            'vendure-plugin-google-storage-assets',
-            'vendure-plugin-invoices',
-            'vendure-plugin-klaviyo',
-            'vendure-plugin-limited-products',
-            'vendure-plugin-metrics',
-            'vendure-plugin-modify-customer-orders',
-            'vendure-plugin-multiserver-db-sessioncache',
-            'vendure-plugin-myparcel',
-            'vendure-plugin-order-export',
-            'vendure-plugin-picqer',
-            'vendure-plugin-payment-extensions',
-            'vendure-plugin-popularity-scores',
-            'vendure-plugin-primary-collection',
-            'vendure-plugin-public-customer-groups',
-            'vendure-plugin-sendcloud',
-            'vendure-plugin-shipmate',
-            'vendure-plugin-shipping-extensions',
-            'vendure-plugin-stock-monitoring',
-            'vendure-plugin-stripe-subscription',
-            'vendure-plugin-variant-bulk-update',
-            'vendure-plugin-webhook',
-          ]
+        package: ${{ fromJson(needs.collect_dirs.outputs.dirs) }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -71,9 +48,10 @@ jobs:
       - name: Install dependencies with Yarn workspaces
         run: yarn
       - name: Build
-        run: cd packages/${{ matrix.package }} && yarn build
+        run: cd ${{ matrix.package }} && yarn build
+      - name: Lint
+        run: cd ${{ matrix.package }} && yarn lint
       - name: Test
-        # TEST_ADMIN_UI=true enables Admin UI compilation in tests
         run: |
-          cd packages/${{ matrix.package }}
+          cd ${{ matrix.package }}
           TEST_ADMIN_UI=true yarn test
