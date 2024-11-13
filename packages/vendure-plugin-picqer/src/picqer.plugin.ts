@@ -67,7 +67,15 @@ export interface PicqerOptions {
     order: Order
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ) => any;
+  /**
+   * Define wether to trigger a sync when one of these custom fields is updated on a ProductVariant
+   */
   shouldSyncOnProductVariantCustomFields?: string[];
+  /**
+   * Define wether to fall back to a variant's product, when the variant does not have a featured asset.
+   * Default is `true`
+   */
+  fallBackToProductFeaturedAsset?: boolean;
 }
 
 @VendurePlugin({
@@ -101,11 +109,10 @@ export class PicqerPlugin {
   static options: PicqerOptions;
 
   static init(options: PicqerOptions) {
-    if (options.enabled !== false) {
-      // Only disable if explicitly set to false
-      options.enabled = true;
-    }
-    this.options = options;
+    this.options = {
+      fallBackToProductFeaturedAsset: true,
+      ...options,
+    };
     return PicqerPlugin;
   }
 
