@@ -1006,7 +1006,7 @@ export class PicqerService implements OnApplicationBootstrap {
     variant: ProductVariant
   ): Promise<string | undefined> {
     let asset = await this.assetService.getFeaturedAsset(ctx, variant);
-    if (!asset?.preview) {
+    if (!asset?.preview && this.options.fallBackToProductFeaturedAsset) {
       // No featured asset on variant, try the parent product
       await this.entityHydrator.hydrate(ctx, variant, {
         relations: ['product'],
