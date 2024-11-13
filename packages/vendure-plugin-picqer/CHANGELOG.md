@@ -1,6 +1,6 @@
 # 3.4.2 (2024-11-13)
 
-- Making falling back to parent product featured asset configurable, so that only images of variants are synced to Picqer.
+- Make falling back to parent product featured asset configurable, so that only images of variants are synced to Picqer.
 
 # 3.4.1 (2024-10-08)
 
