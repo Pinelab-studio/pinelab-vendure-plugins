@@ -9,10 +9,17 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
 import { RevenuePerProduct } from './api/metrics/revenue-per-product';
 import { AverageOrderValueMetric } from './api/metrics/average-order-value';
 import { UnitsSoldMetric } from './api/metrics/units-sold-metric';
-import { ConversionMetric } from './api/metrics/conversion';
 
 export interface MetricsPluginOptions {
+  /**
+   * The enabled metrics shown in the widget.
+   */
   metrics: MetricStrategy<any>[];
+  /**
+   * The number of past months to display in the metrics widget.
+   * If your shop has a lot of orders, consider using only the last 3 months for example.
+   */
+  displayPastMonths: number;
 }
 
 @VendurePlugin({
@@ -31,14 +38,17 @@ export class MetricsPlugin {
   static options: MetricsPluginOptions = {
     metrics: [
       new RevenuePerProduct(),
-      new ConversionMetric(),
       new AverageOrderValueMetric(),
       new UnitsSoldMetric(),
     ],
+    displayPastMonths: 13,
   };
 
-  static init(options: MetricsPluginOptions): typeof MetricsPlugin {
-    this.options = options;
+  static init(options: Partial<MetricsPluginOptions>): typeof MetricsPlugin {
+    this.options = {
+      ...this.options,
+      ...options,
+    };
     return MetricsPlugin;
   }
 

@@ -44,7 +44,12 @@ export class UnitsSoldMetric implements MetricStrategy<OrderLine> {
         .getRepository(ctx, OrderLine)
         .createQueryBuilder('orderLine')
         .leftJoin('orderLine.order', 'order')
-        .addSelect(['order.id', 'order.orderPlacedAt'])
+        .select([
+          'order.id',
+          'order.orderPlacedAt',
+          'orderLine.id',
+          'orderLine.quantity',
+        ])
         .leftJoin('order.channels', 'channel')
         .where(`channel.id=:channelId`, { channelId: ctx.channelId })
         .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {

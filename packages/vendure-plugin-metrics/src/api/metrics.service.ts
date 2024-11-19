@@ -48,16 +48,18 @@ export class MetricsService {
     );
     const today = endOfDay(new Date());
     // Use start of month, because we'd like to see the full results of last years same month
-    const oneYearAgo = startOfMonth(sub(today, { years: 1 }));
+    const startDate = startOfMonth(
+      sub(today, { months: this.pluginOptions.displayPastMonths })
+    );
     // For each metric strategy
     return Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
         const cacheKeyObject = {
           code: metricStrategy.code,
-          from: today.toDateString(),
-          to: oneYearAgo.toDateString(),
+          from: startDate.toDateString(),
+          to: today.toDateString(),
           channel: ctx.channel.token,
-          variantIds: [] as string[],
+          variantIds: [] as string[], // Set below if input is given
         };
         if (metricStrategy.allowProductSelection) {
           // Only use variantIds for cache key if the strategy allows filtering by variants
@@ -78,14 +80,14 @@ export class MetricsService {
         const allEntities = await metricStrategy.loadEntities(
           ctx,
           new Injector(this.moduleRef),
-          oneYearAgo,
+          startDate,
           today,
           variants
         );
         const entitiesPerMonth = this.splitEntitiesInMonths(
           metricStrategy,
           allEntities,
-          oneYearAgo,
+          startDate,
           today
         );
         // Calculate datapoints per 'name', because we could be dealing with a multi line chart
