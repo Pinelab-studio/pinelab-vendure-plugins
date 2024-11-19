@@ -9,7 +9,6 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
 import { RevenuePerProduct } from './api/metrics/revenue-per-product';
 import { AverageOrderValueMetric } from './api/metrics/average-order-value';
 import { UnitsSoldMetric } from './api/metrics/units-sold-metric';
-import { ConversionMetric } from './api/metrics/conversion';
 
 export interface MetricsPluginOptions {
   metrics: MetricStrategy<any>[];
@@ -31,7 +30,6 @@ export class MetricsPlugin {
   static options: MetricsPluginOptions = {
     metrics: [
       new RevenuePerProduct(),
-      new ConversionMetric(),
       new AverageOrderValueMetric(),
       new UnitsSoldMetric(),
     ],

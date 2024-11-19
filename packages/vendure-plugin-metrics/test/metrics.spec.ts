@@ -84,10 +84,7 @@ describe('Metrics', () => {
     const salesPerProduct = advancedMetricSummaries.find(
       (m) => m.code === 'units-sold'
     )!;
-    const conversion = advancedMetricSummaries.find(
-      (m) => m.code === 'conversion'
-    )!;
-    expect(advancedMetricSummaries.length).toEqual(4);
+    expect(advancedMetricSummaries.length).toEqual(3);
     expect(averageOrderValue.series[0].values.length).toEqual(13);
     expect(averageOrderValue.labels.length).toEqual(13);
     // All orders are 4102 without tax, so that the AOV
@@ -98,9 +95,6 @@ describe('Metrics', () => {
     expect(revenuePerProduct.series[0].values[12]).toEqual(3 * 4102); //12306
     expect(salesPerProduct.series[0].values.length).toEqual(13);
     expect(salesPerProduct.labels.length).toEqual(13);
-    expect(conversion.series[0].values.length).toEqual(13);
-    expect(conversion.labels.length).toEqual(13);
-    expect(conversion.series[0].values[12]).toEqual(100);
   });
 
   it('Fetches metrics for specific variant', async () => {
@@ -109,7 +103,7 @@ describe('Metrics', () => {
       await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS, {
         input: { variantIds: [1, 2] },
       });
-    expect(advancedMetricSummaries.length).toEqual(4);
+    expect(advancedMetricSummaries.length).toEqual(3);
     const revenuePerProduct = advancedMetricSummaries.find(
       (m) => m.code === 'revenue-per-product'
     )!;

@@ -1,3 +1,8 @@
+# 1.6.0 (2024-11-19)
+
+- Removed conversion metric, as it is can not be accurately calculated based on created orders alone
+- Small improvement in query performance
+
 # 1.5.0 (2024-11-03)
 
 - Allow specifying per metric if it's filterable by variant ID's
