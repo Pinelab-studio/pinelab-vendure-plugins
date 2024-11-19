@@ -31,7 +31,9 @@ import { addItem, createSettledOrder } from '../../test/src/shop-utils';
       paymentMethodHandlers: [testPaymentMethod],
     },
     plugins: [
-      MetricsPlugin,
+      MetricsPlugin.init({
+        displayPastMonths: 19,
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
