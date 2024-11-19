@@ -5,7 +5,7 @@
 A plugin to measure and visualize your shop's average order value (AOV),number of orders per
 month or per week and number of items per product variant for the past 12 months (or weeks) per variants.
 
-![image](https://user-images.githubusercontent.com/6604455/236404288-e55c37ba-9508-43e6-a54c-2eb7b3cd36ee.png)
+![image](https://private-user-images.githubusercontent.com/6604455/387630787-8f43eb2b-384b-4bf2-b580-ab9379046d12.png?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3MzIwMTU0NjAsIm5iZiI6MTczMjAxNTE2MCwicGF0aCI6Ii82NjA0NDU1LzM4NzYzMDc4Ny04ZjQzZWIyYi0zODRiLTRiZjItYjU4MC1hYjkzNzkwNDZkMTIucG5nP1gtQW16LUFsZ29yaXRobT1BV1M0LUhNQUMtU0hBMjU2JlgtQW16LUNyZWRlbnRpYWw9QUtJQVZDT0RZTFNBNTNQUUs0WkElMkYyMDI0MTExOSUyRnVzLWVhc3QtMSUyRnMzJTJGYXdzNF9yZXF1ZXN0JlgtQW16LURhdGU9MjAyNDExMTlUMTExOTIwWiZYLUFtei1FeHBpcmVzPTMwMCZYLUFtei1TaWduYXR1cmU9NWM1Njc5OTlmMWYzMDY0Mjg5MjIxYWFkYWNmYTU2MzJhNDZjNWVmNjAzMmEzYjFiMWNlNjE5MzZkZWFkMGUyZSZYLUFtei1TaWduZWRIZWFkZXJzPWhvc3QifQ.jZqdbqUZXMqvxhL6n3owdz3ovWYiSvy9h8LCc8Hfrm8)
 
 ## Getting started
 
