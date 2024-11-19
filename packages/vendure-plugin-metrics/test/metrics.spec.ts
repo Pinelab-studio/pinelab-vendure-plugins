@@ -71,7 +71,7 @@ describe('Metrics', () => {
     await expect(promise).rejects.toThrow('authorized');
   });
 
-  it('Fetches metrics for past 13 months', async () => {
+  it('Fetches metrics for past 14 months', async () => {
     await adminClient.asSuperAdmin();
     const { advancedMetricSummaries } =
       await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS);
@@ -85,16 +85,16 @@ describe('Metrics', () => {
       (m) => m.code === 'units-sold'
     )!;
     expect(advancedMetricSummaries.length).toEqual(3);
-    expect(averageOrderValue.series[0].values.length).toEqual(13);
-    expect(averageOrderValue.labels.length).toEqual(13);
+    expect(averageOrderValue.series[0].values.length).toEqual(14);
+    expect(averageOrderValue.labels.length).toEqual(14);
     // All orders are 4102 without tax, so that the AOV
-    expect(averageOrderValue.series[0].values[12]).toEqual(4102);
-    expect(revenuePerProduct.series[0].values.length).toEqual(13);
-    expect(revenuePerProduct.labels.length).toEqual(13);
+    expect(averageOrderValue.series[0].values[13]).toEqual(4102);
+    expect(revenuePerProduct.series[0].values.length).toEqual(14);
+    expect(revenuePerProduct.labels.length).toEqual(14);
     // All orders are 4102 without tax, and we placed 3 orders
-    expect(revenuePerProduct.series[0].values[12]).toEqual(3 * 4102); //12306
-    expect(salesPerProduct.series[0].values.length).toEqual(13);
-    expect(salesPerProduct.labels.length).toEqual(13);
+    expect(revenuePerProduct.series[0].values[13]).toEqual(3 * 4102); //12306
+    expect(salesPerProduct.series[0].values.length).toEqual(14);
+    expect(salesPerProduct.labels.length).toEqual(14);
   });
 
   it('Fetches metrics for specific variant', async () => {
@@ -108,24 +108,24 @@ describe('Metrics', () => {
       (m) => m.code === 'revenue-per-product'
     )!;
     // For revenue per product we expect 2 series: one for each variant
-    expect(revenuePerProduct.series[0].values.length).toEqual(13);
-    expect(revenuePerProduct.series[1].values.length).toEqual(13);
-    expect(revenuePerProduct.labels.length).toEqual(13);
+    expect(revenuePerProduct.series[0].values.length).toEqual(14);
+    expect(revenuePerProduct.series[1].values.length).toEqual(14);
+    expect(revenuePerProduct.labels.length).toEqual(14);
     // Expect the first series (variant 1), to have 389700 revenue in last month
-    expect(revenuePerProduct.series[0].values[12]).toEqual(3897);
+    expect(revenuePerProduct.series[0].values[13]).toEqual(3897);
     // Expect the first series (variant 2), to have 839400 revenue in last month
-    expect(revenuePerProduct.series[1].values[12]).toEqual(8394);
+    expect(revenuePerProduct.series[1].values[13]).toEqual(8394);
     const salesPerProduct = advancedMetricSummaries.find(
       (m) => m.code === 'units-sold'
     )!;
     // For sales per product we expect 2 series: one for each variant
-    expect(salesPerProduct.series[0].values.length).toEqual(13);
-    expect(salesPerProduct.series[1].values.length).toEqual(13);
-    expect(salesPerProduct.labels.length).toEqual(13);
+    expect(salesPerProduct.series[0].values.length).toEqual(14);
+    expect(salesPerProduct.series[1].values.length).toEqual(14);
+    expect(salesPerProduct.labels.length).toEqual(14);
     // Expect the first series (variant 1), to have 3 revenue in last month
-    expect(salesPerProduct.series[0].values[12]).toEqual(3);
+    expect(salesPerProduct.series[0].values[13]).toEqual(3);
     // Expect the first series (variant 2), to have 6 revenue in last month
-    expect(salesPerProduct.series[1].values[12]).toEqual(6);
+    expect(salesPerProduct.series[1].values[13]).toEqual(6);
   });
 
   if (process.env.TEST_ADMIN_UI) {

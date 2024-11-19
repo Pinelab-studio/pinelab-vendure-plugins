@@ -41,7 +41,7 @@ export class MetricsPlugin {
       new AverageOrderValueMetric(),
       new UnitsSoldMetric(),
     ],
-    displayPastMonths: 14,
+    displayPastMonths: 13,
   };
 
   static init(options: Partial<MetricsPluginOptions>): typeof MetricsPlugin {
