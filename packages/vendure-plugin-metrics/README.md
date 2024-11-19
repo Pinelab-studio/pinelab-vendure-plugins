@@ -2,8 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-metrics)
 
-A plugin to measure and visualize your shop's average order value (AOV),number of orders per
-month or per week and number of items per product variant for the past 12 months (or weeks) per variants.
+A plugin to visualize your shops most important metrics of the past year.
 
 ![image](https://raw.githubusercontent.com/Pinelab-studio/pinelab-vendure-plugins/96ed9d15e7a2908e0620a8a1e92b1d8c9fe381a4/docs-website/public/plugin-images/metrics.png)
 
