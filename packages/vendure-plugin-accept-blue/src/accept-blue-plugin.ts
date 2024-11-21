@@ -48,6 +48,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
     });
     config.customFields.Customer.push({
       name: 'acceptBlueCustomerId',
+      nullable: true,
       type: 'int',
     });
     return config;
