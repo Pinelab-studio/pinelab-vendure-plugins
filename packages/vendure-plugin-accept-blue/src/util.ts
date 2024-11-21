@@ -123,7 +123,7 @@ export function getNrOfBillingCyclesLeft(
 ): number {
   const diff = endDate.getTime() - startDate.getTime();
   const diffInDays = diff / (1000 * 3600 * 24);
-  const nrOfBillingCyclesLeft = Math.floor(
+  const nrOfBillingCyclesLeft = Math.ceil(
     diffInDays / getDaysBetweenBillingCycles(frequency)
   );
   return nrOfBillingCyclesLeft;
@@ -131,6 +131,8 @@ export function getNrOfBillingCyclesLeft(
 
 export function getDaysBetweenBillingCycles(frequency: Frequency): number {
   switch (frequency) {
+    case 'daily':
+      return 1;
     case 'weekly':
       return 7;
     case 'biweekly':
