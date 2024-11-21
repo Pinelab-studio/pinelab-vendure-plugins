@@ -33,15 +33,6 @@ describe('getNrOfBillingCyclesLeft', () => {
     const result = getNrOfBillingCyclesLeft(startDate, endDate, frequency);
     expect(result).toBe(1);
   });
-
-  it('Starts monday and ends the monday 1 week later with frequency daily', () => {
-    const startDate = new Date('2024-11-18');
-    const endDate = new Date('2024-11-25');
-    const frequency = 'daily';
-    const result = getNrOfBillingCyclesLeft(startDate, endDate, frequency);
-    expect(result).toBe(7);
-  });
-
   it('Starts monday and ends the monday 1 week later with frequency daily', () => {
     const startDate = new Date('2024-11-18');
     const endDate = new Date('2024-11-25');
