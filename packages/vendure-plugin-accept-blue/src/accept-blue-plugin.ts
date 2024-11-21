@@ -1,4 +1,4 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
 import { AcceptBlueService } from './api/accept-blue-service';
 import { acceptBluePaymentHandler } from './api/accept-blue-handler';
@@ -45,9 +45,13 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
       name: 'acceptBlueSubscriptionIds',
       type: 'int',
       list: true,
+      nullable: true,
+      readonly: true,
     });
     config.customFields.Customer.push({
       name: 'acceptBlueCustomerId',
+      nullable: true,
+      readonly: true,
       type: 'int',
     });
     return config;
@@ -57,7 +61,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
 export class AcceptBluePlugin {
   static options: AcceptBluePluginOptions;
 
-  static init(options: AcceptBluePluginOptionsInput): AcceptBluePlugin {
+  static init(options: AcceptBluePluginOptionsInput): Type<AcceptBluePlugin> {
     let vendureHost = options.vendureHost;
     // Strip trailing slash
     if (vendureHost.endsWith('/')) {

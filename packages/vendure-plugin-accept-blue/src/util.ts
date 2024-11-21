@@ -123,7 +123,7 @@ export function getNrOfBillingCyclesLeft(
 ): number {
   const diff = endDate.getTime() - startDate.getTime();
   const diffInDays = diff / (1000 * 3600 * 24);
-  const nrOfBillingCyclesLeft = Math.floor(
+  const nrOfBillingCyclesLeft = Math.ceil(
     diffInDays / getDaysBetweenBillingCycles(frequency)
   );
   return nrOfBillingCyclesLeft;
@@ -131,6 +131,8 @@ export function getNrOfBillingCyclesLeft(
 
 export function getDaysBetweenBillingCycles(frequency: Frequency): number {
   switch (frequency) {
+    case 'daily':
+      return 1;
     case 'weekly':
       return 7;
     case 'biweekly':
@@ -146,6 +148,7 @@ export function getDaysBetweenBillingCycles(frequency: Frequency): number {
     case 'biannually':
       return 730;
     default:
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- prevent runtime errors, even though this shouldnt be possible TS wise
       throw Error(`Frequency '${frequency}' is not a valid frequency`);
   }
 }

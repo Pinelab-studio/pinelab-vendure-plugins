@@ -1,6 +1,8 @@
 // TODO test if getPaymentMethods only works for logged in users. IMPORTANT
 
 import {
+  Customer,
+  CustomerService,
   DefaultLogger,
   EventBus,
   LanguageCode,
@@ -26,6 +28,7 @@ import { initialData } from '../../test/src/initial-data';
 import { AcceptBluePlugin } from '../src';
 import { AcceptBlueClient } from '../src/api/accept-blue-client';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
+import { DataSource } from 'typeorm';
 import {
   AcceptBlueWebhook,
   AccountType,
@@ -187,11 +190,16 @@ describe('Shop API', () => {
       'hayden.zieme12@hotmail.com',
       'test'
     );
-    const { updateCustomer } = await adminClient.query(
-      UPDATE_CUSTOMER_BLUE_ID,
-      { customerId: '1', acceptBlueCustomerId: haydenZiemeCustomerDetails.id }
-    );
-    expect(updateCustomer.emailAddress).toBe('hayden.zieme12@hotmail.com');
+    // Set mock customerId on Vendure customer for this test
+    await server.app
+      .get(DataSource)
+      .getRepository(Customer)
+      .update(
+        { id: 1 },
+        {
+          customFields: { acceptBlueCustomerId: haydenZiemeCustomerDetails.id },
+        }
+      );
     const {
       activeCustomer: { savedAcceptBluePaymentMethods },
     } = await shopClient.query(GET_USER_SAVED_PAYMENT_METHOD);

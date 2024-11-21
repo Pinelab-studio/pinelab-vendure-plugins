@@ -25,6 +25,7 @@ import {
 } from '../util';
 import { AcceptBlueClient } from './accept-blue-client';
 import { AcceptBlueService } from './accept-blue-service';
+import { asError } from 'catch-unknown';
 
 let service: AcceptBlueService;
 export const acceptBluePaymentHandler = new PaymentMethodHandler({
@@ -106,28 +107,41 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       | NoncePaymentMethodInput
       | SavedPaymentMethodInput;
     const client = new AcceptBlueClient(args.apiKey, args.pin, args.testMode);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-    const result = await service.handlePaymentForOrder(
-      ctx,
-      order,
-      amount,
-      client,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      input
-    );
-    const chargeTransactionId = result.chargeResult?.transaction?.id;
-    Logger.info(
-      `Settled payment for order '${order.code}', for Accept Blue customer '${result.customerId}' and one time charge transaction '${chargeTransactionId}'`,
-      loggerCtx
-    );
-    return {
-      amount,
-      state: 'Settled',
-      transactionId: chargeTransactionId
-        ? String(chargeTransactionId)
-        : undefined,
-      metadata: result,
-    };
+    try {
+      const result = await service.handlePaymentForOrder(
+        ctx,
+        order,
+        amount,
+        client,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        input
+      );
+      const chargeTransactionId = result.chargeResult?.transaction?.id;
+      Logger.info(
+        `Settled payment for order '${order.code}', for Accept Blue customer '${result.customerId}' and one time charge transaction '${chargeTransactionId}'`,
+        loggerCtx
+      );
+      return {
+        amount,
+        state: 'Settled',
+        transactionId: chargeTransactionId
+          ? String(chargeTransactionId)
+          : undefined,
+        metadata: result,
+      };
+    } catch (e) {
+      const error = asError(e);
+      Logger.error(
+        `Error settling payment for order '${order.code}': ${error.message}`,
+        loggerCtx,
+        error.stack
+      );
+      return {
+        amount,
+        state: 'Declined',
+        errorMessage: error.message,
+      };
+    }
   },
   settlePayment(): SettlePaymentResult {
     return {

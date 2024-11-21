@@ -1,3 +1,10 @@
+# 1.9.0 (2024-11-21)
+
+- Round up `nrOfBillingCyclesLeft`, to prevent unwanted never-ending subscriptions. See #532
+- Made both custom fields `customer.acceptBlueCustomerId` and `orderLine.acceptBlueSubscriptionIds` nullable and readonly. DB migration needed
+- Included custom field type declaration file in published package
+- Return Declined when payment handling fails, instead of throwing
+
 # 1.8.1 (2024-11-03)
 
 - Bug fix: Return Settled state for successful refunds
