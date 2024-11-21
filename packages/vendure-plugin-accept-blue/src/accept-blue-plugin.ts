@@ -45,10 +45,13 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
       name: 'acceptBlueSubscriptionIds',
       type: 'int',
       list: true,
+      nullable: true,
+      readonly: true,
     });
     config.customFields.Customer.push({
       name: 'acceptBlueCustomerId',
       nullable: true,
+      readonly: true,
       type: 'int',
     });
     return config;
