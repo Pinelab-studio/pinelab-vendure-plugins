@@ -7,3 +7,4 @@ export * from './api/accept-blue-client';
 export * from './api/accept-blue-transaction-event';
 export * from './api/accept-blue-handler';
 export * from './api/accept-blue-common-resolvers';
+export * from './api/custom-field-types';

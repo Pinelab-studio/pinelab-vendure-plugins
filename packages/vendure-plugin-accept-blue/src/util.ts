@@ -148,6 +148,7 @@ export function getDaysBetweenBillingCycles(frequency: Frequency): number {
     case 'biannually':
       return 730;
     default:
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions -- prevent runtime errors, even though this shouldnt be possible TS wise
       throw Error(`Frequency '${frequency}' is not a valid frequency`);
   }
 }
