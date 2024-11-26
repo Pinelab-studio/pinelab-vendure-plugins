@@ -24,10 +24,16 @@ code {
   border-radius: 10px;
 }
 
+/* Copy link for headings */
 .icon-link:before {
   content: '#';
   margin-left: 10px;
   text-decoration: none;
+}
+/* Remove backticks or any content before or after code blocks */
+.prose code::before,
+.prose code::after {
+  content: none; /* Prevent backticks or any other content from being added */
 }
 
 :root {
