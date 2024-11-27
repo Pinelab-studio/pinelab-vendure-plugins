@@ -2,11 +2,14 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-campaign-tracker)
 
-Vendure plugin to track revenue per campaign, so that you can compare different campaigns from different sources.
-To track campaigns, your storefront should send the unique campaign code to Vendure on a page visit:
+Vendure plugin to track revenue per campaign server side, so that you can compare different campaigns from different sources.
+To track campaigns:
 
-- Pass a campaign code in the url, e.g. `my-website.com?ref=summer-sale-ad`. This URL is then included in your ads or email campaigns.
-- Or, set a fixed campaign code for a landing page. For example, all visits to page `/sale-landing` will get the campaign code `sale-landing`
+- Create a campaign via the Vendure admin UI
+- Pass the created campaign code in the url, e.g. `my-website.com?ref=summer-sale-ad`. This URL is then included in your ads or email campaigns.
+- Make your storefront send the campaign code to Vendure with the `addCampaign` mutation
+
+![image](https://pinelab-plugins.com/plugin-images/campaigns.jpeg)
 
 ## Getting started
 
@@ -19,7 +22,8 @@ import { CampaignTrackerPlugin, LastInteractionAttribution } from '@pinelab/vend
 plugins: [
   CampaignTrackerPlugin.init({
     // Pick an attribution model. Choose from `LastInteractionAttribution`, `FirstInteractionAttribution`, `LinearAttribution`
-    // Or, implement your own by implementing the AttributionModel interface
+    // Or, implement your own by implementing the AttributionModel interface.
+    // See JsDoc of each model for more information
     attributionModel: new LastInteractionAttribution()
   }),
   AdminUiPlugin.init({
