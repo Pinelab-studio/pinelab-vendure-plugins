@@ -20,8 +20,13 @@
   @apply prose-lg hover:prose-a:text-blue-500 prose prose-a:font-semibold prose-a:text-blue-600 prose-blockquote:text-blue-600 prose-h3:text-purple-900 text-slate-500;
 }
 
-code {
-  border-radius: 10px;
+/* Highlight inline code */
+code:not([class]) {
+  user-select: all; /* Makes the entire block selectable */
+  border-radius: 5px;
+  padding: 0.2em 0.4em;
+  background-color: #ebf9f3; /* Light grey background */
+  color: #02393b; /* Contrasting text color */
 }
 
 /* Copy link for headings */
