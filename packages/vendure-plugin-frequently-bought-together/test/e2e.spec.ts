@@ -21,7 +21,7 @@ let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 
-it('Server should start', async () => {
+beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),

@@ -59,8 +59,8 @@ export class FrequentlyBoughtTogetherPlugin {
     options: Partial<PluginInitOptions>
   ): Type<FrequentlyBoughtTogetherPlugin> {
     this.options = {
-      ...options,
       ...this.options,
+      ...options,
     };
     return FrequentlyBoughtTogetherPlugin;
   }
