@@ -28,7 +28,7 @@ export class FrequentlyBoughtTogetherService implements OnModuleInit {
   public async onModuleInit(): Promise<void> {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'frequently-bought-together-calculation',
-      process: async (job) => {
+      process: async () => {
         // TODO
       },
     });
@@ -45,5 +45,5 @@ export class FrequentlyBoughtTogetherService implements OnModuleInit {
   /**
    * Create a job to calculate frequently bought together products
    */
-  async triggerCalculation(ctx: RequestContext): Promise<void> {}
+  async triggerCalculation(): Promise<void> {}
 }
