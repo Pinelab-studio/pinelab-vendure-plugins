@@ -43,7 +43,7 @@ import { PluginInitOptions } from './types';
     });
     return config;
   },
-  compatibility: '>=2.3.0',
+  compatibility: '>=2.2.0',
   //   adminApiExtensions: {
   //     schema: adminApiExtensions,
   //     resolvers: [FrequentlyBoughtTogetherAdminResolver],
