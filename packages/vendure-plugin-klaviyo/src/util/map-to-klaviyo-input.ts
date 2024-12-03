@@ -94,6 +94,9 @@ export function mapToKlaviyoOrderPlacedInput(
       RowTotal: item.RowTotal,
     })),
   };
+  if (event.discountCode) {
+    orderProperties.DiscountCode = event.discountCode;
+  }
   if (event.customProperties) {
     orderProperties.CustomProperties = event.customProperties;
   }

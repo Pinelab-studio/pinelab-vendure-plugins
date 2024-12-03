@@ -73,6 +73,7 @@ export interface KlaviyoOrderPlacedEvent extends KlaviyoGenericEvent {
    */
   totalOrderValue: number;
   orderItems: KlaviyoOrderItem[];
+  discountCode?: string;
 }
 
 /**
