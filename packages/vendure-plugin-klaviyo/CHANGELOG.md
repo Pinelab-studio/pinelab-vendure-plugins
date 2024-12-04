@@ -1,3 +1,7 @@
+# 1.2.1 (2024-12-04)
+
+- Add support for DiscountCode on Placed Order event
+
 # 1.2.0 (2024-08-14)
 
 - Allow setting multiple Klaviyo handlers for Vendure's OrderPlacedEvent
