@@ -6,6 +6,8 @@ import {
   KlaviyoOrderPlacedEventHandler,
 } from './event-handler/klaviyo-event-handler';
 import { KlaviyoService } from './klaviyo.service';
+import { KlaviyoShopResolver } from './api/klaviyo-shop.resolver';
+import { shopApiExtension } from './api/api-extensions';
 
 interface KlaviyoPluginOptionsInput {
   /**
@@ -32,6 +34,10 @@ export type KlaviyoPluginOptions = Required<KlaviyoPluginOptionsInput>;
     },
     KlaviyoService,
   ],
+  shopApiExtensions: {
+    resolvers: [KlaviyoShopResolver],
+    schema: shopApiExtension,
+  },
   compatibility: '>=2.2.0',
 })
 export class KlaviyoPlugin {

@@ -1,3 +1,7 @@
+# 1.3.0 (2024-08-14)
+
+- Add `getKlaviyoReviews` to fetch all reviews(#516)
+
 # 1.2.0 (2024-08-14)
 
 - Allow setting multiple Klaviyo handlers for Vendure's OrderPlacedEvent

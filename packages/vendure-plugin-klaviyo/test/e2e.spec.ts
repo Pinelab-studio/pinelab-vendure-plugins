@@ -16,6 +16,9 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { defaultOrderPlacedEventHandler, KlaviyoPlugin } from '../src';
 import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
+import { klaviyoReviews } from './mock-data';
+import { getAllKlaviyoReviews } from './queries';
+import { KlaviyoResponse } from '../src/ui/generated/graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -183,5 +186,22 @@ describe('Klaviyo', () => {
     expect(
       (customEvent?.data.attributes.properties as any).customTestEventProp
     ).toEqual('some information');
+  });
+
+  it('Should fetch all reviews from klavivo', async () => {
+    nock('https://a.klaviyo.com/api/')
+      .get('/reviews/', (reqBody) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        klaviyoRequests.push(reqBody);
+        return true;
+      })
+      .query(true)
+      .reply(200, klaviyoReviews)
+      .persist();
+    const { getKlaviyoReviews } = await shopClient.query<{
+      getKlaviyoReviews: KlaviyoResponse;
+    }>(getAllKlaviyoReviews);
+    expect(getKlaviyoReviews.data.length).toBe(3);
+    expect(getKlaviyoReviews.data[0]?.type).toBe('review');
   });
 });
