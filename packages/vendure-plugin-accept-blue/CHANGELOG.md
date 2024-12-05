@@ -1,3 +1,7 @@
+# 1.9.1 (2024-12-04)
+
+- Recurring amounts divided by 100
+
 # 1.9.0 (2024-11-21)
 
 - Round up `nrOfBillingCyclesLeft`, to prevent unwanted never-ending subscriptions. See #532
