@@ -187,6 +187,7 @@ export class AcceptBlueClient {
       `customers/${customerId}/recurring-schedules`,
       {
         ...input,
+        amount: input.amount / 100,
         // Accept Blue requires dates to be in 'yyyy-mm-dd' format
         next_run_date: input.next_run_date
           ? this.toDateString(input.next_run_date)
