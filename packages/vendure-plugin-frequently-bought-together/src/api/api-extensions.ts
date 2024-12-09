@@ -1,6 +1,21 @@
 import gql from 'graphql-tag';
 
-const frequentlyBoughtTogetherAdminApiExtensions = gql``;
 export const adminApiExtensions = gql`
-  ${frequentlyBoughtTogetherAdminApiExtensions}
+  type FrequentlyBoughtTogetherPreview {
+    memoryUsed: String!
+    totalItemSets: Int!
+    bestItemSets: [FrequentlyBoughtTogetherItemSet!]!
+    worstItemSets: [FrequentlyBoughtTogetherItemSet!]!
+  }
+
+  type FrequentlyBoughtTogetherItemSet {
+    items: [String!]
+    support: Float!
+  }
+
+  extend type Query {
+    previewFrequentlyBoughtTogether(
+      support: Float!
+    ): FrequentlyBoughtTogetherPreview!
+  }
 `;

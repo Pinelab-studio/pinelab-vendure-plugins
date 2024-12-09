@@ -1,0 +1,10 @@
+schema: 'src/**/*.ts'
+generates:
+  ./src/generated-graphql-types.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      avoidOptionals: false
+      scalars:
+        DateTime: Date

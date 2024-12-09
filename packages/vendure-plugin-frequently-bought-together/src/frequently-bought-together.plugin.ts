@@ -5,10 +5,14 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 
 import { FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS } from './constants';
 import { FrequentlyBoughtTogetherService } from './services/frequently-bought-together.service';
 import { PluginInitOptions } from './types';
+import path from 'path';
+import { adminApiExtensions } from './api/api-extensions';
+import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-together-admin.resolver';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -44,15 +48,17 @@ import { PluginInitOptions } from './types';
     return config;
   },
   compatibility: '>=2.2.0',
-  //   adminApiExtensions: {
-  //     schema: adminApiExtensions,
-  //     resolvers: [FrequentlyBoughtTogetherAdminResolver],
-  //   },
+  adminApiExtensions: {
+    schema: adminApiExtensions,
+    resolvers: [FrequentlyBoughtTogetherAdminResolver],
+  },
 })
 export class FrequentlyBoughtTogetherPlugin {
   static options: PluginInitOptions = {
     maxRelatedProducts: 5,
     customFieldUiTab: 'Related products',
+    experimentMode: false,
+    supportLevel: 0.01,
   };
 
   static init(
@@ -64,4 +70,9 @@ export class FrequentlyBoughtTogetherPlugin {
     };
     return FrequentlyBoughtTogetherPlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    providers: ['providers.ts'],
+  };
 }
