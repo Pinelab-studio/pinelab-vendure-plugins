@@ -27,7 +27,6 @@ export type FrequentlyBoughtTogetherItemSet = {
 export type FrequentlyBoughtTogetherPreview = {
   __typename?: 'FrequentlyBoughtTogetherPreview';
   bestItemSets: Array<FrequentlyBoughtTogetherItemSet>;
-  memoryUsed: Scalars['String'];
   totalItemSets: Scalars['Int'];
   worstItemSets: Array<FrequentlyBoughtTogetherItemSet>;
 };

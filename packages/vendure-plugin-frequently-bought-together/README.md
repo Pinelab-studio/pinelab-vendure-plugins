@@ -4,6 +4,7 @@
 
 // TODO installation
 
-// TODO preview mode + support
+// TODO experiment mode + support
+// What does support mean? nr of orders
 
-// TODO channel specific support
+// TODO channel specific support numbers

@@ -5,7 +5,7 @@ import {
   JobQueueService,
   Logger,
   OrderLine,
-  ProductVariantService,
+  ProductService,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
@@ -15,8 +15,8 @@ import {
   FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS,
   loggerCtx,
 } from '../constants';
-import { PluginInitOptions } from '../types';
 import { FrequentlyBoughtTogetherPreview } from '../generated-graphql-types';
+import { PluginInitOptions } from '../types';
 
 @Injectable()
 export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
@@ -30,7 +30,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     @Inject(FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS)
     private options: PluginInitOptions,
     private jobQueueService: JobQueueService,
-    private variantService: ProductVariantService
+    private productService: ProductService
   ) {}
 
   public async onApplicationBootstrap(): Promise<void> {
@@ -46,32 +46,30 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     ctx: RequestContext,
     support: number
   ): Promise<FrequentlyBoughtTogetherPreview> {
-    const initialMemory = process.memoryUsage().heapUsed;
     const itemSets = await this.getItemSets(ctx, support);
-    const best = itemSets.slice(-10);
-    const worst = itemSets.slice(0, 10);
-    const variantIds = [
+    const best = itemSets.slice(0, 10);
+    const worst = itemSets.slice(-10);
+    const productIds = [
       ...best.map((i) => i.items).flat(),
       ...worst.map((i) => i.items).flat(),
     ];
-    const allVariants = await this.variantService.findByIds(ctx, variantIds);
+    const allProducts = productIds.length
+      ? await this.productService.findByIds(ctx, productIds)
+      : [];
     // Replace ID's with variant names
     const bestItemSets = best.map((is) => ({
       items: is.items.map(
-        (id) => allVariants.find((v) => v.id === id)?.name || String(id)
+        (id) => allProducts.find((v) => v.id === id)?.name || String(id)
       ),
       support: is.support,
     }));
     const worstItemSets = worst.map((is) => ({
       items: is.items.map(
-        (id) => allVariants.find((v) => v.id === id)?.name || String(id)
+        (id) => allProducts.find((v) => v.id === id)?.name || String(id)
       ),
       support: is.support,
     }));
-    const finalMemory = process.memoryUsage().heapUsed;
-    const memoryUsed = finalMemory - initialMemory;
     return {
-      memoryUsed: `${memoryUsed / 1024 / 1024} MB`,
       totalItemSets: itemSets.length,
       bestItemSets,
       worstItemSets,
@@ -82,7 +80,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     ctx: RequestContext,
     support: number
   ): Promise<Itemset<ID>[]> {
-    const result: Array<{ orderId: ID; productVariant_id: ID }> =
+    const result: Array<{ orderId: ID; productVariant_productId: ID }> =
       await this.connection
         .getRepository(ctx, OrderLine)
         .createQueryBuilder('orderLine')
@@ -92,7 +90,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
         .where('order.orderPlacedAt IS NOT NULL')
         .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
         .andWhere('productVariant.deletedAt IS NULL')
-        .select(['orderLine.orderId', 'productVariant.id'])
+        .select(['orderLine.orderId', 'productVariant.productId'])
         .orderBy('order.orderPlacedAt', 'DESC')
         .limit(500000)
         .getRawMany();
@@ -100,24 +98,28 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     const transactions = new Map<ID, ID[]>();
     result.forEach((row) => {
       const transactionsForOrder = transactions.get(row.orderId) || [];
-      transactionsForOrder.push(row['productVariant_id']);
-      transactions.set(row.orderId, transactionsForOrder);
+      const productId = row['productVariant_productId'];
+      if (!transactionsForOrder.includes(productId)) {
+        // Only add if productID is not already in the list
+        transactionsForOrder.push(productId);
+        transactions.set(row.orderId, transactionsForOrder);
+      }
     });
     const matrix = Array.from(transactions.values());
     const fpgrowth = new FPGrowth<ID>(support);
     const itemSets = (await fpgrowth.exec(matrix))
       // Only combinations allowed
       .filter((is) => is.items.length > 1)
-      // Lowest support first, because if they make sense, the higher ones will too
-      .sort((a, b) => a.support - b.support);
-    const totalUniqueVariants = new Set<ID>();
+      // High to low desc
+      .sort((a, b) => b.support - a.support);
+    const totalUniqueProducts = new Set<ID>();
     itemSets.forEach((itemSet) => {
       itemSet.items.forEach((item) => {
-        totalUniqueVariants.add(item);
+        totalUniqueProducts.add(item);
       });
     });
     Logger.info(
-      `Found ${itemSets.length} item sets for ${totalUniqueVariants.size} variants from ${matrix.length} orders and ${result.length} order lines`,
+      `Found ${itemSets.length} item sets for ${totalUniqueProducts.size} variants from ${matrix.length} orders and ${result.length} order lines`,
       loggerCtx
     );
     return itemSets;

@@ -2,7 +2,6 @@ import gql from 'graphql-tag';
 
 export const adminApiExtensions = gql`
   type FrequentlyBoughtTogetherPreview {
-    memoryUsed: String!
     totalItemSets: Int!
     bestItemSets: [FrequentlyBoughtTogetherItemSet!]!
     worstItemSets: [FrequentlyBoughtTogetherItemSet!]!
@@ -10,7 +9,7 @@ export const adminApiExtensions = gql`
 
   type FrequentlyBoughtTogetherItemSet {
     items: [String!]
-    support: Float!
+    support: Int!
   }
 
   extend type Query {
