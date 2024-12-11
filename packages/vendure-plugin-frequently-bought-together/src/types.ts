@@ -1,4 +1,5 @@
-import { RequestContext } from '@vendure/core';
+import { ID, RequestContext } from '@vendure/core';
+import { Itemset } from 'node-fpgrowth';
 
 /**
  * @description
@@ -25,4 +26,10 @@ export interface PluginInitOptions {
    * Should be between 0 and 1
    */
   supportLevel: number | ((ctx: RequestContext) => number);
+}
+
+export interface FrequentlyBoughtTogetherCalculationResult {
+  itemSets: Itemset<ID>[];
+  maxMemoryUsedInMB: number;
+  uniqueProducts: number;
 }

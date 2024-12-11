@@ -35,16 +35,17 @@ require('dotenv').config();
     plugins: [
       FrequentlyBoughtTogetherPlugin.init({
         experimentMode: true,
+        supportLevel: 0.001,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [FrequentlyBoughtTogetherPlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [FrequentlyBoughtTogetherPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
   });
@@ -59,10 +60,36 @@ require('dotenv').config();
         },
       ],
     },
-    productsCsvPath: '../test/src/products-import.csv',
+    productsCsvPath: './test/products-import.csv',
   });
 
-  await createSettledOrder(shopClient, 1);
-  await createSettledOrder(shopClient, 1);
   await createSettledOrder(shopClient, 1, true, [{ id: 'T_1', quantity: 10 }]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_5', quantity: 10 },
+    { id: 'T_1', quantity: 10 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_5', quantity: 10 },
+    { id: 'T_1', quantity: 10 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_5', quantity: 10 },
+    { id: 'T_1', quantity: 10 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_6', quantity: 10 },
+    { id: 'T_10', quantity: 10 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_6', quantity: 10 },
+    { id: 'T_10', quantity: 10 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_6', quantity: 10 },
+    { id: 'T_10', quantity: 10 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_6', quantity: 10 },
+    { id: 'T_10', quantity: 10 },
+  ]);
 })();

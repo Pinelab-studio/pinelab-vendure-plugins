@@ -34,7 +34,7 @@ beforeAll(async () => {
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
   const serverStart = server.init({
     initialData: initialData as InitialData,
-    productsCsvPath: '../test/src/products-import.csv',
+    productsCsvPath: './test/products-import.csv',
   });
   await expect(serverStart).resolves.toEqual(undefined);
 }, 60000);

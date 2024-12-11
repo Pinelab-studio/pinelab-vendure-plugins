@@ -18,21 +18,47 @@ export type Scalars = {
   Float: number;
 };
 
+/**
+ * An item set with a support value.
+ * An item set is a combination of products which are frequently bought together, e.g. ['product-1', 'product-2', 'product-3']
+ * Support is the number of orders this combination was in
+ */
 export type FrequentlyBoughtTogetherItemSet = {
   __typename?: 'FrequentlyBoughtTogetherItemSet';
   items?: Maybe<Array<Scalars['String']>>;
-  support: Scalars['Float'];
+  support: Scalars['Int'];
 };
 
 export type FrequentlyBoughtTogetherPreview = {
   __typename?: 'FrequentlyBoughtTogetherPreview';
+  /** The item sets with the most support */
   bestItemSets: Array<FrequentlyBoughtTogetherItemSet>;
+  /**
+   * The max memory used during the calculation.
+   * Make sure this doesn't exceed your worker's memory limit.
+   * process.memoryUsage().rss is used to calculate this.
+   */
+  maxMemoryUsedInMB: Scalars['Int'];
+  /** The total number of sets found.  */
   totalItemSets: Scalars['Int'];
+  /** The number of unique products for which a related product was found */
+  uniqueProducts: Scalars['Int'];
+  /** The item sets with the worst support. If these make sense, the others probably do too. */
   worstItemSets: Array<FrequentlyBoughtTogetherItemSet>;
+};
+
+export type Mutation = {
+  __typename?: 'Mutation';
+  /** Trigger the job to calculate and set frequently bought together products. */
+  triggerFrequentlyBoughtTogetherCalculation: Scalars['Boolean'];
 };
 
 export type Query = {
   __typename?: 'Query';
+  /**
+   * Preview the frequently bought together item sets,
+   * to check what level of support is reasonable for your data set
+   */
   previewFrequentlyBoughtTogether: FrequentlyBoughtTogetherPreview;
 };
 

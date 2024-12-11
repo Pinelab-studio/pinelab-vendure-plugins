@@ -2,6 +2,7 @@ import {
   addActionBarDropdownMenuItem,
   ModalService,
 } from '@vendure/admin-ui/core';
+import gql from 'graphql-tag';
 
 export default [
   addActionBarDropdownMenuItem({
@@ -10,7 +11,24 @@ export default [
     locationId: 'product-list',
     icon: 'switch',
     onClick: async (event, { dataService, notificationService, injector }) => {
-      console.log('Generate frequently-bought-together products');
+      dataService
+        .mutate(
+          gql`
+            mutation TriggerFrequentlyBoughtTogetherCalculation {
+              triggerFrequentlyBoughtTogetherCalculation
+            }
+          `
+        )
+        .subscribe({
+          next: () => {
+            notificationService.success('Calculation triggered');
+          },
+          error: (err) => {
+            notificationService.error(
+              `Error starting calculation: ${err.message}`
+            );
+          },
+        });
     },
   }),
 ];
