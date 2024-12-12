@@ -1,1 +1,5 @@
+# Owner of repository
 * @martijnvdbrug
+
+# IS Outfitters have the ability to approve and merge eachothers PR's for Accept Blue
+/packages/vendure-plugin-accept-blue/ @is0utfitters @mschipperheyn
