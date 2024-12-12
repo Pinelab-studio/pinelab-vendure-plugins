@@ -56,7 +56,7 @@ export type FrequentlyBoughtTogetherPluginOptions = Partial<
         {
           languageCode: LanguageCode.en,
           value:
-            'Products which are frequently bought together with these products',
+            'Products that are frequently bought together with the current product',
         },
       ],
       list: true,
