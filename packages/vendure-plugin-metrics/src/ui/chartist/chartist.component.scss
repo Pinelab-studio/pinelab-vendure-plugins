@@ -31,6 +31,10 @@
     transform-origin: 100% 0;
     transform: translate(-100%) rotate(-45deg);
     white-space: nowrap;
+    color: var(--clr-label-info-font-color);
+  }
+  .ct-label.ct-vertical.ct-start {
+    color: var(--clr-label-info-font-color);
   }
   .ct-series-a .ct-slice-pie,
   .ct-series-a .ct-area {
