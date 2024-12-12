@@ -25,6 +25,11 @@ import {
 import { asError } from 'catch-unknown';
 import { FrequentlyBoughtTogetherShopResolver } from './api/frequently-bought-together-shop.resolver';
 
+export type FrequentlyBoughtTogetherPluginOptions = Partial<
+  Omit<PluginInitOptions, 'hasValidLicense'>
+> &
+  Pick<PluginInitOptions, 'licenseKey'>;
+
 /**
  * Increase revenue by cross selling frequently bought together products.
  *
@@ -122,7 +127,7 @@ export class FrequentlyBoughtTogetherPlugin implements OnApplicationBootstrap {
   }
 
   static init(
-    options: Partial<Omit<PluginInitOptions, 'hasValidLicense'>>
+    options: FrequentlyBoughtTogetherPluginOptions
   ): Type<FrequentlyBoughtTogetherPlugin> {
     this.options = {
       ...this.options,

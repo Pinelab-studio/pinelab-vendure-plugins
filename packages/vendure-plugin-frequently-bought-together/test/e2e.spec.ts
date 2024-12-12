@@ -32,7 +32,11 @@ beforeAll(async () => {
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
-    plugins: [FrequentlyBoughtTogetherPlugin.init({})],
+    plugins: [
+      FrequentlyBoughtTogetherPlugin.init({
+        licenseKey: '123',
+      }),
+    ],
   });
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
   const serverStart = server.init({
