@@ -1,6 +1,6 @@
 {
   "name": "@vendure-hub/pinelab-frequently-bought-together-plugin",
-  "version": "0.0.2",
+  "version": "1.0.0",
   "description": "Increase average order value by suggesting frequently bought together products based on past orders. Also known as related products or product recommendations.",
   "keywords": [
     "frequently bought together",
