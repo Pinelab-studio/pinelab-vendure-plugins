@@ -153,23 +153,31 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     if (!product.customFields.frequentlyBoughtWith) {
       return [];
     }
-    const supportPerProduct: Partial<Support>[] = JSON.parse(
-      product.customFields.frequentlyBoughtWithSupport || '[]'
-    );
-    if (!Array.isArray(supportPerProduct)) {
+    try {
+      const supportPerProduct: Partial<Support>[] = JSON.parse(
+        product.customFields.frequentlyBoughtWithSupport || '[]'
+      );
+      if (!Array.isArray(supportPerProduct)) {
+        Logger.error(
+          `product.customFields.frequentlyBoughtWithSupport for product '${product.id}' is not an array`,
+          loggerCtx
+        );
+        return [];
+      }
+      return product.customFields.frequentlyBoughtWith?.sort((a, b) => {
+        const supportA =
+          supportPerProduct.find((s) => s.productId === a.id)?.support || 0;
+        const supportB =
+          supportPerProduct.find((s) => s.productId === b.id)?.support || 0;
+        return supportB - supportA;
+      });
+    } catch (e) {
       Logger.error(
-        `product.customFields.frequentlyBoughtWithSupport for product '${product.id}' is not an array`,
+        `Failed to get sorted products: ${asError(e).message}`,
         loggerCtx
       );
       return [];
     }
-    return product.customFields.frequentlyBoughtWith?.sort((a, b) => {
-      const supportA =
-        supportPerProduct.find((s) => s.productId === a.id)?.support || 0;
-      const supportB =
-        supportPerProduct.find((s) => s.productId === b.id)?.support || 0;
-      return supportB - supportA;
-    });
   }
 
   private async getItemSets(

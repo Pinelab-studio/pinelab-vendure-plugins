@@ -25,7 +25,7 @@ export type Scalars = {
  */
 export type FrequentlyBoughtTogetherItemSet = {
   __typename?: 'FrequentlyBoughtTogetherItemSet';
-  items?: Maybe<Array<Scalars['String']>>;
+  items: Array<Scalars['String']>;
   support: Scalars['Int'];
 };
 
