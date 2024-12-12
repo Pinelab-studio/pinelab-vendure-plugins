@@ -14,6 +14,10 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import { FrequentlyBoughtTogetherPlugin } from '../src';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 require('dotenv').config();
 
@@ -25,20 +29,55 @@ require('dotenv').config();
       shopApiPlayground: true,
       adminApiPlayground: true,
     },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
     plugins: [
       FrequentlyBoughtTogetherPlugin.init({
-        maxRelatedProducts: 10,
+        licenseKey: `123`,
+        experimentMode: true,
+        supportLevel: 0.001,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [FrequentlyBoughtTogetherPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({
-    initialData: initialData as InitialData,
-    productsCsvPath: '../test/src/products-import.csv',
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
+    productsCsvPath: './test/products-import.csv',
   });
+
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_2', quantity: 1 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_3', quantity: 1 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_3', quantity: 1 },
+  ]);
+  await createSettledOrder(shopClient, 1, true, [
+    { id: 'T_2', quantity: 1 },
+    { id: 'T_3', quantity: 1 },
+  ]);
 })();
