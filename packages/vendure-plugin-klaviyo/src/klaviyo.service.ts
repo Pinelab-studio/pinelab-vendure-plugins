@@ -164,7 +164,11 @@ export class KlaviyoService implements OnApplicationBootstrap {
 
   // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars -- In future implementation we can make this channel aware, where the API key is stored in the DB per channel
   async getKlaviyoApi(ctx: RequestContext): Promise<EventsApi> {
-    const session = new ApiKeySession(this.options.apiKey);
+    const apiKey =
+      typeof this.options.apiKey === 'function'
+        ? this.options.apiKey(ctx)
+        : this.options.apiKey;
+    const session = new ApiKeySession(apiKey);
     return new EventsApi(session);
   }
 

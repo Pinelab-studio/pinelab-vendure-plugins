@@ -1,3 +1,7 @@
+# 1.3.0 (2024-12-12)
+
+- Allow setting an apiKey per channel
+
 # 1.2.1 (2024-12-04)
 
 - Add support for DiscountCode on Placed Order event

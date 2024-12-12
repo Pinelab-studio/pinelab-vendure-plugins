@@ -1,4 +1,8 @@
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import {
+  PluginCommonModule,
+  RequestContext,
+  VendurePlugin,
+} from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { defaultOrderPlacedEventHandler } from './event-handler/default-order-placed-event-handler';
 import {
@@ -11,7 +15,7 @@ interface KlaviyoPluginOptionsInput {
   /**
    * Private API key from your Klaviyo dashboard
    */
-  apiKey: string;
+  apiKey: string | ((ctx: RequestContext) => string);
   /**
    * Map a Vendure event to a Klaviyo event.
    */
