@@ -30,7 +30,7 @@ export class FrequentlyBoughtTogetherAdminResolver {
   ): Promise<FrequentlyBoughtTogetherPreview> {
     if (!this.options.experimentMode) {
       throw new UserInputError(
-        `This query is only available in experiment mode. Set 'expirementMode: true' in plugin's init()`
+        `This query is only available in experiment mode. Set 'experementMode: true' in plugin's init()`
       );
     }
     return await this.frequentlyBoughtTogetherService.previewItemSets(

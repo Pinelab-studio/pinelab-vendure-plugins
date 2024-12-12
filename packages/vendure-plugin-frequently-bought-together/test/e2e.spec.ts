@@ -114,15 +114,18 @@ it('Triggers bought together calculation via admin API', async () => {
       }
     `
   );
-});
-
-it('Get sorted relations via shop API', async () => {
   // We have to wait for async job processing to complete
-  const product1 = await waitFor(async () => {
+  await waitFor(async () => {
     const { product } = await shopClient.query(GetProductById, { id: 'T_1' });
     if (product.frequentlyBoughtWith.length >= 2) {
       return product;
     }
+  });
+});
+
+it('Get sorted relations via shop API', async () => {
+  const { product: product1 } = await shopClient.query(GetProductById, {
+    id: 'T_1',
   });
   // Should get [3,2] for T_1
   expect(product1.frequentlyBoughtWith.length).toBe(2);

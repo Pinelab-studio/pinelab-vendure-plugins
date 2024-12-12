@@ -66,11 +66,11 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
   async createFrequentlyBoughtTogetherRelations(
     ctx: RequestContext
   ): Promise<number> {
-    const suport =
+    const support =
       typeof this.options.supportLevel === 'function'
         ? this.options.supportLevel(ctx)
         : this.options.supportLevel;
-    const { itemSets, uniqueProducts } = await this.getItemSets(ctx, suport);
+    const { itemSets, uniqueProducts } = await this.getItemSets(ctx, support);
     const relatedProductsPerProduct = getRelatedProductsPerProduct(
       itemSets,
       this.options.maxRelatedProducts

@@ -32,7 +32,7 @@ export const adminApiExtensions = gql`
   Support is the number of orders this combination was in
   """
   type FrequentlyBoughtTogetherItemSet {
-    items: [String!]
+    items: [String!]!
     support: Int!
   }
 
