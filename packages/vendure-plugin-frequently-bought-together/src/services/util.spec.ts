@@ -18,10 +18,25 @@ describe('getRelatedProductsPerProduct', () => {
       },
     ];
     const result = getRelatedProductsPerProduct(itemSets);
-    // Should yield this specific order, because it should sort by support level
-    expect(result.get(1)).toEqual([3, 4, 2]);
-    expect(result.get(2)).toEqual([3, 4, 1]);
-    expect(result.get(3)).toEqual([2, 4, 1]);
-    expect(result.get(4)).toEqual([2, 3, 1]);
+    expect(result.get(1)).toEqual([
+      { productId: 3, support: 3 },
+      { productId: 4, support: 3 },
+      { productId: 2, support: 1 },
+    ]);
+    expect(result.get(2)).toEqual([
+      { productId: 3, support: 99 },
+      { productId: 4, support: 99 },
+      { productId: 1, support: 1 },
+    ]);
+    expect(result.get(3)).toEqual([
+      { productId: 2, support: 99 },
+      { productId: 4, support: 99 },
+      { productId: 1, support: 3 },
+    ]);
+    expect(result.get(4)).toEqual([
+      { productId: 2, support: 99 },
+      { productId: 3, support: 99 },
+      { productId: 1, support: 3 },
+    ]);
   });
 });

@@ -1,15 +1,19 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import {
+  EntityHydrator,
   ID,
   JobQueue,
   JobQueueService,
   Logger,
   OrderLine,
+  Product,
   ProductService,
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import { FPGrowth } from 'node-fpgrowth';
 import {
   FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS,
@@ -19,6 +23,7 @@ import { FrequentlyBoughtTogetherPreview } from '../generated-graphql-types';
 import {
   FrequentlyBoughtTogetherCalculationResult,
   PluginInitOptions,
+  Support,
 } from '../types';
 import { getRelatedProductsPerProduct } from './util';
 
@@ -33,7 +38,8 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     @Inject(FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS)
     private options: PluginInitOptions,
     private jobQueueService: JobQueueService,
-    private productService: ProductService
+    private productService: ProductService,
+    private entityHydrator: EntityHydrator
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -42,7 +48,15 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
       process: async (job) =>
         this.createFrequentlyBoughtTogetherRelations(
           RequestContext.deserialize(job.data.ctx)
-        ),
+        ).catch((e) => {
+          Logger.error(
+            `Failed to calculate frequently bought together relations: ${
+              asError(e).message
+            }`,
+            loggerCtx
+          );
+          throw e;
+        }),
     });
   }
 
@@ -60,23 +74,26 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
     const relatedProductsPerProduct = getRelatedProductsPerProduct(itemSets);
     for (const [
       productId,
-      relatedProductIds,
+      supportPerProduct,
     ] of relatedProductsPerProduct.entries()) {
-      await this.productService.update(ctx, {
+      await this.connection.getRepository(ctx, Product).save({
         id: productId,
         customFields: {
-          frequentlyBoughtWithIds: relatedProductIds,
+          frequentlyBoughtWith: supportPerProduct.map((s) => ({
+            id: s.productId,
+          })),
+          frequentlyBoughtWithSupport: JSON.stringify(supportPerProduct),
         },
       });
       Logger.debug(
-        `Set frequently bought together products for '${productId}' to [${relatedProductIds.join(
-          ','
-        )}]`,
+        `Set frequently bought together products for '${productId}' to [${supportPerProduct
+          .map((s) => s.productId)
+          .join(',')}]`,
         loggerCtx
       );
     }
     Logger.info(
-      `Set frequently bought together products for ${relatedProductsPerProduct.size} products`,
+      `Set frequently bought together relations for ${relatedProductsPerProduct.size} products`,
       loggerCtx
     );
     return uniqueProducts;
@@ -117,6 +134,39 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
       bestItemSets,
       worstItemSets,
     };
+  }
+
+  /**
+   * Sort the related products by their support level,
+   * so that the most frequently bought together products are first
+   */
+  async getSortedProducts(
+    ctx: RequestContext,
+    product: Product
+  ): Promise<Product[]> {
+    await this.entityHydrator.hydrate(ctx, product, {
+      relations: ['customFields.frequentlyBoughtWith'],
+    });
+    if (!product.customFields.frequentlyBoughtWith) {
+      return [];
+    }
+    const supportPerProduct: Partial<Support>[] = JSON.parse(
+      product.customFields.frequentlyBoughtWithSupport || '[]'
+    );
+    if (!Array.isArray(supportPerProduct)) {
+      Logger.error(
+        `product.customFields.frequentlyBoughtWithSupport for product '${product.id}' is not an array`,
+        loggerCtx
+      );
+      return [];
+    }
+    return product.customFields.frequentlyBoughtWith?.sort((a, b) => {
+      const supportA =
+        supportPerProduct.find((s) => s.productId === a.id)?.support || 0;
+      const supportB =
+        supportPerProduct.find((s) => s.productId === b.id)?.support || 0;
+      return supportB - supportA;
+    });
   }
 
   private async getItemSets(
@@ -185,7 +235,7 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
    * Create a job to calculate frequently bought together products
    */
   async triggerCalculation(ctx: RequestContext): Promise<boolean> {
-    await this.jobQueue.add({ ctx: ctx.serialize() });
+    await this.jobQueue.add({ ctx: ctx.serialize() }, { retries: 5 });
     return true;
   }
 }

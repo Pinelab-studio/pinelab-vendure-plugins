@@ -1,6 +1,7 @@
 // TODO
 
 - Check order of relations
+- License check
 
 # Frequently Bought Together Plugin
 
@@ -10,7 +11,7 @@ This plugin finds products that are often bought together by looking at past ord
 
 ## Installation
 
-To install the plugin, add it to your Vendure config and include its Admin UI extension in the Admin UI plugin:
+1. To install the plugin, add it to your Vendure config and include its Admin UI extension in the Admin UI plugin:
 
 ```ts
 import { FrequentlyBoughtTogetherPlugin } from '@vendure-hub/pinelab-frequently-bought-together-plugin';
@@ -35,29 +36,29 @@ const vendureConfig = {
 };
 ```
 
+2. Run a database migration to add the custom fields to your database.
+
 ## Storefront usage
 
 You can get the related product via the shop API with the following query:
 
 ```graphql
 {
-  product(id: 1) {
+  product(id: 2) {
     id
     name
-    customFields {
-      frequentlyBoughtWith {
-        id
-        name
-        slug
-        variants {
-          sku
-          priceWithTax
-        }
-      }
+    slug
+    frequentlyBoughtWith {
+      id
+      name
+      slug
     }
   }
 }
 ```
+
+Product relations in the Shop API are sorted by support, meaning that the most bought together products will appear first in the list.
+The admin UI shows relations in random order due to the unordered nature of SQL relations.
 
 ## Experiment mode
 

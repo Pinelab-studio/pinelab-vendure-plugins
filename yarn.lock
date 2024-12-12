@@ -5540,7 +5540,7 @@
 
 "@vendure-hub/vendure-hub-plugin@^0.0.2":
   version "0.0.2"
-  resolved "https://registry.next.vendure.io/@vendure-hub/vendure-hub-plugin/-/vendure-hub-plugin-0.0.2.tgz"
+  resolved "https://registry.vendure.io/@vendure-hub/vendure-hub-plugin/-/vendure-hub-plugin-0.0.2.tgz#6fc261f9121b353941fa4ff3a475e332035680ad"
   integrity sha512-SmZ/HiQlVWkcVEErinW5MJIBHp9VCjH8F31Iyyynta1/kusD6h1m8KLCxeUFEvmuAMfzSOERMMqfNqMtpJ1UVA==
   dependencies:
     node-fetch "^2.6.1"

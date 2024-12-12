@@ -17,11 +17,9 @@ export const GetProductById = gql`
   query GetProduct($id: ID!) {
     product(id: $id) {
       id
-      customFields {
-        frequentlyBoughtWith {
-          id
-          name
-        }
+      frequentlyBoughtWith {
+        id
+        name
       }
     }
   }

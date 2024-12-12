@@ -39,7 +39,7 @@ export type FrequentlyBoughtTogetherPreview = {
    * process.memoryUsage().rss is used to calculate this.
    */
   maxMemoryUsedInMB: Scalars['Int'];
-  /** The total number of sets found.  */
+  /** The total number of sets found. */
   totalItemSets: Scalars['Int'];
   /** The number of unique products for which a related product was found */
   uniqueProducts: Scalars['Int'];
@@ -51,6 +51,11 @@ export type Mutation = {
   __typename?: 'Mutation';
   /** Trigger the job to calculate and set frequently bought together products. */
   triggerFrequentlyBoughtTogetherCalculation: Scalars['Boolean'];
+};
+
+export type Product = {
+  __typename?: 'Product';
+  frequentlyBoughtWith: Array<Product>;
 };
 
 export type Query = {

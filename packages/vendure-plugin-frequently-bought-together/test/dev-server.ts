@@ -63,33 +63,20 @@ require('dotenv').config();
     productsCsvPath: './test/products-import.csv',
   });
 
-  await createSettledOrder(shopClient, 1, true, [{ id: 'T_1', quantity: 10 }]);
   await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_5', quantity: 10 },
-    { id: 'T_1', quantity: 10 },
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_2', quantity: 1 },
   ]);
   await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_5', quantity: 10 },
-    { id: 'T_1', quantity: 10 },
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_3', quantity: 1 },
   ]);
   await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_5', quantity: 10 },
-    { id: 'T_1', quantity: 10 },
+    { id: 'T_1', quantity: 1 },
+    { id: 'T_3', quantity: 1 },
   ]);
   await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_6', quantity: 10 },
-    { id: 'T_10', quantity: 10 },
-  ]);
-  await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_6', quantity: 10 },
-    { id: 'T_10', quantity: 10 },
-  ]);
-  await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_6', quantity: 10 },
-    { id: 'T_10', quantity: 10 },
-  ]);
-  await createSettledOrder(shopClient, 1, true, [
-    { id: 'T_6', quantity: 10 },
-    { id: 'T_10', quantity: 10 },
+    { id: 'T_2', quantity: 1 },
+    { id: 'T_3', quantity: 1 },
   ]);
 })();

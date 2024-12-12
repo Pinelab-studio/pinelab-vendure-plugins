@@ -1,5 +1,6 @@
 import {
   LanguageCode,
+  Logger,
   PluginCommonModule,
   Product,
   Type,
@@ -7,15 +8,30 @@ import {
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 
-import { FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS } from './constants';
+import {
+  FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS,
+  loggerCtx,
+} from './constants';
 import { FrequentlyBoughtTogetherService } from './services/frequently-bought-together.service';
 import { PluginInitOptions } from './types';
 import path from 'path';
-import { adminApiExtensions } from './api/api-extensions';
+import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-together-admin.resolver';
+import { OnApplicationBootstrap } from '@nestjs/common';
+import {
+  LicenseService,
+  VendureHubPlugin,
+} from '@vendure-hub/vendure-hub-plugin';
+import { asError } from 'catch-unknown';
+import { FrequentlyBoughtTogetherShopResolver } from './api/frequently-bought-together-shop.resolver';
 
+/**
+ * Increase revenue by cross selling frequently bought together products.
+ *
+ * @category Plugin
+ */
 @VendurePlugin({
-  imports: [PluginCommonModule],
+  imports: [PluginCommonModule, VendureHubPlugin],
   providers: [
     {
       provide: FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS,
@@ -24,6 +40,7 @@ import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-t
     FrequentlyBoughtTogetherService,
   ],
   configuration: (config) => {
+    // Set custom product to product relation
     config.customFields.Product.push({
       name: 'frequentlyBoughtWith',
       type: 'relation',
@@ -39,11 +56,19 @@ import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-t
       ],
       list: true,
       entity: Product,
-      public: true,
+      public: false,
       readonly: false,
       eager: false,
       nullable: true,
       ui: { tab: FrequentlyBoughtTogetherPlugin.options.customFieldUiTab },
+    });
+    // Set custom field for storing the support per product
+    config.customFields.Product.push({
+      name: 'frequentlyBoughtWithSupport',
+      type: 'text',
+      internal: true,
+      public: false,
+      nullable: true,
     });
     return config;
   },
@@ -52,17 +77,52 @@ import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-t
     schema: adminApiExtensions,
     resolvers: [FrequentlyBoughtTogetherAdminResolver],
   },
+  shopApiExtensions: {
+    schema: shopApiExtensions,
+    resolvers: [FrequentlyBoughtTogetherShopResolver],
+  },
 })
-export class FrequentlyBoughtTogetherPlugin {
+export class FrequentlyBoughtTogetherPlugin implements OnApplicationBootstrap {
   static options: PluginInitOptions = {
-    maxRelatedProducts: 5,
+    licenseKey: '',
     customFieldUiTab: 'Related products',
     experimentMode: false,
     supportLevel: 0.01,
+    hasValidLicense: false,
   };
 
+  constructor(private licenseService: LicenseService) {}
+
+  onApplicationBootstrap() {
+    this.licenseService
+      .checkLicenseKey(
+        FrequentlyBoughtTogetherPlugin.options.licenseKey,
+        '@vendure-hub/pinelab-frequently-bought-together-plugin'
+      )
+      .then((result) => {
+        if (!result.valid) {
+          Logger.error(
+            `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin.`,
+            loggerCtx
+          );
+          FrequentlyBoughtTogetherPlugin.options.hasValidLicense = false;
+        } else {
+          FrequentlyBoughtTogetherPlugin.options.hasValidLicense = true;
+        }
+      })
+      .catch((err) => {
+        Logger.error(
+          `Error checking license key: ${
+            asError(err).message
+          }. Some functionality might be disabled`,
+          loggerCtx
+        );
+        FrequentlyBoughtTogetherPlugin.options.hasValidLicense = false;
+      });
+  }
+
   static init(
-    options: Partial<PluginInitOptions>
+    options: Partial<Omit<PluginInitOptions, 'hasValidLicense'>>
   ): Type<FrequentlyBoughtTogetherPlugin> {
     this.options = {
       ...this.options,

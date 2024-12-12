@@ -7,10 +7,10 @@ import { Itemset } from 'node-fpgrowth';
  */
 export interface PluginInitOptions {
   /**
-   * The maximum number of related products that are automatically added.
-   * Manual selection can exceed this limit
+   * @description
+   * License key obtained from the Vendure Hub
    */
-  maxRelatedProducts: number;
+  licenseKey: string;
   /**
    * Defines in what tab the custom field should be displayed in the admin UI.
    * Can be an existing tab.
@@ -26,10 +26,16 @@ export interface PluginInitOptions {
    * Should be between 0 and 1
    */
   supportLevel: number | ((ctx: RequestContext) => number);
+  hasValidLicense: boolean;
 }
 
 export interface FrequentlyBoughtTogetherCalculationResult {
   itemSets: Itemset<ID>[];
   maxMemoryUsedInMB: number;
   uniqueProducts: number;
+}
+
+export interface Support {
+  productId: ID;
+  support: number;
 }

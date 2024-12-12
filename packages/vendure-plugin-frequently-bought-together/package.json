@@ -25,13 +25,14 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn generate && tsc",
+    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "start": "yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen --config codegen.yml",
     "test": "vitest run --bail 1",
     "lint": "eslint ."
   },
   "dependencies": {
+    "@vendure-hub/vendure-hub-plugin": "^0.0.2",
     "catch-unknown": "^2.0.0",
     "node-fpgrowth": "^1.2.1"
   }

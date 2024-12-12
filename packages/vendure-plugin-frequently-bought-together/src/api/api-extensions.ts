@@ -53,3 +53,9 @@ export const adminApiExtensions = gql`
     triggerFrequentlyBoughtTogetherCalculation: Boolean!
   }
 `;
+
+export const shopApiExtensions = gql`
+  extend type Product {
+    frequentlyBoughtWith: [Product!]!
+  }
+`;
