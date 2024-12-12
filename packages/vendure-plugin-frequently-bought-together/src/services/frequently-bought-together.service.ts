@@ -71,7 +71,10 @@ export class FrequentlyBoughtTogetherService implements OnApplicationBootstrap {
         ? this.options.supportLevel(ctx)
         : this.options.supportLevel;
     const { itemSets, uniqueProducts } = await this.getItemSets(ctx, suport);
-    const relatedProductsPerProduct = getRelatedProductsPerProduct(itemSets);
+    const relatedProductsPerProduct = getRelatedProductsPerProduct(
+      itemSets,
+      this.options.maxRelatedProducts
+    );
     for (const [
       productId,
       supportPerProduct,

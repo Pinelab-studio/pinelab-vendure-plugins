@@ -93,6 +93,7 @@ export class FrequentlyBoughtTogetherPlugin implements OnApplicationBootstrap {
     customFieldUiTab: 'Related products',
     experimentMode: false,
     supportLevel: 0.01,
+    maxRelatedProducts: 10,
     hasValidLicense: false,
   };
 

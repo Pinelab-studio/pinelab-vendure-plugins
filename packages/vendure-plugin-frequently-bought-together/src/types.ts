@@ -27,6 +27,10 @@ export interface PluginInitOptions {
    */
   supportLevel: number | ((ctx: RequestContext) => number);
   hasValidLicense: boolean;
+  /**
+   * The maximum number of related products to store per product
+   */
+  maxRelatedProducts: number;
 }
 
 export interface FrequentlyBoughtTogetherCalculationResult {
