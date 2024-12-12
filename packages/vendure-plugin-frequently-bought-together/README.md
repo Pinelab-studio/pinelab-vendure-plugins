@@ -2,7 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-frequently-bought-together)
 
-This plugin finds products that are often bought together by looking at past orders. You can integrate these frequently bought together products on your storefront, and increase your average order value.
+This plugin finds products that are often bought together by looking at past orders. You can integrate these frequently bought together products on your storefront, and so increase your revenue.
 
 ## Installation
 
