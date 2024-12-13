@@ -16,7 +16,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { defaultOrderPlacedEventHandler, KlaviyoPlugin } from '../src';
 import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
-import { CheckoutStartedEvent } from '../src/';
+import { CheckoutStartedEvent, startedCheckoutHandler } from '../src/';
 import gql from 'graphql-tag';
 
 let server: TestServer;
@@ -32,6 +32,7 @@ beforeAll(async () => {
         apiKey: 'some_private_api_key',
         eventHandlers: [
           defaultOrderPlacedEventHandler,
+          startedCheckoutHandler,
           mockOrderPlacedHandler,
           mockCustomEventHandler,
         ],
@@ -194,6 +195,15 @@ describe('Klaviyo', () => {
       'test'
     );
     await addItem(shopClient, 'T_1', 1);
+    // Mock API response
+    nock('https://a.klaviyo.com/api/')
+      .post('/events/', (reqBody) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        klaviyoRequests.push(reqBody);
+        return true;
+      })
+      .reply(200, {})
+      .persist();
     const events: CheckoutStartedEvent[] = [];
     server.app
       .get(EventBus)
@@ -206,6 +216,8 @@ describe('Klaviyo', () => {
         }
       `
     );
+    // Give worker some time to send event to klaviyo
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     const checkoutStartedEvent = klaviyoRequests.find(
       (r) =>
         r.data.attributes.metric.data.attributes.name === 'Checkout Started'

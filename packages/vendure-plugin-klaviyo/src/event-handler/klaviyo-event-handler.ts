@@ -28,7 +28,7 @@ export interface KlaviyoOrderItem {
   excludeFromOrderedProductEvent?: boolean;
 }
 
-type CustomProperties = Record<string, string | string[] | number | boolean>;
+type CustomProperties = Record<string, unknown>;
 
 /**
  * Use this interface to define custom events for Klaviyo.

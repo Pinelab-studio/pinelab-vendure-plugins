@@ -1,7 +1,7 @@
 import {
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
-} from '@pinelab/vendure-plugin-klaviyo';
+} from '../event-handler/klaviyo-event-handler';
 import { EntityHydrator, Logger } from '@vendure/core';
 import { CheckoutStartedEvent } from '../service/checkout-started-event';
 import { loggerCtx } from '../constants';
