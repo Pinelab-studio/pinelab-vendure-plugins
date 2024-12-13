@@ -15,7 +15,7 @@ interface KlaviyoPluginOptionsInput {
   /**
    * Private API key from your Klaviyo dashboard
    */
-  apiKey: string | ((ctx: RequestContext) => string);
+  apiKey: string | ((ctx: RequestContext) => string | undefined);
   /**
    * Map a Vendure event to a Klaviyo event.
    */
