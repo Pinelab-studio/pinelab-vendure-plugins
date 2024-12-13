@@ -1,4 +1,4 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -11,11 +11,13 @@ import { EventCreateQueryV2 } from 'klaviyo-api';
 import nock from 'nock';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { defaultOrderPlacedEventHandler, KlaviyoPlugin } from '../src';
 import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
+import { CheckoutStartedEvent } from '../src/';
+import gql from 'graphql-tag';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -183,5 +185,35 @@ describe('Klaviyo', () => {
     expect(
       (customEvent?.data.attributes.properties as any).customTestEventProp
     ).toEqual('some information');
+  });
+
+  it('Emits CheckoutStartedEvent on calling checkoutStarted() mutation', async () => {
+    // Create active order
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    await addItem(shopClient, 'T_1', 1);
+    const events: CheckoutStartedEvent[] = [];
+    server.app
+      .get(EventBus)
+      .ofType(CheckoutStartedEvent)
+      .subscribe((e) => events.push(e));
+    await shopClient.query(
+      gql`
+        mutation {
+          klaviyoCheckoutStarted
+        }
+      `
+    );
+    const checkoutStartedEvent = klaviyoRequests.find(
+      (r) => (r) =>
+        r.data.attributes.metric.data.attributes.name === 'Checkout Started'
+    );
+    expect(events[0].order.id).toBeDefined();
+    const profile = checkoutStartedEvent?.data.attributes.profile.data
+      .attributes as any;
+    expect(profile.email).toBe('hayden.zieme12@hotmail.com');
+    expect(checkoutStartedEvent).toBeDefined();
   });
 });

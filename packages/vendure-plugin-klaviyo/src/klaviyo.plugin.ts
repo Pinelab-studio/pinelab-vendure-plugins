@@ -9,7 +9,10 @@ import {
   KlaviyoEventHandler,
   KlaviyoOrderPlacedEventHandler,
 } from './event-handler/klaviyo-event-handler';
-import { KlaviyoService } from './klaviyo.service';
+import { KlaviyoService } from './service/klaviyo.service';
+import { KlaviyoShopResolver } from './api/klaviyo-shop-resolver';
+import { shopApiExtensions } from './api/api-extensions';
+import { startedCheckoutHandler } from './event-handler/checkout-started-event-handler';
 
 interface KlaviyoPluginOptionsInput {
   /**
@@ -36,6 +39,10 @@ export type KlaviyoPluginOptions = Required<KlaviyoPluginOptionsInput>;
     },
     KlaviyoService,
   ],
+  shopApiExtensions: {
+    resolvers: [KlaviyoShopResolver],
+    schema: shopApiExtensions,
+  },
   compatibility: '>=2.2.0',
 })
 export class KlaviyoPlugin {
@@ -44,7 +51,10 @@ export class KlaviyoPlugin {
   static init(options: KlaviyoPluginOptionsInput): typeof KlaviyoPlugin {
     this.options = {
       ...options,
-      eventHandlers: options.eventHandlers ?? [defaultOrderPlacedEventHandler],
+      eventHandlers: options.eventHandlers ?? [
+        defaultOrderPlacedEventHandler,
+        startedCheckoutHandler,
+      ],
     };
     return KlaviyoPlugin;
   }
