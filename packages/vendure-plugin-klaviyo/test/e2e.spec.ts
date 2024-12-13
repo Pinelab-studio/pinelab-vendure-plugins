@@ -207,7 +207,7 @@ describe('Klaviyo', () => {
       `
     );
     const checkoutStartedEvent = klaviyoRequests.find(
-      (r) => (r) =>
+      (r) =>
         r.data.attributes.metric.data.attributes.name === 'Checkout Started'
     );
     expect(events[0].order.id).toBeDefined();

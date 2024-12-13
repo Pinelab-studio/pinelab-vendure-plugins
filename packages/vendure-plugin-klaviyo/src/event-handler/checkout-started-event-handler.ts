@@ -19,7 +19,7 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
       if (!order.customer?.emailAddress) {
         return false;
       }
-      const address = order.billingAddress.streetLine1
+      const address = order.billingAddress?.streetLine1
         ? order.billingAddress
         : order.shippingAddress;
       const event: KlaviyoGenericEvent = {
