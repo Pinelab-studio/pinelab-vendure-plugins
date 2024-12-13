@@ -1,3 +1,7 @@
+# 1.3.1 (2024-12-13)
+
+- Don't log push jobs and log errors for channels without api keys
+
 # 1.3.0 (2024-12-12)
 
 - Allow setting an apiKey per channel

@@ -103,6 +103,14 @@ export class KlaviyoService implements OnApplicationBootstrap {
     eventHandler: KlaviyoEventHandler<T>,
     retries = 10
   ): Promise<void> {
+    const api = await this.getKlaviyoApi(vendureEvent.ctx);
+    if (!api) {
+      Logger.debug(
+        `No API key provided for Klaviyo, this means klaviyo is not enabled for channel '${vendureEvent.ctx.channel.token};`,
+        loggerCtx
+      );
+      return;
+    }
     const event = await eventHandler.mapToKlaviyoEvent(
       vendureEvent,
       new Injector(this.moduleRef)
@@ -124,6 +132,9 @@ export class KlaviyoService implements OnApplicationBootstrap {
     event: KlaviyoGenericEvent | KlaviyoOrderPlacedEvent
   ): Promise<void> {
     const klaviyoApi = await this.getKlaviyoApi(ctx);
+    if (!klaviyoApi) {
+      return;
+    }
     if (event.eventName !== 'Order Placed') {
       // Anything other than Order Placed is handled as a generic Klaviyo event
       await this.createEvent(klaviyoApi, mapToKlaviyoEventInput(event));
@@ -163,11 +174,15 @@ export class KlaviyoService implements OnApplicationBootstrap {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars -- In future implementation we can make this channel aware, where the API key is stored in the DB per channel
-  async getKlaviyoApi(ctx: RequestContext): Promise<EventsApi> {
+  async getKlaviyoApi(ctx: RequestContext): Promise<EventsApi | undefined> {
     const apiKey =
       typeof this.options.apiKey === 'function'
         ? this.options.apiKey(ctx)
         : this.options.apiKey;
+    if (!apiKey) {
+      // Klaviyo is disabled
+      return;
+    }
     const session = new ApiKeySession(apiKey);
     return new EventsApi(session);
   }
