@@ -11,19 +11,19 @@ import {
 } from '@vendure/core';
 import { isAxiosError } from 'axios';
 import { ApiKeySession, EventCreateQueryV2, EventsApi } from 'klaviyo-api';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import {
   EventWithContext,
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
   KlaviyoOrderPlacedEvent,
-} from './event-handler/klaviyo-event-handler';
-import { KlaviyoPluginOptions } from './klaviyo.plugin';
+} from '../event-handler/klaviyo-event-handler';
+import { KlaviyoPluginOptions } from '../klaviyo.plugin';
 import {
   mapToKlaviyoEventInput,
   mapToKlaviyoOrderPlacedInput,
   mapToOrderedProductEvent,
-} from './util/map-to-klaviyo-input';
+} from '../util/map-to-klaviyo-input';
 
 type JobData = {
   ctx: SerializedRequestContext;

@@ -1,3 +1,7 @@
+# 1.4.0 (2024-12-13)
+
+- Include `klaviyoCheckoutStarted` mutation to be able to use abandoned cart email flows
+
 # 1.3.1 (2024-12-13)
 
 - Don't log push jobs and log errors for channels without api keys
