@@ -43,7 +43,7 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
             address2: address?.streetLine2,
             city: address?.city,
             postalCode: address?.postalCode,
-            countryCode: address.countryCode ?? address?.countryCode,
+            countryCode: address.countryCode,
           },
         },
       };
