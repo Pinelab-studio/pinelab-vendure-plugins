@@ -93,4 +93,6 @@ Don't forget to exclude the default order placed handler if you do!
      }),
 ```
 
-Aband
+## Abandoned cart emails
+
+This plugin includes a mutation `klaviyoCheckoutStarted`, which can be called from your storefront. When called, and an active order is present, it sends a custom event `Checkout Started` to Klaviyo, including basic order and profile data. This event can be used to set up abandoned cart email flows in Klaviyo.

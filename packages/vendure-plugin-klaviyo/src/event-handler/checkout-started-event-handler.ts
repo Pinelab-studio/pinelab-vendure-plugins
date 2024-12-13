@@ -13,11 +13,9 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
   {
     vendureEvent: CheckoutStartedEvent,
     mapToKlaviyoEvent: async ({ ctx, order }, injector) => {
-      await injector
-        .get(EntityHydrator)
-        .hydrate(ctx, order, {
-          relations: ['customer', 'lines.productVariant'],
-        });
+      await injector.get(EntityHydrator).hydrate(ctx, order, {
+        relations: ['customer', 'lines.productVariant'],
+      });
       if (!order.customer?.emailAddress) {
         return false;
       }
