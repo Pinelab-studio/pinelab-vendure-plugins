@@ -1,8 +1,9 @@
-import { DataService } from '@vendure/admin-ui/core';
+import { ActionBarContext, DataService } from '@vendure/admin-ui/core';
 import {
   FulfillmentStateTransitionError,
   OrderDetailFragment,
-} from '@vendure/admin-ui/core/common/generated-types';
+} from '@vendure/admin-ui/core';
+import { map } from 'rxjs';
 import { ErrorResult, RefundOrderStateError } from '@vendure/core';
 
 export async function transitionToShipped(
@@ -116,4 +117,13 @@ export async function cancel(
   if (errorResult.errorCode) {
     throw Error(`${errorResult.errorCode} - ${errorResult.message}`);
   }
+}
+
+export function mapEntityToButtonState(context: ActionBarContext) {
+  return context.entity$.pipe(
+    map((entity) => ({
+      disabled: entity?.state === 'ArrangingPayment',
+      visible: true,
+    }))
+  );
 }
