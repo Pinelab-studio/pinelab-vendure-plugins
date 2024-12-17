@@ -1,9 +1,8 @@
 import { addActionBarItem, SharedModule } from '@vendure/admin-ui/core';
 import { NgModule } from '@angular/core';
-import { Observable } from 'rxjs';
-import { cancel, refund } from './order-state.util';
+import { Observable, firstValueFrom } from 'rxjs';
+import { cancel, mapEntityToButtonState, refund } from './order-state.util';
 import { RouterModule } from '@angular/router';
-
 @NgModule({
   imports: [
     SharedModule,
@@ -20,6 +19,7 @@ import { RouterModule } from '@angular/router';
       buttonStyle: 'outline',
       icon: 'times-circle',
       locationId: 'order-detail',
+      buttonState: mapEntityToButtonState,
       routerLink: [],
       onClick: async (event, { route, dataService, notificationService }) => {
         try {
@@ -27,22 +27,21 @@ import { RouterModule } from '@angular/router';
             return;
           }
           const orderId = route.snapshot.params.id;
-          dataService.order
-            .getOrder(orderId)
-            .single$.subscribe(async (response) => {
-              if (!response?.order) {
-                return notificationService.error('Could not find order...');
-              }
-              if (
-                response.order.state === 'PaymentSettled' ||
-                response.order.state === 'Delivered' ||
-                response.order.state === 'Shipped'
-              ) {
-                await refund(dataService, response.order);
-              }
-              await cancel(dataService, response.order);
-              notificationService.success('Order refunded and cancelled');
-            });
+          const response = await firstValueFrom(
+            dataService.order.getOrder(orderId).single$
+          );
+          if (!response?.order) {
+            return notificationService.error('Could not find order...');
+          }
+          if (
+            response.order.state === 'PaymentSettled' ||
+            response.order.state === 'Delivered' ||
+            response.order.state === 'Shipped'
+          ) {
+            await refund(dataService, response.order);
+          }
+          await cancel(dataService, response.order);
+          notificationService.success('Order refunded and cancelled');
         } catch (e: any) {
           notificationService.error(e.message);
           console.error(e);

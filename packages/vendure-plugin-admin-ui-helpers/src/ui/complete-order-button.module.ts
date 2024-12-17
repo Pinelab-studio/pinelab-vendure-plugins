@@ -1,7 +1,11 @@
 import { addActionBarItem, SharedModule } from '@vendure/admin-ui/core';
 import { NgModule } from '@angular/core';
 import { Observable } from 'rxjs';
-import { transitionToDelivered, transitionToShipped } from './order-state.util';
+import {
+  mapEntityToButtonState,
+  transitionToDelivered,
+  transitionToShipped,
+} from './order-state.util';
 import { RouterModule } from '@angular/router';
 
 @NgModule({
@@ -20,6 +24,7 @@ import { RouterModule } from '@angular/router';
       buttonStyle: 'outline',
       icon: 'check-circle',
       locationId: 'order-detail',
+      buttonState: mapEntityToButtonState,
       routerLink: [],
       onClick: async (event, { route, dataService, notificationService }) => {
         try {
