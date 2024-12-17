@@ -404,6 +404,7 @@ describe('Payment with Saved Payment Method', () => {
       active: true,
       customer_number: haydenZiemeCustomerDetails.customer_number,
     };
+    const recurringRequests: any[] = [];
     nockInstance
       .persist()
       .get(`/customers`)
@@ -412,7 +413,13 @@ describe('Payment with Saved Payment Method', () => {
     //createRecurringSchedule
     nockInstance
       .persist()
-      .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
+      .post(
+        `/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`,
+        (body) => {
+          recurringRequests.push(body);
+          return true;
+        }
+      )
       .reply(201, createMockRecurringScheduleResult(6014));
     //createCharge
     nockInstance
@@ -441,6 +448,8 @@ describe('Payment with Saved Payment Method', () => {
       .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
+    expect(recurringRequests.length).toBe(1);
+    expect(recurringRequests[0].amount).toBe(9);
   });
 
   it('Created subscriptions at Accept Blue', async () => {
