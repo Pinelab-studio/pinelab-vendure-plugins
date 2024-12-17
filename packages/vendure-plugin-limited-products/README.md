@@ -1,4 +1,4 @@
-# Set a max quantity or bulk quantity per product
+# Vendure Limited Products Plugin
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-limit-product-per-order)
 
