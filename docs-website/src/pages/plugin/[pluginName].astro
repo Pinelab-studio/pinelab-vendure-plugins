@@ -5,6 +5,7 @@ import 'highlight.js/styles/github-dark-dimmed.css';
 
 export async function getStaticPaths() {
   const plugins = await getPlugins();
+  console.log(plugins.map((p) => p.slug));
   return plugins.map((p) => ({
     params: { pluginName: p.slug },
     props: { plugin: p },
@@ -31,10 +32,19 @@ const plugin: Plugin = Astro.props.plugin;
         class="inline-block"
         src={`https://img.shields.io/badge/version-${plugin.version}-3DC685`}
       />
-      <img
-        class="inline-block"
-        src="https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure&color=%2317C1FF"
-      />
+      {
+        plugin.compatibility ? (
+          <img
+            class="inline-block"
+            src={`https://img.shields.io/badge/compatible with Vendure-${plugin.compatibility}-3DC685`}
+          />
+        ) : (
+          <img
+            class="inline-block"
+            src="https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure&color=%2317C1FF"
+          />
+        )
+      }
 
       <div class="prose" set:html={plugin.markdownContent} />
     </div>

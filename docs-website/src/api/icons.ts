@@ -2,6 +2,7 @@
 // But, most of them should already be in public/icons, along with some others
 const icons: Record<string, string> = {
   'pinelab-invoice-plugin': 'sticky-note.svg',
+  'pinelab-frequently-bought-together-plugin': 'undraw_arrow.svg',
   'vendure-plugin-google-storage-assets': 'google_cloud.png',
   'vendure-plugin-facet-suggestions': 'undraw_chat-text.svg',
   'vendure-plugin-stripe-subscription': 'stripe.webp',

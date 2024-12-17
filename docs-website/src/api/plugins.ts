@@ -17,6 +17,7 @@ interface PackageJson {
 export interface Plugin {
   name: string;
   npmName: string;
+  compatibility?: string;
   version: string;
   slug: string;
   description: string;
@@ -25,13 +26,13 @@ export interface Plugin {
   nrOfDownloads: number;
 }
 
-const pluginDirName = '../packages/';
+const packageDir = '../packages/';
 
 /**
  * Get all plugin directories starting with `vendure-plugin`
  */
 export async function getPluginDirectories(): Promise<Dirent[]> {
-  return (await readdir(pluginDirName, { withFileTypes: true }))
+  return (await readdir(packageDir, { withFileTypes: true }))
     .filter((dir) => dir.isDirectory())
     .filter((dir) => dir.name.startsWith('vendure-'));
 }
@@ -40,17 +41,21 @@ export async function getPlugins(): Promise<Plugin[]> {
   const pluginDirectories = await getPluginDirectories();
   const plugins: Plugin[] = [];
   await Promise.all(
-    pluginDirectories.map(async (r) => {
+    pluginDirectories.map(async (pluginDir) => {
       try {
         const packageJsonFilePath = path.join(
-          pluginDirName,
-          r.name,
+          packageDir,
+          pluginDir.name,
           'package.json'
         );
         const packageJson: PackageJson = JSON.parse(
           await readFile(packageJsonFilePath, 'utf8')
         );
-        const readmeFilePath = path.join(pluginDirName, r.name, 'README.md');
+        const readmeFilePath = path.join(
+          packageDir,
+          pluginDir.name,
+          'README.md'
+        );
         let readme: string = await readFile(readmeFilePath, 'utf8');
         // Remove official docs link from readme
         readme = readme.replace(/^.*Official documentation.*$/gm, '');
@@ -58,6 +63,7 @@ export async function getPlugins(): Promise<Plugin[]> {
         const name = readme.split('\n')[0].replace('#', '').trim();
         const readmeHtml = await parseReadme(readme);
         const nrOfDownloads = await getNrOfDownloads(packageJson.name);
+        const compatibility = await getCompatibilityRange(pluginDir.name);
         const slug = packageJson.name
           .replace('@pinelab/', '')
           .replace('@vendure-hub/', '');
@@ -70,9 +76,10 @@ export async function getPlugins(): Promise<Plugin[]> {
           icon: getIcon(slug),
           markdownContent: readmeHtml,
           nrOfDownloads,
+          compatibility,
         });
       } catch (e) {
-        console.error(`Error reading plugin ${r.name}`, e);
+        console.error(`Error reading plugin ${pluginDir.name}`, e);
         return;
       }
     })
@@ -126,4 +133,18 @@ export async function getNrOfDownloads(
     `https://api.npmjs.org/downloads/point/${period}/${packageName}`
   );
   return (await response.json()).downloads as number;
+}
+
+export async function getCompatibilityRange(
+  pluginDirectoryName: string
+): Promise<string | undefined> {
+  const srcDir = path.join(packageDir, pluginDirectoryName, 'src');
+  const files = await readdir(srcDir);
+  const pluginFile = files.find((f) => f.endsWith('.plugin.ts'));
+  if (!pluginFile) {
+    return;
+  }
+  const fileContent = await readFile(path.join(srcDir, pluginFile), 'utf-8');
+  const matches = fileContent.match(/compatibility:\s*['"]([^'"]+)['"]/);
+  return matches?.[1];
 }
