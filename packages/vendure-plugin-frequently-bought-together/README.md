@@ -4,6 +4,8 @@
 
 This plugin finds products that are often bought together by looking at past orders. You can integrate these frequently bought together products on your storefront, and so increase your revenue.
 
+This is a paid plugin. For production use, please purchase a license at https://vendure.io/marketplace.
+
 ## Installation
 
 1. To install the plugin, add it to your Vendure config and include its Admin UI extension in the Admin UI plugin:
