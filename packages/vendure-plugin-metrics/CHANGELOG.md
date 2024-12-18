@@ -1,3 +1,7 @@
+# 1.6.1 (2024-12-18)
+
+- Fixed chart text color to display correctly in dark mode.
+
 # 1.6.0 (2024-11-19)
 
 - Allow showing metrics of past X months instead of always past 12 months.
