@@ -14,6 +14,7 @@ import {
   OrderLine,
   PaymentMethodService,
   Permission,
+  ProductPriceApplicator,
   RequestContext,
   UserInputError,
 } from '@vendure/core';
@@ -39,7 +40,8 @@ export class StripeSubscriptionCommonResolver {
   constructor(
     private stripeSubscriptionService: StripeSubscriptionService,
     private paymentMethodService: PaymentMethodService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
+    private productPriceApplicator: ProductPriceApplicator
   ) {}
 
   @Query()
@@ -88,7 +90,17 @@ export class StripeSubscriptionCommonResolver {
     @Ctx() ctx: RequestContext,
     @Parent() orderLine: OrderLine
   ): Promise<StripeSubscription[] | undefined> {
-    await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['order', 'productVariant'],
+    });
+    await this.entityHydrator.hydrate(ctx, orderLine.productVariant, {
+      relations: ['productVariantPrices', 'taxCategory'],
+    });
+    await this.productPriceApplicator.applyChannelPriceAndTax(
+      orderLine.productVariant,
+      ctx,
+      orderLine.order
+    );
     const subscriptionsForOrderLine =
       await this.stripeSubscriptionService.subscriptionHelper.getSubscriptionsForOrderLine(
         ctx,
