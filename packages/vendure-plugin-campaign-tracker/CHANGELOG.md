@@ -1,3 +1,7 @@
+# 0.1.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 0.0.4 (2024-11-01)
 
 - Only fetch orders with connected campaigns for calculating revenue

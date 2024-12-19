@@ -1,3 +1,7 @@
+# 1.7.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 1.6.1 (2024-12-18)
 
 - Fixed chart text color to display correctly in dark mode.

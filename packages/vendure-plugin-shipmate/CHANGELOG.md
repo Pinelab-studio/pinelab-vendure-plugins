@@ -1,3 +1,7 @@
+# 1.4.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 1.3.2 (2024-09-27)
 
 - Include catch-unknown dependency

@@ -1,3 +1,7 @@
+# 1.3.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 1.2.1 (2024-06-21)
 
 - Disable buttons on the `ArrangingPayment` state and allow vendure error to bubble by using a `Promise` instead of an `Observable`

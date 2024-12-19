@@ -1,3 +1,7 @@
+# 1.3.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 1.2.2 (2024-10-31)
 
 - Use asset server for admin with Vendure V3 support

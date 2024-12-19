@@ -1,3 +1,7 @@
+# 3.5.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 3.4.2 (2024-11-13)
 
 - Make falling back to parent product featured asset configurable, so that only images of variants are synced to Picqer.

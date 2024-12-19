@@ -1,3 +1,7 @@
+# 1.2.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 1.1.2 (2024-10-10)
 
 - Added privacy policy to the login page

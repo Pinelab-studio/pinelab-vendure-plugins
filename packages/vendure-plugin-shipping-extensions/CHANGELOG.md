@@ -1,3 +1,7 @@
+# 2.8.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 2.7.2 (2024-08-12)
 
 - Resolve to channels default tax zone if no tax rate found

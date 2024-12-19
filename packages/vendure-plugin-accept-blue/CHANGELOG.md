@@ -1,3 +1,7 @@
+# 2.0.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 1.9.1 (2024-12-04)
 
 - Recurring amounts divided by 100

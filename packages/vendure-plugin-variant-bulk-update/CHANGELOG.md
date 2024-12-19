@@ -1,3 +1,7 @@
+# 1.4.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 1.3.4 (2024-10-17)
 
 - Clear product.price after bulk update, to prevent accidental future updates
