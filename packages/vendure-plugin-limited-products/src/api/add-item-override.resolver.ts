@@ -12,6 +12,8 @@ import {
   Injector,
   OrderLine,
   Permission,
+  RelationPaths,
+  Relations,
   RequestContext,
   Transaction,
   UserInputError,
@@ -40,11 +42,13 @@ export class AddItemOverrideResolver {
   @Allow(Permission.UpdateOrder, Permission.Owner)
   async addItemToOrder(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationAddItemToOrderArgs
+    @Args() args: MutationAddItemToOrderArgs,
+    @Relations({ entity: Order, omit: ['aggregateOrder', 'sellerOrders'] })
+    relations: RelationPaths<Order>
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
     const result = await this.injector
       .get(ShopOrderResolver)
-      .addItemToOrder(ctx, args);
+      .addItemToOrder(ctx, args, relations);
     if (!(result as Order).code) {
       return result;
     }
@@ -63,11 +67,13 @@ export class AddItemOverrideResolver {
   @Allow(Permission.UpdateOrder, Permission.Owner)
   async adjustOrderLine(
     @Ctx() ctx: RequestContext,
-    @Args() args: MutationAdjustOrderLineArgs
+    @Args() args: MutationAdjustOrderLineArgs,
+    @Relations({ entity: Order, omit: ['aggregateOrder', 'sellerOrders'] })
+    relations: RelationPaths<Order>
   ): Promise<ErrorResultUnion<UpdateOrderItemsResult, Order>> {
     const result = await this.injector
       .get(ShopOrderResolver)
-      .adjustOrderLine(ctx, args);
+      .adjustOrderLine(ctx, args, relations);
     if (!(result as Order).code) {
       return result;
     }
@@ -86,6 +92,9 @@ export class AddItemOverrideResolver {
     ctx: RequestContext,
     orderLine: OrderLine
   ): Promise<void> {
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['productVariant'],
+    });
     await this.entityHydrator.hydrate(ctx, orderLine.productVariant, {
       relations: ['product'],
     });

@@ -1,3 +1,7 @@
+# 4.2.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 4.1.1 (2024-11-12)
 
 - Better error message extraction from Xero API response

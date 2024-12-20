@@ -1,3 +1,7 @@
+# 3.1.0 (2024-12-19)
+
+- Update Vendure to 3.1.1
+
 # 3.0.1 (2024-08-04)
 
 - Update compatibility range (#480)
