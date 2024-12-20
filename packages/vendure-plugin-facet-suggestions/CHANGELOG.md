@@ -1,6 +1,10 @@
-# 1.2.0 (2024-12-19)
+# 1.2.0 (2024-12-20)
 
 - Update Vendure to 3.1.1
+
+# 1.1.2 (2024-12-20)
+
+- Fix to correctly save assets with Vendure V3.1
 
 # 1.1.1 (2024-08-04)
 

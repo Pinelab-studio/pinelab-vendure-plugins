@@ -90,18 +90,19 @@ export class SuggestedFacetsComponent implements CustomDetailComponent, OnInit {
       facetValueIds: unique([...currentFacetValueIds, facetValue.id]),
     });
     productGroup.markAsDirty();
+    productGroup.controls.facetValueIds.markAsDirty();
   }
 
   removeFacetValue(facetValue: FacetValue) {
     const productGroup = this.getProductFormGroup();
     const currentFacetValueIds: string[] = productGroup.value.facetValueIds;
-    console.log('productGroup', facetValue);
     productGroup.patchValue({
       facetValueIds: unique([
         ...currentFacetValueIds.filter((id) => id !== facetValue.id),
       ]),
     });
     productGroup.markAsDirty();
+    productGroup.controls.facetValueIds.markAsDirty();
   }
 
   private getProductFormGroup(): FormGroup {
