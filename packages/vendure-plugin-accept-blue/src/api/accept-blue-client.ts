@@ -7,7 +7,7 @@ import {
   AcceptBlueCustomer,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
-  AcceptBlueRecurringScheduleInput,
+  AcceptBlueRecurringScheduleCreateInput,
   AcceptBlueRecurringScheduleTransaction,
   CheckPaymentMethodInput,
   NoncePaymentMethodInput,
@@ -15,6 +15,7 @@ import {
   AcceptBlueWebhookInput,
   AcceptBlueWebhook,
   CustomFields,
+  AcceptBlueRecurringScheduleUpdateInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
@@ -132,6 +133,26 @@ export class AcceptBlueClient {
     );
   }
 
+  async updateRecurringSchedule(
+    id: number,
+    input: AcceptBlueRecurringScheduleUpdateInput
+  ): Promise<AcceptBlueRecurringSchedule> {
+    const formattedInput = {
+      ...input,
+      amount: input.amount ? input.amount / 100 : undefined,
+      // Accept Blue requires dates to be in 'yyyy-mm-dd' format
+      next_run_date: input.next_run_date
+        ? this.toDateString(input.next_run_date)
+        : undefined,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.request(
+      'patch',
+      `recurring-schedules/${id}`,
+      formattedInput
+    );
+  }
+
   async getTransactionsForRecurringSchedule(
     id: number
   ): Promise<AcceptBlueRecurringScheduleTransaction[]> {
@@ -179,7 +200,7 @@ export class AcceptBlueClient {
 
   async createRecurringSchedule(
     customerId: number,
-    input: AcceptBlueRecurringScheduleInput
+    input: AcceptBlueRecurringScheduleCreateInput
   ): Promise<AcceptBlueRecurringSchedule> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result: AcceptBlueRecurringSchedule = await this.request(

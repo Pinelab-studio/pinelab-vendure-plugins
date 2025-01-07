@@ -28,6 +28,7 @@ import {
   QueryPreviewAcceptBlueSubscriptionsArgs,
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
   MutationRefundAcceptBlueTransactionArgs,
+  MutationUpdateAcceptBlueSubscriptionArgs,
 } from './generated/graphql';
 
 @Resolver()
@@ -77,7 +78,7 @@ export class AcceptBlueCommonResolver {
   }
 
   @Mutation()
-  @Allow(Permission.Authenticated)
+  @Allow(Permission.UpdateOrder)
   async refundAcceptBlueTransaction(
     @Ctx() ctx: RequestContext,
     @Args()
@@ -89,6 +90,16 @@ export class AcceptBlueCommonResolver {
       amount ?? undefined,
       cvv2 ?? undefined
     );
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateOrder)
+  async updateAcceptBlueSubscription(
+    @Ctx() ctx: RequestContext,
+    @Args()
+    { input }: MutationUpdateAcceptBlueSubscriptionArgs
+  ): Promise<GraphqlMutation['updateAcceptBlueSubscription']> {
+    return await this.acceptBlueService.updateSubscription(ctx, input);
   }
 
   @ResolveField('acceptBlueHostedTokenizationKey')

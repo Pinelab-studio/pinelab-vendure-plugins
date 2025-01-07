@@ -1,3 +1,8 @@
+# 2.1.0 (2025-01-01)
+
+- Allow updating created subscriptions via the Admin API
+- Only allow refunding for users with permission `UpdateOrder`
+
 # 2.0.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

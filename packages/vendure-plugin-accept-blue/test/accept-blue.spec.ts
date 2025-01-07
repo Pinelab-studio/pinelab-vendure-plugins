@@ -48,7 +48,7 @@ import {
   REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
-  UPDATE_CUSTOMER_BLUE_ID,
+  UPDATE_SUBSCRIPTION,
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
@@ -60,7 +60,12 @@ import {
   createMockWebhook,
   createSignature,
 } from './helpers/mocks';
-import { AcceptBlueTransactionEvent } from '../src/api/accept-blue-transaction-event';
+import { AcceptBlueTransactionEvent } from '../src/events/accept-blue-transaction-event';
+import {
+  AcceptBlueSubscription,
+  MutationUpdateAcceptBlueSubscriptionArgs,
+  UpdateAcceptBlueSubscriptionInput,
+} from '../src/api/generated/graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -457,7 +462,7 @@ describe('Payment with Saved Payment Method', () => {
   });
 });
 
-describe('Refunds and transactions', () => {
+describe('Transactions', () => {
   let orderLineWithSubscription: OrderLine;
 
   it('Emits transaction event for incoming schedule payments webhook', async () => {
@@ -536,8 +541,11 @@ describe('Refunds and transactions', () => {
     expect(transaction.cardDetails).toBeDefined();
     expect(transaction.amount).toBeDefined();
   });
+});
 
+describe('Admin API', () => {
   it('Refunds a transaction', async () => {
+    await adminClient.asSuperAdmin();
     let refundRequest: any;
     nockInstance
       .post(`/transactions/refund`, (body) => {
@@ -552,7 +560,7 @@ describe('Refunds and transactions', () => {
         error_details: { detail: 'An error detail object' },
         reference_number: 123,
       });
-    const { refundAcceptBlueTransaction } = await shopClient.query(
+    const { refundAcceptBlueTransaction } = await adminClient.query(
       REFUND_TRANSACTION,
       {
         transactionId: 123,
@@ -574,10 +582,10 @@ describe('Refunds and transactions', () => {
   });
 
   it('Fails to refund when not logged in', async () => {
-    await shopClient.asAnonymousUser();
+    await adminClient.asAnonymousUser();
     let error: any;
     try {
-      await shopClient.query(REFUND_TRANSACTION, {
+      await adminClient.query(REFUND_TRANSACTION, {
         transactionId: 123,
         amount: 4567,
         cvv2: '999',
@@ -587,10 +595,6 @@ describe('Refunds and transactions', () => {
     }
     expect(error?.response?.errors?.[0]?.extensions.code).toEqual('FORBIDDEN');
   });
-});
-
-describe('Admin API', () => {
-  // Just smoke test 1 call, so we know resolvers and schema are also loaded for admin API
 
   it('Gets saved payment methods for customer', async () => {
     nockInstance
@@ -599,9 +603,68 @@ describe('Admin API', () => {
         `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
       )
       .reply(200, haydenSavedPaymentMethods);
+    await adminClient.asSuperAdmin();
     const { customer } = await adminClient.query(GET_CUSTOMER_WITH_ID, {
       id: '1',
     });
     expect(customer?.savedAcceptBluePaymentMethods?.length).toBeGreaterThan(0);
   });
+
+  it('Does not allow updating subscriptions by unauthorized admins', async () => {
+    await adminClient.asAnonymousUser();
+    const updateRequest = adminClient.query<
+      { updateAcceptBlueSubscription: AcceptBlueSubscription },
+      MutationUpdateAcceptBlueSubscriptionArgs
+    >(UPDATE_SUBSCRIPTION, {
+      input: {
+        id: 123,
+        active: false,
+      },
+    });
+    expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Updates a subscription', async () => {
+    await adminClient.asSuperAdmin();
+    const scheduleId = 6014; // This ID was created earlier in test, and added to an order
+    let updateRequest: any;
+    nockInstance
+      .persist()
+      .patch(`/recurring-schedules/${scheduleId}`, (body) => {
+        updateRequest = body;
+        return true;
+      })
+      .reply(200, createMockRecurringScheduleResult(scheduleId));
+    const tenDaysFromNow = new Date();
+    tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
+    await adminClient.query<any, MutationUpdateAcceptBlueSubscriptionArgs>(
+      UPDATE_SUBSCRIPTION,
+      {
+        input: {
+          id: scheduleId,
+          amount: 4321,
+          active: false,
+          frequency: 'biannually',
+          nextRunDate: tenDaysFromNow,
+          numLeft: 5,
+          title: 'Updated title',
+          receiptEmail: 'newCustomer@pinelab.studio',
+        },
+      }
+    );
+    expect(updateRequest).toEqual({
+      title: 'Updated title',
+      amount: 43.21,
+      frequency: 'biannually',
+      next_run_date: '2025-01-17',
+      num_left: 5,
+      receipt_email: 'newCustomer@pinelab.studio',
+    });
+  });
+
+  // TODO check order history entry
+
+  // Check event publishing
 });

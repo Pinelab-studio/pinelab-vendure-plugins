@@ -223,20 +223,19 @@ export const GET_CUSTOMER_WITH_ID = gql`
   ${ACCEPT_BLUE_PAYMENT_METHOD_FRAGMENT}
 `;
 
-export const UPDATE_CUSTOMER_BLUE_ID = gql`
-  mutation UpdateCustomer($customerId: ID!, $acceptBlueCustomerId: Int!) {
-    updateCustomer(
-      input: {
-        id: $customerId
-        customFields: { acceptBlueCustomerId: $acceptBlueCustomerId }
-      }
-    ) {
-      ... on Customer {
-        id
-        emailAddress
-      }
-      ... on ErrorResult {
-        message
+export const UPDATE_SUBSCRIPTION = gql`
+  mutation UpdateSubscription($input: UpdateAcceptBlueSubscriptionInput!) {
+    updateAcceptBlueSubscription(input: $input) {
+      name
+      variantId
+      amountDueNow
+      priceIncludesTax
+      recurring {
+        amount
+        interval
+        intervalCount
+        startDate
+        endDate
       }
     }
   }
