@@ -1,4 +1,20 @@
+import { RequestContext } from '@vendure/core';
 import type { Request } from 'express';
+
+export const ACCEPT_BLUE_TRANSACTION_UPDATE = 'ACCEPT_BLUE_TRANSACTION_UPDATE';
+
+declare module '@vendure/core' {
+  interface OrderHistoryEntryData {
+    [ACCEPT_BLUE_TRANSACTION_UPDATE]: {
+      type: 'Approved' | 'Partially Approved' | 'Declined' | 'Error' | 'Update';
+      transactionId: string;
+      rawData: string;
+      orderLineId?: string;
+      error?: string;
+    };
+  }
+}
+
 export interface CustomFields {
   custom1?: string;
 }
@@ -348,6 +364,7 @@ export interface AcceptBlueChargeTransaction extends AcceptBlueTransaction {
 }
 
 export interface AcceptBlueEvent {
+  ctx: RequestContext;
   type: 'succeeded' | 'updated' | 'declined' | 'error' | 'status';
   subType: string;
   event: 'transaction' | 'batch';

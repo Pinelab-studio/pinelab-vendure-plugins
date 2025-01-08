@@ -118,6 +118,10 @@ export const commonApiExtensions = gql`
     savedAcceptBluePaymentMethods: [AcceptBluePaymentMethod!]!
   }
 
+  extend enum HistoryEntryType {
+    ACCEPT_BLUE_TRANSACTION_UPDATE
+  }
+
   extend type Query {
     previewAcceptBlueSubscriptions(
       productVariantId: ID!

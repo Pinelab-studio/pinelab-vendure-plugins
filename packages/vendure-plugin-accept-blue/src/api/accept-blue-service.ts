@@ -7,9 +7,11 @@ import {
   EntityHydrator,
   EventBus,
   ForbiddenError,
+  HistoryService,
   ID,
   Logger,
   Order,
+  OrderHistoryEntryData,
   OrderLine,
   PaymentMethod,
   PaymentMethodEvent,
@@ -28,6 +30,7 @@ import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import {
+  ACCEPT_BLUE_TRANSACTION_UPDATE,
   AcceptBlueChargeTransaction,
   AcceptBlueEvent,
   AcceptBluePaymentMethod,
@@ -62,6 +65,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
     private connection: TransactionalConnection,
+    private historyService: HistoryService,
     private eventBus: EventBus,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
@@ -518,11 +522,20 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       });
       await this.eventBus.publish(
         new AcceptBlueTransactionEvent(
+          ctx,
           event.type,
           event,
           orderLine,
           event.data.transaction?.id
         )
+      );
+      await this.logHistoryEntry(
+        ctx,
+        orderLine.order.id,
+        event.data.transaction?.id ? `${event.data.transaction?.id}` : '',
+        event.data,
+        orderLine,
+        event.data.error_message
       );
       Logger.debug(
         `Published AcceptBlueTransactionEvent (${event.id}) for orderLine ${orderLine.id}`,
@@ -554,6 +567,33 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     // With LIKE, we can get false positives, so we check again if the parsed result contains the exact scheduleId
     return result.find((orderLine) =>
       orderLine.customFields.acceptBlueSubscriptionIds.includes(scheduleId)
+    );
+  }
+
+  async logHistoryEntry(
+    ctx: RequestContext,
+    orderId: ID,
+    transactionId: string,
+    rawData: AcceptBlueChargeTransaction,
+    orderLine?: OrderLine,
+    error?: unknown
+  ): Promise<void> {
+    const prettifiedError =
+      typeof error === 'string' ? error : (error as Error)?.message;
+    await this.historyService.createHistoryEntryForOrder(
+      {
+        ctx,
+        orderId,
+        type: ACCEPT_BLUE_TRANSACTION_UPDATE,
+        data: {
+          type: rawData.status,
+          transactionId,
+          rawData: JSON.stringify(rawData),
+          orderLineId: orderLine?.id ? `${orderLine.id}` : undefined,
+          error: prettifiedError,
+        },
+      },
+      false
     );
   }
 
