@@ -76,6 +76,13 @@ export interface PicqerOptions {
    * Default is `true`
    */
   fallBackToProductFeaturedAsset?: boolean;
+  /**
+   * Define wether to cancel orders in Vendure when they are cancelled in Picqer.
+   * Default is `true`
+   *
+   * When, for example, orders in Picqer are cancelled solely because they need to be edited, you might want to disable this feature.
+   */
+  cancelOrdersOnPicqerCancellation?: boolean;
 }
 
 @VendurePlugin({
@@ -111,6 +118,7 @@ export class PicqerPlugin {
   static init(options: PicqerOptions) {
     this.options = {
       fallBackToProductFeaturedAsset: true,
+      cancelOrdersOnPicqerCancellation: true,
       ...options,
     };
     return PicqerPlugin;
