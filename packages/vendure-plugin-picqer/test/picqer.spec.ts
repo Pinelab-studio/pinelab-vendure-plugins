@@ -332,7 +332,34 @@ describe('Order placement', function () {
     expect(order!.state).toBe('Delivered');
   });
 
-  it('Should update to "Canceled" on incoming order status "cancelled"', async () => {
+  it('Should not update to "Canceled" when "cancelOrdersOnPicqerCancellation = false"', async () => {
+    PicqerPlugin.options.cancelOrdersOnPicqerCancellation = false;
+    const mockIncomingWebhook = {
+      event: 'orders.status_changed',
+      data: {
+        reference: createdOrder?.code,
+        status: 'cancelled',
+      },
+    } as Partial<IncomingOrderStatusWebhook>;
+    await adminClient.fetch(
+      `http://localhost:3050/picqer/hooks/${E2E_DEFAULT_CHANNEL_TOKEN}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(mockIncomingWebhook),
+        headers: {
+          'X-Picqer-Signature': createSignature(
+            mockIncomingWebhook,
+            'test-api-key'
+          ),
+        },
+      }
+    );
+    const order = await getOrder(adminClient, createdOrder?.id as string);
+    expect(order!.state).toBe('Delivered');
+  });
+
+  it('Should update to "Canceled" on incoming order status "cancelled" and "cancelOrdersOnPicqerCancellation = true"', async () => {
+    PicqerPlugin.options.cancelOrdersOnPicqerCancellation = true;
     const mockIncomingWebhook = {
       event: 'orders.status_changed',
       data: {
