@@ -6,7 +6,7 @@ import { AcceptBlueEvent } from '../types';
  */
 export class AcceptBlueTransactionEvent extends VendureEvent {
   constructor(
-    ctx: RequestContext,
+    public ctx: RequestContext,
     public status: 'succeeded' | 'updated' | 'declined' | 'error' | 'status',
     /**
      * The entire data object received from Accept Blue webhook

@@ -1,3 +1,7 @@
+# 2.0.2 (2025-01-09)
+
+- Correct ctx not being public
+
 # 2.0.1 (2025-01-09)
 
 - Add ctx to AcceptBlueTransactionEvent
