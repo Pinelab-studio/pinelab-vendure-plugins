@@ -1,4 +1,6 @@
+import { RequestContext } from '@vendure/core';
 import type { Request } from 'express';
+
 export interface CustomFields {
   custom1?: string;
 }
@@ -348,6 +350,7 @@ export interface AcceptBlueChargeTransaction extends AcceptBlueTransaction {
 }
 
 export interface AcceptBlueEvent {
+  ctx: RequestContext;
   type: 'succeeded' | 'updated' | 'declined' | 'error' | 'status';
   subType: string;
   event: 'transaction' | 'batch';

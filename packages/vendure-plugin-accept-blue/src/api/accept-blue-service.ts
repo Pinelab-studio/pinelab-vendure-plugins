@@ -518,6 +518,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       });
       await this.eventBus.publish(
         new AcceptBlueTransactionEvent(
+          ctx,
           event.type,
           event,
           orderLine,

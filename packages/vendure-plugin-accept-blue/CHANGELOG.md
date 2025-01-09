@@ -1,3 +1,7 @@
+# 2.0.1 (2025-01-09)
+
+- Add ctx to AcceptBlueTransactionEvent
+
 # 2.0.0 (2024-12-19)
 
 - Update Vendure to 3.1.1
