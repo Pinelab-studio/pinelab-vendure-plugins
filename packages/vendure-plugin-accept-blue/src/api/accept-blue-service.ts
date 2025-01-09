@@ -7,7 +7,6 @@ import {
   EntityHydrator,
   EventBus,
   ForbiddenError,
-  HistoryService,
   ID,
   Logger,
   Order,
@@ -63,7 +62,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
     private connection: TransactionalConnection,
-    private historyService: HistoryService,
     private eventBus: EventBus,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
