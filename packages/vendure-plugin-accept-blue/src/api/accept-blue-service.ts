@@ -11,6 +11,7 @@ import {
   Logger,
   Order,
   OrderLine,
+  OrderService,
   PaymentMethod,
   PaymentMethodEvent,
   PaymentMethodService,
@@ -51,8 +52,10 @@ import {
   AcceptBlueRefundResult,
   AcceptBlueSubscription,
   AcceptBlueTransaction,
+  UpdateAcceptBlueSubscriptionInput,
 } from './generated/graphql';
-import { AcceptBlueTransactionEvent } from './accept-blue-transaction-event';
+import { AcceptBlueTransactionEvent } from '../events/accept-blue-transaction-event';
+import { AcceptBlueSubscriptionEvent } from '../events/accept-blue-subscription-event';
 
 @Injectable()
 export class AcceptBlueService implements OnApplicationBootstrap {
@@ -61,7 +64,8 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     private readonly paymentMethodService: PaymentMethodService,
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
-    private connection: TransactionalConnection,
+    private readonly orderService: OrderService,
+    private readonly connection: TransactionalConnection,
     private eventBus: EventBus,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
@@ -295,6 +299,47 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       )
     );
     return recurringSchedules;
+  }
+
+  async updateSubscription(
+    ctx: RequestContext,
+    input: UpdateAcceptBlueSubscriptionInput
+  ): Promise<AcceptBlueSubscription> {
+    const scheduleId = input.id;
+    const orderLine = await this.findOrderLineByScheduleId(ctx, scheduleId);
+    if (!orderLine) {
+      throw new UserInputError(
+        `No order exists with an Accept Blue subscription id of ${scheduleId}`
+      );
+    }
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['order', 'productVariant'],
+    });
+    const client = await this.getClientForChannel(ctx);
+    const schedule = await client.updateRecurringSchedule(scheduleId, {
+      title: input.title ?? undefined,
+      amount: input.amount ?? undefined,
+      frequency: input.frequency ?? undefined,
+      next_run_date: input.nextRunDate ?? undefined,
+      num_left: input.numLeft ?? undefined,
+      active: input.active ?? undefined,
+      receipt_email: input.receiptEmail || undefined,
+    });
+    // Write History entry on order
+    await this.orderService.addNoteToOrder(ctx, {
+      id: orderLine.order.id,
+      note: `Subscription updated: ${JSON.stringify(input)}`,
+      isPublic: true,
+    });
+    const subscription = this.mapToGraphqlSubscription(
+      schedule,
+      orderLine.productVariant.id
+    );
+    // Publish event
+    await this.eventBus.publish(
+      new AcceptBlueSubscriptionEvent(ctx, subscription, 'updated', input)
+    );
+    return subscription;
   }
 
   /**

@@ -1,18 +1,9 @@
+import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import {
-  Args,
-  Parent,
-  Query,
-  ResolveField,
-  Resolver,
-  Mutation,
-} from '@nestjs/graphql';
-import {
-  Allow,
   Ctx,
   Customer,
   EntityHydrator,
   OrderLine,
-  Permission,
   RequestContext,
 } from '@vendure/core';
 import {
@@ -24,10 +15,8 @@ import { AcceptBlueService } from './accept-blue-service';
 import {
   AcceptBlueSubscription,
   Query as GraphqlQuery,
-  Mutation as GraphqlMutation,
   QueryPreviewAcceptBlueSubscriptionsArgs,
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
-  MutationRefundAcceptBlueTransactionArgs,
 } from './generated/graphql';
 
 @Resolver()
@@ -74,21 +63,6 @@ export class AcceptBlueCommonResolver {
       ...sub,
       transactions: [], // No transactions exist for a preview subscription
     }));
-  }
-
-  @Mutation()
-  @Allow(Permission.Authenticated)
-  async refundAcceptBlueTransaction(
-    @Ctx() ctx: RequestContext,
-    @Args()
-    { transactionId, amount, cvv2 }: MutationRefundAcceptBlueTransactionArgs
-  ): Promise<GraphqlMutation['refundAcceptBlueTransaction']> {
-    return await this.acceptBlueService.refund(
-      ctx,
-      transactionId,
-      amount ?? undefined,
-      cvv2 ?? undefined
-    );
   }
 
   @ResolveField('acceptBlueHostedTokenizationKey')

@@ -169,6 +169,22 @@ export const GET_ORDER_BY_CODE = gql`
   }
 `;
 
+export const GET_HISTORY_ENTRIES = gql`
+  query GetHistoryEntries($id: ID!) {
+    order(id: $id) {
+      id
+      code
+      history {
+        items {
+          id
+          type
+          data
+        }
+      }
+    }
+  }
+`;
+
 export const SET_SHIPPING_METHOD = gql`
   mutation SetShippingMethod($id: [ID!]!) {
     setOrderShippingMethod(shippingMethodId: $id) {
@@ -223,20 +239,19 @@ export const GET_CUSTOMER_WITH_ID = gql`
   ${ACCEPT_BLUE_PAYMENT_METHOD_FRAGMENT}
 `;
 
-export const UPDATE_CUSTOMER_BLUE_ID = gql`
-  mutation UpdateCustomer($customerId: ID!, $acceptBlueCustomerId: Int!) {
-    updateCustomer(
-      input: {
-        id: $customerId
-        customFields: { acceptBlueCustomerId: $acceptBlueCustomerId }
-      }
-    ) {
-      ... on Customer {
-        id
-        emailAddress
-      }
-      ... on ErrorResult {
-        message
+export const UPDATE_SUBSCRIPTION = gql`
+  mutation UpdateSubscription($input: UpdateAcceptBlueSubscriptionInput!) {
+    updateAcceptBlueSubscription(input: $input) {
+      name
+      variantId
+      amountDueNow
+      priceIncludesTax
+      recurring {
+        amount
+        interval
+        intervalCount
+        startDate
+        endDate
       }
     }
   }

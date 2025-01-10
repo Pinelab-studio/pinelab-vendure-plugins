@@ -6,7 +6,7 @@ const _codegenAdditions = gql`
   scalar JSON
 `;
 
-export const commonApiExtensions = gql`
+const commonApiExtensions = gql`
   enum AcceptBlueSubscriptionInterval {
     week
     month
@@ -118,6 +118,37 @@ export const commonApiExtensions = gql`
     savedAcceptBluePaymentMethods: [AcceptBluePaymentMethod!]!
   }
 
+  enum AcceptBlueFrequencyInput {
+    daily
+    weekly
+    biweekly
+    monthly
+    bimonthly
+    quarterly
+    biannually
+    annually
+  }
+
+  input UpdateAcceptBlueSubscriptionInput {
+    id: Int!
+    title: String
+    frequency: AcceptBlueFrequencyInput
+    """
+    Amount in cents to bill customer
+    """
+    amount: Int
+    nextRunDate: DateTime
+    """
+    Number of times the schedule has left to bill. Set to 0 for ongoing
+    """
+    numLeft: Int
+    active: Boolean
+    """
+    An email address to send a customer receipt to each time the schedule runs
+    """
+    receiptEmail: String
+  }
+
   extend type Query {
     previewAcceptBlueSubscriptions(
       productVariantId: ID!
@@ -128,12 +159,30 @@ export const commonApiExtensions = gql`
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
   }
+`;
+
+export const shopApiExtensions = gql`
+  ${commonApiExtensions}
+`;
+
+export const adminApiExtensions = gql`
+  ${commonApiExtensions}
 
   extend type Mutation {
+    """
+    Refund a transaction by ID
+    """
     refundAcceptBlueTransaction(
       transactionId: Int!
       amount: Int
       cvv2: String
     ): AcceptBlueRefundResult!
+
+    """
+    Update the given subscription in Accept Blue
+    """
+    updateAcceptBlueSubscription(
+      input: UpdateAcceptBlueSubscriptionInput!
+    ): AcceptBlueSubscription!
   }
 `;

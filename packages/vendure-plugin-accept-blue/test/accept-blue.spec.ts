@@ -25,7 +25,7 @@ import {
 } from '@vendure/testing';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { AcceptBluePlugin } from '../src';
+import { AcceptBluePlugin, AcceptBlueSubscriptionEvent } from '../src';
 import { AcceptBlueClient } from '../src/api/accept-blue-client';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
 import { DataSource } from 'typeorm';
@@ -41,6 +41,7 @@ import {
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
   GET_CUSTOMER_WITH_ID,
+  GET_HISTORY_ENTRIES,
   GET_ORDER_BY_CODE,
   GET_USER_SAVED_PAYMENT_METHOD,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
@@ -48,7 +49,7 @@ import {
   REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
-  UPDATE_CUSTOMER_BLUE_ID,
+  UPDATE_SUBSCRIPTION,
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
@@ -60,7 +61,12 @@ import {
   createMockWebhook,
   createSignature,
 } from './helpers/mocks';
-import { AcceptBlueTransactionEvent } from '../src/api/accept-blue-transaction-event';
+import { AcceptBlueTransactionEvent } from '../src/events/accept-blue-transaction-event';
+import {
+  AcceptBlueSubscription,
+  MutationUpdateAcceptBlueSubscriptionArgs,
+  UpdateAcceptBlueSubscriptionInput,
+} from '../src/api/generated/graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -457,7 +463,7 @@ describe('Payment with Saved Payment Method', () => {
   });
 });
 
-describe('Refunds and transactions', () => {
+describe('Transactions', () => {
   let orderLineWithSubscription: OrderLine;
 
   it('Emits transaction event for incoming schedule payments webhook', async () => {
@@ -536,8 +542,11 @@ describe('Refunds and transactions', () => {
     expect(transaction.cardDetails).toBeDefined();
     expect(transaction.amount).toBeDefined();
   });
+});
 
+describe('Admin API', () => {
   it('Refunds a transaction', async () => {
+    await adminClient.asSuperAdmin();
     let refundRequest: any;
     nockInstance
       .post(`/transactions/refund`, (body) => {
@@ -552,7 +561,7 @@ describe('Refunds and transactions', () => {
         error_details: { detail: 'An error detail object' },
         reference_number: 123,
       });
-    const { refundAcceptBlueTransaction } = await shopClient.query(
+    const { refundAcceptBlueTransaction } = await adminClient.query(
       REFUND_TRANSACTION,
       {
         transactionId: 123,
@@ -574,10 +583,10 @@ describe('Refunds and transactions', () => {
   });
 
   it('Fails to refund when not logged in', async () => {
-    await shopClient.asAnonymousUser();
+    await adminClient.asAnonymousUser();
     let error: any;
     try {
-      await shopClient.query(REFUND_TRANSACTION, {
+      await adminClient.query(REFUND_TRANSACTION, {
         transactionId: 123,
         amount: 4567,
         cvv2: '999',
@@ -587,10 +596,6 @@ describe('Refunds and transactions', () => {
     }
     expect(error?.response?.errors?.[0]?.extensions.code).toEqual('FORBIDDEN');
   });
-});
-
-describe('Admin API', () => {
-  // Just smoke test 1 call, so we know resolvers and schema are also loaded for admin API
 
   it('Gets saved payment methods for customer', async () => {
     nockInstance
@@ -599,9 +604,89 @@ describe('Admin API', () => {
         `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
       )
       .reply(200, haydenSavedPaymentMethods);
+    await adminClient.asSuperAdmin();
     const { customer } = await adminClient.query(GET_CUSTOMER_WITH_ID, {
       id: '1',
     });
     expect(customer?.savedAcceptBluePaymentMethods?.length).toBeGreaterThan(0);
+  });
+
+  it('Does not allow updating subscriptions by unauthorized admins', async () => {
+    await adminClient.asAnonymousUser();
+    const updateRequest = adminClient.query<
+      { updateAcceptBlueSubscription: AcceptBlueSubscription },
+      MutationUpdateAcceptBlueSubscriptionArgs
+    >(UPDATE_SUBSCRIPTION, {
+      input: {
+        id: 123,
+        active: false,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  const events: AcceptBlueSubscriptionEvent[] = [];
+
+  it('Updates a subscription', async () => {
+    server.app
+      .get(EventBus)
+      .ofType(AcceptBlueSubscriptionEvent)
+      .subscribe((event) => events.push(event));
+    await adminClient.asSuperAdmin();
+    const scheduleId = 6014; // This ID was created earlier in test, and added to an order
+    let updateRequest: any;
+    nockInstance
+      .persist()
+      .patch(`/recurring-schedules/${scheduleId}`, (body) => {
+        updateRequest = body;
+        return true;
+      })
+      .reply(200, createMockRecurringScheduleResult(scheduleId));
+    const tenDaysFromNow = new Date();
+    tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
+    await adminClient.query<any, MutationUpdateAcceptBlueSubscriptionArgs>(
+      UPDATE_SUBSCRIPTION,
+      {
+        input: {
+          id: scheduleId,
+          amount: 4321,
+          active: false,
+          frequency: 'biannually',
+          nextRunDate: tenDaysFromNow,
+          numLeft: 5,
+          title: 'Updated title',
+          receiptEmail: 'newCustomer@pinelab.studio',
+        },
+      }
+    );
+    expect(updateRequest).toEqual({
+      active: false,
+      title: 'Updated title',
+      amount: 43.21,
+      frequency: 'biannually',
+      next_run_date: tenDaysFromNow.toISOString().substring(0, 10), // Take yyyy-mm-dd
+      num_left: 5,
+      receipt_email: 'newCustomer@pinelab.studio',
+    });
+  });
+
+  it('Has created history entries', async () => {
+    await adminClient.asSuperAdmin();
+    const { order } = await adminClient.query(GET_HISTORY_ENTRIES, {
+      id: placedOrder?.id,
+    });
+    const entry = order.history.items.find(
+      (entry: any) => entry.type === 'ORDER_NOTE'
+    );
+    expect(entry?.data.note).toContain('Subscription updated:');
+  });
+
+  it('Has published Subscription Event', async () => {
+    const event = events[0];
+    expect(events.length).toBe(1);
+    expect(event.subscription.id).toBe(6014);
+    expect(event.type).toBe('updated');
   });
 });

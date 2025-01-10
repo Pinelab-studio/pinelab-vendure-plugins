@@ -264,7 +264,10 @@ export interface AcceptBlueRecurringSchedule {
   transaction_count: number;
 }
 
-export interface AcceptBlueRecurringScheduleInput {
+/**
+ * Input type for creating a new recurring schedule
+ */
+export interface AcceptBlueRecurringScheduleCreateInput {
   title: string;
   amount: number;
   payment_method_id: number;
@@ -274,6 +277,19 @@ export interface AcceptBlueRecurringScheduleInput {
   active?: boolean;
   receipt_email?: string;
   use_this_source_key?: boolean;
+}
+/**
+ * Input type for updating an existing recurring schedule
+ */
+export interface AcceptBlueRecurringScheduleUpdateInput {
+  title?: string;
+  amount?: number;
+  payment_method_id?: number;
+  frequency?: Frequency;
+  next_run_date?: Date;
+  num_left?: number;
+  active?: boolean;
+  receipt_email?: string;
 }
 
 export interface AcceptBlueRecurringScheduleTransaction {
