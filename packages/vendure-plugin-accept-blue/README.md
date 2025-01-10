@@ -175,6 +175,31 @@ mutation {
 
 The arguments `amount` and `cvv2` are optional, see [the Accept Blue Docs for more info](https://docs.accept.blue/api/v2#tag/processing-credit/paths/~1transactions~1refund).
 
+## Updating Subscriptions
+
+You can update created subscriptions in Accept Blue as Admin via de admin-api with `UpdateOrder` permissions:
+
+```graphql
+mutation {
+  updateAcceptBlueSubscription(
+    input: {
+      id: 11820
+      title: "New Title For Updated Subscription"
+      frequency: daily
+    }
+  ) {
+    id
+    name
+    variantId
+    recurring {
+      interval
+      intervalCount
+    }
+    # ... additional subscription fields
+  }
+}
+```
+
 ## CORS
 
 If you run into CORS issues loading the Accept Blue hosted tokenization javascript library, you might need to remove the `cross-origin` key on your `script` tag.
