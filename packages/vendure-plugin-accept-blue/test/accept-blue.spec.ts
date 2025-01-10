@@ -622,7 +622,7 @@ describe('Admin API', () => {
         active: false,
       },
     });
-    expect(updateRequest).rejects.toThrowError(
+    await expect(updateRequest).rejects.toThrowError(
       'You are not currently authorized to perform this action'
     );
   });

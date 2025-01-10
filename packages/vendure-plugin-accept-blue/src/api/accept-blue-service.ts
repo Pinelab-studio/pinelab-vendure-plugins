@@ -316,30 +316,30 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       relations: ['order', 'productVariant'],
     });
     const client = await this.getClientForChannel(ctx);
-    const subscription = await client.updateRecurringSchedule(scheduleId, {
-      title: input.title || undefined,
-      amount: input.amount || undefined,
+    const schedule = await client.updateRecurringSchedule(scheduleId, {
+      title: input.title ?? undefined,
+      amount: input.amount ?? undefined,
       frequency: input.frequency ?? undefined,
-      next_run_date: input.nextRunDate || undefined,
-      num_left: input.numLeft || undefined,
-      active: input.active || undefined,
+      next_run_date: input.nextRunDate ?? undefined,
+      num_left: input.numLeft ?? undefined,
+      active: input.active ?? undefined,
       receipt_email: input.receiptEmail || undefined,
     });
-    const subcription = this.mapToGraphqlSubscription(
-      subscription,
-      orderLine.productVariant.id
-    );
     // Write History entry on order
     await this.orderService.addNoteToOrder(ctx, {
       id: orderLine.order.id,
       note: `Subscription updated: ${JSON.stringify(input)}`,
       isPublic: true,
     });
+    const subscription = this.mapToGraphqlSubscription(
+      schedule,
+      orderLine.productVariant.id
+    );
     // Publish event
     await this.eventBus.publish(
-      new AcceptBlueSubscriptionEvent(ctx, subcription, 'updated', input)
+      new AcceptBlueSubscriptionEvent(ctx, subscription, 'updated', input)
     );
-    return subcription;
+    return subscription;
   }
 
   /**
