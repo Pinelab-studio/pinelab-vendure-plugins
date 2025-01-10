@@ -200,6 +200,8 @@ mutation {
 }
 ```
 
+This wil emit an `AcceptBlueSubscriptionEvent` of type `updated`.
+
 ## CORS
 
 If you run into CORS issues loading the Accept Blue hosted tokenization javascript library, you might need to remove the `cross-origin` key on your `script` tag.
