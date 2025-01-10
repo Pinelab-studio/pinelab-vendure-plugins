@@ -6,7 +6,7 @@ const _codegenAdditions = gql`
   scalar JSON
 `;
 
-export const commonApiExtensions = gql`
+const commonApiExtensions = gql`
   enum AcceptBlueSubscriptionInterval {
     week
     month
@@ -159,6 +159,14 @@ export const commonApiExtensions = gql`
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
   }
+`;
+
+export const shopApiExtensions = gql`
+  ${commonApiExtensions}
+`;
+
+export const adminApiExtensions = gql`
+  ${commonApiExtensions}
 
   extend type Mutation {
     """

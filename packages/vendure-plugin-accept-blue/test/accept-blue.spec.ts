@@ -25,7 +25,7 @@ import {
 } from '@vendure/testing';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { AcceptBluePlugin } from '../src';
+import { AcceptBluePlugin, AcceptBlueSubscriptionEvent } from '../src';
 import { AcceptBlueClient } from '../src/api/accept-blue-client';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
 import { DataSource } from 'typeorm';
@@ -41,6 +41,7 @@ import {
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
   GET_CUSTOMER_WITH_ID,
+  GET_HISTORY_ENTRIES,
   GET_ORDER_BY_CODE,
   GET_USER_SAVED_PAYMENT_METHOD,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
@@ -626,7 +627,13 @@ describe('Admin API', () => {
     );
   });
 
+  const events: AcceptBlueSubscriptionEvent[] = [];
+
   it('Updates a subscription', async () => {
+    server.app
+      .get(EventBus)
+      .ofType(AcceptBlueSubscriptionEvent)
+      .subscribe((event) => events.push(event));
     await adminClient.asSuperAdmin();
     const scheduleId = 6014; // This ID was created earlier in test, and added to an order
     let updateRequest: any;
@@ -658,13 +665,27 @@ describe('Admin API', () => {
       title: 'Updated title',
       amount: 43.21,
       frequency: 'biannually',
-      next_run_date: '2025-01-17',
+      next_run_date: tenDaysFromNow.toISOString().substring(0, 10), // Take yyyy-mm-dd
       num_left: 5,
       receipt_email: 'newCustomer@pinelab.studio',
     });
   });
 
-  // TODO check order history entry
+  it('Has created history entries', async () => {
+    await adminClient.asSuperAdmin();
+    const { order } = await adminClient.query(GET_HISTORY_ENTRIES, {
+      id: placedOrder?.id,
+    });
+    const entry = order.history.items.find(
+      (entry: any) => entry.type === 'ORDER_NOTE'
+    );
+    expect(entry?.data.note).toContain('Subscription updated:');
+  });
 
-  // Check event publishing
+  it('Has published Subscription Event', async () => {
+    const event = events[0];
+    expect(events.length).toBe(1);
+    expect(event.subscription.id).toBe(6014);
+    expect(event.type).toBe('updated');
+  });
 });

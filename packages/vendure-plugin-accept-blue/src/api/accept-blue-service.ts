@@ -64,9 +64,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     private readonly paymentMethodService: PaymentMethodService,
     private readonly customerService: CustomerService,
     private readonly entityHydrator: EntityHydrator,
-    private readonly connection: TransactionalConnection,
-    private readonly eventBus: EventBus,
     private readonly orderService: OrderService,
+    private readonly connection: TransactionalConnection,
+    private eventBus: EventBus,
     moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AcceptBluePluginOptions
@@ -312,7 +312,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No order exists with an Accept Blue subscription id of ${scheduleId}`
       );
     }
-    await this.entityHydrator.hydrate(ctx, orderLine, { relations: ['order'] });
+    await this.entityHydrator.hydrate(ctx, orderLine, {
+      relations: ['order', 'productVariant'],
+    });
     const client = await this.getClientForChannel(ctx);
     const subscription = await client.updateRecurringSchedule(scheduleId, {
       title: input.title || undefined,
@@ -588,7 +590,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const result = await this.connection
       .getRepository(ctx, OrderLine)
       .createQueryBuilder('orderLine')
-      .leftJoinAndSelect('orderLine.productVariant', 'productVariant')
       .where(
         'orderLine.customFields.acceptBlueSubscriptionIds LIKE :scheduleId',
         { scheduleId: `%${scheduleId}%` }

@@ -3,11 +3,12 @@ import { SubscriptionStrategy } from '../../util/src/subscription/subscription-s
 import { AcceptBlueService } from './api/accept-blue-service';
 import { acceptBluePaymentHandler } from './api/accept-blue-handler';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { commonApiExtensions } from './api/api-extensions';
+import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { AcceptBlueCommonResolver } from './api/accept-blue-common-resolvers';
 import { AcceptBlueController } from './api/accept-blue-controller';
 import { DefaultSubscriptionStrategy } from '../../util/src/subscription/default-subscription-strategy';
 import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
+import { AcceptBlueAdminResolver } from './api/accept-blue-admin-resolver';
 
 interface AcceptBluePluginOptionsInput {
   subscriptionStrategy?: SubscriptionStrategy;
@@ -19,11 +20,11 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
 @VendurePlugin({
   imports: [PluginCommonModule],
   adminApiExtensions: {
-    schema: commonApiExtensions,
-    resolvers: [AcceptBlueCommonResolver],
+    schema: adminApiExtensions,
+    resolvers: [AcceptBlueCommonResolver, AcceptBlueAdminResolver],
   },
   shopApiExtensions: {
-    schema: commonApiExtensions,
+    schema: shopApiExtensions,
     resolvers: [AcceptBlueCommonResolver],
   },
   controllers: [AcceptBlueController],

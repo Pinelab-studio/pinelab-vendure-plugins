@@ -169,6 +169,22 @@ export const GET_ORDER_BY_CODE = gql`
   }
 `;
 
+export const GET_HISTORY_ENTRIES = gql`
+  query GetHistoryEntries($id: ID!) {
+    order(id: $id) {
+      id
+      code
+      history {
+        items {
+          id
+          type
+          data
+        }
+      }
+    }
+  }
+`;
+
 export const SET_SHIPPING_METHOD = gql`
   mutation SetShippingMethod($id: [ID!]!) {
     setOrderShippingMethod(shippingMethodId: $id) {
