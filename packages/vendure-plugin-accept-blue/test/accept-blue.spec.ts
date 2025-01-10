@@ -662,6 +662,7 @@ describe('Admin API', () => {
       }
     );
     expect(updateRequest).toEqual({
+      active: false,
       title: 'Updated title',
       amount: 43.21,
       frequency: 'biannually',
