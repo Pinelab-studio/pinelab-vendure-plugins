@@ -373,7 +373,11 @@ export class PicqerService implements OnApplicationBootstrap {
       );
       return;
     }
-    if (data.status === 'cancelled' && order.state !== 'Cancelled') {
+    if (
+      data.status === 'cancelled' &&
+      order.state !== 'Cancelled' &&
+      this.options.cancelOrdersOnPicqerCancellation
+    ) {
       const result = await this.orderService.cancelOrder(ctx, {
         orderId: order.id,
         reason: 'Cancelled in Picqer',

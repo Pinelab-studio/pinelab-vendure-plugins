@@ -1,7 +1,15 @@
-# 2.1.0 (2025-01-01)
+# 2.1.0 (2025-01-10)
 
 - Allow updating created subscriptions via the Admin API
-- Only allow refunding for users with permission `UpdateOrder`
+- Moved refunding to admin-api, and only allow with permission UpdateOrder
+
+# 2.0.2 (2025-01-09)
+
+- Piublicly expose ctx in AcceptBlueTransactionEvent
+
+# 2.0.1 (2025-01-09)
+
+- Add ctx to AcceptBlueTransactionEvent
 
 # 2.0.0 (2024-12-19)
 

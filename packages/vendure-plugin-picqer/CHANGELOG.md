@@ -1,3 +1,7 @@
+# 3.6.0 (2025-01-08)
+
+- Allow configuring the plugin to not cancel Vendure orders when a Picqer order is cancelled
+
 # 3.5.0 (2024-12-19)
 
 - Update Vendure to 3.1.1
