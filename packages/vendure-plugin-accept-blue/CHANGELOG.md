@@ -1,3 +1,7 @@
+# 2.2.0 (2025-01-14)
+
+- Update a customer's shipping and billing details in Accept Blue on subscription creation
+
 # 2.1.0 (2025-01-10)
 
 - Allow updating created subscriptions via the Admin API

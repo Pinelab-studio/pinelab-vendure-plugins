@@ -34,7 +34,7 @@ export interface AcceptBlueAddress {
   city: string;
   zip: string;
   country: string;
-  phone: string;
+  phone?: string;
 }
 
 /** +++++ Transactions +++++ */
@@ -113,8 +113,8 @@ export interface AcceptBlueCustomerInput {
   website?: string;
   phone?: string;
   alternate_phone?: string;
-  billing_info?: AcceptBlueAddress;
-  shipping_info?: AcceptBlueAddress;
+  billing_info?: Partial<AcceptBlueAddress>;
+  shipping_info?: Partial<AcceptBlueAddress>;
   active?: boolean;
 }
 

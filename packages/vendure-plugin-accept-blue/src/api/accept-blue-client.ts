@@ -5,17 +5,18 @@ import { loggerCtx } from '../constants';
 import {
   AcceptBlueChargeTransaction,
   AcceptBlueCustomer,
+  AcceptBlueCustomerInput,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleCreateInput,
   AcceptBlueRecurringScheduleTransaction,
-  CheckPaymentMethodInput,
-  NoncePaymentMethodInput,
-  AcceptBlueTransaction,
-  AcceptBlueWebhookInput,
-  AcceptBlueWebhook,
-  CustomFields,
   AcceptBlueRecurringScheduleUpdateInput,
+  AcceptBlueTransaction,
+  AcceptBlueWebhook,
+  AcceptBlueWebhookInput,
+  CheckPaymentMethodInput,
+  CustomFields,
+  NoncePaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
@@ -53,13 +54,27 @@ export class AcceptBlueClient {
     return await this.request('get', `transactions/${id}`);
   }
 
-  async getOrCreateCustomer(emailAddress: string): Promise<AcceptBlueCustomer> {
+  /**
+   * Find a customer based on given emailAddress and updates the details.
+   * If no customer found, creates a new customer.
+   */
+  async upsertCustomer(
+    emailAddress: string,
+    input: AcceptBlueCustomerInput
+  ): Promise<AcceptBlueCustomer> {
     const existing = await this.getCustomer(emailAddress);
     if (existing) {
+      await this.updateCustomer(existing.id, input).catch((e) => {
+        // Catch and log instead of throw, because an existing customer was already found to return
+        Logger.error(
+          `Failed to update customer ${existing.id}: ${e}`,
+          loggerCtx
+        );
+      });
       return existing;
     } else {
       Logger.info(`Creating new customer ${emailAddress}`, loggerCtx);
-      return await this.createCustomer(emailAddress);
+      return await this.createCustomer(emailAddress, input);
     }
   }
 
@@ -85,8 +100,12 @@ export class AcceptBlueClient {
     return undefined;
   }
 
-  async createCustomer(emailAddress: string): Promise<AcceptBlueCustomer> {
-    const customer: Partial<AcceptBlueCustomer> = {
+  async createCustomer(
+    emailAddress: string,
+    input: AcceptBlueCustomerInput
+  ): Promise<AcceptBlueCustomer> {
+    const customer: AcceptBlueCustomerInput = {
+      ...input,
       identifier: emailAddress,
       customer_number: emailAddress,
       email: emailAddress,
@@ -95,6 +114,17 @@ export class AcceptBlueClient {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request('post', 'customers', customer);
     Logger.info(`Created new customer '${emailAddress}'`, loggerCtx);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return result;
+  }
+
+  async updateCustomer(
+    id: number,
+    input: AcceptBlueCustomerInput
+  ): Promise<AcceptBlueCustomer> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result = await this.request('patch', `customers/${id}`, input);
+    Logger.info(`Updated customer '${id}'`, loggerCtx);
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result;
   }
