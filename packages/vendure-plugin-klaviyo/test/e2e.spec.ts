@@ -228,4 +228,51 @@ describe('Klaviyo', () => {
     expect(profile.email).toBe('hayden.zieme12@hotmail.com');
     expect(checkoutStartedEvent).toBeDefined();
   });
+
+  it('Does not allow signup for unauthenticated calls', async () => {
+    await shopClient.asAnonymousUser();
+    const signUpPromise = shopClient.query(
+      gql`
+        mutation {
+          subscribeToKlaviyoList(
+            emailAddress: "testing@pinelab.studio"
+            listId: "test-list-id"
+          )
+        }
+      `
+    );
+    expect(signUpPromise).rejects.toThrow(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Sign up to list', async () => {
+    // Create active order
+    await shopClient.asAnonymousUser();
+    await addItem(shopClient, 'T_1', 1);
+    // Mock API response
+    let signupRequest: any;
+    nock('https://a.klaviyo.com/api/')
+      .post('/profile-subscription-bulk-create-jobs/', (reqBody) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        signupRequest = reqBody;
+        return true;
+      })
+      .reply(200, {})
+      .persist();
+    await shopClient.query(
+      gql`
+        mutation {
+          subscribeToKlaviyoList(
+            emailAddress: "testing@pinelab.studio"
+            listId: "test-list-id"
+          )
+        }
+      `
+    );
+    expect(
+      signupRequest.data.attributes.profiles.data[0].attributes.email
+    ).toBe('testing@pinelab.studio');
+    expect(signupRequest.data.relationships.list.data.id).toBe('test-list-id');
+  });
 });
