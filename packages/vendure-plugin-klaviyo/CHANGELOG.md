@@ -1,3 +1,7 @@
+# 1.6.0 (2025-01-14)
+
+- Added mutation to sign up to Klaviyo Audience list
+
 # 1.5.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

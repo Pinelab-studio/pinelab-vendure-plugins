@@ -96,3 +96,18 @@ Don't forget to exclude the default order placed handler if you do!
 ## Abandoned cart emails
 
 This plugin includes a mutation `klaviyoCheckoutStarted`, which can be called from your storefront. When called, and an active order is present, it sends a custom event `Checkout Started` to Klaviyo, including basic order and profile data. This event can be used to set up abandoned cart email flows in Klaviyo.
+
+## Newsletter signup
+
+The following mutation allows a customer to sign up to a Klaviyo Audience list via the API:
+
+```graphql
+mutation {
+  subscribeToKlaviyoList(
+    emailAddress: "testing@pinelab.studio"
+    listId: "WpeFJd"
+  )
+}
+```
+
+This mutation requires an active session, which means a customer should have interacted with the Vendure API already. This can be done for example by fetching an active order. This is to prevent unwanted bot sign ups. The customer will also receive a double opt-in email, asking them to confirm signing up for marketing emails.
