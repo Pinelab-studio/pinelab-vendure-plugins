@@ -8,7 +8,7 @@ export const shopApiExtensions = gql`
     """
     klaviyoCheckoutStarted: Boolean!
     """
-    Subscribe an email address to a Klaviyo list. Requires Permission.Authenticated to prevent bot usage.
+    Subscribe an email address to a Klaviyo list.
     Klaviyo also sends a confirmation before the subscription is active (double opt-in).
     """
     subscribeToKlaviyoList(emailAddress: String!, listId: String!): Boolean!
