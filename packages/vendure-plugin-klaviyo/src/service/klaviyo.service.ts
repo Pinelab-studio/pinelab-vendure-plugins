@@ -9,13 +9,11 @@ import {
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
-import { AxiosError, isAxiosError } from 'axios';
+import { isAxiosError } from 'axios';
 import {
   ApiKeySession,
   EventCreateQueryV2,
   EventsApi,
-  ListsApi,
-  ListMembersAddQuery,
   ProfilesApi,
 } from 'klaviyo-api';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
