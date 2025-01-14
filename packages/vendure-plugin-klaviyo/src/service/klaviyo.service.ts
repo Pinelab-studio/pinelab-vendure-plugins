@@ -9,8 +9,15 @@ import {
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
-import { isAxiosError } from 'axios';
-import { ApiKeySession, EventCreateQueryV2, EventsApi } from 'klaviyo-api';
+import { AxiosError, isAxiosError } from 'axios';
+import {
+  ApiKeySession,
+  EventCreateQueryV2,
+  EventsApi,
+  ListsApi,
+  ListMembersAddQuery,
+  ProfilesApi,
+} from 'klaviyo-api';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import {
   EventWithContext,
@@ -103,8 +110,8 @@ export class KlaviyoService implements OnApplicationBootstrap {
     eventHandler: KlaviyoEventHandler<T>,
     retries = 10
   ): Promise<void> {
-    const api = await this.getKlaviyoApi(vendureEvent.ctx);
-    if (!api) {
+    const session = await this.getKlaviyoSession(vendureEvent.ctx);
+    if (!session) {
       Logger.debug(
         `No API key provided for Klaviyo, this means klaviyo is not enabled for channel '${vendureEvent.ctx.channel.token};`,
         loggerCtx
@@ -131,13 +138,14 @@ export class KlaviyoService implements OnApplicationBootstrap {
     ctx: RequestContext,
     event: KlaviyoGenericEvent | KlaviyoOrderPlacedEvent
   ): Promise<void> {
-    const klaviyoApi = await this.getKlaviyoApi(ctx);
-    if (!klaviyoApi) {
+    const session = await this.getKlaviyoSession(ctx);
+    if (!session) {
       return;
     }
+    const klaviyoEventsApi = new EventsApi(session);
     if (event.eventName !== 'Order Placed') {
       // Anything other than Order Placed is handled as a generic Klaviyo event
-      await this.createEvent(klaviyoApi, mapToKlaviyoEventInput(event));
+      await this.createEvent(klaviyoEventsApi, mapToKlaviyoEventInput(event));
       Logger.info(
         `Sent '${event.eventName}' event with event ID '${event.uniqueId}' to Klaviyo.`,
         loggerCtx
@@ -148,7 +156,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
     // Push an order to Klaviyo as 'Placed Order Event' and create 'Ordered Product Events' for each order line
     const orderPlacedEvent = event as KlaviyoOrderPlacedEvent;
     await this.createEvent(
-      klaviyoApi,
+      klaviyoEventsApi,
       mapToKlaviyoOrderPlacedInput(orderPlacedEvent)
     );
     Logger.info(
@@ -165,7 +173,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
         index,
         orderPlacedEvent
       );
-      await this.createEvent(klaviyoApi, orderedProductEvent);
+      await this.createEvent(klaviyoEventsApi, orderedProductEvent);
     }
     Logger.info(
       `Sent 'Ordered Product' event to Klaviyo for order ${orderPlacedEvent.orderId} for ${orderPlacedEvent.orderItems.length} order lines`,
@@ -174,7 +182,9 @@ export class KlaviyoService implements OnApplicationBootstrap {
   }
 
   // eslint-disable-next-line @typescript-eslint/require-await, @typescript-eslint/no-unused-vars -- In future implementation we can make this channel aware, where the API key is stored in the DB per channel
-  async getKlaviyoApi(ctx: RequestContext): Promise<EventsApi | undefined> {
+  async getKlaviyoSession(
+    ctx: RequestContext
+  ): Promise<ApiKeySession | undefined> {
     const apiKey =
       typeof this.options.apiKey === 'function'
         ? this.options.apiKey(ctx)
@@ -183,21 +193,20 @@ export class KlaviyoService implements OnApplicationBootstrap {
       // Klaviyo is disabled
       return;
     }
-    const session = new ApiKeySession(apiKey);
-    return new EventsApi(session);
+    return new ApiKeySession(apiKey);
   }
 
   /**
    * Creates an event in Klaviyo, but checks the response status code and throws an error if it's not 2xx
    */
   async createEvent(
-    klaviyoApi: EventsApi,
+    klaviyoEventsApi: EventsApi,
     event: EventCreateQueryV2
   ): Promise<void> {
     try {
       const {
         response: { status, statusText },
-      } = await klaviyoApi.createEvent(event);
+      } = await klaviyoEventsApi.createEvent(event);
       if (status < 200 || status > 299) {
         throw new Error(
           `[${loggerCtx}]: Failed to create event '${event.data.attributes.metric.data.attributes.name}': ${statusText} (${status})`
@@ -216,5 +225,53 @@ export class KlaviyoService implements OnApplicationBootstrap {
         throw e;
       }
     }
+  }
+
+  /**
+   * Subscribe email address to list. Still requires the user to confirm via email they receive from Klaviyo (double opt in)
+   */
+  async subscribeToList(
+    ctx: RequestContext,
+    emailAddress: string,
+    listId: string
+  ): Promise<void> {
+    const session = await this.getKlaviyoSession(ctx);
+    if (!session) {
+      return;
+    }
+    const klaviyoApi = new ProfilesApi(session);
+    await klaviyoApi.subscribeProfiles({
+      data: {
+        type: 'profile-subscription-bulk-create-job',
+        attributes: {
+          profiles: {
+            data: [
+              {
+                type: 'profile',
+                attributes: {
+                  email: emailAddress,
+                  subscriptions: {
+                    email: {
+                      marketing: {
+                        consent: 'SUBSCRIBED',
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        },
+        relationships: {
+          list: {
+            data: {
+              id: listId,
+              type: 'list',
+            },
+          },
+        },
+      },
+    });
+    Logger.info(`Subscribed '${emailAddress}' to list '${listId}'`);
   }
 }

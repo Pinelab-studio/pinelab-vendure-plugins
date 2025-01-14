@@ -54,6 +54,6 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  const order = await createSettledOrder(shopClient, 1);
-  console.log(`Created settled order '${order.code}'`);
+  // const order = await createSettledOrder(shopClient, 1);
+  // console.log(`Created settled order '${order.code}'`);
 })();

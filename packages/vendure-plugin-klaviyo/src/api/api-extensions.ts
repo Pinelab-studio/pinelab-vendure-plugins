@@ -7,5 +7,10 @@ export const shopApiExtensions = gql`
     The frontend should call this mutation. It will make the Klaviyo plugin emit a CheckoutStartedEvent.
     """
     klaviyoCheckoutStarted: Boolean!
+    """
+    Subscribe an email address to a Klaviyo list. Requires Permission.Authenticated to prevent bot usage.
+    Klaviyo also sends a confirmation before the subscription is active (double opt-in).
+    """
+    subscribeToKlaviyoList(emailAddress: String!, listId: String!): Boolean!
   }
 `;
