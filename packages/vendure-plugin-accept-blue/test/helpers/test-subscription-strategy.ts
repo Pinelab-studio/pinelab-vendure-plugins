@@ -33,7 +33,6 @@ export class TestSubscriptionStrategy implements SubscriptionStrategy {
   private getSubscriptionForVariant(
     productVariant: ProductVariant
   ): Subscription {
-    console.log('TRIGGERERED', productVariant.listPrice);
     return {
       name: `Test Subscription ${productVariant.name}`,
       priceIncludesTax: true,

@@ -20,16 +20,19 @@ import {
   TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import crypto from 'node:crypto';
 import { filter } from 'rxjs';
 import { In } from 'typeorm';
-import { asError } from 'catch-unknown';
 import * as util from 'util';
 import { SubscriptionHelper } from '../';
 import { AcceptBluePluginOptions } from '../accept-blue-plugin';
 import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
+import { AcceptBlueSubscriptionEvent } from '../events/accept-blue-subscription-event';
+import { AcceptBlueTransactionEvent } from '../events/accept-blue-transaction-event';
 import {
   AcceptBlueChargeTransaction,
+  AcceptBlueCustomerInput,
   AcceptBlueEvent,
   AcceptBluePaymentMethod,
   AcceptBlueRecurringSchedule,
@@ -54,8 +57,6 @@ import {
   AcceptBlueTransaction,
   UpdateAcceptBlueSubscriptionInput,
 } from './generated/graphql';
-import { AcceptBlueTransactionEvent } from '../events/accept-blue-transaction-event';
-import { AcceptBlueSubscriptionEvent } from '../events/accept-blue-subscription-event';
 
 @Injectable()
 export class AcceptBlueService implements OnApplicationBootstrap {
@@ -167,8 +168,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `We can only handle Accept Blue payments for logged in users, because we need to save the payment methods on Accept Blue customers`
       );
     }
-    const acceptBlueCustomer = await client.getOrCreateCustomer(
-      order.customer.emailAddress
+    const acceptBlueCustomer = await client.upsertCustomer(
+      order.customer.emailAddress,
+      this.mapToAcceptBlueCustomerInput(order, order.customer)
     );
     await this.customerService.update(ctx, {
       id: order.customer?.id,
@@ -631,6 +633,49 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       throw new Error(`Given custom field is not an array`);
     }
     return orderLineIds as ID[];
+  }
+
+  /**
+   * Map a Vendure customer to an Accept Blue customer.
+   * Uses the order's shipping and billing address as customer address
+   */
+  mapToAcceptBlueCustomerInput(
+    order: Order,
+    customer: Customer
+  ): AcceptBlueCustomerInput {
+    const shippingName = order.shippingAddress?.fullName?.split(' ');
+    const shippingAddress: AcceptBlueCustomerInput['shipping_info'] = {
+      first_name: shippingName?.[0] ?? customer.firstName,
+      last_name: shippingName?.[1] ?? customer.lastName,
+      street: order.shippingAddress?.streetLine1,
+      street2: order.shippingAddress?.streetLine2,
+      zip: order.shippingAddress?.postalCode,
+      state: order.shippingAddress?.province,
+      phone: order.shippingAddress?.phoneNumber,
+      city: order.shippingAddress?.city,
+      country: order.shippingAddress?.countryCode,
+    };
+    const billingName = order.billingAddress?.fullName?.split(' ');
+    const billingAddress: AcceptBlueCustomerInput['billing_info'] = {
+      first_name: billingName?.[0] ?? customer.firstName,
+      last_name: billingName?.[1] ?? customer.lastName,
+      street: order.billingAddress?.streetLine1,
+      street2: order.billingAddress?.streetLine2,
+      zip: order.billingAddress?.postalCode,
+      state: order.billingAddress?.province,
+      phone: order.billingAddress?.phoneNumber,
+      city: order.billingAddress?.city,
+      country: order.billingAddress?.countryCode,
+    };
+    return {
+      first_name: customer.firstName,
+      last_name: customer.lastName,
+      identifier: customer.emailAddress,
+      email: customer.emailAddress,
+      shipping_info: shippingAddress,
+      billing_info: billingAddress,
+      phone: customer.phoneNumber,
+    };
   }
 
   /**

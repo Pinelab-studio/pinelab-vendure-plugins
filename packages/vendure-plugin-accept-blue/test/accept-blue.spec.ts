@@ -67,6 +67,7 @@ import {
   MutationUpdateAcceptBlueSubscriptionArgs,
   UpdateAcceptBlueSubscriptionInput,
 } from '../src/api/generated/graphql';
+import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -221,6 +222,123 @@ describe('Shop API', () => {
       GET_USER_SAVED_PAYMENT_METHOD
     );
     expect(activeCustomer?.savedAcceptBluePaymentMethods).toBeUndefined();
+  });
+});
+
+describe('Payment with Saved Payment Method', () => {
+  let subscriptionIds: number[] = [];
+
+  it('Adds item to order and set shipping address', async () => {
+    await shopClient.asAnonymousUser();
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const { addItemToOrder: order } = await shopClient.query(
+      ADD_ITEM_TO_ORDER,
+      {
+        productVariantId: '3',
+        quantity: 1,
+      }
+    );
+    await shopClient.query(SetShippingAddress, {
+      input: {
+        fullName: 'Hayden Shipping Name',
+        streetLine1: 'Hayden Shipping Street 1',
+        streetLine2: 'Hayden Shipping Street 2',
+        city: 'City of Hayden',
+        postalCode: '1234 XX',
+        countryCode: 'US',
+      },
+    });
+    // has subscription on orderline
+    expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
+  });
+
+  let patchCustomerRequest: any = {};
+
+  it('Adds payment to order', async () => {
+    const queryParams = {
+      active: true,
+      customer_number: haydenZiemeCustomerDetails.customer_number,
+    };
+    nockInstance
+      .persist()
+      .get(`/customers`)
+      .query(queryParams)
+      .reply(200, [haydenZiemeCustomerDetails]);
+    // patch customer details
+    nockInstance
+      .patch(`/customers/${haydenZiemeCustomerDetails.id}`, (body) => {
+        patchCustomerRequest = body;
+        return true;
+      })
+      .reply(200, [haydenZiemeCustomerDetails]);
+    // createRecurringSchedule
+    const recurringRequests: any[] = [];
+    nockInstance
+      .persist()
+      .post(
+        `/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`,
+        (body) => {
+          recurringRequests.push(body);
+          return true;
+        }
+      )
+      .reply(201, createMockRecurringScheduleResult(6014));
+    //createCharge
+    nockInstance
+      .persist()
+      .post(`/transactions/charge`)
+      .reply(201, checkChargeResult);
+    await shopClient.query(SET_SHIPPING_METHOD, {
+      id: [1],
+    });
+    await shopClient.query(TRANSITION_ORDER_TO, {
+      state: 'ArrangingPayment',
+    });
+    const testPaymentMethod =
+      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
+    const { addPaymentToOrder: order } = await shopClient.query(
+      ADD_PAYMENT_TO_ORDER,
+      {
+        input: {
+          method: acceptBluePaymentMethod.code,
+          metadata: { paymentMethodId: testPaymentMethod.id },
+        },
+      }
+    );
+    placedOrder = order;
+    subscriptionIds = order.lines
+      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
+      .flat();
+    expect(order.state).toBe('PaymentSettled');
+    expect(recurringRequests.length).toBe(1);
+    expect(recurringRequests[0].amount).toBe(9);
+  });
+
+  it('Updated customer at Accept Blue', async () => {
+    expect(patchCustomerRequest).toEqual({
+      first_name: 'Hayden',
+      last_name: 'Zieme',
+      identifier: 'hayden.zieme12@hotmail.com',
+      email: 'hayden.zieme12@hotmail.com',
+      shipping_info: {
+        first_name: 'Hayden',
+        last_name: 'Shipping',
+        street: 'Hayden Shipping Street 1',
+        street2: 'Hayden Shipping Street 2',
+        zip: '1234 XX',
+        city: 'City of Hayden',
+        country: 'US',
+      },
+      billing_info: { first_name: 'Hayden', last_name: 'Zieme' },
+      phone: '029 1203 1336',
+    });
+  });
+
+  it('Created subscriptions at Accept Blue', async () => {
+    expect(subscriptionIds.length).toBeGreaterThan(0);
   });
 });
 
@@ -382,84 +500,6 @@ describe('Payment with Check Payment Method', () => {
 
   it('Created subscriptions at Accept Blue', async () => {
     expect(checkSubscriptionIds.length).toBeGreaterThan(0);
-  });
-});
-
-describe('Payment with Saved Payment Method', () => {
-  let subscriptionIds: number[] = [];
-
-  it('Adds item to order', async () => {
-    await shopClient.asAnonymousUser();
-    await shopClient.asUserWithCredentials(
-      'hayden.zieme12@hotmail.com',
-      'test'
-    );
-    const { addItemToOrder: order } = await shopClient.query(
-      ADD_ITEM_TO_ORDER,
-      {
-        productVariantId: '3',
-        quantity: 1,
-      }
-    );
-    // has subscription on orderline
-    expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
-  });
-
-  it('Adds payment to order', async () => {
-    const queryParams = {
-      active: true,
-      customer_number: haydenZiemeCustomerDetails.customer_number,
-    };
-    const recurringRequests: any[] = [];
-    nockInstance
-      .persist()
-      .get(`/customers`)
-      .query(queryParams)
-      .reply(200, [haydenZiemeCustomerDetails]);
-    //createRecurringSchedule
-    nockInstance
-      .persist()
-      .post(
-        `/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`,
-        (body) => {
-          recurringRequests.push(body);
-          return true;
-        }
-      )
-      .reply(201, createMockRecurringScheduleResult(6014));
-    //createCharge
-    nockInstance
-      .persist()
-      .post(`/transactions/charge`)
-      .reply(201, checkChargeResult);
-    await shopClient.query(SET_SHIPPING_METHOD, {
-      id: [1],
-    });
-    await shopClient.query(TRANSITION_ORDER_TO, {
-      state: 'ArrangingPayment',
-    });
-    const testPaymentMethod =
-      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
-    const { addPaymentToOrder: order } = await shopClient.query(
-      ADD_PAYMENT_TO_ORDER,
-      {
-        input: {
-          method: acceptBluePaymentMethod.code,
-          metadata: { paymentMethodId: testPaymentMethod.id },
-        },
-      }
-    );
-    placedOrder = order;
-    subscriptionIds = order.lines
-      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
-      .flat();
-    expect(order.state).toBe('PaymentSettled');
-    expect(recurringRequests.length).toBe(1);
-    expect(recurringRequests[0].amount).toBe(9);
-  });
-
-  it('Created subscriptions at Accept Blue', async () => {
-    expect(subscriptionIds.length).toBeGreaterThan(0);
   });
 });
 

@@ -30,6 +30,7 @@ import {
 import { NoncePaymentMethodInput } from '../src/types';
 import { add } from 'date-fns';
 import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
+import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
@@ -131,6 +132,16 @@ import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
     quantity: 1,
   });
   console.log(`Added item`);
+  await shopClient.query(SetShippingAddress, {
+    input: {
+      fullName: 'Hayden Shipping Name',
+      streetLine1: 'Hayden Shipping Street 1',
+      streetLine2: 'Hayden Shipping Street 2',
+      city: 'City of Hayden',
+      postalCode: '1234 XX',
+      countryCode: 'US',
+    },
+  });
   await shopClient.query(SET_SHIPPING_METHOD, {
     id: [1],
   });
