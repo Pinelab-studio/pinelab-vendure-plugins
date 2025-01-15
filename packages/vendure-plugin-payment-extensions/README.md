@@ -7,6 +7,8 @@ This `Vendure` plugin allows an `Order` to be settled without upfront payment.
 - `isCustomerInGroupPaymentChecker`: Verifies if the customer attached to an order belongs to a specified group to allow configured payment method.
 - `settleWithoutPaymentHandler`: This handler simply transitions the `Payment` to settled state.
 
+Have a payment extension in mind? Create a Pull Request on our repository and we will maintain your feature in this plugin!
+
 ## Getting started
 
 1. Add the plugin to your `vendure-config.ts`
