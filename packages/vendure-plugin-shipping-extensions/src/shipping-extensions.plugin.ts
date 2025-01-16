@@ -15,6 +15,7 @@ import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { zoneAwareFlatRateShippingCalculator } from './config/zone-aware-flat-rate-shipping-calculator';
 import { ZoneAwareShippingTaxCalculationService } from './services/zone-aware-shipping-tax-calculation.service';
+import { facetAndCountryChecker } from './config/facet-and-country-checker';
 
 export interface ShippingExtensionsOptions {
   /**
@@ -59,6 +60,9 @@ export interface ShippingExtensionsOptions {
   configuration: (config) => {
     config.shippingOptions.shippingEligibilityCheckers.push(
       weightAndCountryChecker
+    );
+    config.shippingOptions.shippingEligibilityCheckers.push(
+      facetAndCountryChecker
     );
     config.promotionOptions.promotionConditions.push(
       orderInCountryPromotionCondition

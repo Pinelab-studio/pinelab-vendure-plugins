@@ -31,6 +31,16 @@ fragment OrderFields on Order {
     lastName
     emailAddress
   }
+  shippingLines {
+    id
+    price
+    priceWithTax
+    shippingMethod {
+      id
+      code
+      name
+    }
+  }
   lines {
     id
     quantity

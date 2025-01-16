@@ -55,11 +55,11 @@ import path from 'path';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [ShippingExtensionsPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [ShippingExtensionsPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
       ShippingExtensionsPlugin.init({
         weightUnit: 'kg',

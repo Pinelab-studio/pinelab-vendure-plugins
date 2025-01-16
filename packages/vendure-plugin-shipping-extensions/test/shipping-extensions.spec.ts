@@ -1,8 +1,12 @@
 import {
   DefaultLogger,
   DefaultSearchPlugin,
+  FacetValue,
+  FacetValueChecker,
+  ID,
   LogLevel,
   mergeConfig,
+  OrderService,
   ProductService,
   ProductVariantService,
   RequestContext,
@@ -36,9 +40,11 @@ import { getDistanceBetweenPointsInKMs } from '../src/util/get-distance-between-
 import {
   createDistanceBasedShippingMethod,
   createPromotion,
-  createShippingMethod,
+  createShippingMethodForCountriesAndFacets,
+  createShippingMethodForCountriesAndWeight,
   DistanceBasedShippingCalculatorOptions,
 } from './test-helpers';
+import { updateVariants } from '../../test/src/admin-utils';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -98,9 +104,9 @@ it('Should start successfully', async () => {
 });
 
 describe('Shipping by weight and country', function () {
-  it('Creates shippingmethod 1 for NL and BE, with weight between 0 and 100 ', async () => {
+  it('Creates shipping method 1 for NL and BE, with weight between 0 and 100 ', async () => {
     await adminClient.asSuperAdmin();
-    const res = await createShippingMethod(adminClient, {
+    const res = await createShippingMethodForCountriesAndWeight(adminClient, {
       minWeight: 0,
       maxWeight: 100,
       countries: ['NL', 'BE'],
@@ -110,9 +116,9 @@ describe('Shipping by weight and country', function () {
     expect(res.code).toBeDefined();
   });
 
-  it('Creates shippingmethod 2 for everything except NL and BE, with weight between 0 and 100 ', async () => {
+  it('Creates shipping method 2 for everything except NL and BE, with weight between 0 and 100 ', async () => {
     await adminClient.asSuperAdmin();
-    const res = await createShippingMethod(adminClient, {
+    const res = await createShippingMethodForCountriesAndWeight(adminClient, {
       minWeight: 0,
       maxWeight: 100,
       countries: ['NL', 'BE'],
@@ -122,9 +128,9 @@ describe('Shipping by weight and country', function () {
     expect(res.code).toBeDefined();
   });
 
-  it('Creates shippingmethod 3 for everything except BE, with weight between 150 and 200 ', async () => {
+  it('Creates shipping method 3 for everything except BE, with weight between 150 and 200 ', async () => {
     await adminClient.asSuperAdmin();
-    const res = await createShippingMethod(adminClient, {
+    const res = await createShippingMethodForCountriesAndWeight(adminClient, {
       minWeight: 0,
       maxWeight: 100,
       countries: ['BE'],
@@ -366,6 +372,44 @@ describe('Country based Promotion condition', function () {
     );
     expect(order.state).toBe('PaymentSettled');
     expect(order.shippingWithTax).toBe(111);
+  });
+});
+
+describe('Shipping by facet and country', function () {
+  let shippingMethodId: ID;
+
+  it('Creates shipping method for NL and facet "limited" ', async () => {
+    await adminClient.asSuperAdmin();
+    const res = await createShippingMethodForCountriesAndFacets(adminClient, {
+      facetIds: [4], // 1 = edition:limited
+      countries: ['NL'],
+      rate: 456,
+      exclude: false,
+    });
+    shippingMethodId = res.id;
+    expect(res.code).toBeDefined();
+  });
+
+  it('Is eligible for an order where all items have facet "limited"', async () => {
+    // Only T_4 has the facet "limited"
+    const order = await createSettledOrder(shopClient, shippingMethodId, true, [
+      { id: 'T_4', quantity: 1 },
+    ]);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingLines[0].price).toBe(456);
+  });
+
+  it('Is not eligible for order that does not have facet "limited"', async () => {
+    // T_1 does not have facet "limited"
+    const createSettledOrderPromise = createSettledOrder(
+      shopClient,
+      shippingMethodId,
+      true,
+      [{ id: 'T_1', quantity: 1 }]
+    );
+    await expect(createSettledOrderPromise).rejects.toThrow(
+      'ORDER_STATE_TRANSITION_ERROR'
+    );
   });
 });
 

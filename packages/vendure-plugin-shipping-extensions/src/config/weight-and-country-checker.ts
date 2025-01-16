@@ -8,6 +8,7 @@ import {
   ShippingEligibilityChecker,
 } from '@vendure/core';
 import { ShippingExtensionsPlugin } from '../shipping-extensions.plugin';
+import { isEligibleForCountry } from './util';
 
 export function calculateOrderWeight(order: Order): number {
   return order.lines.reduce((acc, line) => {
@@ -103,25 +104,22 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     order,
     { minWeight, maxWeight, countries, excludeCountries }
   ) {
-    const shippingCountry = order.shippingAddress.countryCode;
-    const orderIsInSelectedCountry = shippingCountry
-      ? countries.includes(shippingCountry)
-      : false;
-    if (orderIsInSelectedCountry && excludeCountries) {
-      // Not eligible, because order.country is in our excluded-country-list
-      return false;
-    }
-    if (!orderIsInSelectedCountry && !excludeCountries) {
-      // Not eligible, because order.country is not in our list, but it should be
+    const isEligibleByCountry = isEligibleForCountry(
+      order,
+      countries,
+      excludeCountries
+    );
+    if (isEligibleByCountry === false) {
       return false;
     }
     // Shipping country is allowed, continue checking order weight
-    await entityHydrator.hydrate(ctx, order, { relations: ['lines'] });
-    for (const line of order.lines) {
-      await entityHydrator.hydrate(ctx, line, {
-        relations: ['productVariant', 'productVariant.product'],
-      });
-    }
+    await entityHydrator.hydrate(ctx, order, {
+      relations: [
+        'lines',
+        'lines.productVariant',
+        'lines.productVariant.product',
+      ],
+    });
     let totalOrderWeight = 0;
     if (ShippingExtensionsPlugin.options?.weightCalculationFunction) {
       totalOrderWeight =

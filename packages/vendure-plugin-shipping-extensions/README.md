@@ -4,7 +4,8 @@
 
 A collection of shipping calculators, checkers and promotion conditions that help you create customizable shipping options:
 
-- Shipping eligibility checks based on the order weight and the order's country
+- Country and Weight: Shipping eligibility checker that checks an order based on the total weight and country
+- Facet Value and Country: Shipping eligibility checker that checks an order based on configured facet values and country
 - Distance based Shipping calculator, to calculate your shipping price based on the distance from your store
 - A promotion condition that checks the order's shipping country. For example to only give free shipping to countries X, Y and Z
 
