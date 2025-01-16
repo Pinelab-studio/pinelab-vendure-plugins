@@ -98,3 +98,14 @@ mutation {
   }
 }
 ```
+
+## Monitoring and Alerting
+
+You should monitor your server logs for the message `Failed to process job sync-order` with severity WARNING. This means an order was not pushed to GoedGepickt. Depending on your job queue implementation this will be retried.
+
+In Google Cloud, we create an alert for the following log query:
+
+```
+severity>=WARNING
+"Failed to process job sync-order"
+```
