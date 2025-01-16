@@ -1,3 +1,8 @@
+# 2.9.0 (2025-01-16)
+
+- Added new shipping checker: Check by country and facet values
+- Optimization of the Weight and Country checker: Hydrate all `lines.productVariant.product` in one call.
+
 # 2.8.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

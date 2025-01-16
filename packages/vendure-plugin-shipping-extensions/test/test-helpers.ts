@@ -20,7 +20,7 @@ const CREATE_SHIPPING_METHOD = gql`
   }
 `;
 
-interface Options {
+interface CountryAndWeightOptions {
   minWeight: number;
   maxWeight: number;
   countries: string[];
@@ -28,9 +28,9 @@ interface Options {
   rate: number;
 }
 
-export async function createShippingMethod(
+export async function createShippingMethodForCountriesAndWeight(
   adminClient: SimpleGraphQLClient,
-  options: Options
+  options: CountryAndWeightOptions
 ) {
   const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
     input: {
@@ -79,6 +79,69 @@ export async function createShippingMethod(
         {
           languageCode: 'en',
           name: 'Shipping by weight and country',
+          description: '',
+          customFields: {},
+        },
+      ],
+    },
+  });
+  return res.createShippingMethod;
+}
+
+interface CountryAndFacetOptions {
+  facetIds: string | number[];
+  countries: string[];
+  exclude: boolean;
+  rate: number;
+}
+
+export async function createShippingMethodForCountriesAndFacets(
+  adminClient: SimpleGraphQLClient,
+  options: CountryAndFacetOptions
+) {
+  const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
+    input: {
+      code: 'shipping-by-facets-and-country',
+      checker: {
+        code: 'shipping-by-facets-and-country',
+        arguments: [
+          {
+            name: 'facets',
+            value: JSON.stringify(options.facetIds),
+          },
+          {
+            name: 'countries',
+            value: JSON.stringify(options.countries),
+          },
+          {
+            name: 'excludeCountries',
+            value: String(options.exclude),
+          },
+        ],
+      },
+      calculator: {
+        code: 'zone-aware-flat-rate-shipping-calculator',
+        arguments: [
+          {
+            name: 'rate',
+            value: String(options.rate),
+          },
+          {
+            name: 'includesTax',
+            value: 'exclude',
+          },
+          {
+            name: 'taxCategoryId',
+            value: '3',
+          },
+        ],
+      },
+      fulfillmentHandler: 'manual-fulfillment',
+      customFields: {},
+      translations: [
+        {
+          languageCode: 'en',
+          name: 'Shipping by facet and country',
           description: '',
           customFields: {},
         },

@@ -19,6 +19,16 @@ fragment OrderFields on Order {
     trackingCode
     customFields
   }
+  shippingLines {
+    id
+    price
+    priceWithTax
+    shippingMethod {
+      id
+      code
+      name
+    }
+  }
   lines {
     id
     quantity
@@ -122,6 +132,11 @@ mutation UpdateProductVariants($input: [UpdateProductVariantInput!]!) {
     stockOnHand
     trackInventory
     outOfStockThreshold
+    facetValues {
+      id
+      code
+      name
+    }
     __typename
   }
 }

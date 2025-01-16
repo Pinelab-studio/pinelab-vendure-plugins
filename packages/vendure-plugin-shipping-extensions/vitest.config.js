@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: './test/shipping-extensions.spec.ts',
+    include: '**/*.spec.ts',
   },
   plugins: [
     // SWC required to support decorators used in test plugins
