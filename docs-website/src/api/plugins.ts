@@ -23,6 +23,7 @@ export interface Plugin {
   description: string;
   icon: string;
   markdownContent: string;
+  changelogContent: string;
   nrOfDownloads: number;
 }
 
@@ -51,17 +52,26 @@ export async function getPlugins(): Promise<Plugin[]> {
         const packageJson: PackageJson = JSON.parse(
           await readFile(packageJsonFilePath, 'utf8')
         );
+        // README
         const readmeFilePath = path.join(
           packageDir,
           pluginDir.name,
           'README.md'
         );
-        let readme: string = await readFile(readmeFilePath, 'utf8');
+        let readme = await readFile(readmeFilePath, 'utf8');
         // Remove official docs link from readme
         readme = readme.replace(/^.*Official documentation.*$/gm, '');
         // Get title from first line
         const name = readme.split('\n')[0].replace('#', '').trim();
-        const readmeHtml = await parseReadme(readme);
+        const markdownContent = await parseMarkdown(readme);
+        // CHANGELOG
+        const changelogFilePath = path.join(
+          packageDir,
+          pluginDir.name,
+          'CHANGELOG.md'
+        );
+        const changelog = await readFile(changelogFilePath, 'utf8');
+        const changelogContent = await parseMarkdown(changelog);
         const nrOfDownloads = await getNrOfDownloads(packageJson.name);
         const compatibility = await getCompatibilityRange(pluginDir.name);
         const slug = packageJson.name
@@ -74,7 +84,8 @@ export async function getPlugins(): Promise<Plugin[]> {
           slug,
           description: packageJson.description,
           icon: getIcon(slug),
-          markdownContent: readmeHtml,
+          markdownContent,
+          changelogContent,
           nrOfDownloads,
           compatibility,
         });
@@ -97,7 +108,7 @@ export async function getPlugins(): Promise<Plugin[]> {
 /**
  * Parse raw Readme.md string to HTML
  */
-export async function parseReadme(readmeString: string): Promise<string> {
+export async function parseMarkdown(readmeString: string): Promise<string> {
   // `highlight` example uses https://highlightjs.org
   marked.setOptions({
     renderer: new marked.Renderer(),

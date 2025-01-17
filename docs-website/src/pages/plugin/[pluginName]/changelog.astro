@@ -1,0 +1,55 @@
+---
+import { getPlugins, type Plugin } from '../../../api/plugins';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import 'highlight.js/styles/github-dark-dimmed.css';
+
+export async function getStaticPaths() {
+  const plugins = await getPlugins();
+  return plugins.map((p) => ({
+    params: { pluginName: p.slug },
+    props: { plugin: p },
+  }));
+}
+
+const plugin: Plugin = Astro.props.plugin;
+---
+
+<BaseLayout title={`${plugin.name} Changelog`}>
+  <section>
+    <div
+      class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 z-50 items-center"
+    >
+      <pre>
+      <code class="hljs language-shell">
+      <span class="hljs-comment"># Install this plugin</span>
+      <span class="hljs-attr">npm</span> install {plugin.npmName}
+      </code>
+      </pre>
+
+      <div
+        class="flex flex-col lg:flex-row justify-center gap-x-6 lg:ml-auto mb-12"
+      >
+        <a
+          class="text-blue-600 items-center font-medium gap-3 inline-flex focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none justify-center px-6 lg:px-8 ring-2 ring-transparent focus:ring-offset-2 focus:ring-blue-500 duration-200 py-3.5 rounded-full active:bg-blue-800 active:text-white bg-blue-100 hover:bg-blue-50"
+          href={`/plugin/${plugin.slug}/`}
+        >
+          README
+        </a>
+        <a
+          class="text-white items-center font-medium gap-3 inline-flex focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none justify-center px-6 lg:px-8 ring-2 ring-transparent focus:ring-offset-2 focus:ring-blue-500 duration-200 py-3.5 rounded-full active:bg-blue-800 active:text-white bg-blue-500 hover:bg-blue-600"
+          href="javascript:void(0)"
+        >
+          CHANGELOG
+        </a>
+      </div>
+
+      <div class="prose mb-12">
+        <h1 class="leading-relaxed">
+          Changelog for <code>{plugin.slug}</code>
+        </h1>
+      </div>
+
+      <div class="prose" set:html={plugin.changelogContent} />
+    </div>
+  </section>
+</BaseLayout>
