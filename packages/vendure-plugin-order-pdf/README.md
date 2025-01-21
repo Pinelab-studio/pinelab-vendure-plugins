@@ -1,4 +1,4 @@
-# Vendure Picklist Plugin
+# Vendure Order PDF Plugin
 
 A plugin for generating PDF picklists for orders.
 

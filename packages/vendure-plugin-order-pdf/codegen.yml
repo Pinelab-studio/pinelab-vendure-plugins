@@ -7,3 +7,6 @@ generates:
       - typescript-operations
     config:
       avoidOptionals: false
+      scalars:
+        DateTime: Date
+        ID: string | number

@@ -2,27 +2,30 @@ import { Column, Entity, ColumnType } from 'typeorm';
 import { DeepPartial, Logger, VendureEntity } from '@vendure/core';
 import { loggerCtx } from '../constants';
 
-@Entity('picklist_config')
-export class PicklistConfigEntity extends VendureEntity {
-  constructor(input?: DeepPartial<PicklistConfigEntity>) {
+@Entity('pdf_template')
+export class PDFTemplateEntity extends VendureEntity {
+  constructor(input?: DeepPartial<PDFTemplateEntity>) {
     super(input);
   }
 
   @Column()
   channelId!: string;
 
+  @Column()
+  name!: string;
+
   @Column({ default: false })
   enabled: boolean = false;
 
-  @Column({ type: resolveTemplateColumnType(), nullable: true })
-  templateString?: string | null;
+  @Column({ type: resolveTemplateColumnType(), nullable: false })
+  templateString!: string;
 }
 
 /**
  * Resolve column type based on the DB engine
  */
 function resolveTemplateColumnType(): ColumnType {
-  const dbEngine = process.env.PICKLISTS_PLUGIN_DB_ENGINE;
+  const dbEngine = process.env.PDF_TEMPLATE_PLUGIN_DB_ENGINE;
   if (!dbEngine) {
     return 'text';
   } else if (dbEngine === 'mysql' || dbEngine === 'mariadb') {

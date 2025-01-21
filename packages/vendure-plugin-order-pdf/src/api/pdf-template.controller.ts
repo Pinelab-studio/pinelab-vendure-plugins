@@ -1,4 +1,4 @@
-import { PicklistService } from './picklist.service';
+import { PDFTemplateService } from './pdf-template.service';
 import {
   Controller,
   Post,
@@ -18,22 +18,21 @@ import {
   RequestContext,
   UserInputError,
 } from '@vendure/core';
-import { picklistPermission } from './picklist.resolver';
+import { pdfDownloadPermission } from './pdf-template.resolver';
 
-@Controller('picklists')
-export class PicklistController {
+@Controller('pdf-templates')
+export class PDFTemplateController {
   constructor(
-    private readonly picklistService: PicklistService,
+    private readonly pdfTemplateService: PDFTemplateService,
     private readonly orderService: OrderService
   ) {}
 
-  @Allow(picklistPermission.Permission)
-  @Post('/preview/:orderCode?')
+  @Allow(pdfDownloadPermission.Permission)
+  @Post('/preview/:templateName?')
   async preview(
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
-    @Body() body: { template: string },
-    @Param('orderCode') orderCode?: string
+    @Body() body: { template: string }
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
@@ -41,24 +40,24 @@ export class PicklistController {
     if (!body?.template || !body?.template.trim()) {
       throw new BadRequestException('No template given');
     }
-    const stream = await this.picklistService.previewPicklistWithTemplate(
+    const stream = await this.pdfTemplateService.downloadPDF(
       ctx,
-      body.template,
-      orderCode
+      body.template
     );
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="preview-picklist.pdf"`,
+      'Content-Disposition': `inline; filename="preview.pdf"`,
     });
     return stream.pipe(res);
   }
 
-  @Allow(picklistPermission.Permission)
-  @Get('/download/:orderCode')
+  @Allow(pdfDownloadPermission.Permission)
+  @Get('/download/:templateName/:orderCode')
   async download(
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
-    @Param('orderCode') orderCode: string
+    @Param('orderCode') orderCode: string,
+    @Param('templateName') templateName: string
   ) {
     if (!ctx.channel?.token) {
       throw new BadRequestException('No channel set for request');
@@ -67,19 +66,24 @@ export class PicklistController {
     if (!order) {
       throw new UserInputError(`No order with code ${orderCode} found`);
     }
-    const stream = await this.picklistService.downloadPicklist(ctx, order);
+    const stream = await this.pdfTemplateService.downloadPDF(
+      ctx,
+      templateName,
+      order
+    );
     res.set({
       'Content-Type': 'application/pdf',
-      'Content-Disposition': `inline; filename="preview-picklist.pdf"`,
+      'Content-Disposition': `inline; filename="download.pdf"`,
     });
     return stream.pipe(res);
   }
 
-  @Allow(picklistPermission.Permission)
-  @Get('/download')
+  @Allow(pdfDownloadPermission.Permission)
+  @Get('/download/:templateName/')
   async downloadMultiple(
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
+    @Param('templateName') templateName: string,
     @Query('orderCodes') orderCodes: string
   ) {
     if (!ctx.channel?.token) {
@@ -95,13 +99,14 @@ export class PicklistController {
     if (!orders?.length) {
       throw new UserInputError(`No order with codes ${orderCodes} found`);
     }
-    const stream = await this.picklistService.downloadMultiplePicklists(
+    const stream = await this.pdfTemplateService.downloadMultiplePDFs(
       ctx,
+      templateName,
       orders
     );
     res.set({
       'Content-Type': 'application/zip',
-      'Content-Disposition': `inline; filename="picklists-${orders.length}.zip"`,
+      'Content-Disposition': `inline; filename="pdf-${orders.length}.zip"`,
     });
     return stream.pipe(res);
   }

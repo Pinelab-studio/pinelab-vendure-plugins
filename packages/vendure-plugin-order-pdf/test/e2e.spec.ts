@@ -12,7 +12,7 @@ import fetch from 'node-fetch';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { defaultTemplate } from '../src/api/default-template';
+import { defaultTemplate } from '../src/ui/default-template';
 import {
   PicklistConfigQuery,
   MutationUpsertPicklistConfigArgs,
@@ -23,7 +23,7 @@ import {
   upsertConfigMutation,
 } from '../src/ui/queries.graphql';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-import { PicklistPlugin } from '../src/plugin';
+import { PicklistPlugin } from '../src/pdf-template-plugin';
 import { createSettledOrder } from '../../test/src/shop-utils';
 
 describe('Picklists plugin', function () {

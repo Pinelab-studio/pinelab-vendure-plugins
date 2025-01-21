@@ -1,0 +1,227 @@
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
+import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
+import {
+  DataService,
+  DeactivateAware,
+  getServerLocation,
+  LocalStorageService,
+  NotificationService,
+  SharedModule,
+} from '@vendure/admin-ui/core';
+import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
+import { firstValueFrom, Subscription } from 'rxjs';
+import { defaultTemplate } from './default-template';
+import {
+  PdfTemplate,
+  PdfTemplatesQuery,
+  UpdatePdfTemplateMutation,
+  UpdatePdfTemplateMutationVariables,
+  CreatePdfTemplateMutation,
+  CreatePdfTemplateMutationVariables,
+  DeletePdfTemplateMutation,
+  DeletePdfTemplateMutationVariables,
+} from './generated/graphql';
+import { deletePDFTemplate, getPDFTemplates, updatePDFTemplate } from './queries.graphql';
+
+@Component({
+  selector: 'pl-pdf-template-list-component',
+  templateUrl: './pdf-template-list.component.html',
+  standalone: true,
+  imports: [SharedModule],
+})
+export class PDFTemplateListComponent
+  implements OnInit, OnDestroy, DeactivateAware
+{
+  form: FormGroup;
+  serverPath: string;
+  previewLoading: boolean = false;
+  getPDFTemplatesSubscription!: Subscription;
+  pdfTemplates: PdfTemplate[] = [];
+  saveInProgress: boolean = false;
+  htmlFormInputConfigArgsDef: ConfigArgDefinition = {
+    name: 'templateString',
+    type: 'text',
+    list: false,
+    required: false,
+    ui: { component: 'html-editor-form-input' },
+  };
+
+  constructor(
+    private formBuilder: FormBuilder,
+    protected dataService: DataService,
+    private changeDetector: ChangeDetectorRef,
+    private notificationService: NotificationService,
+    private localStorageService: LocalStorageService
+  ) {
+    this.form = this.formBuilder.group({
+      pdfTemplateForms: this.formBuilder.array([]),
+    });
+    this.serverPath = getServerLocation();
+  }
+
+  ngOnDestroy(): void {
+    this.getPDFTemplatesSubscription.unsubscribe();
+  }
+
+  async ngOnInit(): Promise<void> {
+    this.getPdfTemplates();
+  }
+
+  canDeactivate(): boolean {
+    return !this.form.dirty;
+  }
+
+  get pdfTemplateForms(): FormArray {
+    return this.form.get('pdfTemplateForms') as FormArray;
+  }
+
+  /**
+   * Get PDF templates and populate forms
+   */
+  async getPdfTemplates(): Promise<void> {
+    this.getPDFTemplatesSubscription?.unsubscribe();
+    this.getPDFTemplatesSubscription = this.dataService
+      .query<PdfTemplatesQuery>(getPDFTemplates)
+      .mapStream((d) => d.pdfTemplates)
+      .subscribe((templates) => {
+        this.pdfTemplates = templates;
+        this.renderPdfTemplateForms();
+      });
+  }
+
+  renderPdfTemplateForms(): void {
+    this.pdfTemplateForms.clear();
+    this.pdfTemplates.forEach((template) => {
+      this.pdfTemplateForms.push(
+        this.formBuilder.group({
+          name: [template.name],
+          enabled: [template.enabled],
+          templateString: [template.templateString],
+        })
+      );
+    });
+  }
+
+  async update(input: PdfTemplate) {
+    try {
+      this.saveInProgress = true;
+      const result$ = await this.dataService.mutate<
+        UpdatePdfTemplateMutation,
+        UpdatePdfTemplateMutationVariables
+      >(updatePDFTemplate, {
+        id: input.id,
+        input: {
+          enabled: input.enabled,
+          name: input.name,
+          templateString: input.templateString || '',
+        },
+      });
+      await firstValueFrom(result$);
+      this.getPdfTemplates();
+      this.form.markAsPristine();
+      this.changeDetector.markForCheck();
+      this.notificationService.success('common.notify-update-success', {
+        entity: 'PDF Templates',
+      });
+      this.changeDetector.markForCheck();
+    } catch (e: any) {
+      this.notificationService.error('common.notify-update-error', {
+        entity: 'PDF Templates',
+      });
+    }
+    this.saveInProgress = false;
+  }
+
+  async delete(template: PdfTemplate): Promise<void> {
+    try {
+      this.saveInProgress = true;
+      const result$ = await this.dataService.mutate<
+        DeletePdfTemplateMutation,
+        DeletePdfTemplateMutationVariables
+      >(deletePDFTemplate, {
+        id: template.id,
+      });
+      await firstValueFrom(result$);
+      this.getPdfTemplates();
+      this.form.markAsPristine();
+      this.changeDetector.markForCheck();
+      this.notificationService.success('common.notify-update-success', {
+        entity: 'PDF Templates',
+      });
+      this.changeDetector.markForCheck();
+    } catch (e: any) {
+      this.notificationService.error('common.notify-update-error', {
+        entity: 'PDF Templates',
+      });
+    }
+    this.saveInProgress = false;
+  }
+
+  async create(): Promise<void> {
+    this.pdfTemplates = [
+      {
+        name: ' ',
+        enabled: true,
+        templateString: defaultTemplate,
+      },
+      ...this.pdfTemplates,
+    ];
+    console.log(this.pdfTemplates);
+    this.renderPdfTemplateForms();
+    this.form.markAsDirty();
+  }
+
+  async preview(template: PdfTemplate) {
+    try {
+      this.previewLoading = true;
+      const res = await fetch(`${this.serverPath}/pdf-templates/preview/`, {
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json',
+        },
+        method: 'POST',
+        body: JSON.stringify({ template: template.templateString }),
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw Error(json?.message);
+      }
+      const blob = await res.blob();
+      await this.downloadBlob(blob, 'test.pdf', true);
+    } catch (err: any) {
+      console.error(err);
+      this.notificationService.error(err?.message);
+    }
+    this.previewLoading = false;
+  }
+
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {};
+    const channelToken = this.localStorageService.get('activeChannelToken');
+    if (channelToken) {
+      headers['vendure-token'] = channelToken;
+    }
+    const authToken = this.localStorageService.get('authToken');
+    if (authToken) {
+      headers.authorization = `Bearer ${authToken}`;
+    }
+    return headers;
+  }
+
+  private async downloadBlob(
+    blob: Blob,
+    fileName: string,
+    openInNewTab = false
+  ): Promise<void> {
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    document.body.appendChild(a);
+    a.setAttribute('hidden', 'true');
+    a.href = blobUrl;
+    if (!openInNewTab) {
+      a.download = fileName;
+    }
+    a.setAttribute('target', '_blank');
+    a.click();
+  }
+}
