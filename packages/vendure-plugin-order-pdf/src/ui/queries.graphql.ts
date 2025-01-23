@@ -47,3 +47,16 @@ export const getPDFTemplates = gql`
   }
   ${pdfTemplateFields}
 `;
+
+export const getTemplateNames = gql`
+  query pdfTemplateNames {
+    pdfTemplates {
+      items {
+        id
+        name
+        enabled
+      }
+      totalItems
+    }
+  }
+`;

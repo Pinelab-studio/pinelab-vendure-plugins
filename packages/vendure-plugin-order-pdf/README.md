@@ -23,6 +23,8 @@ import {PicklistPlugin} from '@pinelab/vendure-plugin-picklist';
     ],
 ```
 
+// Puppeteer Docker TODO
+
 ## Increase picklist template DB storage
 
 By default, the plugin uses TypeOrm's `text` to store the template in the DB. This might not be enough, for example when you'd like to add base64 encoded images to your picklists. This will result in the error `ER_DATA_TOO_LONG: Data too long for column 'templateString'`. You can specify your DB engine with an env variable, and the plugin will resolve the correct column type:

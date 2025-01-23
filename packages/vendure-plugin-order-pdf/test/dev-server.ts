@@ -18,6 +18,9 @@ import { PDFTemplatePlugin } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { PDFTemplateService } from '../src/api/pdf-template.service';
+import { addShippingMethod } from '../../test/src/admin-utils';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { defaultTemplate } from '../src/ui/default-template';
 
 require('dotenv').config();
 
@@ -26,7 +29,9 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      PDFTemplatePlugin.init({}),
+      PDFTemplatePlugin.init({
+        allowPublicDownload: true,
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -65,15 +70,15 @@ require('dotenv').config();
   });
   await server.app.get(PDFTemplateService).createPDFTemplate(ctx, {
     enabled: true,
-    name: 'Testing',
-    templateString: 'Testing',
+    name: 'Default',
+    templateString: defaultTemplate,
   });
-  // // Add a testorders at every server start
-  // await new Promise((resolve) => setTimeout(resolve, 3000));
-  // await addShippingMethod(adminClient as any, 'manual-fulfillment');
-  // const orders = 3;
-  // for (let i = 1; i <= orders; i++) {
-  //   await createSettledOrder(shopClient as any, 3);
-  // }
-  // console.log(`Created ${orders} orders`);
+  // Add a testorders at every server start
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await addShippingMethod(adminClient as any, 'manual-fulfillment');
+  const orders = 3;
+  for (let i = 1; i <= orders; i++) {
+    await createSettledOrder(shopClient as any, 3);
+  }
+  console.log(`Created ${orders} orders`);
 })();

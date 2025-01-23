@@ -29,7 +29,9 @@ import {
   UpdatePdfTemplateMutation,
   UpdatePdfTemplateMutationVariables,
 } from './generated/graphql';
-import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
+import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { defaultTemplate } from './default-template';
+import { downloadBlob, getHeaders } from './helpers';
 
 const GetPDFTemplatesDocument: TypedDocumentNode<{
   pdfTemplates: PdfTemplateList;
@@ -53,15 +55,8 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
   typeof GetPDFTemplatesDocument,
   'pdfTemplates'
 > {
-  currencyCode: any;
   showModal = false;
   modalAction: 'Edit' | 'Create' = 'Create';
-  currentPdfTemplate = {
-    id: '' as Scalars['ID'],
-    enabled: true,
-    name: '',
-    templateString: '',
-  };
   previewLoading = false;
   serverPath: string;
   htmlFormInputConfigArgsDef: ConfigArgDefinition = {
@@ -72,6 +67,8 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
     ui: { component: 'html-editor-form-input' },
   };
   form: FormGroup;
+  // This is needed to re-render the html form input after the value has been set
+  renderHtmlFormInput = false;
 
   constructor(
     private changeDetector: ChangeDetectorRef,
@@ -87,22 +84,49 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
     });
     this.serverPath = getServerLocation();
     this.form = this.formBuilder.group({
-      templateString: '',
+      id: [''],
+      name: ['', Validators.required],
+      enabled: [true, Validators.required],
+      templateString: ['', Validators.required],
     });
   }
 
   create() {
     this.modalAction = 'Create';
     this.clear();
+    this.form.patchValue({
+      id: '',
+      name: '',
+      enabled: true,
+      templateString: defaultTemplate,
+    });
+    this.forceRerender();
     this.showModal = true;
   }
 
   edit(template: PdfTemplate) {
     this.modalAction = 'Edit';
-    this.currentPdfTemplate.id = template.id;
-    this.currentPdfTemplate.name = template.name;
-
+    this.form.patchValue({
+      id: template.id,
+      name: template.name,
+      enabled: template.enabled,
+      templateString: template.templateString,
+    });
+    this.forceRerender();
     this.showModal = true;
+  }
+
+  /**
+   * Super gross function to destroy and recreate the html-editor-form input,
+   * because it doesn't allow updating value after rendering
+   */
+  forceRerender(): void {
+    this.renderHtmlFormInput = false;
+    this.changeDetector.detectChanges();
+    setTimeout(() => {
+      this.renderHtmlFormInput = true;
+      this.changeDetector.detectChanges();
+    }, 1);
   }
 
   delete() {
@@ -110,38 +134,39 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
       .mutate<DeletePdfTemplateMutation, DeletePdfTemplateMutationVariables>(
         deletePDFTemplate,
         {
-          id: this.currentPdfTemplate.id,
+          id: this.form.get('id')!.value,
         }
       )
       .subscribe((s: any) => {
         this.showModal = false;
         this.clear();
         this.notificationService.success('Deleted');
-        this.changeDetector.detectChanges();
         super.refresh();
       });
   }
 
   clear() {
-    this.currentPdfTemplate.id = '';
-    this.currentPdfTemplate.name = '';
-    this.currentPdfTemplate.enabled = true;
-    this.currentPdfTemplate.templateString = '';
+    this.form.patchValue({
+      id: '',
+      name: '',
+      enabled: true,
+      templateString: '',
+    });
   }
 
   createOrUpdate() {
-    console.log(this.currentPdfTemplate);
-    if (this.currentPdfTemplate.id) {
+    const formValues = this.form.value;
+    if (formValues.id) {
       // Update
       this.dataService
         .mutate<UpdatePdfTemplateMutation, UpdatePdfTemplateMutationVariables>(
           updatePDFTemplate,
           {
-            id: this.currentPdfTemplate.id,
+            id: formValues.id,
             input: {
-              enabled: this.currentPdfTemplate.enabled,
-              name: this.currentPdfTemplate.name,
-              templateString: this.currentPdfTemplate.templateString,
+              enabled: formValues.enabled,
+              name: formValues.name,
+              templateString: formValues.templateString,
             },
           }
         )
@@ -158,9 +183,9 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
           createPDFTemplate,
           {
             input: {
-              name: this.currentPdfTemplate.name,
-              enabled: this.currentPdfTemplate.enabled,
-              templateString: this.currentPdfTemplate.templateString,
+              name: formValues.name,
+              enabled: formValues.enabled,
+              templateString: formValues.templateString,
             },
           }
         )
@@ -175,61 +200,27 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
   }
 
   async preview() {
+    const formValues = this.form.value;
     try {
       this.previewLoading = true;
-      const res = await fetch(
-        `${this.serverPath}/pdf-templates/preview/${this.currentPdfTemplate.name}`,
-        {
-          headers: {
-            ...this.getHeaders(),
-            'Content-Type': 'application/json',
-          },
-          method: 'POST',
-          body: JSON.stringify({
-            template: this.currentPdfTemplate.templateString,
-          }),
-        }
-      );
+      const res = await fetch(`${this.serverPath}/order-pdf/preview/`, {
+        headers: getHeaders(this.localStorageService),
+        method: 'POST',
+        body: JSON.stringify({
+          template: formValues.templateString,
+        }),
+      });
       if (!res.ok) {
         const json = await res.json();
         throw Error(json?.message);
       }
       const blob = await res.blob();
-      await this.downloadBlob(blob, 'test.pdf', true);
+      await downloadBlob(blob, 'test.pdf', true);
     } catch (err: any) {
       console.error(err);
       this.notificationService.error(err?.message);
+    } finally {
+      this.previewLoading = false;
     }
-    this.previewLoading = false;
-  }
-
-  private getHeaders(): Record<string, string> {
-    const headers: Record<string, string> = {};
-    const channelToken = this.localStorageService.get('activeChannelToken');
-    if (channelToken) {
-      headers['vendure-token'] = channelToken;
-    }
-    const authToken = this.localStorageService.get('authToken');
-    if (authToken) {
-      headers.authorization = `Bearer ${authToken}`;
-    }
-    return headers;
-  }
-
-  private async downloadBlob(
-    blob: Blob,
-    fileName: string,
-    openInNewTab = false
-  ): Promise<void> {
-    const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    document.body.appendChild(a);
-    a.setAttribute('hidden', 'true');
-    a.href = blobUrl;
-    if (!openInNewTab) {
-      a.download = fileName;
-    }
-    a.setAttribute('target', '_blank');
-    a.click();
   }
 }

@@ -4,6 +4,7 @@ import { SortOrder } from '@vendure/common/lib/generated-shop-types';
 import {
   ID,
   Injector,
+  Logger,
   Order,
   OrderService,
   RequestContext,
@@ -12,7 +13,7 @@ import {
 } from '@vendure/core';
 import { createReadStream, ReadStream } from 'fs';
 import Handlebars from 'handlebars';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { PDFTemplatePluginOptions } from '../pdf-template-plugin';
 import { PdfTemplateInput } from '../ui/generated/graphql';
 import {
@@ -22,6 +23,7 @@ import {
   ZippableFile,
 } from './file.util';
 import { PDFTemplateEntity } from './pdf-template.entity';
+import puppeteer, { Browser } from 'puppeteer';
 
 @Injectable()
 export class PDFTemplateService {
@@ -93,10 +95,10 @@ export class PDFTemplateService {
     const existing = await repository.findOneOrFail({
       where: { channelId: ctx.channelId as string, id },
     });
-    if (existing) {
+    if (!existing) {
       throw new UserInputError(`No PDF template with id '${id}' exists`);
     }
-    const result = await repository.delete({ id });
+    await repository.delete({ id });
     return await this.getTemplates(ctx);
   }
 
@@ -109,11 +111,11 @@ export class PDFTemplateService {
 
   async findTemplate(
     ctx: RequestContext,
-    templateName: string
+    id: ID
   ): Promise<PDFTemplateEntity | undefined | null> {
     const repository = this.connection.getRepository(ctx, PDFTemplateEntity);
     return await repository.findOne({
-      where: { channelId: ctx.channelId as string, name: templateName },
+      where: { channelId: ctx.channelId as string, id },
     });
   }
 
@@ -122,22 +124,27 @@ export class PDFTemplateService {
    */
   async downloadPDF(
     ctx: RequestContext,
-    templateName: string,
+    templateId?: ID,
+    templateString?: string,
     _order?: Order
   ): Promise<ReadStream> {
     let order = _order;
     if (!order) {
       order = await this.getLatestPlacedOrder(ctx);
     }
-    const template = await this.findTemplate(ctx, templateName);
-    if (!template) {
-      throw Error(`No template found with name '${templateName}'`);
+    if (!templateString && !templateId) {
+      throw new UserInputError(
+        `Need a template ID or template string to render PDF`
+      );
     }
-    const { tempFilePath } = await this.generatePDF(
-      ctx,
-      template.templateString,
-      order
-    );
+    if (!templateString) {
+      const template = await this.findTemplate(ctx, templateId!);
+      if (!template) {
+        throw Error(`No template found with id '${templateId}'`);
+      }
+      templateString = template.templateString;
+    }
+    const { tempFilePath } = await this.generatePDF(ctx, templateString, order);
     const stream = createReadStream(tempFilePath);
     stream.on('finish', () => safeRemoveFile(tempFilePath));
     return stream;
@@ -145,16 +152,16 @@ export class PDFTemplateService {
 
   async downloadMultiplePDFs(
     ctx: RequestContext,
-    templateName: string,
+    templateId: ID,
     orders: Order[]
   ) {
     // This is currently done in main thread, so a max of 10 orders is allowed
     if (orders.length > 10) {
       throw new UserInputError(`Max 10 orders allowed`);
     }
-    const template = await this.findTemplate(ctx, templateName);
+    const template = await this.findTemplate(ctx, templateId);
     if (!template) {
-      throw Error(`No template found with name '${templateName}'`);
+      throw Error(`No template found with name '${templateId}'`);
     }
     const pdfData = await Promise.all(
       orders.map(async (order) => {
@@ -187,32 +194,45 @@ export class PDFTemplateService {
     templateString: string,
     order: Order
   ): Promise<{ tempFilePath: string; orderCode: string }> {
-    const pdf = require('pdf-creator-node');
     const data = await this.pluginInitOptions.loadDataFn!(
       ctx,
       new Injector(this.moduleRef),
       order
     );
     const tmpFilePath = await createTempFile('.pdf');
-    const html = templateString;
-    const options = {
-      format: 'A4',
-      orientation: 'portrait',
-      border: '10mm',
-      timeout: 1000 * 60 * 5, // 5 min
-      childProcessOptions: {
-        env: {
-          OPENSSL_CONF: '/dev/null',
-        },
-      },
-    };
-    const document = {
-      html,
-      data,
-      path: tmpFilePath,
-      type: '',
-    };
-    await pdf.create(document, options);
+    let browser: Browser | undefined;
+    try {
+      const compiledHtml = Handlebars.compile(templateString)(data);
+      browser = await puppeteer.launch({
+        headless: true,
+        // We are not using puppeteer to fetch any external resources, so we dont care about the security concerns here
+        args: ['--no-sandbox'],
+      });
+      const page = await browser.newPage();
+      await page.setContent(compiledHtml);
+      await page.pdf({
+        path: tmpFilePath,
+        format: 'A4',
+        margin: { bottom: 100, top: 100, left: 50, right: 50 },
+      });
+    } catch (e) {
+      // Warning, because this will be retried, or is returned to the user
+      Logger.warn(
+        `Failed to generate invoice: ${JSON.stringify((e as Error)?.message)}`,
+        loggerCtx
+      );
+      throw e;
+    } finally {
+      if (browser) {
+        // Prevent memory leaks
+        browser.close().catch((e: Error) => {
+          Logger.error(
+            `Failed to close puppeteer browser: ${e?.message}`,
+            loggerCtx
+          );
+        });
+      }
+    }
     return { tempFilePath: tmpFilePath, orderCode: order.code };
   }
 

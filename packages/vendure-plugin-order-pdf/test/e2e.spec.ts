@@ -13,18 +13,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { defaultTemplate } from '../src/ui/default-template';
-import {
-  PicklistConfigQuery,
-  MutationUpsertPicklistConfigArgs,
-  UpsertPicklistConfigMutation,
-} from '../src/ui/generated/graphql';
-import {
-  getConfigQuery,
-  upsertConfigMutation,
-} from '../src/ui/queries.graphql';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
-import { PicklistPlugin } from '../src/pdf-template-plugin';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { PDFTemplatePlugin } from '../src';
 
 describe('Picklists plugin', function () {
   let server: TestServer;
@@ -40,7 +31,11 @@ describe('Picklists plugin', function () {
         port: 3106,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [PicklistPlugin.init()],
+      plugins: [
+        PDFTemplatePlugin.init({
+          allowPublicDownload: true,
+        }),
+      ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -124,6 +119,17 @@ describe('Picklists plugin', function () {
       `http://localhost:3106/picklists/download?orderCodes=${order1.code},${order2.code}`,
       {
         headers,
+        method: 'GET',
+      }
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it('Allows public download', async () => {
+    const order1 = await createSettledOrder(shopClient, 'T_1');
+    const res = await fetch(
+      `http://localhost:3050/order-pdf/download/${E2E_DEFAULT_CHANNEL_TOKEN}/${order1.code}/1/hayden.zieme12@hotmail.com`,
+      {
         method: 'GET',
       }
     );

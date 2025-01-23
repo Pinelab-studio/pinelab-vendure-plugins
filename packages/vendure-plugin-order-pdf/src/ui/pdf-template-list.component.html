@@ -51,32 +51,42 @@
   <div class="modal-body">
     <div class="popupContainer">
       <div class="card">
-        <div style="width: 100%">
+        <form [formGroup]="form" style="width: 100%">
           <ul class="list-group list-group-flush">
             <li class="list-group-item">
-              <h4 class="card-title">Name *</h4>
-              <input
-                clrInput
-                name="input"
-                required
-                [(ngModel)]="currentPdfTemplate.name"
-              />
+              <div class="form-grid">
+                <!-- Name -->
+                <vdr-form-field label="Name" for="name" class="mb-2">
+                  <input clrInput name="input" formControlName="name" />
+                </vdr-form-field>
+                <!-- Enabled -->
+                <vdr-form-field label="Enabled" for="enabled" class="mb-2">
+                  <clr-toggle-wrapper>
+                    <input
+                      type="checkbox"
+                      clrToggle
+                      formControlName="enabled"
+                    />
+                  </clr-toggle-wrapper>
+                </vdr-form-field>
+              </div>
             </li>
             <li class="list-group-item">
               <!-- Template String Field -->
               <vdr-form-field label="HTML template" for="templateString">
                 <vdr-dynamic-form-input
+                  *ngIf="renderHtmlFormInput"
                   formControlName="templateString"
+                  [control]="form.get('templateString')"
                   [readonly]="false"
                   [def]="htmlFormInputConfigArgsDef"
-                  [control]="form.get('templateString')"
                   style="max-width: 100%"
                 >
                 </vdr-dynamic-form-input>
               </vdr-form-field>
             </li>
           </ul>
-        </div>
+        </form>
       </div>
     </div>
   </div>
@@ -101,7 +111,13 @@
         >
           Preview
         </button>
-        <button class="btn btn-primary" (click)="createOrUpdate()">Save</button>
+        <button
+          class="btn btn-primary"
+          (click)="createOrUpdate()"
+          [disabled]="!form.valid"
+        >
+          Save
+        </button>
       </vdr-ab-right>
     </vdr-action-bar>
   </div>

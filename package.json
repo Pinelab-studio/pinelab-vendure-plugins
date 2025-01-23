@@ -112,7 +112,7 @@
           "variant-bulk-update",
           "vendure-order-client",
           "webhook",
-          "picklist",
+          "order-pdfs",
           "vendure-scripts",
           "public-customer-groups",
           "shipmate"

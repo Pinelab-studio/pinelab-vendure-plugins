@@ -22,6 +22,11 @@ export interface PDFTemplatePluginOptions {
    * Load custom data that is passed in to your HTML/handlebars template
    */
   loadDataFn?: LoadDataFn;
+  /**
+   * Allow public download of PDFs, requires the emailaddress that belongs to the order.
+   * @example /pdf-templates/download/my-channel-token/1234/F1BTWG6U2JBXT1RC/hayden.zieme@hotmail.com
+   */
+  allowPublicDownload?: boolean;
 }
 
 @VendurePlugin({
