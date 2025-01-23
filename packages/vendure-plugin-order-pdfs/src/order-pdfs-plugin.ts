@@ -36,7 +36,7 @@ export interface PDFTemplatePluginOptions {
     PDFTemplateService,
     {
       provide: PLUGIN_INIT_OPTIONS,
-      useFactory: () => PDFTemplatePlugin.options,
+      useFactory: () => OrderPDFsPlugin.options,
     },
   ],
   controllers: [PDFTemplateController],
@@ -50,17 +50,17 @@ export interface PDFTemplatePluginOptions {
   },
   compatibility: '>=3.1.0',
 })
-export class PDFTemplatePlugin {
+export class OrderPDFsPlugin {
   static options: PDFTemplatePluginOptions = {
     loadDataFn: defaultLoadDataFn,
   };
 
-  static init(options: PDFTemplatePluginOptions): Type<PDFTemplatePlugin> {
-    PDFTemplatePlugin.options = {
+  static init(options: PDFTemplatePluginOptions): Type<OrderPDFsPlugin> {
+    OrderPDFsPlugin.options = {
       ...this.options,
       ...options,
     };
-    return PDFTemplatePlugin;
+    return OrderPDFsPlugin;
   }
 
   static ui: AdminUiExtension = {

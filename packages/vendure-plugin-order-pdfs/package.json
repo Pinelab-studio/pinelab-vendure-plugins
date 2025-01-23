@@ -1,7 +1,7 @@
 {
-  "name": "@pinelab/vendure-plugin-order-pdf",
+  "name": "@pinelab/vendure-plugin-order-pdfs",
   "version": "0.0.1",
-  "description": "Vendure plugin that allows downloading PDF's of orders",
+  "description": "A Vendure plugin that enables the download of various types of PDF files for orders, such as quotations, packing slips, and shipping labels.",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",

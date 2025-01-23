@@ -14,7 +14,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { PDFTemplatePlugin } from '../src';
+import { OrderPDFsPlugin } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { PDFTemplateService } from '../src/api/pdf-template.service';
@@ -29,7 +29,7 @@ require('dotenv').config();
   const devConfig = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      PDFTemplatePlugin.init({
+      OrderPDFsPlugin.init({
         allowPublicDownload: true,
       }),
       DefaultSearchPlugin,
@@ -38,7 +38,7 @@ require('dotenv').config();
         route: 'admin',
         app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [PDFTemplatePlugin.ui],
+          extensions: [OrderPDFsPlugin.ui],
           devMode: true,
         }),
       }),

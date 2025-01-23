@@ -24,7 +24,7 @@ import {
 } from '@vendure/core';
 import { pdfDownloadPermission } from './pdf-template.resolver';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { PDFTemplatePluginOptions } from '../pdf-template-plugin';
+import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
 
 @Controller('order-pdf')
 export class PDFTemplateController {

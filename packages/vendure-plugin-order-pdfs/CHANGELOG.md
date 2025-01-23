@@ -2,3 +2,4 @@
 
 - Refactored Picklist plugin into a more generic PDF order plugin
 - Moved to Puppeteer
+- Allow public access to PDF files

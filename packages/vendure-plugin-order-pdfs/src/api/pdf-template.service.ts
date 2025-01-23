@@ -14,7 +14,7 @@ import {
 import { createReadStream, ReadStream } from 'fs';
 import Handlebars from 'handlebars';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { PDFTemplatePluginOptions } from '../pdf-template-plugin';
+import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
 import { PdfTemplateInput } from '../ui/generated/graphql';
 import {
   createTempFile,

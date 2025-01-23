@@ -15,7 +15,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { defaultTemplate } from '../src/ui/default-template';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { PDFTemplatePlugin } from '../src';
+import { OrderPDFsPlugin } from '../src';
 
 describe('Picklists plugin', function () {
   let server: TestServer;
@@ -32,7 +32,7 @@ describe('Picklists plugin', function () {
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
-        PDFTemplatePlugin.init({
+        OrderPDFsPlugin.init({
           allowPublicDownload: true,
         }),
       ],

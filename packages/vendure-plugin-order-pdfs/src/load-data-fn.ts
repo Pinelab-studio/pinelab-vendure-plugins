@@ -9,19 +9,13 @@ export type LoadDataFn = (
   ctx: RequestContext,
   injector: Injector,
   order: Order
-) => Promise<DefaultPicklistData>;
-
-interface DefaultPicklistData {
-  orderDate: string;
-  customerEmail: string;
-  order: Partial<Order>;
-}
+) => Promise<any>;
 
 export const defaultLoadDataFn: LoadDataFn = async (
   ctx: RequestContext,
   injector: Injector,
   order: Order
-): Promise<DefaultPicklistData> => {
+): Promise<any> => {
   order.lines.forEach((line) => {
     line.productVariant = translateEntity(
       line.productVariant,
