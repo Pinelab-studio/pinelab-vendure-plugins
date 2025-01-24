@@ -87,6 +87,7 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
       id: [''],
       name: ['', Validators.required],
       enabled: [true, Validators.required],
+      public: [false, Validators.required],
       templateString: ['', Validators.required],
     });
   }
@@ -98,6 +99,7 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
       id: '',
       name: '',
       enabled: true,
+      public: false,
       templateString: defaultTemplate,
     });
     this.forceRerender();
@@ -110,6 +112,7 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
       id: template.id,
       name: template.name,
       enabled: template.enabled,
+      public: template.public,
       templateString: template.templateString,
     });
     this.forceRerender();
@@ -150,12 +153,14 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
       id: '',
       name: '',
       enabled: true,
+      public: true,
       templateString: '',
     });
   }
 
   createOrUpdate() {
     const formValues = this.form.value;
+    console.log(formValues);
     if (formValues.id) {
       // Update
       this.dataService
@@ -165,6 +170,7 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
             id: formValues.id,
             input: {
               enabled: formValues.enabled,
+              public: formValues.public,
               name: formValues.name,
               templateString: formValues.templateString,
             },
@@ -185,6 +191,7 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
             input: {
               name: formValues.name,
               enabled: formValues.enabled,
+              public: formValues.public,
               templateString: formValues.templateString,
             },
           }

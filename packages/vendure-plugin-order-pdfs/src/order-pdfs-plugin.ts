@@ -6,16 +6,17 @@ import {
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { PDFTemplateService } from './api/pdf-template.service';
+import { OrderPDFsService } from './api/order-pdfs.service';
 import {
-  PDFTemplateResolver,
+  PDFTemplateAdminResolver,
   pdfDownloadPermission,
-} from './api/pdf-template.resolver';
-import { schema } from './api/schema.graphql';
-import { PDFTemplateController } from './api/pdf-template.controller';
+} from './api/pdf-template-admin-resolver';
+import { adminSchema, shopSchema } from './api/schema.graphql';
+import { OrderPDFsController } from './api/order-pdfs.controller';
 import { LoadDataFn, defaultLoadDataFn } from './load-data-fn';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { PDFTemplateEntity } from './api/pdf-template.entity';
+import { PDFTemplateShopResolver } from './api/pdf-template-shop-resolver';
 
 export interface PDFTemplatePluginOptions {
   /**
@@ -33,16 +34,20 @@ export interface PDFTemplatePluginOptions {
   imports: [PluginCommonModule],
   entities: [PDFTemplateEntity],
   providers: [
-    PDFTemplateService,
+    OrderPDFsService,
     {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => OrderPDFsPlugin.options,
     },
   ],
-  controllers: [PDFTemplateController],
+  controllers: [OrderPDFsController],
   adminApiExtensions: {
-    schema: schema as any,
-    resolvers: [PDFTemplateResolver],
+    schema: adminSchema,
+    resolvers: [PDFTemplateAdminResolver],
+  },
+  shopApiExtensions: {
+    schema: shopSchema,
+    resolvers: [PDFTemplateShopResolver],
   },
   configuration: (config: RuntimeVendureConfig) => {
     config.authOptions.customPermissions.push(pdfDownloadPermission);

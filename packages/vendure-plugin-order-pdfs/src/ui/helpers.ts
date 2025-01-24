@@ -1,5 +1,9 @@
 import { LocalStorageService } from '@vendure/admin-ui/core';
 
+/**
+ * Make the downloaded blob popup in the browser.
+ * Opens the PDF in new browser tab, or prompts a download if its a ZIP file
+ */
 export async function downloadBlob(
   blob: Blob,
   fileName: string,
@@ -17,6 +21,9 @@ export async function downloadBlob(
   a.click();
 }
 
+/**
+ * Get the channel token and auth token from local storage
+ */
 export function getHeaders(
   localStorageService: LocalStorageService
 ): Record<string, string> {

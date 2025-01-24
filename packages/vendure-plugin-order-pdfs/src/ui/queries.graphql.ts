@@ -3,8 +3,11 @@ import gql from 'graphql-tag';
 const pdfTemplateFields = gql`
   fragment PDFTemplateFields on PDFTemplate {
     id
+    createdAt
+    updatedAt
     name
     enabled
+    public
     templateString
   }
 `;
@@ -55,6 +58,7 @@ export const getTemplateNames = gql`
         id
         name
         enabled
+        public
       }
       totalItems
     }

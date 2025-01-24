@@ -17,7 +17,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { OrderPDFsPlugin } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { PDFTemplateService } from '../src/api/pdf-template.service';
+import { OrderPDFsService } from '../src/api/order-pdfs.service';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { defaultTemplate } from '../src/ui/default-template';
@@ -68,8 +68,9 @@ require('dotenv').config();
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });
-  await server.app.get(PDFTemplateService).createPDFTemplate(ctx, {
+  await server.app.get(OrderPDFsService).createPDFTemplate(ctx, {
     enabled: true,
+    public: true,
     name: 'Default',
     templateString: defaultTemplate,
   });

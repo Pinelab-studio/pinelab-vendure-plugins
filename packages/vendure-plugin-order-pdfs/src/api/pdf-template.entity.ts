@@ -14,8 +14,11 @@ export class PDFTemplateEntity extends VendureEntity {
   @Column()
   name!: string;
 
+  @Column({ default: true })
+  enabled: boolean = true;
+
   @Column({ default: false })
-  enabled: boolean = false;
+  public: boolean = false;
 
   @Column({ type: resolveTemplateColumnType(), nullable: false })
   templateString!: string;

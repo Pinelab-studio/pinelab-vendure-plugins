@@ -44,9 +44,18 @@
       }}</vdr-chip>
     </ng-template>
   </vdr-dt2-column>
+  <vdr-dt2-column id="public" heading="Public">
+    <ng-template let-pdfTemplate="item">
+      <vdr-chip *ngIf="pdfTemplate.public" colorType="success">Public</vdr-chip>
+      <vdr-chip *ngIf="!pdfTemplate.public" colorType="warning"
+        >Admin Only</vdr-chip
+      >
+    </ng-template>
+  </vdr-dt2-column>
 </vdr-data-table-2>
 
-<clr-modal [(clrModalOpen)]="showModal">
+<!-- Create and Edit modal -->
+<clr-modal [(clrModalOpen)]="showModal" clrModalSize="xl">
   <h3 class="modal-title">{{ modalAction }} PDF Template</h3>
   <div class="modal-body">
     <div class="popupContainer">
@@ -54,21 +63,37 @@
         <form [formGroup]="form" style="width: 100%">
           <ul class="list-group list-group-flush">
             <li class="list-group-item">
-              <div class="form-grid">
-                <!-- Name -->
-                <vdr-form-field label="Name" for="name" class="mb-2">
-                  <input clrInput name="input" formControlName="name" />
-                </vdr-form-field>
-                <!-- Enabled -->
-                <vdr-form-field label="Enabled" for="enabled" class="mb-2">
-                  <clr-toggle-wrapper>
-                    <input
-                      type="checkbox"
-                      clrToggle
-                      formControlName="enabled"
-                    />
-                  </clr-toggle-wrapper>
-                </vdr-form-field>
+              <div class="clr-row">
+                <div class="clr-col-4">
+                  <!-- Name -->
+                  <vdr-form-field label="Name" for="name" class="mb-2">
+                    <input clrInput name="input" formControlName="name" />
+                  </vdr-form-field>
+                </div>
+                <div class="clr-col-4">
+                  <!-- Enabled -->
+                  <vdr-form-field label="Enabled" for="enabled" class="mb-2">
+                    <clr-toggle-wrapper>
+                      <input
+                        type="checkbox"
+                        clrToggle
+                        formControlName="enabled"
+                      />
+                    </clr-toggle-wrapper>
+                  </vdr-form-field>
+                </div>
+                <div class="clr-col-4">
+                  <!-- Public -->
+                  <vdr-form-field label="Public" for="public" class="mb-2">
+                    <clr-toggle-wrapper>
+                      <input
+                        type="checkbox"
+                        clrToggle
+                        formControlName="public"
+                      />
+                    </clr-toggle-wrapper>
+                  </vdr-form-field>
+                </div>
               </div>
             </li>
             <li class="list-group-item">

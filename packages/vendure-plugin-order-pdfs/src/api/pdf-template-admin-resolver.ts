@@ -13,7 +13,7 @@ import {
   PdfTemplateList,
   UpdatePdfTemplateMutationVariables,
 } from '../ui/generated/graphql';
-import { PDFTemplateService } from './pdf-template.service';
+import { OrderPDFsService } from './order-pdfs.service';
 
 export const pdfDownloadPermission = new PermissionDefinition({
   name: 'AllowPDFDownload',
@@ -21,8 +21,8 @@ export const pdfDownloadPermission = new PermissionDefinition({
 });
 
 @Resolver()
-export class PDFTemplateResolver {
-  constructor(private readonly service: PDFTemplateService) {}
+export class PDFTemplateAdminResolver {
+  constructor(private readonly service: OrderPDFsService) {}
 
   @Mutation()
   @Allow(pdfDownloadPermission.Permission)

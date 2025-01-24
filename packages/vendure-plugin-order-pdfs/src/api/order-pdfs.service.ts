@@ -26,7 +26,7 @@ import { PDFTemplateEntity } from './pdf-template.entity';
 import puppeteer, { Browser } from 'puppeteer';
 
 @Injectable()
-export class PDFTemplateService {
+export class OrderPDFsService {
   constructor(
     private readonly connection: TransactionalConnection,
     private readonly orderService: OrderService,
@@ -55,6 +55,7 @@ export class PDFTemplateService {
       await repository.update(existing.id, {
         name: input.name,
         enabled: input.enabled,
+        public: input.public,
         templateString: input.templateString,
       });
     }
@@ -79,6 +80,7 @@ export class PDFTemplateService {
     const result = await repository.save({
       name: input.name,
       enabled: input.enabled,
+      public: input.public,
       templateString: input.templateString,
       channelId: ctx.channelId as string,
     });

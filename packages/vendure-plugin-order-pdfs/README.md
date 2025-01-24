@@ -75,6 +75,19 @@ CMD [ "npm", "run", "start" ]
 
 A customer can download a PDF file by accessing the url `/order-pdf/download/<CHANNEL_TOKEN>/<ORDER_CODE>/<TEMPLATE_ID>/<ORDER_EMAIL_ADDRESS>`. For example: `/order-pdf/download/my-channel-token/ORD1234XYZ/1/hayden.zieme12@hotmail.com`. This means a user should know the order code and the corresponding email address before she can download a PDF for the order. It's a plain GET request, so you can include these links, for example in emails you send to your customers.
 
+You can query the available public templates via the shop api using the query below. You can then use the returned ID to construct the download URL.
+
+```graphql
+query {
+  availablePDFTemplates {
+    id
+    createdAt
+    updatedAt
+    name
+  }
+}
+```
+
 If you want to disable this behavior, you can supply `allowPublicDownload: false` in the plugin init arguments.
 
 ## Custom data loading

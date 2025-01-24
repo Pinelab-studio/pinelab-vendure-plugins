@@ -5,12 +5,26 @@ const scalars = gql`
   scalar DateTime
 `;
 
-export const schema = gql`
+export const shopSchema = gql`
+  type PDFTemplate {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    name: String!
+  }
+
+  extend type Query {
+    availablePDFTemplates: [PDFTemplate!]!
+  }
+`;
+
+export const adminSchema = gql`
   type PDFTemplate {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
     enabled: Boolean!
+    public: Boolean!
     name: String!
     templateString: String
   }
@@ -18,6 +32,7 @@ export const schema = gql`
   input PDFTemplateInput {
     name: String!
     enabled: Boolean!
+    public: Boolean!
     templateString: String!
   }
 

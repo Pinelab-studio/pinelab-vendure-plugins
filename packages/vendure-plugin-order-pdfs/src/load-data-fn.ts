@@ -22,14 +22,10 @@ export const defaultLoadDataFn: LoadDataFn = async (
       ctx.languageCode
     );
   });
-  if (!order.customer?.emailAddress) {
-    throw Error(`Order doesnt have a customer.email set!`);
-  }
   return {
     orderDate: order.orderPlacedAt
       ? new Intl.DateTimeFormat('nl-NL').format(order.orderPlacedAt)
       : new Intl.DateTimeFormat('nl-NL').format(order.updatedAt),
-    customerEmail: order.customer.emailAddress,
     order,
   };
 };

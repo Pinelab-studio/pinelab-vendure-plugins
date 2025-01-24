@@ -1,4 +1,4 @@
-import { PDFTemplateService } from './pdf-template.service';
+import { OrderPDFsService } from './order-pdfs.service';
 import {
   Controller,
   Post,
@@ -22,14 +22,14 @@ import {
   RequestContextService,
   UserInputError,
 } from '@vendure/core';
-import { pdfDownloadPermission } from './pdf-template.resolver';
+import { pdfDownloadPermission } from './pdf-template-admin-resolver';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { PDFTemplatePluginOptions } from '../order-pdfs-plugin';
 
 @Controller('order-pdf')
-export class PDFTemplateController {
+export class OrderPDFsController {
   constructor(
-    private readonly pdfTemplateService: PDFTemplateService,
+    private readonly pdfTemplateService: OrderPDFsService,
     private readonly orderService: OrderService,
     private readonly entityHydrator: EntityHydrator,
     private readonly requestContextService: RequestContextService,
@@ -63,7 +63,7 @@ export class PDFTemplateController {
 
   @Allow(pdfDownloadPermission.Permission)
   @Get('/download/:templateId/')
-  async downloadMultiple(
+  async download(
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
     @Param('templateId') templateId: ID,
@@ -131,29 +131,29 @@ export class PDFTemplateController {
     if (!this.config.allowPublicDownload) {
       throw new BadRequestException('PDF downloads not allowed');
     }
-    console.log(
-      'channelToken',
-      channelToken,
-      orderCode,
-      templateId,
-      emailAddress
-    );
     if (!channelToken) {
       throw new BadRequestException('No channel token given');
+    }
+    if (String(templateId).startsWith('T_')) {
+      // Remove T_ prefix on ID's in test environment
+      templateId = String(templateId).replace('T_', '');
     }
     const ctx = await this.requestContextService.create({
       apiType: 'admin',
       channelOrToken: channelToken,
     });
-    console.log('ctx', ctx.channel.token);
-    // Return single as inline PDF
+    const template = await this.pdfTemplateService.findTemplate(
+      ctx,
+      templateId
+    );
+    if (!template?.enabled || !template?.public) {
+      throw new ForbiddenError();
+    }
     const order = await this.orderService.findOneByCode(ctx, orderCode);
-    console.log('order', order);
     if (!order) {
       throw new ForbiddenError();
     }
     await this.entityHydrator.hydrate(ctx, order, { relations: ['customer'] });
-    console.log('order.customer', order.customer?.emailAddress);
     if (!order.customer || order.customer.emailAddress !== emailAddress) {
       throw new ForbiddenError();
     }
