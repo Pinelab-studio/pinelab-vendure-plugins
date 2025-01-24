@@ -26,21 +26,10 @@ const plugin: Plugin = Astro.props.plugin;
     </code>
     </pre>
 
-      <!-- Buttons -->
-      <div
-        class="flex flex-col lg:flex-row justify-center gap-x-6 lg:ml-auto mb-12"
-      >
-        <a
-          class="text-white items-center font-medium gap-3 inline-flex focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none justify-center px-6 lg:px-8 ring-2 ring-transparent focus:ring-offset-2 focus:ring-blue-500 duration-200 py-3.5 rounded-full active:bg-blue-800 active:text-white bg-blue-500 hover:bg-blue-600"
-          href="javascript:void(0)"
-        >
-          README
-        </a>
-        <a
-          class="text-blue-600 items-center font-medium gap-3 inline-flex focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none justify-center px-6 lg:px-8 ring-2 ring-transparent focus:ring-offset-2 focus:ring-blue-500 duration-200 py-3.5 rounded-full active:bg-blue-800 active:text-white bg-blue-100 hover:bg-blue-50"
-          href={`/plugin/${plugin.slug}/changelog`}
-        >
-          CHANGELOG
+      <!-- Changelog link -->
+      <div class="text-right">
+        <a class="text-blue-600" href={`/plugin/${plugin.slug}/changelog`}
+          >Changelog &rsaquo;
         </a>
       </div>
 

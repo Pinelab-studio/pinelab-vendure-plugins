@@ -1,0 +1,149 @@
+<vdr-page-block>
+  <vdr-action-bar>
+    <vdr-ab-left></vdr-ab-left>
+    <vdr-ab-right>
+      <a class="btn btn-primary" (click)="create()">
+        <clr-icon shape="plus"></clr-icon>
+        Create
+      </a>
+    </vdr-ab-right>
+  </vdr-action-bar>
+</vdr-page-block>
+
+<!-- The data table -->
+<vdr-data-table-2
+  id="pdf-template-list"
+  [items]="items$ | async"
+  [itemsPerPage]="itemsPerPage$ | async"
+  [totalItems]="totalItems$ | async"
+  [currentPage]="currentPage$ | async"
+  (pageChange)="setPageNumber($event)"
+  (itemsPerPageChange)="setItemsPerPage($event)"
+>
+  <vdr-dt2-column id="id" [heading]="'common.id' | translate">
+    <ng-template let-pdfTemplate="item">
+      {{ pdfTemplate.id }}
+    </ng-template>
+  </vdr-dt2-column>
+
+  <vdr-dt2-column id="name" heading="Name">
+    <ng-template let-pdfTemplate="item">
+      <a class="button-ghost" (click)="edit(pdfTemplate)">
+        <span>{{ pdfTemplate.name }}</span>
+      </a>
+    </ng-template>
+  </vdr-dt2-column>
+
+  <vdr-dt2-column id="enabled" heading="Enabled">
+    <ng-template let-pdfTemplate="item">
+      <vdr-chip *ngIf="pdfTemplate.enabled" colorType="success">{{
+        'common.enabled' | translate
+      }}</vdr-chip>
+      <vdr-chip *ngIf="!pdfTemplate.enabled" colorType="warning">{{
+        'common.disabled' | translate
+      }}</vdr-chip>
+    </ng-template>
+  </vdr-dt2-column>
+  <vdr-dt2-column id="public" heading="Public">
+    <ng-template let-pdfTemplate="item">
+      <vdr-chip *ngIf="pdfTemplate.public" colorType="success">Public</vdr-chip>
+      <vdr-chip *ngIf="!pdfTemplate.public" colorType="warning"
+        >Admin Only</vdr-chip
+      >
+    </ng-template>
+  </vdr-dt2-column>
+</vdr-data-table-2>
+
+<!-- Create and Edit modal -->
+<clr-modal [(clrModalOpen)]="showModal" clrModalSize="xl">
+  <h3 class="modal-title">{{ modalAction }} PDF Template</h3>
+  <div class="modal-body">
+    <div class="popupContainer">
+      <div class="card">
+        <form [formGroup]="form" style="width: 100%">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <div class="clr-row">
+                <div class="clr-col-4">
+                  <!-- Name -->
+                  <vdr-form-field label="Name" for="name" class="mb-2">
+                    <input clrInput name="input" formControlName="name" />
+                  </vdr-form-field>
+                </div>
+                <div class="clr-col-4">
+                  <!-- Enabled -->
+                  <vdr-form-field label="Enabled" for="enabled" class="mb-2">
+                    <clr-toggle-wrapper>
+                      <input
+                        type="checkbox"
+                        clrToggle
+                        formControlName="enabled"
+                      />
+                    </clr-toggle-wrapper>
+                  </vdr-form-field>
+                </div>
+                <div class="clr-col-4">
+                  <!-- Public -->
+                  <vdr-form-field label="Public" for="public" class="mb-2">
+                    <clr-toggle-wrapper>
+                      <input
+                        type="checkbox"
+                        clrToggle
+                        formControlName="public"
+                      />
+                    </clr-toggle-wrapper>
+                  </vdr-form-field>
+                </div>
+              </div>
+            </li>
+            <li class="list-group-item">
+              <!-- Template String Field -->
+              <vdr-form-field label="HTML template" for="templateString">
+                <vdr-dynamic-form-input
+                  *ngIf="renderHtmlFormInput"
+                  formControlName="templateString"
+                  [control]="form.get('templateString')"
+                  [readonly]="false"
+                  [def]="htmlFormInputConfigArgsDef"
+                  style="max-width: 100%"
+                >
+                </vdr-dynamic-form-input>
+              </vdr-form-field>
+            </li>
+          </ul>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer pdf-template">
+    <vdr-action-bar>
+      <vdr-ab-left>
+        <a
+          *ngIf="modalAction === 'Edit'"
+          class="btn btn-danger"
+          (click)="delete()"
+        >
+          <clr-icon shape="trash"></clr-icon>
+          Delete
+        </a>
+      </vdr-ab-left>
+      <vdr-ab-right>
+        <button
+          type="button"
+          class="btn btn-outline mr-2"
+          (click)="preview()"
+          [disabled]="previewLoading"
+        >
+          Preview
+        </button>
+        <button
+          class="btn btn-primary"
+          (click)="createOrUpdate()"
+          [disabled]="!form.valid"
+        >
+          Save
+        </button>
+      </vdr-ab-right>
+    </vdr-action-bar>
+  </div>
+</clr-modal>
