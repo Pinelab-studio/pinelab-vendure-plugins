@@ -32,7 +32,7 @@ export class OrderPDFsService {
     private readonly orderService: OrderService,
     private moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
-    private pluginInitOptions: PDFTemplatePluginOptions
+    private options: PDFTemplatePluginOptions
   ) {
     Handlebars.registerHelper('formatMoney', (amount?: number) => {
       if (amount == null) {
@@ -122,7 +122,7 @@ export class OrderPDFsService {
   }
 
   /**
-   * Generates an picklist for the latest placed order and the given template
+   * Generates an PDF for the latest placed order and the given template
    */
   async downloadPDF(
     ctx: RequestContext,
@@ -178,9 +178,9 @@ export class OrderPDFsService {
         );
       })
     );
-    const zippableFiles: ZippableFile[] = pdfData.map((picklist) => ({
-      path: picklist.tempFilePath,
-      name: picklist.orderCode + '.pdf',
+    const zippableFiles: ZippableFile[] = pdfData.map((pdf) => ({
+      path: pdf.tempFilePath,
+      name: pdf.orderCode + '.pdf',
     }));
     const zipFile = await zipFiles(zippableFiles);
     const stream = createReadStream(zipFile);
@@ -196,7 +196,7 @@ export class OrderPDFsService {
     templateString: string,
     order: Order
   ): Promise<{ tempFilePath: string; orderCode: string }> {
-    const data = await this.pluginInitOptions.loadDataFn!(
+    const data = await this.options.loadDataFn!(
       ctx,
       new Injector(this.moduleRef),
       order
