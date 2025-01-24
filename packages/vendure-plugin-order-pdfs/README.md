@@ -124,5 +124,5 @@ By default, the plugin uses TypeOrm's `text` to store the template in the DB. Th
 
 ```shell
 # E.g. For mysql the column type 'longtext' will be used, which supports up to 4gb
-PICKLISTS_PLUGIN_DB_ENGINE=mysql
+PDF_TEMPLATE_PLUGIN_DB_ENGINE=mysql
 ```
