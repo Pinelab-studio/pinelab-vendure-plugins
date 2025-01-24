@@ -2,7 +2,7 @@
 
 A Vendure plugin that enables the download of various types of PDF files for orders, such as quotations, packing slips, and shipping labels.
 
-This plugin generates PDF's on the fly, and should **not be used for invoices** be used for invoices, because invoices should be persisted and have fixed numbers. Please check out our [Invoices Plugin](https://plugins.pinelab.studio/plugin/pinelab-invoice-plugin/) for compliant invoicing.
+This plugin generates PDF's on the fly, and should **not be used for invoices**, because invoices should be persisted and have fixed numbers. Please check out our [Invoices Plugin](https://plugins.pinelab.studio/plugin/pinelab-invoice-plugin/) for compliant invoicing.
 
 ## Getting started
 
