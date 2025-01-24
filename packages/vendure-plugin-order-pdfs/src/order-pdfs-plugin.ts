@@ -53,7 +53,7 @@ export interface PDFTemplatePluginOptions {
     config.authOptions.customPermissions.push(pdfDownloadPermission);
     return config;
   },
-  compatibility: '>=3.1.0',
+  compatibility: '>=2.2.0',
 })
 export class OrderPDFsPlugin {
   static options: PDFTemplatePluginOptions = {
