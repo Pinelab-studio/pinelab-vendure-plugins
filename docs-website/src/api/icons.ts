@@ -27,7 +27,7 @@ const icons: Record<string, string> = {
   'vendure-plugin-goedgepickt': 'goedgepickt.png',
   'vendure-plugin-variant-bulk-update': 'undraw_chevrons.svg',
   'vendure-plugin-dutch-postalcode': 'undraw_asymmetric-lines.svg',
-  'vendure-plugin-picklist': 'undraw_note.svg',
+  'vendure-plugin-order-pdfs': 'undraw_note.svg',
   'vendure-plugin-anonymized-order': 'undraw_ghost.svg',
   'vendure-plugin-limit-variant-per-order': 'undraw_circled-x.svg',
   'vendure-plugin-myparcel': 'myparcel.png',
