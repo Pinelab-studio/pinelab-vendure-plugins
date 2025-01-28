@@ -1,3 +1,7 @@
+# 1.3.1 (2025-01-28)
+
+- Correct UI label for actions dropdown
+
 # 1.3.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

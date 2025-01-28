@@ -10,8 +10,7 @@ export const stringifyProductTransformer = new RequestTransformer({
       return {
         body: JSON.stringify({ type: event.type, ctx: event.ctx.serialize() }),
         headers: {
-          'x-custom-header': 'stringify-custom-header',
-          'content-type': 'application/json',
+          'pc-update:': 'true',
         },
       };
     }
