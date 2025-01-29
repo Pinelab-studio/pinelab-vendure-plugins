@@ -1,6 +1,6 @@
 import querystring from 'querystring';
 
-interface Tokens {
+interface TokenSet {
   /**
    * Valid for 10 minutes. If expired, use refresh token to get a new one
    */
@@ -33,7 +33,7 @@ export class ExactOnlineClient {
    * Get access and refresh tokens using code gotten by the Exact login redirect.
    * redirectCode can be found in the url: `?code=stampNL001.xxxxx` stampNL001.xxxxx is the rawCode we need here
    */
-  async getAccessToken(redirectCode: string): Promise<Tokens> {
+  async getAccessToken(redirectCode: string): Promise<TokenSet> {
     const data = querystring.stringify({
       code: decodeURIComponent(redirectCode),
       redirect_uri: this.redirectUri,
@@ -49,10 +49,10 @@ export class ExactOnlineClient {
       body: data,
     });
     await this.throwIfError(response);
-    return (await response.json()) as Tokens;
+    return (await response.json()) as TokenSet;
   }
 
-  async refreshTokens(refreshToken: string): Promise<Tokens> {
+  async refreshTokens(refreshToken: string): Promise<TokenSet> {
     const data = querystring.stringify({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
@@ -67,7 +67,7 @@ export class ExactOnlineClient {
       body: data,
     });
     await this.throwIfError(response);
-    return (await response.json()) as Tokens;
+    return (await response.json()) as TokenSet;
   }
 
   async throwIfError(response: Response): Promise<void> {

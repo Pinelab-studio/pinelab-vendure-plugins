@@ -1,22 +1,27 @@
 import { initialData } from '../../test/src/initial-data';
 import {
   createTestEnvironment,
+  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
 import {
+  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
+  Injector,
   JobQueueService,
   LogLevel,
   mergeConfig,
+  RequestContext,
   RequestContextService,
 } from '@vendure/core';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import {
+  ExactOnlineStrategy,
   InvoicePlugin,
   InvoiceService,
   LocalFileStrategy,
@@ -25,6 +30,7 @@ import {
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { INestApplication } from '@nestjs/common';
 
 require('dotenv').config();
 
@@ -67,13 +73,23 @@ require('dotenv').config();
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [InvoicePlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [InvoicePlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
+    customFields: {
+      Channel: [
+        {
+          name: 'exactRefreshToken',
+          type: 'string',
+          public: false,
+          readonly: true,
+        },
+      ],
+    },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
@@ -103,37 +119,55 @@ require('dotenv').config();
     apiType: 'admin',
   });
   await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
+
+  // Test Exact Online setup
+  await testExactOnlineSetup(server.app);
+
   // Add a test orders at every server start
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-  await addShippingMethod(adminClient, 'manual-fulfillment');
-  const orders = 1;
-  for (let i = 1; i <= orders; i++) {
-    await createSettledOrder(
-      shopClient,
-      3,
-      undefined,
-      undefined,
-      {
-        input: {
-          fullName: 'Pinelab Finance Department',
-          streetLine1: 'Bankstreet',
-          streetLine2: '899',
-          city: 'Leeuwarden',
-          postalCode: '233 DE',
-          countryCode: 'NL',
-        },
-      },
-      {
-        input: {
-          fullName: 'Martijn Pinelab',
-          streetLine1: 'Pinestreet',
-          streetLine2: '16',
-          city: 'Leeuwarden',
-          postalCode: '736 XX',
-          countryCode: 'NL',
-        },
-      }
-    );
-  }
-  console.log(`Created ${orders} orders`);
+  // await new Promise((resolve) => setTimeout(resolve, 3000));
+  // await addShippingMethod(adminClient, 'manual-fulfillment');
+  // const orders = 1;
+  // for (let i = 1; i <= orders; i++) {
+  //   await createSettledOrder(
+  //     shopClient,
+  //     3,
+  //     undefined,
+  //     undefined,
+  //     {
+  //       input: {
+  //         fullName: 'Pinelab Finance Department',
+  //         streetLine1: 'Bankstreet',
+  //         streetLine2: '899',
+  //         city: 'Leeuwarden',
+  //         postalCode: '233 DE',
+  //         countryCode: 'NL',
+  //       },
+  //     },
+  //     {
+  //       input: {
+  //         fullName: 'Martijn Pinelab',
+  //         streetLine1: 'Pinestreet',
+  //         streetLine2: '16',
+  //         city: 'Leeuwarden',
+  //         postalCode: '736 XX',
+  //         countryCode: 'NL',
+  //       },
+  //     }
+  //   );
+  // }
+  // console.log(`Created ${orders} orders`);
 })();
+
+export async function testExactOnlineSetup(app: INestApplication<unknown>) {
+  const ctx = await app.get(RequestContextService).create({
+    apiType: 'admin',
+    channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
+  });
+  const exact = new ExactOnlineStrategy({
+    channelToken: 'your-channel-token', // Or undefined if you want to use this strategy for all Channels
+    clientId: process.env.EXACT_CLIENT_ID!,
+    clientSecret: process.env.EXACT_CLIENT_SECRET!,
+    redirectUri: process.env.EXACT_REDIRECT_URI!,
+  });
+  await exact.setupExactAuth(ctx, app);
+}

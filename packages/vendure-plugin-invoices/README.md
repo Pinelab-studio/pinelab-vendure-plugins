@@ -394,6 +394,50 @@ InvoicePlugin.init({
 
 If you are getting `{ error: 'invalid_client' }` during startup, you might have to recreate your Xero app on https://developer.xero.com/app/manage.
 
+### Exact Online export strategy
+
+This plugin comes with an accounting export strategy to export invoices to Exact Online. It does require some steps to set up:
+
+1. Create a custom field `exactRefreshToken` on a Channel. This is needed to persist the current refresh token. Without it, the first refresh token will expire, and we need user interaction to log in again.
+
+```ts
+// Add the field in your vendure-config.ts
+customFields: {
+  Channel: [
+    {
+      name: 'exactRefreshToken',
+      type: 'string',
+      public: false,
+      readonly: true,
+    },
+  ],
+},
+```
+
+2. An administrator of the Exact account should create an app: Partners > Exact App Store > login > Manage apps > Click the "+" icon
+3. As redirectUrl you can specify your Vendure admin. It doesn't really matter, since we will be manually copying the URL during setup.
+4. Save the `clientId`, `clientSecret` and the `redirectUrl` somewhere, we will need it later.
+5. Run the following script locally, this is only needed once:
+
+```ts
+// Start your Vendure service first, to get the `app` instance
+const ctx = await app.get(RequestContextService).create({
+  apiType: 'admin',
+  channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
+});
+const exact = new ExactOnlineStrategy({
+  channelToken: 'your-channel-token', // Or undefined if you want to use this strategy for all Channels
+  clientId: process.env.EXACT_CLIENT_ID!,
+  clientSecret: process.env.EXACT_CLIENT_SECRET!,
+  redirectUri: process.env.EXACT_REDIRECT_URI!,
+});
+await exact.setupExactAuth(ctx, app);
+```
+
+If all is well, the refresh token is saved on your channel. The plugin will keep refreshing the token for you, but keep in mind that if no invoice has been synced to Exact Online **within 30 days, the refresh token will expire**. If this happens, you need to go trough the manual auth flow again.
+
+// TODO Watch your logs for this log message is critical `Exact Online refresh token expired`
+
 ### Custom accounting strategy
 
 You can implement your own export strategy to export invoices to your custom accounting platform. Take a look at the included `XeroUKExportStrategy` as an example.
