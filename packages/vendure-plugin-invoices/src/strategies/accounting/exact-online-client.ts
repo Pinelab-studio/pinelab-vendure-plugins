@@ -1,6 +1,17 @@
 import querystring from 'querystring';
 
-interface TokenSet {
+/**
+ * Thrown when Exact returns a 401, meaning:
+ * 1. the access token is expired, or
+ * 2. we are trying to get a new access token to early
+ */
+export class AuthenticationRequiredError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
+export interface TokenSet {
   /**
    * Valid for 10 minutes. If expired, use refresh token to get a new one
    */
@@ -18,8 +29,29 @@ export class ExactOnlineClient {
   constructor(
     private clientId: string,
     private clientSecret: string,
-    private redirectUri: string
+    private redirectUri: string,
+    private division: number
   ) {}
+
+  async getCustomerId(
+    accessToken: string,
+    emailAddress: string
+  ): Promise<string> {
+    // /api/v1/3870536/crm/Accounts?$filter=ID eq guid'00000000-0000-0000-0000-000000000000'&$select=Accountant
+    const response = await fetch(
+      `${this.url}/v1/${this.division}/crm/Accounts`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      }
+    );
+    const customer = await this.throwIfError<{ id: string }>(response);
+    console.log('=======', customer);
+    return customer.id;
+  }
 
   getLoginUrl() {
     return `${this.url}/oauth2/auth?client_id=${
@@ -48,11 +80,13 @@ export class ExactOnlineClient {
       },
       body: data,
     });
-    await this.throwIfError(response);
-    return (await response.json()) as TokenSet;
+    return await this.throwIfError<TokenSet>(response);
   }
 
-  async refreshTokens(refreshToken: string): Promise<TokenSet> {
+  /**
+   * Get new access token and refresh token using the current refresh token.
+   */
+  async renewTokens(refreshToken: string): Promise<TokenSet> {
     const data = querystring.stringify({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
@@ -66,16 +100,23 @@ export class ExactOnlineClient {
       },
       body: data,
     });
-    await this.throwIfError(response);
-    return (await response.json()) as TokenSet;
+    return await this.throwIfError<TokenSet>(response);
   }
 
-  async throwIfError(response: Response): Promise<void> {
-    if (!response.ok) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      const body: { error_description: string } =
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (await response.json()) as any;
+  /**
+   * Throws if the response is not ok. Returns the json body as T if ok.
+   */
+  async throwIfError<T>(response: Response): Promise<T> {
+    if (response.ok) {
+      return (await response.json()) as T;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const body: { error_description: string } =
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (await response.json()) as any;
+    if (response.status === 401) {
+      throw new AuthenticationRequiredError(`${body.error_description}`);
+    } else {
       throw new Error(`${response.status}: ${body.error_description}`);
     }
   }

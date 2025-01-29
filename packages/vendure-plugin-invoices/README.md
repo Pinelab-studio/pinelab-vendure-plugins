@@ -436,7 +436,7 @@ await exact.setupExactAuth(ctx, app);
 
 If all is well, the refresh token is saved on your channel. The plugin will keep refreshing the token for you, but keep in mind that if no invoice has been synced to Exact Online **within 30 days, the refresh token will expire**. If this happens, you need to go trough the manual auth flow again.
 
-// TODO Watch your logs for this log message is critical `Exact Online refresh token expired`
+// TODO Watch your logs for this log message is critical `No valid refresh token for Exact Online found`
 
 ### Custom accounting strategy
 

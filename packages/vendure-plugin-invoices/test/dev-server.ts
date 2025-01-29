@@ -3,6 +3,7 @@ import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
+  SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
@@ -31,6 +32,8 @@ import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { INestApplication } from '@nestjs/common';
+import { appendFile } from 'fs';
+import { customFields } from '../../vendure-plugin-customer-managed-groups/dist';
 
 require('dotenv').config();
 
@@ -46,26 +49,33 @@ require('dotenv').config();
         // licenseKey: 'false license key',
         startInvoiceNumber: Math.floor(100000 + Math.random() * 900000), // Random 6 digit number to prevent duplicates in Xero
         accountingExports: [
-          new XeroUKExportStrategy({
-            clientId: process.env.XERO_CLIENT_ID!,
-            clientSecret: process.env.XERO_CLIENT_SECRET!,
-            shippingAccountCode: '0103',
-            salesAccountCode: '0102',
-            invoiceBrandingThemeId: '62f2bce1-32c4-4e8d-a9b1-87060fb7c791',
-            getReference: () =>
-              'THIS IS A TEST INVOICE, DONT APPROVE THIS PLEASE.',
-            getVendureUrl: (order) =>
-              `https://pinelab.studio/order/${order.code}`,
-            getDueDate: (ctx, order, invoice) => {
-              const payment = order.payments.find((p) => p.state === 'Settled');
-              if (payment?.method === 'purchase-order') {
-                const date = new Date();
-                date.setDate(date.getDate() + 30); //30 days later
-                return date;
-              } else {
-                return new Date();
-              }
-            },
+          // new XeroUKExportStrategy({
+          //   clientId: process.env.XERO_CLIENT_ID!,
+          //   clientSecret: process.env.XERO_CLIENT_SECRET!,
+          //   shippingAccountCode: '0103',
+          //   salesAccountCode: '0102',
+          //   invoiceBrandingThemeId: '62f2bce1-32c4-4e8d-a9b1-87060fb7c791',
+          //   getReference: () =>
+          //     'THIS IS A TEST INVOICE, DONT APPROVE THIS PLEASE.',
+          //   getVendureUrl: (order) =>
+          //     `https://pinelab.studio/order/${order.code}`,
+          //   getDueDate: (ctx, order, invoice) => {
+          //     const payment = order.payments.find((p) => p.state === 'Settled');
+          //     if (payment?.method === 'purchase-order') {
+          //       const date = new Date();
+          //       date.setDate(date.getDate() + 30); //30 days later
+          //       return date;
+          //     } else {
+          //       return new Date();
+          //     }
+          //   },
+          // }),
+          new ExactOnlineStrategy({
+            channelToken: undefined,
+            clientId: process.env.EXACT_CLIENT_ID!,
+            clientSecret: process.env.EXACT_CLIENT_SECRET!,
+            redirectUri: process.env.EXACT_REDIRECT_URI!,
+            division: 3870536, // Test env
           }),
         ],
       }),
@@ -88,7 +98,16 @@ require('dotenv').config();
           public: false,
           readonly: true,
         },
+        {
+          name: 'exactAccessToken',
+          type: 'string',
+          public: false,
+          readonly: true,
+        },
       ],
+    },
+    dbConnectionOptions: {
+      autoSave: true, // Persist the database between restarts
     },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
@@ -120,42 +139,11 @@ require('dotenv').config();
   });
   await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
 
-  // Test Exact Online setup
+  // Test Exact Online auth setup
   await testExactOnlineSetup(server.app);
 
-  // Add a test orders at every server start
-  // await new Promise((resolve) => setTimeout(resolve, 3000));
-  // await addShippingMethod(adminClient, 'manual-fulfillment');
-  // const orders = 1;
-  // for (let i = 1; i <= orders; i++) {
-  //   await createSettledOrder(
-  //     shopClient,
-  //     3,
-  //     undefined,
-  //     undefined,
-  //     {
-  //       input: {
-  //         fullName: 'Pinelab Finance Department',
-  //         streetLine1: 'Bankstreet',
-  //         streetLine2: '899',
-  //         city: 'Leeuwarden',
-  //         postalCode: '233 DE',
-  //         countryCode: 'NL',
-  //       },
-  //     },
-  //     {
-  //       input: {
-  //         fullName: 'Martijn Pinelab',
-  //         streetLine1: 'Pinestreet',
-  //         streetLine2: '16',
-  //         city: 'Leeuwarden',
-  //         postalCode: '736 XX',
-  //         countryCode: 'NL',
-  //       },
-  //     }
-  //   );
-  // }
-  // console.log(`Created ${orders} orders`);
+  // Create a test order to trigger invoice and export
+  // await createTestOrders(adminClient, shopClient);
 })();
 
 export async function testExactOnlineSetup(app: INestApplication<unknown>) {
@@ -168,6 +156,44 @@ export async function testExactOnlineSetup(app: INestApplication<unknown>) {
     clientId: process.env.EXACT_CLIENT_ID!,
     clientSecret: process.env.EXACT_CLIENT_SECRET!,
     redirectUri: process.env.EXACT_REDIRECT_URI!,
+    division: 3870536, // Test env
   });
   await exact.setupExactAuth(ctx, app);
+}
+
+export async function createTestOrders(
+  adminClient: SimpleGraphQLClient,
+  shopClient: SimpleGraphQLClient
+) {
+  await addShippingMethod(adminClient, 'manual-fulfillment');
+  const nrOforders = 1;
+  for (let i = 1; i <= nrOforders; i++) {
+    await createSettledOrder(
+      shopClient,
+      3,
+      undefined,
+      undefined,
+      {
+        input: {
+          fullName: 'Pinelab Finance Department',
+          streetLine1: 'Bankstreet',
+          streetLine2: '899',
+          city: 'Leeuwarden',
+          postalCode: '233 DE',
+          countryCode: 'NL',
+        },
+      },
+      {
+        input: {
+          fullName: 'Martijn Pinelab',
+          streetLine1: 'Pinestreet',
+          streetLine2: '16',
+          city: 'Leeuwarden',
+          postalCode: '736 XX',
+          countryCode: 'NL',
+        },
+      }
+    );
+  }
+  console.log(`Created ${nrOforders} orders`);
 }
