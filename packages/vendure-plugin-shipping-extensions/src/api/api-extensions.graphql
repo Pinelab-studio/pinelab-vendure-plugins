@@ -1,0 +1,32 @@
+input ParcelCollectionPointSearchInput {
+  carrier: String! # PostNL DHL etc
+  postalCode: String!
+  houseNumber: String
+}
+
+type ParcelCollectionPoint {
+  id: ID!
+  name: String!
+  address: String!
+  postalCode: String!
+  houseNumber: String
+  city: String!
+  country: String!
+  latitude: Float
+  longitude: Float
+  distanceInKm: Float
+  cutOffTime: String
+}
+
+extend type Query {
+  searchParcelCollectionPoints(
+    input: ParcelCollectionPointSearchInput
+  ): [ParcelCollectionPoint]!
+  setParcelCollectionPoint(id: ID!): Order!
+  unsetParcelCollectionPoint: Order!
+}
+
+# JWT encoded ID's will be long if they contain address. It adds 0.4kb per point in the resultset. Acceptable?
+# Do we need more filters? e.g. shoptype=packStation. These would differ per carrier though
+
+# eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjgwMDQtTkwtMzU0MjUyIiwibmFtZSI6IlBha2tldGF1dG9tYWF0IERITCBCaW5uZW4iLCJhZGRyZXNzIjp7ImNvdW50cnlDb2RlIjoiTkwiLCJ6aXBDb2RlIjoiMzU0MkFEIiwiY2l0eSI6IlV0cmVjaHQiLCJzdHJlZXQiOiJSZWFjdG9yd2VnIiwibnVtYmVyIjoiMjUiLCJhZGRpdGlvbiI6Ii1QUy80MSIsInBvc3RhbENvZGUiOiIzNTQyQUQifSwiaWF0IjoxNzM4MDc5Mjg4fQ.LKAXT7HaMrR3NMHmBhpS2sqXbkj3M_4rXwNZunNbeJs
