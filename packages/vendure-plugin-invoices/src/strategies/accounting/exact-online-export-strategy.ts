@@ -128,7 +128,7 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
         loggerCtx
       );
       const tokenSet = await this.client
-        .getAccessToken(refreshToken)
+        .renewTokens(refreshToken)
         .catch((e) => {
           const error = asError(e);
           Logger.error(
@@ -164,9 +164,10 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
     await new Promise((resolve) => setTimeout(resolve, 3000));
     const customFields = ctx.channel.customFields as WithExactCustomField;
     // First check if a refresh token is already set on the channel
-    // eslint-disable-next-line no-prototype-builtins
     if (
+      // eslint-disable-next-line no-prototype-builtins
       !customFields?.hasOwnProperty('exactRefreshToken') ||
+      // eslint-disable-next-line no-prototype-builtins
       !customFields?.hasOwnProperty('exactAccessToken')
     ) {
       throw Error(
