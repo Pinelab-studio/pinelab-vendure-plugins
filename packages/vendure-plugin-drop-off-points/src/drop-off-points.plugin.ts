@@ -3,8 +3,8 @@ import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { DROP_OFF_POINTS_PLUGIN_OPTIONS, loggerCtx } from './constants';
 import { PluginInitOptions } from './types';
 import { DropOffPointsService } from './services/drop-off-points.service';
-import { DropOffPointsAdminResolver } from './api/drop-off-points-admin.resolver';
-import { adminApiExtensions } from './api/api-extensions';
+import { shopApiExtensions } from './api/api-extensions';
+import { DropOffPointsShopResolver } from './api/drop-off-points-shop.resolver';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -16,16 +16,16 @@ import { adminApiExtensions } from './api/api-extensions';
     DropOffPointsService,
   ],
   configuration: (config) => {
-    // Plugin-specific configuration
-    // such as custom fields, custom permissions,
-    // strategies etc. can be configured here by
-    // modifying the `config` object.
+    if (!DropOffPointsPlugin.options.customMutations) {
+      // Only create custom fields if customMutations are not provided
+      // TODO other fields
+    }
     return config;
   },
   compatibility: '=>2.2.0',
-  adminApiExtensions: {
-    schema: adminApiExtensions,
-    resolvers: [DropOffPointsAdminResolver],
+  shopApiExtensions: {
+    schema: shopApiExtensions,
+    resolvers: [DropOffPointsShopResolver],
   },
 })
 export class DropOffPointsPlugin {

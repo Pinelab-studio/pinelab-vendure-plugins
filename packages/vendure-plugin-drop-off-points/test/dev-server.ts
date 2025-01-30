@@ -14,6 +14,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import { DropOffPointsPlugin } from '../src';
+import { DHLCarrier } from '../src/carriers/dhl-carrier';
 
 require('dotenv').config();
 
@@ -26,7 +27,9 @@ require('dotenv').config();
       adminApiPlayground: true,
     },
     plugins: [
-      DropOffPointsPlugin.init({}),
+      DropOffPointsPlugin.init({
+        carriers: [new DHLCarrier()],
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,

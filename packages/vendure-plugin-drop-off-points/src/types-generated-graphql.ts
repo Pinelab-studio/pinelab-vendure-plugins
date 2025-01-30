@@ -16,23 +16,28 @@ export type Scalars = {
   Boolean: boolean;
   Int: number;
   Float: number;
+  JSON: any;
   Order: any;
 };
 
 export type ParcelDropOffPoint = {
   __typename?: 'ParcelDropOffPoint';
+  additionalData?: Maybe<Scalars['JSON']>;
   city: Scalars['String'];
   country: Scalars['String'];
   cutOffTime?: Maybe<Scalars['String']>;
   distanceInKm?: Maybe<Scalars['Float']>;
+  /** The carrier assigned ID of the drop off point */
+  dropOffPointId: Scalars['String'];
   houseNumber: Scalars['String'];
-  id: Scalars['ID'];
+  houseNumberSuffix?: Maybe<Scalars['String']>;
   latitude?: Maybe<Scalars['Float']>;
   longitude?: Maybe<Scalars['Float']>;
   name: Scalars['String'];
   postalCode: Scalars['String'];
   streetLine1: Scalars['String'];
   streetLine2?: Maybe<Scalars['String']>;
+  token: Scalars['ID'];
 };
 
 export type ParcelDropOffPointSearchInput = {
@@ -44,13 +49,13 @@ export type ParcelDropOffPointSearchInput = {
 
 export type Query = {
   __typename?: 'Query';
-  parcelDropOffPoints: Array<Maybe<ParcelDropOffPoint>>;
+  parcelDropOffPoints: Array<ParcelDropOffPoint>;
   setDropOffPoints: Scalars['Order'];
   unsetDropOffPoints: Scalars['Order'];
 };
 
 export type QueryParcelDropOffPointsArgs = {
-  input?: InputMaybe<ParcelDropOffPointSearchInput>;
+  input: ParcelDropOffPointSearchInput;
 };
 
 export type QuerySetDropOffPointsArgs = {

@@ -1,4 +1,4 @@
-import { Injector, RequestContext } from '@vendure/core';
+import { Order, RequestContext } from '@vendure/core';
 import {
   ParcelDropOffPoint,
   ParcelDropOffPointSearchInput,
@@ -10,14 +10,20 @@ export interface PluginInitOptions {
   carriers: DropOffPointCarrier[];
   /**
    * By default this plugin creates custom fields on an order for drop off points.
-   * If you already have custom fields, you can implement this function to set the drop off point on your order.
-   * The plugin will then not add custom fields.
+   * If you already have custom fields, you can implement `customMutations`
+   * to set and unset drop off points on your order.
    */
-  setDropOffPoint?: (
-    ctx: RequestContext,
-    injector: Injector,
-    dropOffPoint: SelectedDropOffPoint
-  ) => Promise<void>;
+  customMutations?: {
+    setDropOffPointOnOrder?: (
+      ctx: RequestContext,
+      activeOrder: Order,
+      dropOffPoint: SavedDropOffPoint
+    ) => Promise<void>;
+    unsetDropOffPointOnOrder?: (
+      ctx: RequestContext,
+      activeOrder: Order
+    ) => Promise<void>;
+  };
 }
 
 /**
@@ -28,16 +34,23 @@ export type DropOffPoint = Omit<ParcelDropOffPoint, 'token'>;
 export interface DropOffPointCarrier {
   name: string;
   getDropOffPoints: (
+    ctx: RequestContext,
     input: ParcelDropOffPointSearchInput
   ) => Promise<DropOffPoint[]>;
 }
 
-export interface SelectedDropOffPoint {
+/**
+ * Representation of a drop off point when it's saved to an order.
+ * This omits certain details like distance and geolocation,
+ * because they don't matter anymore after selection
+ */
+export interface SavedDropOffPoint {
   id: string;
   name: string;
-  houseNumber: string;
   streetLine1: string;
   streetLine2?: string;
+  houseNumber: string;
+  houseNumberSuffix?: string;
   postalCode: string;
   city: string;
   country: string;
