@@ -140,10 +140,10 @@ require('dotenv').config();
   await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
 
   // Test Exact Online auth setup
-  await testExactOnlineSetup(server.app);
+  // await testExactOnlineSetup(server.app);
 
   // Create a test order to trigger invoice and export
-  // await createTestOrders(adminClient, shopClient);
+  await createTestOrders(adminClient, shopClient);
 })();
 
 export async function testExactOnlineSetup(app: INestApplication<unknown>) {

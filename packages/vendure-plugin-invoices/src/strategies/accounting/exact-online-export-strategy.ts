@@ -1,7 +1,5 @@
 import { INestApplication } from '@nestjs/common';
 import {
-  Cache,
-  CacheService,
   ChannelService,
   Injector,
   Logger,
@@ -17,9 +15,18 @@ import {
   ExternalReference,
 } from './accounting-export-strategy';
 import { ExactOnlineClient } from './exact-online-client';
+import { TokenSet } from './exact-online-client';
 
-interface WithExactCustomField {
+interface WithExactCustomFields {
+  /**
+   * Token to get new access tokens from Exact. Valid for 30 days.
+   * When receivind a new access token, the refresh token is also updated.
+   */
   exactRefreshToken?: string;
+  /**
+   * Temporarily lived acces token: valid for 10 minutes
+   */
+  exactAccessToken?: string;
 }
 
 export interface ExactConfig {
@@ -44,8 +51,7 @@ const INVALID_REFRESH_TOKEN_ERROR =
 export class ExactOnlineStrategy implements AccountingExportStrategy {
   readonly channelToken: string | undefined;
   readonly client: ExactOnlineClient;
-  private injector!: Injector;
-  private accessTokenCache!: Cache;
+  private channelService!: ChannelService;
 
   constructor(private readonly config: ExactConfig) {
     this.channelToken = config.channelToken;
@@ -57,14 +63,8 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
     );
   }
 
-  init(_injector: Injector) {
-    this.injector = _injector;
-    this.accessTokenCache = this.injector.get(CacheService).createCache({
-      getKey: (id) => `ExactOnlineAccessToken:${id}`,
-      options: {
-        ttl: 9.5 * 1000 * 60, // 9 minutes 30 seconds, as described in the Exact Docs
-      },
-    });
+  init(injector: Injector) {
+    this.channelService = injector.get(ChannelService);
   }
 
   async exportInvoice(
@@ -73,15 +73,10 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
     order: Order
   ): Promise<ExternalReference> {
     const accessToken = await this.getAccessToken(ctx);
-    Logger.debug(
-      `Fetching customer ${
-        order.customer?.emailAddress
-      } with accessToken '...${accessToken.slice(0, 5)}'`,
-      loggerCtx
-    );
     const customerId = await this.client.getCustomerId(
       accessToken,
-      'order.customer.emailAddress'
+      // order.customer.emailAddress
+      'martijn@pinelab.studio'
     );
     Logger.debug(
       `Found customer '${customerId}' in exact for ${order.customer?.emailAddress}`,
@@ -105,47 +100,34 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
    *
    * If a new access token is requested, it also stores the latest refresh token on the channel
    */
-  private async getAccessToken(
-    ctx: RequestContext,
-    forceRenewal = false
-  ): Promise<string> {
-    const refreshToken = (ctx.channel.customFields as WithExactCustomField)
-      ?.exactRefreshToken;
-    if (!refreshToken) {
+  async getAccessToken(ctx: RequestContext): Promise<string> {
+    const { exactAccessToken, exactRefreshToken } = ctx.channel
+      .customFields as WithExactCustomFields;
+    if (!exactRefreshToken) {
       throw new Error(
         `${INVALID_REFRESH_TOKEN_ERROR}: No refresh token set on channel '${ctx.channel.token}'`
       );
     }
-    if (forceRenewal) {
-      await this.accessTokenCache.delete(ctx.channel.id);
+    if (await this.client.isAccessTokenValid(exactAccessToken)) {
+      return exactAccessToken!;
     }
-    return await this.accessTokenCache.get(ctx.channel.id, async () => {
-      // This is executed when no access token is found in the cache
-      Logger.debug(
-        `Getting new access token for channel '${
-          ctx.channel.token
-        }' with refresh token '...${refreshToken.slice(-4)}'`,
-        loggerCtx
-      );
-      const tokenSet = await this.client
-        .renewTokens(refreshToken)
-        .catch((e) => {
-          const error = asError(e);
-          Logger.error(
-            `${INVALID_REFRESH_TOKEN_ERROR}: Error getting new access token from Exact'${error.message}`,
-            loggerCtx,
-            error.message
-          );
-          throw e;
-        });
-      // Save the new refresh token on the channel
-      await this.injector.get(ChannelService).update(ctx, {
-        id: ctx.channel.id,
-        customFields: {
-          exactRefreshToken: tokenSet.refresh_token,
-        },
-      });
-      return tokenSet.access_token;
+    return '';
+    // const tokenSet = await this.client.renewTokens(exactRefreshToken);
+    // await this.saveTokens(ctx, this.channelService, tokenSet);
+    // return tokenSet.access_token;
+  }
+
+  private async saveTokens(
+    ctx: RequestContext,
+    channelService: ChannelService,
+    tokenSet: TokenSet
+  ): Promise<void> {
+    await channelService.update(ctx, {
+      id: ctx.channel.id,
+      customFields: {
+        exactRefreshToken: tokenSet.refresh_token,
+        exactAccessToken: tokenSet.access_token,
+      },
     });
   }
 
@@ -162,7 +144,7 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
   ): Promise<void> {
     // Wait for server startup
     await new Promise((resolve) => setTimeout(resolve, 3000));
-    const customFields = ctx.channel.customFields as WithExactCustomField;
+    const customFields = ctx.channel.customFields as WithExactCustomFields;
     // First check if a refresh token is already set on the channel
     if (
       // eslint-disable-next-line no-prototype-builtins
@@ -174,8 +156,9 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
         'Channel custom fields should have "exactRefreshToken" and "exactAccessToken"'
       );
     }
-    const exactRefreshToken = (ctx.channel.customFields as WithExactCustomField)
-      ?.exactRefreshToken;
+    const exactRefreshToken = (
+      ctx.channel.customFields as WithExactCustomFields
+    )?.exactRefreshToken;
     if (exactRefreshToken) {
       console.log('A refresh token is already set, checking validity...');
       // Check if it is still valid
@@ -185,12 +168,7 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
           console.log(`Refresh token is invalid: ${asError(e).message}`);
         });
       if (tokenSet) {
-        await app.get(ChannelService).update(ctx, {
-          id: ctx.channel.id,
-          customFields: {
-            exactRefreshToken: tokenSet.refresh_token,
-          },
-        });
+        await this.saveTokens(ctx, app.get(ChannelService), tokenSet);
         console.log('Refresh token is already set and valid');
         return;
       }
@@ -216,22 +194,12 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
     });
     console.log(`Exchanging code for refresh token...`);
     const tokenSet = await this.client.getAccessToken(code);
+    await this.saveTokens(ctx, app.get(ChannelService), tokenSet);
     console.log(
-      `Successfully saved refresh token '...${tokenSet.refresh_token.slice(
-        -4
-      )}' for channel '${ctx.channel.token}'`
+      `Successfully saved refresh token for channel '${ctx.channel.token}'`
     );
-    await app.get(ChannelService).update(ctx, {
-      id: ctx.channel.id,
-      customFields: {
-        exactRefreshToken: tokenSet.refresh_token,
-      },
-    });
-    // JSUT TESTING
-    const res = await this.client.getCustomerId(
-      tokenSet.access_token,
-      'order.customer.emailAddress'
-    );
-    console.log(res);
+
+    // FIXME
+    await this.getAccessToken(ctx);
   }
 }

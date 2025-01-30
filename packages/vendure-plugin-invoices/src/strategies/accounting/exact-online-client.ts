@@ -37,9 +37,12 @@ export class ExactOnlineClient {
     accessToken: string,
     emailAddress: string
   ): Promise<string> {
-    // /api/v1/3870536/crm/Accounts?$filter=ID eq guid'00000000-0000-0000-0000-000000000000'&$select=Accountant
     const response = await fetch(
-      `${this.url}/v1/${this.division}/crm/Accounts`,
+      `${this.url}/v1/${
+        this.division
+      }/crm/Accounts?$select=ID,Code,Name&$filter=Email eq ${encodeURIComponent(
+        emailAddress
+      )}`,
       {
         method: 'GET',
         headers: {
@@ -110,14 +113,38 @@ export class ExactOnlineClient {
     if (response.ok) {
       return (await response.json()) as T;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const body: { error_description: string } =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (await response.json()) as any;
+    const body = await response.text();
     if (response.status === 401) {
-      throw new AuthenticationRequiredError(`${body.error_description}`);
+      throw new AuthenticationRequiredError(`${body}`);
     } else {
-      throw new Error(`${response.status}: ${body.error_description}`);
+      throw new Error(`${response.status} - ${response.statusText}: ${body}`);
+    }
+  }
+
+  async isAccessTokenValid(accessToken?: string): Promise<boolean> {
+    if (!accessToken) {
+      return false;
+    }
+    const response = await fetch(
+      `${this.url}/v1/current/Me?$select=AccountingDivision`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: 'application/json',
+        },
+      }
+    );
+    if (response.ok) {
+      return true;
+    } else if (response.status === 401) {
+      return false;
+    } else {
+      throw Error(
+        `Error checking access token: [${
+          response.status
+        }] ${await response.text()}`
+      );
     }
   }
 }
