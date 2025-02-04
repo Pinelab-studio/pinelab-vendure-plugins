@@ -1,6 +1,6 @@
 # Vendure Drop Off Points Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-coinbase)
+### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-drop-off-points)
 
 Show nearby parcel drop off points to your customers. Supports multiple carriers and allows custom carriers. Also known as collection points or pickup points.
 

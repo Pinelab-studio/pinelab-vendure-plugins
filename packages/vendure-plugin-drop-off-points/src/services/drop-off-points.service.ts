@@ -106,13 +106,12 @@ export class DropOffPointsService {
       undefined,
       true
     );
-    if (this.options.customMutations?.unsetDropOffPointOnOrder) {
+    if (this.options.customMutations?.unsetDropOffPoint) {
       // Save using custom mutations
-      const updatedOrder =
-        await this.options.customMutations.unsetDropOffPointOnOrder(
-          ctx,
-          activeOrder
-        );
+      const updatedOrder = await this.options.customMutations.unsetDropOffPoint(
+        ctx,
+        activeOrder
+      );
       await this.orderService.updateCustomFields(ctx, activeOrder.id, {
         ...updatedOrder.customFields,
       });
