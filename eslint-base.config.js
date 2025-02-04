@@ -17,6 +17,7 @@ export default tseslint.config(
       '**/test/**',
       '**/src/ui/**',
       '**/generated/graphql.ts',
+      '**/*generated*',
     ],
   }
 );

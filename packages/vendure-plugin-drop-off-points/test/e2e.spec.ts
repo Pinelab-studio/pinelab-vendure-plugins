@@ -72,7 +72,7 @@ it('Fetches drop off points', async () => {
 
 it('Set drop off point on order', async () => {
   await addItem(shopClient, '1', 1); // Create an active order
-  const { setDropOffPoint: order } = await shopClient.query<
+  const { setParcelDropOffPoint: order } = await shopClient.query<
     any,
     MutationSetParcelDropOffPointArgs
   >(setDropOffPointMutation, {
@@ -89,7 +89,7 @@ it('Set drop off point on order', async () => {
 });
 
 it('Unset drop off point', async () => {
-  const { unsetDropOffPoint: order } = await shopClient.query(
+  const { unsetParcelDropOffPoint: order } = await shopClient.query(
     unsetDropOffPointMutation
   );
   expect(order.customFields.dropOffPointCarrier).toBeNull();
@@ -126,7 +126,7 @@ const getDropOffPointsQuery = gql`
 
 const setDropOffPointMutation = gql`
   mutation setParcelDropOffPoint($token: String!) {
-    setDropOffPoint(token: $token) {
+    setParcelDropOffPoint(token: $token) {
       id
       code
       customFields {
@@ -147,7 +147,7 @@ const setDropOffPointMutation = gql`
 
 const unsetDropOffPointMutation = gql`
   mutation unsetParcelDropOffPoint {
-    unsetDropOffPoint {
+    unsetParcelDropOffPoint {
       id
       code
       customFields {
