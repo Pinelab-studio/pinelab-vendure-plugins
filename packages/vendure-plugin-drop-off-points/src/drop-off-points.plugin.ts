@@ -40,7 +40,7 @@ export class DropOffPointsPlugin {
     );
     if (duplicateCarrierNames.length) {
       throw new Error(
-        `[${loggerCtx}] Carrier name should be unique, but found: ${duplicateCarrierNames.join(
+        `[${loggerCtx}] Carrier name should be unique, but found the following names more than once: ${duplicateCarrierNames.join(
           ','
         )}`
       );
