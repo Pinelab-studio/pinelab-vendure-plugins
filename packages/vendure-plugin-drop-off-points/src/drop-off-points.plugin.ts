@@ -23,7 +23,7 @@ import { customOrderFields } from './custom-fields';
     }
     return config;
   },
-  compatibility: '=>2.2.0',
+  compatibility: '>=2.2.0',
   shopApiExtensions: {
     schema: shopApiExtensions,
     resolvers: [DropOffPointsShopResolver],
