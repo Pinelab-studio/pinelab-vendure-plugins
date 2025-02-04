@@ -28,7 +28,7 @@ require('dotenv').config();
     },
     plugins: [
       DropOffPointsPlugin.init({
-        carriers: [new DHLCarrier(), new DHLCarrier()],
+        carriers: [new DHLCarrier()],
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
