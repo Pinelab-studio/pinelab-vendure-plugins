@@ -1,7 +1,7 @@
 {
   "name": "@pinelab/vendure-plugin-drop-off-points",
-  "version": "1.0.0l",
-  "description": "Vendure plugin for fetching and setting parcel drop off points on orders",
+  "version": "1.0.0",
+  "description": "Show nearby parcel drop off points to your customers. Supports multiple carriers and allows custom carriers. Also known as collection points or pickup points.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",

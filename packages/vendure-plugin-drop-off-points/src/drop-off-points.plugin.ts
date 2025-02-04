@@ -5,6 +5,7 @@ import { PluginInitOptions } from './types';
 import { DropOffPointsService } from './services/drop-off-points.service';
 import { shopApiExtensions } from './api/api-extensions';
 import { DropOffPointsShopResolver } from './api/drop-off-points-shop.resolver';
+import { customOrderFields } from './custom-fields';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -18,7 +19,7 @@ import { DropOffPointsShopResolver } from './api/drop-off-points-shop.resolver';
   configuration: (config) => {
     if (!DropOffPointsPlugin.options.customMutations) {
       // Only create custom fields if customMutations are not provided
-      // TODO other fields
+      config.customFields.Order.push(...customOrderFields);
     }
     return config;
   },

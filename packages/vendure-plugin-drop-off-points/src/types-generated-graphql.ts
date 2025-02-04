@@ -11,13 +11,23 @@ export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & {
 };
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
-  ID: number | string;
+  ID: string;
   String: string;
   Boolean: boolean;
   Int: number;
   Float: number;
   JSON: any;
   Order: any;
+};
+
+export type Mutation = {
+  __typename?: 'Mutation';
+  setParcelDropOffPoint: Scalars['Order'];
+  unsetParcelDropOffPoint: Scalars['Order'];
+};
+
+export type MutationSetParcelDropOffPointArgs = {
+  token: Scalars['String'];
 };
 
 export type ParcelDropOffPoint = {
@@ -37,7 +47,7 @@ export type ParcelDropOffPoint = {
   postalCode: Scalars['String'];
   streetLine1: Scalars['String'];
   streetLine2?: Maybe<Scalars['String']>;
-  token: Scalars['ID'];
+  token: Scalars['String'];
 };
 
 export type ParcelDropOffPointSearchInput = {
@@ -50,14 +60,8 @@ export type ParcelDropOffPointSearchInput = {
 export type Query = {
   __typename?: 'Query';
   parcelDropOffPoints: Array<ParcelDropOffPoint>;
-  setDropOffPoints: Scalars['Order'];
-  unsetDropOffPoints: Scalars['Order'];
 };
 
 export type QueryParcelDropOffPointsArgs = {
   input: ParcelDropOffPointSearchInput;
-};
-
-export type QuerySetDropOffPointsArgs = {
-  id: Scalars['ID'];
 };

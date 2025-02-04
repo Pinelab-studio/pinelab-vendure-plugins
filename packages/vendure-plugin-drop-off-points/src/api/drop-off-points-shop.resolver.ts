@@ -1,7 +1,8 @@
-import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Ctx, RequestContext } from '@vendure/core';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Ctx, Order, RequestContext } from '@vendure/core';
 import { DropOffPointsService } from '../services/drop-off-points.service';
 import {
+  MutationSetParcelDropOffPointArgs,
   ParcelDropOffPoint,
   QueryParcelDropOffPointsArgs,
 } from '../types-generated-graphql';
@@ -16,5 +17,18 @@ export class DropOffPointsShopResolver {
     @Args() args: QueryParcelDropOffPointsArgs
   ): Promise<ParcelDropOffPoint[]> {
     return await this.dropOffPointsService.getDropOffPoints(ctx, args.input);
+  }
+
+  @Mutation()
+  async setParcelDropOffPoint(
+    @Ctx() ctx: RequestContext,
+    @Args() { token }: MutationSetParcelDropOffPointArgs
+  ): Promise<Order> {
+    return await this.dropOffPointsService.setDropOffPointOnOrder(ctx, token);
+  }
+
+  @Mutation()
+  async unsetParcelDropOffPoint(@Ctx() ctx: RequestContext): Promise<Order> {
+    return await this.dropOffPointsService.unsetDropOffPoint(ctx);
   }
 }

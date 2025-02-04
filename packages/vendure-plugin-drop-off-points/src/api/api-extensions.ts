@@ -17,7 +17,7 @@ export const shopApiExtensions = gql`
   }
 
   type ParcelDropOffPoint {
-    token: ID!
+    token: String!
     """
     The carrier assigned ID of the drop off point
     """
@@ -41,7 +41,10 @@ export const shopApiExtensions = gql`
     parcelDropOffPoints(
       input: ParcelDropOffPointSearchInput!
     ): [ParcelDropOffPoint!]!
-    setDropOffPoints(token: ID!): Order!
-    unsetDropOffPoints: Order!
+  }
+
+  extend type Mutation {
+    setParcelDropOffPoint(token: String!): Order!
+    unsetParcelDropOffPoint: Order!
   }
 `;
