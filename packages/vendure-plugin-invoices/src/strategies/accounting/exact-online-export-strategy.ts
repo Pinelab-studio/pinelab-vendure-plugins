@@ -8,7 +8,6 @@ import {
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import readline from 'readline';
-import { loggerCtx } from '../../constants';
 import { InvoiceEntity } from '../../entities/invoice.entity';
 import {
   AccountingExportStrategy,
@@ -16,6 +15,8 @@ import {
 } from './accounting-export-strategy';
 import { ExactOnlineClient } from './exact-online-client';
 import { TokenSet } from './exact-online-client';
+
+export const loggerCtx = 'ExactOnlineAccountingExport';
 
 interface WithExactCustomFields {
   /**
@@ -111,10 +112,9 @@ export class ExactOnlineStrategy implements AccountingExportStrategy {
     if (await this.client.isAccessTokenValid(exactAccessToken)) {
       return exactAccessToken!;
     }
-    return '';
-    // const tokenSet = await this.client.renewTokens(exactRefreshToken);
-    // await this.saveTokens(ctx, this.channelService, tokenSet);
-    // return tokenSet.access_token;
+    const tokenSet = await this.client.renewTokens(exactRefreshToken);
+    await this.saveTokens(ctx, this.channelService, tokenSet);
+    return tokenSet.access_token;
   }
 
   private async saveTokens(

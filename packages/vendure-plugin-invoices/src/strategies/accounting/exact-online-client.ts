@@ -1,4 +1,6 @@
+import { Logger } from '@vendure/core';
 import querystring from 'querystring';
+import { loggerCtx } from './exact-online-export-strategy';
 
 /**
  * Thrown when Exact returns a 401, meaning:
@@ -33,16 +35,16 @@ export class ExactOnlineClient {
     private division: number
   ) {}
 
-  async getCustomerId(
+  async getCustomer(
     accessToken: string,
     emailAddress: string
-  ): Promise<string> {
+  ): Promise<Customer | undefined> {
     const response = await fetch(
       `${this.url}/v1/${
         this.division
-      }/crm/Accounts?$select=ID,Code,Name&$filter=Email eq ${encodeURIComponent(
+      }/crm/Accounts?$select=ID,Code,Name,Email&$filter=Email eq '${encodeURIComponent(
         emailAddress
-      )}`,
+      )}'`,
       {
         method: 'GET',
         headers: {
@@ -51,9 +53,17 @@ export class ExactOnlineClient {
         },
       }
     );
-    const customer = await this.throwIfError<{ id: string }>(response);
-    console.log('=======', customer);
-    return customer.id;
+    const result = await this.throwIfError<SearchCustomerResult>(response);
+    const customer = result.d.results?.[0];
+    if (!customer) {
+      return undefined;
+    } else if (result.d.results.length > 1) {
+      Logger.warn(
+        `Multiple customers found for ${emailAddress}. Using '${customer.ID}'`,
+        loggerCtx
+      );
+    }
+    return customer;
   }
 
   getLoginUrl() {
@@ -103,7 +113,8 @@ export class ExactOnlineClient {
       },
       body: data,
     });
-    return await this.throwIfError<TokenSet>(response);
+    const result = await this.throwIfError<TokenSet>(response);
+    return result;
   }
 
   /**
@@ -147,4 +158,17 @@ export class ExactOnlineClient {
       );
     }
   }
+}
+
+interface SearchCustomerResult {
+  d: {
+    results: Array<Customer>;
+  };
+}
+
+interface Customer {
+  ID: string;
+  Code: string;
+  Email: string;
+  Name: string;
 }
