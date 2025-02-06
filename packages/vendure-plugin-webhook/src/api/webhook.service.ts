@@ -197,7 +197,10 @@ export class WebhookService implements OnApplicationBootstrap {
       new Injector(this.moduleRef),
       webhook
     );
-
+    if (request === false) {
+      // Don't call webhook if transformer returns false
+      return;
+    }
     // Call the webhook with the constructed request
     try {
       await fetch(webhook.url, {

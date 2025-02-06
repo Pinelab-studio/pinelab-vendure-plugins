@@ -1,3 +1,8 @@
+# 1.4.0 (2025-02-06)
+
+- Allow cancelling webhook by returning `false` in request transformers
+- Fixed union type inference from events array in transformer
+
 # 1.3.1 (2025-01-28)
 
 - Correct UI label for actions dropdown
