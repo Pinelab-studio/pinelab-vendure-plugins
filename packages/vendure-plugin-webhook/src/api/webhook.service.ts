@@ -199,6 +199,10 @@ export class WebhookService implements OnApplicationBootstrap {
     );
     if (request === false) {
       // Don't call webhook if transformer returns false
+      Logger.info(
+        `Ignoring event ${event.constructor.name} for channel ${webhook.channelId} because transformer "${webhook.transformerName}" returned false`,
+        loggerCtx
+      );
       return;
     }
     // Call the webhook with the constructed request

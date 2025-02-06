@@ -1,3 +1,7 @@
+# 1.4.1 (2025-02-06)
+
+- Log info message when event is ignored because transformer returned 'false'
+
 # 1.4.0 (2025-02-06)
 
 - Allow cancelling webhook by returning `false` in request transformers
