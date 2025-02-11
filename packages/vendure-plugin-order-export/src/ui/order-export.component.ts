@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import {
   DataService,
@@ -9,49 +9,57 @@ import {
 import gql from 'graphql-tag';
 
 @Component({
+  encapsulation: ViewEncapsulation.None, // Hide time picker on children of order export
   selector: 'order-export-component',
-  styles: [],
+  styles: ['.time-picker { display: none !important; }'],
   template: `
-    <h1>Export orders</h1>
-    <form class="form" [formGroup]="form" id="export-form">
-      <section class="form-block">
-        <div class="flex">
-          <div>
-            <label>{{ 'order.placed-at-start' | translate }}</label>
-            <vdr-datetime-picker
-              required
-              timeGranularityInterval="60"
-              formControlName="startsAt"
-            ></vdr-datetime-picker>
+    <div class="page-block">
+      <h1 class="mb-2">Export orders</h1>
+      <form class="form" [formGroup]="form" id="export-form">
+        <section class="form-block">
+          <div class="flex">
+            <div>
+              <label>{{ 'common.start-date' | translate }}</label>
+              <vdr-datetime-picker
+                required
+                timeGranularityInterval="60"
+                formControlName="startsAt"
+              ></vdr-datetime-picker>
+            </div>
+            <div>
+              <label>{{ 'common.end-date' | translate }}</label>
+              <vdr-datetime-picker
+                required
+                timeGranularityInterval="60"
+                formControlName="endsAt"
+              ></vdr-datetime-picker>
+            </div>
           </div>
-          <div>
-            <label>{{ 'order.placed-at-end' | translate }}</label>
-            <vdr-datetime-picker
+          <br />
+          <clr-select-container>
+            <label>Export as</label>
+            <select
+              clrSelect
+              name="options"
+              formControlName="strategy"
               required
-              timeGranularityInterval="60"
-              formControlName="endsAt"
-            ></vdr-datetime-picker>
-          </div>
-        </div>
-        <br />
-        <clr-select-container>
-          <label>Export as</label>
-          <select clrSelect name="options" formControlName="strategy" required>
-            <option *ngFor="let strategy of strategies" [value]="strategy">
-              {{ strategy }}
-            </option>
-          </select>
-        </clr-select-container>
-        <br />
-        <button
-          class="btn btn-primary"
-          [disabled]="form.invalid || form.pristine"
-          (click)="download()"
-        >
-          Export
-        </button>
-      </section>
-    </form>
+            >
+              <option *ngFor="let strategy of strategies" [value]="strategy">
+                {{ strategy }}
+              </option>
+            </select>
+          </clr-select-container>
+          <br />
+          <button
+            class="btn btn-primary"
+            [disabled]="form.invalid || form.pristine"
+            (click)="download()"
+          >
+            Export
+          </button>
+        </section>
+      </form>
+    </div>
   `,
 })
 export class OrderExportComponent implements OnInit {
@@ -62,7 +70,6 @@ export class OrderExportComponent implements OnInit {
   constructor(
     private formBuilder: FormBuilder,
     protected dataService: DataService,
-    private changeDetector: ChangeDetectorRef,
     private notificationService: NotificationService,
     private localStorageService: LocalStorageService
   ) {

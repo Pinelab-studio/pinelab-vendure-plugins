@@ -1,3 +1,8 @@
+# 1.3.1 (2025-02-11)
+
+- Fix UI labels
+- Hide time picker, because it defaults to beginning and end time of selected dates
+
 # 1.3.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

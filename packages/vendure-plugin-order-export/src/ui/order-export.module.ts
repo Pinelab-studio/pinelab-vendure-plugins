@@ -12,6 +12,7 @@ import { OrderExportComponent } from './order-export.component';
         pathMatch: 'full',
         component: OrderExportComponent,
         data: { breadcrumb: 'Export orders' },
+        title: 'Export orders',
       },
     ]),
   ],
