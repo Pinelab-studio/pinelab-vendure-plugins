@@ -4,7 +4,7 @@
 
 # 1.1.2 (2024-12-20)
 
-- Fix to correctly save assets with Vendure V3.1
+- Fix to correctly save facets with Vendure V3.1
 
 # 1.1.1 (2024-08-04)
 
