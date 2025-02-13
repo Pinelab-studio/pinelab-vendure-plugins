@@ -1,3 +1,8 @@
+# 1.7.0 (2025-02-13)
+
+- Assign products now only assigns assets, variants and products to given channel. Not facets and values.
+- Only exporting main functions, not internal helpers
+
 # 1.6.0 (2024-12-19)
 
 - Update Vendure to 3.1.1
