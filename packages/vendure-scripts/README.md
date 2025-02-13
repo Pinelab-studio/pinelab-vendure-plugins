@@ -12,7 +12,8 @@ You will need to create a file to run in your Vendure project. In that file you 
 import { ModuleRef } from '@nestjs/core';
 import {
   assignAllProductsToChannel,
-  assignAllCust,
+  assignCustomersToChannel,
+  assignOrdersToChannel,
 } from '@pinelab/vendure-scripts';
 import { ChannelService, Injector, bootstrap } from '@vendure/core';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
@@ -40,6 +41,9 @@ import('../src/vendure-config').then(async ({ config }) => {
   );
   // Assign all Customers from Source to Target channel
   await assignCustomersToChannel(defaultChannelId, newChannelId, injector, ctx);
+
+  // Assign all orders from Source to Target channel
+  await assignOrdersToChannel(defaultChannelId, newChannelId, injector, ctx);
 
   await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for any background tasks or jobs
   process.exit(0);

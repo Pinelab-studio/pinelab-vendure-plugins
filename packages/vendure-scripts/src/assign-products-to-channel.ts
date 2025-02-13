@@ -65,8 +65,8 @@ async function assignProductsInBatch(
     // assign them to target channel
     await assignProductsToChannel(targetChannelId, injector, products, ctx);
   } while (products.length);
-  await searchService.reindex(ctxInTargetChannel),
-    await conn.commitOpenTransaction(ctx);
+  await searchService.reindex(ctxInTargetChannel);
+  await conn.commitOpenTransaction(ctx);
 }
 
 /**

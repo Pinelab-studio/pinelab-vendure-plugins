@@ -52,7 +52,9 @@ export async function assignEntitiesToChannel<
         .add(targetChannelId)
         .catch((e) => {
           Logger.error(
-            `Error assigning ${entity.name}s ${totalCount}-${batchSize} to Channel`,
+            `Error assigning ${entity.name}s ${totalCount}-${
+              totalCount + batchSize - 1
+            } to Channel`,
             loggerCtx
           );
           throw e;
