@@ -8,14 +8,14 @@ import {
   VendureEntity,
 } from '@vendure/core';
 import { DataSource, FindOptionsWhere } from 'typeorm';
-import { loggerCtx } from '../constants';
+import { loggerCtx } from './constants';
 
 export type GetEntityFunction<T> = (
   ctx: RequestContext,
   sourceChannelId: ID,
   injector: Injector,
-  batch: number,
   skip: number,
+  take: number,
   condition?: FindOptionsWhere<T> | FindOptionsWhere<T>[]
 ) => Promise<T[]>;
 
@@ -26,33 +26,37 @@ export async function assignEntitiesToChannel<
   targetChannelId: ID,
   injector: Injector,
   ctx: RequestContext,
-  getEntity: GetEntityFunction<T>,
-  batch: number,
-  condition?: FindOptionsWhere<T> | FindOptionsWhere<T>[]
+  getEntityFn: GetEntityFunction<T>,
+  batchSize: number
 ): Promise<void> {
   let totalCount = 0;
   const conn = injector.get(TransactionalConnection);
   let items: T[];
   await conn.startTransaction(ctx);
   do {
-    items = await getEntity(
+    items = await getEntityFn(
       ctx,
       sourceChannelId,
       injector,
-      batch,
       totalCount,
-      condition
+      batchSize
     );
     if (items.length) {
+      const entity = items[0].constructor;
       await injector
         .get(DataSource)
-        .getRepository(items[0].constructor)
+        .getRepository(entity)
         .createQueryBuilder()
         .relation('channels')
         .of(items)
         .add(targetChannelId)
         .catch((e) => {
-          Logger.error(`Error assigning customers to Channel`, loggerCtx);
+          Logger.error(
+            `Error assigning ${entity.name}s ${totalCount}-${
+              totalCount + batchSize - 1
+            } to Channel`,
+            loggerCtx
+          );
           throw e;
         });
       totalCount += items.length;

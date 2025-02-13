@@ -2,45 +2,48 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-scripts)
 
-This 'plugin' contains generic scripts that can be used with `Vendure` projects. The following scripts are available:
+This 'plugin' contains some helper scripts that can be used with `Vendure` projects. Helpers scripts include assigning products, customers and orders from a source to a target channel, and copying MySQL databases between environments.
 
-- `assignAllProductsToChannel`: assigns all `Products`, `ProductVariants`,`Facets` and `FacetValues` from the source channel to the target channel.
-- `assignProductsToChannel`: assigns specified `Products` with their related `ProductVariants`,`Facets` and `FacetValues` from the source channel to the target channel.
-- `assignCustomersToChannel`: assigns all `Customers` from the source channel to the target channel.
-- `assignOrdersToChannel`: assigns all `Orders` from the source channel to the target channel.
-- `exportDbToFile` and `insertIntoDb` to copy databases from production to test
+## Example scripts
 
-## Assign products to a new channel
-
-This script assigns all products from the source channel to the target channel
+You will need to create a file to run in your Vendure project. In that file you can import the helpers to do some heavy lifting for you.
 
 ```ts
 import { ModuleRef } from '@nestjs/core';
-import { assignAllProductsToChannel } from '@pinelab/vendure-scripts';
+import {
+  assignAllProductsToChannel,
+  assignCustomersToChannel,
+  assignOrdersToChannel,
+} from '@pinelab/vendure-scripts';
 import { ChannelService, Injector, bootstrap } from '@vendure/core';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 
-require('dotenv').config({ path: process.env.ENV_FILE }); // Load env before config
+// Load env before config
+require('dotenv').config({ path: process.env.ENV_FILE });
+
 import('../src/vendure-config').then(async ({ config }) => {
+  // Bootstrap Vendure
   const app = await bootstrap(config);
 
   const sourceChannel = await app.get(ChannelService).getDefaultChannel();
   const targetChannel = await app
     .get(ChannelService)
-    .getChannelFromToken('colourgraphics');
+    .getChannelFromToken('your-channel-token');
   const injector = new Injector(app.get(ModuleRef));
   const ctx = await getSuperadminContext(app);
 
-  console.log(
-    `Assigning all products from ${sourceChannel.code} to ${targetChannel.code}`
-  );
-
+  // Assign all products from Source to Target channel
   await assignAllProductsToChannel(
     sourceChannel.id,
     targetChannel.id,
     injector,
     ctx
   );
+  // Assign all Customers from Source to Target channel
+  await assignCustomersToChannel(defaultChannelId, newChannelId, injector, ctx);
+
+  // Assign all orders from Source to Target channel
+  await assignOrdersToChannel(defaultChannelId, newChannelId, injector, ctx);
 
   await new Promise((resolve) => setTimeout(resolve, 10000)); // Wait for any background tasks or jobs
   process.exit(0);

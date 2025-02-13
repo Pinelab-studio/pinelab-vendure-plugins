@@ -1,13 +1,14 @@
+import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
   CustomerService,
   DefaultLogger,
   Injector,
   LogLevel,
+  mergeConfig,
   OrderService,
   ProductService,
   RequestContext,
-  mergeConfig,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -17,17 +18,15 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { describe, beforeAll, it, expect } from 'vitest';
-import { CREATE_CHANNEL, createChannelInput } from './test-helpers';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { ModuleRef } from '@nestjs/core';
-import { assignAllProductsToChannel } from '../src';
-import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
-import { assignCustomersToChannel } from '../src/assign-customers/assign-all-customers-to-channel';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { assignOrdersToChannel } from '../src/assign-orders/assign-all-orders-to-channel';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
+import { assignAllProductsToChannel } from '../src';
+import { assignCustomersToChannel } from '../src/assign-customers-to-channel';
+import { assignOrdersToChannel } from '../src/assign-orders-to-channel';
+import { CREATE_CHANNEL, createChannelInput } from './test-helpers';
 
 describe('Vendure Scripts', function () {
   let server: TestServer;
@@ -37,8 +36,8 @@ describe('Vendure Scripts', function () {
   let defaultChannelId = 1;
   let newChannelId = 2;
   let injector: Injector;
-  let superadminContextInSourceChannel: RequestContext;
-  let superadminContextInTargetChannel: RequestContext;
+  let sourceChannelCtx: RequestContext;
+  let targetChannelCtx: RequestContext;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -76,13 +75,20 @@ describe('Vendure Scripts', function () {
       },
     });
     injector = new Injector(server.app.get(ModuleRef));
-    superadminContextInSourceChannel = await getSuperadminContext(server.app);
     const channelService = server.app.get(ChannelService);
+    const sourceChannel = await channelService.findOne(
+      sourceChannelCtx,
+      defaultChannelId
+    );
+    sourceChannelCtx = await getSuperadminContextInChannel(
+      injector,
+      sourceChannel!
+    );
     const targetChannel = await channelService.findOne(
-      superadminContextInSourceChannel,
+      sourceChannelCtx,
       newChannelId
     );
-    superadminContextInTargetChannel = await getSuperadminContextInChannel(
+    targetChannelCtx = await getSuperadminContextInChannel(
       injector,
       targetChannel!
     );
@@ -97,13 +103,13 @@ describe('Vendure Scripts', function () {
       defaultChannelId,
       newChannelId,
       injector,
-      superadminContextInSourceChannel
+      sourceChannelCtx
     );
     //test if the assinging worked
     const targetChannelProducts = (
       await server.app
         .get(ProductService)
-        .findAll(superadminContextInTargetChannel, undefined, [
+        .findAll(targetChannelCtx, undefined, [
           'featuredAsset',
           'assets',
           'channels',
@@ -130,17 +136,13 @@ describe('Vendure Scripts', function () {
       defaultChannelId,
       newChannelId,
       injector,
-      superadminContextInSourceChannel
+      sourceChannelCtx
     );
     const customersInTargetChannel = (
-      await server.app
-        .get(CustomerService)
-        .findAll(superadminContextInTargetChannel, undefined)
+      await server.app.get(CustomerService).findAll(targetChannelCtx, undefined)
     ).items;
     const customersInSourceChannel = (
-      await server.app
-        .get(CustomerService)
-        .findAll(superadminContextInSourceChannel, undefined)
+      await server.app.get(CustomerService).findAll(sourceChannelCtx, undefined)
     ).items;
     expect(customersInTargetChannel.length).toBe(5);
     for (let sourceChannelCustomer of customersInSourceChannel) {
@@ -160,26 +162,15 @@ describe('Vendure Scripts', function () {
       defaultChannelId,
       newChannelId,
       injector,
-      superadminContextInSourceChannel
+      sourceChannelCtx
     );
     const ordersInTargetChannel = (
-      await server.app
-        .get(OrderService)
-        .findAll(superadminContextInTargetChannel, undefined)
+      await server.app.get(OrderService).findAll(targetChannelCtx, undefined)
     ).items;
     const ordersInSourceChannel = (
-      await server.app
-        .get(OrderService)
-        .findAll(superadminContextInSourceChannel, undefined)
+      await server.app.get(OrderService).findAll(sourceChannelCtx, undefined)
     ).items;
+    expect(ordersInSourceChannel.length).toBe(2);
     expect(ordersInTargetChannel.length).toBe(2);
-    for (let sourceChannelOrder of ordersInSourceChannel) {
-      expect(
-        ordersInSourceChannel.find(
-          (targetChannelOrder) =>
-            targetChannelOrder.id === sourceChannelOrder.id
-        )
-      ).toBeDefined();
-    }
   });
 });
