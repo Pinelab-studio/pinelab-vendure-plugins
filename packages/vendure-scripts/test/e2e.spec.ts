@@ -1,13 +1,14 @@
+import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
   CustomerService,
   DefaultLogger,
   Injector,
   LogLevel,
+  mergeConfig,
   OrderService,
   ProductService,
   RequestContext,
-  mergeConfig,
 } from '@vendure/core';
 import {
   createTestEnvironment,
@@ -17,17 +18,15 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { describe, beforeAll, it, expect } from 'vitest';
-import { CREATE_CHANNEL, createChannelInput } from './test-helpers';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
-import { ModuleRef } from '@nestjs/core';
-import { assignAllProductsToChannel } from '../src';
-import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
-import { assignCustomersToChannel } from '../src/assign-all-customers-to-channel';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { assignOrdersToChannel } from '../src/assign-all-orders-to-channel';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { getSuperadminContextInChannel } from '../../util/src/superadmin-request-context';
+import { assignAllProductsToChannel } from '../src';
+import { assignCustomersToChannel } from '../src/assign-customers-to-channel';
+import { assignOrdersToChannel } from '../src/assign-orders-to-channel';
+import { CREATE_CHANNEL, createChannelInput } from './test-helpers';
 
 describe('Vendure Scripts', function () {
   let server: TestServer;
