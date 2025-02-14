@@ -1,3 +1,8 @@
+# 1.7.1 (2025-02-14)
+
+- Improved logging to track progress
+- Don't throw if failed to assign to a channel
+
 # 1.7.0 (2025-02-13)
 
 - Assign products now only assigns assets, variants and products to given channel. Not facets and values.
