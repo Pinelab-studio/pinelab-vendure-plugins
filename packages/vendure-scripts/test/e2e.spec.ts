@@ -2,9 +2,7 @@ import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
   CustomerService,
-  DefaultLogger,
   Injector,
-  LogLevel,
   mergeConfig,
   OrderService,
   ProductService,
@@ -42,7 +40,7 @@ describe('Vendure Scripts', function () {
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
-      logger: new DefaultLogger({ level: LogLevel.Debug }),
+      logger: console,
       apiOptions: {
         port: 1234,
       },

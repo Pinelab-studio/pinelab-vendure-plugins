@@ -29,20 +29,18 @@ export async function assignEntitiesToChannel<
   getEntityFn: GetEntityFunction<T>,
   batchSize: number
 ): Promise<void> {
-  let totalCount = 0;
+  let skip = 0;
   const conn = injector.get(TransactionalConnection);
   let items: T[];
   await conn.startTransaction(ctx);
   do {
-    items = await getEntityFn(
-      ctx,
-      sourceChannelId,
-      injector,
-      totalCount,
-      batchSize
-    );
+    items = await getEntityFn(ctx, sourceChannelId, injector, skip, batchSize);
     if (items.length) {
       const entity = items[0].constructor;
+      Logger.info(
+        `Asigning ${entity.name}s ${skip}-${skip + batchSize} to Channel`,
+        loggerCtx
+      );
       await injector
         .get(DataSource)
         .getRepository(entity)
@@ -52,14 +50,14 @@ export async function assignEntitiesToChannel<
         .add(targetChannelId)
         .catch((e) => {
           Logger.error(
-            `Error assigning ${entity.name}s ${totalCount}-${
-              totalCount + batchSize - 1
-            } to Channel`,
+            `Error assigning ${entity.name}s ${skip}-${
+              skip + batchSize
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            } to Channel: ${e.message}`,
             loggerCtx
           );
-          throw e;
         });
-      totalCount += items.length;
+      skip += batchSize;
     }
   } while (items.length);
   await conn.commitOpenTransaction(ctx);

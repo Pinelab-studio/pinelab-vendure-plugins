@@ -32,7 +32,6 @@ function getCustomers(
   skip: number = 0,
   take: number = 10
 ): Promise<Customer[]> {
-  console.log(`Getting customers ${skip} to ${take + skip}`);
   const conn = injector.get(TransactionalConnection);
   const customerRepo = conn.getRepository(ctx, Customer);
   return customerRepo
