@@ -1,3 +1,7 @@
+# 1.6.1 (2025-02-19)
+
+- Fetch order with relations instead of hydrating, to prevent `Maximum call stack exceeded` (https://github.com/vendure-ecommerce/vendure/issues/3355)
+
 # 1.6.0 (2025-01-14)
 
 - Added mutation to sign up to Klaviyo Audience list

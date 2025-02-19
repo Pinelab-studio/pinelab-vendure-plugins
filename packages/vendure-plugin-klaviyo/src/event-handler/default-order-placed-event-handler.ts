@@ -1,9 +1,9 @@
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import {
   Address,
-  EntityHydrator,
   Logger,
   OrderPlacedEvent,
+  OrderService,
   translateDeep,
 } from '@vendure/core';
 import { loggerCtx } from '../constants';
@@ -12,9 +12,11 @@ import { KlaviyoOrderPlacedEventHandler } from './klaviyo-event-handler';
 
 export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
   vendureEvent: OrderPlacedEvent,
-  mapToKlaviyoEvent: async ({ order, ctx }, injector) => {
-    await injector.get(EntityHydrator).hydrate(ctx, order, {
-      relations: [
+  mapToKlaviyoEvent: async ({ order: { id, code }, ctx }, injector) => {
+    // Refetch order with relations. Don't hydrate to prevent concurrency issues
+    const order = await injector
+      .get(OrderService)
+      .findOne(ctx, id, [
         'lines.productVariant.product.facetValues.facet',
         'lines.productVariant.product.translations',
         'lines.productVariant.collections.children',
@@ -22,21 +24,20 @@ export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
         'shippingLines.shippingMethod',
         'customer.addresses.country',
         'customer.user',
-      ],
-    });
-    order.lines.forEach((line) => {
-      line.productVariant.product = translateDeep(
-        line.productVariant.product,
-        ctx.languageCode
-      );
-    });
-    if (!order.customer) {
+      ]);
+    if (!order?.customer) {
       Logger.error(
-        `Can not send Order placed Event to Klaviyo, because order ${order.code} has no customer`,
+        `Can not send Order placed Event to Klaviyo, because order ${code} has no customer`,
         loggerCtx
       );
       return false;
     }
+    order.lines.forEach((line) => {
+      line.productVariant = translateDeep(
+        line.productVariant,
+        ctx.languageCode
+      );
+    });
     let address: Address | OrderAddress | undefined =
       order.customer.addresses.find((a) => a.defaultShippingAddress);
     if (!address) {
