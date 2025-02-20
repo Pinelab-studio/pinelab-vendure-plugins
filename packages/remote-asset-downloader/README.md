@@ -4,7 +4,7 @@ This util helps you download assets from a remote source to your local filesyste
 
 ```ts
 import { RemoteAssetDownloader } from '@pinelab/remote-asset-downloader';
-const asssetDownloader = new RemoteAssetDownloader({
+const assetDownloader = new RemoteAssetDownloader({
   publicAssetDirectory: './static/',
   subDirectory: '/remote-img/',
   getRemoteUrl: (assetId) =>
