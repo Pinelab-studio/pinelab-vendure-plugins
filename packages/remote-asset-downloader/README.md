@@ -16,7 +16,7 @@ const assetDownloader = new RemoteAssetDownloader({
 
 // This example creates two new properties on a project: "project.featured_image.small"
 // and "project.featured_image.medium"
-for (project of projects) {
+for (const project of projects) {
   const mediumImage = await asssetDownloader.getAsset(
     project.featured_image.id,
     {
