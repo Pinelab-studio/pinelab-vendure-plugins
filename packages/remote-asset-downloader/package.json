@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/remote-asset-downloader",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Utility to download assets from remote servers and store locally for static site builds.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",

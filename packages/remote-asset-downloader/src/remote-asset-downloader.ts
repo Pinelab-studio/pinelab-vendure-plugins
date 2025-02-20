@@ -11,9 +11,10 @@ interface DownloadConfig {
    */
   publicAssetDirectory: string;
   /**
-   * Optionally provide a subdirectory for the assets.
+   * Provide a subdirectory for the assets. This directory should be excluded from git,
+   * and added to your build cache. (For example, the Netlify Build Cache)
    */
-  subDirectory?: string;
+  subDirectory: string;
   /**
    * This function should return the remote URL of the asset.
    * E.g. (assetId) => `https://my-cms.io/assets/${assetId}?format=webp`
@@ -55,11 +56,9 @@ export class RemoteAssetDownloader {
     config.publicAssetDirectory = this.stripTrailingAndLeadingSlash(
       config.publicAssetDirectory
     );
-    if (config.subDirectory) {
-      config.subDirectory = this.stripTrailingAndLeadingSlash(
-        config.subDirectory
-      );
-    }
+    config.subDirectory = this.stripTrailingAndLeadingSlash(
+      config.subDirectory
+    );
   }
 
   /**
@@ -79,10 +78,7 @@ export class RemoteAssetDownloader {
       // Return the remote URL if configured to do so.
       return remoteUrl;
     }
-    let assetDir = this.config.publicAssetDirectory;
-    if (this.config.subDirectory) {
-      assetDir += `/${this.config.subDirectory}`;
-    }
+    const assetDir = `${this.config.publicAssetDirectory}/${this.config.subDirectory}`;
     const filePath = `${assetDir}/${this.stripUnsafeCharacters(
       `${assetId}_${fileName}`
     )}`;
@@ -114,11 +110,11 @@ export class RemoteAssetDownloader {
    * E.g. `This test@22.wepb` -> `this_test_22.webp`
    */
   private stripUnsafeCharacters(str: string): string {
-    return str.toLocaleLowerCase().replace(/[^a-zA-Z0-9-_\.]/g, '_');
+    return str.toLocaleLowerCase().replace(/[^a-zA-Z0-9-_.]/g, '_');
   }
 
   private stripTrailingAndLeadingSlash(str: string): string {
-    let newStr = str.startsWith('/') ? str.slice(1) : str;
+    const newStr = str.startsWith('/') ? str.slice(1) : str;
     return newStr.endsWith('/') ? newStr.slice(0, -1) : newStr;
   }
 }
