@@ -11,6 +11,11 @@ interface DownloadConfig {
    */
   publicAssetDirectory: string;
   /**
+   * Specify a cache directory to store the downloaded assets.
+   * E.g. Netlify caches the `.cache` directory between builds
+   */
+  cacheDirectory: string;
+  /**
    * Provide a subdirectory for the assets. This directory should be excluded from git,
    * and added to your build cache. (For example, the Netlify Build Cache)
    */
@@ -59,6 +64,9 @@ export class RemoteAssetDownloader {
     config.subDirectory = this.stripTrailingAndLeadingSlash(
       config.subDirectory
     );
+    config.cacheDirectory = this.stripTrailingAndLeadingSlash(
+      config.cacheDirectory
+    );
   }
 
   /**
@@ -79,29 +87,39 @@ export class RemoteAssetDownloader {
       return remoteUrl;
     }
     const assetDir = `${this.config.publicAssetDirectory}/${this.config.subDirectory}`;
-    const filePath = `${assetDir}/${this.stripUnsafeCharacters(
+    const downloadedFileName = this.stripUnsafeCharacters(
       `${assetId}_${fileName}`
-    )}`;
+    );
+    const destinationPath = `${assetDir}/${downloadedFileName}`;
     // Construct the public storefront path, e.g. "/subdirectory/asset123.webp"
-    const storefrontUrl = filePath.replace(
+    const storefrontUrl = destinationPath.replace(
       this.config.publicAssetDirectory,
       ''
     );
+    const cachedAsset = `${this.config.cacheDirectory}/${downloadedFileName}`;
+    fs.mkdirSync(this.config.cacheDirectory, { recursive: true });
     try {
-      fs.accessSync(filePath);
-      console.log(`Using existing cached asset in ${filePath}`);
+      // Check if we have a cached asset
+      fs.accessSync(cachedAsset);
+      // Copy file from cache to target location
+      fs.copyFileSync(cachedAsset, destinationPath);
+      console.log(`Using cached asset from ${cachedAsset}`);
       return storefrontUrl;
     } catch (e) {
       // File doesn't exist
     }
-    console.log(`No cached asset found, downloading asset ${remoteUrl}`);
+    console.log(
+      `No cached asset found in ${cachedAsset}, downloading asset ${remoteUrl}`
+    );
     fs.mkdirSync(assetDir, { recursive: true });
     const response = await fetch(remoteUrl);
     if (!response.ok) {
       throw new Error(`Failed to download asset from ${remoteUrl}`);
     }
     const assetData = await response.arrayBuffer();
-    fs.writeFileSync(filePath, Buffer.from(assetData));
+    fs.writeFileSync(destinationPath, Buffer.from(assetData));
+    // Also copy back into cache
+    fs.copyFileSync(destinationPath, cachedAsset);
     return storefrontUrl;
   }
 
