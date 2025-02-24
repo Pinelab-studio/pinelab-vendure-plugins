@@ -7,6 +7,7 @@ import { RemoteAssetDownloader } from '@pinelab/remote-asset-downloader';
 const assetDownloader = new RemoteAssetDownloader({
   publicAssetDirectory: './static/',
   subDirectory: '/remote-img/',
+  cacheDirectory: './node_modules/.cache' // Astro should be caching this dir
   getRemoteUrl: (assetId) =>
     // This can be any asset server, as long as it returns an asset
     `https://your-directus.io/assets/${assetId}`,
@@ -22,7 +23,7 @@ for (const project of projects) {
     {
       // Download the preset `medium-webp` which is configure in Directus
       fileName: `${project.title}_medium.webp`,
-      transformations: '?key=medium-webp',
+      transformationArguments: '?key=medium-webp',
     }
   );
   project.featured_image.medium = mediumImage;
@@ -30,7 +31,7 @@ for (const project of projects) {
     project.featured_image.id,
     {
       fileName: `${project.title}_small.webp`,
-      transformations: '?key=small-webp',
+      transformationArguments: '?key=small-webp',
     }
   );
   project.featured_image.small = smallImage;
@@ -47,8 +48,11 @@ For use with Astro JS, you would use `/public/` instead of `/static/`:
 const asssetDownloader = new RemoteAssetDownloader({
   publicAssetDirectory: './public/',
   subDirectory: '/remote-img/',
+  cacheDirectory: './node_modules/.cache' // Astro should be caching this dir
   getRemoteUrl: (assetId) => `https://your-directus.io/assets/${assetId}`,
   // Or process.env.NODE_ENV === 'production' to only download in production
   downloadRemoteAsset: true,
 });
 ```
+
+With Astro, the copying of files from `public` to `dist` happens before the JS build, so you need to manually copy the downloaded files to dist after build: `npm run build && cp -r public/* dist/`
