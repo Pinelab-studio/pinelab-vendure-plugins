@@ -33,7 +33,7 @@ describe('Customer managed groups', function () {
   let adminClient: any;
   let shopClient: any;
   let convertedOrder: Order;
-  let newACtiveOrder: Order;
+  let newActiveOrder: Order;
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
