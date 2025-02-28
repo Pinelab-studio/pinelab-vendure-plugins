@@ -7,6 +7,8 @@ This plugin allows you to convert an active order from a customer to a Draft ord
 3. The order can now be edited as admin under 'Drafts'
 4. Click `Complete draft` to connect the order as active order to a customer. (This behaviour can be disabled, see `autoAssignDraftOrdersToCustomer` below)
 
+When you connect a Draft order to a customer, the customers existing active order will be made a Draft.
+
 ## Getting started
 
 ```ts
@@ -31,5 +33,3 @@ plugins: [
   }),
 ];
 ```
-
-![](./docs/button.png)
