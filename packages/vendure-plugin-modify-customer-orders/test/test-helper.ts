@@ -31,3 +31,23 @@ export const convertToDraftMutation = gql`
     }
   }
 `;
+
+export const TRANSITION_ORDER_TO = gql`
+  mutation TransitionOrderToState($id: ID!, $state: String!) {
+    transitionOrderToState(id: $id, state: $state) {
+      ... on Order {
+        id
+        code
+        totalWithTax
+        total
+        state
+        active
+      }
+      ... on OrderStateTransitionError {
+        errorCode
+        message
+        transitionError
+      }
+    }
+  }
+`;

@@ -70,6 +70,12 @@ mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
   }
 }
 
+query GetActiveOrder {
+  activeOrder {
+    ...OrderFields
+  }
+}
+
 mutation ApplyCouponCode($couponCode: String!) {
   applyCouponCode(couponCode: $couponCode) {
     ... on Order {

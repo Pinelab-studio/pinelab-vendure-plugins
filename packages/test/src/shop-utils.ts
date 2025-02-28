@@ -14,6 +14,8 @@ import {
   TransitionToStateMutation,
   TransitionToStateMutationVariables,
   SetBillingAddressMutationVariables,
+  GetActiveOrder,
+  GetActiveOrderQuery,
 } from './generated/shop-graphql';
 import { testPaymentMethod } from './test-payment-method';
 
@@ -98,6 +100,13 @@ export async function addItem(
     quantity,
   });
   return addItemToOrder;
+}
+
+export async function getActiveOrder(
+  shopClient: SimpleGraphQLClient
+): Promise<GetActiveOrderQuery['activeOrder'] | undefined> {
+  const { activeOrder } = await shopClient.query(GetActiveOrder);
+  return activeOrder;
 }
 
 export async function applyCouponCode(

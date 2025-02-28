@@ -1,3 +1,8 @@
+# 1.5.0 (2025-02-27)
+
+- Correctly unset active order on customer
+- Transition current active order of customer to draft
+
 # 1.4.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

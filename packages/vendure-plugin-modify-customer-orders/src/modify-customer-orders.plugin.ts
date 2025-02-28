@@ -2,7 +2,6 @@ import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import { adminApiExtension } from './api/api.extension';
 import { AdminApiResolver } from './api/api.resolver';
-import { OrderTransitionListenerService } from './api/order-transition-listener.service';
 import { convertToDraftButton } from './ui';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { convertToDraft } from './custom-order-process';
@@ -23,7 +22,6 @@ export interface ModifyCustomerOrdersPluginOptions {
     schema: adminApiExtension,
   },
   providers: [
-    OrderTransitionListenerService,
     {
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => ModifyCustomerOrdersPlugin.options,
