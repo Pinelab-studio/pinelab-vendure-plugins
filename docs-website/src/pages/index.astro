@@ -1,70 +1,28 @@
 ---
-import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPlugins } from '../api/plugins';
+import HeroSection from '../components/HeroSection.astro';
+import Layout from '../layouts/Layout.astro';
+
+import { getPlugins } from '../utils/plugins';
 import {
   getPluginsContributors,
-  Contributor as ContributorType,
-} from '../api/contributors';
+  type Contributor as ContributorType,
+} from '../utils/contributors';
 import Contributor from '../components/Contributor.astro';
 
 const plugins = await getPlugins();
 const contributors = await getPluginsContributors();
-
-// https://spaziobianco.lexingtonthemes.com/jobs/home/
 ---
 
-<BaseLayout>
-  <section>
-    <div
-      class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 mt-24 z-50 items-center"
-    >
-      <div class="lg:pr-24 md:pr-12 pb-12 lg:pb-0 max-w-xl">
-        <span class="text-sm uppercase font-medium tracking-wide text-blue-600"
-          >OPEN SOURCE 4 LIFE</span
-        >
-        <h2
-          class="text-purple-900 font-semibold mt-6 text-4xl lg:text-7xl tracking-tight"
-        >
-          Battle tested Vendure plugins
-        </h2>
-        <p class="text-slate-500 mt-5 lg:text-balance">
-          Vendure plugins built by <a
-            class="text-blue-600"
-            href="https://pinelab.studio"
-            target="_blank">Pinelab</a
-          >, used for solving real problems for our clients.
-        </p>
-        <a
-          href="#plugins"
-          class="text-blue-500 mt-8 hover:text-blue-600 inline-flex items-center group"
-        >
-          Go to plugins ↓
-        </a>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div
-      class="h-64 justify-center lg:px-0 max-h-full md:px-12 overflow-hidden relativ -skew-y-[16deg] transform mb-24"
-    >
-      <div class="bg-white block lg:flex-1 lg:relative sm:contents">
-        <div class="bg-white absolute h-full inset-0 object-cover w-full">
-          <video
-            autoplay=""
-            class="bg-white absolute max-w-none min-h-full min-w-full w-auto z-10"
-            loop=""
-            muted=""
-            ><source src="/gradientB.mp4" type="video/mp4" />Your browser does
-            not support the video tag.</video
-          >
-        </div>
-      </div>
-    </div>
-  </section>
+<Layout
+  metaTitle="Pinelab Vendure Plugins"
+  metaDescription="Battle tested Vendure plugins, built by Pinelab.studio"
+>
+  <HeroSection />
 
   <section id="plugins">
-    <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 py-24 mb-12">
+    <div
+      class="mx-auto max-w-7xl px-6 pb-24 sm:pb-32 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:pb-40"
+    >
       <div
         class="gap-x-2 gap-y-14 lg:gap-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 mt-12"
       >
@@ -73,7 +31,7 @@ const contributors = await getPluginsContributors();
             <div>
               <div class="space-y-3">
                 <div class="lg:inline-flex lg:items-center lg:gap-3">
-                  <div class="flex items-center justify-center size-10 text-blue-500 rounded-full">
+                  <div class="flex items-center justify-center size-10 text-green-500 rounded-full">
                     <img src={plugin.icon} class="rounded" />
                   </div>
                   <a
@@ -91,7 +49,7 @@ const contributors = await getPluginsContributors();
                     aria-label={plugin.name}
                     href={`/plugin/${plugin.slug}`}
                     title={plugin.name}
-                    class="text-blue-500 hover:text-blue-600 inline-flex items-center group"
+                    class="text-green-500 hover:text-green-600 inline-flex items-center group"
                   >
                     Learn more
                     <svg
@@ -116,7 +74,7 @@ const contributors = await getPluginsContributors();
     </div>
   </section>
 
-  <div>
+  <div class="mb-14">
     {
       contributors.length > 0 && (
         <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 ">
@@ -147,4 +105,4 @@ const contributors = await getPluginsContributors();
       )
     }
   </div>
-</BaseLayout>
+</Layout>

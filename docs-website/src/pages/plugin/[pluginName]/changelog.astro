@@ -1,6 +1,6 @@
 ---
-import { getPlugins, type Plugin } from '../../../api/plugins';
-import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Layout from '../../../layouts/Layout.astro';
+import { getPlugins, type Plugin } from '../../../utils/plugins';
 import 'highlight.js/styles/github-dark-dimmed.css';
 
 export async function getStaticPaths() {
@@ -14,11 +14,14 @@ export async function getStaticPaths() {
 const plugin: Plugin = Astro.props.plugin;
 ---
 
-<BaseLayout title={`${plugin.name} Changelog`}>
-  <section>
-    <div
-      class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 z-50 items-center"
-    >
+<Layout
+  metaTitle={`${plugin.name} Changelog`}
+  metaDescription={`Changelog for Vendure plugin ${plugin.name}`}
+>
+  <section
+    class="mt-18 mx-auto max-w-7xl px-6 pb-24 sm:pb-32 lg:items-center 10 lg:px-8 lg:pb-40"
+  >
+    <div>
       <pre>
     <code class="hljs language-shell">
     <span class="hljs-comment"># Install this plugin</span>
@@ -28,18 +31,20 @@ const plugin: Plugin = Astro.props.plugin;
 
       <!-- Changelog link -->
       <div class="text-left mb-2">
-        <a class="text-blue-600" href={`/plugin/${plugin.slug}`}>
+        <a class="text-green-600" href={`/plugin/${plugin.slug}`}>
           &lsaquo; Readme</a
         >
       </div>
 
-      <div class="prose mb-12">
-        <h1 class="leading-relaxed">
+      <div class="mb-12">
+        <h1
+          class="text-5xl font-semibold tracking-tight text-pretty text-gray-800 sm:text-4xl"
+        >
           Changelog for <code>{plugin.slug}</code>
         </h1>
       </div>
 
-      <div class="prose" set:html={plugin.changelogContent} />
+      <div class="prose !max-w-none" set:html={plugin.changelogContent} />
     </div>
   </section>
-</BaseLayout>
+</Layout>

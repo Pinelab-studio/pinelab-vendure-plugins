@@ -1,6 +1,6 @@
 ---
-import { getPlugins, type Plugin } from '../../api/plugins';
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import Layout from '../../layouts/Layout.astro';
+import { getPlugins, type Plugin } from '../../utils/plugins';
 import 'highlight.js/styles/github-dark-dimmed.css';
 
 export async function getStaticPaths() {
@@ -14,12 +14,13 @@ export async function getStaticPaths() {
 const plugin: Plugin = Astro.props.plugin;
 ---
 
-<BaseLayout title={plugin.name}>
-  <section>
-    <div
-      class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 z-50 items-center"
-    >
-      <pre>
+<Layout metaTitle={plugin.name} metaDescription={plugin.description}>
+  <section
+    class="mt-18 mx-auto max-w-7xl px-6 pb-24 sm:pb-32 lg:items-center 10 lg:px-8 lg:pb-40"
+  >
+    <div>
+      <pre
+        class="rounded">
     <code class="hljs language-shell">
     <span class="hljs-comment"># Install this plugin</span>
     <span class="hljs-attr">npm</span> install {plugin.npmName}
@@ -28,7 +29,7 @@ const plugin: Plugin = Astro.props.plugin;
 
       <!-- Changelog link -->
       <div class="text-right">
-        <a class="text-blue-600" href={`/plugin/${plugin.slug}/changelog`}
+        <a class="text-green-600" href={`/plugin/${plugin.slug}/changelog`}
           >Changelog &rsaquo;
         </a>
       </div>
@@ -47,12 +48,21 @@ const plugin: Plugin = Astro.props.plugin;
         ) : (
           <img
             class="inline-block"
-            src="https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=blue&label=Built%20on%20Vendure&color=%2317C1FF"
+            src="https://img.shields.io/badge/dynamic/json.svg?url=https%3A%2F%2Fraw.githubusercontent.com%2FPinelab-studio%2Fpinelab-vendure-plugins%2Fmain%2Fpackage.json&query=$.devDependencies[%27@vendure/core%27]&colorB=green&label=Built%20on%20Vendure&color=%2317C1FF"
           />
         )
       }
 
-      <div class="prose" set:html={plugin.markdownContent} />
+      <div class="prose !max-w-none" set:html={plugin.markdownContent} />
+
+      <div>
+        <p class="mt-12 pt-12 border-t border-gray-200">
+          Need help? <a
+            href="https://pinelab.studio/contact/"
+            class="text-green-600 hover:text-green-500">Get In Touch</a
+          >
+        </p>
+      </div>
     </div>
   </section>
-</BaseLayout>
+</Layout>

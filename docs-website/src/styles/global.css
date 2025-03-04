@@ -1,23 +1,67 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-:root {
-  font-family: Inter, sans-serif;
-  font-feature-settings: 'liga' 1, 'calt' 1,
-    /* Contextual Alternates */ 'dlig' 1, /* Discretionary Ligatures */ 'ss07' 1,
-    /* fSquare punctuation */ 'ss08' 1, /* Square quotes */ 'zero' 1,
-    /* Slashed zero */ 'tnum' 1, /* Tabular numbers */ 'cv03' 1,
-    /* Open six */ 'cv04' 1, /* Open nine */ 'cv01' 1,
-    /* Alternate one */ 'cv09', /* Flat-top three */ 'cv02' 1; /* Open 4 */
+@import 'tailwindcss';
+@plugin "@tailwindcss/typography";
+
+html {
+  font-family: 'Ubuntu Sans', Arial, Helvetica, sans-serif;
 }
-@supports (font-variation-settings: normal) {
-  /* Use variable font if supported */
-  :root {
-    font-family: InterVariable, sans-serif;
-  }
+
+@theme {
+  --font-sans: 'Ubuntu Sans', Arial, Helvetica, sans-serif;
+  --color-*: initial;
+  --color-green-50: #ebfef5;
+  --color-green-100: #cefde5;
+  --color-green-200: #a1f9d0;
+  --color-green-300: #65f0b9;
+  --color-green-400: #28df9d;
+  --color-green-500: #03c686;
+  --color-green-600: #00a16e;
+  --color-green-700: #00815b;
+  --color-green-800: #006649;
+  --color-green-900: #00543e;
+  --color-green-950: #002f24;
+  --color-gray-light: #e7e7e7;
+  --color-gray-50: #f6f6f6;
+  --color-gray-100: #e7e7e7;
+  --color-gray-200: #d1d1d1;
+  --color-gray-300: #b0b0b0;
+  --color-gray-400: #888888;
+  --color-gray-500: #6d6d6d;
+  --color-gray-600: #5d5d5d;
+  --color-gray-700: #4f4f4f;
+  --color-gray-800: #454545;
+  --color-gray-900: #333333;
+  --color-gray-950: #262626;
+  --color-swamp-50: #effefb;
+  --color-swamp-100: #c9fef5;
+  --color-swamp-200: #94fbed;
+  --color-swamp-300: #57f1e2;
+  --color-swamp-400: #24ddd1;
+  --color-swamp-500: #0bc1b8;
+  --color-swamp-600: #069b97;
+  --color-swamp-700: #097c7a;
+  --color-swamp-800: #0d6262;
+  --color-swamp-900: #105151;
+  --color-swamp-950: #011c1d;
+
+  --color-red-100: #fee2e2;
+  --color-red-800: #991b1b;
+
+  --color-white: #ffffff;
 }
+
+/* Navbar white after scrolling */
+
+header {
+  background-color: transparent;
+}
+
+body.scrolled header {
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 .prose-styles {
-  @apply prose-lg hover:prose-a:text-blue-500 prose prose-a:font-semibold prose-a:text-blue-600 prose-blockquote:text-blue-600 prose-h3:text-purple-900 text-slate-500;
+  @apply prose-lg hover:prose-a:text-green-500 prose prose-a:font-semibold prose-a:text-green-600 prose-blockquote:text-green-600 prose-h3:text-green-900 text-gray-500;
 }
 
 /* Highlight inline code */
@@ -27,6 +71,10 @@ code:not([class]) {
   padding: 0.2em 0.4em;
   background-color: #ebf9f3; /* Light grey background */
   color: #02393b; /* Contrasting text color */
+}
+
+code {
+  border-radius: 5px;
 }
 
 /* Copy link for headings */
@@ -40,31 +88,3 @@ code:not([class]) {
 .prose code::after {
   content: none; /* Prevent backticks or any other content from being added */
 }
-
-:root {
-  --astro-code-color-text: theme('colors.white');
-  --astro-code-color-background: #14162c;
-  --astro-code-token-constant: theme('colors.slate.300');
-  --astro-code-token-string: theme('colors.slate.200');
-  --astro-code-token-comment: theme('colors.slate.300');
-  --astro-code-token-keyword: theme('colors.white');
-  --astro-code-token-parameter: theme('colors.white');
-  --astro-code-token-function: theme('colors.slate.300');
-  --astro-code-token-string-expression: theme('colors.blue.300');
-  --astro-code-token-punctuation: theme('colors.slate.300');
-  --astro-code-token-link: theme('colors.slate.300');
-}
-
-/* :root {
-  --astro-code-color-text: #ffffff;
-  --astro-code-color-background: #14162c;
-  --astro-code-token-constant: #dfe3ee;
-  --astro-code-token-string: #619CFC50;
-  --astro-code-token-comment: #ffffff60;
-  --astro-code-token-keyword: #dfe3ee;
-  --astro-code-token-parameter: #ffffff;
-  --astro-code-token-function: #ffffff;
-  --astro-code-token-string-expression: #619CFC;
-  --astro-code-token-punctuation: #ffffff;
-  --astro-code-token-link: #ffffff;
-} */
