@@ -31,27 +31,30 @@
   function acceptCookies() {
     document.cookie = 'consent_given=true; path=/; max-age=31536000'; // 1 year expiry
     loadAnalytics(); // Load GA only after consent
-    document.getElementById('cookie-banner').style.display = 'none';
   }
 
   function declineCookies() {
     document.cookie = 'consent_given=false; path=/; max-age=31536000'; // 1 year expiry
-    document.getElementById('cookie-banner').style.display = 'none';
   }
 
   window.onload = function () {
     if (document.cookie.includes('consent_given=true')) {
       loadAnalytics(); // If consent was already given, load GA
+    } else {
+      // No consent given, show cookie banner
+      document.getElementById('cookie-banner').style.display = 'block';
     }
   };
 </script>
 <!-- Cookie banner -->
 <div
   id="cookie-banner"
-  class="fixed bottom-0 left-0 right-0 bg-gray-800 text-white p-4 flex justify-between items-center"
+  class="fixed hidden bottom-0 left-0 right-0 bg-gray-800 text-white p-4 flex flex-col md:flex-row justify-between items-center"
 >
-  <div class="container mx-auto flex justify-between items-center">
-    <p class="text-sm">
+  <div
+    class="container mx-auto flex flex-col md:flex-row justify-between items-center"
+  >
+    <p class="text-sm mb-4 md:mb-0">
       We use cookies to analyze site traffic and improve your experience. By
       clicking "Accept", you agree to our use of analytics cookies. You can
       change your preference at any time in your browser settings.
