@@ -1,29 +1,39 @@
 {
-  "name": "docs-website",
+  "name": "pinelab-docs-website",
   "type": "module",
   "version": "0.0.1",
+  "engines": {
+    "npm": "please-use-yarn",
+    "node": ">= 20"
+  },
   "scripts": {
     "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
+    "build": "astro build && cp -r public/* dist",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "prettier": "prettier -w ."
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.1.5",
-    "@astrojs/tailwind": "^5.1.0",
-    "@fontsource/inter": "^5.0.8",
-    "@tailwindcss/typography": "^0.5.13",
-    "@types/marked": "^5.0.0",
-    "astro": "^3.5.5",
-    "highlight.js": "11.8.0",
+    "@astrojs/react": "^4.2.0",
+    "@astrojs/sitemap": "^3.2.1",
+    "@fontsource/ubuntu-sans": "^5.1.1",
+    "@jsdevtools/rehype-toc": "^3.0.2",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tailwindcss/vite": "^4.0.4",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "astro": "^5.2.5",
+    "highlight.js": "^11.11.1",
     "marked": "4.1.0",
-    "rehype": "^13.0.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "reading-time": "^1.5.0",
+    "rehype": "^13.0.2",
     "rehype-autolink-headings": "^7.1.0",
-    "tailwind-scrollbar-hide": "^1.1.7",
-    "tailwindcss": "^3.4.3"
+    "tailwindcss": "^4.0.4"
   },
   "devDependencies": {
-    "sass": "^1.69.5"
+    "@pinelab/remote-asset-downloader": "0.0.4",
+    "@types/marked": "^5.0.0"
   }
 }

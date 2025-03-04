@@ -1,15 +1,9 @@
 {
+  "extends": "astro/tsconfigs/strict",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"],
   "compilerOptions": {
-    "strict": true,
-    "lib": ["es2021"],
-    "module": "commonjs",
-    "target": "es2021",
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "declaration": true,
-    "sourceMap": false,
-    "skipLibCheck": true
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
   }
 }
