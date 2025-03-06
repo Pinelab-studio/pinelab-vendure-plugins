@@ -1,3 +1,8 @@
+# 2.3.0 (2025-02-06)
+
+- Allow disabling certain payment methods, e.g. Disable 'visa' or 'check'
+- Expose surcharges used by Accept Blue
+
 # 2.2.0 (2025-01-14)
 
 - Update a customer's shipping and billing details in Accept Blue on subscription creation

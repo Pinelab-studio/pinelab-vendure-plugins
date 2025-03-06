@@ -31,6 +31,7 @@ import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { AcceptBlueSubscriptionEvent } from '../events/accept-blue-subscription-event';
 import { AcceptBlueTransactionEvent } from '../events/accept-blue-transaction-event';
 import {
+  AcceptBlueCardPaymentMethod,
   AcceptBlueChargeTransaction,
   AcceptBlueCustomerInput,
   AcceptBlueEvent,
@@ -38,6 +39,7 @@ import {
   AcceptBlueRecurringSchedule,
   AcceptBlueRecurringScheduleTransaction,
   CheckPaymentMethodInput,
+  EnabledPaymentMethodsArgs,
   HandlePaymentResult,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
@@ -52,6 +54,7 @@ import {
 import { AcceptBlueClient } from './accept-blue-client';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
 import {
+  AcceptBluePaymentMethodQuote,
   AcceptBlueRefundResult,
   AcceptBlueSubscription,
   AcceptBlueTransaction,
@@ -176,37 +179,63 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       id: order.customer?.id,
       customFields: { acceptBlueCustomerId: acceptBlueCustomer.id },
     });
-    let paymentMethodId: number | undefined;
+    let paymentMethod: AcceptBluePaymentMethod;
     if ((input as SavedPaymentMethodInput).paymentMethodId) {
-      paymentMethodId = (input as SavedPaymentMethodInput).paymentMethodId;
+      const foundMethod = await client.getPaymentMethod(
+        acceptBlueCustomer.id,
+        (input as SavedPaymentMethodInput).paymentMethodId
+      );
+      if (!foundMethod) {
+        throw new UserInputError(
+          `No Accept Blue payment method found with id ${
+            (input as SavedPaymentMethodInput).paymentMethodId
+          }`
+        );
+      }
+      paymentMethod = foundMethod;
     } else {
-      const paymentMethod = await client.getOrCreatePaymentMethod(
+      paymentMethod = await client.getOrCreatePaymentMethod(
         acceptBlueCustomer.id,
         input as NoncePaymentMethodInput | CheckPaymentMethodInput
       );
-      paymentMethodId = paymentMethod.id;
+    }
+    if (client.isPaymentMethodAllowed(paymentMethod)) {
+      throw new UserInputError(
+        `Payment method ${paymentMethod.payment_method_type} ${
+          (paymentMethod as AcceptBlueCardPaymentMethod).card_type ?? ''
+        } is not allowed`
+      );
     }
     const recurringSchedules = await this.createRecurringSchedule(
       ctx,
       order,
       client,
-      paymentMethodId
+      paymentMethod.id
     );
     let chargeResult: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
       const subscriptionOrderLines =
         await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
-      chargeResult = await client.createCharge(paymentMethodId, amount, {
+      chargeResult = await client.createCharge(paymentMethod.id, amount, {
         // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
         custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
       });
     }
     return {
       customerId: String(acceptBlueCustomer.id),
-      paymentMethodId: paymentMethodId,
+      paymentMethodId: paymentMethod.id,
       recurringScheduleResult: recurringSchedules,
       chargeResult,
     };
+  }
+
+  async getEligiblePaymentMethods(
+    ctx: RequestContext
+  ): Promise<AcceptBluePaymentMethodQuote[]> {
+    const client = await this.getClientForChannel(ctx);
+    return client.enabledPaymentMethods.map((pm) => ({
+      name: pm,
+    }));
   }
 
   /**
@@ -464,7 +493,36 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No apiKey or pin found on configured Accept Blue payment method`
       );
     }
-    return new AcceptBlueClient(apiKey, pin, testMode);
+    const mapToBoolean = (value: string | undefined) =>
+      value === 'true' ? true : false;
+    const enabledPaymentMethodArgs: EnabledPaymentMethodsArgs = {
+      allowAmericanExpress: mapToBoolean(
+        acceptBlueMethod.handler.args.find(
+          (a) => a.name === 'allowAmericanExpress'
+        )?.value
+      ),
+      allowECheck: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowECheck')
+          ?.value
+      ),
+      allowDiscover: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowDiscover')
+          ?.value
+      ),
+      allowMasterCard: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowMasterCard')
+          ?.value
+      ),
+      allowVisa: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowVisa')?.value
+      ),
+    };
+    return new AcceptBlueClient(
+      apiKey,
+      pin,
+      enabledPaymentMethodArgs,
+      testMode
+    );
   }
 
   async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {

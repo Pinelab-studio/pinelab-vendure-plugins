@@ -256,3 +256,11 @@ export const UPDATE_SUBSCRIPTION = gql`
     }
   }
 `;
+
+export const ELIGIBLE_AC_PAYMENT_METHODS = gql`
+  query eligibleAcceptBluePaymentMethods {
+    eligibleAcceptBluePaymentMethods {
+      name
+    }
+  }
+`;

@@ -13,6 +13,7 @@ import {
 } from '../types';
 import { AcceptBlueService } from './accept-blue-service';
 import {
+  AcceptBluePaymentMethodQuote,
   AcceptBlueSubscription,
   Query as GraphqlQuery,
   QueryPreviewAcceptBlueSubscriptionsArgs,
@@ -106,5 +107,12 @@ export class AcceptBlueCommonResolver {
     return value.payment_method_type === 'card'
       ? 'AcceptBlueCardPaymentMethod'
       : 'AcceptBlueCheckPaymentMethod';
+  }
+
+  @Query()
+  async eligibleAcceptBluePaymentMethods(
+    @Ctx() ctx: RequestContext
+  ): Promise<AcceptBluePaymentMethodQuote[]> {
+    return this.acceptBlueService.getEligiblePaymentMethods(ctx);
   }
 }
