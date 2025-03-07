@@ -149,6 +149,31 @@ const commonApiExtensions = gql`
     receiptEmail: String
   }
 
+  enum AcceptBluePaymentMethodType {
+    Visa
+    MasterCard
+    Discover
+    Amex
+    ECheck
+  }
+
+  type AcceptBlueSurchargeValue {
+    type: String!
+    value: Float!
+  }
+
+  type AcceptBlueSurcharges {
+    check: AcceptBlueSurchargeValue!
+    card: AcceptBlueSurchargeValue!
+  }
+
+  """
+  Used to display eligible payment methods
+  """
+  type AcceptBluePaymentMethodQuote {
+    name: AcceptBluePaymentMethodType!
+  }
+
   extend type Query {
     previewAcceptBlueSubscriptions(
       productVariantId: ID!
@@ -158,6 +183,8 @@ const commonApiExtensions = gql`
       productId: ID!
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
+    eligibleAcceptBluePaymentMethods: [AcceptBluePaymentMethodQuote!]!
+    acceptBlueSurcharges: AcceptBlueSurcharges!
   }
 `;
 

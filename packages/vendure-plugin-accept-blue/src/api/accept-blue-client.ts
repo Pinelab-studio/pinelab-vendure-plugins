@@ -3,6 +3,7 @@ import axios, { AxiosInstance } from 'axios';
 import util from 'util';
 import { loggerCtx } from '../constants';
 import {
+  AcceptBlueCardPaymentMethod,
   AcceptBlueChargeTransaction,
   AcceptBlueCustomer,
   AcceptBlueCustomerInput,
@@ -16,17 +17,24 @@ import {
   AcceptBlueWebhookInput,
   CheckPaymentMethodInput,
   CustomFields,
+  EnabledPaymentMethodsArgs,
   NoncePaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
+import {
+  AcceptBluePaymentMethodType,
+  AcceptBlueSurcharges,
+} from './generated/graphql';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
   readonly instance: AxiosInstance;
+  public readonly enabledPaymentMethods: AcceptBluePaymentMethodType[];
 
   constructor(
     public readonly apiKey: string,
     public readonly pin: string = '',
+    enabledPaymentMethodArgs: EnabledPaymentMethodsArgs,
     public readonly testMode?: boolean
   ) {
     if (this.testMode) {
@@ -47,6 +55,38 @@ export class AcceptBlueClient {
       },
       validateStatus: () => true,
     });
+    // Determine enabled methods
+    const enabledPaymentMethods: AcceptBluePaymentMethodType[] = [];
+    if (enabledPaymentMethodArgs.allowECheck) {
+      enabledPaymentMethods.push('ECheck');
+    }
+    if (enabledPaymentMethodArgs.allowVisa) {
+      enabledPaymentMethods.push('Visa');
+    }
+    if (enabledPaymentMethodArgs.allowMasterCard) {
+      enabledPaymentMethods.push('MasterCard');
+    }
+    if (enabledPaymentMethodArgs.allowAmericanExpress) {
+      enabledPaymentMethods.push('Amex');
+    }
+    if (enabledPaymentMethodArgs.allowDiscover) {
+      enabledPaymentMethods.push('Discover');
+    }
+    this.enabledPaymentMethods = enabledPaymentMethods;
+  }
+
+  isPaymentMethodAllowed(pm: AcceptBluePaymentMethod): boolean {
+    if (
+      pm.payment_method_type === 'check' &&
+      this.enabledPaymentMethods.includes('ECheck')
+    ) {
+      return true;
+    }
+    const cardType = (pm as AcceptBlueCardPaymentMethod).card_type;
+    if (this.enabledPaymentMethods.includes(cardType)) {
+      return true;
+    }
+    return false;
   }
 
   async getTransaction(id: number): Promise<AcceptBlueChargeTransaction> {
@@ -129,6 +169,10 @@ export class AcceptBlueClient {
     return result;
   }
 
+  /**
+   * Checks if a payment method with the same details already exists.
+   * Or, create new if doesn't exist yet.
+   */
   async getOrCreatePaymentMethod(
     acceptBlueCustomerId: number,
     input: NoncePaymentMethodInput | CheckPaymentMethodInput
@@ -209,6 +253,21 @@ export class AcceptBlueClient {
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result;
+  }
+
+  async getPaymentMethod(
+    acceptBlueCustomerId: number,
+    paymentMethodId: number
+  ): Promise<AcceptBluePaymentMethod | undefined> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result = await this.request(
+      'get',
+      `payment-methods/${paymentMethodId}`
+    );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    if (result.customer_id == acceptBlueCustomerId) {
+      return result as AcceptBluePaymentMethod;
+    }
   }
 
   async createPaymentMethod(
@@ -331,6 +390,14 @@ export class AcceptBlueClient {
       );
     }
     return result;
+  }
+
+  /**
+   * Get Surcharge settings from Accept Blue for all payment methods
+   */
+  async getSurcharges(): Promise<AcceptBlueSurcharges> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.request('get', `surcharge`);
   }
 
   async createWebhook(

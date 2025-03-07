@@ -43,18 +43,48 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       label: [{ languageCode: LanguageCode.en, value: 'API key' }],
       ui: { component: 'password-form-input' },
     },
+    pin: {
+      type: 'string',
+      required: false,
+      label: [{ languageCode: LanguageCode.en, value: 'PIN' }],
+      ui: { component: 'password-form-input' },
+    },
+    allowVisa: {
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      label: [{ languageCode: LanguageCode.en, value: 'Visa' }],
+    },
+    allowMasterCard: {
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      label: [{ languageCode: LanguageCode.en, value: 'Master Card' }],
+    },
+    allowAmericanExpress: {
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      label: [{ languageCode: LanguageCode.en, value: 'American Express' }],
+    },
+    allowDiscover: {
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      label: [{ languageCode: LanguageCode.en, value: 'Discover' }],
+    },
+    allowECheck: {
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      label: [{ languageCode: LanguageCode.en, value: 'E-check' }],
+    },
     tokenizationSourceKey: {
       type: 'string',
       required: false,
       label: [
         { languageCode: LanguageCode.en, value: 'Hosted tokenization key' },
       ],
-    },
-    pin: {
-      type: 'string',
-      required: false,
-      label: [{ languageCode: LanguageCode.en, value: 'PIN' }],
-      ui: { component: 'password-form-input' },
     },
     webhookSecret: {
       type: 'string',
@@ -106,7 +136,12 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       | CheckPaymentMethodInput
       | NoncePaymentMethodInput
       | SavedPaymentMethodInput;
-    const client = new AcceptBlueClient(args.apiKey, args.pin, args.testMode);
+    const client = new AcceptBlueClient(
+      args.apiKey,
+      args.pin,
+      args,
+      args.testMode
+    );
     try {
       const result = await service.handlePaymentForOrder(
         ctx,

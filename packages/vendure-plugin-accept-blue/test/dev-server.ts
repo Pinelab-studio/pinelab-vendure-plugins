@@ -110,6 +110,7 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
           { name: 'apiKey', value: process.env.API_KEY },
           { name: 'pin', value: process.env.PIN },
           { name: 'testMode', value: 'true' },
+          { name: 'allowECheck', value: 'true' },
           {
             name: 'tokenizationSourceKey',
             value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,

@@ -137,8 +137,7 @@ export interface AcceptBlueCustomer {
 }
 
 /** +++++ Payment +++++ */
-
-type CardType = 'Visa' | 'MasterCard' | 'Discover' | 'Amex' | 'JCB' | 'Diners';
+type CardType = 'Visa' | 'MasterCard' | 'Discover' | 'Amex';
 export type AccountType = 'Checking' | 'Savings';
 export type SecCode = 'PPD' | 'CCD' | 'TEL' | 'WEB';
 
@@ -155,7 +154,7 @@ export interface AcceptBlueCardPaymentMethod {
   avs_zip: string;
   expiry_month: number;
   expiry_year: number;
-  card_type: string;
+  card_type: CardType;
 }
 
 export interface AcceptBlueCheckPaymentMethod {
@@ -442,4 +441,12 @@ export interface AcceptBlueWebhook {
 
 export interface RequestWithRawBody extends Request {
   rawBody: Buffer;
+}
+
+export interface EnabledPaymentMethodsArgs {
+  allowVisa?: boolean;
+  allowMasterCard?: boolean;
+  allowAmericanExpress?: boolean;
+  allowDiscover?: boolean;
+  allowECheck?: boolean;
 }
