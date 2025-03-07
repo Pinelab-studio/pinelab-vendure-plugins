@@ -1,30 +1,30 @@
 <script is:inline>
   const googleAnalyticsId = 'G-1W9ZRN5898';
-  function loadAnalytics() {
-    window.dataLayer = window.dataLayer || [];
-    function gtag() {
-      dataLayer.push(arguments);
-    }
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`;
-    document.head.appendChild(script);
-    gtag('js', new Date());
-    gtag('config', googleAnalyticsId, {
-      anonymize_ip: true,
-      storage: 'none',
-    });
-    gtag('consent', 'update', {
-      ad_storage: 'granted',
-      ad_user_data: 'granted',
-      ad_personalization: 'granted',
-      analytics_storage: 'granted',
-    });
+
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    dataLayer.push(arguments);
   }
+  // Set default
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+  });
+  // Load script
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`;
+  document.head.appendChild(script);
+  gtag('js', new Date());
+  gtag('config', googleAnalyticsId, {
+    anonymize_ip: true,
+  });
 
   function acceptCookies() {
     document.cookie = 'consent_given=true; path=/; max-age=31536000'; // 1 year expiry
-    loadAnalytics(); // Load GA only after consent
+    giveConsent();
     document.getElementById('cookie-banner').style.display = 'none';
   }
 
@@ -33,9 +33,18 @@
     document.getElementById('cookie-banner').style.display = 'none';
   }
 
+  function giveConsent() {
+    gtag('consent', 'update', {
+      ad_storage: 'granted',
+      ad_user_data: 'granted',
+      ad_personalization: 'granted',
+      analytics_storage: 'granted',
+    });
+  }
+
   window.onload = function () {
     if (document.cookie.includes('consent_given=true')) {
-      loadAnalytics(); // If consent was already given, load GA
+      giveConsent();
     } else {
       // No consent given, show cookie banner
       document.getElementById('cookie-banner').style.display = 'block';
