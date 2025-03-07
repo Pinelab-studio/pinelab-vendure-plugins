@@ -34,7 +34,6 @@ it('should only enable specified payment methods', () => {
     allowAmericanExpress: false,
     allowDiscover: false,
   });
-
   expect(client.enabledPaymentMethods).toEqual(['ECheck', 'Visa']);
   expect(client.enabledPaymentMethods.length).toBe(2);
 });
@@ -47,7 +46,6 @@ it('should enable no payment methods when none are allowed', () => {
     allowAmericanExpress: false,
     allowDiscover: false,
   });
-
   expect(client.enabledPaymentMethods).toEqual([]);
 });
 
@@ -60,7 +58,6 @@ it('should use test endpoint when testMode is true', () => {
     },
     true
   );
-
   expect(client.endpoint).toBe('https://api.develop.accept.blue/api/v2/');
 });
 
@@ -73,6 +70,5 @@ it('should use production endpoint when testMode is false', () => {
     },
     false
   );
-
   expect(client.endpoint).toBe('https://api.accept.blue/api/v2/');
 });
