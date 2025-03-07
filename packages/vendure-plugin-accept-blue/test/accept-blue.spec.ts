@@ -43,6 +43,7 @@ import {
   GET_CUSTOMER_WITH_ID,
   GET_HISTORY_ENTRIES,
   GET_ORDER_BY_CODE,
+  GET_SURCHARGES,
   GET_USER_SAVED_PAYMENT_METHOD,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
   PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
@@ -182,6 +183,30 @@ describe('Shop API', () => {
     ]);
   });
 
+  it('Returns surcharge configuration', async () => {
+    nockInstance.get('/surcharge').reply(200, {
+      card: {
+        type: 'currency',
+        value: 0,
+      },
+      check: {
+        type: 'currency',
+        value: 0,
+      },
+    });
+    const { acceptBlueSurcharges } = await shopClient.query(GET_SURCHARGES);
+    expect(acceptBlueSurcharges).toEqual({
+      card: {
+        type: 'currency',
+        value: 0,
+      },
+      check: {
+        type: 'currency',
+        value: 0,
+      },
+    });
+  });
+
   it('Previews subscriptions for variant', async () => {
     const { previewAcceptBlueSubscriptions } = await shopClient.query(
       PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
@@ -306,7 +331,6 @@ describe('Payment with Saved Payment Method', () => {
     const testPaymentMethod =
       haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
     nockInstance
-      .persist()
       .get(`/payment-methods/${testPaymentMethod.id}`)
       .reply(201, testPaymentMethod);
     await shopClient.query(SET_SHIPPING_METHOD, {

@@ -21,7 +21,10 @@ import {
   NoncePaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
-import { AcceptBluePaymentMethodType } from './generated/graphql';
+import {
+  AcceptBluePaymentMethodType,
+  AcceptBlueSurcharges,
+} from './generated/graphql';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -387,6 +390,14 @@ export class AcceptBlueClient {
       );
     }
     return result;
+  }
+
+  /**
+   * Get Surcharge settings from Accept Blue for all payment methods
+   */
+  async getSurcharges(): Promise<AcceptBlueSurcharges> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.request('get', `surcharge`);
   }
 
   async createWebhook(

@@ -33,6 +33,8 @@ Create recurring subscriptions with the Accept Blue platform.
 
 These are the different payment methods you can use to pay for an order. Keep in mind that these examples use sample input data.
 
+You can use the query `eligibleAcceptBluePaymentMethods` to check what payment methods and card types are enabled. This is configured in Vendure: your Accept Blue API Key should have all methods enabled for this to work.
+
 ### Pay with Saved Payment Method
 
 If a customer already has a payment method saved in Accept Blue, you can use that to pay for an order.
@@ -201,6 +203,10 @@ mutation {
 ```
 
 This wil emit an `AcceptBlueSubscriptionEvent` of type `updated`.
+
+## Accept Blue Surcharges
+
+You can use the query `acceptBlueSurcharge` to see what surcharges your account has configured.
 
 ## CORS
 

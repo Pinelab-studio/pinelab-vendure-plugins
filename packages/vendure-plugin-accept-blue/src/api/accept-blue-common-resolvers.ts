@@ -15,6 +15,7 @@ import { AcceptBlueService } from './accept-blue-service';
 import {
   AcceptBluePaymentMethodQuote,
   AcceptBlueSubscription,
+  AcceptBlueSurcharges,
   Query as GraphqlQuery,
   QueryPreviewAcceptBlueSubscriptionsArgs,
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
@@ -114,5 +115,12 @@ export class AcceptBlueCommonResolver {
     @Ctx() ctx: RequestContext
   ): Promise<AcceptBluePaymentMethodQuote[]> {
     return this.acceptBlueService.getEligiblePaymentMethods(ctx);
+  }
+
+  @Query()
+  async acceptBlueSurcharges(
+    @Ctx() ctx: RequestContext
+  ): Promise<AcceptBlueSurcharges> {
+    return await this.acceptBlueService.getSurcharges(ctx);
   }
 }

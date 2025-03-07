@@ -264,3 +264,18 @@ export const ELIGIBLE_AC_PAYMENT_METHODS = gql`
     }
   }
 `;
+
+export const GET_SURCHARGES = gql`
+  query {
+    acceptBlueSurcharges {
+      card {
+        type
+        value
+      }
+      check {
+        type
+        value
+      }
+    }
+  }
+`;

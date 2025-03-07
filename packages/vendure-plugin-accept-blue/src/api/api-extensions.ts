@@ -157,9 +157,14 @@ const commonApiExtensions = gql`
     ECheck
   }
 
-  type AcceptBlueSurcharge {
+  type AcceptBlueSurchargeValue {
     type: String!
     value: Float!
+  }
+
+  type AcceptBlueSurcharges {
+    check: AcceptBlueSurchargeValue!
+    card: AcceptBlueSurchargeValue!
   }
 
   """
@@ -179,7 +184,7 @@ const commonApiExtensions = gql`
       customInputs: JSON
     ): [AcceptBlueSubscription!]!
     eligibleAcceptBluePaymentMethods: [AcceptBluePaymentMethodQuote!]!
-    acceptBlueSurcharges: [AcceptBlueSurcharge!]!
+    acceptBlueSurcharges: AcceptBlueSurcharges!
   }
 `;
 

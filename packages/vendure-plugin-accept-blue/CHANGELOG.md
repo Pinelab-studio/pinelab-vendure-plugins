@@ -1,7 +1,7 @@
 # 2.3.0 (2025-02-06)
 
-- Allow disabling certain payment methods, e.g. Disable 'visa' or 'check'
-- Expose surcharges used by Accept Blue
+- Allow disabling certain payment methods, e.g. 'visa' or 'check', via the Vendure Admin UI
+- Expose surcharges used by Accept Blue via GraphQL query
 
 # 2.2.0 (2025-01-14)
 

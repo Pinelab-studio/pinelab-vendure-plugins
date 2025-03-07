@@ -57,6 +57,7 @@ import {
   AcceptBluePaymentMethodQuote,
   AcceptBlueRefundResult,
   AcceptBlueSubscription,
+  AcceptBlueSurcharges,
   AcceptBlueTransaction,
   UpdateAcceptBlueSubscriptionInput,
 } from './generated/graphql';
@@ -199,11 +200,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         input as NoncePaymentMethodInput | CheckPaymentMethodInput
       );
     }
-    if (client.isPaymentMethodAllowed(paymentMethod)) {
+    if (!client.isPaymentMethodAllowed(paymentMethod)) {
       throw new UserInputError(
         `Payment method ${paymentMethod.payment_method_type} ${
           (paymentMethod as AcceptBlueCardPaymentMethod).card_type ?? ''
-        } is not allowed`
+        } is not allowed. Allowed methods: ${client.enabledPaymentMethods.join(
+          ', '
+        )}`
       );
     }
     const recurringSchedules = await this.createRecurringSchedule(
@@ -470,6 +473,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       errorMessage: refundResult.error_message,
       errorDetails,
     };
+  }
+
+  async getSurcharges(ctx: RequestContext): Promise<AcceptBlueSurcharges> {
+    const client = await this.getClientForChannel(ctx);
+    return await client.getSurcharges();
   }
 
   async getClientForChannel(ctx: RequestContext): Promise<AcceptBlueClient> {
