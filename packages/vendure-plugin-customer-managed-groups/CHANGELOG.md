@@ -1,3 +1,7 @@
+# 1.5.1 (2025-03-11)
+
+- Don't allow removing yourself from group
+
 # 1.5.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

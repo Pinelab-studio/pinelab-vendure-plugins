@@ -8,6 +8,7 @@ import {
   EntityNotFoundError,
   ForbiddenError,
   ID,
+  idsAreEqual,
   Logger,
   Order,
   OrderService,
@@ -177,7 +178,7 @@ export class CustomerManagedGroupsService {
         `Customer '${customerIdToRemove}' is not in your group`
       );
     }
-    if (customer.id === customerIdToRemove) {
+    if (idsAreEqual(customer.id, customerToRemove.id)) {
       throw new UserInputError(`You cannot remove yourself from your group`);
     }
     customerManagedGroup =

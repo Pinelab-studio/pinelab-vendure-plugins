@@ -277,7 +277,7 @@ describe('Customer managed groups', function () {
     }
   });
 
-  it('Removes customer ', async () => {
+  it('Removes customer', async () => {
     await authorizeAsGroupAdmin();
     const { removeCustomerFromMyCustomerManagedGroup: group } =
       await shopClient.query(removeCustomerFromGroupMutation, {
@@ -287,6 +287,20 @@ describe('Customer managed groups', function () {
       (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
     );
     expect(marques).toBeUndefined();
+  });
+
+  it('You cannot remove yourself from your group', async () => {
+    expect.assertions(1);
+    await authorizeAsGroupAdmin(); // Authorizes as Hayden, the admin
+    try {
+      await shopClient.query(removeCustomerFromGroupMutation, {
+        customerId: '1', // Hayden
+      });
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        'You cannot remove yourself from your group'
+      );
+    }
   });
 
   it('Adds another group admin to my group', async () => {
@@ -707,7 +721,7 @@ describe('Customer managed groups', function () {
       });
 
     const updatedCustomer = updatedGroup.customers.find(
-      (c) => c.customerId === customer2.id
+      (c: any) => c.customerId === customer2.id
     );
     expect(updatedCustomer).toBeDefined();
     expect(updatedCustomer.isGroupAdministrator).toBeTruthy();
@@ -724,14 +738,9 @@ describe('Customer managed groups', function () {
     });
     const hayden = customersRes.customers.items[0];
     expect(hayden).toBeDefined();
-    const group = hayden.groups.find((g) => g.customFields.isCustomerManaged);
-    // This is dependent on earlier unit tests
-    // const { createCustomerManagedGroup: group } = await adminClient.query(
-    //   adminCreateCustomerManagedGroupMutation,
-    //   {
-    //     customerId: hayden.id,
-    //   }
-    // );
+    const group = hayden.groups.find(
+      (g: any) => g.customFields.isCustomerManaged
+    );
     expect(group).toBeDefined();
     const { ordersForCustomerManagedGroup } = await adminClient.query(
       adminGetOrdersForCustomerManagedGroup,
