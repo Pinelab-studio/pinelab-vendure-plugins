@@ -20,14 +20,14 @@
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-stripe-subscription/src/",
     "test": "vitest run --bail 1",
-    "start": "COMPILE_ADMIN=true yarn ts-node test/dev-server.ts",
-    "start:no-admin": "yarn ts-node test/dev-server.ts",
+    "start": "yarn ts-node test/dev-server.ts",
+    "start:with-admin": "COMPILE_ADMIN=true yarn ts-node test/dev-server.ts",
     "generate": "graphql-codegen",
     "lint": "echo 'No linting configured'"
   },
   "dependencies": {
     "date-fns": "2.29.3",
-    "stripe": "11.1.0"
+    "stripe": "17.7.0"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

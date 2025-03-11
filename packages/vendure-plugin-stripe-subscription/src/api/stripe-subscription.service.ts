@@ -250,7 +250,7 @@ export class StripeSubscriptionService {
       .getRepository(ctx, PaymentMethod)
       .save(paymentMethod);
     Logger.info(
-      `Created webhook ${createdHook.id} for channel ${ctx.channel.token}`,
+      `Created webhook ${createdHook.id} for payment method '${res.code}' for channel ${ctx.channel.token}`,
       loggerCtx
     );
     return createdHook;
@@ -724,13 +724,22 @@ export class StripeSubscriptionService {
     let webhookSecret = paymentMethod.handler.args.find(
       (arg) => arg.name === 'webhookSecret'
     )?.value;
-    if (!apiKey || !webhookSecret) {
+    if (!apiKey) {
       Logger.warn(
-        `No api key or webhook secret is configured for ${paymentMethod.code}`,
+        `No api key is configured for ${paymentMethod.code}`,
         loggerCtx
       );
       throw Error(
-        `Payment method ${paymentMethod.code} has no api key or webhook secret configured`
+        `Payment method ${paymentMethod.code} has no api key configured`
+      );
+    }
+    if (!webhookSecret) {
+      Logger.warn(
+        `No webhook secret configured for ${paymentMethod.code}`,
+        loggerCtx
+      );
+      throw Error(
+        `Payment method ${paymentMethod.code} has no webhook secret configured`
       );
     }
     return {
