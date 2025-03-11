@@ -277,7 +277,7 @@ describe('Customer managed groups', function () {
     }
   });
 
-  it('Removes customer ', async () => {
+  it('Removes customer', async () => {
     await authorizeAsGroupAdmin();
     const { removeCustomerFromMyCustomerManagedGroup: group } =
       await shopClient.query(removeCustomerFromGroupMutation, {
@@ -287,6 +287,20 @@ describe('Customer managed groups', function () {
       (c: any) => c.emailAddress === 'marques.sawayn@hotmail.com'
     );
     expect(marques).toBeUndefined();
+  });
+
+  it('You cannot remove yourself from your group', async () => {
+    expect.assertions(1);
+    await authorizeAsGroupAdmin(); // Authorizes as Hayden, the admin
+    try {
+      await shopClient.query(removeCustomerFromGroupMutation, {
+        customerId: '1', // Hayden
+      });
+    } catch (e) {
+      expect((e as any).response.errors[0].message).toBe(
+        'You cannot remove yourself from your group'
+      );
+    }
   });
 
   it('Adds another group admin to my group', async () => {
