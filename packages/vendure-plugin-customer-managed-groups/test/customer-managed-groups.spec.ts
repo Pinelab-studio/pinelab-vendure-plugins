@@ -721,7 +721,7 @@ describe('Customer managed groups', function () {
       });
 
     const updatedCustomer = updatedGroup.customers.find(
-      (c) => c.customerId === customer2.id
+      (c: any) => c.customerId === customer2.id
     );
     expect(updatedCustomer).toBeDefined();
     expect(updatedCustomer.isGroupAdministrator).toBeTruthy();
@@ -738,14 +738,9 @@ describe('Customer managed groups', function () {
     });
     const hayden = customersRes.customers.items[0];
     expect(hayden).toBeDefined();
-    const group = hayden.groups.find((g) => g.customFields.isCustomerManaged);
-    // This is dependent on earlier unit tests
-    // const { createCustomerManagedGroup: group } = await adminClient.query(
-    //   adminCreateCustomerManagedGroupMutation,
-    //   {
-    //     customerId: hayden.id,
-    //   }
-    // );
+    const group = hayden.groups.find(
+      (g: any) => g.customFields.isCustomerManaged
+    );
     expect(group).toBeDefined();
     const { ordersForCustomerManagedGroup } = await adminClient.query(
       adminGetOrdersForCustomerManagedGroup,
