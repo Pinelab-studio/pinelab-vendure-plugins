@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-accept-blue",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Vendure plugin for creating subscriptions with the Accept Blue platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

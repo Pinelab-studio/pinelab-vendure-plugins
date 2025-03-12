@@ -1,4 +1,8 @@
-# 2.3.0 (2025-02-06)
+# 2.3.1 (2025-03-12)
+
+- Renamed payment method American Express to Amex
+
+# 2.3.0 (2025-03-06)
 
 - Allow disabling certain payment methods, e.g. 'visa' or 'check', via the Vendure Admin UI
 - Expose surcharges used by Accept Blue via GraphQL query
