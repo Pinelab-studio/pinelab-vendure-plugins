@@ -9,7 +9,7 @@ it('should enable all payment methods when all are allowed', () => {
     allowECheck: true,
     allowVisa: true,
     allowMasterCard: true,
-    allowAmericanExpress: true,
+    allowAmex: true,
     allowDiscover: true,
   });
 
@@ -31,7 +31,7 @@ it('should only enable specified payment methods', () => {
     allowECheck: true,
     allowVisa: true,
     allowMasterCard: false,
-    allowAmericanExpress: false,
+    allowAmex: false,
     allowDiscover: false,
   });
   expect(client.enabledPaymentMethods).toEqual(['ECheck', 'Visa']);
@@ -43,7 +43,7 @@ it('should enable no payment methods when none are allowed', () => {
     allowECheck: false,
     allowVisa: false,
     allowMasterCard: false,
-    allowAmericanExpress: false,
+    allowAmex: false,
     allowDiscover: false,
   });
   expect(client.enabledPaymentMethods).toEqual([]);
