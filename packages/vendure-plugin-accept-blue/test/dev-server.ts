@@ -96,7 +96,8 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 
   const port = config.apiOptions?.port ?? '';
   console.log(`Vendure server now running on port ${port}`);
-  console.log('Accept blue checkout form', `http://localhost:${port}/checkout`);
+  console.log('Test tokenization:', `http://localhost:${port}/checkout`);
+  console.log('Test Google Pay:', `http://localhost:${port}/google-pay`);
 
   // Create Accept Blue payment method
   await adminClient.asSuperAdmin();
@@ -127,6 +128,7 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
   });
   console.log(`Created paymentMethod`);
 
+  // Prepare sample order
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
   await shopClient.query(ADD_ITEM_TO_ORDER, {
     productVariantId: '3',
@@ -157,6 +159,8 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
     `Transitioned order '${transitionOrderToState.code}' to ArrangingPayment`
   );
 
+  return;
+  // Add payment
   // Use this metadata in AddpaymentToOrder to use a one time nonce for payment method creation
   const metadata: NoncePaymentMethodInput = {
     source: 'nonce-h301nyq2kycko8b6v6sr',

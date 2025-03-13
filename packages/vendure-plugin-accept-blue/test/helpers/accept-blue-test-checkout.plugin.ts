@@ -1,7 +1,8 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { Body, Controller, Get, Headers, Res } from '@nestjs/common';
 import { Response } from 'express';
-// import './dev-server';
+import fs from 'fs/promises';
+import Handlebars from 'handlebars';
 
 interface CommonResult {
   cardType: string; // e.g. Visa
@@ -27,87 +28,41 @@ export interface DataResult extends CommonResult {
 }
 
 /**
- * Return the Accept Blue Card Tokenization page
+ * Return a test checkout page to test payments.
+ * Includes Accept Blue tokenization and Google Pay test
  */
 @Controller()
 export class CheckoutController {
+  // Returns the Accept Blue Hosted tokenization form
   @Get('checkout')
-  async webhook(
+  async checkout(
     @Headers('X-signature') signature: string | undefined,
-    @Res() res: Response,
-    @Body() body: any
+    @Res() res: Response
   ): Promise<void> {
-    res.send(`
-<head>
-  <title>Checkout</title>
-  <script src="https://tokenization.develop.accept.blue/tokenization/v0.2"></script>
-</head>
-<html>
+    // Load HTML file
+    const html = await fs.readFile(
+      `${__dirname}/hosted-tokenization.html`,
+      'utf8'
+    );
+    // Replace variables with handlebars
+    const renderedHtml = Handlebars.compile(html)({
+      acceptBlueTokenizationKey:
+        process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY,
+    });
+    res.send(renderedHtml);
+  }
 
-<form id="payment-form">
-  <div>
-    <p>Test cards</p>
-    <ul>
-      <li>Mastercard: 5555 3412 4444 1115 MM/YY: 03/30 CVV2: 737</li>
-      <li>Visa: 4111 1111 4555 1142 MM/YY: 03/30 CVV2: 737</li>
-    </ul>
-  </div>
-  <div id="payment-element" style="max-height:50vh;">
-    <!-- Elements will create form elements here -->
-  </div>
-  <button id="submit">Submit</button>
-  <div id="error-message" style="border: 2px solid red;min-height:50px;">
-    <!-- Display error message to your customers here -->
-  </div>
-  <div id="nonce-output" style="border: 2px solid green;min-height:50px;">
-  </div>
-</form>
-
-<script>
-
-// See your keys here: https://dashboard.accept.blue/apikeys
-
-const tokenizationSourceKey = '${
-      process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? ''
-    }';
-const hostedTokenization = new window.HostedTokenization(tokenizationSourceKey);
-
-const cardForm = hostedTokenization.create('card-form');
-
-cardForm.mount('#payment-element');
-cardForm.setStyles({
-  name: 'border: 1px solid black',
-  card: 'border: 1px solid black',
-  expiryMonth: 'border: 1px solid black',
-  expiryYear: 'border: 1px solid black',
-  cvv2: 'border: 1px solid black',
-});
-
-const form = document.getElementById('payment-form');
-const output = document.getElementById('nonce-output');
-
-form.addEventListener('submit', async (event) => {
-  event.preventDefault();
-
-  const result = await cardForm.getNonceToken();
-
-  var pre = document.createElement('pre');
-  pre.innerHTML += "{\\n";
-  pre.innerHTML += "source: nonce-" + result.nonce + "\\n";
-  pre.innerHTML += "name: 'Test user'\\n";
-  pre.innerHTML += "expiryMonth: " + result.expiryMonth + "\\n";
-  pre.innerHTML += "expiryYear: " + result.expiryYear + "\\n";
-  pre.innerHTML += "maskedCard: " + result.maskedCard + "\\n";
-  pre.innerHTML += "cardType: " + result.cardType + "\\n";
-  pre.innerHTML += "last4: " + result.last4 + "\\n";
-  pre.innerHTML += "}";
-
-  output.innerHTML = '';
-  output.appendChild(pre)
-});
-</script>
-</html>
-    `);
+  // Returns a test google Pay form
+  @Get('google-pay')
+  async googlePay(
+    @Headers('X-signature') signature: string | undefined,
+    @Res() res: Response
+  ): Promise<void> {
+    // Load HTML file
+    const html = await fs.readFile(`${__dirname}/google-pay.html`, 'utf8');
+    // Replace variables with handlebars
+    const renderedHtml = Handlebars.compile(html)({});
+    res.send(renderedHtml);
   }
 }
 
