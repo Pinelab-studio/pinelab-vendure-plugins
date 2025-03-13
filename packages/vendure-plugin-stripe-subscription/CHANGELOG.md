@@ -1,3 +1,7 @@
+# 2.7.0 (2025-03-11)
+
+- Updated Stripe package to v17.7.0
+
 # 2.6.0 (2024-12-19)
 
 - Update Vendure to 3.1.1
