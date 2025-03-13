@@ -61,7 +61,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       defaultValue: true,
       label: [{ languageCode: LanguageCode.en, value: 'Master Card' }],
     },
-    allowAmericanExpress: {
+    allowAmex: {
       type: 'boolean',
       required: false,
       defaultValue: true,

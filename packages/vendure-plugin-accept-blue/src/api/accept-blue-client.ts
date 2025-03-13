@@ -66,7 +66,7 @@ export class AcceptBlueClient {
     if (enabledPaymentMethodArgs.allowMasterCard) {
       enabledPaymentMethods.push('MasterCard');
     }
-    if (enabledPaymentMethodArgs.allowAmericanExpress) {
+    if (enabledPaymentMethodArgs.allowAmex) {
       enabledPaymentMethods.push('Amex');
     }
     if (enabledPaymentMethodArgs.allowDiscover) {

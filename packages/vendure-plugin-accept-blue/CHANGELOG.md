@@ -1,3 +1,8 @@
+# 2.4.0 (2025-03-13)
+
+- Renamed internals to Amex as well
+- Not checking for `sec_code` input anymore, as it is an optional argument
+
 # 2.3.1 (2025-03-12)
 
 - Renamed payment method American Express to Amex

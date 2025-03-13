@@ -446,7 +446,7 @@ export interface RequestWithRawBody extends Request {
 export interface EnabledPaymentMethodsArgs {
   allowVisa?: boolean;
   allowMasterCard?: boolean;
-  allowAmericanExpress?: boolean;
+  allowAmex?: boolean;
   allowDiscover?: boolean;
   allowECheck?: boolean;
 }

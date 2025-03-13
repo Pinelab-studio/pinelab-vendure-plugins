@@ -47,8 +47,7 @@ export function isSameCheck(input: CheckInput, check: ObfuscatedCheck) {
     input.name === check.name &&
     input.routing_number === check.routing_number &&
     input.account_number.endsWith(check.last4) &&
-    input.account_type === check.account_type &&
-    input.sec_code === check.sec_code
+    input.account_type === check.account_type
   );
 }
 /**
@@ -176,7 +175,6 @@ export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
     input.account_number &&
     input.routing_number &&
     input.name &&
-    input.sec_code &&
     input.account_type
   );
 }

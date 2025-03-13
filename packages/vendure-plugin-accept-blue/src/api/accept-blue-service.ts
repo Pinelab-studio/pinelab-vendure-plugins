@@ -501,13 +501,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No apiKey or pin found on configured Accept Blue payment method`
       );
     }
+    // Find the handler arguments and pass the enabled payment methods to the client
     const mapToBoolean = (value: string | undefined) =>
       value === 'true' ? true : false;
     const enabledPaymentMethodArgs: EnabledPaymentMethodsArgs = {
-      allowAmericanExpress: mapToBoolean(
-        acceptBlueMethod.handler.args.find(
-          (a) => a.name === 'allowAmericanExpress'
-        )?.value
+      allowAmex: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowAmex')?.value
       ),
       allowECheck: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowECheck')
