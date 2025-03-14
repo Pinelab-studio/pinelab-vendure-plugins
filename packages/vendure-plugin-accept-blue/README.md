@@ -226,3 +226,13 @@ this.eventBus.ofType(AcceptBlueTransactionEvent).subscribe((event) => {
   // Event.orderLine may be undefined, for example when refund transactions come in. Refunds are currently not connected to an orderLine
 });
 ```
+
+## Google Pay
+
+This plugin also allows you to integration Google Pay. You will need to implement the Google Pay button on your storefront first.
+
+- Checkout the video to get a good understanding of the flow: https://developers.google.com/pay/api/web/overview
+- The complete script is available here: https://developers.google.com/pay/api/web/guides/tutorial#full-example
+- Make sure to read the specific settings needed for Accept Blue here: https://docs.accept.blue/digital-wallet/google-pay
+
+// TODO send to server

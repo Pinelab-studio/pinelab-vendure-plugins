@@ -18,6 +18,7 @@ import {
   CheckPaymentMethodInput,
   CustomFields,
   EnabledPaymentMethodsArgs,
+  GooglePayPaymentMethodInput,
   NoncePaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
@@ -175,7 +176,10 @@ export class AcceptBlueClient {
    */
   async getOrCreatePaymentMethod(
     acceptBlueCustomerId: number,
-    input: NoncePaymentMethodInput | CheckPaymentMethodInput
+    input:
+      | NoncePaymentMethodInput
+      | CheckPaymentMethodInput
+      | GooglePayPaymentMethodInput
   ): Promise<AcceptBluePaymentMethod> {
     const methods = await this.getPaymentMethods(acceptBlueCustomerId);
     const existing = methods.find((method) => {
@@ -272,7 +276,10 @@ export class AcceptBlueClient {
 
   async createPaymentMethod(
     acceptBlueCustomerId: number,
-    input: NoncePaymentMethodInput | CheckPaymentMethodInput
+    input:
+      | NoncePaymentMethodInput
+      | CheckPaymentMethodInput
+      | GooglePayPaymentMethodInput
   ): Promise<AcceptBluePaymentMethod> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result: AcceptBluePaymentMethod = await this.request(
