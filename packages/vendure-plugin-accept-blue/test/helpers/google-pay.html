@@ -231,6 +231,25 @@ Payment response will be print here</pre
           null,
           2
         );
+
+        // Construct accept blue input
+
+        document
+          .getElementById('output')
+          .append(
+            '\n\n// Send this as payment input to addPaymentToOrder mutation \n'
+          );
+        document.getElementById('output').append(
+          JSON.stringify(
+            {
+              amount: 1.5,
+              source: 'googlepay',
+              token: paymentData.paymentMethodData.tokenizationData.token,
+            },
+            null,
+            2
+          )
+        );
         // @todo pass payment token to your gateway to process payment
         // @note DO NOT save the payment credentials for future transactions,
         // unless they're used for merchant-initiated transactions with user

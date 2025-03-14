@@ -15,11 +15,13 @@ import {
 import { loggerCtx } from '../constants';
 import {
   CheckPaymentMethodInput,
+  GooglePayPaymentMethodInput,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
 } from '../types';
 import {
   isCheckPaymentMethod,
+  isGooglePayPaymentMethod,
   isNoncePaymentMethod,
   isSavedPaymentMethod,
 } from '../util';
@@ -119,23 +121,20 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     metadata
   ): Promise<CreatePaymentResult> {
     if (
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-      !isNoncePaymentMethod(metadata as any) &&
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-      !isCheckPaymentMethod(metadata as any) &&
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-      !isSavedPaymentMethod(metadata as any)
+      !isNoncePaymentMethod(metadata as NoncePaymentMethodInput) &&
+      !isCheckPaymentMethod(metadata as CheckPaymentMethodInput) &&
+      !isGooglePayPaymentMethod(metadata as GooglePayPaymentMethodInput) &&
+      !isSavedPaymentMethod(metadata as SavedPaymentMethodInput)
     ) {
-      throw new UserInputError(`You either need to provide nonce input, check input or a saved payment method ID.
-        Check requires the fields: name, routing_number, account_number, account_type and sec_code.
-        Nonce requires the fields: source, expiry_month, expiry_year and last4.
-        Saved payment method requires the field paymentMethodId
-      `);
+      throw new UserInputError(
+        `You either need to provide Nonce, Check or GooglePay input, or a saved payment method ID`
+      );
     }
     const input = metadata as
       | CheckPaymentMethodInput
       | NoncePaymentMethodInput
-      | SavedPaymentMethodInput;
+      | SavedPaymentMethodInput
+      | GooglePayPaymentMethodInput;
     const client = new AcceptBlueClient(
       args.apiKey,
       args.pin,
@@ -148,7 +147,6 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
         order,
         amount,
         client,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         input
       );
       const chargeTransactionId = result.chargeResult?.transaction?.id;

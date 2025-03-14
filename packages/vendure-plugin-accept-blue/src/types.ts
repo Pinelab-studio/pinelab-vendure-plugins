@@ -173,22 +173,12 @@ export type AcceptBluePaymentMethod =
   | AcceptBlueCardPaymentMethod
   | AcceptBlueCheckPaymentMethod;
 
-export interface CreditCardPaymentMethodInput {
-  card: string;
-  expiry_month: number;
-  expiry_year: number;
-  avs_zip: string;
-  cvv2?: string;
-  name?: string;
+export interface GooglePayPaymentMethodInput {
+  amount: number;
+  source: 'googlepay';
+  token: string;
+  avs_zip?: string;
   avs_address?: string;
-}
-
-export interface CheckPaymentMethodInput {
-  name: string;
-  routing_number: string;
-  account_number: string;
-  account_type: AccountType;
-  sec_code: SecCode;
 }
 
 export interface NoncePaymentMethodInput {
@@ -214,7 +204,7 @@ export interface CheckPaymentMethodInput {
   account_number: string;
   name: string;
   account_type: AccountType;
-  sec_code: SecCode;
+  sec_code?: SecCode;
 }
 
 export interface HandlePaymentResult {

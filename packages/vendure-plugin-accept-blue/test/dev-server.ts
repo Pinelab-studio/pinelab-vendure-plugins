@@ -27,7 +27,10 @@ import {
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
 } from './helpers/graphql-helpers';
-import { NoncePaymentMethodInput } from '../src/types';
+import {
+  GooglePayPaymentMethodInput,
+  NoncePaymentMethodInput,
+} from '../src/types';
 import { add } from 'date-fns';
 import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
@@ -59,11 +62,7 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
     dbConnectionOptions: {
       // autoSave: true, // Uncomment this line to persist the database between restarts
     },
-    authOptions: {
-      cookieOptions: {
-        secret: '123',
-      },
-    },
+    authOptions: {},
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
@@ -159,24 +158,30 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
     `Transitioned order '${transitionOrderToState.code}' to ArrangingPayment`
   );
 
-  return;
   // Add payment
   // Use this metadata in AddpaymentToOrder to use a one time nonce for payment method creation
-  const metadata: NoncePaymentMethodInput = {
-    source: 'nonce-h301nyq2kycko8b6v6sr',
-    last4: '1115',
-    expiry_year: 2030,
-    expiry_month: 3,
+  // const metadata: NoncePaymentMethodInput = {
+  //   source: 'nonce-h301nyq2kycko8b6v6sr',
+  //   last4: '1115',
+  //   expiry_year: 2030,
+  //   expiry_month: 3,
+  // };
+  const metadata: GooglePayPaymentMethodInput = {
+    source: 'googlepay',
+    amount: 1.5,
+    token:
+      '{"signature":"MEUCIQCHGvR477TcKBpB7GBCGUhi4OkVaXvcjIN5OOUPa0/HPQIgKmzS4PZwWIiF/3MsvZ4qv8sWJZfZ/6KArmtZRfWSgkA\\u003d","intermediateSigningKey":{"signedKey":"{\\"keyValue\\":\\"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES/evYaIU/GRN3k8HyEeelQ+eFjmBhcPUBWRXaowpvL6MvqqRC0m9vjB4cv5MYJOB2WjxqYZ+6jlMMwqIYokBOw\\\\u003d\\\\u003d\\",\\"keyExpiration\\":\\"1742620849296\\"}","signatures":["MEUCICYpBEYnhfLbu5+PPXqw7VTzCJfjyXoz4YBSxXo8KLD3AiEAi7t2trHbKkDTerdmj/hS0o/ixNimI6S40zYTpM/d+xg\\u003d"]},"protocolVersion":"ECv2","signedMessage":"{\\"encryptedMessage\\":\\"6Z8nxlGBPdT4RoJjWcJR6pejk2eLNw11T4rQWfhyPyRTimmfEI09FSJDSdOkqT73JiyQ9nCSvnhQAITnNB6nrhGhYs5YxBw0OdrPYpXw9zp+U5UlPOJAte5RwvIY9cm9lgBrLzaRDPJIFxrkaZYBZvnC4ogXjd8WSUQzDRpqV76VAJ63lj3j0UvQJGxSkZhsdyuSR7b22eBjCKxcUnfluS0jFXSIv8qZ0DEPxAEEGY7tKfRFQT3RvRflsih7Rd8iDsWgbzLRXsN6vBAiAz8LFnS1inS2qVuLo8MT4r8IlqbrMavlYomfp7tiEGpPPfkQtXFR9d16hOT4yc0WToUDlF7SQ7JLzdrdkZC3y/O0F9ueku+h+Nweum2AKBDCxBkkD5ore9nk+MCGS8drD2OXpuw9A7QdcL6VDQ1gPfHnYlzHwSEqTjCzApC00eRLc3WSTfT2h7q3BU3UgMcoyA9XINQ6BRxPmxfR4/5UqB66og/hWSBE7tjsUa8MdUnWBd0REUQ1Jy5/iTKFq9mD4NI+H/7D7WkGbXdYOI3hz5yETgOQnu1WsvNYD04/HLlRooonfA8\\\\u003d\\",\\"ephemeralPublicKey\\":\\"BENFcF4QCrspQ/1BX2qe6WOB4SLHPhPbAoTy1GVLcm2XM0BadBwhBRtNJ9tVWq4czcSlD+8jX88xGcgPqIrj3gg\\\\u003d\\",\\"tag\\":\\"O9mjMmZHS730XHH1JSkVhOPfS4BCrCM8SKPCnrDz9Xk\\\\u003d\\"}"}',
   };
 
   try {
     const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
       input: {
         method: 'accept-blue',
-        // metadata,
-        metadata: { paymentMethodId: 14556 }, // Use a saved payment method
+        metadata,
+        // metadata: { paymentMethodId: 14556 }, // Use a saved payment method
       },
     });
+    console.log(JSON.stringify);
     console.log(
       `Successfully transitioned order to ${addPaymentToOrder.state}`
     );

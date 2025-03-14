@@ -40,12 +40,14 @@ import {
   AcceptBlueRecurringScheduleTransaction,
   CheckPaymentMethodInput,
   EnabledPaymentMethodsArgs,
+  GooglePayPaymentMethodInput,
   HandlePaymentResult,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
 } from '../types';
 import {
   getNrOfBillingCyclesLeft,
+  isSavedPaymentMethod,
   isToday,
   toAcceptBlueFrequency,
   toGraphqlRefundStatus,
@@ -163,6 +165,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       | NoncePaymentMethodInput
       | CheckPaymentMethodInput
       | SavedPaymentMethodInput
+      | GooglePayPaymentMethodInput
   ): Promise<HandlePaymentResult> {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
@@ -181,7 +184,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       customFields: { acceptBlueCustomerId: acceptBlueCustomer.id },
     });
     let paymentMethod: AcceptBluePaymentMethod;
-    if ((input as SavedPaymentMethodInput).paymentMethodId) {
+    if (isSavedPaymentMethod(input as SavedPaymentMethodInput)) {
       const foundMethod = await client.getPaymentMethod(
         acceptBlueCustomer.id,
         (input as SavedPaymentMethodInput).paymentMethodId
@@ -197,7 +200,10 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     } else {
       paymentMethod = await client.getOrCreatePaymentMethod(
         acceptBlueCustomer.id,
-        input as NoncePaymentMethodInput | CheckPaymentMethodInput
+        input as
+          | NoncePaymentMethodInput
+          | CheckPaymentMethodInput
+          | GooglePayPaymentMethodInput
       );
     }
     if (!client.isPaymentMethodAllowed(paymentMethod)) {
