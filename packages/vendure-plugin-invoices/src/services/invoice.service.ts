@@ -88,6 +88,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     'lines.productVariant.product',
     'shippingLines.shippingMethod',
     'payments',
+    'surcharges',
     'customer',
   ];
 
