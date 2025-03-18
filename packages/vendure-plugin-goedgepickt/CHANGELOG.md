@@ -1,3 +1,7 @@
+# 1.4.1 (2025-03-18)
+
+- Only sync product image on creation, not on update, after complaints from GoedGepickt about too many updates.
+
 # 1.4.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

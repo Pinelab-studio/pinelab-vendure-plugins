@@ -562,6 +562,7 @@ export class GoedgepicktService
     }
     for (const product of products) {
       if (product.uuid) {
+        product.picture = undefined; // Don't update picture on existing product
         await client.updateProduct(product.uuid, product);
         Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
       } else {
@@ -599,10 +600,11 @@ export class GoedgepicktService
     for (const variant of variants) {
       const existing = await client.findProductBySku(variant.sku);
       const product = this.mapToProductInput(
-        await this.setAbsoluteImage(ctx, variant)
+        this.setAbsoluteImage(ctx, variant)
       );
       const uuid = existing?.[0]?.uuid;
       if (uuid) {
+        product.picture = undefined; // Don't update picture on existing product
         await client.updateProduct(uuid, product);
         Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
       } else {
@@ -751,12 +753,15 @@ export class GoedgepicktService
       );
       const mappedVariants = variantsWithPrice
         .map((v) => translateDeep(v, ctx.languageCode))
-        .map(async (v) => await this.setAbsoluteImage(ctx, v));
+        .map((v) => this.setAbsoluteImage(ctx, v));
       translatedVariants.push(...(await Promise.all(mappedVariants)));
     }
     return translatedVariants;
   }
 
+  /**
+   * Set the absolute image URL on a variant
+   */
   private setAbsoluteImage(
     ctx: RequestContext,
     variant: Translated<ProductVariant> | ProductVariant
