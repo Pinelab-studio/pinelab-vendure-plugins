@@ -5,6 +5,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
+  Channel,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -18,7 +19,6 @@ import { goedgepicktHandler, GoedgepicktPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { GoedgepicktConfigEntity } from '../src/api/goedgepickt-config.entity';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 
@@ -45,11 +45,11 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [GoedgepicktPlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [GoedgepicktPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
   });
@@ -70,10 +70,11 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
   const goedgepicktService = server.app.get(GoedgepicktService);
   const connection = server.app.get(TransactionalConnection);
   //set config
-  await connection.getRepository(GoedgepicktConfigEntity).insert({
-    channelToken: 'e2e-default-channel',
-    apiKey: process.env.GOEDGEPICKT_APIKEY!,
-    webshopUuid: process.env.GOEDGEPICKT_WEBSHOPUUID!,
+  await connection.getRepository(Channel).update(1, {
+    customFields: {
+      ggEnabled: true,
+      ggUuidApiKey: `${process.env.GOEDGEPICKT_WEBSHOPUUID}:${process.env.GOEDGEPICKT_APIKEY}`,
+    },
   });
   const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel');
   await server.app.get(ShippingMethodService).update(ctx, {
@@ -82,6 +83,6 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     translations: [],
   });
   await goedgepicktService.setWebhooks(ctx);
-  await goedgepicktService.processStockUpdateEvent(ctx, 'L2201308', 5);
+  await goedgepicktService.handleIncomingStockUpdate(ctx, 'L2201308');
   await createSettledOrder(shopClient, 1);
 })();

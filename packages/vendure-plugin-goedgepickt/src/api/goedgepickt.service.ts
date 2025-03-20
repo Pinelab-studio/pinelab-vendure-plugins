@@ -28,13 +28,12 @@ import {
   TransactionalConnection,
   Translated,
   translateDeep,
+  UserInputError,
 } from '@vendure/core';
 import { IsNull } from 'typeorm';
 import util from 'util';
 import { transitionToDelivered } from '../../../util/src';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { PickupPointCustomFields } from './custom-fields';
-import { GoedgepicktConfigEntity } from './goedgepickt-config.entity';
 import { GoedgepicktClient } from './goedgepickt.client';
 import { goedgepicktHandler } from './goedgepickt.handler';
 import {
@@ -204,42 +203,8 @@ export class GoedgepicktService
       });
   }
 
-  async upsertConfig(
-    ctx: RequestContext,
-    config: Partial<GoedgepicktConfigEntity>
-  ): Promise<GoedgepicktConfigEntity> {
-    config.channelToken = ctx.channel.token;
-    const existing = await this.connection
-      .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOne({ where: { channelToken: config.channelToken } });
-    if (existing) {
-      await this.connection
-        .getRepository(ctx, GoedgepicktConfigEntity)
-        .update(existing.id, config);
-    } else {
-      await this.connection
-        .getRepository(ctx, GoedgepicktConfigEntity)
-        .insert(config);
-    }
-    return this.connection
-      .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOneOrFail({ where: { channelToken: config.channelToken } });
-  }
-
-  async getConfig(
-    ctx: RequestContext
-  ): Promise<GoedgepicktConfigEntity | null> {
-    return this.connection
-      .getRepository(ctx, GoedgepicktConfigEntity)
-      .findOne({ where: { channelToken: ctx.channel.token } });
-  }
-
-  async getConfigs(): Promise<GoedgepicktConfigEntity[]> {
-    return this.connection.getRepository(GoedgepicktConfigEntity).find();
-  }
-
   /**
-   * Set webhook and update secrets in DB
+   * Set webhook
    */
   async setWebhooks(ctx: RequestContext): Promise<undefined> {
     const client = await this.getClientForChannel(ctx);
@@ -259,53 +224,68 @@ export class GoedgepicktService
         webhook.targetUrl === webhookTarget &&
         webhook.webhookEvent === GoedgepicktEvent.stockChanged
     );
-    let orderSecret = orderStatusWebhook?.webhookSecret;
-    let stockSecret = stockWebhook?.webhookSecret;
-    if (!orderSecret) {
-      Logger.info(
-        `Creating OrderStatusWebhook because it didn't exist.`,
-        loggerCtx
-      );
+    if (!orderStatusWebhook) {
       const created = await client.createWebhook({
         webhookEvent: GoedgepicktEvent.orderStatusChanged,
         targetUrl: webhookTarget,
       });
-      orderSecret = created.webhookSecret;
+      Logger.info(
+        `Created OrderStatusWebhook '${created.webhookUuid}' because it didn't exist.`,
+        loggerCtx
+      );
     } else {
       Logger.info(`OrderStatusWebhook already present`, loggerCtx);
     }
-    if (!stockSecret) {
-      Logger.info(`Creating stockWebhook because it didn't exist.`, loggerCtx);
+    if (!stockWebhook) {
       const created = await client.createWebhook({
         webhookEvent: GoedgepicktEvent.stockChanged,
         targetUrl: webhookTarget,
       });
-      stockSecret = created.webhookSecret;
+      Logger.info(
+        `Created StockWebhook '${created.webhookUuid}' because it didn't exist.`,
+        loggerCtx
+      );
     } else {
       Logger.info(`StockWebhook already present`, loggerCtx);
     }
-    await this.upsertConfig(ctx, {
-      orderWebhookKey: orderSecret,
-      stockWebhookKey: stockSecret,
-    });
   }
 
   /**
    * Update stock in Vendure based on Goedgepickt webhook event
    */
-  async processStockUpdateEvent(
+  async handleIncomingStockUpdate(
     ctx: RequestContext,
-    productSku: string,
-    ggStock: number
+    productSku: string
   ): Promise<void> {
+    const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
+    const ggProduct = await client.findProductBySku(productSku);
+    console.log('======================GGGP', ggProduct);
+    if (!ggProduct) {
+      Logger.warn(
+        `Product with sku '${productSku}' doesn't exists in GoedGepickt. Ignoring incoming stock update event`,
+        loggerCtx
+      );
+      return;
+    }
+    const ggStock = ggProduct.stock?.freeStock;
+    if (!ggStock) {
+      Logger.warn(
+        `Product with sku '${productSku}' has no freeStock in GoedGepickt. Ignoring incoming stock update event`,
+        loggerCtx
+      );
+      return;
+    }
     const variants = await this.getVariants(ctx, productSku);
-    await this.createStockUpdateJobs(
-      ctx,
-      [{ sku: productSku, stockLevel: ggStock }],
-      variants
-    );
+    const stockInput: StockInput[] = variants.map((v) => ({
+      variantId: v.id as string,
+      stock: ggStock,
+    }));
+    await this.handleStockUpdateJob(ctx, stockInput);
     Logger.info(
-      `Created stock update job for ${productSku} to ${ggStock} via incoming event`,
+      `Updated stock for ${productSku} to ${ggStock} via incoming event`,
       loggerCtx
     );
   }
@@ -385,9 +365,7 @@ export class GoedgepicktService
           .map((line) => line.shippingMethod?.name)
           .join(','),
       };
-      const customFields = order.customFields as
-        | PickupPointCustomFields
-        | undefined;
+      const customFields = order.customFields;
       if (
         customFields?.pickupLocationNumber ||
         customFields?.pickupLocationName
@@ -415,12 +393,24 @@ export class GoedgepicktService
   /**
    * Update order status in Vendure based on event
    */
-  async updateOrderStatus(
+  async handleIncomingOrderStatusUpdate(
     ctx: RequestContext,
     orderCode: string,
-    orderUuid: string,
-    newStatus: OrderStatus
+    orderUuid: string
   ): Promise<void> {
+    const client = await this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
+    const ggOrder = await client.getOrder(orderUuid);
+    if (!ggOrder) {
+      Logger.warn(
+        `Order with uuid '${orderUuid}' doesn't exists in GoedGepickt. Ignoring incoming order status update for order'${orderCode}'`,
+        loggerCtx
+      );
+      return;
+    }
+    const newStatus = ggOrder.status;
     let order = await this.orderService.findOneByCode(ctx, orderCode);
     if (!order) {
       Logger.warn(
@@ -457,20 +447,23 @@ export class GoedgepicktService
   async getClientForChannel(
     ctx: RequestContext
   ): Promise<GoedgepicktClient | undefined> {
-    const config = await this.getConfig(ctx);
-    if (!config?.enabled) {
+    if (!ctx.channel.customFields.ggEnabled) {
+      Logger.info(
+        `GoedGepickt plugin is disabled for channel ${ctx.channel.token}`
+      );
       return undefined;
     }
-    if (!config?.apiKey || !config.webshopUuid) {
+    const [uuid, apiKey] = (ctx.channel.customFields.ggUuidApiKey || '').split(
+      ':'
+    );
+    if (!uuid || !apiKey) {
       throw Error(
         `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`
       );
     }
     return new GoedgepicktClient({
-      webshopUuid: config.webshopUuid,
-      apiKey: config.apiKey,
-      orderWebhookKey: config.orderWebhookKey,
-      stockWebhookKey: config.stockWebhookKey,
+      webshopUuid: uuid,
+      apiKey: apiKey,
     });
   }
 
@@ -502,7 +495,9 @@ export class GoedgepicktService
     const ctx = await this.getCtxForChannel(channelToken);
     const client = await this.getClientForChannel(ctx);
     if (!client) {
-      return;
+      throw new UserInputError(
+        `GoedGepickt is not configured for channel ${channelToken}`
+      );
     }
     const [ggProducts, variants] = await Promise.all([
       client.getAllProducts(),
@@ -602,7 +597,7 @@ export class GoedgepicktService
       const product = this.mapToProductInput(
         this.setAbsoluteImage(ctx, variant)
       );
-      const uuid = existing?.[0]?.uuid;
+      const uuid = existing?.uuid;
       if (uuid) {
         product.picture = undefined; // Don't update picture on existing product
         await client.updateProduct(uuid, product);
@@ -796,8 +791,8 @@ export class GoedgepicktService
    * Sync order to Goedgepickt platform
    */
   async syncOrder(ctx: RequestContext, orderCode: string): Promise<void> {
-    const config = await this.getConfig(ctx);
-    if (!config?.enabled) {
+    const client = await this.getClientForChannel(ctx);
+    if (!client) {
       return;
     }
     Logger.info(
