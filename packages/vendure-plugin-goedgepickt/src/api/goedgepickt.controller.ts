@@ -1,27 +1,28 @@
 import {
   Body,
   Controller,
+  Get,
   Headers,
+  Inject,
   Param,
   Post,
-  Get,
-  Inject,
   Req,
 } from '@nestjs/common';
+import { Channel, Logger, TransactionalConnection } from '@vendure/core';
+import { Request } from 'express';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktService } from './goedgepickt.service';
-import { Logger } from '@vendure/core';
 import {
   GoedgepicktPluginConfig,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
 } from './goedgepickt.types';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { Request } from 'express';
 
 @Controller('goedgepickt')
 export class GoedgepicktController {
   constructor(
     private service: GoedgepicktService,
+    private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig
   ) {}
 
@@ -34,9 +35,14 @@ export class GoedgepicktController {
       );
       return;
     }
-    const configs = await this.service.getConfigs();
-    for (const config of configs.filter((config) => config.enabled)) {
-      await this.service.createFullsyncJobs(config.channelToken);
+    const channels = await this.connection.getRepository(Channel).find();
+    for (const channel of channels.filter(c => c.customFields?.ggEnabled)) {
+      await this.service.createFullsyncJobs(channel.token).catch(err => {
+        Logger.error(
+          `Failed to create fullsync jobs for channel ${channel.id}: ${err.message}`,
+          loggerCtx
+        );
+      });
     }
   }
 
@@ -65,37 +71,18 @@ export class GoedgepicktController {
     }
     try {
       const ctx = await this.service.getCtxForChannel(channelToken);
-      const client = await this.service.getClientForChannel(ctx);
-      if (!client) {
-        return;
-      }
-      const rawBody = (req as any).rawBody || JSON.stringify(body); // TestEnvironment doesnt have middleware applied, so no rawBody available
       switch (body.event) {
         case 'orderStatusChanged':
-          if (!client.isOrderWebhookSignatureValid(rawBody, signature)) {
-            return Logger.warn(
-              `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
-              loggerCtx
-            );
-          }
-          await this.service.updateOrderStatus(
+          await this.service.handleIncomingOrderStatusUpdate(
             ctx,
             body.orderNumber,
             body.orderUuid,
-            body.newStatus
           );
           break;
         case 'stockUpdated':
-          if (!client.isStockWebhookSignatureValid(rawBody, signature)) {
-            return Logger.warn(
-              `Not processing webhook with event '${body.event}' for channel ${channelToken} because it has an invalid signature. Given invalid signature: '${signature}'`,
-              loggerCtx
-            );
-          }
-          await this.service.processStockUpdateEvent(
+          await this.service.handleIncomingStockUpdate(
             ctx,
             body.productSku,
-            Number(body.newStock)
           );
           break;
         default:

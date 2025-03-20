@@ -1,13 +1,7 @@
-import {
-  createTestEnvironment,
-  registerInitializer,
-  SimpleGraphQLClient,
-  SqljsInitializer,
-  testConfig,
-} from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
+import nock from 'nock';
 import {
   DefaultLogger,
+  ID,
   LanguageCode,
   LogLevel,
   mergeConfig,
@@ -19,41 +13,38 @@ import {
   ShippingMethodService,
   StockLevelService,
   TransactionalConnection,
-  ID,
 } from '@vendure/core';
-import { TestServer } from '@vendure/testing/lib/test-server';
 import {
-  GoedgepicktConfig,
+  createTestEnvironment,
+  registerInitializer,
+  SimpleGraphQLClient,
+  SqljsInitializer,
+  testConfig,
+} from '@vendure/testing';
+import { TestServer } from '@vendure/testing/lib/test-server';
+import gql from 'graphql-tag';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { getOrder } from '../../test/src/admin-utils';
+import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { initialData } from '../../test/src/initial-data';
+import { addItem, createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import {
   goedgepicktHandler,
   GoedgepicktPlugin,
   IncomingOrderStatusEvent,
   IncomingStockUpdateEvent,
-  OrderInput,
+  OrderInput
 } from '../src';
-import nock from 'nock';
-import { GoedgepicktService } from '../src/api/goedgepickt.service';
-import {
-  getGoedgepicktConfig,
-  runGoedgepicktFullSync,
-  updateGoedgepicktConfig,
-} from '../src/ui/queries.graphql';
-import fs from 'fs';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { GoedgepicktClient } from '../src/api/goedgepickt.client';
-import { getOrder } from '../../test/src/admin-utils';
-import { addItem, createSettledOrder } from '../../test/src/shop-utils';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import gql from 'graphql-tag';
-import { expect, describe, beforeAll, afterAll, it, vi, test } from 'vitest';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { GoedgepicktService } from '../src/api/goedgepickt.service';
+import { updateChannel } from './helpers';
 describe('Goedgepickt plugin', function () {
   const defaultChannelToken = 'e2e-default-channel';
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  let productVariantService: ProductVariantService;
   const ggConfig = {
     apiKey: 'test-api-key',
     webshopUuid: 'test-webshop-uuid',
@@ -103,7 +94,7 @@ describe('Goedgepickt plugin', function () {
     )
     .reply(200, { items: [] });
   // Get webshops
-  nock(apiUrl)
+  nock('https://account.goedgepickt.nl')
     .persist(true)
     .get('/api/v1/webshops')
     .reply(200, { items: [{ uuid: ggConfig.webshopUuid }] });
@@ -152,41 +143,31 @@ describe('Goedgepickt plugin', function () {
     });
     serverStarted = true;
     await adminClient.asSuperAdmin();
-    productVariantService = server.app.get<ProductVariantService>(
-      ProductVariantService
-    );
   }, 60000);
 
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
   });
 
-  it('Updates config via graphql and sets webhooks', async () => {
-    const result: { updateGoedgepicktConfig: GoedgepicktConfig } =
-      await adminClient.query(updateGoedgepicktConfig, {
-        input: ggConfig,
-      });
-    await expect(result.updateGoedgepicktConfig.webshopUuid).toBe(
-      ggConfig.webshopUuid
-    );
-    await expect(result.updateGoedgepicktConfig.orderWebhookKey).toBe(
-      'test-secret'
-    );
-    await expect(result.updateGoedgepicktConfig.stockWebhookKey).toBe(
-      'test-secret'
+  it('Updates credentials on Channel', async () => {
+    const uuidAndApiKey = ggConfig.webshopUuid + ':' + ggConfig.apiKey;
+    console.log('UPDATINGG===========================')
+    const result = await adminClient.query(updateChannel, {
+      input: {
+        id: 'T_1',
+        customFields: {
+          ggEnabled: true,
+          ggUuidApiKey: uuidAndApiKey
+        },
+      },
+    });
+    await expect(result.updateChannel.customFields.ggUuidApiKey).toBe(
+      uuidAndApiKey
     );
     await expect(webhookPayloads.length).toBe(2); // Order and Stock webhooks
     await expect(webhookPayloads[0].targetUrl).toBe(
       'https://test-host/goedgepickt/webhook/e2e-default-channel'
     );
-  });
-
-  it('Retrieves config via graphql', async () => {
-    const result = await adminClient.query(getGoedgepicktConfig);
-    await expect(result.goedgepicktConfig.webshopUuid).toBe(
-      ggConfig.webshopUuid
-    );
-    await expect(result.goedgepicktConfig.apiKey).toBe(ggConfig.apiKey);
   });
 
   it('Pushes products and updates stocklevel on FullSync', async () => {
@@ -344,17 +325,13 @@ describe('Goedgepickt plugin', function () {
       productSku: 'L2201308',
       productUuid: 'doesntmatter',
     };
-    const signature = GoedgepicktClient.computeSignature(
-      'test-secret',
-      JSON.stringify(body)
-    );
     const res = await shopClient.fetch(
       `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
       {
         method: 'POST',
         body: JSON.stringify(body),
         headers: {
-          signature: signature,
+          signature: 'some-sample-signature',
         },
       }
     );

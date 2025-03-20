@@ -22,8 +22,6 @@ interface RawRequestInput {
 export interface ClientInput {
   apiKey: string;
   webshopUuid: string;
-  orderWebhookKey?: string;
-  stockWebhookKey?: string;
 }
 
 export class GoedgepicktClient {
@@ -100,13 +98,20 @@ export class GoedgepicktClient {
     return result.items as Product[];
   }
 
-  async findProductBySku(sku: string): Promise<Product[]> {
+  async findProductBySku(sku: string): Promise<Product | undefined> {
     const result = await this.rawRequest({
       entity: 'products',
       method: 'GET',
       queryParams: `searchAttribute=sku&searchDelimiter=%3D&searchValue=${sku}`,
     });
-    return result.items as Product[];
+    const foundProduct = result.items?.[0];
+    if (result.items.length > 1) {
+      Logger.warn(
+        `Found multiple products with sku ${sku} in Goedgepickt, using '${foundProduct.uuid}'`,
+        loggerCtx
+      );
+    }
+    return foundProduct;
   }
 
   async updateProduct(uuid: string, product: ProductInput): Promise<Product[]> {
@@ -186,46 +191,4 @@ export class GoedgepicktClient {
     throw Error(json.error || json.errorMessage || json.message);
   }
 
-  isOrderWebhookSignatureValid(
-    data: string,
-    incomingSignature: string
-  ): boolean {
-    return this.isSignatureValid({
-      data,
-      secret: this.config.orderWebhookKey,
-      incomingSignature,
-    });
-  }
-
-  isStockWebhookSignatureValid(
-    data: string,
-    incomingSignature: string
-  ): boolean {
-    return this.isSignatureValid({
-      data,
-      secret: this.config.stockWebhookKey,
-      incomingSignature,
-    });
-  }
-
-  private isSignatureValid(input: {
-    data: string;
-    secret?: string;
-    incomingSignature: string;
-  }): boolean {
-    if (!input.secret) {
-      throw Error(
-        `GoedGepickt plugin doesn't have a webhook secret configured`
-      );
-    }
-    const computedSignature = GoedgepicktClient.computeSignature(
-      input.secret,
-      input.data
-    );
-    return computedSignature === input.incomingSignature;
-  }
-
-  static computeSignature(secret: string, data: string): string {
-    return crypto.createHmac('sha256', secret).update(data).digest('hex');
-  }
 }
