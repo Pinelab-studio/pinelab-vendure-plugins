@@ -36,8 +36,8 @@ export class GoedgepicktController {
       return;
     }
     const channels = await this.connection.getRepository(Channel).find();
-    for (const channel of channels.filter(c => c.customFields?.ggEnabled)) {
-      await this.service.createFullsyncJobs(channel.token).catch(err => {
+    for (const channel of channels.filter((c) => c.customFields?.ggEnabled)) {
+      await this.service.createFullsyncJobs(channel.token).catch((err) => {
         Logger.error(
           `Failed to create fullsync jobs for channel ${channel.id}: ${err.message}`,
           loggerCtx
@@ -76,14 +76,11 @@ export class GoedgepicktController {
           await this.service.handleIncomingOrderStatusUpdate(
             ctx,
             body.orderNumber,
-            body.orderUuid,
+            body.orderUuid
           );
           break;
         case 'stockUpdated':
-          await this.service.handleIncomingStockUpdate(
-            ctx,
-            body.productSku,
-          );
+          await this.service.handleIncomingStockUpdate(ctx, body.productSku);
           break;
         default:
           return Logger.warn(

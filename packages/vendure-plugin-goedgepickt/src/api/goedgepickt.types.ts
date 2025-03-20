@@ -114,7 +114,7 @@ export interface OrderItemInput {
 
 export interface Order {
   orderUuid: string;
-  status: OrderStatus
+  status: OrderStatus;
   shipments?: {
     trackTraceUrl?: string;
     trackTraceCode?: string;

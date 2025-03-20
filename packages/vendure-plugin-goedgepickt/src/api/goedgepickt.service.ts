@@ -262,6 +262,7 @@ export class GoedgepicktService
       return;
     }
     const ggProduct = await client.findProductBySku(productSku);
+    console.log('======================GGGP', ggProduct);
     if (!ggProduct) {
       Logger.warn(
         `Product with sku '${productSku}' doesn't exists in GoedGepickt. Ignoring incoming stock update event`,
@@ -278,13 +279,13 @@ export class GoedgepicktService
       return;
     }
     const variants = await this.getVariants(ctx, productSku);
-    await this.createStockUpdateJobs(
-      ctx,
-      [{ sku: productSku, stockLevel: ggStock }],
-      variants
-    );
+    const stockInput: StockInput[] = variants.map((v) => ({
+      variantId: v.id as string,
+      stock: ggStock,
+    }));
+    await this.handleStockUpdateJob(ctx, stockInput);
     Logger.info(
-      `Created stock update job for ${productSku} to ${ggStock} via incoming event`,
+      `Updated stock for ${productSku} to ${ggStock} via incoming event`,
       loggerCtx
     );
   }
@@ -452,7 +453,9 @@ export class GoedgepicktService
       );
       return undefined;
     }
-    const [uuid, apiKey] = (ctx.channel.customFields.ggUuidApiKey || '').split(':');
+    const [uuid, apiKey] = (ctx.channel.customFields.ggUuidApiKey || '').split(
+      ':'
+    );
     if (!uuid || !apiKey) {
       throw Error(
         `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`

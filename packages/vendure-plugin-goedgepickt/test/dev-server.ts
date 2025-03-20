@@ -73,8 +73,8 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
   await connection.getRepository(Channel).update(1, {
     customFields: {
       ggEnabled: true,
-      ggUuidApiKey: `${process.env.GOEDGEPICKT_WEBSHOPUUID}:${process.env.GOEDGEPICKT_APIKEY}`
-    }
+      ggUuidApiKey: `${process.env.GOEDGEPICKT_WEBSHOPUUID}:${process.env.GOEDGEPICKT_APIKEY}`,
+    },
   });
   const ctx = await goedgepicktService.getCtxForChannel('e2e-default-channel');
   await server.app.get(ShippingMethodService).update(ctx, {

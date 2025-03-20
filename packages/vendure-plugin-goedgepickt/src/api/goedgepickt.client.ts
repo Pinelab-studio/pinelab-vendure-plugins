@@ -190,5 +190,4 @@ export class GoedgepicktClient {
     }
     throw Error(json.error || json.errorMessage || json.message);
   }
-
 }

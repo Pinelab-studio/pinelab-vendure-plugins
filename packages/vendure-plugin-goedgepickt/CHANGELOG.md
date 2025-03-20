@@ -4,7 +4,7 @@
 - Moved GG config to Channel Custom Fields, instead of custom UI component.
 - Breaking: DB migration needed
 - Breaking: You need to save GoedGepickt credentials on a channel now: Settings > Channel > GoedGepickt custom fields
-  
+
 # 1.4.1 (2025-03-18)
 
 - Only sync product image on creation, not on update, after complaints from GoedGepickt about too many updates.

@@ -34,7 +34,9 @@ import gql from 'graphql-tag';
           )
           .subscribe({
             next: () => {
-              notificationService.success('Started full sync. This might take about 15 minutes...');
+              notificationService.success(
+                'Started full sync. This might take about 15 minutes...'
+              );
             },
             error: (err) => {
               notificationService.error(err.message);
