@@ -45,6 +45,8 @@
   window.onload = function () {
     if (document.cookie.includes('consent_given=true')) {
       giveConsent();
+    } else if (document.cookie.includes('consent_given=false')) {
+      // Do nothing, user has declined
     } else {
       // No consent given, show cookie banner
       document.getElementById('cookie-banner').style.display = 'block';
