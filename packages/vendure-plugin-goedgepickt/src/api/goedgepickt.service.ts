@@ -262,7 +262,6 @@ export class GoedgepicktService
       return;
     }
     const ggProduct = await client.findProductBySku(productSku);
-    console.log('======================GGGP', ggProduct);
     if (!ggProduct) {
       Logger.warn(
         `Product with sku '${productSku}' doesn't exists in GoedGepickt. Ignoring incoming stock update event`,
