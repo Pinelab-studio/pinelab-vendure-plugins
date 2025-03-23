@@ -46,6 +46,17 @@ export interface ShippingExtensionsOptions {
    * to be used when calculating distance based shipping price
    */
   orderAddressToGeolocationStrategy?: OrderAddressToGeolocationConversionStrategy;
+  /**
+   * Additional eligibility check that is appended to all shipping eligibility checkers in this plugin.
+   *
+   * E.g. you have a product that customers can only pick up in store. You can then do something like:
+   * `additionalShippingEligibilityCheck: (ctx, injector, order) => {if(orderContainsSpecialItem) return false;}`
+   */
+  additionalShippingEligibilityCheck?: (
+    ctx: RequestContext,
+    injector: Injector,
+    order: Order
+  ) => Promise<boolean> | boolean;
 }
 
 @VendurePlugin({

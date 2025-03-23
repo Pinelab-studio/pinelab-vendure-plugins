@@ -46,6 +46,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         },
       ],
     },
+    // FIXME determine by items in cart
     taxCategoryId: {
       type: 'ID',
       ui: { component: 'tax-category-id-form-input' },

@@ -10,6 +10,7 @@ export enum TaxSetting {
 
 let zoneAwareShippingTaxCalculationService: ZoneAwareShippingTaxCalculationService;
 
+// FIXME: Remove this. Shipping tax should always be dependent on the items in cart!
 export const zoneAwareFlatRateShippingCalculator = new ShippingCalculator({
   code: 'zone-aware-flat-rate-shipping-calculator',
   description: [
