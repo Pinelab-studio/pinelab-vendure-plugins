@@ -4,6 +4,7 @@ import {
   Order,
   PluginCommonModule,
   RequestContext,
+  ShippingMethod,
   VendurePlugin,
 } from '@vendure/core';
 import { weightAndCountryChecker } from './config/shipping/weight-and-country-checker';
@@ -55,7 +56,8 @@ export interface ShippingExtensionsOptions {
   additionalShippingEligibilityCheck?: (
     ctx: RequestContext,
     injector: Injector,
-    order: Order
+    order: Order,
+    method: ShippingMethod
   ) => Promise<boolean> | boolean;
 }
 

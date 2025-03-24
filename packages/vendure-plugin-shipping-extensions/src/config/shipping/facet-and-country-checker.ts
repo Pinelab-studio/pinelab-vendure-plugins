@@ -7,8 +7,10 @@ import {
   ShippingEligibilityChecker,
 } from '@vendure/core';
 import { isEligibleForCountry } from './shipping-util';
+import { ShippingExtensionsPlugin } from '../../shipping-extensions.plugin';
 
 let injector: Injector;
+
 /**
  * Checks if an order only has items with given facets
  */
@@ -76,7 +78,7 @@ export const facetAndCountryChecker = new ShippingEligibilityChecker({
       ],
     }));
   },
-  async check(ctx, order, { facets, countries, excludeCountries }) {
+  async check(ctx, order, { facets, countries, excludeCountries }, method) {
     const isEligibleByCountry = isEligibleForCountry(
       order,
       countries,
@@ -94,6 +96,17 @@ export const facetAndCountryChecker = new ShippingEligibilityChecker({
         // One of the lines doesn't have the facetValue, no need to check any more
         return false;
       }
+    }
+    // Check for additional consumer provided isEligible check as final option to block eligibility
+    const additionalIsEligible =
+      await ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck?.(
+        ctx,
+        injector,
+        order,
+        method
+      );
+    if (additionalIsEligible === false) {
+      return false;
     }
     return true;
   },

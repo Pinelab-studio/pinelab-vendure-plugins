@@ -102,7 +102,7 @@ it('Should start successfully', async () => {
   await expect(serverStarted).toBe(true);
 });
 
-describe('Shipping by weight and country', function () {
+describe('Shipping by weight and country eligibility checker', function () {
   it('Creates shipping method 1 for NL and BE, with weight between 0 and 100 ', async () => {
     await adminClient.asSuperAdmin();
     const res = await createShippingMethodForCountriesAndWeight(adminClient, {
@@ -140,10 +140,34 @@ describe('Shipping by weight and country', function () {
   });
 
   it('Is eligible for method 1 with country NL and weight 0', async () => {
-    const order = await createSettledOrder(shopClient, 1);
+    const order = await createSettledOrder(shopClient, 1, true, [
+      { id: 'T_1', quantity: 1 },
+    ]);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shipping).toBe(111);
     expect(order.shippingWithTax).toBe(133);
+  });
+
+  it('Is not eligible for quantity 123, because of the custom strategy', async () => {
+    ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
+      async (ctx, injector, order) => {
+        // Dummy config that blocks eligibility for orders with totalQuantity 123
+        // This way we can test the "is eligible" strategy by creating an order with 123 quantity
+        if (order.totalQuantity === 123) {
+          return false;
+        } else {
+          return true;
+        }
+      };
+    const createSettledOrderPromise = createSettledOrder(shopClient, 1, true, [
+      { id: 'T_1', quantity: 123 },
+    ]);
+    // Throws an error, because there is no shipping method added
+    await expect(createSettledOrderPromise).rejects.toThrow(
+      'ORDER_STATE_TRANSITION_ERROR'
+    );
+    ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
+      undefined; // Reset
   });
 
   it('Is eligible for method 3 with country NL and weight 200', async () => {
@@ -373,7 +397,7 @@ describe('Country based Promotion condition', function () {
   });
 });
 
-describe('Shipping by facet and country', function () {
+describe('Shipping by facet and country eligibility checker', function () {
   let shippingMethodId: ID;
 
   it('Creates shipping method for NL and facet "limited" ', async () => {
@@ -395,6 +419,31 @@ describe('Shipping by facet and country', function () {
     ]);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shippingLines[0].price).toBe(456);
+  });
+
+  it('Is not eligible for quantity 123, because of the custom strategy', async () => {
+    ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
+      async (ctx, injector, order) => {
+        // Dummy config that blocks eligibility for orders with totalQuantity 123
+        // This way we can test the "is eligible" strategy by creating an order with 123 quantity
+        if (order.totalQuantity === 123) {
+          return false;
+        } else {
+          return true;
+        }
+      };
+    const createSettledOrderPromise = createSettledOrder(
+      shopClient,
+      shippingMethodId,
+      true,
+      [{ id: 'T_4', quantity: 123 }]
+    );
+    // Throws an error, because there is no shipping method added
+    await expect(createSettledOrderPromise).rejects.toThrow(
+      'ORDER_STATE_TRANSITION_ERROR'
+    );
+    ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck =
+      undefined; // Reset
   });
 
   it('Is not eligible for order that does not have facet "limited"', async () => {
