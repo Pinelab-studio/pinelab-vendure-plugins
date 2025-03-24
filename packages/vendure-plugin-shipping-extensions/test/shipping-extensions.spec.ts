@@ -44,7 +44,6 @@ import {
   createShippingMethodForCountriesAndWeight,
   DistanceBasedShippingCalculatorOptions,
 } from './test-helpers';
-import { updateVariants } from '../../test/src/admin-utils';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -144,14 +143,14 @@ describe('Shipping by weight and country', function () {
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shipping).toBe(111);
-    expect(order.shipping).toBe(order.shippingWithTax);
+    expect(order.shippingWithTax).toBe(133);
   });
 
   it('Is eligible for method 3 with country NL and weight 200', async () => {
     const order = await createSettledOrder(shopClient, 3);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shipping).toBe(333);
-    expect(order.shipping).toBe(order.shippingWithTax);
+    expect(order.shippingWithTax).toBe(400);
   });
 
   it('Is eligible for method 1 with country NL and product weight 100', async () => {
@@ -159,11 +158,10 @@ describe('Shipping by weight and country', function () {
       .get(ProductService)
       .update(ctx, { id: 1, customFields: { weight: 25 } });
     expect((product.customFields as any).weight).toBe(25);
-
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shipping).toBe(111);
-    expect(order.shipping).toBe(order.shippingWithTax);
+    expect(order.shippingWithTax).toBe(133);
   });
 
   it('Is eligible for method 1 with country NL and product weight 25 variant weight 50', async () => {
@@ -181,7 +179,7 @@ describe('Shipping by weight and country', function () {
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shipping).toBe(111);
-    expect(order.shipping).toBe(order.shippingWithTax);
+    expect(order.shippingWithTax).toBe(133);
   });
 
   it('Is eligible for method 1 with country NL and product weight 50 variant weight 0', async () => {
@@ -198,7 +196,7 @@ describe('Shipping by weight and country', function () {
     const order = await createSettledOrder(shopClient, 1);
     expect(order.state).toBe('PaymentSettled');
     expect(order.shipping).toBe(111);
-    expect(order.shipping).toBe(order.shippingWithTax);
+    expect(order.shippingWithTax).toBe(133);
   });
 
   it('Is NOT eligible for method 2 with country NL', async () => {
@@ -371,7 +369,7 @@ describe('Country based Promotion condition', function () {
       }
     );
     expect(order.state).toBe('PaymentSettled');
-    expect(order.shippingWithTax).toBe(111);
+    expect(order.shipping).toBe(111);
   });
 });
 

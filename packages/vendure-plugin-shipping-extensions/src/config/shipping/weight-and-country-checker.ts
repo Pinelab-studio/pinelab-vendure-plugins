@@ -7,8 +7,8 @@ import {
   RequestContext,
   ShippingEligibilityChecker,
 } from '@vendure/core';
-import { ShippingExtensionsPlugin } from '../shipping-extensions.plugin';
-import { isEligibleForCountry } from './util';
+import { ShippingExtensionsPlugin } from '../../shipping-extensions.plugin';
+import { isEligibleForCountry } from './shipping-util';
 
 export function calculateOrderWeight(order: Order): number {
   return order.lines.reduce((acc, line) => {

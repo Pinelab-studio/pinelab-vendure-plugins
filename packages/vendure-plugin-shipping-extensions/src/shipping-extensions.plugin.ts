@@ -6,16 +6,16 @@ import {
   RequestContext,
   VendurePlugin,
 } from '@vendure/core';
-import { weightAndCountryChecker } from './config/weight-and-country-checker';
+import { weightAndCountryChecker } from './config/shipping/weight-and-country-checker';
 import { OrderAddressToGeolocationConversionStrategy } from './strategies/order-address-to-geolocation-strategy';
 import { PLUGIN_OPTIONS } from './constants';
-import { distanceBasedShippingCalculator } from './config/distance-based-shipping-calculator';
+import { distanceBasedShippingCalculator } from './config/shipping/distance-based-shipping-calculator';
 import { orderInCountryPromotionCondition } from './config/order-in-country-promotion-condition';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { zoneAwareFlatRateShippingCalculator } from './config/zone-aware-flat-rate-shipping-calculator';
-import { ZoneAwareShippingTaxCalculationService } from './services/zone-aware-shipping-tax-calculation.service';
-import { facetAndCountryChecker } from './config/facet-and-country-checker';
+import { flatRateItemBasedShippingCalculator } from './config/shipping/flat-rate-item-based-shipping-calculator';
+import { facetAndCountryChecker } from './config/shipping/facet-and-country-checker';
+import { zoneAwareFlatRateShippingCalculator } from './config/shipping/zone-aware-flat-rate-shipping-calculator copy';
 
 export interface ShippingExtensionsOptions {
   /**
@@ -66,14 +66,16 @@ export interface ShippingExtensionsOptions {
       provide: PLUGIN_OPTIONS,
       useFactory: () => ShippingExtensionsPlugin.options,
     },
-    ZoneAwareShippingTaxCalculationService,
   ],
   configuration: (config) => {
     config.shippingOptions.shippingEligibilityCheckers.push(
-      weightAndCountryChecker
-    );
-    config.shippingOptions.shippingEligibilityCheckers.push(
+      weightAndCountryChecker,
       facetAndCountryChecker
+    );
+    config.shippingOptions.shippingCalculators.push(
+      distanceBasedShippingCalculator,
+      flatRateItemBasedShippingCalculator,
+      zoneAwareFlatRateShippingCalculator
     );
     config.promotionOptions.promotionConditions.push(
       orderInCountryPromotionCondition
@@ -112,14 +114,9 @@ export interface ShippingExtensionsOptions {
       nullable: true,
       type: 'int',
     });
-    config.shippingOptions.shippingCalculators.push(
-      distanceBasedShippingCalculator,
-      zoneAwareFlatRateShippingCalculator
-    );
     return config;
   },
   compatibility: '>=2.2.0',
-  exports: [ZoneAwareShippingTaxCalculationService],
 })
 export class ShippingExtensionsPlugin {
   static options: ShippingExtensionsOptions;

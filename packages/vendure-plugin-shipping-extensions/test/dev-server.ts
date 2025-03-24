@@ -15,8 +15,6 @@ import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { ShippingExtensionsPlugin } from '../src/shipping-extensions.plugin';
 import { UKPostalCodeToGelocationConversionStrategy } from '../src/strategies/uk-postalcode-to-geolocation-strategy';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 
 (async () => {
   require('dotenv').config();

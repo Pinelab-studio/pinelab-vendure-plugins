@@ -1,6 +1,6 @@
 import { LanguageCode } from '@vendure/common/lib/generated-types';
-import { RequestContext, ShippingCalculator } from '@vendure/core';
-import { ZoneAwareShippingTaxCalculationService } from '../services/zone-aware-shipping-tax-calculation.service';
+import { Injector, RequestContext, ShippingCalculator } from '@vendure/core';
+import { getHighestTaxRateOfOrder } from './shipping-util';
 
 export enum TaxSetting {
   include = 'include',
@@ -8,15 +8,20 @@ export enum TaxSetting {
   auto = 'auto',
 }
 
-let zoneAwareShippingTaxCalculationService: ZoneAwareShippingTaxCalculationService;
+let injector: Injector;
 
-// FIXME: Remove this. Shipping tax should always be dependent on the items in cart!
-export const zoneAwareFlatRateShippingCalculator = new ShippingCalculator({
-  code: 'zone-aware-flat-rate-shipping-calculator',
+/**
+ * This eligibility finds the highest tax rate in cart, and applies that to the shipping cost.
+ *
+ * In most European countries, shipping tax is prorated according to the tax rate of items in the cart.
+ * Vendure does not support multiple tax rates for shipping, so this calculator uses the highest tax rate in the cart.
+ */
+export const flatRateItemBasedShippingCalculator = new ShippingCalculator({
+  code: 'flat-rate-item-based-shipping-calculator',
   description: [
     {
       languageCode: LanguageCode.en,
-      value: 'Zone aware Flat-Rate Shipping Calculator',
+      value: 'Flat rate. Tax based on highest tax rate in cart.',
     },
   ],
   args: {
@@ -53,37 +58,21 @@ export const zoneAwareFlatRateShippingCalculator = new ShippingCalculator({
       },
       label: [{ languageCode: LanguageCode.en, value: 'Price includes tax' }],
     },
-    taxCategoryId: {
-      type: 'ID',
-      ui: { component: 'tax-category-id-form-input' },
-      label: [{ languageCode: LanguageCode.en, value: 'Tax Category' }],
-    },
   },
-  init: (injector) => {
-    zoneAwareShippingTaxCalculationService = injector.get(
-      ZoneAwareShippingTaxCalculationService
-    );
+  init: (_injector) => {
+    injector = _injector;
   },
   calculate: async (ctx, order, args) => {
-    const taxRate =
-      (await zoneAwareShippingTaxCalculationService.getTaxRateForCategory(
-        ctx,
-        order,
-        args.taxCategoryId
-      )) ?? 0;
+    const taxRate = await getHighestTaxRateOfOrder(ctx, injector, order);
     return {
       price: args.rate,
       taxRate,
-      //eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-      priceIncludesTax: getPriceIncludesTax(ctx, args.includesTax as any),
+      priceIncludesTax: priceIncludesTax(ctx, args.includesTax as TaxSetting),
     };
   },
 });
 
-function getPriceIncludesTax(
-  ctx: RequestContext,
-  setting: TaxSetting
-): boolean {
+function priceIncludesTax(ctx: RequestContext, setting: TaxSetting): boolean {
   switch (setting) {
     case TaxSetting.auto:
       return ctx.channel.pricesIncludeTax;

@@ -6,7 +6,7 @@ import {
   RequestContext,
   ShippingEligibilityChecker,
 } from '@vendure/core';
-import { isEligibleForCountry } from './util';
+import { isEligibleForCountry } from './shipping-util';
 
 let injector: Injector;
 /**
