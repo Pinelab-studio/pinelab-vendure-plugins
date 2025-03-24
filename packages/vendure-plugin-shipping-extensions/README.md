@@ -4,8 +4,9 @@
 
 A collection of shipping calculators, checkers and promotion conditions that help you create customizable shipping options:
 
-- Country and Weight: Shipping eligibility checker that checks an order based on the total weight and country
-- Facet Value and Country: Shipping eligibility checker that checks an order based on configured facet values and country
+- Country and Weight: Shipping eligibility checker that checks if an order has the configured weight and is placed in country.
+- Facet Value and Country: Shipping eligibility checker that checks if an order has configured facet values and is placed in country.
+- Flat Rate Item Based Shipping calculator: Flat rate shipping calculator, that uses the highest tax rate of order lines or surcharges as the shipping tax rate.
 - Distance based Shipping calculator, to calculate your shipping price based on the distance from your store
 - A promotion condition that checks the order's shipping country. For example to only give free shipping to countries X, Y and Z
 
@@ -46,11 +47,11 @@ plugins: [
 2. Start your server
 3. Login to the admin UI and go to `Shipping methods`
 4. Create a new shippingmethod
-5. Under `Shipping eligibility checker` you should see `Check by weight and country`
+5. Under `Shipping eligibility checker` you should see `Check by weight and country` and `Check by facet and country`
 6. Under `Shipping calculator` you should see `Distance Based Shipping Calculator`
 7. Under Promotions conditions you should see `Order is in country` condition.
 
-## Shipping by weight and country options
+## Shipping by weight and country
 
 Some examples:
 
@@ -84,7 +85,30 @@ ShippingExtensionsPlugin.init({
       }),
 ```
 
-## Distance based shipping options
+## Shipping by facets and country
+
+Similar to the `Shipping by weight and country`, this shipping eligibility checker allows you to create shipping methods for orders that have certain facets **and** are placed in a country, for example:
+
+- Shipping method is eligible for orders placed in BE, NL and all items in cart have facet `Mailbox package`
+
+## Additional eligibility check
+
+You can configure an additional eligibility check that can block the final eligibility check. This is then applied to all eligibility checks.
+
+For example: You have different methods configured based on weights and countries, but you only allow pick up for oversized items. You can then configure the plugin to always return false when the order has an oversized item in cart:
+
+```ts
+ShippingExtensionsPlugin.init({
+    additionalShippingEligibilityCheck: (ctx, injector, order, shippingMethod) => {
+      if(hasOversizedItem(order)) {
+        return false;
+      }
+      return true;
+    }
+}),
+```
+
+## Distance based shipping calculator
 
 A configurable `OrderAddressToGeolocationConversionStrategy` is used to convert the `shippingAddress` of an `Order` to a geographic latitudinal and longitudinal, which in turn is used to calculate the distance. The built-in strategy converts a UK postalcode to a lat/lon.
 
@@ -99,7 +123,3 @@ export class USStreetLineToGeolocationConversionStrategy implements OrderAddress
    }
 }
 ```
-
-## Zone aware shipping tax calculation
-
-To calculate a shipping tax(`TaxRate`) based on the shipping or billing country of an order and a configurable `TaxCategory`, you can use the `zone-aware-flat-rate-shipping-calculator` included with this plugin.
