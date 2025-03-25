@@ -81,6 +81,18 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       defaultValue: true,
       label: [{ languageCode: LanguageCode.en, value: 'E-check' }],
     },
+    allowGooglePay: {
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      label: [{ languageCode: LanguageCode.en, value: 'Google Pay' }],
+    },
+    allowApplePay: {
+      type: 'boolean',
+      required: false,
+      defaultValue: true,
+      label: [{ languageCode: LanguageCode.en, value: 'Allow Pay' }],
+    },
     tokenizationSourceKey: {
       type: 'string',
       required: false,
@@ -142,26 +154,23 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       args.testMode
     );
     try {
-      const result = await service.handlePaymentForOrder(
-        ctx,
-        order,
-        amount,
-        client,
-        input
-      );
-      const chargeTransactionId = result.chargeResult?.transaction?.id;
-      Logger.info(
-        `Settled payment for order '${order.code}', for Accept Blue customer '${result.customerId}' and one time charge transaction '${chargeTransactionId}'`,
-        loggerCtx
-      );
-      return {
-        amount,
-        state: 'Settled',
-        transactionId: chargeTransactionId
-          ? String(chargeTransactionId)
-          : undefined,
-        metadata: result,
-      };
+      if (isGooglePayPaymentMethod(input as GooglePayPaymentMethodInput)) {
+        return await service.handleGooglePayPayment(
+          ctx,
+          order,
+          amount,
+          client,
+          input as GooglePayPaymentMethodInput
+        );
+      } else {
+        return await service.handleTraditionalPaymentForOrder(
+          ctx,
+          order,
+          amount,
+          client,
+          input as NoncePaymentMethodInput | CheckPaymentMethodInput
+        );
+      }
     } catch (e) {
       const error = asError(e);
       Logger.error(

@@ -31,7 +31,6 @@ import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { AcceptBlueSubscriptionEvent } from '../events/accept-blue-subscription-event';
 import { AcceptBlueTransactionEvent } from '../events/accept-blue-transaction-event';
 import {
-  AcceptBlueCardPaymentMethod,
   AcceptBlueChargeTransaction,
   AcceptBlueCustomerInput,
   AcceptBlueEvent,
@@ -151,22 +150,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     );
   }
 
-  /**
-   * Handles payments for order for either Nonce or Checks
-   * 1. Get or Create customer
-   * 2. Create payment method
-   */
-  async handlePaymentForOrder(
+  async getOrCreateCustomerForOrder(
     ctx: RequestContext,
-    order: Order,
-    amount: number,
     client: AcceptBlueClient,
-    input:
-      | NoncePaymentMethodInput
-      | CheckPaymentMethodInput
-      | SavedPaymentMethodInput
-      | GooglePayPaymentMethodInput
-  ): Promise<HandlePaymentResult> {
+    order: Order
+  ): Promise<number> {
     if (!order.customer) {
       throw new UserInputError(`Order must have a customer`);
     }
@@ -183,10 +171,36 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       id: order.customer?.id,
       customFields: { acceptBlueCustomerId: acceptBlueCustomer.id },
     });
+    return acceptBlueCustomer.id;
+  }
+
+  /**
+   * Handles payments for order for either Nonce or Checks
+   * 1. Get or Create customer
+   * 2. Create payment method
+   * 3. Create recurring schedules
+   * 4. Create charge transaction
+   */
+  async handleTraditionalPaymentForOrder(
+    ctx: RequestContext,
+    order: Order,
+    amount: number,
+    client: AcceptBlueClient,
+    input:
+      | NoncePaymentMethodInput
+      | CheckPaymentMethodInput
+      | SavedPaymentMethodInput
+  ): Promise<HandlePaymentResult> {
+    const acceptBlueCustomerId = await this.getOrCreateCustomerForOrder(
+      ctx,
+      client,
+      order
+    );
+    // Get or create payment method, depending on the input given
     let paymentMethod: AcceptBluePaymentMethod;
     if (isSavedPaymentMethod(input as SavedPaymentMethodInput)) {
       const foundMethod = await client.getPaymentMethod(
-        acceptBlueCustomer.id,
+        acceptBlueCustomerId,
         (input as SavedPaymentMethodInput).paymentMethodId
       );
       if (!foundMethod) {
@@ -199,42 +213,94 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       paymentMethod = foundMethod;
     } else {
       paymentMethod = await client.getOrCreatePaymentMethod(
-        acceptBlueCustomer.id,
-        input as
-          | NoncePaymentMethodInput
-          | CheckPaymentMethodInput
-          | GooglePayPaymentMethodInput
+        acceptBlueCustomerId,
+        input as NoncePaymentMethodInput | CheckPaymentMethodInput
       );
     }
-    if (!client.isPaymentMethodAllowed(paymentMethod)) {
-      throw new UserInputError(
-        `Payment method ${paymentMethod.payment_method_type} ${
-          (paymentMethod as AcceptBlueCardPaymentMethod).card_type ?? ''
-        } is not allowed. Allowed methods: ${client.enabledPaymentMethods.join(
-          ', '
-        )}`
-      );
-    }
-    const recurringSchedules = await this.createRecurringSchedule(
-      ctx,
-      order,
-      client,
-      paymentMethod.id
-    );
-    let chargeResult: AcceptBlueChargeTransaction | undefined;
+    client.throwIfPaymentMethodNotAllowed(paymentMethod);
+    await this.createRecurringSchedule(ctx, order, client, paymentMethod.id);
+    let chargeTransaction: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
       const subscriptionOrderLines =
         await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
-      chargeResult = await client.createCharge(paymentMethod.id, amount, {
+      chargeTransaction = await client.createCharge(paymentMethod.id, amount, {
         // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
         custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
       });
     }
+    const chargeTransactionId = chargeTransaction?.transaction?.id;
+    Logger.info(
+      `Settled payment for order '${order.code}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransactionId}'`,
+      loggerCtx
+    );
     return {
-      customerId: String(acceptBlueCustomer.id),
-      paymentMethodId: paymentMethod.id,
-      recurringScheduleResult: recurringSchedules,
-      chargeResult,
+      amount,
+      state: 'Settled',
+      transactionId: chargeTransactionId
+        ? String(chargeTransactionId)
+        : undefined,
+      metadata: chargeTransaction,
+    };
+  }
+
+  /**
+   * For Google Pay, we need to create a charge first, then the payment method, then the recurring schedules.
+   * This is different from 'traditional' methods, where we can create the payment methods immediately.
+   *
+   * 1. Get or Create customer
+   * 2. Create charge
+   * 3. Create recurring schedules
+   */
+  async handleGooglePayPayment(
+    ctx: RequestContext,
+    order: Order,
+    amount: number,
+    client: AcceptBlueClient,
+    input: GooglePayPaymentMethodInput
+  ): Promise<HandlePaymentResult> {
+    client.throwIfPaymentMethodNotAllowed(input);
+    const googleAmountInCents = input.amount * 100;
+    if (amount !== googleAmountInCents) {
+      throw new UserInputError(
+        `Amount in Google Pay payment method does not match the order amount. Expected '${amount}', got '${googleAmountInCents}' from the Google Pay payment`
+      );
+    }
+    // Create Charge
+    const subscriptionOrderLines =
+      await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
+    const chargeTransaction = await client.createDigitalWalletCharge(input, {
+      // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+      custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
+    });
+    const acceptBlueCustomerId = await this.getOrCreateCustomerForOrder(
+      ctx,
+      client,
+      order
+    );
+    const acceptBluePaymentMethod = await client.createPaymentMethod(
+      acceptBlueCustomerId,
+      {
+        source: `ref-${chargeTransaction.reference_number}`,
+      }
+    );
+    await this.createRecurringSchedule(
+      ctx,
+      order,
+      client,
+      acceptBluePaymentMethod.id
+    );
+    Logger.info(
+      `Settled payment for order '${order.code}' with '${input.source}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransaction.transaction?.id}'`,
+      loggerCtx
+    );
+    console.log(JSON.stringify(chargeTransaction));
+    return {
+      amount,
+      state: 'Settled',
+      transactionId: chargeTransaction.transaction?.id
+        ? String(chargeTransaction.transaction.id)
+        : undefined,
+      metadata: chargeTransaction,
     };
   }
 

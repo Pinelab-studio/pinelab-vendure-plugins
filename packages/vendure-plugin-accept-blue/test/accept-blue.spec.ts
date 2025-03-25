@@ -463,7 +463,7 @@ describe('Payment with Credit Card Payment Method', () => {
 });
 
 describe('Payment with Check Payment Method', () => {
-  let checkSubscriptionIds: number[] = [];
+  let createdSubscriptionIds: number[] = [];
   it('Adds item to order', async () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
@@ -532,14 +532,101 @@ describe('Payment with Check Payment Method', () => {
         },
       }
     );
-    checkSubscriptionIds = order.lines
+    createdSubscriptionIds = order.lines
       .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
   });
 
   it('Created subscriptions at Accept Blue', async () => {
-    expect(checkSubscriptionIds.length).toBeGreaterThan(0);
+    expect(createdSubscriptionIds.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Payment with Google Pay', () => {
+  let createdSubscriptionIds: number[] = [];
+  it('Adds item to order', async () => {
+    await shopClient.asAnonymousUser();
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const { addItemToOrder: order } = await shopClient.query(
+      ADD_ITEM_TO_ORDER,
+      {
+        productVariantId: '3',
+        quantity: 1,
+      }
+    );
+    // has subscription on orderline
+    expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
+  });
+
+  it('Adds payment to order', async () => {
+    // Nock create customers
+    // Nock create charge
+    // Nock create payment method
+    // Nock create schedule
+    // Add Payment To Order
+    // Verify createdSubscriptionIds
+    // const queryParams = {
+    //   active: true,
+    //   customer_number: haydenZiemeCustomerDetails.customer_number,
+    // };
+    // nockInstance
+    //   .persist()
+    //   .get(`/customers`)
+    //   .query(queryParams)
+    //   .reply(200, [haydenZiemeCustomerDetails]);
+    // //getAllPaymentMethods
+    // nockInstance
+    //   .persist()
+    //   .get(
+    //     `/customers/${haydenZiemeCustomerDetails.id}/payment-methods?limit=100`
+    //   )
+    //   .reply(200, haydenSavedPaymentMethods);
+    // //createRecurringSchedule
+    // nockInstance
+    //   .persist()
+    //   .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
+    //   .reply(201, createMockRecurringScheduleResult());
+    // //createCharge
+    // nockInstance
+    //   .persist()
+    //   .post(`/transactions/charge`)
+    //   .reply(201, checkChargeResult);
+    // await shopClient.query(SET_SHIPPING_METHOD, {
+    //   id: [1],
+    // });
+    // await shopClient.query(TRANSITION_ORDER_TO, {
+    //   state: 'ArrangingPayment',
+    // });
+    // const testCheck =
+    //   haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
+    // const metadata: CheckPaymentMethodInput = {
+    //   name: testCheck.name!,
+    //   routing_number: testCheck.routing_number!,
+    //   account_number: testCheck.account_number!,
+    //   account_type: testCheck.account_type! as AccountType,
+    //   sec_code: testCheck.sec_code! as SecCode,
+    // };
+    // const { addPaymentToOrder: order } = await shopClient.query(
+    //   ADD_PAYMENT_TO_ORDER,
+    //   {
+    //     input: {
+    //       method: acceptBluePaymentMethod.code,
+    //       metadata,
+    //     },
+    //   }
+    // );
+    // checkSubscriptionIds = order.lines
+    //   .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
+    //   .flat();
+    // expect(order.state).toBe('PaymentSettled');
+  });
+
+  it('Created subscriptions at Accept Blue', async () => {
+    expect(createdSubscriptionIds.length).toBeGreaterThan(0);
   });
 });
 

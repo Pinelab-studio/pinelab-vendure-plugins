@@ -1,4 +1,4 @@
-import { RequestContext } from '@vendure/core';
+import { PaymentMetadata, RequestContext } from '@vendure/core';
 import type { Request } from 'express';
 
 export interface CustomFields {
@@ -173,6 +173,12 @@ export type AcceptBluePaymentMethod =
   | AcceptBlueCardPaymentMethod
   | AcceptBlueCheckPaymentMethod;
 
+export interface AllowedPaymentMethodInput {
+  payment_method_type?: string;
+  card_type?: CardType;
+  source?: 'googlepay' | 'applepay';
+}
+
 export interface GooglePayPaymentMethodInput {
   amount: number;
   source: 'googlepay';
@@ -195,6 +201,13 @@ export interface NoncePaymentMethodInput {
   last4: string;
 }
 
+export interface SourcePaymentMethodInput {
+  /*
+   * Reference to the Charge Transaction. Must be prefixed with 'ref-'
+   */
+  source: string;
+}
+
 export interface SavedPaymentMethodInput {
   paymentMethodId: number;
 }
@@ -208,13 +221,10 @@ export interface CheckPaymentMethodInput {
 }
 
 export interface HandlePaymentResult {
-  customerId: string;
-  paymentMethodId: string | number;
-  recurringScheduleResult: AcceptBlueRecurringSchedule[];
-  /**
-   * If the amount is 0, no one time charge was created
-   */
-  chargeResult?: AcceptBlueChargeTransaction;
+  amount: number;
+  state: 'Settled';
+  transactionId?: string;
+  metadata?: PaymentMetadata;
 }
 
 /** +++++ Recurring ++++++ */
@@ -439,4 +449,6 @@ export interface EnabledPaymentMethodsArgs {
   allowAmex?: boolean;
   allowDiscover?: boolean;
   allowECheck?: boolean;
+  allowGooglePay?: boolean;
+  allowApplePay?: boolean;
 }

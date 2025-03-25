@@ -111,6 +111,8 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
           { name: 'pin', value: process.env.PIN },
           { name: 'testMode', value: 'true' },
           { name: 'allowECheck', value: 'true' },
+          { name: 'allowGooglePay', value: 'true' },
+          { name: 'allowApplePay', value: 'true' },
           {
             name: 'tokenizationSourceKey',
             value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
@@ -168,9 +170,9 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
   // };
   const metadata: GooglePayPaymentMethodInput = {
     source: 'googlepay',
-    amount: 1.5,
+    amount: 1.0,
     token:
-      '{"signature":"MEUCIQCHGvR477TcKBpB7GBCGUhi4OkVaXvcjIN5OOUPa0/HPQIgKmzS4PZwWIiF/3MsvZ4qv8sWJZfZ/6KArmtZRfWSgkA\\u003d","intermediateSigningKey":{"signedKey":"{\\"keyValue\\":\\"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAES/evYaIU/GRN3k8HyEeelQ+eFjmBhcPUBWRXaowpvL6MvqqRC0m9vjB4cv5MYJOB2WjxqYZ+6jlMMwqIYokBOw\\\\u003d\\\\u003d\\",\\"keyExpiration\\":\\"1742620849296\\"}","signatures":["MEUCICYpBEYnhfLbu5+PPXqw7VTzCJfjyXoz4YBSxXo8KLD3AiEAi7t2trHbKkDTerdmj/hS0o/ixNimI6S40zYTpM/d+xg\\u003d"]},"protocolVersion":"ECv2","signedMessage":"{\\"encryptedMessage\\":\\"6Z8nxlGBPdT4RoJjWcJR6pejk2eLNw11T4rQWfhyPyRTimmfEI09FSJDSdOkqT73JiyQ9nCSvnhQAITnNB6nrhGhYs5YxBw0OdrPYpXw9zp+U5UlPOJAte5RwvIY9cm9lgBrLzaRDPJIFxrkaZYBZvnC4ogXjd8WSUQzDRpqV76VAJ63lj3j0UvQJGxSkZhsdyuSR7b22eBjCKxcUnfluS0jFXSIv8qZ0DEPxAEEGY7tKfRFQT3RvRflsih7Rd8iDsWgbzLRXsN6vBAiAz8LFnS1inS2qVuLo8MT4r8IlqbrMavlYomfp7tiEGpPPfkQtXFR9d16hOT4yc0WToUDlF7SQ7JLzdrdkZC3y/O0F9ueku+h+Nweum2AKBDCxBkkD5ore9nk+MCGS8drD2OXpuw9A7QdcL6VDQ1gPfHnYlzHwSEqTjCzApC00eRLc3WSTfT2h7q3BU3UgMcoyA9XINQ6BRxPmxfR4/5UqB66og/hWSBE7tjsUa8MdUnWBd0REUQ1Jy5/iTKFq9mD4NI+H/7D7WkGbXdYOI3hz5yETgOQnu1WsvNYD04/HLlRooonfA8\\\\u003d\\",\\"ephemeralPublicKey\\":\\"BENFcF4QCrspQ/1BX2qe6WOB4SLHPhPbAoTy1GVLcm2XM0BadBwhBRtNJ9tVWq4czcSlD+8jX88xGcgPqIrj3gg\\\\u003d\\",\\"tag\\":\\"O9mjMmZHS730XHH1JSkVhOPfS4BCrCM8SKPCnrDz9Xk\\\\u003d\\"}"}',
+      '{"signature":"MEYCIQCcbiCikKwXrhn4njwr1takqr1bfoFgi/a9O0LGon9rrgIhANl7RapmJpuCkjdToRROJvkCLendCJbeM+pwqJkOFKXH","intermediateSigningKey":{"signedKey":"{\\"keyValue\\":\\"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAErFqQhiKDaajVHxIAXTChgmli9B0bJe94QUNPQ7j6/M7HX0wKrwQmtb+Ml1bdJDqmhpvMaFsrFH2CyV51BXX8WQ\\\\u003d\\\\u003d\\",\\"keyExpiration\\":\\"1743588450799\\"}","signatures":["MEYCIQDD9dOLwFdOO90iL1+ppD9GWupn3FhyiXbTU2ANHm5wugIhAKnMjC/twWWUYVXE2HOgUKX+Qbpc4qpMtSrPMm34TMzB"]},"protocolVersion":"ECv2","signedMessage":"{\\"encryptedMessage\\":\\"+8VYX9GholEw55phJyv123iCe2etV5noGjzMPrY0SJwuRVfa6wK9AawBH2POZq8dTIAy2tR1KmY3OOmkE1ZfyqnNcVUEvDt6gYZWtRfI9JYLQL04Aw2yW1SgzT5Qo6iw1Nd/0si3tuwoWnLhDJ/kuk3L+lBw2TK+XbvGSxlWTCOKSpuUDGjHAJ6PttQtW3KcD5rbigczOUKVImweACc0zVxFshqEJ4/KNuipMw23glX6nXJHPFw0+w8QEtgT20Y7tsQEjfuY/ho3li4qQZACEZ5zMAajYUm/CGlGks8t9BqCX+TLCrSnTmuKr4jQm8jad4+na9YWBtt+8nyGwvc668gDoBJ/zktKHcuEdBfwWF9iK4e3JqZeNgWIlQMSUTb8lL6eMlfWh8h/ec7gpJMtejIlEYGuce0yOed5EfJ+vHeUPn7xpoZ66tbhXfFg0+sCRDs30E69TQ4D2f8onfco3C2eGjQIDPQiEsfTYl3voDrwfU+LFL+eq+wH5K+l/GdryIJKPDa+WMHCtr71VonblQw6RtfgsWJgVBQSKkIs8M5aSZhLOsBu+iYvJ7U2CBI72Ew\\\\u003d\\",\\"ephemeralPublicKey\\":\\"BPT6t5rEa5NeoXAyBT/5Q3ARJHB/OsnH2KMksnrQz+sFmn2sI4OpO5wYcJgY0yb762pDUxARRI7hezyxUhjaoto\\\\u003d\\",\\"tag\\":\\"FAWSETa5y0fHmg8FxNP7LnUSFmK1klNCzgCS17SbK6A\\\\u003d\\"}"}',
   };
 
   try {
