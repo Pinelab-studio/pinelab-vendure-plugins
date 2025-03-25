@@ -12,8 +12,6 @@ import { OrderAddressToGeolocationConversionStrategy } from './strategies/order-
 import { PLUGIN_OPTIONS } from './constants';
 import { distanceBasedShippingCalculator } from './config/shipping/distance-based-shipping-calculator';
 import { orderInCountryPromotionCondition } from './config/order-in-country-promotion-condition';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { flatRateItemBasedShippingCalculator } from './config/shipping/flat-rate-item-based-shipping-calculator';
 import { facetAndCountryChecker } from './config/shipping/facet-and-country-checker';
 import { zoneAwareFlatRateShippingCalculator } from './config/shipping/zone-aware-flat-rate-shipping-calculator copy';
