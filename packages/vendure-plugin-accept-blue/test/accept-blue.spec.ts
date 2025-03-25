@@ -26,7 +26,6 @@ import {
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { AcceptBluePlugin, AcceptBlueSubscriptionEvent } from '../src';
-import { AcceptBlueClient } from '../src/api/accept-blue-client';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
 import { DataSource } from 'typeorm';
 import {
@@ -40,9 +39,11 @@ import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
+  ELIGIBLE_AC_PAYMENT_METHODS,
   GET_CUSTOMER_WITH_ID,
   GET_HISTORY_ENTRIES,
   GET_ORDER_BY_CODE,
+  GET_SURCHARGES,
   GET_USER_SAVED_PAYMENT_METHOD,
   PREVIEW_SUBSCRIPTIONS_FOR_PRODUCT,
   PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
@@ -75,7 +76,6 @@ let shopClient: SimpleGraphQLClient;
 let serverStarted = false;
 let acceptBluePaymentMethod: any;
 let nockInstance: nock.Scope;
-let acceptBlueClient: AcceptBlueClient;
 /**
  * Most recently placed test order
  */
@@ -104,8 +104,7 @@ beforeAll(async () => {
     productsCsvPath: '../test/src/products-import.csv',
   });
   serverStarted = true;
-  acceptBlueClient = new AcceptBlueClient('process.env.API_KEY', '');
-  nockInstance = nock(acceptBlueClient.endpoint);
+  nockInstance = nock('https://api.accept.blue/api/v2/');
 }, 60000);
 
 afterEach(async () => {
@@ -114,15 +113,6 @@ afterEach(async () => {
 
 it('Should start successfully', async () => {
   expect(serverStarted).toBe(true);
-});
-
-it('Selects dev mode if args.testMode=true', () => {
-  const acceptBlueClient = new AcceptBlueClient(
-    'process.env.API_KEY',
-    '',
-    true
-  );
-  expect(acceptBlueClient.endpoint).toContain('develop');
 });
 
 it('Creates Accept Blue payment method', async () => {
@@ -156,6 +146,18 @@ it('Creates Accept Blue payment method', async () => {
               name: 'tokenizationSourceKey',
               value: 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY',
             },
+            {
+              name: 'allowVisa',
+              value: 'true',
+            },
+            {
+              name: 'allowECheck',
+              value: 'true',
+            },
+            {
+              name: 'allowMasterCard',
+              value: 'true',
+            },
           ],
         },
         translations: [
@@ -170,6 +172,41 @@ it('Creates Accept Blue payment method', async () => {
 });
 
 describe('Shop API', () => {
+  it('Returns enabled accept blue payment methods', async () => {
+    const { eligibleAcceptBluePaymentMethods } = await shopClient.query(
+      ELIGIBLE_AC_PAYMENT_METHODS
+    );
+    expect(eligibleAcceptBluePaymentMethods).toEqual([
+      { name: 'ECheck' },
+      { name: 'Visa' },
+      { name: 'MasterCard' },
+    ]);
+  });
+
+  it('Returns surcharge configuration', async () => {
+    nockInstance.get('/surcharge').reply(200, {
+      card: {
+        type: 'currency',
+        value: 0,
+      },
+      check: {
+        type: 'currency',
+        value: 0,
+      },
+    });
+    const { acceptBlueSurcharges } = await shopClient.query(GET_SURCHARGES);
+    expect(acceptBlueSurcharges).toEqual({
+      card: {
+        type: 'currency',
+        value: 0,
+      },
+      check: {
+        type: 'currency',
+        value: 0,
+      },
+    });
+  });
+
   it('Previews subscriptions for variant', async () => {
     const { previewAcceptBlueSubscriptions } = await shopClient.query(
       PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
@@ -291,14 +328,17 @@ describe('Payment with Saved Payment Method', () => {
       .persist()
       .post(`/transactions/charge`)
       .reply(201, checkChargeResult);
+    const testPaymentMethod =
+      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
+    nockInstance
+      .get(`/payment-methods/${testPaymentMethod.id}`)
+      .reply(201, testPaymentMethod);
     await shopClient.query(SET_SHIPPING_METHOD, {
       id: [1],
     });
     await shopClient.query(TRANSITION_ORDER_TO, {
       state: 'ArrangingPayment',
     });
-    const testPaymentMethod =
-      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
     const { addPaymentToOrder: order } = await shopClient.query(
       ADD_PAYMENT_TO_ORDER,
       {
