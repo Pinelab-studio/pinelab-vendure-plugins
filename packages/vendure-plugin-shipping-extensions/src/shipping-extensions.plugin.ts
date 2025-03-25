@@ -14,7 +14,7 @@ import { distanceBasedShippingCalculator } from './config/shipping/distance-base
 import { orderInCountryPromotionCondition } from './config/order-in-country-promotion-condition';
 import { flatRateItemBasedShippingCalculator } from './config/shipping/flat-rate-item-based-shipping-calculator';
 import { facetAndCountryChecker } from './config/shipping/facet-and-country-checker';
-import { zoneAwareFlatRateShippingCalculator } from './config/shipping/zone-aware-flat-rate-shipping-calculator copy';
+import { zoneAwareFlatRateShippingCalculator } from './config/shipping/zone-aware-flat-rate-shipping-calculator';
 
 export interface ShippingExtensionsOptions {
   /**
