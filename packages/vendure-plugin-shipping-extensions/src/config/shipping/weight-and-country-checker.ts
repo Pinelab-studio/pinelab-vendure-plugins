@@ -7,8 +7,8 @@ import {
   RequestContext,
   ShippingEligibilityChecker,
 } from '@vendure/core';
-import { ShippingExtensionsPlugin } from '../shipping-extensions.plugin';
-import { isEligibleForCountry } from './util';
+import { ShippingExtensionsPlugin } from '../../shipping-extensions.plugin';
+import { isEligibleForCountry } from './shipping-util';
 
 export function calculateOrderWeight(order: Order): number {
   return order.lines.reduce((acc, line) => {
@@ -23,7 +23,6 @@ export function calculateOrderWeight(order: Order): number {
     return acc + lineWeight;
   }, 0);
 }
-
 let entityHydrator: EntityHydrator;
 let injector: Injector;
 export const weightAndCountryChecker = new ShippingEligibilityChecker({
@@ -102,7 +101,8 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
   async check(
     ctx,
     order,
-    { minWeight, maxWeight, countries, excludeCountries }
+    { minWeight, maxWeight, countries, excludeCountries },
+    method
   ) {
     const isEligibleByCountry = isEligibleForCountry(
       order,
@@ -131,6 +131,22 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     } else {
       totalOrderWeight = calculateOrderWeight(order);
     }
-    return totalOrderWeight <= maxWeight && totalOrderWeight >= minWeight;
+    const isBetweenWeights =
+      totalOrderWeight <= maxWeight && totalOrderWeight >= minWeight;
+    if (!isBetweenWeights) {
+      return false;
+    }
+    // Check for additional consumer provided isEligible check as final option to block eligibility
+    const additionalIsEligible =
+      await ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck?.(
+        ctx,
+        injector,
+        order,
+        method
+      );
+    if (additionalIsEligible === false) {
+      return false;
+    }
+    return true;
   },
 });

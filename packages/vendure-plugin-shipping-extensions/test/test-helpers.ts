@@ -6,7 +6,7 @@ import {
   CreatePromotionMutation,
   CreatePromotionMutationVariables,
 } from '../../test/src/generated/admin-graphql';
-import { distanceBasedShippingCalculator } from '../src/config/distance-based-shipping-calculator';
+import { distanceBasedShippingCalculator } from '../src/config/shipping/distance-based-shipping-calculator';
 
 const CREATE_SHIPPING_METHOD = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {

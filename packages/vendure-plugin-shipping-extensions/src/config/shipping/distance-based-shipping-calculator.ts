@@ -5,13 +5,13 @@ import {
   InternalServerError,
   Logger,
 } from '@vendure/core';
-import { ShippingExtensionsOptions } from '../shipping-extensions.plugin';
-import { loggerCtx, PLUGIN_OPTIONS } from '../constants';
-import { getDistanceBetweenPointsInKMs } from '../util/get-distance-between-points';
-import { ZoneAwareShippingTaxCalculationService } from '../services/zone-aware-shipping-tax-calculation.service';
+import { ShippingExtensionsOptions } from '../../shipping-extensions.plugin';
+import { loggerCtx, PLUGIN_OPTIONS } from '../../constants';
+import { getDistanceBetweenPointsInKMs } from '../../util/get-distance-between-points';
+import { getHighestTaxRateOfOrder } from './shipping-util';
 
 let pluginOptions: ShippingExtensionsOptions;
-let zoneAwareShippingTaxCalculationService: ZoneAwareShippingTaxCalculationService;
+let injector: Injector;
 export const distanceBasedShippingCalculator = new ShippingCalculator({
   code: 'distance-based-shipping-calculator',
   description: [
@@ -46,17 +46,10 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         },
       ],
     },
-    taxCategoryId: {
-      type: 'ID',
-      ui: { component: 'tax-category-id-form-input' },
-      label: [{ languageCode: LanguageCode.en, value: 'Tax Category' }],
-    },
   },
-  init(injector: Injector) {
-    pluginOptions = injector.get<ShippingExtensionsOptions>(PLUGIN_OPTIONS);
-    zoneAwareShippingTaxCalculationService = injector.get(
-      ZoneAwareShippingTaxCalculationService
-    );
+  init(_injector: Injector) {
+    pluginOptions = _injector.get<ShippingExtensionsOptions>(PLUGIN_OPTIONS);
+    injector = _injector;
   },
   calculate: async (ctx, order, args, method) => {
     if (!pluginOptions?.orderAddressToGeolocationStrategy) {
@@ -64,12 +57,7 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         'OrderAddress to geolocation conversion strategy not configured'
       );
     }
-    const taxRate =
-      (await zoneAwareShippingTaxCalculationService.getTaxRateForCategory(
-        ctx,
-        order,
-        args.taxCategoryId
-      )) ?? 0;
+    const taxRate = await getHighestTaxRateOfOrder(ctx, injector, order);
     const storeGeoLocation = {
       latitude: args.storeLatitude,
       longitude: args.storeLongitude,
@@ -82,10 +70,8 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       metadata: { storeGeoLocation },
     };
     if (
-      !order?.shippingAddress ||
-      !order.shippingAddress?.postalCode ||
-      !order.shippingAddress?.countryCode ||
-      !order.shippingAddress
+      !order?.shippingAddress?.postalCode ||
+      !order.shippingAddress?.countryCode
     ) {
       return minimumPrice;
     }
