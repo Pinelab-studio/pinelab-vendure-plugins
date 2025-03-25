@@ -46,12 +46,6 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
         },
       ],
     },
-    // FIXME determine by items in cart
-    taxCategoryId: {
-      type: 'ID',
-      ui: { component: 'tax-category-id-form-input' },
-      label: [{ languageCode: LanguageCode.en, value: 'Tax Category' }],
-    },
   },
   init(_injector: Injector) {
     pluginOptions = _injector.get<ShippingExtensionsOptions>(PLUGIN_OPTIONS);
@@ -76,10 +70,8 @@ export const distanceBasedShippingCalculator = new ShippingCalculator({
       metadata: { storeGeoLocation },
     };
     if (
-      !order?.shippingAddress ||
-      !order.shippingAddress?.postalCode ||
-      !order.shippingAddress?.countryCode ||
-      !order.shippingAddress
+      !order?.shippingAddress?.postalCode ||
+      !order.shippingAddress?.countryCode
     ) {
       return minimumPrice;
     }

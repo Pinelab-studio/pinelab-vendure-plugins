@@ -132,9 +132,4 @@ export class ShippingExtensionsPlugin {
     this.options = options;
     return ShippingExtensionsPlugin;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    providers: ['providers.ts'],
-  };
 }

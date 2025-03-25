@@ -23,7 +23,6 @@ export function calculateOrderWeight(order: Order): number {
     return acc + lineWeight;
   }, 0);
 }
-// TODO, make strategizable: additionalEligibilityCheck()
 let entityHydrator: EntityHydrator;
 let injector: Injector;
 export const weightAndCountryChecker = new ShippingEligibilityChecker({
