@@ -35,7 +35,7 @@ export async function getHighestTaxRateOfOrder(
 ): Promise<number> {
   if (!order.surcharges || !order.lines) {
     await injector.get(EntityHydrator).hydrate(ctx, order, {
-      relations: ['lines', 'shippingLines', 'surcharges'],
+      relations: ['lines', 'surcharges'],
     });
   }
   const lineTaxRates = order.lines.map((line) => line.taxRate);
