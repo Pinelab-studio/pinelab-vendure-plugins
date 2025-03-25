@@ -49,7 +49,7 @@ describe('getHighestTaxRateOfOrder', () => {
   const mockCtx = {} as RequestContext;
   const mockInjector = {} as Injector;
 
-  it('should return the highest tax rate when surcharge has highest rate', async () => {
+  it('should return the highest tax rate when surcharge has highest rate, because shipping lines should be ignored', async () => {
     const order = {
       lines: [{ taxRate: 0.1 }],
       surcharges: [{ taxRate: 0.2 }],
