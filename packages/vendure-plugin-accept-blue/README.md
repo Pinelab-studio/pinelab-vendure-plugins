@@ -233,6 +233,29 @@ This plugin also allows you to integration Google Pay. You will need to implemen
 
 - Checkout the video to get a good understanding of the flow: https://developers.google.com/pay/api/web/overview
 - The complete script is available here: https://developers.google.com/pay/api/web/guides/tutorial#full-example
-- Make sure to read the specific settings needed for Accept Blue here: https://docs.accept.blue/digital-wallet/google-pay
+- Integrate the Google Pay button on your storefront: https://docs.accept.blue/digital-wallet/google-pay
 
-// TODO send to server
+After that, you end up with a `token` you receive from Google. Send that data to Vendure like so:
+
+```graphql
+mutation {
+  addPaymentToOrder(
+    input: {
+      method: "accept-blue"
+      metadata: {
+        source: "googlepay"
+        amount: 10.8
+        token: "{\"signature\":\"MEUCIFZG..."
+      }
+    }
+  ) {
+    ... on Order {
+      id
+      code
+      state
+    }
+  }
+}
+```
+
+Make sure that your amount equals the amount of the order! The amount is passed in as whole amount, not in cents, because this is how you will receive it from Google.
