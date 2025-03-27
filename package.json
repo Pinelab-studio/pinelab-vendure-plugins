@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "postinstall": "yarn husky install",
-    "build": "yarn lerna run build --concurrency 1",
+    "build": "yarn lerna run build --concurrency 10",
     "prettier:check": "yarn prettier --check .",
     "prettier:fix": "yarn prettier --write .",
     "upgrade:vendure": "yarn lerna exec --concurrency 1 \"yarn upgrade --pattern @vendure --latest\"",
