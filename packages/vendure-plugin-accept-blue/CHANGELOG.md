@@ -1,3 +1,7 @@
+# 2.5.0 (2025-03-27)
+
+- Added Google Pay and Apple pay for creating subscriptions
+
 # 2.4.0 (2025-03-13)
 
 - Renamed internals to Amex as well
