@@ -18,8 +18,8 @@ import {
   CheckPaymentMethodInput,
   CustomFields,
   EnabledPaymentMethodsArgs,
-  GooglePayPaymentMethodInput,
   NoncePaymentMethodInput,
+  AppleOrGooglePayInput,
   SourcePaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
@@ -380,7 +380,7 @@ export class AcceptBlueClient {
    * Only supports charge with saved payment method id
    */
   async createDigitalWalletCharge(
-    input: GooglePayPaymentMethodInput,
+    input: AppleOrGooglePayInput,
     customFields: CustomFields
   ): Promise<AcceptBlueChargeTransaction> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -495,7 +495,6 @@ export class AcceptBlueClient {
       return undefined;
     }
     if (result.status >= 400) {
-      console.log(result.data);
       Logger.error(
         `${method} to "${path}" resulted in: ${result.status} (${
           result.statusText

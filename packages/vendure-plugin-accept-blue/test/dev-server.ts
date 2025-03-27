@@ -27,10 +27,7 @@ import {
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
 } from './helpers/graphql-helpers';
-import {
-  GooglePayPaymentMethodInput,
-  NoncePaymentMethodInput,
-} from '../src/types';
+import { AppleOrGooglePayInput, NoncePaymentMethodInput } from '../src/types';
 import { add } from 'date-fns';
 import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
@@ -168,7 +165,7 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
   //   expiry_year: 2030,
   //   expiry_month: 3,
   // };
-  const metadata: GooglePayPaymentMethodInput = {
+  const metadata: AppleOrGooglePayInput = {
     source: 'googlepay',
     amount: 10.8,
     token:

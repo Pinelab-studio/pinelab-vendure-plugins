@@ -179,9 +179,9 @@ export interface AllowedPaymentMethodInput {
   source?: 'googlepay' | 'applepay';
 }
 
-export interface GooglePayPaymentMethodInput {
+export interface AppleOrGooglePayInput {
   amount: number;
-  source: 'googlepay';
+  source: 'googlepay' | 'applepay';
   token: string;
   avs_zip?: string;
   avs_address?: string;

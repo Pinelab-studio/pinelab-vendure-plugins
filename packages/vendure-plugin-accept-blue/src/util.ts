@@ -5,7 +5,7 @@ import {
   AccountType,
   CheckPaymentMethodInput,
   Frequency,
-  GooglePayPaymentMethodInput,
+  AppleOrGooglePayInput,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
 } from './types';
@@ -181,7 +181,7 @@ export function isCheckPaymentMethod(input: CheckPaymentMethodInput): boolean {
 }
 
 export function isGooglePayPaymentMethod(
-  input: GooglePayPaymentMethodInput
+  input: AppleOrGooglePayInput
 ): boolean {
   return !!(input.source === 'googlepay' && input.amount && input.token);
 }

@@ -39,7 +39,7 @@ import {
   AcceptBlueRecurringScheduleTransaction,
   CheckPaymentMethodInput,
   EnabledPaymentMethodsArgs,
-  GooglePayPaymentMethodInput,
+  AppleOrGooglePayInput,
   HandlePaymentResult,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
@@ -251,12 +251,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    * 2. Create charge
    * 3. Create recurring schedules
    */
-  async handleGooglePayPayment(
+  async handleAppleOrGooglePayment(
     ctx: RequestContext,
     order: Order,
     amount: number,
     client: AcceptBlueClient,
-    input: GooglePayPaymentMethodInput
+    input: AppleOrGooglePayInput
   ): Promise<HandlePaymentResult> {
     client.throwIfPaymentMethodNotAllowed(input);
     const googleAmountInCents = input.amount * 100;

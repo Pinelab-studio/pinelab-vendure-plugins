@@ -15,13 +15,13 @@ import {
 import { loggerCtx } from '../constants';
 import {
   CheckPaymentMethodInput,
-  GooglePayPaymentMethodInput,
+  AppleOrGooglePayInput,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
 } from '../types';
 import {
   isCheckPaymentMethod,
-  isGooglePayPaymentMethod,
+  isGooglePayPaymentMethod as isAppleOrGooglePay,
   isNoncePaymentMethod,
   isSavedPaymentMethod,
 } from '../util';
@@ -135,7 +135,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
     if (
       !isNoncePaymentMethod(metadata as NoncePaymentMethodInput) &&
       !isCheckPaymentMethod(metadata as CheckPaymentMethodInput) &&
-      !isGooglePayPaymentMethod(metadata as GooglePayPaymentMethodInput) &&
+      !isAppleOrGooglePay(metadata as AppleOrGooglePayInput) &&
       !isSavedPaymentMethod(metadata as SavedPaymentMethodInput)
     ) {
       throw new UserInputError(
@@ -146,7 +146,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       | CheckPaymentMethodInput
       | NoncePaymentMethodInput
       | SavedPaymentMethodInput
-      | GooglePayPaymentMethodInput;
+      | AppleOrGooglePayInput;
     const client = new AcceptBlueClient(
       args.apiKey,
       args.pin,
@@ -154,13 +154,13 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       args.testMode
     );
     try {
-      if (isGooglePayPaymentMethod(input as GooglePayPaymentMethodInput)) {
-        return await service.handleGooglePayPayment(
+      if (isAppleOrGooglePay(input as AppleOrGooglePayInput)) {
+        return await service.handleAppleOrGooglePayment(
           ctx,
           order,
           amount,
           client,
-          input as GooglePayPaymentMethodInput
+          input as AppleOrGooglePayInput
         );
       } else {
         return await service.handleTraditionalPaymentForOrder(
