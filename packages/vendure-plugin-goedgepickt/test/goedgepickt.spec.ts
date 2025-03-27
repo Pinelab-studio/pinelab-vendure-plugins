@@ -1,5 +1,7 @@
 import nock from 'nock';
 import {
+  AvailableStock,
+  configureDefaultOrderProcess,
   DefaultLogger,
   ID,
   LanguageCode,
@@ -23,8 +25,8 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import gql from 'graphql-tag';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { getOrder } from '../../test/src/admin-utils';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { getOrder, updateVariants } from '../../test/src/admin-utils';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import {
@@ -40,9 +42,11 @@ import {
   IncomingStockUpdateEvent,
   OrderInput,
 } from '../src';
-import { GoedgepicktClient } from '../src/api/goedgepickt.client';
 import { GoedgepicktService } from '../src/api/goedgepickt.service';
 import { updateChannel } from './helpers';
+import { waitFor } from '../../test/src/test-helpers';
+import { GlobalFlag } from '@vendure/common/lib/generated-types';
+
 describe('Goedgepickt plugin', function () {
   const defaultChannelToken = 'e2e-default-channel';
   let server: TestServer;
@@ -55,67 +59,18 @@ describe('Goedgepickt plugin', function () {
   };
 
   let pushProductsPayloads: any[] = [];
-  let createOrderPayload: OrderInput;
   let webhookPayloads: any[] = [];
+  let createOrderPayload: OrderInput;
   let order: SettledOrder;
   const apiUrl = 'https://account.goedgepickt.nl/';
-  // Update products
-  nock(apiUrl)
-    .persist(true)
-    .post('/api/v1/products', (reqBody: any) => {
-      pushProductsPayloads.push(reqBody);
-      return true;
-    })
-    .reply(200, []);
-  // Create order
-  nock(apiUrl)
-    .post('/api/v1/orders', (reqBody: any) => {
-      createOrderPayload = reqBody;
-      return true;
-    })
-    .reply(200, {
-      message: 'Order created',
-      orderUuid: 'testUuid',
-    });
-  // Get order
-  nock(apiUrl)
-    .persist(true)
-    .get('/api/v1/orders/testUuid')
-    .reply(200, {
-      message: 'Order created',
-      orderUuid: 'testUuid',
-      status: 'completed',
-      shipments: [
-        {
-          trackTraceCode: 'XYZ',
-          trackTraceUrl: 'pinelab.studio/xyz',
-        },
-      ],
-    });
-  // Find by SKU
-  nock(apiUrl)
-    .get(
-      /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
-    )
-    .times(3)
-    .reply(200, {
-      items: [],
-    });
-  // Get webshops
-  nock('https://account.goedgepickt.nl')
-    .persist(true)
-    .get('/api/v1/webshops')
-    .reply(200, { items: [{ uuid: ggConfig.webshopUuid }] });
-  // get webhooks
-  nock(apiUrl).persist(true).get('/api/v1/webhooks').reply(200, { items: [] });
-  // Update webhooks
-  nock(apiUrl)
-    .persist(true)
-    .post('/api/v1/webhooks', (reqBody: any) => {
-      webhookPayloads.push(reqBody);
-      return true;
-    })
-    .reply(200, { webhookSecret: 'test-secret' });
+
+  afterEach(() => {
+    const pendingMocks = nock.pendingMocks();
+    if (pendingMocks.length > 0) {
+      console.error("Pending mocks that weren't called:", pendingMocks);
+    }
+    nock.cleanAll();
+  });
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -133,6 +88,11 @@ describe('Goedgepickt plugin', function () {
       ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
+      },
+      orderOptions: {
+        process: [
+          configureDefaultOrderProcess({ checkFulfillmentStates: false }),
+        ] as any,
       },
     });
 
@@ -157,6 +117,20 @@ describe('Goedgepickt plugin', function () {
     await expect(serverStarted).toBe(true);
   });
 
+  it('Should track inventory of all variants', async () => {
+    await adminClient.asSuperAdmin();
+    const variants = await updateVariants(adminClient, [
+      { id: 'T_1', trackInventory: GlobalFlag.TRUE },
+      { id: 'T_2', trackInventory: GlobalFlag.TRUE },
+      { id: 'T_3', trackInventory: GlobalFlag.TRUE },
+      { id: 'T_4', trackInventory: GlobalFlag.TRUE as any },
+    ]);
+    const everyVariantHasStockTracking = variants.every(
+      (v) => v!.trackInventory === (GlobalFlag.TRUE as any)
+    );
+    expect(everyVariantHasStockTracking).toBe(true);
+  });
+
   it('Updates credentials on Channel', async () => {
     const uuidAndApiKey = ggConfig.webshopUuid + ':' + ggConfig.apiKey;
     const result = await adminClient.query(updateChannel, {
@@ -173,9 +147,40 @@ describe('Goedgepickt plugin', function () {
     );
   });
 
-  it('Pushes products and updates stocklevel on FullSync', async () => {
-    nock(apiUrl).put('/api/v1/products/test-uuid').reply(200, []);
+  it('Pushes products and updates stock level on FullSync', async () => {
+    // Pretend there are no webhooks set
     nock(apiUrl)
+      .persist(true)
+      .get('/api/v1/webhooks')
+      .reply(200, { items: [] });
+    // Catch the creation of webhooks
+    nock(apiUrl)
+      .persist(true)
+      .post('/api/v1/webhooks', (reqBody: any) => {
+        webhookPayloads.push(reqBody);
+        return true;
+      })
+      .reply(200, { webhookSecret: 'test-secret' });
+    // Catch the lookup of products
+    nock(apiUrl)
+      .persist(true)
+      .get(
+        /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
+      )
+      .reply(200, {
+        items: [],
+      });
+    // Catch the creation of products
+    nock(apiUrl)
+      .persist(true)
+      .post('/api/v1/products', (reqBody: any) => {
+        pushProductsPayloads.push(reqBody);
+        return true;
+      })
+      .reply(200, []);
+
+    nock(apiUrl)
+      .persist(true)
       .get('/api/v1/products')
       .query(true)
       .reply(200, {
@@ -189,6 +194,7 @@ describe('Goedgepickt plugin', function () {
           },
         ],
       });
+    nock(apiUrl).put('/api/v1/products/test-uuid').reply(200, []);
     await adminClient.query(
       gql`
         mutation {
@@ -196,7 +202,7 @@ describe('Goedgepickt plugin', function () {
         }
       `
     );
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
+    await waitFor(() => pushProductsPayloads.length > 3);
     await expect(pushProductsPayloads.length).toBeGreaterThanOrEqual(3); // After multiple restarts we have 1 extra
     const laptopPayload = pushProductsPayloads.find(
       (p) => p.sku === 'L2201516'
@@ -211,8 +217,11 @@ describe('Goedgepickt plugin', function () {
     );
     const updatedVariant = await findVariantBySku('L2201308');
     expect(updatedVariant).toBeDefined();
-    const stockOnHand = await getAvailableStock(updatedVariant?.id!);
-    expect(stockOnHand).toBe(33);
+    const stock = await getAvailableStock(updatedVariant?.id!);
+    expect(stock.stockOnHand).toBe(33);
+    expect(stock.stockAllocated).toBe(0);
+    await waitFor(() => webhookPayloads.length >= 2);
+    expect(webhookPayloads.length).toBe(2);
   });
 
   it('Set goedgepickt as fulfillment handler', async () => {
@@ -230,14 +239,24 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes order after placement', async () => {
+    // Catch order creation
+    nock(apiUrl)
+      .post('/api/v1/orders', (reqBody: any) => {
+        createOrderPayload = reqBody;
+        return true;
+      })
+      .reply(200, {
+        message: 'Order created',
+        orderUuid: 'testUuid',
+      });
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
     );
     await addItem(shopClient, 'T_1', 1);
-    const res = await shopClient.query(SET_CUSTOM_FIELDS);
+    await shopClient.query(SET_CUSTOM_FIELDS);
     order = await createSettledOrder(shopClient, 1);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
+    await waitFor(() => !!createOrderPayload); // Wait for async jobs to process
     await expect(createOrderPayload.orderId).toBe(order.code);
     await expect(createOrderPayload.orderItems.length).toBe(2);
     await expect(createOrderPayload.shippingFirstName).toBe('Hayden');
@@ -259,9 +278,68 @@ describe('Goedgepickt plugin', function () {
     );
     await expect(createOrderPayload.pickupLocationData?.country).toBe('NL');
     await expect(createOrderPayload.shippingMethod).toBe('Standard Shipping');
+    const stock = await getAvailableStock(1);
+    expect(stock.stockOnHand).toBe(33);
+    expect(stock.stockAllocated).toBe(2);
+  });
+
+  it('Decreases stock via webhook and resets allocated', async () => {
+    // Catch product lookup, and mock an update
+    nock(apiUrl)
+      .persist(true)
+      .get(
+        /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
+      )
+      .reply(200, {
+        items: [
+          {
+            uuid: 'test-uuid',
+            sku: 'L2201308',
+            stock: {
+              freeStock: 123,
+            },
+          },
+        ],
+      });
+    const body: IncomingStockUpdateEvent = {
+      event: 'stockUpdated',
+      newStock: 'doestn matter',
+      productSku: 'L2201308',
+      productUuid: 'doesntmatter',
+    };
+    const res = await shopClient.fetch(
+      `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: {
+          signature: 'some-sample-signature',
+        },
+      }
+    );
+    const updatedVariant = await findVariantBySku('L2201308');
+    expect(res.ok).toBe(true);
+    expect(updatedVariant).toBeDefined();
+    const stock = await getAvailableStock(updatedVariant?.id!);
+    expect(stock.stockOnHand).toBe(123);
+    expect(stock.stockAllocated).toBe(0);
   });
 
   it('Completes order via webhook', async () => {
+    // Catch order fetching
+    nock(apiUrl)
+      .get('/api/v1/orders/testUuid')
+      .reply(200, {
+        message: 'Order created',
+        orderUuid: 'testUuid',
+        status: 'completed',
+        shipments: [
+          {
+            trackTraceCode: 'XYZ',
+            trackTraceUrl: 'pinelab.studio/xyz',
+          },
+        ],
+      });
     const body: IncomingOrderStatusEvent = {
       newStatus: 'completed',
       orderNumber: order.code,
@@ -286,16 +364,36 @@ describe('Goedgepickt plugin', function () {
       .findOneByCode(ctx, order.code))!;
     expect(res.ok).toBe(true);
     expect(adminOrder.state).toBe('Delivered');
+    const stock = await getAvailableStock(1);
+    expect(stock.stockOnHand).toBe(121); // Deducted 2 because of allocation
+    expect(stock.stockAllocated).toBe(-2);
   });
 
   it('Has fulfillment after completion', async () => {
     const adminOrder = await getOrder(adminClient, order.id as string);
     const fulfillment = adminOrder?.fulfillments?.[0];
-    expect(fulfillment?.method).toBe('GoedGepickt - pinelab.studio/xyz');
+    expect(fulfillment?.method).toBe('GoedGepickt - XYZ');
     expect(fulfillment?.trackingCode).toBe('XYZ');
   });
 
   it('Pushes product on product creation', async () => {
+    // Catch the product lookup
+    nock(apiUrl)
+      .persist(true)
+      .get(
+        /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
+      )
+      .reply(200, {
+        items: [],
+      });
+    // Catch product creation
+    nock(apiUrl)
+      .persist(true)
+      .post('/api/v1/products', (reqBody: any) => {
+        pushProductsPayloads.push(reqBody);
+        return true;
+      })
+      .reply(200, []);
     const ctx = await server.app
       .get(GoedgepicktService)
       .getCtxForChannel(defaultChannelToken);
@@ -322,50 +420,10 @@ describe('Goedgepickt plugin', function () {
         ],
       },
     ]);
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Some time for async event handling
-    const payload = pushProductsPayloads.find((p) => p.sku === 'sku123');
-    expect(payload).toBeDefined();
-  });
-
-  it('Decreases stock via webhook', async () => {
-    // Find by SKU
-    nock.cleanAll();
-    nock(apiUrl)
-      .get(
-        /\/api\/v1\/products\?searchAttribute=sku&searchDelimiter=%3D&searchValue=*/
-      )
-      .reply(200, {
-        items: [
-          {
-            uuid: 'test-uuid',
-            sku: 'L2201316',
-            stock: {
-              freeStock: 123,
-            },
-          },
-        ],
-      });
-    const body: IncomingStockUpdateEvent = {
-      event: 'stockUpdated',
-      newStock: 'doestn matter',
-      productSku: 'L2201316',
-      productUuid: 'doesntmatter',
-    };
-    const res = await shopClient.fetch(
-      `http://localhost:3105/goedgepickt/webhook/${defaultChannelToken}`,
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: {
-          signature: 'some-sample-signature',
-        },
-      }
+    const payload = await waitFor(
+      () => !!pushProductsPayloads.find((p) => p.sku === 'sku123')
     );
-    const updatedVariant = await findVariantBySku('L2201316');
-    expect(res.ok).toBe(true);
-    expect(updatedVariant).toBeDefined();
-    const stockOnHand = await getAvailableStock(updatedVariant?.id!);
-    expect(stockOnHand).toBe(123);
+    expect(payload).toBeDefined();
   });
 
   if (process.env.TEST_ADMIN_UI) {
@@ -397,13 +455,14 @@ describe('Goedgepickt plugin', function () {
     });
   }
 
-  async function getAvailableStock(productVariantId: ID): Promise<number> {
+  async function getAvailableStock(
+    productVariantId: ID
+  ): Promise<AvailableStock> {
     const ctx = await server.app
       .get(GoedgepicktService)
       .getCtxForChannel(defaultChannelToken);
     const stockLevelService = server.app.get(StockLevelService);
-    return (await stockLevelService.getAvailableStock(ctx, productVariantId))
-      .stockOnHand;
+    return await stockLevelService.getAvailableStock(ctx, productVariantId);
   }
 });
 

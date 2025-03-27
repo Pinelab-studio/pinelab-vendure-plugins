@@ -1,3 +1,7 @@
+# 2.0.1 (2025-03-20)
+
+- Setting allocated to 0 on incoming stock updates and full sync
+
 # 2.0.0 (2025-03-20)
 
 - Removed validating of webhook signature. Fetching stock and order status directly from GoedGepickt on incoming webhook instead.
