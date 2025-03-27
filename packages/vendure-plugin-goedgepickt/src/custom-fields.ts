@@ -1,4 +1,3 @@
-import { CustomFields } from '@vendure/core';
 import {
   CustomFieldConfig,
   Injector,
@@ -6,15 +5,10 @@ import {
   Logger,
   RequestContext,
 } from '@vendure/core';
-import { Product } from '@vendure/core';
-import {
-  CustomChannelFields,
-  CustomOrderFields,
-} from '@vendure/core/dist/entity/custom-entity-fields';
-import { loggerCtx } from './constants';
+import fetch from 'node-fetch';
 import { goedgepicktPermission } from './api/goedgepickt.resolver';
 import { GoedgepicktService } from './api/goedgepickt.service';
-import nock from 'nock';
+import { loggerCtx } from './constants';
 
 declare module '@vendure/core' {
   interface CustomOrderFields {
@@ -169,7 +163,7 @@ async function validate(
   );
   await injector
     .get(GoedgepicktService)
-    .setWebhooks(ctx)
+    .registerWebhooks(ctx)
     .catch((err) => {
       Logger.error(
         `Failed to set webhooks for channel '${ctx.channel.token}' after saving credentials: ${err.message}`,

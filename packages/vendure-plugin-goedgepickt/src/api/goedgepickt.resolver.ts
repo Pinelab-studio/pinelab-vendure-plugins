@@ -32,7 +32,7 @@ export class GoedgepicktResolver {
     const channelToken = ctx.channel.token;
     await this.service.createFullsyncJobs(channelToken);
     if (this.pluginConfig.setWebhook) {
-      await this.service.setWebhooks(ctx);
+      await this.service.registerWebhooks(ctx);
     }
     return true;
   }

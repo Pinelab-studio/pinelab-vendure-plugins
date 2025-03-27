@@ -82,7 +82,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     fulfillmentHandler: goedgepicktHandler.code,
     translations: [],
   });
-  await goedgepicktService.setWebhooks(ctx);
+  await goedgepicktService.registerWebhooks(ctx);
   await goedgepicktService.handleIncomingStockUpdate(ctx, 'L2201308');
   await createSettledOrder(shopClient, 1);
 })();

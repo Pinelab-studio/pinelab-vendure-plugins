@@ -24,6 +24,7 @@ import {
   ProductVariantService,
   RequestContext,
   SerializedRequestContext,
+  StockLevel,
   StockLevelService,
   TransactionalConnection,
   Translated,
@@ -37,17 +38,19 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktClient } from './goedgepickt.client';
 import { goedgepicktHandler } from './goedgepickt.handler';
 import {
+  Order as GgOrder,
   GoedgepicktEvent,
   GoedgepicktPluginConfig,
-  Order as GgOrder,
   OrderInput,
   OrderItemInput,
-  OrderStatus,
   ProductInput,
 } from './goedgepickt.types';
 
 interface StockInput {
-  variantId: string;
+  variantId: ID;
+  /**
+   * This should be the free stock level
+   */
   stock: number;
 }
 
@@ -72,12 +75,6 @@ interface PushProductByVariantsJobData {
   variants: ProductVariant[];
 }
 
-interface UpdateStockJobData {
-  action: 'update-stock';
-  ctx: SerializedRequestContext;
-  stock: StockInput[];
-}
-
 interface SyncOrderJobData {
   action: 'sync-order';
   ctx: SerializedRequestContext;
@@ -87,7 +84,6 @@ interface SyncOrderJobData {
 type JobData =
   | PushProductJobData
   | PushProductByVariantsJobData
-  | UpdateStockJobData
   | SyncOrderJobData;
 
 @Injectable()
@@ -126,8 +122,6 @@ export class GoedgepicktService
             await this.syncOrder(ctx, data.orderCode);
           } else if (data.action === 'push-product') {
             await this.handlePushProductJob(ctx, data);
-          } else if (data.action === 'update-stock') {
-            await this.handleStockUpdateJob(ctx, data.stock);
           } else if (data.action === 'push-product-by-variants') {
             await this.handlePushByVariantsJob(ctx, data);
           } else {
@@ -193,7 +187,7 @@ export class GoedgepicktService
               ctx: ctx.serialize(),
               variants: batch,
             },
-            { retries: 20 }
+            { retries: 1 } // FIXME this shoudl be 20
           );
           Logger.info(
             `Added ${entity.length} to 'push-product-by-variants' queue, because they were ${type}`,
@@ -204,10 +198,10 @@ export class GoedgepicktService
   }
 
   /**
-   * Set webhook
+   * Register the required webhooks in GG
    */
-  async setWebhooks(ctx: RequestContext): Promise<undefined> {
-    const client = await this.getClientForChannel(ctx);
+  async registerWebhooks(ctx: RequestContext): Promise<undefined> {
+    const client = this.getClientForChannel(ctx);
     if (!client) {
       return;
     }
@@ -257,7 +251,7 @@ export class GoedgepicktService
     ctx: RequestContext,
     productSku: string
   ): Promise<void> {
-    const client = await this.getClientForChannel(ctx);
+    const client = this.getClientForChannel(ctx);
     if (!client) {
       return;
     }
@@ -282,7 +276,7 @@ export class GoedgepicktService
       variantId: v.id as string,
       stock: ggStock,
     }));
-    await this.handleStockUpdateJob(ctx, stockInput);
+    await this.updateStock(ctx, stockInput);
     Logger.info(
       `Updated stock for ${productSku} to ${ggStock} via incoming event`,
       loggerCtx
@@ -298,7 +292,7 @@ export class GoedgepicktService
     order: Order
   ): Promise<GgOrder | undefined> {
     try {
-      const client = await this.getClientForChannel(ctx);
+      const client = this.getClientForChannel(ctx);
       if (!client) {
         return undefined;
       }
@@ -397,7 +391,7 @@ export class GoedgepicktService
     orderCode: string,
     orderUuid: string
   ): Promise<void> {
-    const client = await this.getClientForChannel(ctx);
+    const client = this.getClientForChannel(ctx);
     if (!client) {
       return;
     }
@@ -429,6 +423,16 @@ export class GoedgepicktService
             name: 'goedGepicktOrderUUID',
             value: orderUuid,
           },
+          {
+            name: 'trackingCode',
+            value:
+              ggOrder.shipments?.map((s) => s.trackTraceCode).join(',') ?? '',
+          },
+          {
+            name: 'trackingUrls',
+            value:
+              ggOrder.shipments?.map((s) => s.trackTraceUrl).join(',') ?? '',
+          },
         ],
       });
       Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
@@ -443,9 +447,7 @@ export class GoedgepicktService
   /**
    * Returns undefined if plugin is disabled
    */
-  async getClientForChannel(
-    ctx: RequestContext
-  ): Promise<GoedgepicktClient | undefined> {
+  getClientForChannel(ctx: RequestContext): GoedgepicktClient | undefined {
     if (!ctx.channel.customFields.ggEnabled) {
       Logger.info(
         `GoedGepickt plugin is disabled for channel ${ctx.channel.token}`
@@ -492,7 +494,7 @@ export class GoedgepicktService
    */
   async createFullsyncJobs(channelToken: string): Promise<void> {
     const ctx = await this.getCtxForChannel(channelToken);
-    const client = await this.getClientForChannel(ctx);
+    const client = this.getClientForChannel(ctx);
     if (!client) {
       throw new UserInputError(
         `GoedGepickt is not configured for channel ${channelToken}`
@@ -507,15 +509,30 @@ export class GoedgepicktService
       loggerCtx
     );
     // Create update stocklevel jobs
-    const stockLevelInputs = ggProducts.map((p) => ({
-      sku: p.sku,
-      stockLevel: p.stock?.freeStock,
-    }));
-    await this.createStockUpdateJobs(ctx, stockLevelInputs, variants);
-    Logger.info(
-      `Created stock update jobs for ${stockLevelInputs.length} Vendure variants via fullsync`,
-      loggerCtx
-    );
+    const stockLevelInputs: StockInput[] = [];
+    ggProducts.forEach((p) => {
+      const variantId = variants.find((v) => v.sku === p.sku)?.id;
+      if (!variantId) {
+        Logger.info(
+          `No variant found for product with sku ${p.sku}`,
+          loggerCtx
+        );
+        return;
+      }
+      if (p.stock?.freeStock === undefined || p.stock?.freeStock === null) {
+        Logger.error(
+          `No stock found on product from GoedGepickt with sku ${p.sku}`,
+          loggerCtx
+        );
+        return;
+      }
+      stockLevelInputs.push({
+        variantId,
+        stock: p.stock?.freeStock,
+      });
+    });
+    // We can update stock in main thread, it's not that heavy currently
+    await this.updateStock(ctx, stockLevelInputs);
     // Create product push jobs. 30 products per job
     const productInputs: ProductInput[] = [];
     for (const variant of variants) {
@@ -550,7 +567,7 @@ export class GoedgepicktService
     ctx: RequestContext,
     { products }: PushProductJobData
   ): Promise<void> {
-    const client = await this.getClientForChannel(ctx);
+    const client = this.getClientForChannel(ctx);
     if (!client) {
       return;
     }
@@ -587,7 +604,7 @@ export class GoedgepicktService
     ctx: RequestContext,
     { variants }: PushProductByVariantsJobData
   ): Promise<void> {
-    const client = await this.getClientForChannel(ctx);
+    const client = this.getClientForChannel(ctx);
     if (!client) {
       return;
     }
@@ -635,59 +652,9 @@ export class GoedgepicktService
   }
 
   /**
-   * Create batched jobs for updating variant stock
+   * Update stock for variants based on given GG products
    */
-  private async createStockUpdateJobs(
-    ctx: RequestContext,
-    ggProducts: { sku: string; stockLevel: number | undefined | null }[],
-    variants: Pick<ProductVariant, 'id' | 'sku'>[]
-  ) {
-    const stockPerVariant: StockInput[] = [];
-    for (const ggProduct of ggProducts) {
-      const ggStock = ggProduct.stockLevel;
-      if (ggStock === undefined || ggStock === null) {
-        continue; // Not updating if no stock from GG
-      }
-      const variant = variants.find((v) => v.sku === ggProduct.sku);
-      if (!variant) {
-        continue; // Not updating if we have no variant with SKU
-      }
-      // If ggStock=0 and allocated=1, set Vendure stock=1 to prevent out of stock errors during fulfillment
-      const availableStock = await this.stockLevelService.getAvailableStock(
-        ctx,
-        variant.id
-      );
-      let newStock = ggStock + availableStock.stockAllocated;
-      if (newStock < 0) {
-        // Prevent negative stock
-        newStock = 0;
-      }
-      stockPerVariant.push({
-        variantId: variant.id as string,
-        stock: newStock,
-      });
-    }
-    // Create jobs per 100 variants
-    const stockBatches = this.getBatches(stockPerVariant, 100);
-    await Promise.all(
-      stockBatches.map(async (batch) => {
-        await this.jobQueue.add(
-          {
-            action: 'update-stock',
-            stock: batch,
-            ctx: ctx.serialize(),
-          },
-          { retries: 10 }
-        );
-        Logger.info(
-          `Created stocklevel update job for ${batch.length} variants`,
-          loggerCtx
-        );
-      })
-    );
-  }
-
-  private async handleStockUpdateJob(
+  private async updateStock(
     ctx: RequestContext,
     stockInput: StockInput[]
   ): Promise<ProductVariant[]> {
@@ -696,6 +663,15 @@ export class GoedgepicktService
       stockOnHand: input.stock,
     }));
     const variants = await this.variantService.update(ctx, variantsWithStock);
+    // Set allocated of each variant to 0
+    const variantIds = variants.map((v) => v.id);
+    await this.connection
+      .getRepository(ctx, StockLevel)
+      .createQueryBuilder()
+      .update()
+      .set({ stockAllocated: 0 })
+      .where('productVariantId IN (:...variantIds)', { variantIds })
+      .execute();
     const skus = variants.map((v) => v.sku);
     Logger.info(
       `Updated stock of variants for channel ${ctx.channel.token}: ${skus.join(
@@ -790,7 +766,7 @@ export class GoedgepicktService
    * Sync order to Goedgepickt platform
    */
   async syncOrder(ctx: RequestContext, orderCode: string): Promise<void> {
-    const client = await this.getClientForChannel(ctx);
+    const client = this.getClientForChannel(ctx);
     if (!client) {
       return;
     }
