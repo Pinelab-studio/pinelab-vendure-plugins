@@ -1,3 +1,8 @@
+# 2.0.2 (2025-03-20)
+
+- Prevent empty update SQL statement
+- Update stock in batches of 500
+
 # 2.0.1 (2025-03-20)
 
 - Setting allocated to 0 on incoming stock updates and full sync

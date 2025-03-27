@@ -662,24 +662,32 @@ export class GoedgepicktService
       id: input.variantId,
       stockOnHand: input.stock,
     }));
-    const variants = await this.variantService.update(ctx, variantsWithStock);
-    // Set allocated of each variant to 0
-    const variantIds = variants.map((v) => v.id);
-    await this.connection
-      .getRepository(ctx, StockLevel)
-      .createQueryBuilder()
-      .update()
-      .set({ stockAllocated: 0 })
-      .where('productVariantId IN (:...variantIds)', { variantIds })
-      .execute();
-    const skus = variants.map((v) => v.sku);
-    Logger.info(
-      `Updated stock of variants for channel ${ctx.channel.token}: ${skus.join(
-        ','
-      )}`,
-      loggerCtx
-    );
-    return variants;
+    const batches = this.getBatches(variantsWithStock, 500);
+    const allVariants: ProductVariant[] = [];
+    for (const batch of batches) {
+      const variants = await this.variantService.update(ctx, batch);
+      // Set allocated of each variant to 0
+      const variantIds = batch.map((v) => v.id);
+      if (!variantIds.length) {
+        return [];
+      }
+      await this.connection
+        .getRepository(ctx, StockLevel)
+        .createQueryBuilder()
+        .update()
+        .set({ stockAllocated: 0 })
+        .where('productVariantId IN (:...variantIds)', { variantIds })
+        .execute();
+      const skus = variants.map((v) => v.sku);
+      Logger.info(
+        `Updated stock of variants for channel ${
+          ctx.channel.token
+        }: ${skus.join(',')}`,
+        loggerCtx
+      );
+      allVariants.push(...variants);
+    }
+    return allVariants;
   }
 
   private async getVariants(
