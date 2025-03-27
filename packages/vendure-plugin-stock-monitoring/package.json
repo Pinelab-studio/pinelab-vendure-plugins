@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-stock-monitoring",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Vendure plugin for monitoring stock levels through a widget or by email",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

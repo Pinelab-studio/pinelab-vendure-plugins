@@ -24,17 +24,17 @@ export class StockMonitoringResolver {
       .leftJoin('variant.product', 'product')
       .leftJoin('variant.stockLevels', 'stockLevel')
       .addGroupBy('variant.id')
-      .addSelect(['SUM(stockLevel.stockOnHand) as stockOnHand'])
-      .addSelect(['SUM(stockLevel.stockAllocated) as stockAllocated'])
+      .addSelect('SUM(stockLevel.stockOnHand)', 'stockOnHand')
+      .addSelect('SUM(stockLevel.stockAllocated)', 'stockAllocated')
       .leftJoin('product.channels', 'channel')
       .where('variant.enabled = true')
-      .andWhere('stockOnHand - stockAllocated < :threshold', {
+      .andWhere('"stockOnHand" - "stockAllocated" < :threshold', {
         threshold: StockMonitoringPlugin.threshold,
       })
       .andWhere('variant.deletedAt IS NULL')
       .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
       .limit(100)
-      .orderBy('stockOnHand', 'ASC')
+      .orderBy('"stockOnHand"', 'ASC')
       .getMany();
   }
 }
