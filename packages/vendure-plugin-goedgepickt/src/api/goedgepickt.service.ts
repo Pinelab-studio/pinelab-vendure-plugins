@@ -187,7 +187,7 @@ export class GoedgepicktService
               ctx: ctx.serialize(),
               variants: batch,
             },
-            { retries: 1 } // FIXME this shoudl be 20
+            { retries: 20 }
           );
           Logger.info(
             `Added ${entity.length} to 'push-product-by-variants' queue, because they were ${type}`,
