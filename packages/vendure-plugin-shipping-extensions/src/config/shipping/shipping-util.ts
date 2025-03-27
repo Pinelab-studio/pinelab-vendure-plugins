@@ -1,4 +1,4 @@
-import { Order } from '@vendure/core';
+import { EntityHydrator, Injector, Order, RequestContext } from '@vendure/core';
 
 /**
  * Checks if an order is eligible for the given country codes.
@@ -22,4 +22,25 @@ export function isEligibleForCountry(
     return false;
   }
   return true;
+}
+
+/**
+ * Find the highest tax rate of an order, based on the lines and surcharges.
+ * Hydrates the surcharges and lines if they are not already loaded.
+ */
+export async function getHighestTaxRateOfOrder(
+  ctx: RequestContext,
+  injector: Injector,
+  order: Order
+): Promise<number> {
+  if (!order.surcharges || !order.lines) {
+    await injector.get(EntityHydrator).hydrate(ctx, order, {
+      relations: ['lines', 'surcharges'],
+    });
+  }
+  const lineTaxRates = order.lines.map((line) => line.taxRate);
+  const surchargeTaxRates = order.surcharges.map(
+    (surcharge) => surcharge.taxRate
+  );
+  return Math.max(...lineTaxRates, ...surchargeTaxRates, 0);
 }

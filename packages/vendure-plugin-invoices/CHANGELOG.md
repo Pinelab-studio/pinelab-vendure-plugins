@@ -1,3 +1,7 @@
+# 4.2.1 (2025-03-18)
+
+- Include surcharges as relation, to prevent incomplete tax summaries, and thus incomplete credit invoices
+
 # 4.2.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

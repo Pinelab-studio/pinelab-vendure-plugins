@@ -1,3 +1,23 @@
+# 2.0.2 (2025-03-20)
+
+- Prevent empty update SQL statement
+- Update stock in batches of 500
+
+# 2.0.1 (2025-03-20)
+
+- Setting allocated to 0 on incoming stock updates and full sync
+
+# 2.0.0 (2025-03-20)
+
+- Removed validating of webhook signature. Fetching stock and order status directly from GoedGepickt on incoming webhook instead.
+- Moved GG config to Channel Custom Fields, instead of custom UI component.
+- Breaking: DB migration needed
+- Breaking: You need to save GoedGepickt credentials on a channel now: Settings > Channel > GoedGepickt custom fields
+
+# 1.4.1 (2025-03-18)
+
+- Only sync product image on creation, not on update, after complaints from GoedGepickt about too many updates.
+
 # 1.4.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

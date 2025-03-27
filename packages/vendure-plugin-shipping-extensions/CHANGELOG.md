@@ -1,3 +1,9 @@
+# 3.0.0 (2025-03-24)
+
+- Deprecated `ZoneAwareShippingCalculator`. Tax of shipping should be dependent on items in cart.
+- Added `FlatRateItemBasedShippingCalculator`: Flat rate shipping calculator with tax based on the items in cart.
+- Added additional eligibility strategies, to make the shipping checkers in this plugin not eligible based on consumers custom logic.
+
 # 2.9.0 (2025-01-16)
 
 - Added new shipping checker: Check by country and facet values

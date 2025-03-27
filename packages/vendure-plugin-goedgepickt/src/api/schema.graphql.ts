@@ -16,9 +16,7 @@ export const schema = gql`
     apiKey: String
     webshopUuid: String
     orderWebhookUrl: String
-    orderWebhookKey: String
     stockWebhookUrl: String
-    stockWebhookKey: String
   }
 
   type GoedgepicktError {
