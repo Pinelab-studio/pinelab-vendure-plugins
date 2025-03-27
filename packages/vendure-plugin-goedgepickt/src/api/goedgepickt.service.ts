@@ -508,7 +508,7 @@ export class GoedgepicktService
       `Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
       loggerCtx
     );
-    // Create update stocklevel jobs
+    // Update stock levels based on GG products
     const stockLevelInputs: StockInput[] = [];
     ggProducts.forEach((p) => {
       const variantId = variants.find((v) => v.sku === p.sku)?.id;
