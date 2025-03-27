@@ -155,6 +155,8 @@ const commonApiExtensions = gql`
     Discover
     Amex
     ECheck
+    GooglePay
+    ApplePay
   }
 
   type AcceptBlueSurchargeValue {

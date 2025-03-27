@@ -1,4 +1,4 @@
-import { RequestContext } from '@vendure/core';
+import { PaymentMetadata, RequestContext } from '@vendure/core';
 import type { Request } from 'express';
 
 export interface CustomFields {
@@ -173,22 +173,18 @@ export type AcceptBluePaymentMethod =
   | AcceptBlueCardPaymentMethod
   | AcceptBlueCheckPaymentMethod;
 
-export interface CreditCardPaymentMethodInput {
-  card: string;
-  expiry_month: number;
-  expiry_year: number;
-  avs_zip: string;
-  cvv2?: string;
-  name?: string;
-  avs_address?: string;
+export interface AllowedPaymentMethodInput {
+  payment_method_type?: string;
+  card_type?: CardType;
+  source?: 'googlepay' | 'applepay';
 }
 
-export interface CheckPaymentMethodInput {
-  name: string;
-  routing_number: string;
-  account_number: string;
-  account_type: AccountType;
-  sec_code: SecCode;
+export interface AppleOrGooglePayInput {
+  amount: number;
+  source: 'googlepay' | 'applepay';
+  token: string;
+  avs_zip?: string;
+  avs_address?: string;
 }
 
 export interface NoncePaymentMethodInput {
@@ -205,6 +201,13 @@ export interface NoncePaymentMethodInput {
   last4: string;
 }
 
+export interface SourcePaymentMethodInput {
+  /*
+   * Reference to the Charge Transaction. Must be prefixed with 'ref-'
+   */
+  source: string;
+}
+
 export interface SavedPaymentMethodInput {
   paymentMethodId: number;
 }
@@ -214,17 +217,14 @@ export interface CheckPaymentMethodInput {
   account_number: string;
   name: string;
   account_type: AccountType;
-  sec_code: SecCode;
+  sec_code?: SecCode;
 }
 
 export interface HandlePaymentResult {
-  customerId: string;
-  paymentMethodId: string | number;
-  recurringScheduleResult: AcceptBlueRecurringSchedule[];
-  /**
-   * If the amount is 0, no one time charge was created
-   */
-  chargeResult?: AcceptBlueChargeTransaction;
+  amount: number;
+  state: 'Settled';
+  transactionId?: string;
+  metadata?: PaymentMetadata;
 }
 
 /** +++++ Recurring ++++++ */
@@ -449,4 +449,6 @@ export interface EnabledPaymentMethodsArgs {
   allowAmex?: boolean;
   allowDiscover?: boolean;
   allowECheck?: boolean;
+  allowGooglePay?: boolean;
+  allowApplePay?: boolean;
 }

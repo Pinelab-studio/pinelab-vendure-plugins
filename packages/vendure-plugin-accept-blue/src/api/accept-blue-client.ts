@@ -1,9 +1,8 @@
-import { Logger } from '@vendure/core';
+import { Logger, UserInputError } from '@vendure/core';
 import axios, { AxiosInstance } from 'axios';
 import util from 'util';
 import { loggerCtx } from '../constants';
 import {
-  AcceptBlueCardPaymentMethod,
   AcceptBlueChargeTransaction,
   AcceptBlueCustomer,
   AcceptBlueCustomerInput,
@@ -15,10 +14,13 @@ import {
   AcceptBlueTransaction,
   AcceptBlueWebhook,
   AcceptBlueWebhookInput,
+  AllowedPaymentMethodInput,
   CheckPaymentMethodInput,
   CustomFields,
   EnabledPaymentMethodsArgs,
   NoncePaymentMethodInput,
+  AppleOrGooglePayInput,
+  SourcePaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 import {
@@ -72,21 +74,43 @@ export class AcceptBlueClient {
     if (enabledPaymentMethodArgs.allowDiscover) {
       enabledPaymentMethods.push('Discover');
     }
+    if (enabledPaymentMethodArgs.allowGooglePay) {
+      enabledPaymentMethods.push('GooglePay');
+    }
+    if (enabledPaymentMethodArgs.allowApplePay) {
+      enabledPaymentMethods.push('ApplePay');
+    }
     this.enabledPaymentMethods = enabledPaymentMethods;
   }
 
-  isPaymentMethodAllowed(pm: AcceptBluePaymentMethod): boolean {
+  /**
+   * Throws a UserInputError if the given payment method is not allowed
+   */
+  throwIfPaymentMethodNotAllowed(pm: AllowedPaymentMethodInput): void {
     if (
       pm.payment_method_type === 'check' &&
       this.enabledPaymentMethods.includes('ECheck')
     ) {
-      return true;
+      return;
     }
-    const cardType = (pm as AcceptBlueCardPaymentMethod).card_type;
-    if (this.enabledPaymentMethods.includes(cardType)) {
-      return true;
+    const cardType = pm.card_type;
+    if (cardType && this.enabledPaymentMethods.includes(cardType)) {
+      return;
     }
-    return false;
+    const source = pm.source; // googlepay or applepay
+    if (
+      source &&
+      this.enabledPaymentMethods.map((p) => p.toLowerCase()).includes(source)
+    ) {
+      return;
+    }
+    throw new UserInputError(
+      `Payment method '${
+        pm.card_type ?? pm.source ?? pm.payment_method_type
+      }' is not allowed. Allowed methods: ${this.enabledPaymentMethods.join(
+        ', '
+      )}`
+    );
   }
 
   async getTransaction(id: number): Promise<AcceptBlueChargeTransaction> {
@@ -272,7 +296,10 @@ export class AcceptBlueClient {
 
   async createPaymentMethod(
     acceptBlueCustomerId: number,
-    input: NoncePaymentMethodInput | CheckPaymentMethodInput
+    input:
+      | NoncePaymentMethodInput
+      | CheckPaymentMethodInput
+      | SourcePaymentMethodInput
   ): Promise<AcceptBluePaymentMethod> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result: AcceptBluePaymentMethod = await this.request(
@@ -343,6 +370,42 @@ export class AcceptBlueClient {
     Logger.info(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       `Created charge of '${amount}' with id '${result.transaction.id}'`,
+      loggerCtx
+    );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return result;
+  }
+
+  /**
+   * Only supports charge with saved payment method id
+   */
+  async createDigitalWalletCharge(
+    input: AppleOrGooglePayInput,
+    customFields: CustomFields
+  ): Promise<AcceptBlueChargeTransaction> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result = await this.request('post', `transactions/charge`, {
+      amount: input.amount,
+      source: input.source,
+      token: input.token,
+      avs_zip: input.avs_zip,
+      avs_address: input.avs_address,
+      custom_fields: customFields,
+    });
+    if (
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      result.status === 'Error' ||
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      result.status === 'Declined'
+    ) {
+      throw new Error(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        `One time Digital Wallet charge creation failed: ${result.error_message} (${result.error_code})`
+      );
+    }
+    Logger.info(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      `Created Digital Wallet charge of '${input.amount}' with id '${result.transaction?.id}'`,
       loggerCtx
     );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return

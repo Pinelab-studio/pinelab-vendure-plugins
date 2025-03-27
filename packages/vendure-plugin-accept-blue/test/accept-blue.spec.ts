@@ -2,7 +2,6 @@
 
 import {
   Customer,
-  CustomerService,
   DefaultLogger,
   EventBus,
   LanguageCode,
@@ -23,11 +22,17 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
+import { DataSource } from 'typeorm';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { AcceptBluePlugin, AcceptBlueSubscriptionEvent } from '../src';
 import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
-import { DataSource } from 'typeorm';
+import {
+  AcceptBlueSubscription,
+  MutationUpdateAcceptBlueSubscriptionArgs,
+} from '../src/api/generated/graphql';
+import { AcceptBlueTransactionEvent } from '../src/events/accept-blue-transaction-event';
 import {
   AcceptBlueWebhook,
   AccountType,
@@ -54,21 +59,14 @@ import {
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
+  createMockRecurringScheduleResult,
+  createMockWebhook,
+  createSignature,
   creditCardChargeResult,
   haydenSavedPaymentMethods,
   haydenZiemeCustomerDetails,
   mockCardTransaction,
-  createMockRecurringScheduleResult,
-  createMockWebhook,
-  createSignature,
 } from './helpers/mocks';
-import { AcceptBlueTransactionEvent } from '../src/events/accept-blue-transaction-event';
-import {
-  AcceptBlueSubscription,
-  MutationUpdateAcceptBlueSubscriptionArgs,
-  UpdateAcceptBlueSubscriptionInput,
-} from '../src/api/generated/graphql';
-import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -156,6 +154,10 @@ it('Creates Accept Blue payment method', async () => {
             },
             {
               name: 'allowMasterCard',
+              value: 'true',
+            },
+            {
+              name: 'allowGooglePay',
               value: 'true',
             },
           ],
@@ -463,7 +465,7 @@ describe('Payment with Credit Card Payment Method', () => {
 });
 
 describe('Payment with Check Payment Method', () => {
-  let checkSubscriptionIds: number[] = [];
+  let createdSubscriptionIds: number[] = [];
   it('Adds item to order', async () => {
     await shopClient.asAnonymousUser();
     await shopClient.asUserWithCredentials(
@@ -532,14 +534,110 @@ describe('Payment with Check Payment Method', () => {
         },
       }
     );
-    checkSubscriptionIds = order.lines
+    createdSubscriptionIds = order.lines
       .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
       .flat();
     expect(order.state).toBe('PaymentSettled');
   });
 
   it('Created subscriptions at Accept Blue', async () => {
-    expect(checkSubscriptionIds.length).toBeGreaterThan(0);
+    expect(createdSubscriptionIds.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Payment with Google Pay', () => {
+  let createdSubscriptionIds: number[] = [];
+
+  it('Prepares an order for payment', async () => {
+    await shopClient.asAnonymousUser();
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const { addItemToOrder: order } = await shopClient.query(
+      ADD_ITEM_TO_ORDER,
+      {
+        productVariantId: '3',
+        quantity: 1,
+      }
+    );
+    await shopClient.query(SET_SHIPPING_METHOD, {
+      id: [1],
+    });
+    const { transitionOrderToState } = await shopClient.query(
+      TRANSITION_ORDER_TO,
+      {
+        state: 'ArrangingPayment',
+      }
+    );
+    // has subscription on orderline
+    expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
+    expect(transitionOrderToState.state).toBe('ArrangingPayment');
+  });
+
+  it('Adds payment to order', async () => {
+    // Nock create charge
+    let chargeRequest: any = {};
+    nockInstance
+      .persist()
+      .post(`/transactions/charge`, (req) => {
+        chargeRequest = req;
+        return true;
+      })
+      .reply(201, {
+        reference_number: 1234,
+        transaction: { id: 3333 },
+      });
+    // Nock get existing customer for Hayden
+    nockInstance
+      .persist()
+      .get(`/customers`)
+      .query(true)
+      .reply(200, [haydenZiemeCustomerDetails]);
+    // Nock create payment method from transaction
+    let createPaymentMethodRequest: any = {};
+    nockInstance
+      .post(
+        `/customers/${haydenZiemeCustomerDetails.id}/payment-methods`,
+        (req) => {
+          createPaymentMethodRequest = req;
+          return true;
+        }
+      )
+      .reply(200, {
+        id: 6789,
+      });
+    // Nock create recurring schedule
+    nockInstance
+      .persist()
+      .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
+      .reply(201, createMockRecurringScheduleResult());
+
+    const { addPaymentToOrder: order } = await shopClient.query(
+      ADD_PAYMENT_TO_ORDER,
+      {
+        input: {
+          method: acceptBluePaymentMethod.code,
+          metadata: {
+            source: 'googlepay',
+            amount: 15.8,
+            token: 'encrypted',
+          },
+        },
+      }
+    );
+    createdSubscriptionIds = order.lines
+      .map((l: any) => l.customFields.acceptBlueSubscriptionIds)
+      .flat();
+    expect(order.state).toBe('PaymentSettled');
+    expect(chargeRequest.amount).toBe(15.8);
+    expect(chargeRequest.source).toBe('googlepay');
+    expect(chargeRequest.token).toBe('encrypted');
+    expect(createPaymentMethodRequest.source).toBe('ref-1234');
+  });
+
+  it('Created subscriptions at Accept Blue', async () => {
+    expect(createdSubscriptionIds.length).toBeGreaterThan(0);
   });
 });
 

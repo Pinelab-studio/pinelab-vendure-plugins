@@ -134,6 +134,10 @@ export class SubscriptionHelper {
     return subscriptionOrderLines.length > 0;
   }
 
+  /**
+   * Gets the order lines which contain subscription products.
+   * Does not create or mutate anything
+   */
   async getSubscriptionOrderLines(
     ctx: RequestContext,
     order: Order
