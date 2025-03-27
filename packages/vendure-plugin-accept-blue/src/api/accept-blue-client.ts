@@ -3,7 +3,6 @@ import axios, { AxiosInstance } from 'axios';
 import util from 'util';
 import { loggerCtx } from '../constants';
 import {
-  AcceptBlueCardPaymentMethod,
   AcceptBlueChargeTransaction,
   AcceptBlueCustomer,
   AcceptBlueCustomerInput,
@@ -106,9 +105,9 @@ export class AcceptBlueClient {
       return;
     }
     throw new UserInputError(
-      `Payment method ${pm.payment_method_type} ${
-        (pm as AcceptBlueCardPaymentMethod).card_type ?? ''
-      } is not allowed. Allowed methods: ${this.enabledPaymentMethods.join(
+      `Payment method '${
+        pm.card_type ?? pm.source ?? pm.payment_method_type
+      }' is not allowed. Allowed methods: ${this.enabledPaymentMethods.join(
         ', '
       )}`
     );
@@ -389,9 +388,9 @@ export class AcceptBlueClient {
       amount: input.amount,
       source: input.source,
       token: input.token,
-      // avs_zip: input.avs_zip,
-      // avs_address: input.avs_address,
-      // custom_fields: customFields,
+      avs_zip: input.avs_zip,
+      avs_address: input.avs_address,
+      custom_fields: customFields,
     });
     if (
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -406,7 +405,7 @@ export class AcceptBlueClient {
     }
     Logger.info(
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      `Created Digital Wallet charge of '${input.amount}' with id '${result.transaction.id}'`,
+      `Created Digital Wallet charge of '${input.amount}' with id '${result.transaction?.id}'`,
       loggerCtx
     );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return

@@ -61,7 +61,9 @@ export class CheckoutController {
     // Load HTML file
     const html = await fs.readFile(`${__dirname}/google-pay.html`, 'utf8');
     // Replace variables with handlebars
-    const renderedHtml = Handlebars.compile(html)({});
+    const renderedHtml = Handlebars.compile(html)({
+      GOOGLE_PAY_MERCHANT_ID: process.env.GOOGLE_PAY_MERCHANT_ID,
+    });
     res.send(renderedHtml);
   }
 }

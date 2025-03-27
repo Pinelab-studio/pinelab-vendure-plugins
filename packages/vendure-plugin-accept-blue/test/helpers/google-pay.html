@@ -40,7 +40,7 @@ Payment response will be print here</pre
         type: 'PAYMENT_GATEWAY',
         parameters: {
           gateway: 'acceptblue',
-          gatewayMerchantId: 'exampleGatewayMerchantId',
+          gatewayMerchantId: '{{GOOGLE_PAY_MERCHANT_ID}}',
         },
       };
 
@@ -125,8 +125,8 @@ Payment response will be print here</pre
         paymentDataRequest.merchantInfo = {
           // @todo a merchant ID is available for a production environment after approval by Google
           // See {@link https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist|Integration checklist}
-          // merchantId: '12345678901234567890',
-          merchantName: 'Example Merchant',
+          merchantId: '{{GOOGLE_PAY_MERCHANT_ID}}',
+          merchantName: 'Pinelab',
         };
         return paymentDataRequest;
       }
@@ -194,7 +194,7 @@ Payment response will be print here</pre
           currencyCode: 'USD',
           totalPriceStatus: 'FINAL',
           // set to cart total
-          totalPrice: '1.00',
+          totalPrice: '10.80',
         };
       }
 
@@ -242,7 +242,7 @@ Payment response will be print here</pre
         document.getElementById('output').append(
           JSON.stringify(
             {
-              amount: 1.5,
+              amount: 10.8,
               source: 'googlepay',
               token: paymentData.paymentMethodData.tokenizationData.token,
             },

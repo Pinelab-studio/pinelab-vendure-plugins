@@ -293,7 +293,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       `Settled payment for order '${order.code}' with '${input.source}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransaction.transaction?.id}'`,
       loggerCtx
     );
-    console.log(JSON.stringify(chargeTransaction));
     return {
       amount,
       state: 'Settled',

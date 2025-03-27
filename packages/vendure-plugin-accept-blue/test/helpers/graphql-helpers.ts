@@ -70,6 +70,7 @@ export const TRANSITION_ORDER_TO = gql`
         code
         totalWithTax
         total
+        state
       }
       ... on OrderStateTransitionError {
         errorCode
