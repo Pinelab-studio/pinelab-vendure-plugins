@@ -1,3 +1,8 @@
+# 3.1.0 (2025-03-28)
+
+- Removed `ZoneAwareShippingCalculator`
+- Added `flatRateSurchargeFn` to add surcharges to the Flat Rate calculator based on custom logic
+
 # 3.0.0 (2025-03-24)
 
 - Deprecated `ZoneAwareShippingCalculator`. Tax of shipping should be dependent on items in cart.

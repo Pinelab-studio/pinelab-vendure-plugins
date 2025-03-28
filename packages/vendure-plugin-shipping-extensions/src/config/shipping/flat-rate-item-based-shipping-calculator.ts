@@ -1,6 +1,7 @@
 import { LanguageCode } from '@vendure/common/lib/generated-types';
 import { Injector, RequestContext, ShippingCalculator } from '@vendure/core';
 import { getHighestTaxRateOfOrder } from './shipping-util';
+import { ShippingExtensionsPlugin } from '../../shipping-extensions.plugin';
 
 export enum TaxSetting {
   include = 'include',
@@ -62,10 +63,15 @@ export const flatRateItemBasedShippingCalculator = new ShippingCalculator({
   init: (_injector) => {
     injector = _injector;
   },
-  calculate: async (ctx, order, args) => {
-    const taxRate = await getHighestTaxRateOfOrder(ctx, injector, order);
+  calculate: async (ctx, order, args, method) => {
+    const flatRateSurchargeFn =
+      ShippingExtensionsPlugin.options?.flatRateSurchargeFn;
+    const [taxRate, surcharge] = await Promise.all([
+      getHighestTaxRateOfOrder(ctx, injector, order),
+      flatRateSurchargeFn?.(ctx, injector, order, method) || 0,
+    ]);
     return {
-      price: args.rate,
+      price: args.rate + surcharge,
       taxRate,
       priceIncludesTax: priceIncludesTax(ctx, args.includesTax as TaxSetting),
     };

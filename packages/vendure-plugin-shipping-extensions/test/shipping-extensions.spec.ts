@@ -39,6 +39,7 @@ import {
 import { getDistanceBetweenPointsInKMs } from '../src/util/get-distance-between-points';
 import {
   createDistanceBasedShippingMethod,
+  createFlatRateShippingMethod,
   createPromotion,
   createShippingMethodForCountriesAndFacets,
   createShippingMethodForCountriesAndWeight,
@@ -457,6 +458,37 @@ describe('Shipping by facet and country eligibility checker', function () {
     await expect(createSettledOrderPromise).rejects.toThrow(
       'ORDER_STATE_TRANSITION_ERROR'
     );
+  });
+});
+
+describe('Flat Rate, tax by items in cart shipping calculator', function () {
+  let shippingMethodId: ID;
+
+  it('Creates flat rate shipping method', async () => {
+    const res = await createFlatRateShippingMethod(adminClient, 123);
+    shippingMethodId = res.id;
+    expect(res.code).toBeDefined();
+  });
+
+  it('Calculates flat rate with tax based on items in cart', async () => {
+    const order = await createSettledOrder(shopClient, shippingMethodId, true, [
+      { id: 'T_1', quantity: 1 },
+    ]);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingLines[0].price).toBe(123);
+    expect(order.shippingLines[0].priceWithTax).toBe(123 + 25); // price + tax = 148
+  });
+
+  it('Calculates flat rate, with consumer defined surcharge ', async () => {
+    // Always add 100, as example surcharge
+    ShippingExtensionsPlugin.options.flatRateSurchargeFn = () => 100;
+    const order = await createSettledOrder(shopClient, shippingMethodId, true, [
+      { id: 'T_1', quantity: 1 },
+    ]);
+    expect(order.state).toBe('PaymentSettled');
+    expect(order.shippingLines[0].price).toBe(123 + 100); // +100 surcharge
+    expect(order.shippingLines[0].priceWithTax).toBe(268); // price + tax
+    ShippingExtensionsPlugin.options.flatRateSurchargeFn = undefined; // Reset
   });
 });
 
