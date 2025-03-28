@@ -14,7 +14,6 @@ import { distanceBasedShippingCalculator } from './config/shipping/distance-base
 import { orderInCountryPromotionCondition } from './config/order-in-country-promotion-condition';
 import { flatRateItemBasedShippingCalculator } from './config/shipping/flat-rate-item-based-shipping-calculator';
 import { facetAndCountryChecker } from './config/shipping/facet-and-country-checker';
-import { zoneAwareFlatRateShippingCalculator } from './config/shipping/zone-aware-flat-rate-shipping-calculator';
 
 export interface ShippingExtensionsOptions {
   /**
@@ -57,6 +56,17 @@ export interface ShippingExtensionsOptions {
     order: Order,
     method: ShippingMethod
   ) => Promise<boolean> | boolean;
+  /**
+   * You can optionally apply a surcharge to the "Flat Rate. Tax based on items in cart" shipping calculator.
+   * This amount is excluding or including tax depending on the Flat Rate shipping method setting.
+   * E.g if the Flat Rate shipping method is set to "Excluding tax" this amount should also be the amount excluding tax.
+   */
+  flatRateSurchargeFn?: (
+    ctx: RequestContext,
+    injector: Injector,
+    order: Order,
+    method: ShippingMethod
+  ) => Promise<number> | number;
 }
 
 @VendurePlugin({
@@ -74,8 +84,7 @@ export interface ShippingExtensionsOptions {
     );
     config.shippingOptions.shippingCalculators.push(
       distanceBasedShippingCalculator,
-      flatRateItemBasedShippingCalculator,
-      zoneAwareFlatRateShippingCalculator
+      flatRateItemBasedShippingCalculator
     );
     config.promotionOptions.promotionConditions.push(
       orderInCountryPromotionCondition

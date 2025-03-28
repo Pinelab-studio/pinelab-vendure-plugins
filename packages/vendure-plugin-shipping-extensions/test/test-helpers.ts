@@ -7,6 +7,7 @@ import {
   CreatePromotionMutationVariables,
 } from '../../test/src/generated/admin-graphql';
 import { distanceBasedShippingCalculator } from '../src/config/shipping/distance-based-shipping-calculator';
+import { flatRateItemBasedShippingCalculator } from '../src';
 
 const CREATE_SHIPPING_METHOD = gql`
   mutation CreateShippingMethod($input: CreateShippingMethodInput!) {
@@ -57,7 +58,7 @@ export async function createShippingMethodForCountriesAndWeight(
         ],
       },
       calculator: {
-        code: 'zone-aware-flat-rate-shipping-calculator',
+        code: 'flat-rate-item-based-shipping-calculator',
         arguments: [
           {
             name: 'rate',
@@ -66,10 +67,6 @@ export async function createShippingMethodForCountriesAndWeight(
           {
             name: 'includesTax',
             value: 'exclude',
-          },
-          {
-            name: 'taxCategoryId',
-            value: '3',
           },
         ],
       },
@@ -120,7 +117,7 @@ export async function createShippingMethodForCountriesAndFacets(
         ],
       },
       calculator: {
-        code: 'zone-aware-flat-rate-shipping-calculator',
+        code: 'flat-rate-item-based-shipping-calculator',
         arguments: [
           {
             name: 'rate',
@@ -129,10 +126,6 @@ export async function createShippingMethodForCountriesAndFacets(
           {
             name: 'includesTax',
             value: 'exclude',
-          },
-          {
-            name: 'taxCategoryId',
-            value: '3',
           },
         ],
       },
@@ -198,6 +191,49 @@ export async function createDistanceBasedShippingMethod(
           languageCode: 'en',
           name: 'Shipping by Distance',
           description: 'Distance Based Shipping Method',
+          customFields: {},
+        },
+      ],
+    },
+  });
+  return res.createShippingMethod;
+}
+
+/**
+ * Create a shipping method with the default eligibility checker from Vendure and
+ * the Flat Rate Shipping calculator.
+ */
+export async function createFlatRateShippingMethod(
+  adminClient: SimpleGraphQLClient,
+  amount: number
+) {
+  const res = await adminClient.query(CREATE_SHIPPING_METHOD, {
+    input: {
+      code: 'shipping-by-distance',
+      checker: {
+        code: defaultShippingEligibilityChecker.code,
+        arguments: [{ name: 'orderMinimum', value: '0' }],
+      },
+      calculator: {
+        code: flatRateItemBasedShippingCalculator.code,
+        arguments: [
+          {
+            name: 'rate',
+            value: String(amount),
+          },
+          {
+            name: 'includesTax',
+            value: 'exclude',
+          },
+        ],
+      },
+      fulfillmentHandler: 'manual-fulfillment',
+      customFields: {},
+      translations: [
+        {
+          languageCode: 'en',
+          name: 'Standard Shipping',
+          description: 'Flat Rate, Tax based on items in cart',
           customFields: {},
         },
       ],
