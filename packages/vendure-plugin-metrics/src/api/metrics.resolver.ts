@@ -5,7 +5,7 @@ import {
   AdvancedMetricSummaryInput,
   AdvancedMetricType,
 } from '../ui/generated/graphql';
-import { MetricsService } from './metrics.service';
+import { MetricsService } from '../services/metrics.service';
 
 @Resolver()
 export class MetricsResolver {

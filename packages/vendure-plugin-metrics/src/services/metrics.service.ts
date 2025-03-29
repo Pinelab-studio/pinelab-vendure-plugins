@@ -3,8 +3,12 @@ import { ModuleRef } from '@nestjs/core';
 import {
   Injector,
   Logger,
+  Order,
+  ProductVariant,
   ProductVariantService,
   RequestContext,
+  TransactionalConnection,
+  TransactionIsolationLevel,
 } from '@vendure/core';
 import { addMonths, endOfDay, isBefore, startOfMonth, sub } from 'date-fns';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
@@ -16,24 +20,23 @@ import {
 } from '../ui/generated/graphql';
 import { Cache } from './cache';
 import { MetricStrategy } from './metric-strategy';
-
-// Categorize the datapoints per Legend name,
-type DataPointsPerLegend = Map<string, number[]>;
-interface EntitiesPerMonth<T> {
-  monthNr: number;
-  year: number;
-  entities: T[];
-}
+import {
+  DataPointsPerLegend,
+  getMonthName,
+  mapToSeries,
+  splitEntitiesInMonths,
+} from './metric-util';
 
 @Injectable()
 export class MetricsService {
   // Cache for datapoints
   cache = new Cache<AdvancedMetricSummary>();
-  metricStrategies: MetricStrategy<unknown>[];
+  metricStrategies: MetricStrategy[];
   constructor(
     private moduleRef: ModuleRef,
     private variantService: ProductVariantService,
-    @Inject(PLUGIN_INIT_OPTIONS) private pluginOptions: MetricsPluginOptions
+    @Inject(PLUGIN_INIT_OPTIONS) private pluginOptions: MetricsPluginOptions,
+    private connection: TransactionalConnection
   ) {
     this.metricStrategies = this.pluginOptions.metrics;
   }
@@ -51,6 +54,7 @@ export class MetricsService {
     const startDate = startOfMonth(
       sub(today, { months: this.pluginOptions.displayPastMonths })
     );
+    const orders = await this.getOrders(ctx, startDate, today, variants);
     // For each metric strategy
     return Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
@@ -77,16 +81,9 @@ export class MetricsService {
         }
         // Log execution time, because custom strategies can be heavy and we need to inform the user about it
         const start = performance.now();
-        const allEntities = await metricStrategy.loadEntities(
-          ctx,
-          new Injector(this.moduleRef),
-          startDate,
-          today,
-          variants
-        );
-        const entitiesPerMonth = this.splitEntitiesInMonths(
-          metricStrategy,
-          allEntities,
+        const entitiesPerMonth = splitEntitiesInMonths(
+          orders,
+          'orderPlacedAt',
           startDate,
           today
         );
@@ -109,15 +106,13 @@ export class MetricsService {
             dataPointsPerName.set(dataPoint.legendLabel, entry);
           });
         });
-        const monthNames = entitiesPerMonth.map((d) =>
-          this.getMonthName(d.monthNr)
-        );
+        const monthNames = entitiesPerMonth.map((d) => getMonthName(d.monthNr));
         const summary: AdvancedMetricSummary = {
           code: metricStrategy.code,
           title: metricStrategy.getTitle(ctx),
           allowProductSelection: metricStrategy.allowProductSelection,
           labels: monthNames,
-          series: this.mapToSeries(dataPointsPerName),
+          series: mapToSeries(dataPointsPerName),
           type: metricStrategy.metricType,
         };
         const stop = performance.now();
@@ -134,78 +129,63 @@ export class MetricsService {
   }
 
   /**
-   * Map the data points per month map to the AdvancedMetricSeries array
+   * Get orders with their lines in the given date range
    */
-  mapToSeries(dataPointsPerMonth: DataPointsPerLegend): AdvancedMetricSeries[] {
-    const series: AdvancedMetricSeries[] = [];
-    dataPointsPerMonth.forEach((dataPoints, name) => {
-      series.push({
-        name,
-        values: dataPoints,
-      });
-    });
-    return series;
-  }
-
-  /**
-   * Categorize loaded entities per month
-   */
-  splitEntitiesInMonths<T>(
-    strategy: MetricStrategy<T>,
-    entities: T[],
+  async getOrders(
+    ctx: RequestContext,
     from: Date,
-    to: Date
-  ): EntitiesPerMonth<T>[] {
-    // Helper function to construct yearMonth as identifier. E.g. "2021-01"
-    const getYearMonth = (date: Date) =>
-      `${date.getFullYear()}-${date.getMonth()}`;
-    const entitiesPerMonth = new Map<string, EntitiesPerMonth<T>>();
-    // Populate the map with all months in the range
-    for (let i = from; isBefore(i, to); i = addMonths(i, 1)) {
-      const yearMonth = getYearMonth(i);
-      entitiesPerMonth.set(yearMonth, {
-        monthNr: i.getMonth(),
-        year: i.getFullYear(),
-        entities: [], // Will be populated below
-      });
-    }
-    // Loop over each item and categorize it in the correct month
-    entities.forEach((entity) => {
-      const date =
-        strategy.getSortableField?.(entity) ??
-        ((entity as any).createdAt as Date);
-      if (!(date instanceof Date) || isNaN(date as any)) {
-        throw Error(
-          `${date} is not a valid date! Can not calculate metrics for "${strategy.code}"`
-        );
-      }
-      const yearMonth = getYearMonth(date);
-      const entry = entitiesPerMonth.get(yearMonth);
-      if (!entry) {
-        // Should never happen, but a custom strategy could have fetched data outside of range
-        return;
-      }
-      entry.entities.push(entity);
-      entitiesPerMonth.set(yearMonth, entry);
-    });
-    return Array.from(entitiesPerMonth.values());
-  }
+    to: Date,
+    variants: ProductVariant[] = []
+  ): Promise<Order[]> {
+    let skip = 0;
+    const take = 500;
+    let hasMoreOrders = true;
+    const orders: Order[] = [];
 
-  getMonthName(monthNr: number): string {
-    const monthNames = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return monthNames[monthNr];
+    while (hasMoreOrders) {
+      let query = this.connection
+        .getRepository(ctx, Order)
+        .createQueryBuilder('order')
+        // Join order lines - this replaces the separate OrderLine queries
+        .leftJoinAndSelect('order.lines', 'orderLine')
+        // Select the specific fields needed from orderLine
+        .addSelect('orderLine.quantity')
+        // Join channels as before
+        .leftJoin('order.channels', 'channel')
+        .where('channel.id = :channelId', { channelId: ctx.channelId })
+        .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
+          fromDate: from.toISOString(),
+          toDate: to.toISOString(),
+        });
+
+      // Add variant filtering if variants are specified
+      if (variants.length) {
+        query = query
+          .leftJoinAndSelect('orderLine.productVariant', 'productVariant')
+          .andWhere('productVariant.id IN (:...variantIds)', {
+            variantIds: variants.map((v) => v.id),
+          });
+      }
+
+      // Add pagination
+      query = query.offset(skip).limit(take);
+
+      const [items, totalOrders] = await query.getManyAndCount();
+      orders.push(...items);
+
+      Logger.debug(
+        `Fetched orders ${skip}-${skip + take} with order lines for channel ${
+          ctx.channel.token
+        }`,
+        loggerCtx
+      );
+
+      skip += items.length;
+      if (orders.length >= totalOrders) {
+        hasMoreOrders = false;
+      }
+    }
+
+    return orders;
   }
 }
