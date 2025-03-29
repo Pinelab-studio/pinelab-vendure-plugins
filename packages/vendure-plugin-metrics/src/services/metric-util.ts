@@ -31,7 +31,7 @@ export function getMonthName(monthNr: number): string {
 /**
  * Categorize loaded entities per month
  */
-export function splitEntitiesInMonths<T>(
+export function groupEntitiesPerMonth<T>(
   entities: T[],
   sortableField: 'createdAt' | 'updatedAt' | 'orderPlacedAt',
   from: Date,

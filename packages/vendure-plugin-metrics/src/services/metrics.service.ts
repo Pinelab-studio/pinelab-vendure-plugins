@@ -24,7 +24,7 @@ import {
   DataPointsPerLegend,
   getMonthName,
   mapToSeries,
-  splitEntitiesInMonths,
+  groupEntitiesPerMonth,
 } from './metric-util';
 
 @Injectable()
@@ -81,7 +81,7 @@ export class MetricsService {
         }
         // Log execution time, because custom strategies can be heavy and we need to inform the user about it
         const start = performance.now();
-        const entitiesPerMonth = splitEntitiesInMonths(
+        const entitiesPerMonth = groupEntitiesPerMonth(
           orders,
           'orderPlacedAt',
           startDate,
