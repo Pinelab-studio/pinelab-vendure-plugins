@@ -71,7 +71,11 @@ export function groupEntitiesPerMonth<T>(
 }
 
 /**
- * Map the data points per month map to the AdvancedMetricSeries array
+ * Map the data points per month map to the AdvancedMetricSeries array.
+ *
+ * E.g. `'product1', [10, 20, 30]` becomes
+ * `[{ name: 'product1', values: [10, 20, 30] }]`
+ * This is used to display the data in the chart.
  */
 export function mapToSeries(
   dataPointsPerMonth: DataPointsPerLegend

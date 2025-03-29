@@ -55,6 +55,12 @@ export class MetricsService {
       sub(today, { months: this.pluginOptions.displayPastMonths })
     );
     const orders = await this.getOrders(ctx, startDate, today, variants);
+    const entitiesPerMonth = groupEntitiesPerMonth(
+      orders,
+      'orderPlacedAt',
+      startDate,
+      today
+    );
     // For each metric strategy
     return Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
@@ -81,12 +87,6 @@ export class MetricsService {
         }
         // Log execution time, because custom strategies can be heavy and we need to inform the user about it
         const start = performance.now();
-        const entitiesPerMonth = groupEntitiesPerMonth(
-          orders,
-          'orderPlacedAt',
-          startDate,
-          today
-        );
         // Calculate datapoints per 'name', because we could be dealing with a multi line chart
         const dataPointsPerName: DataPointsPerLegend = new Map<
           string,
@@ -148,15 +148,14 @@ export class MetricsService {
         .createQueryBuilder('order')
         // Join order lines - this replaces the separate OrderLine queries
         .leftJoinAndSelect('order.lines', 'orderLine')
-        // Select the specific fields needed from orderLine
-        .addSelect('orderLine.quantity')
         // Join channels as before
         .leftJoin('order.channels', 'channel')
         .where('channel.id = :channelId', { channelId: ctx.channelId })
         .andWhere('order.orderPlacedAt BETWEEN :fromDate AND :toDate', {
           fromDate: from.toISOString(),
           toDate: to.toISOString(),
-        });
+        })
+        .orderBy('order.orderPlacedAt', 'ASC');
 
       // Add variant filtering if variants are specified
       if (variants.length) {
@@ -168,15 +167,18 @@ export class MetricsService {
       }
 
       // Add pagination
-      query = query.offset(skip).limit(take);
+      query = query.skip(skip).take(take);
 
       const [items, totalOrders] = await query.getManyAndCount();
       orders.push(...items);
-
-      Logger.debug(
-        `Fetched orders ${skip}-${skip + take} with order lines for channel ${
-          ctx.channel.token
-        }`,
+      const firstDate = items[0].orderPlacedAt?.toISOString().split('T')[0];
+      const lastDate = items[items.length - 1].orderPlacedAt
+        ?.toISOString()
+        .split('T')[0];
+      Logger.info(
+        `Fetched orders ${skip}-${
+          skip + take
+        } (${firstDate} to ${lastDate}) for channel ${ctx.channel.token}`,
         loggerCtx
       );
 

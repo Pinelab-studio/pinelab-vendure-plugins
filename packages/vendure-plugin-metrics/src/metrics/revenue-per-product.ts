@@ -33,13 +33,6 @@ export class RevenuePerProduct implements MetricStrategy {
     orders: Order[],
     variants: ProductVariant[]
   ): NamedDatapoint[] {
-    // Map orders to lines, but st the order object on each line
-    const lines = orders
-      .map((order) => {
-        order.lines.forEach((l) => (l.order = order));
-        return order.lines;
-      })
-      .flat();
     if (!variants.length) {
       // Return total revenue
       let legendLabel = 'Total Revenue';
@@ -48,15 +41,11 @@ export class RevenuePerProduct implements MetricStrategy {
       } else {
         legendLabel += ' (excl. tax)';
       }
-      const revenuePerOrder: { [orderId: string]: number } = {};
       const totalFieldName = ctx.channel.pricesIncludeTax
         ? 'totalWithTax'
         : 'total';
-      lines.forEach((line) => {
-        revenuePerOrder[line.order.id] = line.order[totalFieldName];
-      });
-      const totalRevenue = Object.values(revenuePerOrder).reduce(
-        (total, current) => total + current,
+      const totalRevenue = orders.reduce(
+        (total, current) => total + current[totalFieldName],
         0
       );
       return [
@@ -67,6 +56,13 @@ export class RevenuePerProduct implements MetricStrategy {
       ];
     }
     // Else calculate revenue per variant
+    // Map orders to lines, but st the order object on each line
+    const lines = orders
+      .map((order) => {
+        order.lines.forEach((l) => (l.order = order));
+        return order.lines;
+      })
+      .flat();
     const dataPoints: NamedDatapoint[] = [];
     const totalFieldName = ctx.channel.pricesIncludeTax
       ? 'proratedLinePriceWithTax'
