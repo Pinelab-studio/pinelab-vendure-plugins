@@ -1,5 +1,12 @@
 # 1.7.0 (2024-12-19)
 
+- Added server side tracking: Log shop-api events and store in database.
+- Entities are loaded on plugin instead of in strategies, for better performance.
+- Metric results are now persisted in the database instead of in memory.
+- Generation of metrics and loading of entities moved to worker.
+
+# 1.7.0 (2024-12-19)
+
 - Update Vendure to 3.1.1
 
 # 1.6.1 (2024-12-18)

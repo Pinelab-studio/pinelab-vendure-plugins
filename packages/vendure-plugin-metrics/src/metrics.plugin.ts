@@ -9,6 +9,7 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
 import { RevenuePerProduct } from './metrics/revenue-per-product';
 import { AverageOrderValueMetric } from './metrics/average-order-value';
 import { UnitsSoldMetric } from './metrics/units-sold-metric';
+import { MetricSummary } from './entities/metric-summary.entity';
 
 export interface MetricsPluginOptions {
   /**
@@ -33,6 +34,7 @@ export interface MetricsPluginOptions {
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => MetricsPlugin.options },
   ],
   compatibility: '>=2.2.0',
+  entities: [MetricSummary],
 })
 export class MetricsPlugin {
   static options: MetricsPluginOptions = {

@@ -1,92 +1,191 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { JobState } from '@vendure/common/lib/generated-types';
 import {
-  Injector,
+  ID,
+  JobQueue,
+  JobQueueService,
   Logger,
   Order,
   ProductVariant,
   ProductVariantService,
   RequestContext,
+  SerializedRequestContext,
   TransactionalConnection,
-  TransactionIsolationLevel,
 } from '@vendure/core';
-import { addMonths, endOfDay, isBefore, startOfMonth, sub } from 'date-fns';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { endOfDay, startOfMonth, sub } from 'date-fns';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 import { MetricsPluginOptions } from '../metrics.plugin';
 import {
-  AdvancedMetricSeries,
   AdvancedMetricSummary,
   AdvancedMetricSummaryInput,
 } from '../ui/generated/graphql';
-import { Cache } from './cache';
 import { MetricStrategy } from './metric-strategy';
 import {
   DataPointsPerLegend,
   getMonthName,
-  mapToSeries,
   groupEntitiesPerMonth,
+  mapToSeries,
 } from './metric-util';
+import { MetricSummary } from '../entities/metric-summary.entity';
+import { ca } from 'date-fns/locale';
 
 @Injectable()
-export class MetricsService {
-  // Cache for datapoints
-  cache = new Cache<AdvancedMetricSummary>();
-  metricStrategies: MetricStrategy[];
+export class MetricsService implements OnModuleInit {
+  private generateMetricsQueue!: JobQueue<{
+    ctx: SerializedRequestContext;
+    startDate: string; // ISO string
+    endDate: string; // ISO string
+    variantIds: string[];
+  }>;
+
+  readonly metricStrategies: MetricStrategy[];
   constructor(
-    private moduleRef: ModuleRef,
     private variantService: ProductVariantService,
     @Inject(PLUGIN_INIT_OPTIONS) private pluginOptions: MetricsPluginOptions,
-    private connection: TransactionalConnection
+    private connection: TransactionalConnection,
+    private jobQueueService: JobQueueService
   ) {
     this.metricStrategies = this.pluginOptions.metrics;
   }
 
+  public async onModuleInit(): Promise<void> {
+    this.generateMetricsQueue = await this.jobQueueService.createQueue({
+      name: 'generate-metrics',
+      process: async (job) => {
+        // Deserialize the RequestContext from the job data
+        const ctx = RequestContext.deserialize(job.data.ctx);
+        const startDate = new Date(job.data.startDate);
+        const endDate = new Date(job.data.endDate);
+        const variantIds = job.data.variantIds;
+        await this.handleMetricsJob(ctx, startDate, endDate, variantIds);
+      },
+    });
+  }
+
+  /**
+   * Get metrics from cache, or create a job and keep polling the cache
+   */
   async getMetrics(
     ctx: RequestContext,
     input?: AdvancedMetricSummaryInput
   ): Promise<AdvancedMetricSummary[]> {
-    const variants = await this.variantService.findByIds(
-      ctx,
-      input?.variantIds ?? []
-    );
     const today = endOfDay(new Date());
     // Use start of month, because we'd like to see the full results of last years same month
     const startDate = startOfMonth(
       sub(today, { months: this.pluginOptions.displayPastMonths })
     );
-    const orders = await this.getOrders(ctx, startDate, today, variants);
+    const metrics = await this.getAllMetricsFromCache(
+      ctx,
+      startDate,
+      today,
+      input?.variantIds ?? []
+    );
+    if (metrics) {
+      Logger.info(
+        `Loaded data for ${metrics.length} metrics from cache.`,
+        loggerCtx
+      );
+      // All metrics were found in cache, return them
+      return metrics;
+    }
+    // If not in cache, add job to queue
+    await this.generateMetricsQueue.add({
+      ctx: ctx.serialize(),
+      startDate: startDate.toISOString(),
+      endDate: today.toISOString(),
+      variantIds: input?.variantIds ?? [],
+    });
+    Logger.info(`Added 'generate-metrics' job to queue for metric`, loggerCtx);
+    // Poll every 1 seconds for the job to finish, with a timeout of 1 minute
+    for (let i = 0; i < 60; i++) {
+      Logger.info(
+        `Waiting for 'generate-metrics' job to finish... (${i + 1}/60)`,
+        loggerCtx
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const metrics = await this.getAllMetricsFromCache(
+        ctx,
+        startDate,
+        today,
+        input?.variantIds ?? []
+      );
+      if (metrics) {
+        Logger.info(
+          `Loaded data for ${metrics.length} metrics from cache.`,
+          loggerCtx
+        );
+        return metrics;
+      }
+    }
+    throw Error(`Timeout waiting for 'generate-metrics' job to finish`);
+  }
+
+  /**
+   * Get all metrics from cache.
+   * If any of the metrics is missing, returns undefined
+   */
+  async getAllMetricsFromCache(
+    ctx: RequestContext,
+    from: Date,
+    to: Date,
+    variantIds: ID[]
+  ): Promise<AdvancedMetricSummary[] | undefined> {
+    const metrics: AdvancedMetricSummary[] = [];
+    for (const metricStrategy of this.metricStrategies) {
+      const cacheKey = this.createCacheKey(
+        ctx,
+        metricStrategy,
+        from,
+        to,
+        variantIds ?? []
+      );
+      // Return cached result if exists
+      let cachedMetricSummary = await this.findMetricSummary(ctx, cacheKey);
+      if (cachedMetricSummary) {
+        metrics.push(cachedMetricSummary.summaryData);
+      } else {
+        // If any of the metrics is missing, return now
+        return;
+      }
+    }
+    if (metrics.length === this.metricStrategies.length) {
+      // All metrics were found in cache, return them
+      return metrics;
+    }
+  }
+
+  /**
+   * Generate metrics for each strategy, and store them in the cache.
+   */
+  async handleMetricsJob(
+    ctx: RequestContext,
+    startDate: Date,
+    endDate: Date,
+    variantIds: ID[]
+  ) {
+    // Check cache before processing because another job could have completed in the meantime
+    const metrics = await this.getAllMetricsFromCache(
+      ctx,
+      startDate,
+      endDate,
+      variantIds
+    );
+    if (metrics) {
+      // All metrics were found in cache, return them
+      return metrics;
+    }
+    const start = performance.now();
+    const variants = await this.variantService.findByIds(ctx, variantIds);
+    const orders = await this.getOrders(ctx, startDate, endDate, variants);
     const entitiesPerMonth = groupEntitiesPerMonth(
       orders,
       'orderPlacedAt',
       startDate,
-      today
+      endDate
     );
-    // For each metric strategy
-    return Promise.all(
+    await Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
-        const cacheKeyObject = {
-          code: metricStrategy.code,
-          from: startDate.toDateString(),
-          to: today.toDateString(),
-          channel: ctx.channel.token,
-          variantIds: [] as string[], // Set below if input is given
-        };
-        if (metricStrategy.allowProductSelection) {
-          // Only use variantIds for cache key if the strategy allows filtering by variants
-          cacheKeyObject.variantIds = input?.variantIds?.sort() ?? [];
-        }
-        const cacheKey = JSON.stringify(cacheKeyObject);
-        // Return cached result if exists
-        const cachedMetricSummary = this.cache.get(cacheKey);
-        if (cachedMetricSummary) {
-          Logger.info(
-            `Using cached data for metric "${metricStrategy.code}"`,
-            loggerCtx
-          );
-          return cachedMetricSummary;
-        }
-        // Log execution time, because custom strategies can be heavy and we need to inform the user about it
-        const start = performance.now();
         // Calculate datapoints per 'name', because we could be dealing with a multi line chart
         const dataPointsPerName: DataPointsPerLegend = new Map<
           string,
@@ -115,16 +214,22 @@ export class MetricsService {
           series: mapToSeries(dataPointsPerName),
           type: metricStrategy.metricType,
         };
-        const stop = performance.now();
-        Logger.info(
-          `No cache hit, loaded data for metric "${
-            metricStrategy.code
-          }" in ${Math.round(stop - start)}ms`,
-          loggerCtx
+        const cacheKey = this.createCacheKey(
+          ctx,
+          metricStrategy,
+          startDate,
+          endDate,
+          variantIds
         );
-        this.cache.set(cacheKey, summary);
-        return summary;
+        await this.saveMetricSummary(ctx, cacheKey, summary);
       })
+    );
+    const stop = performance.now();
+    Logger.info(
+      `Generated metrics for channel ${ctx.channel.token} in ${Math.round(
+        stop - start
+      )}ms`,
+      loggerCtx
     );
   }
 
@@ -189,5 +294,49 @@ export class MetricsService {
     }
 
     return orders;
+  }
+
+  async findMetricSummary(
+    ctx: RequestContext,
+    cacheKey: string
+  ): Promise<MetricSummary | undefined | null> {
+    return await this.connection
+      .getRepository(ctx, MetricSummary)
+      .findOne({ where: { key: cacheKey } });
+  }
+
+  async saveMetricSummary(
+    ctx: RequestContext,
+    cacheKey: string,
+    summary: AdvancedMetricSummary
+  ): Promise<MetricSummary | undefined | null> {
+    return await this.connection.getRepository(ctx, MetricSummary).save({
+      key: cacheKey,
+      summaryData: summary,
+    });
+  }
+
+  /**
+   * Create an identifier to store metrics in the cache.
+   */
+  private createCacheKey(
+    ctx: RequestContext,
+    strategy: MetricStrategy,
+    from: Date,
+    to: Date,
+    variantIds: ID[]
+  ) {
+    const cacheKeyObject = {
+      code: strategy.code,
+      from: from.toISOString(),
+      to: to.toISOString(),
+      channel: ctx.channel.token,
+      variantIds: [] as ID[],
+    };
+    if (strategy.allowProductSelection) {
+      // Only use variantIds for cache key if the strategy allows filtering by variants
+      cacheKeyObject.variantIds = variantIds?.sort() ?? [];
+    }
+    return JSON.stringify(cacheKeyObject);
   }
 }
