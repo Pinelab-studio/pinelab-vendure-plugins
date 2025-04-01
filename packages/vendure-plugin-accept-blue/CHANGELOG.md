@@ -1,3 +1,7 @@
+# 2.5.1 (2025-04-01)
+
+- Fixed typo `Allow Pay` to `Apple Pay`
+
 # 2.5.0 (2025-03-27)
 
 - Added Google Pay and Apple pay for creating subscriptions

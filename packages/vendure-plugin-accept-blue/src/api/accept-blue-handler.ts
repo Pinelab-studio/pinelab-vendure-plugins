@@ -91,7 +91,7 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
       type: 'boolean',
       required: false,
       defaultValue: true,
-      label: [{ languageCode: LanguageCode.en, value: 'Allow Pay' }],
+      label: [{ languageCode: LanguageCode.en, value: 'Apple Pay' }],
     },
     tokenizationSourceKey: {
       type: 'string',
