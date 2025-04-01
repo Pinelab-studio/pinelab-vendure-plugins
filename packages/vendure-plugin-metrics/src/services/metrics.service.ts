@@ -29,6 +29,7 @@ import {
 } from './metric-util';
 import { MetricSummary } from '../entities/metric-summary.entity';
 import { ca } from 'date-fns/locale';
+import { RequestService } from './request-service';
 
 @Injectable()
 export class MetricsService implements OnModuleInit {
@@ -42,11 +43,12 @@ export class MetricsService implements OnModuleInit {
   readonly metricStrategies: MetricStrategy[];
   constructor(
     private variantService: ProductVariantService,
-    @Inject(PLUGIN_INIT_OPTIONS) private pluginOptions: MetricsPluginOptions,
+    @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions,
     private connection: TransactionalConnection,
-    private jobQueueService: JobQueueService
+    private jobQueueService: JobQueueService,
+    private requestService: RequestService
   ) {
-    this.metricStrategies = this.pluginOptions.metrics;
+    this.metricStrategies = this.options.metrics;
   }
 
   public async onModuleInit(): Promise<void> {
@@ -58,7 +60,15 @@ export class MetricsService implements OnModuleInit {
         const startDate = new Date(job.data.startDate);
         const endDate = new Date(job.data.endDate);
         const variantIds = job.data.variantIds;
-        await this.handleMetricsJob(ctx, startDate, endDate, variantIds);
+        await this.handleMetricsJob(ctx, startDate, endDate, variantIds).catch(
+          (e) => {
+            Logger.error(
+              `Error processing 'generate-metrics' job: ${e}`,
+              loggerCtx
+            );
+            throw e;
+          }
+        );
       },
     });
   }
@@ -73,7 +83,7 @@ export class MetricsService implements OnModuleInit {
     const today = endOfDay(new Date());
     // Use start of month, because we'd like to see the full results of last years same month
     const startDate = startOfMonth(
-      sub(today, { months: this.pluginOptions.displayPastMonths })
+      sub(today, { months: this.options.displayPastMonths })
     );
     const metrics = await this.getAllMetricsFromCache(
       ctx,
@@ -177,7 +187,17 @@ export class MetricsService implements OnModuleInit {
     }
     const start = performance.now();
     const variants = await this.variantService.findByIds(ctx, variantIds);
-    const orders = await this.getOrders(ctx, startDate, endDate, variants);
+    const orders = await this.getPlacedOrders(
+      ctx,
+      startDate,
+      endDate,
+      variants
+    );
+    const visits = await this.requestService.getVisits(
+      ctx,
+      startDate,
+      this.options.sessionLengthInMinutes
+    );
     const entitiesPerMonth = groupEntitiesPerMonth(
       orders,
       'orderPlacedAt',
@@ -195,6 +215,7 @@ export class MetricsService implements OnModuleInit {
           const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
             entityMap.entities,
+            visits,
             variants
           );
           // Loop over datapoint, because we support multi line charts
@@ -236,7 +257,7 @@ export class MetricsService implements OnModuleInit {
   /**
    * Get orders with their lines in the given date range
    */
-  async getOrders(
+  async getPlacedOrders(
     ctx: RequestContext,
     from: Date,
     to: Date,
@@ -302,7 +323,7 @@ export class MetricsService implements OnModuleInit {
   ): Promise<MetricSummary | undefined | null> {
     return await this.connection
       .getRepository(ctx, MetricSummary)
-      .findOne({ where: { key: cacheKey } });
+      .findOne({ where: { key: cacheKey, channelId: ctx.channelId } });
   }
 
   async saveMetricSummary(
@@ -310,9 +331,13 @@ export class MetricsService implements OnModuleInit {
     cacheKey: string,
     summary: AdvancedMetricSummary
   ): Promise<MetricSummary | undefined | null> {
+    // Check if the summary already exists
+    const existingSummary = await this.findMetricSummary(ctx, cacheKey);
     return await this.connection.getRepository(ctx, MetricSummary).save({
+      id: existingSummary?.id,
       key: cacheKey,
       summaryData: summary,
+      channelId: ctx.channelId,
     });
   }
 

@@ -2,13 +2,8 @@ import {
   AdvancedMetricSummaryInput,
   AdvancedMetricType,
 } from '../ui/generated/graphql';
-import {
-  RequestContext,
-  Injector,
-  ProductVariant,
-  Order,
-  OrderLine,
-} from '@vendure/core';
+import { RequestContext, ProductVariant, Order } from '@vendure/core';
+import { Visit } from './request-service';
 /**
  * GroupId is used to group datapoints. For example 'product1', so that the plugin can find all datapoints for that product;
  */
@@ -41,6 +36,8 @@ export interface MetricStrategy {
    * Calculate the aggregated datapoint for the given data.
    * E.g. the sum of all given data, or the average.
    *
+   * This functions is called for each month.
+   *
    * Return multiple datapoints for a multi line chart.
    * The name will be used as legend on the chart.
    *
@@ -54,6 +51,7 @@ export interface MetricStrategy {
   calculateDataPoints(
     ctx: RequestContext,
     orders: Order[],
+    visits: Visit[],
     variants: ProductVariant[]
   ): NamedDatapoint[];
 }

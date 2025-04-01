@@ -1,5 +1,7 @@
 import { addMonths, isBefore } from 'date-fns';
 import { AdvancedMetricSeries } from '../ui/generated/graphql';
+import { MetricRequest } from '../entities/metric-request.entity';
+import { Visit } from './request-service';
 
 interface EntitiesPerMonth<T> {
   monthNr: number;
@@ -88,4 +90,62 @@ export function mapToSeries(
     });
   });
   return series;
+}
+
+/**
+ * Aggregates the raw requests to visits, grouping them by identifier and session length.
+ *
+ * E.g. multiple requests from id:123 within 5 minutes are combined into 1 visit
+ *
+ */
+export function getVisits(
+  requests: MetricRequest[],
+  sessionLengthInMinutes: number
+): Visit[] {
+  const visits: Visit[] = [];
+  const sessionLengthInMs = sessionLengthInMinutes * 60 * 1000;
+
+  // Group requests by identifier
+  const requestsByIdentifier = requests.reduce((map, request) => {
+    const group = map.get(request.identifier) || [];
+    group.push(request);
+    map.set(request.identifier, group);
+    return map;
+  }, new Map<string, MetricRequest[]>());
+
+  // Combine requests within the same session length into one visit
+  for (const [identifier, groupedRequests] of requestsByIdentifier) {
+    // Sort requests by timestamp
+    groupedRequests.sort(
+      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
+    );
+    let currentVisit: Visit | null = null;
+
+    for (const request of groupedRequests) {
+      if (
+        currentVisit &&
+        request.createdAt.getTime() - currentVisit.start.getTime() <=
+          sessionLengthInMs
+      ) {
+        // Extend the current visit
+        currentVisit.end = request.createdAt;
+      } else {
+        // Start a new visit
+        if (currentVisit) {
+          visits.push(currentVisit);
+        }
+        currentVisit = {
+          identifier,
+          start: request.createdAt,
+          end: request.createdAt,
+          deviceType: request.deviceType,
+        };
+      }
+    }
+    // Push the last visit
+    if (currentVisit) {
+      visits.push(currentVisit);
+    }
+  }
+  return visits;
 }

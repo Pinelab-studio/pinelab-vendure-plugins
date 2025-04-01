@@ -1,12 +1,13 @@
+import { describe, expect, it } from 'vitest';
+import { MetricRequest } from '../entities/metric-request.entity';
 import {
   getMonthName,
+  getVisits,
   groupEntitiesPerMonth,
   mapToSeries,
 } from './metric-util';
-import { AdvancedMetricSeries } from '../ui/generated/graphql';
-import { describe, it, expect } from 'vitest';
 
-describe('getMonthName function', () => {
+describe('getMonthName()', () => {
   it('returns correct month names for valid indices', () => {
     expect(getMonthName(0)).toBe('Jan');
     expect(getMonthName(6)).toBe('Jul');
@@ -19,7 +20,7 @@ describe('getMonthName function', () => {
   });
 });
 
-describe('splitEntitiesInMonths function', () => {
+describe('splitEntitiesInMonths()', () => {
   // Test entities with different date fields
   const testEntities = [
     {
@@ -135,7 +136,7 @@ describe('splitEntitiesInMonths function', () => {
   });
 });
 
-describe('mapToSeries function', () => {
+describe('mapToSeries()', () => {
   it('transforms empty map to empty array', () => {
     const dataPointsMap = new Map<string, number[]>();
     const result = mapToSeries(dataPointsMap);
@@ -175,5 +176,124 @@ describe('mapToSeries function', () => {
     const result = mapToSeries(dataPointsMap);
 
     expect(result).toEqual([{ name: 'Empty Series', values: [] }]);
+  });
+});
+
+describe('getVisits()', () => {
+  // Helper function to create a MetricRequest with the given properties
+  function createRequest(
+    identifier: string,
+    timestamp: Date,
+    deviceType: 'Desktop' | 'Mobile' | 'Tablet' | 'Unknown' = 'Desktop'
+  ): MetricRequest {
+    const request = new MetricRequest();
+    request.identifier = identifier;
+    request.createdAt = timestamp;
+    request.deviceType = deviceType;
+    return request;
+  }
+
+  it('returns empty array for empty input', () => {
+    const visits = getVisits([], 30);
+    expect(visits).toEqual([]);
+  });
+
+  it('creates a single visit for a single request', () => {
+    const timestamp = new Date('2023-01-01T12:00:00Z');
+    const request = createRequest('user1', timestamp);
+    const visits = getVisits([request], 30);
+    expect(visits).toHaveLength(1);
+    expect(visits[0]).toEqual({
+      identifier: 'user1',
+      start: timestamp,
+      end: timestamp,
+      deviceType: 'Desktop',
+    });
+  });
+
+  it('combines requests within session window into one visit', () => {
+    const startTime = new Date('2023-01-01T12:00:00Z');
+    const fiveMinLater = new Date(startTime.getTime() + 5 * 60 * 1000);
+    const tenMinLater = new Date(startTime.getTime() + 10 * 60 * 1000);
+    const requests = [
+      createRequest('user1', startTime),
+      createRequest('user1', fiveMinLater),
+      createRequest('user1', tenMinLater),
+    ];
+    const visits = getVisits(requests, 30);
+    expect(visits).toHaveLength(1);
+    expect(visits[0]).toEqual({
+      identifier: 'user1',
+      start: startTime,
+      end: tenMinLater,
+      deviceType: 'Desktop',
+    });
+  });
+
+  it('creates separate visits for requests outside session window', () => {
+    const startTime = new Date('2023-01-01T12:00:00Z');
+    const fiveMinLater = new Date(startTime.getTime() + 5 * 60 * 1000);
+    const tenMinLater = new Date(startTime.getTime() + 10 * 60 * 1000);
+    const requests = [
+      createRequest('user1', startTime),
+      createRequest('user1', fiveMinLater),
+      createRequest('user1', tenMinLater),
+    ];
+    const visits = getVisits(requests, 6);
+    expect(visits).toHaveLength(2);
+    expect(visits[0]).toEqual({
+      identifier: 'user1',
+      start: startTime,
+      end: fiveMinLater,
+      deviceType: 'Desktop',
+    });
+    expect(visits[1]).toEqual({
+      identifier: 'user1',
+      start: tenMinLater,
+      end: tenMinLater,
+      deviceType: 'Desktop',
+    });
+  });
+
+  it('handles requests from different identifiers as separate visits', () => {
+    const baseTime = new Date('2023-01-01T12:00:00Z');
+    const requests = [
+      createRequest('user1', baseTime),
+      createRequest('user2', baseTime),
+      createRequest('user1', new Date(baseTime.getTime() + 5 * 60 * 1000)),
+      createRequest('user2', new Date(baseTime.getTime() + 5 * 60 * 1000)),
+    ];
+    const visits = getVisits(requests, 30);
+    expect(visits).toHaveLength(2);
+    const user1Visit = visits.find((v) => v.identifier === 'user1');
+    const user2Visit = visits.find((v) => v.identifier === 'user2');
+    expect(user1Visit?.start).toEqual(baseTime);
+    expect(user1Visit?.end).toEqual(
+      new Date(baseTime.getTime() + 5 * 60 * 1000)
+    );
+    expect(user2Visit?.start).toEqual(baseTime);
+    expect(user2Visit?.end).toEqual(
+      new Date(baseTime.getTime() + 5 * 60 * 1000)
+    );
+  });
+
+  it('preserves device type information', () => {
+    const baseTime = new Date('2023-01-01T12:00:00Z');
+    const requests = [
+      createRequest('user1', baseTime, 'Desktop'),
+      createRequest('user2', baseTime, 'Mobile'),
+      createRequest('user3', baseTime, 'Tablet'),
+    ];
+    const visits = getVisits(requests, 30);
+    expect(visits).toHaveLength(3);
+    expect(visits.find((v) => v.identifier === 'user1')?.deviceType).toBe(
+      'Desktop'
+    );
+    expect(visits.find((v) => v.identifier === 'user2')?.deviceType).toBe(
+      'Mobile'
+    );
+    expect(visits.find((v) => v.identifier === 'user3')?.deviceType).toBe(
+      'Tablet'
+    );
   });
 });

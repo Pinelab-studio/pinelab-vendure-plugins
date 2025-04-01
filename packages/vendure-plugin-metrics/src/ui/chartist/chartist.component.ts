@@ -55,6 +55,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
           labelInterpolationFnc: (value: number, _: number) => {
             return this.formatCurrencyToValue(value);
           },
+          scaleMinSpace: 30,
         },
         plugins: [
           ChartistTooltip({
@@ -73,7 +74,7 @@ export class ChartistComponent implements OnInit, OnChanges, OnDestroy {
       if (data.type === 'line' || data.type === 'area') {
         data.element.animate({
           d: {
-            begin: 1000 * data.index,
+            begin: 50 * data.index,
             dur: 1000,
             from: data.path
               .clone()

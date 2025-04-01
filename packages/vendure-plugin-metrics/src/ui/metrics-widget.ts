@@ -165,7 +165,6 @@ export class MetricsWidgetComponent implements OnInit {
       // this.selection$,
       this.selectedVariantIds
     );
-    this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
       this.loading = false;
       if (this.selectedMetric) {
@@ -177,5 +176,6 @@ export class MetricsWidgetComponent implements OnInit {
       }
       this.changeDetectorRef.detectChanges();
     });
+    this.changeDetectorRef.detectChanges();
   }
 }

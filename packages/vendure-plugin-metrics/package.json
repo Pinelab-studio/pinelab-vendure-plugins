@@ -25,6 +25,7 @@
     "lint": "echo 'No linting configured'"
   },
   "dependencies": {
+    "catch-unknown": "^2.0.0",
     "chartist-plugin-tooltips-updated": "^1.0.0",
     "date-fns": "^2.29.3"
   },

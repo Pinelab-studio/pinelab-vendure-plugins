@@ -22,7 +22,7 @@ import { addItem, createSettledOrder } from '../../test/src/shop-utils';
   const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Info }),
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
