@@ -20,47 +20,24 @@ export class VisitorsMetric implements MetricStrategy {
     orders: Order[],
     visits: Visit[] = []
   ): NamedDatapoint[] {
-    //FIXME
-    visits = [
-      {
-        deviceType: 'Desktop',
-      },
-      {
-        deviceType: 'Desktop',
-      },
-      {
-        deviceType: 'Desktop',
-      },
-      {
-        deviceType: 'Mobile',
-      },
-      {
-        deviceType: 'Tablet',
-      },
-    ] as any;
-
     const deviceTypeCounts: { [deviceType: string]: number } = {};
     visits.forEach((visit) => {
       const deviceType = visit.deviceType || 'Unknown';
       deviceTypeCounts[deviceType] = (deviceTypeCounts[deviceType] || 0) + 1;
     });
-
     const totalVisitors = visits.length;
-
     const dataPoints: NamedDatapoint[] = [
       {
         legendLabel: 'Total Visitors',
         value: totalVisitors,
       },
     ];
-
     for (const [deviceType, count] of Object.entries(deviceTypeCounts)) {
       dataPoints.push({
         legendLabel: deviceType,
         value: count,
       });
     }
-
     return dataPoints;
   }
 }

@@ -36,4 +36,13 @@ export const schema = gql`
       input: AdvancedMetricSummaryInput
     ): [AdvancedMetricSummary!]!
   }
+
+  extend type Mutation {
+    """
+    Empty mutation to log browser visits.
+    You can call this mutation on page load to track vitits.
+    Returns null
+    """
+    pageVisit: Boolean
+  }
 `;

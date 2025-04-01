@@ -38,7 +38,7 @@ export interface Visit {
  * 2. Non human traffic (e.g. bots, crawlers)
  */
 export function shouldLogRequest(request: Request): boolean {
-  if (!request.get('user-agent')?.toString().includes('Mozilla')) {
+  if (!request.headers['user-agent']?.includes('Mozilla')) {
     return false;
   }
   // Check if the request is a GraphQL introspection query
@@ -48,7 +48,6 @@ export function shouldLogRequest(request: Request): boolean {
   ) {
     return false;
   }
-  // TODO exclude bots and crawlers
   return true;
 }
 
@@ -101,6 +100,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
    * Adds a request to the batch, and pushes the batch to the queue once it reaches a certain size
    */
   logRequest(req: Request): void {
+    console.log('Logging request', req.headers);
     if (!this.options.shouldLogRequest(req)) {
       return;
     }

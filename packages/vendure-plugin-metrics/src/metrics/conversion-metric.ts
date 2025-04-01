@@ -28,11 +28,12 @@ export class ConversionMetric implements MetricStrategy {
     visits: Visit[] = []
   ): NamedDatapoint[] {
     const placedOrders = orders.length;
-    const visitorCount = visits.length;
+    const visitorCount = visits.length ?? 1;
     // Calculate conversion rate (as a percentage)
-    let conversionRate = 0;
-    if (visitorCount > 0) {
-      conversionRate = (placedOrders / visitorCount) * 100;
+    let conversionRate = (placedOrders / visitorCount) * 100;
+    if (conversionRate > 100) {
+      // Conversion rate cannot be more than 100%
+      conversionRate = 100;
     }
     return [
       {

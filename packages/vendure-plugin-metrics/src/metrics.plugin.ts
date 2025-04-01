@@ -61,6 +61,7 @@ export interface MetricsPluginOptions {
     config.apiOptions.middleware.push({
       route: 'shop-api',
       handler: RequestMiddleware,
+      beforeListen: true,
     });
     return config;
   },

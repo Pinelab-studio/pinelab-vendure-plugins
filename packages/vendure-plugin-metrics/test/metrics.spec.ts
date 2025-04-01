@@ -1,6 +1,12 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  RequestContextService,
+} from '@vendure/core';
 import {
   createTestEnvironment,
+  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -18,6 +24,10 @@ import {
   MetricsPlugin,
 } from '../src';
 import { GET_METRICS } from '../src/ui/queries.graphql';
+import gql from 'graphql-tag';
+import { waitFor } from '../../test/src/test-helpers';
+import { RequestService } from '../src/services/request-service';
+import { createMockRequests } from './helpers';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
@@ -128,6 +138,32 @@ describe('Metrics', () => {
     expect(salesPerProduct.series[1].values[13]).toEqual(6);
   });
 
+  it.only('Handles 50 concurrent requests to the shop API', async () => {
+    const requestService = server.app.get(RequestService);
+    await Promise.allSettled(
+      createMockRequests(10).map(async (request) =>
+        requestService.logRequest(request)
+      )
+    );
+    const ctx = await server.app.get(RequestContextService).create({
+      apiType: 'shop',
+      channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
+    });
+
+    const loggedRequests = await waitFor(async () => {
+      const visits = await requestService.getVisits(
+        ctx,
+        new Date('2023-01-01'),
+        1
+      );
+      console.log('Waiting for logged requests...', visits.length);
+      if (visits.length === 50) {
+        return visits;
+      }
+    });
+    expect(loggedRequests.length).toEqual(50);
+  });
+
   if (process.env.TEST_ADMIN_UI) {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
@@ -139,5 +175,3 @@ describe('Metrics', () => {
     await server.destroy();
   }, 100000);
 });
-
-// TODO: request logging, in batches, test visitors count and session
