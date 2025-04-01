@@ -594,6 +594,14 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       allowVisa: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowVisa')?.value
       ),
+      allowApplePay: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowApplePay')
+          ?.value
+      ),
+      allowGooglePay: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowGooglePay')
+          ?.value
+      ),
     };
     return new AcceptBlueClient(
       apiKey,

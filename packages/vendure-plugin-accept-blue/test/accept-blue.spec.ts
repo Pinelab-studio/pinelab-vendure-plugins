@@ -145,11 +145,19 @@ it('Creates Accept Blue payment method', async () => {
               value: 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY',
             },
             {
-              name: 'allowVisa',
+              name: 'allowAmex',
               value: 'true',
             },
             {
               name: 'allowECheck',
+              value: 'true',
+            },
+            {
+              name: 'allowVisa',
+              value: 'true',
+            },
+            {
+              name: 'allowDiscover',
               value: 'true',
             },
             {
@@ -158,6 +166,10 @@ it('Creates Accept Blue payment method', async () => {
             },
             {
               name: 'allowGooglePay',
+              value: 'true',
+            },
+            {
+              name: 'allowApplePay',
               value: 'true',
             },
           ],
@@ -182,6 +194,10 @@ describe('Shop API', () => {
       { name: 'ECheck' },
       { name: 'Visa' },
       { name: 'MasterCard' },
+      { name: 'Amex' },
+      { name: 'Discover' },
+      { name: 'GooglePay' },
+      { name: 'ApplePay' },
     ]);
   });
 

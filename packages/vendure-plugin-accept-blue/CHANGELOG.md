@@ -1,3 +1,7 @@
+# 2.5.2 (2025-04-01)
+
+- Added `Apple Pay` and `Google Pay` to eligible Accept Blue payment methods
+
 # 2.5.1 (2025-04-01)
 
 - Fixed typo `Allow Pay` to `Apple Pay`
