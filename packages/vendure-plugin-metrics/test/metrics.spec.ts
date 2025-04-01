@@ -140,4 +140,4 @@ describe('Metrics', () => {
   }, 100000);
 });
 
-// TODO: 
+// TODO: request logging, in batches, test visitors count and session
