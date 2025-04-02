@@ -99,7 +99,7 @@ export async function populateEuZonesAndTaxRates(
         zoneId: zone.id,
         value,
         enabled: true,
-        categoryId: 1,
+        categoryId,
       });
     }
   }
