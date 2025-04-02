@@ -101,6 +101,10 @@ export async function populateEuZonesAndTaxRates(
         enabled: true,
         categoryId,
       });
+      Logger.info(
+        `Tax rate '${name} ${rateName}' created with value ${value}%`,
+        loggerCtx
+      );
     }
   }
 }
