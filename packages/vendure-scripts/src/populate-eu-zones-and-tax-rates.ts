@@ -72,12 +72,12 @@ export async function populateEuZonesAndTaxRates(
         zoneId: existingZone.id,
         memberIds,
       });
-      continue;
+    } else {
+      zone = await zoneService.create(ctx, {
+        name,
+        memberIds,
+      });
     }
-    zone = await zoneService.create(ctx, {
-      name,
-      memberIds,
-    });
 
     // Create the corresponding tax rates for each zone
     for (const [i, value] of [zero, low, standard].entries()) {
