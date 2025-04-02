@@ -137,4 +137,30 @@ const zonesAndTaxRates = [
   { name: 'Slovenia', members: ['SI'], zero: 0, low: 5, standard: 22 },
   { name: 'Spain', members: ['ES'], zero: 0, low: 10, standard: 21 },
   { name: 'Sweden', members: ['SE'], zero: 0, low: 6, standard: 25 },
+  {
+    name: 'Europe, outside of the EU',
+    members: [
+      'AL', // Albania
+      'AD', // Andorra
+      'BA', // Bosnia and Herzegovina
+      'BY', // Belarus
+      'CH', // Switzerland
+      'IS', // Iceland
+      'KS', // Kosovo
+      'LI', // Liechtenstein
+      'MD', // Moldova
+      'MC', // Monaco
+      'ME', // Montenegro
+      'MK', // North Macedonia
+      'NO', // Norway
+      'RS', // Serbia
+      'SM', // San Marino
+      'TR', // Turkey
+      'UA', // Ukraine
+      'VA', // Vatican City
+    ],
+    zero: 0,
+    low: 0,
+    standard: 0,
+  },
 ];
