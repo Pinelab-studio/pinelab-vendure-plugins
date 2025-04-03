@@ -262,6 +262,21 @@ export const ELIGIBLE_AC_PAYMENT_METHODS = gql`
   query eligibleAcceptBluePaymentMethods {
     eligibleAcceptBluePaymentMethods {
       name
+      tokenizationKey
+      googlePayMerchantId
+      googlePayGatewayMerchantId
+    }
+  }
+`;
+
+export const ELIGIBLE_PAYMENT_METHODS = gql`
+  query eligiblePaymentMethods {
+    eligiblePaymentMethods {
+      id
+      name
+      acceptBlueHostedTokenizationKey
+      acceptBlueGooglePayMerchantId
+      acceptBlueGooglePayGatewayMerchantId
     }
   }
 `;

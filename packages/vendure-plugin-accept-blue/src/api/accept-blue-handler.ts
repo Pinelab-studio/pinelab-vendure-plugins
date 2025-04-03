@@ -100,6 +100,35 @@ export const acceptBluePaymentHandler = new PaymentMethodHandler({
         { languageCode: LanguageCode.en, value: 'Hosted tokenization key' },
       ],
     },
+    googlePayMerchantId: {
+      type: 'string',
+      required: false,
+      label: [
+        { languageCode: LanguageCode.en, value: 'Google Pay Merchant Id' },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'The Merchant Id as defined in your Google Payment Profile',
+        },
+      ],
+    },
+    googlePayGatewayMerchantId: {
+      type: 'string',
+      required: false,
+      label: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Google Pay Gateway Merchant Id',
+        },
+      ],
+      description: [
+        {
+          languageCode: LanguageCode.en,
+          value: 'Can be found in your Accept Blue Control Panel',
+        },
+      ],
+    },
     webhookSecret: {
       type: 'string',
       required: false,
