@@ -108,6 +108,8 @@ const commonApiExtensions = gql`
 
   extend type PaymentMethodQuote {
     acceptBlueHostedTokenizationKey: String
+    acceptBlueGooglePayMerchantId: String
+    acceptBlueGooglePayGatewayMerchantId: String
   }
 
   extend type OrderLine {
@@ -174,6 +176,9 @@ const commonApiExtensions = gql`
   """
   type AcceptBluePaymentMethodQuote {
     name: AcceptBluePaymentMethodType!
+    tokenizationKey: String
+    googlePayMerchantId: String
+    googlePayGatewayMerchantId: String
   }
 
   extend type Query {

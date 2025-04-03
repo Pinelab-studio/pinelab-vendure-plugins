@@ -259,3 +259,5 @@ mutation {
 ```
 
 Make sure that your amount equals the amount of the order! The amount is passed in as whole amount, not in cents, because this is how you will receive it from Google.
+
+You can configure the Merchant ID and Gateway Merchant ID on the payment method in Vendure, and fetch them via `eligiblePaymentMethods` or `eligibleAcceptBluePaymentMethods`.

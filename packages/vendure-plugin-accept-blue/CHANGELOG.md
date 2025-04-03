@@ -1,3 +1,7 @@
+# 2.6.0 (2025-04-03)
+
+- Expose tokenization key, and Google merchant id's on payment method quote and eligible Accept Blue methods.
+
 # 2.5.2 (2025-04-01)
 
 - Added `Apple Pay` and `Google Pay` to eligible Accept Blue payment methods

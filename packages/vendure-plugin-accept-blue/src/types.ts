@@ -452,3 +452,9 @@ export interface EnabledPaymentMethodsArgs {
   allowGooglePay?: boolean;
   allowApplePay?: boolean;
 }
+
+export interface StorefrontKeys {
+  acceptBlueHostedTokenizationKey?: string;
+  acceptBlueGooglePayMerchantId?: string;
+  acceptBlueGooglePayGatewayMerchantId?: string;
+}
