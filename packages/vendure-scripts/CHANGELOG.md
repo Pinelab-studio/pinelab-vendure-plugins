@@ -1,3 +1,7 @@
+# 1.8.0 (2025-04-02)
+
+- EU One Stop Shop tax setup
+
 # 1.7.1 (2025-02-14)
 
 - Improved logging to track progress
