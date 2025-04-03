@@ -18,8 +18,8 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
-    "start": "ts-node test/dev-server.ts",
+    "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node --swc test/dev-server.ts\"",
+    "start": "ts-node --swc test/dev-server.ts",
     "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/vendure-plugin-goedgepickt/src/",
     "test": "vitest run --bail 1",
     "lint": "echo 'No linting configured'"
