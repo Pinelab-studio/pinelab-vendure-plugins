@@ -264,7 +264,7 @@ export class GoedgepicktService
       return;
     }
     const ggStock = ggProduct.stock?.freeStock;
-    if (!ggStock) {
+    if (ggStock === null || ggStock === undefined) {
       Logger.warn(
         `Product with sku '${productSku}' has no freeStock in GoedGepickt. Ignoring incoming stock update event`,
         loggerCtx
