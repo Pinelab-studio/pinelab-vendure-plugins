@@ -18,6 +18,7 @@ import {
   Order,
   OrderPlacedEvent,
   OrderService,
+  OrderStateTransitionError,
   ProductPriceApplicator,
   ProductVariant,
   ProductVariantEvent,
@@ -411,44 +412,30 @@ export class GoedgepicktService
       return;
     }
     const newStatus = ggOrder.status;
-    let order = await this.orderService.findOneByCode(ctx, orderCode);
-    if (!order) {
+    let vendureOrder = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!vendureOrder) {
       Logger.warn(
         `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${ctx.channel.token}`,
         loggerCtx
       );
       return;
     }
-    if (newStatus === 'completed') {
-      if (order.state === 'Delivered') {
-        return;
-      }
-      await transitionToDelivered(this.orderService, ctx, order, {
-        code: goedgepicktHandler.code,
-        arguments: [
-          {
-            name: 'goedGepicktOrderUUID',
-            value: orderUuid,
-          },
-          {
-            name: 'trackingCode',
-            value:
-              ggOrder.shipments?.map((s) => s.trackTraceCode).join(',') ?? '',
-          },
-          {
-            name: 'trackingUrls',
-            value:
-              ggOrder.shipments?.map((s) => s.trackTraceUrl).join(',') ?? '',
-          },
-        ],
-      });
-      Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
-    } else {
+    if (newStatus !== 'completed') {
       return Logger.info(
         `No status updates needed for order ${orderCode} for status ${newStatus}`,
         loggerCtx
       );
     }
+    if (vendureOrder.state === 'Delivered') {
+      return;
+    }
+    if (vendureOrder.state !== 'Shipped') {
+      // Try to transition to shipped first
+      await this.transitionToState(ctx, vendureOrder, 'Shipped');
+      Logger.info(`Updated order ${orderCode} to Shipped`, loggerCtx);
+    }
+    await this.transitionToState(ctx, vendureOrder, 'Delivered');
+    Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
   }
 
   /**
@@ -717,6 +704,30 @@ export class GoedgepicktService
       loggerCtx
     );
     return variants;
+  }
+
+  /**
+   * Transition an order to the given state, and throw an error if it fails, instead of returing the transition result.
+   */
+  private async transitionToState(
+    ctx: RequestContext,
+    order: Order,
+    state: 'Shipped' | 'Delivered'
+  ) {
+    const result = await this.orderService.transitionToState(
+      ctx,
+      order.id,
+      state
+    );
+    const errorResult = result as OrderStateTransitionError;
+    if (errorResult.errorCode) {
+      Logger.error(
+        `Failed to transition order ${order.code} to ${state}: ${errorResult.message}`,
+        loggerCtx,
+        util.inspect(errorResult)
+      );
+      throw errorResult;
+    }
   }
 
   private async getVariants(

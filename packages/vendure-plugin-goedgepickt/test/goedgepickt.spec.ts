@@ -3,12 +3,14 @@ import {
   AvailableStock,
   configureDefaultOrderProcess,
   DefaultLogger,
+  EventBus,
   ID,
   LanguageCode,
   LogLevel,
   mergeConfig,
   Order,
   OrderService,
+  OrderStateTransitionEvent,
   ProductService,
   ProductVariant,
   ProductVariantService,
@@ -330,6 +332,7 @@ describe('Goedgepickt plugin', function () {
     expect(stock.stockAllocated).toBe(0);
   });
 
+  let orderTransitionEvents: OrderStateTransitionEvent[] = [];
   it('Completes order via webhook', async () => {
     // Catch order fetching
     nock(apiUrl)
@@ -344,6 +347,13 @@ describe('Goedgepickt plugin', function () {
             trackTraceUrl: 'pinelab.studio/xyz',
           },
         ],
+      });
+    // Listen for order state events
+    server.app
+      .get(EventBus)
+      .ofType(OrderStateTransitionEvent)
+      .subscribe((event) => {
+        orderTransitionEvents.push(event);
       });
     const body: IncomingOrderStatusEvent = {
       newStatus: 'completed',
@@ -370,15 +380,22 @@ describe('Goedgepickt plugin', function () {
     expect(res.ok).toBe(true);
     expect(adminOrder.state).toBe('Delivered');
     const stock = await getAvailableStock(1);
-    expect(stock.stockOnHand).toBe(121); // Deducted 2 because of allocation
-    expect(stock.stockAllocated).toBe(-2);
+    expect(stock.stockOnHand).toBe(123); // No deduction, because we dont do allocation
+    expect(stock.stockAllocated).toBe(0);
   });
 
-  it('Has fulfillment after completion', async () => {
-    const adminOrder = await getOrder(adminClient, order.id as string);
-    const fulfillment = adminOrder?.fulfillments?.[0];
-    expect(fulfillment?.method).toBe('GoedGepickt - XYZ');
-    expect(fulfillment?.trackingCode).toBe('XYZ');
+  it('Transition to Shipped, and then to Delivered', async () => {
+    const shippedEvent = orderTransitionEvents[0];
+    expect(shippedEvent).toBeDefined();
+    expect(shippedEvent?.fromState).toBe('PaymentSettled');
+    expect(shippedEvent?.toState).toBe('Shipped');
+    expect(shippedEvent?.order.code).toBe(order.code);
+    // Delivered should be the immediate next event
+    const deliveredEvent = orderTransitionEvents[1];
+    expect(deliveredEvent).toBeDefined();
+    expect(deliveredEvent?.fromState).toBe('Shipped');
+    expect(deliveredEvent?.toState).toBe('Delivered');
+    expect(deliveredEvent?.order.code).toBe(order.code);
   });
 
   it('Pushes product on product creation', async () => {
