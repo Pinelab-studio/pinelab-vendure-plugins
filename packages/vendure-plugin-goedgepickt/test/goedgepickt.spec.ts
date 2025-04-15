@@ -320,6 +320,11 @@ describe('Goedgepickt plugin', function () {
     const updatedVariant = await findVariantBySku('L2201308');
     expect(res.ok).toBe(true);
     expect(updatedVariant).toBeDefined();
+    // Wait for async job processing to have processed stock
+    await waitFor(async () => {
+      const stock = await getAvailableStock(updatedVariant?.id!);
+      return stock?.stockOnHand === 123;
+    });
     const stock = await getAvailableStock(updatedVariant?.id!);
     expect(stock.stockOnHand).toBe(123);
     expect(stock.stockAllocated).toBe(0);

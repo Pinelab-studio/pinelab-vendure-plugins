@@ -1,6 +1,10 @@
 # 2.0.3 (2025-04-03)
 
 - Check for undefined or null, to prevent stock updates with 0 being ignored
+  
+# 2.0.3 (2025-04-03)
+
+- Check for undefined or null, to prevent stock updates with 0 being ignored
 
 # 2.0.2 (2025-03-20)
 
