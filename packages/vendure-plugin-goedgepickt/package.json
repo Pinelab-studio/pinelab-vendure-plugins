@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-goedgepickt",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "Vendure plugin for integration with the Goedgepickt order picking platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
