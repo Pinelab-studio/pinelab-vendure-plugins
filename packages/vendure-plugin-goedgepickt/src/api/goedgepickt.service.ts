@@ -608,8 +608,12 @@ export class GoedgepicktService
         this.setAbsoluteImage(ctx, variant)
       );
       const uuid = existing?.uuid;
-      if (uuid) {
+      console.log(existing);
+      if (!existing?.picture?.toLowerCase().includes('image_placeholder.png')) {
+        // The picture on GG is not a placeholder, so don't update it again.
         product.picture = undefined; // Don't update picture on existing product
+      }
+      if (uuid) {
         await client.updateProduct(uuid, product);
         Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
       } else {
