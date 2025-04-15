@@ -18,6 +18,7 @@ import {
   Order,
   OrderPlacedEvent,
   OrderService,
+  OrderStateTransitionError,
   ProductPriceApplicator,
   ProductVariant,
   ProductVariantEvent,
@@ -81,17 +82,24 @@ interface SyncOrderJobData {
   orderCode: string;
 }
 
+interface UpdateStockJobData {
+  action: 'update-stock';
+  ctx: SerializedRequestContext;
+  stockInput: StockInput[];
+}
+
 type JobData =
   | PushProductJobData
   | PushProductByVariantsJobData
-  | SyncOrderJobData;
+  | SyncOrderJobData
+  | UpdateStockJobData;
 
 @Injectable()
 export class GoedgepicktService
   implements OnApplicationBootstrap, OnModuleInit
 {
   readonly queryLimit: number;
-  // @ts-ignore
+  //@ts-ignore -- For some reason nested props are not allowed in job data, while they are stringifyable
   private jobQueue!: JobQueue<JobData>;
 
   constructor(
@@ -99,7 +107,6 @@ export class GoedgepicktService
     private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private config: GoedgepicktPluginConfig,
     private configService: ConfigService,
-    private stockLevelService: StockLevelService,
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
@@ -124,6 +131,8 @@ export class GoedgepicktService
             await this.handlePushProductJob(ctx, data);
           } else if (data.action === 'push-product-by-variants') {
             await this.handlePushByVariantsJob(ctx, data);
+          } else if (data.action === 'update-stock') {
+            await this.handleStockUpdateJob(ctx, data.stockInput);
           } else {
             return Logger.error(
               `Invalid jobqueue action '${JSON.stringify(data)}'`,
@@ -144,7 +153,6 @@ export class GoedgepicktService
           // Loggable job data without entire request context
           const loggableData = {
             ...data,
-
             ctx: undefined,
           };
           Logger.warn(
@@ -276,7 +284,7 @@ export class GoedgepicktService
       variantId: v.id as string,
       stock: ggStock,
     }));
-    await this.updateStock(ctx, stockInput);
+    await this.createStockUpdateJobs(ctx, stockInput);
     Logger.info(
       `Updated stock for ${productSku} to ${ggStock} via incoming event`,
       loggerCtx
@@ -404,44 +412,30 @@ export class GoedgepicktService
       return;
     }
     const newStatus = ggOrder.status;
-    let order = await this.orderService.findOneByCode(ctx, orderCode);
-    if (!order) {
+    const vendureOrder = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!vendureOrder) {
       Logger.warn(
         `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${ctx.channel.token}`,
         loggerCtx
       );
       return;
     }
-    if (newStatus === 'completed') {
-      if (order.state === 'Delivered') {
-        return;
-      }
-      await transitionToDelivered(this.orderService, ctx, order, {
-        code: goedgepicktHandler.code,
-        arguments: [
-          {
-            name: 'goedGepicktOrderUUID',
-            value: orderUuid,
-          },
-          {
-            name: 'trackingCode',
-            value:
-              ggOrder.shipments?.map((s) => s.trackTraceCode).join(',') ?? '',
-          },
-          {
-            name: 'trackingUrls',
-            value:
-              ggOrder.shipments?.map((s) => s.trackTraceUrl).join(',') ?? '',
-          },
-        ],
-      });
-      Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
-    } else {
+    if (newStatus !== 'completed') {
       return Logger.info(
         `No status updates needed for order ${orderCode} for status ${newStatus}`,
         loggerCtx
       );
     }
+    if (vendureOrder.state === 'Delivered') {
+      return;
+    }
+    if (vendureOrder.state !== 'Shipped') {
+      // Try to transition to shipped first
+      await this.transitionToState(ctx, vendureOrder, 'Shipped');
+      Logger.info(`Updated order ${orderCode} to Shipped`, loggerCtx);
+    }
+    await this.transitionToState(ctx, vendureOrder, 'Delivered');
+    Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
   }
 
   /**
@@ -531,8 +525,8 @@ export class GoedgepicktService
         stock: p.stock?.freeStock,
       });
     });
-    // We can update stock in main thread, it's not that heavy currently
-    await this.updateStock(ctx, stockLevelInputs);
+    // Create stock update jobs
+    await this.createStockUpdateJobs(ctx, stockLevelInputs);
     // Create product push jobs. 30 products per job
     const productInputs: ProductInput[] = [];
     for (const variant of variants) {
@@ -614,8 +608,12 @@ export class GoedgepicktService
         this.setAbsoluteImage(ctx, variant)
       );
       const uuid = existing?.uuid;
-      if (uuid) {
+      console.log(existing);
+      if (!existing?.picture?.toLowerCase().includes('image_placeholder.png')) {
+        // The picture on GG is not a placeholder, so don't update it again.
         product.picture = undefined; // Don't update picture on existing product
+      }
+      if (uuid) {
         await client.updateProduct(uuid, product);
         Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
       } else {
@@ -652,9 +650,36 @@ export class GoedgepicktService
   }
 
   /**
+   * Create stock update jobs in batches of 10 (by default).
+   */
+  async createStockUpdateJobs(
+    ctx: RequestContext,
+    stockInput: StockInput[],
+    batchSize = 10
+  ): Promise<void> {
+    const pushBatches = this.getBatches(stockInput, batchSize);
+    await Promise.all(
+      pushBatches.map(async (batch) => {
+        await this.jobQueue.add(
+          {
+            action: 'update-stock',
+            ctx: ctx.serialize(),
+            stockInput: batch,
+          },
+          { retries: 20 }
+        );
+        Logger.info(
+          `Created 'update-stock' job for ${batch.length} variants for channel ${ctx.channel.token}`,
+          loggerCtx
+        );
+      })
+    );
+  }
+
+  /**
    * Update stock for variants based on given GG products
    */
-  private async updateStock(
+  private async handleStockUpdateJob(
     ctx: RequestContext,
     stockInput: StockInput[]
   ): Promise<ProductVariant[]> {
@@ -662,32 +687,51 @@ export class GoedgepicktService
       id: input.variantId,
       stockOnHand: input.stock,
     }));
-    const batches = this.getBatches(variantsWithStock, 500);
-    const allVariants: ProductVariant[] = [];
-    for (const batch of batches) {
-      const variants = await this.variantService.update(ctx, batch);
-      // Set allocated of each variant to 0
-      const variantIds = batch.map((v) => v.id);
-      if (!variantIds.length) {
-        return [];
-      }
-      await this.connection
-        .getRepository(ctx, StockLevel)
-        .createQueryBuilder()
-        .update()
-        .set({ stockAllocated: 0 })
-        .where('productVariantId IN (:...variantIds)', { variantIds })
-        .execute();
-      const skus = variants.map((v) => v.sku);
-      Logger.info(
-        `Updated stock of variants for channel ${
-          ctx.channel.token
-        }: ${skus.join(',')}`,
-        loggerCtx
-      );
-      allVariants.push(...variants);
+    const variants = await this.variantService.update(ctx, variantsWithStock);
+    // Set allocated of each variant to 0
+    const variantIds = variantsWithStock.map((v) => v.id);
+    if (!variantIds.length) {
+      return [];
     }
-    return allVariants;
+    await this.connection
+      .getRepository(ctx, StockLevel)
+      .createQueryBuilder()
+      .update()
+      .set({ stockAllocated: 0 })
+      .where('productVariantId IN (:...variantIds)', { variantIds })
+      .execute();
+    const skus = variants.map((v) => v.sku);
+    Logger.info(
+      `Updated stock of variants for channel ${ctx.channel.token}: ${skus.join(
+        ','
+      )}`,
+      loggerCtx
+    );
+    return variants;
+  }
+
+  /**
+   * Transition an order to the given state, and throw an error if it fails, instead of returing the transition result.
+   */
+  private async transitionToState(
+    ctx: RequestContext,
+    order: Order,
+    state: 'Shipped' | 'Delivered'
+  ) {
+    const result = await this.orderService.transitionToState(
+      ctx,
+      order.id,
+      state
+    );
+    const errorResult = result as OrderStateTransitionError;
+    if (errorResult.errorCode) {
+      Logger.error(
+        `Failed to transition order ${order.code} to ${state}: ${errorResult.message}`,
+        loggerCtx,
+        util.inspect(errorResult)
+      );
+      throw errorResult;
+    }
   }
 
   private async getVariants(

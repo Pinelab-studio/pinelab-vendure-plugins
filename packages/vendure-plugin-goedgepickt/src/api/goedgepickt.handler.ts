@@ -1,42 +1,17 @@
-import { FulfillmentHandler, LanguageCode, Logger } from '@vendure/core';
-import { GoedgepicktService } from './goedgepickt.service';
-import { loggerCtx } from '../constants';
+import { FulfillmentHandler, LanguageCode } from '@vendure/core';
 
-let service: GoedgepicktService;
 export const goedgepicktHandler = new FulfillmentHandler({
   code: 'goedgepickt',
   description: [
     {
       languageCode: LanguageCode.en,
-      value: 'Send order to Goedgepickt',
+      value: 'GoedGepickt fulfilment',
     },
   ],
-  args: {
-    goedGepicktOrderUUID: {
-      type: 'string',
-      required: false,
-    },
-    trackingCode: {
-      type: 'string',
-      required: false,
-    },
-    trackingUrls: {
-      type: 'string',
-      required: false,
-    },
-  },
-  init: (injector) => {
-    service = injector.get(GoedgepicktService);
-  },
-  createFulfillment: async (ctx, orders, orderItems, args) => {
-    const orderCodes = orders.map((o) => o.code);
-    Logger.info(`Fulfilled orders ${orderCodes.join(',')}`, loggerCtx);
-    return {
-      method: `GoedGepickt - ${args.trackingCode}`,
-      trackingCode: args.trackingCode,
-      customFields: {
-        trackingUrls: args.trackingUrls,
-      },
-    };
+  args: {},
+  createFulfillment: () => {
+    throw Error(
+      `Don't use fulfillment with GoedGepickt. Directly transition to Shipped or Delivered instead.`
+    );
   },
 });

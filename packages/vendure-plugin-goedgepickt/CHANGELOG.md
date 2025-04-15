@@ -1,3 +1,9 @@
+# 2.0.4 (2025-04-15)
+
+- Process stock updates via the job queue, so that it is retried when GoedGepickt returns a `Too Many Attempts` error
+- Don't use GoedGepickt as fulfilment handler anymore, instead directly move to `Shipped` or `Delivered` on incoming status change.
+- Update image when the image on GoedGepickt is a placeholder
+
 # 2.0.3 (2025-04-03)
 
 - Check for undefined or null, to prevent stock updates with 0 being ignored
