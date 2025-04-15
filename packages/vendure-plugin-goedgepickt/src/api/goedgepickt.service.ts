@@ -412,7 +412,7 @@ export class GoedgepicktService
       return;
     }
     const newStatus = ggOrder.status;
-    let vendureOrder = await this.orderService.findOneByCode(ctx, orderCode);
+    const vendureOrder = await this.orderService.findOneByCode(ctx, orderCode);
     if (!vendureOrder) {
       Logger.warn(
         `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${ctx.channel.token}`,
