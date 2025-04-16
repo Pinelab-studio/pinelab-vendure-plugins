@@ -406,6 +406,12 @@ export class PicqerService implements OnApplicationBootstrap {
         await this.transitionToState(ctx, order, 'Shipped');
         await this.transitionToState(ctx, order, 'Delivered');
       } catch (e) {
+        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+        Logger.error(
+          `Failed to transition order ${order.code}: ${e}`,
+          loggerCtx,
+          util.inspect(e)
+        );
         return;
       }
     }
