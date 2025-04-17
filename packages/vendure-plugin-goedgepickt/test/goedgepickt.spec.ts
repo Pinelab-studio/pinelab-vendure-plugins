@@ -60,7 +60,6 @@ describe('Goedgepickt plugin', function () {
     webshopUuid: 'test-webshop-uuid',
   };
 
-  let pushProductsPayloads: any[] = [];
   let webhookPayloads: any[] = [];
   let createOrderPayload: OrderInput;
   let order: SettledOrder;
@@ -69,7 +68,7 @@ describe('Goedgepickt plugin', function () {
   afterEach(() => {
     const pendingMocks = nock.pendingMocks();
     if (pendingMocks.length > 0) {
-      console.error("Pending mocks that weren't called:", pendingMocks);
+      throw Error(`Pending mocks that weren't called: ${pendingMocks}`);
     }
     nock.cleanAll();
   });
@@ -149,7 +148,7 @@ describe('Goedgepickt plugin', function () {
     );
   });
 
-  it('Pushes products and updates stock level on FullSync', async () => {
+  it('Pushes products and updates stock level on full sync', async () => {
     // Pretend there are no webhooks set
     nock(apiUrl)
       .persist(true)
@@ -173,6 +172,7 @@ describe('Goedgepickt plugin', function () {
         items: [],
       });
     // Catch the creation of products
+    let pushProductsPayloads: any[] = [];
     nock(apiUrl)
       .persist(true)
       .post('/api/v1/products', (reqBody: any) => {
@@ -196,7 +196,7 @@ describe('Goedgepickt plugin', function () {
           },
         ],
       });
-    nock(apiUrl).put('/api/v1/products/test-uuid').reply(200, []);
+    // nock(apiUrl).put('/api/v1/products/test-uuid').reply(200, []);
     await adminClient.query(
       gql`
         mutation {
@@ -204,11 +204,15 @@ describe('Goedgepickt plugin', function () {
         }
       `
     );
-    await waitFor(() => pushProductsPayloads.length > 3);
-    await expect(pushProductsPayloads.length).toBeGreaterThanOrEqual(3); // After multiple restarts we have 1 extra
-    const laptopPayload = pushProductsPayloads.find(
-      (p) => p.sku === 'L2201516'
-    );
+    const laptopPayload = await waitFor(() => {
+      const laptopPayload = pushProductsPayloads.find(
+        (p) => p.sku === 'L2201516'
+      );
+      if (laptopPayload) {
+        return laptopPayload;
+      }
+    });
+    await expect(pushProductsPayloads.length).toBeGreaterThanOrEqual(3); // After multiple restarts we have extra for some reason
     await expect(laptopPayload.webshopUuid).toBe(ggConfig.webshopUuid);
     await expect(laptopPayload.productId).toBe('L2201516');
     await expect(laptopPayload.sku).toBe('L2201516');
@@ -323,16 +327,18 @@ describe('Goedgepickt plugin', function () {
     expect(res.ok).toBe(true);
     expect(updatedVariant).toBeDefined();
     // Wait for async job processing to have processed stock
-    await waitFor(async () => {
+    const stock = await waitFor(async () => {
       const stock = await getAvailableStock(updatedVariant?.id!);
-      return stock?.stockOnHand === 123;
+      if (stock.stockOnHand === 123) {
+        return stock;
+      }
     });
-    const stock = await getAvailableStock(updatedVariant?.id!);
     expect(stock.stockOnHand).toBe(123);
     expect(stock.stockAllocated).toBe(0);
   });
 
   let orderTransitionEvents: OrderStateTransitionEvent[] = [];
+
   it('Completes order via webhook', async () => {
     // Catch order fetching
     nock(apiUrl)
@@ -374,13 +380,18 @@ describe('Goedgepickt plugin', function () {
     const ctx = await server.app
       .get(GoedgepicktService)
       .getCtxForChannel(defaultChannelToken);
-    const adminOrder = (await server.app
-      .get(OrderService)
-      .findOneByCode(ctx, order.code))!;
+    const orderService = server.app.get(OrderService);
+    // Wait for job queue to process incoming webhook
+    const adminOrder = await waitFor(async () => {
+      const adminOrder = await orderService.findOneByCode(ctx, order.code);
+      if (adminOrder?.state === 'Delivered') {
+        return adminOrder;
+      }
+    });
     expect(res.ok).toBe(true);
     expect(adminOrder.state).toBe('Delivered');
     const stock = await getAvailableStock(1);
-    expect(stock.stockOnHand).toBe(123); // No deduction, because we dont do allocation
+    expect(stock.stockOnHand).toBe(123); // No deduction, because we don't do allocation
     expect(stock.stockAllocated).toBe(0);
   });
 
@@ -399,6 +410,7 @@ describe('Goedgepickt plugin', function () {
   });
 
   it('Pushes product on product creation', async () => {
+    let pushProductsPayloads: any[] = [];
     // Catch the product lookup
     nock(apiUrl)
       .persist(true)
@@ -442,10 +454,10 @@ describe('Goedgepickt plugin', function () {
         ],
       },
     ]);
-    const payload = await waitFor(
-      () => !!pushProductsPayloads.find((p) => p.sku === 'sku123')
+    const payload = await waitFor(() =>
+      pushProductsPayloads.find((p) => p.sku === 'sku123')
     );
-    expect(payload).toBeDefined();
+    expect(payload.sku).toBe('sku123');
   });
 
   if (process.env.TEST_ADMIN_UI) {
