@@ -1,4 +1,4 @@
-import { StripeInvoice } from './stripe-invoice';
+import Stripe from 'stripe';
 import { StripePaymentIntent } from './stripe-payment-intent';
 
 export interface Metadata {
@@ -9,7 +9,7 @@ export interface Metadata {
 }
 
 export interface Data {
-  object: StripeInvoice | StripePaymentIntent;
+  object: Stripe.Invoice | StripePaymentIntent;
 }
 
 export interface Request {

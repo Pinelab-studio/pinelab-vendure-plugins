@@ -1,3 +1,8 @@
+# 2.8.0 (2025-04-17)
+
+- Don't validate webhook secret, but call Stripe API directly to get valid data.
+- Skip job queue for subscription creation, but create synchronously instead, for direct feedback.
+
 # 2.7.0 (2025-03-11)
 
 - Updated Stripe package to v17.7.0

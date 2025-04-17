@@ -1,6 +1,5 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 import { DefaultSubscriptionStrategy, SubscriptionStrategy } from './';
 import path from 'path';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
@@ -19,10 +18,6 @@ import { shopApiSchemaExtensions } from './api/shop-graphql';
 import { adminApiSchemaExtensions } from './api/admin-graphql';
 
 export interface StripeSubscriptionPluginOptions {
-  /**
-   * Only use this for testing purposes, NEVER in production
-   */
-  disableWebhookSignatureChecking?: boolean;
   vendureHost: string;
   subscriptionStrategy?: SubscriptionStrategy;
 }
@@ -58,11 +53,6 @@ export interface StripeSubscriptionPluginOptions {
       hasStripeSubscriptionProductsPaymentChecker,
     ];
     config.customFields.OrderLine.push(...orderLineCustomFields);
-    config.apiOptions.middleware.push({
-      route: '/stripe-subscriptions*',
-      handler: rawBodyMiddleware,
-      beforeListen: true,
-    });
 
     config.orderOptions.orderItemPriceCalculationStrategy =
       new SubscriptionOrderItemCalculation();
@@ -72,7 +62,6 @@ export interface StripeSubscriptionPluginOptions {
 })
 export class StripeSubscriptionPlugin {
   static options: StripeSubscriptionPluginOptions = {
-    disableWebhookSignatureChecking: false,
     vendureHost: '',
     subscriptionStrategy: new DefaultSubscriptionStrategy(),
   };
