@@ -45,6 +45,7 @@ import {
   ADD_PAYMENT_TO_ORDER,
   CREATE_PAYMENT_METHOD,
   ELIGIBLE_AC_PAYMENT_METHODS,
+  ELIGIBLE_PAYMENT_METHODS,
   GET_CUSTOMER_WITH_ID,
   GET_HISTORY_ENTRIES,
   GET_ORDER_BY_CODE,
@@ -67,6 +68,7 @@ import {
   haydenZiemeCustomerDetails,
   mockCardTransaction,
 } from './helpers/mocks';
+import { waitFor } from '../../test/src/test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -142,14 +144,30 @@ it('Creates Accept Blue payment method', async () => {
             { name: 'apiKey', value: 'process.env.API_KEY' },
             {
               name: 'tokenizationSourceKey',
-              value: 'process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY',
+              value: 'tokenization mock',
+            },
+            {
+              name: 'googlePayMerchantId',
+              value: 'googlePayMerchantId mock',
+            },
+            {
+              name: 'googlePayGatewayMerchantId',
+              value: 'googlePayGatewayMerchantId mock',
+            },
+            {
+              name: 'allowAmex',
+              value: 'true',
+            },
+            {
+              name: 'allowECheck',
+              value: 'true',
             },
             {
               name: 'allowVisa',
               value: 'true',
             },
             {
-              name: 'allowECheck',
+              name: 'allowDiscover',
               value: 'true',
             },
             {
@@ -160,6 +178,10 @@ it('Creates Accept Blue payment method', async () => {
               name: 'allowGooglePay',
               value: 'true',
             },
+            {
+              name: 'allowApplePay',
+              value: 'true',
+            },
           ],
         },
         translations: [
@@ -168,7 +190,7 @@ it('Creates Accept Blue payment method', async () => {
       },
     }
   ));
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await waitFor(() => receivedWebhookCreation === true);
   expect(acceptBluePaymentMethod.id).toBeDefined();
   expect(receivedWebhookCreation).toBe(true);
 });
@@ -178,11 +200,24 @@ describe('Shop API', () => {
     const { eligibleAcceptBluePaymentMethods } = await shopClient.query(
       ELIGIBLE_AC_PAYMENT_METHODS
     );
-    expect(eligibleAcceptBluePaymentMethods).toEqual([
-      { name: 'ECheck' },
-      { name: 'Visa' },
-      { name: 'MasterCard' },
-    ]);
+    expect(eligibleAcceptBluePaymentMethods).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'ECheck' }),
+        expect.objectContaining({ name: 'Visa' }),
+        expect.objectContaining({ name: 'MasterCard' }),
+        expect.objectContaining({ name: 'Amex' }),
+        expect.objectContaining({ name: 'Discover' }),
+        expect.objectContaining({ name: 'GooglePay' }),
+        expect.objectContaining({ name: 'ApplePay' }),
+      ])
+    );
+    eligibleAcceptBluePaymentMethods.forEach((method: any) => {
+      expect(method.tokenizationKey).toBe('tokenization mock');
+      expect(method.googlePayMerchantId).toBe('googlePayMerchantId mock');
+      expect(method.googlePayGatewayMerchantId).toBe(
+        'googlePayGatewayMerchantId mock'
+      );
+    });
   });
 
   it('Returns surcharge configuration', async () => {
@@ -292,6 +327,21 @@ describe('Payment with Saved Payment Method', () => {
     });
     // has subscription on orderline
     expect(order.lines[0].acceptBlueSubscriptions?.[0]?.variantId).toBe('T_3');
+  });
+
+  it('Returns eligible payment methods with acceptBlue fields', async () => {
+    const { eligiblePaymentMethods } = await shopClient.query(
+      ELIGIBLE_PAYMENT_METHODS
+    );
+    expect(eligiblePaymentMethods.length).toBe(1);
+    const method = eligiblePaymentMethods[0];
+    expect(method.acceptBlueHostedTokenizationKey).toBe('tokenization mock');
+    expect(method.acceptBlueGooglePayMerchantId).toBe(
+      'googlePayMerchantId mock'
+    );
+    expect(method.acceptBlueGooglePayGatewayMerchantId).toBe(
+      'googlePayGatewayMerchantId mock'
+    );
   });
 
   let patchCustomerRequest: any = {};

@@ -71,8 +71,27 @@ export class AcceptBlueCommonResolver {
   @Resolver('PaymentMethodQuote')
   async acceptBlueHostedTokenizationKey(
     @Ctx() ctx: RequestContext
-  ): Promise<string | null> {
-    return await this.acceptBlueService.getHostedTokenizationKey(ctx);
+  ): Promise<string | null | undefined> {
+    return (await this.acceptBlueService.getStorefrontKeys(ctx))
+      ?.acceptBlueHostedTokenizationKey;
+  }
+
+  @ResolveField('acceptBlueGooglePayMerchantId')
+  @Resolver('PaymentMethodQuote')
+  async acceptBlueGooglePayMerchantId(
+    @Ctx() ctx: RequestContext
+  ): Promise<string | null | undefined> {
+    return (await this.acceptBlueService.getStorefrontKeys(ctx))
+      ?.acceptBlueGooglePayMerchantId;
+  }
+
+  @ResolveField('acceptBlueGooglePayGatewayMerchantId')
+  @Resolver('PaymentMethodQuote')
+  async acceptBlueGooglePayGatewayMerchantId(
+    @Ctx() ctx: RequestContext
+  ): Promise<string | null | undefined> {
+    return (await this.acceptBlueService.getStorefrontKeys(ctx))
+      ?.acceptBlueGooglePayGatewayMerchantId;
   }
 
   @ResolveField('savedAcceptBluePaymentMethods')

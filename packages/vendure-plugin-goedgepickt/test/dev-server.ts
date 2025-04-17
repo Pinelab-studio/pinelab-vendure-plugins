@@ -21,6 +21,7 @@ import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 
 (async () => {
   require('dotenv').config();
@@ -42,6 +43,10 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
         determineOrderStatus: async (ctx, order) => 'on_hold' as const,
       }),
       DefaultSearchPlugin,
+      AssetServerPlugin.init({
+        assetUploadDir: path.join(__dirname, '__data__/assets'),
+        route: 'assets',
+      }),
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
@@ -82,7 +87,5 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     fulfillmentHandler: goedgepicktHandler.code,
     translations: [],
   });
-  await goedgepicktService.registerWebhooks(ctx);
-  await goedgepicktService.handleIncomingStockUpdate(ctx, 'L2201308');
   await createSettledOrder(shopClient, 1);
 })();

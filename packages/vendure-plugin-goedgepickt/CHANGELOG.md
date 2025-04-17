@@ -1,3 +1,17 @@
+# 2.0.5 (2025-04-17)
+
+- Process incoming stock and order webhooks via the job queue, to prevent webhook disabling in GoedGepickt
+
+# 2.0.4 (2025-04-15)
+
+- Process stock updates via the job queue, so that it is retried when GoedGepickt returns a `Too Many Attempts` error
+- Don't use GoedGepickt as fulfilment handler anymore, instead directly move to `Shipped` or `Delivered` on incoming status change.
+- Update image when the image on GoedGepickt is a placeholder
+
+# 2.0.3 (2025-04-03)
+
+- Check for undefined or null, to prevent stock updates with 0 being ignored
+
 # 2.0.2 (2025-03-20)
 
 - Prevent empty update SQL statement

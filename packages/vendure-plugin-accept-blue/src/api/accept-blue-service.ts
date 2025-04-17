@@ -43,6 +43,7 @@ import {
   HandlePaymentResult,
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
+  StorefrontKeys,
 } from '../types';
 import {
   getNrOfBillingCyclesLeft,
@@ -307,8 +308,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext
   ): Promise<AcceptBluePaymentMethodQuote[]> {
     const client = await this.getClientForChannel(ctx);
+    const storefrontKeys = await this.getStorefrontKeys(ctx);
     return client.enabledPaymentMethods.map((pm) => ({
       name: pm,
+      tokenizationKey: storefrontKeys.acceptBlueHostedTokenizationKey,
+      googlePayMerchantId: storefrontKeys.acceptBlueGooglePayMerchantId,
+      googlePayGatewayMerchantId:
+        storefrontKeys.acceptBlueGooglePayGatewayMerchantId,
     }));
   }
 
@@ -594,6 +600,14 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       allowVisa: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowVisa')?.value
       ),
+      allowApplePay: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowApplePay')
+          ?.value
+      ),
+      allowGooglePay: mapToBoolean(
+        acceptBlueMethod.handler.args.find((a) => a.name === 'allowGooglePay')
+          ?.value
+      ),
     };
     return new AcceptBlueClient(
       apiKey,
@@ -603,12 +617,28 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     );
   }
 
-  async getHostedTokenizationKey(ctx: RequestContext): Promise<string | null> {
+  /**
+   * Resolves the keys needed on the storefront for different types of payment methods:
+   *
+   * Hosted tokenization key: The key needed to tokenize a creditcard on the frontend
+   * Google Pay merchant ID and Gateway Merchant Id: to render Google Pay button on the frontend
+   */
+  async getStorefrontKeys(ctx: RequestContext): Promise<StorefrontKeys> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
     const tokenizationSourceKey = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'tokenizationSourceKey'
     )?.value;
-    return tokenizationSourceKey ?? null;
+    const googlePayMerchantId = acceptBlueMethod?.handler.args.find(
+      (a) => a.name === 'googlePayMerchantId'
+    )?.value;
+    const googlePayGatewayMerchantId = acceptBlueMethod?.handler.args.find(
+      (a) => a.name === 'googlePayGatewayMerchantId'
+    )?.value;
+    return {
+      acceptBlueHostedTokenizationKey: tokenizationSourceKey,
+      acceptBlueGooglePayMerchantId: googlePayMerchantId,
+      acceptBlueGooglePayGatewayMerchantId: googlePayGatewayMerchantId,
+    };
   }
 
   async getAcceptBlueMethod(
