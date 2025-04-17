@@ -621,7 +621,7 @@ export class GoedgepicktService
           : order.shippingAddress;
       const { houseNumber: billingHouseNumber, addition: billingAddition } =
         GoedgepicktService.splitHouseNumberAndAddition(
-          order.shippingAddress.streetLine2
+          billingAddress.streetLine2 ?? ''
         );
       const orderStatus =
         (await this.config.determineOrderStatus?.(ctx, order)) || 'open';
