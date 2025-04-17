@@ -1,3 +1,7 @@
+# 2.0.5 (2025-04-17)
+
+- Process incoming stock and order webhooks via the job queue, to prevent webhook disabling in GoedGepickt
+
 # 2.0.4 (2025-04-15)
 
 - Process stock updates via the job queue, so that it is retried when GoedGepickt returns a `Too Many Attempts` error

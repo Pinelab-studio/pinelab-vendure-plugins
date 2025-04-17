@@ -196,7 +196,6 @@ describe('Goedgepickt plugin', function () {
           },
         ],
       });
-    // nock(apiUrl).put('/api/v1/products/test-uuid').reply(200, []);
     await adminClient.query(
       gql`
         mutation {
