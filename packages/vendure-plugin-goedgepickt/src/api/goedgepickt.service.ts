@@ -44,6 +44,11 @@ import {
   OrderItemInput,
   ProductInput,
 } from './goedgepickt.types';
+import {
+  CreateProductVariantInput,
+  UpdateProductVariantInput,
+} from '@vendure/common/lib/generated-types';
+import { Request as ExpressRequest } from 'express';
 
 interface StockInput {
   variantId: ID;
@@ -195,6 +200,17 @@ export class GoedgepicktService
       .subscribe(({ ctx, entity, type, input }) => {
         if (type !== 'created' && type !== 'updated') {
           // Only handle created and updated events
+          return;
+        }
+        const updatedOrCreatedInput = input as
+          | CreateProductVariantInput[]
+          | UpdateProductVariantInput[];
+
+        const isContentUpdated = updatedOrCreatedInput.some(
+          (i) => i.customFields || i.translations || i.price || i.sku
+        );
+        if (!isContentUpdated) {
+          // Only push products on content updates like custom fields, names, slugs
           return;
         }
         const skus = entity.map((v) => v.sku);
@@ -373,7 +389,8 @@ export class GoedgepicktService
   getClientForChannel(ctx: RequestContext): GoedgepicktClient | undefined {
     if (!ctx.channel.customFields.ggEnabled) {
       Logger.info(
-        `GoedGepickt plugin is disabled for channel ${ctx.channel.token}`
+        `GoedGepickt plugin is disabled for channel ${ctx.channel.token}`,
+        loggerCtx
       );
       return undefined;
     }
@@ -749,21 +766,23 @@ export class GoedgepicktService
     ctx: RequestContext,
     variant: Translated<ProductVariant> | ProductVariant
   ): VariantWithImage {
-    // Resolve images as if we are shop client
-    const shopCtx = new RequestContext({
-      apiType: 'shop',
-      isAuthorized: true,
-      authorizedAsOwnerOnly: false,
-      channel: ctx.channel,
-    });
     let imageUrl =
       variant.featuredAsset?.preview || variant.product?.featuredAsset?.preview;
     if (
       this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl &&
       imageUrl
     ) {
-      imageUrl = this.configService.assetOptions.assetStorageStrategy
-        .toAbsoluteUrl!(shopCtx.req as any, imageUrl);
+      // Needed for assetStorageStrategy toAbsoluteUrl
+      const mockReq = {
+        protocol: 'https',
+        get: () => undefined,
+        headers: {},
+      } as unknown as ExpressRequest;
+      imageUrl =
+        this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl(
+          ctx.req || mockReq,
+          imageUrl
+        );
     }
     return {
       id: variant.id,
