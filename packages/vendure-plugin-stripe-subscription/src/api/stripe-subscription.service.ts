@@ -40,7 +40,6 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import { StripeSubscriptionIntent } from './generated/shop-graphql';
 import { StripeClient } from './stripe.client';
-import { StripeInvoice } from './types/stripe-invoice';
 import {
   StripePaymentIntent,
   StripeSetupIntent,
@@ -53,21 +52,13 @@ export interface StripeContext {
   stripeClient: StripeClient;
 }
 
-interface CreateSubscriptionsJob {
-  action: 'createSubscriptionsForOrder';
-  ctx: SerializedRequestContext;
-  orderCode: string;
-  stripeCustomerId: string;
-  stripePaymentMethodId: string;
-}
-
 interface CancelSubscriptionsJob {
   action: 'cancelSubscriptionsForOrderline';
   ctx: SerializedRequestContext;
   orderLineId: ID;
 }
 
-export type JobData = CreateSubscriptionsJob | CancelSubscriptionsJob;
+export type JobData = CancelSubscriptionsJob;
 
 @Injectable()
 export class StripeSubscriptionService {
@@ -115,34 +106,11 @@ export class StripeSubscriptionService {
         const ctx = RequestContext.deserialize(data.ctx);
         if (data.action === 'cancelSubscriptionsForOrderline') {
           this.cancelSubscriptionForOrderLine(ctx, data.orderLineId);
-        } else if (data.action === 'createSubscriptionsForOrder') {
-          const order = await this.orderService.findOneByCode(
-            ctx,
-            data.orderCode,
-            []
+        } else {
+          Logger.error(
+            `Unknown action '${data.action}' in job queue ${this.jobQueue.name}`,
+            loggerCtx
           );
-          try {
-            await this.createSubscriptions(
-              ctx,
-              data.orderCode,
-              data.stripeCustomerId,
-              data.stripePaymentMethodId
-            );
-          } catch (error) {
-            Logger.warn(
-              `Failed to process job ${data.action} (${id}) for channel ${data.ctx._channel.token}: ${error}`,
-              loggerCtx
-            );
-            if (order) {
-              await this.logHistoryEntry(
-                ctx,
-                order.id,
-                'Failed to create subscription',
-                error
-              );
-            }
-            throw error;
-          }
         }
       },
     });
@@ -448,11 +416,13 @@ export class StripeSubscriptionService {
    */
   async handleInvoicePaymentFailed(
     ctx: RequestContext,
-    object: StripeInvoice,
+    invoiceId: string,
     order: Order
   ): Promise<void> {
     // TODO: Emit StripeSubscriptionPaymentFailed(subscriptionId, order, stripeInvoiceObject: StripeInvoice)
-    const amount = object.lines?.data[0]?.plan?.amount;
+    const { stripeClient } = await this.getStripeContext(ctx);
+    const invoice = await stripeClient.invoices.retrieve(invoiceId);
+    const amount = invoice.lines?.data[0]?.plan?.amount;
     const message = amount
       ? `Subscription payment of ${printMoney(amount)} failed`
       : 'Subscription payment failed';
@@ -460,9 +430,9 @@ export class StripeSubscriptionService {
       ctx,
       order.id,
       message,
-      `${message} - ${object.id}`,
+      `${message} - ${invoice.id}`,
       undefined,
-      object.subscription
+      invoice.subscription
     );
   }
 
@@ -477,6 +447,7 @@ export class StripeSubscriptionService {
   ): Promise<void> {
     const {
       paymentMethod: { code: paymentMethodCode },
+      stripeClient,
     } = await this.getStripeContext(ctx);
     if (!object.customer) {
       await this.logHistoryEntry(
@@ -487,24 +458,40 @@ export class StripeSubscriptionService {
       );
       throw Error(`No customer found in webhook data for order ${order.code}`);
     }
-    // Create subscriptions for customer
-    this.jobQueue
-      .add(
-        {
-          action: 'createSubscriptionsForOrder',
-          ctx: ctx.serialize(),
-          orderCode: order.code,
-          stripePaymentMethodId: object.payment_method,
-          stripeCustomerId: object.customer,
-        },
-        { retries: 0 } // Only 1 try, because subscription creation isn't idempotent
-      )
-      .catch((e) =>
-        Logger.error(
-          `Failed to add subscription-creation job to queue`,
-          loggerCtx
-        )
+    // Fetch setup or payment intent from Stripe
+    let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
+    if (object.object === 'payment_intent') {
+      intent = await stripeClient.paymentIntents.retrieve(object.id);
+    } else {
+      intent = await stripeClient.setupIntents.retrieve(object.id);
+    }
+    if (intent.status !== 'succeeded') {
+      throw Error(
+        `Intent '${object.id}' for order '${order.code}' is not succeeded, but '${intent.status}'. Not handling this event.`
       );
+    }
+    // Create subscriptions for customer
+    try {
+      await this.createSubscriptions(
+        ctx,
+        order.code,
+        object.customer,
+        object.payment_method
+      );
+    } catch (error) {
+      Logger.error(
+        `Failed to create subscription for order '${order.code}' for channel ${ctx.channel.token}: ${error}`,
+        loggerCtx
+      );
+      if (order) {
+        await this.logHistoryEntry(
+          ctx,
+          order.id,
+          'Failed to create subscription',
+          error
+        );
+      }
+    }
     // Settle payment for order
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
@@ -756,7 +743,7 @@ export class StripeSubscriptionService {
     message: string,
     error?: unknown,
     subscription?: Subscription,
-    subscriptionId?: string
+    subscriptionId?: any
   ): Promise<void> {
     let prettifiedError = error
       ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))

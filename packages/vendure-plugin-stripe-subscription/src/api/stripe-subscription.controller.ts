@@ -4,12 +4,12 @@ import { Request } from 'express';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { StripeSubscriptionPluginOptions } from '../stripe-subscription.plugin';
 import { StripeSubscriptionService } from './stripe-subscription.service';
-import { StripeInvoice } from './types/stripe-invoice';
 import {
   StripePaymentIntent,
   StripeSetupIntent,
 } from './types/stripe-payment-intent';
 import { IncomingStripeWebhook } from './types/stripe.common';
+import Stripe from 'stripe';
 
 export type RequestWithRawBody = Request & { rawBody: any };
 
@@ -23,19 +23,17 @@ export class StripeSubscriptionController {
   ) {}
 
   @Post('webhook')
-  async webhook(
-    @Headers('stripe-signature') signature: string | undefined,
-    @Req() request: RequestWithRawBody
-  ): Promise<void> {
-    const body = JSON.parse(request.body.toString()) as IncomingStripeWebhook;
+  async webhook(@Req() request: RequestWithRawBody): Promise<void> {
+    const body = request.body as IncomingStripeWebhook;
     Logger.info(`Incoming webhook ${body.type}`, loggerCtx);
     // Validate if metadata present
     const orderCode =
       body.data.object.metadata?.orderCode ??
-      (body.data.object as StripeInvoice).lines?.data[0]?.metadata.orderCode;
+      (body.data.object as Stripe.Invoice).lines?.data[0]?.metadata.orderCode;
     const channelToken =
       body.data.object.metadata?.channelToken ??
-      (body.data.object as StripeInvoice).lines?.data[0]?.metadata.channelToken;
+      (body.data.object as Stripe.Invoice).lines?.data[0]?.metadata
+        .channelToken;
     if (!StripeSubscriptionService.webhookEvents.includes(body.type as any)) {
       Logger.info(
         `Received incoming '${body.type}' webhook, not processing this event.`,
@@ -59,12 +57,6 @@ export class StripeSubscriptionController {
       if (!order) {
         throw Error(`Cannot find order with code ${orderCode}`); // Throw inside catch block, so Stripe will retry
       }
-      // Validate signature
-      const { stripeClient } =
-        await this.stripeSubscriptionService.getStripeContext(ctx);
-      if (!this.options?.disableWebhookSignatureChecking) {
-        stripeClient.validateWebhookSignature(request.rawBody, signature);
-      }
       if (
         body.type === 'payment_intent.succeeded' ||
         body.type === 'setup_intent.succeeded'
@@ -78,10 +70,10 @@ export class StripeSubscriptionController {
         body.type === 'invoice.payment_failed' ||
         body.type === 'invoice.payment_action_required'
       ) {
-        const invoiceObject = body.data.object as StripeInvoice;
+        const invoiceObject = body.data.object as Stripe.Invoice;
         await this.stripeSubscriptionService.handleInvoicePaymentFailed(
           ctx,
-          invoiceObject,
+          invoiceObject.id,
           order
         );
       }
