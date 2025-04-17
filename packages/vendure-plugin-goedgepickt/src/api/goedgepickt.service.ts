@@ -26,7 +26,6 @@ import {
   RequestContext,
   SerializedRequestContext,
   StockLevel,
-  StockLevelService,
   TransactionalConnection,
   Translated,
   translateDeep,
@@ -34,7 +33,6 @@ import {
 } from '@vendure/core';
 import { IsNull } from 'typeorm';
 import util from 'util';
-import { transitionToDelivered } from '../../../util/src';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { GoedgepicktClient } from './goedgepickt.client';
 import { goedgepicktHandler } from './goedgepickt.handler';
@@ -46,6 +44,11 @@ import {
   OrderItemInput,
   ProductInput,
 } from './goedgepickt.types';
+import {
+  CreateProductVariantInput,
+  UpdateProductVariantInput,
+} from '@vendure/common/lib/generated-types';
+import { Request as ExpressRequest } from 'express';
 
 interface StockInput {
   variantId: ID;
@@ -64,16 +67,13 @@ type VariantWithImage = {
   absoluteImageUrl?: string;
 };
 
-interface PushProductJobData {
-  action: 'push-product';
+/**
+ * Job for pushing products to Goedgepickt
+ */
+interface PushProductsJobData {
+  action: 'push-products';
   ctx: SerializedRequestContext;
-  products: ProductInput[];
-}
-
-interface PushProductByVariantsJobData {
-  action: 'push-product-by-variants';
-  ctx: SerializedRequestContext;
-  variants: ProductVariant[];
+  skus: string[];
 }
 
 interface SyncOrderJobData {
@@ -81,18 +81,30 @@ interface SyncOrderJobData {
   ctx: SerializedRequestContext;
   orderCode: string;
 }
-
-interface UpdateStockJobData {
-  action: 'update-stock';
+/**
+ * Job that handles incoming stock updates from GoedGepickt webhooks
+ */
+interface StockUpdateWebhookJobData {
+  action: 'incoming-stock-webhook';
   ctx: SerializedRequestContext;
-  stockInput: StockInput[];
+  sku: string;
+}
+
+/**
+ * Job that handles incoming order status updates from GoedGepickt webhooks
+ */
+interface OrderStatusWebhookJobData {
+  action: 'incoming-order-status-webhook';
+  ctx: SerializedRequestContext;
+  orderCode: string;
+  orderUuid: string;
 }
 
 type JobData =
-  | PushProductJobData
-  | PushProductByVariantsJobData
+  | PushProductsJobData
   | SyncOrderJobData
-  | UpdateStockJobData;
+  | StockUpdateWebhookJobData
+  | OrderStatusWebhookJobData;
 
 @Injectable()
 export class GoedgepicktService
@@ -100,7 +112,7 @@ export class GoedgepicktService
 {
   readonly queryLimit: number;
   //@ts-ignore -- For some reason nested props are not allowed in job data, while they are stringifyable
-  private jobQueue!: JobQueue<JobData>;
+  jobQueue!: JobQueue<JobData>;
 
   constructor(
     private variantService: ProductVariantService,
@@ -126,13 +138,17 @@ export class GoedgepicktService
         try {
           const ctx = RequestContext.deserialize(data.ctx);
           if (data.action === 'sync-order') {
-            await this.syncOrder(ctx, data.orderCode);
-          } else if (data.action === 'push-product') {
-            await this.handlePushProductJob(ctx, data);
-          } else if (data.action === 'push-product-by-variants') {
-            await this.handlePushByVariantsJob(ctx, data);
-          } else if (data.action === 'update-stock') {
-            await this.handleStockUpdateJob(ctx, data.stockInput);
+            await this.pushOrderToGoedGepickt(ctx, data.orderCode);
+          } else if (data.action === 'push-products') {
+            await this.pushSkusToGoedGepickt(ctx, data);
+          } else if (data.action === 'incoming-order-status-webhook') {
+            await this.updateVendureOrderStatus(
+              ctx,
+              data.orderCode,
+              data.orderUuid
+            );
+          } else if (data.action === 'incoming-stock-webhook') {
+            await this.handleStockUpdateJob(ctx, data.sku);
           } else {
             return Logger.error(
               `Invalid jobqueue action '${JSON.stringify(data)}'`,
@@ -181,28 +197,57 @@ export class GoedgepicktService
     // Listen for Variant changes
     this.eventBus
       .ofType(ProductVariantEvent)
-      .subscribe(async ({ ctx, entity, type, input }) => {
+      .subscribe(({ ctx, entity, type, input }) => {
         if (type !== 'created' && type !== 'updated') {
           // Only handle created and updated events
           return;
         }
-        // Batch per 15 because of the Goedgepickt limit
-        const batches = this.getBatches(entity, 15);
-        for (const batch of batches) {
-          await this.jobQueue.add(
-            {
-              action: 'push-product-by-variants',
-              ctx: ctx.serialize(),
-              variants: batch,
-            },
-            { retries: 20 }
-          );
-          Logger.info(
-            `Added ${entity.length} to 'push-product-by-variants' queue, because they were ${type}`,
+        const updatedOrCreatedInput = input as
+          | CreateProductVariantInput[]
+          | UpdateProductVariantInput[];
+
+        const isContentUpdated = updatedOrCreatedInput.some(
+          (i) => i.customFields || i.translations || i.price || i.sku
+        );
+        if (!isContentUpdated) {
+          // Only push products on content updates like custom fields, names, slugs
+          return;
+        }
+        const skus = entity.map((v) => v.sku);
+        this.createPushProductJobs(ctx, skus);
+      });
+  }
+
+  /**
+   * Create jobs for pushing products to GoedGepickt
+   * Creates jobs in batches of 15, because of the GoedGepickt rate limit
+   *
+   * Catches and logs errors instead of throwing them, because this is called from the event bus.
+   */
+  createPushProductJobs(ctx: RequestContext, skus: string[]): void {
+    // Batch per 15 because of the GoedGepickt rate limit
+    const batches = this.getBatches(skus, 15);
+    for (const batch of batches) {
+      this.jobQueue
+        .add(
+          {
+            action: 'push-products',
+            ctx: ctx.serialize(),
+            skus: batch,
+          },
+          { retries: 20 }
+        )
+        .catch((err) => {
+          Logger.error(
+            `Failed to create 'push-products' jobs: ${err}`,
             loggerCtx
           );
-        }
-      });
+        });
+      Logger.info(
+        `Created 'push-products' job for ${skus.length} variants for channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+    }
   }
 
   /**
@@ -253,9 +298,9 @@ export class GoedgepicktService
   }
 
   /**
-   * Update stock in Vendure based on Goedgepickt webhook event
+   * Update stock in Vendure based on Goedgepickt webhook data
    */
-  async handleIncomingStockUpdate(
+  async handleStockUpdateJob(
     ctx: RequestContext,
     productSku: string
   ): Promise<void> {
@@ -284,11 +329,259 @@ export class GoedgepicktService
       variantId: v.id as string,
       stock: ggStock,
     }));
-    await this.createStockUpdateJobs(ctx, stockInput);
+    await this.updateVendureStock(ctx, stockInput);
     Logger.info(
-      `Updated stock for ${productSku} to ${ggStock} via incoming event`,
+      `Updated stock for ${productSku} to ${ggStock} via incoming webhook`,
       loggerCtx
     );
+  }
+
+  /**
+   * Update order status in Vendure based on the status from Goedgepickt
+   */
+  async updateVendureOrderStatus(
+    ctx: RequestContext,
+    orderCode: string,
+    orderUuid: string
+  ): Promise<void> {
+    const client = this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
+    const ggOrder = await client.getOrder(orderUuid);
+    if (!ggOrder) {
+      Logger.warn(
+        `Order with uuid '${orderUuid}' doesn't exists in GoedGepickt. Ignoring incoming order status update for order'${orderCode}'`,
+        loggerCtx
+      );
+      return;
+    }
+    const newStatus = ggOrder.status;
+    const vendureOrder = await this.orderService.findOneByCode(ctx, orderCode);
+    if (!vendureOrder) {
+      Logger.warn(
+        `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+      return;
+    }
+    if (newStatus !== 'completed') {
+      return Logger.info(
+        `No status updates needed for order ${orderCode} for status ${newStatus}`,
+        loggerCtx
+      );
+    }
+    if (vendureOrder.state === 'Delivered') {
+      return;
+    }
+    if (vendureOrder.state !== 'Shipped') {
+      // Try to transition to shipped first
+      await this.transitionToState(ctx, vendureOrder, 'Shipped');
+      Logger.info(`Updated order ${orderCode} to Shipped`, loggerCtx);
+    }
+    await this.transitionToState(ctx, vendureOrder, 'Delivered');
+    Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
+  }
+
+  /**
+   * Returns undefined if plugin is disabled
+   */
+  getClientForChannel(ctx: RequestContext): GoedgepicktClient | undefined {
+    if (!ctx.channel.customFields.ggEnabled) {
+      Logger.info(
+        `GoedGepickt plugin is disabled for channel ${ctx.channel.token}`,
+        loggerCtx
+      );
+      return undefined;
+    }
+    const [uuid, apiKey] = (ctx.channel.customFields.ggUuidApiKey || '').split(
+      ':'
+    );
+    if (!uuid || !apiKey) {
+      throw Error(
+        `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`
+      );
+    }
+    return new GoedgepicktClient({
+      webshopUuid: uuid,
+      apiKey: apiKey,
+    });
+  }
+
+  getWebhookUrl(channelToken: string): string {
+    let webhookTarget = this.config.vendureHost;
+    if (!webhookTarget.endsWith('/')) {
+      webhookTarget += '/';
+    }
+    return `${webhookTarget}goedgepickt/webhook/${channelToken}`;
+  }
+
+  /**
+   * Creates admin context for channel
+   */
+  async getCtxForChannel(channelToken: string): Promise<RequestContext> {
+    const channel = await this.channelService.getChannelFromToken(channelToken);
+    return new RequestContext({
+      apiType: 'admin',
+      isAuthorized: true,
+      authorizedAsOwnerOnly: false,
+      channel,
+    });
+  }
+
+  /**
+   * 1. Gets all products from GG
+   * 2. Updates stock in Vendure based on GG products
+   * 3. Creates jobs for pushing products to GG
+   */
+  async doFullSync(channelToken: string): Promise<void> {
+    const ctx = await this.getCtxForChannel(channelToken);
+    const client = this.getClientForChannel(ctx);
+    if (!client) {
+      throw new UserInputError(
+        `GoedGepickt is not configured for channel ${channelToken}`
+      );
+    }
+    const [ggProducts, variants] = await Promise.all([
+      client.getAllProducts(),
+      this.getVariants(ctx),
+    ]);
+    Logger.info(
+      `Full sync: Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
+      loggerCtx
+    );
+    // Update stock levels based on GG products
+    const stockLevelInputs: StockInput[] = [];
+    ggProducts.forEach((p) => {
+      const variantId = variants.find((v) => v.sku === p.sku)?.id;
+      if (!variantId) {
+        Logger.info(
+          `No variant found for product with sku ${p.sku}`,
+          loggerCtx
+        );
+        return;
+      }
+      if (p.stock?.freeStock === undefined || p.stock?.freeStock === null) {
+        Logger.error(
+          `No stock found on product from GoedGepickt with sku ${p.sku}`,
+          loggerCtx
+        );
+        return;
+      }
+      stockLevelInputs.push({
+        variantId,
+        stock: p.stock?.freeStock,
+      });
+    });
+    // Update stock in batches of 100
+    const stockLevelBatches = this.getBatches(stockLevelInputs, 100);
+    for (const batch of stockLevelBatches) {
+      await this.updateVendureStock(ctx, batch);
+    }
+    // Create 'push-products' jobs
+    const skus = variants.map((v) => v.sku);
+    this.createPushProductJobs(ctx, skus);
+  }
+
+  /**
+   * Create or update products in Goedgepickt based on given Vendure variants
+   *
+   * We assume here that jobs are already created in batches,
+   * so all given skus will be processes at once
+   */
+  async pushSkusToGoedGepickt(
+    ctx: RequestContext,
+    { skus: variantSkus }: PushProductsJobData
+  ): Promise<void> {
+    const client = this.getClientForChannel(ctx);
+    if (!client) {
+      return;
+    }
+    for (const sku of variantSkus) {
+      const variants = await this.getVariants(ctx, sku);
+      const variant = variants?.[0];
+      if (!variant) {
+        Logger.info(
+          `No variants found for sku ${sku} in channel ${ctx.channel.token}. Not pushing to GoedGepickt`,
+          loggerCtx
+        );
+        continue;
+      }
+      const ggProductInput = this.mapToProductInput(variant);
+      const existing = await client.findProductBySku(sku);
+      const uuid = existing?.uuid;
+      if (!existing?.picture?.toLowerCase().includes('image_placeholder.png')) {
+        // The picture on GG is not a placeholder, so don't update it again.
+        ggProductInput.picture = undefined; // Don't update picture on existing product
+      }
+      if (uuid) {
+        await client.updateProduct(uuid, ggProductInput);
+        Logger.debug(`Updated variant ${sku} in GoedGepickt`, loggerCtx);
+      } else {
+        await client.createProduct(ggProductInput);
+        Logger.debug(`Created variant ${sku} in GoedGepickt`, loggerCtx);
+      }
+    }
+    Logger.info(
+      `Created/updated ${variantSkus.length} variants to GoedGepickt for channel ${ctx.channel.token}`
+    );
+  }
+
+  async logHistoryEntry(
+    ctx: RequestContext,
+    orderId: ID,
+    error?: unknown
+  ): Promise<void> {
+    let prettifiedError = error
+      ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
+      : undefined; // Make sure its serializable
+    await this.historyService.createHistoryEntryForOrder(
+      {
+        ctx,
+        orderId,
+        type: 'GOEDGEPICKT_NOTIFICATION' as any,
+        data: {
+          name: 'GoedGepickt',
+          valid: !error,
+          error: prettifiedError,
+        },
+      },
+      false
+    );
+  }
+
+  /**
+   * Update stock for variants in Vendure based on given GG products
+   */
+  private async updateVendureStock(
+    ctx: RequestContext,
+    stockInput: StockInput[]
+  ): Promise<ProductVariant[]> {
+    const variantsWithStock = stockInput.map((input) => ({
+      id: input.variantId,
+      stockOnHand: input.stock,
+    }));
+    const variants = await this.variantService.update(ctx, variantsWithStock);
+    // Set allocated of each variant to 0
+    const variantIds = variantsWithStock.map((v) => v.id);
+    if (!variantIds.length) {
+      return [];
+    }
+    await this.connection
+      .getRepository(ctx, StockLevel)
+      .createQueryBuilder()
+      .update()
+      .set({ stockAllocated: 0 })
+      .where('productVariantId IN (:...variantIds)', { variantIds })
+      .execute();
+    const skus = variants.map((v) => v.sku);
+    Logger.info(
+      `Updated stock of variants for channel ${ctx.channel.token}: ${skus.join(
+        ','
+      )}`,
+      loggerCtx
+    );
+    return variants;
   }
 
   /**
@@ -328,7 +621,7 @@ export class GoedgepicktService
           : order.shippingAddress;
       const { houseNumber: billingHouseNumber, addition: billingAddition } =
         GoedgepicktService.splitHouseNumberAndAddition(
-          order.shippingAddress.streetLine2
+          billingAddress.streetLine2 ?? ''
         );
       const orderStatus =
         (await this.config.determineOrderStatus?.(ctx, order)) || 'open';
@@ -392,325 +685,6 @@ export class GoedgepicktService
   }
 
   /**
-   * Update order status in Vendure based on event
-   */
-  async handleIncomingOrderStatusUpdate(
-    ctx: RequestContext,
-    orderCode: string,
-    orderUuid: string
-  ): Promise<void> {
-    const client = this.getClientForChannel(ctx);
-    if (!client) {
-      return;
-    }
-    const ggOrder = await client.getOrder(orderUuid);
-    if (!ggOrder) {
-      Logger.warn(
-        `Order with uuid '${orderUuid}' doesn't exists in GoedGepickt. Ignoring incoming order status update for order'${orderCode}'`,
-        loggerCtx
-      );
-      return;
-    }
-    const newStatus = ggOrder.status;
-    const vendureOrder = await this.orderService.findOneByCode(ctx, orderCode);
-    if (!vendureOrder) {
-      Logger.warn(
-        `Order with code ${orderCode} doesn't exists. Not updating status to ${newStatus} for this order in channel ${ctx.channel.token}`,
-        loggerCtx
-      );
-      return;
-    }
-    if (newStatus !== 'completed') {
-      return Logger.info(
-        `No status updates needed for order ${orderCode} for status ${newStatus}`,
-        loggerCtx
-      );
-    }
-    if (vendureOrder.state === 'Delivered') {
-      return;
-    }
-    if (vendureOrder.state !== 'Shipped') {
-      // Try to transition to shipped first
-      await this.transitionToState(ctx, vendureOrder, 'Shipped');
-      Logger.info(`Updated order ${orderCode} to Shipped`, loggerCtx);
-    }
-    await this.transitionToState(ctx, vendureOrder, 'Delivered');
-    Logger.info(`Updated order ${orderCode} to Delivered`, loggerCtx);
-  }
-
-  /**
-   * Returns undefined if plugin is disabled
-   */
-  getClientForChannel(ctx: RequestContext): GoedgepicktClient | undefined {
-    if (!ctx.channel.customFields.ggEnabled) {
-      Logger.info(
-        `GoedGepickt plugin is disabled for channel ${ctx.channel.token}`
-      );
-      return undefined;
-    }
-    const [uuid, apiKey] = (ctx.channel.customFields.ggUuidApiKey || '').split(
-      ':'
-    );
-    if (!uuid || !apiKey) {
-      throw Error(
-        `GoedGepickt plugin is enabled, but incomplete config found for channel ${ctx.channel.token}`
-      );
-    }
-    return new GoedgepicktClient({
-      webshopUuid: uuid,
-      apiKey: apiKey,
-    });
-  }
-
-  getWebhookUrl(channelToken: string): string {
-    let webhookTarget = this.config.vendureHost;
-    if (!webhookTarget.endsWith('/')) {
-      webhookTarget += '/';
-    }
-    return `${webhookTarget}goedgepickt/webhook/${channelToken}`;
-  }
-
-  /**
-   * Creates admin context for channel
-   */
-  async getCtxForChannel(channelToken: string): Promise<RequestContext> {
-    const channel = await this.channelService.getChannelFromToken(channelToken);
-    return new RequestContext({
-      apiType: 'admin',
-      isAuthorized: true,
-      authorizedAsOwnerOnly: false,
-      channel,
-    });
-  }
-
-  /**
-   * Creates 2 types of jobs: jobs for pushing products and jobs for updating stocklevels
-   */
-  async createFullsyncJobs(channelToken: string): Promise<void> {
-    const ctx = await this.getCtxForChannel(channelToken);
-    const client = this.getClientForChannel(ctx);
-    if (!client) {
-      throw new UserInputError(
-        `GoedGepickt is not configured for channel ${channelToken}`
-      );
-    }
-    const [ggProducts, variants] = await Promise.all([
-      client.getAllProducts(),
-      this.getVariants(ctx),
-    ]);
-    Logger.info(
-      `Pushing ${variants.length} Vendure variants for channel ${channelToken} to GoedGepickt and fetching stock levels for those variants from GoedGepickt`,
-      loggerCtx
-    );
-    // Update stock levels based on GG products
-    const stockLevelInputs: StockInput[] = [];
-    ggProducts.forEach((p) => {
-      const variantId = variants.find((v) => v.sku === p.sku)?.id;
-      if (!variantId) {
-        Logger.info(
-          `No variant found for product with sku ${p.sku}`,
-          loggerCtx
-        );
-        return;
-      }
-      if (p.stock?.freeStock === undefined || p.stock?.freeStock === null) {
-        Logger.error(
-          `No stock found on product from GoedGepickt with sku ${p.sku}`,
-          loggerCtx
-        );
-        return;
-      }
-      stockLevelInputs.push({
-        variantId,
-        stock: p.stock?.freeStock,
-      });
-    });
-    // Create stock update jobs
-    await this.createStockUpdateJobs(ctx, stockLevelInputs);
-    // Create product push jobs. 30 products per job
-    const productInputs: ProductInput[] = [];
-    for (const variant of variants) {
-      const existing = ggProducts.find(
-        (ggProduct) => ggProduct.sku === variant.sku
-      );
-      productInputs.push(this.mapToProductInput(variant, existing?.uuid));
-    }
-    const pushBatches = this.getBatches(productInputs, 15); // Batch of 15, so we stay under the 60 per minute limit in a single job
-    await Promise.all(
-      pushBatches.map(async (batch) => {
-        await this.jobQueue.add(
-          {
-            action: 'push-product',
-            ctx: ctx.serialize(),
-            products: batch,
-          },
-          { retries: 20 }
-        );
-        Logger.info(
-          `Created PushProducts job for ${batch.length} variants for channel ${channelToken}`,
-          loggerCtx
-        );
-      })
-    );
-  }
-
-  /**
-   * Create or update product in Goedgepickt based on given productInput
-   */
-  async handlePushProductJob(
-    ctx: RequestContext,
-    { products }: PushProductJobData
-  ): Promise<void> {
-    const client = this.getClientForChannel(ctx);
-    if (!client) {
-      return;
-    }
-    for (const product of products) {
-      if (product.uuid) {
-        product.picture = undefined; // Don't update picture on existing product
-        await client.updateProduct(product.uuid, product);
-        Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
-      } else {
-        await client.createProduct(product).catch((e) => {
-          if (
-            typeof e?.message === 'string' &&
-            e.message.indexOf('already exists') > -1
-          ) {
-            // Ignore, this has already been created in previous try of this batch
-          } else {
-            throw e;
-          }
-        });
-        Logger.debug(`Created variant ${product.sku}`, loggerCtx);
-      }
-    }
-    Logger.info(
-      `Pushed ${products.length} products to GoedGepickt for channel ${ctx.channel.token}`,
-      loggerCtx
-    );
-  }
-
-  /**
-   * Create or update products in Goedgepickt based on given Vendure variants
-   * Waits for 1 minute every 30 products, because of Goedgepickt's rate limit
-   */
-  async handlePushByVariantsJob(
-    ctx: RequestContext,
-    { variants }: PushProductByVariantsJobData
-  ): Promise<void> {
-    const client = this.getClientForChannel(ctx);
-    if (!client) {
-      return;
-    }
-    for (const variant of variants) {
-      const existing = await client.findProductBySku(variant.sku);
-      const product = this.mapToProductInput(
-        this.setAbsoluteImage(ctx, variant)
-      );
-      const uuid = existing?.uuid;
-      console.log(existing);
-      if (!existing?.picture?.toLowerCase().includes('image_placeholder.png')) {
-        // The picture on GG is not a placeholder, so don't update it again.
-        product.picture = undefined; // Don't update picture on existing product
-      }
-      if (uuid) {
-        await client.updateProduct(uuid, product);
-        Logger.debug(`Updated variant ${product.sku}`, loggerCtx);
-      } else {
-        await client.createProduct(product);
-        Logger.debug(`Created variant ${product.sku}`, loggerCtx);
-      }
-    }
-    Logger.info(
-      `Pushed ${variants.length} variants to GoedGepickt for channel ${ctx.channel.token}`
-    );
-  }
-
-  async logHistoryEntry(
-    ctx: RequestContext,
-    orderId: ID,
-    error?: unknown
-  ): Promise<void> {
-    let prettifiedError = error
-      ? JSON.parse(JSON.stringify(error, Object.getOwnPropertyNames(error)))
-      : undefined; // Make sure its serializable
-    await this.historyService.createHistoryEntryForOrder(
-      {
-        ctx,
-        orderId,
-        type: 'GOEDGEPICKT_NOTIFICATION' as any,
-        data: {
-          name: 'GoedGepickt',
-          valid: !error,
-          error: prettifiedError,
-        },
-      },
-      false
-    );
-  }
-
-  /**
-   * Create stock update jobs in batches of 10 (by default).
-   */
-  async createStockUpdateJobs(
-    ctx: RequestContext,
-    stockInput: StockInput[],
-    batchSize = 10
-  ): Promise<void> {
-    const pushBatches = this.getBatches(stockInput, batchSize);
-    await Promise.all(
-      pushBatches.map(async (batch) => {
-        await this.jobQueue.add(
-          {
-            action: 'update-stock',
-            ctx: ctx.serialize(),
-            stockInput: batch,
-          },
-          { retries: 20 }
-        );
-        Logger.info(
-          `Created 'update-stock' job for ${batch.length} variants for channel ${ctx.channel.token}`,
-          loggerCtx
-        );
-      })
-    );
-  }
-
-  /**
-   * Update stock for variants based on given GG products
-   */
-  private async handleStockUpdateJob(
-    ctx: RequestContext,
-    stockInput: StockInput[]
-  ): Promise<ProductVariant[]> {
-    const variantsWithStock = stockInput.map((input) => ({
-      id: input.variantId,
-      stockOnHand: input.stock,
-    }));
-    const variants = await this.variantService.update(ctx, variantsWithStock);
-    // Set allocated of each variant to 0
-    const variantIds = variantsWithStock.map((v) => v.id);
-    if (!variantIds.length) {
-      return [];
-    }
-    await this.connection
-      .getRepository(ctx, StockLevel)
-      .createQueryBuilder()
-      .update()
-      .set({ stockAllocated: 0 })
-      .where('productVariantId IN (:...variantIds)', { variantIds })
-      .execute();
-    const skus = variants.map((v) => v.sku);
-    Logger.info(
-      `Updated stock of variants for channel ${ctx.channel.token}: ${skus.join(
-        ','
-      )}`,
-      loggerCtx
-    );
-    return variants;
-  }
-
-  /**
    * Transition an order to the given state, and throw an error if it fails, instead of returing the transition result.
    */
   private async transitionToState(
@@ -734,6 +708,10 @@ export class GoedgepicktService
     }
   }
 
+  /**
+   * Get all variants, or variants by SKU.
+   * Returns translated variants, including an absolute Image Url
+   */
   private async getVariants(
     ctx: RequestContext,
     sku?: string
@@ -788,21 +766,23 @@ export class GoedgepicktService
     ctx: RequestContext,
     variant: Translated<ProductVariant> | ProductVariant
   ): VariantWithImage {
-    // Resolve images as if we are shop client
-    const shopCtx = new RequestContext({
-      apiType: 'shop',
-      isAuthorized: true,
-      authorizedAsOwnerOnly: false,
-      channel: ctx.channel,
-    });
     let imageUrl =
       variant.featuredAsset?.preview || variant.product?.featuredAsset?.preview;
     if (
       this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl &&
       imageUrl
     ) {
-      imageUrl = this.configService.assetOptions.assetStorageStrategy
-        .toAbsoluteUrl!(shopCtx.req as any, imageUrl);
+      // Needed for assetStorageStrategy toAbsoluteUrl
+      const mockReq = {
+        protocol: 'https',
+        get: () => undefined,
+        headers: {},
+      } as unknown as ExpressRequest;
+      imageUrl =
+        this.configService.assetOptions.assetStorageStrategy.toAbsoluteUrl(
+          ctx.req || mockReq,
+          imageUrl
+        );
     }
     return {
       id: variant.id,
@@ -817,7 +797,10 @@ export class GoedgepicktService
   /**
    * Sync order to Goedgepickt platform
    */
-  async syncOrder(ctx: RequestContext, orderCode: string): Promise<void> {
+  async pushOrderToGoedGepickt(
+    ctx: RequestContext,
+    orderCode: string
+  ): Promise<void> {
     const client = this.getClientForChannel(ctx);
     if (!client) {
       return;
@@ -861,12 +844,11 @@ export class GoedgepicktService
     );
   }
 
-  private mapToProductInput(
-    variant: VariantWithImage,
-    uuid?: string
-  ): ProductInput {
+  /**
+   * Map a variant to a product input for GoedGepickt
+   */
+  private mapToProductInput(variant: VariantWithImage): ProductInput {
     return {
-      uuid,
       name: variant.name,
       sku: variant.sku,
       productId: variant.sku,

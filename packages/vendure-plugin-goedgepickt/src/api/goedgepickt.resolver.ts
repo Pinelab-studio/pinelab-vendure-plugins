@@ -30,7 +30,7 @@ export class GoedgepicktResolver {
   @Allow(goedgepicktPermission.Permission)
   async runGoedgepicktFullSync(@Ctx() ctx: RequestContext): Promise<boolean> {
     const channelToken = ctx.channel.token;
-    await this.service.createFullsyncJobs(channelToken);
+    await this.service.doFullSync(channelToken);
     if (this.pluginConfig.setWebhook) {
       await this.service.registerWebhooks(ctx);
     }
@@ -43,7 +43,7 @@ export class GoedgepicktResolver {
     @Ctx() ctx: RequestContext,
     @Args() input: MutationSyncOrderToGoedgepicktArgs
   ): Promise<boolean> {
-    await this.service.syncOrder(ctx, input.orderCode);
+    await this.service.pushOrderToGoedGepickt(ctx, input.orderCode);
     return true;
   }
 }

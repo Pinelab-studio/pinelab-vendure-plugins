@@ -37,7 +37,7 @@ export class GoedgepicktController {
     }
     const channels = await this.connection.getRepository(Channel).find();
     for (const channel of channels.filter((c) => c.customFields?.ggEnabled)) {
-      await this.service.createFullsyncJobs(channel.token).catch((err) => {
+      await this.service.doFullSync(channel.token).catch((err) => {
         Logger.error(
           `Failed to create fullsync jobs for channel ${channel.id}: ${err.message}`,
           loggerCtx
@@ -73,14 +73,25 @@ export class GoedgepicktController {
       const ctx = await this.service.getCtxForChannel(channelToken);
       switch (body.event) {
         case 'orderStatusChanged':
-          await this.service.handleIncomingOrderStatusUpdate(
-            ctx,
-            body.orderNumber,
-            body.orderUuid
+          await this.service.jobQueue.add(
+            {
+              action: 'incoming-order-status-webhook',
+              ctx: ctx.serialize(),
+              orderCode: body.orderNumber,
+              orderUuid: body.orderUuid,
+            },
+            { retries: 20 }
           );
           break;
         case 'stockUpdated':
-          await this.service.handleIncomingStockUpdate(ctx, body.productSku);
+          await this.service.jobQueue.add(
+            {
+              action: 'incoming-stock-webhook',
+              ctx: ctx.serialize(),
+              sku: body.productSku,
+            },
+            { retries: 20 }
+          );
           break;
         default:
           return Logger.warn(
@@ -89,12 +100,12 @@ export class GoedgepicktController {
           );
       }
       Logger.info(
-        `Successfully processed webhook with event ${body.event} for channel ${channelToken}`,
+        `Successfully created jobs for incoming webhook with event ${body.event} for channel ${channelToken}`,
         loggerCtx
       );
     } catch (err: any) {
       Logger.error(
-        `Failed to process incoming webhook ${body?.event} for channel ${channelToken}: ${err?.message}`,
+        `Failed to create jobs for incoming webhook ${body?.event} for channel ${channelToken}: ${err?.message}`,
         loggerCtx,
         JSON.stringify(err, Object.getOwnPropertyNames(err))
       );
