@@ -39,6 +39,27 @@ plugins: [
 
 You can also download multiple PDF's in the order list. This is currently limited to 10 files, because PDF generation runs in the main instance, not the worker.
 
+## Troubleshooting
+
+### 403 Error Despite Proper Permissions
+
+If you're encountering a `403 Forbidden` error in the Admin UI even after granting the correct permissions to your user (e.g., SuperAdmin), you may need to explicitly configure the token method used by the Admin UI to match your server configuration.
+
+Add the following to your `AdminUiPlugin` configuration to ensure compatibility:
+
+```ts
+AdminUiPlugin.init({
+  adminUiConfig: {
+    tokenMethod: 'bearer', // ← switch from default 'cookie' to match server settings
+    // The following are the defaults and should match your server config
+    authTokenHeaderKey: 'vendure-auth-token',
+    channelTokenKey: 'vendure-token',
+  },
+}),
+```
+
+This ensures that the Admin UI and the Vendure server are using the same token method (`bearer`), which is particularly important if your server is configured with both `"bearer"` and `"cookie"` token methods.
+
 ## Docker
 
 To make Puppeteer work on Docker, you need some additional steps in your Dockerfile. This is the Dockerfile we use ourselves:
@@ -93,6 +114,7 @@ If you want to disable this behavior, you can supply `allowPublicDownload: false
 ## Custom data loading
 
 If you need custom data, or more relations in your template, you can supply a custom data loading function. All data returned from this function is passed into your Handlebars HTML template.
+
 
 ```ts
 import { LoadDataFn } from '@pinelab/vendure-plugin-order-pdfs';
