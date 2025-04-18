@@ -76,6 +76,12 @@ export class AcceptBlueCommonResolver {
       ?.acceptBlueHostedTokenizationKey;
   }
 
+  @ResolveField('acceptBlueTestMode')
+  @Resolver('PaymentMethodQuote')
+  async testMode(@Ctx() ctx: RequestContext): Promise<boolean> {
+    return !!(await this.acceptBlueService.getClientForChannel(ctx))?.testMode;
+  }
+
   @ResolveField('acceptBlueGooglePayMerchantId')
   @Resolver('PaymentMethodQuote')
   async acceptBlueGooglePayMerchantId(

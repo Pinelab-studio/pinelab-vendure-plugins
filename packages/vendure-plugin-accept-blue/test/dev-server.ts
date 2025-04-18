@@ -59,7 +59,7 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
     dbConnectionOptions: {
       // autoSave: true, // Uncomment this line to persist the database between restarts
     },
-    authOptions: {},
+
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
