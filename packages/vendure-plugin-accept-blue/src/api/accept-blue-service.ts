@@ -308,7 +308,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext
   ): Promise<AcceptBluePaymentMethodQuote[]> {
     const client = await this.getClientForChannel(ctx);
-    const storefrontKeys = await this.getStorefrontKeys(ctx);
+    const storefrontKeys = await this.getStorefrontKeys(ctx, undefined);
     return client.enabledPaymentMethods.map((pm) => ({
       name: pm,
       tokenizationKey: storefrontKeys.acceptBlueHostedTokenizationKey,
@@ -564,23 +564,23 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
       );
     }
+    // Find the handler arguments and pass the enabled payment methods to the client
+    const mapToBoolean = (value: string | undefined) =>
+      value === 'true' ? true : false;
     const apiKey = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'apiKey'
     )?.value;
     const pin = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'pin'
     )?.value;
-    const testMode = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'testMode'
-    )?.value as boolean | undefined;
+    const testMode = mapToBoolean(
+      acceptBlueMethod.handler.args.find((a) => a.name === 'testMode')?.value
+    );
     if (!apiKey) {
       throw new Error(
         `No apiKey or pin found on configured Accept Blue payment method`
       );
     }
-    // Find the handler arguments and pass the enabled payment methods to the client
-    const mapToBoolean = (value: string | undefined) =>
-      value === 'true' ? true : false;
     const enabledPaymentMethodArgs: EnabledPaymentMethodsArgs = {
       allowAmex: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowAmex')?.value
@@ -622,9 +622,24 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    *
    * Hosted tokenization key: The key needed to tokenize a creditcard on the frontend
    * Google Pay merchant ID and Gateway Merchant Id: to render Google Pay button on the frontend
+   *
+   * If a `parentPaymentMethodId` is given, we only return the keys if the parent payment method is an Accept Blue payment method.
    */
-  async getStorefrontKeys(ctx: RequestContext): Promise<StorefrontKeys> {
-    const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+  async getStorefrontKeys(
+    ctx: RequestContext,
+    parentPaymentMethodId: ID | undefined
+  ): Promise<StorefrontKeys> {
+    const [acceptBlueMethod, client] = await Promise.all([
+      this.getAcceptBlueMethod(ctx),
+      this.getClientForChannel(ctx),
+    ]);
+    if (
+      parentPaymentMethodId &&
+      acceptBlueMethod?.id != parentPaymentMethodId
+    ) {
+      // If the parent payment method is not an Accept Blue payment method, we don't need to return any keys
+      return {};
+    }
     const tokenizationSourceKey = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'tokenizationSourceKey'
     )?.value;
@@ -634,10 +649,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const googlePayGatewayMerchantId = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'googlePayGatewayMerchantId'
     )?.value;
+    console.log(typeof client.testMode);
     return {
       acceptBlueHostedTokenizationKey: tokenizationSourceKey,
       acceptBlueGooglePayMerchantId: googlePayMerchantId,
       acceptBlueGooglePayGatewayMerchantId: googlePayGatewayMerchantId,
+      acceptBlueTestMode: client.testMode,
     };
   }
 

@@ -1,3 +1,7 @@
+# 2.6.2 (2025-04-22)
+
+- Dont expose Accept Blue config on non Accept Blue Payment Method Quotes
+
 # 2.6.1 (2025-04-18)
 
 - Expose `acceptBlueTestMode` on Payment Method Quotes

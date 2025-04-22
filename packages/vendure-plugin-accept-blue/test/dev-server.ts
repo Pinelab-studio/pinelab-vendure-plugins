@@ -31,6 +31,7 @@ import { AppleOrGooglePayInput, NoncePaymentMethodInput } from '../src/types';
 import { add } from 'date-fns';
 import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
@@ -59,7 +60,12 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
     dbConnectionOptions: {
       // autoSave: true, // Uncomment this line to persist the database between restarts
     },
-
+    authOptions: {
+      tokenMethod: ['cookie', 'bearer'],
+    },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},

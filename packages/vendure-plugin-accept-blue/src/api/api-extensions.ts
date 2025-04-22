@@ -110,7 +110,7 @@ const commonApiExtensions = gql`
     acceptBlueHostedTokenizationKey: String
     acceptBlueGooglePayMerchantId: String
     acceptBlueGooglePayGatewayMerchantId: String
-    acceptBlueTestMode: Boolean!
+    acceptBlueTestMode: Boolean
   }
 
   extend type OrderLine {
