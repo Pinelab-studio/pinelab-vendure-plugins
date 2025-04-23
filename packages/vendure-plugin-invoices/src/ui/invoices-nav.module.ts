@@ -3,7 +3,7 @@ import { addNavMenuItem, SharedModule } from '@vendure/admin-ui/core';
 import { registerCustomDetailComponent } from '@vendure/admin-ui/core';
 
 import { InvoiceDetailViewComponent } from './invoices-detail-view/invoices-detail-view.component';
-import { getRegenerateInvoiceButton } from './util';
+import { getActionBarInvoiceButton } from './util';
 
 @NgModule({
   imports: [SharedModule],
@@ -22,8 +22,8 @@ import { getRegenerateInvoiceButton } from './util';
       locationId: 'order-detail',
       component: InvoiceDetailViewComponent,
     }),
-    getRegenerateInvoiceButton(false),
-    getRegenerateInvoiceButton(true),
+    getActionBarInvoiceButton(false),
+    getActionBarInvoiceButton(true),
   ],
 })
 export class InvoicesNavModule {}

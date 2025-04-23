@@ -1,3 +1,7 @@
+# 4.3.0 (2025-04-23)
+
+- Notify admins that they need to regenerate the invoice, when the order total doesn't match the invoice total anymore.
+
 # 4.2.1 (2025-03-18)
 
 - Include surcharges as relation, to prevent incomplete tax summaries, and thus incomplete credit invoices
