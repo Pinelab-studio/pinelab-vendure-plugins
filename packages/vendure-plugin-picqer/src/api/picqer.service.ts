@@ -722,6 +722,7 @@ export class PicqerService implements OnApplicationBootstrap {
       'lines.productVariant',
       'lines.productVariant.translations',
       'lines.productVariant.taxCategory',
+      'lines.productVariant.product',
       'customer',
       'customer.addresses',
       'shippingLines',
@@ -887,6 +888,9 @@ export class PicqerService implements OnApplicationBootstrap {
           return;
         }
         try {
+          await this.entityHydrator.hydrate(ctx, variant, {
+            relations: ['product'],
+          });
           const productInput = this.mapToProductInput(
             ctx,
             variant,

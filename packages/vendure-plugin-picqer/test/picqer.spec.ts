@@ -46,6 +46,7 @@ import { picqerHandler } from '../src/api/picqer.handler';
 import { FULL_SYNC, GET_CONFIG, UPSERT_CONFIG } from '../src/ui/queries';
 import { createSignature } from './test-helpers';
 import { filter } from 'rxjs';
+import { waitFor } from '../../test/src/test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -65,6 +66,7 @@ beforeAll(async () => {
         vendureHost: 'https://example-vendure.io',
         // Dummy data for testing purposes
         pushProductVariantFields: (variant) => ({
+          parentProductName: variant.product.name,
           barcode: variant.sku,
           height: (variant.customFields as any).height,
         }),
@@ -251,7 +253,10 @@ describe('Order placement', function () {
         },
       }
     )) as any;
-    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+
+    // Wait until picqerOrderRequest is intercepted, because this is done in a job queue
+    // and we need to wait for it to finish
+    await waitFor(() => picqerOrderRequest);
     const variant = (await getAllVariants(adminClient)).find(
       (v) => v.id === 'T_1'
     );
@@ -326,7 +331,7 @@ describe('Order placement', function () {
         },
       }
     );
-    await Promise.resolve((r) => setTimeout(r, 1000));
+    await waitFor(() => eventFired === true);
     expect(eventFired).toBe(true);
     const order = await getOrder(adminClient, createdOrder?.id as string);
     expect(order!.state).toBe('Delivered');
@@ -420,7 +425,7 @@ describe('Product synchronization', function () {
       .get('/warehouses?offset=0')
       .reply(200, [{ idwarehouse: 2, name: 'Main warehouse', active: true }]);
     const { triggerPicqerFullSync } = await adminClient.query(FULL_SYNC);
-    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    await waitFor(() => pushProductPayloads.length === 4);
     expect(pushProductPayloads.length).toBe(4);
     expect(triggerPicqerFullSync).toBe(true);
   });
@@ -448,6 +453,8 @@ describe('Product synchronization', function () {
     );
     // Expect the barcode to be the same as SKU, because thats what we configure in the plugin.init()
     expect(pushedProduct?.barcode).toBe('L2201516');
+    // We test this to make sure the variant.product relation is passed into the strategy
+    expect(pushedProduct?.parentProductName).toBe('Laptop');
   });
 
   it('Should push product to Picqer when updated in Vendure', async () => {
@@ -471,7 +478,7 @@ describe('Product synchronization', function () {
     const [variant] = await updateVariants(adminClient, [
       { id: 'T_1', price: 12345 },
     ]);
-    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    await waitFor(() => updatedProduct);
     expect(variant?.price).toBe(12345);
     expect(updatedProduct!.price).toBe(123.45);
   });
@@ -497,7 +504,7 @@ describe('Product synchronization', function () {
     const [variant] = await updateVariants(adminClient, [
       { id: 'T_1', customFields: { height: 100 } },
     ]);
-    await new Promise((r) => setTimeout(r, 500)); // Wait for job queue to finish
+    await waitFor(() => updatedProduct);
     expect(updatedProduct!.height).toBe(100);
   });
 
