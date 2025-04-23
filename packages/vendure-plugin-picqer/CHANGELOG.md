@@ -1,3 +1,7 @@
+# 3.7.0 (2025-04-23)
+
+- Hydrate `ProductVariant.Product` when pushing products to Picqer, so that consumers can use Product to populate Picqer custom fields.
+
 # 3.6.0 (2025-01-08)
 
 - Allow configuring the plugin to not cancel Vendure orders when a Picqer order is cancelled
