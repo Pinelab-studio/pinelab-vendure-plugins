@@ -29,7 +29,14 @@ export const GET_ORDER = gql`
   }
 `;
 
-export function getRegenerateInvoiceButton(isWarningButton: boolean) {
+/**
+ * Get action bar button for the invoice detail view.
+ * Creates a yellow 'urgent' button when isWarningButton is true.
+ *
+ * Warning button is shown when the order totals don't match.
+ * Normal button is shown when the order totals match.
+ */
+export function getActionBarInvoiceButton(isWarningButton: boolean) {
   return addActionBarItem({
     id: isWarningButton ? 'regenerate-invoice-styled' : 'regenerate-invoice',
     label: 'Regenerate Invoice',
@@ -91,6 +98,14 @@ export function getRegenerateInvoiceButton(isWarningButton: boolean) {
             order?.invoices?.[0]?.orderTotals.totalWithTax ===
             order?.totalWithTax;
           if (isWarningButton) {
+            if (!orderTotalMatches) {
+              context.notificationService.notify({
+                message:
+                  'Order total changed, you should regenerate the invoice!',
+                type: 'warning',
+                duration: 60000, // Stay for one minute
+              });
+            }
             // Show the Warning Button when order totals don't match (urgent!)
             return {
               disabled: false,
