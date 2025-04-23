@@ -797,7 +797,7 @@ export class PicqerService implements OnApplicationBootstrap {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       productInputs.push({
         idproduct: picqerProduct.idproduct,
-        vatGroupId: vatGroup.idvatgroup, // Override the vat group for this order
+        idvatgroup: vatGroup.idvatgroup, // Override the vat group for this order
         amount: line.quantity,
         ...additionalOrderLineFields,
       });
