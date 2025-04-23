@@ -788,7 +788,8 @@ export class PicqerService implements OnApplicationBootstrap {
       }
       const picqerProduct = await picqerClient.createOrUpdateProduct(
         line.productVariant.sku,
-        this.mapToProductInput(ctx, line.productVariant, vatGroup.idvatgroup)
+        this.mapToProductInput(ctx, line.productVariant, vatGroup.idvatgroup),
+        false // Do not update VAT group of product, but instead override it in the order
       );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const additionalOrderLineFields =
@@ -796,6 +797,7 @@ export class PicqerService implements OnApplicationBootstrap {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       productInputs.push({
         idproduct: picqerProduct.idproduct,
+        vatGroupId: vatGroup.idvatgroup, // Override the vat group for this order
         amount: line.quantity,
         ...additionalOrderLineFields,
       });
