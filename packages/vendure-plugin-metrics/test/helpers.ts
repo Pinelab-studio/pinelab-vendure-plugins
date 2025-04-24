@@ -5,7 +5,7 @@ import { Request } from 'express';
  * @param count Number of requests to generate (default: 1)
  * @returns Array of mock Express request objects
  */
-export function createMockRequests(count = 1): Request[] {
+export function createMockRequests(channelToken: string, count = 1): Request[] {
   // Possible IP addresses
   const ipAddresses = [
     '192.168.1.42',
@@ -37,7 +37,7 @@ export function createMockRequests(count = 1): Request[] {
       headers: {
         'x-forwarded-for': ipAddresses[ipIndex],
         'user-agent': userAgents[uaIndex],
-        'vendure-token': 'default-channel',
+        'vendure-token': channelToken,
       },
     };
     requests.push(mockRequest);

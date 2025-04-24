@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import {
+  ChannelService,
   JobQueue,
   JobQueueService,
   Logger,
@@ -72,6 +73,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   constructor(
     private jobQueueService: JobQueueService,
     private dataSource: DataSource,
+    private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions
   ) {}
 
@@ -100,7 +102,6 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
    * Adds a request to the batch, and pushes the batch to the queue once it reaches a certain size
    */
   logRequest(req: Request): void {
-    console.log('Logging request', req.headers);
     if (!this.options.shouldLogRequest(req)) {
       return;
     }
@@ -124,21 +125,21 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
     this.requestBatch.push(requestData);
     // Process queue if we've reached X items
     if (this.requestBatch.length >= 10) {
-      this.processQueue();
+      this.createLogRequestJobs();
     }
   }
 
   /**
-   * Processes the current queue, creates a job and clears the queue
+   * Processes the current request log queue, creates a job and clears the queue
    */
-  private processQueue(): void {
+  private createLogRequestJobs(): void {
     if (this.requestBatch.length === 0) return;
     // Create a job with a copy of the current queue
     const requestBatch = [...this.requestBatch];
     // Clear the queue
     this.requestBatch = [];
     this.requestQueue
-      .add(requestBatch)
+      .add(requestBatch, { retries: 2 }) // Not too many, because we will have a lot of requests
       .catch((err) =>
         Logger.error(`Error adding request log job: ${err.message}`, loggerCtx)
       );
@@ -174,7 +175,6 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
     since: Date,
     sessionLengthInMinutes: number
   ): Promise<Visit[]> {
-    const channelToken = ctx.channel.token;
     let hasMore = true;
     let skip = 0;
     const requests: MetricRequest[] = [];
@@ -182,7 +182,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       const result = await this.dataSource
         .getRepository(MetricRequest)
         .createQueryBuilder('metricRequest')
-        .where('metricRequest.channelToken = :channelToken', { channelToken })
+        // .where('metricRequest.channelToken = :channelToken', { channelId: ctx.channel.token })
         .andWhere('metricRequest.createdAt >= :since', { since })
         .skip(skip)
         .take(1000) // Fetch in batches of 1000
@@ -193,6 +193,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
         hasMore = false; // No more results to fetch
       }
     }
+    console.log(`========================= STORED`, requests.length);
     return getVisits(requests, sessionLengthInMinutes);
   }
 

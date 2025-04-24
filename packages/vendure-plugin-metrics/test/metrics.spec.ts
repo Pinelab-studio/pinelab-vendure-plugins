@@ -141,7 +141,7 @@ describe('Metrics', () => {
   it.only('Handles 50 concurrent requests to the shop API', async () => {
     const requestService = server.app.get(RequestService);
     await Promise.allSettled(
-      createMockRequests(10).map(async (request) =>
+      createMockRequests(E2E_DEFAULT_CHANNEL_TOKEN, 10).map(async (request) =>
         requestService.logRequest(request)
       )
     );
@@ -160,7 +160,7 @@ describe('Metrics', () => {
       if (visits.length === 50) {
         return visits;
       }
-    });
+    }, 1000);
     expect(loggedRequests.length).toEqual(50);
   });
 

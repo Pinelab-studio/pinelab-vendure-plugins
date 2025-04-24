@@ -1,10 +1,4 @@
-import {
-  Column,
-  DeepPartial,
-  Entity,
-  Index,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, DeepPartial, Entity, Index } from 'typeorm';
 import { ID, VendureEntity } from '@vendure/core';
 
 /**
