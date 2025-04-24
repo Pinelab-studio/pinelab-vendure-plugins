@@ -1,3 +1,7 @@
+# 2.0.6 (2025-04-24)
+
+- Set correct `main` and `types` paths in package.json, now that we don't export files from outside the root anymore.
+
 # 2.0.5 (2025-04-17)
 
 - Process incoming stock and order webhooks via the job queue, to prevent webhook disabling in GoedGepickt
