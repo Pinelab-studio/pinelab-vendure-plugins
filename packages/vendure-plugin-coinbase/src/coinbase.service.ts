@@ -96,7 +96,6 @@ export class CoinbaseService {
     const { apiKey, method } = await this.getCoinbasePaymentMethod(ctx);
     const client = new CoinbaseClient({ apiKey });
     const charge = await client.getCharge(event.data.code);
-    console.log(JSON.stringify(charge));
     if (!charge.data.confirmed_at) {
       Logger.error(
         `Requested charge ${event.data.code} does not have 'confirmed_at' on Coinbase. This payment will not be settled.`,
