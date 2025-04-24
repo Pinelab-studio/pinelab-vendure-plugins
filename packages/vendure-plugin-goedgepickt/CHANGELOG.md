@@ -1,3 +1,7 @@
+# 2.0.7 (2025-04-24)
+
+- Fix for numeric SKU's
+
 # 2.0.6 (2025-04-24)
 
 - Set correct `main` and `types` paths in package.json, now that we don't export files from outside the root anymore.

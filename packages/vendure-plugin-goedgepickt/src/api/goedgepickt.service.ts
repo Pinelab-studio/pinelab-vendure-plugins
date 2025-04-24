@@ -325,6 +325,13 @@ export class GoedgepicktService
       return;
     }
     const variants = await this.getVariants(ctx, productSku);
+    if (!variants.length) {
+      Logger.warn(
+        `No variants found for product with sku '${productSku}' for channel '${ctx.channel.token}' in Vendure. Ignoring incoming stock update event...`,
+        loggerCtx
+      );
+      return;
+    }
     const stockInput: StockInput[] = variants.map((v) => ({
       variantId: v.id as string,
       stock: ggStock,
@@ -741,7 +748,11 @@ export class GoedgepicktService
         }
       );
       if (sku) {
-        query.andWhere('sku = :sku', { sku });
+        // Normalize the sku parameter so numeric IDs stay numbers,
+        // but non‐numeric SKUs remain strings.
+        // We've had some problems where numeric SKUs were not found
+        const skuParam = /^\d+$/.test(sku) ? parseInt(sku, 10) : sku;
+        query.andWhere('sku = :sku', { sku: skuParam });
       }
       const variants = await query.getMany();
       hasMore = !!variants.length;
