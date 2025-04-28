@@ -1,6 +1,10 @@
+# 2.6.1 (2025-04-28)
+
+- Prevent throwing an error when no enabled Accept Blue payment method is found when fetching other eligible Payment Methods.
+
 # 2.6.2 (2025-04-22)
 
-- Dont expose Accept Blue config on non Accept Blue Payment Method Quotes
+- Don't expose Accept Blue config on non Accept Blue Payment Method Quotes
 
 # 2.6.1 (2025-04-18)
 
