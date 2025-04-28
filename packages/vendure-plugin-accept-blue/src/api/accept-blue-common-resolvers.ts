@@ -74,7 +74,6 @@ export class AcceptBlueCommonResolver {
     @Parent() quote: PaymentMethodQuote,
     @Ctx() ctx: RequestContext
   ): Promise<string | null | undefined> {
-    console.log(quote);
     return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueHostedTokenizationKey;
   }

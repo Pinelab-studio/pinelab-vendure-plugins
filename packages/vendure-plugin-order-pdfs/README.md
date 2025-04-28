@@ -115,7 +115,6 @@ If you want to disable this behavior, you can supply `allowPublicDownload: false
 
 If you need custom data, or more relations in your template, you can supply a custom data loading function. All data returned from this function is passed into your Handlebars HTML template.
 
-
 ```ts
 import { LoadDataFn } from '@pinelab/vendure-plugin-order-pdfs';
 import { Injector, Order, RequestContext} from '@vendure/core';

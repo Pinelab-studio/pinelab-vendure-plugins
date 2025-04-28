@@ -629,10 +629,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext,
     parentPaymentMethodId: ID | undefined
   ): Promise<StorefrontKeys> {
-    const [acceptBlueMethod, client] = await Promise.all([
-      this.getAcceptBlueMethod(ctx),
-      this.getClientForChannel(ctx),
-    ]);
+    const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    if (!acceptBlueMethod) {
+      // No enabled Accept Blue payment method found
+      return {};
+    }
+    const client = await this.getClientForChannel(ctx);
     if (
       parentPaymentMethodId &&
       acceptBlueMethod?.id != parentPaymentMethodId
@@ -649,7 +651,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const googlePayGatewayMerchantId = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'googlePayGatewayMerchantId'
     )?.value;
-    console.log(typeof client.testMode);
     return {
       acceptBlueHostedTokenizationKey: tokenizationSourceKey,
       acceptBlueGooglePayMerchantId: googlePayMerchantId,
@@ -672,11 +673,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     if (acceptBlueMethod.length > 1) {
       throw Error(
         `More than one enabled payment method found with code ${acceptBluePaymentHandler.code}. There should be only 1 per channel`
-      );
-    }
-    if (acceptBlueMethod.length === 0) {
-      throw new Error(
-        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
       );
     }
     return acceptBlueMethod[0];
