@@ -16,19 +16,16 @@ export interface AdvancedChartEntry {
   providedIn: 'root',
 })
 export class MetricsUiService {
-  currencyCode$: Observable<any>;
-  uiState$: Observable<any>;
+  currencyCode$ = this.dataService.settings
+    .getActiveChannel()
+    .refetchOnChannelChange()
+    .mapStream((data) => data.activeChannel.defaultCurrencyCode || undefined);
+  uiState$ = this.dataService.client
+    .uiState()
+    .mapStream((data) => data.uiState);
   selectedVariantIds$ = new BehaviorSubject<string[]>([]);
 
-  constructor(private dataService: DataService) {
-    this.currencyCode$ = this.dataService.settings
-      .getActiveChannel()
-      .refetchOnChannelChange()
-      .mapStream((data) => data.activeChannel.defaultCurrencyCode || undefined);
-    this.uiState$ = this.dataService.client
-      .uiState()
-      .mapStream((data) => data.uiState);
-  }
+  constructor(private dataService: DataService) {}
 
   queryData() {
     return combineLatest([
