@@ -155,7 +155,7 @@ export class MetricsWidgetComponent implements OnInit {
 
   loadChartData() {
     this.loading = true;
-    this.metrics$ = this.metricsService.queryData();
+    this.metrics$ = this.metricsService.queryData$;
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
       this.loading = false;

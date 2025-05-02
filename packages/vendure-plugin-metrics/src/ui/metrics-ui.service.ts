@@ -24,35 +24,32 @@ export class MetricsUiService {
     .uiState()
     .mapStream((data) => data.uiState);
   selectedVariantIds$ = new BehaviorSubject<string[]>([]);
+  queryData$ = combineLatest([
+    this.currencyCode$,
+    this.uiState$,
+    this.selectedVariantIds$,
+  ]).pipe(
+    switchMap(([currencyCode, uiState, selectedVariantIds]) =>
+      this.dataService
+        .query(GET_METRICS, {
+          input: {
+            ...(selectedVariantIds.length
+              ? { variantIds: selectedVariantIds }
+              : []),
+          },
+        })
+        .refetchOnChannelChange()
+        .mapStream((metricSummary: any) => {
+          return this.toChartEntry(
+            metricSummary.advancedMetricSummaries,
+            `${uiState.language}-${uiState.locale}`,
+            currencyCode
+          );
+        })
+    )
+  );
 
   constructor(private dataService: DataService) {}
-
-  queryData() {
-    return combineLatest([
-      this.currencyCode$,
-      this.uiState$,
-      this.selectedVariantIds$,
-    ]).pipe(
-      switchMap(([currencyCode, uiState, selectedVariantIds]) =>
-        this.dataService
-          .query(GET_METRICS, {
-            input: {
-              ...(selectedVariantIds.length
-                ? { variantIds: selectedVariantIds }
-                : []),
-            },
-          })
-          .refetchOnChannelChange()
-          .mapStream((metricSummary: any) => {
-            return this.toChartEntry(
-              metricSummary.advancedMetricSummaries,
-              `${uiState.language}-${uiState.locale}`,
-              currencyCode
-            );
-          })
-      )
-    );
-  }
 
   toChartEntry(
     input: AdvancedMetricSummary[],
