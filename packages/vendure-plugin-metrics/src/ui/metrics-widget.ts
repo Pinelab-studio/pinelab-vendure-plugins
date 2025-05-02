@@ -108,7 +108,6 @@ import { MetricsUiService } from './metrics-ui.service';
 export class MetricsWidgetComponent implements OnInit {
   metrics$: Observable<ChartEntry[]> | undefined;
   selectedMetric: ChartEntry | undefined;
-  variantName: string;
   dropDownName = 'Select Variant';
   nrOfOrdersChart?: any;
   selectedVariantIds: string[] = [];
@@ -123,11 +122,6 @@ export class MetricsWidgetComponent implements OnInit {
 
   async ngOnInit() {
     this.loadChartData();
-  }
-
-  onDropdownItemClick(variantId: string, variantName: string) {
-    this.loadChartData();
-    this.dropDownName = variantName;
   }
 
   openProductSelectionDialog() {
