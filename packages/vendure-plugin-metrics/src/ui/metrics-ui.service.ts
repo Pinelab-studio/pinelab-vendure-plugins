@@ -18,6 +18,8 @@ export interface AdvancedChartEntry {
 export class MetricsUiService {
   currencyCode$: Observable<any>;
   uiState$: Observable<any>;
+  selectedVariantIds$ = new BehaviorSubject<string[]>([]);
+
   constructor(private dataService: DataService) {
     this.currencyCode$ = this.dataService.settings
       .getActiveChannel()
@@ -28,13 +30,19 @@ export class MetricsUiService {
       .mapStream((data) => data.uiState);
   }
 
-  queryData(selectedVariantIds?: string[]) {
-    return combineLatest(this.currencyCode$, this.uiState$).pipe(
-      switchMap(([currencyCode, uiState]) =>
+  queryData() {
+    return combineLatest([
+      this.currencyCode$,
+      this.uiState$,
+      this.selectedVariantIds$,
+    ]).pipe(
+      switchMap(([currencyCode, uiState, selectedVariantIds]) =>
         this.dataService
           .query(GET_METRICS, {
             input: {
-              ...(selectedVariantIds ? { variantIds: selectedVariantIds } : []),
+              ...(selectedVariantIds.length
+                ? { variantIds: selectedVariantIds }
+                : []),
             },
           })
           .refetchOnChannelChange()

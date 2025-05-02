@@ -145,26 +145,23 @@ export class MetricsWidgetComponent implements OnInit {
           this.selectedVariantNames = selection.map(
             (s) => s.productVariantName
           );
-          (this.selectedVariantIds = selection.map((s) => s.productVariantId)),
-            this.changeDetectorRef.detectChanges();
-          this.loadChartData();
+          this.selectedVariantIds = selection.map((s) => s.productVariantId);
+          this.metricsService.selectedVariantIds$.next(this.selectedVariantIds);
+          this.changeDetectorRef.detectChanges();
         }
       });
   }
 
   clearProductVariantSelection() {
     this.selectedVariantIds = [];
+    this.metricsService.selectedVariantIds$.next(this.selectedVariantIds);
     this.selectedVariantNames = [];
     this.changeDetectorRef.detectChanges();
-    this.loadChartData();
   }
 
   loadChartData() {
     this.loading = true;
-    this.metrics$ = this.metricsService.queryData(
-      // this.selection$,
-      this.selectedVariantIds
-    );
+    this.metrics$ = this.metricsService.queryData();
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
       this.loading = false;
