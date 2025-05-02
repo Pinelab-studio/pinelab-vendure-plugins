@@ -1,5 +1,10 @@
 import gql from 'graphql-tag';
 
+// This is only used by codegen so it knows DateTime is a custom scalar
+const scalars = gql`
+  scalar DateTime
+`;
+
 export const schema = gql`
   type AdvancedMetricSummary {
     code: String!
@@ -30,5 +35,14 @@ export const schema = gql`
     advancedMetricSummaries(
       input: AdvancedMetricSummaryInput
     ): [AdvancedMetricSummary!]!
+  }
+
+  extend type Mutation {
+    """
+    Empty mutation to log browser visits.
+    You can call this mutation on page load to track vitits.
+    Returns null
+    """
+    pageVisit: Boolean
   }
 `;
