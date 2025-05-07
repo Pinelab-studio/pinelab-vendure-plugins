@@ -1,7 +1,7 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { OrderAddress, Permission } from '@vendure/common/lib/generated-types';
-import { ID } from '@vendure/common/lib/shared-types';
-import { Allow, Ctx, RequestContext } from '@vendure/core';
+import { OrderAddress } from '@vendure/common/lib/generated-types';
+import { Ctx, RequestContext } from '@vendure/core';
+import { QueryLookupAddressArgs } from '../generated/graphql';
 import { AddressLookupService } from '../services/address-lookup.service';
 
 @Resolver()
@@ -9,11 +9,10 @@ export class AddressLookupResolver {
   constructor(private addressLookupService: AddressLookupService) {}
 
   @Query()
-  @Allow(Permission.SuperAdmin)
   async lookupAddress(
     @Ctx() ctx: RequestContext,
-    @Args() args: { id: ID }
+    @Args() args: QueryLookupAddressArgs
   ): Promise<OrderAddress[]> {
-    return this.addressLookupService.lookupAddress(ctx, args.id);
+    return await this.addressLookupService.lookupAddress(ctx, args.input);
   }
 }
