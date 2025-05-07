@@ -108,7 +108,6 @@ import { MetricsUiService } from './metrics-ui.service';
 export class MetricsWidgetComponent implements OnInit {
   metrics$: Observable<ChartEntry[]> | undefined;
   selectedMetric: ChartEntry | undefined;
-  variantName: string;
   dropDownName = 'Select Variant';
   nrOfOrdersChart?: any;
   selectedVariantIds: string[] = [];
@@ -123,11 +122,6 @@ export class MetricsWidgetComponent implements OnInit {
 
   async ngOnInit() {
     this.loadChartData();
-  }
-
-  onDropdownItemClick(variantId: string, variantName: string) {
-    this.loadChartData();
-    this.dropDownName = variantName;
   }
 
   openProductSelectionDialog() {
@@ -145,26 +139,23 @@ export class MetricsWidgetComponent implements OnInit {
           this.selectedVariantNames = selection.map(
             (s) => s.productVariantName
           );
-          (this.selectedVariantIds = selection.map((s) => s.productVariantId)),
-            this.changeDetectorRef.detectChanges();
-          this.loadChartData();
+          this.selectedVariantIds = selection.map((s) => s.productVariantId);
+          this.metricsService.selectedVariantIds$.next(this.selectedVariantIds);
+          this.changeDetectorRef.detectChanges();
         }
       });
   }
 
   clearProductVariantSelection() {
     this.selectedVariantIds = [];
+    this.metricsService.selectedVariantIds$.next(this.selectedVariantIds);
     this.selectedVariantNames = [];
     this.changeDetectorRef.detectChanges();
-    this.loadChartData();
   }
 
   loadChartData() {
     this.loading = true;
-    this.metrics$ = this.metricsService.queryData(
-      // this.selection$,
-      this.selectedVariantIds
-    );
+    this.metrics$ = this.metricsService.queryData$;
     this.changeDetectorRef.detectChanges();
     this.metrics$?.subscribe(async (metrics) => {
       this.loading = false;
