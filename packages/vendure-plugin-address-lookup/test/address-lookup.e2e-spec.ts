@@ -1,24 +1,23 @@
 import {
+  DefaultLogger,
+  InitialData,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
+import {
   createTestEnvironment,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import {
-  DefaultLogger,
-  InitialData,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { expect, describe, beforeAll, afterAll, it, afterEach } from 'vitest';
+import gql from 'graphql-tag';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { addItem } from '../../test/src/shop-utils';
 import { AddressLookupPlugin } from '../src/address-lookup.plugin';
 import { PostcodeTechStrategy } from '../src/config/postcode-tech-strategy';
-import gql from 'graphql-tag';
-import { addItem } from '../../test/src/shop-utils';
-import nock from 'nock';
 
 describe('Address Lookup plugin', () => {
   let server: TestServer;
@@ -52,10 +51,6 @@ describe('Address Lookup plugin', () => {
     serverStarted = true;
     await adminClient.asSuperAdmin();
   }, 60000);
-
-  afterEach(() => {
-    nock.cleanAll();
-  });
 
   it('Should start successfully', async () => {
     await expect(serverStarted).toBe(true);
@@ -143,6 +138,7 @@ describe('Address Lookup plugin', () => {
   it('returns array of OrderAddress when results found', async () => {
     await addItem(shopClient, 'T_1', 1);
 
+    // Mock the fetch function
     const mockResponse = {
       postcode: '1234AB',
       number: '1',
@@ -151,19 +147,18 @@ describe('Address Lookup plugin', () => {
       municipality: 'Test Municipality',
       province: 'Test Province',
     };
-
-    nock('https://postcode.tech')
-      .get('/api/v1/postcode/full')
-      .query({
-        postcode: '1234AB',
-        number: '1',
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockResponse,
       })
-      .reply(200, mockResponse);
-
+    );
     const { lookupAddress } = await shopClient.query(gql`
       query {
         lookupAddress(
-          input: { countryCode: "NL", postalCode: "1234AB", houseNumber: "1" }
+          input: { countryCode: "NL", postalCode: "1234 AB", houseNumber: "1" }
         ) {
           streetLine1
           city
@@ -173,7 +168,6 @@ describe('Address Lookup plugin', () => {
         }
       }
     `);
-
     expect(lookupAddress).toEqual([
       {
         streetLine1: 'Test Street',

@@ -2,7 +2,7 @@ import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { Logger, RequestContext } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { AddressLookupInput } from '../generated/graphql';
-import { LookupStrategy } from '../types';
+import { AddressLookupStrategy } from '../types';
 import {
   normalizePostalCode,
   validateDutchPostalCode,
@@ -31,7 +31,7 @@ interface PostNLLookupStrategyInput {
  * Address lookup strategy that supports both NL and BE lookups
  *
  */
-export class PostNLLookupStrategy implements LookupStrategy {
+export class PostNLLookupStrategy implements AddressLookupStrategy {
   readonly countryCode: string;
 
   constructor(private readonly input: PostNLLookupStrategyInput) {
@@ -57,8 +57,9 @@ export class PostNLLookupStrategy implements LookupStrategy {
       if (input.streetName) {
         url += `&streetName=${input.streetName}`;
       }
-      url =
-        'https://api.postnl.nl/v2/address/benelux?countryIso=BE&cityName=Antwerpen&streetName=Grotesteenweg&houseNumber=521&bus=1';
+      //   FIXME just for debugging unauthorized
+      // url =
+      //     'https://api.postnl.nl/v2/address/benelux?countryIso=BE&cityName=Antwerpen&streetName=Grotesteenweg&houseNumber=521&bus=1';
 
       console.log(url, this.input.apiKey);
 
@@ -87,7 +88,7 @@ export class PostNLLookupStrategy implements LookupStrategy {
         streetLine2: '',
         city: result.cityName,
         province: '',
-        postalCode: this.normalizePostalCode(input.postalCode),
+        postalCode,
         country: 'Netherlands',
         phoneNumber: '',
       }));

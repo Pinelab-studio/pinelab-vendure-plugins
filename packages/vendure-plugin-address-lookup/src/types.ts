@@ -11,10 +11,10 @@ export interface PluginInitOptions {
    * @description
    * Strategies to be used for address lookup
    */
-  lookupStrategies: LookupStrategy[];
+  lookupStrategies: AddressLookupStrategy[];
 }
 
-export interface LookupStrategy {
+export interface AddressLookupStrategy {
   /**
    * @description
    * Unique code that identifies the lookup strategy.

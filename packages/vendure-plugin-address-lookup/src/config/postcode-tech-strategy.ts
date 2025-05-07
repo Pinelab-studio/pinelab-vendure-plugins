@@ -1,7 +1,7 @@
 import { OrderAddress } from '@vendure/common/lib/generated-types';
 import { Logger, RequestContext } from '@vendure/core';
 import { AddressLookupInput } from '../generated/graphql';
-import { LookupStrategy } from '../types';
+import { AddressLookupStrategy } from '../types';
 import { asError } from 'catch-unknown';
 import {
   normalizePostalCode,
@@ -30,7 +30,7 @@ interface PostcodeTechStrategyInput {
 /**
  * This strategy is used to lookup NL addresses via Postcode.tech API
  */
-export class PostcodeTechStrategy implements LookupStrategy {
+export class PostcodeTechStrategy implements AddressLookupStrategy {
   readonly countryCode = 'NL';
 
   constructor(private readonly input: PostcodeTechStrategyInput) {}
@@ -68,11 +68,12 @@ export class PostcodeTechStrategy implements LookupStrategy {
       return [
         {
           streetLine1: jsonResult.street,
-          streetLine2: '',
+          streetLine2: jsonResult.number,
           city: jsonResult.city,
           province: jsonResult.province,
           postalCode: jsonResult.postcode,
           country: 'Netherlands',
+          countryCode: 'NL',
         },
       ];
     } catch (e) {
