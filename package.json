@@ -78,6 +78,7 @@
         "always",
         [
           "accept-blue",
+          "address-lookup",
           "admin-social-auth",
           "admin-ui-helpers",
           "all-plugins",

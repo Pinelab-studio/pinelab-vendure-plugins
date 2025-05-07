@@ -1,0 +1,11 @@
+schema: 'src/**/api-extensions.ts'
+# documents: 'src/**/*.graphql.ts'
+generates:
+  ./src/generated/graphql.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      avoidOptionals: false
+      scalars:
+        OrderAddress: '@vendure/common/lib/generated-types#OrderAddress'
