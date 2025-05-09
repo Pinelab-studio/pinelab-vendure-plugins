@@ -150,10 +150,7 @@ export async function getCompatibilityRange(
   pluginDirectoryName: string
 ): Promise<string | undefined> {
   const srcDir = path.join(packageDir, pluginDirectoryName, 'src');
-  const files = await readdir(srcDir).catch(() => {
-    console.warn(`Error reading src dir for ${pluginDirectoryName}`);
-    return [];
-  });
+  const files = await readdir(srcDir);
   const pluginFile = files.find((f) => f.endsWith('.plugin.ts'));
   if (!pluginFile) {
     return;
