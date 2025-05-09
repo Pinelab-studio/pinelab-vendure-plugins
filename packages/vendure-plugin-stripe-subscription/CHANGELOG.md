@@ -1,3 +1,8 @@
+# 2.8.1(2025-04-26)
+
+- moved default `['card']` paymentMethods and `setup_future_usage: 'off_session'` from `StripeSubscriptionService.createIntentByOrder` and move it into the `createStripeSubscriptionIntent` resolver
+- **BREAKING CHANGE**: `StripeSubscriptionService.createIntentByOrder`, `StripeSubscriptionService.createIntent`, and `StripeSubscriptionService.createIntentForDraftOrder` now requires a `paymentMethods: string[]` and `setupFutureUsage` argument; update all calls to pass your desired default (e.g. `['card']`)
+
 # 2.8.0 (2025-04-17)
 
 - Don't validate webhook secret, but call Stripe API directly to get valid data.

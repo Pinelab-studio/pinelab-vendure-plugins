@@ -303,17 +303,28 @@ export class StripeSubscriptionService {
     return stripeClient.subscriptions.retrieve(subscriptionId);
   }
 
-  async createIntent(ctx: RequestContext): Promise<StripeSubscriptionIntent> {
+  async createIntent(
+    ctx: RequestContext,
+    stripePaymentMethods?: string[],
+    setupFutureUsage?: Stripe.PaymentIntentCreateParams.SetupFutureUsage
+  ): Promise<StripeSubscriptionIntent> {
     let order = await this.activeOrderService.getActiveOrder(ctx, undefined);
     if (!order) {
       throw new UserInputError('No active order for session');
     }
-    return this.createIntentByOrder(ctx, order);
+    return this.createIntentByOrder(
+      ctx,
+      order,
+      stripePaymentMethods,
+      setupFutureUsage
+    );
   }
 
   async createIntentForDraftOrder(
     ctx: RequestContext,
-    orderId: ID
+    orderId: ID,
+    stripePaymentMethods?: string[],
+    setupFutureUsage?: Stripe.PaymentIntentCreateParams.SetupFutureUsage
   ): Promise<StripeSubscriptionIntent> {
     let order = await this.orderService.findOne(ctx, orderId);
     if (!order) {
@@ -321,12 +332,19 @@ export class StripeSubscriptionService {
     }
     // TODO Perhaps need an order state check (Draft, ArrangingPayment) here?
     // But state transition verification will likely be a good place for this as well
-    return this.createIntentByOrder(ctx, order);
+    return this.createIntentByOrder(
+      ctx,
+      order,
+      stripePaymentMethods,
+      setupFutureUsage
+    );
   }
 
   async createIntentByOrder(
     ctx: RequestContext,
-    order: Order
+    order: Order,
+    stripePaymentMethods?: string[],
+    setupFutureUsage?: Stripe.PaymentIntentCreateParams.SetupFutureUsage
   ): Promise<StripeSubscriptionIntent> {
     await this.entityHydrator.hydrate(ctx, order, {
       relations: ['customer', 'shippingLines', 'lines.productVariant'],
@@ -365,14 +383,15 @@ export class StripeSubscriptionService {
     const stripeCustomer = await stripeClient.getOrCreateCustomer(
       order.customer
     );
-    const stripePaymentMethods = ['card']; // TODO make configurable per channel
     let intent: Stripe.PaymentIntent | Stripe.SetupIntent;
     if (order.totalWithTax > 0) {
       // Create PaymentIntent + off_session, because we have both one-time and recurring payments. Order total is only > 0 if there are one-time payments
       intent = await stripeClient.paymentIntents.create({
         customer: stripeCustomer.id,
-        payment_method_types: stripePaymentMethods,
-        setup_future_usage: 'off_session',
+        ...(stripePaymentMethods?.length
+          ? { payment_method_types: stripePaymentMethods }
+          : {}),
+        setup_future_usage: setupFutureUsage,
         amount: order.totalWithTax,
         currency: order.currencyCode,
         metadata: {

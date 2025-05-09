@@ -123,7 +123,13 @@ export class StripeSubscriptionShopApiResolver {
   async createStripeSubscriptionIntent(
     @Ctx() ctx: RequestContext
   ): Promise<GraphqlShopMutation['createStripeSubscriptionIntent']> {
-    const res = await this.stripeSubscriptionService.createIntent(ctx);
+    const stripePaymentMethods = ['card']; // TODO make configurable per channel
+    const setupFutureUsage = 'off_session'; // TODO make configurable per channel
+    const res = await this.stripeSubscriptionService.createIntent(
+      ctx,
+      stripePaymentMethods,
+      setupFutureUsage
+    );
     return res;
   }
 }
@@ -138,9 +144,13 @@ export class StripeSubscriptionAdminApiResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationCreateStripeSubscriptionIntentArgs
   ): Promise<GraphqlAdminMutation['createStripeSubscriptionIntent']> {
+    const stripePaymentMethods = ['card']; // TODO make configurable per channel
+    const setupFutureUsage = 'off_session'; // TODO make configurable per channel
     const res = await this.stripeSubscriptionService.createIntentForDraftOrder(
       ctx,
-      args.orderId
+      args.orderId,
+      stripePaymentMethods,
+      setupFutureUsage
     );
     return res;
   }
