@@ -78,6 +78,7 @@
         "always",
         [
           "accept-blue",
+          "address-lookup",
           "admin-social-auth",
           "admin-ui-helpers",
           "all-plugins",
@@ -86,7 +87,6 @@
           "coinbase",
           "customer-managed-groups",
           "docs-website",
-          "dutch-postalcode",
           "drop-off-points",
           "e-boekhouden",
           "frequently-bought-together",
@@ -104,6 +104,7 @@
           "picqer",
           "popularity-scores",
           "primary-collection",
+          "promotion-extensions",
           "selectable-gifts",
           "sendcloud",
           "shipping-extensions",
