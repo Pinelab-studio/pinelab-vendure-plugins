@@ -122,7 +122,7 @@ const createPromotionInput = ({
     input: {
       conditions: [
         {
-          code: 'product_quantity',
+          code: 'buy_min_max_of_specified_products',
           arguments: [
             {
               name: 'min',
