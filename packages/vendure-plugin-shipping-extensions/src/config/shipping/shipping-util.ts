@@ -1,4 +1,11 @@
-import { EntityHydrator, Injector, Order, RequestContext } from '@vendure/core';
+import {
+  assertFound,
+  EntityHydrator,
+  Injector,
+  Order,
+  OrderService,
+  RequestContext,
+} from '@vendure/core';
 
 /**
  * Checks if an order is eligible for the given country codes.
@@ -33,13 +40,14 @@ export async function getHighestTaxRateOfOrder(
   injector: Injector,
   order: Order
 ): Promise<number> {
+  let orderWithRelations = order;
   if (!order.surcharges || !order.lines) {
-    await injector.get(EntityHydrator).hydrate(ctx, order, {
-      relations: ['lines', 'surcharges'],
-    });
+    orderWithRelations = await assertFound(
+      injector.get(OrderService).findOne(ctx, order.id, ['lines', 'surcharges'])
+    );
   }
-  const lineTaxRates = order.lines.map((line) => line.taxRate);
-  const surchargeTaxRates = order.surcharges.map(
+  const lineTaxRates = orderWithRelations.lines.map((line) => line.taxRate);
+  const surchargeTaxRates = orderWithRelations.surcharges.map(
     (surcharge) => surcharge.taxRate
   );
   return Math.max(...lineTaxRates, ...surchargeTaxRates, 0);
