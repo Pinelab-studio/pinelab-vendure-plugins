@@ -12,7 +12,7 @@ import {
  * Checks if the order has a minimum and maximum number of specified products
  */
 export const buyMinMaxOfTheSpecifiedProductsCondition = new PromotionCondition({
-  code: 'product_quantity',
+  code: 'buy_min_max_of_specified_products',
   description: [
     {
       languageCode: LanguageCode.en,
