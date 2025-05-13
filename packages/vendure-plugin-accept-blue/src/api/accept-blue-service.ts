@@ -878,7 +878,16 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         amount: subscription.amount,
         interval,
         intervalCount,
-        startDate: subscription.created_at,
+        createdAt: subscription.created_at
+          ? new Date(subscription.created_at)
+          : undefined,
+        nextRunDate: subscription.next_run_date
+          ? new Date(subscription.next_run_date)
+          : undefined,
+        previousRunDate: subscription.prev_run_date
+          ? new Date(subscription.prev_run_date)
+          : undefined,
+        numLeft: subscription.num_left,
       },
       transactions,
     };
