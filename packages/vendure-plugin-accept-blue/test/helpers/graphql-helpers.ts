@@ -141,6 +141,7 @@ export const GET_ORDER_BY_CODE = gql`
             amount
             interval
             intervalCount
+            createdAt
             startDate
             nextRunDate
             previousRunDate
@@ -253,6 +254,7 @@ export const UPDATE_SUBSCRIPTION = gql`
         amount
         interval
         intervalCount
+        createdAt
         startDate
         nextRunDate
         previousRunDate
