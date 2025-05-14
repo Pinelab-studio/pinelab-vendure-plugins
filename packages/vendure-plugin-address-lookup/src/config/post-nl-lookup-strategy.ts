@@ -11,68 +11,51 @@ import {
 interface PostNLAddressResponse {
   streetName: string;
   cityName: string;
+  countryName: string;
+  houseNumber: string;
+  stateName: string;
 }
-
-interface PostNLErrorResponse {
-  errors: Array<{
-    message: string;
-    code: string;
-  }>;
-}
-
-const loggerCtx = 'PostNLLookupStrategy';
 
 interface PostNLLookupStrategyInput {
   apiKey: string;
-  countryCode: 'NL' | 'BE';
 }
 
+const loggerCtx = `PostNLLookupStrategy`;
 /**
  * Address lookup strategy that supports both NL and BE lookups
- *
  */
 export class PostNLLookupStrategy implements AddressLookupStrategy {
-  readonly countryCode: string;
+  readonly supportedCountryCodes = ['NL', 'BE'];
 
-  constructor(private readonly input: PostNLLookupStrategyInput) {
-    this.countryCode = input.countryCode;
-  }
+  constructor(private readonly input: PostNLLookupStrategyInput) {}
 
   validateInput?(input: AddressLookupInput): true | string {
-    if (this.countryCode === 'NL') {
+    const countryCode = input.countryCode.toLowerCase();
+    if (countryCode === 'nl') {
       return this.validateNLPostalCode(input);
-    } else if (this.countryCode === 'BE') {
+    } else if (countryCode === 'be') {
       return this.validateBEPostalCode(input);
     }
-    return `Invalid country code: ${this.countryCode}`;
+    return `Invalid country code: ${input.countryCode}`;
   }
 
   async lookup(
     ctx: RequestContext,
     input: AddressLookupInput
   ): Promise<OrderAddress[]> {
+    const countryCode = input.countryCode.toLowerCase();
+    const postalCode = normalizePostalCode(input.postalCode);
     try {
-      const postalCode = normalizePostalCode(input.postalCode);
-      let url = `https://api.postnl.nl/v2/address/benelux?countryIso=${this.countryCode}&houseNumber=${input.houseNumber}&postalCode=${postalCode}`;
+      let url = `https://api.postnl.nl/v2/address/benelux?countryIso=${countryCode}&houseNumber=${input.houseNumber}&postalCode=${postalCode}`;
       if (input.streetName) {
         url += `&streetName=${input.streetName}`;
       }
-      //   FIXME just for debugging unauthorized
-      // url =
-      //     'https://api.postnl.nl/v2/address/benelux?countryIso=BE&cityName=Antwerpen&streetName=Grotesteenweg&houseNumber=521&bus=1';
-
-      console.log(url, this.input.apiKey);
-
       const result = await fetch(url, {
         headers: {
           'Content-Type': 'application/json',
           apikey: this.input.apiKey,
         },
       });
-
-      console.log(result.status);
-      console.log(result.statusText);
-
       if (!result.ok) {
         throw new Error(
           `PostNL API returned status ${result.status}: ${result.statusText}`
@@ -80,16 +63,15 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
       }
       // Valid results, map to OrderAddress
       const resultJson = (await result.json()) as PostNLAddressResponse[];
-      console.log(JSON.stringify(resultJson, null, 2));
       return resultJson.map((result) => ({
         fullName: '',
         company: '',
         streetLine1: result.streetName,
-        streetLine2: '',
+        streetLine2: result.houseNumber,
         city: result.cityName,
-        province: '',
+        province: result.stateName,
         postalCode,
-        country: 'Netherlands',
+        country: result.countryName,
         phoneNumber: '',
       }));
     } catch (error) {
@@ -106,18 +88,16 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
   }
 
   private validateBEPostalCode(input: AddressLookupInput): true | string {
+    const countryCode = input.countryCode;
     const postalCode = input.postalCode;
     if (postalCode.length !== 4) {
-      return `Postal code for '${this.countryCode}' code must be 4 numbers`;
+      return `Postal code for '${countryCode}' code must be 4 numbers`;
     }
     if (!/^\d{4}$/.test(postalCode)) {
-      return `Postal code must be 4 numbers for '${this.countryCode}'`;
+      return `Postal code must be 4 numbers for '${countryCode}'`;
     }
     if (!input.houseNumber) {
-      return `House number is required for lookup in '${this.countryCode}'`;
-    }
-    if (!input.streetName) {
-      return `Street name is required for lookup in '${this.countryCode}'`;
+      return `House number is required for lookup in '${countryCode}'`;
     }
     return true;
   }

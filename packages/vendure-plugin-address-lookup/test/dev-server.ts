@@ -28,13 +28,12 @@ require('dotenv').config();
     plugins: [
       AddressLookupPlugin.init({
         lookupStrategies: [
-          //   new PostNLLookupStrategy({
-          //     apiKey: process.env.POSTNL_APIKEY!,
-          //     countryCode: 'NL',
-          //   }),
-          new PostcodeTechStrategy({
-            apiKey: process.env.POSTCODE_TECH_APIKEY!,
+          new PostNLLookupStrategy({
+            apiKey: process.env.POSTNL_APIKEY!,
           }),
+          // new PostcodeTechStrategy({
+          //   apiKey: process.env.POSTCODE_TECH_APIKEY!,
+          // }),
         ],
       }),
       DefaultSearchPlugin,

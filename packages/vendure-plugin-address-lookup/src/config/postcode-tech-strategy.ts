@@ -31,7 +31,7 @@ interface PostcodeTechStrategyInput {
  * This strategy is used to lookup NL addresses via Postcode.tech API
  */
 export class PostcodeTechStrategy implements AddressLookupStrategy {
-  readonly countryCode = 'NL';
+  readonly supportedCountryCodes = ['NL'];
 
   constructor(private readonly input: PostcodeTechStrategyInput) {}
 

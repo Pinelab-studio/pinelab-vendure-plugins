@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { ForbiddenError, RequestContext } from '@vendure/core';
+import { RequestContext } from '@vendure/core';
 import { ADDRESS_LOOKUP_PLUGIN_OPTIONS } from '../constants';
-import { AddressLookupInput } from '../generated/graphql';
 import {
   InvalidAddressLookupInputError,
   NoAddressLookupStrategyFoundError,
   PluginInitOptions,
 } from '../types';
+import { AddressLookupInput } from '../generated/graphql';
 
 @Injectable()
 export class AddressLookupService {
@@ -19,13 +19,10 @@ export class AddressLookupService {
     ctx: RequestContext,
     input: AddressLookupInput
   ): Promise<OrderAddress[]> {
-    if (!ctx.session?.activeOrderId) {
-      // Prevent abuse, so only allow calls with an active order
-      throw new ForbiddenError();
-    }
+    // Find strategy that supports the country code in case insensitive manner
     const countryCode = input.countryCode.toLowerCase();
-    const lookupStrategy = this.options.lookupStrategies.find(
-      (s) => s.countryCode.toLowerCase() === countryCode
+    const lookupStrategy = this.options.lookupStrategies.find((s) =>
+      s.supportedCountryCodes.map((c) => c.toLowerCase()).includes(countryCode)
     );
     if (!lookupStrategy) {
       // No lookup strategy found for 'countryCode'

@@ -17,12 +17,11 @@ export interface PluginInitOptions {
 export interface AddressLookupStrategy {
   /**
    * @description
-   * Unique code that identifies the lookup strategy.
-   * The country code will be used to identify for which countries this lookup strategy can be used.
+   * List of country codes that this lookup strategy can be used for.
    *
    * Case insensitive.
    */
-  countryCode: string;
+  supportedCountryCodes: string[];
   /**
    * @description
    * Validate the input for the lookup strategy.

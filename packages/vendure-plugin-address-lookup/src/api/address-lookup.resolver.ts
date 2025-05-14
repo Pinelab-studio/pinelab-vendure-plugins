@@ -13,6 +13,10 @@ export class AddressLookupResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: QueryLookupAddressArgs
   ): Promise<OrderAddress[]> {
+    // if (!ctx.session?.activeOrderId) {
+    //   // Prevent abuse, so only allow calls with an active order
+    //   throw new ForbiddenError();
+    // }
     return await this.addressLookupService.lookupAddress(ctx, args.input);
   }
 }
