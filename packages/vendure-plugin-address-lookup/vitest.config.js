@@ -1,11 +1,9 @@
-import path from 'path';
 import swc from 'unplugin-swc';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    include: ['./test/e2e.spec.ts'],
-    testTimeout: 10000,
+    include: './**/*spec.ts',
   },
   plugins: [
     // SWC required to support decorators used in test plugins

@@ -1,3 +1,7 @@
+# DEPRECATED (2025-05-07)
+
+- This plugin is now deprecated. Please use `@pinelab/vendure-plugin-address-lookup` instead.
+
 # 1.3.0 (2024-12-19)
 
 - Update Vendure to 3.1.1
