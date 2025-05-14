@@ -1,0 +1,33 @@
+{
+  "name": "@pinelab/vendure-plugin-auto-cancel-orders",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "start": "yarn build && yarn test",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "dev": "ts-node test/dev-server.ts"
+  },
+  "devDependencies": {
+    "@vendure/core": "^2.1.0",
+    "@vendure/testing": "^2.1.0",
+    "better-sqlite3": "^8.0.0",
+    "rimraf": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "peerDependencies": {
+    "@vendure/core": "^2.0.0"
+  }
+}
