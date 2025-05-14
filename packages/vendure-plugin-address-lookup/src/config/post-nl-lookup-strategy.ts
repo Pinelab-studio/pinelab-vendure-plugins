@@ -1,6 +1,5 @@
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { Logger, RequestContext } from '@vendure/core';
-import { asError } from 'catch-unknown';
+import { RequestContext } from '@vendure/core';
 import { AddressLookupInput } from '../generated/graphql';
 import { AddressLookupStrategy } from '../types';
 import {
@@ -20,7 +19,6 @@ interface PostNLLookupStrategyInput {
   apiKey: string;
 }
 
-const loggerCtx = `PostNLLookupStrategy`;
 /**
  * Address lookup strategy that supports both NL and BE lookups
  */

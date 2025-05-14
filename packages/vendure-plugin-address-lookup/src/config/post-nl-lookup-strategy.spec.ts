@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { PostNLLookupStrategy } from './post-nl-lookup-strategy';
-import { RequestContext, Logger } from '@vendure/core';
+import { RequestContext } from '@vendure/core';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 import { AddressLookupInput } from '../generated/graphql';
+import { PostNLLookupStrategy } from './post-nl-lookup-strategy';
 
 type MockFetch = Mock<Parameters<typeof fetch>, ReturnType<typeof fetch>>;
 

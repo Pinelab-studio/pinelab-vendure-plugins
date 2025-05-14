@@ -1,14 +1,11 @@
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { Logger, RequestContext } from '@vendure/core';
+import { RequestContext } from '@vendure/core';
 import { AddressLookupInput } from '../generated/graphql';
 import { AddressLookupStrategy } from '../types';
-import { asError } from 'catch-unknown';
 import {
   normalizePostalCode,
   validateDutchPostalCode,
 } from './validation-util';
-
-const loggerCtx = 'PostcodeTechStrategy';
 
 interface PostcodeTechResponse {
   postcode: string;
