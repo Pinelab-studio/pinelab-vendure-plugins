@@ -35,7 +35,7 @@ export class PostcodeTechStrategy implements AddressLookupStrategy {
 
   constructor(private readonly input: PostcodeTechStrategyInput) {}
 
-  validateInput?(input: AddressLookupInput): true | string {
+  validateInput(input: AddressLookupInput): true | string {
     return validateDutchPostalCode(input);
   }
 

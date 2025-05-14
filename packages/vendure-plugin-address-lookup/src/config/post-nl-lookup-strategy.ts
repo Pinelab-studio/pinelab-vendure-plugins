@@ -29,7 +29,7 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
 
   constructor(private readonly input: PostNLLookupStrategyInput) {}
 
-  validateInput?(input: AddressLookupInput): true | string {
+  validateInput(input: AddressLookupInput): true | string {
     const countryCode = input.countryCode.toLowerCase();
     if (countryCode === 'nl') {
       return this.validateNLPostalCode(input);

@@ -35,7 +35,7 @@ This Vendure plugin allows you to lookup addresses based on postalcode, housenum
 
 ## Storefront usage
 
-In your storefront, you can use the `lookupAddress` mutation to lookup an address.
+In your storefront, you can use the `lookupAddress` mutation to look up an address.
 You need an active order to be able to access this query!
 
 ```gql
@@ -96,7 +96,7 @@ If you want to implement your own strategy, for example to support more countrie
 import { AddressLookupStrategy } from '@pinelab/vendure-plugin-address-lookup';
 
 export class GermanPostcodeStrategy implements AddressLookupStrategy {
-  readonly countryCode = 'DE';
+  readonly supportedCountryCodes = ['DE'];
 
   constructor(private readonly input: PostcodeTechStrategyInput) {}
 
