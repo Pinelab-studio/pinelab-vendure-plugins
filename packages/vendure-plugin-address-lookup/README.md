@@ -13,21 +13,16 @@ This Vendure plugin allows you to lookup addresses based on postalcode, housenum
     plugins: [
       AddressLookupPlugin.init({
         lookupStrategies: [
-          // If you want to use Postcode.tech, get an API key at https://postcode.tech/
-          new PostcodeTechStrategy({
-            apiKey: process.env.POSTCODE_TECH_APIKEY!,
+
+          // You can register for the Post NL API to do NL and BE lookups
+          new PostNLLookupStrategy({
+            apiKey: process.env.POSTNL_APIKEY!,
           }),
 
-          // If you want to use PostNL, make sure to get an API key for v2/benelux
-            //   new PostNLLookupStrategy({
-            //     apiKey: process.env.POSTNL_APIKEY!,
-            //     countryCode: 'NL',
-            //   }),
-          // You can also use PostNL for Belgium
-            // new PostNLLookupStrategy({
-            //     apiKey: process.env.POSTNL_APIKEY!,
-            //     countryCode: 'BE',
-            // }),
+          // If you want to use the free Postcode.tech, get an API key at https://postcode.tech/ and uncomment the lines below
+          // new PostcodeTechStrategy({
+          //   apiKey: process.env.POSTCODE_TECH_APIKEY!,
+          // }),
         ],
       }),
       DefaultSearchPlugin,
@@ -41,11 +36,47 @@ This Vendure plugin allows you to lookup addresses based on postalcode, housenum
 ## Storefront usage
 
 In your storefront, you can use the `lookupAddress` mutation to lookup an address.
+You need an active order to be able to access this query!
 
 ```gql
+# NL lookups with postal code and house number will always give 1 result
 query {
   lookupAddress(
     input: { countryCode: "NL", postalCode: "8911 DM", houseNumber: "3" }
+  ) {
+    streetLine1
+    streetLine2
+    postalCode
+    city
+    province
+    country
+    countryCode
+  }
+}
+
+# BE lookups with only a postal code and a house number will give multiple results
+query {
+  lookupAddress(
+    input: { countryCode: "BE", postalCode: "9052", houseNumber: "110" }
+  ) {
+    streetLine1
+    streetLine2
+    postalCode
+    city
+    country
+    countryCode
+  }
+}
+
+# To get a single result, you need to also pass streetname
+query {
+  lookupAddress(
+    input: {
+      countryCode: "BE"
+      postalCode: "9052"
+      houseNumber: "110"
+      streetName: "Rijvisschepark"
+    }
   ) {
     streetLine1
     streetLine2

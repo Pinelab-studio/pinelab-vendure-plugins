@@ -31,9 +31,9 @@ require('dotenv').config();
           new PostNLLookupStrategy({
             apiKey: process.env.POSTNL_APIKEY!,
           }),
-          // new PostcodeTechStrategy({
-          //   apiKey: process.env.POSTCODE_TECH_APIKEY!,
-          // }),
+          new PostcodeTechStrategy({
+            apiKey: process.env.POSTCODE_TECH_APIKEY!,
+          }),
         ],
       }),
       DefaultSearchPlugin,

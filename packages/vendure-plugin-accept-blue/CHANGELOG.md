@@ -1,3 +1,9 @@
+# 3.0.0 (2025-05-13)
+
+- BREAKING: `AcceptBlueSubscription.recurring.endDate` is removed.
+- BREAKING: `AcceptBlueSubscription.recurring.startDate` is now optional.
+- The fields `createdAt`, `nextRunDate`, `previousRunDate` and `numLeft` have been added to `AcceptBlueSubscription.recurring`.
+
 # 2.6.1 (2025-04-28)
 
 - Prevent throwing an error when no enabled Accept Blue payment method is found when fetching other eligible Payment Methods.

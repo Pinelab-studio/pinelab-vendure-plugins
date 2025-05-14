@@ -141,8 +141,11 @@ export const GET_ORDER_BY_CODE = gql`
             amount
             interval
             intervalCount
+            createdAt
             startDate
-            endDate
+            nextRunDate
+            previousRunDate
+            numLeft
           }
           transactions {
             id
@@ -251,8 +254,11 @@ export const UPDATE_SUBSCRIPTION = gql`
         amount
         interval
         intervalCount
+        createdAt
         startDate
-        endDate
+        nextRunDate
+        previousRunDate
+        numLeft
       }
     }
   }

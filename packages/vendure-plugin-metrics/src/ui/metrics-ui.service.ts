@@ -16,38 +16,40 @@ export interface AdvancedChartEntry {
   providedIn: 'root',
 })
 export class MetricsUiService {
-  currencyCode$: Observable<any>;
-  uiState$: Observable<any>;
-  constructor(private dataService: DataService) {
-    this.currencyCode$ = this.dataService.settings
-      .getActiveChannel()
-      .refetchOnChannelChange()
-      .mapStream((data) => data.activeChannel.defaultCurrencyCode || undefined);
-    this.uiState$ = this.dataService.client
-      .uiState()
-      .mapStream((data) => data.uiState);
-  }
+  currencyCode$ = this.dataService.settings
+    .getActiveChannel()
+    .refetchOnChannelChange()
+    .mapStream((data) => data.activeChannel.defaultCurrencyCode || undefined);
+  uiState$ = this.dataService.client
+    .uiState()
+    .mapStream((data) => data.uiState);
+  selectedVariantIds$ = new BehaviorSubject<string[]>([]);
+  queryData$ = combineLatest([
+    this.currencyCode$,
+    this.uiState$,
+    this.selectedVariantIds$,
+  ]).pipe(
+    switchMap(([currencyCode, uiState, selectedVariantIds]) =>
+      this.dataService
+        .query(GET_METRICS, {
+          input: {
+            ...(selectedVariantIds.length
+              ? { variantIds: selectedVariantIds }
+              : []),
+          },
+        })
+        .refetchOnChannelChange()
+        .mapStream((metricSummary: any) => {
+          return this.toChartEntry(
+            metricSummary.advancedMetricSummaries,
+            `${uiState.language}-${uiState.locale}`,
+            currencyCode
+          );
+        })
+    )
+  );
 
-  queryData(selectedVariantIds?: string[]) {
-    return combineLatest(this.currencyCode$, this.uiState$).pipe(
-      switchMap(([currencyCode, uiState]) =>
-        this.dataService
-          .query(GET_METRICS, {
-            input: {
-              ...(selectedVariantIds ? { variantIds: selectedVariantIds } : []),
-            },
-          })
-          .refetchOnChannelChange()
-          .mapStream((metricSummary: any) => {
-            return this.toChartEntry(
-              metricSummary.advancedMetricSummaries,
-              `${uiState.language}-${uiState.locale}`,
-              currencyCode
-            );
-          })
-      )
-    );
-  }
+  constructor(private dataService: DataService) {}
 
   toChartEntry(
     input: AdvancedMetricSummary[],
