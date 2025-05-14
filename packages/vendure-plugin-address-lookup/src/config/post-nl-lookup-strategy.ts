@@ -45,42 +45,34 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
   ): Promise<OrderAddress[]> {
     const countryCode = input.countryCode.toLowerCase();
     const postalCode = normalizePostalCode(input.postalCode);
-    try {
-      let url = `https://api.postnl.nl/v2/address/benelux?countryIso=${countryCode}&houseNumber=${input.houseNumber}&postalCode=${postalCode}`;
-      if (input.streetName) {
-        url += `&streetName=${input.streetName}`;
-      }
-      const result = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: this.input.apiKey,
-        },
-      });
-      if (!result.ok) {
-        throw new Error(
-          `PostNL API returned status ${result.status}: ${result.statusText}`
-        );
-      }
-      // Valid results, map to OrderAddress
-      const resultJson = (await result.json()) as PostNLAddressResponse[];
-      return resultJson.map((result) => ({
-        fullName: '',
-        company: '',
-        streetLine1: result.streetName,
-        streetLine2: result.houseNumber,
-        city: result.cityName,
-        province: result.stateName,
-        postalCode,
-        country: result.countryName,
-        phoneNumber: '',
-      }));
-    } catch (error) {
-      Logger.error(
-        `Error calling PostNL API: ${asError(error).message}`,
-        loggerCtx
-      );
-      return [];
+    let url = `https://api.postnl.nl/v2/address/benelux?countryIso=${countryCode}&houseNumber=${input.houseNumber}&postalCode=${postalCode}`;
+    if (input.streetName) {
+      url += `&streetName=${input.streetName}`;
     }
+    const result = await fetch(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: this.input.apiKey,
+      },
+    });
+    if (!result.ok) {
+      throw new Error(
+        `PostNL API returned status ${result.status}: ${result.statusText}`
+      );
+    }
+    // Valid results, map to OrderAddress
+    const resultJson = (await result.json()) as PostNLAddressResponse[];
+    return resultJson.map((result) => ({
+      fullName: '',
+      company: '',
+      streetLine1: result.streetName,
+      streetLine2: result.houseNumber,
+      city: result.cityName,
+      province: result.stateName,
+      postalCode,
+      country: result.countryName,
+      phoneNumber: '',
+    }));
   }
 
   private validateNLPostalCode(input: AddressLookupInput): true | string {

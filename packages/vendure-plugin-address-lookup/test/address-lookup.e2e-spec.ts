@@ -1,6 +1,7 @@
 import {
   DefaultLogger,
   InitialData,
+  Logger,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
@@ -18,6 +19,7 @@ import { initialData } from '../../test/src/initial-data';
 import { addItem } from '../../test/src/shop-utils';
 import { AddressLookupPlugin } from '../src/address-lookup.plugin';
 import { PostcodeTechStrategy } from '../src/config/postcode-tech-strategy';
+import { loggerCtx } from '../src/constants';
 
 describe('Address Lookup plugin', () => {
   let server: TestServer;
@@ -177,6 +179,48 @@ describe('Address Lookup plugin', () => {
         country: 'Netherlands',
       },
     ]);
+  });
+
+  it('handles errors from lookup strategy', async () => {
+    const loggerSpy = vi.spyOn(Logger, 'error');
+    // Mock fetch to return error response
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      })
+    );
+    expect.assertions(2);
+    await addItem(shopClient, 'T_1', 1);
+    try {
+      await shopClient.query(gql`
+        query {
+          lookupAddress(
+            input: {
+              countryCode: "NL"
+              postalCode: "1234 AB"
+              houseNumber: "1"
+            }
+          ) {
+            streetLine1
+            city
+            postalCode
+            province
+            country
+          }
+        }
+      `);
+    } catch (e: any) {
+      expect(e.response.errors[0].message).toBe(
+        'PostcodeTech API returned status 500: Internal Server Error'
+      );
+    }
+    expect(loggerSpy).toHaveBeenCalledWith(
+      'Error looking up address: PostcodeTech API returned status 500: Internal Server Error',
+      loggerCtx
+    );
   });
 
   afterAll(async () => {

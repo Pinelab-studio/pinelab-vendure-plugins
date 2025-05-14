@@ -145,24 +145,20 @@ describe('PostNLLookupStrategy', () => {
       });
     });
 
-    it('handles API errors gracefully', async () => {
+    it('throws error on API error response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 400,
         statusText: 'Bad Request',
       } as Response);
-      const loggerSpy = vi.spyOn(Logger, 'error');
 
-      const result = await strategy.lookup(ctx, {
-        countryCode: 'NL',
-        postalCode: '1234AB',
-        houseNumber: '1',
-      });
-      expect(loggerSpy).toHaveBeenCalledWith(
-        'Error calling PostNL API: PostNL API returned status 400: Bad Request',
-        'PostNLLookupStrategy'
-      );
-      expect(result).toEqual([]);
+      await expect(
+        strategy.lookup(ctx, {
+          countryCode: 'NL',
+          postalCode: '1234AB',
+          houseNumber: '1',
+        })
+      ).rejects.toThrow('PostNL API returned status 400: Bad Request');
     });
   });
 });

@@ -43,46 +43,37 @@ export class PostcodeTechStrategy implements AddressLookupStrategy {
     ctx: RequestContext,
     input: AddressLookupInput
   ): Promise<OrderAddress[]> {
-    try {
-      const postalCode = normalizePostalCode(input.postalCode);
-      const result = await fetch(
-        `https://postcode.tech/api/v1/postcode/full?postcode=${postalCode}&number=${input.houseNumber}`,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${this.input.apiKey}`,
-          },
-        }
-      );
-
-      if (!result.ok) {
-        throw new Error(
-          `PostcodeTech API returned status ${result.status}: ${result.statusText}`
-        );
-      }
-
-      const jsonResult = (await result.json()) as PostcodeTechResponse;
-      if (!jsonResult.street) {
-        return [];
-      }
-      return [
-        {
-          streetLine1: jsonResult.street,
-          streetLine2: jsonResult.number,
-          city: jsonResult.city,
-          province: jsonResult.province,
-          postalCode: jsonResult.postcode,
-          country: 'Netherlands',
-          countryCode: 'NL',
+    const postalCode = normalizePostalCode(input.postalCode);
+    const result = await fetch(
+      `https://postcode.tech/api/v1/postcode/full?postcode=${postalCode}&number=${input.houseNumber}`,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.input.apiKey}`,
         },
-      ];
-    } catch (e) {
-      const error = asError(e);
-      Logger.error(
-        `Error calling PostcodeTech API: ${error.message}`,
-        loggerCtx
+      }
+    );
+
+    if (!result.ok) {
+      throw new Error(
+        `PostcodeTech API returned status ${result.status}: ${result.statusText}`
       );
-      throw error;
     }
+
+    const jsonResult = (await result.json()) as PostcodeTechResponse;
+    if (!jsonResult.street) {
+      return [];
+    }
+    return [
+      {
+        streetLine1: jsonResult.street,
+        streetLine2: jsonResult.number,
+        city: jsonResult.city,
+        province: jsonResult.province,
+        postalCode: jsonResult.postcode,
+        country: 'Netherlands',
+        countryCode: 'NL',
+      },
+    ];
   }
 }

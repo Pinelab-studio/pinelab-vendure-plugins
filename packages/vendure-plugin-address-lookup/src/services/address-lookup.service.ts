@@ -1,13 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { RequestContext } from '@vendure/core';
-import { ADDRESS_LOOKUP_PLUGIN_OPTIONS } from '../constants';
+import { Logger, RequestContext } from '@vendure/core';
+import { ADDRESS_LOOKUP_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import {
   InvalidAddressLookupInputError,
   NoAddressLookupStrategyFoundError,
   PluginInitOptions,
 } from '../types';
 import { AddressLookupInput } from '../generated/graphql';
+import { asError } from 'catch-unknown';
 
 @Injectable()
 export class AddressLookupService {
@@ -35,6 +36,10 @@ export class AddressLookupService {
         throw new InvalidAddressLookupInputError(validationResult);
       }
     }
-    return await lookupStrategy.lookup(ctx, input);
+    return await lookupStrategy.lookup(ctx, input).catch((e) => {
+      const error = asError(e);
+      Logger.error(`Error looking up address: ${error.message}`, loggerCtx);
+      throw error;
+    });
   }
 }
