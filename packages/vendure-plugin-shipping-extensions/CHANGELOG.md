@@ -1,3 +1,7 @@
+# 3.1.1 (2025-04-09)
+
+- Don't hydrate order object in `getHighestTaxRateOfOrder`, this causes discounts to be lost
+
 # 3.1.0 (2025-03-28)
 
 - Removed `ZoneAwareShippingCalculator`

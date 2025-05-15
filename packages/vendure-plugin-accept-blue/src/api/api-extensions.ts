@@ -30,8 +30,11 @@ const commonApiExtensions = gql`
     amount: Int!
     interval: AcceptBlueSubscriptionInterval!
     intervalCount: Int!
-    startDate: DateTime!
-    endDate: DateTime
+    createdAt: DateTime
+    startDate: DateTime
+    nextRunDate: DateTime
+    previousRunDate: DateTime
+    numLeft: Int
   }
 
   type AcceptBlueCardPaymentMethod {
@@ -110,6 +113,7 @@ const commonApiExtensions = gql`
     acceptBlueHostedTokenizationKey: String
     acceptBlueGooglePayMerchantId: String
     acceptBlueGooglePayGatewayMerchantId: String
+    acceptBlueTestMode: Boolean
   }
 
   extend type OrderLine {

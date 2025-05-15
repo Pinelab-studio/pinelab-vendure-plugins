@@ -1,3 +1,21 @@
+# 3.0.0 (2025-05-13)
+
+- BREAKING: `AcceptBlueSubscription.recurring.endDate` is removed.
+- BREAKING: `AcceptBlueSubscription.recurring.startDate` is now optional.
+- The fields `createdAt`, `nextRunDate`, `previousRunDate` and `numLeft` have been added to `AcceptBlueSubscription.recurring`.
+
+# 2.6.1 (2025-04-28)
+
+- Prevent throwing an error when no enabled Accept Blue payment method is found when fetching other eligible Payment Methods.
+
+# 2.6.2 (2025-04-22)
+
+- Don't expose Accept Blue config on non Accept Blue Payment Method Quotes
+
+# 2.6.1 (2025-04-18)
+
+- Expose `acceptBlueTestMode` on Payment Method Quotes
+
 # 2.6.0 (2025-04-03)
 
 - Expose tokenization key, and Google merchant id's on payment method quote and eligible Accept Blue methods.

@@ -39,6 +39,7 @@ import {
   REFUND_ORDER,
   setShipping,
 } from './helpers/graphql-helpers';
+import { waitFor } from '../../test/src/test-helpers';
 
 describe('Stripe Subscription Plugin', function () {
   let server: TestServer;
@@ -52,7 +53,6 @@ describe('Stripe Subscription Plugin', function () {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         StripeSubscriptionPlugin.init({
-          disableWebhookSignatureChecking: true,
           vendureHost: 'https://public-test-host.io',
           subscriptionStrategy: new DefaultStrategyTestWrapper(),
         }),
@@ -180,7 +180,9 @@ describe('Stripe Subscription Plugin', function () {
         productId: 'T_1',
       });
     // T_2 is not a subscription, so it should not be in the preview result
-    const nonSubscription = subscriptions.find((s) => s.variantId === 'T_2');
+    const nonSubscription = subscriptions.find(
+      (s: any) => s.variantId === 'T_2'
+    );
     expect(nonSubscription).toBeUndefined();
     expect(subscriptions.length).toBe(3);
   });
@@ -212,7 +214,9 @@ describe('Stripe Subscription Plugin', function () {
         productId: 'T_1',
       });
     // T_2 is not a subscription, so it should not be in the preview result
-    const nonSubscription = subscriptions.find((s) => s.variantId === 'T_2');
+    const nonSubscription = subscriptions.find(
+      (s: any) => s.variantId === 'T_2'
+    );
     expect(nonSubscription).toBeUndefined();
     expect(subscriptions.length).toBe(3);
   });
@@ -382,27 +386,38 @@ describe('Stripe Subscription Plugin', function () {
         status: 'active',
       });
     let adminOrder = await getOrder(adminClient, '1');
+    const mockIntent = {
+      type: 'payment_intent.succeeded',
+      status: 'succeeded',
+      data: {
+        object: {
+          id: 'mock-intent',
+          object: 'payment_intent',
+          customer: 'mock',
+          metadata: {
+            orderCode,
+            channelToken: 'e2e-default-channel',
+            amount: adminOrder!.totalWithTax,
+          },
+        },
+      },
+    };
+    nock('https://api.stripe.com')
+      .get(/payment_intents.*/)
+      .reply(200, mockIntent);
     await adminClient.fetch(
       'http://localhost:3050/stripe-subscriptions/webhook',
       {
         method: 'POST',
-        body: JSON.stringify({
-          type: 'payment_intent.succeeded',
-          data: {
-            object: {
-              customer: 'mock',
-              metadata: {
-                orderCode,
-                channelToken: 'e2e-default-channel',
-                amount: adminOrder!.totalWithTax,
-              },
-            },
-          },
-        }),
+        body: JSON.stringify(mockIntent),
       }
     );
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    adminOrder = await getOrder(adminClient, '1');
+    adminOrder = await waitFor(async () => {
+      const order = await getOrder(adminClient, '1');
+      if (order?.state === 'PaymentSettled') {
+        return order;
+      }
+    });
     expect(adminOrder?.state).toBe('PaymentSettled');
   });
 

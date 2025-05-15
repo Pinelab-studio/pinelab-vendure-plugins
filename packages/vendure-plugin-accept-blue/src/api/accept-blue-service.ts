@@ -308,7 +308,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     ctx: RequestContext
   ): Promise<AcceptBluePaymentMethodQuote[]> {
     const client = await this.getClientForChannel(ctx);
-    const storefrontKeys = await this.getStorefrontKeys(ctx);
+    const storefrontKeys = await this.getStorefrontKeys(ctx, undefined);
     return client.enabledPaymentMethods.map((pm) => ({
       name: pm,
       tokenizationKey: storefrontKeys.acceptBlueHostedTokenizationKey,
@@ -564,23 +564,23 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
       );
     }
+    // Find the handler arguments and pass the enabled payment methods to the client
+    const mapToBoolean = (value: string | undefined) =>
+      value === 'true' ? true : false;
     const apiKey = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'apiKey'
     )?.value;
     const pin = acceptBlueMethod.handler.args.find(
       (a) => a.name === 'pin'
     )?.value;
-    const testMode = acceptBlueMethod.handler.args.find(
-      (a) => a.name === 'testMode'
-    )?.value as boolean | undefined;
+    const testMode = mapToBoolean(
+      acceptBlueMethod.handler.args.find((a) => a.name === 'testMode')?.value
+    );
     if (!apiKey) {
       throw new Error(
         `No apiKey or pin found on configured Accept Blue payment method`
       );
     }
-    // Find the handler arguments and pass the enabled payment methods to the client
-    const mapToBoolean = (value: string | undefined) =>
-      value === 'true' ? true : false;
     const enabledPaymentMethodArgs: EnabledPaymentMethodsArgs = {
       allowAmex: mapToBoolean(
         acceptBlueMethod.handler.args.find((a) => a.name === 'allowAmex')?.value
@@ -622,9 +622,26 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    *
    * Hosted tokenization key: The key needed to tokenize a creditcard on the frontend
    * Google Pay merchant ID and Gateway Merchant Id: to render Google Pay button on the frontend
+   *
+   * If a `parentPaymentMethodId` is given, we only return the keys if the parent payment method is an Accept Blue payment method.
    */
-  async getStorefrontKeys(ctx: RequestContext): Promise<StorefrontKeys> {
+  async getStorefrontKeys(
+    ctx: RequestContext,
+    parentPaymentMethodId: ID | undefined
+  ): Promise<StorefrontKeys> {
     const acceptBlueMethod = await this.getAcceptBlueMethod(ctx);
+    if (!acceptBlueMethod) {
+      // No enabled Accept Blue payment method found
+      return {};
+    }
+    const client = await this.getClientForChannel(ctx);
+    if (
+      parentPaymentMethodId &&
+      acceptBlueMethod?.id != parentPaymentMethodId
+    ) {
+      // If the parent payment method is not an Accept Blue payment method, we don't need to return any keys
+      return {};
+    }
     const tokenizationSourceKey = acceptBlueMethod?.handler.args.find(
       (a) => a.name === 'tokenizationSourceKey'
     )?.value;
@@ -638,6 +655,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       acceptBlueHostedTokenizationKey: tokenizationSourceKey,
       acceptBlueGooglePayMerchantId: googlePayMerchantId,
       acceptBlueGooglePayGatewayMerchantId: googlePayGatewayMerchantId,
+      acceptBlueTestMode: client.testMode,
     };
   }
 
@@ -655,11 +673,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     if (acceptBlueMethod.length > 1) {
       throw Error(
         `More than one enabled payment method found with code ${acceptBluePaymentHandler.code}. There should be only 1 per channel`
-      );
-    }
-    if (acceptBlueMethod.length === 0) {
-      throw new Error(
-        `No enabled payment method found with code ${acceptBluePaymentHandler.code}`
       );
     }
     return acceptBlueMethod[0];
@@ -865,7 +878,16 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         amount: subscription.amount,
         interval,
         intervalCount,
-        startDate: subscription.created_at,
+        createdAt: subscription.created_at
+          ? new Date(subscription.created_at)
+          : undefined,
+        nextRunDate: subscription.next_run_date
+          ? new Date(subscription.next_run_date)
+          : undefined,
+        previousRunDate: subscription.prev_run_date
+          ? new Date(subscription.prev_run_date)
+          : undefined,
+        numLeft: subscription.num_left,
       },
       transactions,
     };

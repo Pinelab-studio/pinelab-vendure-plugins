@@ -1,4 +1,5 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import {
   Ctx,
   Customer,
@@ -70,27 +71,40 @@ export class AcceptBlueCommonResolver {
   @ResolveField('acceptBlueHostedTokenizationKey')
   @Resolver('PaymentMethodQuote')
   async acceptBlueHostedTokenizationKey(
+    @Parent() quote: PaymentMethodQuote,
     @Ctx() ctx: RequestContext
   ): Promise<string | null | undefined> {
-    return (await this.acceptBlueService.getStorefrontKeys(ctx))
+    return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueHostedTokenizationKey;
+  }
+
+  @ResolveField('acceptBlueTestMode')
+  @Resolver('PaymentMethodQuote')
+  async testMode(
+    @Parent() quote: PaymentMethodQuote,
+    @Ctx() ctx: RequestContext
+  ): Promise<boolean | undefined> {
+    return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
+      ?.acceptBlueTestMode;
   }
 
   @ResolveField('acceptBlueGooglePayMerchantId')
   @Resolver('PaymentMethodQuote')
   async acceptBlueGooglePayMerchantId(
+    @Parent() quote: PaymentMethodQuote,
     @Ctx() ctx: RequestContext
   ): Promise<string | null | undefined> {
-    return (await this.acceptBlueService.getStorefrontKeys(ctx))
+    return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueGooglePayMerchantId;
   }
 
   @ResolveField('acceptBlueGooglePayGatewayMerchantId')
   @Resolver('PaymentMethodQuote')
   async acceptBlueGooglePayGatewayMerchantId(
+    @Parent() quote: PaymentMethodQuote,
     @Ctx() ctx: RequestContext
   ): Promise<string | null | undefined> {
-    return (await this.acceptBlueService.getStorefrontKeys(ctx))
+    return (await this.acceptBlueService.getStorefrontKeys(ctx, quote.id))
       ?.acceptBlueGooglePayGatewayMerchantId;
   }
 

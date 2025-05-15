@@ -457,4 +457,5 @@ export interface StorefrontKeys {
   acceptBlueHostedTokenizationKey?: string;
   acceptBlueGooglePayMerchantId?: string;
   acceptBlueGooglePayGatewayMerchantId?: string;
+  acceptBlueTestMode?: boolean;
 }

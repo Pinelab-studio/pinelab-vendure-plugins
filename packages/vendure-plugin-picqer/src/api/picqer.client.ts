@@ -296,10 +296,14 @@ export class PicqerClient {
 
   /**
    * Update existing product or create new product if not found
+   *
+   * Does not update VAT group when shouldUpdateVatGroup is false.
+   * For example, when this is called when creating an order, the VAT group of the order should not be used to update the product.
    */
   async createOrUpdateProduct(
     sku: string,
-    input: ProductInput
+    input: ProductInput,
+    shouldUpdateVatGroup = true
   ): Promise<ProductData> {
     const product = await this.getProductByCode(sku);
     if (!product) {
@@ -314,6 +318,10 @@ export class PicqerClient {
       `Existing product '${productId}' found for sku '${sku}', updating product in Picqer`,
       loggerCtx
     );
+    if (!shouldUpdateVatGroup) {
+      // Keep VAT group as is
+      input.idvatgroup = product.idvatgroup;
+    }
     return this.updateProduct(productId, input);
   }
 

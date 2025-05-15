@@ -1,3 +1,7 @@
+# 1.7.1 (2025-05-02)
+
+- Fixed a bug where variant IDs were not being passed correctly to the metrics query.
+
 # 1.7.0 (2024-12-19)
 
 - Added server side tracking: Log shop-api events and store in database.

@@ -31,6 +31,7 @@ import { AppleOrGooglePayInput, NoncePaymentMethodInput } from '../src/types';
 import { add } from 'date-fns';
 import { TestSubscriptionStrategy } from './helpers/test-subscription-strategy';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 /**
  * Ensure you have a .env in the plugin root directory with the variable ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY=pk-abc123
@@ -59,7 +60,12 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
     dbConnectionOptions: {
       // autoSave: true, // Uncomment this line to persist the database between restarts
     },
-    authOptions: {},
+    authOptions: {
+      tokenMethod: ['cookie', 'bearer'],
+    },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
@@ -110,6 +116,7 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
           { name: 'allowECheck', value: 'true' },
           { name: 'allowGooglePay', value: 'true' },
           { name: 'allowApplePay', value: 'true' },
+          { name: 'allowVisa', value: 'true' },
           {
             name: 'tokenizationSourceKey',
             value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
@@ -172,29 +179,29 @@ import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
       '{"signature":"MEUCIFZG/zqpZQohvMILpMEPRC/HzlYsUvJVTlcjuh6ddNZhAiEAyRldHj7sC9xbnCa00u8dUzwRYMOoENTQqm6tyldRcDU\\u003d","intermediateSigningKey":{"signedKey":"{\\"keyValue\\":\\"MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEscxfstKIwGYw8f2aybtHUYjaEKXpXh4c4uEN3NC0kZnawXUpGew8DWdS+vYOVZ5O639ZkRL32L5FeKcb0Wvdlg\\\\u003d\\\\u003d\\",\\"keyExpiration\\":\\"1743759806251\\"}","signatures":["MEYCIQCWPi+p9C/kgQMIuIUeNKRPxPWMORGO7xlm9NrMa6tfbAIhAPyJkxEIPP/ECk3U766OyHvhP5jfAk3/F2giIlNVUHIV"]},"protocolVersion":"ECv2","signedMessage":"{\\"encryptedMessage\\":\\"rXjz4P5ugdTumQ0s3B+kj7PcRDAkxJghyP/flpbxqTz40g4zaYAA9QrG+nX/bJg86I7j6NQU+cJLGTirN196p0bVCqOotx46DeOHXqDG5W2QFabxKa3igcxZ0bbQ3+OQxPN52Vz9jR1lNZkA+ZF4sckK4rtPJJltxxswVCgZm+YNUtTNb7hBh7eoJcu0WJCUv0obNcufJEz8+KoQJiaPu4TwmaIT9RanqKqlHzarXQdOhmHQJiOXfGiP8GeMaROuL9E2h8PowEyjbHEKrx0KjtRW2Jlk2wEQW4GIhietVOvO/9JpesepWX8vfn/HuVsOmXsj9BwBtKEX3Z5r9XlnMWzd8q8U8/1WUPZZgn8Q0B5vdOdzn7srmo4lFKrRBZTeyLjMZGdyINHh5ZSajWZmI9NeucEk3ZvIxAW0bV/mD5OOFmQOetclyldcEMxwsXO7E0TSp65GMAobGwNHkOd0wCN2DMyBxT4Vh4hN0dfZD4lDU2qUWjEc+/GPl/++g+s3rUR1KjyPSH06wv3yqmSG+u/0Gof/mfPoZyf1TRm6UzcFTY8HmoPeR3Oo\\",\\"ephemeralPublicKey\\":\\"BKgk4yeCEVqfZTHIAegqcnABhcc9x4v8IRQZbO7QZMEWAKBeJ9Q/fVKZgs/Tt9WyAKkH7FBfbBTbjEdh+j+3sFc\\\\u003d\\",\\"tag\\":\\"xslhQIESD/gFKNAb/SlRwD9gg8oVMiNQaSOIHFxA5Yo\\\\u003d\\"}"}',
   };
 
-  // try {
-  //   const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
-  //     input: {
-  //       method: 'accept-blue',
-  //       metadata,
-  //       // metadata: { paymentMethodId: 14556 }, // Use a saved payment method
-  //     },
-  //   });
-  //   console.log(JSON.stringify);
-  //   console.log(
-  //     `Successfully transitioned order to ${addPaymentToOrder.state}`
-  //   );
+  try {
+    const { addPaymentToOrder } = await shopClient.query(ADD_PAYMENT_TO_ORDER, {
+      input: {
+        method: 'accept-blue',
+        // metadata,
+        metadata: { paymentMethodId: 14556 }, // Use a saved payment method
+      },
+    });
+    console.log(JSON.stringify);
+    console.log(
+      `Successfully transitioned order to ${addPaymentToOrder.state}`
+    );
 
-  //   // Attempt a refund
-  //   // const { refundAcceptBlueTransaction } = await shopClient.query(
-  //   //   REFUND_TRANSACTION,
-  //   //   {
-  //   //     transactionId: 354653,
-  //   //   }
-  //   // );
-  //   // console.log(`Refunded transaction: ${refundAcceptBlueTransaction}`);
-  // } catch (e) {
-  //   // Catch to prevent server from terminating
-  //   console.error(e);
-  // }
+    //   // Attempt a refund
+    //   // const { refundAcceptBlueTransaction } = await shopClient.query(
+    //   //   REFUND_TRANSACTION,
+    //   //   {
+    //   //     transactionId: 354653,
+    //   //   }
+    //   // );
+    //   // console.log(`Refunded transaction: ${refundAcceptBlueTransaction}`);
+  } catch (e) {
+    // Catch to prevent server from terminating
+    console.error(e);
+  }
 })();

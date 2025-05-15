@@ -1,3 +1,15 @@
+# 3.7.1 (2025-04-23)
+
+- Supply correct key for overriding VAT group in orders. Patch on previous version.
+
+# 3.7.1 (2025-04-23)
+
+- Override VAT rate for orders, when orders have a different VAT rate applied. For example, with orders in other countries.
+
+# 3.7.0 (2025-04-23)
+
+- Hydrate `ProductVariant.Product` when pushing products to Picqer, so that consumers can use Product to populate Picqer custom fields.
+
 # 3.6.0 (2025-01-08)
 
 - Allow configuring the plugin to not cancel Vendure orders when a Picqer order is cancelled

@@ -116,7 +116,7 @@ export function Navigation() {
               </div>
               <div className="py-6">
                 <a
-                  href="/contact/"
+                  href="https://pinelab.studio/contact/"
                   className="-mx-3 block rounded-lg px-3 py-2.5 text-base/7 font-semibold hover:bg-gray-50"
                 >
                   Contact

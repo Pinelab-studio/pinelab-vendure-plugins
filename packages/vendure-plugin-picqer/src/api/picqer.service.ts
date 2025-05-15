@@ -722,6 +722,7 @@ export class PicqerService implements OnApplicationBootstrap {
       'lines.productVariant',
       'lines.productVariant.translations',
       'lines.productVariant.taxCategory',
+      'lines.productVariant.product',
       'customer',
       'customer.addresses',
       'shippingLines',
@@ -787,7 +788,8 @@ export class PicqerService implements OnApplicationBootstrap {
       }
       const picqerProduct = await picqerClient.createOrUpdateProduct(
         line.productVariant.sku,
-        this.mapToProductInput(ctx, line.productVariant, vatGroup.idvatgroup)
+        this.mapToProductInput(ctx, line.productVariant, vatGroup.idvatgroup),
+        false // Do not update VAT group of product, but instead override it in the order
       );
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const additionalOrderLineFields =
@@ -795,6 +797,7 @@ export class PicqerService implements OnApplicationBootstrap {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       productInputs.push({
         idproduct: picqerProduct.idproduct,
+        idvatgroup: vatGroup.idvatgroup, // Override the vat group for this order
         amount: line.quantity,
         ...additionalOrderLineFields,
       });
@@ -887,6 +890,9 @@ export class PicqerService implements OnApplicationBootstrap {
           return;
         }
         try {
+          await this.entityHydrator.hydrate(ctx, variant, {
+            relations: ['product'],
+          });
           const productInput = this.mapToProductInput(
             ctx,
             variant,
