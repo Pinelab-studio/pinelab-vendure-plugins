@@ -49,7 +49,7 @@ describe('splitEntitiesInMonths()', () => {
     },
   ];
 
-  it.only('splits entities by createdAt correctly', () => {
+  it('splits entities by createdAt correctly', () => {
     const from = new Date('2023-01-04T00:00:00Z');
     const to = new Date('2023-03-04T00:00:00Z');
     const result = groupEntitiesPerMonth(testEntities, 'createdAt', from, to);
@@ -99,8 +99,8 @@ describe('splitEntitiesInMonths()', () => {
     const from = new Date('2022-11-01T00:00:00Z');
     const to = new Date('2023-02-01T00:00:00Z');
     const result = groupEntitiesPerMonth(testEntities, 'createdAt', from, to);
-    // Should have 3 months (Nov, Dec, Jan)
-    expect(result.length).toBe(3);
+    // Should have months (Nov, Dec, Jan, Feb)
+    expect(result.length).toBe(4);
 
     // November and December should be empty
     expect(
@@ -114,6 +114,11 @@ describe('splitEntitiesInMonths()', () => {
     expect(
       result.find((m) => m.monthNr === 0 && m.year === 2023)?.entities.length
     ).toBe(1);
+
+    // February should have 1 entity
+    expect(
+      result.find((m) => m.monthNr === 1 && m.year === 2023)?.entities.length
+    ).toBe(2);
   });
 
   it('throws error for entities with invalid dates', () => {
@@ -133,9 +138,10 @@ describe('splitEntitiesInMonths()', () => {
     const result = groupEntitiesPerMonth([], 'createdAt', from, to);
 
     // Should still have 2 months, just with empty entity arrays
-    expect(result.length).toBe(2);
+    expect(result.length).toBe(3);
     expect(result[0].entities.length).toBe(0);
     expect(result[1].entities.length).toBe(0);
+    expect(result[2].entities.length).toBe(0);
   });
 });
 
