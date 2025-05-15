@@ -1,14 +1,7 @@
-import {
-  Injector,
-  Logger,
-  Order,
-  RequestContext,
-  TransactionalConnection,
-} from '@vendure/core';
-import { loggerCtx } from '../constants';
-import { AdvancedMetricType } from '../ui/generated/graphql';
+import { Order, RequestContext } from '@vendure/core';
 import { MetricStrategy, NamedDatapoint } from '../services/metric-strategy';
 import { Visit } from '../services/request-service';
+import { AdvancedMetricType } from '../ui/generated/graphql';
 
 /**
  * Conversion of visitors to orders
