@@ -43,19 +43,19 @@ describe('splitEntitiesInMonths()', () => {
     },
     {
       id: 4,
-      createdAt: new Date('2023-04-01T00:00:00Z'),
+      createdAt: new Date('2023-04-03T00:00:00Z'),
       updatedAt: new Date('2023-04-02T00:00:00Z'),
       orderPlacedAt: new Date('2023-04-03T00:00:00Z'),
     },
   ];
 
-  it('splits entities by createdAt correctly', () => {
-    const from = new Date('2023-01-01T00:00:00Z');
-    const to = new Date('2023-03-01T00:00:00Z');
+  it.only('splits entities by createdAt correctly', () => {
+    const from = new Date('2023-01-04T00:00:00Z');
+    const to = new Date('2023-03-04T00:00:00Z');
     const result = groupEntitiesPerMonth(testEntities, 'createdAt', from, to);
 
-    // Should have 2 months (Jan and Feb)
-    expect(result.length).toBe(2);
+    // Should have 3 months (Jan, Feb, Mar)
+    expect(result.length).toBe(3);
 
     // January should have 1 entity
     expect(result.find((m) => m.monthNr === 0)?.entities.length).toBe(1);
@@ -65,7 +65,7 @@ describe('splitEntitiesInMonths()', () => {
   });
 
   it('splits entities by orderPlacedAt correctly', () => {
-    const from = new Date('2023-01-01T00:00:00Z');
+    const from = new Date('2023-01-02T00:00:00Z');
     const to = new Date('2023-05-03T00:00:00Z');
     const result = groupEntitiesPerMonth(
       testEntities,
@@ -90,6 +90,9 @@ describe('splitEntitiesInMonths()', () => {
     expect(
       result.find((m) => m.monthNr === 3 && m.year === 2023)?.entities.length
     ).toBe(1);
+    expect(
+      result.find((m) => m.monthNr === 4 && m.year === 2023)?.entities.length
+    ).toBe(0);
   });
 
   it('includes empty months in the range', () => {

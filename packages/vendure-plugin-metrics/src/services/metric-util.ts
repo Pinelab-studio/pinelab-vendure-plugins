@@ -1,4 +1,4 @@
-import { addMonths, isBefore } from 'date-fns';
+import { addMonths, isBefore, startOfMonth } from 'date-fns';
 import { AdvancedMetricSeries } from '../ui/generated/graphql';
 import { MetricRequest } from '../entities/metric-request.entity';
 import { Visit } from './request-service';
@@ -39,18 +39,21 @@ export function groupEntitiesPerMonth<T>(
   from: Date,
   to: Date
 ): EntitiesPerMonth<T>[] {
-  // Helper function to construct yearMonth as identifier. E.g. "2021-01"
+  // Helper function to construct yearMonth as identifier. E.g. "2021-1"
   const getYearMonth = (date: Date) =>
     `${date.getFullYear()}-${date.getMonth()}`;
+
   const entitiesPerMonth = new Map<string, EntitiesPerMonth<T>>();
   // Populate the map with all months in the range
-  for (let i = from; isBefore(i, to); i = addMonths(i, 1)) {
-    const yearMonth = getYearMonth(i);
+  let currentDate = startOfMonth(from);
+  while (isBefore(currentDate, to)) {
+    const yearMonth = getYearMonth(currentDate);
     entitiesPerMonth.set(yearMonth, {
-      monthNr: i.getMonth(),
-      year: i.getFullYear(),
-      entities: [], // Will be populated below
+      monthNr: currentDate.getMonth(),
+      year: currentDate.getFullYear(),
+      entities: [],
     });
+    currentDate = addMonths(currentDate, 1);
   }
   // Loop over each item and categorize it in the correct month
   entities.forEach((entity) => {
