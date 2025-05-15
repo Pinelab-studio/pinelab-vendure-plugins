@@ -25,33 +25,33 @@ describe('splitEntitiesInMonths()', () => {
   const testEntities = [
     {
       id: 1,
-      createdAt: new Date('2023-01-15'),
-      updatedAt: new Date('2023-01-20'),
-      orderPlacedAt: new Date('2023-01-25'),
+      createdAt: new Date('2023-01-15T00:00:00Z'),
+      updatedAt: new Date('2023-01-20T00:00:00Z'),
+      orderPlacedAt: new Date('2023-01-25T00:00:00Z'),
     },
     {
       id: 2,
-      createdAt: new Date('2023-02-10'),
-      updatedAt: new Date('2023-02-15'),
-      orderPlacedAt: new Date('2023-02-20'),
+      createdAt: new Date('2023-02-10T00:00:00Z'),
+      updatedAt: new Date('2023-02-15T00:00:00Z'),
+      orderPlacedAt: new Date('2023-02-20T00:00:00Z'),
     },
     {
       id: 3,
-      createdAt: new Date('2023-02-25'),
-      updatedAt: new Date('2023-03-05'),
-      orderPlacedAt: new Date('2023-03-10'),
+      createdAt: new Date('2023-02-25T00:00:00Z'),
+      updatedAt: new Date('2023-03-05T00:00:00Z'),
+      orderPlacedAt: new Date('2023-03-10T00:00:00Z'),
     },
     {
       id: 4,
-      createdAt: new Date('2023-04-01'),
-      updatedAt: new Date('2023-04-02'),
-      orderPlacedAt: new Date('2023-04-03'),
+      createdAt: new Date('2023-04-01T00:00:00Z'),
+      updatedAt: new Date('2023-04-02T00:00:00Z'),
+      orderPlacedAt: new Date('2023-04-03T00:00:00Z'),
     },
   ];
 
   it('splits entities by createdAt correctly', () => {
-    const from = new Date('2023-01-01');
-    const to = new Date('2023-03-01');
+    const from = new Date('2023-01-01T00:00:00Z');
+    const to = new Date('2023-03-01T00:00:00Z');
     const result = groupEntitiesPerMonth(testEntities, 'createdAt', from, to);
 
     // Should have 2 months (Jan and Feb)
@@ -65,8 +65,8 @@ describe('splitEntitiesInMonths()', () => {
   });
 
   it('splits entities by orderPlacedAt correctly', () => {
-    const from = new Date('2023-01-01');
-    const to = new Date('2023-05-01');
+    const from = new Date('2023-01-01T00:00:00Z');
+    const to = new Date('2023-05-01T00:00:00Z');
     const result = groupEntitiesPerMonth(
       testEntities,
       'orderPlacedAt',
@@ -93,8 +93,8 @@ describe('splitEntitiesInMonths()', () => {
   });
 
   it('includes empty months in the range', () => {
-    const from = new Date('2022-11-01');
-    const to = new Date('2023-02-01');
+    const from = new Date('2022-11-01T00:00:00Z');
+    const to = new Date('2023-02-01T00:00:00Z');
     const result = groupEntitiesPerMonth(testEntities, 'createdAt', from, to);
     // Should have 3 months (Nov, Dec, Jan)
     expect(result.length).toBe(3);
@@ -116,8 +116,8 @@ describe('splitEntitiesInMonths()', () => {
   it('throws error for entities with invalid dates', () => {
     const invalidEntities = [{ id: 1, createdAt: new Date('invalid date') }];
 
-    const from = new Date('2023-01-01');
-    const to = new Date('2023-02-01');
+    const from = new Date('2023-01-01T00:00:00Z');
+    const to = new Date('2023-02-01T00:00:00Z');
 
     expect(() => {
       groupEntitiesPerMonth(invalidEntities, 'createdAt', from, to);
@@ -125,8 +125,8 @@ describe('splitEntitiesInMonths()', () => {
   });
 
   it('handles empty entity array', () => {
-    const from = new Date('2023-01-01');
-    const to = new Date('2023-03-01');
+    const from = new Date('2023-01-01T00:00:00Z');
+    const to = new Date('2023-03-01T00:00:00Z');
     const result = groupEntitiesPerMonth([], 'createdAt', from, to);
 
     // Should still have 2 months, just with empty entity arrays
