@@ -5,7 +5,7 @@ import {
   AdvancedMetricSummaryInput,
   AdvancedMetricType,
 } from '../ui/generated/graphql';
-import { MetricsService } from './metrics.service';
+import { MetricsService } from '../services/metrics.service';
 
 @Resolver()
 export class MetricsResolver {
@@ -17,6 +17,6 @@ export class MetricsResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: AdvancedMetricSummaryInput
   ): Promise<AdvancedMetricSummary[]> {
-    return this.metricsService.getMetrics(ctx, input);
+    return await this.metricsService.getMetrics(ctx, input);
   }
 }

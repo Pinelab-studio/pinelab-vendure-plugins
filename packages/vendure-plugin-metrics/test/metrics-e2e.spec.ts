@@ -1,6 +1,12 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  LogLevel,
+  mergeConfig,
+  RequestContextService,
+} from '@vendure/core';
 import {
   createTestEnvironment,
+  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
@@ -18,6 +24,10 @@ import {
   MetricsPlugin,
 } from '../src';
 import { GET_METRICS } from '../src/ui/queries.graphql';
+import gql from 'graphql-tag';
+import { waitFor } from '../../test/src/test-helpers';
+import { RequestService } from '../src/services/request-service';
+import { createMockRequests } from './helpers';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
@@ -75,6 +85,7 @@ describe('Metrics', () => {
     await adminClient.asSuperAdmin();
     const { advancedMetricSummaries } =
       await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS);
+    expect.hasAssertions();
     const averageOrderValue = advancedMetricSummaries.find(
       (m) => m.code === 'aov'
     )!;
@@ -84,17 +95,28 @@ describe('Metrics', () => {
     const salesPerProduct = advancedMetricSummaries.find(
       (m) => m.code === 'units-sold'
     )!;
-    expect(advancedMetricSummaries.length).toEqual(3);
+    const conversion = advancedMetricSummaries.find(
+      (m) => m.code === 'conversion'
+    )!;
+    const visitors = advancedMetricSummaries.find(
+      (m) => m.code === 'visitors'
+    )!;
+    [
+      averageOrderValue,
+      revenuePerProduct,
+      salesPerProduct,
+      conversion,
+      visitors,
+    ].forEach((metric) => {
+      expect(metric.series[0].values.length).toEqual(14);
+      expect(metric.labels.length).toEqual(14);
+    });
     expect(averageOrderValue.series[0].values.length).toEqual(14);
     expect(averageOrderValue.labels.length).toEqual(14);
-    // All orders are 4102 without tax, so that the AOV
+    // All orders are 4102 without tax, so the AOV is always 4102
     expect(averageOrderValue.series[0].values[13]).toEqual(4102);
-    expect(revenuePerProduct.series[0].values.length).toEqual(14);
-    expect(revenuePerProduct.labels.length).toEqual(14);
     // All orders are 4102 without tax, and we placed 3 orders
     expect(revenuePerProduct.series[0].values[13]).toEqual(3 * 4102); //12306
-    expect(salesPerProduct.series[0].values.length).toEqual(14);
-    expect(salesPerProduct.labels.length).toEqual(14);
   });
 
   it('Fetches metrics for specific variant', async () => {
@@ -103,7 +125,6 @@ describe('Metrics', () => {
       await adminClient.query<AdvancedMetricSummariesQuery>(GET_METRICS, {
         input: { variantIds: [1, 2] },
       });
-    expect(advancedMetricSummaries.length).toEqual(3);
     const revenuePerProduct = advancedMetricSummaries.find(
       (m) => m.code === 'revenue-per-product'
     )!;
@@ -126,6 +147,31 @@ describe('Metrics', () => {
     expect(salesPerProduct.series[0].values[13]).toEqual(3);
     // Expect the first series (variant 2), to have 6 revenue in last month
     expect(salesPerProduct.series[1].values[13]).toEqual(6);
+  });
+
+  it('Handles 10 concurrent requests to the shop API', async () => {
+    const requestService = server.app.get(RequestService);
+    await Promise.allSettled(
+      createMockRequests(E2E_DEFAULT_CHANNEL_TOKEN, 10).map(async (request) =>
+        requestService.logRequest(request)
+      )
+    );
+    const ctx = await server.app.get(RequestContextService).create({
+      apiType: 'shop',
+      channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
+    });
+    // Wait until 10 visits are logged
+    const loggedVisits = await waitFor(async () => {
+      const visits = await requestService.getVisits(
+        ctx,
+        new Date('2023-01-01'),
+        0
+      );
+      if (visits.length === 10) {
+        return visits;
+      }
+    }, 1000);
+    expect(loggedVisits.length).toEqual(10);
   });
 
   if (process.env.TEST_ADMIN_UI) {

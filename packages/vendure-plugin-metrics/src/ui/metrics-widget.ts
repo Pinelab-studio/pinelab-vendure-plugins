@@ -168,5 +168,6 @@ export class MetricsWidgetComponent implements OnInit {
       }
       this.changeDetectorRef.detectChanges();
     });
+    this.changeDetectorRef.detectChanges();
   }
 }
