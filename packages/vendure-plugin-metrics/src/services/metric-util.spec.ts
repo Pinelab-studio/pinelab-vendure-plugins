@@ -124,8 +124,8 @@ describe('splitEntitiesInMonths()', () => {
   it('throws error for entities with invalid dates', () => {
     const invalidEntities = [{ id: 1, createdAt: new Date('invalid date') }];
 
-    const from = new Date('2023-01-01T00:00:00Z');
-    const to = new Date('2023-02-01T00:00:00Z');
+    const from = new Date('2023-01-03T00:00:00Z');
+    const to = new Date('2023-02-03T00:00:00Z');
 
     expect(() => {
       groupEntitiesPerMonth(invalidEntities, 'createdAt', from, to);
@@ -133,8 +133,8 @@ describe('splitEntitiesInMonths()', () => {
   });
 
   it('handles empty entity array', () => {
-    const from = new Date('2023-01-01T00:00:00Z');
-    const to = new Date('2023-03-01T00:00:00Z');
+    const from = new Date('2023-01-03T00:00:00Z');
+    const to = new Date('2023-03-03T00:00:00Z');
     const result = groupEntitiesPerMonth([], 'createdAt', from, to);
 
     // Should still have 2 months, just with empty entity arrays
@@ -208,7 +208,7 @@ describe('getVisits()', () => {
   });
 
   it('creates a single visit for a single request', () => {
-    const timestamp = new Date('2023-01-01T12:00:00Z');
+    const timestamp = new Date('2023-01-03T12:00:00Z');
     const request = createRequest('user1', timestamp);
     const visits = getVisits([request], 30);
     expect(visits).toHaveLength(1);
@@ -221,7 +221,7 @@ describe('getVisits()', () => {
   });
 
   it('combines requests within session window into one visit', () => {
-    const startTime = new Date('2023-01-01T12:00:00Z');
+    const startTime = new Date('2023-01-03T12:00:00Z');
     const fiveMinLater = new Date(startTime.getTime() + 5 * 60 * 1000);
     const tenMinLater = new Date(startTime.getTime() + 10 * 60 * 1000);
     const requests = [
@@ -240,7 +240,7 @@ describe('getVisits()', () => {
   });
 
   it('creates separate visits for requests outside session window', () => {
-    const startTime = new Date('2023-01-01T12:00:00Z');
+    const startTime = new Date('2023-01-03T12:00:00Z');
     const fiveMinLater = new Date(startTime.getTime() + 5 * 60 * 1000);
     const tenMinLater = new Date(startTime.getTime() + 10 * 60 * 1000);
     const requests = [
@@ -265,7 +265,7 @@ describe('getVisits()', () => {
   });
 
   it('handles requests from different identifiers as separate visits', () => {
-    const baseTime = new Date('2023-01-01T12:00:00Z');
+    const baseTime = new Date('2023-01-03T12:00:00Z');
     const requests = [
       createRequest('user1', baseTime),
       createRequest('user2', baseTime),
@@ -287,7 +287,7 @@ describe('getVisits()', () => {
   });
 
   it('counts each request as separate visit if session length is 0', () => {
-    const now = new Date('2023-01-01T12:00:00Z');
+    const now = new Date('2023-01-03T12:00:00Z');
     const requests = [
       createRequest('user1', now),
       createRequest('user1', now),
@@ -310,7 +310,7 @@ describe('getVisits()', () => {
   });
 
   it('preserves device type information', () => {
-    const baseTime = new Date('2023-01-01T12:00:00Z');
+    const baseTime = new Date('2023-01-03T12:00:00Z');
     const requests = [
       createRequest('user1', baseTime, 'Desktop'),
       createRequest('user2', baseTime, 'Mobile'),
