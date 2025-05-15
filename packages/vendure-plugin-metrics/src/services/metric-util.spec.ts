@@ -66,7 +66,7 @@ describe('splitEntitiesInMonths()', () => {
 
   it('splits entities by orderPlacedAt correctly', () => {
     const from = new Date('2023-01-01T00:00:00Z');
-    const to = new Date('2023-05-01T00:00:00Z');
+    const to = new Date('2023-05-03T00:00:00Z');
     const result = groupEntitiesPerMonth(
       testEntities,
       'orderPlacedAt',
