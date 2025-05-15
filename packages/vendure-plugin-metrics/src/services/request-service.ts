@@ -193,7 +193,6 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
         hasMore = false; // No more results to fetch
       }
     }
-    console.log(`========================= STORED`, requests.length);
     return getVisits(requests, sessionLengthInMinutes);
   }
 

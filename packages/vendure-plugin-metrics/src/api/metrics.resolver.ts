@@ -17,6 +17,6 @@ export class MetricsResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: AdvancedMetricSummaryInput
   ): Promise<AdvancedMetricSummary[]> {
-    return this.metricsService.getMetrics(ctx, input);
+    return await this.metricsService.getMetrics(ctx, input);
   }
 }

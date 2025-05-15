@@ -277,6 +277,29 @@ describe('getVisits()', () => {
     );
   });
 
+  it('counts each request as separate visit if session length is 0', () => {
+    const now = new Date('2023-01-01T12:00:00Z');
+    const requests = [
+      createRequest('user1', now),
+      createRequest('user1', now),
+      createRequest('user1', now),
+    ];
+    const visits = getVisits(requests, 0);
+    expect(visits).toHaveLength(3);
+    expect(visits[0]).toEqual({
+      identifier: 'user1',
+      start: now,
+      end: now,
+      deviceType: 'Desktop',
+    });
+    expect(visits[1]).toEqual({
+      identifier: 'user1',
+      start: now,
+      end: now,
+      deviceType: 'Desktop',
+    });
+  });
+
   it('preserves device type information', () => {
     const baseTime = new Date('2023-01-01T12:00:00Z');
     const requests = [

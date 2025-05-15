@@ -28,7 +28,6 @@ import {
   mapToSeries,
 } from './metric-util';
 import { MetricSummary } from '../entities/metric-summary.entity';
-import { ca } from 'date-fns/locale';
 import { RequestService } from './request-service';
 
 @Injectable()

@@ -122,12 +122,12 @@ export function getVisits(
     let currentVisit: Visit | null = null;
 
     for (const request of groupedRequests) {
-      if (
+      const isWithinSession =
         currentVisit &&
         request.createdAt.getTime() - currentVisit.start.getTime() <=
-          sessionLengthInMs
-      ) {
-        // Extend the current visit
+          sessionLengthInMs;
+      if (sessionLengthInMs && isWithinSession && currentVisit) {
+        // Extend the current visit if the request is within the same session
         currentVisit.end = request.createdAt;
       } else {
         // Start a new visit
