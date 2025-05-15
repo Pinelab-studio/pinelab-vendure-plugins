@@ -296,16 +296,18 @@ export class MetricsService implements OnModuleInit {
 
       const [items, totalOrders] = await query.getManyAndCount();
       orders.push(...items);
-      const firstDate = items[0].orderPlacedAt?.toISOString().split('T')[0];
-      const lastDate = items[items.length - 1].orderPlacedAt
-        ?.toISOString()
-        .split('T')[0];
-      Logger.info(
-        `Fetched orders ${skip}-${
-          skip + take
-        } (${firstDate} to ${lastDate}) for channel ${ctx.channel.token}`,
-        loggerCtx
-      );
+      if (items.length > 0) {
+        const firstDate = items[0].orderPlacedAt?.toISOString().split('T')[0];
+        const lastDate = items[items.length - 1].orderPlacedAt
+          ?.toISOString()
+          .split('T')[0];
+        Logger.info(
+          `Fetched orders ${skip}-${
+            skip + take
+          } (${firstDate} to ${lastDate}) for channel ${ctx.channel.token}`,
+          loggerCtx
+        );
+      }
 
       skip += items.length;
       if (orders.length >= totalOrders) {

@@ -4,30 +4,29 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
-import { Request } from 'express';
 import {
   ChannelService,
   JobQueue,
   JobQueueService,
   Logger,
   RequestContext,
-  TransactionalConnection,
 } from '@vendure/core';
-import { createHash } from 'crypto';
-import { MetricRequest } from '../entities/metric-request.entity';
-import { DataSource } from 'typeorm';
-import { MetricsPluginOptions } from '../metrics.plugin';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
-import { addMonths, differenceInHours } from 'date-fns';
 import { asError } from 'catch-unknown';
-import { RequestMiddleware } from './reques-middleware';
+import crypto, { createHash } from 'crypto';
+import { addMonths, differenceInHours } from 'date-fns';
+import { Request } from 'express';
+import { DataSource } from 'typeorm';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MetricRequestSalt } from '../entities/metric-request-salt';
-import crypto from 'crypto';
+import { MetricRequest } from '../entities/metric-request.entity';
+import { MetricsPluginOptions } from '../metrics.plugin';
 import { getVisits } from './metric-util';
+import { RequestMiddleware } from './reques-middleware';
+import { UAParser } from 'ua-parser-js';
 
 export interface Visit {
   identifier: string;
-  deviceType: 'Mobile' | 'Tablet' | 'Desktop' | 'Unknown';
+  deviceType: string;
   start: Date;
   end: Date;
 }
@@ -149,7 +148,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
    * Handles the job data and stores it in the database
    */
   async handleLogRequestJobs(requests: RequestData[]): Promise<void> {
-    const dailySalt = this.getSalt();
+    const dailySalt = await this.getSalt();
     const entities = requests.map((request) => {
       // Create a hash of IP + user agent for privacy
       const hash = createHash('sha256')
@@ -158,7 +157,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       const device = this.extractDeviceInfo(request.userAgent);
       const entity = new MetricRequest();
       entity.identifier = hash;
-      entity.deviceType = device;
+      entity.deviceType = device || 'Unknown';
       entity.channelToken = request.channelToken;
       return entity;
     });
@@ -264,19 +263,8 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Extracts basic device information from user agent string
    */
-  private extractDeviceInfo(
-    userAgent: string
-  ): 'Mobile' | 'Tablet' | 'Desktop' | 'Unknown' {
-    if (!userAgent) return 'Unknown';
-
-    // Very basic detection
-    if (userAgent.includes('Mobile')) {
-      return 'Mobile';
-    } else if (userAgent.includes('Tablet')) {
-      return 'Tablet';
-    } else if (userAgent.includes('Desktop')) {
-      return 'Desktop';
-    }
-    return 'Unknown';
+  private extractDeviceInfo(userAgent: string): UAParser.IDevice['type'] {
+    const ua = UAParser(userAgent);
+    return ua.device.type;
   }
 }

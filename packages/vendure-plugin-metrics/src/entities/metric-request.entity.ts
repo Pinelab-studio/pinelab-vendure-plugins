@@ -14,7 +14,7 @@ export class MetricRequest extends VendureEntity {
   identifier!: string;
 
   @Column()
-  deviceType!: 'Desktop' | 'Mobile' | 'Tablet' | 'Unknown';
+  deviceType!: string;
 
   @Index()
   @Column()
