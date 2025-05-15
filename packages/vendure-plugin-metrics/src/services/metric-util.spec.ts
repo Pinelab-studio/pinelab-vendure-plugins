@@ -96,8 +96,8 @@ describe('splitEntitiesInMonths()', () => {
   });
 
   it('includes empty months in the range', () => {
-    const from = new Date('2022-11-01T00:00:00Z');
-    const to = new Date('2023-02-01T00:00:00Z');
+    const from = new Date('2022-11-03T00:00:00Z');
+    const to = new Date('2023-02-03T00:00:00Z');
     const result = groupEntitiesPerMonth(testEntities, 'createdAt', from, to);
     // Should have months (Nov, Dec, Jan, Feb)
     expect(result.length).toBe(4);
