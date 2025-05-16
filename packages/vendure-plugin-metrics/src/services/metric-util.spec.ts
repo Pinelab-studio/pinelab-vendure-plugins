@@ -188,7 +188,7 @@ describe('mapToSeries()', () => {
   });
 });
 
-describe('getVisits()', () => {
+describe('getSessions()', () => {
   // Helper function to create a MetricRequest with the given properties
   function createRequest(
     identifier: string,
@@ -203,16 +203,16 @@ describe('getVisits()', () => {
   }
 
   it('returns empty array for empty input', () => {
-    const visits = getSessions([], 30);
-    expect(visits).toEqual([]);
+    const sessions = getSessions([], 30);
+    expect(sessions).toEqual([]);
   });
 
-  it('creates a single visit for a single request', () => {
+  it('creates a single session for a single request', () => {
     const timestamp = new Date('2023-01-03T12:00:00Z');
     const request = createRequest('user1', timestamp);
-    const visits = getSessions([request], 30);
-    expect(visits).toHaveLength(1);
-    expect(visits[0]).toEqual({
+    const sessions = getSessions([request], 30);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toEqual({
       identifier: 'user1',
       start: timestamp,
       end: timestamp,
@@ -220,7 +220,7 @@ describe('getVisits()', () => {
     });
   });
 
-  it('combines requests within session window into one visit', () => {
+  it('combines requests within session window into one session', () => {
     const startTime = new Date('2023-01-03T12:00:00Z');
     const fiveMinLater = new Date(startTime.getTime() + 5 * 60 * 1000);
     const tenMinLater = new Date(startTime.getTime() + 10 * 60 * 1000);
@@ -229,9 +229,9 @@ describe('getVisits()', () => {
       createRequest('user1', fiveMinLater),
       createRequest('user1', tenMinLater),
     ];
-    const visits = getSessions(requests, 30);
-    expect(visits).toHaveLength(1);
-    expect(visits[0]).toEqual({
+    const sessions = getSessions(requests, 30);
+    expect(sessions).toHaveLength(1);
+    expect(sessions[0]).toEqual({
       identifier: 'user1',
       start: startTime,
       end: tenMinLater,
@@ -239,7 +239,7 @@ describe('getVisits()', () => {
     });
   });
 
-  it('creates separate visits for requests outside session window', () => {
+  it('creates separate sessions for requests outside session window', () => {
     const startTime = new Date('2023-01-03T12:00:00Z');
     const fiveMinLater = new Date(startTime.getTime() + 5 * 60 * 1000);
     const tenMinLater = new Date(startTime.getTime() + 10 * 60 * 1000);
@@ -248,15 +248,15 @@ describe('getVisits()', () => {
       createRequest('user1', fiveMinLater),
       createRequest('user1', tenMinLater),
     ];
-    const visits = getSessions(requests, 6);
-    expect(visits).toHaveLength(2);
-    expect(visits[0]).toEqual({
+    const sessions = getSessions(requests, 6);
+    expect(sessions).toHaveLength(2);
+    expect(sessions[0]).toEqual({
       identifier: 'user1',
       start: startTime,
       end: fiveMinLater,
       deviceType: 'Desktop',
     });
-    expect(visits[1]).toEqual({
+    expect(sessions[1]).toEqual({
       identifier: 'user1',
       start: tenMinLater,
       end: tenMinLater,
@@ -264,7 +264,7 @@ describe('getVisits()', () => {
     });
   });
 
-  it('handles requests from different identifiers as separate visits', () => {
+  it('handles requests from different identifiers as separate sessions', () => {
     const baseTime = new Date('2023-01-03T12:00:00Z');
     const requests = [
       createRequest('user1', baseTime),
@@ -272,36 +272,36 @@ describe('getVisits()', () => {
       createRequest('user1', new Date(baseTime.getTime() + 5 * 60 * 1000)),
       createRequest('user2', new Date(baseTime.getTime() + 5 * 60 * 1000)),
     ];
-    const visits = getSessions(requests, 30);
-    expect(visits).toHaveLength(2);
-    const user1Visit = visits.find((v) => v.identifier === 'user1');
-    const user2Visit = visits.find((v) => v.identifier === 'user2');
-    expect(user1Visit?.start).toEqual(baseTime);
-    expect(user1Visit?.end).toEqual(
+    const sessions = getSessions(requests, 30);
+    expect(sessions).toHaveLength(2);
+    const user1Session = sessions.find((s) => s.identifier === 'user1');
+    const user2Session = sessions.find((s) => s.identifier === 'user2');
+    expect(user1Session?.start).toEqual(baseTime);
+    expect(user1Session?.end).toEqual(
       new Date(baseTime.getTime() + 5 * 60 * 1000)
     );
-    expect(user2Visit?.start).toEqual(baseTime);
-    expect(user2Visit?.end).toEqual(
+    expect(user2Session?.start).toEqual(baseTime);
+    expect(user2Session?.end).toEqual(
       new Date(baseTime.getTime() + 5 * 60 * 1000)
     );
   });
 
-  it('counts each request as separate visit if session length is 0', () => {
+  it('counts each request as separate session if session length is 0', () => {
     const now = new Date('2023-01-03T12:00:00Z');
     const requests = [
       createRequest('user1', now),
       createRequest('user1', now),
       createRequest('user1', now),
     ];
-    const visits = getSessions(requests, 0);
-    expect(visits).toHaveLength(3);
-    expect(visits[0]).toEqual({
+    const sessions = getSessions(requests, 0);
+    expect(sessions).toHaveLength(3);
+    expect(sessions[0]).toEqual({
       identifier: 'user1',
       start: now,
       end: now,
       deviceType: 'Desktop',
     });
-    expect(visits[1]).toEqual({
+    expect(sessions[1]).toEqual({
       identifier: 'user1',
       start: now,
       end: now,
@@ -316,15 +316,15 @@ describe('getVisits()', () => {
       createRequest('user2', baseTime, 'Mobile'),
       createRequest('user3', baseTime, 'Tablet'),
     ];
-    const visits = getSessions(requests, 30);
-    expect(visits).toHaveLength(3);
-    expect(visits.find((v) => v.identifier === 'user1')?.deviceType).toBe(
+    const sessions = getSessions(requests, 30);
+    expect(sessions).toHaveLength(3);
+    expect(sessions.find((s) => s.identifier === 'user1')?.deviceType).toBe(
       'Desktop'
     );
-    expect(visits.find((v) => v.identifier === 'user2')?.deviceType).toBe(
+    expect(sessions.find((s) => s.identifier === 'user2')?.deviceType).toBe(
       'Mobile'
     );
-    expect(visits.find((v) => v.identifier === 'user3')?.deviceType).toBe(
+    expect(sessions.find((s) => s.identifier === 'user3')?.deviceType).toBe(
       'Tablet'
     );
   });

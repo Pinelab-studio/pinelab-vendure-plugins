@@ -28,7 +28,7 @@ export class UnitsSoldMetric implements MetricStrategy {
   calculateDataPoints(
     ctx: RequestContext,
     orders: Order[],
-    visits: Session[],
+    sessions: Session[],
     variants: ProductVariant[]
   ): NamedDatapoint[] {
     const lines = orders.map((order) => order.lines).flat();
