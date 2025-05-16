@@ -58,7 +58,7 @@ The default session length is 30 minutes. This can be overridden via `sessionLen
 2. Average Order Value (AOV): The average of `order.totalWithTax` of the orders per month
 3. Units sold: The number of units sold for the selected variant(s).
 4. Conversion Rate: The percentage of visitors that have converted to orders.
-5. Visitors: The number of visitors per month.
+5. Sessions: The number of sessions per month.
 
 # Custom Metrics
 
@@ -77,7 +77,7 @@ import {
 } from '@pinelab/vendure-plugin-metrics';
 
 /**
- * Conversion of visitors to orders
+ * Conversion of sessions to orders
  */
 export class ConversionMetric implements MetricStrategy {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
@@ -91,17 +91,17 @@ export class ConversionMetric implements MetricStrategy {
   calculateDataPoints(
     ctx: RequestContext,
     orders: Order[],
-    visits: Visit[],
+    sessions: Session[],
     variants: ProductVariant[]
   ): NamedDatapoint[] {
-    // Here you would calculate your metric data points, based on the orders, visits and variants
+    // Here you would calculate your metric data points, based on the orders, sessions and variants
 
     const placedOrders = orders.length;
-    const visitorCount = visits.length;
+    const sessionCount = sessions.length;
     // Calculate conversion rate (as a percentage)
     let conversionRate = 0;
-    if (visitorCount > 0) {
-      conversionRate = (placedOrders / visitorCount) * 100;
+    if (sessionCount > 0) {
+      conversionRate = (placedOrders / sessionCount) * 100;
     }
     if (conversionRate > 100) {
       // Conversion rate cannot be more than 100%

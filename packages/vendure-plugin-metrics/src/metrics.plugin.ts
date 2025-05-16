@@ -17,8 +17,7 @@ import { Request } from 'express';
 import { RequestMiddleware } from './services/reques-middleware';
 import { MetricRequestSalt } from './entities/metric-request-salt';
 import { ConversionMetric } from './metrics/conversion-metric';
-import { VisitorsMetric } from './metrics/visitors-metric';
-
+import { SessionsMetric } from './metrics/sessions-metric';
 export interface MetricsPluginOptions {
   /**
    * The enabled metrics shown in the widget.
@@ -71,7 +70,7 @@ export class MetricsPlugin {
     metrics: [
       new RevenuePerProduct(),
       new ConversionMetric(),
-      new VisitorsMetric(),
+      new SessionsMetric(),
       new AverageOrderValueMetric(),
       new UnitsSoldMetric(),
     ],

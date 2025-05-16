@@ -98,15 +98,15 @@ describe('Metrics', () => {
     const conversion = advancedMetricSummaries.find(
       (m) => m.code === 'conversion'
     )!;
-    const visitors = advancedMetricSummaries.find(
-      (m) => m.code === 'visitors'
+    const sessions = advancedMetricSummaries.find(
+      (m) => m.code === 'sessions'
     )!;
     [
       averageOrderValue,
       revenuePerProduct,
       salesPerProduct,
       conversion,
-      visitors,
+      sessions,
     ].forEach((metric) => {
       expect(metric.series[0].values.length).toEqual(14);
       expect(metric.labels.length).toEqual(14);
@@ -160,18 +160,18 @@ describe('Metrics', () => {
       apiType: 'shop',
       channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
     });
-    // Wait until 10 visits are logged
-    const loggedVisits = await waitFor(async () => {
-      const visits = await requestService.getVisits(
+    // Wait until 10 sessions  are logged
+    const loggedSessions = await waitFor(async () => {
+      const sessions = await requestService.getSessions(
         ctx,
         new Date('2023-01-01'),
         0
       );
-      if (visits.length === 10) {
-        return visits;
+      if (sessions.length === 10) {
+        return sessions;
       }
     }, 1000);
-    expect(loggedVisits.length).toEqual(10);
+    expect(loggedSessions.length).toEqual(10);
   });
 
   if (process.env.TEST_ADMIN_UI) {
