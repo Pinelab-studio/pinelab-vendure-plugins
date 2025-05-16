@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MetricRequest } from '../entities/metric-request.entity';
 import {
   getMonthName,
-  getVisits,
+  getSessions,
   groupEntitiesPerMonth,
   mapToSeries,
 } from './metric-util';
@@ -203,14 +203,14 @@ describe('getVisits()', () => {
   }
 
   it('returns empty array for empty input', () => {
-    const visits = getVisits([], 30);
+    const visits = getSessions([], 30);
     expect(visits).toEqual([]);
   });
 
   it('creates a single visit for a single request', () => {
     const timestamp = new Date('2023-01-03T12:00:00Z');
     const request = createRequest('user1', timestamp);
-    const visits = getVisits([request], 30);
+    const visits = getSessions([request], 30);
     expect(visits).toHaveLength(1);
     expect(visits[0]).toEqual({
       identifier: 'user1',
@@ -229,7 +229,7 @@ describe('getVisits()', () => {
       createRequest('user1', fiveMinLater),
       createRequest('user1', tenMinLater),
     ];
-    const visits = getVisits(requests, 30);
+    const visits = getSessions(requests, 30);
     expect(visits).toHaveLength(1);
     expect(visits[0]).toEqual({
       identifier: 'user1',
@@ -248,7 +248,7 @@ describe('getVisits()', () => {
       createRequest('user1', fiveMinLater),
       createRequest('user1', tenMinLater),
     ];
-    const visits = getVisits(requests, 6);
+    const visits = getSessions(requests, 6);
     expect(visits).toHaveLength(2);
     expect(visits[0]).toEqual({
       identifier: 'user1',
@@ -272,7 +272,7 @@ describe('getVisits()', () => {
       createRequest('user1', new Date(baseTime.getTime() + 5 * 60 * 1000)),
       createRequest('user2', new Date(baseTime.getTime() + 5 * 60 * 1000)),
     ];
-    const visits = getVisits(requests, 30);
+    const visits = getSessions(requests, 30);
     expect(visits).toHaveLength(2);
     const user1Visit = visits.find((v) => v.identifier === 'user1');
     const user2Visit = visits.find((v) => v.identifier === 'user2');
@@ -293,7 +293,7 @@ describe('getVisits()', () => {
       createRequest('user1', now),
       createRequest('user1', now),
     ];
-    const visits = getVisits(requests, 0);
+    const visits = getSessions(requests, 0);
     expect(visits).toHaveLength(3);
     expect(visits[0]).toEqual({
       identifier: 'user1',
@@ -316,7 +316,7 @@ describe('getVisits()', () => {
       createRequest('user2', baseTime, 'Mobile'),
       createRequest('user3', baseTime, 'Tablet'),
     ];
-    const visits = getVisits(requests, 30);
+    const visits = getSessions(requests, 30);
     expect(visits).toHaveLength(3);
     expect(visits.find((v) => v.identifier === 'user1')?.deviceType).toBe(
       'Desktop'

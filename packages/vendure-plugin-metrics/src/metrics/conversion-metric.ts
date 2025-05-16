@@ -1,10 +1,10 @@
 import { Order, RequestContext } from '@vendure/core';
 import { MetricStrategy, NamedDatapoint } from '../services/metric-strategy';
-import { Visit } from '../services/request-service';
+import { Session } from '../services/request-service';
 import { AdvancedMetricType } from '../ui/generated/graphql';
 
 /**
- * Conversion of visitors to orders
+ * Conversion of sessions to orders
  */
 export class ConversionMetric implements MetricStrategy {
   readonly metricType: AdvancedMetricType = AdvancedMetricType.Number;
@@ -18,14 +18,14 @@ export class ConversionMetric implements MetricStrategy {
   calculateDataPoints(
     ctx: RequestContext,
     orders: Order[],
-    visits: Visit[]
+    sessions: Session[]
   ): NamedDatapoint[] {
     const placedOrders = orders.length;
-    const visitorCount = visits.length;
+    const sessionCount = sessions.length;
     // Calculate conversion rate (as a percentage)
     let conversionRate = 0;
-    if (visitorCount > 0) {
-      conversionRate = (placedOrders / visitorCount) * 100;
+    if (sessionCount > 0) {
+      conversionRate = (placedOrders / sessionCount) * 100;
     }
     if (conversionRate > 100) {
       // Conversion rate cannot be more than 100%
@@ -33,7 +33,7 @@ export class ConversionMetric implements MetricStrategy {
     }
     return [
       {
-        legendLabel: 'Conversion Rate (%)',
+        legendLabel: 'Conversion of sessions to orders (%)',
         value: parseFloat(conversionRate.toFixed(2)),
       },
     ];

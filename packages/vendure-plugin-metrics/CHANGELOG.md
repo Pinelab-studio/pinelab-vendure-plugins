@@ -1,3 +1,7 @@
+# 2.0.1 (2025-05-16)
+
+- Renamed Visitors to Sessions
+
 # 2.0.0 (2025-05-15)
 
 - Added server side tracking: Log shop-api events and store in database, to allow for server side visitor tracking

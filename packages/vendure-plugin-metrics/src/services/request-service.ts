@@ -20,11 +20,11 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MetricRequestSalt } from '../entities/metric-request-salt';
 import { MetricRequest } from '../entities/metric-request.entity';
 import { MetricsPluginOptions } from '../metrics.plugin';
-import { getVisits } from './metric-util';
+import { getSessions } from './metric-util';
 import { RequestMiddleware } from './reques-middleware';
 import { UAParser } from 'ua-parser-js';
 
-export interface Visit {
+export interface Session {
   identifier: string;
   deviceType: string;
   start: Date;
@@ -169,11 +169,11 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
    * Get the number of visits since a certain date.
    * Multiple requests from the same user within the same session are counted as one visit.
    */
-  async getVisits(
+  async getSessions(
     ctx: RequestContext,
     since: Date,
     sessionLengthInMinutes: number
-  ): Promise<Visit[]> {
+  ): Promise<Session[]> {
     let hasMore = true;
     let skip = 0;
     const requests: MetricRequest[] = [];
@@ -192,7 +192,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
         hasMore = false; // No more results to fetch
       }
     }
-    return getVisits(requests, sessionLengthInMinutes);
+    return getSessions(requests, sessionLengthInMinutes);
   }
 
   /**

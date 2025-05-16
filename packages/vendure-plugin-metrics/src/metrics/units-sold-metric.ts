@@ -10,7 +10,7 @@ import {
 import { AdvancedMetricType } from '../ui/generated/graphql';
 import { MetricStrategy, NamedDatapoint } from '../services/metric-strategy';
 import { loggerCtx } from '../constants';
-import { Visit } from '../services/request-service';
+import { Session } from '../services/request-service';
 
 /**
  * Calculates the number of products sold per month.
@@ -28,7 +28,7 @@ export class UnitsSoldMetric implements MetricStrategy {
   calculateDataPoints(
     ctx: RequestContext,
     orders: Order[],
-    visits: Visit[],
+    visits: Session[],
     variants: ProductVariant[]
   ): NamedDatapoint[] {
     const lines = orders.map((order) => order.lines).flat();

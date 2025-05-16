@@ -192,7 +192,7 @@ export class MetricsService implements OnModuleInit {
       endDate,
       variants
     );
-    const visits = await this.requestService.getVisits(
+    const sessions = await this.requestService.getSessions(
       ctx,
       startDate,
       this.options.sessionLengthInMinutes
@@ -214,7 +214,7 @@ export class MetricsService implements OnModuleInit {
           const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
             entityMap.entities,
-            visits,
+            sessions,
             variants
           );
           // Loop over datapoint, because we support multi line charts

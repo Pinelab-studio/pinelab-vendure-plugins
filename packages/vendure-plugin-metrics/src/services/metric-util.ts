@@ -1,7 +1,7 @@
 import { addMonths, isBefore, startOfMonth } from 'date-fns';
 import { AdvancedMetricSeries } from '../ui/generated/graphql';
 import { MetricRequest } from '../entities/metric-request.entity';
-import { Visit } from './request-service';
+import { Session } from './request-service';
 
 interface EntitiesPerMonth<T> {
   monthNr: number;
@@ -96,16 +96,16 @@ export function mapToSeries(
 }
 
 /**
- * Aggregates the raw requests to visits, grouping them by identifier and session length.
+ * Aggregates the raw requests to sessions, grouping them by identifier and session length.
  *
- * E.g. multiple requests from id:123 within 5 minutes are combined into 1 visit
+ * E.g. multiple requests from id:123 within 5 minutes are combined into 1 session
  *
  */
-export function getVisits(
+export function getSessions(
   requests: MetricRequest[],
   sessionLengthInMinutes: number
-): Visit[] {
-  const visits: Visit[] = [];
+): Session[] {
+  const sessions: Session[] = [];
   const sessionLengthInMs = sessionLengthInMinutes * 60 * 1000;
 
   // Group requests by identifier
@@ -116,28 +116,28 @@ export function getVisits(
     return map;
   }, new Map<string, MetricRequest[]>());
 
-  // Combine requests within the same session length into one visit
+  // Combine requests within the same session length into one session
   for (const [identifier, groupedRequests] of requestsByIdentifier) {
     // Sort requests by timestamp
     groupedRequests.sort(
       (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
     );
-    let currentVisit: Visit | null = null;
+    let currentSession: Session | null = null;
 
     for (const request of groupedRequests) {
       const isWithinSession =
-        currentVisit &&
-        request.createdAt.getTime() - currentVisit.start.getTime() <=
+        currentSession &&
+        request.createdAt.getTime() - currentSession.start.getTime() <=
           sessionLengthInMs;
-      if (sessionLengthInMs && isWithinSession && currentVisit) {
-        // Extend the current visit if the request is within the same session
-        currentVisit.end = request.createdAt;
+      if (sessionLengthInMs && isWithinSession && currentSession) {
+        // Extend the current session if the request is within the same session
+        currentSession.end = request.createdAt;
       } else {
-        // Start a new visit
-        if (currentVisit) {
-          visits.push(currentVisit);
+        // Start a new session
+        if (currentSession) {
+          sessions.push(currentSession);
         }
-        currentVisit = {
+        currentSession = {
           identifier,
           start: request.createdAt,
           end: request.createdAt,
@@ -145,10 +145,10 @@ export function getVisits(
         };
       }
     }
-    // Push the last visit
-    if (currentVisit) {
-      visits.push(currentVisit);
+    // Push the last session
+    if (currentSession) {
+      sessions.push(currentSession);
     }
   }
-  return visits;
+  return sessions;
 }
