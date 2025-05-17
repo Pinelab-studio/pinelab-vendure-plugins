@@ -19,4 +19,13 @@ export class MetricRequest extends VendureEntity {
   @Index()
   @Column({ type: 'varchar' })
   channelId!: string | number;
+
+  @Column({ type: 'varchar', nullable: true })
+  path?: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  productId?: string | number;
+
+  @Column({ type: 'varchar', nullable: true })
+  productVariantId?: string | number;
 }

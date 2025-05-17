@@ -5,7 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
-  ChannelService,
+  ID,
   JobQueue,
   JobQueueService,
   Logger,
@@ -15,12 +15,13 @@ import { asError } from 'catch-unknown';
 import crypto, { createHash } from 'crypto';
 import { addMonths, differenceInHours } from 'date-fns';
 import { DataSource } from 'typeorm';
+import { UAParser } from 'ua-parser-js';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MetricRequestSalt } from '../entities/metric-request-salt';
 import { MetricRequest } from '../entities/metric-request.entity';
 import { MetricsPluginOptions } from '../metrics.plugin';
 import { getSessions } from './metric-util';
-import { UAParser } from 'ua-parser-js';
+import { PageVisitInput } from '../ui/generated/graphql';
 
 export interface Session {
   identifier: string;
@@ -34,6 +35,9 @@ type RequestData = {
   userAgent: string;
   timestamp: string; // ISO string
   channelId: string | number;
+  path?: string;
+  productId?: ID;
+  productVariantId?: ID;
 };
 
 @Injectable()
@@ -50,7 +54,6 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   constructor(
     private jobQueueService: JobQueueService,
     private dataSource: DataSource,
-    private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions
   ) {}
 
@@ -76,7 +79,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Adds a request to the batch, and pushes the batch to the queue once it reaches a certain size
    */
-  logRequest(ctx: RequestContext): void {
+  logRequest(ctx: RequestContext, input: PageVisitInput): void {
     if (this.options.shouldLogRequest && !this.options.shouldLogRequest(ctx)) {
       return;
     }
@@ -87,12 +90,14 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
     if (!ipAddress) {
       return;
     }
-
     const requestData: RequestData = {
       ipAddress,
       userAgent: ctx.req?.headers['user-agent'] || 'unknown',
       timestamp: new Date().toISOString(),
-      channelId: ctx.channel.id,
+      channelId: ctx.channelId,
+      path: input.path || undefined,
+      productId: input.productId || undefined,
+      productVariantId: input.productVariantId || undefined,
     };
     this.requestBatch.push(requestData);
     // Process queue if we've reached X items
@@ -132,6 +137,9 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       entity.identifier = hash;
       entity.deviceType = device || 'Unknown';
       entity.channelId = request.channelId;
+      entity.path = request.path;
+      entity.productId = request.productId;
+      entity.productVariantId = request.productVariantId;
       return entity;
     });
     await this.dataSource.getRepository(MetricRequest).save(entities);
@@ -147,6 +155,14 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
     since: Date,
     sessionLengthInMinutes: number
   ): Promise<Session[]> {
+    const requests = await this.getRequests(ctx, since);
+    return getSessions(requests, sessionLengthInMinutes);
+  }
+
+  async getRequests(
+    ctx: RequestContext,
+    since: Date
+  ): Promise<MetricRequest[]> {
     let hasMore = true;
     let skip = 0;
     const requests: MetricRequest[] = [];
@@ -154,7 +170,9 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       const result = await this.dataSource
         .getRepository(MetricRequest)
         .createQueryBuilder('metricRequest')
-        // .where('metricRequest.channelToken = :channelToken', { channelId: ctx.channel.token })
+        .where('metricRequest.channelId = :channelId', {
+          channelId: ctx.channelId,
+        })
         .andWhere('metricRequest.createdAt >= :since', { since })
         .skip(skip)
         .take(1000) // Fetch in batches of 1000
@@ -165,7 +183,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
         hasMore = false; // No more results to fetch
       }
     }
-    return getSessions(requests, sessionLengthInMinutes);
+    return requests;
   }
 
   /**

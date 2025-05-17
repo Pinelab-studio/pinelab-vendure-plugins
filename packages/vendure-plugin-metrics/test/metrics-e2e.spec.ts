@@ -173,6 +173,46 @@ describe('Metrics', () => {
     expect(loggedSessions.length).toEqual(10);
   });
 
+  it.only('Stores inputs on pageVisit requests', async () => {
+    const PAGE_VISIT = gql`
+      mutation PageVisit {
+        pageVisit(
+          input: {
+            path: "/product/123"
+            productId: "123"
+            productVariantId: "456"
+          }
+        )
+      }
+    `;
+    await Promise.allSettled(
+      Array(10)
+        .fill(0)
+        .map(() => shopClient.query(PAGE_VISIT))
+    );
+    // Wait until 10 sessions  are logged
+    const ctx = await server.app.get(RequestContextService).create({
+      apiType: 'shop',
+      channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
+    });
+    const requestService = server.app.get(RequestService);
+    const requests = await waitFor(async () => {
+      const requests = await requestService.getRequests(
+        ctx,
+        new Date('2023-01-01')
+      );
+      if (requests.length === 10) {
+        return requests;
+      }
+    }, 200);
+    expect(requests.length).toEqual(10);
+    requests.forEach((r) => {
+      expect(r.path).toEqual('/product/123');
+      expect(r.productId).toEqual('123');
+      expect(r.productVariantId).toEqual('456');
+    });
+  });
+
   if (process.env.TEST_ADMIN_UI) {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);

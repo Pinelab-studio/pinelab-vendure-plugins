@@ -40,9 +40,20 @@ Metric results are cached in memory to prevent heavy database queries every time
 
 ### Server side tracking
 
-By default, this plugin already logs all requests to the Shop API, if they have a valid browser user agent. This behaviour can be overriden via `shouldLogRequest` option.
-
 To enable visitor tracking, you need to call the mutation `pageVisit` on the client to log a visit. Without this mutation, no visitors are tracked at all.
+
+You can optionally pass inputs to the pageVisit, which will be persisted on each request.
+
+```graphql
+mutation {
+  # Each of the inputs are optional
+  pageVisit(
+    input: { path: "/product/123", productId: "123", productVariantId: "456" }
+  )
+}
+```
+
+These inputs currently aren't used, but you can write a custom metric to get, for example the top visited products, or pages.
 
 :warning: Not legal advice.
 

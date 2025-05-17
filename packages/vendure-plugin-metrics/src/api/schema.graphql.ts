@@ -39,7 +39,13 @@ export const adminSchema = gql`
 `;
 
 export const shopSchema = gql`
+  input pageVisitInput {
+    path: String
+    productId: ID
+    productVariantId: ID
+  }
+
   extend type Mutation {
-    pageVisit: Boolean
+    pageVisit(input: pageVisitInput): Boolean
   }
 `;

@@ -11,7 +11,11 @@
     "analytics",
     "tracking",
     "server-side",
-    "server side"
+    "server side",
+    "server side tracking",
+    "cookieless",
+    "gdpr",
+    "cookie consent"
   ],
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
