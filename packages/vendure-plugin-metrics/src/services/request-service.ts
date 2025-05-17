@@ -33,7 +33,6 @@ export interface Session {
 type RequestData = {
   ipAddress: string;
   userAgent: string;
-  timestamp: string; // ISO string
   channelId: string | number;
   path?: string;
   productId?: ID;
@@ -93,7 +92,6 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
     const requestData: RequestData = {
       ipAddress,
       userAgent: ctx.req?.headers['user-agent'] || 'unknown',
-      timestamp: new Date().toISOString(),
       channelId: ctx.channelId,
       path: input.path || undefined,
       productId: input.productId || undefined,
