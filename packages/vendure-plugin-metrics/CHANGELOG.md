@@ -1,3 +1,8 @@
+# 2.1.0 (2025-05-17)
+
+- Only track requests that are coming in via `pageVisit` mutation.
+- Added optional inputs to `pageVisit` mutation.
+
 # 2.0.1 (2025-05-16)
 
 - Renamed Visitors to Sessions

@@ -8,7 +8,7 @@ import {
 import { MetricsService } from '../services/metrics.service';
 
 @Resolver()
-export class MetricsResolver {
+export class MetricsAdminResolver {
   constructor(private readonly metricsService: MetricsService) {}
 
   @Query()

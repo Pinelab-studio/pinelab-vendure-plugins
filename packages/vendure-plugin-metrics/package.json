@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-metrics",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Vendure plugin measuring and visualizing e-commerce metrics",
   "keywords": [
     "vendure",
@@ -11,7 +11,11 @@
     "analytics",
     "tracking",
     "server-side",
-    "server side"
+    "server side",
+    "server side tracking",
+    "cookieless",
+    "gdpr",
+    "cookie consent"
   ],
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

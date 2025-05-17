@@ -1,9 +1,13 @@
 import { OnApplicationBootstrap } from '@nestjs/common';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
+import {
+  PluginCommonModule,
+  RequestContext,
+  VendurePlugin,
+} from '@vendure/core';
 import path from 'path';
-import { schema } from './api/schema.graphql';
-import { MetricsResolver } from './api/metrics.resolver';
+import { adminSchema, shopSchema } from './api/schema.graphql';
+import { MetricsAdminResolver } from './api/metrics.admin-resolver';
 import { MetricsService } from './services/metrics.service';
 import { MetricStrategy } from './services/metric-strategy';
 import { PLUGIN_INIT_OPTIONS } from './constants';
@@ -12,12 +16,12 @@ import { AverageOrderValueMetric } from './metrics/average-order-value';
 import { UnitsSoldMetric } from './metrics/units-sold-metric';
 import { MetricSummary } from './entities/metric-summary.entity';
 import { MetricRequest } from './entities/metric-request.entity';
-import { RequestService, shouldLogRequest } from './services/request-service';
+import { RequestService } from './services/request-service';
 import { Request } from 'express';
-import { RequestMiddleware } from './services/reques-middleware';
 import { MetricRequestSalt } from './entities/metric-request-salt';
 import { ConversionMetric } from './metrics/conversion-metric';
 import { SessionsMetric } from './metrics/sessions-metric';
+import { MetricsShopResolver } from './api/metrics.shop-resolver';
 export interface MetricsPluginOptions {
   /**
    * The enabled metrics shown in the widget.
@@ -30,10 +34,9 @@ export interface MetricsPluginOptions {
   displayPastMonths: number;
   /**
    * Optional: decide wether to log a request or not.
-   * The default strategy only logs shop-api requests,
-   * and attempts to exclude any non-human traffic based on user agent.
+   * By default all requests to `pageVisit` are logged.
    */
-  shouldLogRequest: (request: Request) => boolean;
+  shouldLogRequest?: (ctx: RequestContext) => boolean;
   /**
    * Use to aggregate visits: multiple requests from the same user
    * within a certain time frame are grouped into a single visit.
@@ -45,25 +48,20 @@ export interface MetricsPluginOptions {
 @VendurePlugin({
   imports: [PluginCommonModule],
   adminApiExtensions: {
-    schema,
-    resolvers: [MetricsResolver],
+    schema: adminSchema,
+    resolvers: [MetricsAdminResolver],
+  },
+  shopApiExtensions: {
+    schema: shopSchema,
+    resolvers: [MetricsShopResolver],
   },
   providers: [
     MetricsService,
     RequestService,
-    RequestMiddleware,
     { provide: PLUGIN_INIT_OPTIONS, useFactory: () => MetricsPlugin.options },
   ],
   compatibility: '>=2.2.0',
   entities: [MetricSummary, MetricRequest, MetricRequestSalt],
-  configuration: (config) => {
-    config.apiOptions.middleware.push({
-      route: 'shop-api',
-      handler: RequestMiddleware,
-      beforeListen: true,
-    });
-    return config;
-  },
 })
 export class MetricsPlugin {
   static options: MetricsPluginOptions = {
@@ -75,7 +73,6 @@ export class MetricsPlugin {
       new UnitsSoldMetric(),
     ],
     displayPastMonths: 13,
-    shouldLogRequest: shouldLogRequest,
     sessionLengthInMinutes: 30,
   };
 

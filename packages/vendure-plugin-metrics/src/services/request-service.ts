@@ -5,7 +5,7 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
-  ChannelService,
+  ID,
   JobQueue,
   JobQueueService,
   Logger,
@@ -14,15 +14,14 @@ import {
 import { asError } from 'catch-unknown';
 import crypto, { createHash } from 'crypto';
 import { addMonths, differenceInHours } from 'date-fns';
-import { Request } from 'express';
 import { DataSource } from 'typeorm';
+import { UAParser } from 'ua-parser-js';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MetricRequestSalt } from '../entities/metric-request-salt';
 import { MetricRequest } from '../entities/metric-request.entity';
 import { MetricsPluginOptions } from '../metrics.plugin';
 import { getSessions } from './metric-util';
-import { RequestMiddleware } from './reques-middleware';
-import { UAParser } from 'ua-parser-js';
+import { PageVisitInput } from '../ui/generated/graphql';
 
 export interface Session {
   identifier: string;
@@ -31,31 +30,13 @@ export interface Session {
   end: Date;
 }
 
-/**
- * Default strategy that logs all requests from shop-api except
- * 1. If user agent does not contain "Mozilla" (e.g. curl, postman)
- * 2. GraphQL introspection
- * 2. Non human traffic (e.g. bots, crawlers)
- */
-export function shouldLogRequest(request: Request): boolean {
-  if (!request.headers['user-agent']?.includes('Mozilla')) {
-    return false;
-  }
-  // Check if the request is a GraphQL introspection query
-  if (
-    request.body?.query?.includes('__schema') ||
-    request.body?.query?.includes('IntrospectionQuery')
-  ) {
-    return false;
-  }
-  return true;
-}
-
 type RequestData = {
   ipAddress: string;
   userAgent: string;
-  timestamp: string; // ISO string
-  channelToken: string;
+  channelId: string | number;
+  path?: string;
+  productId?: ID;
+  productVariantId?: ID;
 };
 
 @Injectable()
@@ -72,13 +53,10 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   constructor(
     private jobQueueService: JobQueueService,
     private dataSource: DataSource,
-    private channelService: ChannelService,
     @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions
   ) {}
 
   async onModuleInit() {
-    // Nestjs Middleware doesn't have context for some reason, so we inject in on module init
-    RequestMiddleware.requestService = this;
     // Create and register the job queue
     this.requestQueue = await this.jobQueueService.createQueue({
       name: 'persist-metric-requests',
@@ -100,26 +78,24 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Adds a request to the batch, and pushes the batch to the queue once it reaches a certain size
    */
-  logRequest(req: Request): void {
-    if (!this.options.shouldLogRequest(req)) {
+  logRequest(ctx: RequestContext, input?: PageVisitInput): void {
+    if (this.options.shouldLogRequest && !this.options.shouldLogRequest(ctx)) {
       return;
     }
     const ipAddress =
-      (req.headers['x-forwarded-for'] as string) ||
-      req.socket.remoteAddress ||
-      req.ip;
+      (ctx.req?.headers['x-forwarded-for'] as string) ||
+      ctx.req?.socket.remoteAddress ||
+      ctx.req?.ip;
     if (!ipAddress) {
-      return;
-    }
-    const channelToken = req.headers['vendure-token'] as string;
-    if (!channelToken) {
       return;
     }
     const requestData: RequestData = {
       ipAddress,
-      userAgent: req.headers['user-agent'] || 'unknown',
-      timestamp: new Date().toISOString(),
-      channelToken,
+      userAgent: ctx.req?.headers['user-agent'] || 'unknown',
+      channelId: ctx.channelId,
+      path: input?.path || undefined,
+      productId: input?.productId || undefined,
+      productVariantId: input?.productVariantId || undefined,
     };
     this.requestBatch.push(requestData);
     // Process queue if we've reached X items
@@ -158,7 +134,10 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       const entity = new MetricRequest();
       entity.identifier = hash;
       entity.deviceType = device || 'Unknown';
-      entity.channelToken = request.channelToken;
+      entity.channelId = request.channelId;
+      entity.path = request.path;
+      entity.productId = request.productId;
+      entity.productVariantId = request.productVariantId;
       return entity;
     });
     await this.dataSource.getRepository(MetricRequest).save(entities);
@@ -174,6 +153,14 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
     since: Date,
     sessionLengthInMinutes: number
   ): Promise<Session[]> {
+    const requests = await this.getRequests(ctx, since);
+    return getSessions(requests, sessionLengthInMinutes);
+  }
+
+  async getRequests(
+    ctx: RequestContext,
+    since: Date
+  ): Promise<MetricRequest[]> {
     let hasMore = true;
     let skip = 0;
     const requests: MetricRequest[] = [];
@@ -181,8 +168,11 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       const result = await this.dataSource
         .getRepository(MetricRequest)
         .createQueryBuilder('metricRequest')
-        // .where('metricRequest.channelToken = :channelToken', { channelId: ctx.channel.token })
+        .where('metricRequest.channelId = :channelId', {
+          channelId: ctx.channelId,
+        })
         .andWhere('metricRequest.createdAt >= :since', { since })
+        .orderBy('metricRequest.createdAt', 'ASC')
         .skip(skip)
         .take(1000) // Fetch in batches of 1000
         .getMany();
@@ -192,7 +182,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
         hasMore = false; // No more results to fetch
       }
     }
-    return getSessions(requests, sessionLengthInMinutes);
+    return requests;
   }
 
   /**
