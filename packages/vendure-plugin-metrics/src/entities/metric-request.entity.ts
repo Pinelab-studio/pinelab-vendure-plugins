@@ -17,6 +17,6 @@ export class MetricRequest extends VendureEntity {
   deviceType!: string;
 
   @Index()
-  @Column()
-  channelToken!: string;
+  @Column({ type: 'varchar' })
+  channelId!: string | number;
 }

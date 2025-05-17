@@ -42,7 +42,7 @@ Metric results are cached in memory to prevent heavy database queries every time
 
 By default, this plugin already logs all requests to the Shop API, if they have a valid browser user agent. This behaviour can be overriden via `shouldLogRequest` option.
 
-If you use SSR, and not all visits do a query to the shop-api, you can call the mutation `pageVisit` on the client to log a visit.
+To enable visitor tracking, you need to call the mutation `pageVisit` on the client to log a visit. Without this mutation, no visitors are tracked at all.
 
 :warning: Not legal advice.
 

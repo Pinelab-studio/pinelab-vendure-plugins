@@ -5,7 +5,7 @@ const scalars = gql`
   scalar DateTime
 `;
 
-export const schema = gql`
+export const adminSchema = gql`
   type AdvancedMetricSummary {
     code: String!
     title: String!
@@ -36,13 +36,10 @@ export const schema = gql`
       input: AdvancedMetricSummaryInput
     ): [AdvancedMetricSummary!]!
   }
+`;
 
+export const shopSchema = gql`
   extend type Mutation {
-    """
-    Empty mutation to log browser visits.
-    You can call this mutation on page load to track vitits.
-    Returns null
-    """
     pageVisit: Boolean
   }
 `;

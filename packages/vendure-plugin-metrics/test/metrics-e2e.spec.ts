@@ -13,27 +13,21 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
+import gql from 'graphql-tag';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import {
-  AdvancedMetricSummariesQuery,
-  AdvancedMetricSummary,
-  MetricsPlugin,
-} from '../src';
-import { GET_METRICS } from '../src/ui/queries.graphql';
-import gql from 'graphql-tag';
 import { waitFor } from '../../test/src/test-helpers';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { AdvancedMetricSummariesQuery, MetricsPlugin } from '../src';
 import { RequestService } from '../src/services/request-service';
-import { createMockRequests } from './helpers';
+import { GET_METRICS } from '../src/ui/queries.graphql';
 
 describe('Metrics', () => {
   let shopClient: SimpleGraphQLClient;
   let adminClient: SimpleGraphQLClient;
   let server: TestServer;
-  let metrics: AdvancedMetricSummary[];
 
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -149,18 +143,23 @@ describe('Metrics', () => {
     expect(salesPerProduct.series[1].values[13]).toEqual(6);
   });
 
-  it('Handles 10 concurrent requests to the shop API', async () => {
-    const requestService = server.app.get(RequestService);
+  it('Handles 10 concurrent requests to "pageVisit" mutation', async () => {
+    const PAGE_VISIT = gql`
+      mutation PageVisit {
+        pageVisit
+      }
+    `;
     await Promise.allSettled(
-      createMockRequests(E2E_DEFAULT_CHANNEL_TOKEN, 10).map(async (request) =>
-        requestService.logRequest(request)
-      )
+      Array(10)
+        .fill(0)
+        .map(() => shopClient.query(PAGE_VISIT))
     );
+    // Wait until 10 sessions  are logged
     const ctx = await server.app.get(RequestContextService).create({
       apiType: 'shop',
       channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
     });
-    // Wait until 10 sessions  are logged
+    const requestService = server.app.get(RequestService);
     const loggedSessions = await waitFor(async () => {
       const sessions = await requestService.getSessions(
         ctx,
@@ -170,7 +169,7 @@ describe('Metrics', () => {
       if (sessions.length === 10) {
         return sessions;
       }
-    }, 1000);
+    }, 200);
     expect(loggedSessions.length).toEqual(10);
   });
 

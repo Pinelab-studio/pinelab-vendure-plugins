@@ -14,14 +14,12 @@ import {
 import { asError } from 'catch-unknown';
 import crypto, { createHash } from 'crypto';
 import { addMonths, differenceInHours } from 'date-fns';
-import { Request } from 'express';
 import { DataSource } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MetricRequestSalt } from '../entities/metric-request-salt';
 import { MetricRequest } from '../entities/metric-request.entity';
 import { MetricsPluginOptions } from '../metrics.plugin';
 import { getSessions } from './metric-util';
-import { RequestMiddleware } from './reques-middleware';
 import { UAParser } from 'ua-parser-js';
 
 export interface Session {
@@ -31,31 +29,11 @@ export interface Session {
   end: Date;
 }
 
-/**
- * Default strategy that logs all requests from shop-api except
- * 1. If user agent does not contain "Mozilla" (e.g. curl, postman)
- * 2. GraphQL introspection
- * 2. Non human traffic (e.g. bots, crawlers)
- */
-export function shouldLogRequest(request: Request): boolean {
-  if (!request.headers['user-agent']?.includes('Mozilla')) {
-    return false;
-  }
-  // Check if the request is a GraphQL introspection query
-  if (
-    request.body?.query?.includes('__schema') ||
-    request.body?.query?.includes('IntrospectionQuery')
-  ) {
-    return false;
-  }
-  return true;
-}
-
 type RequestData = {
   ipAddress: string;
   userAgent: string;
   timestamp: string; // ISO string
-  channelToken: string;
+  channelId: string | number;
 };
 
 @Injectable()
@@ -77,8 +55,6 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   ) {}
 
   async onModuleInit() {
-    // Nestjs Middleware doesn't have context for some reason, so we inject in on module init
-    RequestMiddleware.requestService = this;
     // Create and register the job queue
     this.requestQueue = await this.jobQueueService.createQueue({
       name: 'persist-metric-requests',
@@ -100,26 +76,23 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Adds a request to the batch, and pushes the batch to the queue once it reaches a certain size
    */
-  logRequest(req: Request): void {
-    if (!this.options.shouldLogRequest(req)) {
+  logRequest(ctx: RequestContext): void {
+    if (this.options.shouldLogRequest && !this.options.shouldLogRequest(ctx)) {
       return;
     }
     const ipAddress =
-      (req.headers['x-forwarded-for'] as string) ||
-      req.socket.remoteAddress ||
-      req.ip;
+      (ctx.req?.headers['x-forwarded-for'] as string) ||
+      ctx.req?.socket.remoteAddress ||
+      ctx.req?.ip;
     if (!ipAddress) {
       return;
     }
-    const channelToken = req.headers['vendure-token'] as string;
-    if (!channelToken) {
-      return;
-    }
+
     const requestData: RequestData = {
       ipAddress,
-      userAgent: req.headers['user-agent'] || 'unknown',
+      userAgent: ctx.req?.headers['user-agent'] || 'unknown',
       timestamp: new Date().toISOString(),
-      channelToken,
+      channelId: ctx.channel.id,
     };
     this.requestBatch.push(requestData);
     // Process queue if we've reached X items
@@ -158,7 +131,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       const entity = new MetricRequest();
       entity.identifier = hash;
       entity.deviceType = device || 'Unknown';
-      entity.channelToken = request.channelToken;
+      entity.channelId = request.channelId;
       return entity;
     });
     await this.dataSource.getRepository(MetricRequest).save(entities);
