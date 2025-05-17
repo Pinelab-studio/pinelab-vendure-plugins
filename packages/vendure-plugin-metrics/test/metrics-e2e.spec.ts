@@ -190,7 +190,7 @@ describe('Metrics', () => {
         .fill(0)
         .map(() => shopClient.query(PAGE_VISIT))
     );
-    // Wait until 10 sessions  are logged
+    // Wait until requests  are persisted
     const ctx = await server.app.get(RequestContextService).create({
       apiType: 'shop',
       channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
@@ -201,12 +201,13 @@ describe('Metrics', () => {
         ctx,
         new Date('2023-01-01')
       );
-      if (requests.length === 10) {
+      if (requests.length === 20) {
+        // wait for the next 10, so 20 in total
         return requests;
       }
     }, 200);
-    expect(requests.length).toEqual(10);
-    requests.forEach((r) => {
+    expect(requests.length).toEqual(20);
+    requests.slice(-10).forEach((r) => {
       expect(r.path).toEqual('/product/123');
       expect(r.productId).toEqual('123');
       expect(r.productVariantId).toEqual('456');

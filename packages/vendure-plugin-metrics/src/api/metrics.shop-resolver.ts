@@ -10,7 +10,7 @@ export class MetricsShopResolver {
   @Mutation()
   pageVisit(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: PageVisitInput
+    @Args('input') input?: PageVisitInput
   ): boolean {
     this.requestService.logRequest(ctx, input);
     return true;

@@ -78,7 +78,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Adds a request to the batch, and pushes the batch to the queue once it reaches a certain size
    */
-  logRequest(ctx: RequestContext, input: PageVisitInput): void {
+  logRequest(ctx: RequestContext, input?: PageVisitInput): void {
     if (this.options.shouldLogRequest && !this.options.shouldLogRequest(ctx)) {
       return;
     }
@@ -93,9 +93,9 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       ipAddress,
       userAgent: ctx.req?.headers['user-agent'] || 'unknown',
       channelId: ctx.channelId,
-      path: input.path || undefined,
-      productId: input.productId || undefined,
-      productVariantId: input.productVariantId || undefined,
+      path: input?.path || undefined,
+      productId: input?.productId || undefined,
+      productVariantId: input?.productVariantId || undefined,
     };
     this.requestBatch.push(requestData);
     // Process queue if we've reached X items
@@ -172,6 +172,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
           channelId: ctx.channelId,
         })
         .andWhere('metricRequest.createdAt >= :since', { since })
+        .orderBy('metricRequest.createdAt', 'ASC')
         .skip(skip)
         .take(1000) // Fetch in batches of 1000
         .getMany();
