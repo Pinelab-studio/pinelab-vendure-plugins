@@ -173,7 +173,7 @@ describe('Metrics', () => {
     expect(loggedSessions.length).toEqual(10);
   });
 
-  it.only('Stores inputs on pageVisit requests', async () => {
+  it('Stores inputs on pageVisit requests', async () => {
     const PAGE_VISIT = gql`
       mutation PageVisit {
         pageVisit(
