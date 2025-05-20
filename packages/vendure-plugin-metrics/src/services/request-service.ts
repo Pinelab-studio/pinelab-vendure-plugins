@@ -15,7 +15,7 @@ import { asError } from 'catch-unknown';
 import crypto, { createHash } from 'crypto';
 import { addMonths, differenceInHours } from 'date-fns';
 import { DataSource } from 'typeorm';
-import { UAParser } from 'ua-parser-js';
+import DeviceDetector from 'device-detector-js';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { MetricRequestSalt } from '../entities/metric-request-salt';
 import { MetricRequest } from '../entities/metric-request.entity';
@@ -253,8 +253,9 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Extracts basic device information from user agent string
    */
-  private extractDeviceInfo(userAgent: string): UAParser.IDevice['type'] {
-    const ua = UAParser(userAgent);
-    return ua.device.type;
+  private extractDeviceInfo(userAgent: string): string {
+    const deviceDetector = new DeviceDetector();
+    const parsed = deviceDetector.parse(userAgent);
+    return parsed.device?.type || 'Unknown';
   }
 }

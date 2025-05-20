@@ -1,3 +1,7 @@
+# 2.1.1 (2025-05-20)
+
+- Using `device-detector-js` to detect device type instead of `ua-parser-js`, because we see a lot of 'Unknown' devices in production.
+
 # 2.1.0 (2025-05-17)
 
 - Only track requests that are coming in via `pageVisit` mutation.
