@@ -23,6 +23,7 @@ import {
 import { MetricStrategy } from './metric-strategy';
 import {
   DataPointsPerLegend,
+  getEntitiesForMonth,
   getMonthName,
   groupEntitiesPerMonth,
   mapToSeries,
@@ -192,16 +193,16 @@ export class MetricsService implements OnModuleInit {
       endDate,
       variants
     );
-    const sessions = await this.requestService.getSessions(
-      ctx,
-      startDate,
-      this.options.sessionLengthInMinutes
-    );
-    const entitiesPerMonth = groupEntitiesPerMonth(
+    const ordersPerMonth = groupEntitiesPerMonth(
       orders,
       'orderPlacedAt',
       startDate,
       endDate
+    );
+    const allSessions = await this.requestService.getSessions(
+      ctx,
+      startDate,
+      this.options.sessionLengthInMinutes
     );
     await Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
@@ -210,11 +211,16 @@ export class MetricsService implements OnModuleInit {
           string,
           number[]
         >();
-        entitiesPerMonth.forEach((entityMap) => {
+        ordersPerMonth.forEach((entityMap) => {
+          const sessionsForThisMonth = getEntitiesForMonth(
+            allSessions,
+            entityMap.date,
+            'start'
+          );
           const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
             entityMap.entities,
-            sessions,
+            sessionsForThisMonth,
             variants
           );
           // Loop over datapoint, because we support multi line charts
@@ -225,7 +231,7 @@ export class MetricsService implements OnModuleInit {
             dataPointsPerName.set(dataPoint.legendLabel, entry);
           });
         });
-        const monthNames = entitiesPerMonth.map((d) => getMonthName(d.monthNr));
+        const monthNames = ordersPerMonth.map((d) => getMonthName(d.monthNr));
         const summary: AdvancedMetricSummary = {
           code: metricStrategy.code,
           title: metricStrategy.getTitle(ctx),

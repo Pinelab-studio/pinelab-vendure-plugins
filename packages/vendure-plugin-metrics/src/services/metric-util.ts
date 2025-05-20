@@ -1,4 +1,10 @@
-import { addMonths, isBefore, startOfMonth } from 'date-fns';
+import {
+  addMonths,
+  isBefore,
+  isSameMonth,
+  isSameYear,
+  startOfMonth,
+} from 'date-fns';
 import { AdvancedMetricSeries } from '../ui/generated/graphql';
 import { MetricRequest } from '../entities/metric-request.entity';
 import { Session } from './request-service';
@@ -6,6 +12,7 @@ import { Session } from './request-service';
 interface EntitiesPerMonth<T> {
   monthNr: number;
   year: number;
+  date: Date;
   entities: T[];
 }
 
@@ -33,9 +40,9 @@ export function getMonthName(monthNr: number): string {
 /**
  * Categorize loaded entities per month
  */
-export function groupEntitiesPerMonth<T>(
+export function groupEntitiesPerMonth<T, K extends keyof T>(
   entities: T[],
-  sortableField: 'createdAt' | 'updatedAt' | 'orderPlacedAt',
+  sortableField: K,
   from: Date,
   to: Date
 ): EntitiesPerMonth<T>[] {
@@ -51,6 +58,7 @@ export function groupEntitiesPerMonth<T>(
     entitiesPerMonth.set(yearMonth, {
       monthNr: currentDate.getMonth(),
       year: currentDate.getFullYear(),
+      date: currentDate,
       entities: [],
     });
     currentDate = addMonths(currentDate, 1);
@@ -75,6 +83,19 @@ export function groupEntitiesPerMonth<T>(
   return Array.from(entitiesPerMonth.values());
 }
 
+/**
+ * Get entities from a list for given month and year
+ */
+export function getEntitiesForMonth<T, K extends keyof T>(
+  entities: T[],
+  date: Date,
+  dateFilterField: K
+): T[] {
+  return entities.filter((entity) => {
+    const entityDate = (entity as any)[dateFilterField] as Date;
+    return isSameMonth(entityDate, date) && isSameYear(entityDate, date);
+  });
+}
 /**
  * Map the data points per month map to the AdvancedMetricSeries array.
  *

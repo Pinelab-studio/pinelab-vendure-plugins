@@ -1,3 +1,8 @@
+# 2.1.2 (2025-05-20)
+
+- Dedicated config for removing old request logs
+- Fixed bug where sessions were not being calculated correctly
+
 # 2.1.1 (2025-05-20)
 
 - Using `device-detector-js` to detect device type instead of `ua-parser-js`, because we see a lot of 'Unknown' devices in production.

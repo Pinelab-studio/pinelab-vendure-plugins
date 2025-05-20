@@ -31,13 +31,33 @@ export class SessionsMetric implements MetricStrategy {
         legendLabel: 'Total sessions',
         value: totalSessions,
       },
+      {
+        legendLabel: 'Unknown',
+        value: sessions.filter(
+          ({ deviceType }) => !deviceType || deviceType === 'Unknown'
+        ).length,
+      },
+      {
+        legendLabel: 'Mobile',
+        value: sessions.filter(({ deviceType }) => deviceType === 'mobile')
+          .length,
+      },
+      {
+        legendLabel: 'Desktop',
+        value: sessions.filter(({ deviceType }) => deviceType === 'desktop')
+          .length,
+      },
+      {
+        legendLabel: 'Other',
+        value: sessions.filter(
+          ({ deviceType }) =>
+            deviceType &&
+            deviceType !== 'mobile' &&
+            deviceType !== 'desktop' &&
+            deviceType !== 'Unknown'
+        ).length,
+      },
     ];
-    for (const [deviceType, count] of Object.entries(deviceTypeCounts)) {
-      dataPoints.push({
-        legendLabel: deviceType,
-        value: count,
-      });
-    }
     return dataPoints;
   }
 }

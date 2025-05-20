@@ -196,7 +196,9 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       .createQueryBuilder()
       .delete()
       .from(MetricRequest)
-      .where('createdAt < :timestamp', { timestamp: pastDate.toISOString() })
+      .where('createdAt < :timestamp', {
+        timestamp: pastDate.toISOString().split('T')[0],
+      })
       .execute()
       .catch((error) => {
         Logger.error(
@@ -206,9 +208,7 @@ export class RequestService implements OnModuleInit, OnApplicationBootstrap {
       })
       .then((result) => {
         Logger.info(
-          `Removed '${result}' old request logs older than ${
-            this.options.displayPastMonths * 2
-          } months`,
+          `Removed '${result?.affected}' old request logs older than ${this.options.removeRequestLogsOlderThanMonths} months`,
           loggerCtx
         );
       });

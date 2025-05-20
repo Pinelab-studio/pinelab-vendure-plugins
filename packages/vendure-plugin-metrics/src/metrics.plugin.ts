@@ -33,6 +33,11 @@ export interface MetricsPluginOptions {
    */
   displayPastMonths: number;
   /**
+   * The plugin will automatically remove request logs older than this number of months.
+   * The default is 24 months.
+   */
+  removeRequestLogsOlderThanMonths: number;
+  /**
    * Optional: decide wether to log a request or not.
    * By default all requests to `pageVisit` are logged.
    */
@@ -74,6 +79,7 @@ export class MetricsPlugin {
     ],
     displayPastMonths: 13,
     sessionLengthInMinutes: 30,
+    removeRequestLogsOlderThanMonths: 24,
   };
 
   static init(options: Partial<MetricsPluginOptions>): typeof MetricsPlugin {

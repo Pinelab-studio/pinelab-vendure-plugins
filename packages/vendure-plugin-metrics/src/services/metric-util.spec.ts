@@ -5,6 +5,7 @@ import {
   getSessions,
   groupEntitiesPerMonth,
   mapToSeries,
+  getEntitiesForMonth,
 } from './metric-util';
 
 describe('getMonthName()', () => {
@@ -327,5 +328,42 @@ describe('getSessions()', () => {
     expect(sessions.find((s) => s.identifier === 'user3')?.deviceType).toBe(
       'Tablet'
     );
+  });
+});
+
+describe('getEntitiesForMonth()', () => {
+  // Test entities with different date fields
+  const testEntities = [
+    {
+      id: 1,
+      createdAt: new Date('2023-01-15T00:00:00Z'),
+    },
+    {
+      id: 2,
+      createdAt: new Date('2023-02-10T00:00:00Z'),
+    },
+    {
+      id: 3,
+      createdAt: new Date('2024-01-25T00:00:00Z'), // Correct month, wrong year
+    },
+  ];
+
+  it('returns entities for the specified month and year', () => {
+    const date = new Date('2023-01-15T00:00:00Z');
+    const result = getEntitiesForMonth(testEntities, date, 'createdAt');
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe(1);
+  });
+
+  it('returns empty array when no entities match the month and year', () => {
+    const date = new Date('2023-03-15T00:00:00Z');
+    const result = getEntitiesForMonth(testEntities, date, 'createdAt');
+    expect(result).toHaveLength(0);
+  });
+
+  it('handles empty entity array', () => {
+    const date = new Date('2023-01-15T00:00:00Z');
+    const result = getEntitiesForMonth([], date, 'createdAt');
+    expect(result).toHaveLength(0);
   });
 });
