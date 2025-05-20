@@ -4,14 +4,11 @@ This util helps you download assets from a remote source to your local filesyste
 
 ```ts
 import { RemoteAssetDownloader } from '@pinelab/remote-asset-downloader';
-const assetDownloader = new RemoteAssetDownloader({
-  publicAssetDirectory: './static/',
-  subDirectory: '/remote-img/',
-  cacheDirectory: './node_modules/.cache' // Astro should be caching this dir
-  getRemoteUrl: (assetId) =>
-    // This can be any asset server, as long as it returns an asset
-    `https://your-directus.io/assets/${assetId}`,
-  // Or process.env.NODE_ENV === 'production' to only download in production
+const asssetDownloader = new RemoteAssetDownloader({
+  publicAssetDirectory: './static/', // "static" is the folder where images should remain in Gridsome for example
+  subDirectory: '/img/', // The subdirectory can be anything you want
+  cacheDirectory: './node_modules/.cache', // The cache directory is used to store the downloaded assets. Netlify caches node_modules by default
+  getRemoteUrl: (assetId) => `${directusUrl}/assets/${assetId}`,
   downloadRemoteAsset: true,
 });
 
@@ -38,8 +35,6 @@ for (const project of projects) {
 }
 ```
 
-In the example above, you should exclude the subdirectory `/remote-img/` from git. You might also want to [add that same directory to the Netlify Build cache](https://www.npmjs.com/package/@netlify/cache-utils), so that assets won't be downloaded again for each build.
-
 ## AstroJS Example
 
 For use with Astro JS, you would use `/public/` instead of `/static/`:
@@ -47,7 +42,7 @@ For use with Astro JS, you would use `/public/` instead of `/static/`:
 ```ts
 const asssetDownloader = new RemoteAssetDownloader({
   publicAssetDirectory: './public/',
-  subDirectory: '/remote-img/',
+  subDirectory: '/img/',
   cacheDirectory: './node_modules/.cache' // Astro should be caching this dir
   getRemoteUrl: (assetId) => `https://your-directus.io/assets/${assetId}`,
   // Or process.env.NODE_ENV === 'production' to only download in production

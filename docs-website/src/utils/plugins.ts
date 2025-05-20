@@ -35,7 +35,7 @@ const packageDir = '../packages/';
 export async function getPluginDirectories(): Promise<Dirent[]> {
   return (await readdir(packageDir, { withFileTypes: true }))
     .filter((dir) => dir.isDirectory())
-    .filter((dir) => dir.name.startsWith('vendure-'));
+    .filter((dir) => !['test', 'util'].includes(dir.name)); // Exclude test and util directories
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
