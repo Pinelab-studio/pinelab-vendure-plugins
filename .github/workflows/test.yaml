@@ -2,30 +2,6 @@ name: Test packages
 on: ['pull_request']
 
 jobs:
-  install:
-    name: Install dependencies
-    runs-on: ubuntu-latest
-    outputs:
-      cache-hit: ${{ steps.cache.outputs.cache-hit }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - name: Cache node_modules
-        id: cache
-        uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-modules-${{ hashFiles('yarn.lock') }}
-      - name: Install dependencies
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: yarn
-      - name: Upload node_modules
-        uses: actions/upload-artifact@v4
-        with:
-          name: node_modules
-          path: node_modules
   collect_dirs:
     name: Collect package names
     runs-on: ubuntu-latest
@@ -38,7 +14,7 @@ jobs:
         # This command will list all directories in the packages directory
         run: echo "dirs=$(ls -d packages/*/ | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')" >> ${GITHUB_OUTPUT}
   test:
-    needs: [install, collect_dirs]
+    needs: collect_dirs
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
     defaults:
@@ -53,15 +29,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Download node_modules
-        uses: actions/download-artifact@v4
-        with:
-          name: node_modules
-          path: node_modules
-      # - name: Install dependencies with Yarn workspaces
-      #   run: yarn
+      - name: Install root dependencies
+        run: yarn
       - name: Build
-        run: cd ${{ matrix.package }} && yarn &&  yarn build
+        run: cd ${{ matrix.package }} && yarn build
       - name: Lint
         run: cd ${{ matrix.package }} && yarn lint
       - name: Test
