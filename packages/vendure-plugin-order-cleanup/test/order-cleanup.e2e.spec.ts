@@ -16,7 +16,7 @@ import {
 } from '@vendure/testing';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { AutoCancelOrdersPlugin } from '../src';
+import { OrderCleanupPlugin } from '../src';
 import { addItem } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
 
@@ -29,7 +29,7 @@ beforeAll(async () => {
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     plugins: [
-      AutoCancelOrdersPlugin.init({
+      OrderCleanupPlugin.init({
         olderThanDays: 0, // For testing this will delete all orders
       }),
     ],

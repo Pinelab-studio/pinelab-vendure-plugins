@@ -11,13 +11,13 @@ import {
   Logger,
   isGraphQlErrorResult,
 } from '@vendure/core';
-import { AUTO_CANCEL_ORDERS_OPTIONS, loggerCtx } from '../constants';
-import { AutoCancelOrdersOptions } from '../auto-cancel-orders.plugin';
+import { ORDER_CLEANUP_OPTIONS, loggerCtx } from '../constants';
+import { OrderCleanupPluginOptions } from '../order-cleanup.plugin';
 import { In, LessThan } from 'typeorm';
 import { asError } from 'catch-unknown';
 import { toReadableDate } from './util';
 @Injectable()
-export class AutoCancelOrdersService implements OnModuleInit {
+export class OrderCleanupService implements OnModuleInit {
   private jobQueue!: JobQueue<{
     ctx: SerializedRequestContext;
     olderThanDays: number;
@@ -27,12 +27,12 @@ export class AutoCancelOrdersService implements OnModuleInit {
     private connection: TransactionalConnection,
     private jobQueueService: JobQueueService,
     private orderService: OrderService,
-    @Inject(AUTO_CANCEL_ORDERS_OPTIONS) private options: AutoCancelOrdersOptions
+    @Inject(ORDER_CLEANUP_OPTIONS) private options: OrderCleanupPluginOptions
   ) {}
 
   async onModuleInit() {
     this.jobQueue = await this.jobQueueService.createQueue({
-      name: 'auto-cancel-orders',
+      name: 'order-cleanup',
       process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
         await this.cancelStaleOrders(ctx, job.data.olderThanDays);

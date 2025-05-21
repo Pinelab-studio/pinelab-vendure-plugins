@@ -13,7 +13,7 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { AutoCancelOrdersPlugin } from '../src';
+import { OrderCleanupPlugin } from '../src';
 
 (async () => {
   require('dotenv').config();
@@ -29,7 +29,7 @@ import { AutoCancelOrdersPlugin } from '../src';
       paymentMethodHandlers: [testPaymentMethod],
     },
     plugins: [
-      AutoCancelOrdersPlugin.init({
+      OrderCleanupPlugin.init({
         olderThanDays: 1,
       }),
       DefaultSearchPlugin,
