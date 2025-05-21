@@ -150,6 +150,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       .ofType(OrderStateTransitionEvent)
       .pipe(filter((event) => event.toState === 'Cancelled'))
       .subscribe(({ ctx, order }) => {
+        if (!order.orderPlacedAt) {
+          return;
+        }
         this.createInvoiceGenerationJobs(
           ctx,
           order.code,

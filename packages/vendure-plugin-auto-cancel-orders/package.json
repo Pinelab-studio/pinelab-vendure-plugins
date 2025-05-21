@@ -29,5 +29,8 @@
   },
   "peerDependencies": {
     "@vendure/core": "^2.0.0"
+  },
+  "dependencies": {
+    "catch-unknown": "^2.0.0"
   }
 }

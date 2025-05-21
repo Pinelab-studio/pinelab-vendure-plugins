@@ -1,6 +1,6 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { AutoCancelOrdersService } from './service/auto-cancel-orders.service';
-import { AutoCancelOrdersController } from 'api/auto-cancel-orders.controller';
+import { AutoCancelOrdersController } from './api/auto-cancel-orders.controller';
 import { AUTO_CANCEL_ORDERS_OPTIONS } from './constants';
 export interface AutoCancelOrdersOptions {
   /**
