@@ -2,22 +2,6 @@ name: Test packages
 on: ['pull_request']
 
 jobs:
-  format:
-    name: Prettier formatting
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-      - name: Install root dependencies
-        run: yarn
-      - name: Is formatted
-        run: yarn prettier:check
   collect_dirs:
     name: Collect package names
     runs-on: ubuntu-latest
@@ -30,7 +14,7 @@ jobs:
         # This command will list all directories in the packages directory
         run: echo "dirs=$(ls -d packages/*/ | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')" >> ${GITHUB_OUTPUT}
   test:
-    needs: [collect_dirs, format]
+    needs: collect_dirs
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
     defaults:
@@ -40,13 +24,13 @@ jobs:
       matrix:
         package: ${{ fromJson(needs.collect_dirs.outputs.dirs) }}
     steps:
-      # - name: Checkout code
-      #   uses: actions/checkout@v3
-      # - uses: actions/setup-node@v3
-      #   with:
-      #     node-version: '18'
-      # - name: Install dependencies with Yarn workspaces
-      #   run: yarn
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+      - name: Install dependencies with Yarn workspaces
+        run: yarn
       - name: Build
         run: cd ${{ matrix.package }} && yarn build
       - name: Lint
