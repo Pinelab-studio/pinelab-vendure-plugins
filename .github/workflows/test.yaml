@@ -30,7 +30,7 @@ jobs:
         # This command will list all directories in the packages directory
         run: echo "dirs=$(ls -d packages/*/ | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')" >> ${GITHUB_OUTPUT}
   test:
-    needs: collect_dirs
+    needs: [collect_dirs, format]
     name: ${{ matrix.package }}
     runs-on: ubuntu-latest
     defaults:
@@ -40,13 +40,13 @@ jobs:
       matrix:
         package: ${{ fromJson(needs.collect_dirs.outputs.dirs) }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-      - name: Install dependencies with Yarn workspaces
-        run: yarn
+      # - name: Checkout code
+      #   uses: actions/checkout@v3
+      # - uses: actions/setup-node@v3
+      #   with:
+      #     node-version: '18'
+      # - name: Install dependencies with Yarn workspaces
+      #   run: yarn
       - name: Build
         run: cd ${{ matrix.package }} && yarn build
       - name: Lint
