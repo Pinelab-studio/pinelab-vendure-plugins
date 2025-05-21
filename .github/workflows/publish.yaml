@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
       - name: Set NPM registry auth token
         run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
       - name: Set Vendure Hub registry auth token
