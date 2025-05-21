@@ -20,7 +20,7 @@ plugins: [
 ],
 ```
 
-Manually call `/auto-cancel-orders-plugin/cancel-stale-orders/` or create a cronjob that periodically calls this endpoint.
+Manually call `/cancel-stale-orders/trigger` or create a cronjob that periodically calls this endpoint.
 
 - Only deletes up to 10 000 orders per job run
 - Only cancels orders that are in `AddingItems`, `Created` or `ArrangingPayment` state

@@ -73,7 +73,7 @@ export class AutoCancelOrdersService implements OnModuleInit {
       const [orders, total] = await this.connection
         .getRepository(ctx, Order)
         .findAndCount({
-          select: ['id', 'updatedAt'],
+          select: ['id', 'state', 'code', 'updatedAt'],
           where: {
             state: In(['AddingItems', 'Created', 'ArrangingPayment']),
             updatedAt: LessThan(olderThanDate),

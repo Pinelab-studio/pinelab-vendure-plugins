@@ -16,7 +16,7 @@ export interface AutoCancelOrdersOptions {
     AutoCancelOrdersService,
     {
       provide: AUTO_CANCEL_ORDERS_OPTIONS,
-      useValue: AutoCancelOrdersPlugin.options,
+      useFactory: () => AutoCancelOrdersPlugin.options,
     },
   ],
   controllers: [AutoCancelOrdersController],

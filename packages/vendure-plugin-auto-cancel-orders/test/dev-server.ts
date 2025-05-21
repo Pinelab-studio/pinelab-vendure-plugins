@@ -1,71 +1,61 @@
+import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
-  bootstrap,
-  DefaultJobQueuePlugin,
+  DefaultLogger,
   DefaultSearchPlugin,
-  InitialData,
-  VendureConfig,
+  LogLevel,
+  mergeConfig,
 } from '@vendure/core';
-import { createTestEnvironment } from '@vendure/testing';
-import { AutoCancelOrdersPlugin } from '../src/auto-cancel-orders.plugin';
-import path from 'path';
+import {
+  createTestEnvironment,
+  registerInitializer,
+  SqljsInitializer,
+} from '@vendure/testing';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { AutoCancelOrdersPlugin } from '../src';
 
-/**
- * This dev server script is useful for testing the plugin during development.
- * It starts a Vendure server with the plugin configured and some test data.
- */
-async function runDevServer() {
-  const config: VendureConfig = {
+(async () => {
+  require('dotenv').config();
+  const { testConfig } = require('@vendure/testing');
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  const config = mergeConfig(testConfig, {
+    logger: new DefaultLogger({ level: LogLevel.Debug }),
     apiOptions: {
-      port: 3000,
-      adminApiPath: 'admin-api',
-      shopApiPath: 'shop-api',
-      adminApiPlayground: true,
-      shopApiPlayground: true,
+      adminApiPlayground: {},
+      shopApiPlayground: {},
     },
-    authOptions: {
-      superadminCredentials: {
-        identifier: 'superadmin',
-        password: 'superadmin',
-      },
-      cookieOptions: {
-        secret: 'dev-server-cookie-secret',
-      },
-    },
-    dbConnectionOptions: {
-      type: 'better-sqlite3',
-      filename: path.join(__dirname, 'vendure.sqlite'),
-      synchronize: true,
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
     },
     plugins: [
-      DefaultJobQueuePlugin,
+      AutoCancelOrdersPlugin.init({
+        olderThanDays: 1,
+      }),
       DefaultSearchPlugin,
-      AutoCancelOrdersPlugin,
+      AdminUiPlugin.init({
+        port: 3002,
+        route: 'admin',
+      }),
     ],
-  };
-
-  const { server, adminClient, shopClient } = await createTestEnvironment(
-    config
-  );
+  });
+  const { server, shopClient } = createTestEnvironment(config);
   await server.init({
     initialData: {
-      defaultLanguage: 'en',
-      defaultZone: 'Europe/Amsterdam',
-      countries: [
-        { name: 'Netherlands', code: 'NL', zone: 'Europe/Amsterdam' },
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
       ],
-      currencies: [{ code: 'EUR', symbol: '€' }],
-    } as InitialData,
-    productsCsvPath: path.join(__dirname, 'products.csv'),
+    },
+    productsCsvPath: '../test/src/products-import.csv',
   });
-
-  return { server, adminClient, shopClient };
-}
-
-runDevServer()
-  .then(({ server }) => {
-    console.log('Dev server is now running on http://localhost:3000');
-  })
-  .catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
+  // Create placed orders
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(shopClient, 1);
+})();
