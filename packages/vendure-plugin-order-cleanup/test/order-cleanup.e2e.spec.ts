@@ -64,7 +64,7 @@ it('Creates 5 active orders', async () => {
 });
 
 it('Cancels all active orders when endpoint is called', async () => {
-  await adminClient.fetch('http://localhost:3050/cancel-stale-orders/trigger');
+  await adminClient.fetch('http://localhost:3050/order-cleanup/trigger');
   const orders = await waitFor(async () => {
     const ctx = await server.app.get(RequestContextService).create({
       apiType: 'admin',
