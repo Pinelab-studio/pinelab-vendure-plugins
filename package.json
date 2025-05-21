@@ -83,6 +83,7 @@
           "admin-ui-helpers",
           "all-plugins",
           "anonymized-order",
+          "order-cleanup",
           "campaign-tracker",
           "coinbase",
           "customer-managed-groups",

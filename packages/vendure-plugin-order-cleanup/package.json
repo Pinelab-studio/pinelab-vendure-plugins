@@ -1,0 +1,24 @@
+{
+  "name": "@pinelab/vendure-plugin-order-cleanup",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "start": "yarn ts-node test/dev-server.ts",
+    "test": "vitest run",
+    "test:watch": "vitest watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "dev": "ts-node test/dev-server.ts"
+  },
+  "dependencies": {
+    "catch-unknown": "^2.0.0"
+  }
+}
