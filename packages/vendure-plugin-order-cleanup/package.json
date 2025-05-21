@@ -9,6 +9,10 @@
     "CHANGELOG.md"
   ],
   "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "rimraf dist && tsc",
     "start": "yarn ts-node test/dev-server.ts",
