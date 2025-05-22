@@ -1,3 +1,7 @@
+# 3.1.2 (2025-05-22)
+
+- Don't hydrate order object in `weightAndCountryChecker`, this caused tax calculations to be incorrect
+
 # 3.1.1 (2025-04-09)
 
 - Don't hydrate order object in `getHighestTaxRateOfOrder`, this causes discounts to be lost

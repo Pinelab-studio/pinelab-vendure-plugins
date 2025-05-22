@@ -2,7 +2,7 @@ import {
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
 } from '../event-handler/klaviyo-event-handler';
-import { EntityHydrator, Logger } from '@vendure/core';
+import { assertFound, Logger, OrderService } from '@vendure/core';
 import { CheckoutStartedEvent } from '../service/checkout-started-event';
 import { loggerCtx } from '../constants';
 
@@ -12,32 +12,38 @@ import { loggerCtx } from '../constants';
 export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
   {
     vendureEvent: CheckoutStartedEvent,
-    mapToKlaviyoEvent: async ({ ctx, order }, injector) => {
-      await injector.get(EntityHydrator).hydrate(ctx, order, {
-        relations: ['customer', 'lines.productVariant'],
-      });
-      if (!order.customer?.emailAddress) {
+    mapToKlaviyoEvent: async ({ ctx, order: _order }, injector) => {
+      const hydratedOrder = await assertFound(
+        injector
+          .get(OrderService)
+          .findOne(ctx, _order.id, [
+            'customer',
+            'lines',
+            'lines.productVariant',
+          ])
+      );
+      if (!hydratedOrder.customer?.emailAddress) {
         return false;
       }
-      const address = order.billingAddress?.streetLine1
-        ? order.billingAddress
-        : order.shippingAddress;
+      const address = hydratedOrder.billingAddress?.streetLine1
+        ? hydratedOrder.billingAddress
+        : hydratedOrder.shippingAddress;
       const event: KlaviyoGenericEvent = {
         eventName: 'Checkout Started',
-        uniqueId: order.code,
+        uniqueId: hydratedOrder.code,
         customProperties: {
-          orderCode: order.code,
-          orderItems: order.lines.map((line) => ({
+          orderCode: hydratedOrder.code,
+          orderItems: hydratedOrder.lines.map((line) => ({
             productName: line.productVariant.name,
             quantity: line.quantity,
           })),
         },
         profile: {
-          emailAddress: order.customer.emailAddress,
-          externalId: order.customer.id.toString(),
-          firstName: order.customer.firstName,
-          lastName: order.customer.lastName,
-          phoneNumber: order.customer.phoneNumber,
+          emailAddress: hydratedOrder.customer.emailAddress,
+          externalId: hydratedOrder.customer.id.toString(),
+          firstName: hydratedOrder.customer.firstName,
+          lastName: hydratedOrder.customer.lastName,
+          phoneNumber: hydratedOrder.customer.phoneNumber,
           address: {
             address1: address?.streetLine1,
             address2: address?.streetLine2,
@@ -48,7 +54,7 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
         },
       };
       Logger.info(
-        `Sent '${event.eventName}' to Klaviyo for order ${order.code}`,
+        `Sent '${event.eventName}' to Klaviyo for order ${hydratedOrder.code}`,
         loggerCtx
       );
       return event;

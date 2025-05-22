@@ -1,9 +1,10 @@
 import {
+  assertFound,
   CountryService,
-  EntityHydrator,
   Injector,
   LanguageCode,
   Order,
+  OrderService,
   RequestContext,
   ShippingEligibilityChecker,
 } from '@vendure/core';
@@ -23,7 +24,6 @@ export function calculateOrderWeight(order: Order): number {
     return acc + lineWeight;
   }, 0);
 }
-let entityHydrator: EntityHydrator;
 let injector: Injector;
 export const weightAndCountryChecker = new ShippingEligibilityChecker({
   code: 'shipping-by-weight-and-country',
@@ -69,7 +69,6 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
     },
   },
   async init(_injector) {
-    entityHydrator = _injector.get(EntityHydrator);
     injector = _injector;
     const ctx = RequestContext.empty();
     // Populate the countries arg list
@@ -100,12 +99,12 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
   },
   async check(
     ctx,
-    order,
+    _order,
     { minWeight, maxWeight, countries, excludeCountries },
     method
   ) {
     const isEligibleByCountry = isEligibleForCountry(
-      order,
+      _order,
       countries,
       excludeCountries
     );
@@ -113,23 +112,25 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
       return false;
     }
     // Shipping country is allowed, continue checking order weight
-    await entityHydrator.hydrate(ctx, order, {
-      relations: [
-        'lines',
-        'lines.productVariant',
-        'lines.productVariant.product',
-      ],
-    });
+    const hydratedOrder = await assertFound(
+      injector
+        .get(OrderService)
+        .findOne(ctx, _order.id, [
+          'lines',
+          'lines.productVariant',
+          'lines.productVariant.product',
+        ])
+    );
     let totalOrderWeight = 0;
     if (ShippingExtensionsPlugin.options?.weightCalculationFunction) {
       totalOrderWeight =
         await ShippingExtensionsPlugin.options.weightCalculationFunction(
           ctx,
-          order,
+          hydratedOrder,
           injector
         );
     } else {
-      totalOrderWeight = calculateOrderWeight(order);
+      totalOrderWeight = calculateOrderWeight(hydratedOrder);
     }
     const isBetweenWeights =
       totalOrderWeight <= maxWeight && totalOrderWeight >= minWeight;
@@ -141,7 +142,7 @@ export const weightAndCountryChecker = new ShippingEligibilityChecker({
       await ShippingExtensionsPlugin.options.additionalShippingEligibilityCheck?.(
         ctx,
         injector,
-        order,
+        hydratedOrder,
         method
       );
     if (additionalIsEligible === false) {

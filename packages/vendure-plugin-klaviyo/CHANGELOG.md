@@ -1,3 +1,7 @@
+# 1.6.2 (2025-05-22)
+
+- Fetch order with relations instead of hydrating in CheckoutStartedEvent, to prevent order object modification
+
 # 1.6.1 (2025-02-19)
 
 - Fetch order with relations instead of hydrating, to prevent `Maximum call stack exceeded` (https://github.com/vendure-ecommerce/vendure/issues/3355)
