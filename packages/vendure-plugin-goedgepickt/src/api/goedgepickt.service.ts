@@ -49,6 +49,7 @@ import {
   UpdateProductVariantInput,
 } from '@vendure/common/lib/generated-types';
 import { Request as ExpressRequest } from 'express';
+import { asError } from 'catch-unknown';
 
 interface StockInput {
   variantId: ID;
@@ -198,23 +199,32 @@ export class GoedgepicktService
     this.eventBus
       .ofType(ProductVariantEvent)
       .subscribe(({ ctx, entity, type, input }) => {
-        if (type !== 'created' && type !== 'updated') {
-          // Only handle created and updated events
-          return;
-        }
-        const updatedOrCreatedInput = input as
-          | CreateProductVariantInput[]
-          | UpdateProductVariantInput[];
+        try {
+          if (type !== 'created' && type !== 'updated') {
+            // Only handle created and updated events
+            return;
+          }
+          const updatedOrCreatedInput = input as
+            | CreateProductVariantInput[]
+            | UpdateProductVariantInput[];
 
-        const isContentUpdated = updatedOrCreatedInput.some(
-          (i) => i.customFields || i.translations || i.price || i.sku
-        );
-        if (!isContentUpdated) {
-          // Only push products on content updates like custom fields, names, slugs
-          return;
+          const isContentUpdated = updatedOrCreatedInput?.some(
+            (i) => i.customFields || i.translations || i.price || i.sku
+          );
+          if (!isContentUpdated) {
+            // Only push products on content updates like custom fields, names, slugs
+            return;
+          }
+          const skus = entity.map((v) => v.sku);
+          this.createPushProductJobs(ctx, skus);
+        } catch (e) {
+          const error = asError(e);
+          Logger.error(
+            `Error handling ProductVariantEvent`,
+            loggerCtx,
+            error.stack
+          );
         }
-        const skus = entity.map((v) => v.sku);
-        this.createPushProductJobs(ctx, skus);
       });
   }
 

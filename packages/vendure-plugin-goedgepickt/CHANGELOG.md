@@ -1,3 +1,7 @@
+# 2.0.8 (2025-05-22)
+
+- Try/catch around event handling, to prevent node process crash on error
+
 # 2.0.7 (2025-04-24)
 
 - Fix for numeric SKU's
