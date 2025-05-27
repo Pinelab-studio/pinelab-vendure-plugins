@@ -343,7 +343,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     );
     if (!acceptBlueCustomer) {
       throw new UserInputError(
-        `No customer found in Accept bBlue with email ${order.customer.emailAddress} not found`
+        `No customer found in Accept Blue with email ${order.customer.emailAddress} not found`
       );
     }
     // Create recurring schedules

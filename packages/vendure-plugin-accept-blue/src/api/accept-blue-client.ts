@@ -148,18 +148,20 @@ export class AcceptBlueClient {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const customers = await this.request(
       'get',
-      `customers?active=true&customer_number=${emailAddress}`
+      `customers?active=true&customer_number=${encodeURIComponent(
+        emailAddress
+      )}`
     );
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const customer = customers?.[0] as AcceptBlueCustomer | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     if (customers.length > 1) {
-      throw Error(
-        `Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one.`
+      Logger.error(
+        `Multiple customers found for email '${emailAddress}' in Accept Blue. There should be only one. Using customer '${customer?.id}'`
       );
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (customers[0]) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-member-access
-      return customers[0];
+    if (customer) {
+      return customer;
     }
     return undefined;
   }
