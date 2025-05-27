@@ -1,3 +1,8 @@
+# 3.0.1 (2025-05-27)
+
+- Correctly encode email addresses when looking up customers in Accept Blue. This prevents incorrect `Customer not found` errors when using email addresses with `+` in them.
+- Fixed typo in error message
+
 # 3.0.0 (2025-05-13)
 
 - BREAKING: `AcceptBlueSubscription.recurring.endDate` is removed.
