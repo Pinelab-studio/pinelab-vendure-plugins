@@ -13,7 +13,11 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { KlaviyoPlugin, defaultOrderPlacedEventHandler } from '../src';
+import {
+  KlaviyoPlugin,
+  createRefundHandler,
+  defaultOrderPlacedEventHandler,
+} from '../src';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
 
 (async () => {
@@ -32,7 +36,16 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
     plugins: [
       KlaviyoPlugin.init({
         apiKey: process.env.KLAVIYO_PRIVATE_API_KEY!,
-        eventHandlers: [defaultOrderPlacedEventHandler, mockCustomEventHandler],
+        eventHandlers: [
+          defaultOrderPlacedEventHandler,
+          mockCustomEventHandler,
+          createRefundHandler({
+            getPaymentMethodName: (payment) => {
+              // This sample gets the payment method (like 'iDeal') when a the settled payment was a Mollie payment
+              return payment?.metadata.method;
+            },
+          }),
+        ],
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -54,6 +67,6 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
-  // const order = await createSettledOrder(shopClient, 1);
-  // console.log(`Created settled order '${order.code}'`);
+  const order = await createSettledOrder(shopClient, 1);
+  console.log(`Created settled order '${order.code}'`);
 })();
