@@ -2,7 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-better-search)
 
-This plugin offers more intuitive storefront search than Vendure's `DefaultSearchPlugin` without the need of an external platform.
+This plugin offers more intuitive storefront search than Vendure's `DefaultSearchPlugin` before the need of an external platform like TypeSense or ElasticSearch.
 
 Important! The scope of this plugin:
 
