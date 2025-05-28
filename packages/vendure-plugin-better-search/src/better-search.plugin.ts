@@ -6,6 +6,7 @@ import { BETTER_SEARCH_PLUGIN_OPTIONS } from './constants';
 import { SearchService } from './services/search.service';
 import { PluginInitOptions } from './types';
 import { IndexService } from './services/index.service';
+import { defaultSearchConfig } from './default-config';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -27,7 +28,7 @@ import { IndexService } from './services/index.service';
   },
 })
 export class BetterSearchPlugin {
-  static options: PluginInitOptions;
+  static options: PluginInitOptions = defaultSearchConfig;
 
   static init(options: PluginInitOptions): Type<BetterSearchPlugin> {
     this.options = options;

@@ -1,8 +1,7 @@
-import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   ID,
   idsAreEqual,
-  JobQueueService,
   LanguageCode,
   Logger,
   RequestContext,
@@ -11,6 +10,7 @@ import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import {
   BetterSearchInput,
+  BetterSearchResult,
   BetterSearchResultList,
 } from '../api/generated/graphql';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
@@ -25,7 +25,7 @@ interface CachedIndex {
 }
 
 @Injectable()
-export class SearchService implements OnApplicationBootstrap {
+export class SearchService {
   /**
    * In memory cache of created indices
    */
@@ -34,24 +34,34 @@ export class SearchService implements OnApplicationBootstrap {
 
   constructor(
     private indexService: IndexService,
-    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: PluginInitOptions,
-    private jobQueueService: JobQueueService
+    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: PluginInitOptions
   ) {}
-
-  onApplicationBootstrap() {
-    throw new Error('Method not implemented.');
-  }
 
   async search(
     ctx: RequestContext,
     input: BetterSearchInput
   ): Promise<BetterSearchResultList> {
+    if (input.term.length < 3) {
+      // No search if term is too short
+      return {
+        items: [],
+        totalItems: 0,
+      };
+    }
     // Get index
     const index = await this.getIndex(ctx);
-    // TODO index.search
+    const skip = input.skip ?? 0;
+    const take = input.take ?? 10;
+    const allResults = index.search(
+      input.term
+    ) as unknown as BetterSearchResult[];
+    const results = allResults.slice(skip, skip + take);
+
+    console.log(`Results: ${JSON.stringify(results, null, 2)}`);
+
     return {
-      items: [],
-      totalItems: 0,
+      items: results as unknown as BetterSearchResult[],
+      totalItems: allResults.length,
     };
   }
 
