@@ -10,8 +10,8 @@
   "publishConfig": {
     "access": "public"
   },
-  "main": "dist/vendure-plugin-accept-blue/src/index.js",
-  "types": "dist/vendure-plugin-accept-blue/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "README.md",
@@ -26,9 +26,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "axios": "1.6.2",
     "catch-unknown": "^2.0.0",
-    "date-fns": "2.29.3",
     "minisearch": "^7.1.2"
   }
 }
