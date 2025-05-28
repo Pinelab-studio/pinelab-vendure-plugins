@@ -1,26 +1,33 @@
 import {
+  assertFound,
+  Logger,
+  OrderService,
+  Payment,
+  RefundEvent,
+} from '@vendure/core';
+import { loggerCtx } from '../constants';
+import {
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
-} from '../event-handler/klaviyo-event-handler';
-import { assertFound, Logger, OrderService } from '@vendure/core';
-import { CheckoutStartedEvent } from '../service/checkout-started-event';
-import { loggerCtx } from '../constants';
+} from './klaviyo-event-handler';
+
+export interface RefundEventInput {
+  getPaymentMethodName: (payment: Payment | undefined) => string;
+}
 
 /**
- * Sends an event to Klavyio when a checkout has started and the order has a customer email address.
+ * Sends an event to Klavyio when a refund has been created for an order.
  */
-export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
-  {
-    vendureEvent: CheckoutStartedEvent,
-    mapToKlaviyoEvent: async ({ ctx, order: _order }, injector) => {
+export function createRefundHandler(
+  input: RefundEventInput
+): KlaviyoEventHandler<RefundEvent> {
+  return {
+    vendureEvent: RefundEvent,
+    mapToKlaviyoEvent: async ({ ctx, order: _order, refund }, injector) => {
       const hydratedOrder = await assertFound(
         injector
           .get(OrderService)
-          .findOne(ctx, _order.id, [
-            'customer',
-            'lines',
-            'lines.productVariant',
-          ])
+          .findOne(ctx, _order.id, ['customer', 'payments'])
       );
       if (!hydratedOrder.customer?.emailAddress) {
         return false;
@@ -28,16 +35,18 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
       const address = hydratedOrder.billingAddress?.streetLine1
         ? hydratedOrder.billingAddress
         : hydratedOrder.shippingAddress;
+      const paymentToRefund = hydratedOrder.payments.find(
+        (p) => p.id === refund.paymentId
+      );
+      const paymentMethodName = input.getPaymentMethodName(paymentToRefund);
       const event: KlaviyoGenericEvent = {
-        eventName: 'Checkout Started',
-        uniqueId:
-          hydratedOrder.code + `_${new Date().toISOString().split('T')[0]}`, // Make checkout event unique per day: If chckout started again tomorrow, this is a new event
+        eventName: 'Refund Created',
+        uniqueId: hydratedOrder.code,
         customProperties: {
           orderCode: hydratedOrder.code,
-          orderItems: hydratedOrder.lines.map((line) => ({
-            productName: line.productVariant.name,
-            quantity: line.quantity,
-          })),
+          paymentMethodName,
+          refundReason: refund.reason,
+          refundAmount: refund.total,
         },
         profile: {
           emailAddress: hydratedOrder.customer.emailAddress,
@@ -61,3 +70,4 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
       return event;
     },
   };
+}

@@ -1,3 +1,7 @@
+# 1.7.0 (2025-05-28)
+
+- Added `RefundEventHandler` to send events to Klaviyo when a refund is created.
+
 # 1.6.2 (2025-05-22)
 
 - Fetch order with relations instead of hydrating in CheckoutStartedEvent, to prevent order object modification

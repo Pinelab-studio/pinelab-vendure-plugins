@@ -13,11 +13,16 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { defaultOrderPlacedEventHandler, KlaviyoPlugin } from '../src';
+import {
+  createRefundHandler,
+  defaultOrderPlacedEventHandler,
+  KlaviyoPlugin,
+} from '../src';
 import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
 import { CheckoutStartedEvent, startedCheckoutHandler } from '../src/';
 import gql from 'graphql-tag';
+import { waitFor } from '../../test/src/test-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -33,6 +38,9 @@ beforeAll(async () => {
         eventHandlers: [
           defaultOrderPlacedEventHandler,
           startedCheckoutHandler,
+          createRefundHandler({
+            getPaymentMethodName: (payment) => `test-${payment?.id}`,
+          }),
           mockOrderPlacedHandler,
           mockCustomEventHandler,
         ],
@@ -64,26 +72,23 @@ afterAll(async () => {
   await server.destroy();
 }, 100000);
 
-// Clear nock mocks after each test
-afterEach(() => nock.cleanAll());
-
 describe('Klaviyo', () => {
-  // Intercepted requests to Klaviyo
+  // Intercepted all requests to Klaviyo
   const klaviyoRequests: EventCreateQueryV2[] = [];
+  nock('https://a.klaviyo.com/api/')
+    .post('/events/', (reqBody) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      klaviyoRequests.push(reqBody);
+      return true;
+    })
+    .reply(200, {})
+    .persist();
 
   it('Started the server', () => {
     expect(server.app.getHttpServer()).toBeDefined();
   });
 
   it('Places an order', async () => {
-    nock('https://a.klaviyo.com/api/')
-      .post('/events/', (reqBody) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        klaviyoRequests.push(reqBody);
-        return true;
-      })
-      .reply(200, {})
-      .persist();
     const order = await createSettledOrder(shopClient, 1);
     // Give worker some time to send event to klaviyo
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -188,6 +193,43 @@ describe('Klaviyo', () => {
     ).toEqual('some information');
   });
 
+  it("Has sent 'Refund Created' event to Klaviyo when an order is refunded", async () => {
+    await adminClient.asSuperAdmin();
+    adminClient.query(
+      gql`
+        mutation RefundOrder($input: RefundOrderInput!) {
+          refundOrder(input: $input) {
+            ... on Refund {
+              id
+            }
+          }
+        }
+      `,
+      {
+        input: {
+          reason: 'Customer request',
+          paymentId: 'T_1',
+          amount: 500,
+          shipping: 0,
+          adjustment: 0,
+        },
+      }
+    );
+    const refundEvent = await waitFor(
+      () =>
+        klaviyoRequests.find(
+          (r) =>
+            r.data.attributes.metric.data.attributes.name === 'Refund Created'
+        ),
+      100
+    );
+    expect(refundEvent).toBeDefined();
+    const properties = refundEvent.data.attributes.properties as any;
+    expect(properties.paymentMethodName).toEqual('test-1');
+    expect(properties.refundAmount).toEqual(500);
+    expect(properties.refundReason).toEqual('Customer request');
+  });
+
   it('Emits CheckoutStartedEvent on calling checkoutStarted() mutation', async () => {
     // Create active order
     await shopClient.asUserWithCredentials(
@@ -195,15 +237,6 @@ describe('Klaviyo', () => {
       'test'
     );
     await addItem(shopClient, 'T_1', 1);
-    // Mock API response
-    nock('https://a.klaviyo.com/api/')
-      .post('/events/', (reqBody) => {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        klaviyoRequests.push(reqBody);
-        return true;
-      })
-      .reply(200, {})
-      .persist();
     const events: CheckoutStartedEvent[] = [];
     server.app
       .get(EventBus)

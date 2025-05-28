@@ -97,6 +97,33 @@ Don't forget to exclude the default order placed handler if you do!
 
 This plugin includes a mutation `klaviyoCheckoutStarted`, which can be called from your storefront. When called, and an active order is present, it sends a custom event `Checkout Started` to Klaviyo, including basic order and profile data. This event can be used to set up abandoned cart email flows in Klaviyo.
 
+## Refund and Cancellation Events
+
+This plugin includes a mutation `klaviyoRefundCreated`, which sends events to Klaviyo whenever a refund is created for an order.
+
+To enable the refund event, add the refund handler to the plugin config:
+
+```ts
+import {
+  KlaviyoPlugin,
+  createRefundHandler,
+} from '@pinelab/vendure-plugin-klaviyo';
+
+plugins: [
+  KlaviyoPlugin.init({
+    apiKey: 'some_private_api_key',
+    eventHandlers: [
+      createRefundHandler({
+        getPaymentMethodName: (payment) => {
+          // This sample gets the payment method (like 'iDeal') when a the settled payment was a Mollie payment
+          return payment?.metadata.method;
+        },
+      }),
+    ],
+  }),
+];
+```
+
 ## Newsletter signup
 
 The following mutation allows a customer to sign up to a Klaviyo Audience list via the API:
