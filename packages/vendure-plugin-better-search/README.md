@@ -19,7 +19,93 @@ Features:
 - Index field weighting
 - Filtering by facets (faceted search): Planned feature, not implemented yet.
 
-// TODO getting started
+## Getting started
 
-// TODO column type process.env.BETTER_SEARCH_INDEX_COLUMN_TYPE=mediumblob
-// https://orkhan.gitbook.io/typeorm/docs/entities
+1. Add the plugin to your `vendure-config.ts`:
+
+```ts
+import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
+
+...
+plugins: [
+  BetterSearchPlugin,
+],
+```
+
+2. Run a database migration
+3. Start the server
+4. Do a search via the new `betterSearch` query
+
+```graphql
+query Search {
+  betterSearch(input: { term: "dumbbells" }) {
+    totalItems
+    items {
+      productId
+      slug
+      productName
+      productAsset {
+        id
+        preview
+      }
+      lowestPrice
+      lowestPriceWithTax
+      highestPrice
+      highestPriceWithTax
+      facetValueIds
+      collectionIds
+      collectionNames
+    }
+  }
+}
+```
+
+⚠️ Set the env variable `BETTER_SEARCH_INDEX_COLUMN_TYPE` for your specific database! Without this, `text` is used as default, but this will be too small for most projects.
+
+```bash
+BETTER_SEARCH_INDEX_COLUMN_TYPE=longtext
+```
+
+E.g. `longtext` for MySQL. Checkout this page on more information on the different column types: https://orkhan.gitbook.io/typeorm/docs/entities#column-types-for-mysql-mariadb
+
+## Indexing custom fields
+
+You can index custom fields of your products by defining a custom `mapToSearchDocument` function.
+
+For example, we have a custom field `keywords` on our products, and we want to index it:
+
+```ts
+import { BetterSearchPlugin, defaultSearchConfig } from '@pinelab/vendure-plugin-better-search';
+
+      BetterSearchPlugin.init({
+        mapToSearchDocument: (product, collections) => {
+            // Import the default mapping function to get a default search document
+          const defaultDocument = defaultSearchConfig.mapToSearchDocument(
+            product,
+            collections
+          );
+          const keywords = product.customFields.keywords;
+          return {
+            ...defaultDocument,
+            keywords,
+          };
+        },
+        // Make sure to add `keywords` to the indexable fields, and give it a weight
+        indexableFields: {
+          ...defaultSearchConfig.indexableFields,
+          facetValueNames: 2,
+        },
+      }),
+```
+
+By default, these fields are indexed with the following weights. Checkout the `defaultSearchConfig.ts` for more details.
+
+```ts
+  indexableFields: {
+    name: 3,
+    slug: 2,
+    variantNames: 3,
+    collectionNames: 1,
+    skus: 2,
+  },
+```
