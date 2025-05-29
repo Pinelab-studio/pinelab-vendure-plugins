@@ -178,12 +178,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         );
         // Apply prices
         p.variants = await Promise.all(
-          p.variants.map(async (v) => {
-            const v2 =
-              await this.productPriceApplicator.applyChannelPriceAndTax(v, ctx);
-            console.log('====== v2 ', v2.price, v2.priceWithTax);
-            return v2;
-          })
+          p.variants.map((v) =>
+            this.productPriceApplicator.applyChannelPriceAndTax(v, ctx)
+          )
         );
         // Translate variants
         p.variants = p.variants.map((v) => translateDeep(v, ctx.languageCode));
