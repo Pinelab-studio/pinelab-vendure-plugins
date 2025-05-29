@@ -5,24 +5,29 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
-  Channel,
-  CollectionService,
+  EventBus,
   JobQueue,
   JobQueueService,
   Logger,
   Product,
+  ProductEvent,
   ProductService,
+  ProductVariantEvent,
   RequestContext,
   RequestContextService,
   SerializedRequestContext,
   TransactionalConnection,
+  translateDeep,
   translateEntity,
+  ProductPriceApplicator,
+  ChannelService,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
-import { PluginInitOptions } from '../types';
-import { suffixes } from './util';
+import { BetterSearchDocuments } from '../entities/better-search-dcouments.entity';
+import { PluginInitOptions, SearchDocument } from '../types';
+import { tokenize } from './util';
 
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
@@ -30,13 +35,17 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     ctx: SerializedRequestContext;
   }>;
 
+  private rebuildIndicesQueue = new Map<string, RequestContext>();
+
   constructor(
     private connection: TransactionalConnection,
     private requestContextService: RequestContextService,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: PluginInitOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
-    private collectionService: CollectionService
+    private productPriceApplicator: ProductPriceApplicator,
+    private eventBus: EventBus,
+    private channelService: ChannelService
   ) {}
 
   onApplicationBootstrap() {
@@ -47,6 +56,28 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx,
         error.stack
       );
+    });
+    // Listen for product events
+    this.eventBus.ofType(ProductEvent).subscribe((event) => {
+      this.debouncedRebuildIndex(event.ctx).catch((e) => {
+        const error = asError(e);
+        Logger.error(
+          `Failed to rebuild index for ProductEvent (${event.type}): ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+      });
+    });
+    // Listen for variant events
+    this.eventBus.ofType(ProductVariantEvent).subscribe((event) => {
+      this.debouncedRebuildIndex(event.ctx).catch((e) => {
+        const error = asError(e);
+        Logger.error(
+          `Failed to rebuild index for ProductVariantEvent (${event.type}): ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+      });
     });
   }
 
@@ -64,7 +95,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         } catch (e) {
           const error = asError(e);
           Logger.error(
-            `Failed to build index for channel '${ctx.channel.token}' (${ctx.languageCode}): ${error.message}`,
+            `Failed to build index for channel '${ctx.channel.token} (${ctx.languageCode})': ${error.message}`,
             loggerCtx,
             error.stack
           );
@@ -78,9 +109,10 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
    * Triggers index builds for all channels for all languages.
    */
   async triggerBuildsForAllIndices() {
-    const channels = await this.connection.rawConnection
-      .getRepository(Channel)
-      .find();
+    const ctx = await this.requestContextService.create({
+      apiType: 'admin',
+    });
+    const { items: channels } = await this.channelService.findAll(ctx);
     for (const channel of channels) {
       for (const languageCode of channel.availableLanguageCodes) {
         const ctx = await this.requestContextService.create({
@@ -100,7 +132,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   async buildIndex(ctx: RequestContext): Promise<MiniSearch> {
     const start = performance.now();
     Logger.info(
-      `Building index for channel '${ctx.channel.token}' (${ctx.languageCode})...`,
+      `Building index for channel '${ctx.channel.token} (${ctx.languageCode})'...`,
       loggerCtx
     );
     // Get all products
@@ -121,11 +153,12 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
           },
         },
         [
-          'facetValues',
-          'variants',
-          'variants.collections',
+          'featuredAsset',
+          'facetValues.translations',
           'variants.collections.translations',
-          'variants.facetValues',
+          'variants.facetValues.translations',
+          'variants.productVariantPrices',
+          'variants.taxCategory',
         ]
       );
       skipProducts += takeProducts;
@@ -134,26 +167,85 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         hasMoreProducts = false;
       }
     }
-    const indexableProducts = allProducts.map((p) => {
-      let collections = [...new Set(p.variants.flatMap((v) => v.collections))];
-      // Translate collections
-      collections = collections.map((c) =>
-        translateEntity(c, ctx.languageCode)
-      );
-      // Translate variants
-      p.variants = p.variants.map((v) => translateEntity(v, ctx.languageCode));
-      return {
-        id: p.id,
-        ...this.options.mapToSearchDocument(p, collections),
-      };
+    const indexableProducts: SearchDocument[] = await Promise.all(
+      allProducts.map(async (p) => {
+        let collections = [
+          ...new Set(p.variants.flatMap((v) => v.collections)),
+        ];
+        // Translate collections
+        collections = collections.map((c) =>
+          translateEntity(c, ctx.languageCode)
+        );
+        // Apply prices
+        p.variants = await Promise.all(
+          p.variants.map(async (v) => {
+            const v2 =
+              await this.productPriceApplicator.applyChannelPriceAndTax(v, ctx);
+            console.log('====== v2 ', v2.price, v2.priceWithTax);
+            return v2;
+          })
+        );
+        // Translate variants
+        p.variants = p.variants.map((v) => translateDeep(v, ctx.languageCode));
+        return {
+          id: p.id,
+          ...this.options.mapToSearchDocument(p, collections),
+        };
+      })
+    );
+    const minisearch = this.createMiniSearch(indexableProducts);
+    // Persist index in DB
+    await this.connection.getRepository(ctx, BetterSearchDocuments).save({
+      id: `${ctx.channel.token}-${ctx.languageCode}`,
+      data: JSON.stringify(indexableProducts),
     });
-    // Get all unique field names
+    // Measure size of the index
+    const serializedIndex = minisearch.toJSON();
+    const indexSizeInKb = Math.round(
+      Buffer.byteLength(JSON.stringify(serializedIndex), 'utf-8') / 1024
+    );
+    const duration = Math.round(performance.now() - start);
+    Logger.info(
+      `Index built for channel '${ctx.channel.token} (${ctx.languageCode})' in ${duration}ms: Indexed ${minisearch.documentCount} products. Approximated index size: ${indexSizeInKb} KB.`,
+      loggerCtx
+    );
+    return minisearch;
+  }
+
+  async getIndex(ctx: RequestContext): Promise<MiniSearch | undefined> {
+    const searchDocuments = await this.connection
+      .getRepository(ctx, BetterSearchDocuments)
+      .findOne({
+        where: {
+          id: `${ctx.channel.token}-${ctx.languageCode}`,
+        },
+      });
+    if (!searchDocuments) {
+      return undefined;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return this.createMiniSearch(JSON.parse(searchDocuments.data));
+  }
+
+  /**
+   * Creates a job to reindex all products for the given channel for the given language.
+   */
+  triggerReindex(ctx: RequestContext) {
+    return this.jobQueue.add({
+      ctx: ctx.serialize(),
+    });
+  }
+
+  /**
+   * Instantiates a new MiniSearch instance (index) with the given settings for the given indexable products.
+   */
+  private createMiniSearch(documents: SearchDocument[]) {
     const uniqueFieldNames = [
-      ...new Set(indexableProducts.flatMap((p) => Object.keys(p))),
+      ...new Set(documents.flatMap((p) => Object.keys(p))),
     ];
     const minisearch = new MiniSearch({
       // Use suffix terms when indexing
-      processTerm: (term) => suffixes(term, 3),
+      processTerm: (term) => tokenize(term, 3),
       fields: Object.keys(this.options.indexableFields),
       storeFields: Array.from(uniqueFieldNames),
       searchOptions: {
@@ -164,29 +256,31 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         processTerm: MiniSearch.getDefault('processTerm'),
       },
     });
-    minisearch.addAll(indexableProducts);
-
-    // TODO persist in DB
-
-    const duration = Math.round(performance.now() - start);
-    Logger.info(
-      `Index built for channel '${ctx.channel.token}' (${ctx.languageCode}) in ${duration}ms: Indexed ${minisearch.documentCount} products.`,
-      loggerCtx
-    );
+    // Add all indexable products to the index
+    minisearch.addAll(documents);
     return minisearch;
   }
 
-  async getIndex(ctx: RequestContext): Promise<MiniSearch | undefined> {
-    // FIXME
-    return this.buildIndex(ctx);
-  }
-
   /**
-   * Creates a job to reindex all products for the given channel for the given language.
+   * Adds index rebuild to the queue, and waits for more events to come in before triggering an index rebuild.
    */
-  triggerReindex(ctx: RequestContext) {
-    return this.jobQueue.add({
-      ctx: ctx.serialize(),
+  private async debouncedRebuildIndex(ctx: RequestContext) {
+    const key = `${ctx.channel.token}-${ctx.languageCode}`;
+    this.rebuildIndicesQueue.set(key, ctx);
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, this.options.debounceIndexRebuildMs)
+    );
+    this.rebuildIndicesQueue.forEach((ctx) => {
+      this.triggerReindex(ctx).catch((e) => {
+        const error = asError(e);
+        Logger.error(
+          `Failed to add reindex job to the job queue for '${key}': ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+      });
     });
+    this.rebuildIndicesQueue.clear();
   }
 }

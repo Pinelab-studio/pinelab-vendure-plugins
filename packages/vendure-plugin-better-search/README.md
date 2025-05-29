@@ -20,3 +20,6 @@ Features:
 - Filtering by facets (faceted search): Planned feature, not implemented yet.
 
 // TODO getting started
+
+// TODO column type process.env.BETTER_SEARCH_INDEX_COLUMN_TYPE=mediumblob
+// https://orkhan.gitbook.io/typeorm/docs/entities

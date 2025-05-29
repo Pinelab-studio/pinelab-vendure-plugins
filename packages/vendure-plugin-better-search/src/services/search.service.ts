@@ -1,11 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  ID,
-  idsAreEqual,
-  LanguageCode,
-  Logger,
-  RequestContext,
-} from '@vendure/core';
+import { ID, LanguageCode, Logger, RequestContext } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import {
@@ -29,7 +23,7 @@ export class SearchService {
   /**
    * In memory cache of created indices
    */
-  private cachedIndices: CachedIndex[] = [];
+  private cachedIndices: Map<string, CachedIndex> = new Map();
   private indexTtl = 5 * 60 * 1000; // 5 minutes in milliseconds
 
   constructor(
@@ -56,9 +50,6 @@ export class SearchService {
       input.term
     ) as unknown as BetterSearchResult[];
     const results = allResults.slice(skip, skip + take);
-
-    console.log(`Results: ${JSON.stringify(results, null, 2)}`);
-
     return {
       items: results as unknown as BetterSearchResult[],
       totalItems: allResults.length,
@@ -71,15 +62,13 @@ export class SearchService {
    * but fetches a new one from DB in the background.
    */
   private async getIndex(ctx: RequestContext): Promise<MiniSearch> {
-    let cachedIndex = this.cachedIndices.find(
-      (i) =>
-        idsAreEqual(i.channelId, ctx.channel.id) &&
-        i.languageCode === ctx.languageCode
-    );
+    const cacheKey = `${ctx.channel.id}-${ctx.languageCode}`;
+    let cachedIndex = this.cachedIndices.get(cacheKey);
     if (!cachedIndex) {
       // Get new index from DB
       const index = await this.indexService.getIndex(ctx);
       if (!index) {
+        await this.indexService.triggerReindex(ctx);
         throw Error(
           `No index was created for channel ${ctx.channel.id} and language ${ctx.languageCode}`
         );
@@ -90,7 +79,7 @@ export class SearchService {
         cachedAt: new Date(),
         index,
       };
-      this.cachedIndices.push(cachedIndex);
+      this.cachedIndices.set(cacheKey, cachedIndex);
     }
     if (cachedIndex.cachedAt < new Date(Date.now() - this.indexTtl)) {
       // Get new index from DB in background - Stale-while-revalidate pattern
@@ -101,7 +90,7 @@ export class SearchService {
             // Do nothing, we still have the old index in cache
             return;
           }
-          this.cachedIndices.push({
+          this.cachedIndices.set(cacheKey, {
             channelId: ctx.channel.id,
             languageCode: ctx.languageCode,
             cachedAt: new Date(),
@@ -110,9 +99,9 @@ export class SearchService {
         })
         .catch((err) => {
           Logger.error(
-            `Failed to fetch new index for channel ${
-              ctx.channel.id
-            } and language ${ctx.languageCode}: ${asError(err).message}`,
+            `Failed to fetch new index for '${cacheKey}': ${
+              asError(err).message
+            }`,
             loggerCtx
           );
         });

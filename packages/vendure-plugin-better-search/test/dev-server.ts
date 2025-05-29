@@ -11,7 +11,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import { BetterSearchPlugin } from '../src';
+import { BetterSearchPlugin, defaultSearchConfig } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -27,7 +27,24 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
       shopApiPlayground: {},
     },
     plugins: [
-      BetterSearchPlugin,
+      BetterSearchPlugin.init({
+        mapToSearchDocument: (product, collections) => {
+          const defaultDocument = defaultSearchConfig.mapToSearchDocument(
+            product,
+            collections
+          );
+          const productFacetValues = product.facetValues.map((fv) => fv.name);
+          return {
+            ...defaultDocument,
+            facetValueNames: productFacetValues,
+          };
+        },
+        // Add facetValueNames to indexable fields
+        indexableFields: {
+          ...defaultSearchConfig.indexableFields,
+          facetValueNames: 2,
+        },
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -38,6 +55,6 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
   const { server } = createTestEnvironment(config);
   await server.init({
     initialData,
-    productsCsvPath: '../test/src/products-import.csv',
+    productsCsvPath: './test/search-products.csv',
   });
 })();

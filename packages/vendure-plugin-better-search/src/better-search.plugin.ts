@@ -7,6 +7,7 @@ import { SearchService } from './services/search.service';
 import { PluginInitOptions } from './types';
 import { IndexService } from './services/index.service';
 import { defaultSearchConfig } from './default-config';
+import { BetterSearchDocuments } from './entities/better-search-dcouments.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -26,12 +27,13 @@ import { defaultSearchConfig } from './default-config';
     schema: shopApiExtensions,
     resolvers: [SearchShopResolver],
   },
+  entities: [BetterSearchDocuments],
 })
 export class BetterSearchPlugin {
   static options: PluginInitOptions = defaultSearchConfig;
 
-  static init(options: PluginInitOptions): Type<BetterSearchPlugin> {
-    this.options = options;
+  static init(options: Partial<PluginInitOptions>): Type<BetterSearchPlugin> {
+    this.options = { ...this.options, ...options };
     return BetterSearchPlugin;
   }
 }

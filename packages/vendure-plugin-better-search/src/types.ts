@@ -1,6 +1,8 @@
 import { Collection, Product } from '@vendure/core';
 import { BetterSearchResult } from './api/generated/graphql';
 
+export type SearchDocument = BetterSearchResult & Record<string, unknown>;
+
 /**
  * @description
  * The plugin can be configured using the following options:
@@ -13,7 +15,7 @@ export interface PluginInitOptions {
   mapToSearchDocument: (
     product: Product,
     collectionForThisProduct: Collection[]
-  ) => BetterSearchResult & Record<string, unknown>;
+  ) => SearchDocument;
   /**
    * The fields and corresponding weights that should be indexed.
    * These should should correspond to what you return in the mapToSearchDocument function.
@@ -24,4 +26,12 @@ export interface PluginInitOptions {
    * 0.0 is no fuzzyness, 1.0 is full fuzzyness.
    */
   fuzziness: number;
+
+  /**
+   * The debounce time for index rebuilds.
+   *
+   * E.g. 5000 means that if a product is updated,
+   * the plugin will wait for 5 seconds for more events to come in, and then rebuild the index.
+   */
+  debounceIndexRebuildMs: number;
 }
