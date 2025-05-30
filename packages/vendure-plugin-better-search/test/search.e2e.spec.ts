@@ -71,13 +71,26 @@ it('Started the server', () => {
 });
 
 it('Returns all fields for exact match', async () => {
+  const search = () =>
+    shopClient.query(SEARCH_QUERY, {
+      input: {
+        term: 'smartphone',
+      },
+    });
+  // First time we waitFor, because index needs to be built
+  const result = await waitFor(async () => {
+    try {
+      const result = await search();
+      if (result.betterSearch.items.length > 0) {
+        return result;
+      }
+    } catch (error) {
+      return undefined;
+    }
+  });
   const {
     betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'smartphone',
-    },
-  });
+  } = result;
   expect(totalItems).toBe(1);
   expect(items.length).toBe(1);
   expect(items[0].productId).toBe('T_2');

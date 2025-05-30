@@ -10,7 +10,7 @@ export const defaultSearchConfig: PluginInitOptions = {
   debounceIndexRebuildMs: 5000,
   fuzziness: 0.3,
   indexableFields: {
-    name: 3,
+    productName: 3,
     slug: 2,
     variantNames: 3,
     collectionNames: 1,

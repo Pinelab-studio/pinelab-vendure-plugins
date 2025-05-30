@@ -5,23 +5,23 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import {
+  CollectionService,
   EventBus,
+  ID,
   JobQueue,
   JobQueueService,
   Logger,
-  Product,
   ProductEvent,
+  ProductPriceApplicator,
   ProductService,
+  ProductVariant,
   ProductVariantEvent,
+  ProductVariantService,
   RequestContext,
   RequestContextService,
   SerializedRequestContext,
   TransactionalConnection,
-  translateDeep,
-  translateEntity,
-  ProductPriceApplicator,
-  ChannelService,
-  ConfigService,
+  Translated,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
@@ -44,21 +44,13 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: PluginInitOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
+    private productVariantService: ProductVariantService,
     private productPriceApplicator: ProductPriceApplicator,
     private eventBus: EventBus,
-    private channelService: ChannelService,
-    private configService: ConfigService
+    private collectionService: CollectionService
   ) {}
 
   onApplicationBootstrap() {
-    this.triggerBuildsForAllIndices().catch((e) => {
-      const error = asError(e);
-      Logger.error(
-        `Failed to build indices for all channels: ${error.message}`,
-        loggerCtx,
-        error.stack
-      );
-    });
     // Listen for product events
     this.eventBus.ofType(ProductEvent).subscribe((event) => {
       this.debouncedRebuildIndex(event.ctx).catch((e) => {
@@ -108,104 +100,77 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Triggers index builds for all channels for all languages.
-   */
-  async triggerBuildsForAllIndices() {
-    const ctx = await this.requestContextService.create({
-      apiType: 'admin',
-    });
-    const { items: channels } = await this.channelService.findAll(ctx);
-    for (const channel of channels) {
-      for (const languageCode of channel.availableLanguageCodes) {
-        const ctx = await this.requestContextService.create({
-          apiType: 'admin',
-          channelOrToken: channel,
-          languageCode,
-        });
-        await this.triggerReindex(ctx);
-      }
-    }
-  }
-
-  /**
    * Builds the index for all products for the given channel for the given language.
    * Saves the index to the database.
    */
   async buildIndex(ctx: RequestContext): Promise<MiniSearch> {
     const start = performance.now();
     Logger.info(
-      `Building index for channel '${ctx.channel.token} (${ctx.languageCode})'...`,
+      `Rebuilding index for channel '${ctx.channel.token} (${ctx.languageCode})'...`,
       loggerCtx
     );
     // Get all products
-    let skipProducts = 0;
-    const takeProducts = this.configService.apiOptions.adminListQueryLimit;
-    const allProducts: Product[] = [];
-    let hasMoreProducts = true;
-    while (hasMoreProducts) {
-      const { items } = await this.productService.findAll(
+    let skip = 0;
+    const take = 100;
+    const searchDocuments: SearchDocument[] = [];
+    let hasMore = true;
+    while (hasMore) {
+      Logger.verbose(
+        `Fetching products from ${skip} to ${skip + take} for '${
+          ctx.channel.token
+        } (${ctx.languageCode})'`,
+        loggerCtx
+      );
+      const { items: products } = await this.productService.findAll(
         ctx,
         {
-          skip: skipProducts,
-          take: takeProducts,
+          skip: skip,
+          take: take,
           filter: {
             deletedAt: {
               isNull: true,
             },
           },
         },
-        [
-          'featuredAsset',
-          'facetValues.translations',
-          'variants.collections.translations',
-          'variants.facetValues.translations',
-          'variants.productVariantPrices',
-          'variants.taxCategory',
-        ]
+        ['featuredAsset', 'facetValues.translations']
       );
-      skipProducts += takeProducts;
-      allProducts.push(...items);
-      if (items.length < takeProducts) {
-        hasMoreProducts = false;
+      skip += take;
+      if (products.length < take) {
+        hasMore = false;
       }
+      // Build search documents for these products
+      const indexableProducts: SearchDocument[] = await Promise.all(
+        products.map(async (p) => {
+          const collections =
+            await this.collectionService.getCollectionsByProductId(
+              ctx,
+              p.id,
+              true
+            );
+          // Get variants
+          p.variants = await this.getAllVariantsForProduct(ctx, p.id);
+          return {
+            id: p.id,
+            ...this.options.mapToSearchDocument(p, collections),
+          };
+        })
+      );
+      searchDocuments.push(...indexableProducts);
     }
-    const indexableProducts: SearchDocument[] = await Promise.all(
-      allProducts.map(async (p) => {
-        let collections = [
-          ...new Set(p.variants.flatMap((v) => v.collections)),
-        ];
-        // Translate collections
-        collections = collections.map((c) =>
-          translateEntity(c, ctx.languageCode)
-        );
-        // Apply prices
-        p.variants = await Promise.all(
-          p.variants.map((v) =>
-            this.productPriceApplicator.applyChannelPriceAndTax(v, ctx)
-          )
-        );
-        // Translate variants
-        p.variants = p.variants.map((v) => translateDeep(v, ctx.languageCode));
-        return {
-          id: p.id,
-          ...this.options.mapToSearchDocument(p, collections),
-        };
-      })
-    );
-    const minisearch = this.createMiniSearch(indexableProducts);
+    const minisearch = this.createMiniSearch(searchDocuments);
     // Persist index in DB
     await this.connection.getRepository(ctx, BetterSearchDocuments).save({
       id: `${ctx.channel.token}-${ctx.languageCode}`,
-      data: JSON.stringify(indexableProducts),
+      data: JSON.stringify(searchDocuments),
     });
     // Measure size of the index
     const serializedIndex = minisearch.toJSON();
     const indexSizeInKb = Math.round(
       Buffer.byteLength(JSON.stringify(serializedIndex), 'utf-8') / 1024
     );
-    const duration = Math.round(performance.now() - start);
+    const durationInS = Math.round((performance.now() - start) / 1000);
     Logger.info(
-      `Index built for channel '${ctx.channel.token} (${ctx.languageCode})' in ${duration}ms: Indexed ${minisearch.documentCount} products. Approximated index size: ${indexSizeInKb} KB.`,
+      `Index built for channel '${ctx.channel.token} (${ctx.languageCode})' in ${durationInS}s: Indexed ${minisearch.documentCount} products. Approximated index size: ${indexSizeInKb} KB.`,
       loggerCtx
     );
     return minisearch;
@@ -283,5 +248,29 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     });
     // Clear queue, because we have triggered rebuilds for all channels in the queue
     this.rebuildIndicesQueue.clear();
+  }
+
+  private async getAllVariantsForProduct(
+    ctx: RequestContext,
+    productId: ID
+  ): Promise<Translated<ProductVariant>[]> {
+    const variants: ProductVariant[] = [];
+    let skip = 0;
+    const take = 100;
+    let hasMore = true;
+    while (hasMore) {
+      const result = await this.productVariantService.getVariantsByProductId(
+        ctx,
+        productId,
+        {
+          take,
+          skip,
+        }
+      );
+      variants.push(...result.items);
+      hasMore = result.items.length === take;
+      skip += take;
+    }
+    return variants as Translated<ProductVariant>[];
   }
 }

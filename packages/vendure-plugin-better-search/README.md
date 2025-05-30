@@ -34,7 +34,7 @@ plugins: [
 
 2. Run a database migration
 3. Start the server
-4. Do a search via the new `betterSearch` query
+4. Do a search via the new `betterSearch` query. The very first time, this will throw an error, and it will start building the index in the background.
 
 ```graphql
 query Search {
