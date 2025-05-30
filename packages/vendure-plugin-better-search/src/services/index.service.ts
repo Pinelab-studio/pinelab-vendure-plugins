@@ -12,13 +12,11 @@ import {
   JobQueueService,
   Logger,
   ProductEvent,
-  ProductPriceApplicator,
   ProductService,
   ProductVariant,
   ProductVariantEvent,
   ProductVariantService,
   RequestContext,
-  RequestContextService,
   SerializedRequestContext,
   TransactionalConnection,
   Translated,
@@ -40,12 +38,10 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   constructor(
     private connection: TransactionalConnection,
-    private requestContextService: RequestContextService,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: PluginInitOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
     private productVariantService: ProductVariantService,
-    private productPriceApplicator: ProductPriceApplicator,
     private eventBus: EventBus,
     private collectionService: CollectionService
   ) {}
@@ -129,6 +125,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
           filter: {
             deletedAt: {
               isNull: true,
+            },
+            enabled: {
+              eq: true,
             },
           },
         },
