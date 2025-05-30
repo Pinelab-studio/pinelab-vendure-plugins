@@ -1,0 +1,58 @@
+name,slug,description,assets,facets,optionGroups,optionValues,sku,price,taxCategory,stockOnHand,trackInventory,variantAssets,variantFacets
+Laptop,laptop,"Now equipped with seventh-generation Intel Core processors, Laptop is snappier than ever. From daily tasks like launching apps and opening files to more advanced computing, you can power through your day thanks to faster SSDs and Turbo Boost processing up to 3.6GHz.",,category:electronics|brand:Apple,"screen size|RAM","13 inch|8GB",L2201308,1299.00,standard,100,false,,category:electronics
+,,,,"","","15 inch|8GB",L2201508,1399.00,standard,100,false,,category:computers
+,,,,"","","13 inch|16GB",L2201316,1499.00,standard,100,false,,category:electronics
+,,,,"","","15 inch|16GB",L2201516,2299.00,standard,100,false,,category:electronics|edition:limited
+Smartphone,smartphone,"Latest smartphone with advanced camera system and all-day battery life.",,category:electronics|brand:Samsung,"storage|color","128GB|Black",SP128B,899.00,standard,50,true,,category:electronics
+,,,,"","","256GB|Black",SP256B,999.00,standard,50,true,,category:electronics
+,,,,"","","128GB|White",SP128W,899.00,standard,50,true,,category:electronics
+,,,,"","","256GB|White",SP256W,999.00,standard,50,true,,category:electronics
+Wireless Earbuds,wireless-earbuds,"Premium wireless earbuds with active noise cancellation.",,category:electronics|brand:Sony,"color","Black",WB001,199.00,standard,200,true,,category:electronics
+,,,,"","","White",WB002,199.00,standard,200,true,,category:electronics
+Smart Watch,smart-watch,"Fitness tracker and smartwatch with heart rate monitoring.",,category:electronics|brand:Fitbit,"size|color","Small|Black",SW001,249.00,standard,75,true,,category:electronics
+,,,,"","","Large|Black",SW002,249.00,standard,75,true,,category:electronics
+,,,,"","","Small|Blue",SW003,249.00,standard,75,true,,category:electronics
+,,,,"","","Large|Blue",SW004,249.00,standard,75,true,,category:electronics
+Gaming Console,gaming-console,"Next-gen gaming console with 4K gaming capabilities.",,category:electronics|brand:PlayStation,"storage","500GB",GC001,499.00,standard,30,true,,category:electronics
+,,,,"","","1TB",GC002,549.00,standard,30,true,,category:electronics
+Coffee Maker,coffee-maker,"Programmable coffee maker with thermal carafe.",,category:appliances|brand:Breville,"color","Black",CM001,129.00,standard,40,true,,category:appliances
+,,,,"","","Stainless Steel",CM002,149.00,standard,40,true,,category:appliances
+Blender,blender,"High-performance blender for smoothies and food processing.",,category:appliances|brand:Ninja,"color","Black",BL001,89.00,standard,60,true,,category:appliances
+,,,,"","","Red",BL002,89.00,standard,60,true,,category:appliances
+Toaster,toaster,"4-slice toaster with multiple browning settings.",,category:appliances|brand:Cuisinart,"color","Black",TO001,49.00,standard,80,true,,category:appliances
+,,,,"","","Stainless Steel",TO002,59.00,standard,80,true,,category:appliances
+Desk Chair,desk-chair,"Ergonomic office chair with adjustable height and lumbar support.",,category:furniture|brand:Herman Miller,"color","Black",DC001,399.00,standard,25,true,,category:furniture
+,,,,"","","Gray",DC002,399.00,standard,25,true,,category:furniture
+,,,,"","","Blue",DC003,399.00,standard,25,true,,category:furniture
+Standing Desk,standing-desk,"Electric height-adjustable standing desk.",,category:furniture|brand:Uplift,"size|color","60 inch|Black",SD001,499.00,standard,20,true,,category:furniture
+,,,,"","","72 inch|Black",SD002,599.00,standard,20,true,,category:furniture
+,,,,"","","60 inch|White",SD003,499.00,standard,20,true,,category:furniture
+,,,,"","","72 inch|White",SD004,599.00,standard,20,true,,category:furniture
+Bookshelf,bookshelf,"Modern bookshelf with adjustable shelves.",,category:furniture|brand:IKEA,"color","White",BS001,129.00,standard,35,true,,category:furniture
+,,,,"","","Black",BS002,129.00,standard,35,true,,category:furniture
+Coffee Table,coffee-table,"Contemporary coffee table with storage.",,category:furniture|brand:West Elm,"color","Walnut",CT001,299.00,standard,15,true,,category:furniture
+,,,,"","","Oak",CT002,299.00,standard,15,true,,category:furniture
+Yoga Mat,yoga-mat,"Non-slip yoga mat with alignment lines.",,category:sports|brand:Lululemon,"color","Purple",YM001,68.00,standard,100,true,,category:sports
+,,,,"","","Black",YM002,68.00,standard,100,true,,category:sports
+Dumbbells,dumbbells,"Rubber-coated hex dumbbells.",,category:sports|brand:PowerBlock,"weight","5lb",DB001,29.00,standard,50,true,,category:sports
+,,,,"","","10lb",DB002,39.00,standard,50,true,,category:sports
+,,,,"","","15lb",DB003,49.00,standard,50,true,,category:sports
+,,,,"","","20lb",DB004,59.00,standard,50,true,,category:sports
+Running Shoes,running-shoes,"Lightweight running shoes with responsive cushioning.",,category:sports|brand:Nike,"size|color","7|Black",RS001,129.00,standard,40,true,,category:sports
+,,,,"","","8|Black",RS002,129.00,standard,40,true,,category:sports
+,,,,"","","9|Black",RS003,129.00,standard,40,true,,category:sports
+,,,,"","","10|Black",RS004,129.00,standard,40,true,,category:sports
+T-Shirt,t-shirt,"Premium cotton t-shirt with modern fit.",,category:clothing|brand:Everlane,"size|color","S|White",TS001,25.00,standard,100,true,,category:clothing
+,,,,"","","M|White",TS002,25.00,standard,100,true,,category:clothing
+,,,,"","","L|White",TS003,25.00,standard,100,true,,category:clothing
+,,,,"","","XL|White",TS004,25.00,standard,100,true,,category:clothing
+Jeans,jeans,"Classic straight-leg jeans with stretch comfort.",,category:clothing|brand:Levi's,"size|color","30|Blue",JN001,59.00,standard,75,true,,category:clothing
+,,,,"","","32|Blue",JN002,59.00,standard,75,true,,category:clothing
+,,,,"","","34|Blue",JN003,59.00,standard,75,true,,category:clothing
+,,,,"","","36|Blue",JN004,59.00,standard,75,true,,category:clothing
+Backpack,backpack,"Water-resistant backpack with laptop compartment.",,category:accessories|brand:Herschel,"color","Black",BP001,79.00,standard,60,true,,category:accessories
+,,,,"","","Navy",BP002,79.00,standard,60,true,,category:accessories
+Wallet,wallet,"Minimalist leather wallet with RFID protection.",,category:accessories|brand:Bellroy,"color","Brown",WL001,49.00,standard,80,true,,category:accessories
+,,,,"","","Black",WL002,49.00,standard,80,true,,category:accessories
+Sunglasses,sunglasses,"UV protection sunglasses with polarized lenses.",,category:accessories|brand:Ray-Ban,"color","Black",SG001,159.00,standard,45,true,,category:accessories
+,,,,"","","Tortoise",SG002,159.00,standard,45,true,,category:accessories

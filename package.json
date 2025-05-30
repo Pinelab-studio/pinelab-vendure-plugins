@@ -83,6 +83,7 @@
           "admin-ui-helpers",
           "all-plugins",
           "anonymized-order",
+          "better-search",
           "order-cleanup",
           "campaign-tracker",
           "coinbase",
