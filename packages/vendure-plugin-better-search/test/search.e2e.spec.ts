@@ -138,6 +138,29 @@ it('Finds by prefix', async () => {
   expect(items[0].productName).toBe('Dumbbells');
 });
 
+it('Fetches all 14 results', async () => {
+  const {
+    betterSearch: { totalItems, items },
+  } = await shopClient.query(SEARCH_QUERY, {
+    input: { term: 'pack', take: 100 },
+  });
+  expect(totalItems).toBe(14);
+  expect(items.length).toBe(14);
+  expect(items[0].productName).toBe('Backpack');
+  expect(items[1].productName).toBe('Running Shoes'); // Has 'black' as variant
+});
+
+it('Fetches results 2 to 4', async () => {
+  const {
+    betterSearch: { totalItems, items },
+  } = await shopClient.query(SEARCH_QUERY, {
+    input: { term: 'pack', skip: 1, take: 4 },
+  });
+  expect(totalItems).toBe(14);
+  expect(items.length).toBe(4);
+  expect(items[0].productName).toBe('Running Shoes'); // Has 'black' as variant
+});
+
 it('Finds by partial variant names', async () => {
   // Searching for 'ainless' finds 'Coffee Maker' and 'Toaster', because they both have a variant with 'Stainless' in the name
   const {
