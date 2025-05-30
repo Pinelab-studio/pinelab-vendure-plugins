@@ -11,7 +11,7 @@ export class BetterSearchDocuments extends VendureEntity {
   }
 
   // Override id to be text
-  @PrimaryColumn({ type: 'text' })
+  @PrimaryColumn()
   id!: string;
 
   @Column({
