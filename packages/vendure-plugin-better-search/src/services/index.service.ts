@@ -21,11 +21,12 @@ import {
   translateEntity,
   ProductPriceApplicator,
   ChannelService,
+  ConfigService,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
-import { BetterSearchDocuments } from '../entities/better-search-dcouments.entity';
+import { BetterSearchDocuments } from '../entities/better-search-documents.entity';
 import { PluginInitOptions, SearchDocument } from '../types';
 import { tokenize } from './util';
 
@@ -45,7 +46,8 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     private productService: ProductService,
     private productPriceApplicator: ProductPriceApplicator,
     private eventBus: EventBus,
-    private channelService: ChannelService
+    private channelService: ChannelService,
+    private configService: ConfigService
   ) {}
 
   onApplicationBootstrap() {
@@ -137,7 +139,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     );
     // Get all products
     let skipProducts = 0;
-    const takeProducts = 99;
+    const takeProducts = this.configService.apiOptions.adminListQueryLimit;
     const allProducts: Product[] = [];
     let hasMoreProducts = true;
     while (hasMoreProducts) {
@@ -163,7 +165,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       );
       skipProducts += takeProducts;
       allProducts.push(...items);
-      if (items.length <= takeProducts) {
+      if (items.length < takeProducts) {
         hasMoreProducts = false;
       }
     }
@@ -264,10 +266,11 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   private async debouncedRebuildIndex(ctx: RequestContext) {
     const key = `${ctx.channel.token}-${ctx.languageCode}`;
     this.rebuildIndicesQueue.set(key, ctx);
-
+    // Wait for debounce time, so that more rebuilds can be added to the rebuild queue
     await new Promise((resolve) =>
       setTimeout(resolve, this.options.debounceIndexRebuildMs)
     );
+    // Trigger rebuild for all channels in the queue
     this.rebuildIndicesQueue.forEach((ctx) => {
       this.triggerReindex(ctx).catch((e) => {
         const error = asError(e);
@@ -278,6 +281,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         );
       });
     });
+    // Clear queue, because we have triggered rebuilds for all channels in the queue
     this.rebuildIndicesQueue.clear();
   }
 }

@@ -14,9 +14,8 @@ export class BetterSearchDocuments extends VendureEntity {
   @PrimaryColumn({ type: 'text' })
   id!: string;
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
   @Column({
-    type: (process.env.BETTER_SEARCH_INDEX_COLUMN_TYPE || 'text') as ColumnType,
+    type: (process.env.BETTER_SEARCH_INDEX_COLUMN_TYPE || 'blob') as ColumnType,
   })
   data!: string;
 }

@@ -4,11 +4,10 @@ import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import {
   BetterSearchInput,
-  BetterSearchResult,
   BetterSearchResultList,
 } from '../api/generated/graphql';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
-import { PluginInitOptions } from '../types';
+import { PluginInitOptions, SearchDocument } from '../types';
 import { IndexService } from './index.service';
 
 interface CachedIndex {
@@ -46,12 +45,10 @@ export class SearchService {
     const index = await this.getIndex(ctx);
     const skip = input.skip ?? 0;
     const take = input.take ?? 10;
-    const allResults = index.search(
-      input.term
-    ) as unknown as BetterSearchResult[];
+    const allResults = index.search(input.term) as unknown as SearchDocument[]; // Not sure why this is needed, but all fields are tested in e2e
     const results = allResults.slice(skip, skip + take);
     return {
-      items: results as unknown as BetterSearchResult[],
+      items: results,
       totalItems: allResults.length,
     };
   }
@@ -61,7 +58,9 @@ export class SearchService {
    * Uses Stale-while-revalidate pattern: uses an outdated index if it exists,
    * but fetches a new one from DB in the background.
    */
-  private async getIndex(ctx: RequestContext): Promise<MiniSearch> {
+  private async getIndex(
+    ctx: RequestContext
+  ): Promise<MiniSearch<SearchDocument>> {
     const cacheKey = `${ctx.channel.id}-${ctx.languageCode}`;
     let cachedIndex = this.cachedIndices.get(cacheKey);
     if (!cachedIndex) {

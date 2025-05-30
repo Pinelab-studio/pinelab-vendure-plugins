@@ -7,7 +7,7 @@ import { SearchService } from './services/search.service';
 import { PluginInitOptions } from './types';
 import { IndexService } from './services/index.service';
 import { defaultSearchConfig } from './default-config';
-import { BetterSearchDocuments } from './entities/better-search-dcouments.entity';
+import { BetterSearchDocuments } from './entities/better-search-documents.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],

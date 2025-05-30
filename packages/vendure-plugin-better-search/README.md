@@ -60,13 +60,17 @@ query Search {
 }
 ```
 
-⚠️ Set the env variable `BETTER_SEARCH_INDEX_COLUMN_TYPE` for your specific database! Without this, `text` is used as default, but this will be too small for most projects.
+⚠️ Set the env variable `BETTER_SEARCH_INDEX_COLUMN_TYPE` for your specific database! Without this, `text` is used as default, but this will be too small for most projects. **Run a database migration after setting this env variable!**
 
 ```bash
-BETTER_SEARCH_INDEX_COLUMN_TYPE=longtext
+# For MySQL
+BETTER_SEARCH_INDEX_COLUMN_TYPE=mediumblob
+
+# For PostgreSQL
+BETTER_SEARCH_INDEX_COLUMN_TYPE=bytea
 ```
 
-E.g. `longtext` for MySQL. Checkout this page on more information on the different column types: https://orkhan.gitbook.io/typeorm/docs/entities#column-types-for-mysql-mariadb
+Checkout this page on more information on the different column types: https://orkhan.gitbook.io/typeorm/docs/entities#column-types-for-mysql-mariadb
 
 ## Indexing custom fields
 
