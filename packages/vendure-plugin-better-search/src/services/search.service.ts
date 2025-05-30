@@ -34,7 +34,7 @@ export class SearchService {
     ctx: RequestContext,
     input: BetterSearchInput
   ): Promise<BetterSearchResultList> {
-    if (input.term.length < 3) {
+    if (input.term.length < 2) {
       // No search if term is too short
       return {
         items: [],

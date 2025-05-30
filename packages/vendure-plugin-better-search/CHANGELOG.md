@@ -1,3 +1,7 @@
+# 0.1.3 (2025-05-30)
+
+- Allow search terms of length 2 or larger
+
 # 0.1.2 (2025-05-30)
 
 - Optimized indexing performance
