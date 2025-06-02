@@ -113,3 +113,8 @@ By default, these fields are indexed with the following weights. Checkout the `d
     skus: 2,
   },
 ```
+
+## Tips
+
+- Add a custom field `keywords` to your products, and make the plugin index it. This is where you'd save keywords, synonyms, etc. This will drastically improve the search experience.
+- Don't index descriptions unless you really have to, to save on memory usage. Also, most of the shops will have a better search experience when the description is not indexed, since the descriptions usually also contain a lot of noise.
