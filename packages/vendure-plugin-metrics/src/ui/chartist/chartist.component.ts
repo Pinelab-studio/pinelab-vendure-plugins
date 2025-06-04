@@ -27,6 +27,7 @@ export interface ChartEntry {
 }
 
 @Component({
+  standalone: false,
   selector: 'vdr-chartist',
   templateUrl: './chartist.component.html',
   styleUrls: ['./chartist.component.scss'],
