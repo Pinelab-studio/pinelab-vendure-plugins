@@ -11,6 +11,7 @@ import { getOrderWithInvoices } from './invoices-detail-view';
 import { Permission, Order } from '@vendure/admin-ui/core';
 
 @Component({
+  standalone: false,
   selector: 'invoices-detail-view',
   templateUrl: './invoices-detail-view.component.html',
 })
