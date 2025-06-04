@@ -14,6 +14,7 @@ import {
 } from './graphql-types';
 
 @Component({
+  standalone: false,
   selector: 'webhook-component',
   templateUrl: './webhook.component.html',
 })

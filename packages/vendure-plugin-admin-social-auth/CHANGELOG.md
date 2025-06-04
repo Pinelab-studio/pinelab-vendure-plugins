@@ -1,3 +1,7 @@
+# 1.3.0 (2025-06-04)
+
+- Upgraded to Vendure 3.3.2
+
 # 1.2.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

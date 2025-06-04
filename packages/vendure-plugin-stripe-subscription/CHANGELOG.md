@@ -1,3 +1,7 @@
+# 2.9.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 2.8.1(2025-04-26)
 
 - moved default `['card']` paymentMethods and `setup_future_usage: 'off_session'` from `StripeSubscriptionService.createIntentByOrder` and move it into the `createStripeSubscriptionIntent` resolver

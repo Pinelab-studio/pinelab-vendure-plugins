@@ -1,3 +1,7 @@
+# 3.2.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 3.1.2 (2025-05-22)
 
 - Don't hydrate order object in `weightAndCountryChecker`, this caused tax calculations to be incorrect

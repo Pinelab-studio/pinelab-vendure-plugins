@@ -1,3 +1,7 @@
+# 1.5.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 1.4.1 (2025-02-06)
 
 - Log info message when event is ignored because transformer returned 'false'

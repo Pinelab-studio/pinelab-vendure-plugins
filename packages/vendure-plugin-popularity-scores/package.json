@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-popularity-scores",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "Sort products and collections by popularity based on previously placed orders",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

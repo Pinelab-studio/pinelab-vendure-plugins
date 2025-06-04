@@ -54,7 +54,7 @@ beforeAll(async () => {
   //create a payment method with isCustomerInGroupPaymentChecker and settleWithoutPaymentHandler
   settleWithoutPaymentMethod = await paymentMethodService.create(ctx, {
     code: 'settle-without-payment',
-    enabled: false,
+    enabled: true,
     handler: {
       arguments: [],
       code: settleWithoutPaymentHandler.code,
@@ -83,6 +83,7 @@ it('Should start successfully', () => {
 
 it('it should settle payment for Customer(1) with "settle-without-payment" PaymentMethod', async () => {
   await shopClient.asUserWithCredentials('hayden.zieme12@hotmail.com', 'test');
+  console.log('settleWithoutPaymentMethod', settleWithoutPaymentMethod);
   const order = await createSettledOrder(
     shopClient,
     1,

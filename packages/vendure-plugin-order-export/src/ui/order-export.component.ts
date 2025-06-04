@@ -9,6 +9,7 @@ import {
 import gql from 'graphql-tag';
 
 @Component({
+  standalone: false,
   encapsulation: ViewEncapsulation.None, // Hide time picker on children of order export
   selector: 'order-export-component',
   styles: ['.time-picker { display: none !important; }'],

@@ -9,6 +9,7 @@ import { ChartEntry } from './chartist/chartist.component';
 import { MetricsUiService } from './metrics-ui.service';
 
 @Component({
+  standalone: false,
   selector: 'product-metrics-widget',
   template: `
     <div style="position: relative;">

@@ -38,7 +38,6 @@ const icons: Record<string, string> = {
   'vendure-plugin-shipmate': 'shipmate.jpg',
   'vendure-plugin-klaviyo': 'klaviyo.png',
   'vendure-plugin-payment-extensions': 'undraw_check.svg',
-  'vendure-plugin-campaign-tracker': 'undraw_dashed-arrow.svg',
   'vendure-plugin-better-search': 'undraw_question-mark.svg',
   'vendure-plugin-promotion-extensions': 'undraw_balloon.svg',
   'vendure-plugin-order-cleanup': 'undraw_chevrons.svg',

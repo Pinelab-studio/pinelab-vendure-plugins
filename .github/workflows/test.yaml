@@ -23,6 +23,7 @@ jobs:
     strategy:
       matrix:
         package: ${{ fromJson(needs.collect_dirs.outputs.dirs) }}
+      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

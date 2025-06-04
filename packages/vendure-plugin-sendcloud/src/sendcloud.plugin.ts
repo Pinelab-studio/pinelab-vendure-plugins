@@ -53,7 +53,7 @@ import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
   entities: [SendcloudConfigEntity],
   configuration: (config) => {
     config.apiOptions.middleware.push({
-      route: '/sendcloud/webhook*',
+      route: '/sendcloud/webhook*splat',
       handler: rawBodyMiddleware,
       beforeListen: true,
     });
@@ -61,7 +61,7 @@ import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
     config.authOptions.customPermissions.push(sendcloudPermission);
     return config;
   },
-  compatibility: '>=2.2.0',
+  compatibility: '>=3.2.0',
 })
 export class SendcloudPlugin {
   private static options: SendcloudPluginOptions;

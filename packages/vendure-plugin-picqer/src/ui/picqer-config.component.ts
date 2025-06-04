@@ -15,6 +15,7 @@ import {
  * Component for updating Picqer configuration.
  */
 @Component({
+  standalone: false,
   selector: 'picqer-component',
   template: `
     <h1>Picqer configuration</h1>

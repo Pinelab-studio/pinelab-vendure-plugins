@@ -10,6 +10,7 @@ import {
 import gql from 'graphql-tag';
 
 @Component({
+  standalone: false,
   selector: 'sendcloud-notification-component',
   template: `
     <span *ngIf="entry.data.valid"> Synced to {{ getName(entry) }} </span>

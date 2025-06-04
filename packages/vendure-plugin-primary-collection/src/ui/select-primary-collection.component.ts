@@ -42,6 +42,7 @@ function idsAreEqual(id1?: ID, id2?: ID): boolean {
 }
 
 @Component({
+  standalone: false,
   template: `
     <select
       *ngIf="!productsCollectionsAreLoading"

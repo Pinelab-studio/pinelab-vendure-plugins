@@ -53,7 +53,7 @@ export class InvoiceController {
   }
 
   @Allow(invoicePermission.Permission)
-  @Post('/preview/:orderCode?')
+  @Post('/preview{/:orderCode}')
   async preview(
     @Ctx() ctx: RequestContext,
     @Res() res: Response,
@@ -79,7 +79,7 @@ export class InvoiceController {
   }
 
   // Example: /invoices/default-channel/DJSLHJ238390/123?email=customer%40example.com
-  @Get('/:channelToken/:orderCode/:invoiceNumber?')
+  @Get('/:channelToken/:orderCode{/:invoiceNumber}')
   async downloadInvoice(
     @Param('channelToken') channelToken: string,
     @Param('orderCode') orderCode: string,

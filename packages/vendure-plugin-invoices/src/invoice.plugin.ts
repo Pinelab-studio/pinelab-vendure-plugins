@@ -90,7 +90,7 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
     schema: shopSchemaExtensions,
     resolvers: [InvoiceCommonResolver],
   },
-  compatibility: '>=2.2.0',
+  compatibility: '>=3.2.0',
   configuration: (config: RuntimeVendureConfig) => {
     config.authOptions.customPermissions.push(invoicePermission);
     return config;

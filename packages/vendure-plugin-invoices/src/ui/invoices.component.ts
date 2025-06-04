@@ -17,6 +17,7 @@ import { ConfigArgDefinition } from '@vendure/common/lib/generated-types';
 import { downloadBlob, getHeaders } from './providers';
 
 @Component({
+  standalone: false,
   selector: 'invoices-component',
   template: `
     <div class="page-block">

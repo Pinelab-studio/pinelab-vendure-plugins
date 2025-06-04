@@ -102,7 +102,7 @@ export interface PicqerOptions {
   entities: [PicqerConfigEntity],
   configuration: (config) => {
     config.apiOptions.middleware.push({
-      route: '/picqer*',
+      route: '/picqer*splat',
       handler: rawBodyMiddleware,
       beforeListen: true,
     });
@@ -110,7 +110,7 @@ export interface PicqerOptions {
     config.shippingOptions.fulfillmentHandlers.push(picqerHandler);
     return config;
   },
-  compatibility: '>=2.2.0',
+  compatibility: '>=3.2.0',
 })
 export class PicqerPlugin {
   static options: PicqerOptions;

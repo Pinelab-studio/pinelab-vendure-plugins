@@ -38,7 +38,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
   configuration: (config) => {
     config.paymentOptions.paymentMethodHandlers.push(acceptBluePaymentHandler);
     config.apiOptions.middleware.push({
-      route: '/accept-blue/*',
+      route: '/accept-blue/*splat',
       handler: rawBodyMiddleware,
       beforeListen: true,
     });
@@ -57,7 +57,7 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
     });
     return config;
   },
-  compatibility: '>=2.2.0',
+  compatibility: '>=3.2.0',
 })
 export class AcceptBluePlugin {
   static options: AcceptBluePluginOptions;

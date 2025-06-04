@@ -1,3 +1,7 @@
+# 0.2.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 0.1.4 (2025-05-30)
 
 - Don't index disabled products
