@@ -4,6 +4,7 @@ import { DataService, NotificationService } from '@vendure/admin-ui/core';
 import { GET_SENDCLOUD_CONFIG, UPDATE_SENDCLOUD_CONFIG } from './queries';
 
 @Component({
+  standalone: false,
   selector: 'sendcloud-component',
   template: `
     <div class="clr-row">
