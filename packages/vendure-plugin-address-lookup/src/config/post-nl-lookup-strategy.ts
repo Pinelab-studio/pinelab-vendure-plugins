@@ -13,6 +13,7 @@ interface PostNLAddressResponse {
   countryName: string;
   houseNumber: string;
   stateName: string;
+  countryIso2: string;
 }
 
 interface PostNLLookupStrategyInput {
@@ -43,9 +44,13 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
   ): Promise<OrderAddress[]> {
     const countryCode = input.countryCode.toLowerCase();
     const postalCode = normalizePostalCode(input.postalCode);
-    let url = `https://api.postnl.nl/v2/address/benelux?countryIso=${countryCode}&houseNumber=${input.houseNumber}&postalCode=${postalCode}`;
+    const { houseNumber, addition } = this.parseHouseNumber(input.houseNumber!);
+    let url = `https://api.postnl.nl/v2/address/benelux?countryIso=${countryCode}&houseNumber=${houseNumber}&postalCode=${postalCode}`;
     if (input.streetName) {
       url += `&streetName=${input.streetName}`;
+    }
+    if (addition) {
+      url += `&houseNumberAddition=${addition}`;
     }
     const result = await fetch(url, {
       headers: {
@@ -60,6 +65,7 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
     }
     // Valid results, map to OrderAddress
     const resultJson = (await result.json()) as PostNLAddressResponse[];
+    console.log(resultJson);
     return resultJson.map((result) => ({
       fullName: '',
       company: '',
@@ -69,6 +75,7 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
       province: result.stateName,
       postalCode,
       country: result.countryName,
+      countryCode: result.countryIso2,
       phoneNumber: '',
     }));
   }
@@ -90,5 +97,21 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
       return `House number is required for lookup in '${countryCode}'`;
     }
     return true;
+  }
+
+  parseHouseNumber(houseNumberAndAddition: string): {
+    houseNumber: number;
+    addition?: string;
+  } {
+    const match = houseNumberAndAddition.match(/^(\d+)(.*)$/);
+    if (!match) {
+      throw new Error('Invalid house number');
+    }
+    const [, houseNumber, addition] = match;
+    const cleanedUpAddition = addition.trim().replace(/[ -]/g, '');
+    return {
+      houseNumber: parseInt(houseNumber),
+      addition: cleanedUpAddition || undefined,
+    };
   }
 }

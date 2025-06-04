@@ -3,6 +3,7 @@
 const icons: Record<string, string> = {
   'pinelab-invoice-plugin': 'sticky-note.svg',
   'pinelab-frequently-bought-together-plugin': 'undraw_arrow.svg',
+  'vendure-scripts': 'undraw_command-button.svg',
   'vendure-plugin-google-storage-assets': 'google_cloud.png',
   'vendure-plugin-facet-suggestions': 'undraw_chat-text.svg',
   'vendure-plugin-stripe-subscription': 'stripe.webp',
@@ -26,7 +27,7 @@ const icons: Record<string, string> = {
   'vendure-plugin-customer-managed-groups': 'undraw_person.svg',
   'vendure-plugin-goedgepickt': 'goedgepickt.png',
   'vendure-plugin-variant-bulk-update': 'undraw_chevrons.svg',
-  'vendure-plugin-dutch-postalcode': 'undraw_asymmetric-lines.svg',
+  'vendure-plugin-address-lookup': 'undraw_asymmetric-lines.svg',
   'vendure-plugin-order-pdfs': 'undraw_note.svg',
   'vendure-plugin-anonymized-order': 'undraw_ghost.svg',
   'vendure-plugin-limit-variant-per-order': 'undraw_circled-x.svg',
@@ -38,6 +39,9 @@ const icons: Record<string, string> = {
   'vendure-plugin-klaviyo': 'klaviyo.png',
   'vendure-plugin-payment-extensions': 'undraw_check.svg',
   'vendure-plugin-campaign-tracker': 'undraw_dashed-arrow.svg',
+  'vendure-plugin-better-search': 'undraw_question-mark.svg',
+  'vendure-plugin-promotion-extensions': 'undraw_balloon.svg',
+  'vendure-plugin-order-cleanup': 'undraw_chevrons.svg',
 };
 
 export function getIcon(pluginName: string): string {

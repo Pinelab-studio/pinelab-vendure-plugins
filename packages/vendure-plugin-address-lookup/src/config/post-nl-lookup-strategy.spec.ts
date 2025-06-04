@@ -161,4 +161,40 @@ describe('PostNLLookupStrategy', () => {
       ).rejects.toThrow('PostNL API returned status 400: Bad Request');
     });
   });
+
+  describe('parseHouseNumber', () => {
+    it.each([
+      {
+        input: '123',
+        expected: { houseNumber: 123, addition: undefined },
+      },
+      {
+        input: '123A',
+        expected: { houseNumber: 123, addition: 'A' },
+      },
+      {
+        input: '123ABC',
+        expected: { houseNumber: 123, addition: 'ABC' },
+      },
+      {
+        input: '123-45',
+        expected: { houseNumber: 123, addition: '45' },
+      },
+      {
+        input: '123A-45',
+        expected: { houseNumber: 123, addition: 'A45' },
+      },
+      {
+        input: '123 45',
+        expected: { houseNumber: 123, addition: '45' },
+      },
+      {
+        input: '123A 45',
+        expected: { houseNumber: 123, addition: 'A45' },
+      },
+    ])('correctly parses $input', ({ input, expected }) => {
+      const result = strategy.parseHouseNumber(input);
+      expect(result).toEqual(expected);
+    });
+  });
 });
