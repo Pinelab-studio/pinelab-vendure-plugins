@@ -10,7 +10,7 @@ import {
 import gql from 'graphql-tag';
 
 @Component({
-  standalone: true,
+  standalone: false,
   selector: 'goedgepickt-notification-component',
   template: `
     <span *ngIf="entry.data.valid"> Synced to {{ getName(entry) }} </span>

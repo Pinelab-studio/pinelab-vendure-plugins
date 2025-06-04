@@ -28,6 +28,8 @@ import {
 } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { EBoekhoudenService } from '../src/api/e-boekhouden.service';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -43,11 +45,11 @@ import { EBoekhoudenService } from '../src/api/e-boekhouden.service';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        /*        app: compileUiExtensions({
-          outputPath: path.join(__dirname, "__admin-ui"),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
           extensions: [EBoekhoudenPlugin.ui],
-          devMode: true
-        })*/
+          devMode: true,
+        }),
       }),
     ],
     paymentOptions: {

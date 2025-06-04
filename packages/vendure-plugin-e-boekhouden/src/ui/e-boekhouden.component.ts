@@ -12,7 +12,7 @@ import {
 } from './generated/graphql';
 
 @Component({
-  standalone: true,
+  standalone: false,
   selector: 'e-boekhouden-component',
   template: `
     <form class="form" [formGroup]="form">
