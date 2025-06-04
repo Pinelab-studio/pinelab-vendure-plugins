@@ -4,6 +4,7 @@ import { DataService, NotificationService } from '@vendure/admin-ui/core';
 import { getMyparcelConfig, updateMyparcelConfig } from './queries';
 
 @Component({
+  standalone: false,
   selector: 'myparcel-component',
   template: `
     <div class="clr-row">
