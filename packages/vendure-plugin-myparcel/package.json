@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-myparcel",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Vendure plugin for MyParcel fulfillment",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

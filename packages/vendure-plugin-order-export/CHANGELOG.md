@@ -1,3 +1,7 @@
+# 1.4.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 1.3.1 (2025-02-11)
 
 - Fix UI labels

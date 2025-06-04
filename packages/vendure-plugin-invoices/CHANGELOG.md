@@ -1,3 +1,7 @@
+# 4.4.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 4.3.1 (2025-05-21)
 
 - Don't create invoice job for orders that don't have an orderPlacedAt date.

@@ -1,3 +1,7 @@
+# 1.6.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 1.5.1 (2025-03-27)
 
 - Prevent error `column "stockonhand" does not exist` on Postgres

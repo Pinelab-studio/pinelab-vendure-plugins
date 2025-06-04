@@ -1,3 +1,7 @@
+# 1.8.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 1.7.0 (2025-05-28)
 
 - Added `RefundEventHandler` to send events to Klaviyo when a refund is created.

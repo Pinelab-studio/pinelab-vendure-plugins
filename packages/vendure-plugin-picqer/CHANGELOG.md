@@ -1,3 +1,7 @@
+# 3.8.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 3.7.1 (2025-04-23)
 
 - Supply correct key for overriding VAT group in orders. Patch on previous version.

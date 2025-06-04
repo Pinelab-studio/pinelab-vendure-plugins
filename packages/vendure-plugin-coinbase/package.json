@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-coinbase",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Vendure plugin for Coinbase payments",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",

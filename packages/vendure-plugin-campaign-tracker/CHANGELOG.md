@@ -1,3 +1,7 @@
+# 0.1.1 (2025-06-04)
+
+- Update Vendure to 3.1.1
+
 # 0.1.0 (2024-12-19)
 
 - Update Vendure to 3.1.1

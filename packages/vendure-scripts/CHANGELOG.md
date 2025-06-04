@@ -1,3 +1,7 @@
+# 1.9.0 (2025-06-04)
+
+- Upgrade to Vendure to 3.3.2
+
 # 1.8.0 (2025-04-02)
 
 - EU One Stop Shop tax setup

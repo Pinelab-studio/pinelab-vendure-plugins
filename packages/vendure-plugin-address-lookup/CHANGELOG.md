@@ -1,3 +1,7 @@
+# 1.1.0 (2025-06-04)
+
+- Upgraded to Vendure 3.3.2
+
 # 1.0.0 (2025-06-04)
 
 - Fixed bug where house number addition was not being sent to PostNL API
