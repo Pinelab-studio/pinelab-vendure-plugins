@@ -13,6 +13,7 @@
     "access": "public"
   },
   "scripts": {
+    "start": "yarn ts-node --swc test/dev-server.ts",
     "build": "rimraf dist && tsc",
     "test": "vitest run",
     "lint": "echo 'No linting configured'"
