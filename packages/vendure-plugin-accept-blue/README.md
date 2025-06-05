@@ -104,7 +104,85 @@ mutation {
 
 ### Managing payment methods
 
-// TODO admins and customers
+You can fetch payment methods on a customer: on active customer when you are logged in, or on any customer via the Admin API.
+
+```graphql
+query {
+  activeCustomer {
+    id
+    emailAddress
+    savedAcceptBluePaymentMethods {
+      __typename
+      ... on AcceptBlueCardPaymentMethod {
+        id
+        created_at
+        avs_address
+        avs_zip
+        name
+        expiry_month
+        expiry_year
+        payment_method_type
+        card_type
+        last4
+      }
+      ... on AcceptBlueCheckPaymentMethod {
+        id
+        name
+        last4
+        sec_code
+        account_type
+        routing_number
+      }
+    }
+  }
+}
+```
+
+To update payment methods, you can use the following mutations. For the Shop API, you need to be logged in as the customer and be owner of the payment method. For the Admin API, you only need to be logged in as an admin and have `UpdateCustomer` permissions.
+
+```graphql
+mutation {
+  updateAcceptBlueCardPaymentMethod(
+    input: {
+      id: 14969
+      address: "Test street 12"
+      zip: "test zip"
+      name: "My Name Pinelab"
+      expiryMonth: 5
+      expiryYear: 2040
+    }
+  ) {
+    id
+    avs_address
+    avs_zip
+    name
+    expiry_month
+    expiry_year
+  }
+}
+```
+
+Or for a check payment method:
+
+```graphql
+mutation {
+  updateAcceptBlueCheckPaymentMethod(
+    input: {
+      id: 15012
+      name: "My Name Pinelab"
+      account_type: "savings"
+      routing_number: "011000138"
+      sec_code: "PPD"
+    }
+  ) {
+    id
+    name
+    routing_number
+    account_type
+    sec_code
+  }
+}
+```
 
 ## Fetching Transactions and Subscriptions for placed orders
 

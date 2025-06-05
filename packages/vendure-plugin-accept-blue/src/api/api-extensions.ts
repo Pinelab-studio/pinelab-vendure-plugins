@@ -57,7 +57,6 @@ const commonApiExtensions = gql`
     name: String
     payment_method_type: String
     last4: String
-    account_number: String
     routing_number: String
     account_type: String
     sec_code: String

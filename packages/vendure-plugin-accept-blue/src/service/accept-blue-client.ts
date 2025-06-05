@@ -21,7 +21,8 @@ import {
   NoncePaymentMethodInput,
   AppleOrGooglePayInput,
   SourcePaymentMethodInput,
-  CardPaymentMethodInput,
+  UpdateCardPaymentMethodInput,
+  UpdateCheckPaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 import {
@@ -310,7 +311,7 @@ export class AcceptBlueClient {
 
   async updatePaymentMethod(
     paymentMethodId: number,
-    input: CardPaymentMethodInput
+    input: UpdateCardPaymentMethodInput | UpdateCheckPaymentMethodInput
   ): Promise<AcceptBluePaymentMethod> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result: AcceptBluePaymentMethod = await this.request(

@@ -57,6 +57,7 @@ import {
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
   UPDATE_CARD_PAYMENT_METHOD,
+  UPDATE_CHECK_PAYMENT_METHOD,
   UPDATE_SUBSCRIPTION,
 } from './helpers/graphql-helpers';
 import {
@@ -934,7 +935,7 @@ describe('Payment method management', () => {
     });
   });
 
-  it('Fails to update as admin when not logged in', async () => {
+  it('Fails to update card as admin when not logged in', async () => {
     await adminClient.asAnonymousUser();
     const updateRequest = adminClient.query(UPDATE_CARD_PAYMENT_METHOD, {
       input: {
@@ -944,6 +945,59 @@ describe('Payment method management', () => {
         name: 'My Name Pinelab',
         expiry_month: 5,
         expiry_year: 2040,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Updates a check payment method as admin', async () => {
+    await adminClient.asSuperAdmin();
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'check',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    // Mock the update payment method call
+    nockInstance.patch('/payment-methods/14969').reply(200, {
+      id: 14969,
+      name: 'My Name Pinelab',
+      routing_number: '011000138',
+      account_type: 'savings',
+      sec_code: 'PPD',
+    });
+    const { updateAcceptBlueCheckPaymentMethod } = await adminClient.query(
+      UPDATE_CHECK_PAYMENT_METHOD,
+      {
+        input: {
+          id: 14969,
+          name: 'My Name Pinelab',
+          routing_number: '011000138',
+          account_type: 'savings',
+          sec_code: 'PPD',
+        },
+      }
+    );
+    expect(updateAcceptBlueCheckPaymentMethod).toEqual({
+      id: 14969,
+      name: 'My Name Pinelab',
+      routing_number: '011000138',
+      account_type: 'savings',
+      sec_code: 'PPD',
+    });
+  });
+
+  it('Fails to update check as admin when not logged in', async () => {
+    await adminClient.asAnonymousUser();
+    const updateRequest = adminClient.query(UPDATE_CHECK_PAYMENT_METHOD, {
+      input: {
+        id: 14969,
+        name: 'My Name Pinelab',
+        routing_number: '011000138',
+        account_type: 'savings',
+        sec_code: 'PPD',
       },
     });
     await expect(updateRequest).rejects.toThrowError(

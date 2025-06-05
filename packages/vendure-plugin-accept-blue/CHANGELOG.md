@@ -1,9 +1,10 @@
 # 3.1.0 (2025-06-05)
 
 - Upgraded to Vendure 3.3.2
-- Added create/read/update of payment methods via the Shop API for logged in customers
-- Added create/read/update of payment methods via the Admin API for all customers
+- Added updating of payment methods via the Shop API for logged in customers
+- Added updating of payment methods via the Admin API for all customers
 - Changed `testMode` log statement from warn to verbose
+- BREAKING: Removed `account_number` from `UpdateCheckPaymentMethodInput` as it is never returned by Accept Blue
 
 # 3.0.1 (2025-05-27)
 
