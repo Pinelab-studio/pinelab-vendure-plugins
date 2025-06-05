@@ -814,11 +814,11 @@ describe('Payment method management', () => {
       {
         input: {
           id: 14969,
-          address: 'Test street 12',
-          zip: 'test zip',
+          avs_address: 'Test street 12',
+          avs_zip: 'test zip',
           name: 'My Name Pinelab',
-          expiryMonth: 5,
-          expiryYear: 2040,
+          expiry_month: 5,
+          expiry_year: 2040,
         },
       }
     );
@@ -842,11 +842,11 @@ describe('Payment method management', () => {
     const updateRequest = shopClient.query(UPDATE_CARD_PAYMENT_METHOD, {
       input: {
         id: 14969,
-        address: 'Test street 12',
-        zip: 'test zip',
+        avs_address: 'Test street 12',
+        avs_zip: 'test zip',
         name: 'My Name Pinelab',
-        expiryMonth: 5,
-        expiryYear: 2040,
+        expiry_month: 5,
+        expiry_year: 2040,
       },
     });
     await expect(updateRequest).rejects.toThrowError(
@@ -864,11 +864,11 @@ describe('Payment method management', () => {
     const updateRequest = shopClient.query(UPDATE_CARD_PAYMENT_METHOD, {
       input: {
         id: 14969,
-        address: 'Test street 12',
-        zip: 'test zip',
+        avs_address: 'Test street 12',
+        avs_zip: 'test zip',
         name: 'My Name Pinelab',
-        expiryMonth: 5,
-        expiryYear: 2040,
+        expiry_month: 5,
+        expiry_year: 2040,
       },
     });
     await expect(updateRequest).rejects.toThrowError(
@@ -881,11 +881,11 @@ describe('Payment method management', () => {
     const updateRequest = shopClient.query(UPDATE_CARD_PAYMENT_METHOD, {
       input: {
         id: 14969,
-        address: 'Test street 12',
-        zip: 'test zip',
+        avs_address: 'Test street 12',
+        avs_zip: 'test zip',
         name: 'My Name Pinelab',
-        expiryMonth: 5,
-        expiryYear: 2040,
+        expiry_month: 5,
+        expiry_year: 2040,
       },
     });
     await expect(updateRequest).rejects.toThrowError(
@@ -916,11 +916,11 @@ describe('Payment method management', () => {
       {
         input: {
           id: 14969,
-          address: 'Test street 12',
-          zip: 'test zip',
+          avs_address: 'Test street 12',
+          avs_zip: 'test zip',
           name: 'My Name Pinelab',
-          expiryMonth: 5,
-          expiryYear: 2040,
+          expiry_month: 5,
+          expiry_year: 2040,
         },
       }
     );
@@ -939,11 +939,11 @@ describe('Payment method management', () => {
     const updateRequest = adminClient.query(UPDATE_CARD_PAYMENT_METHOD, {
       input: {
         id: 14969,
-        address: 'Test street 12',
-        zip: 'test zip',
+        avs_address: 'Test street 12',
+        avs_zip: 'test zip',
         name: 'My Name Pinelab',
-        expiryMonth: 5,
-        expiryYear: 2040,
+        expiry_month: 5,
+        expiry_year: 2040,
       },
     });
     await expect(updateRequest).rejects.toThrowError(

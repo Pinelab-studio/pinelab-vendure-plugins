@@ -456,10 +456,10 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     }
     return (await client.updatePaymentMethod(input.id, {
       name: input.name || undefined,
-      expiry_month: input.expiryMonth ?? undefined,
-      expiry_year: input.expiryYear ?? undefined,
-      avs_address: input.address ?? undefined,
-      avs_zip: input.zip ?? undefined,
+      expiry_month: input.expiry_month ?? undefined,
+      expiry_year: input.expiry_year ?? undefined,
+      avs_address: input.avs_address ?? undefined,
+      avs_zip: input.avs_zip ?? undefined,
     })) as AcceptBlueCardPaymentMethod;
   }
 

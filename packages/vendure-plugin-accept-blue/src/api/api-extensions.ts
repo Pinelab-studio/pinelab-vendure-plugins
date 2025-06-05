@@ -200,17 +200,28 @@ const commonApiExtensions = gql`
 
   input UpdateAcceptBlueCardPaymentMethodInput {
     id: Int!
-    address: String
-    zip: String
+    avs_address: String
+    avs_zip: String
     name: String
-    expiryMonth: Int
-    expiryYear: Int
+    expiry_month: Int
+    expiry_year: Int
+  }
+
+  input UpdateAcceptBlueCheckPaymentMethodInput {
+    id: Int!
+    name: String
+    routing_number: String
+    account_type: String
+    sec_code: String
   }
 
   extend type Mutation {
     updateAcceptBlueCardPaymentMethod(
       input: UpdateAcceptBlueCardPaymentMethodInput!
     ): AcceptBlueCardPaymentMethod!
+    updateAcceptBlueCheckPaymentMethod(
+      input: UpdateAcceptBlueCheckPaymentMethodInput!
+    ): AcceptBlueCheckPaymentMethod!
   }
 `;
 
