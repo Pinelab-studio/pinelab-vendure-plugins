@@ -26,7 +26,7 @@ import { isSameCard, isSameCheck } from '../util';
 import {
   AcceptBluePaymentMethodType,
   AcceptBlueSurcharges,
-} from './generated/graphql';
+} from '../api/generated/graphql';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -41,10 +41,9 @@ export class AcceptBlueClient {
   ) {
     if (this.testMode) {
       this.endpoint = 'https://api.develop.accept.blue/api/v2/';
-      Logger.warn(`Using Accept Blue in test mode`, loggerCtx);
+      Logger.verbose(`Using Accept Blue in test mode`, loggerCtx);
     } else {
       this.endpoint = 'https://api.accept.blue/api/v2/';
-      Logger.debug(`Using Accept Blue in live mode`, loggerCtx);
     }
     this.instance = axios.create({
       baseURL: `${this.endpoint}`,

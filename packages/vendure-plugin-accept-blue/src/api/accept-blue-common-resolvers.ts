@@ -12,7 +12,7 @@ import {
   AcceptBlueCheckPaymentMethod,
   AcceptBluePaymentMethod,
 } from '../types';
-import { AcceptBlueService } from './accept-blue-service';
+import { AcceptBlueService } from '../service/accept-blue-service';
 import {
   AcceptBluePaymentMethodQuote,
   AcceptBlueSubscription,

@@ -201,6 +201,10 @@ const commonApiExtensions = gql`
 
 export const shopApiExtensions = gql`
   ${commonApiExtensions}
+
+  extend type Mutation {
+    updateAcceptBlueCardPaymentMethod: AcceptBlueCardPaymentMethod!
+  }
 `;
 
 export const adminApiExtensions = gql`

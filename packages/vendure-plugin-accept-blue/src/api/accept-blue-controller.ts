@@ -3,7 +3,7 @@ import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { Request } from 'express';
 import { loggerCtx } from '../constants';
 import { AcceptBlueEvent } from '../types';
-import { AcceptBlueService } from './accept-blue-service';
+import { AcceptBlueService } from '../service/accept-blue-service';
 import { asError } from 'catch-unknown';
 
 @Controller('accept-blue')

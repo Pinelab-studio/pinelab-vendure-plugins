@@ -62,7 +62,7 @@ import {
   AcceptBlueSurcharges,
   AcceptBlueTransaction,
   UpdateAcceptBlueSubscriptionInput,
-} from './generated/graphql';
+} from '../api/generated/graphql';
 
 @Injectable()
 export class AcceptBlueService implements OnApplicationBootstrap {
@@ -677,7 +677,6 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     }
     return acceptBlueMethod[0];
   }
-
   /**
    * Handle incoming webhooks from Accept Blue
    */
