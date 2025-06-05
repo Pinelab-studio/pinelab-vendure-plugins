@@ -2,6 +2,7 @@
 import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
+  assertFound,
   Customer,
   CustomerService,
   EntityHydrator,
@@ -44,6 +45,7 @@ import {
   NoncePaymentMethodInput,
   SavedPaymentMethodInput,
   StorefrontKeys,
+  AcceptBlueCardPaymentMethod,
 } from '../types';
 import {
   getNrOfBillingCyclesLeft,
@@ -61,6 +63,7 @@ import {
   AcceptBlueSubscription,
   AcceptBlueSurcharges,
   AcceptBlueTransaction,
+  UpdateAcceptBlueCardPaymentMethodInput,
   UpdateAcceptBlueSubscriptionInput,
 } from '../api/generated/graphql';
 
@@ -201,10 +204,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     let paymentMethod: AcceptBluePaymentMethod;
     if (isSavedPaymentMethod(input as SavedPaymentMethodInput)) {
       const foundMethod = await client.getPaymentMethod(
-        acceptBlueCustomerId,
         (input as SavedPaymentMethodInput).paymentMethodId
       );
-      if (!foundMethod) {
+      if (
+        !foundMethod ||
+        foundMethod.customer_id != String(acceptBlueCustomerId)
+      ) {
         throw new UserInputError(
           `No Accept Blue payment method found with id ${
             (input as SavedPaymentMethodInput).paymentMethodId
@@ -410,6 +415,52 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       )
     );
     return recurringSchedules;
+  }
+
+  async updateCardPaymentMethod(
+    ctx: RequestContext,
+    input: UpdateAcceptBlueCardPaymentMethodInput
+  ): Promise<AcceptBlueCardPaymentMethod> {
+    const client = await this.getClientForChannel(ctx);
+    const existingMethod = await client.getPaymentMethod(input.id);
+    if (!existingMethod) {
+      throw new UserInputError(
+        `No Accept Blue payment method found with id ${input.id}`
+      );
+    }
+    if (existingMethod.payment_method_type !== 'card') {
+      throw new UserInputError(
+        `Payment method '${input.id}' is not a card payment method`
+      );
+    }
+    // if Shop API, we check if the logged in user is owner of the payment method
+    if (ctx.apiType === 'shop') {
+      if (!ctx.activeUserId) {
+        throw new ForbiddenError();
+      }
+      const customer = await assertFound(
+        this.customerService.findOneByUserId(ctx, ctx.activeUserId)
+      );
+      if (!customer.customFields.acceptBlueCustomerId) {
+        throw new UserInputError(
+          `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`
+        );
+      }
+      if (
+        existingMethod.customer_id !=
+        String(customer.customFields.acceptBlueCustomerId)
+      ) {
+        // Given ID is not a payment method of the customer
+        throw new ForbiddenError();
+      }
+    }
+    return (await client.updatePaymentMethod(input.id, {
+      name: input.name || undefined,
+      expiry_month: input.expiryMonth ?? undefined,
+      expiry_year: input.expiryYear ?? undefined,
+      avs_address: input.address ?? undefined,
+      avs_zip: input.zip ?? undefined,
+    })) as AcceptBlueCardPaymentMethod;
   }
 
   async updateSubscription(

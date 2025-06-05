@@ -197,14 +197,25 @@ const commonApiExtensions = gql`
     eligibleAcceptBluePaymentMethods: [AcceptBluePaymentMethodQuote!]!
     acceptBlueSurcharges: AcceptBlueSurcharges!
   }
+
+  input UpdateAcceptBlueCardPaymentMethodInput {
+    id: Int!
+    address: String
+    zip: String
+    name: String
+    expiryMonth: Int
+    expiryYear: Int
+  }
+
+  extend type Mutation {
+    updateAcceptBlueCardPaymentMethod(
+      input: UpdateAcceptBlueCardPaymentMethodInput!
+    ): AcceptBlueCardPaymentMethod!
+  }
 `;
 
 export const shopApiExtensions = gql`
   ${commonApiExtensions}
-
-  extend type Mutation {
-    updateAcceptBlueCardPaymentMethod: AcceptBlueCardPaymentMethod!
-  }
 `;
 
 export const adminApiExtensions = gql`

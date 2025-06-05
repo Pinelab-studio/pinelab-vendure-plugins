@@ -1,14 +1,22 @@
-import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import {
+  Allow,
   Ctx,
   Customer,
   EntityHydrator,
   OrderLine,
+  Permission,
   RequestContext,
 } from '@vendure/core';
 import {
-  AcceptBlueCardPaymentMethod,
   AcceptBlueCheckPaymentMethod,
   AcceptBluePaymentMethod,
 } from '../types';
@@ -18,8 +26,10 @@ import {
   AcceptBlueSubscription,
   AcceptBlueSurcharges,
   Query as GraphqlQuery,
+  MutationUpdateAcceptBlueCardPaymentMethodArgs,
   QueryPreviewAcceptBlueSubscriptionsArgs,
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
+  AcceptBlueCardPaymentMethod,
 } from './generated/graphql';
 
 @Resolver()
@@ -155,5 +165,15 @@ export class AcceptBlueCommonResolver {
     @Ctx() ctx: RequestContext
   ): Promise<AcceptBlueSurcharges> {
     return await this.acceptBlueService.getSurcharges(ctx);
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateCustomer, Permission.Authenticated)
+  async updateAcceptBlueCardPaymentMethod(
+    @Ctx() ctx: RequestContext,
+    @Args()
+    { input }: MutationUpdateAcceptBlueCardPaymentMethodArgs
+  ): Promise<AcceptBlueCardPaymentMethod> {
+    return await this.acceptBlueService.updateCardPaymentMethod(ctx, input);
   }
 }

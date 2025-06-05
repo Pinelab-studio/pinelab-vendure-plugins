@@ -21,6 +21,7 @@ import {
   NoncePaymentMethodInput,
   AppleOrGooglePayInput,
   SourcePaymentMethodInput,
+  CardPaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 import {
@@ -281,18 +282,10 @@ export class AcceptBlueClient {
   }
 
   async getPaymentMethod(
-    acceptBlueCustomerId: number,
     paymentMethodId: number
   ): Promise<AcceptBluePaymentMethod | undefined> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const result = await this.request(
-      'get',
-      `payment-methods/${paymentMethodId}`
-    );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (result.customer_id == acceptBlueCustomerId) {
-      return result as AcceptBluePaymentMethod;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.request('get', `payment-methods/${paymentMethodId}`);
   }
 
   async createPaymentMethod(
@@ -310,6 +303,23 @@ export class AcceptBlueClient {
     );
     Logger.info(
       `Created payment method '${result.payment_method_type}' (${result.id}) for customer '${result.customer_id}'`,
+      loggerCtx
+    );
+    return result;
+  }
+
+  async updatePaymentMethod(
+    paymentMethodId: number,
+    input: CardPaymentMethodInput
+  ): Promise<AcceptBluePaymentMethod> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result: AcceptBluePaymentMethod = await this.request(
+      'patch',
+      `payment-methods/${paymentMethodId}`,
+      input
+    );
+    Logger.info(
+      `Updated payment method '${result.payment_method_type}' (${result.id}) for customer '${result.customer_id}'`,
       loggerCtx
     );
     return result;

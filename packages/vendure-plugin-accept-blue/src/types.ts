@@ -459,3 +459,14 @@ export interface StorefrontKeys {
   acceptBlueGooglePayGatewayMerchantId?: string;
   acceptBlueTestMode?: boolean;
 }
+
+/**
+ * Input for updating an existing card payment method
+ */
+export interface CardPaymentMethodInput {
+  avs_address?: string;
+  avs_zip?: string;
+  expiry_month?: number;
+  expiry_year?: number;
+  name?: string;
+}
