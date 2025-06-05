@@ -1,6 +1,6 @@
 import { it, expect } from 'vitest';
 import { AcceptBlueClient } from './accept-blue-client';
-import { AcceptBluePaymentMethodType } from './generated/graphql';
+import { AcceptBluePaymentMethodType } from '../api/generated/graphql';
 import { AllowedPaymentMethodInput } from '../types';
 
 const API_KEY = 'test-api-key';

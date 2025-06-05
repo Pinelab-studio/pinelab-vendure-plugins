@@ -21,7 +21,6 @@ const ACCEPT_BLUE_PAYMENT_METHOD_FRAGMENT = gql`
       payment_method_type
       last4
       created_at
-      account_number
       routing_number
       account_type
       sec_code
@@ -298,6 +297,35 @@ export const GET_SURCHARGES = gql`
         type
         value
       }
+    }
+  }
+`;
+
+export const UPDATE_CARD_PAYMENT_METHOD = gql`
+  mutation UpdateCardPaymentMethod(
+    $input: UpdateAcceptBlueCardPaymentMethodInput!
+  ) {
+    updateAcceptBlueCardPaymentMethod(input: $input) {
+      id
+      avs_address
+      avs_zip
+      name
+      expiry_month
+      expiry_year
+    }
+  }
+`;
+
+export const UPDATE_CHECK_PAYMENT_METHOD = gql`
+  mutation UpdateCheckPaymentMethod(
+    $input: UpdateAcceptBlueCheckPaymentMethodInput!
+  ) {
+    updateAcceptBlueCheckPaymentMethod(input: $input) {
+      id
+      name
+      routing_number
+      account_type
+      sec_code
     }
   }
 `;

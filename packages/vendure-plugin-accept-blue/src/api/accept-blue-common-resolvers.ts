@@ -1,25 +1,37 @@
-import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import { PaymentMethodQuote } from '@vendure/common/lib/generated-shop-types';
 import {
+  Allow,
   Ctx,
   Customer,
   EntityHydrator,
   OrderLine,
+  Permission,
   RequestContext,
 } from '@vendure/core';
 import {
-  AcceptBlueCardPaymentMethod,
   AcceptBlueCheckPaymentMethod,
   AcceptBluePaymentMethod,
 } from '../types';
-import { AcceptBlueService } from './accept-blue-service';
+import { AcceptBlueService } from '../service/accept-blue-service';
 import {
   AcceptBluePaymentMethodQuote,
   AcceptBlueSubscription,
   AcceptBlueSurcharges,
   Query as GraphqlQuery,
+  Mutation as GraphqlMutation,
+  MutationUpdateAcceptBlueCardPaymentMethodArgs,
   QueryPreviewAcceptBlueSubscriptionsArgs,
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
+  AcceptBlueCardPaymentMethod,
+  MutationUpdateAcceptBlueCheckPaymentMethodArgs,
 } from './generated/graphql';
 
 @Resolver()
@@ -155,5 +167,25 @@ export class AcceptBlueCommonResolver {
     @Ctx() ctx: RequestContext
   ): Promise<AcceptBlueSurcharges> {
     return await this.acceptBlueService.getSurcharges(ctx);
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateCustomer, Permission.Authenticated)
+  async updateAcceptBlueCardPaymentMethod(
+    @Ctx() ctx: RequestContext,
+    @Args()
+    { input }: MutationUpdateAcceptBlueCardPaymentMethodArgs
+  ): Promise<GraphqlMutation['updateAcceptBlueCardPaymentMethod']> {
+    return await this.acceptBlueService.updateCardPaymentMethod(ctx, input);
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateCustomer, Permission.Authenticated)
+  async updateAcceptBlueCheckPaymentMethod(
+    @Ctx() ctx: RequestContext,
+    @Args()
+    { input }: MutationUpdateAcceptBlueCheckPaymentMethodArgs
+  ): Promise<GraphqlMutation['updateAcceptBlueCheckPaymentMethod']> {
+    return await this.acceptBlueService.updateCheckPaymentMethod(ctx, input);
   }
 }

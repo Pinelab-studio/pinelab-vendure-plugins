@@ -1,7 +1,7 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
-import { AcceptBlueService } from './api/accept-blue-service';
-import { acceptBluePaymentHandler } from './api/accept-blue-handler';
+import { AcceptBlueService } from './service/accept-blue-service';
+import { acceptBluePaymentHandler } from './service/accept-blue-handler';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { AcceptBlueCommonResolver } from './api/accept-blue-common-resolvers';

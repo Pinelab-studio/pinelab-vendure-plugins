@@ -21,12 +21,14 @@ import {
   NoncePaymentMethodInput,
   AppleOrGooglePayInput,
   SourcePaymentMethodInput,
+  UpdateCardPaymentMethodInput,
+  UpdateCheckPaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 import {
   AcceptBluePaymentMethodType,
   AcceptBlueSurcharges,
-} from './generated/graphql';
+} from '../api/generated/graphql';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -41,10 +43,9 @@ export class AcceptBlueClient {
   ) {
     if (this.testMode) {
       this.endpoint = 'https://api.develop.accept.blue/api/v2/';
-      Logger.warn(`Using Accept Blue in test mode`, loggerCtx);
+      Logger.verbose(`Using Accept Blue in test mode`, loggerCtx);
     } else {
       this.endpoint = 'https://api.accept.blue/api/v2/';
-      Logger.debug(`Using Accept Blue in live mode`, loggerCtx);
     }
     this.instance = axios.create({
       baseURL: `${this.endpoint}`,
@@ -282,18 +283,10 @@ export class AcceptBlueClient {
   }
 
   async getPaymentMethod(
-    acceptBlueCustomerId: number,
     paymentMethodId: number
   ): Promise<AcceptBluePaymentMethod | undefined> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const result = await this.request(
-      'get',
-      `payment-methods/${paymentMethodId}`
-    );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    if (result.customer_id == acceptBlueCustomerId) {
-      return result as AcceptBluePaymentMethod;
-    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.request('get', `payment-methods/${paymentMethodId}`);
   }
 
   async createPaymentMethod(
@@ -311,6 +304,23 @@ export class AcceptBlueClient {
     );
     Logger.info(
       `Created payment method '${result.payment_method_type}' (${result.id}) for customer '${result.customer_id}'`,
+      loggerCtx
+    );
+    return result;
+  }
+
+  async updatePaymentMethod(
+    paymentMethodId: number,
+    input: UpdateCardPaymentMethodInput | UpdateCheckPaymentMethodInput
+  ): Promise<AcceptBluePaymentMethod> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const result: AcceptBluePaymentMethod = await this.request(
+      'patch',
+      `payment-methods/${paymentMethodId}`,
+      input
+    );
+    Logger.info(
+      `Updated payment method '${result.payment_method_type}' (${result.id}) for customer '${result.customer_id}'`,
       loggerCtx
     );
     return result;

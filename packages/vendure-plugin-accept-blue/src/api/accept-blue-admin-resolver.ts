@@ -1,6 +1,6 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, Permission, RequestContext } from '@vendure/core';
-import { AcceptBlueService } from './accept-blue-service';
+import { AcceptBlueService } from '../service/accept-blue-service';
 import {
   Mutation as GraphqlMutation,
   MutationRefundAcceptBlueTransactionArgs,

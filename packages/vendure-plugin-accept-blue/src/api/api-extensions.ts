@@ -57,7 +57,6 @@ const commonApiExtensions = gql`
     name: String
     payment_method_type: String
     last4: String
-    account_number: String
     routing_number: String
     account_type: String
     sec_code: String
@@ -196,6 +195,32 @@ const commonApiExtensions = gql`
     ): [AcceptBlueSubscription!]!
     eligibleAcceptBluePaymentMethods: [AcceptBluePaymentMethodQuote!]!
     acceptBlueSurcharges: AcceptBlueSurcharges!
+  }
+
+  input UpdateAcceptBlueCardPaymentMethodInput {
+    id: Int!
+    avs_address: String
+    avs_zip: String
+    name: String
+    expiry_month: Int
+    expiry_year: Int
+  }
+
+  input UpdateAcceptBlueCheckPaymentMethodInput {
+    id: Int!
+    name: String
+    routing_number: String
+    account_type: String
+    sec_code: String
+  }
+
+  extend type Mutation {
+    updateAcceptBlueCardPaymentMethod(
+      input: UpdateAcceptBlueCardPaymentMethodInput!
+    ): AcceptBlueCardPaymentMethod!
+    updateAcceptBlueCheckPaymentMethod(
+      input: UpdateAcceptBlueCheckPaymentMethodInput!
+    ): AcceptBlueCheckPaymentMethod!
   }
 `;
 

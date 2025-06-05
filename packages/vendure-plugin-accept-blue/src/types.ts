@@ -159,7 +159,7 @@ export interface AcceptBlueCardPaymentMethod {
 
 export interface AcceptBlueCheckPaymentMethod {
   id: number;
-  customer_id: string;
+  customer_id: number;
   created_at: Date;
   name: string;
   payment_method_type: 'check';
@@ -458,4 +458,25 @@ export interface StorefrontKeys {
   acceptBlueGooglePayMerchantId?: string;
   acceptBlueGooglePayGatewayMerchantId?: string;
   acceptBlueTestMode?: boolean;
+}
+
+/**
+ * Input for updating an existing card payment method
+ */
+export interface UpdateCardPaymentMethodInput {
+  avs_address?: string;
+  avs_zip?: string;
+  expiry_month?: number;
+  expiry_year?: number;
+  name?: string;
+}
+
+/**
+ * Input for updating an existing check payment method
+ */
+export interface UpdateCheckPaymentMethodInput {
+  name?: string;
+  routing_number?: string;
+  account_type?: string;
+  sec_code?: string;
 }

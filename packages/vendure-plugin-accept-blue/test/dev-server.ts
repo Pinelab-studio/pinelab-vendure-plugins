@@ -1,5 +1,5 @@
 // This import is needed to accept custom field types
-import {} from '../src/api/custom-field-types';
+import {} from '../src/service/custom-field-types';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   DefaultLogger,
@@ -16,7 +16,7 @@ import {
 } from '@vendure/testing';
 import readline from 'readline';
 import { AcceptBluePlugin } from '../src';
-import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
+import { acceptBluePaymentHandler } from '../src/service/accept-blue-handler';
 import { AcceptBlueTestCheckoutPlugin } from './helpers/accept-blue-test-checkout.plugin';
 import {
   ADD_ITEM_TO_ORDER,
