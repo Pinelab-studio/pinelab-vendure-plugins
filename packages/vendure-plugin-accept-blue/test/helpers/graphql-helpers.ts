@@ -301,3 +301,18 @@ export const GET_SURCHARGES = gql`
     }
   }
 `;
+
+export const UPDATE_CARD_PAYMENT_METHOD = gql`
+  mutation UpdateCardPaymentMethod(
+    $input: UpdateAcceptBlueCardPaymentMethodInput!
+  ) {
+    updateAcceptBlueCardPaymentMethod(input: $input) {
+      id
+      avs_address
+      avs_zip
+      name
+      expiry_month
+      expiry_year
+    }
+  }
+`;

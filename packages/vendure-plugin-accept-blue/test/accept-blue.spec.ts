@@ -27,7 +27,7 @@ import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
 import { AcceptBluePlugin, AcceptBlueSubscriptionEvent } from '../src';
-import { acceptBluePaymentHandler } from '../src/api/accept-blue-handler';
+import { acceptBluePaymentHandler } from '../src/service/accept-blue-handler';
 import {
   AcceptBlueSubscription,
   MutationUpdateAcceptBlueSubscriptionArgs,
@@ -56,6 +56,7 @@ import {
   REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
   TRANSITION_ORDER_TO,
+  UPDATE_CARD_PAYMENT_METHOD,
   UPDATE_SUBSCRIPTION,
 } from './helpers/graphql-helpers';
 import {
@@ -69,6 +70,7 @@ import {
   mockCardTransaction,
 } from './helpers/mocks';
 import { waitFor } from '../../test/src/test-helpers';
+import { gql } from 'graphql-tag';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -769,6 +771,184 @@ describe('Transactions', () => {
     expect(transaction.status).toBe('settled');
     expect(transaction.cardDetails).toBeDefined();
     expect(transaction.amount).toBeDefined();
+  });
+});
+
+describe('Payment method management', () => {
+  it('Prepares a customer for payment method management', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    // Set mock customerId on Vendure customer for this test
+    await server.app
+      .get(DataSource)
+      .getRepository(Customer)
+      .update(
+        { id: 1 },
+        {
+          customFields: { acceptBlueCustomerId: haydenZiemeCustomerDetails.id },
+        }
+      );
+  });
+
+  it('Updates a card payment method', async () => {
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'card',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    // Mock the update payment method call
+    nockInstance.patch('/payment-methods/14969').reply(200, {
+      id: 14969,
+      name: 'My Name Pinelab',
+      expiry_month: 5,
+      expiry_year: 2040,
+      avs_address: 'Test street 12',
+      avs_zip: 'test zip',
+      card_type: 'visa',
+    });
+    const { updateAcceptBlueCardPaymentMethod } = await shopClient.query(
+      UPDATE_CARD_PAYMENT_METHOD,
+      {
+        input: {
+          id: 14969,
+          address: 'Test street 12',
+          zip: 'test zip',
+          name: 'My Name Pinelab',
+          expiryMonth: 5,
+          expiryYear: 2040,
+        },
+      }
+    );
+    expect(updateAcceptBlueCardPaymentMethod).toEqual({
+      id: 14969,
+      name: 'My Name Pinelab',
+      expiry_month: 5,
+      expiry_year: 2040,
+      avs_address: 'Test street 12',
+      avs_zip: 'test zip',
+    });
+  });
+
+  it('Fails when trying to update a non-card payment method', async () => {
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'check',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    const updateRequest = shopClient.query(UPDATE_CARD_PAYMENT_METHOD, {
+      input: {
+        id: 14969,
+        address: 'Test street 12',
+        zip: 'test zip',
+        name: 'My Name Pinelab',
+        expiryMonth: 5,
+        expiryYear: 2040,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      "Payment method '14969' is not a card payment method"
+    );
+  });
+
+  it('Fails when trying to update a card that does not belong to the customer', async () => {
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'card',
+      customer_id: 123456, // Not Hayden
+    });
+    const updateRequest = shopClient.query(UPDATE_CARD_PAYMENT_METHOD, {
+      input: {
+        id: 14969,
+        address: 'Test street 12',
+        zip: 'test zip',
+        name: 'My Name Pinelab',
+        expiryMonth: 5,
+        expiryYear: 2040,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Fails when not logged in', async () => {
+    await shopClient.asAnonymousUser();
+    const updateRequest = shopClient.query(UPDATE_CARD_PAYMENT_METHOD, {
+      input: {
+        id: 14969,
+        address: 'Test street 12',
+        zip: 'test zip',
+        name: 'My Name Pinelab',
+        expiryMonth: 5,
+        expiryYear: 2040,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Updates a card payment method as admin', async () => {
+    await adminClient.asSuperAdmin();
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'card',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    // Mock the update payment method call
+    nockInstance.patch('/payment-methods/14969').reply(200, {
+      id: 14969,
+      name: 'My Name Pinelab',
+      expiry_month: 5,
+      expiry_year: 2040,
+      avs_address: 'Test street 12',
+      avs_zip: 'test zip',
+      card_type: 'visa',
+    });
+    const { updateAcceptBlueCardPaymentMethod } = await adminClient.query(
+      UPDATE_CARD_PAYMENT_METHOD,
+      {
+        input: {
+          id: 14969,
+          address: 'Test street 12',
+          zip: 'test zip',
+          name: 'My Name Pinelab',
+          expiryMonth: 5,
+          expiryYear: 2040,
+        },
+      }
+    );
+    expect(updateAcceptBlueCardPaymentMethod).toEqual({
+      id: 14969,
+      name: 'My Name Pinelab',
+      expiry_month: 5,
+      expiry_year: 2040,
+      avs_address: 'Test street 12',
+      avs_zip: 'test zip',
+    });
+  });
+
+  it('Fails to update as admin when not logged in', async () => {
+    await adminClient.asAnonymousUser();
+    const updateRequest = adminClient.query(UPDATE_CARD_PAYMENT_METHOD, {
+      input: {
+        id: 14969,
+        address: 'Test street 12',
+        zip: 'test zip',
+        name: 'My Name Pinelab',
+        expiryMonth: 5,
+        expiryYear: 2040,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
   });
 });
 
