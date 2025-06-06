@@ -37,6 +37,80 @@ export const CREATE_PAYMENT_METHOD = gql`
   }
 `;
 
+export const ADMIN_CREATE_CARD_PAYMENT_METHOD = gql`
+  mutation CreateCardPaymentMethod(
+    $input: CreateAcceptBlueCardPaymentMethodInput!
+    $customerId: Int!
+  ) {
+    createAcceptBlueCardPaymentMethod(input: $input, customerId: $customerId) {
+      id
+      created_at
+      avs_address
+      avs_zip
+      name
+      expiry_month
+      expiry_year
+      payment_method_type
+      card_type
+      last4
+    }
+  }
+`;
+
+export const SHOP_CREATE_CARD_PAYMENT_METHOD = gql`
+  mutation CreateCardPaymentMethod(
+    $input: CreateAcceptBlueCardPaymentMethodInput!
+  ) {
+    createAcceptBlueCardPaymentMethod(input: $input) {
+      id
+      created_at
+      avs_address
+      avs_zip
+      name
+      expiry_month
+      expiry_year
+      payment_method_type
+      card_type
+      last4
+    }
+  }
+`;
+
+export const SHOP_CREATE_CHECK_PAYMENT_METHOD = gql`
+  mutation CreateCheckPaymentMethod(
+    $input: CreateAcceptBlueCheckPaymentMethodInput!
+  ) {
+    createAcceptBlueCheckPaymentMethod(input: $input) {
+      id
+      created_at
+      name
+      payment_method_type
+      account_type
+      routing_number
+      sec_code
+      last4
+    }
+  }
+`;
+
+export const ADMIN_CREATE_CHECK_PAYMENT_METHOD = gql`
+  mutation CreateCheckPaymentMethod(
+    $input: CreateAcceptBlueCheckPaymentMethodInput!
+    $customerId: Int!
+  ) {
+    createAcceptBlueCheckPaymentMethod(input: $input, customerId: $customerId) {
+      id
+      created_at
+      name
+      payment_method_type
+      account_type
+      routing_number
+      sec_code
+      last4
+    }
+  }
+`;
+
 export const ADD_ITEM_TO_ORDER = gql`
   mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
     addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
@@ -327,5 +401,11 @@ export const UPDATE_CHECK_PAYMENT_METHOD = gql`
       account_type
       sec_code
     }
+  }
+`;
+
+export const DELETE_PAYMENT_METHOD = gql`
+  mutation DeletePaymentMethod($id: Int!) {
+    deleteAcceptBluePaymentMethod(id: $id)
   }
 `;

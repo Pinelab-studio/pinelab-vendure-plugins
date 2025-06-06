@@ -198,7 +198,9 @@ export interface NoncePaymentMethodInput {
   source: string;
   expiry_month: number;
   expiry_year: number;
-  last4: string;
+  last4?: string;
+  avs_address?: string;
+  avs_zip?: string;
 }
 
 export interface SourcePaymentMethodInput {

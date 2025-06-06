@@ -1,3 +1,8 @@
+# 3.2.0 (2025-06-06)
+
+- Enable creating and deleting payment methods via the Shop API for logged in customers
+- Enable creating and deleting payment methods via the Admin API for all customers
+
 # 3.1.0 (2025-06-05)
 
 - Upgraded to Vendure 3.3.2

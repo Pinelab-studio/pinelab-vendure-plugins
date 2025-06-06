@@ -1,6 +1,10 @@
 import { Logger, UserInputError } from '@vendure/core';
 import axios, { AxiosInstance } from 'axios';
 import util from 'util';
+import {
+  AcceptBluePaymentMethodType,
+  AcceptBlueSurcharges,
+} from '../api/generated/graphql';
 import { loggerCtx } from '../constants';
 import {
   AcceptBlueChargeTransaction,
@@ -15,20 +19,16 @@ import {
   AcceptBlueWebhook,
   AcceptBlueWebhookInput,
   AllowedPaymentMethodInput,
+  AppleOrGooglePayInput,
   CheckPaymentMethodInput,
   CustomFields,
   EnabledPaymentMethodsArgs,
   NoncePaymentMethodInput,
-  AppleOrGooglePayInput,
   SourcePaymentMethodInput,
   UpdateCardPaymentMethodInput,
   UpdateCheckPaymentMethodInput,
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
-import {
-  AcceptBluePaymentMethodType,
-  AcceptBlueSurcharges,
-} from '../api/generated/graphql';
 
 export class AcceptBlueClient {
   readonly endpoint: string;
@@ -326,6 +326,12 @@ export class AcceptBlueClient {
     return result;
   }
 
+  async deletePaymentMethod(paymentMethodId: number): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    await this.request('delete', `payment-methods/${paymentMethodId}`);
+    Logger.info(`Deleted payment method '${paymentMethodId}'`, loggerCtx);
+  }
+
   async createRecurringSchedule(
     customerId: number,
     input: AcceptBlueRecurringScheduleCreateInput
@@ -514,6 +520,13 @@ export class AcceptBlueClient {
         loggerCtx,
         util.inspect(result.data)
       );
+      if (String(result.headers['content-type']).includes('application/json')) {
+        // Errors with a JSON body indicate user input errors
+        throw new UserInputError(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+          result.data?.error_message ?? result.statusText
+        );
+      }
       throw Error(result.statusText);
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return

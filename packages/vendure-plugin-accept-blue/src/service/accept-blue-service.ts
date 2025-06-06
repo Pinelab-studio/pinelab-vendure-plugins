@@ -46,6 +46,8 @@ import {
   SavedPaymentMethodInput,
   StorefrontKeys,
   AcceptBlueCardPaymentMethod,
+  SecCode,
+  AccountType,
 } from '../types';
 import {
   getNrOfBillingCyclesLeft,
@@ -64,6 +66,8 @@ import {
   AcceptBlueSubscription,
   AcceptBlueSurcharges,
   AcceptBlueTransaction,
+  CreateAcceptBlueCardPaymentMethodInput,
+  CreateAcceptBlueCheckPaymentMethodInput,
   UpdateAcceptBlueCardPaymentMethodInput,
   UpdateAcceptBlueCheckPaymentMethodInput,
   UpdateAcceptBlueSubscriptionInput,
@@ -424,7 +428,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCardPaymentMethodInput
   ): Promise<AcceptBlueCardPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isUpdatePaymentMethodAllowed(ctx, client, input.id, 'card');
+    await this.isAllowedToMutatePaymentMethod(ctx, client, input.id, 'card');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name || undefined,
       expiry_month: input.expiry_month ?? undefined,
@@ -439,12 +443,55 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCheckPaymentMethodInput
   ): Promise<AcceptBlueCheckPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isUpdatePaymentMethodAllowed(ctx, client, input.id, 'check');
+    await this.isAllowedToMutatePaymentMethod(ctx, client, input.id, 'check');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name ?? undefined,
       routing_number: input.routing_number ?? undefined,
       account_type: input.account_type ?? undefined,
       sec_code: input.sec_code ?? undefined,
+    })) as AcceptBlueCheckPaymentMethod;
+  }
+
+  async deletePaymentMethod(ctx: RequestContext, id: number): Promise<boolean> {
+    const client = await this.getClientForChannel(ctx);
+    await this.isAllowedToMutatePaymentMethod(ctx, client, id, false);
+    await client.deletePaymentMethod(id);
+    return true;
+  }
+
+  async createCardPaymentMethod(
+    ctx: RequestContext,
+    input: CreateAcceptBlueCardPaymentMethodInput,
+    customerId?: number
+  ): Promise<AcceptBlueCardPaymentMethod> {
+    const client = await this.getClientForChannel(ctx);
+    // Get customer ID from CTX if no customerId is given
+    const acceptBlueCustomerId =
+      customerId ?? (await this.getAcceptBlueCustomerId(ctx));
+    return (await client.createPaymentMethod(acceptBlueCustomerId, {
+      source: input.sourceToken,
+      expiry_month: input.expiry_month,
+      expiry_year: input.expiry_year,
+      avs_address: input.avs_address ?? undefined,
+      avs_zip: input.avs_zip ?? undefined,
+    })) as AcceptBlueCardPaymentMethod;
+  }
+
+  async createCheckPaymentMethod(
+    ctx: RequestContext,
+    input: CreateAcceptBlueCheckPaymentMethodInput,
+    customerId?: number
+  ): Promise<AcceptBlueCheckPaymentMethod> {
+    const client = await this.getClientForChannel(ctx);
+    // Get customer ID from CTX if no customerId is given
+    const acceptBlueCustomerId =
+      customerId ?? (await this.getAcceptBlueCustomerId(ctx));
+    return (await client.createPaymentMethod(acceptBlueCustomerId, {
+      account_number: input.account_number,
+      account_type: input.account_type as AccountType,
+      routing_number: input.routing_number,
+      sec_code: input.sec_code as SecCode,
+      name: input.name,
     })) as AcceptBlueCheckPaymentMethod;
   }
 
@@ -490,17 +537,19 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   }
 
   /**
-   * Check if the logged in user is allowed to update the payment method.
+   * Check if the logged in user is allowed to update or delete the payment method.
    * Throws an error if not allowed
    *
    * 1. Is admin > all good
    * 2. Is shop API > requires logged in customer and ownership of the payment method
+   *
+   * @param shouldBeOfType If false, no payment type check is performed
    */
-  private async isUpdatePaymentMethodAllowed(
+  private async isAllowedToMutatePaymentMethod(
     ctx: RequestContext,
     client: AcceptBlueClient,
     paymentMethodId: number,
-    shouldBe: 'card' | 'check'
+    shouldBeOfType: 'card' | 'check' | false
   ): Promise<void> {
     const existingMethod = await client.getPaymentMethod(paymentMethodId);
     if (!existingMethod) {
@@ -508,9 +557,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No Accept Blue payment method found with id ${paymentMethodId}`
       );
     }
-    if (existingMethod.payment_method_type !== shouldBe) {
+    if (
+      shouldBeOfType &&
+      existingMethod.payment_method_type !== shouldBeOfType
+    ) {
       throw new UserInputError(
-        `Payment method '${paymentMethodId}' is not a ${shouldBe} payment method`
+        `Payment method '${paymentMethodId}' is not a ${shouldBeOfType} payment method`
       );
     }
     // if Shop API, we check if the logged in user is owner of the payment method
@@ -518,22 +570,27 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       if (!ctx.activeUserId) {
         throw new ForbiddenError();
       }
-      const customer = await assertFound(
-        this.customerService.findOneByUserId(ctx, ctx.activeUserId)
-      );
-      if (!customer.customFields.acceptBlueCustomerId) {
-        throw new UserInputError(
-          `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`
-        );
-      }
-      if (
-        existingMethod.customer_id !=
-        String(customer.customFields.acceptBlueCustomerId)
-      ) {
+      const customerId = await this.getAcceptBlueCustomerId(ctx);
+      if (existingMethod.customer_id != String(customerId)) {
         // Given ID is not a payment method of the customer
         throw new ForbiddenError();
       }
     }
+  }
+
+  async getAcceptBlueCustomerId(ctx: RequestContext): Promise<number> {
+    if (!ctx.activeUserId) {
+      throw new UserInputError(`User is not logged in!`);
+    }
+    const customer = await assertFound(
+      this.customerService.findOneByUserId(ctx, ctx.activeUserId)
+    );
+    if (!customer.customFields.acceptBlueCustomerId) {
+      throw new UserInputError(
+        `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`
+      );
+    }
+    return customer.customFields.acceptBlueCustomerId;
   }
 
   /**

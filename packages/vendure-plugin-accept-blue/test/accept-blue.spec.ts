@@ -26,13 +26,14 @@ import { DataSource } from 'typeorm';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { SetShippingAddress } from '../../test/src/generated/shop-graphql';
 import { initialData } from '../../test/src/initial-data';
+import { waitFor } from '../../test/src/test-helpers';
 import { AcceptBluePlugin, AcceptBlueSubscriptionEvent } from '../src';
-import { acceptBluePaymentHandler } from '../src/service/accept-blue-handler';
 import {
   AcceptBlueSubscription,
   MutationUpdateAcceptBlueSubscriptionArgs,
 } from '../src/api/generated/graphql';
 import { AcceptBlueTransactionEvent } from '../src/events/accept-blue-transaction-event';
+import { acceptBluePaymentHandler } from '../src/service/accept-blue-handler';
 import {
   AcceptBlueWebhook,
   AccountType,
@@ -43,7 +44,9 @@ import {
 import {
   ADD_ITEM_TO_ORDER,
   ADD_PAYMENT_TO_ORDER,
+  ADMIN_CREATE_CARD_PAYMENT_METHOD,
   CREATE_PAYMENT_METHOD,
+  DELETE_PAYMENT_METHOD,
   ELIGIBLE_AC_PAYMENT_METHODS,
   ELIGIBLE_PAYMENT_METHODS,
   GET_CUSTOMER_WITH_ID,
@@ -55,10 +58,12 @@ import {
   PREVIEW_SUBSCRIPTIONS_FOR_VARIANT,
   REFUND_TRANSACTION,
   SET_SHIPPING_METHOD,
+  SHOP_CREATE_CARD_PAYMENT_METHOD,
   TRANSITION_ORDER_TO,
   UPDATE_CARD_PAYMENT_METHOD,
   UPDATE_CHECK_PAYMENT_METHOD,
   UPDATE_SUBSCRIPTION,
+  SHOP_CREATE_CHECK_PAYMENT_METHOD,
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
@@ -70,8 +75,6 @@ import {
   haydenZiemeCustomerDetails,
   mockCardTransaction,
 } from './helpers/mocks';
-import { waitFor } from '../../test/src/test-helpers';
-import { gql } from 'graphql-tag';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -1001,6 +1004,213 @@ describe('Payment method management', () => {
       },
     });
     await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Fails to delete payment method when not logged in', async () => {
+    await shopClient.asAnonymousUser();
+    const deleteRequest = shopClient.query(DELETE_PAYMENT_METHOD, {
+      id: 14969,
+    });
+    await expect(deleteRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Fails to delete payment method when it is used in active recurring transactions', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    // Mock the get payment method call to verify it exists
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'card',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    // Mock the delete payment method call to return an error
+    nockInstance.delete('/payment-methods/14969').reply(409, {
+      error_message:
+        'This payment method cannot be deleted since it is used in active recurring transactions',
+    });
+    expect.assertions(1);
+    try {
+      await shopClient.query(DELETE_PAYMENT_METHOD, {
+        id: 14969,
+      });
+    } catch (e: any) {
+      expect(e.response.errors[0].message).toBe(
+        'This payment method cannot be deleted since it is used in active recurring transactions'
+      );
+    }
+  });
+
+  it('Successfully deletes payment method', async () => {
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'shouldnt matter',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    // Mock successful delete response
+    nockInstance.delete('/payment-methods/14969').reply(200, {
+      success: true,
+    });
+    const response = await shopClient.query(DELETE_PAYMENT_METHOD, {
+      id: 14969,
+    });
+
+    expect(response.deleteAcceptBluePaymentMethod).toBe(true);
+  });
+
+  it('Creates card payment method as logged in customer', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const creationDate = new Date();
+    // Mock the create payment method call
+    nockInstance
+      .post(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .reply(200, {
+        id: 15000,
+        created_at: creationDate.toISOString(),
+        expiry_month: 12,
+        expiry_year: 2025,
+      });
+    const { createAcceptBlueCardPaymentMethod } = await shopClient.query(
+      SHOP_CREATE_CARD_PAYMENT_METHOD,
+      {
+        input: {
+          sourceToken: 'test-token',
+          name: 'Test Card',
+          expiry_month: 12,
+          expiry_year: 2025,
+          avs_address: 'Test Street',
+          avs_zip: '12345',
+        },
+      }
+    );
+    expect(createAcceptBlueCardPaymentMethod).toEqual(
+      expect.objectContaining({
+        id: 15000,
+        created_at: creationDate.toISOString(),
+        expiry_month: 12,
+        expiry_year: 2025,
+      })
+    );
+  });
+
+  it('Creates card payment method as admin for a customer', async () => {
+    await adminClient.asSuperAdmin();
+    const creationDate = new Date();
+    // Mock the create payment method call
+    nockInstance
+      .post(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .reply(200, {
+        id: 15001,
+        created_at: creationDate.toISOString(),
+        expiry_month: 6,
+        expiry_year: 2026,
+      });
+    const { createAcceptBlueCardPaymentMethod } = await adminClient.query(
+      ADMIN_CREATE_CARD_PAYMENT_METHOD,
+      {
+        input: {
+          sourceToken: 'admin-token',
+          expiry_month: 6,
+          expiry_year: 2026,
+        },
+        customerId: haydenZiemeCustomerDetails.id,
+      }
+    );
+    expect(createAcceptBlueCardPaymentMethod).toEqual(
+      expect.objectContaining({
+        id: 15001,
+        created_at: creationDate.toISOString(),
+        expiry_month: 6,
+        expiry_year: 2026,
+      })
+    );
+  });
+
+  it('Fails to create card payment method when not logged in', async () => {
+    await shopClient.asAnonymousUser();
+    const createRequest = shopClient.query(SHOP_CREATE_CARD_PAYMENT_METHOD, {
+      input: {
+        sourceToken: 'test-token',
+        name: 'Test Card',
+        expiry_month: 12,
+        expiry_year: 2025,
+        avs_address: 'Test Street',
+        avs_zip: '12345',
+      },
+    });
+    await expect(createRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Creates check payment method as logged in customer', async () => {
+    await shopClient.asUserWithCredentials(
+      haydenZiemeCustomerDetails.email,
+      'test'
+    );
+    const creationDate = new Date();
+    // Mock the create payment method call
+    nockInstance
+      .post(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .reply(200, {
+        id: 15002,
+        created_at: creationDate.toISOString(),
+        name: 'Test Check',
+        payment_method_type: 'check',
+        account_type: 'checking',
+        routing_number: '123456789',
+        sec_code: 'WEB',
+        last4: '5678',
+      });
+    const { createAcceptBlueCheckPaymentMethod } = await shopClient.query(
+      SHOP_CREATE_CHECK_PAYMENT_METHOD,
+      {
+        input: {
+          account_number: '123456789012345678',
+          account_type: 'checking',
+          routing_number: '123456789',
+          sec_code: 'WEB',
+          name: 'Test Check',
+        },
+      }
+    );
+
+    expect(createAcceptBlueCheckPaymentMethod).toEqual(
+      expect.objectContaining({
+        id: 15002,
+        created_at: creationDate.toISOString(),
+        name: 'Test Check',
+        payment_method_type: 'check',
+        account_type: 'checking',
+        routing_number: '123456789',
+        sec_code: 'WEB',
+        last4: '5678',
+      })
+    );
+  });
+
+  it('Fails to create check payment method when not logged in', async () => {
+    await shopClient.asAnonymousUser();
+    const createRequest = shopClient.query(SHOP_CREATE_CHECK_PAYMENT_METHOD, {
+      input: {
+        account_number: '123456789012345678',
+        account_type: 'checking',
+        routing_number: '123456789',
+        sec_code: 'WEB',
+        name: 'Test Check',
+      },
+    });
+
+    await expect(createRequest).rejects.toThrow(
       'You are not currently authorized to perform this action'
     );
   });
