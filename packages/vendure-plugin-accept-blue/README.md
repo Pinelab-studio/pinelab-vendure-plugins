@@ -184,6 +184,18 @@ mutation {
 }
 ```
 
+For creating a a card payment method, you need to use Hosted Tokenization (see `Pay with Nonce/Tokenized card` above). After getting a nonce token, you can use the following mutation to create a card payment method. For the Shop API, you need to be logged in. For the Admin API, you need to pass an Accept Blue customer ID into the mutation.
+
+```graphql
+mutation {
+  createAcceptBlueCardPaymentMethod(
+    input: { nonce: "nonce-z5frsiogt4kce2paljeb" }
+  ) {
+    id
+  }
+}
+```
+
 ## Fetching Transactions and Subscriptions for placed orders
 
 After an order is placed, the `order.lines.acceptBlueSubscriptions` is populated with the actual subscription values from the Accept Blue platform, so it will not call your strategy anymore. This is to better reflect the subscription that was actually created at the time of ordering.

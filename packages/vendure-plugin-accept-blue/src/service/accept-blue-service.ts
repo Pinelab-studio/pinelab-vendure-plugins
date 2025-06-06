@@ -64,6 +64,7 @@ import {
   AcceptBlueSubscription,
   AcceptBlueSurcharges,
   AcceptBlueTransaction,
+  CreateAcceptBlueCardPaymentMethodInput,
   UpdateAcceptBlueCardPaymentMethodInput,
   UpdateAcceptBlueCheckPaymentMethodInput,
   UpdateAcceptBlueSubscriptionInput,
@@ -455,6 +456,24 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     return true;
   }
 
+  async createCardPaymentMethod(
+    ctx: RequestContext,
+    input: CreateAcceptBlueCardPaymentMethodInput,
+    customerId?: number
+  ): Promise<AcceptBlueCardPaymentMethod> {
+    const client = await this.getClientForChannel(ctx);
+    // Get customer ID from CTX if no customerId is given
+    const acceptBlueCustomerId =
+      customerId ?? (await this.getAcceptBlueCustomerId(ctx));
+    return (await client.createPaymentMethod(acceptBlueCustomerId, {
+      source: input.sourceToken,
+      expiry_month: input.expiry_month,
+      expiry_year: input.expiry_year,
+      avs_address: input.avs_address ?? undefined,
+      avs_zip: input.avs_zip ?? undefined,
+    })) as AcceptBlueCardPaymentMethod;
+  }
+
   async updateSubscription(
     ctx: RequestContext,
     input: UpdateAcceptBlueSubscriptionInput
@@ -530,22 +549,27 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       if (!ctx.activeUserId) {
         throw new ForbiddenError();
       }
-      const customer = await assertFound(
-        this.customerService.findOneByUserId(ctx, ctx.activeUserId)
-      );
-      if (!customer.customFields.acceptBlueCustomerId) {
-        throw new UserInputError(
-          `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`
-        );
-      }
-      if (
-        existingMethod.customer_id !=
-        String(customer.customFields.acceptBlueCustomerId)
-      ) {
+      const customerId = await this.getAcceptBlueCustomerId(ctx);
+      if (existingMethod.customer_id != String(customerId)) {
         // Given ID is not a payment method of the customer
         throw new ForbiddenError();
       }
     }
+  }
+
+  async getAcceptBlueCustomerId(ctx: RequestContext): Promise<number> {
+    if (!ctx.activeUserId) {
+      throw new UserInputError(`User is not logged in!`);
+    }
+    const customer = await assertFound(
+      this.customerService.findOneByUserId(ctx, ctx.activeUserId)
+    );
+    if (!customer.customFields.acceptBlueCustomerId) {
+      throw new UserInputError(
+        `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`
+      );
+    }
+    return customer.customFields.acceptBlueCustomerId;
   }
 
   /**

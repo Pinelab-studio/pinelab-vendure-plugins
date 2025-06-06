@@ -214,6 +214,15 @@ const commonApiExtensions = gql`
     sec_code: String
   }
 
+  input CreateAcceptBlueCardPaymentMethodInput {
+    sourceToken: String!
+    expiry_month: Int!
+    expiry_year: Int!
+    avs_address: String
+    avs_zip: String
+    name: String
+  }
+
   extend type Mutation {
     updateAcceptBlueCardPaymentMethod(
       input: UpdateAcceptBlueCardPaymentMethodInput!
@@ -227,6 +236,16 @@ const commonApiExtensions = gql`
 
 export const shopApiExtensions = gql`
   ${commonApiExtensions}
+
+  extend type Mutation {
+    """
+    Creating a card payment method is only allowed with a nonce token.
+    See Hosted Tokenization in the Accept Blue docs for more information.
+    """
+    createAcceptBlueCardPaymentMethod(
+      input: CreateAcceptBlueCardPaymentMethodInput!
+    ): AcceptBlueCardPaymentMethod!
+  }
 `;
 
 export const adminApiExtensions = gql`
@@ -248,5 +267,14 @@ export const adminApiExtensions = gql`
     updateAcceptBlueSubscription(
       input: UpdateAcceptBlueSubscriptionInput!
     ): AcceptBlueSubscription!
+
+    """
+    Creating a card payment method is only allowed with a nonce token.
+    See Hosted Tokenization in the Accept Blue docs for more information.
+    """
+    createAcceptBlueCardPaymentMethod(
+      input: CreateAcceptBlueCardPaymentMethodInput!
+      customerId: Int!
+    ): AcceptBlueCardPaymentMethod!
   }
 `;

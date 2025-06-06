@@ -11,7 +11,7 @@ import {
 } from './types';
 
 interface MaskedCardInput {
-  last4: string;
+  last4?: string;
   expiry_month: number;
   expiry_year: number;
 }
@@ -36,6 +36,10 @@ export function isSameCard(
   card1: MaskedCardInput,
   card2: MaskedCardInput
 ): boolean {
+  if (!card1.last4 || !card2.last4) {
+    // if no last4 given, we always assume they are different
+    return false;
+  }
   return (
     card1.last4 === card2.last4 &&
     card1.expiry_month === card2.expiry_month &&

@@ -37,6 +37,45 @@ export const CREATE_PAYMENT_METHOD = gql`
   }
 `;
 
+export const ADMIN_CREATE_CARD_PAYMENT_METHOD = gql`
+  mutation CreateCardPaymentMethod(
+    $input: CreateAcceptBlueCardPaymentMethodInput!
+    $customerId: Int!
+  ) {
+    createAcceptBlueCardPaymentMethod(input: $input, customerId: $customerId) {
+      id
+      created_at
+      avs_address
+      avs_zip
+      name
+      expiry_month
+      expiry_year
+      payment_method_type
+      card_type
+      last4
+    }
+  }
+`;
+
+export const SHOP_CREATE_CARD_PAYMENT_METHOD = gql`
+  mutation CreateCardPaymentMethod(
+    $input: CreateAcceptBlueCardPaymentMethodInput!
+  ) {
+    createAcceptBlueCardPaymentMethod(input: $input) {
+      id
+      created_at
+      avs_address
+      avs_zip
+      name
+      expiry_month
+      expiry_year
+      payment_method_type
+      card_type
+      last4
+    }
+  }
+`;
+
 export const ADD_ITEM_TO_ORDER = gql`
   mutation AddItemToOrder($productVariantId: ID!, $quantity: Int!) {
     addItemToOrder(productVariantId: $productVariantId, quantity: $quantity) {
