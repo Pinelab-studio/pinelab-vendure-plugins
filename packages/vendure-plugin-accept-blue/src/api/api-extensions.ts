@@ -221,6 +221,7 @@ const commonApiExtensions = gql`
     updateAcceptBlueCheckPaymentMethod(
       input: UpdateAcceptBlueCheckPaymentMethodInput!
     ): AcceptBlueCheckPaymentMethod!
+    deleteAcceptBluePaymentMethod(id: Int!): Boolean!
   }
 `;
 

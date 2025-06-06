@@ -329,3 +329,9 @@ export const UPDATE_CHECK_PAYMENT_METHOD = gql`
     }
   }
 `;
+
+export const DELETE_PAYMENT_METHOD = gql`
+  mutation DeletePaymentMethod($id: Int!) {
+    deleteAcceptBluePaymentMethod(id: $id)
+  }
+`;

@@ -59,6 +59,7 @@ import {
   UPDATE_CARD_PAYMENT_METHOD,
   UPDATE_CHECK_PAYMENT_METHOD,
   UPDATE_SUBSCRIPTION,
+  DELETE_PAYMENT_METHOD,
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
@@ -1003,6 +1004,62 @@ describe('Payment method management', () => {
     await expect(updateRequest).rejects.toThrowError(
       'You are not currently authorized to perform this action'
     );
+  });
+
+  it('Fails to delete payment method when not logged in', async () => {
+    await shopClient.asAnonymousUser();
+    const deleteRequest = shopClient.query(DELETE_PAYMENT_METHOD, {
+      id: 14969,
+    });
+    await expect(deleteRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Fails to delete payment method when it is used in active recurring transactions', async () => {
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    // Mock the get payment method call to verify it exists
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'card',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    // Mock the delete payment method call to return an error
+    nockInstance.delete('/payment-methods/14969').reply(409, {
+      error_message:
+        'This payment method cannot be deleted since it is used in active recurring transactions',
+    });
+    expect.assertions(1);
+    try {
+      await shopClient.query(DELETE_PAYMENT_METHOD, {
+        id: 14969,
+      });
+    } catch (e: any) {
+      expect(e.response.errors[0].message).toBe(
+        'This payment method cannot be deleted since it is used in active recurring transactions'
+      );
+    }
+  });
+
+  it('Successfully deletes payment method', async () => {
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/14969').reply(200, {
+      id: 14969,
+      payment_method_type: 'shouldnt matter',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    // Mock successful delete response
+    nockInstance.delete('/payment-methods/14969').reply(200, {
+      success: true,
+    });
+    const response = await shopClient.query(DELETE_PAYMENT_METHOD, {
+      id: 14969,
+    });
+
+    expect(response.deleteAcceptBluePaymentMethod).toBe(true);
   });
 });
 

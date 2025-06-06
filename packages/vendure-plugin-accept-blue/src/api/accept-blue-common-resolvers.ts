@@ -32,6 +32,7 @@ import {
   QueryPreviewAcceptBlueSubscriptionsForProductArgs,
   AcceptBlueCardPaymentMethod,
   MutationUpdateAcceptBlueCheckPaymentMethodArgs,
+  MutationDeleteAcceptBluePaymentMethodArgs,
 } from './generated/graphql';
 
 @Resolver()
@@ -187,5 +188,14 @@ export class AcceptBlueCommonResolver {
     { input }: MutationUpdateAcceptBlueCheckPaymentMethodArgs
   ): Promise<GraphqlMutation['updateAcceptBlueCheckPaymentMethod']> {
     return await this.acceptBlueService.updateCheckPaymentMethod(ctx, input);
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateCustomer, Permission.Authenticated)
+  async deleteAcceptBluePaymentMethod(
+    @Ctx() ctx: RequestContext,
+    @Args() { id }: MutationDeleteAcceptBluePaymentMethodArgs
+  ): Promise<GraphqlMutation['deleteAcceptBluePaymentMethod']> {
+    return await this.acceptBlueService.deletePaymentMethod(ctx, id);
   }
 }

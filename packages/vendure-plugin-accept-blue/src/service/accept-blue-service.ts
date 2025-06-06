@@ -424,7 +424,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCardPaymentMethodInput
   ): Promise<AcceptBlueCardPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isUpdatePaymentMethodAllowed(ctx, client, input.id, 'card');
+    await this.isAllowedToMutatePaymentMethod(ctx, client, input.id, 'card');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name || undefined,
       expiry_month: input.expiry_month ?? undefined,
@@ -439,13 +439,20 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCheckPaymentMethodInput
   ): Promise<AcceptBlueCheckPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isUpdatePaymentMethodAllowed(ctx, client, input.id, 'check');
+    await this.isAllowedToMutatePaymentMethod(ctx, client, input.id, 'check');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name ?? undefined,
       routing_number: input.routing_number ?? undefined,
       account_type: input.account_type ?? undefined,
       sec_code: input.sec_code ?? undefined,
     })) as AcceptBlueCheckPaymentMethod;
+  }
+
+  async deletePaymentMethod(ctx: RequestContext, id: number): Promise<boolean> {
+    const client = await this.getClientForChannel(ctx);
+    await this.isAllowedToMutatePaymentMethod(ctx, client, id, false);
+    await client.deletePaymentMethod(id);
+    return true;
   }
 
   async updateSubscription(
@@ -490,17 +497,19 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   }
 
   /**
-   * Check if the logged in user is allowed to update the payment method.
+   * Check if the logged in user is allowed to update or delete the payment method.
    * Throws an error if not allowed
    *
    * 1. Is admin > all good
    * 2. Is shop API > requires logged in customer and ownership of the payment method
+   *
+   * @param shouldBeOfType If false, no payment type check is performed
    */
-  private async isUpdatePaymentMethodAllowed(
+  private async isAllowedToMutatePaymentMethod(
     ctx: RequestContext,
     client: AcceptBlueClient,
     paymentMethodId: number,
-    shouldBe: 'card' | 'check'
+    shouldBeOfType: 'card' | 'check' | false
   ): Promise<void> {
     const existingMethod = await client.getPaymentMethod(paymentMethodId);
     if (!existingMethod) {
@@ -508,9 +517,12 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No Accept Blue payment method found with id ${paymentMethodId}`
       );
     }
-    if (existingMethod.payment_method_type !== shouldBe) {
+    if (
+      shouldBeOfType &&
+      existingMethod.payment_method_type !== shouldBeOfType
+    ) {
       throw new UserInputError(
-        `Payment method '${paymentMethodId}' is not a ${shouldBe} payment method`
+        `Payment method '${paymentMethodId}' is not a ${shouldBeOfType} payment method`
       );
     }
     // if Shop API, we check if the logged in user is owner of the payment method
