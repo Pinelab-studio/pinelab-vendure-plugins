@@ -46,6 +46,8 @@ import {
   SavedPaymentMethodInput,
   StorefrontKeys,
   AcceptBlueCardPaymentMethod,
+  SecCode,
+  AccountType,
 } from '../types';
 import {
   getNrOfBillingCyclesLeft,
@@ -65,6 +67,7 @@ import {
   AcceptBlueSurcharges,
   AcceptBlueTransaction,
   CreateAcceptBlueCardPaymentMethodInput,
+  CreateAcceptBlueCheckPaymentMethodInput,
   UpdateAcceptBlueCardPaymentMethodInput,
   UpdateAcceptBlueCheckPaymentMethodInput,
   UpdateAcceptBlueSubscriptionInput,
@@ -472,6 +475,24 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       avs_address: input.avs_address ?? undefined,
       avs_zip: input.avs_zip ?? undefined,
     })) as AcceptBlueCardPaymentMethod;
+  }
+
+  async createCheckPaymentMethod(
+    ctx: RequestContext,
+    input: CreateAcceptBlueCheckPaymentMethodInput,
+    customerId?: number
+  ): Promise<AcceptBlueCheckPaymentMethod> {
+    const client = await this.getClientForChannel(ctx);
+    // Get customer ID from CTX if no customerId is given
+    const acceptBlueCustomerId =
+      customerId ?? (await this.getAcceptBlueCustomerId(ctx));
+    return (await client.createPaymentMethod(acceptBlueCustomerId, {
+      account_number: input.account_number,
+      account_type: input.account_type as AccountType,
+      routing_number: input.routing_number,
+      sec_code: input.sec_code as SecCode,
+      name: input.name,
+    })) as AcceptBlueCheckPaymentMethod;
   }
 
   async updateSubscription(

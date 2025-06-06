@@ -223,6 +223,14 @@ const commonApiExtensions = gql`
     name: String
   }
 
+  input CreateAcceptBlueCheckPaymentMethodInput {
+    name: String!
+    routing_number: String!
+    account_number: String!
+    account_type: String!
+    sec_code: String!
+  }
+
   extend type Mutation {
     updateAcceptBlueCardPaymentMethod(
       input: UpdateAcceptBlueCardPaymentMethodInput!
@@ -245,6 +253,9 @@ export const shopApiExtensions = gql`
     createAcceptBlueCardPaymentMethod(
       input: CreateAcceptBlueCardPaymentMethodInput!
     ): AcceptBlueCardPaymentMethod!
+    createAcceptBlueCheckPaymentMethod(
+      input: CreateAcceptBlueCheckPaymentMethodInput!
+    ): AcceptBlueCheckPaymentMethod!
   }
 `;
 
@@ -276,5 +287,9 @@ export const adminApiExtensions = gql`
       input: CreateAcceptBlueCardPaymentMethodInput!
       customerId: Int!
     ): AcceptBlueCardPaymentMethod!
+    createAcceptBlueCheckPaymentMethod(
+      input: CreateAcceptBlueCheckPaymentMethodInput!
+      customerId: Int!
+    ): AcceptBlueCheckPaymentMethod!
   }
 `;

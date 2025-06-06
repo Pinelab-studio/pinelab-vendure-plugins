@@ -63,6 +63,7 @@ import {
   UPDATE_CARD_PAYMENT_METHOD,
   UPDATE_CHECK_PAYMENT_METHOD,
   UPDATE_SUBSCRIPTION,
+  SHOP_CREATE_CHECK_PAYMENT_METHOD,
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
@@ -1147,6 +1148,69 @@ describe('Payment method management', () => {
       },
     });
     await expect(createRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Creates check payment method as logged in customer', async () => {
+    await shopClient.asUserWithCredentials(
+      haydenZiemeCustomerDetails.email,
+      'test'
+    );
+    const creationDate = new Date();
+    // Mock the create payment method call
+    nockInstance
+      .post(`/customers/${haydenZiemeCustomerDetails.id}/payment-methods`)
+      .reply(200, {
+        id: 15002,
+        created_at: creationDate.toISOString(),
+        name: 'Test Check',
+        payment_method_type: 'check',
+        account_type: 'checking',
+        routing_number: '123456789',
+        sec_code: 'WEB',
+        last4: '5678',
+      });
+    const { createAcceptBlueCheckPaymentMethod } = await shopClient.query(
+      SHOP_CREATE_CHECK_PAYMENT_METHOD,
+      {
+        input: {
+          account_number: '123456789012345678',
+          account_type: 'checking',
+          routing_number: '123456789',
+          sec_code: 'WEB',
+          name: 'Test Check',
+        },
+      }
+    );
+
+    expect(createAcceptBlueCheckPaymentMethod).toEqual(
+      expect.objectContaining({
+        id: 15002,
+        created_at: creationDate.toISOString(),
+        name: 'Test Check',
+        payment_method_type: 'check',
+        account_type: 'checking',
+        routing_number: '123456789',
+        sec_code: 'WEB',
+        last4: '5678',
+      })
+    );
+  });
+
+  it('Fails to create check payment method when not logged in', async () => {
+    await shopClient.asAnonymousUser();
+    const createRequest = shopClient.query(SHOP_CREATE_CHECK_PAYMENT_METHOD, {
+      input: {
+        account_number: '123456789012345678',
+        account_type: 'checking',
+        routing_number: '123456789',
+        sec_code: 'WEB',
+        name: 'Test Check',
+      },
+    });
+
+    await expect(createRequest).rejects.toThrow(
       'You are not currently authorized to perform this action'
     );
   });

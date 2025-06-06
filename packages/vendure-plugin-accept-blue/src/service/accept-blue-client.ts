@@ -522,8 +522,8 @@ export class AcceptBlueClient {
       );
       if (String(result.headers['content-type']).includes('application/json')) {
         // Errors with a JSON body indicate user input errors
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
         throw new UserInputError(
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
           result.data?.error_message ?? result.statusText
         );
       }

@@ -34,8 +34,8 @@ import {
   MutationUpdateAcceptBlueCheckPaymentMethodArgs,
   MutationDeleteAcceptBluePaymentMethodArgs,
   MutationCreateAcceptBlueCardPaymentMethodArgs,
+  MutationCreateAcceptBlueCheckPaymentMethodArgs,
 } from './generated/graphql';
-import { s } from 'vitest/dist/reporters-MmQN-57K';
 
 @Resolver()
 export class AcceptBlueCommonResolver {
@@ -217,5 +217,24 @@ export class AcceptBlueCommonResolver {
     }
     // For Shop API, we use the ctx.activeUserId
     return await this.acceptBlueService.createCardPaymentMethod(ctx, input);
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateCustomer, Permission.Authenticated)
+  async createAcceptBlueCheckPaymentMethod(
+    @Ctx() ctx: RequestContext,
+    @Args()
+    { input, customerId }: MutationCreateAcceptBlueCheckPaymentMethodArgs
+  ): Promise<GraphqlMutation['createAcceptBlueCheckPaymentMethod']> {
+    if (ctx.apiType === 'admin') {
+      // CustomerId is only defined for admin API
+      return await this.acceptBlueService.createCheckPaymentMethod(
+        ctx,
+        input,
+        customerId
+      );
+    }
+    // For Shop API, we use the ctx.activeUserId
+    return await this.acceptBlueService.createCheckPaymentMethod(ctx, input);
   }
 }
