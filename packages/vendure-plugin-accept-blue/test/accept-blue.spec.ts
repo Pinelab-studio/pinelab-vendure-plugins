@@ -802,6 +802,7 @@ describe('Payment method management', () => {
       id: 14969,
       payment_method_type: 'card',
       customer_id: haydenZiemeCustomerDetails.id,
+      card_type: 'Visa',
     });
     // Mock the update payment method call
     nockInstance.patch('/payment-methods/14969').reply(200, {
@@ -864,6 +865,7 @@ describe('Payment method management', () => {
       id: 14969,
       payment_method_type: 'card',
       customer_id: 123456, // Not Hayden
+      card_type: 'Visa',
     });
     const updateRequest = shopClient.query(UPDATE_CARD_PAYMENT_METHOD, {
       input: {
@@ -904,6 +906,7 @@ describe('Payment method management', () => {
       id: 14969,
       payment_method_type: 'card',
       customer_id: haydenZiemeCustomerDetails.id,
+      card_type: 'Visa',
     });
     // Mock the update payment method call
     nockInstance.patch('/payment-methods/14969').reply(200, {
@@ -1028,6 +1031,7 @@ describe('Payment method management', () => {
       id: 14969,
       payment_method_type: 'card',
       customer_id: haydenZiemeCustomerDetails.id,
+      card_type: 'Visa',
     });
     // Mock the delete payment method call to return an error
     nockInstance.delete('/payment-methods/14969').reply(409, {
@@ -1222,6 +1226,7 @@ describe('Payment method management', () => {
       id: 456789,
       payment_method_type: 'shouldnt matter',
       customer_id: haydenZiemeCustomerDetails.id,
+      card_type: 'Visa',
     });
     nockInstance
       .persist()
@@ -1265,6 +1270,7 @@ describe('Payment method management', () => {
       id: 456789,
       payment_method_type: 'shouldnt matter',
       customer_id: 999999, // Different customer ID, not Hayden
+      card_type: 'Visa',
     });
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',

@@ -1,6 +1,7 @@
 # 3.3.0 (2025-06-10)
 
 - Enable updating payment method on a subscription via the Shop API for logged in customers
+- Bug fix: Prevent updating a subscription to a payment method type (Visa, MasterCard, etc) that is not allowed. Only allow the methods set via the Admin UI.
 
 # 3.2.0 (2025-06-06)
 

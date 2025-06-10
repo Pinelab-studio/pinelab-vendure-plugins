@@ -428,7 +428,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCardPaymentMethodInput
   ): Promise<AcceptBlueCardPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isOwnerOfPaymentMethod(ctx, client, input.id, 'card');
+    await this.isPaymentMethodAllowed(ctx, client, input.id, 'card');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name || undefined,
       expiry_month: input.expiry_month ?? undefined,
@@ -443,7 +443,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCheckPaymentMethodInput
   ): Promise<AcceptBlueCheckPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isOwnerOfPaymentMethod(ctx, client, input.id, 'check');
+    await this.isPaymentMethodAllowed(ctx, client, input.id, 'check');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name ?? undefined,
       routing_number: input.routing_number ?? undefined,
@@ -454,7 +454,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
 
   async deletePaymentMethod(ctx: RequestContext, id: number): Promise<boolean> {
     const client = await this.getClientForChannel(ctx);
-    await this.isOwnerOfPaymentMethod(ctx, client, id, false);
+    await this.isPaymentMethodAllowed(ctx, client, id, false, false);
     await client.deletePaymentMethod(id);
     return true;
   }
@@ -516,7 +516,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     if (ctx.apiType === 'shop') {
       // Verify ownership of schedule and payment method
       if (input.paymentMethodId) {
-        await this.isOwnerOfPaymentMethod(
+        await this.isPaymentMethodAllowed(
           ctx,
           client,
           input.paymentMethodId,
@@ -560,25 +560,27 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   }
 
   /**
-   * Check if the logged in user is allowed to update or delete the payment method.
-   * Throws an error if not allowed
+   * Check if the payment method itself is allowed, and if the calling user is allowed to use, update or delete the payment method.
    *
-   * 1. Is admin > all good
-   * 2. Is shop API > requires logged in customer and ownership of the payment method
-   *
-   * @param shouldBeOfType If false, no payment type check is performed
+   * @param shouldBeOfType Additional check if the payment method should be of a certain type, e.g. card or check
+   * @param checkIfAllowedMethod If true, check if the payment method is allowed. E.g. for deletion of a method, no check is needed
    */
-  private async isOwnerOfPaymentMethod(
+  private async isPaymentMethodAllowed(
     ctx: RequestContext,
     client: AcceptBlueClient,
     paymentMethodId: number,
-    shouldBeOfType: 'card' | 'check' | false
+    shouldBeOfType: 'card' | 'check' | false,
+    checkIfAllowedMethod: boolean = true
   ): Promise<void> {
     const existingMethod = await client.getPaymentMethod(paymentMethodId);
     if (!existingMethod) {
       throw new UserInputError(
         `No Accept Blue payment method found with id ${paymentMethodId}`
       );
+    }
+    if (checkIfAllowedMethod) {
+      // Check if the payment method is allowed.
+      client.throwIfPaymentMethodNotAllowed(existingMethod);
     }
     if (
       shouldBeOfType &&

@@ -117,6 +117,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
           { name: 'allowGooglePay', value: 'true' },
           { name: 'allowApplePay', value: 'true' },
           { name: 'allowVisa', value: 'true' },
+          { name: 'allowMasterCard', value: 'true' },
           {
             name: 'tokenizationSourceKey',
             value: process.env.ACCEPT_BLUE_TOKENIZATION_SOURCE_KEY ?? null,
@@ -184,10 +185,10 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
       input: {
         method: 'accept-blue',
         // metadata,
-        metadata: { paymentMethodId: 14556 }, // Use a saved payment method
+        metadata: { paymentMethodId: 14969 }, // Use a saved payment method
       },
     });
-    console.log(JSON.stringify);
+    console.log(JSON.stringify(addPaymentToOrder, null, 2));
     console.log(
       `Successfully transitioned order to ${addPaymentToOrder.state}`
     );
