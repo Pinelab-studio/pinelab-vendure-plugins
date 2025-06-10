@@ -12,6 +12,7 @@ interface PostNLAddressResponse {
   cityName: string;
   countryName: string;
   houseNumber: string;
+  houseNumberAddition?: string;
   stateName: string;
   countryIso2: string;
 }
@@ -26,7 +27,7 @@ interface PostNLLookupStrategyInput {
 export class PostNLLookupStrategy implements AddressLookupStrategy {
   readonly supportedCountryCodes = ['NL', 'BE'];
 
-  constructor(private readonly input: PostNLLookupStrategyInput) {}
+  constructor(private readonly input: PostNLLookupStrategyInput) { }
 
   validateInput(input: AddressLookupInput): true | string {
     const countryCode = input.countryCode.toLowerCase();
@@ -65,12 +66,12 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
     }
     // Valid results, map to OrderAddress
     const resultJson = (await result.json()) as PostNLAddressResponse[];
-    console.log(resultJson);
+
     return resultJson.map((result) => ({
       fullName: '',
       company: '',
       streetLine1: result.streetName,
-      streetLine2: result.houseNumber,
+      streetLine2: result.houseNumberAddition ? `${result.houseNumber} ${result.houseNumberAddition}` : result.houseNumber,
       city: result.cityName,
       province: result.stateName,
       postalCode,
