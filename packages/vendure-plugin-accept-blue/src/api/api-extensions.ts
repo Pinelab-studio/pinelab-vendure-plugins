@@ -22,7 +22,7 @@ const commonApiExtensions = gql`
     variantId: ID!
     amountDueNow: Int!
     priceIncludesTax: Boolean!
-    paymentMethodId: Int!
+    paymentMethodId: Int
     recurring: AcceptBlueSubscriptionRecurringPayment!
     transactions: [AcceptBlueTransaction!]!
   }
