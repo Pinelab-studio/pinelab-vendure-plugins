@@ -35,6 +35,7 @@ import {
   MutationDeleteAcceptBluePaymentMethodArgs,
   MutationCreateAcceptBlueCardPaymentMethodArgs,
   MutationCreateAcceptBlueCheckPaymentMethodArgs,
+  MutationUpdateAcceptBlueSubscriptionArgs,
 } from './generated/graphql';
 
 @Resolver()
@@ -236,5 +237,15 @@ export class AcceptBlueCommonResolver {
     }
     // For Shop API, we use the ctx.activeUserId
     return await this.acceptBlueService.createCheckPaymentMethod(ctx, input);
+  }
+
+  @Mutation()
+  @Allow(Permission.UpdateOrder, Permission.Authenticated)
+  async updateAcceptBlueSubscription(
+    @Ctx() ctx: RequestContext,
+    @Args()
+    { input }: MutationUpdateAcceptBlueSubscriptionArgs
+  ): Promise<GraphqlMutation['updateAcceptBlueSubscription']> {
+    return await this.acceptBlueService.updateSubscription(ctx, input);
   }
 }

@@ -172,11 +172,15 @@ export const haydenZiemeCustomerDetails = {
   active: true,
 };
 
-export function createMockRecurringScheduleResult(id?: number) {
+export function createMockRecurringScheduleResult(input: {
+  id?: number;
+  payment_method_id?: number;
+  customer_id?: number;
+}) {
   return {
-    id: id ?? Math.floor(Math.random() * 10000),
+    id: input.id ?? Math.floor(Math.random() * 10000),
     created_at: '2024-02-07T23:57:55.000Z',
-    customer_id: 181937,
+    customer_id: input.customer_id ?? 181937,
     title: 'Subscription Laptop 13 inch 8GB',
     frequency: 'monthly',
     amount: 129900,
@@ -186,7 +190,7 @@ export function createMockRecurringScheduleResult(id?: number) {
     num_left: 0,
     active: true,
     status: 'active',
-    payment_method_id: 15035,
+    payment_method_id: input.payment_method_id ?? 15035,
     receipt_email: 'hayden.zieme12@hotmail.com',
   };
 }

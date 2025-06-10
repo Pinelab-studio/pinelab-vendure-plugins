@@ -428,7 +428,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCardPaymentMethodInput
   ): Promise<AcceptBlueCardPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isAllowedToMutatePaymentMethod(ctx, client, input.id, 'card');
+    await this.isPaymentMethodAllowed(ctx, client, input.id, 'card');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name || undefined,
       expiry_month: input.expiry_month ?? undefined,
@@ -443,7 +443,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     input: UpdateAcceptBlueCheckPaymentMethodInput
   ): Promise<AcceptBlueCheckPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
-    await this.isAllowedToMutatePaymentMethod(ctx, client, input.id, 'check');
+    await this.isPaymentMethodAllowed(ctx, client, input.id, 'check');
     return (await client.updatePaymentMethod(input.id, {
       name: input.name ?? undefined,
       routing_number: input.routing_number ?? undefined,
@@ -454,7 +454,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
 
   async deletePaymentMethod(ctx: RequestContext, id: number): Promise<boolean> {
     const client = await this.getClientForChannel(ctx);
-    await this.isAllowedToMutatePaymentMethod(ctx, client, id, false);
+    await this.isPaymentMethodAllowed(ctx, client, id, false, false);
     await client.deletePaymentMethod(id);
     return true;
   }
@@ -495,10 +495,17 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     })) as AcceptBlueCheckPaymentMethod;
   }
 
+  /**
+   * Update a subscription as admin or customer.
+   *
+   * For a customer, we verify if the customer owns the schedule and the payment method.
+   * Admin permissions are checked at the resolver level.
+   */
   async updateSubscription(
     ctx: RequestContext,
     input: UpdateAcceptBlueSubscriptionInput
   ): Promise<AcceptBlueSubscription> {
+    const client = await this.getClientForChannel(ctx);
     const scheduleId = input.id;
     const orderLine = await this.findOrderLineByScheduleId(ctx, scheduleId);
     if (!orderLine) {
@@ -506,10 +513,25 @@ export class AcceptBlueService implements OnApplicationBootstrap {
         `No order exists with an Accept Blue subscription id of ${scheduleId}`
       );
     }
+    if (ctx.apiType === 'shop') {
+      // Verify ownership of schedule and payment method
+      if (input.paymentMethodId) {
+        await this.isPaymentMethodAllowed(
+          ctx,
+          client,
+          input.paymentMethodId,
+          false
+        );
+      }
+      const acceptBlueCustomerId = await this.getAcceptBlueCustomerId(ctx);
+      const schedule = await client.getRecurringSchedules([scheduleId]);
+      if (schedule?.[0].customer_id != acceptBlueCustomerId) {
+        throw new ForbiddenError();
+      }
+    }
     await this.entityHydrator.hydrate(ctx, orderLine, {
       relations: ['order', 'productVariant'],
     });
-    const client = await this.getClientForChannel(ctx);
     const schedule = await client.updateRecurringSchedule(scheduleId, {
       title: input.title ?? undefined,
       amount: input.amount ?? undefined,
@@ -518,6 +540,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       num_left: input.numLeft ?? undefined,
       active: input.active ?? undefined,
       receipt_email: input.receiptEmail || undefined,
+      payment_method_id: input.paymentMethodId ?? undefined,
     });
     // Write History entry on order
     await this.orderService.addNoteToOrder(ctx, {
@@ -537,25 +560,27 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   }
 
   /**
-   * Check if the logged in user is allowed to update or delete the payment method.
-   * Throws an error if not allowed
+   * Check if the payment method itself is allowed, and if the calling user is allowed to use, update or delete the payment method.
    *
-   * 1. Is admin > all good
-   * 2. Is shop API > requires logged in customer and ownership of the payment method
-   *
-   * @param shouldBeOfType If false, no payment type check is performed
+   * @param shouldBeOfType Additional check if the payment method should be of a certain type, e.g. card or check
+   * @param checkIfAllowedMethod If true, check if the payment method is allowed. E.g. for deletion of a method, no check is needed
    */
-  private async isAllowedToMutatePaymentMethod(
+  private async isPaymentMethodAllowed(
     ctx: RequestContext,
     client: AcceptBlueClient,
     paymentMethodId: number,
-    shouldBeOfType: 'card' | 'check' | false
+    shouldBeOfType: 'card' | 'check' | false,
+    checkIfAllowedMethod: boolean = true
   ): Promise<void> {
     const existingMethod = await client.getPaymentMethod(paymentMethodId);
     if (!existingMethod) {
       throw new UserInputError(
         `No Accept Blue payment method found with id ${paymentMethodId}`
       );
+    }
+    if (checkIfAllowedMethod) {
+      // Check if the payment method is allowed.
+      client.throwIfPaymentMethodNotAllowed(existingMethod);
     }
     if (
       shouldBeOfType &&
@@ -1000,33 +1025,34 @@ export class AcceptBlueService implements OnApplicationBootstrap {
    * Map a subscription from Accept Blue to the GraphQL Subscription type
    */
   private mapToGraphqlSubscription(
-    subscription: AcceptBlueRecurringSchedule,
+    schedule: AcceptBlueRecurringSchedule,
     variantId: ID,
     transactions: AcceptBlueTransaction[] = []
   ): AcceptBlueSubscription {
     const { interval, intervalCount } = toSubscriptionInterval(
-      subscription.frequency
+      schedule.frequency
     );
     return {
-      id: subscription.id,
+      id: schedule.id,
       amountDueNow: 0,
-      name: subscription.title,
+      name: schedule.title,
       priceIncludesTax: true,
       variantId,
+      paymentMethodId: schedule.payment_method_id,
       recurring: {
-        amount: subscription.amount,
+        amount: schedule.amount,
         interval,
         intervalCount,
-        createdAt: subscription.created_at
-          ? new Date(subscription.created_at)
+        createdAt: schedule.created_at
+          ? new Date(schedule.created_at)
           : undefined,
-        nextRunDate: subscription.next_run_date
-          ? new Date(subscription.next_run_date)
+        nextRunDate: schedule.next_run_date
+          ? new Date(schedule.next_run_date)
           : undefined,
-        previousRunDate: subscription.prev_run_date
-          ? new Date(subscription.prev_run_date)
+        previousRunDate: schedule.prev_run_date
+          ? new Date(schedule.prev_run_date)
           : undefined,
-        numLeft: subscription.num_left,
+        numLeft: schedule.num_left,
       },
       transactions,
     };
