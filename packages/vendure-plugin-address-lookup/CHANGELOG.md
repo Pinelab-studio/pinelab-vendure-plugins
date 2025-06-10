@@ -1,3 +1,7 @@
+# 1.1.1 (2025-06-04)
+
+- Fixed bug where PostNL house number addition was not being returned on streetline 2
+
 # 1.1.0 (2025-06-04)
 
 - Upgraded to Vendure 3.3.2
