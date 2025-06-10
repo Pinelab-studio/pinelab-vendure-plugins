@@ -319,10 +319,12 @@ export const GET_CUSTOMER_WITH_ID = gql`
 export const UPDATE_SUBSCRIPTION = gql`
   mutation UpdateSubscription($input: UpdateAcceptBlueSubscriptionInput!) {
     updateAcceptBlueSubscription(input: $input) {
+      id
       name
       variantId
       amountDueNow
       priceIncludesTax
+      paymentMethodId
       recurring {
         amount
         interval

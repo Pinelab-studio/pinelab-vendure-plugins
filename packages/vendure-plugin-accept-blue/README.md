@@ -198,6 +198,19 @@ mutation {
 
 To create a check payment method, you can use the `createAcceptBlueCheckPaymentMethod` mutation.
 
+To connect a new payment method to a subscription, you can use the `updateAcceptBlueSubscription` mutation.
+
+```graphql
+mutation {
+  updateAcceptBlueSubscription(input: { id: 12345, paymentMethodId: 67890 }) {
+    id
+    paymentMethodId
+  }
+}
+```
+
+For the Shop API, you need to be logged in as the customer and be owner of the payment method and the recurring schedule. For the Admin API, you only need to be logged in as an admin and have `UpdateOrder` permissions.
+
 ## Fetching Transactions and Subscriptions for placed orders
 
 After an order is placed, the `order.lines.acceptBlueSubscriptions` is populated with the actual subscription values from the Accept Blue platform, so it will not call your strategy anymore. This is to better reflect the subscription that was actually created at the time of ordering.

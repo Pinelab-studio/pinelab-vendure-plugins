@@ -22,6 +22,7 @@ const commonApiExtensions = gql`
     variantId: ID!
     amountDueNow: Int!
     priceIncludesTax: Boolean!
+    paymentMethodId: Int!
     recurring: AcceptBlueSubscriptionRecurringPayment!
     transactions: [AcceptBlueTransaction!]!
   }
@@ -134,26 +135,6 @@ const commonApiExtensions = gql`
     annually
   }
 
-  input UpdateAcceptBlueSubscriptionInput {
-    id: Int!
-    title: String
-    frequency: AcceptBlueFrequencyInput
-    """
-    Amount in cents to bill customer
-    """
-    amount: Int
-    nextRunDate: DateTime
-    """
-    Number of times the schedule has left to bill. Set to 0 for ongoing
-    """
-    numLeft: Int
-    active: Boolean
-    """
-    An email address to send a customer receipt to each time the schedule runs
-    """
-    receiptEmail: String
-  }
-
   enum AcceptBluePaymentMethodType {
     Visa
     MasterCard
@@ -245,6 +226,11 @@ const commonApiExtensions = gql`
 export const shopApiExtensions = gql`
   ${commonApiExtensions}
 
+  input UpdateAcceptBlueSubscriptionInput {
+    id: Int!
+    paymentMethodId: Int
+  }
+
   extend type Mutation {
     """
     Creating a card payment method is only allowed with a nonce token.
@@ -256,11 +242,38 @@ export const shopApiExtensions = gql`
     createAcceptBlueCheckPaymentMethod(
       input: CreateAcceptBlueCheckPaymentMethodInput!
     ): AcceptBlueCheckPaymentMethod!
+    """
+    Update the given subscription in Accept Blue
+    """
+    updateAcceptBlueSubscription(
+      input: UpdateAcceptBlueSubscriptionInput!
+    ): AcceptBlueSubscription!
   }
 `;
 
 export const adminApiExtensions = gql`
   ${commonApiExtensions}
+
+  input UpdateAcceptBlueSubscriptionInput {
+    id: Int!
+    title: String
+    frequency: AcceptBlueFrequencyInput
+    """
+    Amount in cents to bill customer
+    """
+    amount: Int
+    nextRunDate: DateTime
+    """
+    Number of times the schedule has left to bill. Set to 0 for ongoing
+    """
+    numLeft: Int
+    active: Boolean
+    """
+    An email address to send a customer receipt to each time the schedule runs
+    """
+    receiptEmail: String
+    paymentMethodId: Int
+  }
 
   extend type Mutation {
     """

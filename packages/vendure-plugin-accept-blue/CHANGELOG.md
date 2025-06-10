@@ -1,3 +1,7 @@
+# 3.3.0 (2025-06-10)
+
+- Enable updating payment method on a subscription via the Shop API for logged in customers
+
 # 3.2.0 (2025-06-06)
 
 - Enable creating and deleting payment methods via the Shop API for logged in customers

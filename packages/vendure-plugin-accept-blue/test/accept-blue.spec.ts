@@ -380,7 +380,7 @@ describe('Payment with Saved Payment Method', () => {
           return true;
         }
       )
-      .reply(201, createMockRecurringScheduleResult(6014));
+      .reply(201, createMockRecurringScheduleResult({ id: 6014 }));
     //createCharge
     nockInstance
       .persist()
@@ -482,7 +482,7 @@ describe('Payment with Credit Card Payment Method', () => {
     nockInstance
       .persist()
       .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
-      .reply(201, createMockRecurringScheduleResult());
+      .reply(201, createMockRecurringScheduleResult({}));
     //createCharge
     nockInstance
       .persist()
@@ -560,7 +560,7 @@ describe('Payment with Check Payment Method', () => {
     nockInstance
       .persist()
       .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
-      .reply(201, createMockRecurringScheduleResult());
+      .reply(201, createMockRecurringScheduleResult({}));
     //createCharge
     nockInstance
       .persist()
@@ -667,7 +667,7 @@ describe('Payment with Google Pay', () => {
     nockInstance
       .persist()
       .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
-      .reply(201, createMockRecurringScheduleResult());
+      .reply(201, createMockRecurringScheduleResult({}));
 
     const { addPaymentToOrder: order } = await shopClient.query(
       ADD_PAYMENT_TO_ORDER,
@@ -763,7 +763,7 @@ describe('Transactions', () => {
   it('Has transactions per subscription', async () => {
     nockInstance
       .get(`/recurring-schedules/6014`)
-      .reply(200, createMockRecurringScheduleResult(6014));
+      .reply(200, createMockRecurringScheduleResult({ id: 6014 }));
     nockInstance
       .get(`/recurring-schedules/6014/transactions`)
       .reply(200, [mockCardTransaction]);
@@ -1214,6 +1214,102 @@ describe('Payment method management', () => {
       'You are not currently authorized to perform this action'
     );
   });
+
+  it("Updates a subscription's payment method as customer", async () => {
+    const scheduleId = 6014; // This ID was created earlier in test, and added to an order
+    // Mock the get payment method call to verify it's a card
+    nockInstance.get('/payment-methods/456789').reply(200, {
+      id: 456789,
+      payment_method_type: 'shouldnt matter',
+      customer_id: haydenZiemeCustomerDetails.id,
+    });
+    nockInstance
+      .persist()
+      .get(`/recurring-schedules/${scheduleId}`)
+      .reply(200, createMockRecurringScheduleResult({ id: scheduleId }));
+    nockInstance
+      .persist()
+      .patch(`/recurring-schedules/${scheduleId}`)
+      .reply(
+        200,
+        createMockRecurringScheduleResult({
+          id: scheduleId,
+          payment_method_id: 456789,
+        })
+      );
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const { updateAcceptBlueSubscription } = await shopClient.query<
+      any,
+      MutationUpdateAcceptBlueSubscriptionArgs
+    >(UPDATE_SUBSCRIPTION, {
+      input: {
+        id: scheduleId,
+        paymentMethodId: 456789,
+      },
+    });
+    expect(updateAcceptBlueSubscription).toEqual(
+      expect.objectContaining({
+        id: `T_${scheduleId}`,
+        paymentMethodId: 456789,
+      })
+    );
+  });
+
+  it('Does not allow updating to a payment method that is not owned by the user', async () => {
+    const scheduleId = 6014;
+    // Mock the get payment method call to verify it belongs to a different customer
+    nockInstance.get('/payment-methods/456789').reply(200, {
+      id: 456789,
+      payment_method_type: 'shouldnt matter',
+      customer_id: 999999, // Different customer ID, not Hayden
+    });
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const updateRequest = shopClient.query<
+      any,
+      MutationUpdateAcceptBlueSubscriptionArgs
+    >(UPDATE_SUBSCRIPTION, {
+      input: {
+        id: scheduleId,
+        paymentMethodId: 456789,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Does not allow updating a subscription that is not owned by the user', async () => {
+    const scheduleId = 6014; // Created earlier
+    // Mock that the recurring schedule does not belong to Hayden
+    nockInstance.get(`/recurring-schedules/${scheduleId}`).reply(
+      200,
+      createMockRecurringScheduleResult({
+        id: scheduleId,
+        customer_id: 999999, // Different customer ID, not Hayden
+      })
+    );
+    await shopClient.asUserWithCredentials(
+      'hayden.zieme12@hotmail.com',
+      'test'
+    );
+    const updateRequest = shopClient.query<
+      any,
+      MutationUpdateAcceptBlueSubscriptionArgs
+    >(UPDATE_SUBSCRIPTION, {
+      input: {
+        id: scheduleId,
+      },
+    });
+    await expect(updateRequest).rejects.toThrowError(
+      'You are not currently authorized to perform this action'
+    );
+  });
 });
 
 describe('Admin API', () => {
@@ -1315,7 +1411,7 @@ describe('Admin API', () => {
         updateRequest = body;
         return true;
       })
-      .reply(200, createMockRecurringScheduleResult(scheduleId));
+      .reply(200, createMockRecurringScheduleResult({ id: scheduleId }));
     const tenDaysFromNow = new Date();
     tenDaysFromNow.setDate(tenDaysFromNow.getDate() + 10);
     await adminClient.query<any, MutationUpdateAcceptBlueSubscriptionArgs>(
@@ -1330,6 +1426,7 @@ describe('Admin API', () => {
           numLeft: 5,
           title: 'Updated title',
           receiptEmail: 'newCustomer@pinelab.studio',
+          paymentMethodId: 123456,
         },
       }
     );
@@ -1341,6 +1438,7 @@ describe('Admin API', () => {
       next_run_date: tenDaysFromNow.toISOString().substring(0, 10), // Take yyyy-mm-dd
       num_left: 5,
       receipt_email: 'newCustomer@pinelab.studio',
+      payment_method_id: 123456,
     });
   });
 
