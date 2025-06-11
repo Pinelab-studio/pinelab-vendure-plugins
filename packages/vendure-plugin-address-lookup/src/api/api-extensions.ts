@@ -10,7 +10,7 @@ const _scalars = gql`
 export const shopApiExtensions = gql`
   input AddressLookupInput {
     countryCode: String!
-    postalCode: String!
+    postalCode: String
     houseNumber: String
     streetName: String
   }

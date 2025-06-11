@@ -1,3 +1,8 @@
+# 1.2.0 (2025-06-11)
+
+- Added Google Places API strategy for global address lookup
+- BREAKING: Input `postalCode` is now optional
+
 # 1.1.1 (2025-06-04)
 
 - Fixed bug where PostNL house number addition was not being returned on streetline 2

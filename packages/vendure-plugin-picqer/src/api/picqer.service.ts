@@ -438,6 +438,7 @@ export class PicqerService implements OnApplicationBootstrap {
         loggerCtx,
         util.inspect(errorResult)
       );
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw errorResult;
     }
   }
@@ -1075,7 +1076,7 @@ export class PicqerService implements OnApplicationBootstrap {
     try {
       await client.getStats();
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

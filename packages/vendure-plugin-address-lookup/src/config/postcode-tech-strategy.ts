@@ -40,7 +40,7 @@ export class PostcodeTechStrategy implements AddressLookupStrategy {
     ctx: RequestContext,
     input: AddressLookupInput
   ): Promise<OrderAddress[]> {
-    const postalCode = normalizePostalCode(input.postalCode);
+    const postalCode = normalizePostalCode(input.postalCode!);
     const result = await fetch(
       `https://postcode.tech/api/v1/postcode/full?postcode=${postalCode}&number=${input.houseNumber}`,
       {

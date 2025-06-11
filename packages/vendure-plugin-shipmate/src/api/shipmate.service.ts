@@ -281,6 +281,7 @@ export class ShipmateService implements OnApplicationBootstrap {
           `Unable to create Fulfillment for order ${order.code}: ${createdFulfillmentResult.message}`,
           createdFulfillmentResult
         );
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
         throw createdFulfillmentResult.message;
       }
       if (createdFulfillmentResult.state !== state) {
@@ -298,6 +299,7 @@ export class ShipmateService implements OnApplicationBootstrap {
             `Unable to transition Fulfillment ${createdFulfillmentResult.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
             createdFulfillmentResult
           );
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
           throw transitionResult.transitionError;
         }
       }
@@ -318,6 +320,7 @@ export class ShipmateService implements OnApplicationBootstrap {
             `Unable to transition Fulfillment ${fulfillment.id} of order ${order.code} to ${state}: ${transitionResult.transitionError}`,
             transitionResult
           );
+          // eslint-disable-next-line @typescript-eslint/only-throw-error
           throw transitionResult.transitionError;
         }
       }

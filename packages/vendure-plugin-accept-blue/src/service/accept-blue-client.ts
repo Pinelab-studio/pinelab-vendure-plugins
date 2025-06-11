@@ -230,6 +230,7 @@ export class AcceptBlueClient {
   ): Promise<AcceptBlueRecurringSchedule[]> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await Promise.all(
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       ids.map(async (id) => this.request('get', `recurring-schedules/${id}`))
     );
   }

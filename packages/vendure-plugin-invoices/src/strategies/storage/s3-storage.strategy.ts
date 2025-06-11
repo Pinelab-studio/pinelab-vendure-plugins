@@ -89,6 +89,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
           Bucket: this.bucket,
           Key: invoice.storageReference,
         }).promise();
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string
         await writeFile(tmpFile, object.Body?.toString() as string);
         return {
           path: tmpFile,

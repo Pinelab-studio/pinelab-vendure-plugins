@@ -105,7 +105,7 @@ export class RemoteAssetDownloader {
       fs.copyFileSync(cachedAsset, destinationPath);
       console.log(`Using cached asset from ${cachedAsset}`);
       return storefrontUrl;
-    } catch (e) {
+    } catch {
       // File doesn't exist
     }
     console.log(

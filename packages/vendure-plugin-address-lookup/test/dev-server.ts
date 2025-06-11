@@ -13,8 +13,11 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { initialData } from '../../test/src/initial-data';
 import { AddressLookupPlugin } from '../src/address-lookup.plugin';
-import { PostNLLookupStrategy } from '../src';
-import { PostcodeTechStrategy } from '../src/config/postcode-tech-strategy';
+import {
+  GooglePlacesLookupStrategy,
+  PostNLLookupStrategy,
+  PostcodeTechStrategy,
+} from '../src';
 
 require('dotenv').config();
 
@@ -33,6 +36,10 @@ require('dotenv').config();
           }),
           new PostcodeTechStrategy({
             apiKey: process.env.POSTCODE_TECH_APIKEY!,
+          }),
+          new GooglePlacesLookupStrategy({
+            apiKey: process.env.GOOGLE_PLACES_APIKEY!,
+            supportedCountryCodes: ['DE'],
           }),
         ],
       }),
