@@ -18,6 +18,10 @@ This Vendure plugin allows you to lookup addresses based on postalcode, housenum
           new PostNLLookupStrategy({
             apiKey: process.env.POSTNL_APIKEY!,
           }),
+                new GooglePlacesLookupStrategy({
+        supportedCountryCodes: ['DE'], // You can use the Google Places API for any country, but you need to register for an API key at https://developers.google.com/maps/documentation/places/web-service/get-api-key
+        apiKey: process.env.GOOGLE_PLACES_APIKEY!,
+      })
 
           // If you want to use the free Postcode.tech, get an API key at https://postcode.tech/ and uncomment the lines below
           // new PostcodeTechStrategy({
@@ -82,6 +86,68 @@ query {
     streetLine2
     postalCode
     city
+    country
+    countryCode
+  }
+}
+```
+
+## Google Places Strategy
+
+If you want to use the Google Places API, you can do so by registering the `GooglePlacesLookupStrategy` in your config:
+
+```ts
+import { GooglePlacesLookupStrategy } from '@pinelab/vendure-plugin-address-lookup';
+
+plugins: [
+  AddressLookupPlugin.init({
+    lookupStrategies: [
+      new GooglePlacesLookupStrategy({
+        supportedCountryCodes: ['DE'],
+        apiKey: process.env.GOOGLE_PLACES_APIKEY!,
+      }),
+    ],
+  }),
+],
+
+```
+
+The Google places API requires you to input the housenumber and streetname. It will mostly give you a single result, even when multiple results can exists.
+If that happens, you can pass the postalcode to get a specific result.
+
+```graphql
+# This example will give you 1 result: the Parkstraße 4 in Osnabrück
+{
+  lookupAddress(
+    input: { countryCode: "DE", streetName: "Parkstraße", houseNumber: "4" }
+  ) {
+    streetLine1
+    streetLine2
+    city
+    province
+    postalCode
+    country
+    countryCode
+  }
+}
+```
+
+```graphql
+# This example will give you another single result: the Parkstraße 4 in Löningen
+{
+  lookupAddress(
+    input: {
+      countryCode: "DE"
+      streetName: "Parkstraße"
+      houseNumber: "4"
+      postalCode: "49624"
+    }
+  ) {
+    streetLine1
+    streetLine2
+    city
+    province
+    postalCode
     country
     countryCode
   }

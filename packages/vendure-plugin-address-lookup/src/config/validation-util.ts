@@ -3,6 +3,9 @@ import { AddressLookupInput } from '../generated/graphql';
 export function validateDutchPostalCode(
   input: AddressLookupInput
 ): true | string {
+  if (!input.postalCode) {
+    return 'Postal code is required for lookup';
+  }
   const postalCode = normalizePostalCode(input.postalCode);
   if (postalCode.length !== 6) {
     return 'Postal code must be 4 numbers and 2 letters';

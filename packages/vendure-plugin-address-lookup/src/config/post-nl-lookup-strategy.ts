@@ -27,7 +27,7 @@ interface PostNLLookupStrategyInput {
 export class PostNLLookupStrategy implements AddressLookupStrategy {
   readonly supportedCountryCodes = ['NL', 'BE'];
 
-  constructor(private readonly input: PostNLLookupStrategyInput) { }
+  constructor(private readonly input: PostNLLookupStrategyInput) {}
 
   validateInput(input: AddressLookupInput): true | string {
     const countryCode = input.countryCode.toLowerCase();
@@ -44,7 +44,7 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
     input: AddressLookupInput
   ): Promise<OrderAddress[]> {
     const countryCode = input.countryCode.toLowerCase();
-    const postalCode = normalizePostalCode(input.postalCode);
+    const postalCode = normalizePostalCode(input.postalCode!);
     const { houseNumber, addition } = this.parseHouseNumber(input.houseNumber!);
     let url = `https://api.postnl.nl/v2/address/benelux?countryIso=${countryCode}&houseNumber=${houseNumber}&postalCode=${postalCode}`;
     if (input.streetName) {
@@ -71,7 +71,9 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
       fullName: '',
       company: '',
       streetLine1: result.streetName,
-      streetLine2: result.houseNumberAddition ? `${result.houseNumber} ${result.houseNumberAddition}` : result.houseNumber,
+      streetLine2: result.houseNumberAddition
+        ? `${result.houseNumber} ${result.houseNumberAddition}`
+        : result.houseNumber,
       city: result.cityName,
       province: result.stateName,
       postalCode,
@@ -88,6 +90,9 @@ export class PostNLLookupStrategy implements AddressLookupStrategy {
   private validateBEPostalCode(input: AddressLookupInput): true | string {
     const countryCode = input.countryCode;
     const postalCode = input.postalCode;
+    if (!postalCode) {
+      return 'Postal code is required for lookup';
+    }
     if (postalCode.length !== 4) {
       return `Postal code for '${countryCode}' code must be 4 numbers`;
     }
