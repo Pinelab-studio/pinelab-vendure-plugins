@@ -135,6 +135,7 @@ export class OrderCleanupService implements OnModuleInit {
         reason: `Automated cancellation after ${this.options.olderThanDays} days of inactivity by '${loggerCtx}'`,
       });
       if (isGraphQlErrorResult(result)) {
+        // eslint-disable-next-line @typescript-eslint/only-throw-error
         throw result;
       }
       Logger.debug(`Cancelled order ${result.code} (${result.id})`, loggerCtx);

@@ -19,3 +19,21 @@ export const shopApiExtensions = gql`
     lookupAddress(input: AddressLookupInput!): [OrderAddress!]!
   }
 `;
+
+gql`
+  # dit gaat goed, geen changes nodig
+  query lookupAddress($input: AddressLookupInput!) {
+    lookupAddress(input: $input) {
+      streetLine1
+      streetLine2
+    }
+  }
+
+  # dit gaat niet goed, want postalCode is nu optional: String ipv String!
+  query lookupAddress($postalCode: String!) {
+    lookupAddress(input: { countryCode: "DE", postalCode: $postalCode }) {
+      streetLine1
+      streetLine2
+    }
+  }
+`;

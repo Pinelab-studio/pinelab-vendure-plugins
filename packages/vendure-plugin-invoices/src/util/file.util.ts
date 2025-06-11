@@ -3,6 +3,7 @@ import fs from 'fs/promises';
 import * as tmp from 'tmp';
 import { loggerCtx } from '../constants';
 
+/* eslint-disable @typescript-eslint/no-require-imports */
 import AdmZip = require('adm-zip');
 
 export async function createTempFile(postfix: string): Promise<string> {
@@ -27,7 +28,7 @@ export async function exists(path: string): Promise<boolean> {
   try {
     await fs.access(path);
     exists = true;
-  } catch (error) {
+  } catch {
     exists = false;
   }
   return exists;

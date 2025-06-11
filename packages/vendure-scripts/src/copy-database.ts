@@ -4,6 +4,7 @@
 // Some eslint rules are disabled, because there are no types available for 'prompt-confirm'
 /* eslint-disable @typescript-eslint/no-var-requires */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const Confirm = require('prompt-confirm');
 import { spawn } from 'child_process';
