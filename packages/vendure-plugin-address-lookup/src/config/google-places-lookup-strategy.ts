@@ -70,7 +70,7 @@ export class GooglePlacesLookupStrategy implements AddressLookupStrategy {
         },
         body: JSON.stringify({
           textQuery: query,
-          regionCode: input.countryCode?.toLowerCase(),
+          regionCode: input.countryCode.toLowerCase(),
         }),
       }
     );
