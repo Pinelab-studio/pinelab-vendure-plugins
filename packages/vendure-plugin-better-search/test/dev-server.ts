@@ -42,7 +42,6 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
         // Add facetValueNames to indexable fields
         indexableFields: {
           ...defaultSearchConfig.indexableFields,
-          facetValueNames: 2,
         },
       }),
       DefaultSearchPlugin,

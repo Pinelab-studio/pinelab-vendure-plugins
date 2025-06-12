@@ -7,20 +7,20 @@ export type SearchDocument = BetterSearchResult & Record<string, unknown>;
  * @description
  * The plugin can be configured using the following options:
  */
-export interface PluginInitOptions {
+export interface PluginInitOptions<T extends SearchDocument = SearchDocument> {
   /**
    * Map a product to a Search Document.
    * This is called when creating the index
    */
-  mapToSearchDocument: (
+  mapToSearchDocument:(
     product: Product,
     collectionForThisProduct: Collection[]
-  ) => SearchDocument;
+  ) => T;
   /**
    * The fields and corresponding weights that should be indexed.
    * These should should correspond to what you return in the mapToSearchDocument function.
    */
-  indexableFields: Record<string, number>;
+  indexableFields: { [K in keyof T]: number };
   /**
    * The fuzziness of the search.
    * 0.0 is no fuzzyness, 1.0 is full fuzzyness.

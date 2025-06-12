@@ -1,6 +1,9 @@
 import gql from 'graphql-tag';
+import { BetterSearchPlugin } from '../better-search.plugin';
 
-export const shopApiExtensions = gql`
+export const shopApiExtensions = () => {
+  console.log('===============', BetterSearchPlugin.options)
+  return gql`
   type BetterSearchResult {
     productId: ID!
     slug: String!
@@ -35,3 +38,4 @@ export const shopApiExtensions = gql`
     betterSearch(input: BetterSearchInput!): BetterSearchResultList!
   }
 `;
+};
