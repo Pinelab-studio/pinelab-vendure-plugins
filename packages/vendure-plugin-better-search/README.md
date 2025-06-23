@@ -110,7 +110,7 @@ export const searchConfig: BetterSearchOptions<MySearchResult> = {
       weight: 2,
       // Tell the GraphQL schema that "keywords" is a [String!]!
       // If you do not specify the graphqlFieldType, the field will not be returned in the search results
-      graphqlFieldType: "String!",
+      graphqlFieldType: "[String!]!",
     },
   },
 };
