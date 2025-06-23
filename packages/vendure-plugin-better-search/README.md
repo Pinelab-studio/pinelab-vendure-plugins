@@ -87,7 +87,7 @@ import {
 
 // Define an interface for our custom search result
 interface MySearchResult extends BetterSearchResult {
-  customStaticField: string;
+  keywords: string[];
 }
 
 export const searchConfig: Partial<SearchPluginInitOptions<MySearchResult>> = {
