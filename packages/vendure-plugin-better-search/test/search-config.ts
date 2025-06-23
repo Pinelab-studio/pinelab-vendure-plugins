@@ -1,14 +1,14 @@
 import {
   BetterSearchResult,
   defaultSearchConfig,
-  SearchPluginInitOptions,
+  BetterSearchOptions,
 } from '../src';
 
 interface MySearchResult extends BetterSearchResult {
   facetValueNames: string[];
   customStaticField: string;
 }
-export const searchConfig: Partial<SearchPluginInitOptions<MySearchResult>> = {
+export const searchConfig: BetterSearchOptions<MySearchResult> = {
   mapToSearchDocument: (product, collections) => {
     const defaultDocument = defaultSearchConfig.mapToSearchDocument(
       product,

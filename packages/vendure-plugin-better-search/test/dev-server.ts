@@ -11,12 +11,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import {
-  BetterSearchPlugin,
-  BetterSearchResult,
-  defaultSearchConfig,
-  SearchPluginInitOptions,
-} from '../src';
+import { BetterSearchPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { searchConfig } from './search-config';
 

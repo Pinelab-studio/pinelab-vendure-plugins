@@ -1,11 +1,15 @@
 import { Collection, Product } from '@vendure/core';
 import { BetterSearchResult } from './api/generated/graphql';
 
+export type BetterSearchOptions<
+  T extends BetterSearchResult = BetterSearchResult
+> = Partial<MandatoryPluginInitOptions<T>>;
+
 /**
  * @description
  * The plugin can be configured using the following options:
  */
-export interface SearchPluginInitOptions<
+export interface MandatoryPluginInitOptions<
   T extends BetterSearchResult = BetterSearchResult
 > {
   /**

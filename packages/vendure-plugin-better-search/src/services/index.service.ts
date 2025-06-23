@@ -25,7 +25,7 @@ import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { BetterSearchDocuments } from '../entities/better-search-documents.entity';
-import { SearchPluginInitOptions } from '../types';
+import { MandatoryPluginInitOptions } from '../types';
 import { tokenize } from './util';
 import { BetterSearchResult } from '../api/generated/graphql';
 
@@ -40,7 +40,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   constructor(
     private connection: TransactionalConnection,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
-    private options: SearchPluginInitOptions,
+    private options: MandatoryPluginInitOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
     private productVariantService: ProductVariantService,

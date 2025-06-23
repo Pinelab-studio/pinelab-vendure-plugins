@@ -1,5 +1,5 @@
 import { Collection, Product } from '@vendure/core';
-import { SearchPluginInitOptions } from './types';
+import { MandatoryPluginInitOptions } from './types';
 import { BetterSearchResult } from './';
 
 type IndexedFields = BetterSearchResult & {
@@ -7,7 +7,7 @@ type IndexedFields = BetterSearchResult & {
   skus: string[];
 };
 
-export const defaultSearchConfig: SearchPluginInitOptions<IndexedFields> = {
+export const defaultSearchConfig: MandatoryPluginInitOptions<IndexedFields> = {
   debounceIndexRebuildMs: 5000,
   fuzziness: 0.3,
   indexableFields: {
