@@ -28,7 +28,7 @@ export const searchConfig: BetterSearchOptions<MySearchResult> = {
   // Add facetValueNames to indexable fields
   indexableFields: {
     ...defaultSearchConfig.indexableFields,
-    facetValueNames: { weight: 2, graphqlFieldType: '[String!]!' },
-    customStaticField: { weight: 0, graphqlFieldType: 'String!' },
+    // facetValueNames: { weight: 2, graphqlFieldType: '[String!]!' },
+    // customStaticField: { weight: 0, graphqlFieldType: 'String!' },
   },
 };

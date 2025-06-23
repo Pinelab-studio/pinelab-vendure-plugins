@@ -73,7 +73,7 @@ export class SearchService {
       if (!index) {
         await this.indexService.triggerReindex(ctx);
         throw Error(
-          `No index was created for channel ${ctx.channel.id} and language ${ctx.languageCode}`
+          `No index was created for channel '${ctx.channel.id}' and language '${ctx.languageCode}'`
         );
       }
       cachedIndex = {
