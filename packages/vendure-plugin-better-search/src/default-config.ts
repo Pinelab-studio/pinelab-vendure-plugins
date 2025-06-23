@@ -1,20 +1,21 @@
 import { Collection, Product } from '@vendure/core';
-import { PluginInitOptions, SearchDocument } from './types';
+import { SearchPluginInitOptions } from './types';
+import { BetterSearchResult } from './';
 
-type IndexedFields = SearchDocument & {
+type IndexedFields = BetterSearchResult & {
   variantNames: string[];
   skus: string[];
 };
 
-export const defaultSearchConfig: PluginInitOptions = {
+export const defaultSearchConfig: SearchPluginInitOptions<IndexedFields> = {
   debounceIndexRebuildMs: 5000,
   fuzziness: 0.3,
   indexableFields: {
-    productName: 3,
-    slug: 2,
-    variantNames: 3,
-    collectionNames: 1,
-    skus: 2,
+    productName: { weight: 3 },
+    slug: { weight: 2 },
+    variantNames: { weight: 3 },
+    collectionNames: { weight: 1 },
+    skus: { weight: 2 },
   },
   mapToSearchDocument: mapToDefaultSearchDocument,
 };

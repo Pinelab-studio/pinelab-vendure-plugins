@@ -25,8 +25,9 @@ import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
 import { BetterSearchDocuments } from '../entities/better-search-documents.entity';
-import { PluginInitOptions, SearchDocument } from '../types';
+import { SearchPluginInitOptions } from '../types';
 import { tokenize } from './util';
+import { BetterSearchResult } from '../api/generated/graphql';
 
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
@@ -38,7 +39,8 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   constructor(
     private connection: TransactionalConnection,
-    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: PluginInitOptions,
+    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
+    private options: SearchPluginInitOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
     private productVariantService: ProductVariantService,
@@ -108,7 +110,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     // Get all products
     let skip = 0;
     const take = 100;
-    const searchDocuments: SearchDocument[] = [];
+    const searchDocuments: BetterSearchResult[] = [];
     let hasMore = true;
     while (hasMore) {
       Logger.verbose(
@@ -138,7 +140,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
         hasMore = false;
       }
       // Build search documents for these products
-      const indexableProducts: SearchDocument[] = await Promise.all(
+      const indexableProducts: BetterSearchResult[] = await Promise.all(
         products.map(async (p) => {
           const collections =
             await this.collectionService.getCollectionsByProductId(
@@ -202,17 +204,23 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Instantiates a new MiniSearch instance (index) with the given settings for the given indexable products.
    */
-  private createMiniSearch(documents: SearchDocument[]) {
+  private createMiniSearch(documents: BetterSearchResult[]) {
     const uniqueFieldNames = [
       ...new Set(documents.flatMap((p) => Object.keys(p))),
     ];
     const minisearch = new MiniSearch({
       // Use suffix terms when indexing
-      processTerm: (term) => tokenize(term, 3),
+      tokenize: (term) => tokenize(term, 4),
       fields: Object.keys(this.options.indexableFields),
       storeFields: Array.from(uniqueFieldNames),
       searchOptions: {
-        boost: this.options.indexableFields,
+        // Map the config to, for example,  "{ myFieldName: 3}"
+        boost: Object.fromEntries(
+          Object.entries(this.options.indexableFields).map(([key, value]) => [
+            key,
+            value.weight,
+          ])
+        ),
         fuzzy: this.options.fuzziness,
         prefix: true,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Use default processTerm when searching

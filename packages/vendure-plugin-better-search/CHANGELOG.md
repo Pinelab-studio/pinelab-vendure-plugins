@@ -1,3 +1,7 @@
+# 0.3.0 (2025-06-23)
+
+- Allow extending the GraphQL results with custom fields
+
 # 0.2.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2

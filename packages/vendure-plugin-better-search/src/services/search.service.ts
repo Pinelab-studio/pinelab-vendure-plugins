@@ -4,10 +4,11 @@ import { asError } from 'catch-unknown';
 import MiniSearch from 'minisearch';
 import {
   BetterSearchInput,
+  BetterSearchResult,
   BetterSearchResultList,
 } from '../api/generated/graphql';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
-import { PluginInitOptions, SearchDocument } from '../types';
+import { SearchPluginInitOptions } from '../types';
 import { IndexService } from './index.service';
 
 interface CachedIndex {
@@ -27,7 +28,8 @@ export class SearchService {
 
   constructor(
     private indexService: IndexService,
-    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS) private options: PluginInitOptions
+    @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
+    private options: SearchPluginInitOptions
   ) {}
 
   async search(
@@ -45,7 +47,9 @@ export class SearchService {
     const index = await this.getIndex(ctx);
     const skip = input.skip ?? 0;
     const take = input.take ?? 10;
-    const allResults = index.search(input.term) as unknown as SearchDocument[]; // Not sure why this is needed, but all fields are tested in e2e
+    const allResults = index.search(
+      input.term
+    ) as unknown as BetterSearchResult[]; // Not sure why this is needed, but all fields are tested in e2e
     const results = allResults.slice(skip, skip + take);
     return {
       items: results,
@@ -60,7 +64,7 @@ export class SearchService {
    */
   private async getIndex(
     ctx: RequestContext
-  ): Promise<MiniSearch<SearchDocument>> {
+  ): Promise<MiniSearch<BetterSearchResult>> {
     const cacheKey = `${ctx.channel.id}-${ctx.languageCode}`;
     let cachedIndex = this.cachedIndices.get(cacheKey);
     if (!cachedIndex) {
