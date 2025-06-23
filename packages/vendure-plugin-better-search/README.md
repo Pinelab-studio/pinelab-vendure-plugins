@@ -74,9 +74,9 @@ Checkout this page on more information on the different column types: https://or
 
 ## Custom fields
 
-You can add custom fields to your the search results by defining a custom `mapToSearchDocument` function.
+You can add custom fields by defining a custom `mapToSearchDocument` function together with a custom `indexableFields` object.
 
-For example, we have a custom field `keywords` on our products, and we want to index it:
+For example, we have a custom field `keywords` on our products, and we want to index it, and return it in the search results:
 
 ```ts
 import {
@@ -109,6 +109,7 @@ export const searchConfig: Partial<SearchPluginInitOptions<MySearchResult>> = {
     keywords: {
       weight: 2,
       // Tell the GraphQL schema that "keywords" is a [String!]!
+      // If you do not specify the graphqlFieldType, the field will not be returned in the search results
       graphqlFieldType: "String!",
     },
   },
@@ -122,7 +123,7 @@ plugins: [
 ],
 ```
 
-Checkout the `defaultSearchConfig.ts` for the default weights.
+Checkout the `defaultSearchConfig.ts` for the default weights of each field.
 
 ## Tips
 
