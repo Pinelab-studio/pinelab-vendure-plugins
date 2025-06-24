@@ -1,3 +1,7 @@
+# 2.1.2 (2025-12-17)
+
+- Version bump
+
 # 2.1.1 (2025-06-24)
 
 - Improved error logging when incoming webhooks fail
