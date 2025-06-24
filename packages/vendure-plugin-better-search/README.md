@@ -82,7 +82,7 @@ For example, we have a custom field `keywords` on our products, and we want to i
 import {
   BetterSearchResult,
   defaultSearchConfig,
-  BetterSearchOptions,
+  BetterSearchConfigInput,
 } from '@pinelab/vendure-plugin-better-search';
 
 // Define an interface for our custom search result
@@ -90,7 +90,7 @@ interface MySearchResult extends BetterSearchResult {
   keywords: string[];
 }
 
-export const searchConfig: BetterSearchOptions<MySearchResult> = {
+export const searchConfig: BetterSearchConfigInput<MySearchResult> = {
   mapToSearchDocument: (product, collections) => {
     // Use the default mapping to get the base document
     const defaultDocument = defaultSearchConfig.mapToSearchDocument(
