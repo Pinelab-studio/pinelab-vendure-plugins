@@ -1,3 +1,7 @@
+# 2.1.1 (2025-06-24)
+
+- Improved error logging when incoming webhooks fail
+
 # 2.1.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2

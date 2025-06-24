@@ -1,3 +1,7 @@
+# 1.9.1 (2025-06-24)
+
+- Add stack trace to error message when job fails
+
 # 1.9.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2

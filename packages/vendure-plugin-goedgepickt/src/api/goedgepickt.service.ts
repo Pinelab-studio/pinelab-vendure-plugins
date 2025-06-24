@@ -391,6 +391,15 @@ export class GoedgepicktService
     if (vendureOrder.state === 'Delivered') {
       return;
     }
+    if (vendureOrder.state === 'PaymentAuthorized') {
+      // Dont try to transition to Delivered, because the payment still needs to be settled.
+      // This can have multiple causes, like offline payments that need to be manually settled.
+      Logger.info(
+        `Order ${orderCode} is in PaymentAuthorized state. Not updating status to Delivered, because it's payment still needs to be settled.`,
+        loggerCtx
+      );
+      return;
+    }
     if (vendureOrder.state !== 'Shipped') {
       // Try to transition to shipped first
       await this.transitionToState(ctx, vendureOrder, 'Shipped');
