@@ -1,3 +1,8 @@
+# 2.1.1 (2025-06-24)
+
+- Improved error logging when incoming webhooks fail
+- Don't try to transition to Delivered when the order is in PaymentAuthorized state
+
 # 2.1.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2

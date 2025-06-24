@@ -391,6 +391,15 @@ export class GoedgepicktService
     if (vendureOrder.state === 'Delivered') {
       return;
     }
+    if (vendureOrder.state === 'PaymentAuthorized') {
+      // Dont try to transition to Delivered, because the payment still needs to be settled.
+      // This can have multiple causes, like offline payments that need to be manually settled.
+      Logger.info(
+        `Order ${orderCode} is in PaymentAuthorized state. Not updating status to Delivered, because it's payment still needs to be settled.`,
+        loggerCtx
+      );
+      return;
+    }
     if (vendureOrder.state !== 'Shipped') {
       // Try to transition to shipped first
       await this.transitionToState(ctx, vendureOrder, 'Shipped');
@@ -716,12 +725,9 @@ export class GoedgepicktService
     );
     const errorResult = result as OrderStateTransitionError;
     if (errorResult.errorCode) {
-      Logger.error(
-        `Failed to transition order ${order.code} to ${state}: ${errorResult.message}`,
-        loggerCtx,
-        util.inspect(errorResult)
-      );
-      throw errorResult;
+      const message = `Failed to transition order ${order.code} to ${state}: ${errorResult.message} - ${errorResult.transitionError}`;
+      Logger.error(message, loggerCtx, util.inspect(errorResult));
+      throw new Error(message);
     }
   }
 

@@ -15,6 +15,7 @@ import { DataSource, In, LessThan, Repository } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { CloudTaskMessage, CloudTaskOptions } from './types';
 import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
+import { asError } from 'catch-unknown';
 
 type QueueProcessFunction = (job: Job) => Promise<any>;
 
@@ -255,7 +256,8 @@ export class CloudTasksService implements OnApplicationBootstrap {
         })
       );
       return 200;
-    } catch (error: any) {
+    } catch (e: any) {
+      const error = asError(e);
       if (this.options.onJobFailure) {
         try {
           await this.options.onJobFailure(error);
@@ -267,7 +269,8 @@ export class CloudTasksService implements OnApplicationBootstrap {
         // This was the final attempt, so mark the job as failed
         Logger.error(
           `Failed to handle message ${message.id} after final attempt (${attempts} attempts made). Marking with status 200 to prevent retries: ${error}`,
-          loggerCtx
+          loggerCtx,
+          e.stack
         );
         // Log failed job in DB
         await this.saveWithRetry(
@@ -283,7 +286,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
             isSettled: true,
             settledAt: new Date(),
             progress: 0,
-            result: error?.message ?? error.toString(),
+            result: error.message as any,
           })
         ).catch((e: any) => {
           Logger.error(`Failed `, loggerCtx);
