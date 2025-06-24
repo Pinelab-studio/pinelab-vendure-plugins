@@ -716,12 +716,9 @@ export class GoedgepicktService
     );
     const errorResult = result as OrderStateTransitionError;
     if (errorResult.errorCode) {
-      Logger.error(
-        `Failed to transition order ${order.code} to ${state}: ${errorResult.message}`,
-        loggerCtx,
-        util.inspect(errorResult)
-      );
-      throw errorResult;
+      const message = `Failed to transition order ${order.code} to ${state}: ${errorResult.message} - ${errorResult.transitionError}`;
+      Logger.error(message, loggerCtx, util.inspect(errorResult));
+      throw new Error(message);
     }
   }
 
