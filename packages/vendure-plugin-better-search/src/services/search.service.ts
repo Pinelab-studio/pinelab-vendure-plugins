@@ -8,7 +8,7 @@ import {
   BetterSearchResultList,
 } from '../api/generated/graphql';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
-import { MandatoryPluginInitOptions } from '../types';
+import { BetterSearchConfig } from '../types';
 import { IndexService } from './index.service';
 
 interface CachedIndex {
@@ -29,7 +29,7 @@ export class SearchService {
   constructor(
     private indexService: IndexService,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
-    private options: MandatoryPluginInitOptions
+    private options: BetterSearchConfig
   ) {}
 
   async search(
