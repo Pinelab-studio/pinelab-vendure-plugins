@@ -1,6 +1,19 @@
 import gql from 'graphql-tag';
+import { BetterSearchPlugin } from '../better-search.plugin';
 
-export const shopApiExtensions = gql`
+export const shopApiExtensions = () => {
+  // Map the custom fields to the graphql schema. E.g. "facetValueNames: [String!]!"
+  const customFields = Object.entries(
+    BetterSearchPlugin.options.indexableFields
+  )
+    // Only include fields that have a graphqlFieldType
+    .filter(([, value]) => value.graphqlFieldType)
+    .map(([key, value]) => {
+      return `${key}: ${value.graphqlFieldType}`;
+    })
+    .join('\n');
+
+  return gql`
   type BetterSearchResult {
     productId: ID!
     slug: String!
@@ -13,6 +26,8 @@ export const shopApiExtensions = gql`
     facetValueIds: [ID!]!
     collectionIds: [ID!]!
     collectionNames: [String!]!
+    skus: [String!]!
+    ${customFields}
   }
 
   type BetterSearchResultAsset {
@@ -35,3 +50,4 @@ export const shopApiExtensions = gql`
     betterSearch(input: BetterSearchInput!): BetterSearchResultList!
   }
 `;
+};

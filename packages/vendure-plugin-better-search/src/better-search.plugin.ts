@@ -4,7 +4,7 @@ import { shopApiExtensions } from './api/api-extensions';
 import { SearchShopResolver } from './api/search.resolver';
 import { BETTER_SEARCH_PLUGIN_OPTIONS } from './constants';
 import { SearchService } from './services/search.service';
-import { PluginInitOptions } from './types';
+import { BetterSearchConfigInput, BetterSearchConfig } from './types';
 import { IndexService } from './services/index.service';
 import { defaultSearchConfig } from './default-config';
 import { BetterSearchDocuments } from './entities/better-search-documents.entity';
@@ -30,9 +30,9 @@ import { BetterSearchDocuments } from './entities/better-search-documents.entity
   entities: [BetterSearchDocuments],
 })
 export class BetterSearchPlugin {
-  static options: PluginInitOptions = defaultSearchConfig;
+  static options: BetterSearchConfig = defaultSearchConfig;
 
-  static init(options: Partial<PluginInitOptions>): Type<BetterSearchPlugin> {
+  static init(options: BetterSearchConfigInput): Type<BetterSearchPlugin> {
     this.options = { ...this.options, ...options };
     return BetterSearchPlugin;
   }

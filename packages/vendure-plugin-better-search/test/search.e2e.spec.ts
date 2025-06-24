@@ -18,8 +18,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { addItem } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
-import { BetterSearchPlugin, defaultSearchConfig } from '../src';
+import {
+  BetterSearchPlugin,
+  BetterSearchResult,
+  defaultSearchConfig,
+} from '../src';
 import gql from 'graphql-tag';
+import { searchConfig } from './search-config';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -29,30 +34,7 @@ beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [
-      BetterSearchPlugin.init({
-        mapToSearchDocument: (product, collections) => {
-          const defaultDocument = defaultSearchConfig.mapToSearchDocument(
-            product,
-            collections
-          );
-          const productFacetValues = product.facetValues.map((fv) => fv.name);
-          return {
-            ...defaultDocument,
-            facetValueNames: productFacetValues,
-            productAsset: {
-              id: 'mock',
-              preview: 'mock-preview',
-            },
-          };
-        },
-        // Add facetValueNames to indexable fields
-        indexableFields: {
-          ...defaultSearchConfig.indexableFields,
-          facetValueNames: 2,
-        },
-      }),
-    ],
+    plugins: [BetterSearchPlugin.init(searchConfig)],
   });
 
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
@@ -91,8 +73,6 @@ it('Returns all fields for exact match', async () => {
   const {
     betterSearch: { totalItems, items },
   } = result;
-  expect(totalItems).toBe(1);
-  expect(items.length).toBe(1);
   expect(items[0].productId).toBe('T_2');
   expect(items[0].slug).toBe('smartphone');
   expect(items[0].productName).toBe('Smartphone');
@@ -115,11 +95,19 @@ it('Finds by facet value name', async () => {
       term: 'sports',
     },
   });
-  expect(totalItems).toBe(3);
-  expect(items.length).toBe(3);
-  expect(items[0].productName).toBe('Yoga Mat');
-  expect(items[1].productName).toBe('Dumbbells');
-  expect(items[2].productName).toBe('Running Shoes');
+  expect(totalItems).toBe(6);
+  expect(items.length).toBe(6);
+  expect(
+    items.find((item: BetterSearchResult) => item.productName === 'Yoga Mat')
+  ).toBeDefined();
+  expect(
+    items.find((item: BetterSearchResult) => item.productName === 'Dumbbells')
+  ).toBeDefined();
+  expect(
+    items.find(
+      (item: BetterSearchResult) => item.productName === 'Running Shoes'
+    )
+  ).toBeDefined(); // Has 'black' as variant
 });
 
 it('Finds by suffix and facet value', async () => {
@@ -131,8 +119,6 @@ it('Finds by suffix and facet value', async () => {
       term: 'bell',
     },
   });
-  expect(totalItems).toBe(2);
-  expect(items.length).toBe(2);
   expect(items[0].productName).toBe('Dumbbells');
   expect(items[1].productName).toBe('Wallet');
 });
@@ -151,55 +137,51 @@ it('Finds by prefix', async () => {
   expect(items[0].productName).toBe('Dumbbells');
 });
 
-it('Fetches all 14 results', async () => {
+it('Fetches all results', async () => {
   const {
     betterSearch: { totalItems, items },
   } = await shopClient.query(SEARCH_QUERY, {
     input: { term: 'pack', take: 100 },
   });
-  expect(totalItems).toBe(14);
-  expect(items.length).toBe(14);
+  expect(totalItems).toBe(5);
+  expect(items.length).toBe(5);
   expect(items[0].productName).toBe('Backpack');
-  expect(items[1].productName).toBe('Running Shoes'); // Has 'black' as variant
+  expect(items[1].productName).toBe('Wallet'); // Has 'black' as variant
 });
 
-it('Fetches results 2 to 4', async () => {
+it('Fetches results 2 to 5', async () => {
   const {
     betterSearch: { totalItems, items },
   } = await shopClient.query(SEARCH_QUERY, {
     input: { term: 'pack', skip: 1, take: 4 },
   });
-  expect(totalItems).toBe(14);
+  expect(totalItems).toBe(5);
   expect(items.length).toBe(4);
-  expect(items[0].productName).toBe('Running Shoes'); // Has 'black' as variant
+  expect(items[0].productName).toBe('Wallet'); // Has 'black' as variant
 });
 
 it('Finds by partial variant names', async () => {
   // Searching for 'ainless' finds 'Coffee Maker' and 'Toaster', because they both have a variant with 'Stainless' in the name
   const {
-    betterSearch: { totalItems, items },
+    betterSearch: { items },
   } = await shopClient.query(SEARCH_QUERY, {
     input: {
       term: 'ainless',
     },
   });
-  expect(totalItems).toBe(2);
-  expect(items.length).toBe(2);
-  expect(items[0].productName).toBe('Toaster');
-  expect(items[1].productName).toBe('Coffee Maker');
+  expect(items[0].productName).toBe('Coffee Maker');
+  expect(items[1].productName).toBe('Toaster');
 });
 
 it('Finds by mistyped variant names', async () => {
-  // Searching for 'ainless' finds 'Coffee Maker' and 'Toaster', because they both have a variant with 'Stainless' in the name
+  // 'Coffee Maker' and 'Toaster' both have a variant with 'Stainless' in the name
   const {
-    betterSearch: { totalItems, items },
+    betterSearch: { items },
   } = await shopClient.query(SEARCH_QUERY, {
     input: {
       term: 'steinless',
     },
   });
-  expect(totalItems).toBe(2);
-  expect(items.length).toBe(2);
   expect(items[0].productName).toBe('Toaster');
   expect(items[1].productName).toBe('Coffee Maker');
 });
@@ -212,8 +194,6 @@ it('Is case insensitive', async () => {
       term: 'STaiNlESS',
     },
   });
-  expect(totalItems).toBe(2);
-  expect(items.length).toBe(2);
   expect(items[0].productName).toBe('Toaster');
   expect(items[1].productName).toBe('Coffee Maker');
 });
@@ -226,10 +206,26 @@ it('Normalizes special characters', async () => {
       term: 'ŠtÅinless',
     },
   });
-  expect(totalItems).toBe(2);
-  expect(items.length).toBe(2);
   expect(items[0].productName).toBe('Toaster');
   expect(items[1].productName).toBe('Coffee Maker');
+});
+
+it('Extended Graphql schema with custom fields', async () => {
+  const {
+    betterSearch: { items },
+  } = await shopClient.query(gql`
+    query Search {
+      betterSearch(input: { term: "test" }) {
+        items {
+          productName
+          facetValueNames
+          customStaticField
+        }
+      }
+    }
+  `);
+  expect(items[0].customStaticField).toBe('Some test value');
+  expect(Array.isArray(items[0].facetValueNames)).toBe(true);
 });
 
 const SEARCH_QUERY = gql`

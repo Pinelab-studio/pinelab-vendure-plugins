@@ -15,7 +15,7 @@ Features:
 
 - Search by term or multiple terms, no and/or logic or query syntax.
 - Fuzzy matching / type tolerance
-- Custom field indexation
+- Extendable with custom fields
 - Index field weighting
 - Filtering by facets (faceted search): Planned feature, not implemented yet.
 
@@ -72,47 +72,58 @@ BETTER_SEARCH_INDEX_COLUMN_TYPE=bytea
 
 Checkout this page on more information on the different column types: https://orkhan.gitbook.io/typeorm/docs/entities#column-types-for-mysql-mariadb
 
-## Indexing custom fields
+## Custom fields
 
-You can index custom fields of your products by defining a custom `mapToSearchDocument` function.
+You can add custom fields by defining a custom `mapToSearchDocument` function together with a custom `indexableFields` object.
 
-For example, we have a custom field `keywords` on our products, and we want to index it:
-
-```ts
-import { BetterSearchPlugin, defaultSearchConfig } from '@pinelab/vendure-plugin-better-search';
-
-      BetterSearchPlugin.init({
-        mapToSearchDocument: (product, collections) => {
-            // Import the default mapping function to get a default search document
-          const defaultDocument = defaultSearchConfig.mapToSearchDocument(
-            product,
-            collections
-          );
-          const keywords = product.customFields.keywords;
-          return {
-            ...defaultDocument,
-            keywords,
-          };
-        },
-        // Make sure to add `keywords` to the indexable fields, and give it a weight
-        indexableFields: {
-          ...defaultSearchConfig.indexableFields,
-          facetValueNames: 2,
-        },
-      }),
-```
-
-By default, these fields are indexed with the following weights. Checkout the `defaultSearchConfig.ts` for more details.
+For example, we have a custom field `keywords` on our products, and we want to index it, and return it in the search results:
 
 ```ts
-  indexableFields: {
-    name: 3,
-    slug: 2,
-    variantNames: 3,
-    collectionNames: 1,
-    skus: 2,
+import {
+  BetterSearchResult,
+  defaultSearchConfig,
+  BetterSearchConfigInput,
+} from '@pinelab/vendure-plugin-better-search';
+
+// Define an interface for our custom search result
+interface MySearchResult extends BetterSearchResult {
+  keywords: string[];
+}
+
+export const searchConfig: BetterSearchConfigInput<MySearchResult> = {
+  mapToSearchDocument: (product, collections) => {
+    // Use the default mapping to get the base document
+    const defaultDocument = defaultSearchConfig.mapToSearchDocument(
+      product,
+      collections
+    );
+    return {
+      ...defaultDocument,
+      // Extend the base document with "keywords"
+      keywords: product.customFields.keywords,
+    };
   },
+  indexableFields: {
+    ...defaultSearchConfig.indexableFields,
+    // Add "keywords" to the index with a weight of 2,
+    keywords: {
+      weight: 2,
+      // Tell the GraphQL schema that "keywords" is a [String!]!
+      // If you do not specify the graphqlFieldType, the field will not be returned in the search results
+      graphqlFieldType: "[String!]!",
+    },
+  },
+};
+
+// Then in your vendure-config.ts, use the searchConfig:
+plugins: [
+  BetterSearchPlugin.init({
+    searchConfig,
+  }),
+],
 ```
+
+Checkout the `defaultSearchConfig.ts` for the default weights of each field.
 
 ## Tips
 
