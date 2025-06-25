@@ -11,6 +11,9 @@ import {
   InitialData,
   LogLevel,
   ProductEvent,
+  RequestContext,
+  ChannelService,
+  TransactionalConnection,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
@@ -18,6 +21,7 @@ import { WebhookPlugin } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import * as path from 'path';
 import { stringifyProductTransformer } from './test-helpers';
+import { Webhook } from '../src/api/webhook.entity';
 
 (async () => {
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
@@ -48,4 +52,32 @@ import { stringifyProductTransformer } from './test-helpers';
     initialData: initialData as InitialData,
     productsCsvPath: '../test/src/products-import.csv',
   });
+
+  // Example: Create an admin RequestContext and insert webhook entities
+  console.log('Creating webhook examples...');
+
+  // Get services from the server
+  const channelService = server.app.get(ChannelService);
+  const connection = server.app.get(TransactionalConnection);
+
+  // Get the default channel
+  const channel = await channelService.getDefaultChannel();
+
+  // Create an admin RequestContext
+  const ctx = new RequestContext({
+    apiType: 'admin',
+    isAuthorized: true,
+    authorizedAsOwnerOnly: false,
+    channel,
+    languageCode: channel.defaultLanguageCode,
+  });
+  // Create a webhook entity
+  const webhook = new Webhook({
+    channelId: String(ctx.channelId),
+    url: 'https://pinelab.requestcatcher.com/',
+    event: 'ProductEvent',
+    transformerName: 'Stringify Product events',
+  });
+  await connection.getRepository(ctx, Webhook).save(webhook);
+  console.log('Webhook created successfully');
 })();
