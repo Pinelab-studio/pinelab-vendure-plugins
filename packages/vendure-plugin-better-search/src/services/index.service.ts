@@ -164,14 +164,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       id: `${ctx.channel.token}-${ctx.languageCode}`,
       data: JSON.stringify(searchDocuments),
     });
-    // Measure size of the index
-    const serializedIndex = minisearch.toJSON();
-    const indexSizeInKb = Math.round(
-      Buffer.byteLength(JSON.stringify(serializedIndex), 'utf-8') / 1024
-    );
     const durationInS = Math.round((performance.now() - start) / 1000);
     Logger.info(
-      `Index built for channel '${ctx.channel.token} (${ctx.languageCode})' in ${durationInS}s: Indexed ${minisearch.documentCount} products. Approximated index size: ${indexSizeInKb} KB.`,
+      `Index built for channel '${ctx.channel.token} (${ctx.languageCode})' in ${durationInS}s: Indexed ${minisearch.documentCount} products.`,
       loggerCtx
     );
     return minisearch;
@@ -263,7 +258,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   ): Promise<Translated<ProductVariant>[]> {
     const variants: ProductVariant[] = [];
     let skip = 0;
-    const take = 100;
+    const take = 50;
     let hasMore = true;
     while (hasMore) {
       const result = await this.productVariantService.getVariantsByProductId(

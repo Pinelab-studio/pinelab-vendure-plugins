@@ -129,3 +129,4 @@ Checkout the `defaultSearchConfig.ts` for the default weights of each field.
 
 - Add a custom field `keywords` to your products, and make the plugin index it. This is where you'd save keywords, synonyms, etc. This will drastically improve the search experience.
 - Don't index descriptions unless you really have to, to save on memory usage. Also, most of the shops will have a better search experience when the description is not indexed, since the descriptions usually also contain a lot of noise.
+- Monitor your workers memory usage and database CPU usage. If any of these are high, you can increase the `debounceIndexRebuildMs` to reduce the number of rebuilds. If that doesn't work, your dataset might be too large for this search.

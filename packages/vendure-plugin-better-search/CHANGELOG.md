@@ -1,3 +1,8 @@
+# 0.3.1 (2025-06-26)
+
+- Removed logging of index size, as it can cause `max call stack exceeded` errors
+- Fetch variants per 50 instead of 100
+
 # 0.3.0 (2025-06-23)
 
 - Allow extending the GraphQL results with custom fields
