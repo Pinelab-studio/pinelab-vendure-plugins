@@ -1,3 +1,8 @@
+# 1.9.1 (2025-06-27)
+
+- Don't throw error for products without a price when generating the product feed
+- Filter out disabled variants from the product feed
+
 # 1.9.0 (2025-06-27)
 
 - Added query for retrieving the Klaviyo JSON product feed.

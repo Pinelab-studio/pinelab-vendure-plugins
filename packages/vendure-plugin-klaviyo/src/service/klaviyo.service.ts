@@ -393,10 +393,12 @@ export class KlaviyoService implements OnApplicationBootstrap {
       );
       // Map all product.variants to Translated<ProductVariant> with the product attached
       const allVariants = products.flatMap((product) =>
-        product.variants.map((variant) => {
-          variant.product = product;
-          return variant;
-        })
+        product.variants
+          .filter((variant) => variant.enabled)
+          .map((variant) => {
+            variant.product = product;
+            return variant;
+          })
       );
       // Transform variants to Klaviyo product feed items
       for (const variant of allVariants) {
@@ -406,7 +408,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
             variant,
             ctx,
             undefined,
-            true
+            false
           );
         enhancedVariant = translateDeep(enhancedVariant, ctx.languageCode);
         enhancedVariant.collections = enhancedVariant.collections
