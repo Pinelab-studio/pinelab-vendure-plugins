@@ -44,6 +44,18 @@ beforeAll(async () => {
           mockOrderPlacedHandler,
           mockCustomEventHandler,
         ],
+        feed: {
+          password: 'test',
+          enhanceProductFeedItemFn: (ctx, variant, feedItem) => {
+            const asset =
+              variant.product.featuredAsset ?? variant.featuredAsset;
+            return {
+              ...feedItem,
+              image_link: `https://my-storefront.io/assets/${asset?.preview}`,
+              link: `https://my-storefront.io/product/${variant.product.slug}`,
+            };
+          },
+        },
       }),
     ],
     paymentOptions: {
@@ -76,7 +88,7 @@ describe('Klaviyo', () => {
   // Intercepted all requests to Klaviyo
   const klaviyoRequests: EventCreateQueryV2[] = [];
   nock('https://a.klaviyo.com/api/')
-    .post('/events/', (reqBody) => {
+    .post('/events', (reqBody) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       klaviyoRequests.push(reqBody);
       return true;
@@ -286,7 +298,7 @@ describe('Klaviyo', () => {
     // Mock API response
     let signupRequest: any;
     nock('https://a.klaviyo.com/api/')
-      .post('/profile-subscription-bulk-create-jobs/', (reqBody) => {
+      .post('/profile-subscription-bulk-create-jobs', (reqBody) => {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         signupRequest = reqBody;
         return true;
@@ -307,5 +319,118 @@ describe('Klaviyo', () => {
       signupRequest.data.attributes.profiles.data[0].attributes.email
     ).toBe('testing@pinelab.studio');
     expect(signupRequest.data.relationships.list.data.id).toBe('test-list-id');
+  });
+
+  it('Does not allow access to product feed with wrong password', async () => {
+    await shopClient.asAnonymousUser();
+    const promise = shopClient.query(
+      gql`
+        query {
+          klaviyoProductFeed(password: "wrong-password")
+        }
+      `
+    );
+    expect(promise).rejects.toThrow(
+      'You are not currently authorized to perform this action'
+    );
+  });
+
+  it('Get product feed via GraphQL', async () => {
+    await shopClient.asAnonymousUser();
+
+    const { klaviyoProductFeed } = await shopClient.query(
+      gql`
+        query {
+          klaviyoProductFeed(password: "test")
+        }
+      `
+    );
+
+    expect(klaviyoProductFeed).toBeDefined();
+    expect(Array.isArray(klaviyoProductFeed)).toBe(true);
+    expect(klaviyoProductFeed.length).toBeGreaterThan(0);
+    // Verify all products in feed have required structure
+    klaviyoProductFeed.forEach((item: any) => {
+      expect(typeof item.id).toBe('string');
+      expect(typeof item.title).toBe('string');
+      expect(typeof item.link).toBe('string');
+      expect(typeof item.description).toBe('string');
+      expect(typeof item.price).toBe('number');
+      expect(typeof item.image_link).toBe('string');
+      expect(Array.isArray(item.categories)).toBe(true);
+      expect(typeof item.inventory_quantity).toBe('number');
+      expect(typeof item.inventory_policy).toBe('number');
+    });
+    expect(klaviyoProductFeed[0]).toEqual({
+      id: 'T_1', // Vendure Test server prefixes with 'T_'
+      title: 'Laptop 13 inch 8GB',
+      description:
+        'Now equipped with seventh-generation Intel Core processors, Laptop is snappier than ever. From daily tasks like launching apps and opening files to more advanced computing, you can power through your day thanks to faster SSDs and Turbo Boost processing up to 3.6GHz.',
+      image_link: 'https://my-storefront.io/assets/undefined', // undefined because no assets in test data
+      link: 'https://my-storefront.io/product/laptop',
+      price: 1558.8,
+      categories: ['Electronics'],
+      inventory_quantity: 100,
+      inventory_policy: 1,
+    });
+  });
+
+  it('Subscribe to back in stock notification', async () => {
+    await shopClient.asAnonymousUser();
+    await addItem(shopClient, 'T_1', 1); // Create session
+    // Mock API response for back-in-stock subscription
+    let backInStockRequest: any;
+    nock('https://a.klaviyo.com/api/')
+      .post('/back-in-stock-subscriptions', (reqBody) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        backInStockRequest = reqBody;
+        return true;
+      })
+      .reply(200, {})
+      .persist();
+
+    await shopClient.query(
+      gql`
+        mutation {
+          subscribeToKlaviyoBackInStock(
+            emailAddress: "test@example.com"
+            catalogItemId: "1"
+          )
+        }
+      `
+    );
+    // Verify the request body matches the expected structure
+    expect(backInStockRequest).toBeDefined();
+    expect(backInStockRequest.data.type).toBe('back-in-stock-subscription');
+    expect(backInStockRequest.data.attributes.profile.data.type).toBe(
+      'profile'
+    );
+    expect(
+      backInStockRequest.data.attributes.profile.data.attributes.email
+    ).toBe('test@example.com');
+    expect(backInStockRequest.data.attributes.channels).toEqual(['EMAIL']);
+    expect(backInStockRequest.data.relationships.variant.data.type).toBe(
+      'catalog-variant'
+    );
+    expect(backInStockRequest.data.relationships.variant.data.id).toBe(
+      '$custom:::$default:::1'
+    );
+  });
+
+  it('Does not allow back-in-stock subscription for unauthenticated calls', async () => {
+    await shopClient.asAnonymousUser();
+    const backInStockPromise = shopClient.query(
+      gql`
+        mutation {
+          subscribeToKlaviyoBackInStock(
+            emailAddress: "test@example.com"
+            catalogItemId: "1"
+          )
+        }
+      `
+    );
+    expect(backInStockPromise).rejects.toThrow(
+      'You are not currently authorized to perform this action'
+    );
   });
 });

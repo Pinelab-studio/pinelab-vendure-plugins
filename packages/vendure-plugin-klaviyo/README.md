@@ -138,3 +138,57 @@ mutation {
 ```
 
 This mutation requires an active session, which means a customer should have interacted with the Vendure API already. This can be done for example by fetching an active order. This is to prevent unwanted bot sign ups. The customer will also receive a double opt-in email, asking them to confirm signing up for marketing emails.
+
+## Product Feed
+
+You can use this plugin to get the JSON product feed for Klaviyo. This can be used to sync your products to Klaviyo. To enable it, you need to configure the feed settings of the plugin:
+
+```ts
+import { KlaviyoPlugin } from '@pinelab/vendure-plugin-klaviyo';
+
+plugins: [
+  KlaviyoPlugin.init({
+    apiKey: 'some_private_api_key',
+    feed: {
+      // The feed is secured by a password, to prevent abuse, but still able to use it via the shop API in your storefront build.
+      password: 'some_password',
+      enhanceProductFeedItemFn: (ctx, variant, feedItem) => {
+        const asset = variant.product.featuredAsset ?? variant.featuredAsset;
+        return {
+          ...feedItem,
+          image_link: `https://my-storefront.io/assets/${asset?.preview}`,
+          link: `https://my-storefront.io/product/${variant.product.slug}`,
+          // You can add any custom fields you want to the feed item, like so:
+          myCustomField: variant.customFields.myCustomField,
+          // or override any of the default fields, like so:
+          name: variant.product.name + ' - Buy Now!',
+        };
+      },
+    },
+  }),
+];
+```
+
+After that, you can call the feed via the shop API, which will return a JSON object. You could stringify that, and use it to save it to a static file. For example `klaviyo_feed.json`, and use the path to that file to have Klaviyo fetch your products.
+
+```graphql
+query {
+  klaviyoProductFeed(password: "some_password")
+}
+```
+
+Without the `feed.password` set, feed generation is disabled.
+
+## Back In Stock notifications
+
+Allow customers to subscribe to back in stock notifications for a given product. Requires an active session, and requires the Klaviyo feed to be connected in your account.
+
+```graphql
+mutation {
+  subscribeToKlaviyoBackInStock(
+    emailAddress: "testing@pinelab.studio"
+    # This is the catalog item ID, which is the variant ID if you use the generated feed above.
+    catalogItemId: "1"
+  )
+}
+```

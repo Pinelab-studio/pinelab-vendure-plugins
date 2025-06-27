@@ -30,6 +30,9 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    authOptions: {
+      tokenMethod: ['bearer', 'cookie'],
+    },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
@@ -46,6 +49,23 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
             },
           }),
         ],
+        feed: {
+          // The feed is secured by a password, to prevent abuse, but still able to use it via the shop API in your storefront build.
+          password: 'some_password',
+          enhanceProductFeedItemFn: (ctx, variant, feedItem) => {
+            const asset =
+              variant.product.featuredAsset ?? variant.featuredAsset;
+            return {
+              ...feedItem,
+              image_link: `https://my-storefront.io/assets/${asset?.preview}`,
+              link: `https://my-storefront.io/product/${variant.product.slug}`,
+              // You can add any custom fields you want to the feed item, like so:
+              myCustomField: 'Testing',
+              // or override any of the default fields, like so:
+              name: variant.product.name + ' - Buy Now!',
+            };
+          },
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
