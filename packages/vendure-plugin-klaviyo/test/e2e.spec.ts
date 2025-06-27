@@ -47,7 +47,6 @@ beforeAll(async () => {
         feed: {
           password: 'test',
           enhanceProductFeedItemFn: (ctx, variant, feedItem) => {
-            console.log('enhanceProductFeedItemFn stockelvvess', feedItem);
             const asset =
               variant.product.featuredAsset ?? variant.featuredAsset;
             return {
@@ -404,8 +403,6 @@ describe('Klaviyo', () => {
         }
       `
     );
-    console.log('backInStockRequest', backInStockRequest);
-
     // Verify the request body matches the expected structure
     expect(backInStockRequest).toBeDefined();
     expect(backInStockRequest.data.type).toBe('back-in-stock-subscription');
