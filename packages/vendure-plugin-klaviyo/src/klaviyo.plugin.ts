@@ -1,5 +1,6 @@
 import {
   PluginCommonModule,
+  ProductVariant,
   RequestContext,
   VendurePlugin,
 } from '@vendure/core';
@@ -13,8 +14,9 @@ import { KlaviyoService } from './service/klaviyo.service';
 import { KlaviyoShopResolver } from './api/klaviyo-shop-resolver';
 import { shopApiExtensions } from './api/api-extensions';
 import { startedCheckoutHandler } from './event-handler/checkout-started-event-handler';
+import { KlaviyoProductFeedItem } from './types';
 
-interface KlaviyoPluginOptionsInput {
+export interface KlaviyoPluginOptions {
   /**
    * Private API key from your Klaviyo dashboard
    */
@@ -26,9 +28,23 @@ interface KlaviyoPluginOptionsInput {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     KlaviyoOrderPlacedEventHandler | KlaviyoEventHandler<any>
   >;
+  feed?: {
+    /**
+     * Klaviyo feed password. We want to expose the feed via the Shop API, as it is is shop data.
+     * We also don't want to have to authenticate our frontend builds, so we use a password.
+     */
+    password?: string;
+    /**
+     * This function allows you to enhance the product feed item with additional data.
+     * This is mandatory, because you should at least construct the storefront URL and image URL.
+     */
+    enhanceProductFeedItemFn: (
+      ctx: RequestContext,
+      variant: ProductVariant,
+      feedItem: Omit<KlaviyoProductFeedItem, 'image_link' | 'link'>
+    ) => KlaviyoProductFeedItem & Record<string, unknown>;
+  };
 }
-
-export type KlaviyoPluginOptions = Required<KlaviyoPluginOptionsInput>;
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -48,7 +64,7 @@ export type KlaviyoPluginOptions = Required<KlaviyoPluginOptionsInput>;
 export class KlaviyoPlugin {
   static options: KlaviyoPluginOptions;
 
-  static init(options: KlaviyoPluginOptionsInput): typeof KlaviyoPlugin {
+  static init(options: KlaviyoPluginOptions): typeof KlaviyoPlugin {
     this.options = {
       ...options,
       eventHandlers: options.eventHandlers ?? [

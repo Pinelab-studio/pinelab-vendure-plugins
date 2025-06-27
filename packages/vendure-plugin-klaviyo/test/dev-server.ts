@@ -30,6 +30,9 @@ import { mockCustomEventHandler } from './mock-custom-event-handler';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    authOptions: {
+      tokenMethod: ['bearer', 'cookie'],
+    },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },

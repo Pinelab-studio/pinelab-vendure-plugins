@@ -25,7 +25,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "klaviyo-api": "10.1.0",
+    "klaviyo-api": "18.0.0",
     "lodash": "4.17.21",
     "phone": "3.1.45"
   },

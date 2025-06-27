@@ -138,3 +138,9 @@ mutation {
 ```
 
 This mutation requires an active session, which means a customer should have interacted with the Vendure API already. This can be done for example by fetching an active order. This is to prevent unwanted bot sign ups. The customer will also receive a double opt-in email, asking them to confirm signing up for marketing emails.
+
+## Product Feed
+
+// TODO
+
+## Back In Stock notifications

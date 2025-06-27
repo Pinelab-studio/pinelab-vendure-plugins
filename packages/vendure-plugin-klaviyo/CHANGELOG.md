@@ -1,3 +1,9 @@
+# 1.9.0 (2025-06-27)
+
+- Added query for retrieving the Klaviyo JSON product feed.
+- Added mutation for subscribing to back in stock notifications for a given product.
+- Upgrade to Klaviyo Client from 10.1.0 to 18.0.0
+
 # 1.8.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2
