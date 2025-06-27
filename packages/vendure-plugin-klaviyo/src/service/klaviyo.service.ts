@@ -15,6 +15,7 @@ import {
   SerializedRequestContext,
   Translated,
   translateDeep,
+  UserInputError,
 } from '@vendure/core';
 import { isAxiosError } from 'axios';
 import {
@@ -271,7 +272,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
   ): Promise<void> {
     const session = this.getKlaviyoSession(ctx);
     if (!session) {
-      return;
+      throw new UserInputError('Klaviyo is not enabled');
     }
     const klaviyoApi = new ProfilesApi(session);
     await klaviyoApi.subscribeProfiles({
@@ -319,7 +320,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
   ): Promise<void> {
     const session = this.getKlaviyoSession(ctx);
     if (!session) {
-      return;
+      throw new UserInputError('Klaviyo is not enabled');
     }
     const klaviyoApi = new CatalogsApi(session);
     await klaviyoApi.createBackInStockSubscription({
