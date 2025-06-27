@@ -169,7 +169,7 @@ plugins: [
 ];
 ```
 
-After that, you can call the feed via the shop API, which will return a stringified JSON object. You could use that to save it to a static file. For example `klaviyo_feed.json`, and use the path to that file to have Klaviyo fetch your products.
+After that, you can call the feed via the shop API, which will return a JSON object. You could stringify that, and use it to save it to a static file. For example `klaviyo_feed.json`, and use the path to that file to have Klaviyo fetch your products.
 
 ```graphql
 query {

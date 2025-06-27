@@ -28,6 +28,6 @@ export const shopApiExtensions = gql`
     Get the Klaviyo JSON product feed. Each product variant is an entry in the feed.
     For some basic protection, we ask for a password. The feed disabled when no password is configured.
     """
-    klaviyoProductFeed(password: String!): String!
+    klaviyoProductFeed(password: String!): JSON!
   }
 `;

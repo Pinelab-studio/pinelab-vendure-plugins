@@ -47,14 +47,13 @@ export class KlaviyoShopResolver {
   async klaviyoProductFeed(
     @Ctx() ctx: RequestContext,
     @Args('password') password: string
-  ): Promise<string> {
+  ): Promise<unknown> {
     // Basic protection - check if password is configured and matches
     const configuredPassword = this.options.feed?.password;
     if (!configuredPassword || configuredPassword !== password) {
       throw new ForbiddenError();
     }
-    const productFeed = await this.klaviyoService.getProductFeed(ctx);
-    return JSON.stringify(productFeed);
+    return await this.klaviyoService.getProductFeed(ctx);
   }
 
   /**

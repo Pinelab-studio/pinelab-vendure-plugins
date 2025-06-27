@@ -347,14 +347,10 @@ describe('Klaviyo', () => {
     );
 
     expect(klaviyoProductFeed).toBeDefined();
-    expect(typeof klaviyoProductFeed).toBe('string');
-
-    // Parse the JSON feed to verify structure
-    const productFeed = JSON.parse(klaviyoProductFeed);
-    expect(Array.isArray(productFeed)).toBe(true);
-    expect(productFeed.length).toBeGreaterThan(0);
+    expect(Array.isArray(klaviyoProductFeed)).toBe(true);
+    expect(klaviyoProductFeed.length).toBeGreaterThan(0);
     // Verify all products in feed have required structure
-    productFeed.forEach((item: any) => {
+    klaviyoProductFeed.forEach((item: any) => {
       expect(typeof item.id).toBe('string');
       expect(typeof item.title).toBe('string');
       expect(typeof item.link).toBe('string');
@@ -365,8 +361,8 @@ describe('Klaviyo', () => {
       expect(typeof item.inventory_quantity).toBe('number');
       expect(typeof item.inventory_policy).toBe('number');
     });
-    expect(productFeed[0]).toEqual({
-      id: '1',
+    expect(klaviyoProductFeed[0]).toEqual({
+      id: 'T_1', // Vendure Test server prefixes with 'T_'
       title: 'Laptop 13 inch 8GB',
       description:
         'Now equipped with seventh-generation Intel Core processors, Laptop is snappier than ever. From daily tasks like launching apps and opening files to more advanced computing, you can power through your day thanks to faster SSDs and Turbo Boost processing up to 3.6GHz.',
