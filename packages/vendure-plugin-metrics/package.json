@@ -42,8 +42,7 @@
   "dependencies": {
     "catch-unknown": "^2.0.0",
     "chartist-plugin-tooltips-updated": "^1.0.0",
-    "date-fns": "^2.29.3",
-    "device-detector-js": "^3.0.3"
+    "date-fns": "^2.29.3"
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f"
 }

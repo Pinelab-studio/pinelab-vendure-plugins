@@ -214,6 +214,20 @@ describe('Metrics', () => {
     });
   });
 
+  it('Extracts device info from user agent', () => {
+    const requestService = server.app.get(RequestService);
+    expect(
+      requestService.extractDeviceInfo(
+        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
+      )
+    ).toEqual('other');
+    expect(
+      requestService.extractDeviceInfo(
+        'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
+      )
+    ).toEqual('mobile');
+  });
+
   if (process.env.TEST_ADMIN_UI) {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(__dirname, MetricsPlugin.ui);
