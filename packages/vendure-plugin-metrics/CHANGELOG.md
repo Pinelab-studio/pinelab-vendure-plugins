@@ -1,3 +1,7 @@
+# 2.3.0 (2025-07-02)
+
+- Removed `device-detector-js` dependency and replaced with regex from https://stackoverflow.com/questions/11381673/detecting-a-mobile-browser
+
 # 2.2.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2

@@ -20,11 +20,6 @@ export class SessionsMetric implements MetricStrategy {
     orders: Order[],
     sessions: Session[] = []
   ): NamedDatapoint[] {
-    const deviceTypeCounts: { [deviceType: string]: number } = {};
-    sessions.forEach((session) => {
-      const deviceType = session.deviceType || 'Unknown';
-      deviceTypeCounts[deviceType] = (deviceTypeCounts[deviceType] || 0) + 1;
-    });
     const totalSessions = sessions.length;
     const dataPoints: NamedDatapoint[] = [
       {
@@ -32,30 +27,14 @@ export class SessionsMetric implements MetricStrategy {
         value: totalSessions,
       },
       {
-        legendLabel: 'Unknown',
-        value: sessions.filter(
-          ({ deviceType }) => !deviceType || deviceType === 'Unknown'
-        ).length,
-      },
-      {
         legendLabel: 'Mobile',
         value: sessions.filter(({ deviceType }) => deviceType === 'mobile')
           .length,
       },
       {
-        legendLabel: 'Desktop',
-        value: sessions.filter(({ deviceType }) => deviceType === 'desktop')
-          .length,
-      },
-      {
         legendLabel: 'Other',
-        value: sessions.filter(
-          ({ deviceType }) =>
-            deviceType &&
-            deviceType !== 'mobile' &&
-            deviceType !== 'desktop' &&
-            deviceType !== 'Unknown'
-        ).length,
+        value: sessions.filter(({ deviceType }) => deviceType === 'other')
+          .length,
       },
     ];
     return dataPoints;
