@@ -464,6 +464,17 @@ export class StripeSubscriptionService {
     object: StripePaymentIntent | StripeSetupIntent,
     order: Order
   ): Promise<void> {
+
+    if (order.state === 'PaymentSettled') {
+      Logger.warn(
+        `Order ${order.code} is already in state PaymentSettled, not processing this intent again`,
+        loggerCtx
+      );
+      throw Error(
+        `Order ${order.code} is already in state PaymentSettled, not processing this intent again`
+      );
+    }
+
     const {
       paymentMethod: { code: paymentMethodCode },
       stripeClient,
@@ -489,6 +500,7 @@ export class StripeSubscriptionService {
         `Intent '${object.id}' for order '${order.code}' is not succeeded, but '${intent.status}'. Not handling this event.`
       );
     }
+
     // Create subscriptions for customer
     try {
       await this.createSubscriptions(
@@ -511,6 +523,7 @@ export class StripeSubscriptionService {
         );
       }
     }
+
     // Settle payment for order
     if (order.state !== 'ArrangingPayment') {
       const transitionToStateResult = await this.orderService.transitionToState(
@@ -535,6 +548,7 @@ export class StripeSubscriptionService {
         },
       }
     );
+
     if ((addPaymentToOrderResult as ErrorResult).errorCode) {
       throw Error(
         `[${loggerCtx}]: Error adding payment to order ${order.code}: ${
