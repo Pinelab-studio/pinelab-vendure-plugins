@@ -1,11 +1,13 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { AssetStorageStrategy } from '@vendure/core';
 import { Storage } from '@google-cloud/storage';
 import { Request } from 'express';
 import { Stream } from 'stream';
 import * as tmp from 'tmp';
 import * as fs from 'fs';
-import { GoogleStorageConfig } from './google-storage-config';
-import sharp from 'sharp';
+import { GoogleStorageAssetsPlugin } from '../google-storage-assets-plugin';
 
 export class GoogleStorageStrategy implements AssetStorageStrategy {
   storage: Storage;
@@ -13,18 +15,18 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   bucketName: string;
   readonly useAssetServerForAdminUi: boolean;
 
-  constructor(private config: GoogleStorageConfig) {
+  constructor() {
+    const config = GoogleStorageAssetsPlugin?.config;
+    if (!config) {
+      throw new Error(
+        'GoogleStorageAssetsPlugin.config is not set. Did you include the "GoogleStorageAssetsPlugin" in your Vendure config?'
+      );
+    }
     this.bucketName = config.bucketName;
     this.useAssetServerForAdminUi =
       config.useAssetServerForAdminUi === undefined
         ? true
         : config.useAssetServerForAdminUi;
-    if (!config.thumbnails) {
-      config.thumbnails = {
-        height: 300,
-        width: 300,
-      };
-    }
     this.storage = new Storage(config.storageOptions ?? {});
   }
 
@@ -55,17 +57,11 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   }
 
   async readFileToBuffer(identifier: string): Promise<Buffer> {
-    if (identifier?.startsWith('/')) {
-      identifier = identifier.replace('/', '');
-    }
-    const tmpFile = tmp.fileSync();
-    await this.storage
-      .bucket(this.bucketName)
-      .file(identifier)
-      .download({ destination: tmpFile.name });
-    return fs.readFileSync(tmpFile.name);
+    const tmpFile = await this.downloadRemoteToLocalTmpFile(identifier);
+    return fs.readFileSync(tmpFile);
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- parent interface requires promise
   async readFileToStream(identifier: string): Promise<Stream> {
     if (identifier?.startsWith('/')) {
       identifier = identifier.replace('/', '');
@@ -82,20 +78,13 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
     await this.storage.bucket(this.bucketName).upload(tmpFile.name, {
       destination: fileName,
     });
-    if (fileName.startsWith('preview/')) {
-      // For each preview, we also generate a thumbnail version
-      await this.writeThumbnail(fileName, tmpFile.name);
-    }
     return fileName;
   }
 
   async writeFileFromStream(fileName: string, data: Stream): Promise<string> {
     const blob = this.storage.bucket(this.bucketName).file(fileName);
     const uploadStream = blob.createWriteStream();
-    await Promise.all([
-      this.streamToPromise(data.pipe(uploadStream)),
-      this.streamToPromise(uploadStream),
-    ]);
+    await this.streamToPromise(data.pipe(uploadStream));
     return fileName;
   }
 
@@ -109,19 +98,17 @@ export class GoogleStorageStrategy implements AssetStorageStrategy {
   }
 
   /**
-   * Transforms local file to thumbnail (jpg) and uploads to Storage
+   * Download a remote file to a local temporary file
    */
-  async writeThumbnail(fileName: string, localFilePath: string): Promise<void> {
-    const tmpFile = tmp.fileSync({ postfix: '.jpg' });
-    await sharp(localFilePath)
-      .resize({
-        width: this.config.thumbnails!.width,
-        height: this.config.thumbnails!.height,
-      })
-      .flatten({ background: '#ffffff' })
-      .toFile(tmpFile.name);
-    await this.storage.bucket(this.bucketName).upload(tmpFile.name, {
-      destination: `${fileName}_thumbnail.jpg`,
-    });
+  async downloadRemoteToLocalTmpFile(identifier: string): Promise<string> {
+    if (identifier?.startsWith('/')) {
+      identifier = identifier.replace('/', '');
+    }
+    const tmpFile = tmp.fileSync();
+    await this.storage
+      .bucket(this.bucketName)
+      .file(identifier)
+      .download({ destination: tmpFile.name });
+    return tmpFile.name;
   }
 }

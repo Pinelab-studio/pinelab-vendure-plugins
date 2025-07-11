@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-google-storage-assets",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "Vendure plugin for uploading assets to Google storage",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -21,10 +21,11 @@
     "build": "yarn add -D sharp --ignore-engines && rimraf dist && tsc",
     "test": "vitest run",
     "start": "yarn ts-node test/dev-server.ts",
-    "lint": "echo 'No linting configured'"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@google-cloud/storage": "^5.18.2",
+    "catch-unknown": "^2.0.0",
     "tmp": "^0.2.1"
   },
   "peerDependencies": {
@@ -32,6 +33,6 @@
   },
   "devDependencies": {
     "@types/tmp": "^0.2.6",
-    "sharp": "^0.34.2"
+    "sharp": "^0.34.3"
   }
 }
