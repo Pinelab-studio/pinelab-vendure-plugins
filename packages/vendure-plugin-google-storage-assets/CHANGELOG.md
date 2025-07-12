@@ -1,8 +1,9 @@
 # 2.0.0 (2025-07-11)
 
+- Added support for presets. The first time you set presets, or change preset settings, you will need to regenerate the presets for all existing assets with `generateGoogleStorageAssetPresets`.
 - Breaking: Config is now passed into `GoogleStorageAssetsPlugin.init({})`, instead of to the `GoogleStorageStrategy` constructor
 - Breaking: `Asset.thumbnail` is now deprecated, use `Asset.presets.<presetName>` instead. `Asset.thumbnail` still resolves to old thumbnails, **but will not work for new assets**
-- Added support for presets. The first time you set presets, or change preset settings, you will need to regenerate the presets for all existing assets with `generateGoogleStorageAssetPresets`.
+- Breaking: A database migration is needed, because a custom field is added to the `Asset` entity for saving the presets.
 
 # 1.4.0 (2025-06-04)
 

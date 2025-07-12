@@ -20,11 +20,14 @@ import dotenv from 'dotenv';
 
 (async () => {
   dotenv.config(); // Needed for GCLOUD_PROJECT
-  testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
+  testConfig.logger = new DefaultLogger({ level: LogLevel.Info });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const devServerConfig = mergeConfig(testConfig, {
     dbConnectionOptions: {
       autoSave: true,
+    },
+    authOptions: {
+      tokenMethod: ['bearer', 'cookie'],
     },
     plugins: [
       AssetServerPlugin.init({
