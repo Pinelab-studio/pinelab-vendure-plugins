@@ -89,13 +89,12 @@ export class PresetService implements OnApplicationBootstrap {
    * Generate presets for asset and store via the Google Storage Strategy
    */
   async generatePresets(ctx: RequestContext, assetIds: ID[]): Promise<void> {
-    const storageStrategy = new GoogleStorageStrategy();
     for (const assetId of assetIds) {
       const asset = await this.assetService.findOne(ctx, assetId);
       if (!asset) {
         throw new Error(`Asset ${assetId} not found`);
       }
-      const localFile = await storageStrategy.downloadRemoteToLocalTmpFile(
+      const localFile = await this.strategy.downloadRemoteToLocalTmpFile(
         asset.preview
       );
       const originalSizeInKB = (asset.fileSize / 1024).toFixed(1);
@@ -114,7 +113,7 @@ export class PresetService implements OnApplicationBootstrap {
           presetName,
           extension
         );
-        await storageStrategy.writeFileFromBuffer(presetFileName, buffer);
+        await this.strategy.writeFileFromBuffer(presetFileName, buffer);
         // Set preset in custom fields object
         presetUrls[presetName] = presetFileName;
         // Log the processed preset name
