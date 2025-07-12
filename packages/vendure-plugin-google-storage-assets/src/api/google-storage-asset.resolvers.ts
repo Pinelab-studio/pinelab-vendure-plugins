@@ -4,10 +4,13 @@ import {
   Asset,
   ConfigService,
   Ctx,
+  Logger,
   Permission,
   RequestContext,
 } from '@vendure/core';
 import { PresetService } from '../services/preset-service';
+import { asError } from 'catch-unknown';
+import { loggerCtx } from '../constants';
 
 @Resolver()
 export class AssetThumbnailResolvers {
@@ -39,7 +42,17 @@ export class AssetThumbnailResolvers {
     @Ctx() ctx: RequestContext,
     @Parent() asset: Asset
   ): Record<string, string> {
-    return this.presetService.getPresetUrls(ctx, asset);
+    try {
+      return this.presetService.getPresetUrls(ctx, asset);
+    } catch (error) {
+      Logger.error(
+        `Failed to get preset URL's from custom field for asset ${asset.id}: ${
+          asError(error).message
+        }`,
+        loggerCtx
+      );
+      return {};
+    }
   }
 
   @Mutation()
@@ -48,6 +61,6 @@ export class AssetThumbnailResolvers {
     @Ctx() ctx: RequestContext
   ): Promise<boolean> {
     await this.presetService.createPresetJobsForAllAssets(ctx);
-    return true;
+    return false;
   }
 }
