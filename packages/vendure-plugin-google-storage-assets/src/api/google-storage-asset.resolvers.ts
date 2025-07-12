@@ -61,6 +61,6 @@ export class AssetThumbnailResolvers {
     @Ctx() ctx: RequestContext
   ): Promise<boolean> {
     await this.presetService.createPresetJobsForAllAssets(ctx);
-    return false;
+    return true;
   }
 }
