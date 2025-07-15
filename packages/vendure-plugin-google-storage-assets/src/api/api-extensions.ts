@@ -14,7 +14,7 @@ export function createAssetSchema(config: GoogleStorageAssetConfig) {
     }
 
     extend type Mutation {
-      generateGoogleStorageAssetPresets: Boolean!
+      generateGoogleStorageAssetPresets(force: Boolean): Boolean!
     }
   `;
 

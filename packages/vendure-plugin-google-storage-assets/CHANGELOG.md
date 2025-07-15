@@ -1,3 +1,7 @@
+# 2.1.0 (2025-07-15)
+
+- Allow generating presets only for assets that don't have presets yet
+
 # 2.0.0 (2025-07-11)
 
 - Added support for presets. The first time you set presets, or change preset settings, you will need to regenerate the presets for all existing assets with `generateGoogleStorageAssetPresets`.

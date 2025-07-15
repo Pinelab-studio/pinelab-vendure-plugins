@@ -1,4 +1,10 @@
-import { Mutation, Parent, ResolveField, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import {
   Allow,
   Asset,
@@ -13,7 +19,7 @@ import { asError } from 'catch-unknown';
 import { loggerCtx } from '../constants';
 
 @Resolver()
-export class AssetThumbnailResolvers {
+export class GoogleStorageAssetResolver {
   constructor(
     private configService: ConfigService,
     private presetService: PresetService
@@ -58,9 +64,10 @@ export class AssetThumbnailResolvers {
   @Mutation()
   @Allow(Permission.UpdateAsset)
   async generateGoogleStorageAssetPresets(
-    @Ctx() ctx: RequestContext
+    @Ctx() ctx: RequestContext,
+    @Args('force') force: boolean
   ): Promise<boolean> {
-    await this.presetService.createPresetJobsForAllAssets(ctx);
+    await this.presetService.createPresetJobsForAllAssets(ctx, force);
     return true;
   }
 }

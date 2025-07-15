@@ -75,11 +75,18 @@ query {
 
 ### Generating Presets for Existing Assets
 
-To generate presets for all existing assets, you can use the Admin API:
+To generate presets for all existing assets, you can use the Admin API. You will need to have Asset Update permission to run this mutation.
+
 
 ```graphql
+# This will generate presets for assets that don't have any presets yet
 mutation {
   generateGoogleStorageAssetPresets
+}
+
+# Or, if you want to force re-generation of all presets
+mutation {
+  generateGoogleStorageAssetPresets(force: true)
 }
 ```
 

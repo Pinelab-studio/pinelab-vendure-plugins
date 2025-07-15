@@ -175,7 +175,12 @@ export class PresetService implements OnApplicationBootstrap {
   /**
    * Pushes jobs for all assets to the job queue.
    */
-  async createPresetJobsForAllAssets(ctx: RequestContext) {
+  async createPresetJobsForAllAssets(
+    ctx: RequestContext,
+    force: boolean = false
+  ) {
+    // These are the presets that should be generated for the assets
+    const shouldHavePresets = Object.keys(this.config.presets);
     const batchSize = 10;
     let skip = 0;
     let hasMore = true;
@@ -185,18 +190,28 @@ export class PresetService implements OnApplicationBootstrap {
         where: { type: AssetType.IMAGE },
         take: batchSize,
         skip,
-        select: ['id'],
       });
       if (assets.length === 0) {
         hasMore = false;
         break;
       }
+      // Get asset ids that need to be processed
+      const assetIds = assets
+        .filter((asset) => {
+          if (force || !asset.customFields?.presets) {
+            // If force, always regenerate presets
+            return true;
+          }
+          // Else, check if each preset is present in the custom fields
+          const generatedPresets = JSON.parse(
+            asset.customFields.presets
+          ) as Record<string, string>;
+          return !shouldHavePresets.every((preset) => generatedPresets[preset]);
+        })
+        .map((asset) => asset.id);
       const serializedCtx = ctx.serialize();
-      await this.jobQueue.add(
-        { ctx: serializedCtx, assetIds: assets.map((asset) => asset.id) },
-        { retries: 2 }
-      );
-      totalProcessed += assets.length;
+      await this.jobQueue.add({ ctx: serializedCtx, assetIds }, { retries: 2 });
+      totalProcessed += assetIds.length;
       skip += batchSize;
     }
     Logger.info(`Created jobs for ${totalProcessed} assets`, loggerCtx);

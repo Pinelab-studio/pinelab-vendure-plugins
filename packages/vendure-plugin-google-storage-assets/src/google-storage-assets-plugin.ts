@@ -1,6 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { createAssetSchema } from './api/api-extensions';
-import { AssetThumbnailResolvers } from './api/google-storage-asset.resolvers';
+import { GoogleStorageAssetResolver } from './api/google-storage-asset.resolver';
 import { GoogleStorageAssetConfig } from './types';
 import { PresetService } from './services/preset-service';
 import { PLUGIN_INIT_OPTIONS } from './constants';
@@ -9,11 +9,11 @@ import { PLUGIN_INIT_OPTIONS } from './constants';
   imports: [PluginCommonModule],
   shopApiExtensions: {
     schema: () => createAssetSchema(GoogleStorageAssetsPlugin.config),
-    resolvers: [AssetThumbnailResolvers],
+    resolvers: [GoogleStorageAssetResolver],
   },
   adminApiExtensions: {
     schema: () => createAssetSchema(GoogleStorageAssetsPlugin.config),
-    resolvers: [AssetThumbnailResolvers],
+    resolvers: [GoogleStorageAssetResolver],
   },
   compatibility: '>=2.2.0',
   providers: [

@@ -464,7 +464,6 @@ export class StripeSubscriptionService {
     object: StripePaymentIntent | StripeSetupIntent,
     order: Order
   ): Promise<void> {
-
     if (order.state === 'PaymentSettled') {
       Logger.warn(
         `Order ${order.code} is already in state PaymentSettled, not processing this intent again`,
