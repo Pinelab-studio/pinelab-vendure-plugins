@@ -251,7 +251,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       transactionId: chargeTransactionId
         ? String(chargeTransactionId)
         : undefined,
-      metadata: chargeTransaction,
+      metadata: chargeTransaction || {},
     };
   }
 

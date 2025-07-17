@@ -1,3 +1,7 @@
+# 3.3.1 (2025-07-17)
+
+- Prevent empty metadata for orders with $0
+
 # 3.3.0 (2025-06-10)
 
 - Enable updating payment method on a subscription via the Shop API for logged in customers

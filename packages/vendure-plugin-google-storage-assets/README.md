@@ -77,7 +77,6 @@ query {
 
 To generate presets for all existing assets, you can use the Admin API. You will need to have Asset Update permission to run this mutation.
 
-
 ```graphql
 # This will generate presets for assets that don't have any presets yet
 mutation {
