@@ -818,7 +818,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       // Only log in test, don't throw
       return;
     }
-    throw Error(message);
+    // FIXME Disabled because Vendure license server is offline
+    // throw Error(message);
   }
 
   /**

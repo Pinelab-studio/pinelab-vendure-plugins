@@ -1,3 +1,7 @@
+# 4.4.1 (2025-07-31)
+
+- Disabled license check, because Vendure license server is offline
+
 # 4.4.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2
