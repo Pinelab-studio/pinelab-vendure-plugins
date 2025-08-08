@@ -5,6 +5,7 @@ import {
   OrderService,
   RequestContext,
   PermissionDefinition,
+  Injector,
 } from '@vendure/core';
 import { ExportPluginConfig } from '..';
 import {
@@ -23,6 +24,7 @@ import { Response } from 'express';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import * as fs from 'fs';
 import { promises as promisedFs } from 'fs';
+import { ModuleRef } from '@nestjs/core';
 
 export class ParseDatePipe implements PipeTransform {
   transform(value: any, metadata: ArgumentMetadata) {
@@ -41,7 +43,8 @@ export const orderExportPermission = new PermissionDefinition({
 export class OrderExportController {
   constructor(
     @Inject(PLUGIN_INIT_OPTIONS) private config: ExportPluginConfig,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private moduleRef: ModuleRef
   ) {}
 
   @Allow(orderExportPermission.Permission)
@@ -75,6 +78,7 @@ export class OrderExportController {
       startDate,
       endDate,
       orderService: this.orderService,
+      injector: new Injector(this.moduleRef),
     });
     const readStream = fs.createReadStream(filePath);
     res.set({

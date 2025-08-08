@@ -12,9 +12,13 @@ import { loggerCtx } from '../constants';
 
 export interface ExportInput {
   ctx: RequestContext;
+  /**
+   * @deprecated Use injector.get(OrderService) instead
+   */
   orderService: OrderService;
   startDate: Date;
   endDate: Date;
+  injector: Injector;
 }
 
 export interface ExportStrategy {
@@ -53,18 +57,22 @@ export class DefaultExportStrategy implements ExportStrategy {
     ctx,
     startDate,
     endDate,
-    orderService,
+    injector,
   }: ExportInput): Promise<string> {
-    const orders = await orderService.findAll(ctx, {
-      filter: {
-        orderPlacedAt: {
-          between: {
-            start: startDate,
-            end: endDate,
+    const orders = await injector.get(OrderService).findAll(
+      ctx,
+      {
+        filter: {
+          orderPlacedAt: {
+            between: {
+              start: startDate,
+              end: endDate,
+            },
           },
         },
       },
-    });
+      []
+    );
     if (orders.totalItems > orders.items.length) {
       // This is just a sample strategy, so this is oke
       throw new InternalServerError(

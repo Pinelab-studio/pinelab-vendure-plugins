@@ -1,3 +1,8 @@
+# 1.5.0 (2025-08-08)
+
+- Passing `Injector` to export strategy
+- Deprecated `orderService` in export strategy
+
 # 1.4.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2
