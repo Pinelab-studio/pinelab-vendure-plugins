@@ -41,17 +41,13 @@ export class CloudTasksService implements OnApplicationBootstrap {
       Date.now() -
         (this.options.clearStaleJobsAfterDays ?? 30) * 24 * 60 * 60 * 1000
     );
-    this.removeStaleJobs(daysAgo)
-      .then(() => {
-        Logger.info(`Removed stale jobs`, loggerCtx);
-      })
-      .catch((e: any) => {
-        Logger.error(
-          `Failed to remove stale jobs: ${e?.message}`,
-          loggerCtx,
-          e?.stack
-        );
-      });
+    this.removeStaleJobs(daysAgo).catch((e: any) => {
+      Logger.error(
+        `Failed to remove stale jobs: ${e?.message}`,
+        loggerCtx,
+        e?.stack
+      );
+    });
   }
 
   async findJob(id: ID): Promise<Job<any> | undefined> {
@@ -100,9 +96,15 @@ export class CloudTasksService implements OnApplicationBootstrap {
    * for example when you run the server locally.
    */
   async removeStaleJobs(olderThan: Date): Promise<void> {
-    await this.jobRecordRepository.delete({
+    const result = await this.jobRecordRepository.delete({
       createdAt: LessThan(olderThan),
     });
+    Logger.info(
+      `Removed '${
+        result.affected
+      }' stale jobs older than ${olderThan.toLocaleDateString()}`,
+      loggerCtx
+    );
   }
 
   async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
