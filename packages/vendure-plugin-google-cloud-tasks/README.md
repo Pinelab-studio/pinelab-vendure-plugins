@@ -32,11 +32,14 @@ plugins: [
     defaultJobRetries: 15,
     // The amount of retries when a job fails to be pushed to the queue
     createTaskRetries: 3,
+    // Default amount of days to keep jobs in the database.
+    clearStaleJobsAfterDays: 7,
   }),
 ];
 ```
 
-2. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
+2. Run a database migration to add the `JobRecordBuffer` table.
+3. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
    via `Products > (cog icon) > reindex` to test the Cloud Tasks Plugin.
 
 # Clear jobs
