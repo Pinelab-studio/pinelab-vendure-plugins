@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-google-cloud-tasks",
-  "version": "1.9.1",
+  "version": "2.0.0",
   "description": "Vendure plugin for using worker jobs with Google Cloud Tasks",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
