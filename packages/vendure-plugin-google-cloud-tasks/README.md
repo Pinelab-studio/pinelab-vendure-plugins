@@ -32,11 +32,14 @@ plugins: [
     defaultJobRetries: 15,
     // The amount of retries when a job fails to be pushed to the queue
     createTaskRetries: 3,
+    // Default amount of days to keep jobs in the database.
+    clearStaleJobsAfterDays: 7,
   }),
 ];
 ```
 
-2. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
+2. Run a database migration to add the `JobRecordBuffer` table.
+3. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
    via `Products > (cog icon) > reindex` to test the Cloud Tasks Plugin.
 
 # Clear jobs
@@ -89,3 +92,13 @@ export const config: VendureConfig = {
 ```
 
 We don't include this in the plugin, because it affects the entire NestJS instance
+
+## `ER_OUT_OF_SORTMEMORY: Out of sort memory, consider increasing server sort buffer size` on MySQL
+
+If you get this error, you should create an index on the `createdAt` column of the job table:
+
+```sql
+CREATE INDEX idx_job_created_at ON job_record (createdAt);
+```
+
+The error is caused by the fact that the `job_record.data` column is a `json` column and can contain a lot of data. More information can be found here: https://stackoverflow.com/questions/29575835/error-1038-out-of-sort-memory-consider-increasing-sort-buffer-size

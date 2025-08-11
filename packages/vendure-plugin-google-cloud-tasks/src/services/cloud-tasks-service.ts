@@ -12,8 +12,8 @@ import {
 } from '@vendure/core';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 import { DataSource, In, LessThan, Repository } from 'typeorm';
-import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
-import { CloudTaskMessage, CloudTaskOptions } from './types';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { CloudTaskMessage, CloudTaskOptions } from '../types';
 import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 import { asError } from 'catch-unknown';
 
@@ -29,25 +29,26 @@ export class CloudTasksService implements OnApplicationBootstrap {
   constructor(
     private readonly listQueryBuilder: ListQueryBuilder,
     @Inject(PLUGIN_INIT_OPTIONS) private readonly options: CloudTaskOptions,
-    dataSource: DataSource
+    private readonly dataSource: DataSource
   ) {
     this.jobRecordRepository = dataSource.getRepository(JobRecord);
     this.client = new CloudTasksClient(options.clientOptions);
   }
 
   onApplicationBootstrap() {
-    const daysAgo30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    this.removeAllJobs(daysAgo30)
-      .then(() => {
-        Logger.info(`Removed settled jobs`, loggerCtx);
-      })
-      .catch((e: any) => {
+    // Remove all jobs older than `clearStaleJobsAfterDays` on startup
+    if (this.options.clearStaleJobsAfterDays) {
+      const daysAgo = new Date(
+        Date.now() - this.options.clearStaleJobsAfterDays * 24 * 60 * 60 * 1000
+      );
+      this.removeStaleJobs(daysAgo).catch((e: any) => {
         Logger.error(
-          `Failed to remove settled jobs: ${e?.message}`,
+          `Failed to remove stale jobs: ${e?.message}`,
           loggerCtx,
           e?.stack
         );
       });
+    }
   }
 
   async findJob(id: ID): Promise<Job<any> | undefined> {
@@ -90,12 +91,20 @@ export class CloudTasksService implements OnApplicationBootstrap {
 
   /**
    * Remove all jobs older than given date.
-   * All queues, settled or unsettled
+   * For all queues and all states, including pending jobs.
+   *
+   * We also remove stale pending jobs, because with Cloud Tasks jobs can stay pending forever when you specified a wrong Worker endpoint (localhost for example).
    */
-  async removeAllJobs(olderThan: Date): Promise<void> {
-    await this.jobRecordRepository.delete({
+  async removeStaleJobs(olderThan: Date): Promise<void> {
+    const result = await this.jobRecordRepository.delete({
       createdAt: LessThan(olderThan),
     });
+    Logger.info(
+      `Removed '${
+        result.affected
+      }' stale jobs older than ${olderThan.toLocaleDateString()}`,
+      loggerCtx
+    );
   }
 
   async cancelJob(jobId: ID): Promise<Job<any> | undefined> {
@@ -112,7 +121,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
     }
     const retries = job.retries || this.options.defaultJobRetries || 3;
     // Store record saying that the task is PENDING, because we don't distinguish between pending and running
-    const jobRecord = await this.saveWithRetry(
+    const jobRecord = await this.saveJob(
       new JobRecord({
         id: job.id,
         queueName: queueName,
@@ -199,7 +208,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
   ) {
     const queueName = this.getQueueName(originalQueueName);
     this.PROCESS_MAP.set(queueName, process);
-    Logger.info(`Started queue ${queueName}`, loggerCtx);
+    Logger.info(`Started queue ${originalQueueName}`, loggerCtx);
   }
 
   getAllQueueNames(): string[] {
@@ -240,7 +249,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
         `Successfully handled ${message.id} after ${attempts} attempts`,
         loggerCtx
       );
-      await this.saveWithRetry(
+      await this.saveJob(
         new JobRecord({
           id: job.id,
           queueName: job.queueName,
@@ -273,7 +282,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
           e.stack
         );
         // Log failed job in DB
-        await this.saveWithRetry(
+        await this.saveJob(
           new JobRecord({
             id: job.id,
             queueName: job.queueName,
@@ -315,25 +324,45 @@ export class CloudTasksService implements OnApplicationBootstrap {
   }
 
   /**
-   * Save the job record with a retry when the data is too long
+   * Save the job record to the DB.
+   * Constrains jobRecord.data to 64kb to prevent `ER_DATA_TOO_LONG` errors on MySQL.
    */
-  private async saveWithRetry(jobRecord: JobRecord): Promise<JobRecord> {
-    try {
-      return await this.jobRecordRepository.save(jobRecord);
-    } catch (e: any) {
-      if (e?.message?.indexOf('ER_DATA_TOO_LONG') > -1) {
-        // Save job without data
-        jobRecord.data = undefined;
-        return await this.jobRecordRepository.save(jobRecord);
-      }
-      throw e;
-    }
+  private async saveJob(jobRecord: JobRecord): Promise<JobRecord> {
+    const constrainedData = this.constrainDataSize(
+      jobRecord.data,
+      jobRecord.queueName
+    );
+    const savedJobRecord = await this.jobRecordRepository.save({
+      ...jobRecord,
+      data: constrainedData,
+      // Save with original queue name for filtering in admin
+      queueName: this.getOriginalQueueName(jobRecord.queueName),
+    });
+    return {
+      ...savedJobRecord,
+      // Return with original data
+      data: jobRecord.data,
+    };
   }
 
+  /**
+   * Get queue name with suffix
+   */
   private getQueueName(name: string): string {
     return this.options.queueSuffix
       ? `${name}-${this.options.queueSuffix}`
       : name;
+  }
+
+  /**
+   * Get original queue name without suffix for filtering in admin
+   */
+  private getOriginalQueueName(name: string): string {
+    if (!this.options.queueSuffix) {
+      return name;
+    }
+    const suffix = `-${this.options.queueSuffix}`;
+    return name.endsWith(suffix) ? name.slice(0, -suffix.length) : name;
   }
 
   private getQueuePath(queueName: string): string {
@@ -369,5 +398,40 @@ export class CloudTasksService implements OnApplicationBootstrap {
         throw error;
       }
     }
+  }
+
+  /**
+   * MySQL & MariaDB store job data as a "text" type which has a limit of 64kb. Going over that limit will cause the job to not be stored.
+   * In order to try to prevent that, this method will truncate any strings in the `data` object over 2kb in size.
+   *
+   * Copied from Vendure's `SqlJobQueueStrategy`
+   */
+  private constrainDataSize<Data extends JobData<Data> = object>(
+    data: Data,
+    queueName: string
+  ): Data {
+    const type = this.dataSource?.options.type;
+    if (type === 'mysql' || type === 'mariadb') {
+      const stringified = JSON.stringify(data);
+      if (64 * 1024 <= stringified.length) {
+        const truncatedKeys: Array<{ key: string; size: number }> = [];
+        const reduced = JSON.parse(stringified, (key, value) => {
+          if (typeof value === 'string' && 2048 < value.length) {
+            truncatedKeys.push({ key, size: value.length });
+            return `[truncated - originally ${value.length} bytes]`;
+          }
+          return value;
+        });
+        Logger.warn(
+          `Job data for "${queueName}" is too long to store with the ${type} driver (${Math.round(
+            stringified.length / 1024
+          )}kb).\nThe following keys were truncated: ${truncatedKeys
+            .map(({ key, size }) => `${key} (${size} bytes)`)
+            .join(', ')}`
+        );
+        return reduced;
+      }
+    }
+    return data;
   }
 }

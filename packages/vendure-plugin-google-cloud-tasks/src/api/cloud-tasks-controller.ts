@@ -9,10 +9,10 @@ import {
 } from '@nestjs/common';
 import { Logger } from '@vendure/core';
 import { Request, Response } from 'express';
-import { CloudTasksService } from './cloud-tasks-service';
-import { CloudTasksPlugin } from './cloud-tasks.plugin';
-import { loggerCtx } from './constants';
-import { CloudTaskMessage, ROUTE } from './types';
+import { CloudTasksService } from '../services/cloud-tasks-service';
+import { CloudTasksPlugin } from '../cloud-tasks.plugin';
+import { loggerCtx } from '../constants';
+import { CloudTaskMessage, ROUTE } from '../types';
 
 @Controller(ROUTE)
 export class CloudTasksController implements OnApplicationBootstrap {
@@ -60,7 +60,7 @@ export class CloudTasksController implements OnApplicationBootstrap {
     }
     const days = parseInt(daysString);
     const daysAgo = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-    await this.service.removeAllJobs(daysAgo);
+    await this.service.removeStaleJobs(daysAgo);
     res.sendStatus(200);
   }
 
