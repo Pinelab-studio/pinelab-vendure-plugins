@@ -3,10 +3,12 @@ import {
   RuntimeVendureConfig,
   VendurePlugin,
   Logger,
+  JobRecordBuffer,
+  SqlJobBufferStorageStrategy,
 } from '@vendure/core';
-import { CloudTasksJobQueueStrategy } from './cloud-tasks-job-queue.strategy';
-import { CloudTasksController } from './cloud-tasks-controller';
-import { CloudTasksService } from './cloud-tasks-service';
+import { CloudTasksJobQueueStrategy } from './services/cloud-tasks-job-queue.strategy';
+import { CloudTasksController } from './api/cloud-tasks-controller';
+import { CloudTasksService } from './services/cloud-tasks-service';
 import { CloudTaskOptions } from './types';
 import { JobRecord } from '@vendure/core/dist/plugin/default-job-queue-plugin/job-record.entity';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
@@ -14,7 +16,7 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 @VendurePlugin({
   imports: [PluginCommonModule],
   controllers: [CloudTasksController],
-  entities: [JobRecord],
+  entities: [JobRecord, JobRecordBuffer],
   providers: [
     CloudTasksService,
     {
@@ -24,6 +26,8 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
   ],
   configuration: (config: RuntimeVendureConfig) => {
     config.jobQueueOptions.jobQueueStrategy = new CloudTasksJobQueueStrategy();
+    config.jobQueueOptions.jobBufferStorageStrategy =
+      new SqlJobBufferStorageStrategy();
     return config;
   },
   compatibility: '>=2.2.0',
@@ -32,7 +36,10 @@ export class CloudTasksPlugin {
   static options: CloudTaskOptions;
 
   static init(options: CloudTaskOptions): typeof CloudTasksPlugin {
-    this.options = options;
+    this.options = {
+      clearStaleJobsAfterDays: 30,
+      ...options,
+    };
     if (
       this.options?.createTaskRetries &&
       this.options?.createTaskRetries > 20

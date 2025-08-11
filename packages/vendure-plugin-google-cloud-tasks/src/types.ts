@@ -26,6 +26,11 @@ export interface CloudTaskOptions {
    * These options will be passed into the Google cloud task client.
    */
   clientOptions?: ClientOptions;
+  /**
+   * Nr of days to keep jobs in the database. Default is 30.
+   * This also clears Pending jobs older than this nr of days!
+   */
+  clearStaleJobsAfterDays?: number;
 }
 
 export interface CloudTaskMessage {

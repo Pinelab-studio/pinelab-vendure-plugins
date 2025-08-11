@@ -89,3 +89,13 @@ export const config: VendureConfig = {
 ```
 
 We don't include this in the plugin, because it affects the entire NestJS instance
+
+## `ER_OUT_OF_SORTMEMORY: Out of sort memory, consider increasing server sort buffer size` on MySQL
+
+If you get this error, you should create an index on the `createdAt` column of the job table:
+
+```sql
+CREATE INDEX idx_job_created_at ON job_record (createdAt);
+```
+
+The error is caused by the fact that the `job_record.data` column is a `json` column and can contain a lot of data. More information can be found here: https://stackoverflow.com/questions/29575835/error-1038-out-of-sort-memory-consider-increasing-sort-buffer-size

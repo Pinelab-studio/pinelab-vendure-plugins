@@ -1,3 +1,11 @@
+# 2.0.0 (2025-08-11)
+
+- BREAKING: Included `SQLJobBufferStrategy`, to buffer jobs in DB instead of in memory, to support multiple instances. A database migration is required.
+- Added documentation to fix `ER_OUT_OF_SORTMEMORY: Out of sort memory, consider increasing server sort buffer size` on MySQL
+- Constrain data size to 64kb to prevent `ER_DATA_TOO_LONG` errors on MySQL
+- Allow configuring deletion of jobs older than X days
+- Save original queue names in database. Only use suffix for creating queues in Google Cloud. This fixes admin UI job filtering
+
 # 1.9.1 (2025-06-24)
 
 - Add stack trace to error message when job fails

@@ -21,7 +21,7 @@
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "vitest run",
-    "start": "yarn ts-node test/dev-server.ts",
+    "start": "nodemon --watch src --ext ts --exec ts-node --transpile-only test/dev-server.ts",
     "lint": "echo 'No linting configured'"
   },
   "dependencies": {
