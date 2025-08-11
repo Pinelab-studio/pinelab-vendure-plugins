@@ -92,8 +92,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
    * Remove all jobs older than given date.
    * For all queues and all states, including pending jobs.
    *
-   * We also remove stale pending jobs, because with Cloud Tasks messages can get 'lost',
-   * for example when you run the server locally.
+   * We also remove stale pending jobs, because with Cloud Tasks jobs can stay pending forever when you specified a wrong Worker endpoint (localhost for example).
    */
   async removeStaleJobs(olderThan: Date): Promise<void> {
     const result = await this.jobRecordRepository.delete({
