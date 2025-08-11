@@ -208,7 +208,7 @@ export class CloudTasksService implements OnApplicationBootstrap {
   ) {
     const queueName = this.getQueueName(originalQueueName);
     this.PROCESS_MAP.set(queueName, process);
-    Logger.info(`Started queue ${queueName}`, loggerCtx);
+    Logger.info(`Started queue ${originalQueueName}`, loggerCtx);
   }
 
   getAllQueueNames(): string[] {
@@ -358,9 +358,11 @@ export class CloudTasksService implements OnApplicationBootstrap {
    * Get original queue name without suffix for filtering in admin
    */
   private getOriginalQueueName(name: string): string {
-    return this.options.queueSuffix
-      ? name.replace(`-${this.options.queueSuffix}`, '')
-      : name;
+    if (!this.options.queueSuffix) {
+      return name;
+    }
+    const suffix = `-${this.options.queueSuffix}`;
+    return name.endsWith(suffix) ? name.slice(0, -suffix.length) : name;
   }
 
   private getQueuePath(queueName: string): string {
