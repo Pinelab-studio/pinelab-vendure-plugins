@@ -414,4 +414,39 @@ export class CloudTasksService implements OnApplicationBootstrap {
       }
     }
   }
+
+  /**
+   * MySQL & MariaDB store job data as a "text" type which has a limit of 64kb. Going over that limit will cause the job to not be stored.
+   * In order to try to prevent that, this method will truncate any strings in the `data` object over 2kb in size.
+   *
+   * Copied from Vendure's `SqlJobQueueStrategy`
+   */
+  private constrainDataSize<Data extends JobData<Data> = object>(
+    data: Data,
+    queueName: string
+  ): Data {
+    const type = this.dataSource?.options.type;
+    if (type === 'mysql' || type === 'mariadb') {
+      const stringified = JSON.stringify(data);
+      if (64 * 1024 <= stringified.length) {
+        const truncatedKeys: Array<{ key: string; size: number }> = [];
+        const reduced = JSON.parse(stringified, (key, value) => {
+          if (typeof value === 'string' && 2048 < value.length) {
+            truncatedKeys.push({ key, size: value.length });
+            return `[truncated - originally ${value.length} bytes]`;
+          }
+          return value;
+        });
+        Logger.warn(
+          `Job data for "${queueName}" is too long to store with the ${type} driver (${Math.round(
+            stringified.length / 1024
+          )}kb).\nThe following keys were truncated: ${truncatedKeys
+            .map(({ key, size }) => `${key} (${size} bytes)`)
+            .join(', ')}`
+        );
+        return reduced;
+      }
+    }
+    return data;
+  }
 }
