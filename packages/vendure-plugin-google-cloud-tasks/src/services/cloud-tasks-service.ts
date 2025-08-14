@@ -16,6 +16,7 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { CloudTaskMessage, CloudTaskOptions } from '../types';
 import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 import { asError } from 'catch-unknown';
+import { truncateData } from './cloud-tasks-util';
 
 type QueueProcessFunction = (job: Job) => Promise<any>;
 
@@ -328,21 +329,35 @@ export class CloudTasksService implements OnApplicationBootstrap {
    * Constrains jobRecord.data to 64kb to prevent `ER_DATA_TOO_LONG` errors on MySQL.
    */
   private async saveJob(jobRecord: JobRecord): Promise<JobRecord> {
-    const constrainedData = this.constrainDataSize(
-      jobRecord.data,
-      jobRecord.queueName
-    );
-    const savedJobRecord = await this.jobRecordRepository.save({
-      ...jobRecord,
-      data: constrainedData,
-      // Save with original queue name for filtering in admin
-      queueName: this.getOriginalQueueName(jobRecord.queueName),
-    });
-    return {
-      ...savedJobRecord,
-      // Return with original data
-      data: jobRecord.data,
-    };
+    try {
+      const constrainedData = truncateData(jobRecord.data, jobRecord.queueName);
+      const savedJobRecord = await this.jobRecordRepository.save({
+        ...jobRecord,
+        data: constrainedData,
+        // Save with original queue name for filtering in admin
+        queueName: this.getOriginalQueueName(jobRecord.queueName),
+      });
+      return {
+        ...savedJobRecord,
+        // Return with original data
+        data: jobRecord.data,
+      };
+    } catch (e) {
+      const error = asError(e);
+      Logger.error(
+        `Failed to save job record: ${error.message}`,
+        loggerCtx,
+        error.stack
+      );
+      // Retry saving without data
+      const savedJobRecord = await this.jobRecordRepository.save({
+        ...jobRecord,
+        data: undefined,
+        // Save with original queue name for filtering in admin
+        queueName: this.getOriginalQueueName(jobRecord.queueName),
+      });
+      return savedJobRecord;
+    }
   }
 
   /**
@@ -398,40 +413,5 @@ export class CloudTasksService implements OnApplicationBootstrap {
         throw error;
       }
     }
-  }
-
-  /**
-   * MySQL & MariaDB store job data as a "text" type which has a limit of 64kb. Going over that limit will cause the job to not be stored.
-   * In order to try to prevent that, this method will truncate any strings in the `data` object over 2kb in size.
-   *
-   * Copied from Vendure's `SqlJobQueueStrategy`
-   */
-  private constrainDataSize<Data extends JobData<Data> = object>(
-    data: Data,
-    queueName: string
-  ): Data {
-    const type = this.dataSource?.options.type;
-    if (type === 'mysql' || type === 'mariadb') {
-      const stringified = JSON.stringify(data);
-      if (64 * 1024 <= stringified.length) {
-        const truncatedKeys: Array<{ key: string; size: number }> = [];
-        const reduced = JSON.parse(stringified, (key, value) => {
-          if (typeof value === 'string' && 2048 < value.length) {
-            truncatedKeys.push({ key, size: value.length });
-            return `[truncated - originally ${value.length} bytes]`;
-          }
-          return value;
-        });
-        Logger.warn(
-          `Job data for "${queueName}" is too long to store with the ${type} driver (${Math.round(
-            stringified.length / 1024
-          )}kb).\nThe following keys were truncated: ${truncatedKeys
-            .map(({ key, size }) => `${key} (${size} bytes)`)
-            .join(', ')}`
-        );
-        return reduced;
-      }
-    }
-    return data;
   }
 }
