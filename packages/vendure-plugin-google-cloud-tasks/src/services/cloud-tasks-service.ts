@@ -16,6 +16,7 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { CloudTaskMessage, CloudTaskOptions } from '../types';
 import { generatePublicId } from '@vendure/core/dist/common/generate-public-id';
 import { asError } from 'catch-unknown';
+import { truncateData } from './cloud-tasks-util';
 
 type QueueProcessFunction = (job: Job) => Promise<any>;
 
@@ -328,21 +329,35 @@ export class CloudTasksService implements OnApplicationBootstrap {
    * Constrains jobRecord.data to 64kb to prevent `ER_DATA_TOO_LONG` errors on MySQL.
    */
   private async saveJob(jobRecord: JobRecord): Promise<JobRecord> {
-    const constrainedData = this.constrainDataSize(
-      jobRecord.data,
-      jobRecord.queueName
-    );
-    const savedJobRecord = await this.jobRecordRepository.save({
-      ...jobRecord,
-      data: constrainedData,
-      // Save with original queue name for filtering in admin
-      queueName: this.getOriginalQueueName(jobRecord.queueName),
-    });
-    return {
-      ...savedJobRecord,
-      // Return with original data
-      data: jobRecord.data,
-    };
+    try {
+      const constrainedData = truncateData(jobRecord.data, jobRecord.queueName);
+      const savedJobRecord = await this.jobRecordRepository.save({
+        ...jobRecord,
+        data: constrainedData,
+        // Save with original queue name for filtering in admin
+        queueName: this.getOriginalQueueName(jobRecord.queueName),
+      });
+      return {
+        ...savedJobRecord,
+        // Return with original data
+        data: jobRecord.data,
+      };
+    } catch (e) {
+      const error = asError(e);
+      Logger.error(
+        `Failed to save job record: ${error.message}`,
+        loggerCtx,
+        error.stack
+      );
+      // Retry saving without data
+      const savedJobRecord = await this.jobRecordRepository.save({
+        ...jobRecord,
+        data: undefined,
+        // Save with original queue name for filtering in admin
+        queueName: this.getOriginalQueueName(jobRecord.queueName),
+      });
+      return savedJobRecord;
+    }
   }
 
   /**
