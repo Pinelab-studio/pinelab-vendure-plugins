@@ -42,6 +42,8 @@ plugins: [
 3. Start the Vendure server, log in to the admin dashboard and trigger a reindex job
    via `Products > (cog icon) > reindex` to test the Cloud Tasks Plugin.
 
+This plugin installs the `SQLJobBufferStrategy` from Vendure's default JobQueue plugin, to buffer jobs in the database. This is because most projects that are using Google Cloud Tasks will also have multiple instances of the Vendure server.
+
 # Clear jobs
 
 You can call the endpoint `/cloud-tasks/clear-jobs/X` with the secret as Auth header to clear jobs older than X days. For example:
