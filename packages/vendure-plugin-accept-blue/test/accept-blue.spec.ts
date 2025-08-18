@@ -366,13 +366,11 @@ describe('Payment with Saved Payment Method', () => {
       .patch(`/customers/${haydenZiemeCustomerDetails.id}`, () => true)
       .reply(200, [haydenZiemeCustomerDetails]);
     // createCharge -> Declined body (so service catches AcceptBlueChargeError)
-    nockInstance
-      .post(`/transactions/charge`)
-      .reply(201, {
-        status: 'Declined',
-        error_message: 'Card declined',
-        error_code: 'D123',
-      });
+    nockInstance.post(`/transactions/charge`).reply(201, {
+      status: 'Declined',
+      error_message: 'Card declined',
+      error_code: 'D123',
+    });
     const testPaymentMethod =
       haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
     nockInstance

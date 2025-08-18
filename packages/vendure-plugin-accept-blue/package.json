@@ -19,8 +19,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc",
-    "start": "ts-node --swc test/dev-server.ts",
-    "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
+    "start": "nodemon --exec ts-node --swc --transpile-only test/dev-server.ts",
     "generate": "graphql-codegen",
     "test": "vitest run --bail 1",
     "lint": "eslint ."
