@@ -40,7 +40,7 @@ export const CREATE_PAYMENT_METHOD = gql`
 export const ADMIN_CREATE_CARD_PAYMENT_METHOD = gql`
   mutation CreateCardPaymentMethod(
     $input: CreateAcceptBlueCardPaymentMethodInput!
-    $customerId: Int!
+    $customerId: ID!
   ) {
     createAcceptBlueCardPaymentMethod(input: $input, customerId: $customerId) {
       id
@@ -81,24 +81,6 @@ export const SHOP_CREATE_CHECK_PAYMENT_METHOD = gql`
     $input: CreateAcceptBlueCheckPaymentMethodInput!
   ) {
     createAcceptBlueCheckPaymentMethod(input: $input) {
-      id
-      created_at
-      name
-      payment_method_type
-      account_type
-      routing_number
-      sec_code
-      last4
-    }
-  }
-`;
-
-export const ADMIN_CREATE_CHECK_PAYMENT_METHOD = gql`
-  mutation CreateCheckPaymentMethod(
-    $input: CreateAcceptBlueCheckPaymentMethodInput!
-    $customerId: Int!
-  ) {
-    createAcceptBlueCheckPaymentMethod(input: $input, customerId: $customerId) {
       id
       created_at
       name

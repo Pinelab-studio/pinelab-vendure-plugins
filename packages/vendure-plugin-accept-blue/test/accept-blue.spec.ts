@@ -1183,7 +1183,7 @@ describe('Payment method management', () => {
           expiry_month: 6,
           expiry_year: 2026,
         },
-        customerId: haydenZiemeCustomerDetails.id,
+        customerId: haydenZiemeCustomerDetails.vendureId,
       }
     );
     expect(createAcceptBlueCardPaymentMethod).toEqual(
