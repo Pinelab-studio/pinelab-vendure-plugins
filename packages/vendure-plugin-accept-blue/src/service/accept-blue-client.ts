@@ -30,6 +30,15 @@ import {
 } from '../types';
 import { isSameCard, isSameCheck } from '../util';
 
+export class AcceptBlueChargeError extends Error {
+  constructor(
+    message: string,
+    public readonly metadata: AcceptBlueChargeTransaction
+  ) {
+    super(message);
+  }
+}
+
 export class AcceptBlueClient {
   readonly endpoint: string;
   readonly instance: AxiosInstance;
@@ -381,9 +390,10 @@ export class AcceptBlueClient {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       result.status === 'Declined'
     ) {
-      throw new Error(
+      throw new AcceptBlueChargeError(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        `One time charge creation failed: ${result.error_message} (${result.error_code})`
+        `One time charge creation failed: ${result.error_message} (${result.error_code})`,
+        result as AcceptBlueChargeTransaction
       );
     }
     Logger.info(
@@ -417,9 +427,10 @@ export class AcceptBlueClient {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       result.status === 'Declined'
     ) {
-      throw new Error(
+      throw new AcceptBlueChargeError(
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-        `One time Digital Wallet charge creation failed: ${result.error_message} (${result.error_code})`
+        `One time Digital Wallet charge creation failed: ${result.error_message} (${result.error_code})`,
+        result as AcceptBlueChargeTransaction
       );
     }
     Logger.info(

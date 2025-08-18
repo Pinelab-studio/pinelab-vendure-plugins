@@ -137,6 +137,7 @@ export const haydenSavedPaymentMethods = [
 
 export const haydenZiemeCustomerDetails = {
   id: 181937,
+  vendureId: 1,
   identifier: 'hayden.zieme12@hotmail.com',
   customer_number: 'hayden.zieme12@hotmail.com',
   first_name: 'Hayden',

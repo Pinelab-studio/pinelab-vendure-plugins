@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-accept-blue",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Vendure plugin for creating subscriptions with the Accept Blue platform",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -19,8 +19,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc",
-    "start": "ts-node --swc test/dev-server.ts",
-    "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
+    "start": "nodemon --exec ts-node --swc --transpile-only test/dev-server.ts",
     "generate": "graphql-codegen",
     "test": "vitest run --bail 1",
     "lint": "eslint ."

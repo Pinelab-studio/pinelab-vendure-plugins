@@ -298,11 +298,11 @@ export const adminApiExtensions = gql`
     """
     createAcceptBlueCardPaymentMethod(
       input: CreateAcceptBlueCardPaymentMethodInput!
-      customerId: Int!
+      customerId: ID!
     ): AcceptBlueCardPaymentMethod!
     createAcceptBlueCheckPaymentMethod(
       input: CreateAcceptBlueCheckPaymentMethodInput!
-      customerId: Int!
+      customerId: ID!
     ): AcceptBlueCheckPaymentMethod!
   }
 `;

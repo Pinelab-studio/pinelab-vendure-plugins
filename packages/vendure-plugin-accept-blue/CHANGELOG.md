@@ -1,3 +1,8 @@
+# 3.4.0 (2025-08-18)
+
+- Store payment metadata for declined transactions. Create recurring schedule after successful charge.
+- POTENTIALLY BREAKING: Creating a card payment method now accepts a Vendure customer ID, which changed the input from `Int!` to `ID!`.
+
 # 3.3.1 (2025-07-17)
 
 - Prevent empty metadata for orders with $0

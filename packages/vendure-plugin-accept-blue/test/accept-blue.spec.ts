@@ -64,6 +64,7 @@ import {
   UPDATE_CHECK_PAYMENT_METHOD,
   UPDATE_SUBSCRIPTION,
   SHOP_CREATE_CHECK_PAYMENT_METHOD,
+  GET_ORDER_AS_ADMIN,
 } from './helpers/graphql-helpers';
 import {
   checkChargeResult,
@@ -350,6 +351,46 @@ describe('Payment with Saved Payment Method', () => {
     );
   });
 
+  it('Declines payment when charge is declined', async () => {
+    const queryParams = {
+      active: true,
+      customer_number: haydenZiemeCustomerDetails.customer_number,
+    };
+    // get customer
+    nockInstance
+      .get(`/customers`)
+      .query(queryParams)
+      .reply(200, [haydenZiemeCustomerDetails]);
+    // patch customer
+    nockInstance
+      .patch(`/customers/${haydenZiemeCustomerDetails.id}`, () => true)
+      .reply(200, [haydenZiemeCustomerDetails]);
+    // createCharge -> Declined body (so service catches AcceptBlueChargeError)
+    nockInstance.post(`/transactions/charge`).reply(201, {
+      status: 'Declined',
+      error_message: 'Card declined',
+      error_code: 'D123',
+    });
+    const testPaymentMethod =
+      haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
+    nockInstance
+      .get(`/payment-methods/${testPaymentMethod.id}`)
+      .reply(201, testPaymentMethod);
+    await shopClient.query(SET_SHIPPING_METHOD, { id: [1] });
+    await shopClient.query(TRANSITION_ORDER_TO, { state: 'ArrangingPayment' });
+    const { addPaymentToOrder: order } = await shopClient.query(
+      ADD_PAYMENT_TO_ORDER,
+      {
+        input: {
+          method: acceptBluePaymentMethod.code,
+          metadata: { paymentMethodId: testPaymentMethod.id },
+        },
+      }
+    );
+    // Payment declined should keep order in ArrangingPayment
+    expect(order.errorCode).toBe('PAYMENT_DECLINED_ERROR');
+  });
+
   let patchCustomerRequest: any = {};
 
   it('Adds payment to order', async () => {
@@ -413,6 +454,20 @@ describe('Payment with Saved Payment Method', () => {
     expect(order.state).toBe('PaymentSettled');
     expect(recurringRequests.length).toBe(1);
     expect(recurringRequests[0].amount).toBe(9);
+  });
+
+  it('Order has metadata for both declined and settled payments', async () => {
+    await adminClient.asSuperAdmin();
+    const { order: settledOrder } = await adminClient.query(
+      GET_ORDER_AS_ADMIN,
+      {
+        id: placedOrder?.id,
+      }
+    );
+    expect(settledOrder.payments?.length).toBe(2);
+    settledOrder.payments.forEach((p: any) => {
+      expect(p.metadata).toBeDefined();
+    });
   });
 
   it('Updated customer at Accept Blue', async () => {
@@ -1126,7 +1181,7 @@ describe('Payment method management', () => {
           expiry_month: 6,
           expiry_year: 2026,
         },
-        customerId: haydenZiemeCustomerDetails.id,
+        customerId: haydenZiemeCustomerDetails.vendureId,
       }
     );
     expect(createAcceptBlueCardPaymentMethod).toEqual(

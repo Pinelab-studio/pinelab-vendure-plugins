@@ -57,7 +57,7 @@ import {
   toGraphqlRefundStatus,
   toSubscriptionInterval,
 } from '../util';
-import { AcceptBlueClient } from './accept-blue-client';
+import { AcceptBlueChargeError, AcceptBlueClient } from './accept-blue-client';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
 import {
   AcceptBlueCheckPaymentMethod,
@@ -230,16 +230,31 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       );
     }
     client.throwIfPaymentMethodNotAllowed(paymentMethod);
-    await this.createRecurringSchedule(ctx, order, client, paymentMethod.id);
     let chargeTransaction: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
       const subscriptionOrderLines =
         await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
-      chargeTransaction = await client.createCharge(paymentMethod.id, amount, {
-        // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
-        custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
-      });
+      try {
+        chargeTransaction = await client.createCharge(
+          paymentMethod.id,
+          amount,
+          {
+            // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+            custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
+          }
+        );
+      } catch (e) {
+        if (e instanceof AcceptBlueChargeError) {
+          return {
+            amount,
+            state: 'Declined',
+            metadata: e.metadata,
+          };
+        }
+        throw e;
+      }
     }
+    await this.createRecurringSchedule(ctx, order, client, paymentMethod.id);
     const chargeTransactionId = chargeTransaction?.transaction?.id;
     Logger.info(
       `Settled payment for order '${order.code}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransactionId}'`,
@@ -280,10 +295,22 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     // Create Charge
     const subscriptionOrderLines =
       await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
-    const chargeTransaction = await client.createDigitalWalletCharge(input, {
-      // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
-      custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
-    });
+    let chargeTransaction: AcceptBlueChargeTransaction | undefined;
+    try {
+      chargeTransaction = await client.createDigitalWalletCharge(input, {
+        // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+        custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
+      });
+    } catch (e) {
+      if (e instanceof AcceptBlueChargeError) {
+        return {
+          amount,
+          state: 'Declined',
+          metadata: e.metadata,
+        };
+      }
+      throw e;
+    }
     const acceptBlueCustomerId = await this.getOrCreateCustomerForOrder(
       ctx,
       client,
@@ -462,12 +489,14 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   async createCardPaymentMethod(
     ctx: RequestContext,
     input: CreateAcceptBlueCardPaymentMethodInput,
-    customerId?: number
+    customerId?: ID
   ): Promise<AcceptBlueCardPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
     // Get customer ID from CTX if no customerId is given
-    const acceptBlueCustomerId =
-      customerId ?? (await this.getAcceptBlueCustomerId(ctx));
+    const acceptBlueCustomerId = await this.getAcceptBlueCustomerId(
+      ctx,
+      customerId
+    );
     return (await client.createPaymentMethod(acceptBlueCustomerId, {
       source: input.sourceToken,
       expiry_month: input.expiry_month,
@@ -480,12 +509,14 @@ export class AcceptBlueService implements OnApplicationBootstrap {
   async createCheckPaymentMethod(
     ctx: RequestContext,
     input: CreateAcceptBlueCheckPaymentMethodInput,
-    customerId?: number
+    customerId?: ID
   ): Promise<AcceptBlueCheckPaymentMethod> {
     const client = await this.getClientForChannel(ctx);
     // Get customer ID from CTX if no customerId is given
-    const acceptBlueCustomerId =
-      customerId ?? (await this.getAcceptBlueCustomerId(ctx));
+    const acceptBlueCustomerId = await this.getAcceptBlueCustomerId(
+      ctx,
+      customerId
+    );
     return (await client.createPaymentMethod(acceptBlueCustomerId, {
       account_number: input.account_number,
       account_type: input.account_type as AccountType,
@@ -603,13 +634,31 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     }
   }
 
-  async getAcceptBlueCustomerId(ctx: RequestContext): Promise<number> {
-    if (!ctx.activeUserId) {
-      throw new UserInputError(`User is not logged in!`);
+  /**
+   * Get the Accept Blue customer ID for the given context (active customer) or given customer ID.
+   */
+  async getAcceptBlueCustomerId(
+    ctx: RequestContext,
+    customerId?: ID
+  ): Promise<number> {
+    let customer: Customer;
+    if (customerId) {
+      const potentialCustomer = await this.customerService.findOne(
+        ctx,
+        customerId
+      );
+      if (!potentialCustomer) {
+        throw new UserInputError(`No customer found for user ${customerId}`);
+      }
+      customer = potentialCustomer;
+    } else {
+      if (!ctx.activeUserId) {
+        throw new UserInputError(`User is not logged in!`);
+      }
+      customer = await assertFound(
+        this.customerService.findOneByUserId(ctx, ctx.activeUserId)
+      );
     }
-    const customer = await assertFound(
-      this.customerService.findOneByUserId(ctx, ctx.activeUserId)
-    );
     if (!customer.customFields.acceptBlueCustomerId) {
       throw new UserInputError(
         `Customer '${customer.emailAddress}' (${customer.id}) is not linked to an Accept Blue customer`
