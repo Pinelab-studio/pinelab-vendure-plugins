@@ -224,7 +224,7 @@ export interface CheckPaymentMethodInput {
 
 export interface HandlePaymentResult {
   amount: number;
-  state: 'Settled';
+  state: 'Settled' | 'Declined';
   transactionId?: string;
   metadata?: PaymentMetadata;
 }

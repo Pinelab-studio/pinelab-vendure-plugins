@@ -57,7 +57,7 @@ import {
   toGraphqlRefundStatus,
   toSubscriptionInterval,
 } from '../util';
-import { AcceptBlueClient } from './accept-blue-client';
+import { AcceptBlueChargeError, AcceptBlueClient } from './accept-blue-client';
 import { acceptBluePaymentHandler } from './accept-blue-handler';
 import {
   AcceptBlueCheckPaymentMethod,
@@ -230,16 +230,31 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       );
     }
     client.throwIfPaymentMethodNotAllowed(paymentMethod);
-    await this.createRecurringSchedule(ctx, order, client, paymentMethod.id);
     let chargeTransaction: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
       const subscriptionOrderLines =
         await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
-      chargeTransaction = await client.createCharge(paymentMethod.id, amount, {
-        // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
-        custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
-      });
+      try {
+        chargeTransaction = await client.createCharge(
+          paymentMethod.id,
+          amount,
+          {
+            // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+            custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
+          }
+        );
+      } catch (e) {
+        if (e instanceof AcceptBlueChargeError) {
+          return {
+            amount,
+            state: 'Declined',
+            metadata: e.metadata,
+          };
+        }
+        throw e;
+      }
     }
+    await this.createRecurringSchedule(ctx, order, client, paymentMethod.id);
     const chargeTransactionId = chargeTransaction?.transaction?.id;
     Logger.info(
       `Settled payment for order '${order.code}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransactionId}'`,
@@ -280,10 +295,22 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     // Create Charge
     const subscriptionOrderLines =
       await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
-    const chargeTransaction = await client.createDigitalWalletCharge(input, {
-      // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
-      custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
-    });
+    let chargeTransaction: AcceptBlueChargeTransaction | undefined;
+    try {
+      chargeTransaction = await client.createDigitalWalletCharge(input, {
+        // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+        custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
+      });
+    } catch (e) {
+      if (e instanceof AcceptBlueChargeError) {
+        return {
+          amount,
+          state: 'Declined',
+          metadata: e.metadata,
+        };
+      }
+      throw e;
+    }
     const acceptBlueCustomerId = await this.getOrCreateCustomerForOrder(
       ctx,
       client,

@@ -169,6 +169,13 @@ export const ADD_PAYMENT_TO_ORDER = gql`
             acceptBlueSubscriptionIds
           }
         }
+        payments {
+          state
+          metadata
+          amount
+          method
+          transactionId
+        }
       }
       ... on ErrorResult {
         errorCode
@@ -195,6 +202,22 @@ export const REFUND_TRANSACTION = gql`
       errorMessage
       errorCode
       errorDetails
+    }
+  }
+`;
+
+export const GET_ORDER_AS_ADMIN = gql`
+  query GetOrderAsAdmin($id: ID!) {
+    order(id: $id) {
+      id
+      code
+      payments {
+        state
+        metadata
+        amount
+        method
+        transactionId
+      }
     }
   }
 `;

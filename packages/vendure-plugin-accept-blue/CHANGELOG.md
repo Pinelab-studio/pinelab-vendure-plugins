@@ -1,3 +1,7 @@
+# 3.3.2 (2025-08-18)
+
+- Store payment metadata for declined transactions. Create recurring schedule after successful charge.
+
 # 3.3.1 (2025-07-17)
 
 - Prevent empty metadata for orders with $0
