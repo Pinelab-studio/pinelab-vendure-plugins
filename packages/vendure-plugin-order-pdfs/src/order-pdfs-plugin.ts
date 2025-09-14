@@ -28,6 +28,16 @@ export interface PDFTemplatePluginOptions {
    * @example /pdf-templates/download/my-channel-token/1234/F1BTWG6U2JBXT1RC/hayden.zieme@hotmail.com
    */
   allowPublicDownload?: boolean;
+
+  /**
+   * Margins for the PDF, defaults to { bottom: 100, top: 100, left: 50, right: 50 },
+   */
+  pdfMargin?: {
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+  }
 }
 
 @VendurePlugin({
