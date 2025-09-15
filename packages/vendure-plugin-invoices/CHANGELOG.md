@@ -1,6 +1,7 @@
 # 4.4.2 (2025-09-15)
 
 - Removed license check completely, also removed the dependency on @vendure-hub/vendure-hub-plugin
+- Moved to @pinelab/pinelab-invoice-plugin, which means the plugin is free again!
 
 # 4.4.1 (2025-07-31)
 

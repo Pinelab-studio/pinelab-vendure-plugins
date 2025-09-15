@@ -1,3 +1,7 @@
+# 1.2.0 (2025-09-15)
+
+- Allow setting margins for the PDF
+
 # 1.1.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2
