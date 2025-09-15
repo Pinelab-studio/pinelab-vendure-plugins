@@ -29,7 +29,6 @@ plugins: [
   InvoicePlugin.init({
     // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
-    licenseKey: '<Vendure Hub license key>',
   }),
   // Add the invoices UI components to the admin ui
   AdminUiPlugin.init({
@@ -365,7 +364,6 @@ This strategy exports each invoice to Xero (UK only). To get started:
 InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
         storageStrategy: new LocalFileStrategy(),
-        licenseKey: process.env.LICENSE_KEY!,
         accountingExports: [
           // Export each invoice to Xero
           new XeroUKExportStrategy({

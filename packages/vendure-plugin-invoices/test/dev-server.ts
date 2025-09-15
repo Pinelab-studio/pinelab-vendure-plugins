@@ -36,8 +36,6 @@ require('dotenv').config();
       InvoicePlugin.init({
         vendureHost: 'http://localhost:3050',
         storageStrategy: new LocalFileStrategy(),
-        licenseKey: process.env.LICENSE_KEY!,
-        // licenseKey: 'false license key',
         startInvoiceNumber: Math.floor(100000 + Math.random() * 900000), // Random 6 digit number to prevent duplicates in Xero
         accountingExports: [
           new XeroUKExportStrategy({

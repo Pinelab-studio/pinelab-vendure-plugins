@@ -37,7 +37,6 @@ export class InvoiceAdminResolver {
     @Ctx() ctx: RequestContext,
     @Args('invoiceNumber') invoiceNumber: number
   ): Promise<boolean> {
-    this.invoiceService.throwIfInvalidLicense();
     await this.accountingService.exportInvoiceToAccountingPlatform(
       ctx,
       invoiceNumber
@@ -52,7 +51,6 @@ export class InvoiceAdminResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: InvoiceConfigInput
   ): Promise<InvoiceConfigEntity> {
-    this.invoiceService.throwIfInvalidLicense();
     return this.invoiceService.upsertConfig(ctx, input);
   }
 
@@ -98,7 +96,6 @@ export class InvoiceAdminResolver {
   async invoiceConfig(
     @Ctx() ctx: RequestContext
   ): Promise<InvoiceConfigEntity | undefined> {
-    this.invoiceService.throwIfInvalidLicense();
     return this.invoiceService.getConfig(ctx);
   }
 
@@ -108,7 +105,6 @@ export class InvoiceAdminResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: QueryInvoicesArgs
   ): Promise<PaginatedList<Invoice>> {
-    this.invoiceService.throwIfInvalidLicense();
     return this.invoiceService.findAll(ctx, args.options || undefined);
   }
 }
