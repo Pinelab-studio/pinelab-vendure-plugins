@@ -15,10 +15,7 @@ import { FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS } from './constants';
 import { FrequentlyBoughtTogetherService } from './services/frequently-bought-together.service';
 import { PluginInitOptions } from './types';
 
-export type FrequentlyBoughtTogetherPluginOptions = Partial<
-  Omit<PluginInitOptions, 'hasValidLicense'>
-> &
-  Pick<PluginInitOptions, 'licenseKey'>;
+export type FrequentlyBoughtTogetherPluginOptions = Partial<PluginInitOptions>;
 
 /**
  * Increase revenue by cross selling frequently bought together products.
@@ -79,12 +76,10 @@ export type FrequentlyBoughtTogetherPluginOptions = Partial<
 })
 export class FrequentlyBoughtTogetherPlugin {
   static options: PluginInitOptions = {
-    licenseKey: '',
     customFieldUiTab: 'Related products',
     experimentMode: false,
     supportLevel: 0.01,
     maxRelatedProducts: 10,
-    hasValidLicense: false,
   };
 
   static init(

@@ -39,11 +39,6 @@ export interface InvoicePluginConfigInput {
   vendureHost: string;
   /**
    * @description
-   * License key obtained from the Vendure Hub
-   */
-  licenseKey: string;
-  /**
-   * @description
    * Load custom data that is passed in to your HTML/handlebars template
    */
   loadDataFn?: LoadDataFn;
@@ -61,7 +56,6 @@ export interface InvoicePluginConfigInput {
 export interface InvoicePluginConfig extends InvoicePluginConfigInput {
   loadDataFn: LoadDataFn;
   storageStrategy: StorageStrategy;
-  hasValidLicense: boolean;
   startInvoiceNumber: number;
 }
 
@@ -123,7 +117,6 @@ export class InvoicePlugin implements OnModuleInit {
       ...config,
       storageStrategy: config.storageStrategy || new LocalFileStrategy(),
       loadDataFn: config.loadDataFn || defaultLoadDataFn,
-      hasValidLicense: false,
       startInvoiceNumber: config.startInvoiceNumber || 10000,
     };
     return this;

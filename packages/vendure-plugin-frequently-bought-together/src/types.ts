@@ -7,11 +7,6 @@ import { Itemset } from 'node-fpgrowth';
  */
 export interface PluginInitOptions {
   /**
-   * @description
-   * License key obtained from the Vendure Hub
-   */
-  licenseKey: string;
-  /**
    * Defines in what tab the custom field should be displayed in the admin UI.
    * Can be an existing tab.
    */
@@ -26,7 +21,6 @@ export interface PluginInitOptions {
    * Should be between 0 and 1
    */
   supportLevel: number | ((ctx: RequestContext) => number);
-  hasValidLicense: boolean;
   /**
    * The maximum number of related products to store per product
    */

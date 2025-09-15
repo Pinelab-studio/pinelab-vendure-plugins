@@ -34,7 +34,6 @@ require('dotenv').config();
     },
     plugins: [
       FrequentlyBoughtTogetherPlugin.init({
-        licenseKey: `123`,
         experimentMode: true,
         supportLevel: 0.001,
       }),
