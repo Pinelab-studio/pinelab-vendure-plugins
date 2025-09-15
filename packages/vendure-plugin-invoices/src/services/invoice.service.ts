@@ -808,20 +808,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     return !!result?.enabled;
   }
 
-  throwIfInvalidLicense(): void {
-    if (this.config.hasValidLicense) {
-      return;
-    }
-    const message = `Invalid license key. Viewing invoices is disabled. Invoice generation will continue as usual.`;
-    Logger.error(message, loggerCtx);
-    if (process.env.NODE_ENV === 'test') {
-      // Only log in test, don't throw
-      return;
-    }
-    // FIXME Disabled because Vendure license server is offline
-    // throw Error(message);
-  }
-
   /**
    * Creates a new invoice row in the database, so we can be sure that we have reserved the given invoiceNumber.
    */

@@ -1,3 +1,5 @@
+import { OnModuleInit } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
   Injector,
   Logger,
@@ -6,8 +8,6 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
-import { OnApplicationBootstrap, OnModuleInit } from '@nestjs/common';
-import { ModuleRef } from '@nestjs/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import {
@@ -20,19 +20,15 @@ import {
   invoicePermission,
 } from './api/invoice-common.resolver';
 import { InvoiceController } from './api/invoice.controller';
-import { defaultLoadDataFn, LoadDataFn } from './strategies/load-data-fn';
-import { LocalFileStrategy } from './strategies/storage/local-file-strategy';
-import { PLUGIN_INIT_OPTIONS, loggerCtx } from './constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from './constants';
 import { InvoiceConfigEntity } from './entities/invoice-config.entity';
 import { InvoiceEntity } from './entities/invoice.entity';
-import { StorageStrategy } from './strategies/storage/storage-strategy';
-import { InvoiceService } from './services/invoice.service';
-import {
-  LicenseService,
-  VendureHubPlugin,
-} from '@vendure-hub/vendure-hub-plugin';
-import { AccountingExportStrategy } from './strategies/accounting/accounting-export-strategy';
 import { AccountingService } from './services/accounting.service';
+import { InvoiceService } from './services/invoice.service';
+import { AccountingExportStrategy } from './strategies/accounting/accounting-export-strategy';
+import { defaultLoadDataFn, LoadDataFn } from './strategies/load-data-fn';
+import { LocalFileStrategy } from './strategies/storage/local-file-strategy';
+import { StorageStrategy } from './strategies/storage/storage-strategy';
 
 export interface InvoicePluginConfigInput {
   /**
@@ -74,7 +70,7 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
  * Vendure plugin to generate PDF invoices for orders.
  */
 @VendurePlugin({
-  imports: [PluginCommonModule, VendureHubPlugin],
+  imports: [PluginCommonModule],
   entities: [InvoiceConfigEntity, InvoiceEntity],
   providers: [
     InvoiceService,
@@ -96,13 +92,10 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
     return config;
   },
 })
-export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
+export class InvoicePlugin implements OnModuleInit {
   static config: InvoicePluginConfig;
 
-  constructor(
-    private licenseService: LicenseService,
-    private moduleRef: ModuleRef
-  ) {}
+  constructor(private moduleRef: ModuleRef) {}
 
   async onModuleInit(): Promise<void> {
     // Initialize accounting export strategies, if they define an init function
@@ -123,33 +116,6 @@ export class InvoicePlugin implements OnApplicationBootstrap, OnModuleInit {
         loggerCtx
       );
     }
-  }
-
-  onApplicationBootstrap(): void {
-    this.licenseService
-      .checkLicenseKey(
-        InvoicePlugin.config.licenseKey,
-        '@vendure-hub/pinelab-invoice-plugin'
-      )
-      .then((result) => {
-        if (!result.valid) {
-          Logger.error(
-            `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin. Viewing invoices is disabled. Invoice generation will continue as usual.`,
-            loggerCtx
-          );
-          InvoicePlugin.config.hasValidLicense = false;
-        } else {
-          InvoicePlugin.config.hasValidLicense = true;
-        }
-      })
-      .catch((err) => {
-        Logger.error(
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          `Error checking license key: ${err?.message}. Viewing invoices is disabled. Invoice generation will continue as usual.`,
-          loggerCtx
-        );
-        InvoicePlugin.config.hasValidLicense = false;
-      });
   }
 
   static init(config: InvoicePluginConfigInput): Type<InvoicePlugin> {

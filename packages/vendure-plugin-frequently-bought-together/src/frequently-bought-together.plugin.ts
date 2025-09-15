@@ -1,6 +1,5 @@
 import {
   LanguageCode,
-  Logger,
   PluginCommonModule,
   Product,
   Type,
@@ -8,22 +7,13 @@ import {
 } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 
-import {
-  FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS,
-  loggerCtx,
-} from './constants';
-import { FrequentlyBoughtTogetherService } from './services/frequently-bought-together.service';
-import { PluginInitOptions } from './types';
 import path from 'path';
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { FrequentlyBoughtTogetherAdminResolver } from './api/frequently-bought-together-admin.resolver';
-import { OnApplicationBootstrap } from '@nestjs/common';
-import {
-  LicenseService,
-  VendureHubPlugin,
-} from '@vendure-hub/vendure-hub-plugin';
-import { asError } from 'catch-unknown';
 import { FrequentlyBoughtTogetherShopResolver } from './api/frequently-bought-together-shop.resolver';
+import { FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS } from './constants';
+import { FrequentlyBoughtTogetherService } from './services/frequently-bought-together.service';
+import { PluginInitOptions } from './types';
 
 export type FrequentlyBoughtTogetherPluginOptions = Partial<
   Omit<PluginInitOptions, 'hasValidLicense'>
@@ -36,7 +26,7 @@ export type FrequentlyBoughtTogetherPluginOptions = Partial<
  * @category Plugin
  */
 @VendurePlugin({
-  imports: [PluginCommonModule, VendureHubPlugin],
+  imports: [PluginCommonModule],
   providers: [
     {
       provide: FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS,
@@ -87,7 +77,7 @@ export type FrequentlyBoughtTogetherPluginOptions = Partial<
     resolvers: [FrequentlyBoughtTogetherShopResolver],
   },
 })
-export class FrequentlyBoughtTogetherPlugin implements OnApplicationBootstrap {
+export class FrequentlyBoughtTogetherPlugin {
   static options: PluginInitOptions = {
     licenseKey: '',
     customFieldUiTab: 'Related products',
@@ -96,36 +86,6 @@ export class FrequentlyBoughtTogetherPlugin implements OnApplicationBootstrap {
     maxRelatedProducts: 10,
     hasValidLicense: false,
   };
-
-  constructor(private licenseService: LicenseService) {}
-
-  onApplicationBootstrap() {
-    this.licenseService
-      .checkLicenseKey(
-        FrequentlyBoughtTogetherPlugin.options.licenseKey,
-        '@vendure-hub/pinelab-frequently-bought-together-plugin'
-      )
-      .then((result) => {
-        if (!result.valid) {
-          Logger.error(
-            `Your license key is invalid. Make sure to obtain a valid license key from the Vendure Hub if you want to keep using this plugin.`,
-            loggerCtx
-          );
-          FrequentlyBoughtTogetherPlugin.options.hasValidLicense = false;
-        } else {
-          FrequentlyBoughtTogetherPlugin.options.hasValidLicense = true;
-        }
-      })
-      .catch((err) => {
-        Logger.error(
-          `Error checking license key: ${
-            asError(err).message
-          }. Some functionality might be disabled`,
-          loggerCtx
-        );
-        FrequentlyBoughtTogetherPlugin.options.hasValidLicense = false;
-      });
-  }
 
   static init(
     options: FrequentlyBoughtTogetherPluginOptions

@@ -1,3 +1,7 @@
+# 1.2.1 (2025-09-15)
+
+- Removed license check completely, also removed the dependency on @vendure-hub/vendure-hub-plugin
+
 # 1.2.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2

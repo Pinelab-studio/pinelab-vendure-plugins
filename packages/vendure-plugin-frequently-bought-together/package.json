@@ -32,7 +32,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@vendure-hub/vendure-hub-plugin": "^0.0.2",
     "catch-unknown": "^2.0.0",
     "node-fpgrowth": "^1.2.1"
   }

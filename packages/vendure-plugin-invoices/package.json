@@ -26,7 +26,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@vendure-hub/vendure-hub-plugin": "^0.0.2",
     "adm-zip": "0.5.9",
     "puppeteer": "23.1.0",
     "tmp": "0.2.1"
