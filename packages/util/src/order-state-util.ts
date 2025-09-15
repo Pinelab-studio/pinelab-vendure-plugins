@@ -1,6 +1,7 @@
 import {
   ErrorResult,
   FulfillmentStateTransitionError,
+  Logger,
   Order,
   OrderService,
   RequestContext,
@@ -11,6 +12,8 @@ import {
   ItemsAlreadyFulfilledError,
 } from '@vendure/common/lib/generated-types';
 import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
+
+export const loggerCtx = 'OrderStateUtil';
 
 /**
  * Create a fulfillment for all orderlines. Returns fulfillments[0] if already fulfilled
@@ -34,7 +37,16 @@ export async function fulfillAll(
     'ITEMS_ALREADY_FULFILLED_ERROR'
   ) {
     const fulfillments = await orderService.getOrderFulfillments(ctx, order);
-    return fulfillments[0];
+    const fulfillment = fulfillments[0];
+    Logger.info(
+      `Items already fulfilled for order ${
+        order.code
+      }. Returning fulfillment '${
+        fulfillment.id
+      }'. Existing fulfillments: ${fulfillments.map((f) => f.id).join(', ')}`,
+      loggerCtx
+    );
+    return fulfillment;
   }
   throwIfTransitionFailed(fulfillment);
   return fulfillment as Fulfillment;
