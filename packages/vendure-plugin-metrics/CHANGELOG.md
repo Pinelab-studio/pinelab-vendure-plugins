@@ -1,6 +1,7 @@
 # 3.0.0 (2025-09-15)
 
 - Abandoned server side tracking. Use dedicated analytics tool instead. This plugin focusses on measuring existing data in Vendure.
+- BREAKING: Custom metrics don't receive `session` entities anymore, because server side tracking is no longer supported.
 - Showing both with and without tax for AOV.
 
 # 2.3.0 (2025-07-02)
