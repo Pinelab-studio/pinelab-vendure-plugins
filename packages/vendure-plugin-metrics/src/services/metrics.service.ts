@@ -29,7 +29,6 @@ import {
   mapToSeries,
 } from './metric-util';
 import { MetricSummary } from '../entities/metric-summary.entity';
-import { RequestService } from './request-service';
 
 @Injectable()
 export class MetricsService implements OnModuleInit {
@@ -45,8 +44,7 @@ export class MetricsService implements OnModuleInit {
     private variantService: ProductVariantService,
     @Inject(PLUGIN_INIT_OPTIONS) private options: MetricsPluginOptions,
     private connection: TransactionalConnection,
-    private jobQueueService: JobQueueService,
-    private requestService: RequestService
+    private jobQueueService: JobQueueService
   ) {
     this.metricStrategies = this.options.metrics;
   }
@@ -100,12 +98,15 @@ export class MetricsService implements OnModuleInit {
       return metrics;
     }
     // If not in cache, add job to queue
-    await this.generateMetricsQueue.add({
-      ctx: ctx.serialize(),
-      startDate: startDate.toISOString(),
-      endDate: today.toISOString(),
-      variantIds: input?.variantIds ?? [],
-    });
+    await this.generateMetricsQueue.add(
+      {
+        ctx: ctx.serialize(),
+        startDate: startDate.toISOString(),
+        endDate: today.toISOString(),
+        variantIds: input?.variantIds ?? [],
+      },
+      { retries: 2 }
+    );
     Logger.info(`Added 'generate-metrics' job to queue for metric`, loggerCtx);
     // Poll every 1 seconds for the job to finish, with a timeout of 1 minute
     for (let i = 0; i < 60; i++) {
@@ -199,11 +200,6 @@ export class MetricsService implements OnModuleInit {
       startDate,
       endDate
     );
-    const allSessions = await this.requestService.getSessions(
-      ctx,
-      startDate,
-      this.options.sessionLengthInMinutes
-    );
     await Promise.all(
       this.metricStrategies.map(async (metricStrategy) => {
         // Calculate datapoints per 'name', because we could be dealing with a multi line chart
@@ -212,15 +208,9 @@ export class MetricsService implements OnModuleInit {
           number[]
         >();
         ordersPerMonth.forEach((entityMap) => {
-          const sessionsForThisMonth = getEntitiesForMonth(
-            allSessions,
-            entityMap.date,
-            'start'
-          );
           const calculatedDataPoints = metricStrategy.calculateDataPoints(
             ctx,
             entityMap.entities,
-            sessionsForThisMonth,
             variants
           );
           // Loop over datapoint, because we support multi line charts

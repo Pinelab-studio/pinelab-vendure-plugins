@@ -47,5 +47,6 @@ export const shopSchema = gql`
 
   extend type Mutation {
     pageVisit(input: pageVisitInput): Boolean
+      @deprecated(reason: "Server side tracking is no longer supported")
   }
 `;
