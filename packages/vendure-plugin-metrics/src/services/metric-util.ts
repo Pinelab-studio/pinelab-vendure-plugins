@@ -6,8 +6,6 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { AdvancedMetricSeries } from '../ui/generated/graphql';
-import { MetricRequest } from '../entities/metric-request.entity';
-import { Session } from './request-service';
 
 interface EntitiesPerMonth<T> {
   monthNr: number;
@@ -114,62 +112,4 @@ export function mapToSeries(
     });
   });
   return series;
-}
-
-/**
- * Aggregates the raw requests to sessions, grouping them by identifier and session length.
- *
- * E.g. multiple requests from id:123 within 5 minutes are combined into 1 session
- *
- */
-export function getSessions(
-  requests: MetricRequest[],
-  sessionLengthInMinutes: number
-): Session[] {
-  const sessions: Session[] = [];
-  const sessionLengthInMs = sessionLengthInMinutes * 60 * 1000;
-
-  // Group requests by identifier
-  const requestsByIdentifier = requests.reduce((map, request) => {
-    const group = map.get(request.identifier) || [];
-    group.push(request);
-    map.set(request.identifier, group);
-    return map;
-  }, new Map<string, MetricRequest[]>());
-
-  // Combine requests within the same session length into one session
-  for (const [identifier, groupedRequests] of requestsByIdentifier) {
-    // Sort requests by timestamp
-    groupedRequests.sort(
-      (a, b) => a.createdAt.getTime() - b.createdAt.getTime()
-    );
-    let currentSession: Session | null = null;
-
-    for (const request of groupedRequests) {
-      const isWithinSession =
-        currentSession &&
-        request.createdAt.getTime() - currentSession.start.getTime() <=
-          sessionLengthInMs;
-      if (sessionLengthInMs && isWithinSession && currentSession) {
-        // Extend the current session if the request is within the same session
-        currentSession.end = request.createdAt;
-      } else {
-        // Start a new session
-        if (currentSession) {
-          sessions.push(currentSession);
-        }
-        currentSession = {
-          identifier,
-          start: request.createdAt,
-          end: request.createdAt,
-          deviceType: request.deviceType,
-        };
-      }
-    }
-    // Push the last session
-    if (currentSession) {
-      sessions.push(currentSession);
-    }
-  }
-  return sessions;
 }

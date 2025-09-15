@@ -1,27 +1,18 @@
-import {
-  DefaultLogger,
-  LogLevel,
-  mergeConfig,
-  RequestContextService,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
-  E2E_DEFAULT_CHANNEL_TOKEN,
   registerInitializer,
   SimpleGraphQLClient,
   SqljsInitializer,
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import gql from 'graphql-tag';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
-import { waitFor } from '../../test/src/test-helpers';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { AdvancedMetricSummariesQuery, MetricsPlugin } from '../src';
-import { RequestService } from '../src/services/request-service';
 import { GET_METRICS } from '../src/ui/queries.graphql';
 
 describe('Metrics', () => {
@@ -89,26 +80,17 @@ describe('Metrics', () => {
     const salesPerProduct = advancedMetricSummaries.find(
       (m) => m.code === 'units-sold'
     )!;
-    const conversion = advancedMetricSummaries.find(
-      (m) => m.code === 'conversion'
-    )!;
-    const sessions = advancedMetricSummaries.find(
-      (m) => m.code === 'sessions'
-    )!;
-    [
-      averageOrderValue,
-      revenuePerProduct,
-      salesPerProduct,
-      conversion,
-      sessions,
-    ].forEach((metric) => {
-      expect(metric.series[0].values.length).toEqual(14);
-      expect(metric.labels.length).toEqual(14);
-    });
+    [averageOrderValue, revenuePerProduct, salesPerProduct].forEach(
+      (metric) => {
+        expect(metric.series[0].values.length).toEqual(14);
+        expect(metric.labels.length).toEqual(14);
+      }
+    );
     expect(averageOrderValue.series[0].values.length).toEqual(14);
     expect(averageOrderValue.labels.length).toEqual(14);
     // All orders are 4102 without tax, so the AOV is always 4102
-    expect(averageOrderValue.series[0].values[13]).toEqual(4102);
+    expect(averageOrderValue.series[0].values[13]).toEqual(4921.4); // Incl tax
+    expect(averageOrderValue.series[1].values[13]).toEqual(4102);
     // All orders are 4102 without tax, and we placed 3 orders
     expect(revenuePerProduct.series[0].values[13]).toEqual(3 * 4102); //12306
   });
@@ -141,91 +123,6 @@ describe('Metrics', () => {
     expect(salesPerProduct.series[0].values[13]).toEqual(3);
     // Expect the first series (variant 2), to have 6 revenue in last month
     expect(salesPerProduct.series[1].values[13]).toEqual(6);
-  });
-
-  it('Handles 10 concurrent requests to "pageVisit" mutation', async () => {
-    const PAGE_VISIT = gql`
-      mutation PageVisit {
-        pageVisit
-      }
-    `;
-    await Promise.allSettled(
-      Array(10)
-        .fill(0)
-        .map(() => shopClient.query(PAGE_VISIT))
-    );
-    // Wait until 10 sessions  are logged
-    const ctx = await server.app.get(RequestContextService).create({
-      apiType: 'shop',
-      channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
-    });
-    const requestService = server.app.get(RequestService);
-    const loggedSessions = await waitFor(async () => {
-      const sessions = await requestService.getSessions(
-        ctx,
-        new Date('2023-01-01'),
-        0
-      );
-      if (sessions.length === 10) {
-        return sessions;
-      }
-    }, 200);
-    expect(loggedSessions.length).toEqual(10);
-  });
-
-  it('Stores inputs on pageVisit requests', async () => {
-    const PAGE_VISIT = gql`
-      mutation PageVisit {
-        pageVisit(
-          input: {
-            path: "/product/123"
-            productId: "123"
-            productVariantId: "456"
-          }
-        )
-      }
-    `;
-    await Promise.allSettled(
-      Array(10)
-        .fill(0)
-        .map(() => shopClient.query(PAGE_VISIT))
-    );
-    // Wait until requests  are persisted
-    const ctx = await server.app.get(RequestContextService).create({
-      apiType: 'shop',
-      channelOrToken: E2E_DEFAULT_CHANNEL_TOKEN,
-    });
-    const requestService = server.app.get(RequestService);
-    const requests = await waitFor(async () => {
-      const requests = await requestService.getRequests(
-        ctx,
-        new Date('2023-01-01')
-      );
-      if (requests.length === 20) {
-        // wait for the next 10, so 20 in total
-        return requests;
-      }
-    }, 200);
-    expect(requests.length).toEqual(20);
-    requests.slice(-10).forEach((r) => {
-      expect(r.path).toEqual('/product/123');
-      expect(r.productId).toEqual('123');
-      expect(r.productVariantId).toEqual('456');
-    });
-  });
-
-  it('Extracts device info from user agent', () => {
-    const requestService = server.app.get(RequestService);
-    expect(
-      requestService.extractDeviceInfo(
-        'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36'
-      )
-    ).toEqual('other');
-    expect(
-      requestService.extractDeviceInfo(
-        'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Mobile Safari/537.36'
-      )
-    ).toEqual('mobile');
   });
 
   if (process.env.TEST_ADMIN_UI) {

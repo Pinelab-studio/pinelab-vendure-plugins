@@ -27,13 +27,6 @@ export class FrequentlyBoughtTogetherShopResolver {
         ctx,
         product
       );
-    if (!this.options.hasValidLicense) {
-      Logger.error(
-        `Invalid license key, only returning the top 2 most frequently bought together products`,
-        loggerCtx
-      );
-      return products.slice(0, 2);
-    }
     return products;
   }
 }

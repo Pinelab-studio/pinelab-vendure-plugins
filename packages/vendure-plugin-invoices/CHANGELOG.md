@@ -1,3 +1,7 @@
+# 4.4.2 (2025-09-15)
+
+- Removed license check completely, also removed the dependency on @vendure-hub/vendure-hub-plugin
+
 # 4.4.1 (2025-07-31)
 
 - Disabled license check, because Vendure license server is offline

@@ -1,9 +1,5 @@
-import {
-  AdvancedMetricSummaryInput,
-  AdvancedMetricType,
-} from '../ui/generated/graphql';
-import { RequestContext, ProductVariant, Order } from '@vendure/core';
-import { Session } from './request-service';
+import { Order, ProductVariant, RequestContext } from '@vendure/core';
+import { AdvancedMetricType } from '../ui/generated/graphql';
 /**
  * GroupId is used to group datapoints. For example 'product1', so that the plugin can find all datapoints for that product;
  */
@@ -51,7 +47,6 @@ export interface MetricStrategy {
   calculateDataPoints(
     ctx: RequestContext,
     orders: Order[],
-    sessions: Session[],
     variants: ProductVariant[]
   ): NamedDatapoint[];
 }
