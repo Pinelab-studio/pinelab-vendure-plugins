@@ -1,13 +1,6 @@
-import {
-  Injector,
-  Logger,
-  Order,
-  RequestContext,
-  TransactionalConnection,
-} from '@vendure/core';
-import { loggerCtx } from '../constants';
-import { AdvancedMetricType } from '../ui/generated/graphql';
+import { Order, RequestContext } from '@vendure/core';
 import { MetricStrategy, NamedDatapoint } from '../services/metric-strategy';
+import { AdvancedMetricType } from '../ui/generated/graphql';
 
 /**
  * Calculates the average order value per month
@@ -21,36 +14,28 @@ export class AverageOrderValueMetric implements MetricStrategy {
     return `Average order value`;
   }
 
-  calculateDataPoints(
-    ctx: RequestContext,
-    entities: Order[]
-  ): NamedDatapoint[] {
-    let legendLabel = 'Average order value';
-    if (ctx.channel.pricesIncludeTax) {
-      legendLabel += ' (incl. tax)';
-    } else {
-      legendLabel += ' (excl. tax)';
+  calculateDataPoints(ctx: RequestContext, orders: Order[]): NamedDatapoint[] {
+    let averageInclTax = 0;
+    let averageExclTax = 0;
+    if (orders.length) {
+      // Only calculate if there are orders
+      let totalWithTax = 0;
+      let totalExclTax = 0;
+      orders.forEach((o) => {
+        totalWithTax += o.totalWithTax;
+        totalExclTax += o.total;
+      });
+      averageInclTax = Math.round(totalWithTax / orders.length) / 100;
+      averageExclTax = Math.round(totalExclTax / orders.length) / 100;
     }
-    if (!entities.length) {
-      // Return 0 as average if no orders
-      return [
-        {
-          legendLabel,
-          value: 0,
-        },
-      ];
-    }
-    const totalFieldName = ctx.channel.pricesIncludeTax
-      ? 'totalWithTax'
-      : 'total';
-    const total = entities
-      .map((o) => o[totalFieldName])
-      .reduce((total, current) => total + current, 0);
-    const average = Math.round(total / entities.length) / 100;
     return [
       {
-        legendLabel,
-        value: average,
+        legendLabel: 'AOV incl. tax',
+        value: averageInclTax,
+      },
+      {
+        legendLabel: 'AOV excl. tax',
+        value: averageExclTax,
       },
     ];
   }
