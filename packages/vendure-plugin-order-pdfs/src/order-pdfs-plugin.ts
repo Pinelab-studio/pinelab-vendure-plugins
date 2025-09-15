@@ -37,7 +37,7 @@ export interface PDFTemplatePluginOptions {
     right?: number;
     bottom?: number;
     left?: number;
-  }
+  };
 }
 
 @VendurePlugin({

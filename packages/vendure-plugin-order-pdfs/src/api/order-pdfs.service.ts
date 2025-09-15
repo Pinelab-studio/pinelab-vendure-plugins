@@ -215,7 +215,12 @@ export class OrderPDFsService {
       await page.pdf({
         path: tmpFilePath,
         format: 'A4',
-        margin: this.options.pdfMargin || { bottom: 100, top: 100, left: 50, right: 50 },
+        margin: this.options.pdfMargin || {
+          bottom: 100,
+          top: 100,
+          left: 50,
+          right: 50,
+        },
       });
     } catch (e) {
       // Warning, because this will be retried, or is returned to the user
