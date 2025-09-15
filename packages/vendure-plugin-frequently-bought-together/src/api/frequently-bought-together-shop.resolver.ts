@@ -1,10 +1,7 @@
 import { Inject } from '@nestjs/common';
 import { Parent, ResolveField, Resolver } from '@nestjs/graphql';
-import { Ctx, Logger, Product, RequestContext } from '@vendure/core';
-import {
-  FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS,
-  loggerCtx,
-} from '../constants';
+import { Ctx, Product, RequestContext } from '@vendure/core';
+import { FREQUENTLY_BOUGHT_TOGETHER_PLUGIN_OPTIONS } from '../constants';
 import { FrequentlyBoughtTogetherService } from '../services/frequently-bought-together.service';
 import { PluginInitOptions } from '../types';
 
