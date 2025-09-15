@@ -92,9 +92,6 @@ describe('Metrics', () => {
     expect(averageOrderValue.series[0].values[13]).toEqual(4921.4); // Incl tax
     expect(averageOrderValue.series[1].values[13]).toEqual(4102);
     // All orders are 4102 without tax, and we placed 3 orders
-    expect(Math.round(revenuePerProduct.series[0].values[13])).toEqual(
-      3 * 4102
-    ); // Incl tax
     expect(revenuePerProduct.series[0].values[13]).toEqual(3 * 4102); //12306
   });
 
