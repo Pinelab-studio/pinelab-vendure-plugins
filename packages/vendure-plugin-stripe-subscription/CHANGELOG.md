@@ -1,3 +1,7 @@
+# 2.9.2 (2025-09-19)
+
+- Don't throw errors for subscription with $0 amount.
+
 # 2.9.1 (2025-07-07)
 
 - skip intent processing in handleIntentSucceeded if order is already PaymentSettled
