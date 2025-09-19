@@ -9,6 +9,7 @@ import { AcceptBlueController } from './api/accept-blue-controller';
 import { DefaultSubscriptionStrategy } from '../../util/src/subscription/default-subscription-strategy';
 import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 import { AcceptBlueAdminResolver } from './api/accept-blue-admin-resolver';
+import { SubscriptionOrderItemCalculation } from './service/subscription-order-item-calculation';
 
 interface AcceptBluePluginOptionsInput {
   subscriptionStrategy?: SubscriptionStrategy;
@@ -55,6 +56,9 @@ export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
       readonly: true,
       type: 'int',
     });
+    // Set the order item price calculation strategy, so that order line price is the price of the calculation
+    config.orderOptions.orderItemPriceCalculationStrategy =
+      new SubscriptionOrderItemCalculation();
     return config;
   },
   compatibility: '>=3.2.0',

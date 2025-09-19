@@ -366,6 +366,11 @@ export class AcceptBlueClient {
     return result;
   }
 
+  async deleteRecurringSchedule(scheduleId: number): Promise<void> {
+    await this.request('delete', `recurring-schedules/${scheduleId}`);
+    Logger.info(`Deleted recurring schedule ${scheduleId}`, loggerCtx);
+  }
+
   /**
    * Only supports charge with saved payment method id
    */

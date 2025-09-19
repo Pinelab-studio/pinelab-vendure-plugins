@@ -36,9 +36,9 @@ export class TestSubscriptionStrategy implements SubscriptionStrategy {
     return {
       name: `Test Subscription ${productVariant.name}`,
       priceIncludesTax: true,
-      amountDueNow: 0,
+      amountDueNow: productVariant.priceWithTax,
       recurring: {
-        amount: 4567, // 12.34 per week, starting tomorrow
+        amount: 0,
         interval: 'week',
         intervalCount: 1,
         startDate: this.getTomorrow(),
