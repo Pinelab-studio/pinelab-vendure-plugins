@@ -112,17 +112,6 @@ export class SubscriptionHelper {
       })
     );
     const flattenedSubscriptionsArray = subscriptions.flat();
-    // Validate recurring amount
-    flattenedSubscriptionsArray.forEach((subscription) => {
-      if (
-        !subscription.recurring.amount ||
-        subscription.recurring.amount <= 0
-      ) {
-        throw Error(
-          `[${this.loggerCtx}]: Defined subscription for order line ${subscription.variantId} must have a recurring amount greater than 0`
-        );
-      }
-    });
     return flattenedSubscriptionsArray;
   }
 

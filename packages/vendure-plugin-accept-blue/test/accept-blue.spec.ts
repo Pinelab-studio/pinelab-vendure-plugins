@@ -352,14 +352,12 @@ describe('Payment with Saved Payment Method', () => {
   });
 
   it('Declines payment when charge is declined', async () => {
-    const queryParams = {
-      active: true,
-      customer_number: haydenZiemeCustomerDetails.customer_number,
-    };
     // get customer
     nockInstance
-      .get(`/customers`)
-      .query(queryParams)
+      .get(
+        `/customers?active=true&customer_number=hayden.zieme12%40hotmail.com`
+      )
+      .times(2)
       .reply(200, [haydenZiemeCustomerDetails]);
     // patch customer
     nockInstance
@@ -371,6 +369,15 @@ describe('Payment with Saved Payment Method', () => {
       error_message: 'Card declined',
       error_code: 'D123',
     });
+    // create Recurring Schedules nock
+    nockInstance
+      .persist()
+      .post(`/customers/${haydenZiemeCustomerDetails.id}/recurring-schedules`)
+      .reply(201, createMockRecurringScheduleResult({ id: 1234 }));
+    // Catch deletion of recurring schedules
+    const deletionRequest = nockInstance
+      .delete(`/recurring-schedules/1234`)
+      .reply(200);
     const testPaymentMethod =
       haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
     nockInstance
@@ -387,6 +394,7 @@ describe('Payment with Saved Payment Method', () => {
         },
       }
     );
+    expect(deletionRequest.isDone()).toBe(true); // Should have called delete recurring schedule
     // Payment declined should keep order in ArrangingPayment
     expect(order.errorCode).toBe('PAYMENT_DECLINED_ERROR');
   });

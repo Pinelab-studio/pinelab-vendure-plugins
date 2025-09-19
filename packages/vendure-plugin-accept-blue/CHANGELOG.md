@@ -1,3 +1,9 @@
+# 3.5.0 (2025-09-18)
+
+- Breaking: `amountDueNow` was not actually being used to calculate the line price! If you used `variant.price` in your subscription strategy, or used the default subscription strategy, everything still works as expected.
+- Allow subscriptions with `amount=0`
+- Delete created subscriptions if the one-time charge fails after that.
+
 # 3.4.0 (2025-08-18)
 
 - Store payment metadata for declined transactions. Create recurring schedule after successful charge.

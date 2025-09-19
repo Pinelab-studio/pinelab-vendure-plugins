@@ -230,6 +230,14 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       );
     }
     client.throwIfPaymentMethodNotAllowed(paymentMethod);
+    // Create recurring schedule
+    const createdSchedules = await this.createRecurringSchedule(
+      ctx,
+      order,
+      client,
+      paymentMethod.id
+    );
+    // Create charge transaction if
     let chargeTransaction: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
       const subscriptionOrderLines =
@@ -244,6 +252,22 @@ export class AcceptBlueService implements OnApplicationBootstrap {
           }
         );
       } catch (e) {
+        const error = asError(e);
+        Logger.error(
+          `Error creating charge for order '${order.code}': ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+        // If the charge fails, we need to delete the recurring schedules again
+        await Promise.all(
+          createdSchedules.map((s) => client.deleteRecurringSchedule(s.id))
+        );
+        Logger.warn(
+          `Deleted recurring schedules '${createdSchedules
+            .map((s) => s.id)
+            .join(', ')}' for order '${order.code}' because the charge failed`,
+          loggerCtx
+        );
         if (e instanceof AcceptBlueChargeError) {
           return {
             amount,
@@ -251,10 +275,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
             metadata: e.metadata,
           };
         }
-        throw e;
+        throw error;
       }
     }
-    await this.createRecurringSchedule(ctx, order, client, paymentMethod.id);
     const chargeTransactionId = chargeTransaction?.transaction?.id;
     Logger.info(
       `Settled payment for order '${order.code}', for Accept Blue customer '${acceptBlueCustomerId}' and one time charge transaction '${chargeTransactionId}'`,
@@ -411,6 +434,13 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     const subscriptionsPerOrderLine = new Map<ID, number[]>();
     const recurringSchedules: AcceptBlueRecurringSchedule[] = [];
     for (const subscriptionDefinition of subscriptionDefinitions) {
+      if (subscriptionDefinition.recurring.amount <= 0) {
+        Logger.warn(
+          `Skipping creation of recurring schedule for subscription '${subscriptionDefinition.name}' for customer '${order.customer.emailAddress}' because recurring.amount is 0, and that is not allowed with Accept Blue`,
+          loggerCtx
+        );
+        continue;
+      }
       const recurringSchedule = await client.createRecurringSchedule(
         acceptBlueCustomer.id,
         {
