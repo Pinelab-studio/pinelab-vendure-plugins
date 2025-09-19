@@ -237,7 +237,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       client,
       paymentMethod.id
     );
-    // Create charge transaction if
+    // Create charge transaction if amount is greater than 0
     let chargeTransaction: AcceptBlueChargeTransaction | undefined;
     if (amount > 0) {
       const subscriptionOrderLines =
