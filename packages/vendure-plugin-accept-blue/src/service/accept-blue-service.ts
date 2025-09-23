@@ -450,7 +450,9 @@ export class AcceptBlueService implements OnApplicationBootstrap {
           frequency: subscriptionDefinition.frequency,
           num_left: subscriptionDefinition.billingCyclesLeft,
           payment_method_id: paymentMethodId,
-          receipt_email: order.customer.emailAddress,
+          receipt_email: this.options.sendReceiptEmail
+            ? order.customer.emailAddress
+            : undefined,
           next_run_date: subscriptionDefinition.nextRunDate,
         }
       );

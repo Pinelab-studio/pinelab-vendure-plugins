@@ -78,6 +78,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
         vendureHost:
           'https://webhook.site/cdef50e0-0e6d-4e23-a4b1-6ffc9ca89df8',
         subscriptionStrategy: new TestSubscriptionStrategy(),
+        sendReceiptEmail: false,
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

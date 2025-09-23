@@ -14,6 +14,12 @@ import { SubscriptionOrderItemCalculation } from './service/subscription-order-i
 interface AcceptBluePluginOptionsInput {
   subscriptionStrategy?: SubscriptionStrategy;
   vendureHost: string;
+  /**
+   * Whether to send a receipt email to the customer via the Accept Blue platform.
+   * Set this to false if you handle your own receipt emails.
+   * Default is true.
+   */
+  sendReceiptEmail?: boolean;
 }
 
 export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
@@ -76,6 +82,7 @@ export class AcceptBluePlugin {
       subscriptionStrategy:
         options.subscriptionStrategy ?? new DefaultSubscriptionStrategy(),
       vendureHost,
+      sendReceiptEmail: options.sendReceiptEmail ?? true,
     };
     return AcceptBluePlugin;
   }

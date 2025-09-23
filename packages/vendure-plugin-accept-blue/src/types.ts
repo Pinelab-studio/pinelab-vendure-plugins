@@ -252,7 +252,7 @@ export interface AcceptBlueRecurringSchedule {
   num_left: number;
   payment_method_id: number;
   active: boolean;
-  receipt_email: string;
+  receipt_email?: string;
   /*
    * - active: The schedule is active and will run on the next_run_date.
    * - declined: The last transaction run by the schedule was declined. If the schedule has not completed the set number of retries, it will retry the next day.
