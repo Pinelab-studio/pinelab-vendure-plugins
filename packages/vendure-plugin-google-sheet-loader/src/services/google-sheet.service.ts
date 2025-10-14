@@ -17,8 +17,9 @@ import {
   SheetContent,
   SheetMetadata,
 } from '../types';
+import { asError } from 'catch-unknown';
 
-const GOOGLE_SPREASHEET_URL = `https://sheets.googleapis.com/v4/spreadsheets`;
+const GOOGLE_SPREADSHEET_URL = `https://sheets.googleapis.com/v4/spreadsheets`;
 
 type JobData = {
   ctx: SerializedRequestContext;
@@ -65,15 +66,15 @@ export class GoogleSheetService implements OnModuleInit {
     const sheetMetadata = dataStrategy.getSheetMetadata(ctx) as SheetMetadata; // We know it's a SheetMetadata because the strategy returned metadata above
     const sheets: SheetContent[] = [];
     for (const sheetName of sheetMetadata.sheets) {
-      const requestUrl = `${GOOGLE_SPREASHEET_URL}/${sheetMetadata.spreadSheetId}/values/${sheetName}?key=${this.options.googleApiKey}`;
+      const requestUrl = `${GOOGLE_SPREADSHEET_URL}/${sheetMetadata.spreadSheetId}/values/${sheetName}?key=${this.options.googleApiKey}`;
       const result = await fetch(requestUrl);
       if (!result.ok) {
         throw new UserInputError(
           `Couldn't read from Google api: ${result.statusText}`
         );
       }
-      const data = (await result.json()) as any;
-      sheets.push({ sheetName, data: data.values as string[][] });
+      const data = (await result.json()) as { values: string[][] };
+      sheets.push({ sheetName, data: data.values });
     }
     const validationError = await dataStrategy.validateSheetData(ctx, sheets);
     if (validationError !== true) {
@@ -104,10 +105,12 @@ export class GoogleSheetService implements OnModuleInit {
         sheets
       );
       return result;
-    } catch (error) {
+    } catch (e) {
+      const error = asError(e);
       Logger.error(
         `Error handling job ${jobData.strategyCode}: ${error}`,
-        loggerCtx
+        loggerCtx,
+        error.stack
       );
       throw error;
     }
