@@ -41,6 +41,7 @@ const icons: Record<string, string> = {
   'vendure-plugin-better-search': 'undraw_question-mark.svg',
   'vendure-plugin-promotion-extensions': 'undraw_balloon.svg',
   'vendure-plugin-order-cleanup': 'undraw_chevrons.svg',
+  'vendure-plugin-google-sheet-loader': 'google-sheet.png',
 };
 
 export function getIcon(pluginName: string): string {
