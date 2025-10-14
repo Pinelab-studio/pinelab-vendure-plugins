@@ -120,7 +120,8 @@
           "vendure-scripts",
           "public-customer-groups",
           "shipmate",
-          "asset-downloader"
+          "asset-downloader",
+          "google-sheet"
         ]
       ]
     }
