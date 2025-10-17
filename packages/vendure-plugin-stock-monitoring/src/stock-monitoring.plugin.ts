@@ -3,36 +3,43 @@ import path from 'path';
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { gql } from 'graphql-tag';
 import { StockMonitoringResolver } from './api/stock-monitoring.resolver';
-
-export * from './api/low-stock.email-handler';
-
-export interface StockMonitoringPlugin {
-  /**
-   * Widget will show productvariants with a stocklevel below 'threshold'
-   */
-  threshold: number;
-}
+import { StockMonitoringPluginOptions } from './types';
+import { StockMonitoringService } from './services/stock-monitoring.service';
+import { apiExtensions } from './api/api-extensions';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { customVariantFields } from './custom-fields';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   adminApiExtensions: {
-    schema: gql`
-      extend type Query {
-        productVariantsWithLowStock: [ProductVariant!]!
-      }
-    `,
+    schema: apiExtensions.schema,
     resolvers: [StockMonitoringResolver],
   },
-  compatibility: '>=2.2.0',
+  providers: [
+    StockMonitoringService,
+    {
+      provide: PLUGIN_INIT_OPTIONS,
+      useFactory: () => StockMonitoringPlugin.options,
+    },
+  ],
+  configuration: (config) => {
+    config.customFields.ProductVariant.push(...customVariantFields);
+    return config;
+  },
+  compatibility: '>=3.0.0',
 })
 export class StockMonitoringPlugin {
+  static options: StockMonitoringPluginOptions;
+
+  static init(
+    options: StockMonitoringPluginOptions
+  ): typeof StockMonitoringPlugin {
+    this.options = options;
+    return StockMonitoringPlugin;
+  }
+
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
     providers: ['providers.ts'],
   };
-  static threshold = 10;
-  static init(options: StockMonitoringPlugin): typeof StockMonitoringPlugin {
-    this.threshold = options.threshold;
-    return StockMonitoringPlugin;
-  }
 }

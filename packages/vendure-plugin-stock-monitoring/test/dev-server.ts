@@ -26,6 +26,9 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    dbConnectionOptions: {
+      autoSave: true,
+    },
     plugins: [
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -38,7 +41,8 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
         }),
       }),
       StockMonitoringPlugin.init({
-        threshold: 10,
+        globalThreshold: 10,
+        uiTab: 'Stock Monitoring',
       }),
     ],
   });

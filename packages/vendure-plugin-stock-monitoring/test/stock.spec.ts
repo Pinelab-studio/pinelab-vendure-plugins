@@ -13,7 +13,6 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import gql from 'graphql-tag';
 import { StockMonitoringPlugin } from '../src/stock-monitoring.plugin';
-import { createLowStockEmailHandler } from '../src/api/low-stock.email-handler';
 import * as path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
@@ -42,26 +41,9 @@ describe('Stock monitoring plugin', function () {
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
-        StockMonitoringPlugin.init({ threshold: 101 }),
-        EmailPlugin.init({
-          handlers: [
-            createLowStockEmailHandler({
-              ...emailHandlerConfig,
-              emailRecipients: async () => ['test@test.com'], // Async function
-            }),
-            createLowStockEmailHandler({
-              ...emailHandlerConfig,
-              emailRecipients: () => ['test@test.com'], // Sync function
-            }),
-            createLowStockEmailHandler({
-              ...emailHandlerConfig,
-              emailRecipients: ['test@test.com'], // Array of strings
-            }),
-          ],
-          route: 'mailbox',
-          templatePath: path.join(__dirname, './templates/'),
-          outputPath: testEmailDir,
-          devMode: true,
+        StockMonitoringPlugin.init({
+          globalThreshold: 101,
+          uiTab: 'Stock Monitoring',
         }),
       ],
       paymentOptions: {
@@ -100,7 +82,7 @@ describe('Stock monitoring plugin', function () {
     await expect(queryPromise).rejects.toThrow(ClientError);
   });
 
-  it('Gets variants with stocklevels below threshold', async () => {
+  it('Gets variants with stock levels below threshold', async () => {
     await adminClient.asSuperAdmin();
     const { productVariantsWithLowStock } = await adminClient.query(
       GET_OUT_OF_STOCK_VARIANTS
@@ -127,11 +109,8 @@ describe('Stock monitoring plugin', function () {
     expect(productVariantsWithLowStock.length).toBe(3);
   });
 
-  it('Sends an email when stock is low after order placement', async () => {
-    await createSettledOrder(shopClient, 1);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for event handling
-    const files = fs.readdirSync(testEmailDir);
-    expect(files.length).toBe(3); // 3 emails should be sent, one for every handler
+  it('Emitted event when stock level drops below threshold after order placement', async () => {
+    // TODO
   });
 
   if (process.env.TEST_ADMIN_UI) {
