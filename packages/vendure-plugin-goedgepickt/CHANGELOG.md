@@ -1,3 +1,7 @@
+# 2.1.2 (2025-10-17)
+
+- Allow empty UUID and ApiKey in Goedgepickt config on Channel.
+
 # 2.1.1 (2025-06-24)
 
 - Improved error logging when incoming webhooks fail
