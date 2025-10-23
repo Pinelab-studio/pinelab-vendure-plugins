@@ -1,4 +1,4 @@
-# Vendure Picqer Plugin
+# Vendure UTM Tracker Plugin
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-campaign-tracker)
 
