@@ -39,4 +39,5 @@ When you start the server and login, you can find `stock-levels` under the `add 
 
 ### Caveats
 
-This plugin doesn't use the `StockLocationStrategy` because of performance reasons. Instead, it fetches the stock level for each variant from the database and calculates its absolute stock based on the `stockOnHand` and `stockAllocated` fields.
+1. This plugin doesn't use the `StockLocationStrategy` because of performance reasons. Instead, it fetches the stock level for each variant from the database and calculates its absolute stock based on the `stockOnHand` and `stockAllocated` fields.
+2. Stock notifications are only emitted after an order is placed. Manual stock changes via the admin UI will not trigger a notification.
