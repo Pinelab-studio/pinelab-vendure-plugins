@@ -2,7 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-campaign-tracker)
 
-Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform. This plugin doesnt include any UI, it only adds the UTM parameters to the orders. You should use your own data visualization or BI tool to visualize the data.
+Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform. This plugin doesn't include any UI, it only adds the UTM parameters to the orders. You should use your own data visualization or BI tool to visualize the data.
 
 ## Getting started
 
