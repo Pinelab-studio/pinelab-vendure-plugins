@@ -121,7 +121,8 @@
           "public-customer-groups",
           "shipmate",
           "asset-downloader",
-          "google-sheet"
+          "google-sheet",
+          "utm-tracker"
         ]
       ]
     }
