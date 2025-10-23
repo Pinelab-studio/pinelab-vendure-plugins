@@ -5,7 +5,7 @@ import { UTMParameterInput } from '../types';
 
 @Resolver()
 export class UTMTrackerShopResolver {
-  constructor(private uTMTrackerService: UTMTrackerService) {}
+  constructor(private utmTrackerService: UTMTrackerService) {}
 
   @Mutation()
   @Transaction()
@@ -13,6 +13,6 @@ export class UTMTrackerShopResolver {
     @Ctx() ctx: RequestContext,
     @Args('input') input: UTMParameterInput
   ): Promise<boolean> {
-    return this.uTMTrackerService.addUTMParametersToOrder(ctx, input);
+    return this.utmTrackerService.addUTMParametersToOrder(ctx, input);
   }
 }
