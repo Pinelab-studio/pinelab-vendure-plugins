@@ -13,7 +13,7 @@ export class FirstClickAttribution implements AttributionModel {
     return [
       {
         utmParameterId: oldest.id,
-        attributionPercentage: 0.1,
+        attributionPercentage: 1,
       },
     ];
   }

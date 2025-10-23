@@ -29,7 +29,7 @@ describe('Attribution Models', () => {
       ];
       const result = firstClickAttribution.calculateAttribution(utmParams);
       expect(result[0].utmParameterId).toEqual(1);
-      expect(result[0].attributionPercentage).toEqual(0.1);
+      expect(result[0].attributionPercentage).toEqual(1);
     });
   });
 
@@ -43,7 +43,7 @@ describe('Attribution Models', () => {
       ];
       const result = lastClickAttribution.calculateAttribution(utmParams);
       expect(result[0].utmParameterId).toEqual(3);
-      expect(result[0].attributionPercentage).toEqual(0.1);
+      expect(result[0].attributionPercentage).toEqual(1);
     });
   });
 

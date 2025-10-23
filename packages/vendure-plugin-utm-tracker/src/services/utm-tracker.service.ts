@@ -14,6 +14,7 @@ import { loggerCtx, UTM_TRACKER_PLUGIN_OPTIONS } from '../constants';
 import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { UTMParameterInput, UTMTrackerPluginInitOptions } from '../types';
 import { asError } from 'catch-unknown';
+import { IsNull } from 'typeorm';
 
 @Injectable()
 export class UTMTrackerService implements OnApplicationBootstrap {
@@ -54,18 +55,18 @@ export class UTMTrackerService implements OnApplicationBootstrap {
       !input.term &&
       !input.content
     ) {
-      throw new UserInputError('At least one UTM parameters is required');
+      throw new UserInputError('At least one UTM parameter is required');
     }
     const utmRepo = this.connection.getRepository(ctx, UtmOrderParameter);
     // Check if the given params already exists
     const existingParameter = await utmRepo.findOne({
       where: {
         orderId: order.id,
-        utmSource: input.source,
-        utmMedium: input.medium,
-        utmCampaign: input.campaign,
-        utmTerm: input.term,
-        utmContent: input.content,
+        utmSource: input.source ?? IsNull(),
+        utmMedium: input.medium ?? IsNull(),
+        utmCampaign: input.campaign ?? IsNull(),
+        utmTerm: input.term ?? IsNull(),
+        utmContent: input.content ?? IsNull(),
       },
     });
     if (existingParameter) {

@@ -182,14 +182,14 @@ describe('UTM parameters plugin', function () {
       const { order } = await adminClient.query(GET_ORDER_WITH_UTM_PARAMETERS, {
         orderId: activeOrder.id,
       });
-      if (order.utmParameters[0].attributedPercentage === 0.1) {
+      if (order.utmParameters[0].attributedPercentage === 1) {
         return order.utmParameters;
       }
     });
-    // We use first click attribution model, so the oldest parameter should be attributed 100% (0.1)
+    // We use first click attribution model, so the oldest parameter should be attributed 100% (1)
     const oldestParameter = utmParameters[0];
     expect(oldestParameter.utmSource).toBe('test-source2');
-    expect(oldestParameter.attributedPercentage).toBe(0.1);
+    expect(oldestParameter.attributedPercentage).toBe(1);
     const mostRecentParameter = utmParameters[1];
     expect(mostRecentParameter.utmSource).toBe('test-source3');
     expect(mostRecentParameter.attributedPercentage).toBe(0);

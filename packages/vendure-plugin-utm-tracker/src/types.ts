@@ -22,7 +22,7 @@ export interface UTMTrackerPluginInitOptions {
 export interface AttributionModel {
   /**
    * Determine the attribution percentage for each UTM parameter of the given order.
-   * The parameters are sorted by updatedAt timestamp, ASC (oldest first)
+   * The parameters are already sorted by connectedAt timestamp, ascending (oldest first)
    */
   calculateAttribution(
     utmParameters: UtmOrderParameter[],

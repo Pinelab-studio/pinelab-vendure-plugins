@@ -13,7 +13,7 @@ export class LastClickAttribution implements AttributionModel {
     return [
       {
         utmParameterId: mostRecent.id,
-        attributionPercentage: 0.1,
+        attributionPercentage: 1,
       },
     ];
   }
