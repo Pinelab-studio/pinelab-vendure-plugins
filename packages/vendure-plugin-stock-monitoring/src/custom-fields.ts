@@ -1,5 +1,6 @@
 import { CustomFieldConfig, LanguageCode } from '@vendure/core';
 import { StockMonitoringPlugin } from './stock-monitoring.plugin';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { CustomProductVariantFields } from '@vendure/core/dist/entity/custom-entity-fields';
 
 declare module '@vendure/core' {

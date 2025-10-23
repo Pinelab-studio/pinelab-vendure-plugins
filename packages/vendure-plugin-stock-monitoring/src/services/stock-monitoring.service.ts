@@ -66,10 +66,10 @@ export class StockMonitoringService
     });
   }
 
-  async onApplicationBootstrap(): Promise<void> {
+  onApplicationBootstrap(): void {
     // Trigger stock monitoring event for each Order Placed Event
-    this.eventBus.ofType(OrderPlacedEvent).subscribe(async (event) => {
-      await this.triggerStockMonitoring(event.ctx, event.order).catch((e) => {
+    this.eventBus.ofType(OrderPlacedEvent).subscribe((event) => {
+      this.triggerStockMonitoring(event.ctx, event.order).catch((e) => {
         Logger.error(
           `Error triggering stock monitoring for order ${event.order.code}: ${e}`,
           loggerCtx,
@@ -78,9 +78,15 @@ export class StockMonitoringService
       });
     });
     // Bust cache when stock is updated
-    this.eventBus.ofType(StockMovementEvent).subscribe(async (event) => {
+    this.eventBus.ofType(StockMovementEvent).subscribe((event) => {
       const cacheKey = this.getCacheKey(event.ctx);
-      this.cacheService.delete(cacheKey);
+      this.cacheService.delete(cacheKey).catch((e) => {
+        Logger.error(
+          `Error deleting cache for stock movement event: ${e}`,
+          loggerCtx,
+          asError(e).stack
+        );
+      });
     });
   }
 
@@ -169,7 +175,7 @@ export class StockMonitoringService
           continue;
         }
         const order = await this.orderService.findOne(ctx, jobData.orderId);
-        this.eventBus.publish(
+        await this.eventBus.publish(
           new StockDroppedBelowThresholdEvent(
             ctx,
             productVariant,

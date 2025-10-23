@@ -1,13 +1,12 @@
+import { PluginCommonModule, VendurePlugin } from '@vendure/core';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { gql } from 'graphql-tag';
-import { StockMonitoringResolver } from './api/stock-monitoring.resolver';
-import { StockMonitoringPluginOptions } from './types';
-import { StockMonitoringService } from './services/stock-monitoring.service';
 import { apiExtensions } from './api/api-extensions';
+import { StockMonitoringResolver } from './api/stock-monitoring.resolver';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { customVariantFields } from './custom-fields';
+import { StockMonitoringService } from './services/stock-monitoring.service';
+import { StockMonitoringPluginOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
