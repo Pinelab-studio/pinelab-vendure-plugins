@@ -1,3 +1,4 @@
+import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
 import {
   ClientError,
   createTestEnvironment,
@@ -6,19 +7,18 @@ import {
   SqljsInitializer,
   testConfig,
 } from '@vendure/testing';
-import { initialData } from '../../test/src/initial-data';
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
-import { EmailPlugin } from '@vendure/email-plugin';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import gql from 'graphql-tag';
-import { StockMonitoringPlugin } from '../src/stock-monitoring.plugin';
-import { createLowStockEmailHandler } from '../src/api/low-stock.email-handler';
-import * as path from 'path';
-import { createSettledOrder } from '../../test/src/shop-utils';
 import * as fs from 'fs';
-import { expect, describe, beforeAll, it, afterAll } from 'vitest';
+import gql from 'graphql-tag';
+import * as path from 'path';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { initialData } from '../../test/src/initial-data';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { StockDroppedBelowThresholdEvent, StockMonitoringPlugin } from '../src';
+
 describe('Stock monitoring plugin', function () {
   let server: TestServer;
   let adminClient: SimpleGraphQLClient;
@@ -42,26 +42,9 @@ describe('Stock monitoring plugin', function () {
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
-        StockMonitoringPlugin.init({ threshold: 101 }),
-        EmailPlugin.init({
-          handlers: [
-            createLowStockEmailHandler({
-              ...emailHandlerConfig,
-              emailRecipients: async () => ['test@test.com'], // Async function
-            }),
-            createLowStockEmailHandler({
-              ...emailHandlerConfig,
-              emailRecipients: () => ['test@test.com'], // Sync function
-            }),
-            createLowStockEmailHandler({
-              ...emailHandlerConfig,
-              emailRecipients: ['test@test.com'], // Array of strings
-            }),
-          ],
-          route: 'mailbox',
-          templatePath: path.join(__dirname, './templates/'),
-          outputPath: testEmailDir,
-          devMode: true,
+        StockMonitoringPlugin.init({
+          globalThreshold: 101,
+          uiTab: 'Stock Monitoring',
         }),
       ],
       paymentOptions: {
@@ -100,7 +83,7 @@ describe('Stock monitoring plugin', function () {
     await expect(queryPromise).rejects.toThrow(ClientError);
   });
 
-  it('Gets variants with stocklevels below threshold', async () => {
+  it('Gets variants with stock levels below threshold', async () => {
     await adminClient.asSuperAdmin();
     const { productVariantsWithLowStock } = await adminClient.query(
       GET_OUT_OF_STOCK_VARIANTS
@@ -114,10 +97,23 @@ describe('Stock monitoring plugin', function () {
 
   it('Does not return variants with stock above threshold', async () => {
     await adminClient.asSuperAdmin();
-    await adminClient.query(gql`
+    const { updateProductVariants } = await adminClient.query(gql`
       mutation updateProductVariants {
-        updateProductVariants(input: [{ id: 1, stockOnHand: 105 }]) {
+        updateProductVariants(
+          input: [
+            {
+              id: 1
+              stockOnHand: 105
+              trackInventory: TRUE
+              customFields: { stockMonitoringThreshold: 104 }
+            }
+          ]
+        ) {
           id
+          stockLevels {
+            stockOnHand
+            stockAllocated
+          }
         }
       }
     `);
@@ -125,13 +121,50 @@ describe('Stock monitoring plugin', function () {
       GET_OUT_OF_STOCK_VARIANTS
     );
     expect(productVariantsWithLowStock.length).toBe(3);
+    expect(updateProductVariants[0].stockLevels[0].stockOnHand).toBe(105);
+    expect(updateProductVariants[0].stockLevels[0].stockAllocated).toBe(0);
   });
 
-  it('Sends an email when stock is low after order placement', async () => {
-    await createSettledOrder(shopClient, 1);
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait for event handling
-    const files = fs.readdirSync(testEmailDir);
-    expect(files.length).toBe(3); // 3 emails should be sent, one for every handler
+  const emittedEvents: StockDroppedBelowThresholdEvent[] = [];
+
+  it('Places an order so that variant T_1 drops below threshold of 104', async () => {
+    // Listen for emitted events
+    server.app
+      .get(EventBus)
+      .ofType(StockDroppedBelowThresholdEvent)
+      .subscribe((event) => {
+        emittedEvents.push(event);
+      });
+    const placedOrder = await createSettledOrder(shopClient, 1, true, [
+      { id: 'T_1', quantity: 2 }, // 105 - 2 = 103 which is below threshold of 104
+    ]);
+    expect(placedOrder.lines.length).toBe(1);
+    expect(placedOrder.lines[0].productVariant.id).toBe('T_1');
+    expect(placedOrder.lines[0].quantity).toBe(2);
+    const { productVariant } = await adminClient.query(
+      gql`
+        query {
+          productVariant(id: "T_1") {
+            stockLevels {
+              stockOnHand
+              stockAllocated
+            }
+          }
+        }
+      `
+    );
+    expect(productVariant.stockLevels[0].stockOnHand).toBe(105);
+    expect(productVariant.stockLevels[0].stockAllocated).toBe(2);
+  });
+
+  it('Should have emitted an event', async () => {
+    // Wait for event to be emitted asynchronously
+    await waitFor(() => emittedEvents.length === 1);
+    expect(emittedEvents.length).toBe(1);
+    expect(emittedEvents[0].productVariant.id).toBe(1);
+    expect(emittedEvents[0].stockBeforeOrder).toBe(105);
+    expect(emittedEvents[0].stockAfterOrder).toBe(103);
+    expect(emittedEvents[0].order?.id).toBe(1);
   });
 
   if (process.env.TEST_ADMIN_UI) {
