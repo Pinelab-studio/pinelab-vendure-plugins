@@ -24,20 +24,8 @@ describe('Stock monitoring plugin', function () {
   let adminClient: SimpleGraphQLClient;
   let shopClient: SimpleGraphQLClient;
   let serverStarted = false;
-  const testEmailDir = path.join(__dirname, './test-emails');
-  const emailHandlerConfig = {
-    subject: 'Low stock',
-    threshold: 100,
-  };
 
   beforeAll(async () => {
-    try {
-      const files = fs.readdirSync(testEmailDir);
-      for (const file of files) {
-        fs.unlinkSync(path.join(testEmailDir, file)); // Delete previous test emails
-      }
-    } catch (err) {}
-
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
