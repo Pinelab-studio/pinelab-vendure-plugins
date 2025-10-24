@@ -36,6 +36,7 @@ export interface AttributionResult {
 }
 
 export interface UTMParameterInput {
+  connectedAt: Date;
   source?: string;
   medium?: string;
   campaign?: string;

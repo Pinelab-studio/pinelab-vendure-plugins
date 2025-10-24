@@ -11,8 +11,8 @@ export class UTMTrackerShopResolver {
   @Transaction()
   async addUTMParametersToOrder(
     @Ctx() ctx: RequestContext,
-    @Args('input') input: UTMParameterInput
+    @Args('inputs') inputs: UTMParameterInput[]
   ): Promise<boolean> {
-    return this.utmTrackerService.addUTMParametersToOrder(ctx, input);
+    return this.utmTrackerService.addMultipleUTMParametersToOrder(ctx, inputs);
   }
 }

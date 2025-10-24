@@ -28,7 +28,7 @@ describe('UTM parameters plugin', function () {
       plugins: [
         UTMTrackerPlugin.init({
           attributionModel: new FirstClickAttribution(),
-          maxParametersPerOrder: 2,
+          maxParametersPerOrder: 3,
           maxAttributionAgeInDays: 30,
         }),
       ],
@@ -64,7 +64,11 @@ describe('UTM parameters plugin', function () {
     );
     const addUTMParametersToOrderPromise = shopClient.query(
       ADD_UTM_PARAMETERS,
-      { input: { source: 'test-source' } }
+      {
+        inputs: [
+          { connectedAt: new Date('2025-01-01'), source: 'test-source' },
+        ],
+      }
     );
     await expect(addUTMParametersToOrderPromise).rejects.toThrow(
       'No active order found'
@@ -72,10 +76,6 @@ describe('UTM parameters plugin', function () {
   });
 
   let activeOrder: Order;
-  /**
-   * The date time at which the previously set UTM parameter was connected to the order
-   */
-  let previouslyConnectedAt: Date;
 
   it('Adds UTM parameters to order', async () => {
     await shopClient.asUserWithCredentials(
@@ -85,14 +85,19 @@ describe('UTM parameters plugin', function () {
     activeOrder = await addItem(shopClient, 'T_1', 1);
     const { addUTMParametersToOrder } = await shopClient.query(
       ADD_UTM_PARAMETERS,
-      { input: { source: 'test-source' } }
+      {
+        inputs: [
+          { connectedAt: new Date('2025-01-01'), source: 'test-source' },
+          { connectedAt: new Date('2025-01-02'), source: 'test-source2' },
+        ],
+      }
     );
     expect(addUTMParametersToOrder).toBe(true);
     await adminClient.asSuperAdmin();
     const { order } = await adminClient.query(GET_ORDER_WITH_UTM_PARAMETERS, {
       orderId: activeOrder.id,
     });
-    expect(order.utmParameters.length).toBe(1);
+    expect(order.utmParameters.length).toBe(2);
     expect(order.utmParameters[0].utmSource).toBe('test-source');
     expect(order.utmParameters[0].utmMedium).toBe(null);
     expect(order.utmParameters[0].utmCampaign).toBe(null);
@@ -101,43 +106,29 @@ describe('UTM parameters plugin', function () {
     expect(order.utmParameters[0].attributedPercentage).toBeNull();
     expect(order.utmParameters[0].createdAt).toBeDefined();
     expect(order.utmParameters[0].updatedAt).toBeDefined();
-    previouslyConnectedAt = new Date(order.utmParameters[0].connectedAt);
+    expect(order.utmParameters[0].connectedAt).toBe('2025-01-01T00:00:00.000Z');
+    expect(order.utmParameters[1].utmSource).toBe('test-source2');
+    expect(order.utmParameters[1].utmMedium).toBe(null);
+    expect(order.utmParameters[1].utmCampaign).toBe(null);
+    expect(order.utmParameters[1].utmTerm).toBe(null);
+    expect(order.utmParameters[1].utmContent).toBe(null);
+    expect(order.utmParameters[1].attributedPercentage).toBeNull();
+    expect(order.utmParameters[1].createdAt).toBeDefined();
+    expect(order.utmParameters[1].updatedAt).toBeDefined();
+    expect(order.utmParameters[1].connectedAt).toBe('2025-01-02T00:00:00.000Z');
   });
 
-  it('Adds the same UTM parameter to order again', async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait some ms so updatedAt is different
+  it('Adds the same UTM parameter to order again with a newer connectedAt date', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
     );
     const { addUTMParametersToOrder } = await shopClient.query(
       ADD_UTM_PARAMETERS,
-      { input: { source: 'test-source' } }
-    );
-    await expect(addUTMParametersToOrder).toBe(true);
-    await adminClient.asSuperAdmin();
-    const { order } = await adminClient.query(GET_ORDER_WITH_UTM_PARAMETERS, {
-      orderId: activeOrder.id,
-    });
-    expect(order.utmParameters.length).toBe(1);
-    expect(order.utmParameters[0].utmSource).toBe('test-source');
-    expect(
-      new Date(order.utmParameters[0].connectedAt).getTime()
-    ).toBeGreaterThan(previouslyConnectedAt.getTime());
-  });
-
-  it('Adds another UTM parameter to order', async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait some ms so updatedAt is different
-    const { addUTMParametersToOrder } = await shopClient.query(
-      ADD_UTM_PARAMETERS,
       {
-        input: {
-          source: 'test-source2',
-          medium: 'test-medium2',
-          campaign: 'test-campaign2',
-          term: 'test-term2',
-          content: 'test-content2',
-        },
+        inputs: [
+          { source: 'test-source', connectedAt: new Date('2025-01-07') },
+        ],
       }
     );
     await expect(addUTMParametersToOrder).toBe(true);
@@ -146,16 +137,43 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(2);
-    expect(order.utmParameters[1].utmSource).toBe('test-source2');
-    expect(order.utmParameters[1].utmMedium).toBe('test-medium2');
-    expect(order.utmParameters[1].utmCampaign).toBe('test-campaign2');
-    expect(order.utmParameters[1].utmTerm).toBe('test-term2');
-    expect(order.utmParameters[1].utmContent).toBe('test-content2');
-    expect(order.utmParameters[1].attributedPercentage).toBeNull();
+    // Should now be moved to [1] because it has a newer connectedAt date
+    expect(order.utmParameters[1].utmSource).toBe('test-source');
+    expect(order.utmParameters[1].connectedAt).toBe('2025-01-07T00:00:00.000Z');
   });
 
-  it('Only keeps the most recent 2 UTM parameters after adding a third one', async () => {
-    await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait some ms so updatedAt is different
+  it('Adds another UTM parameter (#3) to order', async () => {
+    const { addUTMParametersToOrder } = await shopClient.query(
+      ADD_UTM_PARAMETERS,
+      {
+        inputs: [
+          {
+            connectedAt: new Date('2025-01-08'),
+            source: 'test-source3',
+            medium: 'test-medium3',
+            campaign: 'test-campaign3',
+            term: 'test-term3',
+            content: 'test-content3',
+          },
+        ],
+      }
+    );
+    await expect(addUTMParametersToOrder).toBe(true);
+    await adminClient.asSuperAdmin();
+    const { order } = await adminClient.query(GET_ORDER_WITH_UTM_PARAMETERS, {
+      orderId: activeOrder.id,
+    });
+    expect(order.utmParameters.length).toBe(3);
+    expect(order.utmParameters[2].utmSource).toBe('test-source3');
+    expect(order.utmParameters[2].utmMedium).toBe('test-medium3');
+    expect(order.utmParameters[2].utmCampaign).toBe('test-campaign3');
+    expect(order.utmParameters[2].utmTerm).toBe('test-term3');
+    expect(order.utmParameters[2].utmContent).toBe('test-content3');
+    expect(order.utmParameters[2].attributedPercentage).toBeNull();
+    expect(order.utmParameters[2].connectedAt).toBe('2025-01-08T00:00:00.000Z');
+  });
+
+  it('Only keeps the 3 most recent UTM parameters after adding a fourth one', async () => {
     const { addUTMParametersToOrder } = await shopClient.query(
       ADD_UTM_PARAMETERS,
       {
@@ -173,6 +191,8 @@ describe('UTM parameters plugin', function () {
     expect(order.utmParameters[0].utmSource).toBe('test-source2');
     expect(order.utmParameters[1].utmSource).toBe('test-source3');
   });
+
+  // TODO Add one more UTm paramete with new Date(), because all previoius parameters are older that the configured 30 days
 
   it('Calculates attribution after order placement', async () => {
     await createSettledOrder(shopClient, 1, false); // false will make this function settle the current active order
@@ -197,8 +217,8 @@ describe('UTM parameters plugin', function () {
 });
 
 const ADD_UTM_PARAMETERS = gql`
-  mutation addUTMParametersToOrder($input: UTMParameterInput!) {
-    addUTMParametersToOrder(input: $input)
+  mutation addUTMParametersToOrder($inputs: [UTMParameterInput!]!) {
+    addUTMParametersToOrder(inputs: $inputs)
   }
 `;
 

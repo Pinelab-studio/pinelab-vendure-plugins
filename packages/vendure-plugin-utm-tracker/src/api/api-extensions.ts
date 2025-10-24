@@ -2,6 +2,7 @@ import gql from 'graphql-tag';
 
 export const shopApiExtensions = gql`
   input UTMParameterInput {
+    connectedAt: DateTime!
     source: String
     medium: String
     campaign: String
@@ -12,7 +13,7 @@ export const shopApiExtensions = gql`
     """
     Add UTM parameters to the active order. Throws an error if no active order is found.
     """
-    addUTMParametersToOrder(input: UTMParameterInput!): Boolean!
+    addUTMParametersToOrder(inputs: [UTMParameterInput!]!): Boolean!
   }
 `;
 
