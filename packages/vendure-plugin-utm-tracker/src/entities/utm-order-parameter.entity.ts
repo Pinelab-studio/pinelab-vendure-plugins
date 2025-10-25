@@ -55,6 +55,13 @@ export class UtmOrderParameter
   @Column({ nullable: true, type: 'float' })
   attributedPercentage?: number;
 
+  /**
+   * The attribution model that was used to calculate the attributed percentage.
+   * This is set when the attribution is calculated.
+   */
+  @Column({ nullable: true })
+  attributionModel?: string;
+
   @Column(() => UtmOrderParameterCustomFields)
   customFields!: UtmOrderParameterCustomFields;
 }

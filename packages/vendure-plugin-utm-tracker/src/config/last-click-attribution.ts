@@ -2,6 +2,7 @@ import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { AttributionModel, AttributionResult } from '../types';
 
 export class LastClickAttribution implements AttributionModel {
+  name = 'Last Click';
   calculateAttribution(
     utmParameters: UtmOrderParameter[]
   ): AttributionResult[] {

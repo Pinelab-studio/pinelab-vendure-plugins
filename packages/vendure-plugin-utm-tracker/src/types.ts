@@ -20,6 +20,7 @@ export interface UTMTrackerPluginInitOptions {
 }
 
 export interface AttributionModel {
+  name: string;
   /**
    * Determine the attribution percentage for each UTM parameter of the given order.
    * The parameters are already sorted by connectedAt timestamp, ascending (oldest first)

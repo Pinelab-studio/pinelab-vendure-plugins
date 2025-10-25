@@ -2,6 +2,7 @@ import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { AttributionModel, AttributionResult } from '../types';
 
 export class FirstClickAttribution implements AttributionModel {
+  name = 'First Click';
   calculateAttribution(
     utmParameters: UtmOrderParameter[]
   ): AttributionResult[] {
