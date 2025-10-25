@@ -39,14 +39,52 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     });
   }
 
-  async addUTMParametersToOrder(
+  async addMultipleUTMParametersToOrder(
     ctx: RequestContext,
-    input: UTMParameterInput
+    inputs: UTMParameterInput[]
   ): Promise<boolean> {
     const order = await this.activeOrderService.getActiveOrder(ctx, undefined);
     if (!order) {
       throw new UserInputError('No active order found');
     }
+    // Sort inputs by connectedAt date, ascending
+    inputs.sort((a, b) => a.connectedAt.getTime() - b.connectedAt.getTime());
+    // Make sure we don't save more than the maximum number of parameters
+    if (inputs.length > this.options.maxParametersPerOrder) {
+      // Slice off the oldest parameters, so we only keep the most recent ones
+      inputs = inputs.reverse().slice(0, this.options.maxParametersPerOrder);
+      inputs = inputs.reverse(); // Reverse again, so the parameters are in the correct order
+    }
+    for (const input of inputs) {
+      await this.addUTMParameterToOrder(ctx, input, order);
+    }
+    // Check if we have reached the maximum number of parameters
+    const parameters = await this.getUTMParameters(ctx, order.id);
+    if (parameters.length > this.options.maxParametersPerOrder) {
+      // Remove oldest parameter
+      const oldestParameters = parameters
+        .slice() // Slice to not modify original array
+        .reverse() // Reverse, so the oldest parameter is at the end of the array
+        .slice(this.options.maxParametersPerOrder, parameters.length); // slice of MAX to END of array
+      const oldestParameterIds = oldestParameters.map((p) => p.id);
+      await this.connection
+        .getRepository(ctx, UtmOrderParameter)
+        .delete(oldestParameterIds as string[]); // This assertion is safe: ID's are always all numbers or all strings
+      Logger.info(
+        `Removed oldest UTM parameters '${oldestParameters
+          .map((p) => p.id)
+          .join(', ')}' from order ${order.id} (${order.code})`,
+        loggerCtx
+      );
+    }
+    return true;
+  }
+
+  async addUTMParameterToOrder(
+    ctx: RequestContext,
+    input: UTMParameterInput,
+    order: Order
+  ): Promise<void> {
     input = this.sanitizeInput(input);
     if (
       !input.source &&
@@ -71,7 +109,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     });
     if (existingParameter) {
       await utmRepo.update(existingParameter.id, {
-        connectedAt: new Date(),
+        connectedAt: input.connectedAt,
       });
       Logger.info(
         `Updated existing UTM parameters '${existingParameter.id}' of order ${order.id} (${order.code})`,
@@ -86,7 +124,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         utmCampaign: input.campaign,
         utmTerm: input.term,
         utmContent: input.content,
-        connectedAt: new Date(),
+        connectedAt: input.connectedAt,
       });
       Logger.info(
         `Added UTM parameters to order ${order.id} (${order.code}): source=${
@@ -97,18 +135,6 @@ export class UTMTrackerService implements OnApplicationBootstrap {
         loggerCtx
       );
     }
-    // Check if we have reached the maximum number of parameters
-    const parameters = await this.getUTMParameters(ctx, order.id);
-    if (parameters.length > this.options.maxParametersPerOrder) {
-      // Remove oldest parameter
-      const oldestParameter = parameters[0];
-      await utmRepo.delete(oldestParameter.id);
-      Logger.info(
-        `Removed oldest UTM parameter '${oldestParameter.id}' from order ${order.id} (${order.code})`,
-        loggerCtx
-      );
-    }
-    return true;
   }
 
   async getUTMParameters(
@@ -158,10 +184,11 @@ export class UTMTrackerService implements OnApplicationBootstrap {
       const result = results.find((r) => r.utmParameterId === param.id);
       await utmRepo.update(param.id, {
         attributedPercentage: result?.attributionPercentage || 0,
+        attributionModel: this.options.attributionModel.name,
       });
     }
     Logger.info(
-      `Saved attribution percentages for order ${order.id} (${order.code})`,
+      `Saved attribution percentages for order ${order.id} (${order.code}). Attribution model: ${this.options.attributionModel.name}`,
       loggerCtx
     );
     return await this.getUTMParameters(ctx, order.id);

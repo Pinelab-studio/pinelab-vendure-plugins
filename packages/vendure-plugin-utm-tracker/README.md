@@ -25,18 +25,39 @@ UTMTrackerPlugin.init({
 To add parameters to an order, you can use the `addUTMParametersToOrder` mutation:
 
 ```graphql
-mutation addUTMParametersToOrder($input: UTMParameterInput!) {
+mutation addUTMParametersToOrder($inputs: [UTMParameterInput!]!) {
   addUTMParametersToOrder(input: $input)
 }
+"""
+Example input:
+ "input": [
+    {
+      "connectedAt": "2025-01-01T00:00:00.000Z",
+      "source": "test-source1"
+      "medium": "test-medium1",
+      "campaign": "test-campaign1",
+      "term": "test-term1",
+      "content": "test-content1"
+    },
+    {
+      "connectedAt": "2025-01-02T00:00:00.000Z",
+      "source": "test-source2"
+      "medium": "test-medium2",
+      "campaign": "test-campaign2",
+      "term": "test-term2",
+      "content": "test-content2"
+    }
+  ]
+"""
 ```
 
-Keep in mind that UTM parameters can only be added to an active order! On most page visits, an active order is not present yet, so you should save the parameters in a cookie or local storage and add them to the order when the order is created.
+Keep in mind that UTM parameters can only be added to an active order! On most page visits, an active order is not present yet, so you should save the parameters in a cookie or local storage, along with the connectedAt date, and add them to the order when the order is created. You should not create a new order for each page visit, because this drastically increase the amount of orders in your database (Most visitors will never create an order, so this is a waste of resources).
 
 This is the flow we use in our own shops:
 
-![Storefront flow](https://img.plantuml.biz/plantuml/png/RLBDQiCm3BxxANHhSka3j8orT8mDzWTh3piL4Ik9cMCRMsafO-y-EQDTslLYiELFtu-qI8oH-yugDcm9DkjdUCE87J55U42dhN4Dt5k_LshugsQR9AMTIOOJ16m8zePRwBdRLjW5D8sxII4AR9lGqbmfKqEnhDZi27pK0WwH4Zc-BO5RSb1yK2eLmEoTU50GJWgy0nmXvufi8YXU_F1_rLBr2TPNQ26nZo9cBk-PBxT16mdrOIYHlcGJ_384SXeSxIze2vesK_7bv3Au4Am_9mAC4G-PRYmfcy0TNRORvL62SVybYmnJgzypEnio3XHh7xi4w62or1eUcRg9905LDkvxXgvdPEFTqVRJcSJAEqRZqY178-EL351hgPvcdjR-DITTVCb0LyTvZfBuBgzullFWFBVYyS-Ch8iFQY6Nl5u_)
+![Storefront flow](https://img.plantuml.biz/plantuml/png/NPBDQa8n48NtUOhPgOls0PHI1P4M-WVLHQ4WqvlH6ymVcRbAtxwJ5Ans6J8dvpjdCcV18aFmHfnuWitw6TwmO22X0WyOhNTn3okVJiQqMJFTi5uT7JjXoBWdE3dfOP2mxJ1aTFjunxceRCleQMQCsy5uqOax4gHYLPmBCKMvdu3q567yGJmn0DDtaaQGpmGf0buePuOy4unVaivF5pbJj23fJy20fU0tk0W-TUY19HLbl8NFkAGREsJlEXHNtrMfHI7WLAI6T0nz3KossYePV65tK0TrZTRjAc7BdgdiKWdg5M6qi1OUXS982Q7hgJkaGI0CqbncAghndovXe4jHq4LkOPK1_pVHkb0-zFww48PTIU4wss__QArEddV7w_HQ6wl1LtxW_bfJkIwgh8RB1359hqsqovPOLvwocUkXVf4V)
 
-[Edit diagram here ](https://editor.plantuml.com/uml/RLBDQiCm3BxxANHhSka3j8orT8mDzWTh3piL4Ik9cMCRMsafO-y-EQDTslLYiELFtu-qI8oH-yugDcm9DkjdUCE87J55U42dhN4Dt5k_LshugsQR9AMTIOOJ16m8zePRwBdRLjW5D8sxII4AR9lGqbmfKqEnhDZi27pK0WwH4Zc-BO5RSb1yK2eLmEoTU50GJWgy0nmXvufi8YXU_F1_rLBr2TPNQ26nZo9cBk-PBxT16mdrOIYHlcGJ_384SXeSxIze2vesK_7bv3Au4Am_9mAC4G-PRYmfcy0TNRORvL62SVybYmnJgzypEnio3XHh7xi4w62or1eUcRg9905LDkvxXgvdPEFTqVRJcSJAEqRZqY178-EL351hgPvcdjR-DITTVCb0LyTvZfBuBgzullFWFBVYyS-Ch8iFQY6Nl5u_)
+[Edit diagram here ](https://editor.plantuml.com/uml/NPBDQa8n48NtUOhPgOls0PHI1P4M-WVLHQ4WqvlH6ymVcRbAtxwJ5Ans6J8dvpjdCcV18aFmHfnuWitw6TwmO22X0WyOhNTn3okVJiQqMJFTi5uT7JjXoBWdE3dfOP2mxJ1aTFjunxceRCleQMQCsy5uqOax4gHYLPmBCKMvdu3q567yGJmn0DDtaaQGpmGf0buePuOy4unVaivF5pbJj23fJy20fU0tk0W-TUY19HLbl8NFkAGREsJlEXHNtrMfHI7WLAI6T0nz3KossYePV65tK0TrZTRjAc7BdgdiKWdg5M6qi1OUXS982Q7hgJkaGI0CqbncAghndovXe4jHq4LkOPK1_pVHkb0-zFww48PTIU4wss__QArEddV7w_HQ6wl1LtxW_bfJkIwgh8RB1359hqsqovPOLvwocUkXVf4V)
 
 ## Insights and visualizations
 

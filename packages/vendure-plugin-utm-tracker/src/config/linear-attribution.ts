@@ -2,6 +2,7 @@ import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { AttributionModel, AttributionResult } from '../types';
 
 export class LinearAttribution implements AttributionModel {
+  name = 'Linear Attribution';
   calculateAttribution(
     utmParameters: UtmOrderParameter[]
   ): AttributionResult[] {
