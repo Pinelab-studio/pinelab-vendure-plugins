@@ -1,3 +1,7 @@
+# 1.1.1 (2025-10-27)
+
+- Add `utm-util.js` file to the README.md
+
 # 1.1.0 (2025-10-24)
 
 - Allow adding bulk UTM parameters to an order, and de-duplicate parameters on the backend.

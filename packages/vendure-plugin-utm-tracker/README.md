@@ -53,11 +53,65 @@ Example input:
 
 Keep in mind that UTM parameters can only be added to an active order! On most page visits, an active order is not present yet, so you should save the parameters in a cookie or local storage, along with the connectedAt date, and add them to the order when the order is created. You should not create a new order for each page visit, because this drastically increase the amount of orders in your database (Most visitors will never create an order, so this is a waste of resources).
 
-This is the flow we use in our own shops:
+You should do something like this in your storefront:
 
-![Storefront flow](https://img.plantuml.biz/plantuml/png/NPBDQa8n48NtUOhPgOls0PHI1P4M-WVLHQ4WqvlH6ymVcRbAtxwJ5Ans6J8dvpjdCcV18aFmHfnuWitw6TwmO22X0WyOhNTn3okVJiQqMJFTi5uT7JjXoBWdE3dfOP2mxJ1aTFjunxceRCleQMQCsy5uqOax4gHYLPmBCKMvdu3q567yGJmn0DDtaaQGpmGf0buePuOy4unVaivF5pbJj23fJy20fU0tk0W-TUY19HLbl8NFkAGREsJlEXHNtrMfHI7WLAI6T0nz3KossYePV65tK0TrZTRjAc7BdgdiKWdg5M6qi1OUXS982Q7hgJkaGI0CqbncAghndovXe4jHq4LkOPK1_pVHkb0-zFww48PTIU4wss__QArEddV7w_HQ6wl1LtxW_bfJkIwgh8RB1359hqsqovPOLvwocUkXVf4V)
+```js
+import {storeUtmParameters,  clearUtmParameters} from './utm-util.js'; // See script below
 
-[Edit diagram here ](https://editor.plantuml.com/uml/NPBDQa8n48NtUOhPgOls0PHI1P4M-WVLHQ4WqvlH6ymVcRbAtxwJ5Ans6J8dvpjdCcV18aFmHfnuWitw6TwmO22X0WyOhNTn3okVJiQqMJFTi5uT7JjXoBWdE3dfOP2mxJ1aTFjunxceRCleQMQCsy5uqOax4gHYLPmBCKMvdu3q567yGJmn0DDtaaQGpmGf0buePuOy4unVaivF5pbJj23fJy20fU0tk0W-TUY19HLbl8NFkAGREsJlEXHNtrMfHI7WLAI6T0nz3KossYePV65tK0TrZTRjAc7BdgdiKWdg5M6qi1OUXS982Q7hgJkaGI0CqbncAghndovXe4jHq4LkOPK1_pVHkb0-zFww48PTIU4wss__QArEddV7w_HQ6wl1LtxW_bfJkIwgh8RB1359hqsqovPOLvwocUkXVf4V)
+async mounted() { // Or, `useEffect` in React
+  const utmParameters = storeUtmParameters(window.location.search); // Store params in local storage on page load
+  const activeOrder = await getActiveOrder(); // Or your equivalent of fetching the active order
+  if (activeOrder && utmParameters) {
+    await addUTMParametersToOrder(utmParameters); // The newly added mutation
+    clearUtmParameters(); // Clear the parameters from local storage, so they are not added again later
+  }
+},
+```
+
+<details>
+<summary>`utm-util.js` file</summary>
+
+```js
+/**
+ * Local storage key for storing UTM parameters.
+ */
+const key = 'vendure_utm_parameters';
+
+/**
+ * Parses the given path name, and saves the UTM parameters to the local storage.
+ * Does nothing if the path name doesn't contain any UTM parameters.
+ *
+ * Do not pass full url, but use window.location.search instead.
+ */
+export function storeUtmParameters(queryParams) {
+  const urlParams = new URLSearchParams(queryParams);
+  const storedParameters = localStorage.getItem(key);
+  const utmParameters = storedParameters ? JSON.parse(storedParameters) : [];
+  if (!queryParams.includes('utm_')) {
+    // Return existing parameters if no new ones are found. Or undefined if no parameters are stored.
+    return utmParameters.length > 0 ? utmParameters : undefined;
+  }
+  utmParameters.push({
+    connectedAt: new Date().toISOString(),
+    source: urlParams.get('utm_source') || undefined,
+    medium: urlParams.get('utm_medium') || undefined,
+    campaign: urlParams.get('utm_campaign') || undefined,
+    term: urlParams.get('utm_term') || undefined,
+    content: urlParams.get('utm_content') || undefined,
+  });
+  localStorage.setItem(key, JSON.stringify(utmParameters));
+  return utmParameters;
+}
+
+/**
+ * Clears the UTM parameters from the local storage.
+ */
+export function clearUtmParameters() {
+  localStorage.removeItem(key);
+}
+```
+
+</details>
 
 ## Insights and visualizations
 
