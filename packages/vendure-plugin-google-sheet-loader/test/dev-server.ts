@@ -6,15 +6,16 @@ import {
 import {
   DefaultLogger,
   DefaultSearchPlugin,
-  LanguageCode,
   LogLevel,
   mergeConfig,
 } from '@vendure/core';
 import { initialData } from '../../test/src/initial-data';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { StockMonitoringPlugin } from '../src/stock-monitoring.plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import { GoogleSheetLoaderPlugin } from '../src';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { TestDataStrategy } from './test-data-strategy';
 
 (async () => {
   require('dotenv').config();
@@ -26,29 +27,40 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    paymentOptions: {
+      paymentMethodHandlers: [testPaymentMethod],
+    },
     dbConnectionOptions: {
       autoSave: true,
     },
     plugins: [
+      GoogleSheetLoaderPlugin.init({
+        strategies: [new TestDataStrategy()],
+        googleApiKey: process.env.GOOGLE_SHEET_API_KEY!,
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
         app: compileUiExtensions({
           outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [StockMonitoringPlugin.ui],
+          extensions: [GoogleSheetLoaderPlugin.ui],
           devMode: true,
         }),
-      }),
-      StockMonitoringPlugin.init({
-        globalThreshold: 10,
-        uiTab: 'Stock Monitoring',
       }),
     ],
   });
   const { server, shopClient } = createTestEnvironment(config);
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
 })();

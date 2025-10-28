@@ -129,6 +129,10 @@ async function validate(
   injector: Injector,
   ctx: RequestContext
 ): Promise<string | undefined> {
+  if (!value) {
+    // Empty is allowed
+    return;
+  }
   if (typeof value !== 'string') {
     return 'Must be a string';
   }

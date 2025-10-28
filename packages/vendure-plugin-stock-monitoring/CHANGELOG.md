@@ -1,3 +1,10 @@
+# 2.0.0 (2025-10-17)
+
+- Added support for per variant thresholds
+- Emitting event when a variant's stock level drops below a given threshold
+- Processing stock checking in worker instead of main process.
+- BREAKING: removed email handler functionality. You can implement your own email handler by listening to the event `StockLevelBelowThresholdEvent`.
+
 # 1.6.0 (2025-06-04)
 
 - Upgrade to Vendure to 3.3.2
