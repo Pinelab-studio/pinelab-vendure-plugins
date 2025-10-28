@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-validate-cart",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vendure plugin for validating the cart before checkout",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
@@ -11,7 +11,7 @@
     "access": "public"
   },
   "main": "dist/index.js",
-  "types": "dist/vendure-plugin-validate-cart/src/index.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "README.md",
