@@ -97,6 +97,7 @@
           "invoices",
           "klaviyo",
           "limited-products",
+          "validate-cart",
           "metrics",
           "modify-customer-orders",
           "multiserver-db-sessioncache",
