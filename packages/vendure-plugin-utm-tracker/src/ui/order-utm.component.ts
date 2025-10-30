@@ -51,7 +51,7 @@ interface UtmOrderParameter {
               <td>{{ p.utmTerm }}</td>
               <td *ngIf="p.attributedValue > 0">
                 {{ p.attributedValue / 100 | currency }} ({{
-                  p.attributedPercentage * 100
+                  p.attributedPercentage * 100 | number : '1.0-0'
                 }}%)
               </td>
               <td *ngIf="!p.attributedValue">-</td>

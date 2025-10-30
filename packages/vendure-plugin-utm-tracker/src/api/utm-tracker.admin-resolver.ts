@@ -20,7 +20,7 @@ export class UTMTrackerAdminResolver {
     return utmParameters.map((param) => ({
       ...param,
       attributedValue: param.attributedPercentage
-        ? param.attributedPercentage * order.total
+        ? Math.round(param.attributedPercentage * order.total)
         : undefined,
     }));
   }

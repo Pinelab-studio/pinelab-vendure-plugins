@@ -3,6 +3,7 @@ import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { FirstClickAttribution } from './first-click-attribution';
 import { LastClickAttribution } from './last-click-attribution';
 import { LinearAttribution } from './linear-attribution';
+import { TimeDecayAttribution } from './time-decay-attribution';
 
 describe('Attribution Models', () => {
   const createMockUtmParameter = (
@@ -69,6 +70,27 @@ describe('Attribution Models', () => {
         utmParameterId: 3,
         attributionPercentage: 0.3333,
       });
+    });
+  });
+
+  describe('TimeDecayAttribution', () => {
+    it('Gives higher attribution to more recent parameters and sums to ~1', () => {
+      const model = new TimeDecayAttribution();
+      const now = new Date();
+      const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+      const utmParams = [
+        createMockUtmParameter(1, tenDaysAgo), // older
+        createMockUtmParameter(2, now), // newer
+      ];
+      const result = model.calculateAttribution(utmParams);
+      expect(result).toHaveLength(2);
+      const sum = result.reduce((s, r) => s + r.attributionPercentage, 0);
+      expect(sum).toBeCloseTo(1, 4);
+      const newer =
+        result.find((r) => r.utmParameterId === 2)?.attributionPercentage ?? 0;
+      const older =
+        result.find((r) => r.utmParameterId === 1)?.attributionPercentage ?? 0;
+      expect(newer).toBeGreaterThan(older);
     });
   });
 });

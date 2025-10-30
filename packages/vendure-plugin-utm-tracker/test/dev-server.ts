@@ -19,6 +19,7 @@ import { LinearAttribution } from '../src';
 import gql from 'graphql-tag';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/dist/test-payment-method';
+import { TimeDecayAttribution } from '../src/';
 
 (async () => {
   require('dotenv').config();
@@ -48,7 +49,7 @@ import { testPaymentMethod } from '../../test/dist/test-payment-method';
         }),
       }),
       UTMTrackerPlugin.init({
-        attributionModel: new LinearAttribution(),
+        attributionModel: new TimeDecayAttribution(),
         maxParametersPerOrder: 5,
         maxAttributionAgeInDays: 30,
       }),
@@ -82,7 +83,14 @@ import { testPaymentMethod } from '../../test/dist/test-payment-method';
     {
       inputs: [
         { connectedAt: new Date(), source: 'dev-source1' },
-        { connectedAt: new Date(), source: 'dev-source2' },
+        {
+          connectedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+          source: 'dev-source2',
+        },
+        {
+          connectedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000),
+          source: 'dev-source2',
+        },
         { connectedAt: new Date('2023-01-01'), source: 'dev-source3' },
       ],
     }
