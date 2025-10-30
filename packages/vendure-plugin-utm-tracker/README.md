@@ -2,7 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-utm-tracker)
 
-Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform. This plugin doesn't include any UI, it only adds the UTM parameters to the orders. You should use your own data visualization or BI tool to visualize the data.
+Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform. 
 
 ## Getting started
 
@@ -15,6 +15,17 @@ UTMTrackerPlugin.init({
   attributionModel: new FirstClickAttribution(), // or LastClickAttribution, or LinearAttribution
   maxParametersPerOrder: 5, // The maximum number of UTM parameters that can be added to an order. If a customer adds more than this number, the oldest UTM parameters will be removed.
   maxAttributionAgeInDays: 10, // The maximum age of a UTM parameter to be attributed. If a UTM parameter is older than this number of days, it will not be attributed.
+}),
+
+
+// Include the admin UI extensions of this plugin
+AdminUiPlugin.init({
+  port: 3002,
+  route: 'admin',
+  app: compileUiExtensions({
+    outputPath: path.join(__dirname, '__admin-ui'),
+    extensions: [UTMTrackerPlugin.ui],
+  }),
 }),
 ```
 

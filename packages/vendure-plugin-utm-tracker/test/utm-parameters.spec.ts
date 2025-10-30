@@ -263,9 +263,28 @@ describe('UTM parameters plugin', function () {
       (p: UtmOrderParameter) => p.utmSource === 'recent5'
     );
     expect(recent2.attributedPercentage).toBe(1); // 1, because it's the first click
+    expect(recent2.attributedValue).toBe(540100); // 100, because it's the first click
     expect(recent3.attributedPercentage).toBe(0); // 0, because it's not the first click
+    expect(recent3.attributedValue).toBe(null); // 0, because it's not the first click
     expect(recent5.attributedPercentage).toBe(0); // 0, because it's not the first click
+    expect(recent5.attributedValue).toBe(null); // 0, because it's not the first click
   });
+
+  if (process.env.TEST_ADMIN_UI) {
+    it('Should compile admin UI extension', async () => {
+      // Dynamically import the utility for file checking
+      const getFilesInAdminUiFolder = (
+        await import('../../test/src/compile-admin-ui.util')
+      ).default;
+      // Import the plugin
+      const { UTMTrackerPlugin } = await import('../src');
+      const files = await getFilesInAdminUiFolder(
+        __dirname,
+        UTMTrackerPlugin.ui
+      );
+      expect(files?.length).toBeGreaterThan(0);
+    }, 200000);
+  }
 });
 
 const ADD_UTM_PARAMETERS = gql`
@@ -285,6 +304,7 @@ const GET_ORDER_WITH_UTM_PARAMETERS = gql`
         utmTerm
         utmContent
         attributedPercentage
+        attributedValue
         createdAt
         updatedAt
         connectedAt

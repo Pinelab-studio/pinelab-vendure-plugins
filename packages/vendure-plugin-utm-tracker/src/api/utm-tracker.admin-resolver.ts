@@ -12,7 +12,16 @@ export class UTMTrackerAdminResolver {
   async utmParameters(
     @Ctx() ctx: RequestContext,
     @Parent() order: Order
-  ): Promise<UtmOrderParameter[]> {
-    return await this.utmTrackerService.getUTMParameters(ctx, order.id);
+  ): Promise<(UtmOrderParameter & { attributedValue?: number })[]> {
+    const utmParameters = await this.utmTrackerService.getUTMParameters(
+      ctx,
+      order.id
+    );
+    return utmParameters.map((param) => ({
+      ...param,
+      attributedValue: param.attributedPercentage
+        ? param.attributedPercentage * order.total
+        : undefined,
+    }));
   }
 }
