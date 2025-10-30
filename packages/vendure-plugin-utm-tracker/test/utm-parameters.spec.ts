@@ -102,7 +102,7 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(2);
-    expect(order.utmParameters[0].utmSource).toBe('test-source1');
+    expect(order.utmParameters[0].utmSource).toBe('test-source2');
     expect(order.utmParameters[0].utmMedium).toBe(null);
     expect(order.utmParameters[0].utmCampaign).toBe(null);
     expect(order.utmParameters[0].utmTerm).toBe(null);
@@ -110,8 +110,8 @@ describe('UTM parameters plugin', function () {
     expect(order.utmParameters[0].attributedPercentage).toBeNull();
     expect(order.utmParameters[0].createdAt).toBeDefined();
     expect(order.utmParameters[0].updatedAt).toBeDefined();
-    expect(order.utmParameters[0].connectedAt).toBe('2025-01-01T00:00:00.000Z');
-    expect(order.utmParameters[1].utmSource).toBe('test-source2');
+    expect(order.utmParameters[0].connectedAt).toBe('2025-01-02T00:00:00.000Z');
+    expect(order.utmParameters[1].utmSource).toBe('test-source1');
     expect(order.utmParameters[1].utmMedium).toBe(null);
     expect(order.utmParameters[1].utmCampaign).toBe(null);
     expect(order.utmParameters[1].utmTerm).toBe(null);
@@ -119,7 +119,7 @@ describe('UTM parameters plugin', function () {
     expect(order.utmParameters[1].attributedPercentage).toBeNull();
     expect(order.utmParameters[1].createdAt).toBeDefined();
     expect(order.utmParameters[1].updatedAt).toBeDefined();
-    expect(order.utmParameters[1].connectedAt).toBe('2025-01-02T00:00:00.000Z');
+    expect(order.utmParameters[1].connectedAt).toBe('2025-01-01T00:00:00.000Z');
   });
 
   it('Adds the same UTM parameter to order again with a newer connectedAt date', async () => {
@@ -141,9 +141,8 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(2);
-    // Should now be moved to [1] because it has a newer connectedAt date
-    expect(order.utmParameters[1].utmSource).toBe('test-source1');
-    expect(order.utmParameters[1].connectedAt).toBe('2025-01-07T00:00:00.000Z');
+    expect(order.utmParameters[0].utmSource).toBe('test-source1');
+    expect(order.utmParameters[0].connectedAt).toBe('2025-01-07T00:00:00.000Z');
   });
 
   it('Adds another UTM parameter (#3) to order', async () => {
@@ -168,13 +167,13 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(3);
-    expect(order.utmParameters[2].utmSource).toBe('test-source3');
-    expect(order.utmParameters[2].utmMedium).toBe('test-medium3');
-    expect(order.utmParameters[2].utmCampaign).toBe('test-campaign3');
-    expect(order.utmParameters[2].utmTerm).toBe('test-term3');
-    expect(order.utmParameters[2].utmContent).toBe('test-content3');
-    expect(order.utmParameters[2].attributedPercentage).toBeNull();
-    expect(order.utmParameters[2].connectedAt).toBe('2025-01-08T00:00:00.000Z');
+    expect(order.utmParameters[0].utmSource).toBe('test-source3');
+    expect(order.utmParameters[0].utmMedium).toBe('test-medium3');
+    expect(order.utmParameters[0].utmCampaign).toBe('test-campaign3');
+    expect(order.utmParameters[0].utmTerm).toBe('test-term3');
+    expect(order.utmParameters[0].utmContent).toBe('test-content3');
+    expect(order.utmParameters[0].attributedPercentage).toBeNull();
+    expect(order.utmParameters[0].connectedAt).toBe('2025-01-08T00:00:00.000Z');
   });
 
   it('Only keeps the 3 most recent UTM parameters after adding a fourth one', async () => {
@@ -195,9 +194,9 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(3);
-    expect(order.utmParameters[0].utmSource).toBe('test-source1');
+    expect(order.utmParameters[0].utmSource).toBe('test-source4');
     expect(order.utmParameters[1].utmSource).toBe('test-source3');
-    expect(order.utmParameters[2].utmSource).toBe('test-source4');
+    expect(order.utmParameters[2].utmSource).toBe('test-source1');
   });
 
   it('Adding 5 new UTM parameters will only save the 3 most recent ones', async () => {
@@ -211,7 +210,7 @@ describe('UTM parameters plugin', function () {
           },
           {
             source: 'recent2',
-            connectedAt: new Date(Date.now() - 3), // First (oldest)
+            connectedAt: new Date(Date.now() - 3), // Last (oldest)
           },
           {
             source: 'recent3',
@@ -223,7 +222,7 @@ describe('UTM parameters plugin', function () {
           },
           {
             source: 'recent5',
-            connectedAt: new Date(Date.now() - 1), // Third
+            connectedAt: new Date(Date.now() - 1), // First (oldest)
           },
         ],
       }
@@ -234,9 +233,9 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(3);
-    expect(order.utmParameters[0].utmSource).toBe('recent2');
+    expect(order.utmParameters[0].utmSource).toBe('recent5');
     expect(order.utmParameters[1].utmSource).toBe('recent3');
-    expect(order.utmParameters[2].utmSource).toBe('recent5');
+    expect(order.utmParameters[2].utmSource).toBe('recent2');
   });
 
   it('Calculates attribution after order placement', async () => {
@@ -262,12 +261,12 @@ describe('UTM parameters plugin', function () {
     const recent5 = utmParameters.find(
       (p: UtmOrderParameter) => p.utmSource === 'recent5'
     );
-    expect(recent2.attributedPercentage).toBe(1); // 1, because it's the first click
-    expect(recent2.attributedValue).toBe(540100); // 100, because it's the first click
+    expect(recent5.attributedPercentage).toBe(1); // 1, because it's the first click
+    expect(recent5.attributedValue).toBe(540100); // 100, because it's the first click
     expect(recent3.attributedPercentage).toBe(0); // 0, because it's not the first click
     expect(recent3.attributedValue).toBe(null); // 0, because it's not the first click
-    expect(recent5.attributedPercentage).toBe(0); // 0, because it's not the first click
-    expect(recent5.attributedValue).toBe(null); // 0, because it's not the first click
+    expect(recent2.attributedPercentage).toBe(0); // 0, because it's not the first click
+    expect(recent2.attributedValue).toBe(null); // 0, because it's not the first click
   });
 
   if (process.env.TEST_ADMIN_UI) {

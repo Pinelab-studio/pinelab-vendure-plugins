@@ -2,7 +2,7 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-utm-tracker)
 
-Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform. 
+Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform. This plugin aims to fix over attribution when you use multiple different marketing platforms, each using their own attribution model.
 
 ## Getting started
 
@@ -30,6 +30,8 @@ AdminUiPlugin.init({
 ```
 
 2. Run a database migration to add the new entities to your database.
+
+This plugin shows UTM parameters on the order detail page, but doesn't include diagrams or charts. You should use your own data visualization or BI tool to visualize the data.
 
 ## Storefront usage
 

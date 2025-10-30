@@ -47,13 +47,12 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     if (!order) {
       throw new UserInputError('No active order found');
     }
-    // Sort inputs by connectedAt date, ascending
-    inputs.sort((a, b) => a.connectedAt.getTime() - b.connectedAt.getTime());
+    // Sort inputs by connectedAt date, descending
+    inputs.sort((a, b) => b.connectedAt.getTime() - a.connectedAt.getTime());
     // Make sure we don't save more than the maximum number of parameters
     if (inputs.length > this.options.maxParametersPerOrder) {
       // Slice off the oldest parameters, so we only keep the most recent ones
-      inputs = inputs.reverse().slice(0, this.options.maxParametersPerOrder);
-      inputs = inputs.reverse(); // Reverse again, so the parameters are in the correct order
+      inputs = inputs.slice(0, this.options.maxParametersPerOrder);
     }
     for (const input of inputs) {
       await this.addUTMParameterToOrder(ctx, input, order);
@@ -62,10 +61,10 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     const parameters = await this.getUTMParameters(ctx, order.id);
     if (parameters.length > this.options.maxParametersPerOrder) {
       // Remove oldest parameter
-      const oldestParameters = parameters
-        .slice() // Slice to not modify original array
-        .reverse() // Reverse, so the oldest parameter is at the end of the array
-        .slice(this.options.maxParametersPerOrder, parameters.length); // slice of MAX to END of array
+      const oldestParameters = parameters.slice(
+        this.options.maxParametersPerOrder,
+        parameters.length
+      ); // slice of MAX to END of array
       const oldestParameterIds = oldestParameters.map((p) => p.id);
       await this.connection
         .getRepository(ctx, UtmOrderParameter)
@@ -144,7 +143,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     const utmRepo = this.connection.getRepository(ctx, UtmOrderParameter);
     return await utmRepo.find({
       where: { orderId: orderId },
-      order: { connectedAt: 'ASC' },
+      order: { connectedAt: 'DESC' },
     });
   }
 
