@@ -210,11 +210,11 @@ describe('UTM parameters plugin', function () {
           },
           {
             source: 'recent2',
-            connectedAt: new Date(Date.now() - 3), // Last (oldest)
+            connectedAt: new Date(Date.now() - 3), // Oldest (last click)
           },
           {
             source: 'recent3',
-            connectedAt: new Date(Date.now() - 2), // Second
+            connectedAt: new Date(Date.now() - 2), // Middle
           },
           {
             source: 'recent4',
@@ -222,7 +222,7 @@ describe('UTM parameters plugin', function () {
           },
           {
             source: 'recent5',
-            connectedAt: new Date(Date.now() - 1), // First (oldest)
+            connectedAt: new Date(Date.now() - 1), // Newest (first click)
           },
         ],
       }
@@ -233,9 +233,9 @@ describe('UTM parameters plugin', function () {
       orderId: activeOrder.id,
     });
     expect(order.utmParameters.length).toBe(3);
-    expect(order.utmParameters[0].utmSource).toBe('recent5');
-    expect(order.utmParameters[1].utmSource).toBe('recent3');
-    expect(order.utmParameters[2].utmSource).toBe('recent2');
+    expect(order.utmParameters[0].utmSource).toBe('recent5'); // Last click (newest)
+    expect(order.utmParameters[1].utmSource).toBe('recent3'); // Middle
+    expect(order.utmParameters[2].utmSource).toBe('recent2'); // First click (oldest)
   });
 
   it('Calculates attribution after order placement', async () => {
@@ -246,8 +246,12 @@ describe('UTM parameters plugin', function () {
       const { order } = await adminClient.query(GET_ORDER_WITH_UTM_PARAMETERS, {
         orderId: activeOrder.id,
       });
-      if (order.utmParameters[0].attributedPercentage === 1) {
-        // [] is recent2, the first click
+      if (
+        order.utmParameters.find(
+          (p: UtmOrderParameter) => p.attributedPercentage === 1
+        )
+      ) {
+        // Return as soon as a parameter is attributed 100%
         return order.utmParameters;
       }
     });
@@ -261,12 +265,12 @@ describe('UTM parameters plugin', function () {
     const recent5 = utmParameters.find(
       (p: UtmOrderParameter) => p.utmSource === 'recent5'
     );
-    expect(recent5.attributedPercentage).toBe(1); // 1, because it's the first click
-    expect(recent5.attributedValue).toBe(540100); // 100, because it's the first click
+    expect(recent2.attributedPercentage).toBe(1); // 1, because it's the first click
+    expect(recent2.attributedValue).toBe(540100); // 100, because it's the first click
     expect(recent3.attributedPercentage).toBe(0); // 0, because it's not the first click
     expect(recent3.attributedValue).toBe(null); // 0, because it's not the first click
-    expect(recent2.attributedPercentage).toBe(0); // 0, because it's not the first click
-    expect(recent2.attributedValue).toBe(null); // 0, because it's not the first click
+    expect(recent5.attributedPercentage).toBe(0); // 0, because it's not the first click
+    expect(recent5.attributedValue).toBe(null); // 0, because it's not the first click
   });
 
   if (process.env.TEST_ADMIN_UI) {
