@@ -1,3 +1,9 @@
+# 1.2.0 (2025-10-30)
+
+- Added UI to view UTM parameters on the order detail page.
+- Added U-Shaped Attribution model.
+- Reversed orders of UTM parameters in API: Most recent parameters are now first.
+
 # 1.1.1 (2025-10-27)
 
 - Add `utm-util.js` file to the README.md

@@ -2,23 +2,46 @@
 
 ### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-utm-tracker)
 
-Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform. This plugin doesn't include any UI, it only adds the UTM parameters to the orders. You should use your own data visualization or BI tool to visualize the data.
+This plugin aims to fix over attribution when you use multiple different marketing platforms, by connecting UTM parameters directly to orders.
+
+![UTM Tracker Plugin](https://pinelab-plugins.com/plugin-images/utm-tracker.jpeg)
+
+When using multiple marketing platforms, each platform has their own attribution model, and each doesn't know what the other already attributed. This can lead to over attribution, or double-attribution. This means your ROAS or ROI might look better than it actually is.
+
+This plugin connects UTM parameters directly to orders, so that attribution can never exceed the actual value of an order. This might lead to slight under-attribution, but never to over attribution.
 
 ## Getting started
 
 1. Add the plugin to your `vendure-config.ts`
 
 ```ts
-import { UTMTrackerPlugin, FirstClickAttribution, LastClickAttribution, LinearAttribution } from '@pinelab/vendure-plugin-utm-tracker';
+import { UTMTrackerPlugin, FirstClickAttribution, LastClickAttribution, LinearAttribution, UShapedAttribution } from '@pinelab/vendure-plugin-utm-tracker';
 
 UTMTrackerPlugin.init({
-  attributionModel: new FirstClickAttribution(), // or LastClickAttribution, or LinearAttribution
+  attributionModel: new FirstClickAttribution(), // or LastClickAttribution, or LinearAttribution, or UShapedAttribution
   maxParametersPerOrder: 5, // The maximum number of UTM parameters that can be added to an order. If a customer adds more than this number, the oldest UTM parameters will be removed.
   maxAttributionAgeInDays: 10, // The maximum age of a UTM parameter to be attributed. If a UTM parameter is older than this number of days, it will not be attributed.
+}),
+
+
+// Include the admin UI extensions of this plugin
+AdminUiPlugin.init({
+  port: 3002,
+  route: 'admin',
+  app: compileUiExtensions({
+    outputPath: path.join(__dirname, '__admin-ui'),
+    extensions: [UTMTrackerPlugin.ui],
+  }),
 }),
 ```
 
 2. Run a database migration to add the new entities to your database.
+
+This plugin shows UTM parameters on the order detail page, but doesn't include diagrams or charts. You should use your own data visualization or BI tool to visualize the data.
+
+## Enable UTM parameters in your marketing tools
+
+Most platforms like Klaviyo or Google Ads allow you to automatically add UTM parameters to your campaigns. This is needed to extract the parameters on your storefront.
 
 ## Storefront usage
 

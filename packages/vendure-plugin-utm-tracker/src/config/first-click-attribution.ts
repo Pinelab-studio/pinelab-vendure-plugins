@@ -10,7 +10,7 @@ export class FirstClickAttribution implements AttributionModel {
       return [];
     }
     // First click attribution gives 100% to the oldest parameter
-    const oldest = utmParameters[0];
+    const oldest = utmParameters[utmParameters.length - 1];
     return [
       {
         utmParameterId: oldest.id,

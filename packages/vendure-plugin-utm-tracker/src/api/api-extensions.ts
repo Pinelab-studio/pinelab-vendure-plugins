@@ -29,6 +29,7 @@ export const adminApiExtensions = gql`
     utmTerm: String
     utmContent: String
     attributedPercentage: Float
+    attributedValue: Money
   }
 
   extend type Order {

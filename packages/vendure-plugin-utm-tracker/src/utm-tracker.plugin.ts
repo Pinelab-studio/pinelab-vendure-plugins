@@ -1,4 +1,5 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 
 import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
 import { UTM_TRACKER_PLUGIN_OPTIONS } from './constants';
@@ -8,6 +9,7 @@ import { UTMTrackerPluginInitOptions } from './types';
 import { UTMTrackerShopResolver } from './api/utm-tracker.shop-resolver';
 import { FirstClickAttribution } from './config/first-click-attribution';
 import { UTMTrackerAdminResolver } from './api/utm-tracker.admin-resolver';
+import path from 'path';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -45,4 +47,9 @@ export class UTMTrackerPlugin {
     };
     return UTMTrackerPlugin;
   }
+
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    providers: ['providers.ts'],
+  };
 }
