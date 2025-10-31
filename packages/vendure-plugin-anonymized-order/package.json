@@ -3,7 +3,7 @@
   "version": "1.4.0",
   "description": "This plugin facilitates the retrieval of anonymized customer orders",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
-  "homepage": "https://pinelab-plugins.com/",
+  "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,

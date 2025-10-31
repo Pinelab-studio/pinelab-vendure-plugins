@@ -1,6 +1,6 @@
 # Vendure Better Search Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-better-search)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-better-search)
 
 This plugin offers more intuitive storefront search than Vendure's `DefaultSearchPlugin` before the need of an external platform like TypeSense or ElasticSearch.
 

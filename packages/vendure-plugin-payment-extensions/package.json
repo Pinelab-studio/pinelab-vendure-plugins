@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "description": "Vendure plugin for allowing customers to 'pay' for an order without actually paying",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab-plugins.com/",
+  "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,

@@ -1,6 +1,6 @@
 # Vendure Payment Extensions
 
-## [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-payment-extensions)
+## [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-payment-extensions)
 
 This `Vendure` plugin allows an `Order` to be settled without upfront payment.
 

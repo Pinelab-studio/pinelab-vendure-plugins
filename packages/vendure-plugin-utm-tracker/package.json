@@ -13,7 +13,7 @@
     "email marketing"
   ],
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
-  "homepage": "https://pinelab-plugins.com/",
+  "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,

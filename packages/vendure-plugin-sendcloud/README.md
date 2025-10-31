@@ -1,6 +1,6 @@
 # Vendure SendCloud plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-sendcloud)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-sendcloud)
 
 This plugin syncs orders to the SendCloud fulfillment platform.
 

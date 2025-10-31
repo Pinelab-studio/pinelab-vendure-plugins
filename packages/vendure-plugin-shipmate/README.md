@@ -1,6 +1,6 @@
 # Vendure Shipmate Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-shipmate)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-shipmate)
 
 Create shipments in Shipmate on every order placed, to automate your order fulfillment process.
 

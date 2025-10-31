@@ -3,7 +3,7 @@
   "version": "2.2.0",
   "description": "Adds a primary collection to all Products by extending Vendure's graphql api",
   "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
-  "homepage": "https://pinelab-plugins.com/",
+  "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,

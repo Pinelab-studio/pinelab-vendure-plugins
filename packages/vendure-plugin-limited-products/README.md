@@ -1,6 +1,6 @@
 # Vendure Limited Products Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-limit-product-per-order)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-limit-product-per-order)
 
 This plugin allows you to:
 

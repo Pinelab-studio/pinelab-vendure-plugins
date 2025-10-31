@@ -1,11 +1,11 @@
 # Vendure Facets Suggestion Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-facet-suggestions)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-facet-suggestions)
 
 This plugin allows you to define facets that will show as suggestions on a product detail page. You can set facets to always show on every product detail, or dependant on other facet values.
 This feature is based on one of [Michael Bromley's (Co-founder of Vendure) tutorials](https://www.youtube.com/watch?v=nfIlBvbMcJ8).
 
-![image](https://pinelab-plugins.com/plugin-images/facet-suggestions_product-detail.png)
+![image](https://plugins.pinelab.studio/plugin-images/facet-suggestions_product-detail.png)
 
 ## Getting started
 

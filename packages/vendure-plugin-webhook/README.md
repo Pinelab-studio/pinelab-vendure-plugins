@@ -1,6 +1,6 @@
 # Vendure Webhook plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-webhook)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-webhook)
 
 Triggers an outgoing webhook based on configured events. Events are specified in `vendure-config` and webhooks are configured per
 channel via the admin UI.

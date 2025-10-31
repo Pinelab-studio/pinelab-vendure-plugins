@@ -1,6 +1,6 @@
 # Vendure Selectable Gifts Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-selectable-gifts)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-selectable-gifts)
 
 Vendure plugin to allow your loyal customers to select gifts when they placed more than X orders, or to select a gift when their order value is over $50.
 

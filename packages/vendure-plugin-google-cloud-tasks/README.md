@@ -1,6 +1,6 @@
 # Google Cloud Tasks Vendure plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-google-cloud-tasks)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-google-cloud-tasks)
 
 Plugin for using Vendure worker with Google Cloud Tasks. This plugin will show ending, successful and failed jobs in the admin UI under `sytem/jobs`, but not running jobs. Only jobs of the past 7 days are kept in the DB.
 

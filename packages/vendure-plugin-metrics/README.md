@@ -1,6 +1,6 @@
 # Vendure Metrics plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-metrics)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-metrics)
 
 A plugin to visualize your shops most important metrics.
 

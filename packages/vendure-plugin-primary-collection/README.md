@@ -1,6 +1,6 @@
 # Vendure Primary Collection Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-primary-collection)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-primary-collection)
 
 To construct breadcrumbs and URL's it's useful to have a primary collection for each product, in case a product is part of multiple collections. This plugin extends Vendure's `Product` graphql type, adding a `primaryCollection` field that points to the primary collection of a product.
 

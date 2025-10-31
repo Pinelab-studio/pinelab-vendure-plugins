@@ -1,12 +1,12 @@
 # Vendure Plugin for generating PDF invoices
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-invoices)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-invoices)
 
 A plugin for generating customizable PDF invoices for orders. Supports incremental invoice numbering, credit invoices, and customizable Handlebars templates.
 
 ### This is a paid plugin. For production use, please purchase a license at https://vendure.io/marketplace.
 
-![Invoice plugin screens](https://pinelab-plugins.com/plugin-images/invoices-screenshots.gif 'Invoice plugin screens')
+![Invoice plugin screens](https://plugins.pinelab.studio/plugin-images/invoices-screenshots.gif 'Invoice plugin screens')
 
 ## Migration from V3.x to V4.0.0
 

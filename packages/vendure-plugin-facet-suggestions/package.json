@@ -3,7 +3,7 @@
   "version": "1.3.0",
   "description": "A vendure plugin that allows you to define suggested facets for all products, or suggested facets based on other facets.",
   "author": "Surafel Tariku <surafelmelese09@gmail.com>",
-  "homepage": "https://pinelab-plugins.com/",
+  "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
   "private": false,

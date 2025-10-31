@@ -1,6 +1,6 @@
 # Vendure Google Sheet Loader plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-google-sheet-loader)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-google-sheet-loader)
 
 This plugin allows you to load data from a Google Sheet and handle the data in Vendure. For example, to load products and prices into Vendure.
 You can define a single action per channel. This means each channel can have it's own sheet, and it's own way of handling the data from that sheet.

@@ -1,6 +1,6 @@
 # Vendure Picqer Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-picqer)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-picqer)
 
 Vendure plugin to sync orders, stock and catalogue with Picqer.com order pick platform.
 

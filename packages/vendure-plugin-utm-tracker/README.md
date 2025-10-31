@@ -1,10 +1,10 @@
 # Vendure UTM Tracker Plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-utm-tracker)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-utm-tracker)
 
 This plugin aims to fix over attribution when you use multiple different marketing platforms, by connecting UTM parameters directly to orders.
 
-![UTM Tracker Plugin](https://pinelab-plugins.com/plugin-images/utm-tracker.jpeg)
+![UTM Tracker Plugin](https://plugins.pinelab.studio/plugin-images/utm-tracker.jpeg)
 
 When using multiple marketing platforms, each platform has their own attribution model, and each doesn't know what the other already attributed. This can lead to over attribution, or double-attribution. This means your ROAS or ROI might look better than it actually is.
 

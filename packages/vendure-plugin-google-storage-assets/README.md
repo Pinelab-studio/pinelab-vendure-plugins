@@ -1,6 +1,6 @@
 # Vendure Google Asset Storage plugin
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-google-storage-assets)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-google-storage-assets)
 
 Plugin for storing Vendure assets on Google Cloud Storage with support for pre-generated image presets.
 

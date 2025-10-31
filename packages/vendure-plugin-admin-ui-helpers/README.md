@@ -1,6 +1,6 @@
 # Admin UI helper buttons for Vendure
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-admin-ui-helpers)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-admin-ui-helpers)
 
 Cancel and complete order buttons for easier completion and cancellation of orders.
 

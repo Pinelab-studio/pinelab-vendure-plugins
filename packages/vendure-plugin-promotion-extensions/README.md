@@ -1,6 +1,6 @@
 # Vendure Promotion Extensions
 
-### [Official documentation here](https://pinelab-plugins.com/plugin/vendure-plugin-promotion-extensions)
+### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-promotion-extensions)
 
 A collection of different promotion actions and conditions for Vendure. See documentation below for more information on each action and condition.
 
