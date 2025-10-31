@@ -15,11 +15,10 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { UTMTrackerPlugin } from '../src/utm-tracker.plugin';
 import path from 'path';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import { LinearAttribution } from '../src';
+import { LinearAttribution, UShapedAttribution } from '../src';
 import gql from 'graphql-tag';
 import { addItem, createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/dist/test-payment-method';
-import { TimeDecayAttribution } from '../src/';
 
 (async () => {
   require('dotenv').config();
@@ -49,7 +48,7 @@ import { TimeDecayAttribution } from '../src/';
         }),
       }),
       UTMTrackerPlugin.init({
-        attributionModel: new TimeDecayAttribution(),
+        attributionModel: new UShapedAttribution(),
         maxParametersPerOrder: 5,
         maxAttributionAgeInDays: 30,
       }),
@@ -82,16 +81,30 @@ import { TimeDecayAttribution } from '../src/';
     `,
     {
       inputs: [
-        { connectedAt: new Date(), source: 'dev-source1' },
+        {
+          connectedAt: new Date(),
+          source: 'klaviyo',
+          medium: 'email',
+          campaign: 'Monthly newsletter',
+        },
         {
           connectedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          source: 'dev-source2',
+          source: 'google',
+          medium: 'cpc',
+          campaign: 'Performance Max Campaign',
         },
         {
           connectedAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000),
-          source: 'dev-source2',
+          source: 'klaviyo',
+          medium: 'email',
+          campaign: 'Abandoned cart reminder',
         },
-        { connectedAt: new Date('2023-01-01'), source: 'dev-source3' },
+        {
+          connectedAt: new Date('2023-01-01'),
+          source: 'google',
+          medium: 'cpc',
+          campaign: 'Branded campaign',
+        },
       ],
     }
   );

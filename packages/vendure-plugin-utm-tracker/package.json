@@ -1,7 +1,7 @@
 {
   "name": "@pinelab/vendure-plugin-utm-tracker",
   "version": "1.2.0",
-  "description": "Vendure plugin to connect UTM parameters to orders, to measure true attribution per platform",
+  "description": "Connect UTM parameters directly to your orders, to prevent double-attribution caused by silo'ed marketing platforms",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://pinelab-plugins.com/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
