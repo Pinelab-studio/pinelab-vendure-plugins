@@ -39,6 +39,10 @@ AdminUiPlugin.init({
 
 This plugin shows UTM parameters on the order detail page, but doesn't include diagrams or charts. You should use your own data visualization or BI tool to visualize the data.
 
+## Enable UTM parameters in your marketing tools
+
+Most platforms like Klaviyo or Google Ads allow you to automatically add UTM parameters to your campaigns. This is needed to extract the parameters on your storefront.
+
 ## Storefront usage
 
 To add parameters to an order, you can use the `addUTMParametersToOrder` mutation:
