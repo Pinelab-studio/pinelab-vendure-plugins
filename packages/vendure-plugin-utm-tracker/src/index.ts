@@ -5,4 +5,4 @@ export * from './services/utm-tracker.service';
 export * from './config/first-click-attribution';
 export * from './config/last-click-attribution';
 export * from './config/linear-attribution';
-export * from './config/time-decay-attribution';
+export * from './config/u-shaped-attribution';

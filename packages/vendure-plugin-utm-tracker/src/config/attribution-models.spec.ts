@@ -3,7 +3,7 @@ import { UtmOrderParameter } from '../entities/utm-order-parameter.entity';
 import { FirstClickAttribution } from './first-click-attribution';
 import { LastClickAttribution } from './last-click-attribution';
 import { LinearAttribution } from './linear-attribution';
-import { TimeDecayAttribution } from './time-decay-attribution';
+import { UShapedAttribution } from './u-shaped-attribution';
 
 describe('Attribution Models', () => {
   const createMockUtmParameter = (
@@ -24,9 +24,9 @@ describe('Attribution Models', () => {
     it('Gives 100% attribution to the first (oldest) parameter', () => {
       const firstClickAttribution = new FirstClickAttribution();
       const utmParams = [
-        createMockUtmParameter(1, new Date('2024-01-01')), // oldest - should get 100%
-        createMockUtmParameter(2, new Date('2024-01-02')),
         createMockUtmParameter(3, new Date('2024-01-03')), // newest
+        createMockUtmParameter(2, new Date('2024-01-02')),
+        createMockUtmParameter(1, new Date('2024-01-01')), // oldest - should get 100%
       ];
       const result = firstClickAttribution.calculateAttribution(utmParams);
       expect(result[0].utmParameterId).toEqual(1);
@@ -38,9 +38,9 @@ describe('Attribution Models', () => {
     it('Gives 100% attribution to the last (newest) parameter', () => {
       const lastClickAttribution = new LastClickAttribution();
       const utmParams = [
-        createMockUtmParameter(1, new Date('2024-01-01')), // oldest
-        createMockUtmParameter(2, new Date('2024-01-02')),
         createMockUtmParameter(3, new Date('2024-01-03')), // newest - should get 100%
+        createMockUtmParameter(2, new Date('2024-01-02')),
+        createMockUtmParameter(1, new Date('2024-01-01')), // oldest
       ];
       const result = lastClickAttribution.calculateAttribution(utmParams);
       expect(result[0].utmParameterId).toEqual(3);
@@ -73,24 +73,70 @@ describe('Attribution Models', () => {
     });
   });
 
-  describe('TimeDecayAttribution', () => {
-    it('Gives higher attribution to more recent parameters and sums to ~1', () => {
-      const model = new TimeDecayAttribution();
+  describe('UShapedAttribution', () => {
+    it('Gives 40% to first and last click, middle parameters share remaining 20%, and sums to 1', () => {
+      const model = new UShapedAttribution();
       const now = new Date();
-      const tenDaysAgo = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+      const oneDayAgo = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+      const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+      const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      // Parameters are sorted newest first (descending by connectedAt)
       const utmParams = [
-        createMockUtmParameter(1, tenDaysAgo), // older
-        createMockUtmParameter(2, now), // newer
+        createMockUtmParameter(4, now), // newest (first click) - 40%
+        createMockUtmParameter(3, oneDayAgo), // second (middle) - 10%
+        createMockUtmParameter(2, twoDaysAgo), // third (middle) - 10%
+        createMockUtmParameter(1, threeDaysAgo), // oldest (last click) - 40%
+      ];
+      const result = model.calculateAttribution(utmParams);
+      expect(result).toHaveLength(4);
+
+      const newest =
+        result.find((r) => r.utmParameterId === 4)?.attributionPercentage ?? 0;
+      const second =
+        result.find((r) => r.utmParameterId === 3)?.attributionPercentage ?? 0;
+      const third =
+        result.find((r) => r.utmParameterId === 2)?.attributionPercentage ?? 0;
+      const oldest =
+        result.find((r) => r.utmParameterId === 1)?.attributionPercentage ?? 0;
+
+      expect(newest).toBe(0.4); // 40% - first click
+      expect(second).toBe(0.1); // 10% - middle (20% / 2)
+      expect(third).toBe(0.1); // 10% - middle (20% / 2)
+      expect(oldest).toBe(0.4); // 40% - last click
+
+      const sum = result.reduce((s, r) => s + r.attributionPercentage, 0);
+      expect(sum).toBe(1);
+    });
+
+    it('Gives 50% to each when only 2 parameters', () => {
+      const model = new UShapedAttribution();
+      const now = new Date();
+      const oneDayAgo = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+      // Newest first
+      const utmParams = [
+        createMockUtmParameter(2, now),
+        createMockUtmParameter(1, oneDayAgo),
       ];
       const result = model.calculateAttribution(utmParams);
       expect(result).toHaveLength(2);
+      expect(
+        result.find((r) => r.utmParameterId === 2)?.attributionPercentage
+      ).toBe(0.5);
+      expect(
+        result.find((r) => r.utmParameterId === 1)?.attributionPercentage
+      ).toBe(0.5);
       const sum = result.reduce((s, r) => s + r.attributionPercentage, 0);
-      expect(sum).toBeCloseTo(1, 4);
-      const newer =
-        result.find((r) => r.utmParameterId === 2)?.attributionPercentage ?? 0;
-      const older =
-        result.find((r) => r.utmParameterId === 1)?.attributionPercentage ?? 0;
-      expect(newer).toBeGreaterThan(older);
+      expect(sum).toBe(1);
+    });
+
+    it('Gives 100% to the only parameter when only 1 is given', () => {
+      const model = new UShapedAttribution();
+      const now = new Date();
+      const utmParams = [createMockUtmParameter(1, now)];
+      const result = model.calculateAttribution(utmParams);
+      expect(result).toHaveLength(1);
+      expect(result[0].utmParameterId).toBe(1);
+      expect(result[0].attributionPercentage).toBe(1);
     });
   });
 });

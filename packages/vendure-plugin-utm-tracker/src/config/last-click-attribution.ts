@@ -10,7 +10,7 @@ export class LastClickAttribution implements AttributionModel {
       return [];
     }
     // Last click attribution gives 100% to the most recent parameter
-    const mostRecent = utmParameters[utmParameters.length - 1];
+    const mostRecent = utmParameters[0];
     return [
       {
         utmParameterId: mostRecent.id,
