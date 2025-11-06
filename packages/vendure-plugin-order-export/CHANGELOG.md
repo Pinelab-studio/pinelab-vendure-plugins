@@ -1,3 +1,7 @@
+# 1.5.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 1.5.0 (2025-08-08)
 
 - Passing `Injector` to export strategy

@@ -1,3 +1,7 @@
+# 2.1.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 2.1.0 (2025-07-15)
 
 - Allow generating presets only for assets that don't have presets yet

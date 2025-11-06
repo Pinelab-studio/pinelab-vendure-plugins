@@ -1,3 +1,7 @@
+# 0.3.2 (2025-11-06)
+
+- Updated official documentation URL
+
 # 0.3.1 (2025-06-26)
 
 - Removed logging of index size, as it can cause `max call stack exceeded` errors

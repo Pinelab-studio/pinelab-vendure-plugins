@@ -1,3 +1,7 @@
+# 3.6.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 3.6.0 (2025-09-23)
 
 - Allow disabling sending receipt emails to the customer via the Accept Blue platform.

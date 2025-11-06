@@ -1,3 +1,7 @@
+# 1.9.2 (2025-11-06)
+
+- Updated official documentation URL
+
 # 1.9.1 (2025-06-27)
 
 - Don't throw error for products without a price when generating the product feed

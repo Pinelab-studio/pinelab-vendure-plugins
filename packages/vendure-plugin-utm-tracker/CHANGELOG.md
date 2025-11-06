@@ -1,3 +1,7 @@
+# 1.2.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 1.2.0 (2025-10-30)
 
 - Added UI to view UTM parameters on the order detail page.

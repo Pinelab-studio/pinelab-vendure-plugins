@@ -1,3 +1,7 @@
+# 1.4.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 1.4.0 (2025-06-04)
 
 - Upgraded to Vendure 3.3.2

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-public-customer-groups",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "Determines if a customer group is publicly visible",
   "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://plugins.pinelab.studio/",

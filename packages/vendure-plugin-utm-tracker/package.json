@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-utm-tracker",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Connect UTM parameters directly to your orders, to prevent double-attribution caused by silo'ed marketing platforms",
   "keywords": [
     "vendure",

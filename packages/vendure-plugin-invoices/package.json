@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/pinelab-invoice-plugin",
-  "version": "4.4.2",
+  "version": "4.4.3",
   "description": "Vendure plugin for PDF invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",

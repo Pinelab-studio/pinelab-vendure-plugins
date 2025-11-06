@@ -1,3 +1,7 @@
+# 1.2.2 (2025-11-06)
+
+- Updated official documentation URL
+
 # 1.2.1 (2025-09-15)
 
 - Removed license check completely, also removed the dependency on @vendure-hub/vendure-hub-plugin

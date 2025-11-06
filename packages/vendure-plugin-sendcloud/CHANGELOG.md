@@ -1,3 +1,7 @@
+# 1.5.2 (2025-11-06)
+
+- Updated official documentation URL
+
 # 1.5.1 (2025-09-15)
 
 - Log existing fulfillments when items are already fulfilled

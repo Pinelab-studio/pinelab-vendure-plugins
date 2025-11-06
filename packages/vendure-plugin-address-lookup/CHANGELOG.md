@@ -1,3 +1,7 @@
+# 1.2.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 1.2.0 (2025-06-11)
 
 - Added Google Places API strategy for global address lookup

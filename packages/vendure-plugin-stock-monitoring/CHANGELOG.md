@@ -1,3 +1,7 @@
+# 2.0.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 2.0.0 (2025-10-17)
 
 - Added support for per variant thresholds

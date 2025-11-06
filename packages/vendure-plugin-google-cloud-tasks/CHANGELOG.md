@@ -1,3 +1,7 @@
+# 2.0.2 (2025-11-06)
+
+- Updated official documentation URL
+
 # 2.0.1 (2025-08-14)
 
 - IMPORTANT: Better truncate of job.data, and retry saving without data if it fails. V2.0.0 crashes the Vendure server when job.data is too large.

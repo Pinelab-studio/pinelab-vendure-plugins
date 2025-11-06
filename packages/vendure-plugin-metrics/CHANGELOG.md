@@ -1,3 +1,7 @@
+# 3.0.1 (2025-11-06)
+
+- Updated official documentation URL
+
 # 3.0.0 (2025-09-15)
 
 - Abandoned server side tracking. Use dedicated analytics tool instead. This plugin focusses on measuring existing data in Vendure.

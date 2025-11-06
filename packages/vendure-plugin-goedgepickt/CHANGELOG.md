@@ -1,3 +1,7 @@
+# 2.1.3 (2025-11-06)
+
+- Updated official documentation URL
+
 # 2.1.2 (2025-10-17)
 
 - Allow empty UUID and ApiKey in Goedgepickt config on Channel.

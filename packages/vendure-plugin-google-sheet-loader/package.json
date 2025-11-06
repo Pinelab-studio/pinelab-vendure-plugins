@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-google-sheet-loader",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vendure plugin for loading data from a Google Sheet",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
