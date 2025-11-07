@@ -42,7 +42,13 @@ import { QlsPlugin } from '../src';
       shopApiPlayground: {},
     },
     plugins: [
-      QlsPlugin.init({}),
+      QlsPlugin.init({
+        getConfig: () => ({
+          username: process.env.QLS_USERNAME!,
+          password: process.env.QLS_PASSWORD!,
+          companyId: process.env.QLS_COMPANY_ID!,
+        }),
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,

@@ -24,13 +24,10 @@ import { adminApiExtensions } from './api/api-extensions';
   },
 })
 export class QlsPlugin {
-  static options: QlsPluginOptions = {};
+  static options: QlsPluginOptions;
 
   static init(options: QlsPluginOptions): Type<QlsPlugin> {
-    this.options = {
-      ...this.options,
-      ...options,
-    };
+    this.options = options;
     return QlsPlugin;
   }
 }
