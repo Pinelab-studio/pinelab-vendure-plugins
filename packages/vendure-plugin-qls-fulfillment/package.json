@@ -1,0 +1,35 @@
+{
+  "name": "@pinelab/vendure-plugin-qls-fulfillment",
+  "version": "1.0.0",
+  "description": "Vendure plugin to fulfill orders via QLS.",
+  "keywords": [
+    "fulfillment",
+    "fulfillment center",
+    "qls"
+  ],
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://plugins.pinelab.studio/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && yarn generate && tsc",
+    "start": "nodemon --exec ts-node --swc --transpile-only test/dev-server.ts",
+    "generate": "graphql-codegen",
+    "test": "vitest run --bail 1",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "catch-unknown": "^2.0.0"
+  }
+}
