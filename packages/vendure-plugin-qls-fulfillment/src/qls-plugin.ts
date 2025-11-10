@@ -10,6 +10,7 @@ import { adminApiExtensions } from './api/api-extensions';
 import { QlsAdminResolver } from './api/qls-admin.resolver';
 import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
+import { customProductVariantFields } from './custom-fields';
 import { QlsService } from './services/qls.service';
 import { QlsPluginOptions } from './types';
 
@@ -24,17 +25,7 @@ import { QlsPluginOptions } from './types';
   ],
   controllers: [QlsWebhooksController],
   configuration: (config) => {
-    // config.customFields.ProductVariant.push({
-    //   name: 'qlsFulfillmentProductId',
-    //   label: [
-    //     {
-    //       languageCode: LanguageCode.en,
-    //       value: 'QLS Fulfillment Product ID',
-    //     },
-    //   ],
-    //   type: 'string',
-    //   internal: true,
-    // });
+    config.customFields.ProductVariant.push(...customProductVariantFields);
     return config;
   },
   compatibility: '>=3.2.0',

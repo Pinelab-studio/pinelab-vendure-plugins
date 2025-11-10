@@ -12,8 +12,8 @@ import {
   Logger,
   ProductVariant,
   RequestContext,
-  TransactionalConnection,
   StockLevelService,
+  TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { In } from 'typeorm';
@@ -24,7 +24,6 @@ import {
   QlsFulfillmentProduct,
   QlsJobData,
   QlsPluginOptions,
-  QlsWebhookEvent,
 } from '../types';
 import { QlsClient } from './qls-client';
 

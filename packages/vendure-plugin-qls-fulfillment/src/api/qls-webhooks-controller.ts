@@ -1,15 +1,7 @@
-import {
-  Controller,
-  Headers,
-  Param,
-  Post,
-  Req,
-  Response,
-} from '@nestjs/common';
+import { Controller, Param, Post, Req } from '@nestjs/common';
 import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Request } from 'express';
-import { loggerCtx } from '../constants';
 import { QlsService } from '../services/qls.service';
 import { QlsFulfillmentProduct } from '../types';
 
