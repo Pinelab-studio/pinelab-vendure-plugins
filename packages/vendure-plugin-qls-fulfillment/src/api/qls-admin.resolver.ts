@@ -1,14 +1,8 @@
 import { Mutation, Resolver } from '@nestjs/graphql';
-import {
-  Allow,
-  Ctx,
-  Permission,
-  RequestContext,
-  Transaction,
-  Logger,
-} from '@vendure/core';
-import { QlsService } from '../services/qls.service';
+import { Allow, Ctx, Logger, RequestContext, Transaction } from '@vendure/core';
 import { loggerCtx } from '../constants';
+import { QlsService } from '../services/qls.service';
+import { fullSyncPermission } from './permissions';
 
 @Resolver()
 export class QlsAdminResolver {
@@ -16,7 +10,7 @@ export class QlsAdminResolver {
 
   @Mutation()
   @Transaction()
-  @Allow(Permission.SuperAdmin) // TODO setup permission
+  @Allow(fullSyncPermission.Permission)
   async triggerQlsProductSync(@Ctx() ctx: RequestContext) {
     try {
       await this.qlsService.triggerSyncProducts(ctx);

@@ -29,6 +29,7 @@ import { QlsPlugin } from '../src';
   const config: Required<VendureConfig> = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     dbConnectionOptions: {
+      synchronize: true,
       // autoSave: true, // Uncomment this line to persist the database between restarts
     },
     authOptions: {

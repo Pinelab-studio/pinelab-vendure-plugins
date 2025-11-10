@@ -7,6 +7,7 @@ import {
   VendurePlugin,
 } from '@vendure/core';
 import { adminApiExtensions } from './api/api-extensions';
+import { fullSyncPermission } from './api/permissions';
 import { QlsAdminResolver } from './api/qls-admin.resolver';
 import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
@@ -26,6 +27,7 @@ import { QlsPluginOptions } from './types';
   controllers: [QlsWebhooksController],
   configuration: (config) => {
     config.customFields.ProductVariant.push(...customProductVariantFields);
+    config.authOptions.customPermissions.push(fullSyncPermission);
     return config;
   },
   compatibility: '>=3.2.0',

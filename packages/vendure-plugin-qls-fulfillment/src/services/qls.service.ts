@@ -25,7 +25,7 @@ import {
   QlsJobData,
   QlsPluginOptions,
 } from '../types';
-import { QlsClient } from './qls-client';
+import { QlsClient } from '../lib/qls-client';
 
 function wait(delay: number) {
   return new Promise((resolve) => {
@@ -156,12 +156,13 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
           take: batchSize,
         });
         for (const productVariant of productVariants) {
-          await client.createFulfillmentProduct({
+          const response = await client.createFulfillmentProduct({
             name: productVariant.name, // FIXME name is not resolved for languageCode
             ...this.mapProductVariantToFulfillmentProductAttributes(
               productVariant
             ),
           });
+          await this.saveQlsProductId(productVariant, response.id);
           await wait(100);
           processedCount += 1;
         }
