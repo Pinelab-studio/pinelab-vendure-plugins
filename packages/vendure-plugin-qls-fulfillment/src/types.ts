@@ -118,3 +118,52 @@ export type QlsUpdateFulfillmentProductRequest =
 
 export type QLSUpdateFulfillmentProductResponse =
   QlsCreateFulfillmentProductResponse;
+
+export type QlsWarehouseZone = {
+  id: number;
+  name: string;
+  pickable: boolean;
+  warehouse: {
+    id: number;
+    name: string;
+    is_fulfillment: boolean;
+    cutoff: string;
+  };
+};
+
+export type QlsProductBatch = {
+  id: number;
+  code: string;
+  status: string;
+  best_before: string;
+};
+
+export type QlsWarehouseStock = {
+  id: string;
+  zone_id: number;
+  row_number: string;
+  rack_number: string;
+  shelf_number: string;
+  number: string;
+  amount_current: number;
+  amount_reserved: number;
+  best_before: string;
+  best_before_cutoff: string;
+  warehouse_zone: QlsWarehouseZone;
+  product_batch: QlsProductBatch[];
+};
+
+export type QlsFulfillmentProduct = {
+  article_number: string;
+  id: string;
+  name: string;
+  ean: string;
+  sku: string;
+  amount_total: number;
+  amount_reserved: number;
+  amount_blocked: number;
+  price_cost: number;
+  price_store: number;
+  order_unit: null;
+  warehouse_stocks: QlsWarehouseStock[];
+};

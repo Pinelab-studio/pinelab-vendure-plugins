@@ -13,6 +13,7 @@ import {
   ProductVariant,
   RequestContext,
   TransactionalConnection,
+  StockLevelService,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { In } from 'typeorm';
@@ -20,8 +21,10 @@ import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
   QlsFulfilllmentProductSyncedAttributes,
+  QlsFulfillmentProduct,
   QlsJobData,
   QlsPluginOptions,
+  QlsWebhookEvent,
 } from '../types';
 import { QlsClient } from './qls-client';
 
@@ -40,7 +43,8 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
   constructor(
     private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private options: QlsPluginOptions,
-    private jobQueueService: JobQueueService
+    private jobQueueService: JobQueueService,
+    private stockLevelService: StockLevelService
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
@@ -350,7 +354,41 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
     });
   }
 
-  async getClient(ctx: RequestContext): Promise<QlsClient> {
+  async updateStock(
+    ctx: RequestContext,
+    fulfillmentProduct: QlsFulfillmentProduct
+  ) {
+    Logger.debug(`update stock for QLS product "${fulfillmentProduct.id}"`);
+    const productVariantRepository = this.connection.getRepository(
+      ctx,
+      ProductVariant
+    );
+
+    const productVariant = await productVariantRepository.findOne({
+      where: {
+        sku: fulfillmentProduct.sku,
+      },
+    });
+
+    if (!productVariant) {
+      Logger.error(
+        `Tried to update stock for a product variant with sku "${fulfillmentProduct.sku}" which doesn't exist`,
+        loggerCtx
+      );
+    }
+
+    for (const warehouseStock of fulfillmentProduct.warehouse_stocks) {
+      const stockLocationId = warehouseStock.id; // TODO
+      await this.stockLevelService.updateStockOnHandForLocation(
+        ctx,
+        productVariant!.id,
+        stockLocationId,
+        warehouseStock.amount_current || 0
+      );
+    }
+  }
+
+  private async getClient(ctx: RequestContext): Promise<QlsClient> {
     const config = await this.options.getConfig(ctx);
     if (!config) {
       throw new Error('QLS Client config is missing');

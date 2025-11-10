@@ -8,6 +8,7 @@ import {
 } from '@vendure/core';
 import { adminApiExtensions } from './api/api-extensions';
 import { QlsAdminResolver } from './api/qls-admin.resolver';
+import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { QlsService } from './services/qls.service';
 import { QlsPluginOptions } from './types';
@@ -21,6 +22,7 @@ import { QlsPluginOptions } from './types';
     },
     QlsService,
   ],
+  controllers: [QlsWebhooksController],
   configuration: (config) => {
     // config.customFields.ProductVariant.push({
     //   name: 'qlsFulfillmentProductId',
