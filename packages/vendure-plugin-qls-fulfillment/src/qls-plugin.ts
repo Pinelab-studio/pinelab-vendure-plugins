@@ -1,9 +1,16 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS } from './constants';
-import { QlsPluginOptions } from './types';
-import { QlsService } from './services/qls.service';
-import { QlsAdminResolver } from './api/qls-admin.resolver';
+import { OnModuleInit } from '@nestjs/common';
+import {
+  EventBus,
+  PluginCommonModule,
+  ProductVariantEvent,
+  Type,
+  VendurePlugin,
+} from '@vendure/core';
 import { adminApiExtensions } from './api/api-extensions';
+import { QlsAdminResolver } from './api/qls-admin.resolver';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { QlsService } from './services/qls.service';
+import { QlsPluginOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -15,6 +22,17 @@ import { adminApiExtensions } from './api/api-extensions';
     QlsService,
   ],
   configuration: (config) => {
+    // config.customFields.ProductVariant.push({
+    //   name: 'qlsFulfillmentProductId',
+    //   label: [
+    //     {
+    //       languageCode: LanguageCode.en,
+    //       value: 'QLS Fulfillment Product ID',
+    //     },
+    //   ],
+    //   type: 'string',
+    //   internal: true,
+    // });
     return config;
   },
   compatibility: '>=3.2.0',
@@ -23,11 +41,32 @@ import { adminApiExtensions } from './api/api-extensions';
     resolvers: [QlsAdminResolver],
   },
 })
-export class QlsPlugin {
+export class QlsPlugin implements OnModuleInit {
   static options: QlsPluginOptions;
+
+  constructor(private eventBus: EventBus, private qlsService: QlsService) {}
 
   static init(options: QlsPluginOptions): Type<QlsPlugin> {
     this.options = options;
     return QlsPlugin;
+  }
+
+  onModuleInit() {
+    this.eventBus.ofType(ProductVariantEvent).subscribe((event) => {
+      switch (event.type) {
+        case 'created':
+          void this.qlsService.triggerCreateFulfillmentProducts(
+            event.ctx,
+            event.entity.map((variant) => variant.id)
+          );
+          break;
+        case 'updated':
+          void this.qlsService.triggerUpdateFulfillmentProducts(
+            event.ctx,
+            event.entity.map((variant) => variant.id)
+          );
+          break;
+      }
+    });
   }
 }

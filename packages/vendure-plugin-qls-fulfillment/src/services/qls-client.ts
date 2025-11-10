@@ -1,12 +1,22 @@
 import { Logger } from '@vendure/core';
-import { QlsApiResponse, QlsClientConfig } from '../types';
 import { loggerCtx } from '../constants';
-
+import type {
+  QlsCreateFulfillmentProductRequest,
+  QlsCreateFulfillmentProductResponse,
+  QlsApiResponse,
+  QlsClientConfig,
+  QlsUpdateFulfillmentProductRequest,
+  QLSUpdateFulfillmentProductResponse,
+} from '../types';
 /**
  * Wrapper around the QLS Rest API.
  */
 export class QlsClient {
-  constructor(private readonly config: QlsClientConfig) {}
+  private baseUrl: string;
+
+  constructor(private readonly config: QlsClientConfig) {
+    this.baseUrl = config.url || 'https://api.pakketdienstqls.nl';
+  }
 
   /**
    * Find a product by SKU.
@@ -30,6 +40,32 @@ export class QlsClient {
     return result.data[0];
   }
 
+  async createFulfillmentProduct(
+    data: QlsCreateFulfillmentProductRequest
+  ): Promise<QlsCreateFulfillmentProductResponse> {
+    // TODO handle errors
+    const response = await this.rawRequest<QlsCreateFulfillmentProductResponse>(
+      'POST',
+      'fulfillment/products',
+      data
+    );
+
+    return response.data;
+  }
+
+  async updateFulfillmentProduct(
+    data: QlsUpdateFulfillmentProductRequest
+  ): Promise<QLSUpdateFulfillmentProductResponse> {
+    // TODO handle errors
+    const response = await this.rawRequest<QLSUpdateFulfillmentProductResponse>(
+      'POST',
+      'fulfillment/products',
+      data
+    );
+
+    return response.data;
+  }
+
   async rawRequest<T>(
     method: 'POST' | 'GET' | 'PUT' | 'DELETE',
     action: string,
@@ -44,14 +80,21 @@ export class QlsClient {
       'Content-Type': 'application/json',
     };
     const body = data ? JSON.stringify(data) : undefined;
-    const response = await fetch(
-      `https://api.pakketdienstqls.nl/companies/${this.config.companyId}/${action}`,
-      {
-        method,
-        headers,
-        body,
-      }
-    );
+    const url = `${this.baseUrl}/companies/${this.config.companyId}/${action}`;
+
+    if (this.config.mock) {
+      Logger.debug(`Mock QLS API request: ${url}, ${body}`, loggerCtx);
+      return {
+        data: {} as T,
+        meta: { code: -1 },
+      };
+    }
+
+    const response = await fetch(url, {
+      method,
+      headers,
+      body,
+    });
 
     if (!response.ok) {
       const errorText = await response.text();

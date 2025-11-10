@@ -9,7 +9,11 @@ export interface QlsPluginOptions {
   ) => QlsClientConfig | undefined | Promise<QlsClientConfig | undefined>;
 }
 
-export type QlsJobData = PushOrderJobData | PushProductsJobData;
+export type QlsJobData =
+  | PushOrderJobData
+  | FullProductsSyncJobData
+  | CreateProductsJobData
+  | UpdateProductsJobData;
 
 /**
  * Job data required for pushing an order to QLS
@@ -21,18 +25,43 @@ export interface PushOrderJobData {
 }
 
 /**
- * Job data required for pushing products to QLS
+ * Job data required for pushing products to QLS (full sync)
  */
-export interface PushProductsJobData {
-  action: 'push-products';
+export interface FullProductsSyncJobData {
+  action: 'sync-products';
   ctx: SerializedRequestContext;
-  variantIds: ID[]; // FIXME: probably a batch of id's?
+}
+
+/**
+ * Job data required for creating fulfillment products in QLS (no full sync)
+ */
+export interface CreateProductsJobData {
+  action: 'create-products';
+  ctx: SerializedRequestContext;
+  productVariantIds: ID[];
+}
+
+/**
+ * Job data required for deleting fulfillment products in QLS
+ */
+export interface UpdateProductsJobData {
+  action: 'update-products';
+  ctx: SerializedRequestContext;
+  productVariantIds: ID[];
 }
 
 export interface QlsClientConfig {
   username: string;
   password: string;
   companyId: string;
+  /**
+   * if set to `true` the actual API calls will not be made but instead logged
+   */
+  mock?: boolean;
+  /**
+   * defaults to 'https://api.pakketdienstqls.nl'
+   */
+  url?: string;
 }
 
 export interface QlsApiResponse<T> {
@@ -49,3 +78,43 @@ export interface QlsApiResponse<T> {
     prevPage: boolean;
   };
 }
+
+export type QlsFulfilllmentProductSyncedAttributes = {
+  ean?: string;
+  sku?: string;
+  image_url?: string;
+  shop_integration_id?: string;
+  shop_integration_reference?: string;
+  price_cost?: number;
+  price_store?: number;
+  order_unit?: number | null;
+};
+
+export type QlsCreateFulfillmentProductResponse = {
+  id: string;
+  company_id: string;
+  name: string;
+  description: string;
+  ean: string;
+  sku: string;
+  hs_code: string;
+  amount_available: number;
+  amount_total: number;
+  amount_reserverd: number;
+  image_url: number;
+  price_cost: number;
+  price_store: number;
+  order_unit: number;
+  created: string;
+  modified: string;
+};
+
+export type QlsCreateFulfillmentProductRequest = {
+  name: string;
+} & QlsFulfilllmentProductSyncedAttributes;
+
+export type QlsUpdateFulfillmentProductRequest =
+  QlsFulfilllmentProductSyncedAttributes;
+
+export type QLSUpdateFulfillmentProductResponse =
+  QlsCreateFulfillmentProductResponse;
