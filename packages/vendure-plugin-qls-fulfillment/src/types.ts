@@ -9,8 +9,7 @@ export interface QlsPluginOptions {
   ) => QlsClientConfig | undefined | Promise<QlsClientConfig | undefined>;
 }
 
-export type QlsJobData =
-  | PushOrderJobData
+export type QlsProductJobData =
   | FullProductsSyncJobData
   | CreateProductsJobData
   | UpdateProductsJobData;
@@ -18,7 +17,7 @@ export type QlsJobData =
 /**
  * Job data required for pushing an order to QLS
  */
-export interface PushOrderJobData {
+export interface QlsOrderJobData {
   action: 'push-order';
   ctx: SerializedRequestContext;
   orderId: ID;

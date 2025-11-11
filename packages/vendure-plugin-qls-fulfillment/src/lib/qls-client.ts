@@ -1,4 +1,4 @@
-import { Logger } from '@vendure/core';
+import { Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import type {
   QlsCreateFulfillmentProductRequest,
@@ -7,7 +7,20 @@ import type {
   QlsClientConfig,
   QlsUpdateFulfillmentProductRequest,
   QLSUpdateFulfillmentProductResponse,
+  QlsPluginOptions,
 } from '../types';
+
+export async function getQlsClient(
+  ctx: RequestContext,
+  pluginOptions: QlsPluginOptions
+): Promise<QlsClient | undefined> {
+  const config = await pluginOptions.getConfig(ctx);
+  if (!config) {
+    Logger.info(`QLS not enabled for channel ${ctx.channel.token}`, loggerCtx);
+    return undefined;
+  }
+  return new QlsClient(config);
+}
 
 /**
  * Wrapper around the QLS Rest API.

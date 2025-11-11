@@ -2,14 +2,14 @@ import { Controller, Param, Post, Req } from '@nestjs/common';
 import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Request } from 'express';
-import { QlsService } from '../services/qls.service';
+import { QlsProductService } from '../services/qls-product-service';
 import { QlsFulfillmentProduct } from '../types';
 
 @Controller('qls')
 export class QlsWebhooksController {
   constructor(
     private channelService: ChannelService,
-    private qlsService: QlsService
+    private qlsService: QlsProductService
   ) {}
 
   /**

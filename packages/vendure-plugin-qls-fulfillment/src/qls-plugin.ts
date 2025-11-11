@@ -12,8 +12,9 @@ import { QlsAdminResolver } from './api/qls-admin.resolver';
 import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { customProductVariantFields } from './custom-fields';
-import { QlsService } from './services/qls.service';
+import { QlsProductService } from './services/qls-product-service';
 import { QlsPluginOptions } from './types';
+import { QlsOrderService } from './services/qls-order.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -22,7 +23,8 @@ import { QlsPluginOptions } from './types';
       provide: PLUGIN_INIT_OPTIONS,
       useFactory: () => QlsPlugin.options,
     },
-    QlsService,
+    QlsProductService,
+    QlsOrderService,
   ],
   controllers: [QlsWebhooksController],
   configuration: (config) => {
@@ -39,7 +41,10 @@ import { QlsPluginOptions } from './types';
 export class QlsPlugin implements OnModuleInit {
   static options: QlsPluginOptions;
 
-  constructor(private eventBus: EventBus, private qlsService: QlsService) {}
+  constructor(
+    private eventBus: EventBus,
+    private qlsService: QlsProductService
+  ) {}
 
   static init(options: QlsPluginOptions): Type<QlsPlugin> {
     this.options = options;

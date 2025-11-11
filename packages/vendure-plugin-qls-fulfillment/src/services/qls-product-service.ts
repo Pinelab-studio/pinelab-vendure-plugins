@@ -19,13 +19,13 @@ import { asError } from 'catch-unknown';
 import { In } from 'typeorm';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { getQlsClient } from '../lib/qls-client';
 import {
   QlsFulfilllmentProductSyncedAttributes,
   QlsFulfillmentProduct,
-  QlsJobData,
   QlsPluginOptions,
+  QlsProductJobData,
 } from '../types';
-import { QlsClient } from '../lib/qls-client';
 
 function wait(delay: number) {
   return new Promise((resolve) => {
@@ -36,8 +36,8 @@ function wait(delay: number) {
 }
 
 @Injectable()
-export class QlsService implements OnModuleInit, OnApplicationBootstrap {
-  private qlsJobsQueue!: JobQueue<QlsJobData>;
+export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
+  private productJobQueue!: JobQueue<QlsProductJobData>;
 
   constructor(
     private connection: TransactionalConnection,
@@ -47,22 +47,14 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    // TODO listen for OrderPlacedEvent and add a job to the queue
     // TODO listen for ProductVariantEvent and add a job to the queue
-
-    // FIXME just testing
-    await this.qlsJobsQueue.add({
-      action: 'push-order',
-      ctx: {} as any,
-      orderId: '123',
-    });
   }
 
   public async onModuleInit(): Promise<void> {
-    this.qlsJobsQueue = await this.jobQueueService.createQueue({
-      name: 'qls-jobs',
+    this.productJobQueue = await this.jobQueueService.createQueue({
+      name: 'qls-product-jobs',
       process: (job) => {
-        return this.handleJob(job);
+        return this.handleProductJob(job);
       },
     });
   }
@@ -71,12 +63,10 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
    * Decide what kind of job it is and handle accordingly.
    * Returns the result of the job, which will be stored in the job record.
    */
-  async handleJob(job: Job<QlsJobData>): Promise<unknown> {
+  async handleProductJob(job: Job<QlsProductJobData>): Promise<unknown> {
     try {
       const ctx = RequestContext.deserialize(job.data.ctx);
-      if (job.data.action === 'push-order') {
-        return await this.pushOrder(ctx, job.data.orderId);
-      } else if (job.data.action === 'sync-products') {
+      if (job.data.action === 'sync-products') {
         return await this.syncFulfillmentProducts(ctx);
       } else if (job.data.action === 'create-products') {
         return await this.createFulfillmentProducts(
@@ -89,7 +79,9 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
           job.data.productVariantIds
         );
       }
-      throw new Error(`Unknown job action: ${(job.data as QlsJobData).action}`);
+      throw new Error(
+        `Unknown job action: ${(job.data as QlsProductJobData).action}`
+      );
     } catch (e) {
       const error = asError(e);
       const dataWithoutCtx = {
@@ -105,26 +97,6 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
     }
   }
 
-  async pushOrder(ctx: RequestContext, orderId: ID): Promise<string> {
-    // Check if all products are available in QLS
-    const client = await this.getClient(ctx);
-    if (!client) {
-      throw new Error('QLS client not found');
-    }
-    const product = await client.getProductBySku('123'); // fixme
-    console.log('QLS product=======', product);
-
-    // Log error and throw
-
-    // Create order in QLS
-
-    // If not, throw an error
-
-    const createdOrder = 1234; // FIXME
-
-    return `Created order ${createdOrder} in QLS`;
-  }
-
   /**
    * Create fulfillment products in QLS for all product variants (full push)
    */
@@ -135,7 +107,10 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
 
     let processedCount = 0;
     try {
-      const client = await this.getClient(ctx);
+      const client = await getQlsClient(ctx, this.options);
+      if (!client) {
+        throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+      }
 
       const productVariantRepository = this.connection.getRepository(
         ctx,
@@ -204,7 +179,10 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
     }[] = [];
 
     try {
-      const client = await this.getClient(ctx);
+      const client = await getQlsClient(ctx, this.options);
+      if (!client) {
+        throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+      }
 
       const productVariantRepository = this.connection.getRepository(
         ctx,
@@ -268,7 +246,10 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
     }[] = [];
 
     try {
-      const client = await this.getClient(ctx);
+      const client = await getQlsClient(ctx, this.options);
+      if (!client) {
+        throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+      }
 
       const productVariantRepository = this.connection.getRepository(
         ctx,
@@ -326,7 +307,7 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   async triggerSyncProducts(ctx: RequestContext) {
-    return this.qlsJobsQueue.add({
+    return this.productJobQueue.add({
       action: 'sync-products',
       ctx: ctx.serialize(),
     });
@@ -336,7 +317,7 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     productVariantIds: ID[]
   ) {
-    return this.qlsJobsQueue.add({
+    return this.productJobQueue.add({
       action: 'create-products',
       ctx: ctx.serialize(),
       productVariantIds,
@@ -347,7 +328,7 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     productVariantIds: ID[]
   ) {
-    return this.qlsJobsQueue.add({
+    return this.productJobQueue.add({
       action: 'update-products',
       ctx: ctx.serialize(),
       productVariantIds,
@@ -386,13 +367,5 @@ export class QlsService implements OnModuleInit, OnApplicationBootstrap {
         warehouseStock.amount_current || 0
       );
     }
-  }
-
-  private async getClient(ctx: RequestContext): Promise<QlsClient> {
-    const config = await this.options.getConfig(ctx);
-    if (!config) {
-      throw new Error('QLS Client config is missing');
-    }
-    return new QlsClient(config);
   }
 }
