@@ -13,7 +13,7 @@ export class QlsAdminResolver {
   @Allow(fullSyncPermission.Permission)
   async triggerQlsProductSync(@Ctx() ctx: RequestContext) {
     try {
-      await this.qlsService.triggerSyncProducts(ctx);
+      await this.qlsService.triggerFullSyncProducts(ctx);
       return true;
     } catch (error) {
       Logger.error(

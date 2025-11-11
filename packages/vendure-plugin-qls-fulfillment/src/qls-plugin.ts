@@ -12,9 +12,9 @@ import { QlsAdminResolver } from './api/qls-admin.resolver';
 import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { customProductVariantFields } from './custom-fields';
+import { QlsOrderService } from './services/qls-order.service';
 import { QlsProductService } from './services/qls-product-service';
 import { QlsPluginOptions } from './types';
-import { QlsOrderService } from './services/qls-order.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -55,13 +55,8 @@ export class QlsPlugin implements OnModuleInit {
     this.eventBus.ofType(ProductVariantEvent).subscribe((event) => {
       switch (event.type) {
         case 'created':
-          void this.qlsService.triggerCreateFulfillmentProducts(
-            event.ctx,
-            event.entity.map((variant) => variant.id)
-          );
-          break;
         case 'updated':
-          void this.qlsService.triggerUpdateFulfillmentProducts(
+          void this.qlsService.triggerSyncProducts(
             event.ctx,
             event.entity.map((variant) => variant.id)
           );

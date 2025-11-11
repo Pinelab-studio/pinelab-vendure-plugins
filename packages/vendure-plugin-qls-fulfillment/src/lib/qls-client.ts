@@ -1,13 +1,13 @@
 import { Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import type {
-  QlsCreateFulfillmentProductRequest,
-  QlsCreateFulfillmentProductResponse,
   QlsApiResponse,
   QlsClientConfig,
+  QlsCreateFulfillmentProductRequest,
+  QlsCreateFulfillmentProductResponse,
+  QlsPluginOptions,
   QlsUpdateFulfillmentProductRequest,
   QLSUpdateFulfillmentProductResponse,
-  QlsPluginOptions,
 } from '../types';
 
 export async function getQlsClient(
@@ -54,9 +54,7 @@ export class QlsClient {
     return result.data[0];
   }
 
-  async createFulfillmentProduct(
-    data: QlsCreateFulfillmentProductRequest
-  ): Promise<QlsCreateFulfillmentProductResponse> {
+  async createFulfillmentProduct(data: QlsCreateFulfillmentProductRequest) {
     // TODO handle errors
     const response = await this.rawRequest<QlsCreateFulfillmentProductResponse>(
       'POST',
@@ -68,12 +66,13 @@ export class QlsClient {
   }
 
   async updateFulfillmentProduct(
+    fulfillmentProductId: string,
     data: QlsUpdateFulfillmentProductRequest
-  ): Promise<QLSUpdateFulfillmentProductResponse> {
+  ) {
     // TODO handle errors
     const response = await this.rawRequest<QLSUpdateFulfillmentProductResponse>(
-      'POST',
-      'fulfillment/products',
+      'PUT',
+      `fulfillment/products/${fulfillmentProductId}`,
       data
     );
 

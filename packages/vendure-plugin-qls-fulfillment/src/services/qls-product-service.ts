@@ -35,6 +35,12 @@ function wait(delay: number) {
   });
 }
 
+type SyncProductsJobResult = {
+  updated: { productVariantId: ID; qlsFulfillmentProductId: string }[];
+  created: { productVariantId: ID; qlsFulfillmentProductId: string }[];
+};
+type FullSyncProductsJobResult = { count: number };
+
 @Injectable()
 export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   private productJobQueue!: JobQueue<QlsProductJobData>;
@@ -66,18 +72,10 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   async handleProductJob(job: Job<QlsProductJobData>): Promise<unknown> {
     try {
       const ctx = RequestContext.deserialize(job.data.ctx);
-      if (job.data.action === 'sync-products') {
-        return await this.syncFulfillmentProducts(ctx);
-      } else if (job.data.action === 'create-products') {
-        return await this.createFulfillmentProducts(
-          ctx,
-          job.data.productVariantIds
-        );
-      } else if (job.data.action === 'update-products') {
-        return await this.updateFulfillmentProducts(
-          ctx,
-          job.data.productVariantIds
-        );
+      if (job.data.action === 'full-sync-products') {
+        return await this.syncAllProducts(ctx);
+      } else if (job.data.action === 'sync-products') {
+        return await this.syncProducts(ctx, job.data.productVariantIds);
       }
       throw new Error(
         `Unknown job action: ${(job.data as QlsProductJobData).action}`
@@ -100,9 +98,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Create fulfillment products in QLS for all product variants (full push)
    */
-  async syncFulfillmentProducts(
+  async syncAllProducts(
     ctx: RequestContext
-  ): Promise<{ count: number }> {
+  ): Promise<FullSyncProductsJobResult> {
     Logger.debug('Full product sync to QLS');
 
     let processedCount = 0;
@@ -119,8 +117,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
 
       const productVariantsCount = await productVariantRepository.count();
 
-      const batchSize = 10; // TODO make batch size configurable
-      const batchDelay = 10000; // TODO make batch delay configurable
+      const batchSize = this.options.productSync?.batchSize || 10;
+      const batchDelay = this.options.productSync?.batchDelay || 10000;
 
       const batches = Math.ceil(productVariantsCount / batchSize);
 
@@ -131,13 +129,25 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           take: batchSize,
         });
         for (const productVariant of productVariants) {
-          const response = await client.createFulfillmentProduct({
-            name: productVariant.name, // FIXME name is not resolved for languageCode
-            ...this.mapProductVariantToFulfillmentProductAttributes(
+          const attributes =
+            this.mapProductVariantToFulfillmentProductAttributes(
               productVariant
-            ),
-          });
-          await this.saveQlsProductId(productVariant, response.id);
+            );
+          const fulfillmentProductId =
+            productVariant.customFields?.qlsFulfillmentProductId;
+          if (fulfillmentProductId) {
+            await client.updateFulfillmentProduct(
+              fulfillmentProductId,
+              attributes
+            );
+          } else {
+            const response = await client.createFulfillmentProduct({
+              name: productVariant.name, // FIXME name is not resolved for languageCode
+              ...attributes,
+            });
+            await this.saveQlsProductId(productVariant, response.id);
+          }
+
           await wait(100);
           processedCount += 1;
         }
@@ -165,85 +175,22 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Create fulfillment products in QLS
-   */
-  async createFulfillmentProducts(
-    ctx: RequestContext,
-    productVariantIds: ID[]
-  ): Promise<{ productVariantId: ID; qlsFulfillmentProductId: string }[]> {
-    Logger.debug('Full product sync to QLS');
-
-    const createdFullfillmentProducts: {
-      productVariantId: ID;
-      qlsFulfillmentProductId: string;
-    }[] = [];
-
-    try {
-      const client = await getQlsClient(ctx, this.options);
-      if (!client) {
-        throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
-      }
-
-      const productVariantRepository = this.connection.getRepository(
-        ctx,
-        ProductVariant
-      );
-
-      const productVariants = await productVariantRepository.find({
-        where: {
-          id: In(productVariantIds),
-        },
-      });
-
-      for (const productVariant of productVariants) {
-        const response = await client.createFulfillmentProduct({
-          name: productVariant.name, // FIXME name is not resolved for languageCode
-          ...this.mapProductVariantToFulfillmentProductAttributes(
-            productVariant
-          ),
-        });
-        await this.saveQlsProductId(productVariant, response.id);
-        await wait(100);
-        createdFullfillmentProducts.push({
-          productVariantId: productVariant.id,
-          qlsFulfillmentProductId: response.id,
-        });
-      }
-    } catch (error) {
-      Logger.error(
-        `Error while creating fulfillment products in QLS: ${
-          (error as Error).message
-        }`,
-        loggerCtx
-      );
-    }
-    return createdFullfillmentProducts;
-  }
-
-  /**
-   * // TODO Save the SQL product id for a product variant
+   * // TODO Save the QLS product id for a product variant
    */
   private async saveQlsProductId(productVariant: ProductVariant, id: string) {
     // productVariant.customFields?.qlsFulfillmentProductId = response.id;
     // await productVariantRepository.save(productVariant);
   }
 
-  async updateFulfillmentProducts(
+  /**
+   * Sync particular product variants to QLS
+   */
+  async syncProducts(
     ctx: RequestContext,
     productVariantIds: ID[]
-  ): Promise<{
-    updated: { productVariantId: ID; qlsFulfillmentProductId: string }[];
-    created: { productVariantId: ID; qlsFulfillmentProductId: string }[];
-  }> {
-    const updatedFullfillmentProducts: {
-      productVariantId: ID;
-      qlsFulfillmentProductId: string;
-    }[] = [];
-
-    const createdFullfillmentProducts: {
-      productVariantId: ID;
-      qlsFulfillmentProductId: string;
-    }[] = [];
+  ): Promise<SyncProductsJobResult> {
+    const updatedFullfillmentProducts: SyncProductsJobResult['updated'] = [];
+    const createdFullfillmentProducts: SyncProductsJobResult['created'] = [];
 
     try {
       const client = await getQlsClient(ctx, this.options);
@@ -263,13 +210,18 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       });
 
       for (const productVariant of productVariants) {
-        if (productVariant.customFields?.qlsFulfillmentProductId) {
-          const response = await client.updateFulfillmentProduct({
-            // name: productVariant.name, // TODO updating the name is not supported
-            ...this.mapProductVariantToFulfillmentProductAttributes(
-              productVariant
-            ),
-          });
+        const fulfillmentProductId =
+          productVariant.customFields?.qlsFulfillmentProductId;
+        if (fulfillmentProductId) {
+          const response = await client.updateFulfillmentProduct(
+            fulfillmentProductId,
+            {
+              // name: productVariant.name, // TODO updating the name seems to be not supported
+              ...this.mapProductVariantToFulfillmentProductAttributes(
+                productVariant
+              ),
+            }
+          );
           updatedFullfillmentProducts.push({
             productVariantId: productVariant.id,
             qlsFulfillmentProductId: response.id,
@@ -306,35 +258,30 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     };
   }
 
-  async triggerSyncProducts(ctx: RequestContext) {
+  /**
+   * Trigger a full product sync job
+   */
+  async triggerFullSyncProducts(ctx: RequestContext) {
+    return this.productJobQueue.add({
+      action: 'full-sync-products',
+      ctx: ctx.serialize(),
+    });
+  }
+
+  /**
+   * Trigger a product sync job for particular product variants
+   */
+  async triggerSyncProducts(ctx: RequestContext, productVariantIds: ID[]) {
     return this.productJobQueue.add({
       action: 'sync-products',
       ctx: ctx.serialize(),
-    });
-  }
-
-  async triggerCreateFulfillmentProducts(
-    ctx: RequestContext,
-    productVariantIds: ID[]
-  ) {
-    return this.productJobQueue.add({
-      action: 'create-products',
-      ctx: ctx.serialize(),
       productVariantIds,
     });
   }
 
-  async triggerUpdateFulfillmentProducts(
-    ctx: RequestContext,
-    productVariantIds: ID[]
-  ) {
-    return this.productJobQueue.add({
-      action: 'update-products',
-      ctx: ctx.serialize(),
-      productVariantIds,
-    });
-  }
-
+  /**
+   * Update stock level for a particular QLS Fulfillment Product (i.e. one product variant)
+   */
   async updateStock(
     ctx: RequestContext,
     fulfillmentProduct: QlsFulfillmentProduct

@@ -7,12 +7,17 @@ export interface QlsPluginOptions {
   getConfig: (
     ctx: RequestContext
   ) => QlsClientConfig | undefined | Promise<QlsClientConfig | undefined>;
+
+  /** Options to customize the product sync */
+  productSync?: {
+    /** How many product variants to sync in each batch, defaults to 10 */
+    batchSize?: number;
+    /** How to wait betweens batches in milliseconds, defaults to 10000 (10 seconds) */
+    batchDelay?: number;
+  };
 }
 
-export type QlsProductJobData =
-  | FullProductsSyncJobData
-  | CreateProductsJobData
-  | UpdateProductsJobData;
+export type QlsProductJobData = FullProductsSyncJobData | ProductsSyncJobData;
 
 /**
  * Job data required for pushing an order to QLS
@@ -27,24 +32,15 @@ export interface QlsOrderJobData {
  * Job data required for pushing products to QLS (full sync)
  */
 export interface FullProductsSyncJobData {
+  action: 'full-sync-products';
+  ctx: SerializedRequestContext;
+}
+
+/**
+ * Job data required for creating/updating fulfillment products in QLS (no full sync)
+ */
+export interface ProductsSyncJobData {
   action: 'sync-products';
-  ctx: SerializedRequestContext;
-}
-
-/**
- * Job data required for creating fulfillment products in QLS (no full sync)
- */
-export interface CreateProductsJobData {
-  action: 'create-products';
-  ctx: SerializedRequestContext;
-  productVariantIds: ID[];
-}
-
-/**
- * Job data required for deleting fulfillment products in QLS
- */
-export interface UpdateProductsJobData {
-  action: 'update-products';
   ctx: SerializedRequestContext;
   productVariantIds: ID[];
 }
