@@ -13,7 +13,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { QlsPlugin } from '../src';
+import { QlsPlugin, fullProductSyncTask } from '../src';
 
 /**
  * The dev-server is just for development. Feel free to break anything here.
@@ -58,6 +58,14 @@ import { QlsPlugin } from '../src';
         route: 'admin',
       }),
     ],
+    schedulerOptions: {
+      tasks: [
+        fullProductSyncTask.configure({
+          schedule: (cron) => cron.everyDayAt(3, 0),
+          params: {},
+        }),
+      ],
+    },
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);
   await server.init({

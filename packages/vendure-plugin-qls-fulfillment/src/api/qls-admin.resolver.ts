@@ -1,7 +1,7 @@
 import { Mutation, Resolver } from '@nestjs/graphql';
 import { Allow, Ctx, Logger, RequestContext, Transaction } from '@vendure/core';
 import { loggerCtx } from '../constants';
-import { QlsProductService } from '../services/qls-product-service';
+import { QlsProductService } from '../services/qls-product.service';
 import { fullSyncPermission } from './permissions';
 
 @Resolver()

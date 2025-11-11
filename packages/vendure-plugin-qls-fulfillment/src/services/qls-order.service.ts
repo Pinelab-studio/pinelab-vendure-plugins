@@ -18,7 +18,7 @@ import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { getQlsClient } from '../lib/qls-client';
 import { QlsOrderJobData, QlsPluginOptions } from '../types';
-import { QlsProductService } from './qls-product-service';
+import { QlsProductService } from './qls-product.service';
 
 @Injectable()
 export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {

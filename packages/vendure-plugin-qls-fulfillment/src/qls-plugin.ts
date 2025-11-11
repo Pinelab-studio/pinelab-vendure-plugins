@@ -13,7 +13,7 @@ import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { customProductVariantFields } from './custom-fields';
 import { QlsOrderService } from './services/qls-order.service';
-import { QlsProductService } from './services/qls-product-service';
+import { QlsProductService } from './services/qls-product.service';
 import { QlsPluginOptions } from './types';
 
 @VendurePlugin({
