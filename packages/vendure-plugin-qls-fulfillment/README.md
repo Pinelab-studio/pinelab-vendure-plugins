@@ -9,3 +9,12 @@ To create a new plugin inside this repo:
 ## Getting started
 
 // TODO
+
+## Stock management
+
+This plugin assumes one (default) stock location is used in Vendure, that means you should either:
+
+1. Remove all but one stock location in Vendure
+2. Or, remove all stock from other stock locations in Vendure
+
+Vendure assumes the first created stock location is the default stock location.

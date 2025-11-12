@@ -11,21 +11,20 @@ import {
   JobQueueService,
   Logger,
   ProductVariant,
+  ProductVariantService,
   RequestContext,
+  RequestContextService,
+  StockLevel,
   StockLevelService,
+  StockLocationService,
   TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import { In } from 'typeorm';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { getQlsClient } from '../lib/qls-client';
-import {
-  QlsFulfilllmentProductSyncedAttributes,
-  QlsFulfillmentProduct,
-  QlsPluginOptions,
-  QlsProductJobData,
-} from '../types';
+import { QlsPluginOptions, QlsProductJobData } from '../types';
+import { QlsFulfillmentStock } from '../lib/types';
 
 function wait(delay: number) {
   return new Promise((resolve) => {
@@ -36,10 +35,10 @@ function wait(delay: number) {
 }
 
 type SyncProductsJobResult = {
-  updated: { productVariantId: ID; qlsFulfillmentProductId: string }[];
-  created: { productVariantId: ID; qlsFulfillmentProductId: string }[];
+  updatedInQls: number;
+  createdInQls: number;
+  updateStock: number;
 };
-type FullSyncProductsJobResult = { count: number };
 
 @Injectable()
 export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
@@ -49,11 +48,20 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private options: QlsPluginOptions,
     private jobQueueService: JobQueueService,
-    private stockLevelService: StockLevelService
+    private stockLevelService: StockLevelService,
+    private readonly requestContextService: RequestContextService,
+    private readonly variantService: ProductVariantService,
+    private readonly stockLocationService: StockLocationService
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     // TODO listen for ProductVariantEvent and add a job to the queue
+
+    // FIXME
+    const ctx = await this.requestContextService.create({
+      apiType: 'admin',
+    });
+    await this.triggerFullSyncProducts(ctx);
   }
 
   public async onModuleInit(): Promise<void> {
@@ -97,10 +105,12 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
 
   /**
    * Create fulfillment products in QLS for all product variants (full push)
+   * 1. Fetches all products from QLS
+   * 2. Updates stock levels in Vendure based on the QLS products
+   * 3. Creates products in QLS if needed
+   * 4. Updates products in QLS if needed
    */
-  async syncAllProducts(
-    ctx: RequestContext
-  ): Promise<FullSyncProductsJobResult> {
+  async syncAllProducts(ctx: RequestContext): Promise<SyncProductsJobResult> {
     Logger.debug('Full product sync to QLS');
 
     let processedCount = 0;
@@ -110,76 +120,130 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
       }
 
-      const productVariantRepository = this.connection.getRepository(
-        ctx,
-        ProductVariant
-      );
+      const allQlsProducts = await client.getAllFulfillmentStocks();
+      const allVariants = await this.getAllVariants(ctx);
 
-      const productVariantsCount = await productVariantRepository.count();
-
-      const batchSize = this.options.productSync?.batchSize || 10;
-      const batchDelay = this.options.productSync?.batchDelay || 10000;
-
-      const batches = Math.ceil(productVariantsCount / batchSize);
-
-      for (let i = 1; i <= batches; i++) {
-        Logger.debug(`running batch ${i} of ${batches}`);
-        const productVariants = await productVariantRepository.find({
-          skip: (i - 1) * batchSize,
-          take: batchSize,
-        });
-        for (const productVariant of productVariants) {
-          const attributes =
-            this.mapProductVariantToFulfillmentProductAttributes(
-              productVariant
-            );
-          const fulfillmentProductId =
-            productVariant.customFields?.qlsFulfillmentProductId;
-          if (fulfillmentProductId) {
-            await client.updateFulfillmentProduct(
-              fulfillmentProductId,
-              attributes
-            );
-          } else {
-            const response = await client.createFulfillmentProduct({
-              name: productVariant.name, // FIXME name is not resolved for languageCode
-              ...attributes,
-            });
-            await this.saveQlsProductId(productVariant, response.id);
-          }
-
-          await wait(100);
-          processedCount += 1;
-        }
-        await wait(batchDelay);
-      }
-    } catch (error) {
-      Logger.error(
-        `Error while syncing fulfillment products to QLS: ${
-          (error as Error).message
-        }`,
+      Logger.info(
+        `Running full sync for ${allQlsProducts.length} QLS products and ${allVariants.length} Vendure variants`,
         loggerCtx
       );
-    }
-    return { count: processedCount };
-  }
 
-  private mapProductVariantToFulfillmentProductAttributes(
-    productVariant: ProductVariant
-  ): QlsFulfilllmentProductSyncedAttributes {
-    return {
-      sku: productVariant.sku,
-      image_url: productVariant.featuredAsset?.preview,
-      // TODO add more attributes?
-    };
+      // Update stock in Vendure based on QLS products
+      let updateStockCount = 0;
+      for (const variant of allVariants) {
+        const qlsProduct = allQlsProducts.find((p) => p.sku == variant.sku);
+        if (qlsProduct) {
+          await this.updateStock(ctx, variant.id, qlsProduct.amount_total);
+          updateStockCount += 1;
+        }
+      }
+      Logger.info(
+        `Updated stock for ${updateStockCount} variants based on QLS stock levels`,
+        loggerCtx
+      );
+      // Create products in QLS
+      let createdQlsProductsCount = 0;
+      for (const variant of allVariants) {
+        const existingQlsProduct = allQlsProducts.find(
+          (p) => p.sku == variant.sku
+        );
+        if (existingQlsProduct) {
+          continue; // Already exists in QLS
+        }
+        await client.createFulfillmentProduct({
+          name: variant.name,
+          sku: variant.sku,
+          ...this.options.getAdditionalVariantFields?.(ctx, variant),
+        });
+        createdQlsProductsCount += 1;
+      }
+      Logger.info(
+        `Created ${createdQlsProductsCount} products in QLS`,
+        loggerCtx
+      );
+      // Update products in QLS
+      let updatedQlsProductsCount = 0;
+      for (const variant of allVariants) {
+        const existingProduct = allQlsProducts.find(
+          (p) => p.sku == variant.sku
+        );
+        if (!this.shouldUpdateProductInQls(ctx, variant, existingProduct)) {
+          continue;
+        }
+        await client.updateFulfillmentProduct(existingProduct!.id, {
+          sku: variant.sku,
+          name: variant.name,
+          ...this.options.getAdditionalVariantFields?.(ctx, variant),
+        });
+        updatedQlsProductsCount += 1;
+      }
+      return {
+        updatedInQls: updatedQlsProductsCount,
+        createdInQls: createdQlsProductsCount,
+        updateStock: updateStockCount,
+      };
+    } catch (e) {
+      const error = asError(e);
+      Logger.error(
+        `Error running full sync: ${error.message}`,
+        loggerCtx,
+        error.stack
+      );
+      throw error;
+    }
   }
 
   /**
-   * // TODO Save the QLS product id for a product variant
+   * Determine if a product needs to be updated in QLS.
+   * Only returns true if the product needs to be updated, not created!
    */
-  private async saveQlsProductId(productVariant: ProductVariant, id: string) {
-    // productVariant.customFields?.qlsFulfillmentProductId = response.id;
-    // await productVariantRepository.save(productVariant);
+  private shouldUpdateProductInQls(
+    ctx: RequestContext,
+    variant: ProductVariant,
+    qlsProduct?: QlsFulfillmentStock
+  ): boolean {
+    if (!qlsProduct) {
+      // If no QLS product exists, return false, because it needs creation, not update
+      return true;
+    }
+    const additionalFields = this.options.getAdditionalVariantFields?.(
+      ctx,
+      variant
+    );
+    if (
+      qlsProduct.name !== variant.name ||
+      qlsProduct.ean !== additionalFields?.ean
+    ) {
+      // If name or ean has changed, product should be updated in QLS
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Get all variants for the current channel in batches
+   */
+  private async getAllVariants(ctx: RequestContext): Promise<ProductVariant[]> {
+    const allVariants: ProductVariant[] = [];
+    let skip = 0;
+    const take = 100;
+    let hasMore = true;
+    while (hasMore) {
+      const result = await this.variantService.findAll(ctx, {
+        filter: { deletedAt: { isNull: true } },
+        skip,
+        take,
+      });
+      if (!result.items.length) {
+        break;
+      }
+      allVariants.push(...result.items);
+      if (allVariants.length >= result.totalItems) {
+        hasMore = false;
+      }
+      skip += take;
+    }
+    return allVariants;
   }
 
   /**
@@ -189,72 +253,70 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     productVariantIds: ID[]
   ): Promise<SyncProductsJobResult> {
-    const updatedFullfillmentProducts: SyncProductsJobResult['updated'] = [];
-    const createdFullfillmentProducts: SyncProductsJobResult['created'] = [];
+    // try {
+    //   const client = await getQlsClient(ctx, this.options);
+    //   if (!client) {
+    //     throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+    //   }
 
-    try {
-      const client = await getQlsClient(ctx, this.options);
-      if (!client) {
-        throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
-      }
+    //   const productVariantRepository = this.connection.getRepository(
+    //     ctx,
+    //     ProductVariant
+    //   );
 
-      const productVariantRepository = this.connection.getRepository(
-        ctx,
-        ProductVariant
-      );
+    //   const productVariants = await productVariantRepository.find({
+    //     where: {
+    //       id: In(productVariantIds),
+    //     },
+    //   });
 
-      const productVariants = await productVariantRepository.find({
-        where: {
-          id: In(productVariantIds),
-        },
-      });
+    //   for (const productVariant of productVariants) {
+    //     const fulfillmentProductId =
+    //       productVariant.customFields?.qlsFulfillmentProductId;
+    //     if (fulfillmentProductId) {
+    //       const response = await client.updateFulfillmentProduct(
+    //         fulfillmentProductId,
+    //         {
+    //           // name: productVariant.name, // TODO updating the name seems to be not supported
+    //           ...this.mapProductVariantToFulfillmentProductAttributes(
+    //             productVariant
+    //           ),
+    //         }
+    //       );
+    //       updatedFullfillmentProducts.push({
+    //         productVariantId: productVariant.id,
+    //         qlsFulfillmentProductId: response.id,
+    //       });
+    //     } else {
+    //       // NOTE: This case should actually never happen, because fulfillment products are created on the fly when product variants are created.
+    //       const response = await client.createFulfillmentProduct({
+    //         name: productVariant.name, // FIXME name is not resolved for languageCode
+    //         ...this.mapProductVariantToFulfillmentProductAttributes(
+    //           productVariant
+    //         ),
+    //       });
+    //       await this.saveQlsProductId(productVariant, response.id);
+    //       createdFullfillmentProducts.push({
+    //         productVariantId: productVariant.id,
+    //         qlsFulfillmentProductId: response.id,
+    //       });
+    //     }
 
-      for (const productVariant of productVariants) {
-        const fulfillmentProductId =
-          productVariant.customFields?.qlsFulfillmentProductId;
-        if (fulfillmentProductId) {
-          const response = await client.updateFulfillmentProduct(
-            fulfillmentProductId,
-            {
-              // name: productVariant.name, // TODO updating the name seems to be not supported
-              ...this.mapProductVariantToFulfillmentProductAttributes(
-                productVariant
-              ),
-            }
-          );
-          updatedFullfillmentProducts.push({
-            productVariantId: productVariant.id,
-            qlsFulfillmentProductId: response.id,
-          });
-        } else {
-          // NOTE: This case should actually never happen, because fulfillment products are created on the fly when product variants are created.
-          const response = await client.createFulfillmentProduct({
-            name: productVariant.name, // FIXME name is not resolved for languageCode
-            ...this.mapProductVariantToFulfillmentProductAttributes(
-              productVariant
-            ),
-          });
-          await this.saveQlsProductId(productVariant, response.id);
-          createdFullfillmentProducts.push({
-            productVariantId: productVariant.id,
-            qlsFulfillmentProductId: response.id,
-          });
-        }
-
-        await wait(100);
-      }
-    } catch (error) {
-      Logger.error(
-        `Error while updating fulfillment products in QLS: ${
-          (error as Error).message
-        }`,
-        loggerCtx
-      );
-    }
+    //     await wait(100);
+    //   }
+    // } catch (error) {
+    //   Logger.error(
+    //     `Error while updating fulfillment products in QLS: ${
+    //       (error as Error).message
+    //     }`,
+    //     loggerCtx
+    //   );
+    // }
 
     return {
-      updated: updatedFullfillmentProducts,
-      created: createdFullfillmentProducts,
+      updatedInQls: 0,
+      createdInQls: 0,
+      updateStock: 0, // FIXME
     };
   }
 
@@ -262,57 +324,55 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
    * Trigger a full product sync job
    */
   async triggerFullSyncProducts(ctx: RequestContext) {
-    return this.productJobQueue.add({
-      action: 'full-sync-products',
-      ctx: ctx.serialize(),
-    });
+    return this.productJobQueue.add(
+      {
+        action: 'full-sync-products',
+        ctx: ctx.serialize(),
+      },
+      { retries: 5 }
+    );
   }
 
   /**
    * Trigger a product sync job for particular product variants
    */
   async triggerSyncProducts(ctx: RequestContext, productVariantIds: ID[]) {
-    return this.productJobQueue.add({
-      action: 'sync-products',
-      ctx: ctx.serialize(),
-      productVariantIds,
-    });
+    return this.productJobQueue.add(
+      {
+        action: 'sync-products',
+        ctx: ctx.serialize(),
+        productVariantIds,
+      },
+      { retries: 5 }
+    );
   }
 
   /**
-   * Update stock level for a particular QLS Fulfillment Product (i.e. one product variant)
+   * Update stock level for a variant based on the given available stock
    */
-  async updateStock(
+  private async updateStock(
     ctx: RequestContext,
-    fulfillmentProduct: QlsFulfillmentProduct
+    variantId: ID,
+    availableStock: number
   ) {
-    Logger.debug(`update stock for QLS product "${fulfillmentProduct.id}"`);
-    const productVariantRepository = this.connection.getRepository(
+    // Find default Stock Location
+    const defaultStockLocation =
+      await this.stockLocationService.defaultStockLocation(ctx);
+    // Get current stock level id
+    const { id: stockLevelId } = await this.stockLevelService.getStockLevel(
       ctx,
-      ProductVariant
+      variantId,
+      defaultStockLocation.id
     );
-
-    const productVariant = await productVariantRepository.findOne({
-      where: {
-        sku: fulfillmentProduct.sku,
-      },
+    // Update stock level
+    await this.connection.getRepository(ctx, StockLevel).save({
+      id: stockLevelId,
+      stockOnHand: availableStock,
+      stockAllocated: 0, // Reset allocations, because allocation is handled by QLS
     });
-
-    if (!productVariant) {
-      Logger.error(
-        `Tried to update stock for a product variant with sku "${fulfillmentProduct.sku}" which doesn't exist`,
-        loggerCtx
-      );
-    }
-
-    for (const warehouseStock of fulfillmentProduct.warehouse_stocks) {
-      const stockLocationId = warehouseStock.id; // TODO
-      await this.stockLevelService.updateStockOnHandForLocation(
-        ctx,
-        productVariant!.id,
-        stockLocationId,
-        warehouseStock.amount_current || 0
-      );
-    }
+    Logger.info(
+      `Updated stock for variant ${variantId} to ${availableStock}`,
+      loggerCtx
+    );
   }
 }

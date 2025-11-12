@@ -1,4 +1,9 @@
-import { ID, RequestContext, SerializedRequestContext } from '@vendure/core';
+import {
+  ID,
+  ProductVariant,
+  RequestContext,
+  SerializedRequestContext,
+} from '@vendure/core';
 
 export interface QlsPluginOptions {
   /**
@@ -7,17 +12,14 @@ export interface QlsPluginOptions {
   getConfig: (
     ctx: RequestContext
   ) => QlsClientConfig | undefined | Promise<QlsClientConfig | undefined>;
-
-  /** Options to customize the product sync */
-  productSync?: {
-    /** How many product variants to sync in each batch, defaults to 10 */
-    batchSize?: number;
-    /** How to wait betweens batches in milliseconds, defaults to 10000 (10 seconds) */
-    batchDelay?: number;
-  };
+  /**
+   * Required to get the EAN and image URL for a product variant
+   */
+  getAdditionalVariantFields?: (
+    ctx: RequestContext,
+    variant: ProductVariant
+  ) => { ean: string; imageUrl?: string };
 }
-
-export type QlsProductJobData = FullProductsSyncJobData | ProductsSyncJobData;
 
 /**
  * Job data required for pushing an order to QLS
@@ -27,6 +29,8 @@ export interface QlsOrderJobData {
   ctx: SerializedRequestContext;
   orderId: ID;
 }
+
+export type QlsProductJobData = FullProductsSyncJobData | ProductsSyncJobData;
 
 /**
  * Job data required for pushing products to QLS (full sync)
@@ -58,107 +62,3 @@ export interface QlsClientConfig {
    */
   url?: string;
 }
-
-export interface QlsApiResponse<T> {
-  meta: {
-    code: number;
-  };
-  data: T;
-  pagination?: {
-    page: number;
-    limit: number;
-    count: number;
-    pageCount: number;
-    nextPage: boolean;
-    prevPage: boolean;
-  };
-}
-
-export type QlsFulfilllmentProductSyncedAttributes = {
-  ean?: string;
-  sku?: string;
-  image_url?: string;
-  shop_integration_id?: string;
-  shop_integration_reference?: string;
-  price_cost?: number;
-  price_store?: number;
-  order_unit?: number | null;
-};
-
-export type QlsCreateFulfillmentProductResponse = {
-  id: string;
-  company_id: string;
-  name: string;
-  description: string;
-  ean: string;
-  sku: string;
-  hs_code: string;
-  amount_available: number;
-  amount_total: number;
-  amount_reserverd: number;
-  image_url: number;
-  price_cost: number;
-  price_store: number;
-  order_unit: number;
-  created: string;
-  modified: string;
-};
-
-export type QlsCreateFulfillmentProductRequest = {
-  name: string;
-} & QlsFulfilllmentProductSyncedAttributes;
-
-export type QlsUpdateFulfillmentProductRequest =
-  QlsFulfilllmentProductSyncedAttributes;
-
-export type QLSUpdateFulfillmentProductResponse =
-  QlsCreateFulfillmentProductResponse;
-
-export type QlsWarehouseZone = {
-  id: number;
-  name: string;
-  pickable: boolean;
-  warehouse: {
-    id: number;
-    name: string;
-    is_fulfillment: boolean;
-    cutoff: string;
-  };
-};
-
-export type QlsProductBatch = {
-  id: number;
-  code: string;
-  status: string;
-  best_before: string;
-};
-
-export type QlsWarehouseStock = {
-  id: string;
-  zone_id: number;
-  row_number: string;
-  rack_number: string;
-  shelf_number: string;
-  number: string;
-  amount_current: number;
-  amount_reserved: number;
-  best_before: string;
-  best_before_cutoff: string;
-  warehouse_zone: QlsWarehouseZone;
-  product_batch: QlsProductBatch[];
-};
-
-export type QlsFulfillmentProduct = {
-  article_number: string;
-  id: string;
-  name: string;
-  ean: string;
-  sku: string;
-  amount_total: number;
-  amount_reserved: number;
-  amount_blocked: number;
-  price_cost: number;
-  price_store: number;
-  order_unit: null;
-  warehouse_stocks: QlsWarehouseStock[];
-};

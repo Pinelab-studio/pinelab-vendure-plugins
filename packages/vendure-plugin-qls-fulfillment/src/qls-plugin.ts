@@ -11,7 +11,6 @@ import { fullSyncPermission } from './api/permissions';
 import { QlsAdminResolver } from './api/qls-admin.resolver';
 import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { customProductVariantFields } from './custom-fields';
 import { QlsOrderService } from './services/qls-order.service';
 import { QlsProductService } from './services/qls-product.service';
 import { QlsPluginOptions } from './types';
@@ -28,7 +27,6 @@ import { QlsPluginOptions } from './types';
   ],
   controllers: [QlsWebhooksController],
   configuration: (config) => {
-    config.customFields.ProductVariant.push(...customProductVariantFields);
     config.authOptions.customPermissions.push(fullSyncPermission);
     return config;
   },

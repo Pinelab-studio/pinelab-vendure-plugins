@@ -2,13 +2,11 @@ import { Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
 import type {
   QlsApiResponse,
-  QlsClientConfig,
-  QlsCreateFulfillmentProductRequest,
-  QlsCreateFulfillmentProductResponse,
-  QlsPluginOptions,
-  QlsUpdateFulfillmentProductRequest,
-  QLSUpdateFulfillmentProductResponse,
-} from '../types';
+  QlsFulfillmentProductInput,
+  QlsFulfillmentProduct,
+  QlsFulfillmentStock,
+} from './types';
+import { QlsClientConfig, QlsPluginOptions } from '../types';
 
 export async function getQlsClient(
   ctx: RequestContext,
@@ -36,7 +34,7 @@ export class QlsClient {
    * Find a product by SKU.
    * Returns the first product found, or undefined if no product is found.
    */
-  async getProductBySku(sku: string): Promise<any> {
+  async getFulfillmentProductBySku(sku: string): Promise<any> {
     const result = await this.rawRequest<any[]>(
       'GET',
       `fulfillment/products?filter%5Bsku%5D=${encodeURIComponent(sku)}`
@@ -54,28 +52,47 @@ export class QlsClient {
     return result.data[0];
   }
 
-  async createFulfillmentProduct(data: QlsCreateFulfillmentProductRequest) {
-    // TODO handle errors
-    const response = await this.rawRequest<QlsCreateFulfillmentProductResponse>(
+  /**
+   * Get stock for all fulfillment products.
+   * Might require multiple requests if the result is paginated.
+   */
+  async getAllFulfillmentStocks(): Promise<QlsFulfillmentStock[]> {
+    let page = 1;
+    const allProducts: QlsFulfillmentStock[] = [];
+    let hasNextPage = true;
+    while (hasNextPage) {
+      const result = await this.rawRequest<QlsFulfillmentStock[]>(
+        'GET',
+        `fulfillment/products?page=${page}`
+      );
+      if (!result.data || result.data.length === 0) {
+        break;
+      }
+      allProducts.push(...result.data);
+      hasNextPage = result.pagination?.nextPage ?? false;
+      page++;
+    }
+    return allProducts;
+  }
+
+  async createFulfillmentProduct(data: QlsFulfillmentProductInput) {
+    const response = await this.rawRequest<QlsFulfillmentProduct>(
       'POST',
       'fulfillment/products',
       data
     );
-
     return response.data;
   }
 
   async updateFulfillmentProduct(
     fulfillmentProductId: string,
-    data: QlsUpdateFulfillmentProductRequest
+    data: QlsFulfillmentProductInput
   ) {
-    // TODO handle errors
-    const response = await this.rawRequest<QLSUpdateFulfillmentProductResponse>(
+    const response = await this.rawRequest<QlsFulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
       data
     );
-
     return response.data;
   }
 
@@ -94,7 +111,6 @@ export class QlsClient {
     };
     const body = data ? JSON.stringify(data) : undefined;
     const url = `${this.baseUrl}/companies/${this.config.companyId}/${action}`;
-
     if (this.config.mock) {
       Logger.debug(`Mock QLS API request: ${url}, ${body}`, loggerCtx);
       return {

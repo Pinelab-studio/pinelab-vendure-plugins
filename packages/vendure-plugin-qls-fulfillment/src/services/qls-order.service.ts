@@ -84,8 +84,6 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (!client) {
       throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
     }
-    const product = await client.getProductBySku('123'); // fixme
-    console.log('QLS product=======', product);
 
     // Log error and throw
 

@@ -49,7 +49,6 @@ import { QlsPlugin, fullProductSyncTask } from '../src';
           password: process.env.QLS_PASSWORD!,
           companyId: process.env.QLS_COMPANY_ID!,
           url: process.env.QLS_URL,
-          mock: true,
         }),
       }),
       DefaultSearchPlugin,
