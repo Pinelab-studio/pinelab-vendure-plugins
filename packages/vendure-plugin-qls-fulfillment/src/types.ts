@@ -4,6 +4,7 @@ import {
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
+import { QlsFulfillmentProductInput } from './lib/types';
 
 export interface QlsPluginOptions {
   /**
@@ -13,12 +14,18 @@ export interface QlsPluginOptions {
     ctx: RequestContext
   ) => QlsClientConfig | undefined | Promise<QlsClientConfig | undefined>;
   /**
-   * Required to get the EAN and image URL for a product variant
+   * Required to get the EAN and image URL for a product variant.
+   * Also allows you to override other product attributes like name, price, etc.
    */
   getAdditionalVariantFields?: (
     ctx: RequestContext,
     variant: ProductVariant
-  ) => { ean: string; imageUrl?: string };
+  ) => Partial<QlsFulfillmentProductInput>;
+  /**
+   * A key used to verify if the caller is authorized to call the webhook.
+   * Set this to a random string
+   */
+  webhookSecret: string;
 }
 
 /**

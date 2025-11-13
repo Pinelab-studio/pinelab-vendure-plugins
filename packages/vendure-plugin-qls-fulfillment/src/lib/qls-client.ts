@@ -4,7 +4,6 @@ import type {
   QlsApiResponse,
   QlsFulfillmentProductInput,
   QlsFulfillmentProduct,
-  QlsFulfillmentStock,
 } from './types';
 import { QlsClientConfig, QlsPluginOptions } from '../types';
 
@@ -34,8 +33,10 @@ export class QlsClient {
    * Find a product by SKU.
    * Returns the first product found, or undefined if no product is found.
    */
-  async getFulfillmentProductBySku(sku: string): Promise<any> {
-    const result = await this.rawRequest<any[]>(
+  async getFulfillmentProductBySku(
+    sku: string
+  ): Promise<QlsFulfillmentProduct | undefined> {
+    const result = await this.rawRequest<QlsFulfillmentProduct[]>(
       'GET',
       `fulfillment/products?filter%5Bsku%5D=${encodeURIComponent(sku)}`
     );
@@ -56,12 +57,12 @@ export class QlsClient {
    * Get stock for all fulfillment products.
    * Might require multiple requests if the result is paginated.
    */
-  async getAllFulfillmentStocks(): Promise<QlsFulfillmentStock[]> {
+  async getAllFulfillmentProducts(): Promise<QlsFulfillmentProduct[]> {
     let page = 1;
-    const allProducts: QlsFulfillmentStock[] = [];
+    const allProducts: QlsFulfillmentProduct[] = [];
     let hasNextPage = true;
     while (hasNextPage) {
-      const result = await this.rawRequest<QlsFulfillmentStock[]>(
+      const result = await this.rawRequest<QlsFulfillmentProduct[]>(
         'GET',
         `fulfillment/products?page=${page}`
       );
@@ -127,6 +128,12 @@ export class QlsClient {
 
     if (!response.ok) {
       const errorText = await response.text();
+      // Log error including the request body
+      Logger.error(
+        `QLS request failed: ${response.status} ${response.statusText} - ${errorText}`,
+        loggerCtx,
+        data ? JSON.stringify(data, null, 2) : undefined
+      );
       throw new Error(
         `QLS request failed: ${response.status} ${response.statusText} - ${errorText}`
       );

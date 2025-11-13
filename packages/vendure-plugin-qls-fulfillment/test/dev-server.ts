@@ -14,6 +14,8 @@ import {
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { QlsPlugin, fullProductSyncTask } from '../src';
+import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 /**
  * The dev-server is just for development. Feel free to break anything here.
@@ -30,7 +32,7 @@ import { QlsPlugin, fullProductSyncTask } from '../src';
     logger: new DefaultLogger({ level: LogLevel.Debug }),
     dbConnectionOptions: {
       synchronize: true,
-      // autoSave: true, // Uncomment this line to persist the database between restarts
+      autoSave: true, // Uncomment this line to persist the database between restarts
     },
     authOptions: {
       tokenMethod: ['cookie', 'bearer'],
@@ -50,11 +52,21 @@ import { QlsPlugin, fullProductSyncTask } from '../src';
           companyId: process.env.QLS_COMPANY_ID!,
           url: process.env.QLS_URL,
         }),
+        getAdditionalVariantFields: (ctx, variant) => ({
+          ean: variant.sku,
+          image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
+        }),
+        webhookSecret: 'd2dbfdea849b00184e216cd61e35d375',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [QlsPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     schedulerOptions: {

@@ -1,19 +1,19 @@
-import { OnModuleInit } from '@nestjs/common';
 import {
   EventBus,
   PluginCommonModule,
-  ProductVariantEvent,
   Type,
   VendurePlugin,
 } from '@vendure/core';
 import { adminApiExtensions } from './api/api-extensions';
-import { fullSyncPermission } from './api/permissions';
+import { fullSyncPermission } from './config/permissions';
 import { QlsAdminResolver } from './api/qls-admin.resolver';
 import { QlsWebhooksController } from './api/qls-webhooks-controller';
 import { PLUGIN_INIT_OPTIONS } from './constants';
 import { QlsOrderService } from './services/qls-order.service';
 import { QlsProductService } from './services/qls-product.service';
 import { QlsPluginOptions } from './types';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -28,6 +28,7 @@ import { QlsPluginOptions } from './types';
   controllers: [QlsWebhooksController],
   configuration: (config) => {
     config.authOptions.customPermissions.push(fullSyncPermission);
+
     return config;
   },
   compatibility: '>=3.2.0',
@@ -36,7 +37,7 @@ import { QlsPluginOptions } from './types';
     resolvers: [QlsAdminResolver],
   },
 })
-export class QlsPlugin implements OnModuleInit {
+export class QlsPlugin {
   static options: QlsPluginOptions;
 
   constructor(
@@ -49,17 +50,9 @@ export class QlsPlugin implements OnModuleInit {
     return QlsPlugin;
   }
 
-  onModuleInit() {
-    this.eventBus.ofType(ProductVariantEvent).subscribe((event) => {
-      switch (event.type) {
-        case 'created':
-        case 'updated':
-          void this.qlsService.triggerSyncProducts(
-            event.ctx,
-            event.entity.map((variant) => variant.id)
-          );
-          break;
-      }
-    });
-  }
+  static ui: AdminUiExtension = {
+    extensionPath: path.join(__dirname, 'ui'),
+    id: 'qls-fulfillment-ui',
+    providers: ['providers.ts'],
+  };
 }

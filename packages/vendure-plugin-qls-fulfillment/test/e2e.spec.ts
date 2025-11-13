@@ -48,6 +48,14 @@ it('Should start successfully', async () => {
 
 // FIXME implement tests
 
+// Trigger full sync via mutation
+
+// Create new product in Vendure
+
+// Update product name in Vendure
+
+// Update stock via webhook
+
 // FIXME Sync button in product overview
 //
 // if (process.env.TEST_ADMIN_UI) {
