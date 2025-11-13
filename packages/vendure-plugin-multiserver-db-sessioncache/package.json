@@ -1,7 +1,7 @@
 {
   "name": "@pinelab/vendure-plugin-multiserver-db-sessioncache",
   "description": "An implementation of Vendure's SessionCacheStrategy that caches session in the database",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "author": "Surafel Melese Tariku <surafelmelese09@gmail.com>",
   "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",

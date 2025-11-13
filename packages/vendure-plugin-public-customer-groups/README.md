@@ -1,6 +1,6 @@
 # Vendure Public Customer Groups
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-public-customer-groups)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-public-customer-groups)
 
 This plugin adds a custom field `isPublic` to `CustomerGroup`s, so that we can determine if a `CustomerGroup` is publicly available. It also adds a GraphQL field `Customer.customerGroups` that returns the public customerGroups to the Shop API.
 

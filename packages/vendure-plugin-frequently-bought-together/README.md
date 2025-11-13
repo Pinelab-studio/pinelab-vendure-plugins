@@ -1,6 +1,6 @@
 # Frequently Bought Together Plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/pinelab-frequently-bought-together-plugin)
+[Official documentation here](https://plugins.pinelab.studio/plugin/pinelab-frequently-bought-together-plugin)
 
 This plugin finds products that are often bought together by looking at past orders. You can integrate these frequently bought together products on your storefront, and so increase your revenue.
 

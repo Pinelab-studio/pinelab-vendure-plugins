@@ -35,66 +35,61 @@ const packageDir = '../packages/';
 export async function getPluginDirectories(): Promise<Dirent[]> {
   return (await readdir(packageDir, { withFileTypes: true }))
     .filter((dir) => dir.isDirectory())
-    .filter((dir) => !['test', 'util'].includes(dir.name)); // Exclude test and util directories
+    .filter(
+      (dir) => !['test', 'util', '_vendure-plugin-template'].includes(dir.name)
+    ); // Exclude test and util directories
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
   const pluginDirectories = await getPluginDirectories();
   const plugins: Plugin[] = [];
-  await Promise.all(
-    pluginDirectories.map(async (pluginDir) => {
-      try {
-        const packageJsonFilePath = path.join(
-          packageDir,
-          pluginDir.name,
-          'package.json'
-        );
-        const packageJson: PackageJson = JSON.parse(
-          await readFile(packageJsonFilePath, 'utf8')
-        );
-        // README
-        const readmeFilePath = path.join(
-          packageDir,
-          pluginDir.name,
-          'README.md'
-        );
-        let readme = await readFile(readmeFilePath, 'utf8');
-        // Remove official docs link from readme
-        readme = readme.replace(/^.*Official documentation.*$/gm, '');
-        // Get title from first line
-        const name = readme.split('\n')[0].replace('#', '').trim();
-        const markdownContent = await parseMarkdown(readme);
-        // CHANGELOG
-        const changelogFilePath = path.join(
-          packageDir,
-          pluginDir.name,
-          'CHANGELOG.md'
-        );
-        const changelog = await readFile(changelogFilePath, 'utf8');
-        const changelogContent = await parseMarkdown(changelog);
-        const nrOfDownloads = await getNrOfDownloads(packageJson.name);
-        const compatibility = await getCompatibilityRange(pluginDir.name);
-        const slug = packageJson.name
-          .replace('@pinelab/', '')
-          .replace('@vendure-hub/', '');
-        plugins.push({
-          name,
-          npmName: packageJson.name,
-          version: packageJson.version,
-          slug,
-          description: packageJson.description,
-          icon: getIcon(slug),
-          markdownContent,
-          changelogContent,
-          nrOfDownloads,
-          compatibility,
-        });
-      } catch (e) {
-        console.error(`Error reading plugin ${pluginDir.name}`, e);
-        return;
-      }
-    })
-  );
+  for (const pluginDir of pluginDirectories) {
+    try {
+      const packageJsonFilePath = path.join(
+        packageDir,
+        pluginDir.name,
+        'package.json'
+      );
+      const packageJson: PackageJson = JSON.parse(
+        await readFile(packageJsonFilePath, 'utf8')
+      );
+      // README
+      const readmeFilePath = path.join(packageDir, pluginDir.name, 'README.md');
+      let readme = await readFile(readmeFilePath, 'utf8');
+      // Remove official docs link from readme
+      readme = readme.replace(/^.*Official documentation.*$/gm, '');
+      // Get title from first line
+      const name = readme.split('\n')[0].replace('#', '').trim();
+      const markdownContent = await parseMarkdown(readme);
+      // CHANGELOG
+      const changelogFilePath = path.join(
+        packageDir,
+        pluginDir.name,
+        'CHANGELOG.md'
+      );
+      const changelog = await readFile(changelogFilePath, 'utf8');
+      const changelogContent = await parseMarkdown(changelog);
+      const nrOfDownloads = await getNrOfDownloads(packageJson.name);
+      const compatibility = await getCompatibilityRange(pluginDir.name);
+      const slug = packageJson.name
+        .replace('@pinelab/', '')
+        .replace('@vendure-hub/', '');
+      plugins.push({
+        name,
+        npmName: packageJson.name,
+        version: packageJson.version,
+        slug,
+        description: packageJson.description,
+        icon: getIcon(slug),
+        markdownContent,
+        changelogContent,
+        nrOfDownloads,
+        compatibility,
+      });
+    } catch (e) {
+      console.error(`Error reading plugin ${pluginDir.name}`, e);
+    }
+  }
   const pluginsSortedByDownloads = plugins.sort((a, b) => {
     // Move vendure-hub packages to the top
     if (a.npmName.indexOf('@vendure-hub') > -1) {
@@ -143,6 +138,12 @@ export async function getNrOfDownloads(
   const response = await fetch(
     `https://api.npmjs.org/downloads/point/${period}/${packageName}`
   );
+  if (!response.ok) {
+    console.error(
+      `Error fetching downloads for ${packageName}: ${response.statusText}`
+    );
+    return 0;
+  }
   return (await response.json()).downloads as number;
 }
 

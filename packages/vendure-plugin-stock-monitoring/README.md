@@ -1,6 +1,6 @@
 # Vendure stock monitoring plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-stock-monitoring)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-stock-monitoring)
 
 This plugin helps you monitor the stock levels in two ways:
 

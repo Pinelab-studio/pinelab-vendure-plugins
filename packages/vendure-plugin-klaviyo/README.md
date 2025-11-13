@@ -1,6 +1,6 @@
 # Vendure Klaviyo Plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-invoices)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-invoices)
 
 An extensible plugin for sending placed orders to the Klaviyo marketing platform.
 

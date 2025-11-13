@@ -1,6 +1,6 @@
 # Vendure UTM Tracker Plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-utm-tracker)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-utm-tracker)
 
 This plugin aims to fix over attribution when you use multiple different marketing platforms, by connecting UTM parameters directly to orders.
 

@@ -1,6 +1,6 @@
 # Vendure Plugin for bulk updating all variants of a product
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-variant-bulk-update)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-variant-bulk-update)
 
 Tiny plugin that allows you to update the prices and/or custom fields of all variants for a given product. Useful for when all your variants have the same price for example.
 

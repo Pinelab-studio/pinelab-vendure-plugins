@@ -1,6 +1,6 @@
 # Vendure Scripts
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-scripts)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-scripts)
 
 This 'plugin' contains some helper scripts that can be used with `Vendure` projects. Helpers scripts include assigning products, customers and orders from a source to a target channel, and copying MySQL databases between environments.
 

@@ -1,6 +1,6 @@
 # Vendure Validate Cart Plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-validate-cart)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-validate-cart)
 
 A very lightweight plugin to have custom cart validation rules before proceeding to checkout. For example to check current stock, or check for limited products. You can implement your own validation rules by implementing the `CartValidatorStrategy` interface.
 

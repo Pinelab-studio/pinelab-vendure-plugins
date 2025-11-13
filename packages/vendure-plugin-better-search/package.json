@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-better-search",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Vendure plugin for better storefront search, without the need of external systems",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",

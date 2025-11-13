@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-metrics",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Vendure plugin measuring and visualizing e-commerce metrics",
   "keywords": [
     "vendure",
