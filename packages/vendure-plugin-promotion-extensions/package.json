@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-promotion-extensions",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A collection of different promotion actions and conditions for Vendure",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",

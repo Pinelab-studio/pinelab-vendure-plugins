@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-limited-products",
-  "version": "3.2.1",
+  "version": "3.2.2",
   "description": "Limit the maximum quantity of a product that can be ordered at a time, or require that purchases be made in bulk quantities, such as in multiples of 6 items.",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",

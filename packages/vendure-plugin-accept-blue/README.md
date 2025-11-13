@@ -1,6 +1,6 @@
 # Vendure Accept Blue Subscriptions
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-accept-blue)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-accept-blue)
 
 Create recurring subscriptions with the Accept Blue platform.
 

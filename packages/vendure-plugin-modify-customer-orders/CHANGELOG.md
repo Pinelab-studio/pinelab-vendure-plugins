@@ -1,3 +1,7 @@
+# 1.6.2 (2025-11-13)
+
+- Documentation update
+
 # 1.6.1 (2025-11-06)
 
 - Updated official documentation URL

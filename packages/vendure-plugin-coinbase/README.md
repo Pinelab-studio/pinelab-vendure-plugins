@@ -1,6 +1,6 @@
 # Vendure Coinbase plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-coinbase)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-coinbase)
 
 Accept crypto payments via Coinbase Commerce in Vendure.
 

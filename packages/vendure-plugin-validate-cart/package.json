@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-validate-cart",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Vendure plugin for validating the cart before checkout",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",

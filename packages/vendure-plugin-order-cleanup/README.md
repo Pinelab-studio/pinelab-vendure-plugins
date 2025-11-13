@@ -1,6 +1,6 @@
 # Vendure Order Cleanup Plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-order-cleanup)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-order-cleanup)
 
 This plugin provides functionality to automatically cleanup orders after a specified delay period. It's useful for scenarios where you want to automatically cleanup orders that haven't been settled after a certain period of time.
 

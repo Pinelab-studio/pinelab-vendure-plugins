@@ -1,6 +1,6 @@
 # Vendure Order Export Plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-order-export)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-order-export)
 
 This plugin allows administrators to export orders to a file. The default exports orders and their totals to a csv file.
 You can implement your own strategy to determine what and how data is exported.

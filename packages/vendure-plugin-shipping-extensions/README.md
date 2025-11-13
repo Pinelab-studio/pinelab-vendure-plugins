@@ -1,6 +1,6 @@
 # Shipping Extenions Vendure Plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-shipping-extensions)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-shipping-extensions)
 
 A collection of shipping calculators, checkers and promotion conditions that help you create customizable shipping options:
 

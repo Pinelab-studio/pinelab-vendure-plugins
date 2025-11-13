@@ -1,6 +1,6 @@
 # Vendure GoedGepickt plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-goedgepickt)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-goedgepickt)
 
 Plugin for integrating Vendure with GoedGepickt.
 

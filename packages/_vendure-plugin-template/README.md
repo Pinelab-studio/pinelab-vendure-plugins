@@ -12,4 +12,4 @@ To create a new plugin inside this repo:
 8. `yarn` and `yarn start` should run the server on localhost:3050.
 9. Use `npx vendure add` to add services, admin UI, api extensions etc.
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin- <NAME)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin- <NAME)

@@ -1,6 +1,6 @@
 # Vendure E-boekhouden plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-e-boekhouden)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-e-boekhouden)
 
 Plugin for syncing orders to the Dutch accounting platform E-boekhouden.nl.
 

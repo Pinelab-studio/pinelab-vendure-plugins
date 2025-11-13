@@ -1,6 +1,6 @@
 # Vendure Stripe Subscription plugin
 
-### [Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-stripe-subscription)
+[Official documentation here](https://plugins.pinelab.studio/plugin/vendure-plugin-stripe-subscription)
 
 A channel aware plugin that allows you to sell subscription based services or products through Vendure. This plugin was made in collaboration with the great people
 at [isoutfitters.com](https://isoutfitters.com/).
