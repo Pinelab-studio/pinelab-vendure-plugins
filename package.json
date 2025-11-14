@@ -123,7 +123,8 @@
           "shipmate",
           "asset-downloader",
           "google-sheet",
-          "utm-tracker"
+          "utm-tracker",
+          "qls"
         ]
       ]
     }
