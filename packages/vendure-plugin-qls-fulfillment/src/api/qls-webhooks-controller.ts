@@ -3,7 +3,7 @@ import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Request } from 'express';
 import { QlsProductService } from '../services/qls-product.service';
-import { QlsFulfillmentProduct } from '../lib/types';
+import { QlsFulfillmentProduct } from '../lib/client-types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { QlsPluginOptions } from '../types';
 

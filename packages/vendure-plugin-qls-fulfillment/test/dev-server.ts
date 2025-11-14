@@ -16,6 +16,7 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { QlsPlugin, fullProductSyncTask } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
+import { createSettledOrder } from '../../test/src/shop-utils';
 
 /**
  * The dev-server is just for development. Feel free to break anything here.
@@ -51,6 +52,7 @@ import path from 'path';
           password: process.env.QLS_PASSWORD!,
           companyId: process.env.QLS_COMPANY_ID!,
           url: process.env.QLS_URL,
+          brandId: process.env.QLS_BRAND_ID!,
         }),
         getAdditionalVariantFields: (ctx, variant) => ({
           ean: variant.sku,
@@ -62,11 +64,11 @@ import path from 'path';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [QlsPlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [QlsPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
     schedulerOptions: {
@@ -91,4 +93,6 @@ import path from 'path';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
+
+  await createSettledOrder(shopClient, 1);
 })();

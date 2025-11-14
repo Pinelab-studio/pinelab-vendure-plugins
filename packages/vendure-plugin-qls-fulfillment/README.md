@@ -12,6 +12,8 @@ To create a new plugin inside this repo:
 
 ## Stock management
 
+// Todo Setup webhook
+
 This plugin assumes one (default) stock location is used in Vendure, that means you should either:
 
 1. Remove all but one stock location in Vendure

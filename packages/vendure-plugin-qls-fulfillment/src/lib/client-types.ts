@@ -60,3 +60,43 @@ export type QlsFulfillmentProduct = {
   image_url_handheld: string | null;
   barcodes_and_ean: string[];
 };
+
+export interface FulfillmentOrderInput {
+  brand_id: string;
+  customer_reference: string;
+  processable: string; // ISO datetime string
+  servicepoint_code?: string;
+  total_price: number;
+  receiver_contact: FulfillmentOrderReceiverContactInput;
+  custom_values?: CustomValue[];
+  products: FulfillmentOrderLineInput[];
+  delivery_options: string[];
+}
+
+export interface FulfillmentOrderReceiverContactInput {
+  name: string;
+  companyname: string;
+  street: string;
+  housenumber: string;
+  address2?: string | null;
+  postalcode: string;
+  locality: string;
+  country: string;
+  email?: string | null;
+  phone?: string | null;
+  vat?: string | null;
+  eori?: string | null;
+  oss?: string | null;
+}
+
+export interface CustomValue {
+  key: string;
+  value: string;
+}
+
+export interface FulfillmentOrderLineInput {
+  amount_ordered: number;
+  product_id: string;
+  name: string;
+  custom_values?: CustomValue[];
+}

@@ -4,7 +4,8 @@ import type {
   QlsApiResponse,
   QlsFulfillmentProductInput,
   QlsFulfillmentProduct,
-} from './types';
+  FulfillmentOrderInput,
+} from './client-types';
 import { QlsClientConfig, QlsPluginOptions } from '../types';
 
 export async function getQlsClient(
@@ -76,7 +77,9 @@ export class QlsClient {
     return allProducts;
   }
 
-  async createFulfillmentProduct(data: QlsFulfillmentProductInput) {
+  async createFulfillmentProduct(
+    data: QlsFulfillmentProductInput
+  ): Promise<QlsFulfillmentProduct> {
     const response = await this.rawRequest<QlsFulfillmentProduct>(
       'POST',
       'fulfillment/products',
@@ -88,11 +91,25 @@ export class QlsClient {
   async updateFulfillmentProduct(
     fulfillmentProductId: string,
     data: QlsFulfillmentProductInput
-  ) {
+  ): Promise<QlsFulfillmentProduct> {
     const response = await this.rawRequest<QlsFulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
       data
+    );
+    return response.data;
+  }
+
+  async createFulfillmentOrder(
+    data: Omit<FulfillmentOrderInput, 'brand_id'>
+  ): Promise<FulfillmentOrderInput> {
+    const response = await this.rawRequest<FulfillmentOrderInput>(
+      'POST',
+      'fulfillment/orders',
+      {
+        ...data,
+        brand_id: this.config.brandId,
+      }
     );
     return response.data;
   }

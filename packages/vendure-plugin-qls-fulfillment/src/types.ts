@@ -1,10 +1,12 @@
 import {
   ID,
+  Injector,
+  Order,
   ProductVariant,
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
-import { QlsFulfillmentProductInput } from './lib/types';
+import { QlsFulfillmentProductInput } from './lib/client-types';
 
 export interface QlsPluginOptions {
   /**
@@ -21,11 +23,29 @@ export interface QlsPluginOptions {
     ctx: RequestContext,
     variant: ProductVariant
   ) => Partial<QlsFulfillmentProductInput>;
+
+  /**
+   * Function to get the set service point code for an order.
+   * Return undefined to not use a service point at all.
+   */
+  getAdditionalOrderFields?: (
+    ctx: RequestContext,
+    injector: Injector,
+    order: Order
+  ) =>
+    | Promise<AdditionalOrderFields | undefined>
+    | AdditionalOrderFields
+    | undefined;
   /**
    * A key used to verify if the caller is authorized to call the webhook.
    * Set this to a random string
    */
   webhookSecret: string;
+}
+
+export interface AdditionalOrderFields {
+  servicepoint_code?: string;
+  delivery_options?: string[];
 }
 
 /**
@@ -60,6 +80,7 @@ export interface QlsClientConfig {
   username: string;
   password: string;
   companyId: string;
+  brandId: string;
   /**
    * if set to `true` the actual API calls will not be made but instead logged
    */

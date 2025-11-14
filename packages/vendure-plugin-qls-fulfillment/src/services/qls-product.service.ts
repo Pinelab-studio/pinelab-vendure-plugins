@@ -24,7 +24,7 @@ import { asError } from 'catch-unknown';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { getQlsClient, QlsClient } from '../lib/qls-client';
-import { QlsFulfillmentProduct } from '../lib/types';
+import { QlsFulfillmentProduct } from '../lib/client-types';
 import { QlsPluginOptions, QlsProductJobData } from '../types';
 
 type SyncProductsJobResult = {
@@ -305,29 +305,50 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     variant: ProductVariant,
     existingProduct: QlsFulfillmentProduct | null
   ): Promise<'created' | 'updated' | 'not-changed'> {
+    let qlsProductId: string | undefined;
+    let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
     if (!existingProduct) {
-      await client.createFulfillmentProduct({
+      const result = await client.createFulfillmentProduct({
         name: variant.name,
         sku: variant.sku,
         ...this.options.getAdditionalVariantFields?.(ctx, variant),
       });
+      qlsProductId = result.id;
       Logger.info(`Created product '${variant.sku}' in QLS`, loggerCtx);
-      return 'created';
-    }
-    if (this.shouldUpdateProductInQls(ctx, variant, existingProduct)) {
-      await client.updateFulfillmentProduct(existingProduct.id, {
+      createdOrUpdated = 'created';
+    } else if (this.shouldUpdateProductInQls(ctx, variant, existingProduct)) {
+      const result = await client.updateFulfillmentProduct(existingProduct.id, {
         sku: variant.sku,
         name: variant.name,
         ...this.options.getAdditionalVariantFields?.(ctx, variant),
       });
+      qlsProductId = result.id;
       Logger.info(`Updated product '${variant.sku}' in QLS`, loggerCtx);
-      return 'updated';
+      createdOrUpdated = 'updated';
+    }
+
+    // FIxMEEEEE Infinite loop here
+
+    if (qlsProductId !== variant.customFields.qlsProductId) {
+      // Update variant with QLS product ID if it changed
+      await this.variantService.update(ctx, [
+        {
+          id: variant.id,
+          customFields: {
+            qlsProductId,
+          },
+        },
+      ]);
+      Logger.info(
+        `Updated QLS product ID for variant '${variant.sku}' in Vendure, because it changed.`,
+        loggerCtx
+      );
     }
     Logger.debug(
       `Not updating product '${variant.sku}' in QLS because it doesn't have any changes`,
       loggerCtx
     );
-    return 'not-changed';
+    return createdOrUpdated;
   }
 
   /**

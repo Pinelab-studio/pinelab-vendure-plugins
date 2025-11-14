@@ -14,6 +14,7 @@ import { QlsProductService } from './services/qls-product.service';
 import { QlsPluginOptions } from './types';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
+import { variantCustomFields } from './custom-fields';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -28,6 +29,7 @@ import path from 'path';
   controllers: [QlsWebhooksController],
   configuration: (config) => {
     config.authOptions.customPermissions.push(fullSyncPermission);
+    config.customFields.ProductVariant.push(...variantCustomFields);
 
     return config;
   },
