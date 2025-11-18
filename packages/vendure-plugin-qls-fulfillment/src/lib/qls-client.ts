@@ -130,14 +130,6 @@ export class QlsClient {
     };
     const body = data ? JSON.stringify(data) : undefined;
     const url = `${this.baseUrl}/companies/${this.config.companyId}/${action}`;
-    if (this.config.mock) {
-      Logger.debug(`Mock QLS API request: ${url}, ${body}`, loggerCtx);
-      return {
-        data: {} as T,
-        meta: { code: -1 },
-      };
-    }
-
     const response = await fetch(url, {
       method,
       headers,

@@ -83,10 +83,6 @@ export interface QlsClientConfig {
   companyId: string;
   brandId: string;
   /**
-   * if set to `true` the actual API calls will not be made but instead logged
-   */
-  mock?: boolean;
-  /**
    * defaults to 'https://api.pakketdienstqls.nl'
    */
   url?: string;
