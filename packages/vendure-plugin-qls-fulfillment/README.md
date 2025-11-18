@@ -29,3 +29,7 @@ Make sure to monitor failed jobs: A job that failed after its retries were exhau
 2. A product was not synced to QLS
 
 Monitor your logs for the string `QLS webhook error`. This means an incoming stock update webhook was not processed correctly.
+
+## Cancelling orders and manually pushing orders to QLS
+
+// TODO: Push will just create a new order in QLS, it will not cancel the existing order in QLS. Cancel existing order first via https://mijn.pakketdienstqls.nl/

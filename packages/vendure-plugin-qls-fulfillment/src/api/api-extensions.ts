@@ -7,6 +7,9 @@ export const adminApiExtensions = gql`
     """
     triggerQlsProductSync: Boolean!
 
-    
+    """
+    Manually push an order to QLS (again)
+    """
+    pushOrderToQls(orderId: ID!): String!
   }
 `;
