@@ -41,6 +41,7 @@ export default [
     locationId: 'order-detail',
     icon: 'resistor',
     requiresPermission: ['QLSFullSync'],
+    hasDivider: true,
     onClick: (_, { route, dataService, notificationService }) => {
       dataService
         .mutate(

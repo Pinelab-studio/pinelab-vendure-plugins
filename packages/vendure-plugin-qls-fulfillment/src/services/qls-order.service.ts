@@ -15,6 +15,7 @@ import {
   Logger,
   OrderPlacedEvent,
   OrderService,
+  OrderState,
   RequestContext,
   TransactionalConnection,
 } from '@vendure/core';
@@ -24,6 +25,7 @@ import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
+  IncomingOrderWebhook,
 } from '../lib/client-types';
 import { getQlsClient } from '../lib/qls-client';
 import { QlsOrderJobData, QlsPluginOptions } from '../types';
@@ -103,50 +105,99 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (!order) {
       throw new Error(`No order with id ${orderId} not found`);
     }
-    // Check if all products are available in QLS
-    const qlsProducts: FulfillmentOrderLineInput[] = order.lines.map((line) => {
-      if (!line.productVariant.customFields.qlsProductId) {
-        throw new Error(
-          `Product variant '${line.productVariant.sku}' does not have a QLS product ID set. Unable to push order '${order.code}' to QLS.`
+    try {
+      // Check if all products are available in QLS
+      const qlsProducts: FulfillmentOrderLineInput[] = order.lines.map(
+        (line) => {
+          if (!line.productVariant.customFields.qlsProductId) {
+            throw new Error(
+              `Product variant '${line.productVariant.sku}' does not have a QLS product ID set. Unable to push order '${order.code}' to QLS.`
+            );
+          }
+          return {
+            amount_ordered: line.quantity,
+            product_id: line.productVariant.customFields.qlsProductId,
+            name: line.productVariant.name,
+          };
+        }
+      );
+      const additionalOrderFields =
+        await this.options.getAdditionalOrderFields?.(
+          ctx,
+          new Injector(this.moduleRef),
+          order
         );
-      }
-      return {
-        amount_ordered: line.quantity,
-        product_id: line.productVariant.customFields.qlsProductId,
-        name: line.productVariant.name,
+      const customerName = [order.customer?.firstName, order.customer?.lastName]
+        .filter(Boolean)
+        .join(' ');
+      const name = order.shippingAddress.fullName || customerName;
+      const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
+        customer_reference: order.code,
+        processable: new Date().toISOString(), // Processable starting now
+        servicepoint_code: additionalOrderFields?.servicepoint_code,
+        delivery_options: additionalOrderFields?.delivery_options ?? [],
+        total_price: order.totalWithTax,
+        receiver_contact: {
+          name: name,
+          companyname: order.shippingAddress.company ?? '',
+          street: order.shippingAddress.streetLine1 ?? '',
+          housenumber: order.shippingAddress.streetLine2 ?? '',
+          postalcode: order.shippingAddress.postalCode ?? '',
+          locality: order.shippingAddress.city ?? '',
+          country: order.shippingAddress.countryCode?.toUpperCase() ?? '',
+          email: order.customer?.emailAddress ?? '',
+          phone: order.customer?.phoneNumber ?? '',
+        },
+        products: qlsProducts,
+        ...(additionalOrderFields ?? {}),
       };
-    });
-    const additionalOrderFields = await this.options.getAdditionalOrderFields?.(
-      ctx,
-      new Injector(this.moduleRef),
-      order
+      const result = await client.createFulfillmentOrder(qlsOrder);
+      await this.orderService.addNoteToOrder(ctx, {
+        id: orderId,
+        isPublic: false,
+        note: `Created order '${result.id}' in QLS`,
+      });
+      return `Order '${order.code}' created in QLS with id '${result.id}'`;
+    } catch (e) {
+      const error = asError(e);
+      await this.orderService.addNoteToOrder(ctx, {
+        id: orderId,
+        isPublic: false,
+        note: `Failed to create order '${order.code}' in QLS: ${error.message}`,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update the status of an order in QLS based on the given order code and status
+   */
+  async handleOrderStatusUpdate(
+    ctx: RequestContext,
+    body: IncomingOrderWebhook
+  ): Promise<void> {
+    const orderCode = body.customer_reference;
+    const order = await this.orderService.findOneByCode(ctx, orderCode, []);
+    if (!order) {
+      throw new Error(`Order with code '${orderCode}' not found`);
+    }
+    const client = await getQlsClient(ctx, this.options);
+    if (!client) {
+      throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+    }
+    const vendureOrderState = this.getVendureOrderState(body);
+    if (!vendureOrderState) {
+      Logger.info(
+        `Not handling QLS order status '${body.status}' for order '${orderCode}', because no Vendure order state found for this status`,
+        loggerCtx
+      );
+      return;
+    }
+    await this.orderService.transitionToState(ctx, order.id, vendureOrderState);
+    Logger.info(
+      `Successfully updated order '${orderCode}' to '${vendureOrderState}'`,
+      loggerCtx
     );
-    const customerName = [order.customer?.firstName, order.customer?.lastName]
-      .filter(Boolean)
-      .join(' ');
-    const name = order.shippingAddress.fullName || customerName;
-    const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
-      customer_reference: order.code,
-      processable: new Date().toISOString(), // Processable starting now
-      servicepoint_code: additionalOrderFields?.servicepoint_code,
-      delivery_options: additionalOrderFields?.delivery_options ?? [],
-      total_price: order.totalWithTax,
-      receiver_contact: {
-        name: name,
-        companyname: order.shippingAddress.company ?? '',
-        street: order.shippingAddress.streetLine1 ?? '',
-        housenumber: order.shippingAddress.streetLine2 ?? '',
-        postalcode: order.shippingAddress.postalCode ?? '',
-        locality: order.shippingAddress.city ?? '',
-        country: order.shippingAddress.countryCode?.toUpperCase() ?? '',
-        email: order.customer?.emailAddress ?? '',
-        phone: order.customer?.phoneNumber ?? '',
-      },
-      products: qlsProducts,
-      ...(additionalOrderFields ?? {}),
-    };
-    const result = await client.createFulfillmentOrder(qlsOrder);
-    return `Order '${order.code}' created in QLS with id '${result.id}'`;
   }
 
   async triggerPushOrder(
@@ -173,5 +224,22 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       },
       { retries: 5 }
     );
+  }
+
+  private getVendureOrderState(
+    body: IncomingOrderWebhook
+  ): OrderState | undefined {
+    if (body.cancelled) {
+      return 'Cancelled';
+    }
+    if (body.amount_delivered === body.amount_total) {
+      return 'Delivered';
+    }
+    switch (body.status) {
+      case 'sent':
+        return 'Shipped';
+      case 'partically_sent':
+        return 'PartiallyShipped';
+    }
   }
 }

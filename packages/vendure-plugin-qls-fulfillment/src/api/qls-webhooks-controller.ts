@@ -1,28 +1,42 @@
-import { Controller, Inject, Param, Post, Query, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Inject,
+  Param,
+  Post,
+  Query,
+  Req,
+} from '@nestjs/common';
 import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Request } from 'express';
 import { QlsProductService } from '../services/qls-product.service';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { QlsPluginOptions } from '../types';
-import { FulfillmentProduct } from '../lib/client-types';
+import { QlsOrderService } from '../services/qls-order.service';
+import {
+  IncomingOrderWebhook,
+  IncomingStockWebhook,
+} from '../lib/client-types';
 
 @Controller('qls')
 export class QlsWebhooksController {
   constructor(
     private channelService: ChannelService,
-    private qlsService: QlsProductService,
+    private qlsProductService: QlsProductService,
+    private qlsOrderService: QlsOrderService,
     @Inject(PLUGIN_INIT_OPTIONS) private options: QlsPluginOptions
   ) {}
 
   /**
-   * Endpoint for fulfilment product stock changes
+   * Endpoint for all incoming webhooks
    */
-  @Post('/stock/:channelToken')
+  @Post('/webhook/:channelToken')
   async events(
     @Param('channelToken') channelToken: string,
     @Query('secret') webhookSecret: string,
-    @Req() request: Request
+    @Req() request: Request,
+    @Body() body: IncomingStockWebhook | IncomingOrderWebhook
   ) {
     if (webhookSecret !== this.options.webhookSecret) {
       return Logger.warn(
@@ -32,31 +46,38 @@ export class QlsWebhooksController {
     }
     try {
       const ctx = await this.getCtxForChannel(channelToken);
-      const body = request.body as FulfillmentProduct;
-      const availableStock = body.amount_available;
-      if (availableStock === undefined || availableStock === null) {
+      if (!ctx) {
         return Logger.error(
-          `Incoming webhook with invalid available stock to '${request.url}'`,
+          `Incoming webhook with invalid channel token for channel '${channelToken}' to '${request.url}'`,
           loggerCtx,
           JSON.stringify(body)
         );
       }
-      if (!body.sku) {
-        return Logger.error(
-          `Incoming webhook with invalid sku '${body.sku}' to '${request.url}'`,
-          loggerCtx,
-          JSON.stringify(body)
+      if (isStockWebhook(body)) {
+        await this.qlsProductService.updateStockBySku(
+          ctx,
+          body.sku,
+          body.amount_available
         );
+      } else if (isOrderWebhook(body)) {
+        await this.qlsOrderService.handleOrderStatusUpdate(ctx, body);
+      } else {
+        throw Error(`Invalid webhook body: ${JSON.stringify(body)}`);
       }
-      await this.qlsService.updateStockBySku(ctx, body.sku, availableStock);
     } catch (error) {
       Logger.error(`QLS webhook error: ${asError(error).message}`);
       throw error;
     }
   }
 
-  private async getCtxForChannel(token: string): Promise<RequestContext> {
+  private async getCtxForChannel(
+    token: string
+  ): Promise<RequestContext | undefined> {
     const channel = await this.channelService.getChannelFromToken(token);
+    if (token !== channel.token) {
+      // This validation is needed. Vendure returns the default channel when a non-existing channel token is provided.
+      return undefined;
+    }
     return new RequestContext({
       apiType: 'admin',
       authorizedAsOwnerOnly: false,
@@ -64,4 +85,16 @@ export class QlsWebhooksController {
       isAuthorized: true,
     });
   }
+}
+
+function isStockWebhook(
+  body: IncomingStockWebhook | IncomingOrderWebhook
+): body is IncomingStockWebhook {
+  return 'amount_available' in body;
+}
+
+function isOrderWebhook(
+  body: IncomingStockWebhook | IncomingOrderWebhook
+): body is IncomingOrderWebhook {
+  return 'customer_reference' in body && 'status' in body;
 }

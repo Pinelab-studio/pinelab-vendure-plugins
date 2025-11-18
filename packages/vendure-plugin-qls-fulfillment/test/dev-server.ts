@@ -1,9 +1,11 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
+  configureDefaultOrderProcess,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
+  OrderProcess,
   VendureConfig,
 } from '@vendure/core';
 import {
@@ -45,6 +47,13 @@ import { createSettledOrder } from '../../test/src/shop-utils';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    orderOptions: {
+      process: [
+        configureDefaultOrderProcess({
+          checkFulfillmentStates: false,
+        }) as OrderProcess<any>,
+      ],
+    },
     plugins: [
       QlsPlugin.init({
         getConfig: () => ({
@@ -58,7 +67,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           ean: variant.sku,
           image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
         }),
-        webhookSecret: 'd2dbfdea849b00184e216cd61e35d375',
+        webhookSecret: '121231',
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
@@ -94,20 +103,20 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     productsCsvPath: '../test/src/products-import.csv',
   });
 
-  await createSettledOrder(
-    shopClient,
-    1,
-    true,
-    [{ id: 'T_1', quantity: 1 }],
-    undefined,
-    {
-      input: {
-        countryCode: 'NL',
-        streetLine1: 'Verzetsstraat',
-        streetLine2: '48',
-        city: 'Liwwa',
-        postalCode: '8932 BR',
-      },
-    }
-  );
+  // await createSettledOrder(
+  //   shopClient,
+  //   1,
+  //   true,
+  //   [{ id: 'T_1', quantity: 1 }],
+  //   undefined,
+  //   {
+  //     input: {
+  //       countryCode: 'NL',
+  //       streetLine1: 'Verzetsstraat',
+  //       streetLine2: '48',
+  //       city: 'Liwwa',
+  //       postalCode: '8932 BR',
+  //     },
+  //   }
+  // );
 })();

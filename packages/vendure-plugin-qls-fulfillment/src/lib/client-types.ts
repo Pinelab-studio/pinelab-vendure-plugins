@@ -101,13 +101,21 @@ export interface FulfillmentOrderLineInput {
   custom_values?: CustomValue[];
 }
 
+export type QlsOrderStatus =
+  | 'concept'
+  | 'error_validation'
+  | 'received'
+  | 'pending'
+  | 'partically_sent'
+  | 'sent';
+
 export interface FulfillmentOrder {
   id: string;
   customer_reference: string;
   amount_delivered: number | null;
   amount_reserved: number | null;
   amount_total: number;
-  status: string | null;
+  status: QlsOrderStatus;
   created: string;
   modified: string;
   cancelled: boolean | null;
@@ -154,3 +162,17 @@ export interface FulfillmentOrder {
     product: unknown;
   }>;
 }
+
+export type IncomingStockWebhook = Pick<
+  FulfillmentProduct,
+  'sku' | 'amount_available'
+>;
+
+export type IncomingOrderWebhook = Pick<
+  FulfillmentOrder,
+  | 'customer_reference'
+  | 'status'
+  | 'cancelled'
+  | 'amount_delivered'
+  | 'amount_total'
+>;
