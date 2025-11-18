@@ -121,6 +121,10 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       new Injector(this.moduleRef),
       order
     );
+    const customerName = [order.customer?.firstName, order.customer?.lastName]
+      .filter(Boolean)
+      .join(' ');
+    const name = order.shippingAddress.fullName || customerName;
     const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
       customer_reference: order.code,
       processable: new Date().toISOString(), // Processable starting now
@@ -128,21 +132,21 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       delivery_options: additionalOrderFields?.delivery_options ?? [],
       total_price: order.totalWithTax,
       receiver_contact: {
-        name: order.shippingAddress.fullName ?? '',
+        name: name,
         companyname: order.shippingAddress.company ?? '',
         street: order.shippingAddress.streetLine1 ?? '',
         housenumber: order.shippingAddress.streetLine2 ?? '',
         postalcode: order.shippingAddress.postalCode ?? '',
         locality: order.shippingAddress.city ?? '',
-        country: order.shippingAddress.country ?? '',
+        country: order.shippingAddress.countryCode?.toUpperCase() ?? '',
         email: order.customer?.emailAddress ?? '',
         phone: order.customer?.phoneNumber ?? '',
       },
       products: qlsProducts,
+      ...(additionalOrderFields ?? {}),
     };
-    console.log('========= PORDER', qlsOrder);
-    await client.createFulfillmentOrder(qlsOrder);
-    return `Order '${order.code}' pushed to QLS`;
+    const result = await client.createFulfillmentOrder(qlsOrder);
+    return `Order '${order.code}' created in QLS with id '${result.id}'`;
   }
 
   async triggerPushOrder(

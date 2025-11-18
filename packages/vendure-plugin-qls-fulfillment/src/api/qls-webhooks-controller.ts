@@ -3,9 +3,9 @@ import { ChannelService, Logger, RequestContext } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Request } from 'express';
 import { QlsProductService } from '../services/qls-product.service';
-import { QlsFulfillmentProduct } from '../lib/client-types';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { QlsPluginOptions } from '../types';
+import { FulfillmentProduct } from '../lib/client-types';
 
 @Controller('qls')
 export class QlsWebhooksController {
@@ -32,7 +32,7 @@ export class QlsWebhooksController {
     }
     try {
       const ctx = await this.getCtxForChannel(channelToken);
-      const body = request.body as QlsFulfillmentProduct;
+      const body = request.body as FulfillmentProduct;
       const availableStock = body.amount_available;
       if (availableStock === undefined || availableStock === null) {
         return Logger.error(

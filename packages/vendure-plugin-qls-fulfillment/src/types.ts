@@ -6,7 +6,7 @@ import {
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
-import { QlsFulfillmentProductInput } from './lib/client-types';
+import { CustomValue, FulfillmentProductInput } from './lib/client-types';
 
 export interface QlsPluginOptions {
   /**
@@ -22,7 +22,7 @@ export interface QlsPluginOptions {
   getAdditionalVariantFields?: (
     ctx: RequestContext,
     variant: ProductVariant
-  ) => Partial<QlsFulfillmentProductInput>;
+  ) => Partial<FulfillmentProductInput>;
 
   /**
    * Function to get the set service point code for an order.
@@ -46,6 +46,7 @@ export interface QlsPluginOptions {
 export interface AdditionalOrderFields {
   servicepoint_code?: string;
   delivery_options?: string[];
+  custom_values?: CustomValue[];
 }
 
 /**

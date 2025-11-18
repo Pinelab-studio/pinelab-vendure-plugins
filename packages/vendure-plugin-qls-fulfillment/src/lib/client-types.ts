@@ -17,7 +17,7 @@ export interface QlsApiResponse<T> {
   };
 }
 
-export type QlsFulfillmentProductInput = {
+export type FulfillmentProductInput = {
   name: string;
   ean?: string;
   sku: string;
@@ -27,7 +27,7 @@ export type QlsFulfillmentProductInput = {
   order_unit?: number;
 };
 
-export type QlsFulfillmentProduct = {
+export type FulfillmentProduct = {
   id: string;
   company_id: string;
   collection_id: string | null;
@@ -99,4 +99,58 @@ export interface FulfillmentOrderLineInput {
   product_id: string;
   name: string;
   custom_values?: CustomValue[];
+}
+
+export interface FulfillmentOrder {
+  id: string;
+  customer_reference: string;
+  amount_delivered: number | null;
+  amount_reserved: number | null;
+  amount_total: number;
+  status: string | null;
+  created: string;
+  modified: string;
+  cancelled: boolean | null;
+  hold: boolean | null;
+  processable: string;
+  shop_integration_id: string | null;
+  shop_integration_reference: string | null;
+  need_customs_information: boolean | null;
+  brand: string | null;
+  receiver_contact: {
+    companyName: string | null;
+    name: string;
+    phone: string | null;
+    email: string | null;
+    street: string;
+    houseNumber: string | null;
+    address2: string | null;
+    postalCode: string | null;
+    locality: string;
+    country: string;
+  };
+  delivery_options: string[];
+  products: Array<{
+    id: string;
+    order_id: string;
+    product_id: string;
+    name: string;
+    shop_integration_reference: string | null;
+    status: string | null;
+    amount_open: number | null;
+    amount_ordered: number;
+    amount_reserved: number | null;
+    amount_delivered: number | null;
+    amount_original: number | null;
+    country_code_of_origin: string | null;
+    hs_code: string | null;
+    price_per_unit: number | null;
+    custom1: string | null;
+    special_handling: string | null;
+    weight_per_unit: number | null;
+    company_id: string;
+    created: string;
+    modified: string;
+    product: unknown;
+  }>;
 }

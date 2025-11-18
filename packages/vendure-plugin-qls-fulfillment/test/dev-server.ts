@@ -64,11 +64,11 @@ import { createSettledOrder } from '../../test/src/shop-utils';
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [QlsPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [QlsPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     schedulerOptions: {
@@ -94,5 +94,20 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     productsCsvPath: '../test/src/products-import.csv',
   });
 
-  await createSettledOrder(shopClient, 1);
+  await createSettledOrder(
+    shopClient,
+    1,
+    true,
+    [{ id: 'T_1', quantity: 1 }],
+    undefined,
+    {
+      input: {
+        countryCode: 'NL',
+        streetLine1: 'Verzetsstraat',
+        streetLine2: '48',
+        city: 'Liwwa',
+        postalCode: '8932 BR',
+      },
+    }
+  );
 })();

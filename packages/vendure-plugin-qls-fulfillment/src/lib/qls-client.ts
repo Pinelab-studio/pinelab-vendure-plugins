@@ -1,12 +1,13 @@
 import { Logger, RequestContext } from '@vendure/core';
 import { loggerCtx } from '../constants';
-import type {
-  QlsApiResponse,
-  QlsFulfillmentProductInput,
-  QlsFulfillmentProduct,
-  FulfillmentOrderInput,
-} from './client-types';
 import { QlsClientConfig, QlsPluginOptions } from '../types';
+import type {
+  FulfillmentOrder,
+  FulfillmentOrderInput,
+  FulfillmentProduct,
+  FulfillmentProductInput,
+  QlsApiResponse,
+} from './client-types';
 
 export async function getQlsClient(
   ctx: RequestContext,
@@ -36,8 +37,8 @@ export class QlsClient {
    */
   async getFulfillmentProductBySku(
     sku: string
-  ): Promise<QlsFulfillmentProduct | undefined> {
-    const result = await this.rawRequest<QlsFulfillmentProduct[]>(
+  ): Promise<FulfillmentProduct | undefined> {
+    const result = await this.rawRequest<FulfillmentProduct[]>(
       'GET',
       `fulfillment/products?filter%5Bsku%5D=${encodeURIComponent(sku)}`
     );
@@ -58,12 +59,12 @@ export class QlsClient {
    * Get stock for all fulfillment products.
    * Might require multiple requests if the result is paginated.
    */
-  async getAllFulfillmentProducts(): Promise<QlsFulfillmentProduct[]> {
+  async getAllFulfillmentProducts(): Promise<FulfillmentProduct[]> {
     let page = 1;
-    const allProducts: QlsFulfillmentProduct[] = [];
+    const allProducts: FulfillmentProduct[] = [];
     let hasNextPage = true;
     while (hasNextPage) {
-      const result = await this.rawRequest<QlsFulfillmentProduct[]>(
+      const result = await this.rawRequest<FulfillmentProduct[]>(
         'GET',
         `fulfillment/products?page=${page}`
       );
@@ -78,9 +79,9 @@ export class QlsClient {
   }
 
   async createFulfillmentProduct(
-    data: QlsFulfillmentProductInput
-  ): Promise<QlsFulfillmentProduct> {
-    const response = await this.rawRequest<QlsFulfillmentProduct>(
+    data: FulfillmentProductInput
+  ): Promise<FulfillmentProduct> {
+    const response = await this.rawRequest<FulfillmentProduct>(
       'POST',
       'fulfillment/products',
       data
@@ -90,9 +91,9 @@ export class QlsClient {
 
   async updateFulfillmentProduct(
     fulfillmentProductId: string,
-    data: QlsFulfillmentProductInput
-  ): Promise<QlsFulfillmentProduct> {
-    const response = await this.rawRequest<QlsFulfillmentProduct>(
+    data: FulfillmentProductInput
+  ): Promise<FulfillmentProduct> {
+    const response = await this.rawRequest<FulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
       data
@@ -102,8 +103,8 @@ export class QlsClient {
 
   async createFulfillmentOrder(
     data: Omit<FulfillmentOrderInput, 'brand_id'>
-  ): Promise<FulfillmentOrderInput> {
-    const response = await this.rawRequest<FulfillmentOrderInput>(
+  ): Promise<FulfillmentOrder> {
+    const response = await this.rawRequest<FulfillmentOrder>(
       'POST',
       'fulfillment/orders',
       {
@@ -151,9 +152,7 @@ export class QlsClient {
         loggerCtx,
         data ? JSON.stringify(data, null, 2) : undefined
       );
-      throw new Error(
-        `QLS request failed: ${response.status} ${response.statusText} - ${errorText}`
-      );
+      throw new Error(errorText);
     }
 
     const contentType = response.headers.get('content-type') ?? '';

@@ -10,8 +10,6 @@ declare module '@vendure/core' {
   }
 }
 
-const uiTab = 'QLS';
-
 export const variantCustomFields: CustomFieldConfig[] = [
   {
     name: 'qlsProductId',
@@ -19,6 +17,7 @@ export const variantCustomFields: CustomFieldConfig[] = [
     label: [{ value: 'QLS Product ID', languageCode: LanguageCode.en }],
     nullable: true,
     public: false,
-    ui: { tab: uiTab },
+    readonly: true,
+    ui: { tab: 'QLS' },
   },
 ];

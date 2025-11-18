@@ -24,8 +24,8 @@ import { asError } from 'catch-unknown';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { getQlsClient, QlsClient } from '../lib/qls-client';
-import { QlsFulfillmentProduct } from '../lib/client-types';
 import { QlsPluginOptions, QlsProductJobData } from '../types';
+import { FulfillmentProduct } from '../lib/client-types';
 
 type SyncProductsJobResult = {
   updatedInQls: number;
@@ -303,9 +303,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     client: QlsClient,
     variant: ProductVariant,
-    existingProduct: QlsFulfillmentProduct | null
+    existingProduct: FulfillmentProduct | null
   ): Promise<'created' | 'updated' | 'not-changed'> {
-    let qlsProductId: string | undefined;
+    let qlsProductId = existingProduct?.id;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
     if (!existingProduct) {
       const result = await client.createFulfillmentProduct({
@@ -317,37 +317,25 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       Logger.info(`Created product '${variant.sku}' in QLS`, loggerCtx);
       createdOrUpdated = 'created';
     } else if (this.shouldUpdateProductInQls(ctx, variant, existingProduct)) {
-      const result = await client.updateFulfillmentProduct(existingProduct.id, {
+      await client.updateFulfillmentProduct(existingProduct.id, {
         sku: variant.sku,
         name: variant.name,
         ...this.options.getAdditionalVariantFields?.(ctx, variant),
       });
-      qlsProductId = result.id;
       Logger.info(`Updated product '${variant.sku}' in QLS`, loggerCtx);
       createdOrUpdated = 'updated';
     }
-
-    // FIxMEEEEE Infinite loop here
-
     if (qlsProductId !== variant.customFields.qlsProductId) {
       // Update variant with QLS product ID if it changed
-      await this.variantService.update(ctx, [
-        {
-          id: variant.id,
-          customFields: {
-            qlsProductId,
-          },
-        },
-      ]);
+      // Do not use variantService.update because it will trigger a change event and cause an infinite loop
+      await this.connection
+        .getRepository(ctx, ProductVariant)
+        .update({ id: variant.id }, { customFields: { qlsProductId } });
       Logger.info(
-        `Updated QLS product ID for variant '${variant.sku}' in Vendure, because it changed.`,
+        `Set QLS product ID for variant '${variant.sku}' to ${qlsProductId}`,
         loggerCtx
       );
     }
-    Logger.debug(
-      `Not updating product '${variant.sku}' in QLS because it doesn't have any changes`,
-      loggerCtx
-    );
     return createdOrUpdated;
   }
 
@@ -357,7 +345,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   private shouldUpdateProductInQls(
     ctx: RequestContext,
     variant: ProductVariant,
-    qlsProduct: QlsFulfillmentProduct
+    qlsProduct: FulfillmentProduct
   ): boolean {
     const additionalFields = this.options.getAdditionalVariantFields?.(
       ctx,

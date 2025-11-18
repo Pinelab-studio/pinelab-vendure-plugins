@@ -56,6 +56,8 @@ it('Should start successfully', async () => {
 
 // Update stock via webhook
 
+// Test error logs for failed webhook
+
 // FIXME Sync button in product overview
 //
 // if (process.env.TEST_ADMIN_UI) {
