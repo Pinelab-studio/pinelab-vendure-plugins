@@ -146,19 +146,28 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       let createdQlsProductsCount = 0;
       let updatedQlsProductsCount = 0;
       for (const variant of allVariants) {
-        const existingQlsProduct = allQlsProducts.find(
-          (p) => p.sku == variant.sku
-        );
-        const result = await this.createOrUpdateProductInQls(
-          ctx,
-          client,
-          variant,
-          existingQlsProduct ?? null
-        );
-        if (result === 'created') {
-          createdQlsProductsCount += 1;
-        } else if (result === 'updated') {
-          updatedQlsProductsCount += 1;
+        try {
+          const existingQlsProduct = allQlsProducts.find(
+            (p) => p.sku == variant.sku
+          );
+          const result = await this.createOrUpdateProductInQls(
+            ctx,
+            client,
+            variant,
+            existingQlsProduct ?? null
+          );
+          if (result === 'created') {
+            createdQlsProductsCount += 1;
+          } else if (result === 'updated') {
+            updatedQlsProductsCount += 1;
+          }
+        } catch (e) {
+          const error = asError(e);
+          Logger.error(
+            `Error creating or updating variant '${variant.sku}' in QLS: ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
         }
       }
       Logger.info(

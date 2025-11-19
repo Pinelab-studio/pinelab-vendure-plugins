@@ -58,7 +58,12 @@ Make sure to monitor failed jobs: A job that failed after its retries were exhau
 1. An order was not pushed to QLS
 2. A product was not synced to QLS
 
-Monitor your logs for the string `QLS webhook error`. This means an incoming stock update webhook was not processed correctly.
+Monitor your logs for the following text:
+
+- `QLS webhook error` - This means an incoming stock update webhook was not processed correctly.
+- `Error creating or updating variant` - This means a product was not synced to QLS.
+
+Make sure to filter by logger context `QlsPlugin`, to prevent false positive alerts.
 
 ## Cancelling orders and manually pushing orders to QLS
 
