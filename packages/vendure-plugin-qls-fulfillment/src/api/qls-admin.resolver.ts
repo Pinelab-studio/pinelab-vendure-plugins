@@ -1,9 +1,18 @@
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
-import { Allow, Ctx, RequestContext, Transaction } from '@vendure/core';
+import {
+  Allow,
+  Ctx,
+  Permission,
+  RequestContext,
+  Transaction,
+} from '@vendure/core';
 import { QlsProductService } from '../services/qls-product.service';
-import { fullSyncPermission } from '../config/permissions';
 import { MutationPushOrderToQlsArgs } from './generated/graphql';
 import { QlsOrderService } from '../services/qls-order.service';
+import {
+  qlsFullSyncPermission,
+  qlsPushOrderPermission,
+} from '../config/permissions';
 
 @Resolver()
 export class QlsAdminResolver {
@@ -14,7 +23,7 @@ export class QlsAdminResolver {
 
   @Mutation()
   @Transaction()
-  @Allow(fullSyncPermission.Permission)
+  @Allow(qlsFullSyncPermission.Permission)
   async triggerQlsProductSync(@Ctx() ctx: RequestContext) {
     await this.qlsService.triggerFullSync(ctx);
     return true;
@@ -22,7 +31,8 @@ export class QlsAdminResolver {
 
   @Mutation()
   @Transaction()
-  @Allow(fullSyncPermission.Permission)
+  @Allow(qlsPushOrderPermission.Permission)
+  @Allow(Permission.UpdateAdministrator)
   async pushOrderToQls(
     @Ctx() ctx: RequestContext,
     @Args() input: MutationPushOrderToQlsArgs

@@ -75,7 +75,7 @@ export interface FulfillmentOrderInput {
 
 export interface FulfillmentOrderReceiverContactInput {
   name: string;
-  companyname: string;
+  companyname?: string;
   street: string;
   housenumber: string;
   address2?: string | null;

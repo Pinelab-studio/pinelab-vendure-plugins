@@ -74,6 +74,7 @@ export class QlsClient {
       allProducts.push(...result.data);
       hasNextPage = result.pagination?.nextPage ?? false;
       page++;
+      await new Promise((resolve) => setTimeout(resolve, 1100)); // Limit to 55/minute, because the rate limit is 60/minute
     }
     return allProducts;
   }

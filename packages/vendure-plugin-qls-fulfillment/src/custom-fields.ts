@@ -1,5 +1,8 @@
 import { CustomFieldConfig, LanguageCode } from '@vendure/core';
 import {
+  // Note: we are using a deep import here, rather than importing from `@vendure/core` due to
+  // a possible bug in TypeScript (https://github.com/microsoft/TypeScript/issues/46617) which
+  // causes issues when multiple plugins extend the same custom fields interface.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   CustomProductVariantFields,
 } from '@vendure/core/dist/entity/custom-entity-fields';

@@ -130,7 +130,28 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       const customerName = [order.customer?.firstName, order.customer?.lastName]
         .filter(Boolean)
         .join(' ');
-      const name = order.shippingAddress.fullName || customerName;
+      // Validate customer and shipping address
+      if (!order.customer) {
+        throw new Error(
+          `Order '${order.code}' has no customer! Can not push order to QLS.`
+        );
+      }
+      if (!order.shippingAddress) {
+        throw new Error(
+          `Order '${order.code}' has no shipping address! Can not push order to QLS.`
+        );
+      }
+      if (
+        !order.shippingAddress.streetLine1 ||
+        !order.shippingAddress.postalCode ||
+        !order.shippingAddress.city ||
+        !order.shippingAddress.streetLine2 ||
+        !order.shippingAddress.countryCode
+      ) {
+        throw new Error(
+          `Shipping address for order '${order.code}' is missing one of required fields: streetLine1, postalCode, city, streetLine2, countryCode. Can not push order to QLS.`
+        );
+      }
       const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
         customer_reference: order.code,
         processable: new Date().toISOString(), // Processable starting now
@@ -138,15 +159,15 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         delivery_options: additionalOrderFields?.delivery_options ?? [],
         total_price: order.totalWithTax,
         receiver_contact: {
-          name: name,
-          companyname: order.shippingAddress.company ?? '',
-          street: order.shippingAddress.streetLine1 ?? '',
-          housenumber: order.shippingAddress.streetLine2 ?? '',
-          postalcode: order.shippingAddress.postalCode ?? '',
-          locality: order.shippingAddress.city ?? '',
-          country: order.shippingAddress.countryCode?.toUpperCase() ?? '',
-          email: order.customer?.emailAddress ?? '',
-          phone: order.customer?.phoneNumber ?? '',
+          name: order.shippingAddress.fullName || customerName,
+          companyname: order.shippingAddress.company,
+          street: order.shippingAddress.streetLine1,
+          housenumber: order.shippingAddress.streetLine2,
+          postalcode: order.shippingAddress.postalCode,
+          locality: order.shippingAddress.city,
+          country: order.shippingAddress.countryCode.toUpperCase(),
+          email: order.customer.emailAddress,
+          phone: order.customer.phoneNumber,
         },
         products: qlsProducts,
         ...(additionalOrderFields ?? {}),
