@@ -35,6 +35,7 @@ type SyncProductsJobResult = {
   updatedInQls: number;
   createdInQls: number;
   updatedStock: number;
+  failed: number;
 };
 
 @Injectable()
@@ -151,6 +152,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       // Create or update products in QLS
       let createdQlsProductsCount = 0;
       let updatedQlsProductsCount = 0;
+      let failedCount = 0;
       for (const variant of allVariants) {
         try {
           const existingQlsProduct = allQlsProducts.find(
@@ -174,7 +176,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             loggerCtx,
             error.stack
           );
+          failedCount += 1;
         }
+        await new Promise((resolve) => setTimeout(resolve, 700)); // Avoid rate limit of 500/5 minutes (700ms delay = 85/minute)
       }
       Logger.info(
         `Created ${createdQlsProductsCount} products in QLS`,
@@ -188,6 +192,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         updatedInQls: updatedQlsProductsCount,
         createdInQls: createdQlsProductsCount,
         updatedStock: updateStockCount,
+        failed: failedCount,
       };
     } catch (e) {
       const error = asError(e);
@@ -217,38 +222,56 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         updatedInQls: 0,
         createdInQls: 0,
         updatedStock: 0,
+        failed: 0,
       };
     }
     let updatedInQls = 0;
     let createdInQls = 0;
+    let failedCount = 0;
     for (const variantId of productVariantIds) {
-      const variant = await this.variantService.findOne(ctx, variantId);
-      if (!variant) {
-        Logger.error(
-          `Variant with id ${variantId} not found. Not creating or updating product in QLS.`,
-          loggerCtx
+      try {
+        const variant = await this.variantService.findOne(ctx, variantId, [
+          'featuredAsset',
+          'taxCategory',
+          'channels',
+          'product.featuredAsset',
+        ]);
+        if (!variant) {
+          Logger.error(
+            `Variant with id ${variantId} not found. Not creating or updating product in QLS.`,
+            loggerCtx
+          );
+          continue;
+        }
+        const existingQlsProduct = await client.getFulfillmentProductBySku(
+          variant.sku
         );
-        continue;
-      }
-      const existingQlsProduct = await client.getFulfillmentProductBySku(
-        variant.sku
-      );
-      const result = await this.createOrUpdateProductInQls(
-        ctx,
-        client,
-        variant,
-        existingQlsProduct ?? null
-      );
-      if (result === 'created') {
-        createdInQls += 1;
-      } else if (result === 'updated') {
-        updatedInQls += 1;
+        const result = await this.createOrUpdateProductInQls(
+          ctx,
+          client,
+          variant,
+          existingQlsProduct ?? null
+        );
+        if (result === 'created') {
+          createdInQls += 1;
+        } else if (result === 'updated') {
+          updatedInQls += 1;
+        }
+      } catch (e) {
+        const error = asError(e);
+        Logger.error(
+          `Error syncing variant ${variantId} to QLS: ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+        failedCount += 1;
       }
     }
     return {
       updatedInQls,
       createdInQls,
       updatedStock: 0,
+      failed: failedCount,
     };
   }
 
