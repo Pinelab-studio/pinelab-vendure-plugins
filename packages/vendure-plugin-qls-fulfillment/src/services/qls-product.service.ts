@@ -10,7 +10,9 @@ import {
   Job,
   JobQueue,
   JobQueueService,
+  ListQueryBuilder,
   Logger,
+  ProductPriceApplicator,
   ProductVariant,
   ProductVariantEvent,
   ProductVariantService,
@@ -19,13 +21,15 @@ import {
   StockLevelService,
   StockLocationService,
   TransactionalConnection,
+  translateDeep,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
+import { IsNull } from 'typeorm';
 import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
+import { FulfillmentProduct } from '../lib/client-types';
 import { getQlsClient, QlsClient } from '../lib/qls-client';
 import { QlsPluginOptions, QlsProductJobData } from '../types';
-import { FulfillmentProduct } from '../lib/client-types';
 
 type SyncProductsJobResult = {
   updatedInQls: number;
@@ -44,7 +48,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     private stockLevelService: StockLevelService,
     private readonly variantService: ProductVariantService,
     private readonly stockLocationService: StockLocationService,
-    private readonly eventBus: EventBus
+    private readonly eventBus: EventBus,
+    private readonly listQueryBuilder: ListQueryBuilder,
+    private readonly productPriceApplicator: ProductPriceApplicator
   ) {}
 
   onApplicationBootstrap(): void {
@@ -380,16 +386,40 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     const take = 100;
     let hasMore = true;
     while (hasMore) {
-      const result = await this.variantService.findAll(ctx, {
-        filter: { deletedAt: { isNull: true } },
-        skip,
-        take,
-      });
-      if (!result.items.length) {
-        break;
-      }
-      allVariants.push(...result.items);
-      if (allVariants.length >= result.totalItems) {
+      const relations = [
+        'featuredAsset',
+        'taxCategory',
+        'channels',
+        'product.featuredAsset',
+      ];
+      const [items, totalItems] = await this.listQueryBuilder
+        .build(
+          ProductVariant,
+          {
+            skip,
+            take,
+          },
+          {
+            relations,
+            channelId: ctx.channelId,
+            where: { deletedAt: IsNull() },
+            ctx,
+          }
+        )
+        .getManyAndCount();
+      let variants = await Promise.all(
+        items.map(async (item) =>
+          this.productPriceApplicator.applyChannelPriceAndTax(
+            item,
+            ctx,
+            undefined,
+            false
+          )
+        )
+      );
+      variants = variants.map((v) => translateDeep(v, ctx.languageCode));
+      allVariants.push(...variants);
+      if (allVariants.length >= totalItems) {
         hasMore = false;
       }
       skip += take;
