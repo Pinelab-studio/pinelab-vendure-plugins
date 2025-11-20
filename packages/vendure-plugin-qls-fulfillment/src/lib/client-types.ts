@@ -33,6 +33,9 @@ export type FulfillmentProduct = {
   collection_id: string | null;
   dimensions: unknown;
   article_number: string | null;
+  /**
+   * Main EAN of the product
+   */
   ean: string;
   name: string;
   sku: string;
@@ -56,8 +59,18 @@ export type FulfillmentProduct = {
   amount_blocked: number;
   status: string | null;
   suppliers: unknown[];
-  barcodes: string[];
+  barcodes: Array<{
+    id: number;
+    fulfillment_product_id: string;
+    company_id: string;
+    barcode: string;
+    created: string;
+    modified: string;
+  }>;
   image_url_handheld: string | null;
+  /**
+   * All EANs of the product, including the main EAN
+   */
   barcodes_and_ean: string[];
 };
 

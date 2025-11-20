@@ -74,7 +74,11 @@ export class QlsClient {
       allProducts.push(...result.data);
       hasNextPage = result.pagination?.nextPage ?? false;
       page++;
-      await new Promise((resolve) => setTimeout(resolve, 1100)); // Limit to 55/minute, because the rate limit is 60/minute
+      Logger.info(
+        `Fetched products ${allProducts.length}/${result.pagination?.count}`,
+        loggerCtx
+      );
+      await new Promise((resolve) => setTimeout(resolve, 700)); // Limit to ~86/minute, because the rate limit is 500/5 minutes
     }
     return allProducts;
   }
@@ -114,6 +118,29 @@ export class QlsClient {
       }
     );
     return response.data;
+  }
+
+  /**
+   * Add an extra barcode to a fulfillment product in QLS
+   */
+  async addBarcode(productId: string, barcode: string): Promise<void> {
+    await this.rawRequest<void>(
+      'POST',
+      `fulfillment/products/${productId}/barcodes`,
+      {
+        barcode,
+      }
+    );
+  }
+
+  /**
+   * Add an extra barcode to a fulfillment product in QLS
+   */
+  async removeBarcode(productId: string, barcodeId: number): Promise<void> {
+    await this.rawRequest<void>(
+      'DELETE',
+      `fulfillment/products/${productId}/barcodes/${barcodeId}`
+    );
   }
 
   async rawRequest<T>(

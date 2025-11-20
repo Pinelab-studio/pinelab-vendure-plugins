@@ -19,10 +19,10 @@ export interface QlsPluginOptions {
    * Required to get the EAN and image URL for a product variant.
    * Also allows you to override other product attributes like name, price, etc.
    */
-  getAdditionalVariantFields?: (
+  getAdditionalVariantFields: (
     ctx: RequestContext,
     variant: ProductVariant
-  ) => Partial<FulfillmentProductInput>;
+  ) => AdditionalVariantFields;
 
   /**
    * Function to get the set service point code for an order.
@@ -41,7 +41,19 @@ export interface QlsPluginOptions {
    * Set this to a random string
    */
   webhookSecret: string;
+  /**
+   * Disable the pulling in of stock levels from QLS. When disabled, stock in Vendure will not be modified based on QLS stock levels.
+   * Useful for testing out order sync separately, or testing against a QLS test env that has no stock for example
+   */
+  disableStockSync?: boolean;
 }
+
+/**
+ * Additional fields for a product variant that are used to create or update a product in QLS
+ */
+export type AdditionalVariantFields = Partial<
+  FulfillmentProductInput & { ean: string; additionalEANs?: string[] }
+>;
 
 export interface AdditionalOrderFields {
   servicepoint_code?: string;

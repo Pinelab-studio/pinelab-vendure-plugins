@@ -66,6 +66,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
         getAdditionalVariantFields: (ctx, variant) => ({
           ean: variant.sku,
           image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
+          // Just testing additionalEANs: [Math.floor(Math.random() * 1000).toString()],
         }),
         webhookSecret: '121231',
       }),

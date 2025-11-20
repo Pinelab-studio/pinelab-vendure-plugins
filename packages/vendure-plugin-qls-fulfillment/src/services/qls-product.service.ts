@@ -29,7 +29,12 @@ import util from 'util';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { FulfillmentProduct } from '../lib/client-types';
 import { getQlsClient, QlsClient } from '../lib/qls-client';
-import { QlsPluginOptions, QlsProductJobData } from '../types';
+import {
+  AdditionalVariantFields,
+  QlsPluginOptions,
+  QlsProductJobData,
+} from '../types';
+import { getEansToUpdate } from './util';
 
 type SyncProductsJobResult = {
   updatedInQls: number;
@@ -343,56 +348,121 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     variant: ProductVariant,
     existingProduct: FulfillmentProduct | null
   ): Promise<'created' | 'updated' | 'not-changed'> {
-    let qlsProductId = existingProduct?.id;
+    let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
+    const additionalVariantFields = this.options.getAdditionalVariantFields(
+      ctx,
+      variant
+    );
     if (!existingProduct) {
       const result = await client.createFulfillmentProduct({
         name: variant.name,
         sku: variant.sku,
-        ...this.options.getAdditionalVariantFields?.(ctx, variant),
+        ...additionalVariantFields,
       });
-      qlsProductId = result.id;
+      qlsProduct = result;
       Logger.info(`Created product '${variant.sku}' in QLS`, loggerCtx);
       createdOrUpdated = 'created';
-    } else if (this.shouldUpdateProductInQls(ctx, variant, existingProduct)) {
+    } else if (
+      this.shouldUpdateProductInQls(
+        variant,
+        existingProduct,
+        additionalVariantFields
+      )
+    ) {
       await client.updateFulfillmentProduct(existingProduct.id, {
         sku: variant.sku,
         name: variant.name,
-        ...this.options.getAdditionalVariantFields?.(ctx, variant),
+        ...additionalVariantFields,
       });
       Logger.info(`Updated product '${variant.sku}' in QLS`, loggerCtx);
       createdOrUpdated = 'updated';
     }
-    if (qlsProductId !== variant.customFields.qlsProductId) {
+    if (qlsProduct && qlsProduct?.id !== variant.customFields.qlsProductId) {
       // Update variant with QLS product ID if it changed
       // Do not use variantService.update because it will trigger a change event and cause an infinite loop
       await this.connection
         .getRepository(ctx, ProductVariant)
-        .update({ id: variant.id }, { customFields: { qlsProductId } });
+        .update(
+          { id: variant.id },
+          { customFields: { qlsProductId: qlsProduct.id } }
+        );
       Logger.info(
-        `Set QLS product ID for variant '${variant.sku}' to ${qlsProductId}`,
+        `Set QLS product ID for variant '${variant.sku}' to ${qlsProduct.id}`,
         loggerCtx
       );
     }
+    if (qlsProduct) {
+      const updatedEANs = await this.updateAdditionalEANs(
+        ctx,
+        client,
+        qlsProduct,
+        additionalVariantFields
+      );
+      if (createdOrUpdated === 'not-changed' && updatedEANs) {
+        // If nothing changed so far, but EANs changed, then we did update the product in QLS
+        createdOrUpdated = 'updated';
+      }
+    }
+
     return createdOrUpdated;
+  }
+
+  /**
+   * Update the additional EANs/barcodes for a product in QLS if needed
+   */
+  private async updateAdditionalEANs(
+    ctx: RequestContext,
+    client: QlsClient,
+    qlsProduct: FulfillmentProduct,
+    additionalVariantFields: AdditionalVariantFields
+  ): Promise<boolean> {
+    const existingAdditionalEANs = qlsProduct?.barcodes_and_ean.filter(
+      (ean) => ean !== qlsProduct.ean
+    ); // Remove the main EAN
+    const eansToUpdate = getEansToUpdate({
+      existingEans: existingAdditionalEANs,
+      desiredEans: additionalVariantFields.additionalEANs,
+    });
+    if (!eansToUpdate) {
+      // No updates needed
+      return false;
+    }
+    await Promise.all(
+      eansToUpdate.eansToAdd.map((ean) => client.addBarcode(qlsProduct.id, ean))
+    );
+    // get barcode ID's to remove, because deletion goes via barcode ID, not barcode value
+    const barcodeIdsToRemove = qlsProduct.barcodes
+      .filter((barcode) => eansToUpdate.eansToRemove.includes(barcode.barcode))
+      .map((barcode) => barcode.id);
+    await Promise.all(
+      barcodeIdsToRemove.map((barcodeId) =>
+        client.removeBarcode(qlsProduct.id, barcodeId)
+      )
+    );
+    Logger.info(
+      `Added additional EANs '${eansToUpdate.eansToAdd.join(
+        ','
+      )}', and removed EANs '${eansToUpdate.eansToRemove.join(
+        ','
+      )}' for product '${qlsProduct.sku}' in QLS`,
+      loggerCtx
+    );
+    return true;
   }
 
   /**
    * Determine if a product needs to be updated in QLS based on the given variant and QLS product.
    */
   private shouldUpdateProductInQls(
-    ctx: RequestContext,
     variant: ProductVariant,
-    qlsProduct: FulfillmentProduct
+    qlsProduct: FulfillmentProduct,
+    additionalVariantFields: AdditionalVariantFields
   ): boolean {
-    const additionalFields = this.options.getAdditionalVariantFields?.(
-      ctx,
-      variant
-    );
     if (
       qlsProduct.name !== variant.name ||
-      qlsProduct.ean !== additionalFields?.ean ||
-      qlsProduct.image_url !== additionalFields?.image_url
+      qlsProduct.ean !== additionalVariantFields?.ean ||
+      qlsProduct.image_url !== additionalVariantFields?.image_url
     ) {
       // If name or ean has changed, product should be updated in QLS
       return true;
@@ -458,6 +528,13 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     variantId: ID,
     availableStock: number
   ) {
+    if (this.options.disableStockSync) {
+      Logger.warn(
+        `Stock sync disabled. Not updating stock for variant '${variantId}'`,
+        loggerCtx
+      );
+      return;
+    }
     // Find default Stock Location
     const defaultStockLocation =
       await this.stockLocationService.defaultStockLocation(ctx);

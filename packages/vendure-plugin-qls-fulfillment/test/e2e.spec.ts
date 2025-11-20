@@ -58,6 +58,8 @@ it('Should start successfully', async () => {
 
 // Test error logs for failed webhook
 
+// Does not update stock when disableStockSync is true
+
 // FIXME Sync button in product overview
 //
 // if (process.env.TEST_ADMIN_UI) {
