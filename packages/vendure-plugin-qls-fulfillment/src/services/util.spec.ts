@@ -11,10 +11,10 @@ describe('getEansToUpdate', () => {
     ).toBe(false);
   });
 
-  it('ignores ordering, whitespace and null/undefined when determining additions', () => {
+  it('ignores ordering, whitespace, null/undefined and empty stringswhen determining additions', () => {
     expect(
       getEansToUpdate({
-        existingEans: [null, '123'],
+        existingEans: [null, '123', ''],
         desiredEans: [' 123', '456 ', undefined, null],
       })
     ).toEqual({

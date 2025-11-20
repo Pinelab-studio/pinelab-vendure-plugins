@@ -34,7 +34,7 @@ import {
   QlsPluginOptions,
   QlsProductJobData,
 } from '../types';
-import { getEansToUpdate } from './util';
+import { getEansToUpdate, normalizeEans } from './util';
 
 type SyncProductsJobResult = {
   updatedInQls: number;
@@ -193,6 +193,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         `Updated ${updatedQlsProductsCount} products in QLS`,
         loggerCtx
       );
+      Logger.info(`Finished full sync with ${failedCount} failures`, loggerCtx);
       return {
         updatedInQls: updatedQlsProductsCount,
         createdInQls: createdQlsProductsCount,
@@ -426,6 +427,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       // No updates needed
       return false;
     }
+    eansToUpdate.eansToAdd = normalizeEans(eansToUpdate.eansToAdd);
+    eansToUpdate.eansToRemove = normalizeEans(eansToUpdate.eansToRemove);
     await Promise.all(
       eansToUpdate.eansToAdd.map((ean) => client.addBarcode(qlsProduct.id, ean))
     );
