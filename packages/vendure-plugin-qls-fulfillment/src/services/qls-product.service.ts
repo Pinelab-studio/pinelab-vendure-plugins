@@ -350,10 +350,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   ): Promise<'created' | 'updated' | 'not-changed'> {
     let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
-    const additionalVariantFields = this.options.getAdditionalVariantFields(
-      ctx,
-      variant
-    );
+    const { additionalEANs, ...additionalVariantFields } =
+      this.options.getAdditionalVariantFields(ctx, variant);
     if (!existingProduct) {
       const result = await client.createFulfillmentProduct({
         name: variant.name,
@@ -397,7 +395,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         ctx,
         client,
         qlsProduct,
-        additionalVariantFields
+        additionalEANs
       );
       if (createdOrUpdated === 'not-changed' && updatedEANs) {
         // If nothing changed so far, but EANs changed, then we did update the product in QLS
@@ -415,14 +413,14 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     client: QlsClient,
     qlsProduct: FulfillmentProduct,
-    additionalVariantFields: AdditionalVariantFields
+    additionalEANs: string[] | undefined
   ): Promise<boolean> {
     const existingAdditionalEANs = qlsProduct?.barcodes_and_ean.filter(
       (ean) => ean !== qlsProduct.ean
     ); // Remove the main EAN
     const eansToUpdate = getEansToUpdate({
       existingEans: existingAdditionalEANs,
-      desiredEans: additionalVariantFields.additionalEANs,
+      desiredEans: additionalEANs,
     });
     if (!eansToUpdate) {
       // No updates needed
