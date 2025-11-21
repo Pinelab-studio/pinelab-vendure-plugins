@@ -60,6 +60,8 @@ it('Should start successfully', async () => {
 
 // Does not update stock when disableStockSync is true
 
+// Tests additional EANs
+
 // FIXME Sync button in product overview
 //
 // if (process.env.TEST_ADMIN_UI) {

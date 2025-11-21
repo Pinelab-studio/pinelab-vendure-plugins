@@ -427,11 +427,21 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       // No updates needed
       return false;
     }
+    // Add additional EANs
     eansToUpdate.eansToAdd = normalizeEans(eansToUpdate.eansToAdd);
-    eansToUpdate.eansToRemove = normalizeEans(eansToUpdate.eansToRemove);
     await Promise.all(
       eansToUpdate.eansToAdd.map((ean) => client.addBarcode(qlsProduct.id, ean))
     );
+    if (eansToUpdate.eansToAdd.length > 0) {
+      Logger.info(
+        `Added additional EANs: ${eansToUpdate.eansToAdd.join(
+          ','
+        )} to product '${qlsProduct.sku}' in QLS`,
+        loggerCtx
+      );
+    }
+    // Remove EANs, normalize first
+    eansToUpdate.eansToRemove = normalizeEans(eansToUpdate.eansToRemove);
     // get barcode ID's to remove, because deletion goes via barcode ID, not barcode value
     const barcodeIdsToRemove = qlsProduct.barcodes
       .filter((barcode) => eansToUpdate.eansToRemove.includes(barcode.barcode))
@@ -441,14 +451,14 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         client.removeBarcode(qlsProduct.id, barcodeId)
       )
     );
-    Logger.info(
-      `Added additional EANs '${eansToUpdate.eansToAdd.join(
-        ','
-      )}', and removed EANs '${eansToUpdate.eansToRemove.join(
-        ','
-      )}' for product '${qlsProduct.sku}' in QLS`,
-      loggerCtx
-    );
+    if (eansToUpdate.eansToRemove.length > 0) {
+      Logger.info(
+        `Removed EANs '${eansToUpdate.eansToRemove.join(',')} from product '${
+          qlsProduct.sku
+        }' in QLS`,
+        loggerCtx
+      );
+    }
     return true;
   }
 
