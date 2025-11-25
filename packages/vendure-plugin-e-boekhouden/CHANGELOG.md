@@ -1,3 +1,7 @@
+# 2.0.0 (2025-11-25)
+
+- Add support for custom VAT code strategy to define the VAT code to send to e-boekhouden
+
 # 1.4.2 (2025-11-13)
 
 - Documentation update

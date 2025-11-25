@@ -10,6 +10,7 @@ import {
   DefaultLogger,
   LogLevel,
   mergeConfig,
+  Order,
   RequestContext,
   TaxRateService,
 } from '@vendure/core';
@@ -47,6 +48,8 @@ describe('E-boekhouden plugin', function () {
     username: 'testUsername',
   };
 
+  const vatCodeStrategyCalled = vi.fn();
+
   beforeAll(async () => {
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
@@ -55,7 +58,14 @@ describe('E-boekhouden plugin', function () {
         port: 3105,
       },
       logger: new DefaultLogger({ level: LogLevel.Debug }),
-      plugins: [EBoekhoudenPlugin],
+      plugins: [
+        EBoekhoudenPlugin.init({
+          getTaxCode: (ctx, order, taxRate) => {
+            vatCodeStrategyCalled(ctx, order, taxRate);
+            return 'HOOG_VERK_21';
+          },
+        }),
+      ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
       },
@@ -142,6 +152,14 @@ describe('E-boekhouden plugin', function () {
     expect(payloads[1]).toContain('HOOG_VERK_21');
     expect(payloads[1]).toContain(eBoekhoudenConfig.account);
     expect(payloads[1]).toContain(eBoekhoudenConfig.contraAccount);
+  });
+
+  it('Should have called vat code strategy', async () => {
+    const [ctx, order, taxRate] = vatCodeStrategyCalled.mock.calls[0];
+    expect(vatCodeStrategyCalled).toHaveBeenCalledTimes(2); // once for 21% and once for 0%
+    expect(ctx).toBeInstanceOf(RequestContext);
+    expect(order).toBeInstanceOf(Order);
+    expect(taxRate).toBe(21);
   });
 
   if (process.env.TEST_ADMIN_UI) {
