@@ -641,6 +641,11 @@ export class GoedgepicktService
         GoedgepicktService.splitHouseNumberAndAddition(
           order.shippingAddress.streetLine2
         );
+      if (!houseNumber) {
+        throw Error(
+          `Order ${order.code} has no house number in streetLine2. Cannot push order to GoedGepickt`
+        );
+      }
       const billingAddress =
         order.billingAddress && order.billingAddress.streetLine1
           ? order.billingAddress

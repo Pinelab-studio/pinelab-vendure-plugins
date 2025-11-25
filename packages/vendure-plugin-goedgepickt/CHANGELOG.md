@@ -1,4 +1,4 @@
-# 2.1.5 (2025-11-25)
+# 2.1.6 (2025-11-25)
 
 - Fix `object null is not iterable at GoedgepicktService.splitHouseNumberAndAddition` for empty house number string
 
