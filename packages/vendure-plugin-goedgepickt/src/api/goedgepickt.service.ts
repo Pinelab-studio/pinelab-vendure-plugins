@@ -663,7 +663,7 @@ export class GoedgepicktService
         shippingLastName: order.customer?.lastName,
         shippingCompany: order.shippingAddress.company,
         shippingAddress: order.shippingAddress.streetLine1,
-        shippingHouseNumber: houseNumber,
+        shippingHouseNumber: houseNumber ?? 0,
         shippingHouseNumberAddition: addition,
         shippingZipcode: order.shippingAddress.postalCode,
         shippingCity: order.shippingAddress.city,
@@ -895,14 +895,19 @@ export class GoedgepicktService
   }
 
   static splitHouseNumberAndAddition(houseNumberString: string): {
-    houseNumber: number;
+    houseNumber?: number;
     addition?: string;
   } {
-    const [houseNumber, ...addition] = houseNumberString.match(
-      /[a-z]+|\d+/gi
-    ) as any[];
+    const result = houseNumberString.match(/[a-z]+|\d+/gi);
+    if (!result) {
+      return {
+        houseNumber: undefined,
+        addition: undefined,
+      };
+    }
+    const [houseNumber, ...addition] = result;
     return {
-      houseNumber,
+      houseNumber: parseInt(houseNumber),
       addition: addition.join() || undefined, // .join() can result in empty string
     };
   }
