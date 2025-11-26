@@ -173,6 +173,10 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         ...(additionalOrderFields ?? {}),
       };
       const result = await client.createFulfillmentOrder(qlsOrder);
+      Logger.info(
+        `Successfully created order '${order.code}' in QLS with id '${result.id}'`,
+        loggerCtx
+      );
       await this.orderService.addNoteToOrder(ctx, {
         id: orderId,
         isPublic: false,
