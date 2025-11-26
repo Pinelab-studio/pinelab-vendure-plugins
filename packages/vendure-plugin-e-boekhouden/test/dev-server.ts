@@ -40,7 +40,12 @@ import path from 'path';
       shopApiPlayground: {},
     },
     plugins: [
-      EBoekhoudenPlugin,
+      EBoekhoudenPlugin.init({
+        getTaxCode: (ctx, order, taxRate) => {
+          // Just testing
+          return 'HOOG_VERK_21';
+        },
+      }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -108,5 +113,5 @@ import path from 'path';
       countryCode: 'NL',
     },
   });
-  await addPaymentToOrder(shopClient, testPaymentMethod.code);
+  // await addPaymentToOrder(shopClient, testPaymentMethod.code);
 })();

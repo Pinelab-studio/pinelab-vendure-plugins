@@ -15,7 +15,20 @@ mutation line for each taxrate of the order's tax summary.
 import { EboekhoudenPlugin } from '@pinelab/vendure-plugin-e-boekhouden'
 
 plugins: [
-  EboekhoudenPlugin,
+  EboekhoudenPlugin.init({
+    getTaxCode: (ctx, order, taxRate) => {
+      if (order.customFields.VatID && taxRate == 0) {
+        return 'VERL_VERK'; // Reverse charge for EU sales
+      } else if (taxRate == 21) {
+        return 'HOOG_VERK_21';
+      } else if (taxRate == 9) {
+        return 'LAAG_VERK_9';
+      } else {
+        Logger.error(`Unknown tax rate ${taxRate} for order ${order.code}`);
+        return 'GEEN';
+      }
+    },
+  }),
   ...
 ]
 ```

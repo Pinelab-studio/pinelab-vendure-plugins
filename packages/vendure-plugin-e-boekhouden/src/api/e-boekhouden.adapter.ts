@@ -1,8 +1,9 @@
 import { CMutatieRegel, OMut } from '../client';
-import { Logger, Order } from '@vendure/core';
+import { Logger, Order, RequestContext } from '@vendure/core';
 import { EBoekhoudenConfigEntity } from './e-boekhouden-config.entity';
 import { loggerCtx } from '../constants';
 import { OrderTaxSummary } from '@vendure/common/lib/generated-types';
+import { EBoekhoudenPlugin } from '../e-boekhouden.plugin';
 
 const toPrice = (price: number) => (Math.round(price) / 100).toFixed(2);
 
@@ -29,10 +30,14 @@ export class EBoekhoudenAdapter {
    * Transforms an order, together with config, to a e-Boekhouden mutation format
    * using the order.taxSummary
    */
-  static toMutation(order: Order, config: EBoekhoudenConfigEntity): OMut {
+  static toMutation(
+    ctx: RequestContext,
+    order: Order,
+    config: EBoekhoudenConfigEntity
+  ): OMut {
     const description = `Order ${order.code} - ${order.customer?.firstName} ${order.customer?.lastName} (${order.customer?.emailAddress})`;
     const cMutatieRegel = order.taxSummary.map((summary) =>
-      this.toMutationLine(summary, config)
+      this.toMutationLine(ctx, summary, order, config)
     );
     return {
       Soort: 'GeldOntvangen',
@@ -47,7 +52,9 @@ export class EBoekhoudenAdapter {
   }
 
   static toMutationLine(
+    ctx: RequestContext,
     tax: OrderTaxSummary,
+    order: Order,
     config: EBoekhoudenConfigEntity
   ): CMutatieRegel {
     const recalculatedTax = recalculateTaxFromTotalIncVAT(tax);
@@ -57,28 +64,9 @@ export class EBoekhoudenAdapter {
       BedragBTW: toPrice(recalculatedTax.totalTax),
       BTWPercentage: String(tax.taxRate),
       TegenrekeningCode: config.contraAccount,
-      BTWCode: this.getTax(tax.taxRate, tax.description),
+      BTWCode: EBoekhoudenPlugin.options.getTaxCode(ctx, order, tax.taxRate),
       BedragInvoer: toPrice(recalculatedTax.totalIncVAT),
     };
-  }
-
-  static getTax(
-    value: number,
-    reference: string
-  ): 'LAAG_VERK_9' | 'HOOG_VERK_21' | 'AFW' | 'GEEN' {
-    if (value === 9) {
-      return 'LAAG_VERK_9';
-    } else if (value === 21) {
-      return 'HOOG_VERK_21';
-    } else if (value === 0) {
-      return 'GEEN';
-    } else {
-      Logger.error(
-        `Unknown taxValue ${value} for ${reference}. Used 21 as default`,
-        loggerCtx
-      );
-      return 'HOOG_VERK_21';
-    }
   }
 
   static toDateString(date: Date): string {

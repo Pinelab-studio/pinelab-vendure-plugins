@@ -267,7 +267,7 @@ describe('Goedgepickt plugin', function () {
     await expect(createOrderPayload.shippingFirstName).toBe('Hayden');
     await expect(createOrderPayload.shippingLastName).toBe('Zieme');
     await expect(createOrderPayload.shippingAddress).toBe('Verzetsstraat');
-    await expect(createOrderPayload.shippingHouseNumber).toBe('12');
+    await expect(createOrderPayload.shippingHouseNumber).toBe(12);
     await expect(createOrderPayload.shippingHouseNumberAddition).toBe('a');
     await expect(createOrderPayload.shippingZipcode).toBe('8923CP');
     await expect(createOrderPayload.shippingCity).toBe('Liwwa');

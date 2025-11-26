@@ -8,6 +8,7 @@ import {
   EBoekhoudenResolver,
   eBoekhoudenPermission,
 } from './api/e-boekhouden.resolver';
+import { EBoekhoudenOptions } from './api/types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -24,6 +25,13 @@ import {
   compatibility: '>=2.2.0',
 })
 export class EBoekhoudenPlugin {
+  static options: EBoekhoudenOptions;
+
+  static init(options: EBoekhoudenOptions): typeof EBoekhoudenPlugin {
+    this.options = options;
+    return EBoekhoudenPlugin;
+  }
+
   static ui: AdminUiExtension = {
     extensionPath: path.join(__dirname, 'ui'),
     ngModules: [
