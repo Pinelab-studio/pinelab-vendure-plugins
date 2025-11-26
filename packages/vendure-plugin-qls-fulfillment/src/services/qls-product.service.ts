@@ -126,6 +126,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
    * 4. Updates products in QLS if needed
    */
   async runFullSync(ctx: RequestContext): Promise<SyncProductsJobResult> {
+    // Wait for 700ms to avoid rate limit of 500/5 minutes
+    const waitToPreventRateLimit = () =>
+      new Promise((resolve) => setTimeout(resolve, 700));
     try {
       const client = await getQlsClient(ctx, this.options);
       if (!client) {
@@ -175,8 +178,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             updatedQlsProductsCount += 1;
           }
           if (result === 'created' || result === 'updated') {
-            // Wait for 700ms to avoid rate limit of 500/5 minutes, but only if we created or updated a product, otherwise no calls have been made yet.
-            await new Promise((resolve) => setTimeout(resolve, 700));
+            // Wait only if we created or updated a product, otherwise no calls have been made yet.
+            await waitToPreventRateLimit();
           }
         } catch (e) {
           const error = asError(e);
@@ -186,6 +189,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             error.stack
           );
           failedCount += 1;
+          await waitToPreventRateLimit();
         }
       }
       Logger.info(
