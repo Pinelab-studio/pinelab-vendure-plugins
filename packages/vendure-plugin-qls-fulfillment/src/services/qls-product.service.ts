@@ -174,6 +174,10 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           } else if (result === 'updated') {
             updatedQlsProductsCount += 1;
           }
+          if (result === 'created' || result === 'updated') {
+            // Wait for 700ms to avoid rate limit of 500/5 minutes, but only if we created or updated a product, otherwise no calls have been made yet.
+            await new Promise((resolve) => setTimeout(resolve, 700));
+          }
         } catch (e) {
           const error = asError(e);
           Logger.error(
@@ -183,7 +187,6 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           );
           failedCount += 1;
         }
-        await new Promise((resolve) => setTimeout(resolve, 700)); // Avoid rate limit of 500/5 minutes (700ms delay = 85/minute)
       }
       Logger.info(
         `Created ${createdQlsProductsCount} products in QLS`,
@@ -403,7 +406,12 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         createdOrUpdated = 'updated';
       }
     }
-
+    if (createdOrUpdated === 'not-changed') {
+      Logger.info(
+        `Variant '${variant.sku}' not updated in QLS, because no changes were found.`,
+        loggerCtx
+      );
+    }
     return createdOrUpdated;
   }
 
@@ -423,7 +431,11 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       existingEans: existingAdditionalEANs,
       desiredEans: additionalEANs,
     });
-    if (!eansToUpdate) {
+    if (
+      !eansToUpdate ||
+      (eansToUpdate.eansToAdd.length === 0 &&
+        eansToUpdate.eansToRemove.length === 0)
+    ) {
       // No updates needed
       return false;
     }
