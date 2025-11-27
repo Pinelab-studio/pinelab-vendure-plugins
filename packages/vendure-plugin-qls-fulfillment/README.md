@@ -51,6 +51,33 @@ This plugin only uses Vendure's default stock location, that means you should ei
 
 Vendure assumes the first created stock location is the default stock location.
 
+## Service Points
+
+You can use the query `qlsServicePoints(postalCode: String!): [QlsServicePoint!]!` to get the service points for a given postal code. You can use the `setOrderCustomFields` mutation to set the service point on an order.
+
+```graphql
+mutation {
+  setOrderCustomFields(
+    input: {
+      customFields: {
+        qlsServicePointId: "12232" # This is the ID of one of the points returned by the query above
+        qlsServicePointDetails: "Some details about the service point for admin users" # This is just for admin users in Vendure
+      }
+    }
+  ) {
+    __typename
+    ... on Order {
+      id
+      code
+      customFields {
+        qlsServicePointId
+        qlsServicePointDetails
+      }
+    }
+  }
+}
+```
+
 ## Monitoring
 
 Make sure to monitor failed jobs: A job that failed after its retries were exhausted, means:

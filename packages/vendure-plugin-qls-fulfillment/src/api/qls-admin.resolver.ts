@@ -17,7 +17,7 @@ import {
 @Resolver()
 export class QlsAdminResolver {
   constructor(
-    private qlsService: QlsProductService,
+    private qlsProductService: QlsProductService,
     private qlsOrderService: QlsOrderService
   ) {}
 
@@ -25,7 +25,7 @@ export class QlsAdminResolver {
   @Transaction()
   @Allow(qlsFullSyncPermission.Permission)
   async triggerQlsProductSync(@Ctx() ctx: RequestContext) {
-    await this.qlsService.triggerFullSync(ctx);
+    await this.qlsProductService.triggerFullSync(ctx);
     return true;
   }
 

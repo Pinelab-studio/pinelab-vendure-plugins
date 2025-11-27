@@ -8,6 +8,7 @@ import type {
   FulfillmentProductInput,
   QlsApiResponse,
 } from './client-types';
+import { QlsServicePoint } from '../api/generated/graphql';
 
 export async function getQlsClient(
   ctx: RequestContext,
@@ -42,7 +43,7 @@ export class QlsClient {
       'GET',
       `fulfillment/products?filter%5Bsku%5D=${encodeURIComponent(sku)}`
     );
-    if (result.data.length === 0) {
+    if (!result.data || result.data.length === 0) {
       return undefined;
     }
     if (result.data.length > 1) {
@@ -91,6 +92,11 @@ export class QlsClient {
       'fulfillment/products',
       data
     );
+    if (!response.data) {
+      throw new Error(
+        'Failed to create fulfillment product. Got empty response.'
+      );
+    }
     return response.data;
   }
 
@@ -103,6 +109,11 @@ export class QlsClient {
       `fulfillment/products/${fulfillmentProductId}`,
       data
     );
+    if (!response.data) {
+      throw new Error(
+        'Failed to update fulfillment product. Got empty response.'
+      );
+    }
     return response.data;
   }
 
@@ -117,6 +128,11 @@ export class QlsClient {
         brand_id: this.config.brandId,
       }
     );
+    if (!response.data) {
+      throw new Error(
+        'Failed to create fulfillment order. Got empty response.'
+      );
+    }
     return response.data;
   }
 
@@ -143,11 +159,23 @@ export class QlsClient {
     );
   }
 
+  async getServicePoints(
+    countryCode: string,
+    postalCode: string
+  ): Promise<QlsServicePoint[]> {
+    countryCode = countryCode.toUpperCase();
+    const result = await this.rawRequest<QlsServicePoint[]>(
+      'GET',
+      `service-points/${countryCode}/${postalCode}`
+    );
+    return result.data ?? [];
+  }
+
   async rawRequest<T>(
     method: 'POST' | 'GET' | 'PUT' | 'DELETE',
     action: string,
     data?: unknown
-  ): Promise<QlsApiResponse<T>> {
+  ): Promise<QlsApiResponse<T | undefined>> {
     // Set headers
     const headers: Record<string, string> = {
       Authorization: `Basic ${Buffer.from(
@@ -163,6 +191,15 @@ export class QlsClient {
       headers,
       body,
     });
+    if (response.status === 204) {
+      // 204 No Content
+      return {
+        data: undefined,
+        meta: {
+          code: response.status,
+        },
+      };
+    }
 
     if (!response.ok) {
       const errorText = await response.text();

@@ -24,3 +24,32 @@ export const variantCustomFields: CustomFieldConfig[] = [
     ui: { tab: 'QLS' },
   },
 ];
+
+export const orderCustomFields: CustomFieldConfig[] = [
+  {
+    name: 'qlsServicePointId',
+    type: 'string',
+    label: [{ value: 'QLS Service Point ID', languageCode: LanguageCode.en }],
+    nullable: true,
+    public: true,
+    readonly: false,
+    ui: { tab: 'QLS' },
+  },
+  {
+    name: 'qlsServicePointDetails',
+    type: 'string',
+    label: [
+      { value: 'QLS Service Point Details', languageCode: LanguageCode.en },
+    ],
+    description: [
+      {
+        value: 'Only used for display purposes.',
+        languageCode: LanguageCode.en,
+      },
+    ],
+    nullable: true,
+    public: true,
+    readonly: false,
+    ui: { tab: 'QLS' },
+  },
+];

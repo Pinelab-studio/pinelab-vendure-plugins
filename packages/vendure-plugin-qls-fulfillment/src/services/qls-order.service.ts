@@ -18,6 +18,7 @@ import {
   OrderState,
   RequestContext,
   TransactionalConnection,
+  UserInputError,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import util from 'util';
@@ -29,6 +30,10 @@ import {
 } from '../lib/client-types';
 import { getQlsClient } from '../lib/qls-client';
 import { QlsOrderJobData, QlsPluginOptions } from '../types';
+import {
+  QlsServicePoint,
+  QlsServicePointSearchInput,
+} from '../api/generated/graphql';
 
 @Injectable()
 export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
@@ -249,6 +254,19 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       },
       { retries: 5 }
     );
+  }
+
+  async getServicePoints(
+    ctx: RequestContext,
+    input: QlsServicePointSearchInput
+  ): Promise<QlsServicePoint[]> {
+    const client = await getQlsClient(ctx, this.options);
+    if (!client) {
+      throw new UserInputError(
+        `QLS not enabled for channel ${ctx.channel.token}`
+      );
+    }
+    return await client.getServicePoints(input.countryCode, input.postalCode);
   }
 
   private getVendureOrderState(
