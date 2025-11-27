@@ -160,12 +160,12 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
         customer_reference: order.code,
         processable: new Date().toISOString(), // Processable starting now
-        servicepoint_code: additionalOrderFields?.servicepoint_code,
+        servicepoint_code: order.customFields?.qlsServicePointId,
         delivery_options: additionalOrderFields?.delivery_options ?? [],
         total_price: order.totalWithTax,
         receiver_contact: {
           name: order.shippingAddress.fullName || customerName,
-          companyname: order.shippingAddress.company,
+          companyname: order.shippingAddress.company ?? customerName,
           street: order.shippingAddress.streetLine1,
           housenumber: order.shippingAddress.streetLine2,
           postalcode: order.shippingAddress.postalCode,
