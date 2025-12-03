@@ -110,6 +110,11 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (!order) {
       throw new Error(`No order with id ${orderId} not found`);
     }
+    if (order.customFields.syncedToQls) {
+      throw new UserInputError(
+        `Order '${order.code}' has already been synced to QLS`
+      );
+    }
     try {
       // Check if all products are available in QLS
       const qlsProducts: FulfillmentOrderLineInput[] = order.lines.map(
@@ -178,6 +183,9 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         ...(additionalOrderFields ?? {}),
       };
       const result = await client.createFulfillmentOrder(qlsOrder);
+      await this.orderService.updateCustomFields(ctx, orderId, {
+        syncedToQls: true,
+      });
       Logger.info(
         `Successfully created order '${order.code}' in QLS with id '${result.id}'`,
         loggerCtx
@@ -252,7 +260,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         ctx: ctx.serialize(),
         orderId,
       },
-      { retries: 5 }
+      { retries: 3 }
     );
   }
 
