@@ -319,7 +319,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         ctx: ctx.serialize(),
         productVariantIds,
       },
-      { retries: 5 }
+      { retries: 1 }
     );
   }
 
