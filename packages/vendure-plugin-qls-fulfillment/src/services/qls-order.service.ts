@@ -117,8 +117,18 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     }
     try {
       // Check if all products are available in QLS
-      const qlsProducts: FulfillmentOrderLineInput[] = order.lines.map(
-        (line) => {
+      const qlsProducts: FulfillmentOrderLineInput[] = order.lines
+        .filter((line) => {
+          if (this.options.excludeVariantFromSync?.(ctx, line.productVariant)) {
+            Logger.info(
+              `Product variant '${line.productVariant.sku}' not sent to QLS in order '${order.code}' because it is excluded from sync.`,
+              loggerCtx
+            );
+            return false;
+          }
+          return true;
+        })
+        .map((line) => {
           if (!line.productVariant.customFields.qlsProductId) {
             throw new Error(
               `Product variant '${line.productVariant.sku}' does not have a QLS product ID set. Unable to push order '${order.code}' to QLS.`
@@ -129,8 +139,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
             product_id: line.productVariant.customFields.qlsProductId,
             name: line.productVariant.name,
           };
-        }
-      );
+        });
       const additionalOrderFields =
         await this.options.getAdditionalOrderFields?.(
           ctx,
@@ -162,15 +171,16 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           `Shipping address for order '${order.code}' is missing one of required fields: streetLine1, postalCode, city, streetLine2, countryCode. Can not push order to QLS.`
         );
       }
+      const receiverContact = this.options.getReceiverContact?.(ctx, order);
       const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
         customer_reference: order.code,
         processable: new Date().toISOString(), // Processable starting now
         servicepoint_code: order.customFields?.qlsServicePointId,
         delivery_options: additionalOrderFields?.delivery_options ?? [],
         total_price: order.totalWithTax,
-        receiver_contact: {
+        receiver_contact: receiverContact ?? {
           name: order.shippingAddress.fullName || customerName,
-          companyname: order.shippingAddress.company ?? customerName,
+          companyname: order.shippingAddress.company ?? '',
           street: order.shippingAddress.streetLine1,
           housenumber: order.shippingAddress.streetLine2,
           postalcode: order.shippingAddress.postalCode,

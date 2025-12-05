@@ -6,7 +6,13 @@ import {
   RequestContext,
   SerializedRequestContext,
 } from '@vendure/core';
-import { CustomValue, FulfillmentProductInput } from './lib/client-types';
+import {
+  CustomValue,
+  FulfillmentOrder,
+  FulfillmentOrderInput,
+  FulfillmentOrderReceiverContactInput,
+  FulfillmentProductInput,
+} from './lib/client-types';
 
 export interface QlsPluginOptions {
   /**
@@ -46,6 +52,23 @@ export interface QlsPluginOptions {
    * Useful for testing out order sync separately, or testing against a QLS test env that has no stock for example
    */
   disableStockSync?: boolean;
+  /**
+   * Optional function to determine if a product variant should be excluded from syncing to QLS.
+   * Return true to exclude the variant from sync, false or undefined to include it.
+   */
+  excludeVariantFromSync?: (
+    ctx: RequestContext,
+    variant: ProductVariant
+  ) => boolean | Promise<boolean>;
+  /**
+   * Optional function to customize the receiver contact details when creating a QLS order.
+   * Allows you to set different fields or override default mapping from the order's shipping address and customer.
+   * If not provided, default mapping will be used.
+   */
+  getReceiverContact?: (
+    ctx: RequestContext,
+    order: Order
+  ) => FulfillmentOrderInput['receiver_contact'] | undefined;
 }
 
 /**

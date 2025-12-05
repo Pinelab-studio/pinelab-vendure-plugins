@@ -117,6 +117,13 @@ export class QlsClient {
     return response.data;
   }
 
+  async deleteFulfillmentProduct(fulfillmentProductId: string): Promise<void> {
+    await this.rawRequest<void>(
+      'DELETE',
+      `fulfillment/products/${fulfillmentProductId}`
+    );
+  }
+
   async createFulfillmentOrder(
     data: Omit<FulfillmentOrderInput, 'brand_id'>
   ): Promise<FulfillmentOrder> {

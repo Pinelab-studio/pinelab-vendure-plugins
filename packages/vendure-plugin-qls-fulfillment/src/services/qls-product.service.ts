@@ -36,12 +36,16 @@ import {
 } from '../types';
 import { getEansToUpdate, normalizeEans } from './util';
 
-type SyncProductsJobResult = {
-  updatedInQls: number;
-  createdInQls: number;
-  updatedStock: number;
-  failed: number;
+type SyncProductsResult = {
+  updatedInQls: Partial<ProductVariant>[];
+  createdInQls: Partial<ProductVariant>[];
+  updatedStock: Partial<ProductVariant>[];
+  failed: Partial<ProductVariant>[];
 };
+
+// Wait for 700ms to avoid rate limit of 500/5 minutes
+const waitToPreventRateLimit = () =>
+  new Promise((resolve) => setTimeout(resolve, 700));
 
 @Injectable()
 export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
@@ -96,7 +100,13 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     try {
       const ctx = RequestContext.deserialize(job.data.ctx);
       if (job.data.action === 'full-sync-products') {
-        return await this.runFullSync(ctx);
+        const result = await this.runFullSync(ctx);
+        return {
+          updatedInQls: result.updatedInQls.length,
+          createdInQls: result.createdInQls.length,
+          updatedStock: result.updatedStock.length,
+          failed: result.failed.length,
+        };
       } else if (job.data.action === 'sync-products') {
         return await this.syncVariants(ctx, job.data.productVariantIds);
       }
@@ -125,10 +135,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
    * 3. Creates products in QLS if needed
    * 4. Updates products in QLS if needed
    */
-  async runFullSync(ctx: RequestContext): Promise<SyncProductsJobResult> {
-    // Wait for 700ms to avoid rate limit of 500/5 minutes
-    const waitToPreventRateLimit = () =>
-      new Promise((resolve) => setTimeout(resolve, 700));
+  async runFullSync(ctx: RequestContext): Promise<SyncProductsResult> {
     try {
       const client = await getQlsClient(ctx, this.options);
       if (!client) {
@@ -145,22 +152,22 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
       // Update stock in Vendure based on QLS products
-      let updateStockCount = 0;
+      const updatedStock: ProductVariant[] = [];
       for (const variant of allVariants) {
         const qlsProduct = allQlsProducts.find((p) => p.sku == variant.sku);
         if (qlsProduct) {
           await this.updateStock(ctx, variant.id, qlsProduct.amount_available);
-          updateStockCount += 1;
+          updatedStock.push(variant);
         }
       }
       Logger.info(
-        `Updated stock for ${updateStockCount} variants based on QLS stock levels`,
+        `Updated stock for ${updatedStock.length} variants based on QLS stock levels`,
         loggerCtx
       );
       // Create or update products in QLS
-      let createdQlsProductsCount = 0;
-      let updatedQlsProductsCount = 0;
-      let failedCount = 0;
+      const createdQlsProducts: ProductVariant[] = [];
+      const updatedQlsProducts: ProductVariant[] = [];
+      const failed: ProductVariant[] = [];
       for (const variant of allVariants) {
         try {
           const existingQlsProduct = allQlsProducts.find(
@@ -173,9 +180,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             existingQlsProduct ?? null
           );
           if (result === 'created') {
-            createdQlsProductsCount += 1;
+            createdQlsProducts.push(variant);
           } else if (result === 'updated') {
-            updatedQlsProductsCount += 1;
+            updatedQlsProducts.push(variant);
           }
           if (result === 'created' || result === 'updated') {
             // Wait only if we created or updated a product, otherwise no calls have been made yet.
@@ -188,24 +195,27 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             loggerCtx,
             error.stack
           );
-          failedCount += 1;
+          failed.push(variant);
           await waitToPreventRateLimit();
         }
       }
       Logger.info(
-        `Created ${createdQlsProductsCount} products in QLS`,
+        `Created ${createdQlsProducts.length} products in QLS`,
         loggerCtx
       );
       Logger.info(
-        `Updated ${updatedQlsProductsCount} products in QLS`,
+        `Updated ${updatedQlsProducts.length} products in QLS`,
         loggerCtx
       );
-      Logger.info(`Finished full sync with ${failedCount} failures`, loggerCtx);
+      Logger.info(
+        `Finished full sync with ${failed.length} failures`,
+        loggerCtx
+      );
       return {
-        updatedInQls: updatedQlsProductsCount,
-        createdInQls: createdQlsProductsCount,
-        updatedStock: updateStockCount,
-        failed: failedCount,
+        updatedInQls: updatedQlsProducts,
+        createdInQls: createdQlsProducts,
+        updatedStock,
+        failed,
       };
     } catch (e) {
       const error = asError(e);
@@ -219,12 +229,39 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
+   * Utility function to remove all products from QLS
+   */
+  async removeAllProductsFromQls(ctx: RequestContext): Promise<void> {
+    const client = await getQlsClient(ctx, this.options);
+    if (!client) {
+      throw new Error(`QLS not enabled for channel ${ctx.channel.token}`);
+    }
+    Logger.warn(
+      `Removing all products from QLS for channel ${ctx.channel.token}...`,
+      loggerCtx
+    );
+    const allProducts = await client.getAllFulfillmentProducts();
+    for (const product of allProducts) {
+      await client.deleteFulfillmentProduct(product.id);
+      Logger.info(
+        `Removed product '${product.sku}' (${product.id}) from QLS`,
+        loggerCtx
+      );
+      await waitToPreventRateLimit();
+    }
+    Logger.warn(
+      `Removed ${allProducts.length} products from QLS for channel ${ctx.channel.token}`,
+      loggerCtx
+    );
+  }
+
+  /**
    * Creates or updates the fulfillment products in QLS for the given product variants.
    */
   async syncVariants(
     ctx: RequestContext,
     productVariantIds: ID[]
-  ): Promise<SyncProductsJobResult> {
+  ): Promise<SyncProductsResult> {
     const client = await getQlsClient(ctx, this.options);
     if (!client) {
       Logger.debug(
@@ -232,15 +269,15 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
       return {
-        updatedInQls: 0,
-        createdInQls: 0,
-        updatedStock: 0,
-        failed: 0,
+        updatedInQls: [],
+        createdInQls: [],
+        updatedStock: [],
+        failed: [],
       };
     }
-    let updatedInQls = 0;
-    let createdInQls = 0;
-    let failedCount = 0;
+    const updatedInQls: ProductVariant[] = [];
+    const createdInQls: Partial<ProductVariant>[] = [];
+    const failed: Partial<ProductVariant>[] = [];
     for (const variantId of productVariantIds) {
       try {
         const variant = await this.variantService.findOne(ctx, variantId, [
@@ -266,9 +303,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           existingQlsProduct ?? null
         );
         if (result === 'created') {
-          createdInQls += 1;
+          createdInQls.push(variant);
         } else if (result === 'updated') {
-          updatedInQls += 1;
+          updatedInQls.push(variant);
         }
       } catch (e) {
         const error = asError(e);
@@ -277,14 +314,14 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           loggerCtx,
           error.stack
         );
-        failedCount += 1;
+        failed.push({ id: variantId });
       }
     }
     return {
       updatedInQls,
       createdInQls,
-      updatedStock: 0,
-      failed: failedCount,
+      updatedStock: [],
+      failed,
     };
   }
 
@@ -356,6 +393,13 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     variant: ProductVariant,
     existingProduct: FulfillmentProduct | null
   ): Promise<'created' | 'updated' | 'not-changed'> {
+    if (this.options.excludeVariantFromSync?.(ctx, variant)) {
+      Logger.info(
+        `Variant '${variant.sku}' excluded from sync to QLS.`,
+        loggerCtx
+      );
+      return 'not-changed';
+    }
     let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
     const { additionalEANs, ...additionalVariantFields } =

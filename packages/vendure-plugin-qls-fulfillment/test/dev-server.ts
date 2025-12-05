@@ -70,16 +70,19 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           additionalEANs: ['somethingelse'],
         }),
         webhookSecret: '121231',
+        excludeVariantFromSync: (ctx, variant) => {
+          return variant.id == 1; // Just as a test
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [QlsPlugin.ui],
-          devMode: true,
-        }),
+        // app: compileUiExtensions({
+        //   outputPath: path.join(__dirname, '__admin-ui'),
+        //   extensions: [QlsPlugin.ui],
+        //   devMode: true,
+        // }),
       }),
     ],
     schedulerOptions: {
@@ -109,7 +112,10 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     shopClient,
     1,
     true,
-    [{ id: 'T_1', quantity: 1 }],
+    [
+      { id: 'T_1', quantity: 1 },
+      { id: 'T_2', quantity: 2 },
+    ],
     undefined,
     {
       input: {

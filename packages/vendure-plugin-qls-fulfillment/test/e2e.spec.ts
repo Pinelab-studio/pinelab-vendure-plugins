@@ -21,7 +21,17 @@ beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [QlsPlugin.init({})],
+    plugins: [
+      QlsPlugin.init({
+        getConfig: () => {
+          return undefined;
+        },
+        getAdditionalVariantFields: (ctx, variant) => ({
+          ean: variant.sku,
+        }),
+        webhookSecret: '121231',
+      }),
+    ],
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
     },
@@ -61,6 +71,8 @@ it('Should start successfully', async () => {
 // Does not update stock when disableStockSync is true
 
 // Tests additional EANs
+
+// Test excludeVariantFromSync
 
 // FIXME Sync button in product overview
 //
