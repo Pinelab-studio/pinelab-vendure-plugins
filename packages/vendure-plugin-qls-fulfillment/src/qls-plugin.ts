@@ -47,7 +47,11 @@ export class QlsPlugin {
   static options: QlsPluginOptions;
 
   static init(options: QlsPluginOptions): Type<QlsPlugin> {
-    this.options = options;
+    this.options = {
+      synchronizeStockLevels: true,
+      autoPushOrders: true,
+      ...options,
+    };
     return QlsPlugin;
   }
 

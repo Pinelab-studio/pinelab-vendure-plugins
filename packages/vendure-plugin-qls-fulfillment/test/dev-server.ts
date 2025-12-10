@@ -73,16 +73,20 @@ import { createSettledOrder } from '../../test/src/shop-utils';
         excludeVariantFromSync: (ctx, variant) => {
           return variant.id == 1; // Just as a test
         },
+        autoPushOrders: false,
+        processOrderFrom: (ctx, order) => {
+          return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 days from now
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
-        // app: compileUiExtensions({
-        //   outputPath: path.join(__dirname, '__admin-ui'),
-        //   extensions: [QlsPlugin.ui],
-        //   devMode: true,
-        // }),
+        app: compileUiExtensions({
+          outputPath: path.join(__dirname, '__admin-ui'),
+          extensions: [QlsPlugin.ui],
+          devMode: true,
+        }),
       }),
     ],
     schedulerOptions: {

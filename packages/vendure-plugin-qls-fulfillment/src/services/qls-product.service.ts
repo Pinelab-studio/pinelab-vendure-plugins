@@ -229,7 +229,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Utility function to remove all products from QLS
+   * Utility function to remove all products from QLS.
+   * You might need to cancel active orders in QLS first, because products cannot be deleted if they are in an active order.
    */
   async removeAllProductsFromQls(ctx: RequestContext): Promise<void> {
     const client = await getQlsClient(ctx, this.options);
@@ -599,7 +600,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     variantId: ID,
     availableStock: number
   ) {
-    if (this.options.disableStockSync) {
+    if (!this.options.synchronizeStockLevels) {
       Logger.warn(
         `Stock sync disabled. Not updating stock for variant '${variantId}'`,
         loggerCtx

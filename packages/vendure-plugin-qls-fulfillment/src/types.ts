@@ -8,9 +8,7 @@ import {
 } from '@vendure/core';
 import {
   CustomValue,
-  FulfillmentOrder,
   FulfillmentOrderInput,
-  FulfillmentOrderReceiverContactInput,
   FulfillmentProductInput,
 } from './lib/client-types';
 
@@ -48,10 +46,24 @@ export interface QlsPluginOptions {
    */
   webhookSecret: string;
   /**
-   * Disable the pulling in of stock levels from QLS. When disabled, stock in Vendure will not be modified based on QLS stock levels.
-   * Useful for testing out order sync separately, or testing against a QLS test env that has no stock for example
+   * Allows you to disable the pulling in of stock levels from QLS. When disabled, stock in Vendure will not be modified based on QLS stock levels.
+   * Defaults to true.
    */
-  disableStockSync?: boolean;
+  synchronizeStockLevels?: boolean;
+  /**
+   * Allows you to disable the automatic pushing of orders to QLS. You can still push orders manually via the Admin UI.
+   * Defaults to true.
+   */
+  autoPushOrders?: boolean;
+  /**
+   * Allows you to define a date from when the order should be processed by QLS.
+   * You can for example make orders processable 2 hours from now, so that you can still edit the order in QLS
+   * Defaults to now.
+   */
+  processOrderFrom?: (
+    ctx: RequestContext,
+    order: Order
+  ) => Date | Promise<Date>;
   /**
    * Optional function to determine if a product variant should be excluded from syncing to QLS.
    * Return true to exclude the variant from sync, false or undefined to include it.

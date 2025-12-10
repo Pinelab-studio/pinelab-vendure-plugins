@@ -17,11 +17,14 @@ import {
   OrderService,
   OrderState,
   RequestContext,
-  TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
 import util from 'util';
+import {
+  QlsServicePoint,
+  QlsServicePointSearchInput,
+} from '../api/generated/graphql';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
   FulfillmentOrderInput,
@@ -30,17 +33,12 @@ import {
 } from '../lib/client-types';
 import { getQlsClient } from '../lib/qls-client';
 import { QlsOrderJobData, QlsPluginOptions } from '../types';
-import {
-  QlsServicePoint,
-  QlsServicePointSearchInput,
-} from '../api/generated/graphql';
 
 @Injectable()
 export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
   private orderJobQueue!: JobQueue<QlsOrderJobData>;
 
   constructor(
-    private connection: TransactionalConnection,
     @Inject(PLUGIN_INIT_OPTIONS) private options: QlsPluginOptions,
     private jobQueueService: JobQueueService,
     private eventBus: EventBus,
@@ -51,6 +49,13 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
   onApplicationBootstrap(): void {
     // Listen for OrderPlacedEvent and add a job to the queue
     this.eventBus.ofType(OrderPlacedEvent).subscribe((event) => {
+      if (!this.options.autoPushOrders) {
+        Logger.info(
+          `Auto push orders disabled, not triggering push order job for order ${event.order.code}`,
+          loggerCtx
+        );
+        return;
+      }
       this.triggerPushOrder(event.ctx, event.order.id, event.order.code).catch(
         (e) => {
           const error = asError(e);
@@ -171,10 +176,12 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           `Shipping address for order '${order.code}' is missing one of required fields: streetLine1, postalCode, city, streetLine2, countryCode. Can not push order to QLS.`
         );
       }
+      const processable =
+        (await this.options.processOrderFrom?.(ctx, order)) ?? new Date();
       const receiverContact = this.options.getReceiverContact?.(ctx, order);
       const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
         customer_reference: order.code,
-        processable: new Date().toISOString(), // Processable starting now
+        processable: processable.toISOString(),
         servicepoint_code: order.customFields?.qlsServicePointId,
         delivery_options: additionalOrderFields?.delivery_options ?? [],
         total_price: order.totalWithTax,
