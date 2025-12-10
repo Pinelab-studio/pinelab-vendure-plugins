@@ -63,6 +63,11 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           url: process.env.QLS_URL,
           brandId: process.env.QLS_BRAND_ID!,
         }),
+        getAdditionalOrderFields: () => {
+          return {
+            delivery_options: ['dhl-germany-national'],
+          };
+        },
         getAdditionalVariantFields: (ctx, variant) => ({
           ean: variant.sku,
           image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
@@ -73,9 +78,9 @@ import { createSettledOrder } from '../../test/src/shop-utils';
         excludeVariantFromSync: (ctx, variant) => {
           return variant.id == 1; // Just as a test
         },
-        autoPushOrders: false,
+        autoPushOrders: true,
         processOrderFrom: (ctx, order) => {
-          return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 days from now
+          return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours from now
         },
       }),
       DefaultSearchPlugin,

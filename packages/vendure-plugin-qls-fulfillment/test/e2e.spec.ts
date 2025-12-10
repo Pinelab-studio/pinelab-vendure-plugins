@@ -74,6 +74,8 @@ it('Should start successfully', async () => {
 
 // Test excludeVariantFromSync
 
+// Test if additional order fields receives all relations (shippingLines, discounts, etc.)
+
 // FIXME Sync button in product overview
 //
 // if (process.env.TEST_ADMIN_UI) {

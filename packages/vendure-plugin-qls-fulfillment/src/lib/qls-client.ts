@@ -103,18 +103,12 @@ export class QlsClient {
   async updateFulfillmentProduct(
     fulfillmentProductId: string,
     data: FulfillmentProductInput
-  ): Promise<FulfillmentProduct> {
-    const response = await this.rawRequest<FulfillmentProduct>(
+  ): Promise<void> {
+    await this.rawRequest<FulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
       data
     );
-    if (!response.data) {
-      throw new Error(
-        'Failed to update fulfillment product. Got empty response.'
-      );
-    }
-    return response.data;
   }
 
   async deleteFulfillmentProduct(fulfillmentProductId: string): Promise<void> {
