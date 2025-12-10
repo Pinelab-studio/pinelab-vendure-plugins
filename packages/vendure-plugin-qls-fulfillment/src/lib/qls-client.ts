@@ -206,7 +206,7 @@ export class QlsClient {
       const errorText = await response.text();
       // Log error including the request body
       Logger.error(
-        `QLS request to '${url}' failed: ${response.status} ${response.statusText} - ${errorText}`,
+        `[QLS] '${method}' request to '${url}' failed: ${response.status} ${response.statusText} - ${errorText}`,
         loggerCtx,
         data ? JSON.stringify(data, null, 2) : undefined
       );
