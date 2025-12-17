@@ -121,30 +121,37 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       );
     }
     try {
-      // Check if all products are available in QLS
-      const qlsProducts: FulfillmentOrderLineInput[] = order.lines
-        .filter((line) => {
-          if (this.options.excludeVariantFromSync?.(ctx, line.productVariant)) {
+      // Map variants to QLS products
+      const qlsProducts: FulfillmentOrderLineInput[] = [];
+      await Promise.all(
+        order.lines.map(async (line) => {
+          // Check if product variant should be excluded from sync
+          if (
+            await this.options.excludeVariantFromSync?.(
+              ctx,
+              new Injector(this.moduleRef),
+              line.productVariant
+            )
+          ) {
             Logger.info(
               `Product variant '${line.productVariant.sku}' not sent to QLS in order '${order.code}' because it is excluded from sync.`,
               loggerCtx
             );
-            return false;
+            return;
           }
-          return true;
-        })
-        .map((line) => {
+          // Check if product is available in QLS
           if (!line.productVariant.customFields.qlsProductId) {
             throw new Error(
               `Product variant '${line.productVariant.sku}' does not have a QLS product ID set. Unable to push order '${order.code}' to QLS.`
             );
           }
-          return {
+          qlsProducts.push({
             amount_ordered: line.quantity,
             product_id: line.productVariant.customFields.qlsProductId,
             name: line.productVariant.name,
-          };
-        });
+          });
+        })
+      );
       const additionalOrderFields =
         await this.options.getAdditionalOrderFields?.(
           ctx,
@@ -231,6 +238,10 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     body: IncomingOrderWebhook
   ): Promise<void> {
+    Logger.info(
+      `Handling QLS order status update for order '${body.customer_reference}' with status '${body.status} and amount_delivered '${body.amount_delivered}' and amount_total '${body.amount_total}'`,
+      loggerCtx
+    );
     const orderCode = body.customer_reference;
     const order = await this.orderService.findOneByCode(ctx, orderCode, []);
     if (!order) {

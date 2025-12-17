@@ -7,6 +7,7 @@ import {
 import {
   EventBus,
   ID,
+  Injector,
   Job,
   JobQueue,
   JobQueueService,
@@ -35,6 +36,7 @@ import {
   QlsProductJobData,
 } from '../types';
 import { getEansToUpdate, normalizeEans } from './util';
+import { ModuleRef } from '@nestjs/core';
 
 type SyncProductsResult = {
   updatedInQls: Partial<ProductVariant>[];
@@ -60,7 +62,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     private readonly stockLocationService: StockLocationService,
     private readonly eventBus: EventBus,
     private readonly listQueryBuilder: ListQueryBuilder,
-    private readonly productPriceApplicator: ProductPriceApplicator
+    private readonly productPriceApplicator: ProductPriceApplicator,
+    private readonly moduleRef: ModuleRef
   ) {}
 
   onApplicationBootstrap(): void {
@@ -394,7 +397,13 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     variant: ProductVariant,
     existingProduct: FulfillmentProduct | null
   ): Promise<'created' | 'updated' | 'not-changed'> {
-    if (this.options.excludeVariantFromSync?.(ctx, variant)) {
+    if (
+      await this.options.excludeVariantFromSync?.(
+        ctx,
+        new Injector(this.moduleRef),
+        variant
+      )
+    ) {
       Logger.info(
         `Variant '${variant.sku}' excluded from sync to QLS.`,
         loggerCtx

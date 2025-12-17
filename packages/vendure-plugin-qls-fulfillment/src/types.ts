@@ -70,6 +70,7 @@ export interface QlsPluginOptions {
    */
   excludeVariantFromSync?: (
     ctx: RequestContext,
+    injector: Injector,
     variant: ProductVariant
   ) => boolean | Promise<boolean>;
   /**

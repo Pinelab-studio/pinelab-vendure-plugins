@@ -3,6 +3,7 @@ import {
   configureDefaultOrderProcess,
   DefaultLogger,
   DefaultSearchPlugin,
+  EntityHydrator,
   LogLevel,
   mergeConfig,
   OrderProcess,
@@ -75,7 +76,11 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           additionalEANs: ['somethingelse'],
         }),
         webhookSecret: '121231',
-        excludeVariantFromSync: (ctx, variant) => {
+        excludeVariantFromSync: async (ctx, injector, variant) => {
+          await injector.get(EntityHydrator).hydrate(ctx, variant, {
+            relations: ['facetValues'],
+          });
+          console.log('excludeVariantFromSync', variant.facetValues);
           return variant.id == 1; // Just as a test
         },
         autoPushOrders: true,
