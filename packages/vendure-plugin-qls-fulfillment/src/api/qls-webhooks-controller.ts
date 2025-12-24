@@ -7,7 +7,12 @@ import {
   Query,
   Req,
 } from '@nestjs/common';
-import { ChannelService, Logger, RequestContext } from '@vendure/core';
+import {
+  ChannelService,
+  ForbiddenError,
+  Logger,
+  RequestContext,
+} from '@vendure/core';
 import { asError } from 'catch-unknown';
 import { Request } from 'express';
 import { QlsProductService } from '../services/qls-product.service';
@@ -39,10 +44,11 @@ export class QlsWebhooksController {
     @Body() body: IncomingStockWebhook | IncomingOrderWebhook
   ) {
     if (webhookSecret !== this.options.webhookSecret) {
-      return Logger.warn(
+      Logger.warn(
         `Incoming webhook with invalid secret for channel '${channelToken}' to '${request.url}'`,
         loggerCtx
       );
+      throw new ForbiddenError();
     }
     try {
       const ctx = await this.getCtxForChannel(channelToken);

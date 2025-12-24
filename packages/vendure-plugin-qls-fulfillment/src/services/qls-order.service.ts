@@ -105,6 +105,10 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     }
   }
 
+  /**
+   * Push an order to QLS by id.
+   * Returns a human-readable message describing the result of the operation (Used as job result).
+   */
   async pushOrderToQls(ctx: RequestContext, orderId: ID): Promise<string> {
     const client = await getQlsClient(ctx, this.options);
     if (!client) {
@@ -152,6 +156,11 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           });
         })
       );
+      if (qlsProducts.length === 0) {
+        const message = `No products to push to QLS for order '${order.code}'. Ignoring order.`;
+        Logger.info(message, loggerCtx);
+        return message;
+      }
       const additionalOrderFields =
         await this.options.getAdditionalOrderFields?.(
           ctx,
