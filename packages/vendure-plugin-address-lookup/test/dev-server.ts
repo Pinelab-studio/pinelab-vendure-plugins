@@ -16,7 +16,7 @@ import { AddressLookupPlugin } from '../src/address-lookup.plugin';
 import {
   GooglePlacesLookupStrategy,
   PostNLLookupStrategy,
-  PostcodeTechStrategy,
+  BAGLookupStrategy,
 } from '../src';
 
 require('dotenv').config();
@@ -31,11 +31,11 @@ require('dotenv').config();
     plugins: [
       AddressLookupPlugin.init({
         lookupStrategies: [
-          new PostNLLookupStrategy({
-            apiKey: process.env.POSTNL_APIKEY!,
-          }),
-          new PostcodeTechStrategy({
-            apiKey: process.env.POSTCODE_TECH_APIKEY!,
+          // new PostNLLookupStrategy({
+          //   apiKey: process.env.POSTNL_APIKEY!,
+          // }),
+          new BAGLookupStrategy({
+            apiKey: process.env.BAG_APIKEY!,
           }),
           new GooglePlacesLookupStrategy({
             apiKey: process.env.GOOGLE_PLACES_APIKEY!,

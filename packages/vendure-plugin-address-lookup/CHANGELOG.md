@@ -1,3 +1,7 @@
+# 2.0.0 (2025-12-24)
+
+- Replaced Postcode.tech API with BAG api, because Postcode.tech is no longer available
+
 # 1.2.2 (2025-11-13)
 
 - Documentation update
