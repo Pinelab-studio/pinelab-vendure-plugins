@@ -38,7 +38,10 @@ export class AddressLookupService {
     }
     return await lookupStrategy.lookup(ctx, input).catch((e) => {
       const error = asError(e);
-      Logger.error(`Error looking up address: ${error.message}`, loggerCtx);
+      Logger.error(
+        `Error looking up address via ${lookupStrategy.constructor.name}: ${error.message}`,
+        loggerCtx
+      );
       throw error;
     });
   }

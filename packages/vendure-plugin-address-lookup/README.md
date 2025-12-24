@@ -23,9 +23,9 @@ This Vendure plugin allows you to lookup addresses based on postalcode, housenum
         apiKey: process.env.GOOGLE_PLACES_APIKEY!,
       })
 
-          // If you want to use the free Postcode.tech, get an API key at https://postcode.tech/ and uncomment the lines below
-          // new PostcodeTechStrategy({
-          //   apiKey: process.env.POSTCODE_TECH_APIKEY!,
+          // If you want to use the free BAG API (NL only), get an API key at https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-api-individuele-bevragingen and uncomment the lines below
+          // new BAGLookupStrategy({
+          //   apiKey: process.env.BAG_APIKEY!,
           // }),
         ],
       }),
@@ -164,7 +164,7 @@ import { AddressLookupStrategy } from '@pinelab/vendure-plugin-address-lookup';
 export class GermanPostcodeStrategy implements AddressLookupStrategy {
   readonly supportedCountryCodes = ['DE'];
 
-  constructor(private readonly input: PostcodeTechStrategyInput) {}
+  constructor(private readonly input: AddressLookupStrategyInput) {}
 
   validateInput?(input: AddressLookupInput): true | string {
     // Optionally validate the input given by the client

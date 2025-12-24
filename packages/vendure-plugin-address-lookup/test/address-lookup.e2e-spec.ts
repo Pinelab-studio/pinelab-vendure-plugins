@@ -18,7 +18,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { addItem } from '../../test/src/shop-utils';
 import { AddressLookupPlugin } from '../src/address-lookup.plugin';
-import { PostcodeTechStrategy } from '../src/config/postcode-tech-strategy';
+import { BAGLookupStrategy } from '../src/config/bag-lookup-strategy';
 import { loggerCtx } from '../src/constants';
 
 describe('Address Lookup plugin', () => {
@@ -37,7 +37,7 @@ describe('Address Lookup plugin', () => {
       plugins: [
         AddressLookupPlugin.init({
           lookupStrategies: [
-            new PostcodeTechStrategy({
+            new BAGLookupStrategy({
               apiKey: 'test-api-key',
             }),
           ],
@@ -141,13 +141,37 @@ describe('Address Lookup plugin', () => {
     await addItem(shopClient, 'T_1', 1);
 
     // Mock the fetch function
+    // Mock BAG API _embedded.adressen response based on BAGResponse interface
     const mockResponse = {
-      postcode: '1234AB',
-      number: '1',
-      street: 'Test Street',
-      city: 'Test City',
-      municipality: 'Test Municipality',
-      province: 'Test Province',
+      _links: {
+        self: { href: '' },
+      },
+      _embedded: {
+        adressen: [
+          {
+            openbareRuimteNaam: 'Test Street',
+            korteNaam: 'TestSt',
+            huisnummer: 1,
+            postcode: '1234AB',
+            woonplaatsNaam: 'Test City',
+            nummeraanduidingIdentificatie: '',
+            openbareRuimteIdentificatie: '',
+            woonplaatsIdentificatie: '',
+            adresseerbaarObjectIdentificatie: '',
+            pandIdentificaties: [],
+            adresregel5: '',
+            adresregel6: '',
+            _links: {
+              self: { href: '' },
+              openbareRuimte: { href: '' },
+              nummeraanduiding: { href: '' },
+              woonplaats: { href: '' },
+              adresseerbaarObject: { href: '' },
+              panden: [],
+            },
+          },
+        ],
+      },
     };
     vi.stubGlobal(
       'fetch',
@@ -175,7 +199,7 @@ describe('Address Lookup plugin', () => {
         streetLine1: 'Test Street',
         city: 'Test City',
         postalCode: '1234AB',
-        province: 'Test Province',
+        province: null,
         country: 'Netherlands',
       },
     ]);
@@ -213,12 +237,10 @@ describe('Address Lookup plugin', () => {
         }
       `);
     } catch (e: any) {
-      expect(e.response.errors[0].message).toBe(
-        'PostcodeTech API returned status 500: Internal Server Error'
-      );
+      expect(e.response.errors[0].message).toBe('500: Internal Server Error');
     }
     expect(loggerSpy).toHaveBeenCalledWith(
-      'Error looking up address: PostcodeTech API returned status 500: Internal Server Error',
+      'Error looking up address via BAGLookupStrategy: 500: Internal Server Error',
       loggerCtx
     );
   });
