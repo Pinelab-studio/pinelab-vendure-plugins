@@ -46,7 +46,7 @@ export class BAGLookupStrategy implements AddressLookupStrategy {
       return [];
     }
     return jsonResult._embedded.adressen
-      .slice(0, 1) // Slice, because BAG lookup by house number and postal code always returns 1 street
+      .slice(0, 1) // Slice, because BAG lookup by house number and postal code always returns 1 street, but can have multiple results because of diverging house number formats
       .map((result) => ({
         streetLine1: result.openbareRuimteNaam,
         streetLine2: input.houseNumber!,
