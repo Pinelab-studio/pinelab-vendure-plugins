@@ -1,4 +1,7 @@
 name: Publish packages
+permissions:
+  id-token: write # Required for OIDC
+  contents: read
 
 on:
   push:
