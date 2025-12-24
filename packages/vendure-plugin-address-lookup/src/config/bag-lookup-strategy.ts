@@ -1,12 +1,11 @@
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { Logger, RequestContext } from '@vendure/core';
+import { RequestContext } from '@vendure/core';
 import { AddressLookupInput } from '../generated/graphql';
 import { AddressLookupStrategy } from '../types';
 import {
   normalizePostalCode,
   validateDutchPostalCode,
 } from './validation-util';
-import { loggerCtx } from '../constants';
 
 interface BAGLookupInput {
   apiKey: string;
