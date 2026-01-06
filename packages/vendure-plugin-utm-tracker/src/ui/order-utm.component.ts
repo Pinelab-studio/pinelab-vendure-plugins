@@ -45,7 +45,6 @@ interface UtmOrderParameter {
                 {{ p.connectedAt | date : 'short' }}
               </td>
               <td style="text-align: left">{{ p.campaignDisplayName }}</td>
-              nt
               <td *ngIf="p.attributedValue > 0">
                 {{ p.attributedValue / 100 | currency }} ({{
                   p.attributedPercentage * 100 | number : '1.0-0'

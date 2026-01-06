@@ -1,3 +1,8 @@
+# 1.3.1 (2026-01-06)
+
+- Fix type error in `getCampaignDisplayName`
+- Fixed typo in UI
+
 # 1.3.0 (2026-01-06)
 
 - Allow setting a custom display name for a campaign.

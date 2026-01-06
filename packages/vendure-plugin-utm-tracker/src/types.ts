@@ -24,7 +24,7 @@ export interface UTMTrackerPluginInitOptions {
   getCampaignDisplayName?: (
     ctx: RequestContext,
     utmParameters: UTMParameterInput
-  ) => string;
+  ) => string | undefined;
 }
 
 export interface AttributionModel {
