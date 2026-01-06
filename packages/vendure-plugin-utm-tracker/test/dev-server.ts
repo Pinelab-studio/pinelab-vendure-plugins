@@ -32,6 +32,7 @@ import { testPaymentMethod } from '../../test/dist/test-payment-method';
     },
     dbConnectionOptions: {
       autoSave: true,
+      synchronize: true,
     },
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],

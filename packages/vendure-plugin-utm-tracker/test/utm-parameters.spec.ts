@@ -34,6 +34,9 @@ describe('UTM parameters plugin', function () {
           attributionModel: new FirstClickAttribution(),
           maxParametersPerOrder: 3,
           maxAttributionAgeInDays: 30,
+          getCampaignDisplayName: (utmParameters) => {
+            return utmParameters.source + '_customSuffix'; // Testing custom display name
+          },
         }),
       ],
       paymentOptions: {
@@ -142,6 +145,9 @@ describe('UTM parameters plugin', function () {
     });
     expect(order.utmParameters.length).toBe(2);
     expect(order.utmParameters[0].utmSource).toBe('test-source1');
+    expect(order.utmParameters[0].campaignDisplayName).toBe(
+      'test-source1_customSuffix'
+    );
     expect(order.utmParameters[0].connectedAt).toBe('2025-01-07T00:00:00.000Z');
   });
 
@@ -301,6 +307,7 @@ const GET_ORDER_WITH_UTM_PARAMETERS = gql`
     order(id: $orderId) {
       utmParameters {
         id
+        campaignDisplayName
         utmSource
         utmMedium
         utmCampaign

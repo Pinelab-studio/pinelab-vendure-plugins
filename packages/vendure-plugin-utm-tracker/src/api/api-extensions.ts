@@ -20,6 +20,7 @@ export const shopApiExtensions = gql`
 export const adminApiExtensions = gql`
   type UtmOrderParameter {
     id: ID!
+    campaignDisplayName: String
     createdAt: DateTime!
     updatedAt: DateTime!
     connectedAt: DateTime!

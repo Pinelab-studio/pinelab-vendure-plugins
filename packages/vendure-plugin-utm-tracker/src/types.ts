@@ -17,6 +17,11 @@ export interface UTMTrackerPluginInitOptions {
    * Default is 30 days.
    */
   maxAttributionAgeInDays: number;
+  /**
+   * Optional function to set a custom display name for a campaign.
+   * By default utmCampaign is used, but with Google Ads for example, the campaign is the campaign ID, not the campaign name.
+   */
+  getCampaignDisplayName?: (utmParameters: UTMParameterInput) => string;
 }
 
 export interface AttributionModel {

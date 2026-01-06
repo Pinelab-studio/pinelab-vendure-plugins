@@ -27,6 +27,9 @@ export class UtmOrderParameter
   connectedAt!: Date;
 
   @Column({ nullable: true })
+  campaignDisplayName?: string;
+
+  @Column({ nullable: true })
   utmSource?: string;
 
   @Column({ nullable: true })
