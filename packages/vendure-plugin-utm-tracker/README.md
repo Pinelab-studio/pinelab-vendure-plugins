@@ -21,6 +21,17 @@ UTMTrackerPlugin.init({
   attributionModel: new FirstClickAttribution(), // or LastClickAttribution, or LinearAttribution, or UShapedAttribution
   maxParametersPerOrder: 5, // The maximum number of UTM parameters that can be added to an order. If a customer adds more than this number, the oldest UTM parameters will be removed.
   maxAttributionAgeInDays: 10, // The maximum age of a UTM parameter to be attributed. If a UTM parameter is older than this number of days, it will not be attributed.
+  getCampaignDisplayName: (ctx, utmParameters) => {
+    // Allows you to set a custom display name for a campaign, based on the ctx and utm params.
+    // Useful for example with Google Ads, where the campaign is the campaign ID, not the campaign name.
+    if (utmParameters.campaign === '1234567890') {
+      return `Campaign 1`;
+    } else if (utmParameters.campaign === '1234567891') {
+      return `Campaign 2`;
+    } else {
+      return utmParameters.campaign;
+    }
+  }
 }),
 
 
