@@ -102,7 +102,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     }
     let campaignDisplayName = input.campaign;
     if (this.options.getCampaignDisplayName) {
-      campaignDisplayName = this.options.getCampaignDisplayName(input);
+      campaignDisplayName = this.options.getCampaignDisplayName(ctx, input);
     }
     const utmRepo = this.connection.getRepository(ctx, UtmOrderParameter);
     // Check if the given params already exists

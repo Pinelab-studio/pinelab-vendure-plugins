@@ -34,7 +34,7 @@ describe('UTM parameters plugin', function () {
           attributionModel: new FirstClickAttribution(),
           maxParametersPerOrder: 3,
           maxAttributionAgeInDays: 30,
-          getCampaignDisplayName: (utmParameters) => {
+          getCampaignDisplayName: (ctx, utmParameters) => {
             return utmParameters.source + '_customSuffix'; // Testing custom display name
           },
         }),
