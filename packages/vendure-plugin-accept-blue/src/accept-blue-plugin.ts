@@ -1,4 +1,11 @@
-import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
+import {
+  Injector,
+  Order,
+  PluginCommonModule,
+  RequestContext,
+  Type,
+  VendurePlugin,
+} from '@vendure/core';
 import { SubscriptionStrategy } from '../../util/src/subscription/subscription-strategy';
 import { AcceptBlueService } from './service/accept-blue-service';
 import { acceptBluePaymentHandler } from './service/accept-blue-handler';
@@ -10,6 +17,7 @@ import { DefaultSubscriptionStrategy } from '../../util/src/subscription/default
 import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 import { AcceptBlueAdminResolver } from './api/accept-blue-admin-resolver';
 import { SubscriptionOrderItemCalculation } from './service/subscription-order-item-calculation';
+import { AdditionalChargeInput } from './types';
 
 interface AcceptBluePluginOptionsInput {
   subscriptionStrategy?: SubscriptionStrategy;
@@ -20,9 +28,24 @@ interface AcceptBluePluginOptionsInput {
    * Default is true.
    */
   sendReceiptEmail?: boolean;
+  /**
+   * Allows you to define custom additional input when a charge is created.
+   * This function is only called when the initial charge is created, not for future payments with recurring schedules.
+   */
+  additionalChargeInput?: (
+    ctx: RequestContext,
+    injector: Injector,
+    order: Order
+  ) =>
+    | Promise<AdditionalChargeInput | undefined>
+    | AdditionalChargeInput
+    | undefined;
 }
 
-export type AcceptBluePluginOptions = Required<AcceptBluePluginOptionsInput>;
+export type AcceptBluePluginOptions = Required<
+  Omit<AcceptBluePluginOptionsInput, 'additionalChargeInput'>
+> &
+  AcceptBluePluginOptionsInput;
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -79,6 +102,7 @@ export class AcceptBluePlugin {
       vendureHost = vendureHost.slice(0, vendureHost.length - 1);
     }
     this.options = {
+      ...options,
       subscriptionStrategy:
         options.subscriptionStrategy ?? new DefaultSubscriptionStrategy(),
       vendureHost,

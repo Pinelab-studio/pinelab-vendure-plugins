@@ -18,6 +18,7 @@ import {
   AcceptBlueTransaction,
   AcceptBlueWebhook,
   AcceptBlueWebhookInput,
+  AdditionalChargeInput,
   AllowedPaymentMethodInput,
   AppleOrGooglePayInput,
   CheckPaymentMethodInput,
@@ -380,7 +381,8 @@ export class AcceptBlueClient {
      */
     paymentMethodId: number,
     amountInCents: number,
-    customFields: CustomFields
+    customFields: CustomFields,
+    additionalChargeInput?: AdditionalChargeInput
   ): Promise<AcceptBlueChargeTransaction> {
     const amount = amountInCents / 100;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
@@ -388,6 +390,7 @@ export class AcceptBlueClient {
       source: `pm-${paymentMethodId}`,
       amount,
       custom_fields: customFields,
+      ...(additionalChargeInput ? additionalChargeInput : {}),
     });
     if (
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
@@ -415,7 +418,8 @@ export class AcceptBlueClient {
    */
   async createDigitalWalletCharge(
     input: AppleOrGooglePayInput,
-    customFields: CustomFields
+    customFields: CustomFields,
+    additionalChargeInput?: AdditionalChargeInput
   ): Promise<AcceptBlueChargeTransaction> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const result = await this.request('post', `transactions/charge`, {
@@ -425,6 +429,7 @@ export class AcceptBlueClient {
       avs_zip: input.avs_zip,
       avs_address: input.avs_address,
       custom_fields: customFields,
+      ...(additionalChargeInput ? additionalChargeInput : {}),
     });
     if (
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access

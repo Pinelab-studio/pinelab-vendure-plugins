@@ -103,6 +103,13 @@ beforeAll(async () => {
       AcceptBluePlugin.init({
         vendureHost: 'https://my-vendure-backend.io',
         sendReceiptEmail: false,
+        additionalChargeInput: async (ctx, injector, order) => {
+          return {
+            amount_details: {
+              surcharge: 1, // Just a sample, to make sure additional input is passed to AB
+            },
+          };
+        },
       }),
     ],
   });
@@ -432,9 +439,13 @@ describe('Payment with Saved Payment Method', () => {
       )
       .reply(201, createMockRecurringScheduleResult({ id: 6014 }));
     //createCharge
+    const chargeRequests: any[] = [];
     nockInstance
       .persist()
-      .post(`/transactions/charge`)
+      .post(`/transactions/charge`, (body) => {
+        chargeRequests.push(body);
+        return true;
+      })
       .reply(201, checkChargeResult);
     const testPaymentMethod =
       haydenSavedPaymentMethods[haydenSavedPaymentMethods.length - 1];
@@ -464,6 +475,7 @@ describe('Payment with Saved Payment Method', () => {
     expect(recurringRequests.length).toBe(1);
     expect(recurringRequests[0].amount).toBe(9);
     expect(recurringRequests[0].receipt_email).toBeUndefined(); // Because we disabled sending receipt emails in plugin config
+    expect(chargeRequests[0].amount_details.surcharge).toBe(1); // Make sure additional input is passed to AB
   });
 
   it('Order has metadata for both declined and settled payments', async () => {

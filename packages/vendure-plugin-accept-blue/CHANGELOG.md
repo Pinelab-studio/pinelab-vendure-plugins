@@ -1,3 +1,8 @@
+# 3.7.0 (2026-01-06)
+
+- Allow passing additional input when creating a charge via the `additionalChargeInput` option.
+- Use parent `order` instead of `orderLine.order` in `getSubscriptionsForOrderLine` to prevent hydration issues.
+
 # 3.6.2 (2025-11-13)
 
 - Documentation update

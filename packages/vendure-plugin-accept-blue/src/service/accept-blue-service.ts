@@ -9,6 +9,7 @@ import {
   EventBus,
   ForbiddenError,
   ID,
+  Injector,
   Logger,
   Order,
   OrderLine,
@@ -83,7 +84,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
     private readonly orderService: OrderService,
     private readonly connection: TransactionalConnection,
     private eventBus: EventBus,
-    moduleRef: ModuleRef,
+    private readonly moduleRef: ModuleRef,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: AcceptBluePluginOptions
   ) {
@@ -93,9 +94,11 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       productVariantService,
       this.options.subscriptionStrategy
     );
+    this.injector = new Injector(this.moduleRef);
   }
 
   readonly subscriptionHelper: SubscriptionHelper;
+  readonly injector: Injector;
 
   onApplicationBootstrap() {
     // Register webhooks whenever an Accept Blue payment method is created or updated
@@ -243,13 +246,16 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       const subscriptionOrderLines =
         await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
       try {
+        const additionalChargeInput =
+          await this.options.additionalChargeInput?.(ctx, this.injector, order);
         chargeTransaction = await client.createCharge(
           paymentMethod.id,
           amount,
           {
             // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
             custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
-          }
+          },
+          additionalChargeInput
         );
       } catch (e) {
         const error = asError(e);
@@ -320,10 +326,19 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       await this.subscriptionHelper.getSubscriptionOrderLines(ctx, order);
     let chargeTransaction: AcceptBlueChargeTransaction | undefined;
     try {
-      chargeTransaction = await client.createDigitalWalletCharge(input, {
-        // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
-        custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
-      });
+      const additionalChargeInput = await this.options.additionalChargeInput?.(
+        ctx,
+        this.injector,
+        order
+      );
+      chargeTransaction = await client.createDigitalWalletCharge(
+        input,
+        {
+          // Pass subscription orderLine's as custom field, so we receive it in incoming webhooks
+          custom1: JSON.stringify(subscriptionOrderLines.map((l) => l.id)),
+        },
+        additionalChargeInput
+      );
     } catch (e) {
       if (e instanceof AcceptBlueChargeError) {
         return {
@@ -737,7 +752,7 @@ export class AcceptBlueService implements OnApplicationBootstrap {
       await this.subscriptionHelper.getSubscriptionsForOrderLine(
         ctx,
         orderLine,
-        orderLine.order
+        order
       );
     return subscriptionsForOrderLine.map((s) => {
       return {

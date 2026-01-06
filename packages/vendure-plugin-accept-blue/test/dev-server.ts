@@ -79,6 +79,49 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
           'https://webhook.site/cdef50e0-0e6d-4e23-a4b1-6ffc9ca89df8',
         subscriptionStrategy: new TestSubscriptionStrategy(),
         sendReceiptEmail: false,
+        additionalChargeInput: async (ctx, injector, order) => {
+          // Here you can construct the additional input based on the order and the context
+          // See https://docs.accept.blue/api/v2#tag/processing-charges for the fields available
+          return {
+            amount_details: {
+              surcharge: 1,
+            },
+            transaction_details: {
+              description: 'Test description',
+            },
+            billing_info: {
+              first_name: 'John',
+              last_name: 'Doe',
+              street: '123 Main St',
+              city: 'Anytown',
+              state: 'CA',
+              zip: '12345',
+              country: 'US',
+              phone: '1234567890',
+            },
+            shipping_info: {
+              first_name: 'John',
+              last_name: 'Doe',
+              street: '123 Main St',
+              city: 'Anytown',
+              state: 'CA',
+              zip: '12345',
+              country: 'US',
+              phone: '1234567890',
+            },
+            line_items: [
+              {
+                sku: '1234567890',
+                name: 'Test item',
+                description: 'Test description',
+                cost: 100,
+                quantity: 1,
+                tax_rate: 0.1,
+                tax_amount: 10,
+              },
+            ],
+          };
+        },
       }),
       DefaultSearchPlugin,
       AdminUiPlugin.init({

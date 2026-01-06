@@ -370,3 +370,57 @@ mutation {
 Make sure that your amount equals the amount of the order! The amount is passed in as whole amount, not in cents, because this is how you will receive it from Google.
 
 You can configure the Merchant ID and Gateway Merchant ID on the payment method in Vendure, and fetch them via `eligiblePaymentMethods` or `eligibleAcceptBluePaymentMethods`.
+
+## Additional Charge Input
+
+For the initial charge, you can pass additional input to the charge creation. This is useful if you want to add additional information to the charge, such as tax, surcharges,shipping information, etc.
+
+In your plugin initialization, you can pass a function that returns the additional input:
+
+```ts
+AcceptBluePlugin.init({
+  additionalChargeInput: async (ctx, injector, order) => {
+    // Here you can construct the additional input based on the order and the context
+    // See https://docs.accept.blue/api/v2#tag/processing-charges for the fields available
+    return {
+      amount_details: {
+        surcharge: 1,
+      },
+      transaction_details: {
+        description: 'Test description',
+      },
+      billing_info: {
+        first_name: 'John',
+        last_name: 'Doe',
+        street: '123 Main St',
+        city: 'Anytown',
+        state: 'CA',
+        zip: '12345',
+        country: 'US',
+        phone: '1234567890',
+      },
+      shipping_info: {
+        first_name: 'John',
+        last_name: 'Doe',
+        street: '123 Main St',
+        city: 'Anytown',
+        state: 'CA',
+        zip: '12345',
+        country: 'US',
+        phone: '1234567890',
+      },
+      line_items: [
+        {
+          sku: '1234567890',
+          name: 'Test item',
+          description: 'Test description',
+          cost: 100,
+          quantity: 1,
+          tax_rate: 0.1,
+          tax_amount: 10,
+        },
+      ],
+    };
+  },
+});
+```
