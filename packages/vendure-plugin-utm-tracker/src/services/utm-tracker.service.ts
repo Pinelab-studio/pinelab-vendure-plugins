@@ -55,7 +55,13 @@ export class UTMTrackerService implements OnApplicationBootstrap {
       inputs = inputs.slice(0, this.options.maxParametersPerOrder);
     }
     for (const input of inputs) {
-      await this.addUTMParameterToOrder(ctx, input, order);
+      await this.addUTMParameterToOrder(ctx, input, order).catch((e) => {
+        Logger.error(
+          `Error adding UTM parameter to order ${order.code}: ${e}`,
+          loggerCtx,
+          asError(e).stack
+        );
+      });
     }
     // Check if we have reached the maximum number of parameters
     const parameters = await this.getUTMParameters(ctx, order.id);
@@ -94,6 +100,10 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     ) {
       throw new UserInputError('At least one UTM parameter is required');
     }
+    let campaignDisplayName = input.campaign;
+    if (this.options.getCampaignDisplayName) {
+      campaignDisplayName = this.options.getCampaignDisplayName(ctx, input);
+    }
     const utmRepo = this.connection.getRepository(ctx, UtmOrderParameter);
     // Check if the given params already exists
     const existingParameter = await utmRepo.findOne({
@@ -109,6 +119,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     if (existingParameter) {
       await utmRepo.update(existingParameter.id, {
         connectedAt: input.connectedAt,
+        campaignDisplayName,
       });
       Logger.info(
         `Updated existing UTM parameters '${existingParameter.id}' of order ${order.id} (${order.code})`,
@@ -117,6 +128,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     } else {
       // Create new parameter
       await utmRepo.save({
+        campaignDisplayName,
         orderId: order.id,
         utmSource: input.source,
         utmMedium: input.medium,

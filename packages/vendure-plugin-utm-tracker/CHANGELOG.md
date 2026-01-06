@@ -1,3 +1,7 @@
+# 1.3.0 (2026-01-06)
+
+- Allow setting a custom display name for a campaign.
+
 # 1.2.2 (2025-11-13)
 
 - Documentation update

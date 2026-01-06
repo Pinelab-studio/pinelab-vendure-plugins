@@ -28,27 +28,24 @@ interface UtmOrderParameter {
  * Display UTM parameters on the order detail page.
  */
 @Component({
-  template: ` <vdr-card title="UTM Parameters">
+  template: ` <vdr-card title="UTM Parameters" style="margin-bottom: 1rem;">
     <div class="contents">
       <div *ngIf="(utmParams$ | async)?.length as len; else noData">
         <table class="table">
           <thead>
             <tr>
-              <th>Connected</th>
-              <th>Source</th>
-              <th>Medium</th>
-              <th>Campaign</th>
-              <th>Term</th>
+              <th style="text-align: left">Connected</th>
+              <th style="text-align: left">Campaign name</th>
               <th>Attributed Value</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let p of utmParams$ | async; let i = index">
-              <td>{{ p.connectedAt | date : 'short' }}</td>
-              <td>{{ p.utmSource }}</td>
-              <td>{{ p.utmMedium }}</td>
-              <td>{{ p.utmCampaign }}</td>
-              <td>{{ p.utmTerm }}</td>
+              <td style="text-align: left">
+                {{ p.connectedAt | date : 'short' }}
+              </td>
+              <td style="text-align: left">{{ p.campaignDisplayName }}</td>
+              nt
               <td *ngIf="p.attributedValue > 0">
                 {{ p.attributedValue / 100 | currency }} ({{
                   p.attributedPercentage * 100 | number : '1.0-0'
@@ -108,6 +105,7 @@ export const GET_UTM_PARAMETERS = gql`
         createdAt
         updatedAt
         connectedAt
+        campaignDisplayName
         utmSource
         utmMedium
         utmCampaign

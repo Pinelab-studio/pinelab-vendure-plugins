@@ -1,4 +1,4 @@
-import { ID, Order } from '@vendure/core';
+import { ID, Order, RequestContext } from '@vendure/core';
 import { UtmOrderParameter } from './entities/utm-order-parameter.entity';
 
 /**
@@ -17,6 +17,14 @@ export interface UTMTrackerPluginInitOptions {
    * Default is 30 days.
    */
   maxAttributionAgeInDays: number;
+  /**
+   * Optional function to set a custom display name for a campaign.
+   * By default utmCampaign is used, but with Google Ads for example, the campaign is the campaign ID, not the campaign name.
+   */
+  getCampaignDisplayName?: (
+    ctx: RequestContext,
+    utmParameters: UTMParameterInput
+  ) => string;
 }
 
 export interface AttributionModel {
