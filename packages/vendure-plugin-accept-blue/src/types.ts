@@ -75,15 +75,53 @@ interface TransactionDetails {
   schedule_id: number;
 }
 
-export interface AcceptBlueAmountInput {
+export interface AdditionalChargeInput {
+  amount_details?: AcceptBlueAmountDetailsInput;
+  transaction_details?: AcceptBlueTransactionDetailsInput;
+  billing_info?: Partial<AcceptBlueAddress>;
+  shipping_info?: Partial<AcceptBlueAddress>;
+  line_items?: AcceptBlueLineItemInput[];
+}
+
+export interface AcceptBlueAmountDetailsInput {
+  tax?: number;
+  surcharge?: number;
+  shipping?: number;
+  tip?: number;
+  discount?: number;
+}
+
+export interface AcceptBlueTransactionDetailsInput {
+  description?: string;
+  clerk?: string;
+  terminal?: string;
+  client_ip?: string;
+  signature?: string;
+  invoice_number?: string;
+  po_number?: string;
+  order_number?: string;
+}
+
+export interface AcceptBlueLineItemInput {
+  sku?: string;
+  name?: string;
+  description?: string;
+  cost?: number;
+  quantity?: number;
+  tax_rate?: number;
+  tax_amount?: number;
+  unit_of_measure?: string;
+  commodity_code?: string;
+  discount_rate?: number;
+  discount_amount?: number;
+}
+
+export interface AcceptBlueAmountDetails {
   tax: number;
   surcharge: number;
   shipping: number;
   tip: number;
   discount: number;
-}
-
-export interface AcceptBlueAmountDetails extends AcceptBlueAmountInput {
   amount: number;
   subtotal: number;
   original_requested_amount: number;
