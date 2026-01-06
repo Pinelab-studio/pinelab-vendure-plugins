@@ -119,7 +119,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     if (existingParameter) {
       await utmRepo.update(existingParameter.id, {
         connectedAt: input.connectedAt,
-        campaignDisplayName: campaignDisplayName,
+        campaignDisplayName,
       });
       Logger.info(
         `Updated existing UTM parameters '${existingParameter.id}' of order ${order.id} (${order.code})`,
@@ -128,7 +128,7 @@ export class UTMTrackerService implements OnApplicationBootstrap {
     } else {
       // Create new parameter
       await utmRepo.save({
-        campaignDisplayName: campaignDisplayName,
+        campaignDisplayName,
         orderId: order.id,
         utmSource: input.source,
         utmMedium: input.medium,
