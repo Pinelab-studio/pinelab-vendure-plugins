@@ -95,3 +95,5 @@ Make sure to filter by logger context `QlsPlugin`, to prevent false positive ale
 ## Cancelling orders and manually pushing orders to QLS
 
 // TODO: Push will just create a new order in QLS, it will not cancel the existing order in QLS. Cancel existing order first via https://mijn.pakketdienstqls.nl/
+
+// readme about failed event
