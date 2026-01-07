@@ -32,6 +32,7 @@ import {
   IncomingOrderWebhook,
 } from '../lib/client-types';
 import { getQlsClient } from '../lib/qls-client';
+import { QlsOrderFailedEvent } from './qls-order-failed-event';
 import { QlsOrderJobData, QlsPluginOptions } from '../types';
 
 @Injectable()
@@ -216,9 +217,6 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         ...(additionalOrderFields ?? {}),
       };
       const result = await client.createFulfillmentOrder(qlsOrder);
-      await this.orderService.updateCustomFields(ctx, orderId, {
-        syncedToQls: true,
-      });
       Logger.info(
         `Successfully created order '${order.code}' in QLS with id '${result.id}'`,
         loggerCtx
@@ -228,6 +226,21 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         isPublic: false,
         note: `Created order '${result.id}' in QLS`,
       });
+      // Delay 10s to prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
+      setTimeout(async () => {
+        await this.orderService
+          .updateCustomFields(ctx, orderId, {
+            syncedToQls: true,
+          })
+          .catch((e) => {
+            const error = asError(e);
+            Logger.error(
+              `Error updating custom field 'syncedToQls: true' for order '${order.code}': ${error.message}`,
+              loggerCtx,
+              error.stack
+            );
+          });
+      }, 10000);
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
     } catch (e) {
       const error = asError(e);
@@ -236,6 +249,9 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         isPublic: false,
         note: `Failed to create order '${order.code}' in QLS: ${error.message}`,
       });
+      this.eventBus.publish(
+        new QlsOrderFailedEvent(ctx, order, new Date(), error.message)
+      );
       throw error;
     }
   }

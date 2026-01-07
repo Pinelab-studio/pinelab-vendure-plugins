@@ -1,4 +1,4 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   E2E_DEFAULT_CHANNEL_TOKEN,
@@ -12,6 +12,10 @@ import { afterEach, beforeAll, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { FulfillmentProduct, QlsPlugin } from '../src';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import {
+  QlsOrderFailedEvent,
+  QLSOrderError,
+} from '../src/services/qls-order-failed-event';
 import { gql } from 'graphql-tag';
 
 let server: TestServer;
@@ -214,7 +218,7 @@ it('Pushes order to QLS', async () => {
   // Add additional order fields
   QlsPlugin.options.getAdditionalOrderFields = (ctx, injector, order) => {
     return {
-      delivery_options: ['dhl-germany-national'],
+      delivery_options: [{ tag: 'dhl-germany-national' }],
     };
   };
   const createdOrders: string[] = [];
@@ -253,7 +257,7 @@ it('Pushes order to QLS', async () => {
       email: 'hayden.zieme12@hotmail.com',
       phone: '029 1203 1336',
     },
-    delivery_options: ['dhl-germany-national'],
+    delivery_options: [{ tag: 'dhl-germany-national' }],
     products: [
       {
         amount_ordered: 1,
@@ -264,6 +268,48 @@ it('Pushes order to QLS', async () => {
     ],
     brand_id: 'mock-brand-id',
   });
+  // await new Promise(resolve => setTimeout(resolve, 5000));
+}, 20000);
+
+it('Emits QlsOrderFailedEvent when order push fails', async () => {
+  const events: QlsOrderFailedEvent[] = [];
+  server.app
+    .get(EventBus)
+    .ofType(QlsOrderFailedEvent)
+    .subscribe((event) => events.push(event));
+  const errorResponse = {
+    meta: { code: 400 },
+    errors: {
+      receiver_contact: {
+        postalcode: { validPostalCode: 'Ongeldige indeling (NNNN)' },
+      },
+    },
+    pagination: null,
+  };
+  // Mock fulfilment order failure response
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (url, { method }) => {
+      return {
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+        headers: {
+          get: () => 'application/json',
+        },
+        text: async () => JSON.stringify(errorResponse),
+      };
+    })
+  );
+  await createSettledOrder(shopClient, 1, true, [{ id: '1', quantity: 1 }]);
+  await waitFor(() => events.length > 0);
+  expect(events.length).toBe(1);
+  const event = events[0];
+  expect(event.errorCode).toBe(QLSOrderError.INCORRECT_POSTAL_CODE);
+  expect(event.order).toBeDefined();
+  expect(event.order.code).toBeDefined();
+  expect(event.failedAt).toBeInstanceOf(Date);
+  expect(event.fullError).toContain('Ongeldige indeling (NNNN)');
 });
 
 if (process.env.TEST_ADMIN_UI) {

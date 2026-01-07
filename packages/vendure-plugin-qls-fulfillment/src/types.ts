@@ -93,7 +93,7 @@ export type AdditionalVariantFields = Partial<
 
 export interface AdditionalOrderFields {
   servicepoint_code?: string;
-  delivery_options?: string[];
+  delivery_options?: { tag: string }[]; // Not consistent with the Redoc docs but matches the actual API
   custom_values?: CustomValue[];
 }
 
