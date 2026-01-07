@@ -24,14 +24,14 @@ export class QlsOrderFailedEvent extends VendureEvent {
     /**
      * The full error response JSON from QLS.
      */
-    public fullError: any
+    public fullError: unknown
   ) {
     super();
     this.errorCode = getQLSErrorCode(fullError);
   }
 }
 
-export function getQLSErrorCode(errorResponse: JSON): QLSOrderError {
+export function getQLSErrorCode(errorResponse: unknown): QLSOrderError {
   const errorString = JSON.stringify(errorResponse);
   if (errorString.includes('containsNumber')) {
     return QLSOrderError.INCORRECT_HOUSE_NUMBER;

@@ -227,8 +227,8 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         note: `Created order '${result.id}' in QLS`,
       });
       // Delay 10s to prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
-      setTimeout(async () => {
-        await this.orderService
+      setTimeout(() => {
+        this.orderService
           .updateCustomFields(ctx, orderId, {
             syncedToQls: true,
           })
@@ -249,7 +249,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         isPublic: false,
         note: `Failed to create order '${order.code}' in QLS: ${error.message}`,
       });
-      this.eventBus.publish(
+      await this.eventBus.publish(
         new QlsOrderFailedEvent(ctx, order, new Date(), error.message)
       );
       throw error;

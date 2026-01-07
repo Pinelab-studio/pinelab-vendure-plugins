@@ -1,10 +1,6 @@
+import { Order, RequestContext } from '@vendure/core';
 import { describe, expect, it } from 'vitest';
-import { RequestContext, Order } from '@vendure/core';
-import {
-  getQLSErrorCode,
-  QlsOrderFailedEvent,
-  QLSOrderError,
-} from './qls-order-failed-event';
+import { QLSOrderError, QlsOrderFailedEvent } from './qls-order-failed-event';
 
 describe('QlsOrderFailedEvent', () => {
   const mockCtx = {} as RequestContext;
