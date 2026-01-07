@@ -78,20 +78,30 @@ mutation {
 }
 ```
 
-## Monitoring
+## Monitoring failed orders
 
-Make sure to monitor failed jobs: A job that failed after its retries were exhausted, means:
+Whenever an order fails to be pushed to QLS, an event is emitted. You can listen to this event to monitor failed orders.
 
-1. An order was not pushed to QLS
-2. A product was not synced to QLS
+```ts
+this.eventBus.ofType(QlsOrderFailedEvent).subscribe((event) => {
+  console.log('Order failed to be pushed to QLS:', event.order.code);
+});
+```
 
-Monitor your logs for the following text:
+Because a job can be retried, this event can be emitted multiple times for the same order. You can use the date field together with the order code to determine if you have already processed this event.
 
-- `QLS webhook error` - This means an incoming stock update webhook was not processed correctly.
-- `Error creating or updating variant` - This means a product was not synced to QLS.
+```ts
+this.eventBus.ofType(QlsOrderFailedEvent).subscribe((event) => {
+  // Determine if we have already processed this event.
+  const uniqueEventId = `${event.order.code}_${
+    event.failedAt.toISOString().split('T')[0]
+  }`; // "JHD82JS8868_2026-01-01"
+  console.log('Order failed to be pushed to QLS:', event.order.code);
+});
+```
 
-Make sure to filter by logger context `QlsPlugin`, to prevent false positive alerts.
+## Manually pushing orders to QLS
 
-## Cancelling orders and manually pushing orders to QLS
+This plugin adds a button `push to QLS` to the order detail page in the Admin UI. This will push the order to QLS again. If the order has been pushed before, you need to uncheck the checkbox `synced to QLS` in the order custom fields first.
 
-// TODO: Push will just create a new order in QLS, it will not cancel the existing order in QLS. Cancel existing order first via https://mijn.pakketdienstqls.nl/
+Pushing an order to QLS again will not cancel the existing order in QLS. Cancel existing orders first via https://mijn.pakketdienstqls.nl/.

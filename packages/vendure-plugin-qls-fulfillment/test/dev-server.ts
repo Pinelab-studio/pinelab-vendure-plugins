@@ -66,7 +66,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
         }),
         getAdditionalOrderFields: () => {
           return {
-            delivery_options: ['dhl-germany-national'],
+            delivery_options: [{ tag: 'dhl-germany-national' }],
           };
         },
         getAdditionalVariantFields: (ctx, variant) => ({

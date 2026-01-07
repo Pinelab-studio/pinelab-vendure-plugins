@@ -83,7 +83,7 @@ export interface FulfillmentOrderInput {
   receiver_contact: FulfillmentOrderReceiverContactInput;
   custom_values?: CustomValue[];
   products: FulfillmentOrderLineInput[];
-  delivery_options: string[];
+  delivery_options: { tag: string }[];
 }
 
 export interface FulfillmentOrderReceiverContactInput {
