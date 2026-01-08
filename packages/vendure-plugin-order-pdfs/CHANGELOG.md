@@ -1,3 +1,8 @@
+# 1.3.0 (2026-01-08)
+
+- Set readable names for downloaded PDFs
+- Removed opening PDF in new tab, because it removes the readable filename
+
 # 1.2.2 (2025-11-13)
 
 - Documentation update
