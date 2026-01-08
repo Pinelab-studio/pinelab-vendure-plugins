@@ -25,11 +25,10 @@ import {
   DeletePdfTemplateMutationVariables,
   PdfTemplate,
   PdfTemplateList,
-  Scalars,
   UpdatePdfTemplateMutation,
   UpdatePdfTemplateMutationVariables,
 } from './generated/graphql';
-import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { defaultTemplate } from './default-template';
 import { downloadBlob, getHeaders } from './helpers';
 
@@ -222,7 +221,9 @@ export class PDFTemplateListComponent extends TypedBaseListComponent<
         throw Error(json?.message);
       }
       const blob = await res.blob();
-      await downloadBlob(blob, 'test.pdf', true);
+      const fileName =
+        formValues.name?.toLowerCase().replace(' ', '_') + '_preview.pdf';
+      await downloadBlob(blob, fileName);
     } catch (err: any) {
       console.error(err);
       this.notificationService.error(err?.message);

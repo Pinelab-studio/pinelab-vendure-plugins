@@ -8,7 +8,7 @@ import {
   NotificationService,
   registerBulkAction,
 } from '@vendure/admin-ui/core';
-import { firstValueFrom, lastValueFrom } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { PdfTemplate, PdfTemplateNamesQuery } from './generated/graphql';
 import { downloadBlob, getHeaders } from './helpers';
 import { getTemplateNames } from './queries.graphql';
@@ -42,7 +42,7 @@ async function promptTemplateSelection(
         ...templates.map((t) => ({
           type: 'primary' as const,
           label: t.name,
-          returnValue: t.id,
+          returnValue: t,
         })),
       ],
     })
@@ -56,7 +56,8 @@ async function startDownload(
   notificationService: NotificationService,
   localStorageService: LocalStorageService,
   templateId: ID,
-  orderCodes: string[]
+  orderCodes: string[],
+  templateName: string
 ) {
   notificationService.info('Starting download...');
   const serverPath = getServerLocation();
@@ -75,8 +76,11 @@ async function startDownload(
   }
   await new Promise((resolve) => setTimeout(resolve, 5000));
   const blob = await res.blob();
-  const fileName = orderCodes.length > 1 ? `orders.zip` : 'order.pdf';
-  await downloadBlob(blob, fileName, true);
+  const fileName =
+    orderCodes.length > 1
+      ? `orders.zip`
+      : `${orderCodes[0]}-${templateName?.toLowerCase().replace(' ', '_')}.pdf`;
+  await downloadBlob(blob, fileName);
 }
 
 export default [
@@ -102,24 +106,24 @@ export default [
       const templateNames = await getEnabledTemplates(context.dataService);
       // Prompt template selection
       const modalService = context.injector.get(ModalService);
-      const selectedTemplateId = await promptTemplateSelection(
+      const selectedTemplate = await promptTemplateSelection(
         modalService,
         templateNames,
         1
       );
-      if (!selectedTemplateId) {
+      if (!selectedTemplate?.id) {
         return;
       }
       // Download the actual PDFs
       const localStorageService = context.injector.get(LocalStorageService);
       const notificationService = context.injector.get(NotificationService);
       const orderCode = order?.code;
-      console.log('asdfasdfasd', orderCode);
       await startDownload(
         notificationService,
         localStorageService,
-        selectedTemplateId,
-        [orderCode]
+        selectedTemplate.id,
+        [orderCode],
+        selectedTemplate.name
       ).catch((e) => {
         notificationService.error(e?.message);
       });
@@ -135,12 +139,12 @@ export default [
       const templateNames = await getEnabledTemplates(dataService);
       // Prompt template selection
       const modalService = injector.get(ModalService);
-      const selectedTemplateId = await promptTemplateSelection(
+      const selectedTemplate = await promptTemplateSelection(
         modalService,
         templateNames,
         selection.length
       );
-      if (!selectedTemplateId) {
+      if (!selectedTemplate?.id) {
         return;
       }
       // Download the actual PDFs
@@ -150,8 +154,9 @@ export default [
       await startDownload(
         notificationService,
         localStorageService,
-        selectedTemplateId,
-        orderCodes
+        selectedTemplate.id,
+        orderCodes,
+        selectedTemplate.name
       ).catch((e) => {
         notificationService.error(e?.message);
       });
