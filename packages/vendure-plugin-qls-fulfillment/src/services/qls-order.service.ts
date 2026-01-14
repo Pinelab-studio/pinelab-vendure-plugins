@@ -226,21 +226,21 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         isPublic: false,
         note: `Created order '${result.id}' in QLS`,
       });
-      // Delay 10s to prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
-      setTimeout(() => {
-        this.orderService
-          .updateCustomFields(ctx, orderId, {
-            syncedToQls: true,
-          })
-          .catch((e) => {
-            const error = asError(e);
-            Logger.error(
-              `Error updating custom field 'syncedToQls: true' for order '${order.code}': ${error.message}`,
-              loggerCtx,
-              error.stack
-            );
-          });
-      }, 10000);
+      // Delayed custom field update to prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await this.orderService
+        .updateCustomFields(ctx, orderId, {
+          syncedToQls: true,
+        })
+        .catch((e) => {
+          // catch any errors, because we don't want the job to fail and retry when custom field update fails
+          const error = asError(e);
+          Logger.error(
+            `Error updating custom field 'syncedToQls: true' for order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
     } catch (e) {
       const error = asError(e);
@@ -270,7 +270,10 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     const orderCode = body.customer_reference;
     const order = await this.orderService.findOneByCode(ctx, orderCode, []);
     if (!order) {
-      throw new Error(`Order with code '${orderCode}' not found`);
+      return Logger.warn(
+        `Order with code '${orderCode}' not found, ignoring order status update`,
+        loggerCtx
+      );
     }
     const client = await getQlsClient(ctx, this.options);
     if (!client) {

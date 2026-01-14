@@ -8,15 +8,15 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import { afterEach, beforeAll, expect, it } from 'vitest';
-import { initialData } from '../../test/src/initial-data';
-import { FulfillmentProduct, QlsPlugin } from '../src';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import {
-  QlsOrderFailedEvent,
-  QLSOrderError,
-} from '../src/services/qls-order-failed-event';
 import { gql } from 'graphql-tag';
+import { beforeAll, expect, it } from 'vitest';
+import { initialData } from '../../test/src/initial-data';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { FulfillmentProduct, QlsPlugin } from '../src';
+import {
+  QLSOrderError,
+  QlsOrderFailedEvent,
+} from '../src/services/qls-order-failed-event';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -65,11 +65,11 @@ beforeAll(async () => {
 }, 60000);
 
 import { beforeEach, vi } from 'vitest';
-import { createMockResponse } from './util';
-import { waitFor } from '../../test/src/test-helpers';
 import { getAllVariants } from '../../test/src/admin-utils';
-import { createSettledOrder } from '../../test/src/shop-utils';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
+import { createMockResponse } from './util';
 
 beforeEach(() => {
   vi.unstubAllGlobals();
@@ -310,7 +310,7 @@ it('Emits QlsOrderFailedEvent when order push fails', async () => {
   expect(event.order.code).toBeDefined();
   expect(event.failedAt).toBeInstanceOf(Date);
   expect(event.fullError).toContain('Ongeldige indeling (NNNN)');
-});
+}, 7000); // Takes longer because we delay custom field updating by 5 seconds
 
 if (process.env.TEST_ADMIN_UI) {
   it('Should compile admin', async () => {
