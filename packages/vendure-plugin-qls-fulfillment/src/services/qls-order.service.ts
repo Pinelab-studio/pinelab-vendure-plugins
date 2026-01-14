@@ -233,6 +233,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           syncedToQls: true,
         })
         .catch((e) => {
+          // catch any errors, because we don't want the job to fail and retry when custom field update fails
           const error = asError(e);
           Logger.error(
             `Error updating custom field 'syncedToQls: true' for order '${order.code}': ${error.message}`,
