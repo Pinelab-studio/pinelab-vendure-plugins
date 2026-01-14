@@ -228,9 +228,18 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       });
       // Delayd custom field updateto prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
       await new Promise((resolve) => setTimeout(resolve, 5000));
-      await this.orderService.updateCustomFields(ctx, orderId, {
-        syncedToQls: true,
-      });
+      await this.orderService
+        .updateCustomFields(ctx, orderId, {
+          syncedToQls: true,
+        })
+        .catch((e) => {
+          const error = asError(e);
+          Logger.error(
+            `Error updating custom field 'syncedToQls: true' for order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
     } catch (e) {
       const error = asError(e);
