@@ -23,7 +23,7 @@ export const fullProductSyncTask = new ScheduledTask({
       apiType: 'admin',
     });
     const channels = await injector.get(ChannelService).findAll(ctx);
-    let triggeredFullSync = 0;
+    let fullSyncCompleted = 0;
     for (const channel of channels.items) {
       // Create ctx for channel
       const channelCtx = new RequestContext({
@@ -39,11 +39,11 @@ export const fullProductSyncTask = new ScheduledTask({
         Logger.info(`QLS not enabled for channel ${channel.token}`, loggerCtx);
         continue;
       }
-      await qlsProductService.triggerFullSync(ctx);
-      triggeredFullSync += 1;
+      await qlsProductService.runFullSync(channelCtx);
+      fullSyncCompleted += 1;
     }
     return {
-      message: `Triggered full sync for ${triggeredFullSync} channels`,
+      message: `Finnished full sync for ${fullSyncCompleted} channels`,
     };
   },
 });
