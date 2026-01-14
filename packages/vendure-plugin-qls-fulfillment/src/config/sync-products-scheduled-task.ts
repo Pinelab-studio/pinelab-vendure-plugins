@@ -10,14 +10,16 @@ import { QlsProductService } from '../services/qls-product.service';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { QlsPluginOptions } from '../types';
 
-export const fullProductSyncTask = new ScheduledTask({
+/**
+ * Synchronize all products to QLS for all channels, every day at 3:00 AM.
+ */
+export const qlsSyncAllProductsTask = new ScheduledTask({
   id: 'full-sync-qls-products',
   description: 'Trigger a full sync of products to QLS',
   params: {},
   schedule: (cron) => cron.everyDayAt(3, 0),
   async execute({ injector }) {
     const qlsProductService = injector.get(QlsProductService);
-
     // Verify for what channels we need to trigger QLS full sync
     const ctx = await injector.get(RequestContextService).create({
       apiType: 'admin',
