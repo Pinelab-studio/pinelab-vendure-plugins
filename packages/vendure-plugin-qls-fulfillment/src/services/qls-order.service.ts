@@ -226,7 +226,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         isPublic: false,
         note: `Created order '${result.id}' in QLS`,
       });
-      // Delayd custom field updateto prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
+      // Delayed custom field update to prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
       await new Promise((resolve) => setTimeout(resolve, 5000));
       await this.orderService
         .updateCustomFields(ctx, orderId, {
