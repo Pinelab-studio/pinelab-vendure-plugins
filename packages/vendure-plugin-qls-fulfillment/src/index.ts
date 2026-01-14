@@ -1,5 +1,5 @@
 export * from './api/generated/graphql';
-export * from './config/full-product-sync-task';
+export * from './config/sync-products-scheduled-task';
 export * from './custom-fields';
 export * from './lib/client-types';
 export * from './lib/qls-client';
