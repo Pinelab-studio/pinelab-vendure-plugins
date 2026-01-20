@@ -10,6 +10,7 @@ export const setWebhooksMutation = gql`
         supportedEvents
       }
       url
+      channelAgnostic
     }
   }
 `;
@@ -24,6 +25,7 @@ export const getWebhooksQuery = gql`
         supportedEvents
       }
       url
+      channelAgnostic
     }
   }
 `;

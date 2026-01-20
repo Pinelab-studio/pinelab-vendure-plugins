@@ -1,26 +1,27 @@
 import {
   Args,
   Mutation,
-  Query,
-  Resolver,
-  ResolveField,
   Parent,
+  Query,
+  ResolveField,
+  Resolver,
 } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
+  ForbiddenError,
+  Permission,
   PermissionDefinition,
-  ProductEvent,
   RequestContext,
 } from '@vendure/core';
-import { WebhookService } from './webhook.service';
 import {
   Webhook,
   WebhookInput,
   WebhookRequestTransformer,
 } from '../generated/graphql-types';
-import { Webhook as WebhookEntity } from './webhook.entity';
 import { RequestTransformer } from './request-transformer';
+import { Webhook as WebhookEntity } from './webhook.entity';
+import { WebhookService } from './webhook.service';
 
 // Permission needs to be defined first
 export const webhookPermission = new PermissionDefinition({
@@ -41,6 +42,23 @@ export class WebhookResolver {
     @Ctx() ctx: RequestContext,
     @Args('webhooks') webhooks: WebhookInput[]
   ): Promise<Webhook[]> {
+    // FIXME this fails when a webhook already exists with agnostic=true but the user doesnt have permission
+
+    // Check if any webhook is being set as channel-agnostic
+    const hasChannelAgnosticWebhook = webhooks.some(
+      (webhook) => webhook.channelAgnostic === true
+    );
+    if (hasChannelAgnosticWebhook) {
+      // Check if the current user has the "CreateChannel" permission
+      // In Vendure, permissions are checked through the session's channelPermissions
+      const channelPermissions = ctx.session?.user?.channelPermissions || [];
+      const hasPermission = channelPermissions.some((perm) =>
+        perm.permissions?.includes(Permission.CreateChannel)
+      );
+      if (!hasPermission) {
+        throw new ForbiddenError();
+      }
+    }
     return this.webhookService.saveWebhooks(ctx, webhooks);
   }
 

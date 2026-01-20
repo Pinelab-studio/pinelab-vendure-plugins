@@ -22,4 +22,11 @@ export class Webhook extends VendureEntity {
 
   @Column({ nullable: true })
   transformerName?: string;
+
+  /**
+   * When set to true, this webhook is available for all channels.
+   * Otherwise, it is only available for the channel specified in the `channelId` column.
+   */
+  @Column({ default: false })
+  channelAgnostic: boolean = false;
 }

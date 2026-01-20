@@ -1,3 +1,7 @@
+# 1.6.0 (2026-01-20)
+
+- Allow creation of channel-agnostic webhooks that trigger for all channels and are available to all users with the "CreateChannel" permission.
+
 # 1.5.2 (2025-11-13)
 
 - Documentation update

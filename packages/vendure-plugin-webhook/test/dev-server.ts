@@ -26,6 +26,7 @@ import { Webhook } from '../src/api/webhook.entity';
 (async () => {
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  (testConfig.dbConnectionOptions as any).autoSave = true;
   testConfig.plugins.push(
     WebhookPlugin.init({
       delay: 3000,

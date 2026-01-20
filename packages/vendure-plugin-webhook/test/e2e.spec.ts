@@ -227,6 +227,48 @@ describe('Webhook plugin', function () {
     expect(received.length).toBe(2);
   });
 
+  it('Should set channel agnostic webhook', async () => {
+    await adminClient.asSuperAdmin();
+    const { setWebhooks } = await adminClient.query<
+      SetWebhooksMutation,
+      SetWebhooksMutationVariables
+    >(setWebhooksMutation, {
+      webhooks: [
+        // ProductEvent webhook with custom transformer
+        {
+          event: 'ProductEvent',
+          url: testProductWebhookUrl,
+          channelAgnostic: true,
+        },
+      ],
+    });
+    await expect(setWebhooks[0].event).toBe('ProductEvent');
+    await expect(setWebhooks[0].url).toBe(testProductWebhookUrl);
+    await expect(setWebhooks[0].channelAgnostic).toBe(true);
+  });
+
+  it('Should call webhook channel agnostic webhook', async () => {
+    const receivedPayloads: any[] = [];
+    let receivedHeaders: any;
+    nock(testProductWebhookUrl)
+      .post(/.*/, (body) => {
+        receivedPayloads.push(body);
+        return true;
+      })
+      .reply(200, function () {
+        receivedHeaders = this.req.headers;
+      });
+    publishMockProductEvent();
+    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
+    expect(receivedPayloads.length).toBe(1);
+    expect(receivedPayloads[0].type).toBe('created');
+    expect(receivedPayloads[0].ctx).toBeDefined();
+    // See test-helpers.ts to see where these values are coming from
+    expect(receivedHeaders['x-custom-header']).toEqual([
+      'stringify-custom-header',
+    ]);
+  });
+
   if (process.env.TEST_ADMIN_UI) {
     it('Should compile admin', async () => {
       const files = await getFilesInAdminUiFolder(__dirname, WebhookPlugin.ui);

@@ -5,6 +5,7 @@ export const adminSchema = gql`
     event: String!
     url: String!
     transformerName: String
+    channelAgnostic: Boolean
   }
 
   type Webhook {
@@ -12,6 +13,7 @@ export const adminSchema = gql`
     event: String!
     url: String!
     requestTransformer: WebhookRequestTransformer
+    channelAgnostic: Boolean!
   }
 
   type WebhookRequestTransformer {

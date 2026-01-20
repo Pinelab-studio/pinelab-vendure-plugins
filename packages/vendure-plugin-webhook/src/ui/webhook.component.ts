@@ -25,9 +25,10 @@ export class WebhookComponent implements OnInit {
   eventName: string | undefined;
   requestTransformerName: string | undefined;
   url: string | undefined;
+  channelAgnostic: boolean = false;
   showMessage = false;
-  availableWeebhookEvents: string[] = [];
-  filteredWeebhookEvents: string[] = [];
+  availableWebhookEvents: string[] = [];
+  filteredWebhookEvents: string[] = [];
   avaiabelWebhookRequestTransformers: WebhookRequestTransformer[] = [];
 
   constructor(
@@ -41,7 +42,7 @@ export class WebhookComponent implements OnInit {
     this.dataService
       .query(getAvailableWebhookEventsQuery)
       .single$.subscribe((e: any) => {
-        this.filteredWeebhookEvents = this.availableWeebhookEvents =
+        this.filteredWebhookEvents = this.availableWebhookEvents =
           e.availableWebhookEvents;
       });
     this.dataService.query(getWebhooksQuery).single$.subscribe((s: any) => {
@@ -69,6 +70,7 @@ export class WebhookComponent implements OnInit {
     this.eventName = '';
     this.requestTransformerName = '';
     this.url = '';
+    this.channelAgnostic = false;
     this.changeDetector.detectChanges();
   }
 
@@ -87,12 +89,14 @@ export class WebhookComponent implements OnInit {
                 event: w.event,
                 transformerName: w.requestTransformer?.name,
                 url: w.url,
+                channelAgnostic: w.channelAgnostic,
               };
             }),
             {
               event: this.eventName,
               transformerName: this.requestTransformerName,
               url: this.url,
+              channelAgnostic: this.channelAgnostic,
             },
           ],
         })
@@ -107,7 +111,7 @@ export class WebhookComponent implements OnInit {
     }
   }
 
-  deleteWeebhook(id: number) {
+  deleteWebhook(id: number) {
     this.webhooks = this.webhooks.filter((w: Webhook) => w.id != id);
     this.changeDetector.detectChanges();
     this.dataService
@@ -118,6 +122,7 @@ export class WebhookComponent implements OnInit {
               event: w.event,
               transformerName: w.requestTransformer?.name,
               url: w.url,
+              channelAgnostic: w.channelAgnostic,
             };
           }),
         ],
@@ -130,19 +135,19 @@ export class WebhookComponent implements OnInit {
 
   requestTransformerSelected(setRequestTransformerName?: string) {
     if (setRequestTransformerName) {
-      this.filteredWeebhookEvents =
+      this.filteredWebhookEvents =
         this.avaiabelWebhookRequestTransformers.find(
           (v) => v.name === this.requestTransformerName
         )?.supportedEvents ?? [];
     } else if (this.requestTransformerName) {
-      this.filteredWeebhookEvents =
+      this.filteredWebhookEvents =
         this.avaiabelWebhookRequestTransformers.find(
           (v) => v.name === this.requestTransformerName
         )?.supportedEvents ?? [];
     } else {
-      this.filteredWeebhookEvents = this.availableWeebhookEvents;
+      this.filteredWebhookEvents = this.availableWebhookEvents;
     }
-    this.eventName = this.filteredWeebhookEvents.find(
+    this.eventName = this.filteredWebhookEvents.find(
       (v) => v === this.eventName
     );
     this.changeDetector.detectChanges();
