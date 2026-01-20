@@ -47,7 +47,7 @@ describe('Webhook plugin', function () {
   const testRegistrationUrl = 'https://my-security-logger.io';
 
   function publishMockProductEvent() {
-    server.app
+    return server.app
       .get(EventBus)
       .publish(new ProductEvent(ctx, undefined as any, 'created'));
   }
@@ -174,7 +174,7 @@ describe('Webhook plugin', function () {
       .reply(200, function () {
         receivedHeaders = this.req.headers;
       });
-    publishMockProductEvent();
+    await publishMockProductEvent();
     await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');
@@ -205,9 +205,9 @@ describe('Webhook plugin', function () {
       .reply(200, {})
       .persist();
     // Publish 3 events shortly after each other
-    publishMockProductEvent();
-    publishMockProductEvent();
-    publishMockProductEvent();
+    await publishMockProductEvent();
+    await publishMockProductEvent();
+    await publishMockProductEvent();
     await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     // Plugin should have batched all events fired within 200ms
     expect(received.length).toBe(1);
@@ -238,6 +238,7 @@ describe('Webhook plugin', function () {
         {
           event: 'ProductEvent',
           url: testProductWebhookUrl,
+          transformerName: stringifyProductTransformer.name,
           channelAgnostic: true,
         },
       ],
@@ -247,7 +248,7 @@ describe('Webhook plugin', function () {
     await expect(setWebhooks[0].channelAgnostic).toBe(true);
   });
 
-  it('Should call webhook channel agnostic webhook', async () => {
+  it('Should call channel agnostic webhook', async () => {
     const receivedPayloads: any[] = [];
     let receivedHeaders: any;
     nock(testProductWebhookUrl)
@@ -258,7 +259,7 @@ describe('Webhook plugin', function () {
       .reply(200, function () {
         receivedHeaders = this.req.headers;
       });
-    publishMockProductEvent();
+    await publishMockProductEvent();
     await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');

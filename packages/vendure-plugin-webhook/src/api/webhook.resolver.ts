@@ -42,10 +42,18 @@ export class WebhookResolver {
     @Ctx() ctx: RequestContext,
     @Args('webhooks') webhooks: WebhookInput[]
   ): Promise<Webhook[]> {
-    // FIXME this fails when a webhook already exists with agnostic=true but the user doesnt have permission
-
-    // Check if any webhook is being set as channel-agnostic
-    const hasChannelAgnosticWebhook = webhooks.some(
+    const currentWebhooks = await this.webhookService.getAllWebhooks(ctx);
+    const newWebhooks = webhooks.filter(
+      (webhook) =>
+        !currentWebhooks.some(
+          (w) =>
+            w.channelAgnostic &&
+            w.event === webhook.event &&
+            w.url === webhook.url
+        )
+    );
+    // Check if any of the new webhooks are being set as channel-agnostic
+    const hasChannelAgnosticWebhook = newWebhooks.some(
       (webhook) => webhook.channelAgnostic === true
     );
     if (hasChannelAgnosticWebhook) {

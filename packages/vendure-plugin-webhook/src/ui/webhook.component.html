@@ -59,7 +59,7 @@
                 class="list-group-item"
                 *vdrIfPermissions="['CreateAdministrator']"
               >
-                <h4 class="card-title">Channel Agnostic</h4>
+                <h4 class="card-title">Trigger for all channels</h4>
                 <input type="checkbox" [(ngModel)]="channelAgnostic" />
               </li>
             </ul>
@@ -90,9 +90,7 @@
     <vdr-dt-column>Event</vdr-dt-column>
     <vdr-dt-column>Request Transformer</vdr-dt-column>
     <vdr-dt-column>URL</vdr-dt-column>
-    <vdr-dt-column *vdrIfPermissions="['CreateChannel']"
-      >Channel Agnostic</vdr-dt-column
-    >
+    <vdr-dt-column>Trigger for all channels</vdr-dt-column>
     <vdr-dt-column></vdr-dt-column>
 
     <ng-template let-webhook="item">
@@ -105,7 +103,7 @@
       <td class="left align-middle">
         {{ webhook.url }}
       </td>
-      <td class="left align-middle" *vdrIfPermissions="['CreateChannel']">
+      <td class="left align-middle">
         {{ webhook.channelAgnostic ? 'Yes' : 'No' }}
       </td>
       <td>
