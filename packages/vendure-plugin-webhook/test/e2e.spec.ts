@@ -37,6 +37,7 @@ import {
 import { stringifyProductTransformer } from './test-helpers';
 import { describe, beforeAll, it, expect, afterEach, afterAll } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { waitFor } from '../../test/src/test-helpers';
 
 describe('Webhook plugin', function () {
   let server: TestServer;
@@ -175,7 +176,7 @@ describe('Webhook plugin', function () {
         receivedHeaders = this.req.headers;
       });
     await publishMockProductEvent();
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
+    await waitFor(() => receivedPayloads.length === 1);
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');
     expect(receivedPayloads[0].ctx).toBeDefined();
@@ -194,7 +195,7 @@ describe('Webhook plugin', function () {
       })
       .reply(200);
     publishMockRegistrationEvent();
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
+    await waitFor(() => receivedPayloads.length === 1);
     expect(receivedPayloads.length).toBe(1);
   });
 
@@ -260,7 +261,7 @@ describe('Webhook plugin', function () {
         receivedHeaders = this.req.headers;
       });
     await publishMockProductEvent();
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
+    await waitFor(() => receivedPayloads.length === 1);
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');
     expect(receivedPayloads[0].ctx).toBeDefined();

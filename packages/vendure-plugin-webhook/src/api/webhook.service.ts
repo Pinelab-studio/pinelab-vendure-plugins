@@ -92,10 +92,8 @@ export class WebhookService implements OnApplicationBootstrap {
   async getAllWebhooks(ctx: RequestContext): Promise<Webhook[]> {
     return this.connection.getRepository(ctx, Webhook).find({
       where: [
-        // Get channel-specific webhooks
+        // Get channel-specific webhooks only
         { channelId: String(ctx.channelId) },
-        // Or, get channel-agnostic webhooks
-        { channelAgnostic: true },
       ],
     });
   }
