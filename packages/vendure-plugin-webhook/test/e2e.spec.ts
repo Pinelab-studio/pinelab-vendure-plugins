@@ -37,6 +37,7 @@ import {
 import { stringifyProductTransformer } from './test-helpers';
 import { describe, beforeAll, it, expect, afterEach, afterAll } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
+import { waitFor } from '../../test/src/test-helpers';
 
 describe('Webhook plugin', function () {
   let server: TestServer;
@@ -47,7 +48,7 @@ describe('Webhook plugin', function () {
   const testRegistrationUrl = 'https://my-security-logger.io';
 
   function publishMockProductEvent() {
-    server.app
+    return server.app
       .get(EventBus)
       .publish(new ProductEvent(ctx, undefined as any, 'created'));
   }
@@ -174,8 +175,8 @@ describe('Webhook plugin', function () {
       .reply(200, function () {
         receivedHeaders = this.req.headers;
       });
-    publishMockProductEvent();
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
+    await publishMockProductEvent();
+    await waitFor(() => receivedPayloads.length === 1);
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');
     expect(receivedPayloads[0].ctx).toBeDefined();
@@ -194,7 +195,7 @@ describe('Webhook plugin', function () {
       })
       .reply(200);
     publishMockRegistrationEvent();
-    await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
+    await waitFor(() => receivedPayloads.length === 1);
     expect(receivedPayloads.length).toBe(1);
   });
 
@@ -205,9 +206,9 @@ describe('Webhook plugin', function () {
       .reply(200, {})
       .persist();
     // Publish 3 events shortly after each other
-    publishMockProductEvent();
-    publishMockProductEvent();
-    publishMockProductEvent();
+    await publishMockProductEvent();
+    await publishMockProductEvent();
+    await publishMockProductEvent();
     await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     // Plugin should have batched all events fired within 200ms
     expect(received.length).toBe(1);
@@ -225,6 +226,49 @@ describe('Webhook plugin', function () {
     publishMockProductEvent();
     await new Promise((resolve) => setTimeout(resolve, 500)); // Await async eventBus processing
     expect(received.length).toBe(2);
+  });
+
+  it('Should set channel agnostic webhook', async () => {
+    await adminClient.asSuperAdmin();
+    const { setWebhooks } = await adminClient.query<
+      SetWebhooksMutation,
+      SetWebhooksMutationVariables
+    >(setWebhooksMutation, {
+      webhooks: [
+        // ProductEvent webhook with custom transformer
+        {
+          event: 'ProductEvent',
+          url: testProductWebhookUrl,
+          transformerName: stringifyProductTransformer.name,
+          channelAgnostic: true,
+        },
+      ],
+    });
+    await expect(setWebhooks[0].event).toBe('ProductEvent');
+    await expect(setWebhooks[0].url).toBe(testProductWebhookUrl);
+    await expect(setWebhooks[0].channelAgnostic).toBe(true);
+  });
+
+  it('Should call channel agnostic webhook', async () => {
+    const receivedPayloads: any[] = [];
+    let receivedHeaders: any;
+    nock(testProductWebhookUrl)
+      .post(/.*/, (body) => {
+        receivedPayloads.push(body);
+        return true;
+      })
+      .reply(200, function () {
+        receivedHeaders = this.req.headers;
+      });
+    await publishMockProductEvent();
+    await waitFor(() => receivedPayloads.length === 1);
+    expect(receivedPayloads.length).toBe(1);
+    expect(receivedPayloads[0].type).toBe('created');
+    expect(receivedPayloads[0].ctx).toBeDefined();
+    // See test-helpers.ts to see where these values are coming from
+    expect(receivedHeaders['x-custom-header']).toEqual([
+      'stringify-custom-header',
+    ]);
   });
 
   if (process.env.TEST_ADMIN_UI) {

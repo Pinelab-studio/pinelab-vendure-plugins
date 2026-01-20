@@ -44,6 +44,7 @@ export type Query = {
 
 export type Webhook = {
   __typename?: 'Webhook';
+  channelAgnostic: Scalars['Boolean'];
   event: Scalars['String'];
   id: Scalars['ID'];
   requestTransformer?: Maybe<WebhookRequestTransformer>;
@@ -51,6 +52,7 @@ export type Webhook = {
 };
 
 export type WebhookInput = {
+  channelAgnostic?: InputMaybe<Scalars['Boolean']>;
   event: Scalars['String'];
   transformerName?: InputMaybe<Scalars['String']>;
   url: Scalars['String'];
@@ -73,6 +75,7 @@ export type SetWebhooksMutation = {
     id: number | string;
     event: string;
     url: string;
+    channelAgnostic: boolean;
     requestTransformer?: {
       __typename?: 'WebhookRequestTransformer';
       name: string;
@@ -90,6 +93,7 @@ export type WebhooksQuery = {
     id: number | string;
     event: string;
     url: string;
+    channelAgnostic: boolean;
     requestTransformer?: {
       __typename?: 'WebhookRequestTransformer';
       name: string;
@@ -130,6 +134,7 @@ export const SetWebhooks = gql`
         supportedEvents
       }
       url
+      channelAgnostic
     }
   }
 `;
@@ -143,6 +148,7 @@ export const Webhooks = gql`
         supportedEvents
       }
       url
+      channelAgnostic
     }
   }
 `;

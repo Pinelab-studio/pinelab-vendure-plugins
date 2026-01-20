@@ -1,3 +1,9 @@
+# 1.6.0 (2026-01-20)
+
+- Allow creation of channel-agnostic webhooks that trigger for all channels.
+- Channel-agnostic webhooks are available to users with the "CreateChannel" permission to prevent leaking data of other channels.
+- BREAKING: requires a DB migration to add the new `channelAgnostic` column.
+
 # 1.5.2 (2025-11-13)
 
 - Documentation update

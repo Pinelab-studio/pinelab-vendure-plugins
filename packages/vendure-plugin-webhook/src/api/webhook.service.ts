@@ -90,9 +90,12 @@ export class WebhookService implements OnApplicationBootstrap {
    * Get all configured webhooks for current channel
    */
   async getAllWebhooks(ctx: RequestContext): Promise<Webhook[]> {
-    return this.connection
-      .getRepository(ctx, Webhook)
-      .find({ where: { channelId: String(ctx.channelId) } });
+    return this.connection.getRepository(ctx, Webhook).find({
+      where: [
+        // Get channel-specific webhooks only
+        { channelId: String(ctx.channelId) },
+      ],
+    });
   }
 
   /**
@@ -103,7 +106,12 @@ export class WebhookService implements OnApplicationBootstrap {
   ): Promise<Webhook[]> {
     const eventName = event.constructor.name;
     return this.connection.getRepository(event.ctx, Webhook).find({
-      where: { channelId: String(event.ctx.channelId), event: eventName },
+      where: [
+        // Get channel-specific webhooks
+        { channelId: String(event.ctx.channelId), event: eventName },
+        // Or, get channel-agnostic webhooks
+        { channelAgnostic: true, event: eventName },
+      ],
     });
   }
 
@@ -124,6 +132,7 @@ export class WebhookService implements OnApplicationBootstrap {
       url: input.url,
       event: input.event,
       transformerName: input.transformerName ?? undefined,
+      channelAgnostic: input.channelAgnostic ?? false,
     }));
     await repository.save(webhooks);
     return this.getAllWebhooks(ctx);
