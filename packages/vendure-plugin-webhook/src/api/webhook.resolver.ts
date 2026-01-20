@@ -58,7 +58,6 @@ export class WebhookResolver {
     );
     if (hasChannelAgnosticWebhook) {
       // Check if the current user has the "CreateChannel" permission
-      // In Vendure, permissions are checked through the session's channelPermissions
       const channelPermissions = ctx.session?.user?.channelPermissions || [];
       const hasPermission = channelPermissions.some((perm) =>
         perm.permissions?.includes(Permission.CreateChannel)
