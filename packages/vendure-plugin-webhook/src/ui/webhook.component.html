@@ -55,10 +55,7 @@
                   [(ngModel)]="url"
                 />
               </li>
-              <li
-                class="list-group-item"
-                *vdrIfPermissions="['CreateAdministrator']"
-              >
+              <li class="list-group-item" *vdrIfPermissions="['CreateChannel']">
                 <h4 class="card-title">Trigger for all channels</h4>
                 <input type="checkbox" [(ngModel)]="channelAgnostic" />
               </li>
