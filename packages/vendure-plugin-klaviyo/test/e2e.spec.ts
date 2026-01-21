@@ -20,7 +20,11 @@ import {
 } from '../src';
 import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
-import { CheckoutStartedEvent, startedCheckoutHandler } from '../src/';
+import {
+  CheckoutStartedEvent,
+  FailedToSendToKlaviyoEvent,
+  startedCheckoutHandler,
+} from '../src/';
 import gql from 'graphql-tag';
 import { waitFor } from '../../test/src/test-helpers';
 
@@ -432,5 +436,25 @@ describe('Klaviyo', () => {
     expect(backInStockPromise).rejects.toThrow(
       'You are not currently authorized to perform this action'
     );
+  });
+
+  it('Emits FailedToSendToKlaviyoEvent when Klaviyo returns 500', async () => {
+    // Mock 500 response from Klaviyo
+    nock.cleanAll();
+    nock('https://a.klaviyo.com/api/')
+      .post('/events')
+      .reply(500, { error: 'Internal Server Error' })
+      .persist();
+    const failedEvents: FailedToSendToKlaviyoEvent[] = [];
+    server.app
+      .get(EventBus)
+      .ofType(FailedToSendToKlaviyoEvent)
+      .subscribe((e) => failedEvents.push(e));
+    // Trigger an event by placing an order
+    await createSettledOrder(shopClient, 1);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(failedEvents.length).toBeGreaterThan(0);
+    expect(failedEvents[0].error).toBeDefined();
+    expect(failedEvents[0].data).toBeDefined();
   });
 });

@@ -3,7 +3,7 @@ import {
   KlaviyoGenericEvent,
 } from '../event-handler/klaviyo-event-handler';
 import { assertFound, Logger, OrderService } from '@vendure/core';
-import { CheckoutStartedEvent } from '../service/checkout-started-event';
+import { CheckoutStartedEvent } from '../service/events';
 import { loggerCtx } from '../constants';
 
 /**
