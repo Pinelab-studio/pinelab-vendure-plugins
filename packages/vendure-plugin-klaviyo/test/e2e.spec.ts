@@ -20,7 +20,11 @@ import {
 } from '../src';
 import { mockOrderPlacedHandler } from './mock-order-placed-handler';
 import { mockCustomEventHandler } from './mock-custom-event-handler';
-import { CheckoutStartedEvent, startedCheckoutHandler } from '../src/';
+import {
+  CheckoutStartedEvent,
+  FailedToSendToKlaviyoEvent,
+  startedCheckoutHandler,
+} from '../src/';
 import gql from 'graphql-tag';
 import { waitFor } from '../../test/src/test-helpers';
 
@@ -102,15 +106,19 @@ describe('Klaviyo', () => {
 
   it('Places an order', async () => {
     const order = await createSettledOrder(shopClient, 1);
-    // Give worker some time to send event to klaviyo
-    await new Promise((resolve) => setTimeout(resolve, 1000));
     expect(order.code).toBeDefined();
   });
 
-  it("Has sent 'Placed Order Event' to Klaviyo", () => {
-    const orderEvent = klaviyoRequests.find(
-      (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
-    );
+  it("Has sent 'Placed Order Event' to Klaviyo", async () => {
+    // Use waitFor to keep trying until the order event is found
+    const orderEvent = await waitFor(() => {
+      const orderEvent = klaviyoRequests.find(
+        (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
+      );
+      if (orderEvent) {
+        return orderEvent;
+      }
+    });
     const attributes = orderEvent?.data.attributes as any;
     expect(attributes.properties.OrderId).toBeDefined();
     expect(attributes.properties.ItemNames).toEqual([
@@ -163,11 +171,21 @@ describe('Klaviyo', () => {
     });
   });
 
-  it("Has sent 'Custom Order Placed' event to Klaviyo", () => {
-    const orderEvents = klaviyoRequests.filter(
-      (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
-    );
-    const orderEvent = orderEvents[orderEvents.length - 1]; // Last one should be our custom event
+  it("Has sent 'Custom Order Placed' event to Klaviyo", async () => {
+    // Use waitFor to keep trying until the custom order event is found
+    const orderEvent = await waitFor(() => {
+      const orderEvents = klaviyoRequests.filter(
+        (r) => r.data.attributes.metric.data.attributes.name === 'Placed Order'
+      );
+      const lastOrderEvent = orderEvents[orderEvents.length - 1]; // Last one should be our custom event
+      if (
+        (lastOrderEvent.data.attributes.properties as any).CustomProperties
+          ?.customOrderProp
+      ) {
+        // Only if customOrderProp is set, we know it's our custom event
+        return lastOrderEvent;
+      }
+    });
     const properties = orderEvent.data.attributes.properties as any;
     // Only test custom and new properties here
     expect(properties.Categories).toEqual(['Some mock category']);
@@ -195,11 +213,18 @@ describe('Klaviyo', () => {
     expect(orderedProductEvents.length).toBe(2);
   });
 
-  it("Has sent 'Custom Order Placed' event to Klaviyo", () => {
-    const customEvent = klaviyoRequests.find(
-      (r) =>
-        r.data.attributes.metric.data.attributes.name === 'Custom Testing Event'
-    );
+  it("Has sent 'Custom Testing Event' event to Klaviyo", async () => {
+    // Use waitFor to keep trying until the custom event is found
+    const customEvent = await waitFor(() => {
+      const customEvent = klaviyoRequests.find(
+        (r) =>
+          r.data.attributes.metric.data.attributes.name ===
+          'Custom Testing Event'
+      );
+      if (customEvent) {
+        return customEvent;
+      }
+    });
     expect(
       (customEvent?.data.attributes.properties as any).customTestEventProp
     ).toEqual('some information');
@@ -261,12 +286,15 @@ describe('Klaviyo', () => {
         }
       `
     );
-    // Give worker some time to send event to klaviyo
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    const checkoutStartedEvent = klaviyoRequests.find(
-      (r) =>
-        r.data.attributes.metric.data.attributes.name === 'Checkout Started'
-    );
+    const checkoutStartedEvent = await waitFor(() => {
+      const checkoutStartedEvent = klaviyoRequests.find(
+        (r) =>
+          r.data.attributes.metric.data.attributes.name === 'Checkout Started'
+      );
+      if (checkoutStartedEvent) {
+        return checkoutStartedEvent;
+      }
+    });
     expect(events[0].order.id).toBeDefined();
     const profile = checkoutStartedEvent?.data.attributes.profile.data
       .attributes as any;
@@ -432,5 +460,25 @@ describe('Klaviyo', () => {
     expect(backInStockPromise).rejects.toThrow(
       'You are not currently authorized to perform this action'
     );
+  });
+
+  it('Emits FailedToSendToKlaviyoEvent when Klaviyo returns 500', async () => {
+    // Mock 500 response from Klaviyo
+    nock.cleanAll();
+    nock('https://a.klaviyo.com/api/')
+      .post('/events')
+      .reply(500, { error: 'Internal Server Error' })
+      .persist();
+    const failedEvents: FailedToSendToKlaviyoEvent[] = [];
+    server.app
+      .get(EventBus)
+      .ofType(FailedToSendToKlaviyoEvent)
+      .subscribe((e) => failedEvents.push(e));
+    // Trigger an event by placing an order
+    await createSettledOrder(shopClient, 1);
+    await waitFor(() => failedEvents.length > 0);
+    expect(failedEvents.length).toBeGreaterThan(0);
+    expect(failedEvents[0].error).toBeDefined();
+    expect(failedEvents[0].data).toBeDefined();
   });
 });

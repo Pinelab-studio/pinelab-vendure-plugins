@@ -39,7 +39,7 @@ import {
   mapToKlaviyoOrderPlacedInput,
   mapToOrderedProductEvent,
 } from '../util/map-to-klaviyo-input';
-import { CheckoutStartedEvent } from './checkout-started-event';
+import { CheckoutStartedEvent, FailedToSendToKlaviyoEvent } from './events';
 
 type JobData = {
   ctx: SerializedRequestContext;
@@ -80,6 +80,9 @@ export class KlaviyoService implements OnApplicationBootstrap {
               (e as Error).message
             }. Job data: ${JSON.stringify(data.event)}`,
             loggerCtx
+          );
+          await this.eventBus.publish(
+            new FailedToSendToKlaviyoEvent(ctx, data.event, e)
           );
           throw e;
         }

@@ -192,3 +192,21 @@ mutation {
   )
 }
 ```
+
+## Failed to send event to Klaviyo
+
+If for some reason an event fails to be sent to Klaviyo, an `FailedToSendToKlaviyoEvent`event is emitted. You can listen to this event to monitor failed events and take action.
+
+Example:
+
+```ts
+import { FailedToSendToKlaviyoEvent } from '@pinelab/vendure-plugin-klaviyo';
+
+this.eventBus.ofType(FailedToSendToKlaviyoEvent).subscribe((event) => {
+  console.log('Failed to send event to Klaviyo:', event.data.eventName);
+  console.log('For profile:', event.data.profile.emailAddress);
+  console.log('Because of reason:', (event.error as Error)?.message);
+
+  // Maybe send some alerts to your monitoring system
+});
+```
