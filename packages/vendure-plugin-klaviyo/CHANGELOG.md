@@ -1,6 +1,6 @@
 # 1.10.0 (2026-01-21)
 
-- Emitting `FailedToSendEventToKlaviyoEvent` event when a Klaviyo event fails to be sent
+- Emitting `FailedToSendToKlaviyoEvent` event when a Klaviyo event fails to be sent
 
 # 1.9.3 (2025-11-13)
 
