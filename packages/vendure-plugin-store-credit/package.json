@@ -1,0 +1,28 @@
+{
+  "name": "@pinelab/vendure-plugin-s-store-credit",
+  "version": "0.3.3",
+  "description": "Vendure plugin for channel-aware store credit wallets with ledger tracking",
+  "author": "Martijn van de Brug <martijn@pinelab.studio>",
+  "homepage": "https://plugins.pinelab.studio/",
+  "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
+  "license": "MIT",
+  "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && yarn generate && tsc",
+    "start": "ts-node --swc test/dev-server.ts",
+    "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
+    "generate": "graphql-codegen",
+    "test": "vitest run --bail 1",
+    "lint": "eslint ."
+  }
+}
