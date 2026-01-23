@@ -16,11 +16,9 @@ export class CustomerEntityResolver {
     @Ctx() ctx: RequestContext,
     @Parent() customer: Customer
   ): Promise<Wallet[]> {
-    return this.connection
-      .getRepository(ctx, Wallet)
-      .find({
-        where: { customer: { id: customer.id } },
-        relations: ['ledgerEntries'],
-      });
+    return this.connection.getRepository(ctx, Wallet).find({
+      where: { customer: { id: customer.id } },
+      relations: ['ledgerEntries'],
+    });
   }
 }
