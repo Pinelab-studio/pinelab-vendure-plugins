@@ -14,6 +14,8 @@ This plug is meant for small to medium sized shops with up to ~10000 variants.
 
 This plugin is not meant to be a replacement for ElasticSearch or TypeSense, but rather a lightweight alternative for small to medium sized shops. If you want to test if it works for you, give it a try and run the load tests we have included.
 
+// TODO fix everything below this line
+
 Features:
 
 - Search by term or multiple terms, no and/or logic or query syntax.
