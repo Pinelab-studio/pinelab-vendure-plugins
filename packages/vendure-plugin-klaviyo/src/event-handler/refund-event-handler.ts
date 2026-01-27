@@ -10,6 +10,7 @@ import {
   KlaviyoEventHandler,
   KlaviyoGenericEvent,
 } from './klaviyo-event-handler';
+import { mapToProfile } from '../util/map-to-profile';
 
 export interface RefundEventInput {
   getPaymentMethodName: (payment: Payment | undefined) => string;
@@ -49,11 +50,7 @@ export function createRefundHandler(
           refundAmount: refund.total,
         },
         profile: {
-          emailAddress: hydratedOrder.customer.emailAddress,
-          externalId: hydratedOrder.customer.id.toString(),
-          firstName: hydratedOrder.customer.firstName,
-          lastName: hydratedOrder.customer.lastName,
-          phoneNumber: hydratedOrder.customer.phoneNumber,
+          ...mapToProfile(ctx, hydratedOrder.customer),
           address: {
             address1: address?.streetLine1,
             address2: address?.streetLine2,
