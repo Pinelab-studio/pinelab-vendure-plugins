@@ -371,12 +371,15 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     sku: string,
     availableStock: number
-  ) {
+  ): Promise<void> {
     const result = await this.variantService.findAll(ctx, {
       filter: { sku: { eq: sku } },
     });
     if (!result.items.length) {
-      throw new Error(`Variant with sku '${sku}' not found`);
+      return Logger.info(
+        `Variant with sku '${sku}' not found, not updating stock`,
+        loggerCtx
+      );
     }
     const variant = result.items[0];
     if (result.items.length > 1) {
@@ -385,7 +388,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
-    return this.updateStock(ctx, variant.id, availableStock);
+    await this.updateStock(ctx, variant.id, availableStock);
   }
 
   /**

@@ -1,3 +1,7 @@
+# 1.1.3 (2026-01-28)
+
+- Gracefully handle missing variants from incoming webhooks by logging instead of throwing an error.
+
 # 1.1.2 (2026-01-14)
 
 - Run scheduled full sync without job queue, because scheduled tasks already run in the worker only.
