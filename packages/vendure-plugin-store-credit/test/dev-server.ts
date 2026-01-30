@@ -26,6 +26,12 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
+    authOptions: {
+      tokenMethod: ['cookie', 'bearer'],
+    },
+    dbConnectionOptions: {
+      autoSave: true,
+    },
     plugins: [
       StoreCreditPlugin,
       DefaultSearchPlugin,
@@ -38,6 +44,6 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
   const { server } = createTestEnvironment(config);
   await server.init({
     initialData,
-    productsCsvPath: './test/search-products.csv',
+    productsCsvPath: '../test/src/products-import.csv',
   });
 })();

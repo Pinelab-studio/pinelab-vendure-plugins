@@ -5,9 +5,7 @@ import {
   VendureEntity,
   ChannelAware,
   Money,
-  Translatable,
-  Translation,
-  LocaleString,
+  CurrencyCode,
 } from '@vendure/core';
 import {
   Entity,
@@ -32,6 +30,9 @@ export class Wallet extends VendureEntity implements ChannelAware {
 
   @Column()
   name!: string;
+
+  @Column()
+  currencyCode!: string;
 
   @ManyToOne(() => Customer, { onDelete: 'CASCADE', nullable: false })
   @Index()

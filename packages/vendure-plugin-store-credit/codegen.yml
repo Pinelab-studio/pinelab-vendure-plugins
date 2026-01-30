@@ -11,3 +11,5 @@ generates:
       scalars:
         DateTime: Date
         ID: string | number
+        Node: '@vendure/common/lib/generated-types#Node'
+        PaginatedList: '../api-extensions#PaginatedList'

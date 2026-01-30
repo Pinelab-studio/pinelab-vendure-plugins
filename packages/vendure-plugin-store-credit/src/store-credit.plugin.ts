@@ -1,6 +1,6 @@
 import { PluginCommonModule, VendurePlugin } from '@vendure/core';
-import { Wallet } from './entities/wallet.entity';
 import { WalletAdjustment } from './entities/wallet-adjustment.entity';
+import { Wallet } from './entities/wallet.entity';
 import { WalletService } from './services/wallet.service';
 import { adminApiExtensions, commonApiExtension } from './api/api-extensions';
 import { CommonResolver } from './api/common.resolver';
@@ -9,7 +9,7 @@ import { storeCreditPaymentHandler } from './config/payment-method-handler';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [Wallet, WalletAdjustment],
+  entities: [WalletAdjustment, Wallet],
   providers: [WalletService],
   shopApiExtensions: {
     schema: commonApiExtension,

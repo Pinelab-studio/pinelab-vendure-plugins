@@ -20,7 +20,15 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
   init: (injector) => {
     walletService = injector.get(WalletService);
   },
-  createPayment: (ctx, order, amount, args, metadata): CreatePaymentResult => {
+  createPayment: async (
+    ctx,
+    order,
+    amount,
+    args,
+    metadata
+  ): Promise<CreatePaymentResult> => {
+    console.log('createPayment', ctx, order, amount, args, metadata);
+    await walletService.adjustBalanceForWallet(ctx, -amount, metadata.walletId);
     return {
       amount,
       state: 'Settled',
@@ -28,6 +36,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     };
   },
   settlePayment: (): SettlePaymentResult => {
+    // Create payment already settles the payment, so we don't need to do anything here
     return { success: true };
   },
   createRefund: async (ctx, input, amount, order, payment) => {

@@ -1,4 +1,9 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  DefaultLogger,
+  ErrorResult,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -8,9 +13,14 @@ import {
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { AddPaymentToOrder } from '../../test/src/generated/shop-graphql';
 import { LanguageCode } from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import {
+  addItem,
+  createSettledOrder,
+  proceedToArrangingPayment,
+} from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
   MutationAdjustBalanceForWalletArgs,
@@ -25,6 +35,7 @@ import {
   buildRandomAmounts,
   CREATE_PAYMENT_METHOD,
   CREATE_WALLET,
+  GET_CUSTOMER_WITH_WALLETS,
   GET_WALLET_WITH_ADJUSTMENTS,
   REFUND_PAYMENT_TO_STORE_CREDIT,
   sum,
@@ -62,6 +73,24 @@ describe('Store Credit', function () {
     });
     serverStarted = true;
     await adminClient.asSuperAdmin();
+
+    //create a new Payment Method
+    await adminClient.query(CREATE_PAYMENT_METHOD, {
+      input: {
+        code: 'store-credit',
+        enabled: true,
+        handler: {
+          code: storeCreditPaymentHandler.code,
+          arguments: [],
+        },
+        translations: [
+          {
+            name: 'Store Credit',
+            languageCode: LanguageCode.EnUs,
+          },
+        ],
+      },
+    });
   }, 60000);
 
   describe('Wallets and Adjustments', () => {
@@ -80,7 +109,22 @@ describe('Store Credit', function () {
         },
       });
       expect(wallet.id).toBeDefined();
-      expect((wallet.customer as any).id).toBeDefined();
+      expect(wallet.name).toBe('My Wallet');
+      expect(wallet.currencyCode).toBe('USD');
+    });
+
+    it('Should fetch wallets on a Customer object', async () => {
+      const { customer } = await adminClient.query(GET_CUSTOMER_WITH_WALLETS, {
+        id: '1',
+      });
+      expect(customer).toBeDefined();
+      expect(customer).not.toBeNull();
+      expect(customer!.wallets).toBeDefined();
+      expect(customer!.wallets.totalItems).toBeGreaterThanOrEqual(1);
+      expect(customer!.wallets.items.length).toBeGreaterThanOrEqual(1);
+      const wallet = customer!.wallets.items[0];
+      expect(wallet.id).toBeDefined();
+      expect(wallet.name).toBe('My Wallet');
     });
 
     it("Should credit a wallet's balance", async () => {
@@ -148,11 +192,68 @@ describe('Store Credit', function () {
       const previousBalance = wallet.balance - deltaFromAdjustments;
       expect(wallet.balance).toBe(previousBalance + expectedDelta);
     }, 30_000);
+
+    // TODO: test that failure in adjustment creation also rolls back the balance setting
+  });
+
+  describe('Order with store credit payment', () => {
+    beforeAll(async () => {
+      await adminClient.query<
+        { adjustBalanceForWallet: Wallet },
+        MutationAdjustBalanceForWalletArgs
+      >(ADJUST_BALANCE_FOR_WALLET, {
+        input: { walletId: 1, amount: 1000 },
+      });
+    });
+
+    it('Should pay for order with store-credit', async () => {
+      const { wallet: walletBefore } = await adminClient.query(
+        GET_WALLET_WITH_ADJUSTMENTS,
+        { id: 1 }
+      );
+      await shopClient.asUserWithCredentials(
+        'hayden.zieme12@hotmail.com',
+        'test'
+      );
+      await addItem(shopClient, 'T_1', 1);
+      const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
+        input: {
+          fullName: 'Martinho Pinelabio',
+          streetLine1: 'Verzetsstraat',
+          streetLine2: '12a',
+          city: 'Liwwa',
+          postalCode: '8923CP',
+          countryCode: 'NL',
+        },
+      });
+      expect((transitionRes as any)?.errorCode).toBeUndefined();
+      const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
+        input: {
+          method: 'store-credit',
+          metadata: { walletId: 1 },
+        },
+      });
+      expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
+      const order = addPaymentToOrder;
+      expect(order.id).toBeDefined();
+      expect(order.state).toBe('PaymentSettled');
+      const { wallet: walletAfter } = await adminClient.query(
+        GET_WALLET_WITH_ADJUSTMENTS,
+        { id: 1 }
+      );
+      expect(walletAfter.balance).toBeLessThan(walletBefore.balance);
+      expect(walletBefore.balance - walletAfter.balance).toBe(
+        order.totalWithTax
+      );
+    });
+
+    // TODO: Should test that paying fails with insufficient funds
+
+    // TODO: test the wallet can not be used to pay in another channel  (addPaymentToOrder)
   });
 
   describe('Refunding Order', () => {
     beforeAll(async () => {
-      //create a new Payment Method
       await adminClient.query<
         { createWallet: Wallet },
         MutationCreateWalletArgs
@@ -171,22 +272,6 @@ describe('Store Credit', function () {
           amount: 500000,
         },
       });
-      await adminClient.query(CREATE_PAYMENT_METHOD, {
-        input: {
-          code: 'store-credit',
-          enabled: true,
-          handler: {
-            code: storeCreditPaymentHandler.code,
-            arguments: [],
-          },
-          translations: [
-            {
-              name: 'Store Credit',
-              languageCode: LanguageCode.EnUs,
-            },
-          ],
-        },
-      });
       await createSettledOrder(shopClient, 1, true);
     });
 
@@ -195,7 +280,7 @@ describe('Store Credit', function () {
         { refundPaymentToStoreCredit: Wallet },
         MutationRefundPaymentToStoreCreditArgs
       >(REFUND_PAYMENT_TO_STORE_CREDIT, {
-        paymentId: 1,
+        paymentId: 2, // Second payment, because we have 1 above as well
         walletId: 2,
       });
       expect(wallet.balance).toBe(7860);

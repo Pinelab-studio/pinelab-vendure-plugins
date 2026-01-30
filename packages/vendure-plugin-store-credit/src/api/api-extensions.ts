@@ -1,36 +1,24 @@
 import gql from 'graphql-tag';
 
-export const scalars = gql`
-  scalar DateTime
-  scalar Money
-  scalar CurrencyCode
-  scalar JSON
-  scalar LogicalOperator
-  scalar StringOperators
-  scalar LanguageCode
-`;
-
 export const commonApiExtension = gql`
   type WalletAdjustment {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
-    wallet: Wallet!
     amount: Money!
   }
 
-  type Wallet {
+  type Wallet implements Node {
     id: ID!
     name: String!
     createdAt: DateTime!
     updatedAt: DateTime!
-    customer: Customer!
     currencyCode: CurrencyCode!
     balance: Money!
     adjustments: [WalletAdjustment!]!
   }
 
-  type WalletList {
+  type WalletList implements PaginatedList {
     items: [Wallet!]!
     totalItems: Int!
   }
@@ -75,3 +63,19 @@ export const adminApiExtensions = gql`
     refundPaymentToStoreCredit(paymentId: ID!, walletId: ID!): Wallet!
   }
 `;
+
+/**
+ * These are just to 'fool' the codegen, so that we can statically generate types
+ */
+export const scalars = gql`
+  scalar DateTime
+  scalar Money
+  scalar CurrencyCode
+  scalar JSON
+  scalar LogicalOperator
+  scalar StringOperators
+  scalar LanguageCode
+  scalar Node
+  scalar PaginatedList
+`;
+export type PaginatedList = any;

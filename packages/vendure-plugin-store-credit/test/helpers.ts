@@ -9,9 +9,6 @@ export const WALLET_FIELDS = gql`
     currencyCode
     balance
     name
-    customer {
-      id
-    }
     adjustments {
       amount
     }
@@ -57,6 +54,21 @@ export const REFUND_PAYMENT_TO_STORE_CREDIT = gql`
   mutation refundPaymentToStoreCredit($paymentId: ID!, $walletId: ID!) {
     refundPaymentToStoreCredit(paymentId: $paymentId, walletId: $walletId) {
       ...WalletFields
+    }
+  }
+  ${WALLET_FIELDS}
+`;
+
+export const GET_CUSTOMER_WITH_WALLETS = gql`
+  query GetCustomerWithWallets($id: ID!) {
+    customer(id: $id) {
+      id
+      wallets {
+        items {
+          ...WalletFields
+        }
+        totalItems
+      }
     }
   }
   ${WALLET_FIELDS}

@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
+import { unique } from '@vendure/common/lib/unique';
 import {
   assertFound,
   ChannelService,
-  Customer,
   ID,
   ListQueryBuilder,
   ListQueryOptions,
@@ -12,14 +12,10 @@ import {
   RelationPaths,
   RequestContext,
   TransactionalConnection,
-  TranslatableSaver,
-  Translated,
-  TranslatorService,
 } from '@vendure/core';
 import { CreateWalletInput } from '../api/generated/graphql';
-import { Wallet } from '../entities/wallet.entity';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
-import { unique } from '@vendure/common/lib/unique';
+import { Wallet } from '../entities/wallet.entity';
 
 @Injectable()
 export class WalletService {
@@ -58,6 +54,7 @@ export class WalletService {
       name: input.name,
       customer: { id: input.customerId },
       balance: 0,
+      currencyCode: ctx.channel.defaultCurrencyCode,
     });
     await this.channelService.assignToCurrentChannel(wallet, ctx);
     const saved = await this.connection.getRepository(ctx, Wallet).save(wallet);
@@ -71,7 +68,7 @@ export class WalletService {
   ): Promise<Wallet> {
     const walletRepo = this.connection.getRepository(ctx, Wallet);
     const adjustmentRepo = this.connection.getRepository(ctx, WalletAdjustment);
-    await walletRepo.findOneOrFail({ where: { id: walletId } });
+    const wallet = await walletRepo.findOneOrFail({ where: { id: walletId } });
     // TODO: For debit, check if the amount is less than the existing balance
     const res = await walletRepo
       .createQueryBuilder()
