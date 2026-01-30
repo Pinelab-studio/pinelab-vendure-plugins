@@ -1,14 +1,15 @@
 import {
   Channel,
   Customer,
-  CurrencyCode,
   DeepPartial,
   VendureEntity,
   ChannelAware,
   Money,
+  Translatable,
+  Translation,
+  LocaleString,
 } from '@vendure/core';
 import {
-  Column,
   Entity,
   Index,
   ManyToOne,
@@ -17,18 +18,22 @@ import {
   JoinTable,
 } from 'typeorm';
 import { WalletAdjustment } from './wallet-adjustment.entity';
+import { WalletTranslation } from './wallet-translation.entity';
 
 @Entity()
-export class Wallet extends VendureEntity implements ChannelAware {
+export class Wallet
+  extends VendureEntity
+  implements ChannelAware, Translatable
+{
   constructor(input?: DeepPartial<Wallet>) {
     super(input);
   }
+  name!: LocaleString;
 
-  @Money()
-  amount!: number;
-
-  @Money()
-  initialAmount!: number;
+  @OneToMany(() => WalletTranslation, (translation) => translation.base, {
+    eager: true,
+  })
+  translations!: Array<Translation<Wallet>>;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   @ManyToMany((type) => Channel)
@@ -39,16 +44,9 @@ export class Wallet extends VendureEntity implements ChannelAware {
   @Index()
   customer!: Customer;
 
-  @ManyToOne(() => Channel, { onDelete: 'CASCADE', nullable: false })
-  @Index()
-  channel!: Channel;
-
-  @Column({ type: 'enum', enum: CurrencyCode })
-  currencyCode!: CurrencyCode;
-
-  @Column({ type: 'bigint', default: 0 })
-  balance!: string;
+  @Money()
+  balance!: number;
 
   @OneToMany(() => WalletAdjustment, (e) => e.wallet)
-  ledgerEntries!: WalletAdjustment[];
+  adjustments!: WalletAdjustment[];
 }

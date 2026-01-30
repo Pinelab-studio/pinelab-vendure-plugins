@@ -1,4 +1,4 @@
-export const BETTER_SEARCH_PLUGIN_OPTIONS = Symbol(
-  'BETTER_SEARCH_PLUGIN_OPTIONS'
+export const STORE_CREDIT_PLUGIN_OPTIONS = Symbol(
+  'STORE_CREDIT_PLUGIN_OPTIONS'
 );
-export const loggerCtx = 'BetterSearchPlugin';
+export const loggerCtx = 'StoreCreditPlugin';
