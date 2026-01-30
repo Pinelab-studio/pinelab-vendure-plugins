@@ -121,6 +121,7 @@
           "vendure-scripts",
           "public-customer-groups",
           "shipmate",
+          "store-credit",
           "asset-downloader",
           "google-sheet",
           "utm-tracker",

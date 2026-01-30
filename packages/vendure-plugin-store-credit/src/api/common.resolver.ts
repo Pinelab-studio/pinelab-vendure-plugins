@@ -6,11 +6,9 @@ import {
   RelationPaths,
   Relations,
   PaginatedList,
-  Translated,
   EntityHydrator,
   ChannelService,
   idsAreEqual,
-  LocaleStringHydrator,
   ID,
 } from '@vendure/core';
 import { Wallet } from '../entities/wallet.entity';
@@ -22,7 +20,6 @@ export class CommonResolver {
   constructor(
     private readonly walletService: WalletService,
     private channelService: ChannelService,
-    private localeStringHydrator: LocaleStringHydrator,
     private entityHydrator: EntityHydrator
   ) {}
 
@@ -33,7 +30,7 @@ export class CommonResolver {
     @Args() args: { options: WalletListOptions },
     @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>,
     @Parent() customer: Customer
-  ): Promise<PaginatedList<Translated<Wallet>>> {
+  ): Promise<PaginatedList<Wallet>> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return this.walletService.findAll(
       ctx,
@@ -55,19 +52,6 @@ export class CommonResolver {
       return nonDefaultChannel?.defaultCurrencyCode;
     }
     return defaultChannel.defaultCurrencyCode;
-  }
-
-  @ResolveField('name')
-  @Resolver('Wallet')
-  async name(
-    @Ctx() ctx: RequestContext,
-    @Parent() wallet: Wallet
-  ): Promise<string> {
-    return this.localeStringHydrator.hydrateLocaleStringField(
-      ctx,
-      wallet,
-      'name'
-    );
   }
 
   @Query()

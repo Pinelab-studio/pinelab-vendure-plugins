@@ -19,14 +19,6 @@ export const commonApiExtension = gql`
     amount: Money!
   }
 
-  type WalletTranslation {
-    id: ID!
-    createdAt: DateTime!
-    updatedAt: DateTime!
-    languageCode: LanguageCode!
-    name: String!
-  }
-
   type Wallet {
     id: ID!
     name: String!
@@ -35,7 +27,6 @@ export const commonApiExtension = gql`
     customer: Customer!
     currencyCode: CurrencyCode!
     balance: Money!
-    translations: [WalletTranslation!]!
     adjustments: [WalletAdjustment!]!
   }
 
@@ -68,15 +59,9 @@ export const commonApiExtension = gql`
 export const adminApiExtensions = gql`
   ${commonApiExtension}
 
-  input WalletTranslationInput {
-    id: ID
-    languageCode: LanguageCode!
-    name: String!
-  }
-
   input CreateWalletInput {
     customerId: ID!
-    translations: [WalletTranslationInput!]!
+    name: String!
   }
 
   input AdjustBalanceForWalletInput {

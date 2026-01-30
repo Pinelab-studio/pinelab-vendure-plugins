@@ -16,29 +16,22 @@ import {
   OneToMany,
   ManyToMany,
   JoinTable,
+  Column,
 } from 'typeorm';
 import { WalletAdjustment } from './wallet-adjustment.entity';
-import { WalletTranslation } from './wallet-translation.entity';
 
 @Entity()
-export class Wallet
-  extends VendureEntity
-  implements ChannelAware, Translatable
-{
+export class Wallet extends VendureEntity implements ChannelAware {
   constructor(input?: DeepPartial<Wallet>) {
     super(input);
   }
-  name!: LocaleString;
 
-  @OneToMany(() => WalletTranslation, (translation) => translation.base, {
-    eager: true,
-  })
-  translations!: Array<Translation<Wallet>>;
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  @ManyToMany((type) => Channel)
+  @ManyToMany(() => Channel)
   @JoinTable()
   channels!: Channel[];
+
+  @Column()
+  name!: string;
 
   @ManyToOne(() => Customer, { onDelete: 'CASCADE', nullable: false })
   @Index()

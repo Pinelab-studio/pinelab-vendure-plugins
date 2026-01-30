@@ -19,7 +19,6 @@ import {
 import { CreateWalletInput } from '../api/generated/graphql';
 import { Wallet } from '../entities/wallet.entity';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
-import { WalletTranslation } from '../entities/wallet-translation.entity';
 import { unique } from '@vendure/common/lib/unique';
 
 @Injectable()
@@ -27,11 +26,9 @@ export class WalletService {
   private readonly relations = ['channels', 'customer', 'adjustments'];
   constructor(
     private readonly connection: TransactionalConnection,
-    private translatableSaver: TranslatableSaver,
     private readonly channelService: ChannelService,
     private readonly listQueryBuilder: ListQueryBuilder,
-    private readonly paymentService: PaymentService,
-    private readonly translator: TranslatorService
+    private readonly paymentService: PaymentService
   ) {}
 
   findAll(
@@ -39,7 +36,7 @@ export class WalletService {
     customerId: ID,
     options?: ListQueryOptions<Wallet>,
     relations: RelationPaths<Wallet> = []
-  ): Promise<PaginatedList<Translated<Wallet>>> {
+  ): Promise<PaginatedList<Wallet>> {
     return this.listQueryBuilder
       .build(Wallet, options, {
         relations: relations ?? this.relations,
@@ -50,28 +47,21 @@ export class WalletService {
       .getManyAndCount()
       .then(([items, totalItems]) => {
         return {
-          items: items.map((item) => this.translator.translate(item, ctx)),
+          items,
           totalItems,
         };
       });
   }
 
   async create(ctx: RequestContext, input: CreateWalletInput): Promise<Wallet> {
-    const wallet = await this.translatableSaver.create({
-      ctx,
-      input,
-      entityType: Wallet,
-      translationType: WalletTranslation,
-      beforeSave: async (w) => {
-        await this.channelService.assignToCurrentChannel(w, ctx);
-        const customer = await this.connection
-          .getRepository(ctx, Customer)
-          .findOneOrFail({ where: { id: input.customerId } });
-        w.balance = 0;
-        w.customer = customer;
-      },
+    const wallet = new Wallet({
+      name: input.name,
+      customer: { id: input.customerId },
+      balance: 0,
     });
-    return assertFound(this.findOne(ctx, wallet.id));
+    await this.channelService.assignToCurrentChannel(wallet, ctx);
+    const saved = await this.connection.getRepository(ctx, Wallet).save(wallet);
+    return assertFound(this.findOne(ctx, saved.id));
   }
 
   async adjustBalanceForWallet(
@@ -127,7 +117,7 @@ export class WalletService {
     ctx: RequestContext,
     walletId: ID,
     relations?: RelationPaths<Wallet>
-  ): Promise<Translated<Wallet> | undefined> {
+  ): Promise<Wallet | undefined> {
     const effectiveRelations = relations ?? this.relations.slice();
     const wallet = await this.connection.findOneInChannel(
       ctx,
@@ -138,9 +128,6 @@ export class WalletService {
         relations: unique(effectiveRelations),
       }
     );
-    if (!wallet) {
-      return;
-    }
-    return this.translator.translate(wallet, ctx);
+    return wallet;
   }
 }

@@ -5,12 +5,11 @@ import { WalletService } from './services/wallet.service';
 import { adminApiExtensions, commonApiExtension } from './api/api-extensions';
 import { CommonResolver } from './api/common.resolver';
 import { AdminResolver } from './api/admin.resolver';
-import { WalletTranslation } from './entities/wallet-translation.entity';
 import { storeCreditPaymentHandler } from './config/payment-method-handler';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [Wallet, WalletAdjustment, WalletTranslation],
+  entities: [Wallet, WalletAdjustment],
   providers: [WalletService],
   shopApiExtensions: {
     schema: commonApiExtension,

@@ -8,10 +8,7 @@ export const WALLET_FIELDS = gql`
     updatedAt
     currencyCode
     balance
-    translations {
-      id
-      name
-    }
+    name
     customer {
       id
     }

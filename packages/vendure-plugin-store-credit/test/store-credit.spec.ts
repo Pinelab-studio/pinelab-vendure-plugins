@@ -7,10 +7,18 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { LanguageCode } from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
-import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { describe, beforeAll, it, expect } from 'vitest';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
+import {
+  MutationAdjustBalanceForWalletArgs,
+  MutationCreateWalletArgs,
+  MutationRefundPaymentToStoreCreditArgs,
+  Wallet,
+} from '../src/api/generated/graphql';
+import { storeCreditPaymentHandler } from '../src/config/payment-method-handler';
 import { StoreCreditPlugin } from '../src/store-credit.plugin';
 import {
   ADJUST_BALANCE_FOR_WALLET,
@@ -21,15 +29,6 @@ import {
   REFUND_PAYMENT_TO_STORE_CREDIT,
   sum,
 } from './helpers';
-import {
-  CreateWalletInput,
-  MutationAdjustBalanceForWalletArgs,
-  MutationCreateWalletArgs,
-  MutationRefundPaymentToStoreCreditArgs,
-  Wallet,
-} from '../src/api/generated/graphql';
-import { Customer, LanguageCode } from '../../test/src/generated/admin-graphql';
-import { storeCreditPaymentHandler } from '../src/config/payment-method-handler';
 
 describe('Store Credit', function () {
   let server: TestServer;
@@ -77,7 +76,7 @@ describe('Store Credit', function () {
       >(CREATE_WALLET, {
         input: {
           customerId: 1,
-          translations: [{ name: 'My Wallet', languageCode: 'en' }],
+          name: 'My Wallet',
         },
       });
       expect(wallet.id).toBeDefined();
@@ -160,7 +159,7 @@ describe('Store Credit', function () {
       >(CREATE_WALLET, {
         input: {
           customerId: 1,
-          translations: [{ name: 'My Other Wallet', languageCode: 'en' }],
+          name: 'My Other Wallet',
         },
       });
       await adminClient.query<
