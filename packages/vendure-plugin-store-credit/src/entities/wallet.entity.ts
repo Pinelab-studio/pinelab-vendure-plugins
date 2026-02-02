@@ -5,7 +5,6 @@ import {
   VendureEntity,
   ChannelAware,
   Money,
-  CurrencyCode,
 } from '@vendure/core';
 import {
   Entity,
@@ -15,10 +14,12 @@ import {
   ManyToMany,
   JoinTable,
   Column,
+  Check,
 } from 'typeorm';
 import { WalletAdjustment } from './wallet-adjustment.entity';
 
 @Entity()
+@Check(`"balance" >= 0`)
 export class Wallet extends VendureEntity implements ChannelAware {
   constructor(input?: DeepPartial<Wallet>) {
     super(input);

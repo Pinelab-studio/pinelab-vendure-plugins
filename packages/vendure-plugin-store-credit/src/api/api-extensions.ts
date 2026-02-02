@@ -6,6 +6,8 @@ export const commonApiExtension = gql`
     createdAt: DateTime!
     updatedAt: DateTime!
     amount: Money!
+    description: String!
+    mutatedBy: User
   }
 
   type Wallet implements Node {
@@ -50,11 +52,13 @@ export const adminApiExtensions = gql`
   input CreateWalletInput {
     customerId: ID!
     name: String!
+    channelId: ID!
   }
 
   input AdjustBalanceForWalletInput {
     amount: Money!
     walletId: ID!
+    description: String!
   }
 
   extend type Mutation {
@@ -77,5 +81,6 @@ export const scalars = gql`
   scalar LanguageCode
   scalar Node
   scalar PaginatedList
+  scalar User
 `;
 export type PaginatedList = any;

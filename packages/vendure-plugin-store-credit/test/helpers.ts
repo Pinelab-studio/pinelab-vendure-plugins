@@ -1,4 +1,27 @@
 import { gql } from 'graphql-tag';
+import {
+  EventSubscriber,
+  EntitySubscriberInterface,
+  InsertEvent,
+} from 'typeorm';
+import { WalletAdjustment } from '../src/entities/wallet-adjustment.entity';
+import {
+  CreateChannelInput,
+  LanguageCode,
+  CurrencyCode,
+} from '@vendure/common/lib/generated-types';
+
+export const MAGIC_NUMBER = 0xbaaaaaad;
+
+export const CANCEL_ORDER = gql`
+  mutation CancelOrder($id: ID!) {
+    cancelOrder(input: { orderId: $id }) {
+      ... on Order {
+        id
+      }
+    }
+  }
+`;
 
 export const WALLET_FIELDS = gql`
   fragment WalletFields on Wallet {
@@ -11,6 +34,10 @@ export const WALLET_FIELDS = gql`
     name
     adjustments {
       amount
+      description
+      mutatedBy {
+        id
+      }
     }
   }
 `;
@@ -74,6 +101,50 @@ export const GET_CUSTOMER_WITH_WALLETS = gql`
   ${WALLET_FIELDS}
 `;
 
+export const CREATE_CHANNEL = gql`
+  mutation CreateChannelQuery($input: CreateChannelInput!) {
+    createChannel(input: $input) {
+      ... on Channel {
+        code
+        id
+        token
+      }
+    }
+  }
+`;
+
+export const ASSIGN_PRODUCTVARIANT_TO_CHANNEL = gql`
+  mutation AssignProductVariantsToChannel(
+    $input: AssignProductVariantsToChannelInput!
+  ) {
+    assignProductVariantsToChannel(input: $input) {
+      ... on ProductVariant {
+        id
+      }
+    }
+  }
+`;
+
+export const createChannel1Input: CreateChannelInput = {
+  code: 'test-1',
+  defaultLanguageCode: LanguageCode.en,
+  defaultShippingZoneId: 1,
+  defaultTaxZoneId: 1,
+  pricesIncludeTax: true,
+  token: 'test-1-token',
+  defaultCurrencyCode: CurrencyCode.USD,
+};
+
+export const createChannel2Input: CreateChannelInput = {
+  code: 'test-2',
+  defaultLanguageCode: LanguageCode.en,
+  defaultShippingZoneId: 1,
+  defaultTaxZoneId: 1,
+  pricesIncludeTax: true,
+  token: 'test-2-token',
+  defaultCurrencyCode: CurrencyCode.USD,
+};
+
 export const chunk = <T>(arr: T[], size: number) => {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
@@ -100,3 +171,24 @@ export const buildRandomAmounts = (
     return sign * mag;
   });
 };
+
+@EventSubscriber()
+export class WalletAdjustmentSubscriber
+  implements EntitySubscriberInterface<WalletAdjustment>
+{
+  listenTo() {
+    return WalletAdjustment;
+  }
+
+  beforeInsert(event: InsertEvent<WalletAdjustment>) {
+    this.validateStatus(event.entity.amount);
+  }
+
+  private validateStatus(status: number) {
+    if (status === MAGIC_NUMBER) {
+      throw new Error(
+        `Update Failed: You passed the forbidden Magic Number ${MAGIC_NUMBER}`
+      );
+    }
+  }
+}

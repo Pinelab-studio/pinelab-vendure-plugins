@@ -6,22 +6,15 @@ import {
   RelationPaths,
   Relations,
   PaginatedList,
-  EntityHydrator,
-  ChannelService,
-  idsAreEqual,
   ID,
 } from '@vendure/core';
 import { Wallet } from '../entities/wallet.entity';
-import { CustomerWalletsArgs, WalletListOptions } from './generated/graphql';
+import { CustomerWalletsArgs } from './generated/graphql';
 import { WalletService } from '../services/wallet.service';
 
 @Resolver()
 export class CommonResolver {
-  constructor(
-    private readonly walletService: WalletService,
-    private channelService: ChannelService,
-    private entityHydrator: EntityHydrator
-  ) {}
+  constructor(private readonly walletService: WalletService) {}
 
   @ResolveField('wallets')
   @Resolver('Customer')

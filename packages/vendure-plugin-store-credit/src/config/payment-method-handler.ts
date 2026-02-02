@@ -27,13 +27,26 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     args,
     metadata
   ): Promise<CreatePaymentResult> => {
-    console.log('createPayment', ctx, order, amount, args, metadata);
-    await walletService.adjustBalanceForWallet(ctx, -amount, metadata.walletId);
-    return {
-      amount,
-      state: 'Settled',
-      metadata,
-    };
+    try {
+      await walletService.payWithStoreCredit(
+        ctx,
+        order,
+        amount,
+        metadata.walletId
+      );
+      return {
+        amount,
+        state: 'Settled',
+        metadata,
+      };
+    } catch (err: any) {
+      return {
+        amount,
+        state: 'Declined' as const,
+        errorMessage: err.message,
+        metadata,
+      };
+    }
   },
   settlePayment: (): SettlePaymentResult => {
     // Create payment already settles the payment, so we don't need to do anything here
@@ -53,9 +66,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     } catch (err) {
       return {
         state: 'Failed',
-        metadata: {
-          err,
-        },
+        errorMessage: err.message,
       };
     }
   },

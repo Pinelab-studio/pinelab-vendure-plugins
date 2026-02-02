@@ -1,4 +1,4 @@
-import { DeepPartial, VendureEntity } from '@vendure/core';
+import { DeepPartial, User, VendureEntity } from '@vendure/core';
 import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { Wallet } from './wallet.entity';
 
@@ -17,4 +17,14 @@ export class WalletAdjustment extends VendureEntity {
 
   @Column()
   amount!: number;
+
+  @Column()
+  description!: string;
+
+  @ManyToOne(() => User, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+  @Index()
+  mutatedBy!: User;
 }
