@@ -1,3 +1,7 @@
+# 1.2.4 (2026-02-03)
+
+- Documentation update: remove paid plugin notice, free for all!
+
 # 1.2.3 (2025-11-13)
 
 - Documentation update
