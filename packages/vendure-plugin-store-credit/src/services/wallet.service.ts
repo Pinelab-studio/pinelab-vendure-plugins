@@ -99,13 +99,19 @@ export class WalletService {
     const isAllowedInChannel = wallet.channels.some((channel) =>
       idsAreEqual(channel.id, ctx.channelId)
     );
-
     if (!isAllowedInChannel) {
       throw new UserInputError(
         `Wallet with id ${walletId} is not assigned to the current channel`
       );
     }
-    // TODO: For debit, check if the amount is less than the existing balance
+    // Debit would violate CHECK (balance >= 0)
+    if (amount < 0 && wallet.balance + amount < 0) {
+      throw new UserInputError(
+        `Insufficient balance. Wallet has ${
+          wallet.balance
+        }, cannot debit ${-amount}`
+      );
+    }
     const res = await walletRepo
       .createQueryBuilder()
       .update(Wallet)
@@ -147,10 +153,21 @@ export class WalletService {
     const payment = await this.paymentService.findOneOrThrow(ctx, paymentId, [
       'order',
     ]);
+    const wallet = await this.findOne(ctx, walletId);
+    if (!wallet) {
+      throw new UserInputError(
+        `Wallet with id ${walletId} not found. Can not refund payment to this wallet.`
+      );
+    }
+    if (wallet.currencyCode !== payment.order.currencyCode) {
+      throw new UserInputError(
+        `Wallet currency '${wallet.currencyCode}' does not match order currency '${payment.order.currencyCode}'. Can not refund payment to this wallet.`
+      );
+    }
     const description = `Refunded for order ${payment.order.code}`;
     return this.adjustBalanceForWallet(
       ctx,
-      -1 * payment.amount,
+      payment.amount,
       walletId,
       description
     );

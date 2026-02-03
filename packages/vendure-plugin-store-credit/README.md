@@ -56,6 +56,8 @@ mutation AdjustBalance($input: AdjustBalanceForWalletInput!) {
 
 ### Refund payment to store credit
 
+An admin can choose to refund a pa
+
 ```graphql
 mutation RefundToStoreCredit($paymentId: ID!, $walletId: ID!) {
   refundPaymentToStoreCredit(paymentId: $paymentId, walletId: $walletId) {
@@ -65,7 +67,21 @@ mutation RefundToStoreCredit($paymentId: ID!, $walletId: ID!) {
 }
 ```
 
-## Shop API
+## Storefront usage
+
+Customers can pay for orders using their store credit balance.
+
+```graphql
+mutation AddPaymentToOrder($input: AddPaymentToOrderInput!) {
+  # input: { method: "store-credit", metadata: { walletId: "1" } }
+  addPaymentToOrder(input: $input) {
+    ... on Order {
+      id
+      code
+    }
+  }
+}
+```
 
 Logged-in customers can fetch their wallets via `activeCustomer`:
 

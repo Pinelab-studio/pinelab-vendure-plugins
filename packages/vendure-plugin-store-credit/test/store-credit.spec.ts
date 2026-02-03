@@ -491,28 +491,42 @@ describe('Store Credit', function () {
       order = await createSettledOrder(shopClient, 1, true);
     });
 
+    it('Fails to refund when wallet currency does not match order currency', async () => {
+      await expect(
+        adminClient.query<
+          { refundPaymentToStoreCredit: Wallet },
+          MutationRefundPaymentToStoreCreditArgs
+        >(REFUND_PAYMENT_TO_STORE_CREDIT, {
+          paymentId: 6,
+          walletId: 5,
+        })
+      ).rejects.toThrow(
+        "Wallet currency 'EUR' does not match order currency 'USD'. Can not refund payment to this wallet."
+      );
+    });
+
     it('Should refund payment to store credit', async () => {
       const { wallet: walletBefore } = await adminClient.query(
         GET_WALLET_WITH_ADJUSTMENTS,
-        { id: 5 }
+        { id: 4 }
       );
-      expect(walletBefore.balance).toBe(1500000);
+      expect(walletBefore.balance).toBe(1000000);
       const { refundPaymentToStoreCredit: walletAfter } =
         await adminClient.query<
           { refundPaymentToStoreCredit: Wallet },
           MutationRefundPaymentToStoreCreditArgs
         >(REFUND_PAYMENT_TO_STORE_CREDIT, {
           paymentId: 6,
-          walletId: 5,
+          walletId: 4,
         });
+      console.log(JSON.stringify(walletAfter, null, 2));
       expect(walletAfter.balance).toBe(
-        walletBefore.balance - order.totalWithTax
+        walletBefore.balance + order.totalWithTax
       );
-      expect(walletAfter.adjustments.length).toBe(3);
+      expect(walletAfter.adjustments.length).toBe(2);
       expect(walletAfter.adjustments[0].amount).toBe(1000000);
-      expect(walletAfter.adjustments[1].amount).toBe(500000);
-      expect(walletAfter.adjustments[2].amount).toBe(-492140);
-      expect(walletAfter.adjustments[2].description).toContain(
+      expect(walletAfter.adjustments[1].amount).toBe(492140);
+      expect(walletAfter.adjustments[1].description).toContain(
         `Refunded for order ${order.code}`
       );
     });
