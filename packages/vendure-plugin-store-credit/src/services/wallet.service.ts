@@ -61,7 +61,7 @@ export class WalletService {
 
   async create(ctx: RequestContext, input: CreateWalletInput): Promise<Wallet> {
     const wallet = new Wallet({
-      name: input.name as string,
+      name: input.name,
       customer: { id: input.customerId },
       balance: 0,
       currencyCode: ctx.channel.defaultCurrencyCode,

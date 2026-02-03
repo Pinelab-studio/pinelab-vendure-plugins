@@ -82,4 +82,4 @@ export const scalars = gql`
   scalar PaginatedList
   scalar User
 `;
-export type PaginatedList = any;
+export type PaginatedList = unknown;

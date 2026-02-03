@@ -28,11 +28,15 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     args,
     metadata
   ): Promise<CreatePaymentResult> => {
+    if (!metadata.walletId) {
+      throw new Error('Wallet ID is required as input metadata');
+    }
     try {
       await walletService.payWithStoreCredit(
         ctx,
         order,
         amount,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         metadata.walletId
       );
       return {
@@ -40,11 +44,11 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
         state: 'Settled',
         metadata,
       };
-    } catch (err: any) {
+    } catch (err) {
       return {
         amount,
         state: 'Declined' as const,
-        errorMessage: err.message,
+        errorMessage: asError(err).message,
         metadata,
       };
     }
@@ -54,14 +58,14 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     return { success: true };
   },
   createRefund: async (ctx, input, amount, order, payment) => {
+    if (!payment.metadata.walletId) {
+      throw new Error('Wallet ID is required as input metadata');
+    }
     try {
-      if (!payment.metadata.walletId) {
-        throw new Error('Wallet ID is required as input metadata');
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await walletService.refundPaymentToStoreCredit(
         ctx,
         payment.id,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
         payment.metadata.walletId
       );
       return {

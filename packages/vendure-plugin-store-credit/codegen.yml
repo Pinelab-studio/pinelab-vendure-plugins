@@ -10,6 +10,7 @@ generates:
       avoidOptionals: false
       scalars:
         DateTime: Date
+        Money: number
         ID: string | number
         Node: '@vendure/common/lib/generated-types#Node'
         PaginatedList: '../api-extensions#PaginatedList'
