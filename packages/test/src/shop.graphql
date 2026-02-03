@@ -132,5 +132,10 @@ mutation AddPaymentToOrder($input: PaymentInput!) {
       errorCode
       message
     }
+    ... on PaymentDeclinedError {
+      errorCode
+      message
+      paymentErrorMessage
+    }
   }
 }

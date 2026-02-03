@@ -24,5 +24,8 @@
     "generate": "graphql-codegen",
     "test": "vitest run --bail 1",
     "lint": "eslint ."
+  },
+  "dependencies": {
+    "catch-unknown": "^2.0.0"
   }
 }

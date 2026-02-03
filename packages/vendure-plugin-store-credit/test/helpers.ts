@@ -125,17 +125,7 @@ export const ASSIGN_PRODUCTVARIANT_TO_CHANNEL = gql`
   }
 `;
 
-export const createChannel1Input: CreateChannelInput = {
-  code: 'test-1',
-  defaultLanguageCode: LanguageCode.en,
-  defaultShippingZoneId: 1,
-  defaultTaxZoneId: 1,
-  pricesIncludeTax: true,
-  token: 'test-1-token',
-  defaultCurrencyCode: CurrencyCode.USD,
-};
-
-export const createChannel2Input: CreateChannelInput = {
+export const channel2Input: CreateChannelInput = {
   code: 'test-2',
   defaultLanguageCode: LanguageCode.en,
   defaultShippingZoneId: 1,
@@ -143,6 +133,26 @@ export const createChannel2Input: CreateChannelInput = {
   pricesIncludeTax: true,
   token: 'test-2-token',
   defaultCurrencyCode: CurrencyCode.USD,
+};
+
+export const channel3Input: CreateChannelInput = {
+  code: 'test-3',
+  defaultLanguageCode: LanguageCode.en,
+  defaultShippingZoneId: 1,
+  defaultTaxZoneId: 1,
+  pricesIncludeTax: true,
+  token: 'test-3-token',
+  defaultCurrencyCode: CurrencyCode.USD,
+};
+
+export const channel4Input: CreateChannelInput = {
+  code: 'test-4',
+  defaultLanguageCode: LanguageCode.en,
+  defaultShippingZoneId: 1,
+  defaultTaxZoneId: 1,
+  pricesIncludeTax: true,
+  token: 'test-4-token',
+  defaultCurrencyCode: CurrencyCode.EUR,
 };
 
 export const chunk = <T>(arr: T[], size: number) => {
@@ -172,6 +182,9 @@ export const buildRandomAmounts = (
   });
 };
 
+/**
+ * Make the DB insert fail if MAGIC_NUMBER is passed in as an amount, so that we can test rollback of the transaction.
+ */
 @EventSubscriber()
 export class WalletAdjustmentSubscriber
   implements EntitySubscriberInterface<WalletAdjustment>

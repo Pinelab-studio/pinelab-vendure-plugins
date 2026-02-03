@@ -5,6 +5,7 @@ import {
   LanguageCode,
 } from '@vendure/core';
 import { WalletService } from '../services/wallet.service';
+import { asError } from 'catch-unknown';
 
 let walletService: WalletService;
 
@@ -54,6 +55,9 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
   },
   createRefund: async (ctx, input, amount, order, payment) => {
     try {
+      if (!payment.metadata.walletId) {
+        throw new Error('Wallet ID is required as input metadata');
+      }
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
       await walletService.refundPaymentToStoreCredit(
         ctx,
@@ -66,7 +70,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     } catch (err) {
       return {
         state: 'Failed',
-        errorMessage: err.message,
+        errorMessage: asError(err).message,
       };
     }
   },

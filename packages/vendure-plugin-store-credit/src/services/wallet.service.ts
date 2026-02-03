@@ -74,7 +74,7 @@ export class WalletService {
       ctx,
       Wallet,
       wallet.id,
-      unique([defaultChannel.id, input.channelId]) as string[]
+      unique([defaultChannel.id, ctx.channel.id])
     );
     return assertFound(this.findOne(ctx, savedWallet.id));
   }
@@ -83,9 +83,12 @@ export class WalletService {
     ctx: RequestContext,
     amount: number,
     walletId: ID,
-    description: string,
-    user: User | undefined
+    description: string
   ): Promise<Wallet> {
+    let user: User | undefined;
+    if (ctx.activeUserId) {
+      user = await this.userService.getUserById(ctx, ctx.activeUserId);
+    }
     const walletRepo = this.connection.getRepository(ctx, Wallet);
     const adjustmentRepo = this.connection.getRepository(ctx, WalletAdjustment);
 
@@ -99,7 +102,7 @@ export class WalletService {
 
     if (!isAllowedInChannel) {
       throw new UserInputError(
-        `Wallet with id ${walletId} is not active in the current Channel`
+        `Wallet with id ${walletId} is not assigned to the current channel`
       );
     }
     // TODO: For debit, check if the amount is less than the existing balance
@@ -141,39 +144,15 @@ export class WalletService {
     paymentId: ID,
     walletId: ID
   ) {
-    let adminUser: User | undefined;
-    if (ctx.activeUserId) {
-      adminUser = await this.userService.getUserById(ctx, ctx.activeUserId);
-    }
     const payment = await this.paymentService.findOneOrThrow(ctx, paymentId, [
       'order',
     ]);
-    const description = `refunded for order ${payment.order.code}`;
+    const description = `Refunded for order ${payment.order.code}`;
     return this.adjustBalanceForWallet(
       ctx,
       -1 * payment.amount,
       walletId,
-      description,
-      adminUser
-    );
-  }
-
-  async adminAdjustBalance(
-    ctx: RequestContext,
-    amount: number,
-    walletId: ID,
-    description: string
-  ) {
-    let adminUser: User | undefined;
-    if (ctx.activeUserId) {
-      adminUser = await this.userService.getUserById(ctx, ctx.activeUserId);
-    }
-    return this.adjustBalanceForWallet(
-      ctx,
-      amount,
-      walletId,
-      description,
-      adminUser
+      description
     );
   }
 
@@ -183,16 +162,11 @@ export class WalletService {
     amount: number,
     walletId: ID
   ) {
-    let customerUser: User | undefined;
-    if (ctx.activeUserId) {
-      customerUser = await this.userService.getUserById(ctx, ctx.activeUserId);
-    }
     await this.adjustBalanceForWallet(
       ctx,
       -1 * amount,
       walletId,
-      `paid for order ${order.code}`,
-      customerUser
+      `Paid for order ${order.code}`
     );
   }
 

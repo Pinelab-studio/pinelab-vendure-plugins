@@ -52,7 +52,6 @@ export const adminApiExtensions = gql`
   input CreateWalletInput {
     customerId: ID!
     name: String!
-    channelId: ID!
   }
 
   input AdjustBalanceForWalletInput {

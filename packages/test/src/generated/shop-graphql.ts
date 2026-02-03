@@ -3698,6 +3698,11 @@ export const AddPaymentToOrder = gql`
       errorCode
       message
     }
+    ... on PaymentDeclinedError {
+      errorCode
+      message
+      paymentErrorMessage
+    }
   }
 }
     ${OrderFields}`;
