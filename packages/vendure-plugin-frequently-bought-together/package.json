@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/pinelab-frequently-bought-together-plugin",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Increase average order value by suggesting frequently bought together products based on past orders. Also known as related products or product recommendations.",
   "keywords": [
     "frequently bought together",
@@ -11,7 +11,7 @@
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
-  "license": "SEE LICENSE IN FILE 'LICENSE'",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -21,8 +21,7 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/ui/**/*' dist/",

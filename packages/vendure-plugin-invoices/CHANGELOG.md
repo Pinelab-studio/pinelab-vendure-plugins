@@ -1,3 +1,7 @@
+# 4.4.6 (2026-02-03)
+
+- Updated license to MIT
+
 # 4.4.5 (2026-02-03)
 
 - Documentation update: remove paid plugin notice, free for all!
