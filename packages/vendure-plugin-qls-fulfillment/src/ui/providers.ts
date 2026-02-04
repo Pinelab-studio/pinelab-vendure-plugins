@@ -1,4 +1,8 @@
-import { addActionBarDropdownMenuItem } from '@vendure/admin-ui/core';
+import {
+  addActionBarDropdownMenuItem,
+  ModalService,
+} from '@vendure/admin-ui/core';
+import { firstValueFrom } from 'rxjs';
 import gql from 'graphql-tag';
 
 export default [
@@ -42,7 +46,39 @@ export default [
     icon: 'resistor',
     requiresPermission: ['QLSFullSync'],
     hasDivider: true,
-    onClick: (_, { route, dataService, notificationService }) => {
+    onClick: async (
+      _,
+      { route, dataService, notificationService, injector }
+    ) => {
+      const orderId = route.snapshot.params.id;
+      const res = await firstValueFrom(
+        dataService.query(
+          gql`
+            query Order($orderId: ID!) {
+              order(id: $orderId) {
+                id
+                qlsOrderIds
+              }
+            }
+          `,
+          { orderId }
+        ).single$
+      );
+      if ((res as any).order.qlsOrderIds.length > 0) {
+        const modalService = injector.get(ModalService);
+        const confirmed = await firstValueFrom(
+          modalService.dialog({
+            title: 'Push order to QLS',
+            body: 'This order already exists in QLS. Are you sure you want to push it again?',
+            buttons: [
+              { type: 'secondary', label: 'Cancel', returnValue: false },
+              { type: 'primary', label: 'Push to QLS', returnValue: true },
+            ],
+          })
+        );
+        if (!confirmed) return;
+      }
+
       dataService
         .mutate(
           gql`
@@ -50,13 +86,10 @@ export default [
               pushOrderToQls(orderId: $orderId)
             }
           `,
-          {
-            orderId: route.snapshot.params.id,
-          }
+          { orderId }
         )
         .subscribe({
           next: (result) => {
-            console.log(result);
             notificationService.notify({
               message: (result as any).pushOrderToQls,
               type: 'success',

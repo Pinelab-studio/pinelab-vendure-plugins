@@ -10,10 +10,11 @@ import {
   qlsPushOrderPermission,
 } from './config/permissions';
 import { PLUGIN_INIT_OPTIONS } from './constants';
-import { orderCustomFields, variantCustomFields } from './custom-fields';
+import { getVariantCustomFields, orderCustomFields } from './custom-fields';
 import { QlsOrderService } from './services/qls-order.service';
 import { QlsProductService } from './services/qls-product.service';
 import { QlsPluginOptions } from './types';
+import { QlsOrderEntity } from './entities/qls-order-entity.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -29,7 +30,9 @@ import { QlsPluginOptions } from './types';
   configuration: (config) => {
     config.authOptions.customPermissions.push(qlsFullSyncPermission);
     config.authOptions.customPermissions.push(qlsPushOrderPermission);
-    config.customFields.ProductVariant.push(...variantCustomFields);
+    config.customFields.ProductVariant.push(
+      ...getVariantCustomFields(QlsPlugin.options?.qlsProductIdUiTab ?? 'QLS')
+    );
     config.customFields.Order.push(...orderCustomFields);
     return config;
   },
@@ -42,6 +45,7 @@ import { QlsPluginOptions } from './types';
     schema: shopApiExtensions,
     resolvers: [QlsShopResolver],
   },
+  entities: [QlsOrderEntity],
 })
 export class QlsPlugin {
   static options: QlsPluginOptions;
@@ -50,6 +54,7 @@ export class QlsPlugin {
     this.options = {
       synchronizeStockLevels: true,
       autoPushOrders: true,
+      qlsProductIdUiTab: 'QLS',
       ...options,
     };
     return QlsPlugin;

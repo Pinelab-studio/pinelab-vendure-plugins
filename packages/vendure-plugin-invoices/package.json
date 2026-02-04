@@ -1,11 +1,11 @@
 {
   "name": "@pinelab/pinelab-invoice-plugin",
-  "version": "4.4.4",
+  "version": "4.4.6",
   "description": "Vendure plugin for PDF invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
-  "license": "SEE LICENSE IN FILE 'LICENSE'",
+  "license": "MIT",
   "private": false,
   "publishConfig": {
     "access": "public"
@@ -15,8 +15,7 @@
   "files": [
     "dist",
     "README.md",
-    "CHANGELOG.md",
-    "LICENSE"
+    "CHANGELOG.md"
   ],
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
