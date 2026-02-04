@@ -52,7 +52,6 @@ export const adminApiExtensions = gql`
   input CreateWalletInput {
     customerId: ID!
     name: String!
-    channelId: ID!
   }
 
   input AdjustBalanceForWalletInput {
@@ -90,4 +89,4 @@ export const scalars = gql`
   scalar User
   scalar Refund
 `;
-export type PaginatedList = any;
+export type PaginatedList = unknown;

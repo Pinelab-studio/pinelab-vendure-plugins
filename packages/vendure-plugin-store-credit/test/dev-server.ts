@@ -11,8 +11,10 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import { StoreCreditPlugin } from '../src';
+import { storeCreditPaymentHandler, StoreCreditPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
+import { createSettledOrder } from '../../test/src/shop-utils';
+import { testPaymentMethod } from '../../test/src/test-payment-method';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
@@ -32,6 +34,9 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
     dbConnectionOptions: {
       autoSave: true,
     },
+    paymentOptions: {
+      paymentMethodHandlers: [storeCreditPaymentHandler, testPaymentMethod],
+    },
     plugins: [
       StoreCreditPlugin,
       DefaultSearchPlugin,
@@ -41,9 +46,22 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
       }),
     ],
   });
-  const { server } = createTestEnvironment(config);
+  const { server, shopClient } = createTestEnvironment(config);
   await server.init({
-    initialData,
+    initialData: {
+      ...initialData,
+      paymentMethods: [
+        {
+          name: testPaymentMethod.code,
+          handler: { code: testPaymentMethod.code, arguments: [] },
+        },
+        {
+          name: storeCreditPaymentHandler.code,
+          handler: { code: storeCreditPaymentHandler.code, arguments: [] },
+        },
+      ],
+    },
     productsCsvPath: '../test/src/products-import.csv',
   });
+  await createSettledOrder(shopClient, 1, true);
 })();

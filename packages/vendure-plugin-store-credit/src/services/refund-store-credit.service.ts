@@ -127,7 +127,9 @@ export class RefundStoreCreditService {
         method: payment.method,
         state: 'Pending',
         metadata: {},
-        items: orderLinesTotal, // deprecated
+        adjustment: 0,
+        shipping: 0,
+        items: orderLinesTotal,
       });
       let paymentMethod: PaymentMethod | undefined;
       try {

@@ -61,7 +61,7 @@ export class WalletService {
 
   async create(ctx: RequestContext, input: CreateWalletInput): Promise<Wallet> {
     const wallet = new Wallet({
-      name: input.name as string,
+      name: input.name,
       customer: { id: input.customerId },
       balance: 0,
       currencyCode: ctx.channel.defaultCurrencyCode,
@@ -74,7 +74,7 @@ export class WalletService {
       ctx,
       Wallet,
       wallet.id,
-      unique([defaultChannel.id, input.channelId]) as string[]
+      unique([defaultChannel.id, ctx.channel.id])
     );
     return assertFound(this.findOne(ctx, savedWallet.id));
   }
@@ -83,9 +83,12 @@ export class WalletService {
     ctx: RequestContext,
     amount: number,
     walletId: ID,
-    description: string,
-    user: User | undefined
+    description: string
   ): Promise<Wallet> {
+    let user: User | undefined;
+    if (ctx.activeUserId) {
+      user = await this.userService.getUserById(ctx, ctx.activeUserId);
+    }
     const walletRepo = this.connection.getRepository(ctx, Wallet);
     const adjustmentRepo = this.connection.getRepository(ctx, WalletAdjustment);
 
@@ -96,13 +99,19 @@ export class WalletService {
     const isAllowedInChannel = wallet.channels.some((channel) =>
       idsAreEqual(channel.id, ctx.channelId)
     );
-
     if (!isAllowedInChannel) {
       throw new UserInputError(
-        `Wallet with id ${walletId} is not active in the current Channel`
+        `Wallet with id ${walletId} is not assigned to the current channel`
       );
     }
-    // TODO: For debit, check if the amount is less than the existing balance
+    // Debit would violate CHECK (balance >= 0)
+    if (amount < 0 && wallet.balance + amount < 0) {
+      throw new UserInputError(
+        `Insufficient balance. Wallet has ${
+          wallet.balance
+        }, cannot debit ${-amount}`
+      );
+    }
     const res = await walletRepo
       .createQueryBuilder()
       .update(Wallet)
@@ -141,39 +150,26 @@ export class WalletService {
     paymentId: ID,
     walletId: ID
   ) {
-    let adminUser: User | undefined;
-    if (ctx.activeUserId) {
-      adminUser = await this.userService.getUserById(ctx, ctx.activeUserId);
-    }
     const payment = await this.paymentService.findOneOrThrow(ctx, paymentId, [
       'order',
     ]);
-    const description = `refunded for order ${payment.order.code}`;
-    return this.adjustBalanceForWallet(
-      ctx,
-      -1 * payment.amount,
-      walletId,
-      description,
-      adminUser
-    );
-  }
-
-  async adminAdjustBalance(
-    ctx: RequestContext,
-    amount: number,
-    walletId: ID,
-    description: string
-  ) {
-    let adminUser: User | undefined;
-    if (ctx.activeUserId) {
-      adminUser = await this.userService.getUserById(ctx, ctx.activeUserId);
+    const wallet = await this.findOne(ctx, walletId);
+    if (!wallet) {
+      throw new UserInputError(
+        `Wallet with id ${walletId} not found. Can not refund payment to this wallet.`
+      );
     }
+    if (wallet.currencyCode !== payment.order.currencyCode) {
+      throw new UserInputError(
+        `Wallet currency '${wallet.currencyCode}' does not match order currency '${payment.order.currencyCode}'. Can not refund payment to this wallet.`
+      );
+    }
+    const description = `Refunded for order ${payment.order.code}`;
     return this.adjustBalanceForWallet(
       ctx,
-      amount,
+      payment.amount,
       walletId,
-      description,
-      adminUser
+      description
     );
   }
 
@@ -183,16 +179,11 @@ export class WalletService {
     amount: number,
     walletId: ID
   ) {
-    let customerUser: User | undefined;
-    if (ctx.activeUserId) {
-      customerUser = await this.userService.getUserById(ctx, ctx.activeUserId);
-    }
     await this.adjustBalanceForWallet(
       ctx,
       -1 * amount,
       walletId,
-      `paid for order ${order.code}`,
-      customerUser
+      `Paid for order ${order.code}`
     );
   }
 

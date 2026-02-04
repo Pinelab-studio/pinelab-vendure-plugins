@@ -39,11 +39,11 @@ export class AdminResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationAdjustBalanceForWalletArgs
   ) {
-    return this.walletService.adminAdjustBalance(
+    return this.walletService.adjustBalanceForWallet(
       ctx,
-      args.input.amount as number,
+      args.input.amount,
       args.input.walletId,
-      args.input.description as string
+      args.input.description
     );
   }
 

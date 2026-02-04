@@ -19,13 +19,15 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
+import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import { beforeAll, describe, expect, it } from 'vitest';
+import { LanguageCode, Refund } from '../../test/src/generated/admin-graphql';
 import { AddPaymentToOrder } from '../../test/src/generated/shop-graphql';
-import { LanguageCode } from '../../test/src/generated/admin-graphql';
 import { initialData } from '../../test/src/initial-data';
 import {
   addItem,
   createSettledOrder,
+  getActiveOrder,
   proceedToArrangingPayment,
 } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -41,11 +43,12 @@ import {
   ADJUST_BALANCE_FOR_WALLET,
   buildRandomAmounts,
   CANCEL_ORDER,
+  channel2Input,
+  channel3Input,
+  channel4Input,
   CREATE_CHANNEL,
   CREATE_PAYMENT_METHOD,
   CREATE_WALLET,
-  createChannel1Input,
-  createChannel2Input,
   GET_CUSTOMER_WITH_WALLETS,
   GET_WALLET_WITH_ADJUSTMENTS,
   MAGIC_NUMBER,
@@ -53,7 +56,7 @@ import {
   sum,
   WalletAdjustmentSubscriber,
 } from './helpers';
-import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
+import gql from 'graphql-tag';
 
 describe('Store Credit', function () {
   let server: TestServer;
@@ -125,7 +128,6 @@ describe('Store Credit', function () {
         input: {
           customerId: 1,
           name: 'My Wallet',
-          channelId: 1,
         },
       });
       expect(wallet.id).toBeDefined();
@@ -155,13 +157,13 @@ describe('Store Credit', function () {
         input: {
           walletId: 1,
           amount: 100,
-          description: 'adjusted by superadmin',
+          description: 'Adjusted by superadmin',
         },
       });
       expect(wallet.balance).toBe(100);
       expect(wallet.adjustments.length).toBe(1);
       expect(wallet.adjustments[0].amount).toBe(100);
-      expect(wallet.adjustments[0].description).toBe('adjusted by superadmin');
+      expect(wallet.adjustments[0].description).toBe('Adjusted by superadmin');
       expect(wallet.adjustments[0].mutatedBy.id).toBe('T_1');
     });
 
@@ -173,7 +175,7 @@ describe('Store Credit', function () {
         input: {
           walletId: 1,
           amount: -70,
-          description: 'adjusted by superadmin',
+          description: 'Adjusted by superadmin',
         },
       });
       expect(wallet.balance).toBe(30);
@@ -183,6 +185,15 @@ describe('Store Credit', function () {
     });
 
     it('Should rollback wallet update when adjustment creation fails', async () => {
+      // Check state before failed adjustment
+      const { wallet: walletBefore } = await adminClient.query(
+        GET_WALLET_WITH_ADJUSTMENTS,
+        {
+          id: 1,
+        }
+      );
+      expect(walletBefore.balance).toBe(30);
+      expect(walletBefore.adjustments.length).toBe(2);
       await expect(
         adminClient.query<
           { adjustBalanceForWallet: Wallet },
@@ -197,13 +208,16 @@ describe('Store Credit', function () {
       ).rejects.toThrow(
         'Update Failed: You passed the forbidden Magic Number 3131746989'
       );
-      const { wallet } = await adminClient.query(GET_WALLET_WITH_ADJUSTMENTS, {
-        id: 1,
-      });
-      expect(wallet.balance).toBe(30);
-      expect(wallet.adjustments.length).toBe(2);
-      expect(wallet.adjustments[0].amount).toBe(100);
-      expect(wallet.adjustments[1].amount).toBe(-70);
+      const { wallet: walletAfter } = await adminClient.query(
+        GET_WALLET_WITH_ADJUSTMENTS,
+        {
+          id: 1,
+        }
+      );
+      expect(walletAfter.balance).toBe(30);
+      expect(walletAfter.adjustments.length).toBe(2);
+      expect(walletAfter.adjustments[0].amount).toBe(100);
+      expect(walletAfter.adjustments[1].amount).toBe(-70);
     });
 
     it('Should apply 200+ sequential credits/debits and keep adjustments consistent', async () => {
@@ -240,8 +254,6 @@ describe('Store Credit', function () {
       const previousBalance = wallet.balance - deltaFromAdjustments;
       expect(wallet.balance).toBe(previousBalance + expectedDelta);
     }, 30_000);
-
-    // TODO: test that failure in adjustment creation also rolls back the balance setting
   });
 
   describe('Order with store credit payment', () => {
@@ -253,7 +265,7 @@ describe('Store Credit', function () {
         input: {
           walletId: 1,
           amount: 1000000,
-          description: 'adjusted by superadmin',
+          description: 'Adjusted by superadmin',
         },
       });
     });
@@ -299,7 +311,7 @@ describe('Store Credit', function () {
       );
       expect(
         walletAfter.adjustments[walletAfter.adjustments.length - 1].description
-      ).toBe(`paid for order ${order.code}`);
+      ).toBe(`Paid for order ${order.code}`);
       expect(
         walletAfter.adjustments[walletAfter.adjustments.length - 1].mutatedBy.id
       ).toBe('T_2');
@@ -313,7 +325,6 @@ describe('Store Credit', function () {
         input: {
           customerId: 1,
           name: 'My Other Wallet',
-          channelId: 1,
         },
       });
 
@@ -346,71 +357,111 @@ describe('Store Credit', function () {
       );
       await adminClient.query(CANCEL_ORDER, { id: 2 });
     });
+  });
 
-    it('Should reject wallet payment from mismatched channel', async () => {
-      //create channels
+  describe('Channel awareness', () => {
+    let walletForChannel2: Wallet;
+    let walletForChannel3: Wallet;
+    let walletForChannel4: Wallet;
+
+    it('Prepares channels and wallets in channels', async () => {
+      // Create channels and assign products etc to them
       await adminClient.query(CREATE_CHANNEL, {
         input: {
-          ...createChannel1Input,
+          ...channel2Input,
           sellerId: 'T_1',
         },
       });
-
       await adminClient.query(CREATE_CHANNEL, {
         input: {
-          ...createChannel2Input,
+          ...channel3Input,
           sellerId: 'T_1',
         },
       });
-      await assignEntititesToChannels();
+      await adminClient.query(CREATE_CHANNEL, {
+        input: {
+          ...channel4Input,
+          sellerId: 'T_1',
+        },
+      });
+      await assignEntititesToChannels([2, 3, 4]);
 
-      // create wallets in channels and adjust balances
+      // create wallets in channels and adjust balance
+      walletForChannel2 = await createWalletForChannel(channel2Input.token);
+      walletForChannel3 = await createWalletForChannel(channel3Input.token);
+      walletForChannel4 = await createWalletForChannel(channel4Input.token);
 
-      await createWalletAndAdjustBalance(2);
-      await createWalletAndAdjustBalance(3);
+      // Create active orders for both channels, otherwise an NO_ACTIVE_ORDER_ERROR will be thrown.
+      await createActiveOrderForChannel(channel2Input.token);
+      await createActiveOrderForChannel(channel3Input.token);
+      await createActiveOrderForChannel(channel4Input.token);
 
-      // create an active Order in channel 1
-      await createActiveOrderForChannel('test-1-token');
+      expect(walletForChannel2.balance).toBe(1000000);
+      expect(walletForChannel2.currencyCode).toBe('USD');
+      expect(walletForChannel3.balance).toBe(1000000);
+      expect(walletForChannel3.currencyCode).toBe('USD');
+      expect(walletForChannel4.balance).toBe(1000000);
+      expect(walletForChannel4.currencyCode).toBe('EUR');
+    });
 
-      // create an active Order in channel 2
-      await createActiveOrderForChannel('test-2-token');
-
-      // checkout happening on channel 1
-
-      shopClient.setChannelToken('test-1-token');
-
-      // try to pay with wallet from another channel and fail
-
+    it('Fails to pay with wallet from another channel', async () => {
+      shopClient.setChannelToken(channel2Input.token);
       const { addPaymentToOrder: err } = await shopClient.query(
         AddPaymentToOrder,
         {
           input: {
             method: 'store-credit',
-            metadata: { walletId: 4 },
+            metadata: {
+              walletId: String(walletForChannel3.id).replace('T_', ''),
+            }, // wallet from channel 3, while we are in channel 2
           },
         }
       );
-
       expect((err as any)?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
+      expect((err as any)?.paymentErrorMessage).toBe(
+        'Wallet with id 4 is not assigned to the current channel'
+      );
+    });
 
-      // try to pay with wallet from another channel and succeed
-
+    it('Should be allowed to pay with wallet from matching channel', async () => {
+      shopClient.setChannelToken(channel2Input.token);
       const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
         input: {
           method: 'store-credit',
-          metadata: { walletId: 3 },
+          metadata: {
+            walletId: String(walletForChannel2.id).replace('T_', ''),
+          }, // wallet from channel 2, while we are in channel 2
         },
       });
-
       expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
-      await adminClient.query(CANCEL_ORDER, { id: 3 });
-      await adminClient.query(CANCEL_ORDER, { id: 4 });
+      adminClient.setChannelToken(channel2Input.token);
+      const { wallet: walletAfter } = await adminClient.query(
+        GET_WALLET_WITH_ADJUSTMENTS,
+        { id: String(walletForChannel2.id).replace('T_', '') }
+      );
+      expect(walletAfter.balance).toBeLessThan(1000000);
+    });
+
+    it('Fails to pay with a wallet in the correct channel, but in the wrong currency', async () => {
+      shopClient.setChannelToken('test-3-token');
+      const { addPaymentToOrder: err } = await shopClient.query(
+        AddPaymentToOrder,
+        {
+          input: {
+            method: 'store-credit',
+            metadata: { walletId: walletForChannel3.id }, // wallet from channel 3, while we are in channel 4
+          },
+        }
+      );
+      expect((err as any)?.errorCode).toBe('PAYMENT_DECLINED_ERROR');
     });
   });
 
   describe('Refunding Order', () => {
+    let order: any;
     beforeAll(async () => {
-      shopClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+      // adminClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+      adminClient.setChannelToken(channel4Input.token);
       await adminClient.query<
         { createWallet: Wallet },
         MutationCreateWalletArgs
@@ -418,38 +469,206 @@ describe('Store Credit', function () {
         input: {
           customerId: 1,
           name: 'My Other Wallet',
-          channelId: 1,
         },
       });
+      // console.log(y)
       await adminClient.query<
         { adjustBalanceForWallet: Wallet },
         MutationAdjustBalanceForWalletArgs
       >(ADJUST_BALANCE_FOR_WALLET, {
         input: {
-          walletId: 5,
+          walletId: 6,
           amount: 500000,
-          description: 'adjusted by superadmin',
+          description: 'Adjusted by superadmin',
         },
       });
-      await createSettledOrder(shopClient, 1, true);
+      adminClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+      shopClient.setChannelToken(E2E_DEFAULT_CHANNEL_TOKEN);
+      // Cancel all active orders
+      let activeOrder = await getActiveOrder(shopClient);
+      while (activeOrder) {
+        await adminClient.query(CANCEL_ORDER, {
+          id: activeOrder?.id?.replace('T_', ''),
+        });
+        activeOrder = await getActiveOrder(shopClient);
+      }
+      await shopClient.asUserWithCredentials(
+        'hayden.zieme12@hotmail.com',
+        'test'
+      );
+
+      await addItem(shopClient, 'T_1', 1);
+
+      const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
+        input: {
+          fullName: 'Martinho Pinelabio',
+          streetLine1: 'Verzetsstraat',
+          streetLine2: '12a',
+          city: 'Liwwa',
+          postalCode: '8923CP',
+          countryCode: 'NL',
+        },
+      });
+      expect((transitionRes as any)?.errorCode).toBeUndefined();
+      ({ addPaymentToOrder: order } = await shopClient.query(
+        AddPaymentToOrder,
+        {
+          input: {
+            method: 'store-credit',
+            metadata: { walletId: 6 },
+          },
+        }
+      ));
+    });
+
+    it('Fails to refund when wallet currency does not match order currency', async () => {
+      const { refundPaymentToStoreCredit: refund } = await adminClient.query<
+        { refundPaymentToStoreCredit: Refund },
+        MutationRefundPaymentToStoreCreditArgs
+      >(REFUND_PAYMENT_TO_STORE_CREDIT, {
+        input: {
+          paymentId: 6,
+          amount: 130400,
+          reason: 'Product Damaged',
+        },
+      });
+      expect(refund.id).toBeDefined();
+      expect(refund.state).toBe('Failed');
+      expect(refund.metadata.errorMessage).toBe(
+        "Wallet currency 'EUR' does not match order currency 'USD'. Can not refund payment to this wallet."
+      );
     });
 
     it('Should refund payment to store credit', async () => {
-      const { refundPaymentToStoreCredit: wallet } = await adminClient.query<
-        { refundPaymentToStoreCredit: Wallet },
+      await createWalletForChannel(E2E_DEFAULT_CHANNEL_TOKEN);
+
+      let activeOrder = await getActiveOrder(shopClient);
+      while (activeOrder) {
+        await adminClient.query(CANCEL_ORDER, {
+          id: activeOrder?.id?.replace('T_', ''),
+        });
+        activeOrder = await getActiveOrder(shopClient);
+      }
+
+      await shopClient.asUserWithCredentials(
+        'hayden.zieme12@hotmail.com',
+        'test'
+      );
+
+      await addItem(shopClient, 'T_1', 1);
+
+      const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
+        input: {
+          fullName: 'Martinho Pinelabio',
+          streetLine1: 'Verzetsstraat',
+          streetLine2: '12a',
+          city: 'Liwwa',
+          postalCode: '8923CP',
+          countryCode: 'NL',
+        },
+      });
+      expect((transitionRes as any)?.errorCode).toBeUndefined();
+      ({ addPaymentToOrder: order } = await shopClient.query(
+        AddPaymentToOrder,
+        {
+          input: {
+            method: 'store-credit',
+            metadata: { walletId: 7 },
+          },
+        }
+      ));
+
+      const { wallet: walletBefore } = await adminClient.query(
+        GET_WALLET_WITH_ADJUSTMENTS,
+        { id: 7 }
+      );
+
+      expect(walletBefore.balance).toBe(1000000 - 156380);
+      const { refundPaymentToStoreCredit: refund } = await adminClient.query<
+        { refundPaymentToStoreCredit: Refund },
         MutationRefundPaymentToStoreCreditArgs
       >(REFUND_PAYMENT_TO_STORE_CREDIT, {
-        paymentId: 5,
-        walletId: 5,
+        input: {
+          paymentId: 7,
+          amount: 156380,
+          reason: 'Product Damaged',
+        },
       });
-      expect(wallet.balance).toBe(7860);
-      expect(wallet.adjustments.length).toBe(2);
-      expect(wallet.adjustments[0].amount).toBe(500000);
-      expect(wallet.adjustments[1].amount).toBe(-492140);
+
+      expect(refund.id).toBeDefined();
+      expect(refund.state).toBe('Settled');
+      expect(refund.total).toBe(156380);
+
+      const { wallet: walletAfter } = await adminClient.query(
+        GET_WALLET_WITH_ADJUSTMENTS,
+        { id: 7 }
+      );
+      expect(walletAfter.balance).toBe(1000000);
+      expect(walletAfter.adjustments.length).toBe(3);
+
+      expect(walletAfter.adjustments[0].amount).toBe(1000000);
+
+      expect(walletAfter.adjustments[1].amount).toBe(-156380);
+      expect(walletAfter.adjustments[1].description).toContain(
+        `Paid for order ${order.code}`
+      );
+
+      expect(walletAfter.adjustments[2].amount).toBe(156380);
+      expect(walletAfter.adjustments[2].description).toContain(
+        `Refunded for order ${order.code}`
+      );
+    });
+
+    it('Should create a Refund on an Order when refunded', async () => {
+      ({ order } = await adminClient.query(
+        gql`
+          query GetOrderDetail($id: ID!) {
+            order(id: $id) {
+              id
+              payments {
+                id
+                refunds {
+                  id
+                }
+              }
+            }
+          }
+        `,
+        { id: order.id }
+      ));
+      expect(order.payments[0].refunds.length).toBeGreaterThan(0);
+    });
+
+    it('Should create a History on an Order when refunded', async () => {
+      ({ order } = await adminClient.query(
+        gql`
+          query GetOrderDetail($id: ID!) {
+            order(id: $id) {
+              history {
+                totalItems
+                items {
+                  id
+                  type
+                }
+              }
+            }
+          }
+        `,
+        { id: order.id }
+      ));
+      expect(order.history.items[order.history.totalItems - 1].type).toBe(
+        'ORDER_REFUND_TRANSITION'
+      );
     });
   });
 
-  async function createWalletAndAdjustBalance(channelId: ID) {
+  /**
+   * Creates a wallet for a given channel and adjusts the balance to 1000000.
+   */
+  async function createWalletForChannel(
+    setChannelToken: string
+  ): Promise<Wallet> {
+    adminClient.setChannelToken(setChannelToken);
     const { createWallet: wallet } = await adminClient.query<
       { createWallet: Wallet },
       MutationCreateWalletArgs
@@ -457,28 +676,31 @@ describe('Store Credit', function () {
       input: {
         customerId: 1,
         name: 'Wallets',
-        channelId,
       },
     });
-
-    await adminClient.query<
+    const { adjustBalanceForWallet: adjustedWallet } = await adminClient.query<
       { adjustBalanceForWallet: Wallet },
       MutationAdjustBalanceForWalletArgs
     >(ADJUST_BALANCE_FOR_WALLET, {
       input: {
         walletId: wallet.id,
         amount: 1000000,
-        description: 'adjusted by superadmin',
+        description: 'Adjusted by superadmin',
       },
     });
+    return adjustedWallet;
   }
 
-  async function assignEntititesToChannels() {
+  /**
+   * Assign all products, product variants, payment methods, and shipping methods to channels 2 and 3,
+   * so that they can be used in the tests.
+   */
+  async function assignEntititesToChannels(channelIds: ID[]) {
     const channelService = server.app.get(ChannelService);
-    await channelService.assignToChannels(ctx, Product, 1, [2, 3]);
-    await channelService.assignToChannels(ctx, ProductVariant, 1, [2, 3]);
-    await channelService.assignToChannels(ctx, PaymentMethod, 2, [2, 3]);
-    await channelService.assignToChannels(ctx, ShippingMethod, 1, [2, 3]);
+    await channelService.assignToChannels(ctx, Product, 1, channelIds);
+    await channelService.assignToChannels(ctx, ProductVariant, 1, channelIds);
+    await channelService.assignToChannels(ctx, PaymentMethod, 2, channelIds);
+    await channelService.assignToChannels(ctx, ShippingMethod, 1, channelIds);
   }
 
   async function createActiveOrderForChannel(token: string) {
@@ -489,7 +711,7 @@ describe('Store Credit', function () {
       'test'
     );
 
-    const t = await addItem(shopClient, 'T_1', 1);
+    const order = await addItem(shopClient, 'T_1', 1);
 
     const transitionRes1 = await proceedToArrangingPayment(shopClient, 1, {
       input: {
