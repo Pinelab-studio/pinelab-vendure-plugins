@@ -239,11 +239,21 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         `Successfully created order '${order.code}' in QLS with id '${result.id}'`,
         loggerCtx
       );
-      await this.orderService.addNoteToOrder(ctx, {
-        id: orderId,
-        isPublic: false,
-        note: `Created order '${result.id}' in QLS`,
-      });
+      // Add note but catch any errors, because we don't want the job to fail and retry when adding a note fails
+      await this.orderService
+        .addNoteToOrder(ctx, {
+          id: orderId,
+          isPublic: false,
+          note: `Created order '${result.id}' in QLS`,
+        })
+        .catch((e) => {
+          const error = asError(e);
+          Logger.error(
+            `Error adding note to order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
       await this.connection
         .getRepository(ctx, QlsOrderEntity)
         .save({
@@ -262,14 +272,31 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
     } catch (e) {
       const error = asError(e);
-      await this.orderService.addNoteToOrder(ctx, {
-        id: orderId,
-        isPublic: false,
-        note: `Failed to create order '${order.code}' in QLS: ${error.message}`,
-      });
-      await this.eventBus.publish(
-        new QlsOrderFailedEvent(ctx, order, new Date(), error.message)
-      );
+      await this.orderService
+        .addNoteToOrder(ctx, {
+          id: orderId,
+          isPublic: false,
+          note: `Failed to create order '${order.code}' in QLS: ${error.message}`,
+        })
+        .catch((e) => {
+          const error = asError(e);
+          Logger.error(
+            `Error adding note to order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
+      await this.eventBus
+        .publish(new QlsOrderFailedEvent(ctx, order, new Date(), error.message))
+        .catch((e) => {
+          // Don't swallow original error, so catch and log this one
+          const error = asError(e);
+          Logger.error(
+            `Error publishing QlsOrderFailedEvent for order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
       throw error;
     }
   }
