@@ -1,18 +1,25 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
+  Order,
   Permission,
   RequestContext,
   Transaction,
 } from '@vendure/core';
-import { QlsProductService } from '../services/qls-product.service';
-import { MutationPushOrderToQlsArgs } from './generated/graphql';
-import { QlsOrderService } from '../services/qls-order.service';
 import {
   qlsFullSyncPermission,
   qlsPushOrderPermission,
 } from '../config/permissions';
+import { QlsOrderService } from '../services/qls-order.service';
+import { QlsProductService } from '../services/qls-product.service';
+import { MutationPushOrderToQlsArgs } from './generated/graphql';
 
 @Resolver()
 export class QlsAdminResolver {
@@ -20,6 +27,17 @@ export class QlsAdminResolver {
     private qlsProductService: QlsProductService,
     private qlsOrderService: QlsOrderService
   ) {}
+
+  @ResolveField()
+  @Resolver('Order')
+  @Allow(qlsPushOrderPermission.Permission)
+  @Allow(Permission.UpdateAdministrator)
+  async qlsOrderIds(
+    @Ctx() ctx: RequestContext,
+    @Parent() order: Order
+  ): Promise<string[]> {
+    return this.qlsOrderService.getQlsOrderIdsForOrder(ctx, order.id);
+  }
 
   @Mutation()
   @Transaction()
@@ -37,6 +55,6 @@ export class QlsAdminResolver {
     @Ctx() ctx: RequestContext,
     @Args() input: MutationPushOrderToQlsArgs
   ): Promise<string> {
-    return await this.qlsOrderService.pushOrderToQls(ctx, input.orderId);
+    return await this.qlsOrderService.pushOrderToQls(ctx, input.orderId, true);
   }
 }

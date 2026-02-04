@@ -79,6 +79,8 @@ export class QlsClient {
         `Fetched products ${allProducts.length}/${result.pagination?.count}`,
         loggerCtx
       );
+      // FIXME
+      hasNextPage = false;
       await new Promise((resolve) => setTimeout(resolve, 700)); // Limit to ~86/minute, because the rate limit is 500/5 minutes
     }
     return allProducts;

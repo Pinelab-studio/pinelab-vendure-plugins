@@ -2,6 +2,7 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   configureDefaultOrderProcess,
   DefaultLogger,
+  DefaultSchedulerPlugin,
   DefaultSearchPlugin,
   EntityHydrator,
   LogLevel,
@@ -16,7 +17,7 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { QlsPlugin, fullProductSyncTask } from '../src';
+import { QlsPlugin, qlsSyncAllProductsTask } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
@@ -80,7 +81,6 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           await injector.get(EntityHydrator).hydrate(ctx, variant, {
             relations: ['facetValues'],
           });
-          console.log('excludeVariantFromSync', variant.facetValues);
           return variant.id == 1; // Just as a test
         },
         autoPushOrders: true,
@@ -88,6 +88,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours from now
         },
       }),
+      DefaultSchedulerPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -100,12 +101,8 @@ import { createSettledOrder } from '../../test/src/shop-utils';
       }),
     ],
     schedulerOptions: {
-      tasks: [
-        fullProductSyncTask.configure({
-          schedule: (cron) => cron.everyDayAt(3, 0),
-          params: {},
-        }),
-      ],
+      runTasksInWorkerOnly: false,
+      tasks: [qlsSyncAllProductsTask],
     },
   });
   const { server, shopClient, adminClient } = createTestEnvironment(config);

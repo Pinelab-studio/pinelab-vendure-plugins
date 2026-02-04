@@ -16,21 +16,23 @@ declare module '@vendure/core' {
   interface CustomOrderFields {
     qlsServicePointId?: string;
     qlsServicePointDetails?: string;
-    syncedToQls?: boolean;
   }
 }
 
-export const variantCustomFields: CustomFieldConfig[] = [
-  {
-    name: 'qlsProductId',
-    type: 'string',
-    label: [{ value: 'QLS Product ID', languageCode: LanguageCode.en }],
-    nullable: true,
-    public: false,
-    readonly: true,
-    ui: { tab: 'QLS' },
-  },
-];
+/** Returns variant custom fields with the given Admin UI tab name. */
+export function getVariantCustomFields(uiTab: string): CustomFieldConfig[] {
+  return [
+    {
+      name: 'qlsProductId',
+      type: 'string',
+      label: [{ value: 'QLS Product ID', languageCode: LanguageCode.en }],
+      nullable: true,
+      public: false,
+      readonly: true,
+      ui: { tab: uiTab },
+    },
+  ];
+}
 
 export const orderCustomFields: CustomFieldConfig[] = [
   {
@@ -39,28 +41,6 @@ export const orderCustomFields: CustomFieldConfig[] = [
     label: [{ value: 'QLS Service Point ID', languageCode: LanguageCode.en }],
     nullable: true,
     public: true,
-    readonly: false,
-    ui: { tab: 'QLS' },
-  },
-  {
-    name: 'syncedToQls',
-    type: 'boolean',
-    label: [
-      { value: 'Created in QLS', languageCode: LanguageCode.en },
-      { value: 'Aangemaakt in QLS', languageCode: LanguageCode.nl },
-    ],
-    description: [
-      {
-        value: 'Uncheck this to be able to push the order to QLS again',
-        languageCode: LanguageCode.en,
-      },
-      {
-        value: 'Vink dit uit om de order opnieuw naar QLS te sturen',
-        languageCode: LanguageCode.nl,
-      },
-    ],
-    nullable: true,
-    public: false,
     readonly: false,
     ui: { tab: 'QLS' },
   },

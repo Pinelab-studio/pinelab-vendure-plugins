@@ -1,11 +1,12 @@
 import { OrderAddress } from '@vendure/common/lib/generated-types';
-import { RequestContext } from '@vendure/core';
+import { Logger, RequestContext } from '@vendure/core';
 import { AddressLookupInput } from '../generated/graphql';
 import { AddressLookupStrategy } from '../types';
 import {
   normalizePostalCode,
   validateDutchPostalCode,
 } from './validation-util';
+import { loggerCtx } from '../constants';
 
 interface BAGLookupInput {
   apiKey: string;
@@ -37,7 +38,7 @@ export class BAGLookupStrategy implements AddressLookupStrategy {
     });
 
     if (!result.ok) {
-      throw new Error(`${result.status}: ${result.statusText}`);
+      throw new Error(`${result.status}: ${await result.text()}`);
     }
 
     const jsonResult = (await result.json()) as BAGResponse;
