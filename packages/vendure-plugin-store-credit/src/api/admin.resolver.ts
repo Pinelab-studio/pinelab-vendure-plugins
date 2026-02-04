@@ -10,12 +10,17 @@ import {
 import {
   MutationAdjustBalanceForWalletArgs,
   MutationCreateWalletArgs,
+  MutationRefundPaymentToStoreCreditArgs,
 } from './generated/graphql';
 import { WalletService } from '../services/wallet.service';
+import { RefundStoreCreditService } from '../services/refund-store-credit.service';
 
 @Resolver()
 export class AdminResolver {
-  constructor(private walletService: WalletService) {}
+  constructor(
+    private walletService: WalletService,
+    private refundStoreCreditService: RefundStoreCreditService
+  ) {}
 
   @Transaction()
   @Mutation()
@@ -47,12 +52,13 @@ export class AdminResolver {
   @Allow(Permission.UpdateOrder)
   refundPaymentToStoreCredit(
     @Ctx() ctx: RequestContext,
-    @Args() args: { paymentId: ID; walletId: ID }
+    @Args() args: MutationRefundPaymentToStoreCreditArgs
   ) {
-    return this.walletService.refundPaymentToStoreCredit(
+    return this.refundStoreCreditService.refundOrder(
       ctx,
-      args.paymentId,
-      args.walletId
+      args.input.paymentId,
+      args.input.amount,
+      args.input.reason
     );
   }
 }

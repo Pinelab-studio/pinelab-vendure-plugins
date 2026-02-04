@@ -78,8 +78,8 @@ export const CREATE_PAYMENT_METHOD = gql`
 `;
 
 export const REFUND_PAYMENT_TO_STORE_CREDIT = gql`
-  mutation refundPaymentToStoreCredit($paymentId: ID!, $walletId: ID!) {
-    refundPaymentToStoreCredit(paymentId: $paymentId, walletId: $walletId) {
+  mutation refundPaymentToStoreCredit($input: StoreCreditRefundInput!) {
+    refundPaymentToStoreCredit(input: $input) {
       ...WalletFields
     }
   }

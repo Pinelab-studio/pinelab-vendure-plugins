@@ -61,10 +61,16 @@ export const adminApiExtensions = gql`
     description: String!
   }
 
+  input StoreCreditRefundInput {
+    paymentId: ID!
+    amount: Money!
+    reason: String!
+  }
+
   extend type Mutation {
     createWallet(input: CreateWalletInput!): Wallet!
     adjustBalanceForWallet(input: AdjustBalanceForWalletInput!): Wallet!
-    refundPaymentToStoreCredit(paymentId: ID!, walletId: ID!): Wallet!
+    refundPaymentToStoreCredit(input: StoreCreditRefundInput!): Refund!
   }
 `;
 
@@ -82,5 +88,6 @@ export const scalars = gql`
   scalar Node
   scalar PaginatedList
   scalar User
+  scalar Refund
 `;
 export type PaginatedList = any;

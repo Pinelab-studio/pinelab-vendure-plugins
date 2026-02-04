@@ -63,7 +63,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
       return {
         state: 'Settled',
       };
-    } catch (err) {
+    } catch (err: any) {
       return {
         state: 'Failed',
         errorMessage: err.message,
