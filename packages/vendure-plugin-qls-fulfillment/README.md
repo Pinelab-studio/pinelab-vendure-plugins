@@ -78,7 +78,7 @@ mutation {
 }
 ```
 
-## Monitoring failed orders
+## Monitoring failed orders and product syncs
 
 Whenever an order fails to be pushed to QLS, an event is emitted. You can listen to this event to monitor failed orders.
 
@@ -99,6 +99,8 @@ this.eventBus.ofType(QlsOrderFailedEvent).subscribe((event) => {
   console.log('Order failed to be pushed to QLS:', event.order.code);
 });
 ```
+
+For product syncs, the same approach can be used, but with the `QlsProductSyncFailedEvent` instead.
 
 ## Manually pushing orders to QLS
 
