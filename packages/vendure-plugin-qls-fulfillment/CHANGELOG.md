@@ -1,3 +1,7 @@
+# 1.2.1 (2026-01-28)
+
+- Use 'varchar' instead of 'text' for QLS order id and Vendure order id in database.
+
 # 1.2.0 (2026-01-28)
 
 - Prevent accidently pushing orders multiple times by checking if the order is already synced to QLS.

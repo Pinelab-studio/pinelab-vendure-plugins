@@ -10,9 +10,9 @@ export class QlsOrderEntity extends VendureEntity {
     super(input);
   }
 
-  @Column({ type: 'text', nullable: false, unique: true })
+  @Column({ type: 'varchar', nullable: false, unique: true })
   qlsOrderId!: ID;
 
-  @Column({ type: 'text', nullable: false })
+  @Column({ type: 'varchar', nullable: false })
   vendureOrderId!: ID;
 }
