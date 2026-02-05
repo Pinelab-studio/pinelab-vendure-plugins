@@ -7,6 +7,7 @@ fragment OrderFields on Order {
   shipping
   totalWithTax
   shippingWithTax
+  currencyCode
   shippingAddress {
     fullName
     company
@@ -54,6 +55,13 @@ fragment OrderFields on Order {
       description
       type
     }
+  }
+  payments {
+    id
+    amount
+    state
+    method
+    metadata
   }
   couponCodes
 }
@@ -131,6 +139,11 @@ mutation AddPaymentToOrder($input: PaymentInput!) {
     ... on ErrorResult {
       errorCode
       message
+    }
+    ... on PaymentDeclinedError {
+      errorCode
+      message
+      paymentErrorMessage
     }
   }
 }
