@@ -6,6 +6,10 @@ import {
 } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
+  LogicalOperator,
+  SortOrder,
+} from '@vendure/common/lib/generated-shop-types';
+import {
   ChannelService,
   EntityRelationPaths,
   EventBus,
@@ -29,19 +33,7 @@ import {
 import { Response } from 'express';
 import { createReadStream, ReadStream } from 'fs';
 import Handlebars from 'handlebars';
-import {
-  Invoice,
-  InvoiceConfigInput,
-  InvoiceListFilter,
-  InvoiceListOptions,
-  InvoiceOrderTotals,
-} from '../ui/generated/graphql';
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-import {
-  LogicalOperator,
-  SortOrder,
-} from '@vendure/common/lib/generated-shop-types';
+import puppeteer, { Browser } from 'puppeteer';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { InvoiceConfigEntity } from '../entities/invoice-config.entity';
@@ -52,12 +44,16 @@ import {
   LocalStorageStrategy,
   RemoteStorageStrategy,
 } from '../strategies/storage/storage-strategy';
+import {
+  Invoice,
+  InvoiceConfigInput,
+  InvoiceListOptions,
+  InvoiceOrderTotals,
+} from '../ui/generated/graphql';
 import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
-import puppeteer from 'puppeteer';
-import { Browser } from 'puppeteer';
 
 import { filter } from 'rxjs';
 import { In } from 'typeorm';
@@ -66,8 +62,8 @@ import {
   parseFilterParams,
   WhereCondition,
 } from '@vendure/core/dist/service/helpers/list-query-builder/parse-filter-params';
-import { AccountingService } from './accounting.service';
 import util from 'util';
+import { AccountingService } from './accounting.service';
 
 interface DownloadInput {
   customerEmail: string;
@@ -178,9 +174,10 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     const entityOptions: ListQueryOptions<InvoiceEntity> = {
       ...options,
       ...(options?.filter?.invoiceNumber
-        ? // eslint-disable-next-line  @typescript-eslint/no-unsafe-assignment
+        ? // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
-        : { filter: {} }),
+        : // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          { filter: {} }),
       sort: { updatedAt: SortOrder.DESC },
     };
     const qb = this.listQueryBuilder.build(InvoiceEntity, entityOptions, {
@@ -197,6 +194,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       const filter = parseFilterParams<Order>({
         connection: qb.connection,
         entity: Order,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         filterParams: { code: { ...options?.filter?.orderCode } },
         customPropertyMap: undefined,
         originalCustomPropertyMap: undefined,
@@ -256,24 +254,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       });
     }
     return { items, totalItems };
-  }
-
-  parseFilter(filter: InvoiceListFilter | undefined) {
-    let filterInput = {};
-    if (filter?.invoiceNumber) {
-      filterInput = {
-        invoiceNumber: String(filter?.invoiceNumber),
-      };
-    }
-    if (filter?.orderCode) {
-      filterInput = {
-        ...filterInput,
-        order: {
-          code: String(filter?.orderCode),
-        },
-      };
-    }
-    return filterInput;
   }
 
   async downloadMultiple(
