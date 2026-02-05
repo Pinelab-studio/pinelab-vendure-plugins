@@ -42,6 +42,7 @@ export class AccountingService implements OnModuleInit {
     'shippingLines.shippingMethod',
     'payments',
     'customer',
+    'surcharges',
   ];
 
   async onModuleInit(): Promise<void> {
