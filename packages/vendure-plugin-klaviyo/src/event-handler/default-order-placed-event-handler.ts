@@ -9,6 +9,7 @@ import {
 import { loggerCtx } from '../constants';
 import { toKlaviyoMoney } from '../util/to-klaviyo-money';
 import { KlaviyoOrderPlacedEventHandler } from './klaviyo-event-handler';
+import { mapToProfile } from '../util/map-to-profile';
 
 export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
   vendureEvent: OrderPlacedEvent,
@@ -50,11 +51,7 @@ export const defaultOrderPlacedEventHandler: KlaviyoOrderPlacedEventHandler = {
       orderPlacedAt: order.orderPlacedAt ?? order.updatedAt,
       totalOrderValue: toKlaviyoMoney(order.totalWithTax),
       profile: {
-        emailAddress: order.customer.emailAddress,
-        externalId: order.customer.id.toString(),
-        firstName: order.customer.firstName,
-        lastName: order.customer.lastName,
-        phoneNumber: order.customer.phoneNumber,
+        ...mapToProfile(ctx, order.customer),
         address: {
           address1: address?.streetLine1,
           address2: address?.streetLine2,

@@ -173,14 +173,7 @@ describe('Address Lookup plugin', () => {
         ],
       },
     };
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        status: 200,
-        json: async () => mockResponse,
-      })
-    );
+    vi.stubGlobal('fetch', mockFetch(true, 200, 'OK', mockResponse));
     const { lookupAddress } = await shopClient.query(gql`
       query {
         lookupAddress(
@@ -210,10 +203,8 @@ describe('Address Lookup plugin', () => {
     // Mock fetch to return error response
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
+      mockFetch(false, 500, 'Internal Server Error', {
+        error: 'some error message',
       })
     );
     expect.assertions(2);
@@ -237,10 +228,12 @@ describe('Address Lookup plugin', () => {
         }
       `);
     } catch (e: any) {
-      expect(e.response.errors[0].message).toBe('500: Internal Server Error');
+      expect(e.response.errors[0].message).toBe(
+        '500: {"error":"some error message"}'
+      );
     }
     expect(loggerSpy).toHaveBeenCalledWith(
-      'Error looking up address via BAGLookupStrategy: 500: Internal Server Error',
+      'Error looking up address via BAGLookupStrategy: 500: {"error":"some error message"}',
       loggerCtx
     );
   });
@@ -249,3 +242,18 @@ describe('Address Lookup plugin', () => {
     await server.destroy();
   }, 100000);
 });
+
+function mockFetch(
+  ok: boolean,
+  status: number,
+  statusText: string,
+  bodyJson: any
+) {
+  return vi.fn().mockResolvedValue({
+    ok,
+    status,
+    statusText: statusText,
+    json: async () => bodyJson,
+    text: async () => JSON.stringify(bodyJson),
+  });
+}

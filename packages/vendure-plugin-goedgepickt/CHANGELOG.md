@@ -1,3 +1,7 @@
+# 2.2.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 2.1.6 (2025-11-25)
 
 - Fix `object null is not iterable at GoedgepicktService.splitHouseNumberAndAddition` for empty house number string

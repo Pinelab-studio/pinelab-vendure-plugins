@@ -5,6 +5,7 @@ import {
 import { assertFound, Logger, OrderService } from '@vendure/core';
 import { CheckoutStartedEvent } from '../service/events';
 import { loggerCtx } from '../constants';
+import { mapToProfile } from '../util/map-to-profile';
 
 /**
  * Sends an event to Klavyio when a checkout has started and the order has a customer email address.
@@ -40,11 +41,7 @@ export const startedCheckoutHandler: KlaviyoEventHandler<CheckoutStartedEvent> =
           })),
         },
         profile: {
-          emailAddress: hydratedOrder.customer.emailAddress,
-          externalId: hydratedOrder.customer.id.toString(),
-          firstName: hydratedOrder.customer.firstName,
-          lastName: hydratedOrder.customer.lastName,
-          phoneNumber: hydratedOrder.customer.phoneNumber,
+          ...mapToProfile(ctx, hydratedOrder.customer),
           address: {
             address1: address?.streetLine1,
             address2: address?.streetLine2,

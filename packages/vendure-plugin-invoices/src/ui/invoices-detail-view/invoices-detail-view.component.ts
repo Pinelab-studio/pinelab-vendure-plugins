@@ -18,9 +18,9 @@ import { Permission, Order } from '@vendure/admin-ui/core';
 export class InvoiceDetailViewComponent
   implements CustomDetailComponent, OnInit
 {
-  entity$: Observable<Order>;
-  detailForm: UntypedFormGroup;
-  invoicesList: Invoice[] | undefined;
+  entity$!: Observable<Order>;
+  detailForm!: UntypedFormGroup;
+  invoicesList: Invoice[] = [];
   itemsPerPage = 10;
   serverPath: string;
   page = 1;
@@ -54,7 +54,7 @@ export class InvoiceDetailViewComponent
         .mapStream((r: any) => r.order.invoices as Invoice[])
         .subscribe((result) => {
           this.invoicesList = result;
-          this.cdr.markForCheck();
+          this.cdr.detectChanges();
         });
     });
   }

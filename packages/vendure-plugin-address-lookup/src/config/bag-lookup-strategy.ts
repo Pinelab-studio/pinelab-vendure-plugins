@@ -37,7 +37,7 @@ export class BAGLookupStrategy implements AddressLookupStrategy {
     });
 
     if (!result.ok) {
-      throw new Error(`${result.status}: ${result.statusText}`);
+      throw new Error(`${result.status}: ${await result.text()}`);
     }
 
     const jsonResult = (await result.json()) as BAGResponse;

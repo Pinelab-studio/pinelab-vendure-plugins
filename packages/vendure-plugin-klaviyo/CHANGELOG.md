@@ -1,3 +1,11 @@
+# 1.12.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
+# 1.11.0 (2026-01-27)
+
+- Set `customProperties.language` for Klaviyo profiles based on the request context language code from Vendure
+
 # 1.10.0 (2026-01-21)
 
 - Emitting `FailedToSendToKlaviyoEvent` event when a Klaviyo event fails to be sent

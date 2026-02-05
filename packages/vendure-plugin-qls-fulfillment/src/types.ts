@@ -82,6 +82,11 @@ export interface QlsPluginOptions {
     ctx: RequestContext,
     order: Order
   ) => FulfillmentOrderInput['receiver_contact'] | undefined;
+  /**
+   * Admin UI tab name where the QLS Product ID custom field is shown on ProductVariant.
+   * Defaults to 'QLS'.
+   */
+  qlsProductIdUiTab?: string;
 }
 
 /**

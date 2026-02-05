@@ -1,3 +1,7 @@
+# 3.8.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 3.7.0 (2026-01-06)
 
 - Allow passing additional input when creating a charge via the `additionalChargeInput` option.

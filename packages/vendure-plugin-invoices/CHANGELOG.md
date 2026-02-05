@@ -1,3 +1,15 @@
+# 4.5.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
+# 4.4.6 (2026-02-03)
+
+- Updated license to MIT
+
+# 4.4.5 (2026-02-03)
+
+- Documentation update: remove paid plugin notice, free for all!
+
 # 4.4.4 (2025-11-13)
 
 - Documentation update

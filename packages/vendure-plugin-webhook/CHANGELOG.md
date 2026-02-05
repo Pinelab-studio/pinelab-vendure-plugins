@@ -1,3 +1,7 @@
+# 1.7.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 1.6.0 (2026-01-20)
 
 - Allow creation of channel-agnostic webhooks that trigger for all channels.

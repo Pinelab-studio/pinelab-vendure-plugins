@@ -1,3 +1,7 @@
+# 0.1.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 0.0.4 (2025-02-23)
 
 - Allow specifying a cache directory
