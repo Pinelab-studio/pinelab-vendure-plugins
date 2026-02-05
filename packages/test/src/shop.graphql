@@ -56,6 +56,13 @@ fragment OrderFields on Order {
       type
     }
   }
+  payments {
+    id
+    amount
+    state
+    method
+    metadata
+  }
   couponCodes
 }
 

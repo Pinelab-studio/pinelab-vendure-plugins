@@ -81,12 +81,11 @@ export const REFUND_PAYMENT_TO_STORE_CREDIT = gql`
   mutation refundPaymentToStoreCredit($input: StoreCreditRefundInput!) {
     refundPaymentToStoreCredit(input: $input) {
       id
-      state
-      items
-      transactionId
-      shipping
-      total
-      metadata
+      amount
+      description
+      mutatedBy {
+        id
+      }
     }
   }
 `;

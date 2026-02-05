@@ -56,7 +56,7 @@ mutation AdjustBalance($input: AdjustBalanceForWalletInput!) {
 
 ### Refund payment to store credit
 
-An admin can choose to refund a pa
+An admin can choose to refund any payment to store credit wiht the custom `refundPaymentToStoreCredit` mutation:
 
 ```graphql
 mutation RefundToStoreCredit($paymentId: ID!, $walletId: ID!) {
@@ -66,6 +66,8 @@ mutation RefundToStoreCredit($paymentId: ID!, $walletId: ID!) {
   }
 }
 ```
+
+To refund a payment that was made with store credit, you can use the built-in `refundOrder` mutation supplied by Vendure. In this case it will refund the store credit to the same wallet that was used to make the payment.
 
 ## Storefront usage
 

@@ -7,7 +7,6 @@ export const commonApiExtension = gql`
     updatedAt: DateTime!
     amount: Money!
     description: String!
-    mutatedBy: User
   }
 
   type Wallet implements Node {
@@ -49,6 +48,10 @@ export const commonApiExtension = gql`
 export const adminApiExtensions = gql`
   ${commonApiExtension}
 
+  extend type WalletAdjustment {
+    mutatedBy: User!
+  }
+
   input CreateWalletInput {
     customerId: ID!
     name: String!
@@ -64,12 +67,15 @@ export const adminApiExtensions = gql`
     paymentId: ID!
     amount: Money!
     reason: String!
+    walletId: ID!
   }
 
   extend type Mutation {
     createWallet(input: CreateWalletInput!): Wallet!
     adjustBalanceForWallet(input: AdjustBalanceForWalletInput!): Wallet!
-    refundPaymentToStoreCredit(input: StoreCreditRefundInput!): Refund!
+    refundPaymentToStoreCredit(
+      input: StoreCreditRefundInput!
+    ): WalletAdjustment!
   }
 `;
 

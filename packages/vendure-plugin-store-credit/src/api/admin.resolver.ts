@@ -3,7 +3,10 @@ import {
   Allow,
   Ctx,
   ID,
+  OrderService,
+  PaymentService,
   Permission,
+  Refund,
   RequestContext,
   Transaction,
 } from '@vendure/core';
@@ -11,15 +14,16 @@ import {
   MutationAdjustBalanceForWalletArgs,
   MutationCreateWalletArgs,
   MutationRefundPaymentToStoreCreditArgs,
+  Wallet,
+  WalletAdjustment,
 } from './generated/graphql';
 import { WalletService } from '../services/wallet.service';
-import { RefundStoreCreditService } from '../services/refund-store-credit.service';
 
 @Resolver()
 export class AdminResolver {
   constructor(
     private walletService: WalletService,
-    private refundStoreCreditService: RefundStoreCreditService
+    private paymentService: PaymentService
   ) {}
 
   @Transaction()
@@ -28,37 +32,45 @@ export class AdminResolver {
   createWallet(
     @Ctx() ctx: RequestContext,
     @Args() args: MutationCreateWalletArgs
-  ) {
+  ): Promise<Wallet> {
     return this.walletService.create(ctx, args.input);
   }
 
   @Transaction()
   @Mutation()
   @Allow(Permission.UpdateCustomer)
-  adjustBalanceForWallet(
+  async adjustBalanceForWallet(
     @Ctx() ctx: RequestContext,
     @Args() args: MutationAdjustBalanceForWalletArgs
-  ) {
-    return this.walletService.adjustBalanceForWallet(
+  ): Promise<Wallet> {
+    const [wallet] = await this.walletService.adjustBalanceForWallet(
       ctx,
       args.input.amount,
       args.input.walletId,
       args.input.description
     );
+    return wallet;
   }
 
   @Transaction()
   @Mutation()
   @Allow(Permission.UpdateOrder)
-  refundPaymentToStoreCredit(
+  async refundPaymentToStoreCredit(
     @Ctx() ctx: RequestContext,
     @Args() args: MutationRefundPaymentToStoreCreditArgs
-  ) {
-    return this.refundStoreCreditService.refundOrder(
+  ): Promise<WalletAdjustment> {
+    const payment = await this.paymentService.findOneOrThrow(
       ctx,
       args.input.paymentId,
-      args.input.amount,
-      args.input.reason
+      ['order']
     );
+    return this.walletService.refundToStoreCredit(ctx, {
+      order: payment.order,
+      payment: payment,
+      amount: args.input.amount,
+      walletId: args.input.walletId,
+      shouldCreateRefundEntity: true,
+      reason: args.input.reason,
+    });
   }
 }

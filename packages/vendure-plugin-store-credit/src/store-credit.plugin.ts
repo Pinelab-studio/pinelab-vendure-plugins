@@ -6,12 +6,11 @@ import { adminApiExtensions, commonApiExtension } from './api/api-extensions';
 import { CommonResolver } from './api/common.resolver';
 import { AdminResolver } from './api/admin.resolver';
 import { storeCreditPaymentHandler } from './config/payment-method-handler';
-import { RefundStoreCreditService } from './services/refund-store-credit.service';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
   entities: [WalletAdjustment, Wallet],
-  providers: [WalletService, RefundStoreCreditService],
+  providers: [WalletService],
   shopApiExtensions: {
     schema: commonApiExtension,
     resolvers: [CommonResolver],

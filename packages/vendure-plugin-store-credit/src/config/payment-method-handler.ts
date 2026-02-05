@@ -58,18 +58,20 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     return { success: true };
   },
   createRefund: async (ctx, input, amount, order, payment) => {
-    if (!payment.metadata.walletId) {
-      throw new Error('Wallet ID is required as input metadata');
-    }
     try {
-      await walletService.refundPaymentToStoreCredit(
-        ctx,
-        payment.id,
+      const adjustment = await walletService.refundToStoreCredit(ctx, {
+        order,
+        payment,
+        amount,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        payment.metadata.walletId
-      );
+        walletId: payment.metadata.walletId,
+        shouldCreateRefundEntity: false, // Vendure does this because we are in a payment method handler
+        reason: input.reason,
+      });
       return {
         state: 'Settled',
+        reason: input.reason,
+        transactionId: String(adjustment.id),
       };
     } catch (err: any) {
       return {
@@ -80,13 +82,5 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
         },
       };
     }
-  },
-  cancelPayment: () => {
-    return {
-      success: true,
-      metadata: {
-        cancellationDate: new Date().toISOString(),
-      },
-    };
   },
 });
