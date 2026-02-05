@@ -7,6 +7,7 @@ import { getActionBarInvoiceButton } from './util';
 
 @NgModule({
   imports: [SharedModule],
+  declarations: [InvoiceDetailViewComponent],
   providers: [
     addNavMenuItem(
       {
