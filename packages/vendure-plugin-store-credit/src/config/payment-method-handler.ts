@@ -3,6 +3,7 @@ import {
   CreatePaymentResult,
   SettlePaymentResult,
   LanguageCode,
+  ID,
 } from '@vendure/core';
 import { WalletService } from '../services/wallet.service';
 import { asError } from 'catch-unknown';
@@ -63,8 +64,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
         order,
         payment,
         amount,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        walletId: payment.metadata.walletId,
+        walletId: payment.metadata.walletId as ID,
         shouldCreateRefundEntity: false, // Vendure does this because we are in a payment method handler
         reason: input.reason,
       });
@@ -73,7 +73,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
         reason: input.reason,
         transactionId: String(adjustment.id),
       };
-    } catch (err: any) {
+    } catch (err) {
       return {
         state: 'Failed',
         errorMessage: asError(err).message,

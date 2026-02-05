@@ -2,14 +2,12 @@ import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
-  ID,
-  OrderService,
   PaymentService,
   Permission,
-  Refund,
   RequestContext,
   Transaction,
 } from '@vendure/core';
+import { WalletService } from '../services/wallet.service';
 import {
   MutationAdjustBalanceForWalletArgs,
   MutationCreateWalletArgs,
@@ -17,7 +15,6 @@ import {
   Wallet,
   WalletAdjustment,
 } from './generated/graphql';
-import { WalletService } from '../services/wallet.service';
 
 @Resolver()
 export class AdminResolver {

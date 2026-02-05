@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { summate } from '@vendure/common/lib/shared-utils';
 import { unique } from '@vendure/common/lib/unique';
 import {
   assertFound,
@@ -14,9 +15,7 @@ import {
   OrderService,
   PaginatedList,
   Payment,
-  PaymentService,
   Refund,
-  RefundAmountError,
   RefundEvent,
   RelationPaths,
   RequestContext,
@@ -26,10 +25,9 @@ import {
   UserService,
 } from '@vendure/core';
 import { CreateWalletInput } from '../api/generated/graphql';
+import { loggerCtx } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
-import { summate } from '@vendure/common/lib/shared-utils';
-import { loggerCtx } from '../constants';
 
 @Injectable()
 export class WalletService {
@@ -170,7 +168,7 @@ export class WalletService {
       order: Order;
       payment: Payment;
       amount: number;
-      walletId: ID;
+      walletId?: ID;
       shouldCreateRefundEntity: boolean;
       reason?: string;
     }
@@ -184,18 +182,23 @@ export class WalletService {
       reason: inputReason,
     } = input;
     const reason = inputReason ?? 'No reason provided';
+    if (!walletId) {
+      throw new UserInputError(
+        'Wallet ID is required to refund to store credit.'
+      );
+    }
     const wallet = await this.findOne(ctx, walletId);
     if (!wallet) {
       throw new UserInputError(
         `Wallet with id ${walletId} not found. Can not refund payment to this wallet.`
       );
     }
-    if (wallet.currencyCode !== order.currencyCode) {
+    if (String(wallet.currencyCode) !== String(order.currencyCode)) {
       throw new UserInputError(
         `Wallet currency '${wallet.currencyCode}' does not match order currency '${order.currencyCode}'. Can not refund payment to this wallet.`
       );
     }
-    const [_, adjustment] = await this.adjustBalanceForWallet(
+    const [, adjustment] = await this.adjustBalanceForWallet(
       ctx,
       amount,
       walletId,
@@ -316,8 +319,7 @@ export class WalletService {
         metadata: {
           walletId: String(wallet.id),
           walletAdjustmentId: String(adjustment.id),
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        } as any,
+        } as Refund['metadata'],
         shipping: 0,
         items: 0,
         adjustment: 0,
