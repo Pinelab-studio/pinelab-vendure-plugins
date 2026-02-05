@@ -1,3 +1,7 @@
+# 2.1.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 2.0.0 (2025-11-25)
 
 - Add support for custom VAT code strategy to define the VAT code to send to e-boekhouden

@@ -1,11 +1,11 @@
-<clr-accordion *vdrIfPermissions="['AllowInvoicesPermission']">
+<clr-accordion>
   <clr-accordion-panel>
     <clr-accordion-title>Invoices</clr-accordion-title>
-    <clr-accordion-content *clrIfExpanded>
+    <clr-accordion-content>
       <vdr-data-table
         [items]="invoicesList"
         [itemsPerPage]="itemsPerPage"
-        [totalItems]="invoicesList?.length"
+        [totalItems]="invoicesList.length"
         [currentPage]="page"
         (pageChange)="setPageNumber($event)"
         (itemsPerPageChange)="setItemsPerPage($event)"

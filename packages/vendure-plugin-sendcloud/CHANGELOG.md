@@ -1,3 +1,7 @@
+# 1.6.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 1.5.3 (2025-11-13)
 
 - Documentation update

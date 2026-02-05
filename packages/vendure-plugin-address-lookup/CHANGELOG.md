@@ -1,3 +1,7 @@
+# 2.1.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 2.0.1 (2026-02-04)
 
 - Log addditional error details for BAG API

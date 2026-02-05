@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-address-lookup",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Vendure plugin for searching, validating and autofilling address details in checkouts",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",

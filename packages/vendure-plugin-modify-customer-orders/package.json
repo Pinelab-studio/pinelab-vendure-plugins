@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-modify-customer-orders",
-  "version": "1.6.2",
+  "version": "1.7.0",
   "description": "Vendure plugin for converting Active orders to Draft",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
