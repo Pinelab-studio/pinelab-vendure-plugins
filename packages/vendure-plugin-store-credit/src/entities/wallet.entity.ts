@@ -15,11 +15,14 @@ import {
   JoinTable,
   Column,
   Check,
+  Unique,
+  RelationId,
 } from 'typeorm';
 import { WalletAdjustment } from './wallet-adjustment.entity';
 
 @Entity()
 @Check(`"balance" >= 0`)
+@Unique(['name', 'customer'])
 export class Wallet extends VendureEntity implements ChannelAware {
   constructor(input?: DeepPartial<Wallet>) {
     super(input);
@@ -38,6 +41,9 @@ export class Wallet extends VendureEntity implements ChannelAware {
   @ManyToOne(() => Customer, { onDelete: 'CASCADE', nullable: false })
   @Index()
   customer!: Customer;
+
+  @RelationId((wallet: Wallet) => wallet.customer)
+  customerId!: string;
 
   @Money()
   balance!: number;

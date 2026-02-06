@@ -60,6 +60,7 @@ import {
   WalletAdjustmentSubscriber,
 } from './helpers';
 import gql from 'graphql-tag';
+import { createWalletsForCustomers } from '../src/services/exported-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -701,6 +702,28 @@ describe('Refunding Order', () => {
   });
 });
 
+describe('Exported helpers', () => {
+  it('Should create wallets for customers', async () => {
+    const wallets = await createWalletsForCustomers(
+      server.app,
+      {
+        name: 'Special promotion wallet',
+        balance: 123456,
+        balanceDescription: 'Special promotion credits',
+      },
+      'superadmin',
+      undefined,
+      2
+    );
+    expect(wallets.length).toBe(5);
+    wallets.forEach((wallet) => {
+      expect(wallet.name).toBe('Special promotion wallet');
+      expect(wallet.balance).toBe(123456);
+      expect(wallet.currencyCode).toBe('USD');
+    });
+  });
+});
+
 /**
  * Creates a wallet for a given channel and adjusts the balance to 1000000.
  */
@@ -714,7 +737,7 @@ async function createWalletForChannel(
   >(CREATE_WALLET, {
     input: {
       customerId: 1,
-      name: 'Wallets',
+      name: `Wallet for ${setChannelToken}`,
     },
   });
   const { adjustBalanceForWallet: adjustedWallet } = await adminClient.query<

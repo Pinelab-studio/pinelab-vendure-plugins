@@ -11,7 +11,11 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import { storeCreditPaymentHandler, StoreCreditPlugin } from '../src';
+import {
+  createWalletsForCustomers,
+  storeCreditPaymentHandler,
+  StoreCreditPlugin,
+} from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -64,4 +68,19 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
     productsCsvPath: '../test/src/products-import.csv',
   });
   await createSettledOrder(shopClient, 1, true);
+
+  // Create wallets for all customers with a special promotion balance
+  const wallets = await createWalletsForCustomers(
+    server.app,
+    {
+      name: 'Special promotion wallet 2',
+      balance: 44444,
+      balanceDescription: 'Special promotion credits',
+    },
+    'superadmin',
+    undefined,
+    2
+  );
+
+  console.log(`Created ${wallets.length} wallets`);
 })();

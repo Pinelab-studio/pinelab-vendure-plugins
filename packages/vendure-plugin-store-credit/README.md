@@ -143,3 +143,38 @@ query Wallet($id: ID!) {
   }
 }
 ```
+
+# Helper scripts
+
+You can create wallets with a specified balance for all (or given) customers with the following script that is included:
+
+```ts
+import { bootstrap } from '@vendure/core';
+import { createWalletsForCustomers } from '@pinelab/vendure-plugin-store-credit';
+import dotenv from 'dotenv';
+dotenv.config({ path: process.env.ENV_FILE });
+
+// Import vendure config after dotenv.config() so env variables are available in config
+import('./vendure-config')
+  .then(async ({ config }) => {
+    const app = await bootstrap(config);
+    const wallets = await createWalletsForCustomers(
+      app,
+      // Details for all wallets
+      {
+        name: 'Special promotion wallet',
+        balance: 123456,
+        balanceDescription: 'Special promotion credits',
+      },
+      // Administrator email address to use for record-keeping
+      'admin@example.com',
+      // A list of customer email addresses to create wallets for. If omitted, all customers get a wallet.
+      undefined
+    );
+    console.log(`Created ${wallets.length} wallets`);
+    await app.close();
+  })
+  .catch((err) => {
+    console.error(err);
+  });
+```
