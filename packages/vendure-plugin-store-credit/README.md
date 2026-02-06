@@ -74,9 +74,28 @@ To refund a payment that was made with store credit, you can use the built-in `r
 Customers can pay for orders using their store credit balance.
 
 ```graphql
-mutation AddPaymentToOrder($input: AddPaymentToOrderInput!) {
-  # input: { method: "store-credit", metadata: { walletId: "1" } }
-  addPaymentToOrder(input: $input) {
+mutation {
+  addPaymentToOrder(
+    input: { method: "store-credit", metadata: { walletId: "1" } }
+  ) {
+    ... on Order {
+      id
+      code
+    }
+  }
+}
+```
+
+Optionally, a customer can choose to partially pay for an order by specifying the amount to pay with store credit.
+
+```graphql
+mutation {
+  addPaymentToOrder(
+    input: {
+      method: "store-credit"
+      metadata: { walletId: "1", amount: 100000 }
+    }
+  ) {
     ... on Order {
       id
       code
