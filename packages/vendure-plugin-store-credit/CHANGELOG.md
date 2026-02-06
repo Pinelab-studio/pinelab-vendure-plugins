@@ -1,6 +1,6 @@
 # 1.1.0 (2026-02-03)
 
-- Accept amount as input to the store credit payment handler
+- Accept amount as input to the store credit payment handler, to partially pay for an order with store credit
 - Export helper functions to populate wallets for customers
 - BREAKING: DB migration required: Customers can not have multiple wallets with the same name
 
