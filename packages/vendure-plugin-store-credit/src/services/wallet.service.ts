@@ -28,6 +28,7 @@ import { CreateWalletInput } from '../api/generated/graphql';
 import { loggerCtx } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
+import { QueryFailedError } from 'typeorm';
 
 @Injectable()
 export class WalletService {
@@ -74,9 +75,21 @@ export class WalletService {
       balance: 0,
       currencyCode: ctx.channel.defaultCurrencyCode,
     });
-    const savedWallet = await this.connection
-      .getRepository(ctx, Wallet)
-      .save(wallet);
+    let savedWallet: Wallet;
+    try {
+      savedWallet = await this.connection
+        .getRepository(ctx, Wallet)
+        .save(wallet);
+    } catch (error) {
+      if (error instanceof QueryFailedError) {
+        if (error.message.includes('UNIQUE constraint failed')) {
+          throw new UserInputError(
+            `Wallet with name '${input.name}' already exists for customer ${input.customerId}`
+          );
+        }
+      }
+      throw error;
+    }
     const defaultChannel = await this.channelService.getDefaultChannel();
     await this.channelService.assignToChannels(
       ctx,
@@ -84,7 +97,12 @@ export class WalletService {
       wallet.id,
       unique([defaultChannel.id, ctx.channel.id])
     );
-    return assertFound(this.findOne(ctx, savedWallet.id));
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const foundWallet = await this.findOne(ctx, savedWallet!.id);
+    if (!foundWallet) {
+      throw new InternalServerError('Wallet was not found after creation');
+    }
+    return foundWallet;
   }
 
   async adjustBalanceForWallet(
