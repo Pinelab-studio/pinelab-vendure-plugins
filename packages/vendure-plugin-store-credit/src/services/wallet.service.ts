@@ -87,8 +87,8 @@ export class WalletService {
             `Wallet with name '${input.name}' already exists for customer ${input.customerId}`
           );
         }
-        throw error;
       }
+      throw error;
     }
     const defaultChannel = await this.channelService.getDefaultChannel();
     await this.channelService.assignToChannels(
@@ -103,7 +103,6 @@ export class WalletService {
       throw new InternalServerError('Wallet was not found after creation');
     }
     return foundWallet;
-    return assertFound(this.findOne(ctx, savedWallet!.id));
   }
 
   async adjustBalanceForWallet(

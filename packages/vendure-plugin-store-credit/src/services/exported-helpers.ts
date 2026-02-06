@@ -116,7 +116,7 @@ export async function createWalletsForCustomers(
       } catch (e) {
         const error = asError(e);
         Logger.error(
-          `Error creating wallet for customer '${customer.emailAddress}'}: ${error.message}`,
+          `Error creating wallet for customer '${customer.emailAddress}': ${error.message}`,
           loggerCtx
         );
       }

@@ -273,7 +273,7 @@ describe('Order with store credit payment', () => {
     });
   });
 
-  it('Perpares an order for payment', async () => {
+  it('Prepares an order for payment', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
@@ -351,7 +351,7 @@ describe('Order with store credit payment', () => {
     expect(lastAdjustment.mutatedBy.id).toBe('T_2');
   });
 
-  it('Should fail to pay with insuffcient funds', async () => {
+  it('Should fail to pay with insufficient funds', async () => {
     await adminClient.query<{ createWallet: Wallet }, MutationCreateWalletArgs>(
       CREATE_WALLET,
       {
