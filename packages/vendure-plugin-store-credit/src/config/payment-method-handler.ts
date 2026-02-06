@@ -4,6 +4,7 @@ import {
   SettlePaymentResult,
   LanguageCode,
   ID,
+  UserInputError,
 } from '@vendure/core';
 import { WalletService } from '../services/wallet.service';
 import { asError } from 'catch-unknown';
@@ -32,6 +33,12 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     if (!metadata.walletId) {
       throw new Error('Wallet ID is required as input metadata');
     }
+    if (metadata.amount > amount) {
+      throw new UserInputError(
+        `You can not pay more than the order total of ${amount}`
+      );
+    }
+    amount = metadata.amount ?? amount;
     try {
       await walletService.payWithStoreCredit(
         ctx,
