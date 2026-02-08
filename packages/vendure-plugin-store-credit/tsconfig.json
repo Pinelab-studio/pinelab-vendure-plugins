@@ -1,9 +1,24 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["es2022", "DOM", "esnext.asynciterable"],
+    "skipLibCheck": true,
     "outDir": "dist",
-    "types": ["node"]
+    "jsx": "react-jsx",
+    "types": ["node", "vite/client"],
+    "paths": {
+      "@/vdb/*": ["../../node_modules/@vendure/dashboard/src/lib/*"],
+      "virtual:*": [
+        "../../node_modules/@vendure/dashboard/src/lib/virtual.d.ts"
+      ]
+    }
   },
   "include": ["src/"],
-  "exclude": ["src/ui"]
+  "references": [
+    {
+      "path": "./tsconfig.dashboard.json"
+    }
+  ]
 }
