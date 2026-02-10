@@ -6,6 +6,7 @@ const scalars = gql`
   scalar JSON
   scalar LogicalOperator
   scalar StringOperators
+  scalar NumberOperators
   scalar Money
 `;
 

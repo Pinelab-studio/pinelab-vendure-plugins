@@ -1,6 +1,13 @@
 import gql from 'graphql-tag';
 
 export const adminApiExtensions = gql`
+  extend type Order {
+    """
+    QLS order id(s) for this Vendure order.
+    """
+    qlsOrderIds: [String!]!
+  }
+
   extend type Mutation {
     """
     Trigger a sync to create or update all products in Vendure to QLS, and pull in stock levels from QLS.

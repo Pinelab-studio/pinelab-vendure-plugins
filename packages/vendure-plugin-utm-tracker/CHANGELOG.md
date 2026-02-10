@@ -1,3 +1,7 @@
+# 1.4.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
 # 1.3.1 (2026-01-06)
 
 - Fix type error in `getCampaignDisplayName`

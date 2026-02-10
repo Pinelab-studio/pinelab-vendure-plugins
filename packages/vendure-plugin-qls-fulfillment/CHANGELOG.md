@@ -1,3 +1,23 @@
+# 1.3.0 (2026-02-05)
+
+- Upgraded to Vendure 3.5.3
+
+# 1.2.1 (2026-01-28)
+
+- Use 'varchar' instead of 'text' for QLS order id and Vendure order id in database.
+
+# 1.2.0 (2026-01-28)
+
+- Prevent accidently pushing orders multiple times by checking if the order is already synced to QLS.
+- Store combination of QLS order id and Vendure order id to prevent duplicate orders in QLS.
+- Emit event for failed product pushes, and log it as a warning instead of an error.
+- Store failed products as scheduled task data so they can be viewed in the Admin UI.
+- Allow specifying UI tab name where the QLS product ID custom field is shown on ProductVariant page.
+
+# 1.1.3 (2026-01-28)
+
+- Gracefully handle missing variants from incoming webhooks by logging instead of throwing an error.
+
 # 1.1.2 (2026-01-14)
 
 - Run scheduled full sync without job queue, because scheduled tasks already run in the worker only.

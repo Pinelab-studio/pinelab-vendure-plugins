@@ -17,6 +17,7 @@ import {
   OrderService,
   OrderState,
   RequestContext,
+  TransactionalConnection,
   UserInputError,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
@@ -34,6 +35,7 @@ import {
 import { getQlsClient } from '../lib/qls-client';
 import { QlsOrderFailedEvent } from './qls-order-failed-event';
 import { QlsOrderJobData, QlsPluginOptions } from '../types';
+import { QlsOrderEntity } from '../entities/qls-order-entity.entity';
 
 @Injectable()
 export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
@@ -44,7 +46,8 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     private jobQueueService: JobQueueService,
     private eventBus: EventBus,
     private orderService: OrderService,
-    private moduleRef: ModuleRef
+    private moduleRef: ModuleRef,
+    private readonly connection: TransactionalConnection
   ) {}
 
   onApplicationBootstrap(): void {
@@ -109,8 +112,14 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Push an order to QLS by id.
    * Returns a human-readable message describing the result of the operation (Used as job result).
+   *
+   * `force` can be used to force the push of an order even if one already exists in QLS.
    */
-  async pushOrderToQls(ctx: RequestContext, orderId: ID): Promise<string> {
+  async pushOrderToQls(
+    ctx: RequestContext,
+    orderId: ID,
+    force: boolean = false
+  ): Promise<string> {
     const client = await getQlsClient(ctx, this.options);
     if (!client) {
       // Jobs are only added when QLS is enabled for the channel, so if we cant get a client here, something is wrong
@@ -120,10 +129,19 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (!order) {
       throw new Error(`No order with id ${orderId} not found`);
     }
-    if (order.customFields.syncedToQls) {
-      throw new UserInputError(
-        `Order '${order.code}' has already been synced to QLS`
-      );
+    if (!force) {
+      const existingQlsOrder = await this.connection
+        .getRepository(ctx, QlsOrderEntity)
+        .findOne({
+          where: {
+            vendureOrderId: orderId,
+          },
+        });
+      if (existingQlsOrder) {
+        throw new UserInputError(
+          `Order '${order.code}' has already been synced to QLS`
+        );
+      }
     }
     try {
       // Map variants to QLS products
@@ -221,22 +239,32 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         `Successfully created order '${order.code}' in QLS with id '${result.id}'`,
         loggerCtx
       );
-      await this.orderService.addNoteToOrder(ctx, {
-        id: orderId,
-        isPublic: false,
-        note: `Created order '${result.id}' in QLS`,
-      });
-      // Delayed custom field update to prevent race conditions: OrderPlacedEvent is emitted before transition to PaymentSettled is complete
-      await new Promise((resolve) => setTimeout(resolve, 5000));
+      // Add note but catch any errors, because we don't want the job to fail and retry when adding a note fails
       await this.orderService
-        .updateCustomFields(ctx, orderId, {
-          syncedToQls: true,
+        .addNoteToOrder(ctx, {
+          id: orderId,
+          isPublic: false,
+          note: `Created order '${result.id}' in QLS`,
         })
         .catch((e) => {
-          // catch any errors, because we don't want the job to fail and retry when custom field update fails
           const error = asError(e);
           Logger.error(
-            `Error updating custom field 'syncedToQls: true' for order '${order.code}': ${error.message}`,
+            `Error adding note to order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
+      await this.connection
+        .getRepository(ctx, QlsOrderEntity)
+        .save({
+          qlsOrderId: result.id,
+          vendureOrderId: orderId,
+        })
+        .catch((e) => {
+          // Catch any errors, because we don't want the job to fail and retry when custom field update fails
+          const error = asError(e);
+          Logger.error(
+            `Error saving QLS order entity for order '${order.code}': ${error.message}`,
             loggerCtx,
             error.stack
           );
@@ -244,14 +272,31 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
     } catch (e) {
       const error = asError(e);
-      await this.orderService.addNoteToOrder(ctx, {
-        id: orderId,
-        isPublic: false,
-        note: `Failed to create order '${order.code}' in QLS: ${error.message}`,
-      });
-      await this.eventBus.publish(
-        new QlsOrderFailedEvent(ctx, order, new Date(), error.message)
-      );
+      await this.orderService
+        .addNoteToOrder(ctx, {
+          id: orderId,
+          isPublic: false,
+          note: `Failed to create order '${order.code}' in QLS: ${error.message}`,
+        })
+        .catch((e) => {
+          const error = asError(e);
+          Logger.error(
+            `Error adding note to order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
+      await this.eventBus
+        .publish(new QlsOrderFailedEvent(ctx, order, new Date(), error.message))
+        .catch((e) => {
+          // Don't swallow original error, so catch and log this one
+          const error = asError(e);
+          Logger.error(
+            `Error publishing QlsOrderFailedEvent for order '${order.code}': ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
       throw error;
     }
   }
@@ -318,6 +363,21 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       },
       { retries: 3 }
     );
+  }
+
+  /**
+   * Get QLS order id(s) for a Vendure order (for Order.qlsOrderIds field).
+   */
+  async getQlsOrderIdsForOrder(
+    ctx: RequestContext,
+    orderId: ID
+  ): Promise<string[]> {
+    const entities = await this.connection
+      .getRepository(ctx, QlsOrderEntity)
+      .find({
+        where: { vendureOrderId: orderId },
+      });
+    return entities.map((e) => String(e.qlsOrderId));
   }
 
   async getServicePoints(

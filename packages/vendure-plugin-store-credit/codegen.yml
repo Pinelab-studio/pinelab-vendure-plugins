@@ -1,0 +1,16 @@
+schema: 'src/api/api-extensions.ts'
+generates:
+  ./src/api/generated/graphql.ts:
+    plugins:
+      - typescript
+      - typescript-operations
+      - typed-document-node
+    config:
+      enumsAsTypes: true
+      avoidOptionals: false
+      scalars:
+        DateTime: Date
+        Money: number
+        ID: string | number
+        Node: '@vendure/common/lib/generated-types#Node'
+        PaginatedList: '../api-extensions#PaginatedList'

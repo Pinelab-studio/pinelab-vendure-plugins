@@ -36,6 +36,7 @@ import {
   QlsProductJobData,
 } from '../types';
 import { getEansToUpdate, normalizeEans } from './util';
+import { QlsVariantSyncFailedEvent } from './qls-variant-sync-failed-event';
 import { ModuleRef } from '@nestjs/core';
 
 type SyncProductsResult = {
@@ -199,6 +200,9 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             error.stack
           );
           failed.push(variant);
+          await this.eventBus.publish(
+            new QlsVariantSyncFailedEvent(ctx, variant, new Date(), e)
+          );
           await waitToPreventRateLimit();
         }
       }
@@ -283,20 +287,21 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     const createdInQls: Partial<ProductVariant>[] = [];
     const failed: Partial<ProductVariant>[] = [];
     for (const variantId of productVariantIds) {
+      const variant = await this.variantService.findOne(ctx, variantId, [
+        'featuredAsset',
+        'taxCategory',
+        'channels',
+        'product.featuredAsset',
+      ]);
+      if (!variant) {
+        // Can happen when a variant is deleted from Vendure after the job was triggered
+        Logger.info(
+          `Variant with id ${variantId} not found. Not creating or updating product in QLS.`,
+          loggerCtx
+        );
+        continue;
+      }
       try {
-        const variant = await this.variantService.findOne(ctx, variantId, [
-          'featuredAsset',
-          'taxCategory',
-          'channels',
-          'product.featuredAsset',
-        ]);
-        if (!variant) {
-          Logger.error(
-            `Variant with id ${variantId} not found. Not creating or updating product in QLS.`,
-            loggerCtx
-          );
-          continue;
-        }
         const existingQlsProduct = await client.getFulfillmentProductBySku(
           variant.sku
         );
@@ -313,12 +318,15 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         }
       } catch (e) {
         const error = asError(e);
-        Logger.error(
-          `Error syncing variant ${variantId} to QLS: ${error.message}`,
-          loggerCtx,
-          error.stack
+        // Log as warning, because this is probably a functional mistake, i.e. duplicate barcodes or EANs
+        Logger.warn(
+          `Error syncing variant ${variantId} (${variant.sku}) to QLS: ${error.message}`,
+          loggerCtx
         );
         failed.push({ id: variantId });
+        await this.eventBus.publish(
+          new QlsVariantSyncFailedEvent(ctx, variant, new Date(), e)
+        );
       }
     }
     return {
@@ -371,12 +379,15 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     ctx: RequestContext,
     sku: string,
     availableStock: number
-  ) {
+  ): Promise<void> {
     const result = await this.variantService.findAll(ctx, {
       filter: { sku: { eq: sku } },
     });
     if (!result.items.length) {
-      throw new Error(`Variant with sku '${sku}' not found`);
+      return Logger.info(
+        `Variant with sku '${sku}' not found, not updating stock`,
+        loggerCtx
+      );
     }
     const variant = result.items[0];
     if (result.items.length > 1) {
@@ -385,7 +396,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
-    return this.updateStock(ctx, variant.id, availableStock);
+    await this.updateStock(ctx, variant.id, availableStock);
   }
 
   /**
