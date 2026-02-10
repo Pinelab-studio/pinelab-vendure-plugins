@@ -17,6 +17,12 @@ import { VendureConfig } from '@vendure/core';
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
   const { server, shopClient } = createTestEnvironment(
     config as Required<VendureConfig>
   );

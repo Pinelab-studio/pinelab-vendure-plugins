@@ -10,7 +10,14 @@ The fastest way to get your bug fixed or feature released, is to create a Pull R
 4. Run `yarn start` to start the plugin. This will start the plugin with a local SQLite database on localhost:3050.
 5. Run `yarn test` to run the tests.
 6. Run `yarn lint` to check+fix for linting errors.
-7. Run `yarn start:with-admin` to start the plugin with the admin UI. (Not all plugins have this script)
+
+## Development with the dashboard
+
+1. In one terminal, run `yarn serve` (or `yarn start`) to start the Vendure server first.
+2. In another terminal, run `yarn dev:dashboard` to start the dashboard in dev mode.
+3. Go to `http://localhost:5173/dashboard` to view the dashboard.
+
+If your dashboard keeps loading forever in the browser, you might need to access the dashboard in a private window.
 
 ## Creating a Pull Request
 
