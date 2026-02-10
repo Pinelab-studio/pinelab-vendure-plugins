@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-better-search",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Vendure plugin for better storefront search, without the need of external systems",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -20,6 +20,7 @@
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc",
     "start": "ts-node --swc test/dev-server.ts",
+    "benchmark": "ts-node test/benchmark/benchmark.ts",
     "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
     "generate": "graphql-codegen",
     "test": "vitest run --bail 1",
