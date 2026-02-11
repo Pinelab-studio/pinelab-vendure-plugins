@@ -87,6 +87,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
         processOrderFrom: (ctx, order) => {
           return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours from now
         },
+        qlsProductIdUiTab: null,
       }),
       DefaultSchedulerPlugin,
       DefaultSearchPlugin,

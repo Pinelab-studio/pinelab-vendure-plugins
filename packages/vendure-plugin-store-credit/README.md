@@ -74,9 +74,28 @@ To refund a payment that was made with store credit, you can use the built-in `r
 Customers can pay for orders using their store credit balance.
 
 ```graphql
-mutation AddPaymentToOrder($input: AddPaymentToOrderInput!) {
-  # input: { method: "store-credit", metadata: { walletId: "1" } }
-  addPaymentToOrder(input: $input) {
+mutation {
+  addPaymentToOrder(
+    input: { method: "store-credit", metadata: { walletId: "1" } }
+  ) {
+    ... on Order {
+      id
+      code
+    }
+  }
+}
+```
+
+Optionally, a customer can choose to partially pay for an order by specifying the amount to pay with store credit.
+
+```graphql
+mutation {
+  addPaymentToOrder(
+    input: {
+      method: "store-credit"
+      metadata: { walletId: "1", amount: 100000 }
+    }
+  ) {
     ... on Order {
       id
       code
@@ -123,4 +142,39 @@ query Wallet($id: ID!) {
     }
   }
 }
+```
+
+# Helper scripts
+
+You can create wallets with a specified balance for all (or given) customers with the following script that is included:
+
+```ts
+import { bootstrap } from '@vendure/core';
+import { createWalletsForCustomers } from '@pinelab/vendure-plugin-store-credit';
+import dotenv from 'dotenv';
+dotenv.config({ path: process.env.ENV_FILE });
+
+// Import vendure config after dotenv.config() so env variables are available in config
+import('./vendure-config')
+  .then(async ({ config }) => {
+    const app = await bootstrap(config);
+    const wallets = await createWalletsForCustomers(
+      app,
+      // Details for all wallets
+      {
+        name: 'Special promotion wallet',
+        balance: 123456,
+        balanceDescription: 'Special promotion credits',
+      },
+      // Administrator email address to use for record-keeping
+      'admin@example.com',
+      // A list of customer email addresses to create wallets for. If omitted, all customers get a wallet.
+      undefined
+    );
+    console.log(`Created ${wallets.length} wallets`);
+    await app.close();
+  })
+  .catch((err) => {
+    console.error(err);
+  });
 ```

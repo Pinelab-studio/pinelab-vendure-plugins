@@ -1,0 +1,4 @@
+- Always run `nvm use 24` before any terminal session.
+- Bump version: Run `git status` and `git diff` to see what changed and add an entry with bullet points of the changes to CHANGELOG.md. Then bump the version in package.json.
+- Commit and push: Request: Run `git status` and `git diff` to see what changed. Commit with a single line conventional commit message. Push with `git push -u origin HEAD`
+- Creating a Pull Request: Use the GitHub MCP `create_pull_request` to create a pull request with the template at this url: https://github.com/Pinelab-studio/.github/blob/main/pull_request_template.md

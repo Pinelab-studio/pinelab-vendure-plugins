@@ -399,14 +399,11 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (body.cancelled) {
       return 'Cancelled';
     }
-    if (body.amount_delivered === body.amount_total) {
+    if (body.status === 'sent') {
       return 'Delivered';
     }
-    switch (body.status) {
-      case 'sent':
-        return 'Shipped';
-      case 'partically_sent':
-        return 'PartiallyShipped';
+    if (body.status === 'partically_sent') {
+      return 'PartiallyDelivered';
     }
   }
 }

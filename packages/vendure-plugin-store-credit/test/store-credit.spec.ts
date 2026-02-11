@@ -60,6 +60,7 @@ import {
   WalletAdjustmentSubscriber,
 } from './helpers';
 import gql from 'graphql-tag';
+import { createWalletsForCustomers } from '../src/services/exported-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -272,16 +273,12 @@ describe('Order with store credit payment', () => {
     });
   });
 
-  it('Should pay for order with store-credit', async () => {
-    const { wallet: walletBefore } = await adminClient.query(
-      GET_WALLET_WITH_ADJUSTMENTS,
-      { id: 1 }
-    );
+  it('Prepares an order for payment', async () => {
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
       'test'
     );
-    await addItem(shopClient, 'T_1', 1);
+    const order = await addItem(shopClient, 'T_1', 1);
     const transitionRes = await proceedToArrangingPayment(shopClient, 1, {
       input: {
         fullName: 'Martinho Pinelabio',
@@ -293,31 +290,68 @@ describe('Order with store credit payment', () => {
       },
     });
     expect((transitionRes as any)?.errorCode).toBeUndefined();
+    expect(order.totalWithTax).toBe(155880);
+  });
+
+  it('Should partially pay for order with store-credit using amount input', async () => {
+    const { wallet: walletBefore } = await adminClient.query(
+      GET_WALLET_WITH_ADJUSTMENTS,
+      { id: 1 }
+    );
     const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
       input: {
         method: 'store-credit',
-        metadata: { walletId: 1 },
+        metadata: { walletId: 1, amount: 100_000 },
       },
     });
     expect((addPaymentToOrder as any)?.errorCode).toBeUndefined();
     const order = addPaymentToOrder;
+    expect(order.id).toBeDefined();
+    expect(order.state).toBe('ArrangingPayment');
+    const { wallet: walletAfter } = await adminClient.query(
+      GET_WALLET_WITH_ADJUSTMENTS,
+      { id: 1 }
+    );
+    expect(walletAfter.balance).toBe(walletBefore.balance - 100_000);
+    const lastAdjustment =
+      walletAfter.adjustments[walletAfter.adjustments.length - 1];
+    expect(lastAdjustment.description).toBe(`Paid for order ${order.code}`);
+    expect(lastAdjustment.amount).toBe(-100_000);
+  });
+
+  it('Should pay outstanding amount for order without specifying amount', async () => {
+    const { wallet: walletBefore } = await adminClient.query(
+      GET_WALLET_WITH_ADJUSTMENTS,
+      { id: 1 }
+    );
+    const { addPaymentToOrder: order } = await shopClient.query(
+      AddPaymentToOrder,
+      {
+        input: {
+          method: 'store-credit',
+          metadata: { walletId: 1 },
+        },
+      }
+    );
+    expect((order as any)?.errorCode).toBeUndefined();
     expect(order.id).toBeDefined();
     expect(order.state).toBe('PaymentSettled');
     const { wallet: walletAfter } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
       { id: 1 }
     );
+    const leftToPay = order.totalWithTax - 100_000; // already paid in previous test
     expect(walletAfter.balance).toBeLessThan(walletBefore.balance);
-    expect(walletBefore.balance - walletAfter.balance).toBe(order.totalWithTax);
-    expect(
-      walletAfter.adjustments[walletAfter.adjustments.length - 1].description
-    ).toBe(`Paid for order ${order.code}`);
-    expect(
-      walletAfter.adjustments[walletAfter.adjustments.length - 1].mutatedBy.id
-    ).toBe('T_2');
+    // Expect the new balance to be the old balance minus the amount paid
+    expect(walletAfter.balance).toBe(walletBefore.balance - leftToPay);
+    const lastAdjustment =
+      walletAfter.adjustments[walletAfter.adjustments.length - 1];
+    expect(lastAdjustment.description).toBe(`Paid for order ${order.code}`);
+    expect(lastAdjustment.amount).toBe(-leftToPay);
+    expect(lastAdjustment.mutatedBy.id).toBe('T_2');
   });
 
-  it('Should fail to pay with insuffcient funds', async () => {
+  it('Should fail to pay with insufficient funds', async () => {
     await adminClient.query<{ createWallet: Wallet }, MutationCreateWalletArgs>(
       CREATE_WALLET,
       {
@@ -616,8 +650,8 @@ describe('Refunding Order', () => {
       method: 'test-payment-method',
       state: 'Settled',
       metadata: {
-        walletId: '6',
-        walletAdjustmentId: '209',
+        walletId: expect.any(String),
+        walletAdjustmentId: expect.any(String),
       },
       transactionId: "Refunded to wallet 'My new wallet' (6)",
     });
@@ -668,6 +702,28 @@ describe('Refunding Order', () => {
   });
 });
 
+describe('Exported helpers', () => {
+  it('Should create wallets for customers', async () => {
+    const wallets = await createWalletsForCustomers(
+      server.app,
+      {
+        name: 'Special promotion wallet',
+        balance: 123456,
+        balanceDescription: 'Special promotion credits',
+      },
+      'superadmin',
+      undefined,
+      2
+    );
+    expect(wallets.length).toBe(5);
+    wallets.forEach((wallet) => {
+      expect(wallet.name).toBe('Special promotion wallet');
+      expect(wallet.balance).toBe(123456);
+      expect(wallet.currencyCode).toBe('USD');
+    });
+  });
+});
+
 /**
  * Creates a wallet for a given channel and adjusts the balance to 1000000.
  */
@@ -681,7 +737,7 @@ async function createWalletForChannel(
   >(CREATE_WALLET, {
     input: {
       customerId: 1,
-      name: 'Wallets',
+      name: `Wallet for ${setChannelToken}`,
     },
   });
   const { adjustBalanceForWallet: adjustedWallet } = await adminClient.query<

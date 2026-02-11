@@ -1,3 +1,8 @@
+# 1.4.0 (2026-02-11)
+
+- Allow `qlsProductIdUiTab` to be `null` to show QLS Product ID on the default Admin UI tab.
+- Map QLS order status: `sent` → Delivered, `partically_sent` → PartiallyDelivered.
+
 # 1.3.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3
