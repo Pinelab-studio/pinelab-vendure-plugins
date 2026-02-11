@@ -1,15 +1,20 @@
-import { Button, defineDashboardExtension } from '@vendure/dashboard';
+import { defineDashboardExtension } from '@vendure/dashboard';
+import WalletList from './components/WalletList';
+import WalletsHeader from './components/WalletsHeader';
 
 defineDashboardExtension({
-  login: {
-    afterForm: {
-      component: () => (
-        <div>
-          <Button variant="secondary" className="w-full">
-            Login with Vendure ID
-          </Button>
-        </div>
-      ),
+  pageBlocks: [
+    {
+      id: 'customer-wallets',
+      component: ({ context }) => {
+        return <WalletList customerId={context.entity?.id as string} />;
+      },
+      title: WalletsHeader(),
+      location: {
+        pageId: 'customer-detail',
+        column: 'main',
+        position: { blockId: 'addresses', order: 'after' },
+      },
     },
-  },
+  ],
 });
