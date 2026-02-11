@@ -46,5 +46,3 @@ __admin-ui/
 .swc
 .cursor/mcp.json
 .vendure-dashboard-temp
-**/gql/graphql.ts
-**/gql/graphql-env.d.ts
