@@ -1,17 +1,27 @@
 import { ProductVariant, RequestContext } from '@vendure/core';
 import { BetterSearchResult, SearchEngine } from '../../src';
 
-export class DummyEngine implements SearchEngine<ProductVariant> {
-  private index: any;
+type DummySearchIndex = {
+  id: string;
+  name: string;
+};
 
-  async createIndex(
-    ctx: RequestContext,
-    documents: ProductVariant[]
-  ): Promise<void> {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return Promise.resolve();
+export class DummyEngine
+  implements SearchEngine<ProductVariant, DummySearchIndex>
+{
+  async createIndex(ctx: RequestContext, documents: ProductVariant[]) {
+    return {
+      id: '1',
+      name: 'Product 1',
+    };
   }
-  search(ctx: RequestContext, term: string): Promise<BetterSearchResult[]> {
+
+  async search(
+    ctx: RequestContext,
+    searchIndex: DummySearchIndex,
+    term: string
+  ) {
+    await new Promise((resolve) => setTimeout(resolve, 500));
     return Promise.resolve([]);
   }
 }

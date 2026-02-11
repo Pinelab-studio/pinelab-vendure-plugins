@@ -29,6 +29,10 @@ export class SearchService {
       // No search if term is too short
       return [];
     }
-    return this.options.searchStrategy.search(ctx, term);
+    return this.options.searchStrategy.search(
+      ctx,
+      this.indexService.getIndex(ctx),
+      term
+    );
   }
 }

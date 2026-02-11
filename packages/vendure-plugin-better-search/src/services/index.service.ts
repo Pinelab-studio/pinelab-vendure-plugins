@@ -33,6 +33,8 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   private rebuildIndicesQueue = new Map<string, RequestContext>();
 
+  private cachedIndices = new Map<string, unknown>();
+
   constructor(
     private connection: TransactionalConnection,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
@@ -137,12 +139,20 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       });
       allProducts.push(...products);
     }
-    await this.options.searchStrategy.createIndex(
+    const searchIndex = await this.options.searchStrategy.createIndex(
       ctx,
       allProducts.flatMap((p) => p.variants as ProductVariant[]),
       this.moduleRef.get(Injector)
     );
+    this.cachedIndices.set(
+      `${ctx.channel.token}-${ctx.languageCode}`,
+      searchIndex
+    );
     return allProducts.length;
+  }
+
+  getIndex(ctx: RequestContext): undefined | unknown {
+    return this.cachedIndices.get(`${ctx.channel.token}-${ctx.languageCode}`);
   }
 
   /**

@@ -85,6 +85,7 @@ import { DummyEngine } from './dummy-engine';
       2
     )} ms`
   );
+  process.exit(0);
 })();
 
 const BETTER_SEARCH = gql`

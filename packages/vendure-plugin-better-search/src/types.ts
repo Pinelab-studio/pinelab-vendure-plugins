@@ -10,7 +10,7 @@ export interface BetterSearchOptions {
    * Map a product to a Search Document.
    * This is called when creating the index
    */
-  searchStrategy: SearchEngine<ProductVariant>;
+  searchStrategy: SearchEngine<ProductVariant, unknown>;
   /**
    * The debounce time for index rebuilds.
    *
@@ -25,7 +25,7 @@ export interface BetterSearchOptions {
  *
  * FIXME: this is just temporary, to test different engines and algorithms.
  */
-export interface SearchEngine<Document extends ProductVariant> {
+export interface SearchEngine<Document extends ProductVariant, SearchIndex> {
   /**
    * Injector is passed to enrich documents with additional data if needed.
    */
@@ -33,6 +33,11 @@ export interface SearchEngine<Document extends ProductVariant> {
     ctx: RequestContext,
     documents: Document[],
     injector: Injector
-  ) => Promise<void>;
-  search(ctx: RequestContext, term: string): Promise<BetterSearchResult[]>;
+  ) => Promise<SearchIndex>;
+
+  search(
+    ctx: RequestContext,
+    searchIndex: SearchIndex,
+    term: string
+  ): Promise<BetterSearchResult[]>;
 }
