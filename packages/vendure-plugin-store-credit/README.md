@@ -17,7 +17,9 @@ import { StoreCreditPlugin } from '@pinelab/vendure-plugin-store-credit';
 plugins: [StoreCreditPlugin],
 ```
 
-Run a migration to add the Wallet entities, then create a Payment Method in the admin using the `store-credit` handler.
+Run a migration to add the Wallet entities to the database, then create a Payment Method in the admin using the `store-credit` handler.
+
+You also need to rebuild the admin dashboard to see the new Store Credit Wallets on the customer detail page.
 
 ## Admin API
 
