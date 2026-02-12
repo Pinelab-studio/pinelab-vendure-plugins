@@ -13,18 +13,19 @@ jobs:
         with:
           fetch-depth: 0
       - id: dirs
+        # This fetches all directories where tests should be run. Skip any plugins where no files where changed.
         run: |
           BASE_REF="${{ github.event.pull_request.base.sha }}"
           if [ -z "$BASE_REF" ]; then
             # Not a PR (e.g. push); test all packages
-            dirs=$(ls -d packages/*/ | jq --raw-input --slurp --compact-output 'split("\n") | map(select(length > 0))')
+            dirs=$(ls -d packages/*/ | jq -c -R -s 'split("\n") | map(select(length > 0))')
           else
             CHANGED=$(git diff --name-only "$BASE_REF" HEAD || true)
             TRIGGER_ALL=$(echo "$CHANGED" | grep -qE '^package\.json$|^packages/test/|^packages/util/' && echo true || echo false)
             dirs="[]"
             for pkg in packages/*/; do
               if [ "$TRIGGER_ALL" = true ] || echo "$CHANGED" | grep -q "^${pkg}"; then
-                dirs=$(echo "$dirs" | jq --arg p "$pkg" '. + [$p]')
+                dirs=$(echo "$dirs" | jq -c --arg p "$pkg" '. + [$p]')
               fi
             done
           fi
