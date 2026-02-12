@@ -22,7 +22,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     tokenMethod: ['cookie', 'bearer'],
   },
   dbConnectionOptions: {
-    autoSave: true,
+    autoSave: false,
   },
   paymentOptions: {
     paymentMethodHandlers: [storeCreditPaymentHandler, testPaymentMethod],
@@ -41,7 +41,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
       // This appDir should correspond to the `build.outDir`
       // setting in the vite.config.mts file
       // appDir: './dist/dashboard',
-      appDir: path.join(__dirname, './dist/dashboard'),
+      appDir: path.join(__dirname, '../dist/dashboard'),
     }),
   ],
 });
