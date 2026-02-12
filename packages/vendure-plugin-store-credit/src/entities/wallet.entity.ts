@@ -51,4 +51,6 @@ export class Wallet extends VendureEntity implements ChannelAware {
 
   @OneToMany(() => WalletAdjustment, (e) => e.wallet)
   adjustments!: WalletAdjustment[];
+
+  // FIXME just testing a change
 }
