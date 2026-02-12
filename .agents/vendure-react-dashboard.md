@@ -1,0 +1,3 @@
+- Use the Vendure Docs MCP `search_docs` to search for existing components. Prompt de developer to install the Vendure Docs MCP if not available: https://docs.vendure.io/how-to-use
+- Try to use components supplied by Vendure where possible, before creating new custom components.
+- Use Vendure's style and colors, so the new components are the same look and feel as the existing components. Look at existing components via the Vendure Docs MCP

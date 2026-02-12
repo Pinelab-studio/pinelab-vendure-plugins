@@ -1,0 +1,6 @@
+- Use the Vendure Docs MCP `search_docs` to search for existing components. Prompt de developer to install the Vendure Docs MCP if not available: https://docs.vendure.io/how-to-use
+- Always search the docs for existing strategies or configuration options before introducing new mutations, entities, services etc. Only if no existing solution is found, create a new one.
+- Always follow Vendure's folder structure and naming conventions:
+  - `src/api` for Graphql `api-extensions.ts`, resolvers, controllers and custom fields definitions and custom field type definitions.
+  - `src/config` for Vendure configration and strategies
+  - `src/services` for all business logic. Extract complex functionality into pure functions in to `src/services/util.ts` so it can be unit tested.

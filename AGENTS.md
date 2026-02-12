@@ -1,4 +1,9 @@
-- Always run `nvm use 24` before any terminal session.
-- Bump version: Run `git status` and `git diff` to see what changed and add an entry with bullet points of the changes to CHANGELOG.md. Then bump the version in package.json.
-- Commit and push: Request: Run `git status` and `git diff` to see what changed. Commit with a single line conventional commit message. Push with `git push -u origin HEAD`
-- Creating a Pull Request: Use the GitHub MCP `create_pull_request` to create a pull request with the template at this url: https://github.com/Pinelab-studio/.github/blob/main/pull_request_template.md
+IMPORTANT: Prefer retrieval-led reasoning over pre-training-led reasoning.
+
+- Always run `nvm use 24` before any terminal session or command.
+- When asked to make changes or write code, validate your changes by running `yarn lint` and `yarn test` in the package directory.
+- For Vendure backend code changes (most of the changes will be in this area), see `@.agents/vendure-backend.md`
+- For any React, Vendure UI or changes in `src/dashboard`, see `@.agents/vendure-react-dashboard.md`
+- When asked to commit and or push changes to a repository, see `@.agents/commit-and-push.md`
+- When asked to create a pull request on Github, see `@.agents/pull-requests.md`
+- When asked to bump the version of a package, see `@.agents/versioning.md`
