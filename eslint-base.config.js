@@ -18,6 +18,10 @@ export default tseslint.config(
       '**/src/ui/**',
       '**/generated/graphql.ts',
       '**/*generated*',
+      '**/.vendure-dashboard-temp/**',
+      '**/dashboard/**',
+      '**/src/gql/**',
+      '**/vite.config.mts',
     ],
   }
 );

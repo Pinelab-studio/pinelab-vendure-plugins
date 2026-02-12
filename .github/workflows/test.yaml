@@ -8,11 +8,26 @@ jobs:
     outputs:
       dirs: ${{ steps.dirs.outputs.dirs }}
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - id: dirs
-        # This command will list all directories in the packages directory
-        run: echo "dirs=$(ls -d packages/*/ | jq --raw-input --slurp --compact-output 'split("\n")[:-1]')" >> ${GITHUB_OUTPUT}
+        # Collect package directories to run tests for. Skips packages with no changes, except when the root package.json or test/ or util/ directories have changed.
+        run: |
+          CHANGED=$(git diff --name-only HEAD^1 HEAD || true)
+          TRIGGER_ALL=$(echo "$CHANGED" | grep -qE '^package\.json$|^packages/test/|^packages/util/' && echo 1 || echo 0)
+          dirs="[]"
+          for pkg in packages/*/; do
+            if [ "$TRIGGER_ALL" = 1 ] || echo "$CHANGED" | grep -q "^${pkg}"; then
+              dirs=$(echo "$dirs" | jq -c --arg p "$pkg" '. + [$p]')
+            fi
+          done
+          echo "dirs=$dirs" >> $GITHUB_OUTPUT
+      - name: Print selected packages
+        run: |
+          echo "Packages to test:"
+          echo '${{ steps.dirs.outputs.dirs }}' | jq -r '.[]'
   test:
     needs: collect_dirs
     name: ${{ matrix.package }}

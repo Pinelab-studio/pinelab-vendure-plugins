@@ -20,7 +20,9 @@ declare module '@vendure/core' {
 }
 
 /** Returns variant custom fields with the given Admin UI tab name. */
-export function getVariantCustomFields(uiTab?: string | null): CustomFieldConfig[] {
+export function getVariantCustomFields(
+  uiTab?: string | null
+): CustomFieldConfig[] {
   return [
     {
       name: 'qlsProductId',

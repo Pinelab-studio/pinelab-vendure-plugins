@@ -1,3 +1,8 @@
+# 1.2.0 (2026-02-12)
+
+- Added dashboard components for managing wallets and balance on the customer detail page.
+- BREAKING: DB migration required, balance is now defined as `Money` to prevent rounding errors.
+
 # 1.1.0 (2026-02-03)
 
 - Accept amount as input to the store credit payment handler, to partially pay for an order with store credit

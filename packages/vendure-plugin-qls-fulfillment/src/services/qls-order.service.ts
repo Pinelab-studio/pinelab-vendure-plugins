@@ -402,7 +402,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (body.status === 'sent') {
       return 'Delivered';
     }
-    if(body.status === 'partically_sent') {
+    if (body.status === 'partically_sent') {
       return 'PartiallyDelivered';
     }
   }

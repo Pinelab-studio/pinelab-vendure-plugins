@@ -45,3 +45,4 @@ __admin-ui/
 .astro  
 .swc
 .cursor/mcp.json
+.vendure-dashboard-temp

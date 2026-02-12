@@ -1,10 +1,4 @@
 import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
-import {
   SqljsInitializer,
   createTestEnvironment,
   registerInitializer,
@@ -19,6 +13,8 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
+import { config } from './vendure-config';
+import { VendureConfig } from '@vendure/core';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
@@ -26,31 +22,15 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const { testConfig } = require('@vendure/testing');
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const config = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    apiOptions: {
-      adminApiPlayground: {},
-      shopApiPlayground: {},
-    },
-    authOptions: {
-      tokenMethod: ['cookie', 'bearer'],
-    },
-    dbConnectionOptions: {
-      autoSave: true,
-    },
-    paymentOptions: {
-      paymentMethodHandlers: [storeCreditPaymentHandler, testPaymentMethod],
-    },
-    plugins: [
-      StoreCreditPlugin,
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-      }),
-    ],
-  });
-  const { server, shopClient } = createTestEnvironment(config);
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  config.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
+  const { server, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData: {
       ...initialData,
