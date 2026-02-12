@@ -2,6 +2,8 @@
 
 A plugin for channel-aware store credit wallets with ledger tracking. Customers can use wallet balance as a payment method at checkout.
 
+![Store Credit Wallets](https://plugins.pinelab.studio/plugin-images/store-credit-wallets.png)
+
 ## Installation
 
 ```bash
@@ -184,3 +186,7 @@ import('./vendure-config')
 ## Can I create a wallet with an initial starting balance?
 
 To create a wallet with an initial starting balance, you can create a wallet for a customer on the customer detail page in the admin dashboard. Wallets always start with a balance of 0, but you can adjust the balance to anything you want after creation. Wallets always start with 0, so that you can recalculate the current balance by 'rerunning' all the adjustments.
+
+## Can I delete a customer's wallet?
+
+Currently you can not delete a wallet, because of accountability: you need to be able to see the history of adjustments on the wallet. Future version will allow you to archive a wallet.
