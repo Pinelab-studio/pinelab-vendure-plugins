@@ -1,3 +1,7 @@
+# 1.3.0 (2026-02-12)
+
+- Added metadata field on a wallet for custom data
+
 # 1.2.0 (2026-02-12)
 
 - Added dashboard components for managing wallets and balance on the customer detail page.
