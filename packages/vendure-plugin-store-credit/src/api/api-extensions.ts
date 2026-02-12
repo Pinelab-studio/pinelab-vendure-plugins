@@ -16,6 +16,7 @@ export const commonApiExtension = gql`
     updatedAt: DateTime!
     currencyCode: CurrencyCode!
     balance: Money!
+    metadata: JSON
     adjustments: [WalletAdjustment!]!
   }
 
@@ -55,6 +56,7 @@ export const adminApiExtensions = gql`
   input CreateWalletInput {
     customerId: ID!
     name: String!
+    metadata: JSON
   }
 
   input AdjustBalanceForWalletInput {

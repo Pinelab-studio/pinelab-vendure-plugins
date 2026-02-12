@@ -74,6 +74,8 @@ export class WalletService {
       customer: { id: input.customerId },
       balance: 0,
       currencyCode: ctx.channel.defaultCurrencyCode,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      metadata: input.metadata ?? undefined,
     });
     let savedWallet: Wallet;
     try {

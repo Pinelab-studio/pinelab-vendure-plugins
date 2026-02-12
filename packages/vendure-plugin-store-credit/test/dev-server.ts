@@ -11,10 +11,17 @@ import {
   StoreCreditPlugin,
 } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { createSettledOrder } from '../../test/src/shop-utils';
+import {
+  addItem,
+  createSettledOrder,
+  proceedToArrangingPayment,
+} from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { config } from './vendure-config';
 import { VendureConfig } from '@vendure/core';
+import { AddPaymentToOrder } from '../../test/src/generated/shop-graphql';
+import { CREATE_PAYMENT_METHOD } from './helpers';
+import { LanguageCode } from '@vendure/core';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
@@ -28,7 +35,7 @@ import { VendureConfig } from '@vendure/core';
     origin: 'http://localhost:5173',
     credentials: true,
   };
-  const { server, shopClient } = createTestEnvironment(
+  const { server, shopClient, adminClient } = createTestEnvironment(
     config as Required<VendureConfig>
   );
   await server.init({
@@ -47,6 +54,7 @@ import { VendureConfig } from '@vendure/core';
     },
     productsCsvPath: '../test/src/products-import.csv',
   });
+  // Create settled order with test method, to test refunding
   await createSettledOrder(shopClient, 1, true);
 
   // Create wallets for all customers with a special promotion balance
@@ -54,13 +62,58 @@ import { VendureConfig } from '@vendure/core';
     server.app,
     {
       name: 'Special promotion wallet 2',
-      balance: 44444,
+      balance: 500000,
       balanceDescription: 'Special promotion credits',
     },
     'superadmin',
     undefined,
     2
   );
-
   console.log(`Created ${wallets.length} wallets`);
+
+  // Create store credit payment method
+  await adminClient.asSuperAdmin();
+  await adminClient.query(CREATE_PAYMENT_METHOD, {
+    input: {
+      code: 'store-credit',
+      enabled: true,
+      handler: {
+        code: storeCreditPaymentHandler.code,
+        arguments: [],
+      },
+      translations: [
+        {
+          name: 'Store Credit',
+          languageCode: LanguageCode.en,
+        },
+      ],
+    },
+  });
+
+  // Pay for order with store credit
+  const user = await shopClient.asUserWithCredentials(
+    'hayden.zieme12@hotmail.com',
+    'test'
+  );
+  const order = await addItem(shopClient, 'T_1', 1);
+  await proceedToArrangingPayment(shopClient, 1, {
+    input: {
+      fullName: 'Martinho Pinelabio',
+      streetLine1: 'Verzetsstraat',
+      streetLine2: '12a',
+      city: 'Liwwa',
+      postalCode: '8923CP',
+      countryCode: 'NL',
+    },
+  });
+  console.log(`Created order ${order.code} in ArrangingPayment state`);
+  const { addPaymentToOrder } = await shopClient.query(AddPaymentToOrder, {
+    input: {
+      method: 'store-credit',
+      metadata: { walletId: 1 },
+    },
+  });
+  console.log(
+    `Paid for order ${order.code} with store credit: ${addPaymentToOrder.state}`
+  );
 })();
