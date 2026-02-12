@@ -131,11 +131,13 @@ describe('Wallets and Adjustments', () => {
       input: {
         customerId: 1,
         name: 'My Wallet',
+        metadata: { source: 'test', tags: ['e2e'] },
       },
     });
     expect(wallet.id).toBeDefined();
     expect(wallet.name).toBe('My Wallet');
     expect(wallet.currencyCode).toBe('USD');
+    expect(wallet.metadata).toEqual({ source: 'test', tags: ['e2e'] });
   });
 
   it('Should fetch wallets on a Customer object', async () => {

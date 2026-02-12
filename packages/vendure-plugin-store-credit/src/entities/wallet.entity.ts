@@ -49,8 +49,9 @@ export class Wallet extends VendureEntity implements ChannelAware {
   @Money()
   balance!: number;
 
+  @Column({ type: 'json', nullable: true })
+  metadata?: Record<string, unknown>;
+
   @OneToMany(() => WalletAdjustment, (e) => e.wallet)
   adjustments!: WalletAdjustment[];
-
-  // FIXME just testing a change
 }

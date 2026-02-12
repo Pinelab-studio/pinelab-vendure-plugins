@@ -74,6 +74,7 @@ export class WalletService {
       customer: { id: input.customerId },
       balance: 0,
       currencyCode: ctx.channel.defaultCurrencyCode,
+      metadata: input.metadata ?? undefined,
     });
     let savedWallet: Wallet;
     try {

@@ -31,7 +31,7 @@ export const WALLET_FIELDS = gql`
     updatedAt
     currencyCode
     balance
-    name
+    metadata
     adjustments {
       amount
       description
