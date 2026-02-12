@@ -21,6 +21,7 @@ import {
 import { WalletAdjustment } from './wallet-adjustment.entity';
 
 @Entity()
+@Index(['createdAt'])
 @Check(`"balance" >= 0`)
 @Unique(['name', 'customer'])
 export class Wallet extends VendureEntity implements ChannelAware {
