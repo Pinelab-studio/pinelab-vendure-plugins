@@ -46,11 +46,12 @@ const WalletList: React.FC<WalletListProps> = ({ customerId }) => {
     retry: false,
   });
   const wallets = (customerData?.customer?.wallets as any)?.items as Wallet[];
-  console.log(wallets?.[0]?.adjustments, 'wallets');
   return isLoading ? (
-    'Loading'
+    <div className="animate-pulse space-y-2">
+      <div className="h-16 bg-muted rounded-md w-[350px]" />
+    </div>
   ) : (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+    <div className="flex flex-wrap gap-4">
       {wallets.map((w) => (
         <WalletCard key={w.id} wallet={w} />
       ))}

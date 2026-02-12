@@ -178,3 +178,9 @@ import('./vendure-config')
     console.error(err);
   });
 ```
+
+# FAQ
+
+## Can I create a wallet with an initial starting balance?
+
+To create a wallet with an initial starting balance, you can create a wallet for a customer on the customer detail page in the admin dashboard. Wallets always start with a balance of 0, but you can adjust the balance to anything you want after creation. Wallets always start with 0, so that you can recalculate the current balance by 'rerunning' all the adjustments.

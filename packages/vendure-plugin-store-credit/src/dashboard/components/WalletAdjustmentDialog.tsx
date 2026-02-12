@@ -7,7 +7,9 @@ import {
   graphql,
   Button,
   Input,
+  MoneyInput,
   FormFieldWrapper,
+  Switch,
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
@@ -20,10 +22,12 @@ import {
 } from '@vendure/dashboard';
 import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
 
+type AdjustDirection = 'add' | 'subtract';
+
 interface MyCustomFormProps
   extends React.ComponentProps<typeof AlertDialogPrimitive.Root> {
   walletId: string | number;
-  customerName: string;
+  currencyCode: string;
 }
 
 export const ADJUST_WALLET = graphql(`
@@ -51,20 +55,21 @@ export const ADJUST_WALLET = graphql(`
 
 export const WalletAdjustmentDialog = ({
   walletId,
+  currencyCode,
   open: initialOpen,
   children,
 }: MyCustomFormProps) => {
   const [open, setOpen] = React.useState(initialOpen);
   const queryClient = useQueryClient();
   const form = useForm({
-    defaultValues: { amount: 0, description: '' },
+    defaultValues: {
+      direction: 'add' as AdjustDirection,
+      amount: 0,
+      description: '',
+    },
   });
 
-  const {
-    register,
-    reset,
-    formState: { errors },
-  } = form;
+  const { control, register, reset, watch, setValue } = form;
 
   const { mutate, isPending } = useMutation({
     mutationFn: (input: any) => api.mutate(ADJUST_WALLET, { input }),
@@ -85,28 +90,56 @@ export const WalletAdjustmentDialog = ({
 
       <AlertDialogContent>
         <form
-          onSubmit={handleNestedFormSubmit(form, (data) =>
-            mutate({ ...data, walletId })
-          )}
+          onSubmit={handleNestedFormSubmit(form, (data) => {
+            const sign = data.direction === 'subtract' ? -1 : 1;
+            mutate({
+              walletId,
+              description: data.description,
+              amount: data.amount * sign,
+            });
+          })}
         >
           <AlertDialogHeader>
             <AlertDialogTitle>Adjust Balance</AlertDialogTitle>
-            <AlertDialogDescription>Modifying wallet</AlertDialogDescription>
+            <AlertDialogDescription>
+              {watch('direction') === 'subtract'
+                ? 'Subtract from the wallet'
+                : 'Add to the wallet'}
+            </AlertDialogDescription>
           </AlertDialogHeader>
 
           <div className="grid gap-4 py-4">
             <FormFieldWrapper
+              control={control}
               label="Amount"
               name="amount"
-              render={() => (
-                <Input
-                  type="number"
-                  step="0.01"
-                  {...register('amount', {
-                    required: 'Required',
-                    valueAsNumber: true,
-                  })}
-                />
+              render={({ field }) => (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Switch
+                      checked={watch('direction') === 'subtract'}
+                      onCheckedChange={(checked) =>
+                        setValue('direction', checked ? 'subtract' : 'add')
+                      }
+                      className="data-[state=unchecked]:bg-green-600 data-[state=unchecked]:dark:bg-green-500 data-[state=checked]:bg-red-600 data-[state=checked]:dark:bg-red-500"
+                    />
+                    <span
+                      className={`text-sm font-semibold ${
+                        watch('direction') === 'subtract'
+                          ? 'text-red-700 dark:text-red-400'
+                          : 'text-green-700 dark:text-green-400'
+                      }`}
+                    >
+                      {watch('direction') === 'subtract' ? '−' : '+'}
+                    </span>
+                  </div>
+                  <MoneyInput
+                    {...field}
+                    value={Number(field.value) || 0}
+                    onChange={(value) => field.onChange(value)}
+                    currency={currencyCode}
+                  />
+                </div>
               )}
             />
             <FormFieldWrapper

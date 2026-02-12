@@ -22,6 +22,7 @@
   ],
   "scripts": {
     "build": "rimraf dist && yarn generate && tsc && vite build --config ./vite.config.mts",
+    "start": "ts-node test/dev-server.ts",
     "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
     "dev:dashboard": "vite --clearScreen false",
     "generate": "graphql-codegen",

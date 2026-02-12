@@ -1,20 +1,24 @@
+import { useLocalFormat } from '@vendure/dashboard';
 import React from 'react';
 import { WalletAdjustment } from '../../api/generated/graphql';
 
 interface Props {
   adjustment: WalletAdjustment;
+  currencyCode: string;
 }
 
-const WalletAdjustmentCard: React.FC<Props> = ({ adjustment }) => {
+const WalletAdjustmentCard: React.FC<Props> = ({
+  adjustment,
+  currencyCode,
+}) => {
+  const { formatCurrency } = useLocalFormat();
   const isPositive = adjustment.amount >= 0;
 
   return (
-    <div className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-800 text-[0.9rem]">
+    <div className="flex justify-between py-2 border-b border-border last:border-0">
       <div>
-        <div className="font-medium text-gray-900 dark:text-gray-100">
-          {adjustment.description}
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="font-medium">{adjustment.description}</div>
+        <div className="text-xs text-muted-foreground">
           {new Date(adjustment.createdAt).toLocaleDateString()} • By:{' '}
           {adjustment.mutatedBy.identifier}
         </div>
@@ -27,7 +31,7 @@ const WalletAdjustmentCard: React.FC<Props> = ({ adjustment }) => {
         }`}
       >
         {isPositive ? '+' : ''}
-        {adjustment.amount.toLocaleString()}
+        {formatCurrency(adjustment.amount, currencyCode)}
       </div>
     </div>
   );
