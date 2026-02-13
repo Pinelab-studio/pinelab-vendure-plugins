@@ -31,16 +31,6 @@ export const CREATE_WALLET = graphql(`
       currencyCode
       balance
       name
-      adjustments {
-        id
-        createdAt
-        amount
-        description
-        mutatedBy {
-          id
-          identifier
-        }
-      }
     }
   }
 `);
@@ -76,6 +66,7 @@ export const CreateWalletDialog: React.FC<
     onSuccess: async () => {
       toast.success('Wallet created successfully');
       await queryClient.invalidateQueries({ queryKey: ['customer'] });
+      await queryClient.invalidateQueries({ queryKey: ['wallet'] });
       setOpen(false);
       reset();
     },

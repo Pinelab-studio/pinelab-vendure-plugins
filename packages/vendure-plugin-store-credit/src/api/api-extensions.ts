@@ -1,7 +1,7 @@
 import gql from 'graphql-tag';
 
 export const commonApiExtension = gql`
-  type WalletAdjustment {
+  type WalletAdjustment implements Node {
     id: ID!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -18,6 +18,7 @@ export const commonApiExtension = gql`
     balance: Money!
     metadata: JSON
     adjustments: [WalletAdjustment!]!
+    adjustmentList(options: WalletAdjustmentListOptions): WalletAdjustmentList!
   }
 
   type WalletList implements PaginatedList {
@@ -29,12 +30,29 @@ export const commonApiExtension = gql`
     name: StringOperators
   }
 
+  input WalletAdjustmentListFilter {
+    description: StringOperators
+  }
+
   input WalletListOptions {
     skip: Int
     take: Int
     filter: WalletListFilter
     filterOperator: LogicalOperator
     sort: JSON
+  }
+
+  input WalletAdjustmentListOptions {
+    skip: Int
+    take: Int
+    filter: WalletAdjustmentListFilter
+    filterOperator: LogicalOperator
+    sort: JSON
+  }
+
+  type WalletAdjustmentList implements PaginatedList {
+    items: [WalletAdjustment!]!
+    totalItems: Int!
   }
 
   extend type Customer {

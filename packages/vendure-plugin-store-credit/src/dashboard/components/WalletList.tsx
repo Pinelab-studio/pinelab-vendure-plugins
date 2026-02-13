@@ -17,16 +17,6 @@ export const GET_WALLET_WITH_ADJUSTMENTS = graphql(`
           currencyCode
           balance
           name
-          adjustments {
-            id
-            createdAt
-            amount
-            description
-            mutatedBy {
-              id
-              identifier
-            }
-          }
         }
         totalItems
       }
@@ -45,7 +35,8 @@ const WalletList: React.FC<WalletListProps> = ({ customerId }) => {
     },
     retry: false,
   });
-  const wallets = (customerData?.customer?.wallets as any)?.items as Wallet[];
+  const wallets =
+    ((customerData?.customer?.wallets as any)?.items as Wallet[]) ?? [];
   return isLoading ? (
     <div className="animate-pulse space-y-2">
       <div className="h-16 bg-muted rounded-md w-[350px]" />

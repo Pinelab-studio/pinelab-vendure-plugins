@@ -39,16 +39,6 @@ export const ADJUST_WALLET = graphql(`
       updatedAt
       currencyCode
       balance
-      adjustments {
-        id
-        amount
-        createdAt
-        description
-        mutatedBy {
-          id
-          identifier
-        }
-      }
     }
   }
 `);
@@ -75,7 +65,7 @@ export const WalletAdjustmentDialog = ({
     mutationFn: (input: any) => api.mutate(ADJUST_WALLET, { input }),
     onSuccess: async () => {
       toast.success('Balance updated successfully');
-      await queryClient.invalidateQueries({ queryKey: ['customer'] });
+      await queryClient.invalidateQueries({ queryKey: ['wallet', walletId] });
       setOpen(false);
       reset();
     },

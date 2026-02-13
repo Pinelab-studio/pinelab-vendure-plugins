@@ -12,9 +12,9 @@ import {
   MutationAdjustBalanceForWalletArgs,
   MutationCreateWalletArgs,
   MutationRefundPaymentToStoreCreditArgs,
-  Wallet,
   WalletAdjustment,
 } from './generated/graphql';
+import { Wallet } from '../entities/wallet.entity';
 
 @Resolver()
 export class AdminResolver {
