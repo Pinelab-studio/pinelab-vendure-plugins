@@ -1,3 +1,8 @@
+# 1.4.0 (2026-02-13)
+
+- Add pagination support for querying adjustments on wallets.
+- BREAKING: `wallet.adjustments` is now paginated, that means you need to query `adjustments { items { ...fields } }` instead of `adjustments { ...fields }`;
+
 # 1.3.0 (2026-02-12)
 
 - Added metadata field on a wallet for custom data

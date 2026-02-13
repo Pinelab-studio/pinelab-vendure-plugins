@@ -32,18 +32,22 @@ export const WALLET_FIELDS = gql`
     currencyCode
     balance
     metadata
-    adjustments {
-      amount
-      description
-      mutatedBy {
+    adjustments(options: $options) {
+      items {
         id
+        amount
+        description
+        mutatedBy {
+          id
+        }
       }
+      totalItems
     }
   }
 `;
 
 export const GET_WALLET_WITH_ADJUSTMENTS = gql`
-  query GetWalletById($id: ID!) {
+  query GetWalletById($id: ID!, $options: WalletAdjustmentListOptions) {
     wallet(id: $id) {
       ...WalletFields
     }
@@ -52,7 +56,10 @@ export const GET_WALLET_WITH_ADJUSTMENTS = gql`
 `;
 
 export const CREATE_WALLET = gql`
-  mutation CreateWallet($input: CreateWalletInput!) {
+  mutation CreateWallet(
+    $input: CreateWalletInput!
+    $options: WalletAdjustmentListOptions
+  ) {
     createWallet(input: $input) {
       ...WalletFields
     }
@@ -61,7 +68,10 @@ export const CREATE_WALLET = gql`
 `;
 
 export const ADJUST_BALANCE_FOR_WALLET = gql`
-  mutation UpdateWallet($input: AdjustBalanceForWalletInput!) {
+  mutation UpdateWallet(
+    $input: AdjustBalanceForWalletInput!
+    $options: WalletAdjustmentListOptions
+  ) {
     adjustBalanceForWallet(input: $input) {
       ...WalletFields
     }
@@ -91,7 +101,10 @@ export const REFUND_PAYMENT_TO_STORE_CREDIT = gql`
 `;
 
 export const GET_CUSTOMER_WITH_WALLETS = gql`
-  query GetCustomerWithWallets($id: ID!) {
+  query GetCustomerWithWallets(
+    $id: ID!
+    $options: WalletAdjustmentListOptions
+  ) {
     customer(id: $id) {
       id
       wallets {

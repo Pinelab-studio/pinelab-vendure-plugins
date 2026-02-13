@@ -20,7 +20,11 @@ import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { config } from './vendure-config';
 import { VendureConfig } from '@vendure/core';
 import { AddPaymentToOrder } from '../../test/src/generated/shop-graphql';
-import { CREATE_PAYMENT_METHOD } from './helpers';
+import {
+  ADJUST_BALANCE_FOR_WALLET,
+  CREATE_PAYMENT_METHOD,
+  GET_CUSTOMER_WITH_WALLETS,
+} from './helpers';
 import { LanguageCode } from '@vendure/core';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -115,5 +119,28 @@ import { LanguageCode } from '@vendure/core';
   });
   console.log(
     `Paid for order ${order.code} with store credit: ${addPaymentToOrder.state}`
+  );
+
+  // Create 12 adjustments for customer 1 / wallet 1
+  const options = { options: { take: 50 } };
+  for (let i = 1; i <= 12; i++) {
+    await adminClient.query(ADJUST_BALANCE_FOR_WALLET, {
+      input: {
+        walletId: 1,
+        amount: i * 100,
+        description: `Adjustment ${i} for wallet 1`,
+      },
+      ...options,
+    });
+  }
+  const { customer } = await adminClient.query(GET_CUSTOMER_WITH_WALLETS, {
+    id: '1',
+    ...options,
+  });
+  const wallet1 = customer?.wallets?.items?.[0];
+  console.log(
+    `Created 12 adjustments for wallet 1. Total items: ${
+      wallet1?.adjustments?.totalItems ?? 'n/a'
+    }`
   );
 })();
