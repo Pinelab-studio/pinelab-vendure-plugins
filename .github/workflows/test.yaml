@@ -58,7 +58,7 @@ jobs:
       - name: Set Vendure Hub registry auth token
         run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
       - name: Install root dependencies
-        run: yarn
+        run: yarn --frozen-lockfile
       - name: Build
         run: cd ${{ matrix.package }} && yarn build
       - name: Lint
