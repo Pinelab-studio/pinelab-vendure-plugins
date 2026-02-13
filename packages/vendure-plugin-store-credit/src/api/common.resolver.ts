@@ -11,7 +11,7 @@ import {
 import { Wallet } from '../entities/wallet.entity';
 import {
   CustomerWalletsArgs,
-  WalletAdjustmentListArgs,
+  WalletAdjustmentsArgs,
 } from './generated/graphql';
 import { WalletService } from '../services/wallet.service';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
@@ -36,11 +36,11 @@ export class CommonResolver {
     );
   }
 
-  @ResolveField('adjustmentList')
+  @ResolveField('adjustments')
   @Resolver('Wallet')
-  async adjustmentList(
+  async adjustments(
     @Ctx() ctx: RequestContext,
-    @Args() args: WalletAdjustmentListArgs,
+    @Args() args: WalletAdjustmentsArgs,
     @Relations({ entity: WalletAdjustment })
     relations: RelationPaths<WalletAdjustment>,
     @Parent() wallet: Wallet

@@ -10,7 +10,7 @@ export const GET_WALLET_WITH_ADJUSTMENTS = graphql(`
   ) {
     wallet(id: $id) {
       id
-      adjustmentList(options: $options) {
+      adjustments(options: $options) {
         items {
           id
           createdAt
@@ -55,7 +55,7 @@ export function useWalletAdjustmentList({
     initialPageParam: 0,
     getNextPageParam: (lastPage, _pages, lastPageParam) => {
       const totalItems =
-        (lastPage.wallet as Wallet)?.adjustmentList?.totalItems ?? 0;
+        (lastPage.wallet as Wallet)?.adjustments?.totalItems ?? 0;
       const currentMaxItem = (lastPageParam + 1) * pageSize;
       const nextPage = lastPageParam + 1;
       return currentMaxItem < totalItems ? nextPage : undefined;
@@ -64,7 +64,7 @@ export function useWalletAdjustmentList({
 
   const adjustments =
     data?.pages
-      .flatMap((page) => (page.wallet as Wallet)?.adjustmentList?.items)
+      .flatMap((page) => (page.wallet as Wallet)?.adjustments?.items)
       .filter((x) => x != null) ?? [];
 
   return {

@@ -17,8 +17,7 @@ export const commonApiExtension = gql`
     currencyCode: CurrencyCode!
     balance: Money!
     metadata: JSON
-    adjustments: [WalletAdjustment!]!
-    adjustmentList(options: WalletAdjustmentListOptions): WalletAdjustmentList!
+    adjustments(options: WalletAdjustmentListOptions): WalletAdjustmentList!
   }
 
   type WalletList implements PaginatedList {
