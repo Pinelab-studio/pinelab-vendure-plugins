@@ -50,7 +50,7 @@ const WalletCard: React.FC<WalletCardProps> = ({ wallet }) => {
         <Alert variant="destructive">
           <TriangleAlert className="h-4 w-4" />
           <AlertDescription>
-            <Trans>Error loading order history: {error.message}</Trans>
+            <Trans>Error loading wallet adjustments: {error.message}</Trans>
           </AlertDescription>
         </Alert>
       )}
