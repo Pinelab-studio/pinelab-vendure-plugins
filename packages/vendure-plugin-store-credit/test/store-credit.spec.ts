@@ -259,6 +259,27 @@ describe('Wallets and Adjustments', () => {
     const previousBalance = wallet.balance - deltaFromAdjustments;
     expect(wallet.balance).toBe(previousBalance + expectedDelta);
   }, 30_000);
+
+  it('Should return a paginated list of wallet adjustments when valid limit and offset parameters are provided', async () => {
+    const walletId = 1;
+
+    const N = 200;
+    const take = 13;
+    const skip = 14;
+
+    const { wallet } = await adminClient.query(GET_WALLET_WITH_ADJUSTMENTS, {
+      id: walletId,
+      options: {
+        take,
+        skip,
+      },
+    });
+    expect(wallet.adjustments.length).toBeGreaterThanOrEqual(N);
+    expect(wallet.adjustmentList.totalItems).toBeGreaterThanOrEqual(N);
+    expect(wallet.adjustmentList.items.length).toBeGreaterThanOrEqual(take);
+
+    expect(wallet.adjustmentList.items[0].id).toBe(wallet.adjustments[skip].id);
+  });
 });
 
 describe('Order with store credit payment', () => {

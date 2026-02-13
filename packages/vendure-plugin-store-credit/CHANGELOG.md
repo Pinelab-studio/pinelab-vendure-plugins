@@ -1,3 +1,7 @@
+# 1.4.0 (2026-02-13)
+
+- Add pagination support for querying adjustments on wallets.
+
 # 1.3.0 (2026-02-12)
 
 - Added metadata field on a wallet for custom data

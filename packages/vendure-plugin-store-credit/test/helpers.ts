@@ -33,6 +33,7 @@ export const WALLET_FIELDS = gql`
     balance
     metadata
     adjustments {
+      id
       amount
       description
       mutatedBy {
@@ -43,9 +44,15 @@ export const WALLET_FIELDS = gql`
 `;
 
 export const GET_WALLET_WITH_ADJUSTMENTS = gql`
-  query GetWalletById($id: ID!) {
+  query GetWalletById($id: ID!, $options: WalletAdjustmentListOptions) {
     wallet(id: $id) {
       ...WalletFields
+      adjustmentList(options: $options) {
+        items {
+          id
+        }
+        totalItems
+      }
     }
   }
   ${WALLET_FIELDS}
