@@ -26,10 +26,16 @@ jobs:
       - name: Set Vendure Hub registry auth token
         run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
       - id: dirs
+        name: Collect packages to publish
         run: |
           dirs="[]"
           for dir in packages/*/; do
             if [ ! -f "$dir/package.json" ]; then
+              continue
+            fi
+            IS_PRIVATE=$(node -p "require('./$dir/package.json').private || false")
+            if [ "$IS_PRIVATE" = "true" ]; then
+              echo "Skipping private package in $dir"
               continue
             fi
             PKG_NAME=$(node -p "require('./$dir/package.json').name")
