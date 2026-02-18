@@ -1,3 +1,7 @@
+# 1.5.0 (2026-02-18)
+
+- Allow passing additional order items with `addAdditionalOrderItems()` that will be added to the QLS order.
+
 # 1.4.0 (2026-02-11)
 
 - Allow `qlsProductIdUiTab` to be `null` to show QLS Product ID on the default Admin UI tab.

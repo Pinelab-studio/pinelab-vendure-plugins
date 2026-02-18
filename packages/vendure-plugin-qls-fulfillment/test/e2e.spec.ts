@@ -42,6 +42,15 @@ beforeAll(async () => {
           additionalEANs: ['1234567890'],
         }),
         webhookSecret: '1234',
+        addAdditionalOrderItems: async (ctx, injector, order) => {
+          return [
+            {
+              name: 'Additional free gift',
+              product_id: '1234567890', // Just a test
+              amount_ordered: 3,
+            },
+          ];
+        },
       }),
     ],
     paymentOptions: {
@@ -263,6 +272,11 @@ it('Pushes order to QLS', async () => {
         amount_ordered: 1,
         product_id: '1',
         name: 'Laptop 15 inch 8GB',
+      },
+      {
+        name: 'Additional free gift',
+        product_id: '1234567890',
+        amount_ordered: 3,
       },
       // Should have excluded L2201516
     ],
