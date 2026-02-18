@@ -9,8 +9,52 @@ on:
       - main
 
 jobs:
-  Publish:
+  collect_dirs:
+    name: Collect packages to publish
     runs-on: ubuntu-latest
+    outputs:
+      dirs: ${{ steps.dirs.outputs.dirs }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Set NPM registry auth token
+        run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
+      - name: Set Vendure Hub registry auth token
+        run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
+      - id: dirs
+        run: |
+          dirs="[]"
+          for dir in packages/*/; do
+            if [ ! -f "$dir/package.json" ]; then
+              continue
+            fi
+            PKG_NAME=$(node -p "require('./$dir/package.json').name")
+            LOCAL=$(node -p "require('./$dir/package.json').version")
+            REMOTE=$(npm view "$PKG_NAME" version 2>/dev/null || echo "not published")
+            if [ "$LOCAL" != "$REMOTE" ]; then
+              echo "$PKG_NAME@$LOCAL needs publishing (published: $REMOTE)"
+              dirs=$(echo "$dirs" | jq -c --arg p "$dir" '. + [$p]')
+            else
+              echo "Skipping $PKG_NAME@$LOCAL (already published)"
+            fi
+          done
+          echo "dirs=$dirs" >> $GITHUB_OUTPUT
+      - name: Print packages to publish
+        run: echo '${{ steps.dirs.outputs.dirs }}' | jq -r '.[]'
+
+  publish:
+    needs: collect_dirs
+    if: ${{ needs.collect_dirs.outputs.dirs != '[]' }}
+    name: ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: ${{ fromJson(needs.collect_dirs.outputs.dirs) }}
+      fail-fast: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -25,8 +69,8 @@ jobs:
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Build
-        run: yarn build
-      - name: Stash changes that build might have caused by build
+        run: cd ${{ matrix.package }} && yarn build
+      - name: Stash any build changes
         run: git stash
       - name: Publish
-        run: yarn lerna publish from-package --yes
+        run: cd ${{ matrix.package }} && npm publish
