@@ -9,6 +9,7 @@ import {
 import {
   CustomValue,
   FulfillmentOrderInput,
+  FulfillmentOrderLineInput,
   FulfillmentProductInput,
 } from './lib/client-types';
 
@@ -88,6 +89,14 @@ export interface QlsPluginOptions {
    * Defaults to 'QLS'.
    */
   qlsProductIdUiTab?: string | null;
+  /**
+   * Additional order items to add to the QLS order.
+   */
+  addAdditionalOrderItems?: (
+    ctx: RequestContext,
+    injector: Injector,
+    order: Order
+  ) => FulfillmentOrderLineInput[] | Promise<FulfillmentOrderLineInput[]>;
 }
 
 /**

@@ -88,6 +88,16 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours from now
         },
         qlsProductIdUiTab: null,
+        addAdditionalOrderItems: async (ctx, injector, order) => {
+          return [
+            {
+              // Just a test
+              name: 'ALHYDRAN 100ml 123421',
+              product_id: 'ec814961-8c84-4e3b-b54b-125efbf1764d',
+              amount_ordered: 1,
+            },
+          ];
+        },
       }),
       DefaultSchedulerPlugin,
       DefaultSearchPlugin,
