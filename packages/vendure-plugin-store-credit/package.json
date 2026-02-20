@@ -31,7 +31,6 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@pinelab/vendure-plugin-store-credit": "1.4.0",
     "catch-unknown": "^2.0.0"
   },
   "devDependencies": {
