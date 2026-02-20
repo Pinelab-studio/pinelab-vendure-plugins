@@ -10,7 +10,11 @@ import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import path from 'path';
-import { storeCreditPaymentHandler, StoreCreditPlugin } from '../src';
+// import { storeCreditPaymentHandler, StoreCreditPlugin } from '../src';
+import {
+  storeCreditPaymentHandler,
+  StoreCreditPlugin,
+} from '@pinelab/vendure-plugin-store-credit';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),

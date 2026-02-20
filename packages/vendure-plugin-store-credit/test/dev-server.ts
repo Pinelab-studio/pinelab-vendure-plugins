@@ -5,11 +5,11 @@ import {
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
-import {
-  createWalletsForCustomers,
-  storeCreditPaymentHandler,
-  StoreCreditPlugin,
-} from '../src';
+// import {
+//   createWalletsForCustomers,
+//   storeCreditPaymentHandler,
+//   StoreCreditPlugin,
+// } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import {
   addItem,
@@ -26,6 +26,11 @@ import {
   GET_CUSTOMER_WITH_WALLETS,
 } from './helpers';
 import { LanguageCode } from '@vendure/core';
+import {
+  StoreCreditPlugin,
+  storeCreditPaymentHandler,
+  createWalletsForCustomers,
+} from '@pinelab/vendure-plugin-store-credit';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {

@@ -1,4 +1,0 @@
-- Commit: Run `git status` and `git diff` to see what changed.
-- Commit with a single line conventional commit message, e.g. `feat(plugin-name): implemented test cases`, or `fix(plugin-name): fixed bug in test cases`.
-- plugin names can be found in the root package.json file `./package.json`.
-- Push: Push with `git push -u origin HEAD` so a branch with the same name as the local branch is created on the remote repository.
