@@ -1,5 +1,0 @@
-- We use semantic versioning for our packages.
-- When asked to bump the version of a package
-  - Ask the developer to make this a major, minor or patch version increase.
-  - Increase the version numner in the package.json file.
-  - Ask the developer for a short description of the changes and add those changes as bullet points in the CHANGELOG.md file.

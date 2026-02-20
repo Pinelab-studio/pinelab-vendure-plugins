@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-store-credit",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Vendure plugin for channel-aware store credit wallets with ledger tracking",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "contributors": [
@@ -21,7 +21,8 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn generate && tsc && vite build --config ./vite.config.mts",
+    "build": "rimraf dist && yarn generate && tsc && copyfiles -u 1 'src/dashboard/**/*' dist/",
+    "build:dashboard": "vite build --config ./vite.config.mts",
     "start": "ts-node test/dev-server.ts",
     "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
     "dev:dashboard": "vite --clearScreen false",
@@ -33,7 +34,7 @@
     "catch-unknown": "^2.0.0"
   },
   "devDependencies": {
-    "@babel/preset-typescript": "7.26.0",
-    "@babel/preset-react": "7.26.3"
+    "@babel/preset-react": "7.26.3",
+    "@babel/preset-typescript": "7.26.0"
   }
 }

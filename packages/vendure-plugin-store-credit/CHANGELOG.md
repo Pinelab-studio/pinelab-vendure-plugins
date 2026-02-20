@@ -1,3 +1,7 @@
+# 1.4.1 (2026-02-20)
+
+- Include raw .tsx components for React Extension distribution
+
 # 1.4.0 (2026-02-13)
 
 - Add pagination support for querying adjustments on wallets.

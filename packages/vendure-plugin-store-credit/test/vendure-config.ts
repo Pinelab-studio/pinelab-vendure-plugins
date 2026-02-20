@@ -7,10 +7,10 @@ import {
   VendureConfig,
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
+import { storeCreditPaymentHandler, StoreCreditPlugin } from '../src';
 import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import path from 'path';
-import { storeCreditPaymentHandler, StoreCreditPlugin } from '../src';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
