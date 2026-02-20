@@ -76,16 +76,13 @@ You can add screenshots here if applicable.
 
 📌 Always:
 
-
 - [ ] Set a clear title
 - [ ] I have checked my own PR
-
 
 👍 Most of the time:
 
 - [ ] Added or updated test cases
 - [ ] Updated the README
-
 
 📦 For publishable packages:
 

@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-store-credit",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Vendure plugin for channel-aware store credit wallets with ledger tracking",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "contributors": [
