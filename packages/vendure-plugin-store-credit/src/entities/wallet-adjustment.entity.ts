@@ -1,4 +1,4 @@
-import { DeepPartial, User, VendureEntity } from '@vendure/core';
+import { DeepPartial, Money, User, VendureEntity } from '@vendure/core';
 import { Column, Entity, Index, ManyToOne } from 'typeorm';
 import { Wallet } from './wallet.entity';
 
@@ -15,7 +15,7 @@ export class WalletAdjustment extends VendureEntity {
   @Index()
   wallet!: Wallet;
 
-  @Column()
+  @Money()
   amount!: number;
 
   @Column()

@@ -144,7 +144,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       }
     }
     try {
-      // Map variants to QLS products
+      // Map order variants to QLS products
       const qlsProducts: FulfillmentOrderLineInput[] = [];
       await Promise.all(
         order.lines.map(async (line) => {
@@ -175,6 +175,28 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           });
         })
       );
+      // Add additional order items, if any
+      try {
+        const additionalOrderItems =
+          await this.options.addAdditionalOrderItems?.(
+            ctx,
+            new Injector(this.moduleRef),
+            order
+          );
+        if (additionalOrderItems) {
+          qlsProducts.push(...additionalOrderItems);
+        }
+      } catch (e) {
+        const error = asError(e);
+        Logger.error(
+          `Error getting additional order items for order '${order.code}': ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+        throw new Error(
+          `Error adding additional order items for order '${order.code}': ${error.message}`
+        );
+      }
       if (qlsProducts.length === 0) {
         const message = `No products to push to QLS for order '${order.code}'. Ignoring order.`;
         Logger.info(message, loggerCtx);
@@ -399,14 +421,11 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
     if (body.cancelled) {
       return 'Cancelled';
     }
-    if (body.amount_delivered === body.amount_total) {
+    if (body.status === 'sent') {
       return 'Delivered';
     }
-    switch (body.status) {
-      case 'sent':
-        return 'Shipped';
-      case 'partically_sent':
-        return 'PartiallyShipped';
+    if (body.status === 'partically_sent') {
+      return 'PartiallyDelivered';
     }
   }
 }

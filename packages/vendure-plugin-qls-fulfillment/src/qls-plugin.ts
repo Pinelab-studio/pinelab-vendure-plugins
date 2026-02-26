@@ -31,7 +31,7 @@ import { QlsOrderEntity } from './entities/qls-order-entity.entity';
     config.authOptions.customPermissions.push(qlsFullSyncPermission);
     config.authOptions.customPermissions.push(qlsPushOrderPermission);
     config.customFields.ProductVariant.push(
-      ...getVariantCustomFields(QlsPlugin.options?.qlsProductIdUiTab ?? 'QLS')
+      ...getVariantCustomFields(QlsPlugin.options?.qlsProductIdUiTab)
     );
     config.customFields.Order.push(...orderCustomFields);
     return config;

@@ -21,6 +21,7 @@ import {
 import { WalletAdjustment } from './wallet-adjustment.entity';
 
 @Entity()
+@Index(['createdAt'])
 @Check(`"balance" >= 0`)
 @Unique(['name', 'customer'])
 export class Wallet extends VendureEntity implements ChannelAware {
@@ -47,6 +48,9 @@ export class Wallet extends VendureEntity implements ChannelAware {
 
   @Money()
   balance!: number;
+
+  @Column({ type: 'json', nullable: true })
+  metadata?: Record<string, unknown>;
 
   @OneToMany(() => WalletAdjustment, (e) => e.wallet)
   adjustments!: WalletAdjustment[];

@@ -68,12 +68,35 @@ export class WalletService {
       });
   }
 
+  findAdjustmentsForWallet(
+    ctx: RequestContext,
+    walletId: ID,
+    options?: ListQueryOptions<WalletAdjustment>,
+    relations: RelationPaths<WalletAdjustment> = []
+  ): Promise<PaginatedList<WalletAdjustment>> {
+    return this.listQueryBuilder
+      .build(WalletAdjustment, options, {
+        relations: relations ?? ['mutatedBy'],
+        ctx,
+        where: { wallet: { id: walletId } },
+      })
+      .getManyAndCount()
+      .then(([items, totalItems]) => {
+        return {
+          items,
+          totalItems,
+        };
+      });
+  }
+
   async create(ctx: RequestContext, input: CreateWalletInput): Promise<Wallet> {
     const wallet = new Wallet({
       name: input.name,
       customer: { id: input.customerId },
       balance: 0,
       currencyCode: ctx.channel.defaultCurrencyCode,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+      metadata: input.metadata ?? undefined,
     });
     let savedWallet: Wallet;
     try {

@@ -131,11 +131,13 @@ describe('Wallets and Adjustments', () => {
       input: {
         customerId: 1,
         name: 'My Wallet',
+        metadata: { source: 'test', tags: ['e2e'] },
       },
     });
     expect(wallet.id).toBeDefined();
     expect(wallet.name).toBe('My Wallet');
     expect(wallet.currencyCode).toBe('USD');
+    expect(wallet.metadata).toEqual({ source: 'test', tags: ['e2e'] });
   });
 
   it('Should fetch wallets on a Customer object', async () => {
@@ -164,10 +166,12 @@ describe('Wallets and Adjustments', () => {
       },
     });
     expect(wallet.balance).toBe(100);
-    expect(wallet.adjustments.length).toBe(1);
-    expect(wallet.adjustments[0].amount).toBe(100);
-    expect(wallet.adjustments[0].description).toBe('Adjusted by superadmin');
-    expect(wallet.adjustments[0].mutatedBy.id).toBe('T_1');
+    expect(wallet.adjustments.items.length).toBe(1);
+    expect(wallet.adjustments.items[0].amount).toBe(100);
+    expect(wallet.adjustments.items[0].description).toBe(
+      'Adjusted by superadmin'
+    );
+    expect(wallet.adjustments.items[0].mutatedBy.id).toBe('T_1');
   });
 
   it("Should debit a wallet's balance", async () => {
@@ -182,9 +186,9 @@ describe('Wallets and Adjustments', () => {
       },
     });
     expect(wallet.balance).toBe(30);
-    expect(wallet.adjustments.length).toBe(2);
-    expect(wallet.adjustments[0].amount).toBe(100);
-    expect(wallet.adjustments[1].amount).toBe(-70);
+    expect(wallet.adjustments.items.length).toBe(2);
+    expect(wallet.adjustments.items[0].amount).toBe(100);
+    expect(wallet.adjustments.items[1].amount).toBe(-70);
   });
 
   it('Should rollback wallet update when adjustment creation fails', async () => {
@@ -196,7 +200,7 @@ describe('Wallets and Adjustments', () => {
       }
     );
     expect(walletBefore.balance).toBe(30);
-    expect(walletBefore.adjustments.length).toBe(2);
+    expect(walletBefore.adjustments.items.length).toBe(2);
     await expect(
       adminClient.query<
         { adjustBalanceForWallet: Wallet },
@@ -218,9 +222,9 @@ describe('Wallets and Adjustments', () => {
       }
     );
     expect(walletAfter.balance).toBe(30);
-    expect(walletAfter.adjustments.length).toBe(2);
-    expect(walletAfter.adjustments[0].amount).toBe(100);
-    expect(walletAfter.adjustments[1].amount).toBe(-70);
+    expect(walletAfter.adjustments.items.length).toBe(2);
+    expect(walletAfter.adjustments.items[0].amount).toBe(100);
+    expect(walletAfter.adjustments.items[1].amount).toBe(-70);
   });
 
   it('Should apply 200+ sequential credits/debits and keep adjustments consistent', async () => {
@@ -240,7 +244,7 @@ describe('Wallets and Adjustments', () => {
       id: walletId,
     });
 
-    const adjustments = [...wallet.adjustments].sort(
+    const adjustments = [...wallet.adjustments.items].sort(
       (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)
     );
 
@@ -257,6 +261,26 @@ describe('Wallets and Adjustments', () => {
     const previousBalance = wallet.balance - deltaFromAdjustments;
     expect(wallet.balance).toBe(previousBalance + expectedDelta);
   }, 30_000);
+
+  it('Should return a paginated list of wallet adjustments when valid limit and offset parameters are provided', async () => {
+    const walletId = 1;
+
+    const N = 200;
+    const take = 13;
+    const skip = 14;
+
+    const { wallet } = await adminClient.query(GET_WALLET_WITH_ADJUSTMENTS, {
+      id: walletId,
+      options: {
+        take,
+        skip,
+      },
+    });
+    expect(wallet.adjustments.totalItems).toBeGreaterThanOrEqual(N);
+    expect(wallet.adjustments.items.length).toBe(take);
+    // First item in this page is the (skip+1)th adjustment overall
+    expect(wallet.adjustments.items.length).toBeGreaterThanOrEqual(1);
+  });
 });
 
 describe('Order with store credit payment', () => {
@@ -314,7 +338,7 @@ describe('Order with store credit payment', () => {
     );
     expect(walletAfter.balance).toBe(walletBefore.balance - 100_000);
     const lastAdjustment =
-      walletAfter.adjustments[walletAfter.adjustments.length - 1];
+      walletAfter.adjustments.items[walletAfter.adjustments.items.length - 1];
     expect(lastAdjustment.description).toBe(`Paid for order ${order.code}`);
     expect(lastAdjustment.amount).toBe(-100_000);
   });
@@ -345,7 +369,7 @@ describe('Order with store credit payment', () => {
     // Expect the new balance to be the old balance minus the amount paid
     expect(walletAfter.balance).toBe(walletBefore.balance - leftToPay);
     const lastAdjustment =
-      walletAfter.adjustments[walletAfter.adjustments.length - 1];
+      walletAfter.adjustments.items[walletAfter.adjustments.items.length - 1];
     expect(lastAdjustment.description).toBe(`Paid for order ${order.code}`);
     expect(lastAdjustment.amount).toBe(-leftToPay);
     expect(lastAdjustment.mutatedBy.id).toBe('T_2');
@@ -544,35 +568,37 @@ describe('Refunding Order', () => {
   });
 
   it('Fails to refund when wallet currency does not match order currency', async () => {
-    const promise = adminClient.query<
-      { refundPaymentToStoreCredit: WalletAdjustment },
-      MutationRefundPaymentToStoreCreditArgs
-    >(REFUND_PAYMENT_TO_STORE_CREDIT, {
-      input: {
-        paymentId: 6,
-        amount: 1234,
-        reason: 'Product Damaged',
-        walletId: walletWithEuroCurrency.id,
-      },
-    });
-    expect(promise).rejects.toThrow(
+    await expect(
+      adminClient.query<
+        { refundPaymentToStoreCredit: WalletAdjustment },
+        MutationRefundPaymentToStoreCreditArgs
+      >(REFUND_PAYMENT_TO_STORE_CREDIT, {
+        input: {
+          paymentId: paymentToRefund.id,
+          amount: 1234,
+          reason: 'Product Damaged',
+          walletId: walletWithEuroCurrency.id,
+        },
+      })
+    ).rejects.toThrow(
       "Wallet currency 'EUR' does not match order currency 'USD'. Can not refund payment to this wallet."
     );
   });
 
   it('Fails to refund when refunding more than the payment amount', async () => {
-    const promise = adminClient.query<
-      { refundPaymentToStoreCredit: WalletAdjustment },
-      MutationRefundPaymentToStoreCreditArgs
-    >(REFUND_PAYMENT_TO_STORE_CREDIT, {
-      input: {
-        paymentId: paymentToRefund.id,
-        amount: paymentToRefund.amount + 99, // More than the payment, should fail
-        reason: 'Product Damaged',
-        walletId: refundWallet.id,
-      },
-    });
-    expect(promise).rejects.toThrow(
+    await expect(
+      adminClient.query<
+        { refundPaymentToStoreCredit: WalletAdjustment },
+        MutationRefundPaymentToStoreCreditArgs
+      >(REFUND_PAYMENT_TO_STORE_CREDIT, {
+        input: {
+          paymentId: paymentToRefund.id,
+          amount: paymentToRefund.amount + 99, // More than the payment, should fail
+          reason: 'Product Damaged',
+          walletId: refundWallet.id,
+        },
+      })
+    ).rejects.toThrow(
       'Refund amount 492239 is greater than payment amount 492140'
     );
   });
@@ -604,9 +630,9 @@ describe('Refunding Order', () => {
       { id: refundWallet.id }
     );
     expect(walletAfter.balance).toBe(492140);
-    expect(walletAfter.adjustments.length).toBe(1);
-    expect(walletAfter.adjustments[0].amount).toBe(492140);
-    expect(walletAfter.adjustments[0].description).toContain(
+    expect(walletAfter.adjustments.items.length).toBe(1);
+    expect(walletAfter.adjustments.items[0].amount).toBe(492140);
+    expect(walletAfter.adjustments.items[0].description).toContain(
       `Refund for order ${orderToRefund.code}: Product Damaged`
     );
   });
@@ -643,7 +669,9 @@ describe('Refunding Order', () => {
       `,
       { id: orderToRefund.id }
     );
-    const refund = order.payments[0].refunds[0];
+    const payment = order.payments.find((p) => p.id === paymentToRefund.id);
+    const refund = payment?.refunds?.[0];
+    expect(refund).toBeDefined();
     expect(refund).toMatchObject({
       total: 492140,
       reason: 'Product Damaged',

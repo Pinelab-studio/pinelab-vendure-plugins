@@ -9,6 +9,7 @@ import {
 import {
   CustomValue,
   FulfillmentOrderInput,
+  FulfillmentOrderLineInput,
   FulfillmentProductInput,
 } from './lib/client-types';
 
@@ -84,9 +85,18 @@ export interface QlsPluginOptions {
   ) => FulfillmentOrderInput['receiver_contact'] | undefined;
   /**
    * Admin UI tab name where the QLS Product ID custom field is shown on ProductVariant.
+   * `null` will show the custom field on the default tab.
    * Defaults to 'QLS'.
    */
-  qlsProductIdUiTab?: string;
+  qlsProductIdUiTab?: string | null;
+  /**
+   * Additional order items to add to the QLS order.
+   */
+  addAdditionalOrderItems?: (
+    ctx: RequestContext,
+    injector: Injector,
+    order: Order
+  ) => FulfillmentOrderLineInput[] | Promise<FulfillmentOrderLineInput[]>;
 }
 
 /**

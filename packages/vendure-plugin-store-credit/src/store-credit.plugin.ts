@@ -23,5 +23,6 @@ import { storeCreditPaymentHandler } from './config/payment-method-handler';
     config.paymentOptions.paymentMethodHandlers.push(storeCreditPaymentHandler);
     return config;
   },
+  dashboard: './dashboard/index.tsx',
 })
 export class StoreCreditPlugin {}

@@ -9,8 +9,12 @@ import {
   ID,
 } from '@vendure/core';
 import { Wallet } from '../entities/wallet.entity';
-import { CustomerWalletsArgs } from './generated/graphql';
+import {
+  CustomerWalletsArgs,
+  WalletAdjustmentsArgs,
+} from './generated/graphql';
 import { WalletService } from '../services/wallet.service';
+import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 
 @Resolver()
 export class CommonResolver {
@@ -27,6 +31,23 @@ export class CommonResolver {
     return this.walletService.findAll(
       ctx,
       customer.id,
+      args.options || undefined,
+      relations
+    );
+  }
+
+  @ResolveField('adjustments')
+  @Resolver('Wallet')
+  async adjustments(
+    @Ctx() ctx: RequestContext,
+    @Args() args: WalletAdjustmentsArgs,
+    @Relations({ entity: WalletAdjustment })
+    relations: RelationPaths<WalletAdjustment>,
+    @Parent() wallet: Wallet
+  ): Promise<PaginatedList<WalletAdjustment>> {
+    return this.walletService.findAdjustmentsForWallet(
+      ctx,
+      wallet.id,
       args.options || undefined,
       relations
     );
