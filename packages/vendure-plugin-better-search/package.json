@@ -23,7 +23,7 @@
     "benchmark": "ts-node test/benchmark/benchmark.ts",
     "serve": "nodemon --exec ts-node --swc test/dev-server.ts",
     "generate": "graphql-codegen",
-    "test": "vitest run --bail 1",
+    "test": "vitest run",
     "lint": "eslint ."
   },
   "dependencies": {

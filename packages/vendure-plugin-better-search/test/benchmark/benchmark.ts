@@ -40,9 +40,7 @@ import { DummyEngine } from './dummy-engine';
       shopApiPlayground: {},
     },
     plugins: [
-      BetterSearchPlugin.init({
-        searchStrategy: new DummyEngine(),
-      }),
+      BetterSearchPlugin.init({}),
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,

@@ -17,7 +17,6 @@ interface SearchResponse {
   totalItems: number;
   items: Array<{ slug: string; productName: string }>;
 }
-import { searchConfig } from './search-config';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -27,7 +26,7 @@ beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [BetterSearchPlugin.init(searchConfig)],
+    plugins: [BetterSearchPlugin.init({})],
   });
 
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
@@ -46,13 +45,6 @@ it('Started the server', () => {
 });
 
 describe('Relevance', () => {
-  async function search(query: string) {
-    const result = await shopClient.query(SEARCH_QUERY, {
-      input: { term: query },
-    });
-    return (result as { betterSearch: SearchResponse }).betterSearch;
-  }
-
   /**
    * Searching for "apple" should not blindly reward documents that repeat the word "apple" many times.
    * A product like "Apple Banana Orange" that uses the term once in a richer context
@@ -203,6 +195,49 @@ describe('Relevance', () => {
     expect(d2, 'running-shoes-nike-repeated should rank second').toBe(1);
     expect(d3, 'shoes-for-running should rank third').toBe(2);
   });
+
+  /**
+   * Search should be case insensitive: "APPLE" and "apple" should return the same
+   * relevant results so users are not penalized for caps or caps lock.
+   */
+  it('is case insensitive (query: "APPLE")', async () => {
+    const { items } = await search('APPLE');
+    const slugs = items.map((i) => i.slug);
+    expect(slugs).toContain('apple');
+    expect(slugs).toContain('apple-banana-orange');
+    expect(slugs).toContain('apple-repeated');
+    expect(
+      slugs.indexOf('apple'),
+      'exact match "Apple" should rank first'
+    ).toBe(0);
+  });
+
+  /**
+   * Plural and singular forms should match: searching "apples" or "shoe" should
+   * find documents that contain "apple" or "shoes", so users find products
+   * without having to guess the exact form.
+   */
+  it('matches plural/singular forms (query: "apples")', async () => {
+    const { items } = await search('apples');
+    const slugs = items.map((i) => i.slug);
+    expect(slugs).toContain('apple');
+    expect(slugs).toContain('apple-banana-orange');
+    expect(slugs).toContain('apple-repeated');
+  });
+
+  /**
+   * Partial word matches improve findability: "wire" should match "Wireless",
+   * "run" should match "Running", so users get results without typing full words.
+   */
+  it('finds results with partial word match (query: "wire")', async () => {
+    const { items } = await search('wire');
+    const slugs = items.map((i) => i.slug);
+    expect(slugs).toContain('wireless-mouse');
+    expect(
+      slugs.indexOf('wireless-mouse'),
+      'concise match should rank first'
+    ).toBe(0);
+  });
 });
 
 describe('Filtering', () => {
@@ -232,3 +267,10 @@ const SEARCH_QUERY = gql`
     }
   }
 `;
+
+async function search(query: string) {
+  const result = await shopClient.query(SEARCH_QUERY, {
+    input: { term: query },
+  });
+  return (result as { betterSearch: SearchResponse }).betterSearch;
+}

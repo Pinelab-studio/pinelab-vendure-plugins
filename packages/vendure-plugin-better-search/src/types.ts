@@ -7,11 +7,6 @@ import { BetterSearchResult } from './api/generated/graphql';
  */
 export interface BetterSearchOptions {
   /**
-   * Map a product to a Search Document.
-   * This is called when creating the index
-   */
-  searchStrategy: SearchEngine<ProductVariant, unknown>;
-  /**
    * The debounce time for index rebuilds.
    *
    * E.g. 5000 means that if a product is updated,
@@ -25,19 +20,19 @@ export interface BetterSearchOptions {
  *
  * FIXME: this is just temporary, to test different engines and algorithms.
  */
-export interface SearchEngine<Document extends ProductVariant, SearchIndex> {
+export interface SearchEngine {
   /**
-   * Injector is passed to enrich documents with additional data if needed.
+   * Function that creates the index based on given documents.
+   * Should return a serialized version of the index.
    */
   createIndex: (
     ctx: RequestContext,
-    documents: Document[],
-    injector: Injector
-  ) => Promise<SearchIndex>;
+    documents: ProductVariant[]
+  ) => Promise<unknown>;
 
   search(
     ctx: RequestContext,
-    searchIndex: SearchIndex,
+    searchIndex: any,
     term: string
   ): Promise<BetterSearchResult[]>;
 }

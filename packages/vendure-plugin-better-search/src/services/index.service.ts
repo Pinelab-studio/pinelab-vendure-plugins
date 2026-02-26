@@ -22,7 +22,7 @@ import {
   TransactionalConnection,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
+import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
 import { BetterSearchOptions } from '../types';
 
 @Injectable()
@@ -139,10 +139,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       });
       allProducts.push(...products);
     }
-    const searchIndex = await this.options.searchStrategy.createIndex(
+    const searchIndex = await engine.createIndex(
       ctx,
-      allProducts.flatMap((p) => p.variants as ProductVariant[]),
-      this.moduleRef.get(Injector)
+      allProducts.flatMap((p) => p.variants as ProductVariant[])
     );
     this.cachedIndices.set(
       `${ctx.channel.token}-${ctx.languageCode}`,

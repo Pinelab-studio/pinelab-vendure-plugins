@@ -6,9 +6,7 @@ type DummySearchIndex = {
   name: string;
 };
 
-export class DummyEngine
-  implements SearchEngine<ProductVariant, DummySearchIndex>
-{
+export class DummyEngine implements SearchEngine {
   async createIndex(ctx: RequestContext, documents: ProductVariant[]) {
     return {
       id: '1',

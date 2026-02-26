@@ -10,12 +10,13 @@ This plug is meant for small to medium sized shops with up to ~10000 variants.
 
 1. Performant in-memory search, without affecting customer-facing API calls.
 2. Provide relevant, type-tolerant (fuzzy matching) search results, while still meeting goal 1
-3. Extensible with custom fields and custom field weighting.
 
 ### Requirements
 
 - [ ] Provide relevant, type-tolerant (fuzzy matching) search results
 - [ ] Performant in-memory search, without affecting customer-facing API calls (without blocking the node event loop) **without sacrificing relevance**
+- [ ] Allow indexing custom fields, and return them in the search results.
+- Allow boosting specific fields and specific documents in the result set.
 - [ ] Must be configurable: After researching relevance, it became clear relevance is not only technical but also domain-specific. Consumers of the plugin should be able to **boost specific fields**, as well as **boosting or deboosting specific documents** in the result set.
 - [ ] Include search analytics so that relevance can be tuned based on live customer data. This is crucial for relevance tuning.
 
@@ -27,6 +28,7 @@ This plug is meant for small to medium sized shops with up to ~10000 variants.
    - Orama, similar to MiniSearch, but allows custom algorithm settings
    - Flexsearch, because it is the most performant, but needs custom algorithms for better relevance
 3. Take the best-performing solution, and test for performance in sandboxed environment. (See below for more details.)
+4. Implement filtering by facets and collections, so the algorithm can be used as Vendure search plugin. If that is not possible, move the the next candidate to the next phase.
 
 ## Performance Benchmarks
 
