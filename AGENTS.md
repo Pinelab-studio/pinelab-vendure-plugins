@@ -3,11 +3,13 @@ IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) o
 ## General
 
 - Always run `nvm use 24` before any terminal session or command. Run `nvm install 24` if you don't have Node.js 24 installed.
-- When asked to make changes or write code, validate your changes by running `npx lint`.
 - This is a monorepo managed with Yarn workspaces and Lerna (`packages/*`). Each plugin lives under `packages/vendure-plugin-<name>`.
-- Package names are scoped under `@pinelab/`, e.g. `@pinelab/vendure-plugin-invoices`. The full list of scopes is in the root `package.json` under `commitlint`. Any dev dependencies should be installed in the root `package.json` under `devDependencies`. Any plugin specific dependencies should be installed in the plugin's `package.json` under `dependencies`.
+- Any dev dependencies should be installed in the root `package.json` under `devDependencies`. Any plugin specific dependencies should be installed in the plugin's `package.json` under `dependencies`.
 - Use the Vendure Docs MCP `search_docs` to search for any Vendure related tasks. Prompt the developer to install the Vendure Docs MCP if not available: https://docs.vendure.io/how-to-use
 - Always prefer built-in or ready-made config, strategies, services, React components, etc. supplied by Vendure over creating new custom code, even if that means sacrificing some functionality.
+- Add JS doc comments on functions if the name is not descriptive.
+  - Example where JS doc is needed: `processJobData(data)`.
+  - Example where JS doc is not needed: `saveAsset(asset: Asset)`.
 
 ## Vendure Backend
 
