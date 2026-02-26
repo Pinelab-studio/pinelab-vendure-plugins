@@ -1,6 +1,6 @@
 name,slug,description,assets,facets,optionGroups,optionValues,sku,price,taxCategory,stockOnHand,trackInventory,variantAssets,variantFacets
 Apple,apple,"Apple.",,category:food,,,"TFSAT01",3.00,standard,100,false,,
-Apple Apple Apple Apple Apple,apple-repeated,"Apple apple apple apple apple.",,category:food,,,"TFSAT02",3.00,standard,100,false,,
+Bad Apple Apple Apple Bad Apple,apple-repeated,"This document contains a lot of apple apple apple apples. This is not good apple apple apple apple apple.",,category:food,,,"TFSAT02",3.00,standard,100,false,,
 Apple Banana Orange,apple-banana-orange,"A mix of fruits including apple banana and orange.",,category:food,,,"TFSAT03",5.00,standard,100,false,,
 Wireless Mouse,wireless-mouse,"Wireless Mouse.",,category:electronics,,,"LN01",29.00,standard,100,false,,
 Wireless Mouse with USB Receiver,wireless-mouse-usb,"A wireless mouse with USB receiver.",,category:electronics,,,"LN02",34.00,standard,100,false,,
