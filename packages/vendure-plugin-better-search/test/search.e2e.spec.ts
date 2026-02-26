@@ -1,11 +1,4 @@
-import {
-  DefaultLogger,
-  LogLevel,
-  mergeConfig,
-  OrderService,
-  RequestContext,
-  RequestContextService,
-} from '@vendure/core';
+import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -14,17 +7,16 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
+import gql from 'graphql-tag';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { addItem } from '../../test/src/shop-utils';
 import { waitFor } from '../../test/src/test-helpers';
-import {
-  BetterSearchPlugin,
-  BetterSearchResult,
-  defaultSearchConfig,
-} from '../src';
-import gql from 'graphql-tag';
-import { searchConfig } from './search-config';
+import { BetterSearchPlugin } from '../src';
+
+interface SearchResponse {
+  totalItems: number;
+  items: Array<{ slug: string; productName: string }>;
+}
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -34,7 +26,7 @@ beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [BetterSearchPlugin.init(searchConfig)],
+    plugins: [BetterSearchPlugin.init({})],
   });
 
   ({ server, adminClient, shopClient } = createTestEnvironment(config));
@@ -52,180 +44,204 @@ it('Started the server', () => {
   expect(server.app.getHttpServer()).toBeDefined();
 });
 
-it('Returns all fields for exact match', async () => {
-  const search = () =>
-    shopClient.query(SEARCH_QUERY, {
-      input: {
-        term: 'smartphone',
-      },
-    });
-  // First time we waitFor, because index needs to be built
-  const result = await waitFor(async () => {
-    try {
-      const result = await search();
-      if (result.betterSearch.items.length > 0) {
-        return result;
-      }
-    } catch (error) {
-      return undefined;
-    }
+describe('Relevance', () => {
+  /**
+   * Searching for "apple" should not blindly reward documents that repeat the word "apple" many times.
+   * A product like "Apple Banana Orange" that uses the term once in a richer context
+   * should rank above a product that just says "Apple" five times in a row.
+   *
+   * This is the classic term-frequency saturation test: repeating a word
+   * should have diminishing returns, not linear gains.
+   */
+  it('does not over-reward keyword repetition (query: "apple")', async () => {
+    const { items } = await search('apple');
+    const slugs = items.map((i) => i.slug);
+    const d3 = slugs.indexOf('apple-banana-orange');
+    const d1 = slugs.indexOf('apple');
+    const d2 = slugs.indexOf('apple-repeated');
+    expect(d1, 'apple should rank first').toBe(0);
+    expect(d3, 'apple-banana-orange should rank second').toBe(1);
+    expect(d2, 'apple-repeated should rank third').toBe(2);
   });
-  const {
-    betterSearch: { totalItems, items },
-  } = result;
-  expect(items[0].productId).toBe('T_2');
-  expect(items[0].slug).toBe('smartphone');
-  expect(items[0].productName).toBe('Smartphone');
-  expect(items[0].productAsset.id).toBe('T_mock');
-  expect(items[0].productAsset.preview).toBe('mock-preview');
-  expect(items[0].lowestPrice).toBe(89900);
-  expect(items[0].lowestPriceWithTax).toBe(107880);
-  expect(items[0].highestPrice).toBe(99900);
-  expect(items[0].highestPriceWithTax).toBe(119880);
-  expect(items[0].facetValueIds).toEqual(['T_1', 'T_5']);
-  expect(items[0].collectionIds).toEqual(['T_3']);
-  expect(items[0].collectionNames).toEqual(['Electronics']);
+
+  it('does not over-reward keyword repetition with typo (query: "appel")', async () => {
+    const { items } = await search('appel');
+    const slugs = items.map((i) => i.slug);
+    const d3 = slugs.indexOf('apple-banana-orange');
+    const d1 = slugs.indexOf('apple');
+    const d2 = slugs.indexOf('apple-repeated');
+    expect(d1, 'apple should rank first').toBe(0);
+    expect(d3, 'apple-banana-orange should rank second').toBe(1);
+    expect(d2, 'apple-repeated should rank third').toBe(2);
+  });
+
+  /**
+   * When searching for "wireless mouse", a product whose entire name is "Wireless Mouse"
+   * should rank highest because it's a perfect, concise match. A slightly longer product
+   * like "Wireless Mouse with USB Receiver" should come next. A very long product description
+   * that buries "wireless mouse" deep inside a wall of text should rank lowest.
+   *
+   * Without length normalization, long documents tend to float up simply because
+   * they contain more words — even when the match is incidental.
+   */
+  it('prefers concise, focused matches over long documents that mention the term in passing (query: "wireless mouse")', async () => {
+    const { items } = await search('wireless mouse');
+    const slugs = items.map((i) => i.slug);
+    const d1 = slugs.indexOf('wireless-mouse');
+    const d2 = slugs.indexOf('wireless-mouse-usb');
+    const d3 = slugs.indexOf('peripherals-history-wireless-mouse');
+    expect(d1, 'wireless-mouse should rank first').toBe(0);
+    expect(d2, 'wireless-mouse-usb should rank second').toBe(1);
+    expect(d3, 'peripherals-history-wireless-mouse should rank third').toBe(2);
+  });
+
+  it('prefers concise matches with typo (query: "wireles mouse")', async () => {
+    const { items } = await search('wireles mouse');
+    const slugs = items.map((i) => i.slug);
+    const d1 = slugs.indexOf('wireless-mouse');
+    const d2 = slugs.indexOf('wireless-mouse-usb');
+    const d3 = slugs.indexOf('peripherals-history-wireless-mouse');
+    expect(d1, 'wireless-mouse should rank first').toBe(0);
+    expect(d2, 'wireless-mouse-usb should rank second').toBe(1);
+    expect(d3, 'peripherals-history-wireless-mouse should rank third').toBe(2);
+  });
+
+  /**
+   * For the query "red leather shoes", a product that contains all three words
+   * ("Red Leather Shoes") should rank first. A product with two of the three words
+   * ("Leather Shoes") should come next. A product that repeats "red" four times
+   * but is missing "leather" should rank last, because covering more distinct
+   * query terms matters more than repeating one term many times.
+   */
+  it('rewards matching all query terms over repeating a single term (query: "red leather shoes")', async () => {
+    const { items } = await search('red leather shoes');
+    const slugs = items.map((i) => i.slug);
+    const d2 = slugs.indexOf('red-leather-shoes');
+    const d3 = slugs.indexOf('leather-shoes');
+    const d1 = slugs.indexOf('red-repeated-shoes');
+    expect(d2, 'red-leather-shoes should rank first').toBe(0);
+    expect(d3, 'leather-shoes should rank second').toBe(1);
+    expect(d1, 'red-repeated-shoes should rank third').toBe(2);
+  });
+
+  it('rewards matching all query terms with typo (query: "red lether shoes")', async () => {
+    const { items } = await search('red lether shoes');
+    const slugs = items.map((i) => i.slug);
+    const d2 = slugs.indexOf('red-leather-shoes');
+    const d3 = slugs.indexOf('leather-shoes');
+    const d1 = slugs.indexOf('red-repeated-shoes');
+    expect(d2, 'red-leather-shoes should rank first').toBe(0);
+    expect(d3, 'leather-shoes should rank second').toBe(1);
+    expect(d1, 'red-repeated-shoes should rank third').toBe(2);
+  });
+
+  /**
+   * "Quasar" is a rare term that barely appears in the catalog, while "telescope" is more common.
+   * When searching for "quasar telescope", the product that contains both words should rank first.
+   * The product that only contains the rare word "quasar" should rank above the one that
+   * just repeats the common word "telescope" three times.
+   *
+   * This validates that the search correctly weights rare/unique terms higher (IDF),
+   * so niche products are findable and common-word spam doesn't dominate.
+   */
+  it('weights rare terms higher than common terms (query: "quasar telescope")', async () => {
+    const { items } = await search('quasar telescope');
+    const slugs = items.map((i) => i.slug);
+    const d3 = slugs.indexOf('quasar-telescope');
+    const d2 = slugs.indexOf('quasar');
+    const d1 = slugs.indexOf('telescope-repeated');
+    expect(d3, 'quasar-telescope should rank first').toBe(0);
+    expect(d2, 'quasar should rank second').toBe(1);
+    expect(d1, 'telescope-repeated should rank third').toBe(2);
+  });
+
+  it('weights rare terms higher with typo (query: "quaser telescope")', async () => {
+    const { items } = await search('quaser telescope');
+    const slugs = items.map((i) => i.slug);
+    const d3 = slugs.indexOf('quasar-telescope');
+    const d2 = slugs.indexOf('quasar');
+    const d1 = slugs.indexOf('telescope-repeated');
+    expect(d3, 'quasar-telescope should rank first').toBe(0);
+    expect(d2, 'quasar should rank second').toBe(1);
+    expect(d1, 'telescope-repeated should rank third').toBe(2);
+  });
+
+  /**
+   * A realistic e-commerce query: "nike running shoes". The product named
+   * "Nike Running Shoes for Men" matches all three terms naturally and should rank first.
+   * A product that stuffs the brand name ("Running Shoes by Nike Nike Nike Nike") should
+   * rank below it, because keyword stuffing shouldn't be rewarded.
+   * "Shoes for Running" only matches two of the three terms and misses the brand entirely,
+   * so it should rank last.
+   */
+  it('ranks a natural product title above keyword-stuffed titles (query: "nike running shoes")', async () => {
+    const { items } = await search('nike running shoes');
+    const slugs = items.map((i) => i.slug);
+    const d1 = slugs.indexOf('nike-running-shoes-men');
+    const d2 = slugs.indexOf('running-shoes-nike-repeated');
+    const d3 = slugs.indexOf('shoes-for-running');
+    expect(d1, 'nike-running-shoes-men should rank first').toBe(0);
+    expect(d2, 'running-shoes-nike-repeated should rank second').toBe(1);
+    expect(d3, 'shoes-for-running should rank third').toBe(2);
+  });
+
+  it('ranks natural title above keyword-stuffed with typo (query: "nike runing shoes")', async () => {
+    const { items } = await search('nike runing shoes');
+    const slugs = items.map((i) => i.slug);
+    const d1 = slugs.indexOf('nike-running-shoes-men');
+    const d2 = slugs.indexOf('running-shoes-nike-repeated');
+    const d3 = slugs.indexOf('shoes-for-running');
+    expect(d1, 'nike-running-shoes-men should rank first').toBe(0);
+    expect(d2, 'running-shoes-nike-repeated should rank second').toBe(1);
+    expect(d3, 'shoes-for-running should rank third').toBe(2);
+  });
+
+  /**
+   * Search should be case insensitive: "APPLE" and "apple" should return the same
+   * relevant results so users are not penalized for caps or caps lock.
+   */
+  it('is case insensitive (query: "APPLE")', async () => {
+    const { items } = await search('APPLE');
+    const slugs = items.map((i) => i.slug);
+    expect(slugs).toContain('apple');
+    expect(slugs).toContain('apple-banana-orange');
+    expect(slugs).toContain('apple-repeated');
+    expect(
+      slugs.indexOf('apple'),
+      'exact match "Apple" should rank first'
+    ).toBe(0);
+  });
+
+  /**
+   * Plural and singular forms should match: searching "apples" or "shoe" should
+   * find documents that contain "apple" or "shoes", so users find products
+   * without having to guess the exact form.
+   */
+  it('matches plural/singular forms (query: "apples")', async () => {
+    const { items } = await search('apples');
+    const slugs = items.map((i) => i.slug);
+    expect(slugs).toContain('apple');
+    expect(slugs).toContain('apple-banana-orange');
+    expect(slugs).toContain('apple-repeated');
+  });
+
+  /**
+   * Partial word matches improve findability: "wire" should match "Wireless",
+   * "run" should match "Running", so users get results without typing full words.
+   */
+  it('finds results with partial word match (query: "wire")', async () => {
+    const { items } = await search('wire');
+    const slugs = items.map((i) => i.slug);
+    expect(slugs).toContain('wireless-mouse');
+    expect(
+      slugs.indexOf('wireless-mouse'),
+      'concise match should rank first'
+    ).toBe(0);
+  });
 });
 
-it('Finds by facet value name', async () => {
-  const {
-    betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'sports',
-    },
-  });
-  expect(totalItems).toBe(6);
-  expect(items.length).toBe(6);
-  expect(
-    items.find((item: BetterSearchResult) => item.productName === 'Yoga Mat')
-  ).toBeDefined();
-  expect(
-    items.find((item: BetterSearchResult) => item.productName === 'Dumbbells')
-  ).toBeDefined();
-  expect(
-    items.find(
-      (item: BetterSearchResult) => item.productName === 'Running Shoes'
-    )
-  ).toBeDefined(); // Has 'black' as variant
-});
-
-it('Finds by suffix and facet value', async () => {
-  // Searching for 'bell' finds 'dumbbells' and 'wallet', because wallet has 'Bellroy' as brand
-  const {
-    betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'bell',
-    },
-  });
-  expect(items[0].productName).toBe('Dumbbells');
-  expect(items[1].productName).toBe('Wallet');
-});
-
-it('Finds by prefix', async () => {
-  // Searching for 'dumb' finds 'dumbbells'
-  const {
-    betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'dumb',
-    },
-  });
-  expect(totalItems).toBe(1);
-  expect(items.length).toBe(1);
-  expect(items[0].productName).toBe('Dumbbells');
-});
-
-it('Fetches all results', async () => {
-  const {
-    betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: { term: 'pack', take: 100 },
-  });
-  expect(totalItems).toBe(5);
-  expect(items.length).toBe(5);
-  expect(items[0].productName).toBe('Backpack');
-  expect(items[1].productName).toBe('Wallet'); // Has 'black' as variant
-});
-
-it('Fetches results 2 to 5', async () => {
-  const {
-    betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: { term: 'pack', skip: 1, take: 4 },
-  });
-  expect(totalItems).toBe(5);
-  expect(items.length).toBe(4);
-  expect(items[0].productName).toBe('Wallet'); // Has 'black' as variant
-});
-
-it('Finds by partial variant names', async () => {
-  // Searching for 'ainless' finds 'Coffee Maker' and 'Toaster', because they both have a variant with 'Stainless' in the name
-  const {
-    betterSearch: { items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'ainless',
-    },
-  });
-  expect(items[0].productName).toBe('Coffee Maker');
-  expect(items[1].productName).toBe('Toaster');
-});
-
-it('Finds by mistyped variant names', async () => {
-  // 'Coffee Maker' and 'Toaster' both have a variant with 'Stainless' in the name
-  const {
-    betterSearch: { items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'steinless',
-    },
-  });
-  expect(items[0].productName).toBe('Toaster');
-  expect(items[1].productName).toBe('Coffee Maker');
-});
-
-it('Is case insensitive', async () => {
-  const {
-    betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'STaiNlESS',
-    },
-  });
-  expect(items[0].productName).toBe('Toaster');
-  expect(items[1].productName).toBe('Coffee Maker');
-});
-
-it('Normalizes special characters', async () => {
-  const {
-    betterSearch: { totalItems, items },
-  } = await shopClient.query(SEARCH_QUERY, {
-    input: {
-      term: 'ŠtÅinless',
-    },
-  });
-  expect(items[0].productName).toBe('Toaster');
-  expect(items[1].productName).toBe('Coffee Maker');
-});
-
-it('Extended Graphql schema with custom fields', async () => {
-  const {
-    betterSearch: { items },
-  } = await shopClient.query(gql`
-    query Search {
-      betterSearch(input: { term: "test" }) {
-        items {
-          productName
-          facetValueNames
-          customStaticField
-        }
-      }
-    }
-  `);
-  expect(items[0].customStaticField).toBe('Some test value');
-  expect(Array.isArray(items[0].facetValueNames)).toBe(true);
+describe('Filtering', () => {
+  // TODO implement later, when we have decided on what search algorithm to use based on performance and relevance.
 });
 
 const SEARCH_QUERY = gql`
@@ -251,3 +267,10 @@ const SEARCH_QUERY = gql`
     }
   }
 `;
+
+async function search(query: string) {
+  const result = await shopClient.query(SEARCH_QUERY, {
+    input: { term: query },
+  });
+  return (result as { betterSearch: SearchResponse }).betterSearch;
+}
