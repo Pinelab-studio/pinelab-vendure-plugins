@@ -3,6 +3,7 @@ import gql from 'graphql-tag';
 export const shopApiExtensions = gql`
   type BetterSearchResult {
     productId: ID!
+    score: Float!
     slug: String!
     productName: String!
     lowestPrice: Float!

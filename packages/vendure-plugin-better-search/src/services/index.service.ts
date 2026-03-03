@@ -24,6 +24,7 @@ import {
 import { asError } from 'catch-unknown';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
 import { BetterSearchOptions } from '../types';
+import { createIndexKey } from './util';
 
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
@@ -96,7 +97,6 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   /**
    * Fetches all products, let the search engine create the index, and saves the index to the database.
-   * Saves the index to the database.
    */
   async buildIndex(ctx: RequestContext): Promise<number> {
     const start = performance.now();
@@ -143,15 +143,34 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       ctx,
       allProducts.flatMap((p) => p.variants as ProductVariant[])
     );
-    this.cachedIndices.set(
-      `${ctx.channel.token}-${ctx.languageCode}`,
-      searchIndex
+    const indexKey = createIndexKey(ctx);
+    this.cachedIndices.set(indexKey, searchIndex);
+    // TODO store in database (documents, or index?)
+    const time = Math.round(performance.now() - start);
+    Logger.info(
+      `Created index for ${indexKey} with ${allProducts.length} products in ${time}ms`,
+      loggerCtx
     );
     return allProducts.length;
   }
 
-  getIndex(ctx: RequestContext): undefined | unknown {
-    return this.cachedIndices.get(`${ctx.channel.token}-${ctx.languageCode}`);
+  /**
+   * Get's the index from cache,
+   */
+  async getIndex(ctx: RequestContext): Promise<unknown> {
+    // TODO get from DB
+    const indexKey = createIndexKey(ctx);
+    let index = this.cachedIndices.get(indexKey);
+    if (!index) {
+      // No index created yet, can be the case after first install of the plugin
+      await this.buildIndex(ctx);
+      // TODO trigger job, never rebuild index in main!
+      index = this.cachedIndices.get(indexKey);
+    }
+    if (!index) {
+      throw new Error(`Index not found for ${indexKey}`);
+    }
+    return index;
   }
 
   /**
@@ -167,9 +186,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
    * Adds index rebuild to the queue, and waits for more events to come in before triggering an index rebuild, for improved performance.
    */
   private async debouncedRebuildIndex(ctx: RequestContext) {
-    const key = `${ctx.channel.token}-${ctx.languageCode}`;
+    const key = createIndexKey(ctx);
     this.rebuildIndicesQueue.set(key, ctx);
-    // Wait for debounce time, so that more rebuilds can be added to the rebuild queue
+    // Wait for debounce time, so that more rebuilds can be added to the rebuild queue and are deduplicated
     await new Promise((resolve) =>
       setTimeout(resolve, this.options.debounceIndexRebuildMs)
     );

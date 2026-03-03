@@ -94,43 +94,6 @@ function variantToDocument(
   };
 }
 
-/**
- * Search returns one hit per variant. We merge by product: one BetterSearchResult
- * per product with min/max prices, combined facet/collection ids and all skus.
- */
-function groupByProduct(hits: MinisearchDocument[]): BetterSearchResult[] {
-  const byProduct = new Map<string, MinisearchDocument[]>();
-  for (const doc of hits) {
-    const list = byProduct.get(doc.productId) ?? [];
-    list.push(doc);
-    byProduct.set(doc.productId, list);
-  }
-  return Array.from(byProduct.entries()).map(([productId, docs]) => {
-    const allPrices = docs.map((d) => d.price);
-    const allPricesWithTax = docs.map((d) => d.priceWithTax);
-    const facetIds = Array.from(new Set(docs.flatMap((d) => d.facetValueIds)));
-    const collIds = Array.from(new Set(docs.flatMap((d) => d.collectionIds)));
-    const collNames = Array.from(
-      new Set(docs.flatMap((d) => d.collectionNames).filter(Boolean))
-    );
-    return {
-      productId,
-      slug: docs[0].slug,
-      productName: docs[0].productName,
-      lowestPrice: allPrices.length > 0 ? Math.min(...allPrices) : 0,
-      lowestPriceWithTax:
-        allPricesWithTax.length > 0 ? Math.min(...allPricesWithTax) : 0,
-      highestPrice: allPrices.length > 0 ? Math.max(...allPrices) : 0,
-      highestPriceWithTax:
-        allPricesWithTax.length > 0 ? Math.max(...allPricesWithTax) : 0,
-      facetValueIds: facetIds,
-      collectionIds: collIds,
-      collectionNames: collNames,
-      skus: docs.map((d) => d.sku).filter(Boolean),
-    };
-  });
-}
-
 export class MinisearchEngine implements SearchEngine {
   async createIndex(ctx: RequestContext, documents: ProductVariant[]) {
     const miniSearch = new MiniSearch<MinisearchDocument>({
@@ -164,11 +127,28 @@ export class MinisearchEngine implements SearchEngine {
     term: string
   ): Promise<BetterSearchResult[]> {
     const miniSearch = searchIndex as MiniSearch<MinisearchDocument>;
-    if (!miniSearch?.search) return [];
-    const hits = miniSearch.search(term, { prefix: true, fuzzy: 0.2 });
-    // MiniSearch returns id + score + stored fields; normalize to MinisearchDocument
-    const docs: MinisearchDocument[] = hits.map((h) => {
-      const x = h as unknown as Record<string, unknown>;
+    if (!miniSearch?.search) {
+      throw new Error('Invalid search index');
+    }
+    const hits = miniSearch.search(term, {
+      prefix: true,
+      fuzzy: 0.3,
+      boostDocument: (documentId, term, storedFields) => {
+        console.log(documentId, term);
+        // Boost if name or slug exactly matches the term
+        if (
+          storedFields?.productName === term ||
+          storedFields?.slug === term ||
+          storedFields?.variantName === term
+        ) {
+          return 1.2;
+        }
+        return 1;
+      },
+    });
+    console.log(JSON.stringify(hits.slice(0, 3), null, 2));
+    const docs: BetterSearchResult[] = hits.map((h) => {
+      const x = h;
       return {
         id: String(x.id),
         productId: String(x.productId ?? ''),
@@ -187,8 +167,14 @@ export class MinisearchEngine implements SearchEngine {
         collectionNames: Array.isArray(x.collectionNames)
           ? (x.collectionNames as string[])
           : [],
+        score: Math.round((x.score ?? 0) * 100) / 100,
+        lowestPrice: Number(x.price ?? 0),
+        lowestPriceWithTax: Number(x.priceWithTax ?? 0),
+        highestPrice: Number(x.price ?? 0),
+        highestPriceWithTax: Number(x.priceWithTax ?? 0),
+        skus: Array.isArray(x.sku) ? (x.sku as string[]) : [],
       };
     });
-    return groupByProduct(docs);
+    return docs;
   }
 }

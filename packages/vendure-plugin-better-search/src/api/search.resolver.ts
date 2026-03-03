@@ -1,7 +1,7 @@
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import { Ctx, RequestContext } from '@vendure/core';
 import { SearchService } from '../services/search.service';
-import { BetterSearchInput, BetterSearchResult } from './generated/graphql';
+import { BetterSearchResult } from './generated/graphql';
 
 @Resolver()
 export class SearchShopResolver {

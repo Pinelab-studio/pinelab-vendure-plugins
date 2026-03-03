@@ -29,6 +29,7 @@ export class SearchService {
       // No search if term is too short
       return [];
     }
-    return engine.search(ctx, this.indexService.getIndex(ctx), term);
+    const index = await this.indexService.getIndex(ctx);
+    return engine.search(ctx, index, term);
   }
 }
