@@ -4,13 +4,14 @@ import {
   OnApplicationBootstrap,
   OnModuleInit,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import {
-  CollectionService,
   EventBus,
-  ID,
+  Injector,
   JobQueue,
   JobQueueService,
   Logger,
+  Product,
   ProductEvent,
   ProductService,
   ProductVariant,
@@ -19,15 +20,11 @@ import {
   RequestContext,
   SerializedRequestContext,
   TransactionalConnection,
-  Translated,
 } from '@vendure/core';
 import { asError } from 'catch-unknown';
-import MiniSearch from 'minisearch';
-import { BETTER_SEARCH_PLUGIN_OPTIONS, loggerCtx } from '../constants';
-import { BetterSearchDocuments } from '../entities/better-search-documents.entity';
-import { BetterSearchConfig } from '../types';
-import { tokenize } from './util';
-import { BetterSearchResult } from '../api/generated/graphql';
+import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
+import { BetterSearchOptions } from '../types';
+import { createIndexKey } from './util';
 
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
@@ -37,15 +34,17 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   private rebuildIndicesQueue = new Map<string, RequestContext>();
 
+  private cachedIndices = new Map<string, unknown>();
+
   constructor(
     private connection: TransactionalConnection,
     @Inject(BETTER_SEARCH_PLUGIN_OPTIONS)
-    private options: BetterSearchConfig,
+    private options: BetterSearchOptions,
     private jobQueueService: JobQueueService,
     private productService: ProductService,
     private productVariantService: ProductVariantService,
     private eventBus: EventBus,
-    private collectionService: CollectionService
+    private moduleRef: ModuleRef
   ) {}
 
   onApplicationBootstrap() {
@@ -79,10 +78,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
         try {
-          const index = await this.buildIndex(ctx);
+          const count = await this.buildIndex(ctx);
           return {
-            processedCount: index.documentCount,
-            message: 'Indexation completed',
+            message: `Indexing of ${count} products completed for channel '${ctx.channel.token}' (${ctx.languageCode})`,
           };
         } catch (e) {
           const error = asError(e);
@@ -98,10 +96,9 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Builds the index for all products for the given channel for the given language.
-   * Saves the index to the database.
+   * Fetches all products, let the search engine create the index, and saves the index to the database.
    */
-  async buildIndex(ctx: RequestContext): Promise<MiniSearch> {
+  async buildIndex(ctx: RequestContext): Promise<number> {
     const start = performance.now();
     Logger.info(
       `Rebuilding index for channel '${ctx.channel.token} (${ctx.languageCode})'...`,
@@ -110,20 +107,14 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     // Get all products
     let skip = 0;
     const take = 100;
-    const searchDocuments: BetterSearchResult[] = [];
+    const allProducts: Product[] = [];
     let hasMore = true;
     while (hasMore) {
-      Logger.verbose(
-        `Fetching products from ${skip} to ${skip + take} for '${
-          ctx.channel.token
-        } (${ctx.languageCode})'`,
-        loggerCtx
-      );
       const { items: products } = await this.productService.findAll(
         ctx,
         {
-          skip: skip,
-          take: take,
+          skip,
+          take,
           filter: {
             deletedAt: {
               isNull: true,
@@ -133,58 +124,53 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
             },
           },
         },
-        ['featuredAsset', 'facetValues.translations']
+        // FIXME we might need to optimize this, instead of too many joins
+        ['featuredAsset', 'facetValues.translations', 'variants.collections']
       );
       skip += take;
       if (products.length < take) {
         hasMore = false;
       }
-      // Build search documents for these products
-      const indexableProducts: BetterSearchResult[] = await Promise.all(
-        products.map(async (p) => {
-          const collections =
-            await this.collectionService.getCollectionsByProductId(
-              ctx,
-              p.id,
-              true
-            );
-          // Get variants
-          p.variants = await this.getAllVariantsForProduct(ctx, p.id);
-          return {
-            id: p.id,
-            ...this.options.mapToSearchDocument(p, collections),
-          };
-        })
-      );
-      searchDocuments.push(...indexableProducts);
+      // Set all products on the variant object as well
+      products.forEach((p) => {
+        p.variants.forEach((v) => {
+          v.product = p;
+        });
+      });
+      allProducts.push(...products);
     }
-    const minisearch = this.createMiniSearch(searchDocuments);
-    // Persist index in DB
-    await this.connection.getRepository(ctx, BetterSearchDocuments).save({
-      id: `${ctx.channel.token}-${ctx.languageCode}`,
-      data: JSON.stringify(searchDocuments),
-    });
-    const durationInS = Math.round((performance.now() - start) / 1000);
+    const searchIndex = await engine.createIndex(
+      ctx,
+      allProducts.flatMap((p) => p.variants as ProductVariant[])
+    );
+    const indexKey = createIndexKey(ctx);
+    this.cachedIndices.set(indexKey, searchIndex);
+    // TODO store in database (documents, or index?)
+    const time = Math.round(performance.now() - start);
     Logger.info(
-      `Index built for channel '${ctx.channel.token} (${ctx.languageCode})' in ${durationInS}s: Indexed ${minisearch.documentCount} products.`,
+      `Created index for ${indexKey} with ${allProducts.length} products in ${time}ms`,
       loggerCtx
     );
-    return minisearch;
+    return allProducts.length;
   }
 
-  async getIndex(ctx: RequestContext): Promise<MiniSearch | undefined> {
-    const searchDocuments = await this.connection
-      .getRepository(ctx, BetterSearchDocuments)
-      .findOne({
-        where: {
-          id: `${ctx.channel.token}-${ctx.languageCode}`,
-        },
-      });
-    if (!searchDocuments) {
-      return undefined;
+  /**
+   * Get's the index from cache,
+   */
+  async getIndex(ctx: RequestContext): Promise<unknown> {
+    // TODO get from DB
+    const indexKey = createIndexKey(ctx);
+    let index = this.cachedIndices.get(indexKey);
+    if (!index) {
+      // No index created yet, can be the case after first install of the plugin
+      await this.buildIndex(ctx);
+      // TODO trigger job, never rebuild index in main!
+      index = this.cachedIndices.get(indexKey);
     }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    return this.createMiniSearch(JSON.parse(searchDocuments.data));
+    if (!index) {
+      throw new Error(`Index not found for ${indexKey}`);
+    }
+    return index;
   }
 
   /**
@@ -197,43 +183,12 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Instantiates a new MiniSearch instance (index) with the given settings for the given indexable products.
-   */
-  private createMiniSearch(documents: BetterSearchResult[]) {
-    const uniqueFieldNames = [
-      ...new Set(documents.flatMap((p) => Object.keys(p))),
-    ];
-    const minisearch = new MiniSearch({
-      // Use suffix terms when indexing
-      tokenize: (term) => tokenize(term, 4),
-      fields: Object.keys(this.options.indexableFields),
-      storeFields: Array.from(uniqueFieldNames),
-      searchOptions: {
-        // Map the config to, for example,  "{ myFieldName: 3}"
-        boost: Object.fromEntries(
-          Object.entries(this.options.indexableFields).map(([key, value]) => [
-            key,
-            value.weight,
-          ])
-        ),
-        fuzzy: this.options.fuzziness,
-        prefix: true,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Use default processTerm when searching
-        processTerm: MiniSearch.getDefault('processTerm'),
-      },
-    });
-    // Add all indexable products to the index
-    minisearch.addAll(documents);
-    return minisearch;
-  }
-
-  /**
-   * Adds index rebuild to the queue, and waits for more events to come in before triggering an index rebuild.
+   * Adds index rebuild to the queue, and waits for more events to come in before triggering an index rebuild, for improved performance.
    */
   private async debouncedRebuildIndex(ctx: RequestContext) {
-    const key = `${ctx.channel.token}-${ctx.languageCode}`;
+    const key = createIndexKey(ctx);
     this.rebuildIndicesQueue.set(key, ctx);
-    // Wait for debounce time, so that more rebuilds can be added to the rebuild queue
+    // Wait for debounce time, so that more rebuilds can be added to the rebuild queue and are deduplicated
     await new Promise((resolve) =>
       setTimeout(resolve, this.options.debounceIndexRebuildMs)
     );
@@ -250,29 +205,5 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     });
     // Clear queue, because we have triggered rebuilds for all channels in the queue
     this.rebuildIndicesQueue.clear();
-  }
-
-  private async getAllVariantsForProduct(
-    ctx: RequestContext,
-    productId: ID
-  ): Promise<Translated<ProductVariant>[]> {
-    const variants: ProductVariant[] = [];
-    let skip = 0;
-    const take = 50;
-    let hasMore = true;
-    while (hasMore) {
-      const result = await this.productVariantService.getVariantsByProductId(
-        ctx,
-        productId,
-        {
-          take,
-          skip,
-        }
-      );
-      variants.push(...result.items);
-      hasMore = result.items.length === take;
-      skip += take;
-    }
-    return variants as Translated<ProductVariant>[];
   }
 }
