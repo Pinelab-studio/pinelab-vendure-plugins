@@ -1,3 +1,7 @@
+# 1.5.1 (2026-02-18)
+
+- Pass error message to `QlsVariantSyncFailedEvent` instead of the error object.
+
 # 1.5.0 (2026-02-18)
 
 - Allow passing additional order items with `addAdditionalOrderItems()` that will be added to the QLS order.

@@ -201,7 +201,12 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           );
           failed.push(variant);
           await this.eventBus.publish(
-            new QlsVariantSyncFailedEvent(ctx, variant, new Date(), e)
+            new QlsVariantSyncFailedEvent(
+              ctx,
+              variant,
+              new Date(),
+              error.message
+            )
           );
           await waitToPreventRateLimit();
         }
@@ -325,7 +330,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         );
         failed.push({ id: variantId });
         await this.eventBus.publish(
-          new QlsVariantSyncFailedEvent(ctx, variant, new Date(), e)
+          new QlsVariantSyncFailedEvent(ctx, variant, new Date(), error.message)
         );
       }
     }
