@@ -207,6 +207,7 @@ export async function cancelOrder(
   >(CancelOrder, {
     input: {
       orderId: orderWithLines.id,
+      cancelShipping: true,
       lines: orderWithLines.lines.map((line) => ({
         orderLineId: line.id,
         quantity: line.quantity,

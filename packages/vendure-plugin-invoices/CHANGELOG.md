@@ -1,3 +1,8 @@
+# 4.5.1 (2026-03-09)
+
+- Fixed `getMostRecentInvoiceForOrder` to return the latest invoice instead of the oldest one.
+- Fixed cancellation regeneration logic: when an order is cancelled but still has a remaining total (for example shipping costs), the plugin now creates a credit invoice and a new invoice, instead of credit-only.
+
 # 4.5.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3

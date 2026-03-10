@@ -329,7 +329,14 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
       return;
     }
-    if (createCreditInvoiceOnly) {
+    const shouldCreateCreditInvoiceOnly =
+      createCreditInvoiceOnly && order.totalWithTax <= 0;
+    if (createCreditInvoiceOnly && !shouldCreateCreditInvoiceOnly) {
+      Logger.info(
+        `Order ${orderCode} still has a remaining amount (${order.totalWithTax}). Creating credit invoice and new invoice instead of credit-only.`,
+        loggerCtx
+      );
+    } else if (shouldCreateCreditInvoiceOnly) {
       Logger.info(
         `Creating credit invoice only for order ${orderCode}`,
         loggerCtx
@@ -351,7 +358,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         config.templateString!,
         previousInvoiceForOrder
       );
-      if (createCreditInvoiceOnly) {
+      if (shouldCreateCreditInvoiceOnly) {
         // Don't generate normal invoice, so we emit an event now and return
         await this.eventBus.publish(
           new InvoiceCreatedEvent({
@@ -702,7 +709,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (!invoices.length) {
       return undefined;
     }
-    return invoices[invoices.length - 1];
+    return invoices[0];
   }
 
   /**
