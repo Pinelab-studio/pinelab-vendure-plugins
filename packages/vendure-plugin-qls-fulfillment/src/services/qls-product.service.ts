@@ -426,6 +426,21 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
       );
       return 'not-changed';
     }
+    if (!variant.enabled || !variant.product?.enabled) {
+      const disabledEntity = !variant.enabled ? 'Variant' : 'Product';
+      if (existingProduct) {
+        Logger.warn(
+          `${disabledEntity} '${variant.sku}' is disabled but exists in QLS (product ID ${existingProduct.id}). Skipping sync.`,
+          loggerCtx
+        );
+      } else {
+        Logger.info(
+          `${disabledEntity} '${variant.sku}' is disabled, skipping sync to QLS.`,
+          loggerCtx
+        );
+      }
+      return 'not-changed';
+    }
     let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
     const { additionalEANs, ...additionalVariantFields } =

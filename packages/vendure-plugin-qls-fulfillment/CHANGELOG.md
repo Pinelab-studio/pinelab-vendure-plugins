@@ -1,3 +1,7 @@
+# 1.6.0 (2026-03-09)
+
+- Skip syncing disabled products/variants to QLS
+
 # 1.5.1 (2026-02-18)
 
 - Pass error message to `QlsVariantSyncFailedEvent` instead of the error object.
