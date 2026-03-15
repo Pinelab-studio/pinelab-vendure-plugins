@@ -251,7 +251,8 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
           locality: order.shippingAddress.city,
           country: order.shippingAddress.countryCode.toUpperCase(),
           email: order.customer.emailAddress,
-          phone: order.customer.phoneNumber,
+          phone:
+            order.shippingAddress.phoneNumber ?? order.customer.phoneNumber,
         },
         products: qlsProducts,
         ...(additionalOrderFields ?? {}),
