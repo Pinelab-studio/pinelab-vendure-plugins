@@ -25,10 +25,17 @@ Provide a simple CMS plugin for Vendure that lets admins define content models a
      - `list`: multiple content blocks can exist for this model (example: blogs, landing pages, FAQs).
    - The plugin must enforce these rules when creating content blocks.
 
-4. **Translatable content**
-   - Content blocks must support translations per Vendure language.
-   - Translatable fields should store values per language and allow fallback behavior where applicable.
-   - The dashboard editor must allow creating/updating content per language.
+4. **Translatable content (Vendure-native)**
+   - Use Vendure's built-in translatable entity pattern:
+     - base entity implements `Translatable`
+     - translation entity implements `Translation<T>`
+     - `translations` relation on the base entity
+   - Use built-in translatable string types for field definitions:
+     - `localeString` for short translatable strings
+     - `localeText` for long translatable text
+   - The plugin must resolve content by requested language with channel default-language fallback behavior.
+   - The dashboard editor must allow creating/updating translations per language.
+   - Do not implement custom translation storage when Vendure translatable primitives cover the use case.
 
 5. **React dashboard listing page**
    - Provide a React dashboard page (using `@vendure/dashboard`) listing all content blocks.
@@ -60,3 +67,7 @@ Provide a simple CMS plugin for Vendure that lets admins define content models a
 
 - Follow Vendure plugin conventions for backend and dashboard extensions.
 - Keep model definitions and content retrieval predictable so storefronts can consume content without custom mapping per request.
+- Plugin entities must support extension via Vendure custom fields:
+  - implement `HasCustomFields` on custom CMS entities
+  - include `customFields` columns on those entities
+  - use `CustomFieldRelationService` in create/update flows for relation custom fields
