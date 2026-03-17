@@ -2,72 +2,156 @@
 
 ## Goal
 
-Provide a simple CMS plugin for Vendure that lets admins define content models and manage content blocks in the dashboard, with content exposed through the Shop API.
+Provide a simple CMS plugin for Vendure that lets admins define content models and manage content entries in the dashboard, with content exposed through the Shop API. This plugin aims to minimize customization and stay close to the core Vendure functionality.
 
 ## Functional requirements
 
-1. **JSON-defined content models**
-   - The plugin must allow content models to be defined in JSON.
-   - A content model defines:
-     - model key / code
-     - display name
-     - mode (`single` or `list`)
-     - field definitions
-   - The JSON format should be stable and versionable so it can be stored in source control.
+Consumers are consumers of the plugin, which are also developers. Administrators are users of the Vendure dashboard.
 
-2. **Reuse built-in Vendure field types**
-   - Field definitions must use existing Vendure-compatible field types where possible (e.g. string, text, int, float, boolean, datetime, relation-like references where supported).
-   - Do not introduce custom field types when a built-in type can satisfy the requirement.
+- Consumers can define custom content types in the plugin config
+- Administrators can view a paginated list of all created content entries
+- Administrators can search content entries by name or type
+- Administrators can create new content entries for for a given content type
+- Administrators can edit existing content entries
+- Content entries are exposed through the Shop API
+- Content entries are channel aware
 
-3. **Single and list content models**
-   - A model can be configured as:
-     - `single`: only one content block can exist for this model (example: homepage).
-     - `list`: multiple content blocks can exist for this model (example: blogs, landing pages, FAQs).
-   - The plugin must enforce these rules when creating content blocks.
+# Implementation
 
-4. **Translatable content (Vendure-native)**
-   - Use Vendure's built-in translatable entity pattern:
-     - base entity implements `Translatable`
-     - translation entity implements `Translation<T>`
-     - `translations` relation on the base entity
-   - Use built-in translatable string types for field definitions:
-     - `localeString` for short translatable strings
-     - `localeText` for long translatable text
-   - The plugin must resolve content by requested language with channel default-language fallback behavior.
-   - The dashboard editor must allow creating/updating translations per language.
-   - Do not implement custom translation storage when Vendure translatable primitives cover the use case.
+## Guidelines
 
-5. **React dashboard listing page**
-   - Provide a React dashboard page (using `@vendure/dashboard`) listing all content blocks.
-   - The listing shows at least:
-     - title / identifier
-     - content model type
-     - updated date
-     - publication or status (if available)
+- Use Vendure's built-in features for custom functionality whenever possible:
+  - Custom Entities: https://docs.vendure.io/current/core/developer-guide/database-entity
+  - Translatable entities: https://docs.vendure.io/current/core/developer-guide/translatable
+  - Channel Awareness: https://docs.vendure.io/current/core/developer-guide/channel-aware
+  - Custom Fields: https://docs.vendure.io/current/core/developer-guide/custom-fields.
+  - Reuse existing React Dashboard components: https://docs.vendure.io/current/core/extending-the-dashboard/custom-form-components/relation-selectors
 
-6. **Content block detail page**
-   - Provide a React dashboard detail page used for both:
-     - creating a new content block
-     - editing an existing content block
-   - The form fields must be rendered from the selected JSON content model.
+## Custom content types
 
-7. **Filter by content model type**
-   - The listing page must support filtering content blocks by content model type.
-   - Filtering must be usable for both `single` and `list` model types.
+The plugin must allow consumers to define custom content types.
+A content type defines:
 
-8. **Expose content through Shop API**
-   - Content blocks must be queryable from the Shop API.
-   - API should support:
-     - fetching by content model key/code
-     - fetching single model content
-     - listing content for list models
-     - language-aware responses for translatable fields
+- code
+- display name
+- allowMultiple: true or false. When true, multiple instances of this content type can be created. When false, only one instance of this content type can be created.
+- fields: an array of fields
 
-## Implementation baseline
+Example:
 
-- Follow Vendure plugin conventions for backend and dashboard extensions.
-- Keep model definitions and content retrieval predictable so storefronts can consume content without custom mapping per request.
-- Plugin entities must support extension via Vendure custom fields:
-  - implement `HasCustomFields` on custom CMS entities
-  - include `customFields` columns on those entities
-  - use `CustomFieldRelationService` in create/update flows for relation custom fields
+```ts
+SimpleCmsPlugin.init({
+  contentTypes: [
+    {
+      code: 'featured_product',
+      displayName: [
+        { languageCode: LanguageCode.en, value: 'Featured Product' },
+      ],
+      allowMultiple: false, // Only one instance of "Featured Product" can be created
+      fields: [
+        {
+          name: 'title',
+          type: 'localeString',
+          label: [{ languageCode: LanguageCode.en, value: 'Title' }],
+        },
+        {
+          name: 'image',
+          type: 'relation',
+          entity: Asset,
+        },
+      ],
+    },
+  ],
+});
+```
+
+Available field types are coming from https://docs.vendure.io/current/core/developer-guide/custom-fields.
+
+## Common GraphQL API Extensions
+
+These are available to both Admin and Shop API.
+
+```graphql
+type ContentEntry {
+  id: ID!
+  code: String!
+  name: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  contentTypeCode: String!
+  fields: JSON!
+}
+
+type ContentEntryList {
+  items: [ContentEntry!]!
+  totalItems: Int!
+}
+
+input ContentEntryListOptions {
+  skip: Int
+  take: Int
+  filter: ContentEntryListFilter
+  filterOperator: LogicalOperator
+  sort: JSON
+}
+
+extend type Query {
+  contentEntries(input: ContentEntryListOptions): ContentEntryList!
+  contentEntry(id: ID!): ContentEntry!
+}
+```
+
+## Admin API extensions
+
+```graphql
+${commonSchemaExtensions}
+
+input ContentEntryInput {
+  code: String!
+  name: String!
+  contentTypeCode: String!
+  fields: JSON!
+}
+
+extend type Mutation {
+  createContentEntry(input: ContentEntryInput): ContentEntry!
+  updateContentEntry(id: ID!, input: ContentEntryInput): ContentEntry!
+  deleteContentEntry(id: ID!): ContentEntry!
+}
+```
+
+The `fields` are appended at runtime based on the custom content type fields. For example if the custom content config is:
+
+```ts
+SimpleCmsPlugin.init({
+  contentTypes: [
+    {
+      code: 'featured_product',
+      displayName: [
+        { languageCode: LanguageCode.en, value: 'Featured Product' },
+      ],
+      allowMultiple: false, // Only one instance of "Featured Product" can be created
+      fields: [
+        {
+          name: 'title',
+          type: 'localeString',
+          label: [{ languageCode: LanguageCode.en, value: 'Title' }],
+        },
+        {
+          name: 'image',
+          type: 'relation',
+          entity: Asset,
+        },
+      ],
+    },
+  ],
+});
+```
+
+## React Dashboard
+
+* The React dashboard will have a menu item "Content" under the "Catalog" section. https://docs.vendure.io/current/core/extending-the-dashboard/extending-overview
+* This menu item will lead to a Content Entry Listing page. On this page admins can search and sort paginated content entries.
+* When an entry from the list is clicked, the admin will be redirected to a Content Entry Detail page. On this page admins can view and edit the content entry.
+* The top of the listing page will have a "create" button.
+* Please reuse as much as possible from the Vendure source code: https://github.com/vendurehq/vendure/tree/master/packages/dashboard. Use the Github MCP to search through the code base.
