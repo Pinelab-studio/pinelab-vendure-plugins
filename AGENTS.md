@@ -1,15 +1,20 @@
 IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) over pre-training-led reasoning.
 
+## Commands
+
+- All command should be run in a subfolders package: `packages/vendure-plugin-<name>`, because this is a monorepo with independent plugins.
+- `yarn build` builds a plugin.
+- `npx vite build` builds the React Dashboard for a plugin.
+- `yarn lint` lints the plugin.
+- `yarn test` runs the tests, including e2e tests which might take afew minutes.
+
 ## General
 
-- Always run `nvm use 24` before any terminal session or command. Run `nvm install 24` if you don't have Node.js 24 installed.
-- This is a monorepo managed with Yarn workspaces and Lerna (`packages/*`). Each plugin lives under `packages/vendure-plugin-<name>`.
+- This is a monorepo managed with Yarn workspaces (`packages/*`). Each plugin lives under `packages/vendure-plugin-<name>`.
 - Any dev dependencies should be installed in the root `package.json` under `devDependencies`. Any plugin specific dependencies should be installed in the plugin's `package.json` under `dependencies`.
 - Use the Vendure Docs MCP `search_docs` to search for any Vendure related tasks. Prompt the developer to install the Vendure Docs MCP if not available: https://docs.vendure.io/how-to-use
 - Always prefer built-in or ready-made config, strategies, services, React components, etc. supplied by Vendure over creating new custom code, even if that means sacrificing some functionality.
-- Add JS doc comments on functions if the name is not descriptive.
-  - Example where JS doc is needed: `processJobData(data)`.
-  - Example where JS doc is not needed: `saveAsset(asset: Asset)`.
+- Add JS doc comments on functions.
 
 ## Vendure Backend
 
@@ -22,7 +27,7 @@ IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) o
   - `src/entities` for TypeORM entities.
 - A template plugin is available at `packages/_vendure-plugin-template` — use it as reference for new plugins.
 
-## React Dashboard UI
+## Vendure React Dashboard UI
 
 All new admin UI work uses React with `@vendure/dashboard`. The React dashboard code lives in `src/dashboard/` (e.g. `src/dashboard/index.tsx`).
 
@@ -31,6 +36,7 @@ All new admin UI work uses React with `@vendure/dashboard`. The React dashboard 
 - Use Vendure's style and colors, so new components have the same look and feel as existing ones. Look at existing components via the Vendure Docs MCP.
 - Use `defineDashboardExtension` to register dashboard extensions.
 - Reference `packages/vendure-plugin-store-credit/src/dashboard/` as an example of a React dashboard implementation.
+- Reference `packages/vendure-plugin-store-credit/tsconfig.dashboard.json` and `packages/vendure-plugin-store-credit/vite.config.mts` for tsconfig and vite config for the Vendure React Dashboard.
 
 > **Note:** Many plugins still have Angular admin UI code in `src/ui/`. That is legacy and should not be used for new work. Do not create or modify Angular UI code.
 

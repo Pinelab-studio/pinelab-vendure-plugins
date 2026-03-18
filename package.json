@@ -115,6 +115,7 @@
           "facet-suggestions",
           "stock-monitoring",
           "stripe-subscription",
+          "simple-cms",
           "variant-bulk-update",
           "vendure-order-client",
           "webhook",
