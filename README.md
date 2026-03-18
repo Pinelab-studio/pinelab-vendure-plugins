@@ -1,5 +1,4 @@
 [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
-[![lerna](https://img.shields.io/badge/maintained%20with-lerna-cc00ff.svg)](https://lerna.js.org/)
 
 # Pinelab Vendure plugins
 
@@ -7,4 +6,4 @@
 
 # Development
 
-Contributions welcome! [Check out our Contribution guidelines](./CONTRIBUTING.md)
+Contributions welcome! [Check out our guide on how to contribute, it's easy!](./CONTRIBUTING.md)
