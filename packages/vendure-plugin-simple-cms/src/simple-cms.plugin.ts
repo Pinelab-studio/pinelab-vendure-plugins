@@ -1,5 +1,6 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
 import { ContentEntry } from './entities/content-entry.entity';
+import { ContentEntryTranslation } from './entities/content-entry-translation.entity';
 import { ContentEntryService } from './services/content-entry.service';
 import {
   adminSchemaExtensions,
@@ -12,7 +13,7 @@ import { SimpleCmsPluginOptions } from './types';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
-  entities: [ContentEntry],
+  entities: [ContentEntry, ContentEntryTranslation],
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,
@@ -32,13 +33,10 @@ import { SimpleCmsPluginOptions } from './types';
   dashboard: './dashboard/index.tsx',
 })
 export class SimpleCmsPlugin {
-  static options: SimpleCmsPluginOptions = {
-    contentTypes: [],
-  };
+  static options: SimpleCmsPluginOptions;
 
   static init(options: SimpleCmsPluginOptions): Type<SimpleCmsPlugin> {
     this.options = {
-      ...this.options,
       ...options,
     };
     return SimpleCmsPlugin;

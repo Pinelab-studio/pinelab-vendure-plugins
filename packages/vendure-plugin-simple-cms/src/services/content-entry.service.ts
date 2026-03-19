@@ -3,6 +3,7 @@ import { unique } from '@vendure/common/lib/unique';
 import {
   ChannelService,
   ID,
+  LanguageCode,
   ListQueryBuilder,
   ListQueryOptions,
   PaginatedList,
@@ -12,12 +13,17 @@ import {
   UserInputError,
 } from '@vendure/core';
 import { ContentEntry } from '../entities/content-entry.entity';
+import { ContentEntryTranslation } from '../entities/content-entry-translation.entity';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { SimpleCmsPluginOptions } from '../types';
+import { ContentTypeDefinition, SimpleCmsPluginOptions } from '../types';
+import {
+  ContentEntryTranslationInput,
+  ContentEntryInput,
+} from '../api/generated/graphql';
 
 @Injectable()
 export class ContentEntryService {
-  private readonly relations = ['channels'];
+  private readonly relations = ['channels', 'translatableFields'];
 
   constructor(
     private readonly connection: TransactionalConnection,
@@ -62,15 +68,11 @@ export class ContentEntryService {
 
   async create(
     ctx: RequestContext,
-    input: {
-      code: string;
-      name: string;
-      contentTypeCode: string;
-      fields: Record<string, unknown>;
-    }
+    input: ContentEntryInput
   ): Promise<ContentEntry> {
-    this.validateContentType(input.contentTypeCode);
+    const contentType = this.getContentType(input.contentTypeCode);
     await this.validateAllowMultiple(ctx, input.contentTypeCode);
+    this.validateFields(contentType, input);
     const entry = new ContentEntry({
       code: input.code,
       name: input.name,
@@ -80,6 +82,7 @@ export class ContentEntryService {
     const savedEntry = await this.connection
       .getRepository(ctx, ContentEntry)
       .save(entry);
+    await this.saveTranslations(ctx, savedEntry, input.translations);
     const defaultChannel = await this.channelService.getDefaultChannel();
     await this.channelService.assignToChannels(
       ctx,
@@ -97,30 +100,34 @@ export class ContentEntryService {
   async update(
     ctx: RequestContext,
     id: ID,
-    input: {
-      code: string;
-      name: string;
-      contentTypeCode: string;
-      fields: Record<string, unknown>;
-    }
+    input: ContentEntryInput
   ): Promise<ContentEntry> {
-    this.validateContentType(input.contentTypeCode);
+    const contentType = this.getContentType(input.contentTypeCode);
     const existing = await this.connection.findOneInChannel(
       ctx,
       ContentEntry,
       id,
-      ctx.channelId
+      ctx.channelId,
+      { relations: ['translatableFields'] }
     );
     if (!existing) {
       throw new UserInputError(
         `ContentEntry with id '${String(id)}' not found`
       );
     }
+    this.validateFields(contentType, input);
     existing.code = input.code;
     existing.name = input.name;
     existing.contentTypeCode = input.contentTypeCode;
     existing.fields = input.fields;
     await this.connection.getRepository(ctx, ContentEntry).save(existing);
+    // Remove old translations and save new ones
+    if (existing.translatableFields?.length) {
+      await this.connection
+        .getRepository(ctx, ContentEntryTranslation)
+        .remove(existing.translatableFields);
+    }
+    await this.saveTranslations(ctx, existing, input.translations);
     const result = await this.findOne(ctx, id);
     if (!result) {
       throw new Error('ContentEntry not found after update');
@@ -143,16 +150,74 @@ export class ContentEntryService {
     await this.connection.getRepository(ctx, ContentEntry).remove(existing);
   }
 
-  private validateContentType(contentTypeCode: string): void {
-    const contentType = this.options.contentTypes.find(
-      (ct) => ct.code === contentTypeCode
-    );
+  /**
+   * Persist translation rows for translatable fields.
+   */
+  private async saveTranslations(
+    ctx: RequestContext,
+    entry: ContentEntry,
+    translations?: ContentEntryTranslationInput[] | null
+  ): Promise<void> {
+    if (!translations?.length) {
+      return;
+    }
+    const repo = this.connection.getRepository(ctx, ContentEntryTranslation);
+    for (const t of translations) {
+      const translation = new ContentEntryTranslation({
+        languageCode: t.languageCode,
+        fields: t.fields,
+        base: entry,
+      });
+      await repo.save(translation);
+    }
+  }
+
+  /**
+   * Returns the content type definition, or throws if not found.
+   */
+  private getContentType(contentTypeCode: string): ContentTypeDefinition {
+    const contentType =
+      this.options.contentTypes[
+        contentTypeCode as keyof typeof this.options.contentTypes
+      ];
     if (!contentType) {
       throw new UserInputError(
-        `Unknown content type '${contentTypeCode}'. Available types: ${this.options.contentTypes
-          .map((ct) => ct.code)
-          .join(', ')}`
+        `Unknown content type '${contentTypeCode}'. Available types: ${Object.keys(
+          this.options.contentTypes
+        ).join(', ')}`
       );
+    }
+    return contentType;
+  }
+
+  /**
+   * Validates that the supplied fields match the content type definition.
+   * Non-translatable fields must be in `input.fields`, translatable fields
+   * must be in `input.translations[].fields`.
+   */
+  private validateFields(
+    contentType: ContentTypeDefinition,
+    input: ContentEntryInput
+  ): void {
+    for (const fieldDef of contentType.fields) {
+      const isTranslatable =
+        fieldDef.type !== 'relation' && fieldDef.isTranslatable;
+      if (isTranslatable) {
+        // Translatable fields should exist in translations, not in top-level fields
+        if (fieldDef.name in (input.fields ?? {})) {
+          throw new UserInputError(
+            `Field '${fieldDef.name}' is translatable and should be provided in 'translations', not in 'fields'`
+          );
+        }
+      } else {
+        // Non-translatable and relation fields live in top-level fields
+        const isNullable = fieldDef.nullable !== false;
+        if (!isNullable && !(fieldDef.name in (input.fields ?? {}))) {
+          throw new UserInputError(
+            `Required field '${fieldDef.name}' is missing from input fields`
+          );
+        }
+      }
     }
   }
 
@@ -163,9 +228,10 @@ export class ContentEntryService {
     ctx: RequestContext,
     contentTypeCode: string
   ): Promise<void> {
-    const contentType = this.options.contentTypes.find(
-      (ct) => ct.code === contentTypeCode
-    );
+    const contentType =
+      this.options.contentTypes[
+        contentTypeCode as keyof typeof this.options.contentTypes
+      ];
     if (!contentType || contentType.allowMultiple) {
       return;
     }

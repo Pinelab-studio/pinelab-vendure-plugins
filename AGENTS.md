@@ -15,6 +15,7 @@ IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) o
 - Use the Vendure Docs MCP `search_docs` to search for any Vendure related tasks. Prompt the developer to install the Vendure Docs MCP if not available: https://docs.vendure.io/how-to-use
 - Always prefer built-in or ready-made config, strategies, services, React components, etc. supplied by Vendure over creating new custom code, even if that means sacrificing some functionality.
 - Add JS doc comments on functions.
+- Suggest adding guidelines to this AGENTS.md file when you think a new guideline is needed or when commands are used often.
 
 ## Vendure Backend
 

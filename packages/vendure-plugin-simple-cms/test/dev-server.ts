@@ -16,6 +16,12 @@ const CREATE_CONTENT_ENTRY = gql`
       code
       name
       contentTypeCode
+      fields
+      translatableFields {
+        id
+        languageCode
+        fields
+      }
     }
   }
 `;
@@ -47,10 +53,37 @@ const CREATE_CONTENT_ENTRY = gql`
     input: {
       code: 'homepage',
       name: 'Homepage',
-      contentTypeCode: 'featured_product',
+      contentTypeCode: 'featuredProduct',
       fields: {
-        title: 'Welcome to Simple CMS',
+        // Primitive non-translatable field
+        subtitle: 'The best products',
+        // Relation field (Asset ID)
+        image: 1,
       },
+      translations: [
+        {
+          languageCode: 'en',
+          fields: {
+            // Translatable primitive field
+            title: 'Welcome to Simple CMS',
+            // Translatable struct field
+            seo: {
+              metaTitle: 'Home | My Shop',
+              metaDescription: 'Browse our featured products',
+            },
+          },
+        },
+        {
+          languageCode: 'nl',
+          fields: {
+            title: 'Welkom bij Simple CMS',
+            seo: {
+              metaTitle: 'Home | Mijn Winkel',
+              metaDescription: 'Bekijk onze uitgelichte producten',
+            },
+          },
+        },
+      ],
     },
   });
 

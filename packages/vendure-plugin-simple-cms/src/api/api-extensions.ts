@@ -1,6 +1,14 @@
 import gql from 'graphql-tag';
 
 export const commonSchemaExtensions = gql`
+  type ContentEntryTranslation {
+    id: ID!
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    languageCode: LanguageCode!
+    fields: JSON!
+  }
+
   type ContentEntry implements Node {
     id: ID!
     createdAt: DateTime!
@@ -9,6 +17,7 @@ export const commonSchemaExtensions = gql`
     name: String!
     contentTypeCode: String!
     fields: JSON!
+    translatableFields: [ContentEntryTranslation!]!
   }
 
   type ContentEntryList implements PaginatedList {
@@ -43,11 +52,17 @@ export const shopSchemaExtensions = gql`
 export const adminSchemaExtensions = gql`
   ${commonSchemaExtensions}
 
+  input ContentEntryTranslationInput {
+    languageCode: LanguageCode!
+    fields: JSON!
+  }
+
   input ContentEntryInput {
     code: String!
     name: String!
     contentTypeCode: String!
     fields: JSON!
+    translations: [ContentEntryTranslationInput!]
   }
 
   extend type Mutation {
@@ -64,6 +79,7 @@ export const adminSchemaExtensions = gql`
 export const scalars = gql`
   scalar DateTime
   scalar JSON
+  scalar LanguageCode
   scalar LogicalOperator
   scalar StringOperators
   scalar Node

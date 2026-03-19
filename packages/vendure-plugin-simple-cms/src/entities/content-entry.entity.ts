@@ -1,8 +1,17 @@
 import { Channel, VendureEntity, ChannelAware } from '@vendure/core';
-import { Column, Entity, Index, JoinTable, ManyToMany } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+} from 'typeorm';
+import { ContentEntryTranslation } from './content-entry-translation.entity';
 
 @Entity()
-@Index(['createdAt'])
+@Index(['updatedAt'])
+@Index(['code'])
 export class ContentEntry extends VendureEntity implements ChannelAware {
   constructor(input?: Partial<ContentEntry>) {
     super(input);
@@ -24,4 +33,9 @@ export class ContentEntry extends VendureEntity implements ChannelAware {
 
   @Column({ type: 'simple-json', nullable: true })
   fields!: Record<string, unknown>;
+
+  @OneToMany(() => ContentEntryTranslation, (translation) => translation.base, {
+    eager: true,
+  })
+  translatableFields!: ContentEntryTranslation[];
 }
