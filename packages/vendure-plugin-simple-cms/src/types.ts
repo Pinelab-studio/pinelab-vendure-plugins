@@ -42,7 +42,7 @@ export interface StructFieldDefinition extends Translatable, BaseField {
 export interface RelationFieldDefinition extends BaseField {
   type: 'relation';
   entity: Type<VendureEntity>;
-  graphQLType?: string;
+  graphQLType: string;
   eager?: boolean;
   uiComponent?: string;
 }

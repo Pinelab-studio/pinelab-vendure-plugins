@@ -3,8 +3,8 @@ import { ContentEntry } from './entities/content-entry.entity';
 import { ContentEntryTranslation } from './entities/content-entry-translation.entity';
 import { ContentEntryService } from './services/content-entry.service';
 import {
-  adminSchemaExtensions,
-  shopSchemaExtensions,
+  getAdminSchemaExtensions,
+  getShopSchemaExtensions,
 } from './api/api-extensions';
 import { CommonResolver } from './api/common.resolver';
 import { AdminResolver } from './api/admin.resolver';
@@ -22,11 +22,11 @@ import { SimpleCmsPluginOptions } from './types';
     ContentEntryService,
   ],
   shopApiExtensions: {
-    schema: shopSchemaExtensions,
+    schema: () => getShopSchemaExtensions(SimpleCmsPlugin.options),
     resolvers: [CommonResolver],
   },
   adminApiExtensions: {
-    schema: adminSchemaExtensions,
+    schema: () => getAdminSchemaExtensions(SimpleCmsPlugin.options),
     resolvers: [CommonResolver, AdminResolver],
   },
   compatibility: '>=3.2.0',

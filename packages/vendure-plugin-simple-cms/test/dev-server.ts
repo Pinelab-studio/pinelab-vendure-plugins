@@ -17,7 +17,7 @@ const CREATE_CONTENT_ENTRY = gql`
       name
       contentTypeCode
       fields
-      translatableFields {
+      translations {
         id
         languageCode
         fields

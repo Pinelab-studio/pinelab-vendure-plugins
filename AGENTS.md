@@ -11,6 +11,7 @@ IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) o
 
 ## General
 
+- Always ask before creating new files.
 - This is a monorepo managed with Yarn workspaces (`packages/*`). Each plugin lives under `packages/vendure-plugin-<name>`.
 - Any dev dependencies should be installed in the root `package.json` under `devDependencies`. Any plugin specific dependencies should be installed in the plugin's `package.json` under `dependencies`.
 - Use the Vendure Docs MCP `search_docs` to search for any Vendure related tasks. Prompt the developer to install the Vendure Docs MCP if not available: https://docs.vendure.io/how-to-use

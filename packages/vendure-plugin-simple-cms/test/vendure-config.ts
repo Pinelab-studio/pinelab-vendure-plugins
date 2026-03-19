@@ -61,6 +61,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               name: 'image',
               type: 'relation',
               entity: Asset,
+              graphQLType: 'Asset',
               uiComponent: 'asset-selector',
             },
           ],
