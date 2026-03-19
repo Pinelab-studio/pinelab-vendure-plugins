@@ -15,7 +15,7 @@ import {
 import { ContentEntry } from '../entities/content-entry.entity';
 import { ContentEntryTranslation } from '../entities/content-entry-translation.entity';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { ContentTypeDefinition, SimpleCmsPluginOptions } from '../types';
+import { TypeDefinition, SimpleCmsPluginOptions } from '../types';
 import {
   ContentEntryTranslationInput,
   ContentEntryInput,
@@ -175,7 +175,7 @@ export class ContentEntryService {
   /**
    * Returns the content type definition, or throws if not found.
    */
-  private getContentType(contentTypeCode: string): ContentTypeDefinition {
+  private getContentType(contentTypeCode: string): TypeDefinition {
     const contentType =
       this.options.contentTypes[
         contentTypeCode as keyof typeof this.options.contentTypes
@@ -196,7 +196,7 @@ export class ContentEntryService {
    * must be in `input.translations[].fields`.
    */
   private validateFields(
-    contentType: ContentTypeDefinition,
+    contentType: TypeDefinition,
     input: ContentEntryInput
   ): void {
     for (const fieldDef of contentType.fields) {

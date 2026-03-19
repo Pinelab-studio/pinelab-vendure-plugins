@@ -52,6 +52,23 @@ export const shopSchemaExtensions = gql`
 export const adminSchemaExtensions = gql`
   ${commonSchemaExtensions}
 
+  type ContentFieldDefinition {
+    name: String!
+    type: String!
+    nullable: Boolean!
+    isTranslatable: Boolean!
+    uiComponent: String
+    """
+    Sub-fields for struct fields
+    """
+    fields: [ContentFieldDefinition!]
+  }
+
+  extend type ContentEntry {
+    allowMultiple: Boolean!
+    fieldDefinitions: [ContentFieldDefinition!]!
+  }
+
   input ContentEntryTranslationInput {
     languageCode: LanguageCode!
     fields: JSON!

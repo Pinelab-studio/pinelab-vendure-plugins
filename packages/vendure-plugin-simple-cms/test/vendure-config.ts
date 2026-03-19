@@ -21,7 +21,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
     tokenMethod: ['cookie', 'bearer'],
   },
   dbConnectionOptions: {
-    autoSave: false,
+    autoSave: true,
   },
   plugins: [
     SimpleCmsPlugin.init({
@@ -61,6 +61,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               name: 'image',
               type: 'relation',
               entity: Asset,
+              uiComponent: 'asset-selector',
             },
           ],
         },

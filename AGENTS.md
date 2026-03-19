@@ -3,6 +3,7 @@ IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) o
 ## Commands
 
 - All command should be run in a subfolders package: `packages/vendure-plugin-<name>`, because this is a monorepo with independent plugins.
+- `yarn generate` or `yarn codegen` generates the GraphQL schema and API for a plugin. Use this before creating any types yourself.
 - `yarn build` builds a plugin.
 - `npx vite build` builds the React Dashboard for a plugin.
 - `yarn lint` lints the plugin.

@@ -21,9 +21,7 @@ interface BaseField {
  * A primitive field is a field that is a single value.
  * Example: `string`, `number`, `boolean`, `date`
  */
-export interface PrimitiveContentFieldDefinition
-  extends Translatable,
-    BaseField {
+export interface PrimitiveFieldDefinition extends Translatable, BaseField {
   type: 'string' | 'text' | 'number' | 'boolean' | 'date';
   uiComponent?: string;
 }
@@ -33,15 +31,15 @@ export interface PrimitiveContentFieldDefinition
  * A struct field is a field that contains other fields.
  * Example: `{key: string, value: string}`
  */
-export interface StructContentFieldDefinition extends Translatable, BaseField {
+export interface StructFieldDefinition extends Translatable, BaseField {
   type: 'struct';
-  fields: PrimitiveContentFieldDefinition[];
+  fields: PrimitiveFieldDefinition[];
 }
 
 /**
  * The field definition for a relational field like Asset, Customer, Product, etc.
  */
-export interface RelationContentFieldDefinition extends BaseField {
+export interface RelationFieldDefinition extends BaseField {
   type: 'relation';
   entity: Type<VendureEntity>;
   graphQLType?: string;
@@ -49,16 +47,16 @@ export interface RelationContentFieldDefinition extends BaseField {
   uiComponent?: string;
 }
 
-export interface ContentTypeDefinition {
+export interface TypeDefinition {
   displayName: string;
   allowMultiple: boolean;
   fields: (
-    | PrimitiveContentFieldDefinition
-    | StructContentFieldDefinition
-    | RelationContentFieldDefinition
+    | PrimitiveFieldDefinition
+    | StructFieldDefinition
+    | RelationFieldDefinition
   )[];
 }
 
 export interface SimpleCmsPluginOptions {
-  contentTypes: Record<string, ContentTypeDefinition>;
+  contentTypes: Record<string, TypeDefinition>;
 }
