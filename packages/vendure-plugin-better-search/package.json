@@ -27,6 +27,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@orama/orama": "^3.1.18",
     "catch-unknown": "^2.0.0",
     "minisearch": "^7.1.2"
   }
