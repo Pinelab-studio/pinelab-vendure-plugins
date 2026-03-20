@@ -7,14 +7,12 @@ import {
 import { ModuleRef } from '@nestjs/core';
 import {
   EventBus,
-  Injector,
   JobQueue,
   JobQueueService,
   Logger,
   Product,
   ProductEvent,
   ProductService,
-  ProductVariant,
   ProductVariantEvent,
   ProductVariantService,
   RequestContext,
@@ -141,7 +139,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     }
     const searchIndex = await engine.createIndex(
       ctx,
-      allProducts.flatMap((p) => p.variants as ProductVariant[])
+      allProducts.flatMap((p) => p.variants)
     );
     const indexKey = createIndexKey(ctx);
     this.cachedIndices.set(indexKey, searchIndex);

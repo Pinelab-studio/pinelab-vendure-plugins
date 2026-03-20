@@ -88,7 +88,8 @@ function variantToDocument(
       name?: string;
     }) => {
       const t = c.translations?.find(
-        (tr) => tr.languageCode === ctx.languageCode
+        (tr: { languageCode: string }) =>
+          tr.languageCode === String(ctx.languageCode)
       );
       return t?.name ?? c.name ?? '';
     }
@@ -114,7 +115,7 @@ export class OramaEngine implements SearchEngine {
     ctx: RequestContext,
     documents: ProductVariant[]
   ): Promise<unknown> {
-    const db = await create({
+    const db = create({
       schema: ORAMA_SCHEMA,
       components: {
         tokenizer: {
@@ -170,14 +171,10 @@ export class OramaEngine implements SearchEngine {
         price: Number(x.price ?? 0),
         priceWithTax: Number(x.priceWithTax ?? 0),
         sku: String(x.sku ?? ''),
-        facetValueIds: Array.isArray(x.facetValueIds)
-          ? (x.facetValueIds as string[])
-          : [],
-        collectionIds: Array.isArray(x.collectionIds)
-          ? (x.collectionIds as string[])
-          : [],
+        facetValueIds: Array.isArray(x.facetValueIds) ? x.facetValueIds : [],
+        collectionIds: Array.isArray(x.collectionIds) ? x.collectionIds : [],
         collectionNames: Array.isArray(x.collectionNames)
-          ? (x.collectionNames as string[])
+          ? x.collectionNames
           : [],
         score: Math.round((hit.score ?? 0) * 100) / 100,
         lowestPrice: Number(x.price ?? 0),

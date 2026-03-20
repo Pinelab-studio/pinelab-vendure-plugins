@@ -1,4 +1,4 @@
-import { Injector, ProductVariant, RequestContext } from '@vendure/core';
+import { ProductVariant, RequestContext } from '@vendure/core';
 import { BetterSearchResult } from './api/generated/graphql';
 
 /**
@@ -32,7 +32,7 @@ export interface SearchEngine {
 
   search(
     ctx: RequestContext,
-    searchIndex: any,
+    searchIndex: unknown,
     term: string
   ): Promise<BetterSearchResult[]>;
 }

@@ -37,13 +37,13 @@ function getProductText(
     return { productName: '', slug: '', description: '' };
   }
   const t =
-    (product as any).translations?.find(
-      (tr: { languageCode: string }) => tr.languageCode === languageCode
+    product.translations?.find(
+      (tr: { languageCode: string }) => tr.languageCode === String(languageCode)
     ) ?? product;
   return {
-    productName: (t?.name as string) ?? '',
-    slug: (t?.slug as string) ?? '',
-    description: (t?.description as string) ?? '',
+    productName: t.name ?? '',
+    slug: t.slug ?? '',
+    description: t.description ?? '',
   };
 }
 
@@ -56,28 +56,30 @@ function variantToDocument(
     variant,
     ctx.languageCode
   );
-  const variantAny = variant as any;
-  const price = variantAny.price ?? 0;
-  const priceWithTax = variantAny.priceWithTax ?? price;
-  const product = variant.product as any;
-  const facetValueIds = (
-    product?.facetValues ??
-    variantAny.facetValues ??
-    []
-  ).map((fv: { id: ID }) => String(fv.id));
-  const collections = variantAny.collections ?? [];
-  const collectionIds = collections.map((c: { id: ID }) => String(c.id));
-  const collectionNames = collections.map(
-    (c: {
-      translations?: Array<{ languageCode: string; name: string }>;
-      name?: string;
-    }) => {
-      const t = c.translations?.find(
-        (tr) => tr.languageCode === ctx.languageCode
-      );
-      return t?.name ?? c.name ?? '';
-    }
+  const price = variant.price;
+  const priceWithTax = variant.priceWithTax;
+  const product = variant.product;
+  const facetValueIds = (product?.facetValues ?? variant.facetValues ?? []).map(
+    (fv) => String(fv.id)
   );
+  const collections =
+    (
+      variant as unknown as {
+        collections: Array<{
+          id: ID;
+          translations?: Array<{ languageCode: string; name: string }>;
+          name?: string;
+        }>;
+      }
+    ).collections ?? [];
+  const collectionIds = collections.map((c) => String(c.id));
+  const collectionNames = collections.map((c) => {
+    const t = c.translations?.find(
+      (tr: { languageCode: string }) =>
+        tr.languageCode === String(ctx.languageCode)
+    );
+    return t?.name ?? c.name ?? '';
+  });
 
   return {
     id: String(variant.id),
@@ -98,7 +100,6 @@ export class MinisearchEngine implements SearchEngine {
   async createIndex(ctx: RequestContext, documents: ProductVariant[]) {
     const miniSearch = new MiniSearch<MinisearchDocument>({
       fields: ['productName', 'slug', 'description'],
-      // Returned with each hit so we can build BetterSearchResult without extra lookups
       storeFields: [
         'productId',
         'productName',
@@ -111,9 +112,9 @@ export class MinisearchEngine implements SearchEngine {
         'collectionNames',
       ],
       searchOptions: {
-        boost: { productName: 2, slug: 1.5, description: 1 }, // name/slug rank higher
-        prefix: true, // "app" matches "apple"
-        fuzzy: 0.2, // typo tolerance
+        boost: { productName: 2, slug: 1.5, description: 1 },
+        prefix: true,
+        fuzzy: 0.2,
       },
     });
     const docs = documents.map((v) => variantToDocument(ctx, v));
@@ -121,7 +122,7 @@ export class MinisearchEngine implements SearchEngine {
     return Promise.resolve(miniSearch);
   }
 
-  async search(
+  search(
     ctx: RequestContext,
     searchIndex: unknown,
     term: string
@@ -135,7 +136,6 @@ export class MinisearchEngine implements SearchEngine {
       fuzzy: 0.3,
       boostDocument: (documentId, term, storedFields) => {
         console.log(documentId, term);
-        // Boost if name or slug exactly matches the term
         if (
           storedFields?.productName === term ||
           storedFields?.slug === term ||
@@ -158,23 +158,19 @@ export class MinisearchEngine implements SearchEngine {
         price: Number(x.price ?? 0),
         priceWithTax: Number(x.priceWithTax ?? 0),
         sku: String(x.sku ?? ''),
-        facetValueIds: Array.isArray(x.facetValueIds)
-          ? (x.facetValueIds as string[])
-          : [],
-        collectionIds: Array.isArray(x.collectionIds)
-          ? (x.collectionIds as string[])
-          : [],
+        facetValueIds: Array.isArray(x.facetValueIds) ? x.facetValueIds : [],
+        collectionIds: Array.isArray(x.collectionIds) ? x.collectionIds : [],
         collectionNames: Array.isArray(x.collectionNames)
-          ? (x.collectionNames as string[])
+          ? x.collectionNames
           : [],
         score: Math.round((x.score ?? 0) * 100) / 100,
         lowestPrice: Number(x.price ?? 0),
         lowestPriceWithTax: Number(x.priceWithTax ?? 0),
         highestPrice: Number(x.price ?? 0),
         highestPriceWithTax: Number(x.priceWithTax ?? 0),
-        skus: Array.isArray(x.sku) ? (x.sku as string[]) : [],
+        skus: typeof x.sku === 'string' ? [x.sku] : [],
       };
     });
-    return docs;
+    return Promise.resolve(docs);
   }
 }

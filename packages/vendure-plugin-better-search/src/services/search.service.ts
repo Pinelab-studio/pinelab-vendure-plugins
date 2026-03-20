@@ -1,17 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ID, LanguageCode, RequestContext } from '@vendure/core';
-import MiniSearch from 'minisearch';
+import { RequestContext } from '@vendure/core';
 import { BetterSearchResult } from '../api/generated/graphql';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, engine } from '../constants';
 import { BetterSearchOptions } from '../types';
 import { IndexService } from './index.service';
-
-interface CachedIndex {
-  channelId: ID;
-  languageCode: LanguageCode;
-  cachedAt: Date;
-  index: MiniSearch;
-}
 
 @Injectable()
 export class SearchService {
