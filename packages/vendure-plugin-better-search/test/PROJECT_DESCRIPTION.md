@@ -37,3 +37,11 @@ The performance we need:
 // TODO: Investigate what a sensible number for search queries is for our target audience store. Then run benchmarks in sandboxed env to simulate on a deployed server with limited resources. We manually check if the shop API is still performant when simultaneously running search queries.
 
 // TODO: Find real life search queries from existing clients.
+
+## Basic synthetic relevance tests
+
+We are testing the different candidates against some well known relevance cases (See search.e2e.spec.ts) first, as a base line for relevance.
+
+Currently both Minisearch and Orama pass the basic relevance test, but Orama needs less customization because its built-in BM25 algorithm already handles relevance well. MiniSearch is missing features like stemming and length normalization, so the code works around them manually and still has some inconsistent fuzzy settings left in.
+
+Current favorite is Orama.

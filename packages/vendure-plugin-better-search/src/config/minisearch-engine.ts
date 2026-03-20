@@ -135,7 +135,6 @@ export class MinisearchEngine implements SearchEngine {
       prefix: true,
       fuzzy: 0.3,
       boostDocument: (documentId, term, storedFields) => {
-        console.log(documentId, term);
         if (
           storedFields?.productName === term ||
           storedFields?.slug === term ||
@@ -146,7 +145,6 @@ export class MinisearchEngine implements SearchEngine {
         return 1;
       },
     });
-    console.log(JSON.stringify(hits.slice(0, 3), null, 2));
     const docs: BetterSearchResult[] = hits.map((h) => {
       const x = h;
       return {
