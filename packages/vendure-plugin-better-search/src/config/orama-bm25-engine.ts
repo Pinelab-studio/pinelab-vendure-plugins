@@ -110,7 +110,7 @@ function variantToDocument(
   };
 }
 
-export class OramaEngine implements SearchEngine {
+export class OramaBM25Engine implements SearchEngine {
   async createIndex(
     ctx: RequestContext,
     documents: ProductVariant[]
