@@ -1,3 +1,8 @@
+# 2.0.0 (2026-03-23)
+
+- Added support for the new React Dashboard: Google Login button is added below the default login form.
+- BREAKING: Support for the Angular Admin UI has been dropped: YOu can still use V1.4.0
+
 # 1.4.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3

@@ -1,3 +1,7 @@
+# 1.7.0 (2026-03-15)
+
+- Pass order phone number to QLS
+
 # 1.6.0 (2026-03-09)
 
 - Skip syncing disabled products/variants to QLS
