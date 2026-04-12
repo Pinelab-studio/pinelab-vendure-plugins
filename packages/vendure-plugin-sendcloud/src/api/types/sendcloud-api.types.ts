@@ -83,9 +83,3 @@ export interface Status {
   id: number;
   message: string;
 }
-
-export interface IncomingWebhookBody {
-  action: 'parcel_status_changed' | string;
-  timestamp: number;
-  parcel?: Parcel;
-}

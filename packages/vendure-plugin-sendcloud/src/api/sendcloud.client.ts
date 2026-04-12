@@ -1,12 +1,10 @@
 import fetch from 'node-fetch';
 import { Response } from 'node-fetch';
-import crypto from 'crypto';
 import { Logger } from '@vendure/core';
 import { loggerCtx } from './constants';
 import { Parcel, ParcelInput } from './types/sendcloud-api.types';
 
 export class SendcloudClient {
-  static signatureHeader = 'sendcloud-signature';
   endpoint = 'https://panel.sendcloud.sc/api/v2';
   headers: { [key: string]: string };
 
@@ -31,20 +29,6 @@ export class SendcloudClient {
       loggerCtx
     );
     return json.parcel;
-  }
-
-  /**
-   * Verifies if the incoming webhook is actually from SendCloud
-   */
-  isValidWebhook(body: string, signature: string): boolean {
-    if (!body || !signature) {
-      return false;
-    }
-    const hash = crypto
-      .createHmac('sha256', this.secret)
-      .update(body)
-      .digest('hex');
-    return hash === signature;
   }
 
   async fetch(path: string, body: any): Promise<Response> {

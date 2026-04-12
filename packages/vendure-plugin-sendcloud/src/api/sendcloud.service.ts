@@ -1,14 +1,11 @@
-import {
-  Inject,
-  Injectable,
-  OnApplicationBootstrap,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Inject, Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import {
   ChannelService,
   EntityHydrator,
+  ErrorResult,
   EventBus,
+  FulfillmentStateTransitionError,
   HistoryService,
   ID,
   Injector,
@@ -22,23 +19,18 @@ import {
   SerializedRequestContext,
   TransactionalConnection,
 } from '@vendure/core';
+import {
+  AddFulfillmentToOrderResult,
+  ItemsAlreadyFulfilledError,
+} from '@vendure/common/lib/generated-types';
+import { Fulfillment } from '@vendure/core/dist/entity/fulfillment/fulfillment.entity';
 import { toParcelInput } from './sendcloud.adapter';
-import { Connection } from 'typeorm';
 import { loggerCtx, PLUGIN_OPTIONS } from './constants';
 import { SendcloudConfigEntity } from './sendcloud-config.entity';
 import { SendcloudClient } from './sendcloud.client';
 import { sendcloudHandler } from './sendcloud.handler';
-import {
-  fulfillAll,
-  transitionToDelivered,
-  transitionToShipped,
-} from '../../../util/src';
 import { Parcel, ParcelInputItem } from './types/sendcloud-api.types';
-import util from 'util';
-import {
-  SendcloudParcelStatus,
-  SendcloudPluginOptions,
-} from './types/sendcloud.types';
+import { SendcloudPluginOptions } from './types/sendcloud.types';
 
 interface SendcloudJobData {
   orderCode: string;
@@ -134,94 +126,6 @@ export class SendcloudService implements OnApplicationBootstrap {
     }
   }
 
-  /**
-   * Update order by given orderCode, returns undefined if no action was taken
-   * Returns order if transition was successful
-   */
-  async updateOrderStatus(
-    ctx: RequestContext,
-    sendcloudStatus: SendcloudParcelStatus,
-    orderCode: string
-  ): Promise<void> {
-    let order = await this.connection
-      .getRepository(ctx, Order)
-      .findOne({ where: { code: orderCode }, relations: ['lines'] });
-    if (!order) {
-      Logger.warn(
-        `Cannot update status from SendCloud: No order with code ${orderCode} found`,
-        loggerCtx
-      );
-      throw Error(
-        `Cannot update status from SendCloud: No order with code ${orderCode} found`
-      );
-    }
-    if (order.state === sendcloudStatus.orderState) {
-      return Logger.info(
-        `Not updating order with code ${orderCode}: Order already has state ${order.state}`,
-        loggerCtx
-      );
-    }
-    if (sendcloudStatus.orderState === 'Shipped') {
-      await this.shipAll(ctx, order);
-      return Logger.info(
-        `Successfully updated order ${orderCode} to Shipped`,
-        loggerCtx
-      );
-    }
-    order = await this.connection
-      .getRepository(ctx, Order)
-      .findOneOrFail({ where: { code: orderCode }, relations: ['lines'] }); // Refetch in case state was updated
-    if (sendcloudStatus.orderState === 'Delivered') {
-      await transitionToDelivered(this.orderService, ctx, order, {
-        code: sendcloudHandler.code,
-        arguments: [],
-      });
-      return Logger.info(
-        `Successfully updated order ${orderCode} to Delivered`,
-        loggerCtx
-      );
-    }
-    // Fall through, means unhandled state
-    Logger.info(`Not handling state ${sendcloudStatus.orderState}`, loggerCtx);
-  }
-
-  /**
-   * Ship all items
-   */
-  async shipAll(ctx: RequestContext, order: Order): Promise<void> {
-    await transitionToShipped(
-      this.orderService as any,
-      ctx as any,
-      order as any,
-      {
-        code: sendcloudHandler.code,
-        arguments: [],
-      }
-    );
-  }
-
-  /**
-   * Fulfill without throwing errors. Logs an error if fulfilment fails
-   */
-  private async safeFulfill(ctx: RequestContext, order: Order): Promise<void> {
-    try {
-      const fulfillment = await fulfillAll(ctx, this.orderService, order, {
-        code: sendcloudHandler.code,
-        arguments: [],
-      });
-      Logger.info(
-        `Created fulfillment (${fulfillment.id}) for order ${order.code}`,
-        loggerCtx
-      );
-    } catch (e: any) {
-      Logger.error(
-        `Failed to fulfill order ${order.code}: ${e?.message}. Transition this order manually to 'Delivered' after checking that it exists in Sendcloud.`,
-        loggerCtx,
-        util.inspect(e)
-      );
-    }
-  }
-
   async upsertConfig(
     ctx: RequestContext,
     config: {
@@ -313,7 +217,6 @@ export class SendcloudService implements OnApplicationBootstrap {
         loggerCtx
       );
     }
-    await this.safeFulfill(ctx, order);
     Logger.info(
       `Syncing order ${orderCode} for channel ${ctx.channel.token}`,
       loggerCtx
@@ -348,5 +251,159 @@ export class SendcloudService implements OnApplicationBootstrap {
       },
       false
     );
+  }
+
+  /**
+   * Find all PaymentSettled orders placed within the last N days that use the SendCloud
+   * fulfillment handler and transition each to Delivered. Intended to be called by the
+   * `fulfillSettledOrdersTask` scheduled task.
+   */
+  async fulfillSettledOrders(
+    settledSinceDays: number
+  ): Promise<{ fulfilled: number; skipped: number; failed: number }> {
+    const ctx = await this.createContext(
+      (
+        await this.channelService.getDefaultChannel()
+      ).token
+    );
+    const channels = await this.channelService.findAll(ctx);
+    const summary = { fulfilled: 0, skipped: 0, failed: 0 };
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - settledSinceDays);
+    for (const channel of channels.items) {
+      const channelCtx = new RequestContext({
+        apiType: 'admin',
+        channel,
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+      });
+      let skip = 0;
+      const take = 100;
+      while (true) {
+        const orderList = await this.orderService.findAll(
+          channelCtx,
+          {
+            filter: {
+              state: { eq: 'PaymentSettled' },
+              orderPlacedAt: { after: sinceDate.toISOString() },
+            },
+            skip,
+            take,
+          },
+          ['lines', 'shippingLines', 'shippingLines.shippingMethod']
+        );
+        for (const order of orderList.items) {
+          const hasSendcloudHandler = order.shippingLines?.find(
+            (line) =>
+              line.shippingMethod?.fulfillmentHandlerCode ===
+              sendcloudHandler.code
+          );
+          if (!hasSendcloudHandler) {
+            summary.skipped++;
+            continue;
+          }
+          try {
+            await this.fulfillOrderToDelivered(channelCtx, order);
+            summary.fulfilled++;
+            Logger.info(
+              `Fulfilled order ${order.code} to Delivered`,
+              loggerCtx
+            );
+          } catch (e: any) {
+            summary.failed++;
+            Logger.error(
+              `Failed to fulfill order ${order.code}: ${e?.message}`,
+              loggerCtx
+            );
+          }
+        }
+        if (orderList.items.length < take) {
+          break;
+        }
+        skip += take;
+      }
+    }
+    Logger.info(
+      `Finished: ${summary.fulfilled} fulfilled, ${summary.skipped} skipped, ${summary.failed} failed`,
+      loggerCtx
+    );
+    return summary;
+  }
+
+  /**
+   * Transition a single order to Delivered:
+   * 1. Create a fulfillment for all order lines (or reuse an existing one)
+   * 2. Transition the fulfillment to Shipped
+   * 3. Transition the fulfillment to Delivered
+   */
+  private async fulfillOrderToDelivered(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<void> {
+    if (!order.lines?.length) {
+      const fullOrder = await this.orderService.findOne(ctx, order.id, [
+        'lines',
+      ]);
+      if (!fullOrder) {
+        throw new Error(`Order ${order.code} not found`);
+      }
+      order = fullOrder;
+    }
+    const lines = order.lines.map((line) => ({
+      orderLineId: line.id,
+      quantity: line.quantity,
+    }));
+    const fulfillmentResult = await this.orderService.createFulfillment(ctx, {
+      handler: { code: sendcloudHandler.code, arguments: [] },
+      lines,
+    });
+    let fulfillment: Fulfillment;
+    if (
+      (fulfillmentResult as ItemsAlreadyFulfilledError).errorCode ===
+      'ITEMS_ALREADY_FULFILLED_ERROR'
+    ) {
+      const fulfillments = await this.orderService.getOrderFulfillments(
+        ctx,
+        order
+      );
+      fulfillment = fulfillments[0];
+    } else {
+      const error = fulfillmentResult as ErrorResult;
+      if (error.errorCode) {
+        throw new Error(`${error.errorCode}: ${error.message}`);
+      }
+      fulfillment = fulfillmentResult as Fulfillment;
+    }
+    const shippedResult = await this.orderService.transitionFulfillmentToState(
+      ctx,
+      fulfillment.id,
+      'Shipped'
+    );
+    this.throwIfTransitionError(shippedResult);
+    const deliveredResult =
+      await this.orderService.transitionFulfillmentToState(
+        ctx,
+        fulfillment.id,
+        'Delivered'
+      );
+    this.throwIfTransitionError(deliveredResult);
+  }
+
+  /**
+   * Throws if a fulfillment state transition failed.
+   * Ignores errors where fromState === toState (already in the desired state).
+   */
+  private throwIfTransitionError(
+    result: Fulfillment | FulfillmentStateTransitionError
+  ): void {
+    const stateError = result as FulfillmentStateTransitionError;
+    if (stateError.transitionError) {
+      if (stateError.fromState === stateError.toState) {
+        return;
+      }
+      throw new Error(
+        `Transition error: ${stateError.fromState} -> ${stateError.toState}: ${stateError.transitionError}`
+      );
+    }
   }
 }

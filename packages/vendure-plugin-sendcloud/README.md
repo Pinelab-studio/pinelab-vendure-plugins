@@ -4,6 +4,12 @@
 
 This plugin syncs orders to the SendCloud fulfillment platform.
 
+## How it works
+
+1. When an order is placed, it is automatically sent to SendCloud as a parcel (for label creation).
+2. The order stays in `PaymentSettled` state in Vendure — **no fulfillment is created at this point**.
+3. Once an order has been sent to SendCloud, SendCloud is responsible for tracking status. The Vendure order will simply be transitioned to `Delivered` by the included scheduled task. This is because orders are sometimes cancelled and duplicated in Sendcloud, resulting in misaligned stock.
+
 ## Getting started
 
 1. Add the plugin to your `vendure-config.ts`:
@@ -31,17 +37,44 @@ AdminUiPlugin.init({
 3. Run a DB [migration](https://www.vendure.io/docs/developer-guide/migrations/) to add the new SendCloudConfigEntity to
    the database.
 4. Go to your SendCloud account and go to `Settings > Integrations` and create an integration.
-5. Write down the `secret` and `publicKey` of the created integration
-6. For the same integration, add the webhook `https://your-vendure-domain.io/sendcloud/webhook/your-channel-token`. This
-   will update orders when the status changes in SendCloud.
-7. Start Vendure and login as admin
-8. Make sure you have the permission `SetSendCloudConfig`
-9. Go to `Settings > SendCloud`
-10. You can fill in your SendCloud `secret` and `public key` here and click save.
-11. Additionally, you can set a fallback phone number, for when a customer hasn't filled out one. A phone number is
+5. Write down the `secret` and `publicKey` of the created integration.
+6. Start Vendure and login as admin.
+7. Make sure you have the permission `SetSendCloudConfig`.
+8. Go to `Settings > SendCloud`.
+9. Fill in your SendCloud `secret` and `public key` here and click save.
+10. Additionally, you can set a fallback phone number, for when a customer hasn't filled out one. A phone number is
     required by Sendcloud in some cases.
 
-Now, when an order is placed, it will be automatically fulfilled and send to SendCloud.
+## Scheduled task: fulfill settled orders
+
+An optional scheduled task `fulfillSettledOrdersTask` is included to automatically transition settled orders to `Delivered`.
+It is **not auto-registered** — you need to add it to your `schedulerOptions.tasks` yourself.
+
+The task runs nightly (default 2:00 AM) and processes all `PaymentSettled` orders placed within the last N days
+(default 7) that use the SendCloud fulfillment handler. Each qualifying order is fulfilled and transitioned to `Delivered`.
+
+```ts
+import { DefaultSchedulerPlugin } from '@vendure/core';
+import {
+  SendcloudPlugin,
+  fulfillSettledOrdersTask,
+} from '@pinelab/vendure-plugin-sendcloud';
+
+const config: VendureConfig = {
+  plugins: [SendcloudPlugin.init({}), DefaultSchedulerPlugin.init()],
+  schedulerOptions: {
+    tasks: [
+      // Use defaults (every day at 2:00 AM, look back 7 days)
+      fulfillSettledOrdersTask,
+      // Or configure the task
+      fulfillSettledOrdersTask.configure({
+        schedule: (cron) => cron.everyDayAt(3, 0),
+        params: { settledSinceDays: 14 },
+      }),
+    ],
+  },
+};
+```
 
 ## Additional configuration
 
@@ -49,10 +82,11 @@ You can choose to send additional info to SendCloud: `weight`, `hsCode`, `origin
 Parcel items will show up as rows on your SendCloud packaging slips.
 
 ```ts
-import 'SendCloudPlugin, getNrOfOrders';
+import {
+  SendcloudPlugin,
+  getNrOfOrders,
+} from '@pinelab/vendure-plugin-sendcloud';
 
-from;
-('vendure-plugin-sendcloud');
 plugins: [
   SendcloudPlugin.init({
     /**
@@ -77,6 +111,7 @@ plugins: [
      * This example adds the nr of previous orders of the current customer to SendCloud
      */
     additionalParcelItemsFn: async (ctx, injector, order) => {
+      const additionalInputs = [];
       additionalInputs.push(await getNrOfOrders(ctx, injector, order));
       return additionalInputs;
     },

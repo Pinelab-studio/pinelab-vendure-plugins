@@ -6,17 +6,13 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import {
-  DeepPartial,
-  DefaultLogger,
-  LogLevel,
-  mergeConfig,
-} from '@vendure/core';
+import { DefaultLogger, Injector, LogLevel, mergeConfig } from '@vendure/core';
+import { ModuleRef } from '@nestjs/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
 import {
+  fulfillSettledOrdersTask,
   getNrOfOrders,
-  IncomingWebhookBody,
   ParcelInput,
   ParcelInputItem,
   sendcloudHandler,
@@ -26,9 +22,7 @@ import { getSendCloudConfig, updateSendCloudConfig } from './test.helpers';
 import { addShippingMethod, getOrder } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import nock from 'nock';
-import { SendcloudClient } from '../src/api/sendcloud.client';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
-import crypto from 'crypto';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
 describe('SendCloud', () => {
@@ -139,12 +133,13 @@ describe('SendCloud', () => {
     expect(config.id).toBeDefined();
   });
 
-  it('Syncs order after placement when it has Sendcloud handler', async () => {
+  it('Syncs order to SendCloud after placement without fulfilling', async () => {
     const { id } = await createSettledOrder(shopClient, 1);
     await new Promise((resolve) => setTimeout(resolve, 500));
     const order = await getOrder(adminClient, String(id));
     orderCode = order?.code;
     orderId = order?.id;
+    // Verify parcel was sent to SendCloud with correct data
     expect(
       body?.parcel.parcel_items.find((i) => i.sku === 'additional')
     ).toBeDefined();
@@ -169,58 +164,15 @@ describe('SendCloud', () => {
     );
     expect(body?.parcel.telephone).toContain('029 1203 1336');
     expect(body?.parcel.email).toContain('hayden.zieme12@hotmail.com');
+    // Order should remain in PaymentSettled (no automatic fulfillment)
+    expect(order?.state).toBe('PaymentSettled');
   });
 
-  it('Updates order to Shipped via webhook', async () => {
-    const body: DeepPartial<IncomingWebhookBody> = {
-      action: 'parcel_status_changed',
-      parcel: {
-        order_number: orderCode,
-        status: {
-          id: 62990,
-          message: 'At sorting centre',
-        },
-      },
-    };
-    const signature = crypto
-      .createHmac('sha256', 'test-secret')
-      .update(JSON.stringify(body))
-      .digest('hex');
-    await adminClient.fetch(
-      'http://localhost:3050/sendcloud/webhook/e2e-default-channel',
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: { [SendcloudClient.signatureHeader]: signature },
-      }
-    );
-    const order = await getOrder(adminClient, String(orderId));
-    expect(order?.state).toBe('Shipped');
-  });
-
-  it('Updates order to Delivered via webhook', async () => {
-    const body: DeepPartial<IncomingWebhookBody> = {
-      action: 'parcel_status_changed',
-      parcel: {
-        order_number: orderCode,
-        status: {
-          id: 11,
-          message: 'Delivered',
-        },
-      },
-    };
-    const signature = crypto
-      .createHmac('sha256', 'test-secret')
-      .update(JSON.stringify(body))
-      .digest('hex');
-    await adminClient.fetch(
-      'http://localhost:3050/sendcloud/webhook/e2e-default-channel',
-      {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: { [SendcloudClient.signatureHeader]: signature },
-      }
-    );
+  it('Fulfills settled orders to Delivered via scheduled task', async () => {
+    const injector = new Injector(server.app.get(ModuleRef));
+    const result = await fulfillSettledOrdersTask.execute(injector);
+    expect(result.fulfilled).toBeGreaterThanOrEqual(1);
+    expect(result.failed).toBe(0);
     const order = await getOrder(adminClient, String(orderId));
     expect(order?.state).toBe('Delivered');
   });
