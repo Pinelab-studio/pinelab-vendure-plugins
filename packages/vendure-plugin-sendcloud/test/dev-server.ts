@@ -7,6 +7,7 @@ import {
 } from '@vendure/testing';
 import {
   DefaultLogger,
+  DefaultSchedulerPlugin,
   DefaultSearchPlugin,
   LogLevel,
   mergeConfig,
@@ -18,6 +19,7 @@ import {
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import {
+  fulfillSettledOrdersTask,
   getCouponCodes,
   getNrOfOrders,
   ParcelInputItem,
@@ -32,19 +34,6 @@ import * as path from 'path';
 import { GlobalFlag } from '../../test/src/generated/admin-graphql';
 
 require('dotenv').config();
-
-export class AllocateStockOnSettlementStrategy
-  implements StockAllocationStrategy
-{
-  shouldAllocateStock(
-    ctx: RequestContext,
-    fromState: OrderState,
-    toState: OrderState,
-    order: Order
-  ): boolean | Promise<boolean> {
-    return false;
-  }
-}
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
@@ -66,6 +55,7 @@ export class AllocateStockOnSettlementStrategy
           return additionalInputs;
         },
       }),
+      DefaultSchedulerPlugin,
       DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
@@ -80,6 +70,9 @@ export class AllocateStockOnSettlementStrategy
     ],
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
+    },
+    schedulerOptions: {
+      tasks: [fulfillSettledOrdersTask],
     },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
@@ -108,7 +101,6 @@ export class AllocateStockOnSettlementStrategy
   await updateVariants(adminClient, [
     { id: 'T_1', trackInventory: GlobalFlag.True },
   ]);
-  await new Promise((resolve) => setTimeout(resolve, 20000)); // Gives us time to check stock in admin before order placement
   await createSettledOrder(shopClient, 1, true, [{ id: 'T_1', quantity: 1 }]);
   console.log('created test order');
 })();
