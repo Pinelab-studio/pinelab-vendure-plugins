@@ -28,12 +28,12 @@ export const fulfillSettledOrdersTask = new ScheduledTask({
     'Fulfill settled SendCloud orders to Delivered. Only processes orders in PaymentSettled state with the SendCloud handler.',
   params: {
     /** Number of days to look back for settled orders */
-    settledSinceDays: 7,
+    settledSinceDays: 90,
   },
   schedule: (cron) => cron.everyDayAt(2, 0),
   async execute({ injector, params }) {
     return injector
       .get(SendcloudService)
-      .fulfillSettledOrders(params.settledSinceDays);
+      .fulfillPlacedOrders(params.settledSinceDays);
   },
 });

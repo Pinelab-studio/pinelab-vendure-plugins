@@ -6,6 +6,7 @@ import {
   testConfig,
 } from '@vendure/testing';
 import {
+  configureDefaultOrderProcess,
   DefaultLogger,
   DefaultSchedulerPlugin,
   DefaultSearchPlugin,
@@ -72,7 +73,13 @@ require('dotenv').config();
       paymentMethodHandlers: [testPaymentMethod],
     },
     schedulerOptions: {
+      runTasksInWorkerOnly: false,
       tasks: [fulfillSettledOrdersTask],
+    },
+    orderOptions: {
+      process: [
+        configureDefaultOrderProcess({ checkFulfillmentStates: false }) as any,
+      ],
     },
   });
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);

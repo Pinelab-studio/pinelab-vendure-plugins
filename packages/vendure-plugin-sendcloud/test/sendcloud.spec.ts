@@ -6,7 +6,13 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import { DefaultLogger, Injector, LogLevel, mergeConfig } from '@vendure/core';
+import {
+  configureDefaultOrderProcess,
+  DefaultLogger,
+  Injector,
+  LogLevel,
+  mergeConfig,
+} from '@vendure/core';
 import { ModuleRef } from '@nestjs/core';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { initialData } from '../../test/src/initial-data';
@@ -19,9 +25,15 @@ import {
   SendcloudPlugin,
 } from '../src';
 import { getSendCloudConfig, updateSendCloudConfig } from './test.helpers';
-import { addShippingMethod, getOrder } from '../../test/src/admin-utils';
+import {
+  addShippingMethod,
+  fulfill,
+  getOrder,
+} from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { waitFor } from '../../test/src/test-helpers';
 import nock from 'nock';
+import gql from 'graphql-tag';
 import { expect, describe, beforeAll, afterAll, it } from 'vitest';
 import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 
@@ -64,6 +76,14 @@ describe('SendCloud', () => {
       ],
       paymentOptions: {
         paymentMethodHandlers: [testPaymentMethod],
+      },
+      orderOptions: {
+        // Test nightly fulfillment when an order moved to Shipped without fulfillment
+        process: [
+          configureDefaultOrderProcess({
+            checkFulfillmentStates: false,
+          }) as any,
+        ],
       },
     });
     const env = createTestEnvironment(devConfig);
@@ -135,7 +155,11 @@ describe('SendCloud', () => {
 
   it('Syncs order to SendCloud after placement without fulfilling', async () => {
     const { id } = await createSettledOrder(shopClient, 1);
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Wait for the SendCloud job queue to process the order
+    await waitFor(async () => {
+      const o = await getOrder(adminClient, String(id));
+      return o?.state === 'PaymentSettled' && body?.parcel ? true : undefined;
+    });
     const order = await getOrder(adminClient, String(id));
     orderCode = order?.code;
     orderId = order?.id;
@@ -175,6 +199,68 @@ describe('SendCloud', () => {
     expect(result.failed).toBe(0);
     const order = await getOrder(adminClient, String(orderId));
     expect(order?.state).toBe('Delivered');
+  });
+
+  it('Delivers order that already has a pending fulfillment via scheduled task', async () => {
+    // Create a new settled order
+    const { id: newId } = await createSettledOrder(shopClient, 1);
+    await waitFor(async () => {
+      const o = await getOrder(adminClient, String(newId));
+      return o?.state === 'PaymentSettled' ? true : undefined;
+    });
+    const settledOrder = await getOrder(adminClient, String(newId));
+    expect(settledOrder?.state).toBe('PaymentSettled');
+    // Manually create a fulfillment: order moves to Fulfilled, fulfillment starts in Pending
+    await fulfill(
+      adminClient,
+      sendcloudHandler.code,
+      settledOrder!.lines.map((l) => [l.id, l.quantity] as [string, number]),
+      []
+    );
+    const fulfilledOrder = await getOrder(adminClient, String(newId));
+    expect(fulfilledOrder?.state).toBe('PaymentSettled');
+    // Run the task: should pick up the Fulfilled order and transition its pending fulfillment to Delivered
+    const injector = new Injector(server.app.get(ModuleRef));
+    const result = await fulfillSettledOrdersTask.execute(injector);
+    expect(result.failed).toBe(0);
+    const deliveredOrder = await getOrder(adminClient, String(newId));
+    expect(deliveredOrder?.state).toBe('Delivered');
+  });
+
+  it('Delivers a Shipped order (without fulfillment) via scheduled task', async () => {
+    // Create a new settled order
+    const { id: newId } = await createSettledOrder(shopClient, 1);
+    await waitFor(async () => {
+      const o = await getOrder(adminClient, String(newId));
+      return o?.state === 'PaymentSettled' ? true : undefined;
+    });
+    const settledOrder = await getOrder(adminClient, String(newId));
+    expect(settledOrder?.state).toBe('PaymentSettled');
+    // Transition the order to Shipped without creating a fulfillment (checkFulfillmentStates: false)
+    const { transitionOrderToState } = await adminClient.query(
+      gql`
+        mutation TransitionOrderToState($id: ID!, $state: String!) {
+          transitionOrderToState(id: $id, state: $state) {
+            ... on Order {
+              id
+              state
+            }
+            ... on OrderStateTransitionError {
+              errorCode
+              transitionError
+            }
+          }
+        }
+      `,
+      { id: settledOrder!.id, state: 'Shipped' }
+    );
+    expect(transitionOrderToState.state).toBe('Shipped');
+    // Run the task: should detect the Shipped order with no fulfillment and transition directly to Delivered
+    const injector = new Injector(server.app.get(ModuleRef));
+    const result = await fulfillSettledOrdersTask.execute(injector);
+    expect(result.failed).toBe(0);
+    const deliveredOrder = await getOrder(adminClient, String(newId));
+    expect(deliveredOrder?.state).toBe('Delivered');
   });
 
   if (process.env.TEST_ADMIN_UI) {

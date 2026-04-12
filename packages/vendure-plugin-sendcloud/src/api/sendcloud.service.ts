@@ -254,11 +254,15 @@ export class SendcloudService implements OnApplicationBootstrap {
   }
 
   /**
-   * Find all PaymentSettled orders placed within the last N days that use the SendCloud
-   * fulfillment handler and transition each to Delivered. Intended to be called by the
-   * `fulfillSettledOrdersTask` scheduled task.
+   * Find orders placed within the last N days that use the SendCloud fulfillment handler
+   * and process them based on their current state:
+   * - PaymentAuthorized: create fulfillment only (no shipping transitions)
+   * - PaymentSettled: fulfill + transition to Shipped + transition to Delivered
+   * - Shipped: transition existing fulfillment(s) to Delivered
+   *
+   * Intended to be called by the `fulfillSettledOrdersTask` scheduled task.
    */
-  async fulfillSettledOrders(
+  async fulfillPlacedOrders(
     settledSinceDays: number
   ): Promise<{ fulfilled: number; skipped: number; failed: number }> {
     const ctx = await this.createContext(
@@ -284,7 +288,14 @@ export class SendcloudService implements OnApplicationBootstrap {
           channelCtx,
           {
             filter: {
-              state: { eq: 'PaymentSettled' },
+              state: {
+                in: [
+                  'PaymentAuthorized',
+                  'PaymentSettled',
+                  'Fulfilled',
+                  'Shipped',
+                ],
+              },
               orderPlacedAt: { after: sinceDate.toISOString() },
             },
             skip,
@@ -303,16 +314,35 @@ export class SendcloudService implements OnApplicationBootstrap {
             continue;
           }
           try {
-            await this.fulfillOrderToDelivered(channelCtx, order);
+            if (order.state === 'PaymentAuthorized') {
+              await this.createFulfillmentOnly(channelCtx, order);
+              Logger.info(
+                `Created fulfillment for authorized order ${order.code}`,
+                loggerCtx
+              );
+            } else if (
+              order.state === 'PaymentSettled' ||
+              order.state === 'Delivered'
+            ) {
+              // PaymentSettled: create fulfillment + transition to Delivered
+              // Fulfilled: order already has a pending fulfillment, transition it to Delivered
+              await this.fulfillOrderToDelivered(channelCtx, order);
+              Logger.info(
+                `Fulfilled order ${order.code} (state: ${order.state}) to Delivered`,
+                loggerCtx
+              );
+            } else if (order.state === 'Shipped') {
+              await this.transitionShippedToDelivered(channelCtx, order);
+              Logger.info(
+                `Transitioned shipped order ${order.code} to Delivered`,
+                loggerCtx
+              );
+            }
             summary.fulfilled++;
-            Logger.info(
-              `Fulfilled order ${order.code} to Delivered`,
-              loggerCtx
-            );
           } catch (e: any) {
             summary.failed++;
             Logger.error(
-              `Failed to fulfill order ${order.code}: ${e?.message}`,
+              `Failed to process order ${order.code} (${order.state}): ${e?.message}`,
               loggerCtx
             );
           }
@@ -331,10 +361,45 @@ export class SendcloudService implements OnApplicationBootstrap {
   }
 
   /**
-   * Transition a single order to Delivered:
-   * 1. Create a fulfillment for all order lines (or reuse an existing one)
-   * 2. Transition the fulfillment to Shipped
-   * 3. Transition the fulfillment to Delivered
+   * Create a fulfillment for all order lines without any state transitions.
+   * Used for PaymentAuthorized orders where we only want to register the fulfillment.
+   */
+  private async createFulfillmentOnly(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<void> {
+    if (!order.lines?.length) {
+      const fullOrder = await this.orderService.findOne(ctx, order.id, [
+        'lines',
+      ]);
+      if (!fullOrder) {
+        throw new Error(`Order ${order.code} not found`);
+      }
+      order = fullOrder;
+    }
+    const lines = order.lines.map((line) => ({
+      orderLineId: line.id,
+      quantity: line.quantity,
+    }));
+    const fulfillmentResult = await this.orderService.createFulfillment(ctx, {
+      handler: { code: sendcloudHandler.code, arguments: [] },
+      lines,
+    });
+    if (
+      (fulfillmentResult as ItemsAlreadyFulfilledError).errorCode ===
+      'ITEMS_ALREADY_FULFILLED_ERROR'
+    ) {
+      return; // Already fulfilled, nothing to do
+    }
+    const error = fulfillmentResult as ErrorResult;
+    if (error.errorCode) {
+      throw new Error(`${error.errorCode}: ${error.message}`);
+    }
+  }
+
+  /**
+   * Fulfill all order lines and transition the fulfillment to Shipped then Delivered.
+   * Used for PaymentSettled orders.
    */
   private async fulfillOrderToDelivered(
     ctx: RequestContext,
@@ -404,6 +469,48 @@ export class SendcloudService implements OnApplicationBootstrap {
       throw new Error(
         `Transition error: ${stateError.fromState} -> ${stateError.toState}: ${stateError.transitionError}`
       );
+    }
+  }
+
+  /**
+   * Transition a Shipped order to Delivered.
+   * If the order has existing fulfillments, transitions each to Delivered.
+   * If the order has no fulfillments (e.g. manually moved to Shipped), transitions
+   * the order state directly to Delivered.
+   */
+  private async transitionShippedToDelivered(
+    ctx: RequestContext,
+    order: Order
+  ): Promise<void> {
+    const fulfillments = await this.orderService.getOrderFulfillments(
+      ctx,
+      order
+    );
+    if (fulfillments.length > 0) {
+      for (const fulfillment of fulfillments) {
+        const result = await this.orderService.transitionFulfillmentToState(
+          ctx,
+          fulfillment.id,
+          'Delivered'
+        );
+        this.throwIfTransitionError(result);
+      }
+    } else {
+      // No fulfillments: order was moved to Shipped without one (e.g. checkFulfillmentStates: false)
+      const result = await this.orderService.transitionToState(
+        ctx,
+        order.id,
+        'Delivered'
+      );
+      const stateError = result as any;
+      if (
+        stateError?.transitionError &&
+        stateError.fromState !== stateError.toState
+      ) {
+        throw new Error(
+          `Order state transition error: ${stateError.fromState} -> ${stateError.toState}: ${stateError.transitionError}`
+        );
+      }
     }
   }
 }
