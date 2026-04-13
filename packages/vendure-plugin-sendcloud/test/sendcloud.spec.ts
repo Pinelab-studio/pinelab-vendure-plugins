@@ -346,7 +346,6 @@ describe('SendCloud', () => {
     const variantsAfter = await getAllVariants(adminClient);
     const v1After = variantsAfter.find((x) => x.sku === 'L2201308')!;
     const v2After = variantsAfter.find((x) => x.sku === 'L2201508')!;
-    console.log('v1 before', v2Before.stockAllocated, v1Before.stockAllocated);
     expect(v1After.stockAllocated).toBe(0);
     expect(v1After.stockOnHand).toBe(97);
     expect(v2After.stockAllocated).toBe(0);

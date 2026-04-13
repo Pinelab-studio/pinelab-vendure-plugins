@@ -289,12 +289,7 @@ export class SendcloudService implements OnApplicationBootstrap {
           {
             filter: {
               state: {
-                in: [
-                  'PaymentAuthorized',
-                  'PaymentSettled',
-                  'Fulfilled',
-                  'Shipped',
-                ],
+                in: ['PaymentAuthorized', 'PaymentSettled', 'Shipped'],
               },
               orderPlacedAt: { after: sinceDate.toISOString() },
             },
@@ -323,7 +318,6 @@ export class SendcloudService implements OnApplicationBootstrap {
               summary.fulfilled++;
             } else if (
               order.state === 'PaymentSettled' ||
-              order.state === 'Delivered' ||
               order.state === 'Shipped'
             ) {
               await this.fulfillOrderToDelivered(channelCtx, order);
@@ -433,12 +427,15 @@ export class SendcloudService implements OnApplicationBootstrap {
       }
       fulfillment = fulfillmentResult as Fulfillment;
     }
-    const shippedResult = await this.orderService.transitionFulfillmentToState(
-      ctx,
-      fulfillment.id,
-      'Shipped'
-    );
-    this.throwIfTransitionError(shippedResult);
+    if (order.state !== 'Delivered') {
+      const shippedResult =
+        await this.orderService.transitionFulfillmentToState(
+          ctx,
+          fulfillment.id,
+          'Shipped'
+        );
+      this.throwIfTransitionError(shippedResult);
+    }
     const deliveredResult =
       await this.orderService.transitionFulfillmentToState(
         ctx,
