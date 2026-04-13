@@ -53,6 +53,8 @@ It is **not auto-registered** — you need to add it to your `schedulerOptions.t
 The task runs nightly (default 2:00 AM) and processes all `PaymentSettled` orders placed within the last N days
 (default 7) that use the SendCloud fulfillment handler. Each qualifying order is fulfilled and transitioned to `Delivered`.
 
+Do not manually change order statuses in Vendure if you use this scheduled task. The task will fulfill orders and transition to delivered every night.
+
 ```ts
 import { DefaultSchedulerPlugin } from '@vendure/core';
 import {
