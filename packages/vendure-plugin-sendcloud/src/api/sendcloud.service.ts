@@ -320,25 +320,19 @@ export class SendcloudService implements OnApplicationBootstrap {
                 `Created fulfillment for authorized order ${order.code}`,
                 loggerCtx
               );
+              summary.fulfilled++;
             } else if (
               order.state === 'PaymentSettled' ||
-              order.state === 'Delivered'
+              order.state === 'Delivered' ||
+              order.state === 'Shipped'
             ) {
-              // PaymentSettled: create fulfillment + transition to Delivered
-              // Fulfilled: order already has a pending fulfillment, transition it to Delivered
               await this.fulfillOrderToDelivered(channelCtx, order);
               Logger.info(
                 `Fulfilled order ${order.code} (state: ${order.state}) to Delivered`,
                 loggerCtx
               );
-            } else if (order.state === 'Shipped') {
-              await this.transitionShippedToDelivered(channelCtx, order);
-              Logger.info(
-                `Transitioned shipped order ${order.code} to Delivered`,
-                loggerCtx
-              );
+              summary.fulfilled++;
             }
-            summary.fulfilled++;
           } catch (e: any) {
             summary.failed++;
             Logger.error(
@@ -399,7 +393,7 @@ export class SendcloudService implements OnApplicationBootstrap {
 
   /**
    * Fulfill all order lines and transition the fulfillment to Shipped then Delivered.
-   * Used for PaymentSettled orders.
+   * Also works for orders that already have a fulfillment and/or are already Shipped
    */
   private async fulfillOrderToDelivered(
     ctx: RequestContext,
@@ -469,48 +463,6 @@ export class SendcloudService implements OnApplicationBootstrap {
       throw new Error(
         `Transition error: ${stateError.fromState} -> ${stateError.toState}: ${stateError.transitionError}`
       );
-    }
-  }
-
-  /**
-   * Transition a Shipped order to Delivered.
-   * If the order has existing fulfillments, transitions each to Delivered.
-   * If the order has no fulfillments (e.g. manually moved to Shipped), transitions
-   * the order state directly to Delivered.
-   */
-  private async transitionShippedToDelivered(
-    ctx: RequestContext,
-    order: Order
-  ): Promise<void> {
-    const fulfillments = await this.orderService.getOrderFulfillments(
-      ctx,
-      order
-    );
-    if (fulfillments.length > 0) {
-      for (const fulfillment of fulfillments) {
-        const result = await this.orderService.transitionFulfillmentToState(
-          ctx,
-          fulfillment.id,
-          'Delivered'
-        );
-        this.throwIfTransitionError(result);
-      }
-    } else {
-      // No fulfillments: order was moved to Shipped without one (e.g. checkFulfillmentStates: false)
-      const result = await this.orderService.transitionToState(
-        ctx,
-        order.id,
-        'Delivered'
-      );
-      const stateError = result as any;
-      if (
-        stateError?.transitionError &&
-        stateError.fromState !== stateError.toState
-      ) {
-        throw new Error(
-          `Order state transition error: ${stateError.fromState} -> ${stateError.toState}: ${stateError.transitionError}`
-        );
-      }
     }
   }
 }
