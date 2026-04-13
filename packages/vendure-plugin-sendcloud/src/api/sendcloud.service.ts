@@ -316,17 +316,15 @@ export class SendcloudService implements OnApplicationBootstrap {
                 loggerCtx
               );
               summary.fulfilled++;
-            } else if (
-              order.state === 'PaymentSettled' ||
-              order.state === 'Shipped'
-            ) {
-              await this.fulfillOrderToDelivered(channelCtx, order);
-              Logger.info(
-                `Fulfilled order ${order.code} (state: ${order.state}) to Delivered`,
-                loggerCtx
-              );
-              summary.fulfilled++;
+              continue;
             }
+            // Handle Shipped and PaymentSettled orders the same: fulfill + transition to Delivered
+            await this.fulfillOrderToDelivered(channelCtx, order);
+            Logger.info(
+              `Fulfilled order ${order.code} (state: ${order.state}) to Delivered`,
+              loggerCtx
+            );
+            summary.fulfilled++;
           } catch (e: any) {
             summary.failed++;
             Logger.error(
