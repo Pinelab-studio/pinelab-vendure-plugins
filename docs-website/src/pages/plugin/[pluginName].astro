@@ -52,6 +52,14 @@ const plugin: Plugin = Astro.props.plugin;
           />
         )
       }
+      {
+        (
+          <img
+            class="inline-block"
+            src={`https://img.shields.io/badge/dependencies-${plugin.nrOfDependencies}-3DC685`}
+          />
+        )
+      }
 
       <div class="prose !max-w-none" set:html={plugin.markdownContent} />
 
