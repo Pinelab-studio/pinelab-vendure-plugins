@@ -21,10 +21,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Set NPM registry auth token
-        run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
-      - name: Set Vendure Hub registry auth token
-        run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
+      # - name: Set NPM registry auth token
+      #   run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
       - id: dirs
         name: Collect packages to publish
         run: |
@@ -68,10 +66,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Set NPM registry auth token
-        run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
-      - name: Set Vendure Hub registry auth token
-        run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
+      # - name: Set NPM registry auth token
+      #   run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Build
