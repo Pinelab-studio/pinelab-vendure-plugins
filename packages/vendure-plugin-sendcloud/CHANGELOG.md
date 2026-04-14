@@ -1,3 +1,9 @@
+# 2.0.0 (2026-04-12)
+
+- **Breaking**: Removed all webhook handling. Sendcloud is responsible for fulfillment.
+- Added `fulfillSettledOrdersTask` scheduled task (opt-in) to fulfill settled orders to `Delivered` on a nightly basis.
+- Orders are no longer automatically fulfilled on placement. They stay in `PaymentSettled` until the scheduled task runs to prevent misaligned stock in Vendure.
+
 # 1.6.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3

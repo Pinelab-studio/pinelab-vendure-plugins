@@ -201,7 +201,12 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           );
           failed.push(variant);
           await this.eventBus.publish(
-            new QlsVariantSyncFailedEvent(ctx, variant, new Date(), e)
+            new QlsVariantSyncFailedEvent(
+              ctx,
+              variant,
+              new Date(),
+              error.message
+            )
           );
           await waitToPreventRateLimit();
         }
@@ -325,7 +330,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         );
         failed.push({ id: variantId });
         await this.eventBus.publish(
-          new QlsVariantSyncFailedEvent(ctx, variant, new Date(), e)
+          new QlsVariantSyncFailedEvent(ctx, variant, new Date(), error.message)
         );
       }
     }
@@ -419,6 +424,21 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         `Variant '${variant.sku}' excluded from sync to QLS.`,
         loggerCtx
       );
+      return 'not-changed';
+    }
+    if (!variant.enabled || !variant.product?.enabled) {
+      const disabledEntity = !variant.enabled ? 'Variant' : 'Product';
+      if (existingProduct) {
+        Logger.warn(
+          `${disabledEntity} '${variant.sku}' is disabled but exists in QLS (product ID ${existingProduct.id}). Skipping sync.`,
+          loggerCtx
+        );
+      } else {
+        Logger.info(
+          `${disabledEntity} '${variant.sku}' is disabled, skipping sync to QLS.`,
+          loggerCtx
+        );
+      }
       return 'not-changed';
     }
     let qlsProduct = existingProduct;

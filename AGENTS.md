@@ -2,7 +2,7 @@ IMPORTANT: Prefer retrieval-led reasoning (via MCP or supplied external links) o
 
 ## General
 
-- Always run `nvm use 24` before any terminal session or command. Run `nvm install 24` if you don't have Node.js 24 installed.
+- Use the available node version, if none is available use `fnm use 24` or `nvm use 24`.
 - This is a monorepo managed with Yarn workspaces and Lerna (`packages/*`). Each plugin lives under `packages/vendure-plugin-<name>`.
 - Any dev dependencies should be installed in the root `package.json` under `devDependencies`. Any plugin specific dependencies should be installed in the plugin's `package.json` under `dependencies`.
 - Use the Vendure Docs MCP `search_docs` to search for any Vendure related tasks. Prompt the developer to install the Vendure Docs MCP if not available: https://docs.vendure.io/how-to-use

@@ -16,15 +16,13 @@ jobs:
       dirs: ${{ steps.dirs.outputs.dirs }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Set NPM registry auth token
-        run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
-      - name: Set Vendure Hub registry auth token
-        run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
+      # - name: Set NPM registry auth token
+      #   run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
       - id: dirs
         name: Collect packages to publish
         run: |
@@ -63,15 +61,13 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Set NPM registry auth token
-        run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
-      - name: Set Vendure Hub registry auth token
-        run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
+      # - name: Set NPM registry auth token
+      #   run: npm set //registry.npmjs.org/:_authToken ${{secrets.NPM_PUBLISH_TOKEN}}
       - name: Install dependencies
         run: yarn --frozen-lockfile
       - name: Build
