@@ -14,6 +14,8 @@ This plug is meant for small to medium sized shops with up to ~10000 variants.
 
 This plugin is not meant to be a replacement for ElasticSearch or TypeSense, but rather a lightweight alternative for small to medium sized shops. If you want to test if it works for you, give it a try and run the load tests we have included.
 
+// TODO fix everything below this line
+
 Features:
 
 - Search by term or multiple terms, no and/or logic or query syntax.
@@ -77,63 +79,23 @@ Checkout this page on more information on the different column types: https://or
 
 ## Custom fields
 
-You can add custom fields by defining a custom `mapToSearchDocument` function together with a custom `indexableFields` object.
-
-For example, we have a custom field `keywords` on our products, and we want to index it, and return it in the search results:
+// TODO index custom fields? How?
 
 ```ts
-import {
-  BetterSearchResult,
-  defaultSearchConfig,
-  BetterSearchConfigInput,
-} from '@pinelab/vendure-plugin-better-search';
-
-// Define an interface for our custom search result
-interface MySearchResult extends BetterSearchResult {
-  keywords: string[];
-}
-
-export const searchConfig: BetterSearchConfigInput<MySearchResult> = {
-  mapToSearchDocument: (product, collections) => {
-    // Use the default mapping to get the base document
-    const defaultDocument = defaultSearchConfig.mapToSearchDocument(
-      product,
-      collections
-    );
-    return {
-      ...defaultDocument,
-      // Extend the base document with "keywords"
-      keywords: product.customFields.keywords,
-    };
-  },
-  indexableFields: {
-    ...defaultSearchConfig.indexableFields,
-    // Add "keywords" to the index with a weight of 2,
-    keywords: {
-      weight: 2,
-      // Tell the GraphQL schema that "keywords" is a [String!]!
-      // If you do not specify the graphqlFieldType, the field will not be returned in the search results
-      graphqlFieldType: "[String!]!",
-    },
-  },
-};
-
-// Then in your vendure-config.ts, use the searchConfig:
-plugins: [
-  BetterSearchPlugin.init({
-    searchConfig,
-  }),
-],
+import { BetterSearchPlugin } from '@pinelab/vendure-plugin-better-search';
 ```
 
-Checkout the `defaultSearchConfig.ts` for the default weights of each field.
-
-## Tips
+## Tips for improving search relevance
 
 - Add a custom field `keywords` to your products, and make the plugin index it. This is where you'd save keywords, synonyms, etc. This will drastically improve the search experience.
-- Don't index descriptions unless you really have to, to save on memory usage. Also, most of the shops will have a better search experience when the description is not indexed, since the descriptions usually also contain a lot of noise.
-- Monitor your workers memory usage and database CPU usage. If any of these are high, you can increase the `debounceIndexRebuildMs` to reduce the number of rebuilds. If that doesn't work, your dataset might be too large for this search.
+- Use the `weight` option to boost specific fields. For example, boost the custom field `keywords` if you implement it, making it more important for the search engine.
+- Use the `boostResult` option to boost (or de-boost) specific results. For example,a common practice is to slightly decrease the category `accessories` to make main products rank higher.
 
-# Load test
+// TODO reference the correct configs. At the time of writing they are not implemented yet.
 
-// TODO
+# Performance tips:
+
+- If your memory usage is too high, try indexing important fields like name, slug and facets only, without indexing descriptions. This will usually still provide a good search experience, but with less memory usage. Descriptions are the main cause of high memory usage, simply because they are longer and contain more text.
+- Monitor your database CPU usage. If this is high, you can increase the `debounceIndexRebuildMs` to reduce the number of rebuilds.
+
+If these tips don't work, your dataset might be too large for the Better Search Plugin.

@@ -4,9 +4,8 @@ import { shopApiExtensions } from './api/api-extensions';
 import { SearchShopResolver } from './api/search.resolver';
 import { BETTER_SEARCH_PLUGIN_OPTIONS } from './constants';
 import { SearchService } from './services/search.service';
-import { BetterSearchConfigInput, BetterSearchConfig } from './types';
+import { BetterSearchOptions } from './types';
 import { IndexService } from './services/index.service';
-import { defaultSearchConfig } from './default-config';
 import { BetterSearchDocuments } from './entities/better-search-documents.entity';
 
 @VendurePlugin({
@@ -30,10 +29,10 @@ import { BetterSearchDocuments } from './entities/better-search-documents.entity
   entities: [BetterSearchDocuments],
 })
 export class BetterSearchPlugin {
-  static options: BetterSearchConfig = defaultSearchConfig;
+  static options: BetterSearchOptions;
 
-  static init(options: BetterSearchConfigInput): Type<BetterSearchPlugin> {
-    this.options = { ...this.options, ...options };
+  static init(options: BetterSearchOptions): Type<BetterSearchPlugin> {
+    this.options = options;
     return BetterSearchPlugin;
   }
 }
