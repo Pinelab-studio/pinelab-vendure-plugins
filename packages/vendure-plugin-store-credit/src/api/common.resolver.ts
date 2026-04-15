@@ -61,4 +61,13 @@ export class CommonResolver {
   ) {
     return this.walletService.findOne(ctx, args.id, relations);
   }
+
+  @Query()
+  async walletByCode(
+    @Ctx() ctx: RequestContext,
+    @Args() args: { code: string },
+    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>
+  ) {
+    return this.walletService.findByCode(ctx, args.code, relations);
+  }
 }
