@@ -1,3 +1,7 @@
+# 1.5.0 (2026-04-15)
+
+- Added support for `Wallet` based Gift Cards
+
 # 1.4.1 (2026-02-20)
 
 - Include raw .tsx components for React Extension distribution
