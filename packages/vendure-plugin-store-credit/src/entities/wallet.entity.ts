@@ -15,7 +15,6 @@ import {
   JoinTable,
   Column,
   Check,
-  Unique,
   RelationId,
 } from 'typeorm';
 import { WalletAdjustment } from './wallet-adjustment.entity';
@@ -23,7 +22,11 @@ import { WalletAdjustment } from './wallet-adjustment.entity';
 @Entity()
 @Index(['createdAt'])
 @Check(`"balance" >= 0`)
-@Unique(['name', 'customer'])
+@Index(['name', 'customer'], {
+  unique: true,
+  where: '"customerId" IS NOT NULL',
+})
+@Index(['name'], { unique: true, where: '"customerId" IS NULL' })
 export class Wallet extends VendureEntity implements ChannelAware {
   constructor(input?: DeepPartial<Wallet>) {
     super(input);
@@ -36,15 +39,22 @@ export class Wallet extends VendureEntity implements ChannelAware {
   @Column()
   name!: string;
 
+  @Index({ unique: true })
+  @Column({
+    type: 'varchar',
+    nullable: true,
+  })
+  code?: string;
+
   @Column()
   currencyCode!: string;
 
-  @ManyToOne(() => Customer, { onDelete: 'CASCADE', nullable: false })
+  @ManyToOne(() => Customer, { onDelete: 'CASCADE', nullable: true })
   @Index()
-  customer!: Customer;
+  customer?: Customer;
 
   @RelationId((wallet: Wallet) => wallet.customer)
-  customerId!: string;
+  customerId?: string;
 
   @Money()
   balance!: number;

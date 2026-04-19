@@ -1,20 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  OnApplicationBootstrap,
+  Optional,
+} from '@nestjs/common';
 import { summate } from '@vendure/common/lib/shared-utils';
 import { unique } from '@vendure/common/lib/unique';
 import {
   assertFound,
   ChannelService,
   EventBus,
+  generatePublicId,
   ID,
   idsAreEqual,
+  Injector,
   InternalServerError,
   ListQueryBuilder,
   ListQueryOptions,
   Logger,
   Order,
+  OrderLine,
+  OrderPlacedEvent,
   OrderService,
   PaginatedList,
   Payment,
+  PaymentMetadata,
   Refund,
   RefundEvent,
   RelationPaths,
@@ -25,13 +35,16 @@ import {
   UserService,
 } from '@vendure/core';
 import { CreateWalletInput } from '../api/generated/graphql';
-import { loggerCtx } from '../constants';
+import { loggerCtx, STORE_CREDIT_PLUGIN_OPTIONS } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
-import { QueryFailedError } from 'typeorm';
+import { QueryFailedError, IsNull, Not } from 'typeorm';
+import { GiftCardWalletCreatedEvent } from '../events/gift-card-wallet-created.event';
+import { StoreCreditPluginOptions } from '../types';
+import { ModuleRef } from '@nestjs/core';
 
 @Injectable()
-export class WalletService {
+export class WalletService implements OnApplicationBootstrap {
   private readonly relations = [
     'channels',
     'customer',
@@ -43,8 +56,70 @@ export class WalletService {
     private readonly listQueryBuilder: ListQueryBuilder,
     private readonly userService: UserService,
     private readonly eventBus: EventBus,
-    private readonly orderService: OrderService
+    private readonly moduleRef: ModuleRef,
+    private readonly orderService: OrderService,
+    @Optional()
+    @Inject(STORE_CREDIT_PLUGIN_OPTIONS)
+    private options?: StoreCreditPluginOptions
   ) {}
+
+  onApplicationBootstrap() {
+    this.eventBus.ofType(OrderPlacedEvent).subscribe((payload) => {
+      for (const line of payload.order.lines) {
+        void this.processOrderLineForWallets(payload.ctx, payload.order, line);
+      }
+    });
+  }
+
+  async processOrderLineForWallets(
+    ctx: RequestContext,
+    order: Order,
+    line: OrderLine
+  ) {
+    const result = await this.options?.createGiftCardWallet?.(
+      ctx,
+      new Injector(this.moduleRef),
+      order,
+      line
+    );
+
+    if (!result) return;
+
+    const { price, cardCode } = result;
+
+    for (let i = 0; i < line.quantity; i++) {
+      const suffix = line.quantity > 1 ? `-${i + 1}` : '';
+      const finalCode = `${cardCode}${suffix}`;
+
+      const existing = await this.connection
+        .getRepository(ctx, Wallet)
+        .findOne({
+          where: { code: finalCode },
+        });
+
+      if (existing) continue;
+
+      const wallet = await this.create(
+        ctx,
+        {
+          customerId: order.customerId,
+          name: finalCode,
+        },
+        price,
+        finalCode
+      );
+
+      void this.eventBus.publish(
+        new GiftCardWalletCreatedEvent(ctx, wallet, order)
+      );
+
+      await this.orderService.addNoteToOrder(ctx, {
+        id: order.id,
+        note: `Gift card wallet ${finalCode} created with balance ${price} for product with id ${line.productVariant?.productId}`,
+        isPublic: false,
+      });
+    }
+  }
 
   findAll(
     ctx: RequestContext,
@@ -89,11 +164,20 @@ export class WalletService {
       });
   }
 
-  async create(ctx: RequestContext, input: CreateWalletInput): Promise<Wallet> {
+  async create(
+    ctx: RequestContext,
+    input: CreateWalletInput,
+    balance: number = 0,
+    code?: string
+  ): Promise<Wallet> {
+    if (!input.customerId && !code) {
+      code = generatePublicId();
+    }
     const wallet = new Wallet({
       name: input.name,
       customer: { id: input.customerId },
-      balance: 0,
+      balance,
+      code,
       currencyCode: ctx.channel.defaultCurrencyCode,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       metadata: input.metadata ?? undefined,
@@ -143,8 +227,19 @@ export class WalletService {
 
     const wallet = await walletRepo.findOneOrFail({
       where: { id: walletId },
-      relations: ['channels'],
+      relations: ['channels', 'customer'],
     });
+
+    if (
+      ctx.apiType === 'shop' &&
+      wallet.customer?.user?.id &&
+      !idsAreEqual(wallet.customer?.user?.id, user?.id)
+    ) {
+      throw new UserInputError(
+        `Wallet with id ${walletId} is not assigned to the current user`
+      );
+    }
+
     const isAllowedInChannel = wallet.channels.some((channel) =>
       idsAreEqual(channel.id, ctx.channelId)
     );
@@ -264,14 +359,33 @@ export class WalletService {
     ctx: RequestContext,
     order: Order,
     amount: number,
-    walletId: ID
+    metadata: PaymentMetadata
   ) {
-    await this.adjustBalanceForWallet(
-      ctx,
-      -1 * amount,
-      walletId,
-      `Paid for order ${order.code}`
-    );
+    if (metadata.walletId) {
+      await this.adjustBalanceForWallet(
+        ctx,
+        -1 * amount,
+        metadata.walletId as ID,
+        `Paid for order ${order.code}`
+      );
+    }
+    if (metadata.giftCardCode) {
+      const wallet = await this.findByCode(
+        ctx,
+        metadata.giftCardCode as string
+      );
+      if (!wallet) {
+        throw new UserInputError(
+          `No wallet found for gift card code '${metadata.giftCardCode}'`
+        );
+      }
+      await this.adjustBalanceForWallet(
+        ctx,
+        -1 * amount,
+        wallet?.id,
+        `Paid for order ${order.code}`
+      );
+    }
   }
 
   async findOne(
@@ -289,6 +403,23 @@ export class WalletService {
         relations: unique(effectiveRelations),
       }
     );
+    return wallet;
+  }
+
+  async findByCode(
+    ctx: RequestContext,
+    code: string,
+    relations?: RelationPaths<Wallet>
+  ): Promise<Wallet | null> {
+    const effectiveRelations = relations ?? this.relations.slice();
+    const wallet = await this.connection
+      .getRepository(ctx, Wallet)
+      .findOneOrFail({
+        where: {
+          code,
+        },
+        relations: effectiveRelations,
+      });
     return wallet;
   }
 
@@ -395,5 +526,28 @@ export class WalletService {
     const nonFailedRefunds =
       payment.refunds?.filter((refund) => refund.state !== 'Failed') ?? [];
     return summate(nonFailedRefunds, 'total');
+  }
+
+  getGiftCardWallets(
+    ctx: RequestContext,
+    options?: ListQueryOptions<Wallet>,
+    relations: RelationPaths<Wallet> = []
+  ): Promise<PaginatedList<Wallet>> {
+    return this.listQueryBuilder
+      .build(Wallet, options, {
+        ctx,
+        channelId: ctx.channelId,
+        where: {
+          code: Not(IsNull()),
+        },
+        relations,
+      })
+      .getManyAndCount()
+      .then(([items, totalItems]) => {
+        return {
+          items,
+          totalItems,
+        };
+      });
   }
 }
