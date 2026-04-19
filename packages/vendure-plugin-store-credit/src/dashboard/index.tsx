@@ -1,6 +1,7 @@
 import { defineDashboardExtension } from '@vendure/dashboard';
 import WalletList from './components/WalletList';
 import WalletsHeader from './components/WalletsHeader';
+import { giftCardWalletList } from './components/WalletGiftCardList';
 
 defineDashboardExtension({
   pageBlocks: [
@@ -17,4 +18,5 @@ defineDashboardExtension({
       },
     },
   ],
+  routes: [giftCardWalletList],
 });

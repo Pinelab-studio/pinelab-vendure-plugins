@@ -98,6 +98,10 @@ export const adminApiExtensions = gql`
       input: StoreCreditRefundInput!
     ): WalletAdjustment!
   }
+
+  extend type Query {
+    giftCardWallets(options: WalletListOptions): WalletList!
+  }
 `;
 
 /**

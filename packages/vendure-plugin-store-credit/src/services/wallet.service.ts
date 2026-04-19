@@ -38,7 +38,7 @@ import { CreateWalletInput } from '../api/generated/graphql';
 import { loggerCtx, STORE_CREDIT_PLUGIN_OPTIONS } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
-import { QueryFailedError } from 'typeorm';
+import { QueryFailedError, IsNull, Not } from 'typeorm';
 import { GiftCardWalletCreatedEvent } from '../events/gift-card-wallet-created.event';
 import { StoreCreditPluginOptions } from '../types';
 import { ModuleRef } from '@nestjs/core';
@@ -526,5 +526,28 @@ export class WalletService implements OnApplicationBootstrap {
     const nonFailedRefunds =
       payment.refunds?.filter((refund) => refund.state !== 'Failed') ?? [];
     return summate(nonFailedRefunds, 'total');
+  }
+
+  getGiftCardWallets(
+    ctx: RequestContext,
+    options?: ListQueryOptions<Wallet>,
+    relations: RelationPaths<Wallet> = []
+  ): Promise<PaginatedList<Wallet>> {
+    return this.listQueryBuilder
+      .build(Wallet, options, {
+        ctx,
+        channelId: ctx.channelId,
+        where: {
+          code: Not(IsNull()),
+        },
+        relations,
+      })
+      .getManyAndCount()
+      .then(([items, totalItems]) => {
+        return {
+          items,
+          totalItems,
+        };
+      });
   }
 }
