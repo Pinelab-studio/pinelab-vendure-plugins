@@ -13,6 +13,7 @@ description: Migrates Vendure Admin UI extensions (legacy Angular-based) to the 
    - ./01a-common-tasks.md
 3. Check the tsconfig setup <tsconfig-setup>. This may or may not already be set up.
    - ./01b-tsconfig-setup.md
+   - ./01c-common-pitfalls.md
 4. Identify each part of the Admin UI extensions that needs to be
    migrated, and use the data from the appropriate sections to guide
    the migration:

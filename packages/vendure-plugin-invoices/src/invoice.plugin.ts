@@ -81,6 +81,7 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
     resolvers: [InvoiceCommonResolver],
   },
   compatibility: '>=3.2.0',
+  dashboard: './dashboard/index.tsx',
   configuration: (config: RuntimeVendureConfig) => {
     config.authOptions.customPermissions.push(invoicePermission);
     return config;

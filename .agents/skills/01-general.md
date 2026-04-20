@@ -4,6 +4,8 @@
 - old code is usually in a plugin's "ui" dir
 - new code should be in a plugin's "dashboard" dir
 - new code imports all components from `@vendure/dashboard`. It can also import the following as needed:
+  - `graphql` from `@/gql` (**NOT** from `@vendure/dashboard` — see 01c-common-pitfalls.md)
+  - `api` from `@vendure/dashboard`
   - hooks or anything else needed from `react`
   - hooks etc from `@tanstack/react-query`
   - `Link`, `useNavigate` etc from `@tanstack/react-router`

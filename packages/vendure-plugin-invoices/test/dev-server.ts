@@ -62,15 +62,6 @@ require('dotenv').config();
         ],
       }),
       DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [InvoicePlugin.ui],
-          devMode: true,
-        }),
-      }),
     ],
     paymentOptions: {
       paymentMethodHandlers: [testPaymentMethod],
@@ -80,6 +71,12 @@ require('dotenv').config();
       shopApiPlayground: true,
     },
   });
+  // Override cors after merge, because testConfig sets cors: true (boolean)
+  // which mergeConfig can't properly replace with an object
+  devConfig.apiOptions.cors = {
+    origin: 'http://localhost:5173',
+    credentials: true,
+  };
   const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
   await server.init({
     initialData: {
