@@ -22,8 +22,6 @@ import {
   LocalFileStrategy,
   XeroUKExportStrategy,
 } from '../src';
-import path from 'path';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import { createSettledOrder } from '../../test/src/shop-utils';
 
 require('dotenv').config();

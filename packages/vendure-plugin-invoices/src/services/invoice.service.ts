@@ -49,7 +49,7 @@ import {
   InvoiceConfigInput,
   InvoiceListOptions,
   InvoiceOrderTotals,
-} from '../ui/generated/graphql';
+} from '../generated-graphql-types';
 import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
