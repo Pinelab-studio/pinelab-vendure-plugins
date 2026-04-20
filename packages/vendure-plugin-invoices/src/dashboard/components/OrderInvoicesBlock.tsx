@@ -12,7 +12,7 @@ import {
 } from '@vendure/dashboard';
 import { graphql } from '@/gql';
 import { useQuery } from '@tanstack/react-query';
-import { CheckIcon, DownloadIcon, XIcon } from 'lucide-react';
+import { DownloadIcon } from 'lucide-react';
 
 const getOrderInvoicesDocument = graphql(`
   query GetOrderInvoices($id: ID!) {
@@ -63,26 +63,22 @@ export function OrderInvoicesBlock({ orderId }: { orderId?: string }) {
         <TableRow>
           <TableHead>Invoice Nr.</TableHead>
           <TableHead>Created</TableHead>
-          <TableHead>Credit Invoice</TableHead>
           <TableHead>Download</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {invoices.map((invoice: any) => (
           <TableRow key={invoice.id}>
-            <TableCell>{invoice.invoiceNumber}</TableCell>
             <TableCell>
-              <DateTime value={invoice.createdAt} />
+              {invoice.invoiceNumber}
+              {invoice.isCreditInvoice && (
+                <Badge variant="secondary" className="ml-2">
+                  CREDIT
+                </Badge>
+              )}
             </TableCell>
             <TableCell>
-              {invoice.isCreditInvoice ? (
-                <Badge variant="secondary">
-                  <CheckIcon className="h-3 w-3 mr-1" />
-                  Yes
-                </Badge>
-              ) : (
-                <XIcon className="h-4 w-4 text-muted-foreground" />
-              )}
+              <DateTime value={invoice.createdAt} />
             </TableCell>
             <TableCell>
               <a

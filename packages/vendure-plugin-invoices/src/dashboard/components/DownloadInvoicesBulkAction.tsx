@@ -13,6 +13,11 @@ export const DownloadInvoicesBulkAction: BulkActionComponent<any> = ({
 }) => {
   const { refetchPaginatedList } = usePaginatedList();
 
+  // Only show in the bulk bar (multiple selected), not in per-row actions dropdown
+  if (selection.length <= 1) {
+    return null;
+  }
+
   async function handleDownload() {
     try {
       const nrs = selection
@@ -39,7 +44,7 @@ export const DownloadInvoicesBulkAction: BulkActionComponent<any> = ({
     <DataTableBulkActionItem
       requiresPermission={['AllowInvoicesPermission']}
       onClick={handleDownload}
-      label="Download"
+      label="Download invoices"
       icon={DownloadIcon}
     />
   );

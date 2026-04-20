@@ -1,15 +1,15 @@
 import {
   api,
   Badge,
-  Button,
+  BulkActionComponent,
   DashboardRouteDefinition,
+  DataTableBulkActionItem,
   DetailPageButton,
   ListPage,
 } from '@vendure/dashboard';
 import { graphql } from '@/gql';
-import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { DownloadIcon, RefreshCwIcon, ExternalLinkIcon } from 'lucide-react';
+import { DownloadIcon, ExternalLinkIcon } from 'lucide-react';
 import { DownloadInvoicesBulkAction } from './DownloadInvoicesBulkAction';
 
 const invoiceListQuery = graphql(`
@@ -41,27 +41,35 @@ const exportToAccountingDocument = graphql(`
 `);
 
 /**
- * Button to export a single invoice to the accounting platform.
+ * Row-level bulk action to export a single invoice to accounting.
+ * Shows "Re-export" if the invoice was already exported successfully.
  */
-function ExportButton({ invoiceNumber }: { invoiceNumber: number }) {
-  const { mutate, isPending } = useMutation({
-    mutationFn: () => api.mutate(exportToAccountingDocument, { invoiceNumber }),
-    onSuccess: () => toast.success('Export started'),
-    onError: (err: Error) =>
-      toast.error('Export failed', { description: err.message }),
-  });
+const ExportToAccountingAction: BulkActionComponent<any> = ({ selection }) => {
+  const invoice = selection[0];
+  const ref = invoice?.accountingReference;
+  const alreadyExported = ref?.reference && !ref?.errorMessage;
+
+  async function handleExport() {
+    try {
+      await api.mutate(exportToAccountingDocument, {
+        invoiceNumber: invoice.invoiceNumber,
+      });
+      toast.success('Export started');
+    } catch (err: any) {
+      toast.error('Export failed', { description: err.message });
+    }
+  }
+
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => mutate()}
-      disabled={isPending}
-      title="Export to accounting"
-    >
-      <RefreshCwIcon className={`h-4 w-4 ${isPending ? 'animate-spin' : ''}`} />
-    </Button>
+    <DataTableBulkActionItem
+      onClick={handleExport}
+      label={
+        alreadyExported ? 'Re-export to accounting' : 'Export to accounting'
+      }
+      icon={ExternalLinkIcon}
+    />
   );
-}
+};
 
 export const invoiceListRoute: DashboardRouteDefinition = {
   navMenuItem: {
@@ -100,7 +108,7 @@ export const invoiceListRoute: DashboardRouteDefinition = {
       customizeColumns={{
         invoiceNumber: {
           header: 'Invoice Number',
-          meta: { dependencies: ['orderId', 'isCreditInvoice'] },
+          meta: { dependencies: ['orderId', 'isCreditInvoice', 'downloadUrl'] },
           cell: ({ row }: any) => {
             const invoice = row.original;
             return (
@@ -157,47 +165,40 @@ export const invoiceListRoute: DashboardRouteDefinition = {
             return null;
           },
         },
-        downloadUrl: {
-          header: 'Download',
-          cell: ({ row }: any) => (
-            <a
-              href={row.original.downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <DownloadIcon className="h-4 w-4" />
-            </a>
-          ),
-        },
-        // Hide fields that are only used as dependencies
+        // Hide fields that are only used as dependencies or row actions
+        downloadUrl: { meta: { disabled: true } },
         orderId: { meta: { disabled: true } },
         isCreditInvoice: { meta: { disabled: true } },
       }}
-      additionalColumns={{
-        export: {
-          header: 'Export',
-          cell: ({ row }: any) => (
-            <ExportButton invoiceNumber={row.original.invoiceNumber} />
+      rowActions={[
+        {
+          label: (
+            <span className="flex items-center gap-2">
+              <DownloadIcon className="h-4 w-4" />
+              Download
+            </span>
           ),
+          onClick: (row: any) => {
+            window.open(row.original.downloadUrl, '_blank');
+          },
         },
-      }}
+      ]}
       defaultVisibility={{
         invoiceNumber: true,
         createdAt: true,
         orderCode: true,
         accountingReference: true,
-        downloadUrl: true,
-        export: true,
       }}
       defaultColumnOrder={[
         'invoiceNumber',
         'createdAt',
         'orderCode',
         'accountingReference',
-        'downloadUrl',
-        'export',
       ]}
-      bulkActions={[{ component: DownloadInvoicesBulkAction }]}
+      bulkActions={[
+        { component: ExportToAccountingAction },
+        { component: DownloadInvoicesBulkAction },
+      ]}
     />
   ),
 };
