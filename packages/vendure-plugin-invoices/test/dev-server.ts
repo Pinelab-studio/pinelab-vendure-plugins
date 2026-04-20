@@ -3,79 +3,23 @@ import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
-  testConfig,
 } from '@vendure/testing';
 import {
-  DefaultLogger,
-  DefaultSearchPlugin,
   JobQueueService,
-  LogLevel,
-  mergeConfig,
   RequestContextService,
+  VendureConfig,
 } from '@vendure/core';
-import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import { addShippingMethod } from '../../test/src/admin-utils';
-import {
-  InvoicePlugin,
-  InvoiceService,
-  LocalFileStrategy,
-  XeroUKExportStrategy,
-} from '../src';
+import { InvoiceService } from '../src';
 import { createSettledOrder } from '../../test/src/shop-utils';
-
-require('dotenv').config();
+import { config } from './vendure-config';
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const devConfig = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [
-      InvoicePlugin.init({
-        vendureHost: 'http://localhost:3050',
-        storageStrategy: new LocalFileStrategy(),
-        startInvoiceNumber: Math.floor(100000 + Math.random() * 900000), // Random 6 digit number to prevent duplicates in Xero
-        accountingExports: [
-          new XeroUKExportStrategy({
-            clientId: process.env.XERO_CLIENT_ID!,
-            clientSecret: process.env.XERO_CLIENT_SECRET!,
-            shippingAccountCode: '0103',
-            salesAccountCode: '0102',
-            invoiceBrandingThemeId: '62f2bce1-32c4-4e8d-a9b1-87060fb7c791',
-            getReference: () =>
-              'THIS IS A TEST INVOICE, DONT APPROVE THIS PLEASE.',
-            getVendureUrl: (order) =>
-              `https://pinelab.studio/order/${order.code}`,
-            getDueDate: (ctx, order, invoice) => {
-              const payment = order.payments.find((p) => p.state === 'Settled');
-              if (payment?.method === 'purchase-order') {
-                const date = new Date();
-                date.setDate(date.getDate() + 30); //30 days later
-                return date;
-              } else {
-                return new Date();
-              }
-            },
-          }),
-        ],
-      }),
-      DefaultSearchPlugin,
-    ],
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
-    apiOptions: {
-      adminApiPlayground: true,
-      shopApiPlayground: true,
-    },
-  });
-  // Override cors after merge, because testConfig sets cors: true (boolean)
-  // which mergeConfig can't properly replace with an object
-  devConfig.apiOptions.cors = {
-    origin: 'http://localhost:5173',
-    credentials: true,
-  };
-  const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
+  const { server, adminClient, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData: {
       ...initialData,
@@ -91,12 +35,12 @@ require('dotenv').config();
   });
   const jobQueueService = server.app.get(JobQueueService);
   await jobQueueService.start();
-  // add default Config
+  // Add default config
   const ctx = await server.app.get(RequestContextService).create({
     apiType: 'admin',
   });
   await server.app.get(InvoiceService).upsertConfig(ctx, { enabled: true });
-  // Add a test orders at every server start
+  // Add test orders at every server start
   await new Promise((resolve) => setTimeout(resolve, 3000));
   await addShippingMethod(adminClient, 'manual-fulfillment');
   const orders = 1;
