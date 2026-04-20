@@ -16,7 +16,7 @@
     }
   },
   "include": ["src/", "src/index.ts", "test/xero-uk-export-strategy.spec.ts"],
-  "exclude": ["src/ui", "src/gql", "src/dashboard"],
+  "exclude": ["src/gql", "src/dashboard"],
   "references": [
     {
       "path": "./tsconfig.dashboard.json"

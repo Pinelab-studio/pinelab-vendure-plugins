@@ -28,15 +28,6 @@ plugins: [
     // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
   }),
-  // Add the invoices UI components to the admin ui
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [InvoicePlugin.ui],
-    }),
-  }),
 ];
 ```
 
@@ -89,7 +80,7 @@ Add the following link to your email template:
 When the customer clicks the link, the server will check if the `ordercode`, `channelCode` and `customer emailaddress`
 match with the requested order. If so, it will return the invoice.
 
-This link will always return the first invoice generated for an order. If invoices were recreated via the Admin UI, you can specify the invoice number in the url: ``
+This link will always return the first invoice generated for an order. If invoices were recreated via the Admin UI, you can specify the invoice number in the url.
 
 ## Recreating invoices and credit invoices
 
