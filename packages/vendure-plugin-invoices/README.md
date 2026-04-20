@@ -32,11 +32,11 @@ plugins: [
 ```
 
 2. Run a [migration](https://www.vendure.io/docs/developer-guide/migrations/), to add the Invoice and InvoiceConfig entities to the database.
-3. Start Vendure and login to the admin dashboard
+3. Start Vendure and login to the admin dashboard.
 4. Make sure you have the permission `AllowInvoicesPermission`
-5. Go to `Sales > Invoices`.
-6. Unfold the `Settings` accordion.
-7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
+5. Go to `Sales > Invoices` to see all generated invoices. The order detail page will have generated invoices for that order only.
+6. Go to `Settings > Invoices` to enable invoice generation and edit the invoice handlebars template.
+7. Check the checkbox to `Enable invoice generation` for the current channel on order placement. Invoices are generated on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
 ### Docker
