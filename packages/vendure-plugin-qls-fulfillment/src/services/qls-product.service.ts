@@ -361,6 +361,19 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
+   * Trigger a full product sync job
+   */
+  async triggerFullSync(ctx: RequestContext) {
+    return this.productJobQueue.add(
+      {
+        action: 'full-sync-products',
+        ctx: ctx.serialize(),
+      },
+      { retries: 5 }
+    );
+  }
+
+  /**
    * Trigger a product sync job for particular product variants
    */
   async triggerSyncVariants(ctx: RequestContext, productVariantIds: ID[]) {
