@@ -36,7 +36,7 @@ export function getVariantCustomFields(
     },
     {
       name: 'qlsRawProductData',
-      type: 'string',
+      type: 'text',
       label: [{ value: 'QLS Raw Product Data', languageCode: LanguageCode.en }],
       nullable: true,
       public: false,
