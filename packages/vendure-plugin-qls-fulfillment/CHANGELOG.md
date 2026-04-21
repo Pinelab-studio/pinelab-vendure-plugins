@@ -1,3 +1,7 @@
+# 1.7.1 (2026-04-21)
+
+- Fetch QLS raw product data on upsert and save in read-only field
+
 # 1.7.0 (2026-03-15)
 
 - Pass order phone number to QLS

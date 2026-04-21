@@ -472,17 +472,15 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     if (qlsProduct && qlsProduct?.id !== variant.customFields.qlsProductId) {
       // Update variant with QLS product ID if it changed
       // Do not use variantService.update because it will trigger a change event and cause an infinite loop
-      await this.connection
-        .getRepository(ctx, ProductVariant)
-        .update(
-          { id: variant.id },
-          {
-            customFields: {
-              qlsProductId: qlsProduct.id,
-              qlsRawProductData: JSON.stringify(qlsProduct),
-            },
-          }
-        );
+      await this.connection.getRepository(ctx, ProductVariant).update(
+        { id: variant.id },
+        {
+          customFields: {
+            qlsProductId: qlsProduct.id,
+            qlsRawProductData: JSON.stringify(qlsProduct),
+          },
+        }
+      );
       Logger.info(
         `Set QLS product data for variant '${variant.sku}' to ${qlsProduct.id}`,
         loggerCtx
