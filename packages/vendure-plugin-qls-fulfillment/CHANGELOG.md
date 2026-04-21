@@ -1,3 +1,7 @@
+# 1.8.0 (2026-04-21)
+
+- Added configurable `saveRawWarehouseStockData` option
+
 # 1.7.0 (2026-03-15)
 
 - Pass order phone number to QLS

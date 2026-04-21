@@ -331,18 +331,16 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             qlsProduct.warehouse_stocks &&
             this.options.saveRawWarehouseStockData
           ) {
-            await this.connection
-              .getRepository(ctx, ProductVariant)
-              .update(
-                { id: variant.id },
-                {
-                  customFields: {
-                    qlsRawWarehouseStockData: JSON.stringify(
-                      qlsProduct.warehouse_stocks
-                    ),
-                  },
-                }
-              );
+            await this.connection.getRepository(ctx, ProductVariant).update(
+              { id: variant.id },
+              {
+                customFields: {
+                  qlsRawWarehouseStockData: JSON.stringify(
+                    qlsProduct.warehouse_stocks
+                  ),
+                },
+              }
+            );
           }
         }
       } catch (e) {
