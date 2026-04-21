@@ -90,6 +90,12 @@ export interface QlsPluginOptions {
    */
   qlsProductIdUiTab?: string | null;
   /**
+   * After syncing a variant to QLS, fetch the full product from QLS and save
+   * the raw warehouse stock data in the `qlsRawWarehouseStockData` custom field.
+   * Defaults to false.
+   */
+  saveRawWarehouseStockData?: boolean;
+  /**
    * Additional order items to add to the QLS order.
    */
   addAdditionalOrderItems?: (
