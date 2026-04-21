@@ -128,6 +128,7 @@ export class QlsClient {
         )}`,
         loggerCtx
       );
+      return response.data;
     }
     return undefined;
   }
