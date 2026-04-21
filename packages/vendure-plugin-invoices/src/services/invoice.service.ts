@@ -556,8 +556,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         headless: true,
         // We are not using puppeteer to fetch any external resources, so we dont care about the security concerns here
         args: ['--no-sandbox'],
-        // Allow overriding the executable path via env var (e.g. in CI where system Chrome is used)
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
       });
       const page = await browser.newPage();
       await page.setContent(compiledHtml);

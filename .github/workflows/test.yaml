@@ -59,13 +59,14 @@ jobs:
         run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
       - name: Install root dependencies
         run: yarn --frozen-lockfile
+      - name: Install Chrome for Puppeteer (invoices plugin only)
+        if: ${{ matrix.package == 'packages/vendure-plugin-invoices/' }}
+        run: npx puppeteer browsers install chrome
       - name: Build
         run: cd ${{ matrix.package }} && yarn build
       - name: Lint
         run: cd ${{ matrix.package }} && yarn lint
       - name: Test
-        env:
-          PUPPETEER_EXECUTABLE_PATH: /usr/bin/google-chrome-stable
         run: |
           cd ${{ matrix.package }}
           TEST_ADMIN_UI=true yarn test
