@@ -103,7 +103,7 @@ export class QlsClient {
 
   async createFulfillmentProduct(
     data: FulfillmentProductInput
-  ): Promise<FulfillmentProduct> {
+  ): Promise<FulfillmentProduct | undefined> {
     const response = await this.rawRequest<FulfillmentProduct>(
       'POST',
       'fulfillment/products',
@@ -114,30 +114,45 @@ export class QlsClient {
         'Failed to create fulfillment product. Got empty response.'
       );
     }
-    const productData = await this.getFulfillmentProductById(response.data.id);
-    if (!productData) {
-      throw new Error('Failed to retrieve fulfillment product after creation.');
+    try {
+      const productData = await this.getFulfillmentProductById(
+        response.data.id
+      );
+      if (productData) {
+        return productData;
+      }
+    } catch (e) {
+      Logger.warn(
+        `Failed to fetch product '${response.data.id}' after creation: ${e}`,
+        loggerCtx
+      );
     }
-    return productData;
+    return undefined;
   }
 
   async updateFulfillmentProduct(
     fulfillmentProductId: string,
     data: FulfillmentProductInput
-  ): Promise<FulfillmentProduct> {
-    await this.rawRequest<FulfillmentProduct>(
+  ): Promise<FulfillmentProduct | undefined> {
+    const response = await this.rawRequest<FulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
       data
     );
-
-    const productData = await this.getFulfillmentProductById(
-      fulfillmentProductId
-    );
-    if (!productData) {
-      throw new Error('Failed to retrieve fulfillment product after update.');
+    try {
+      const productData = await this.getFulfillmentProductById(
+        fulfillmentProductId
+      );
+      if (productData) {
+        return productData;
+      }
+    } catch (e) {
+      Logger.warn(
+        `Failed to fetch product '${fulfillmentProductId}' after update: ${e}`,
+        loggerCtx
+      );
     }
-    return productData;
+    return undefined;
   }
 
   async deleteFulfillmentProduct(fulfillmentProductId: string): Promise<void> {

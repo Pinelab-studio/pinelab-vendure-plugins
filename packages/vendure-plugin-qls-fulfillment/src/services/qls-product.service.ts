@@ -451,7 +451,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         sku: variant.sku,
         ...additionalVariantFields,
       });
-      qlsProduct = result;
+      qlsProduct = result ?? null;
       Logger.info(`Created product '${variant.sku}' in QLS`, loggerCtx);
       createdOrUpdated = 'created';
     } else if (
@@ -461,11 +461,12 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         additionalVariantFields
       )
     ) {
-      qlsProduct = await client.updateFulfillmentProduct(existingProduct.id, {
-        sku: variant.sku,
-        name: variant.name,
-        ...additionalVariantFields,
-      });
+      qlsProduct =
+        (await client.updateFulfillmentProduct(existingProduct.id, {
+          sku: variant.sku,
+          name: variant.name,
+          ...additionalVariantFields,
+        })) ?? null;
       Logger.info(`Updated product '${variant.sku}' in QLS`, loggerCtx);
       createdOrUpdated = 'updated';
     }
