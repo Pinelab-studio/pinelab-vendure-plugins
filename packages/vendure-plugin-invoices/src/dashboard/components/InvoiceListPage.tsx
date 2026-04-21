@@ -41,39 +41,6 @@ const exportToAccountingDocument = graphql(`
   }
 `);
 
-/**
- * Row-level bulk action to export a single invoice to accounting.
- * Shows "Re-export" if the invoice was already exported successfully.
- */
-function ExportToAccountingAction({
-  selection,
-}: Parameters<BulkActionComponent<any>>[0]) {
-  const invoice = selection[0];
-  const ref = invoice?.accountingReference;
-  const alreadyExported = ref?.reference && !ref?.errorMessage;
-
-  async function handleExport() {
-    try {
-      await api.mutate(exportToAccountingDocument, {
-        invoiceNumber: invoice.invoiceNumber,
-      });
-      toast.success('Export started');
-    } catch (err: any) {
-      toast.error('Export failed', { description: err.message });
-    }
-  }
-
-  return (
-    <DataTableBulkActionItem
-      onClick={handleExport}
-      label={
-        alreadyExported ? 'Re-export to accounting' : 'Export to accounting'
-      }
-      icon={ExternalLinkIcon}
-    />
-  );
-}
-
 export const invoiceListRoute: DashboardRouteDefinition = {
   navMenuItem: {
     sectionId: 'sales',
@@ -198,10 +165,7 @@ export const invoiceListRoute: DashboardRouteDefinition = {
         'orderCode',
         'accountingReference',
       ]}
-      bulkActions={[
-        { component: ExportToAccountingAction },
-        { component: DownloadInvoicesBulkAction },
-      ]}
+      bulkActions={[{ component: DownloadInvoicesBulkAction }]}
     />
   ),
 };
