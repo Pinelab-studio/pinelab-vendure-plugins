@@ -123,7 +123,9 @@ export class QlsClient {
       }
     } catch (e) {
       Logger.warn(
-        `Failed to fetch product '${response.data.id}' after creation: ${e}`,
+        `Failed to fetch product '${response.data.id}' after creation: ${String(
+          e
+        )}`,
         loggerCtx
       );
     }
@@ -134,7 +136,7 @@ export class QlsClient {
     fulfillmentProductId: string,
     data: FulfillmentProductInput
   ): Promise<FulfillmentProduct | undefined> {
-    const response = await this.rawRequest<FulfillmentProduct>(
+    await this.rawRequest<FulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
       data
@@ -148,7 +150,9 @@ export class QlsClient {
       }
     } catch (e) {
       Logger.warn(
-        `Failed to fetch product '${fulfillmentProductId}' after update: ${e}`,
+        `Failed to fetch product '${fulfillmentProductId}' after update: ${String(
+          e
+        )}`,
         loggerCtx
       );
     }
