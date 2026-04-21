@@ -1,18 +1,15 @@
 import {
   BulkActionComponent,
   DataTableBulkActionItem,
-  usePaginatedList,
 } from '@vendure/dashboard';
 import { toast } from 'sonner';
 import { DownloadIcon } from 'lucide-react';
 import { getAuthHeaders, getServerBaseUrl, downloadBlob } from '../utils';
 
-export const DownloadInvoicesBulkAction: BulkActionComponent<any> = ({
+export function DownloadInvoicesBulkAction({
   selection,
   table,
-}) => {
-  const { refetchPaginatedList } = usePaginatedList();
-
+}: Parameters<BulkActionComponent<any>>[0]) {
   // Only show in the bulk bar (multiple selected), not in per-row actions dropdown
   if (selection.length <= 1) {
     return null;
@@ -48,4 +45,4 @@ export const DownloadInvoicesBulkAction: BulkActionComponent<any> = ({
       icon={DownloadIcon}
     />
   );
-};
+}

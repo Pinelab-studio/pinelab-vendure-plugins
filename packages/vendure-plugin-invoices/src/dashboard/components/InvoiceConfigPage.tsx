@@ -68,14 +68,15 @@ function InvoiceConfigPageComponent() {
 
   // Populate form when data loads
   useEffect(() => {
-    const config = data?.invoiceConfig as any;
+    const config = data?.invoiceConfig;
     if (config) {
       form.reset({
         enabled: config.enabled,
-        templateString: config.templateString,
+        templateString: config.templateString ?? '',
         orderCode: '',
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   const { mutate: saveConfig, isPending: saving } = useMutation({
@@ -214,5 +215,5 @@ export const invoiceConfigRoute: DashboardRouteDefinition = {
   loader: () => ({
     breadcrumb: 'Invoice Settings',
   }),
-  component: () => <InvoiceConfigPageComponent />,
+  component: InvoiceConfigPageComponent,
 };

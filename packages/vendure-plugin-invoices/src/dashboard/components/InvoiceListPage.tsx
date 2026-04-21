@@ -7,6 +7,7 @@ import {
   DetailPageButton,
   ListPage,
 } from '@vendure/dashboard';
+
 import { graphql } from '@/gql';
 import { toast } from 'sonner';
 import { DownloadIcon, ExternalLinkIcon } from 'lucide-react';
@@ -44,7 +45,9 @@ const exportToAccountingDocument = graphql(`
  * Row-level bulk action to export a single invoice to accounting.
  * Shows "Re-export" if the invoice was already exported successfully.
  */
-const ExportToAccountingAction: BulkActionComponent<any> = ({ selection }) => {
+function ExportToAccountingAction({
+  selection,
+}: Parameters<BulkActionComponent<any>>[0]) {
   const invoice = selection[0];
   const ref = invoice?.accountingReference;
   const alreadyExported = ref?.reference && !ref?.errorMessage;
@@ -69,7 +72,7 @@ const ExportToAccountingAction: BulkActionComponent<any> = ({ selection }) => {
       icon={ExternalLinkIcon}
     />
   );
-};
+}
 
 export const invoiceListRoute: DashboardRouteDefinition = {
   navMenuItem: {

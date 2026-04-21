@@ -9,15 +9,7 @@ defineDashboardExtension({
   actionBarItems: [
     {
       pageId: 'order-detail',
-      component: ({ context }) => (
-        <RegenerateInvoiceButton context={context} isWarning={false} />
-      ),
-    },
-    {
-      pageId: 'order-detail',
-      component: ({ context }) => (
-        <RegenerateInvoiceButton context={context} isWarning={true} />
-      ),
+      component: ({ context }) => <RegenerateInvoiceButton context={context} />,
     },
   ],
   pageBlocks: [

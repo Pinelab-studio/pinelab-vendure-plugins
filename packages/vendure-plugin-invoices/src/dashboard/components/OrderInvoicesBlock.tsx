@@ -31,14 +31,15 @@ const getOrderInvoicesDocument = graphql(`
 
 export function OrderInvoicesBlock({ orderId }: { orderId?: string }) {
   const { hasPermissions } = usePermissions();
+  const canViewInvoices = hasPermissions(['AllowInvoicesPermission']);
 
   const { data, isLoading } = useQuery({
     queryKey: ['order-invoices', orderId],
     queryFn: () => api.query(getOrderInvoicesDocument, { id: orderId! }),
-    enabled: !!orderId,
+    enabled: !!orderId && canViewInvoices,
   });
 
-  if (!hasPermissions(['AllowInvoicesPermission'])) {
+  if (!canViewInvoices) {
     return null;
   }
 

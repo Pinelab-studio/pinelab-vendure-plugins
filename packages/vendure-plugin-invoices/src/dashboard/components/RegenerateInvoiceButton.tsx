@@ -31,21 +31,16 @@ const createInvoiceDocument = graphql(`
   }
 `);
 
-interface RegenerateInvoiceButtonProps {
-  context: { entity?: any; route?: any };
-  /** When true, shows a warning-style button for mismatched totals */
-  isWarning: boolean;
-}
-
 /**
  * Action bar button for regenerating invoices on the order detail page.
- * Shows a warning variant when order totals don't match the latest invoice,
- * and a normal outlined button when they do.
+ * Shows a destructive variant when order totals don't match the latest invoice,
+ * and an outlined button when they do match.
  */
 export function RegenerateInvoiceButton({
   context,
-  isWarning,
-}: RegenerateInvoiceButtonProps) {
+}: {
+  context: { entity?: any; route?: any };
+}) {
   const orderId = context.entity?.id;
   const queryClient = useQueryClient();
 
@@ -79,23 +74,18 @@ export function RegenerateInvoiceButton({
   }
 
   const latestInvoice = order.invoices?.[0];
-  const orderTotalMatches =
-    latestInvoice?.orderTotals?.totalWithTax === order.totalWithTax;
-
-  // Warning button: only visible when totals DON'T match
-  if (isWarning && orderTotalMatches) return null;
-  // Normal button: only visible when totals DO match
-  if (!isWarning && !orderTotalMatches) return null;
+  const totalsMismatch =
+    latestInvoice?.orderTotals?.totalWithTax !== order.totalWithTax;
 
   return (
     <PermissionGuard requires={['AllowInvoicesPermission']}>
       <Button
         type="button"
-        variant={isWarning ? 'destructive' : 'outline'}
+        variant={totalsMismatch ? 'destructive' : 'outline'}
         onClick={() => regenerate()}
         disabled={isPending}
       >
-        {isWarning ? (
+        {totalsMismatch ? (
           <AlertTriangleIcon className="mr-2 h-4 w-4" />
         ) : (
           <RefreshCwIcon
