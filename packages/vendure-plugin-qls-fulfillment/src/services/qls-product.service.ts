@@ -461,7 +461,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         additionalVariantFields
       )
     ) {
-      await client.updateFulfillmentProduct(existingProduct.id, {
+      qlsProduct = await client.updateFulfillmentProduct(existingProduct.id, {
         sku: variant.sku,
         name: variant.name,
         ...additionalVariantFields,
@@ -476,10 +476,15 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         .getRepository(ctx, ProductVariant)
         .update(
           { id: variant.id },
-          { customFields: { qlsProductId: qlsProduct.id } }
+          {
+            customFields: {
+              qlsProductId: qlsProduct.id,
+              qlsRawProductData: JSON.stringify(qlsProduct),
+            },
+          }
         );
       Logger.info(
-        `Set QLS product ID for variant '${variant.sku}' to ${qlsProduct.id}`,
+        `Set QLS product data for variant '${variant.sku}' to ${qlsProduct.id}`,
         loggerCtx
       );
     }

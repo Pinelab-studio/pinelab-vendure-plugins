@@ -57,6 +57,23 @@ export class QlsClient {
   }
 
   /**
+   * Get a fulfillment product by its ID.
+   * Returns undefined if no product is found.
+   */
+  async getFulfillmentProductById(
+    fulfillmentProductId: string
+  ): Promise<FulfillmentProduct | undefined> {
+    const result = await this.rawRequest<FulfillmentProduct>(
+      'GET',
+      `fulfillment/products/${fulfillmentProductId}`
+    );
+    if (!result.data) {
+      return undefined;
+    }
+    return result.data;
+  }
+
+  /**
    * Get stock for all fulfillment products.
    * Might require multiple requests if the result is paginated.
    */
@@ -97,18 +114,30 @@ export class QlsClient {
         'Failed to create fulfillment product. Got empty response.'
       );
     }
-    return response.data;
+    const productData = await this.getFulfillmentProductById(response.data.id);
+    if (!productData) {
+      throw new Error('Failed to retrieve fulfillment product after creation.');
+    }
+    return productData;
   }
 
   async updateFulfillmentProduct(
     fulfillmentProductId: string,
     data: FulfillmentProductInput
-  ): Promise<void> {
+  ): Promise<FulfillmentProduct> {
     await this.rawRequest<FulfillmentProduct>(
       'PUT',
       `fulfillment/products/${fulfillmentProductId}`,
       data
     );
+
+    const productData = await this.getFulfillmentProductById(
+      fulfillmentProductId
+    );
+    if (!productData) {
+      throw new Error('Failed to retrieve fulfillment product after update.');
+    }
+    return productData;
   }
 
   async deleteFulfillmentProduct(fulfillmentProductId: string): Promise<void> {

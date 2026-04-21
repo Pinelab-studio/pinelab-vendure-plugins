@@ -7,4 +7,5 @@ export * from './qls-plugin';
 export * from './services/qls-order.service';
 export * from './services/qls-product.service';
 export * from './config/permissions';
+export * from './services/qls-variant-sync-failed-event';
 export * from './types';

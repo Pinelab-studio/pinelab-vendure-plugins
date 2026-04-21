@@ -11,6 +11,7 @@ import {
 declare module '@vendure/core' {
   interface CustomProductVariantFields {
     qlsProductId?: string;
+    qlsRawProductData?: string;
   }
 
   interface CustomOrderFields {
@@ -28,6 +29,15 @@ export function getVariantCustomFields(
       name: 'qlsProductId',
       type: 'string',
       label: [{ value: 'QLS Product ID', languageCode: LanguageCode.en }],
+      nullable: true,
+      public: false,
+      readonly: true,
+      ui: { tab: uiTab },
+    },
+    {
+      name: 'qlsRawProductData',
+      type: 'string',
+      label: [{ value: 'QLS Raw Product Data', languageCode: LanguageCode.en }],
       nullable: true,
       public: false,
       readonly: true,
