@@ -1,4 +1,4 @@
-# 1.7.1 (2026-04-21)
+# 1.8.0 (2026-04-21)
 
 - Fetch QLS raw product data on upsert and save in read-only field
 
