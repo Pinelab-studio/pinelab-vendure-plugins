@@ -326,11 +326,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             result.qlsProductId
           );
           // Update QLS warehouse stock data in Vendure, only on sync variants to prevent rate limit issues, and only if the option is enabled
-          if (
-            qlsProduct &&
-            qlsProduct.warehouse_stocks &&
-            this.options.saveRawWarehouseStockData
-          ) {
+          if (qlsProduct && qlsProduct.warehouse_stocks) {
             await this.connection.getRepository(ctx, ProductVariant).update(
               { id: variant.id },
               {
