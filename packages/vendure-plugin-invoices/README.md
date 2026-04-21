@@ -17,11 +17,11 @@ In v4 the field `invoice.isCreditInvoice` was changed from a getter to a physica
 
 ## Getting started
 
-1. Install the plugin with `yarn add @vendure-hub/pinelab-invoice-plugin`
+1. Install the plugin with `yarn add @pinelab/pinelab-invoice-plugin`
 2. Add the following config to your `vendure-config.ts`:
 
 ```ts
-import { InvoicePlugin } from '@vendure-hub/pinelab-invoice-plugin';
+import { InvoicePlugin } from '@pinelab/pinelab-invoice-plugin';
 
 plugins: [
   InvoicePlugin.init({
