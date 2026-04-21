@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/pinelab-invoice-plugin",
-  "version": "4.5.1",
+  "version": "5.0.0",
   "description": "Vendure plugin for PDF invoice generation",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
@@ -20,7 +20,10 @@
   "scripts": {
     "start": "yarn ts-node test/dev-server.ts",
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
-    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
+    "build": "rimraf dist && yarn graphql-codegen && tsc && copyfiles -u 1 'src/dashboard/**/*' dist/ && yarn build:dashboard",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
+    "generate": "graphql-codegen",
     "test": "vitest --bail 1 run",
     "lint": "eslint ."
   },
@@ -31,6 +34,8 @@
   },
   "gitHead": "476f36da3aafea41fbf21c70774a30306f1d238f",
   "devDependencies": {
+    "@babel/preset-react": "7.26.3",
+    "@babel/preset-typescript": "7.26.0",
     "xero-node": "9.2.0"
   }
 }

@@ -1,6 +1,6 @@
 import { DeepPartial, VendureEntity } from '@vendure/core';
 import { Column, Entity, Unique, Index, OneToMany, ManyToOne } from 'typeorm';
-import { InvoiceOrderTotals } from '../ui/generated/graphql';
+import { InvoiceOrderTotals } from '../generated-graphql-types';
 
 @Entity('invoice')
 @Unique(['channelId', 'invoiceNumber'])

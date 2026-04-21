@@ -8,8 +8,6 @@ import {
   Type,
   VendurePlugin,
 } from '@vendure/core';
-import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import {
   adminSchemaExtensions,
   shopSchemaExtensions,
@@ -81,6 +79,7 @@ export interface InvoicePluginConfig extends InvoicePluginConfigInput {
     resolvers: [InvoiceCommonResolver],
   },
   compatibility: '>=3.2.0',
+  dashboard: './dashboard/index.tsx',
   configuration: (config: RuntimeVendureConfig) => {
     config.authOptions.customPermissions.push(invoicePermission);
     return config;
@@ -121,23 +120,4 @@ export class InvoicePlugin implements OnModuleInit {
     };
     return this;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'lazy',
-        route: 'invoices',
-        ngModuleFileName: 'invoices.module.ts',
-        ngModuleName: 'InvoicesModule',
-      },
-      {
-        type: 'shared',
-        ngModuleFileName: 'invoices-nav.module.ts',
-        ngModuleName: 'InvoicesNavModule',
-      },
-    ],
-    routes: [{ filePath: 'routes.ts', route: 'invoice-list' }],
-    providers: ['providers.ts'],
-  };
 }

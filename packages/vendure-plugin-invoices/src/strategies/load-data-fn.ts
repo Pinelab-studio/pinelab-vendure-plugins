@@ -5,7 +5,7 @@ import {
   translateEntity,
 } from '@vendure/core';
 import { InvoiceEntity } from '../entities/invoice.entity';
-import { InvoiceOrderTotals } from '../ui/generated/graphql';
+import { InvoiceOrderTotals } from '../generated-graphql-types';
 
 export interface InvoiceData {
   invoiceNumber: number;

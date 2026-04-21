@@ -55,10 +55,11 @@ jobs:
           key: node-modules-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: |
             node-modules-${{ runner.os }}-
-      - name: Set Vendure Hub registry auth token
-        run: npm set //registry.vendure.io/:_authToken ${{secrets.VENDURE_HUB_NPM_TOKEN}}
       - name: Install root dependencies
         run: yarn --frozen-lockfile
+      - name: Install Chrome for Puppeteer (invoices plugin only)
+        # if: ${{ matrix.package == 'packages/vendure-plugin-invoices/' }}
+        run: npx puppeteer browsers install chrome
       - name: Build
         run: cd ${{ matrix.package }} && yarn build
       - name: Lint

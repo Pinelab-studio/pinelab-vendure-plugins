@@ -1,4 +1,4 @@
-import { InvoiceOrderTotals } from '../ui/generated/graphql';
+import { InvoiceOrderTotals } from '../generated-graphql-types';
 
 /**
  * Reverse the order total amounts.
