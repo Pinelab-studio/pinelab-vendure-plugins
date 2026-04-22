@@ -1,9 +1,11 @@
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
   PaymentService,
   Permission,
+  RelationPaths,
+  Relations,
   RequestContext,
   Transaction,
 } from '@vendure/core';
@@ -13,6 +15,7 @@ import {
   MutationCreateWalletArgs,
   MutationRefundPaymentToStoreCreditArgs,
   WalletAdjustment,
+  WalletListOptions,
 } from './generated/graphql';
 import { Wallet } from '../entities/wallet.entity';
 
@@ -30,7 +33,11 @@ export class AdminResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationCreateWalletArgs
   ): Promise<Wallet> {
-    return this.walletService.create(ctx, args.input);
+    return this.walletService.create(
+      ctx,
+      args.input,
+      args.input.code ?? undefined
+    );
   }
 
   @Transaction()
@@ -69,5 +76,15 @@ export class AdminResolver {
       shouldCreateRefundEntity: true,
       reason: args.input.reason,
     });
+  }
+
+  @Query()
+  @Allow(Permission.ReadCustomer)
+  giftCardWallets(
+    @Ctx() ctx: RequestContext,
+    @Args() args: WalletListOptions,
+    @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>
+  ) {
+    return this.walletService.getGiftCardWallets(ctx, args, relations);
   }
 }

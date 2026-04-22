@@ -39,12 +39,19 @@ const WalletList: React.FC<WalletListProps> = ({ customerId }) => {
     ((customerData?.customer?.wallets as any)?.items as Wallet[]) ?? [];
   return isLoading ? (
     <div className="animate-pulse space-y-2">
-      <div className="h-16 bg-muted rounded-md w-[350px]" />
+      <div className="h-16 bg-muted rounded-md w-87.5" />
     </div>
   ) : (
     <div className="flex flex-wrap gap-4">
       {wallets.map((w) => (
-        <WalletCard key={w.id} wallet={w} />
+        <div
+          className="wallet-card"
+          style={{
+            width: '350px',
+          }}
+        >
+          <WalletCard key={w.id} wallet={w} isCollapsed={false} />
+        </div>
       ))}
     </div>
   );

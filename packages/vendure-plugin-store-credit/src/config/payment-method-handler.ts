@@ -30,8 +30,10 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
     args,
     metadata
   ): Promise<CreatePaymentResult> => {
-    if (!metadata.walletId) {
-      throw new Error('Wallet ID is required as input metadata');
+    if (!metadata.walletId && !metadata.giftCardCode) {
+      throw new Error(
+        'Wallet ID or Gift Card Code is required as input metadata'
+      );
     }
     const metadataAmount = metadata.amount
       ? parseInt(metadata.amount as string)
@@ -51,7 +53,7 @@ export const storeCreditPaymentHandler = new PaymentMethodHandler({
         order,
         amount,
         // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-        metadata.walletId
+        metadata
       );
       return {
         amount,

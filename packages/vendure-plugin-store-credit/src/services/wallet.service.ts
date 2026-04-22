@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  OnApplicationBootstrap,
+  Optional,
+} from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { summate } from '@vendure/common/lib/shared-utils';
 import { unique } from '@vendure/common/lib/unique';
 import {
@@ -7,14 +13,18 @@ import {
   EventBus,
   ID,
   idsAreEqual,
+  Injector,
   InternalServerError,
   ListQueryBuilder,
   ListQueryOptions,
   Logger,
   Order,
+  OrderLine,
+  OrderPlacedEvent,
   OrderService,
   PaginatedList,
   Payment,
+  PaymentMetadata,
   Refund,
   RefundEvent,
   RelationPaths,
@@ -24,14 +34,18 @@ import {
   UserInputError,
   UserService,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import { CreateWalletInput } from '../api/generated/graphql';
-import { loggerCtx } from '../constants';
+import { loggerCtx, STORE_CREDIT_PLUGIN_OPTIONS } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
-import { QueryFailedError } from 'typeorm';
+import { QueryFailedError, IsNull, Not } from 'typeorm';
+import { GiftCardWalletCreatedEvent } from '../events/gift-card-wallet-created.event';
+import { StoreCreditPluginOptions } from '../types';
+import { ModuleRef } from '@nestjs/core';
 
 @Injectable()
-export class WalletService {
+export class WalletService implements OnApplicationBootstrap {
   private readonly relations = [
     'channels',
     'customer',
@@ -43,8 +57,132 @@ export class WalletService {
     private readonly listQueryBuilder: ListQueryBuilder,
     private readonly userService: UserService,
     private readonly eventBus: EventBus,
-    private readonly orderService: OrderService
+    private readonly moduleRef: ModuleRef,
+    private readonly orderService: OrderService,
+    @Optional()
+    @Inject(STORE_CREDIT_PLUGIN_OPTIONS)
+    private options?: StoreCreditPluginOptions
   ) {}
+
+  onApplicationBootstrap() {
+    this.eventBus.ofType(OrderPlacedEvent).subscribe((payload) => {
+      this.createGiftCardsForOrder(payload.ctx, payload.order).catch((err) => {
+        Logger.error(
+          `Error creating gift card wallets for order ${payload.order.code}: ${
+            asError(err).message
+          }`,
+          loggerCtx
+        );
+      });
+    });
+  }
+
+  /**
+   * Creates all gift card wallets for all eligible order lines and emits
+   * one event per order containing all created gift card wallets.
+   */
+  async createGiftCardsForOrder(ctx: RequestContext, order: Order) {
+    const createdWallets: Wallet[] = [];
+    for (const line of order.lines) {
+      try {
+        const wallets = await this.createGiftCardForOrderLine(ctx, order, line);
+        createdWallets.push(...wallets);
+      } catch (err) {
+        Logger.error(
+          `Error creating gift card wallet for order line ${line.id} in order ${
+            order.code
+          }: ${asError(err).message}`,
+          loggerCtx
+        );
+      }
+    }
+    if (createdWallets.length > 0) {
+      void this.eventBus.publish(
+        new GiftCardWalletCreatedEvent(ctx, createdWallets, order)
+      );
+    }
+  }
+
+  /**
+   * Called for each order line of a placed order. If the configured
+   * `createGiftCardWallet` strategy returns a result for the given line, a gift
+   * card wallet is created per quantity of the line. The wallet `code` is made
+   * unique by suffixing `-N` when a code already exists in the DB.
+   */
+  async createGiftCardForOrderLine(
+    ctx: RequestContext,
+    order: Order,
+    line: OrderLine
+  ): Promise<Wallet[]> {
+    const result = await this.options?.createGiftCardWallet?.(
+      ctx,
+      new Injector(this.moduleRef),
+      order,
+      line
+    );
+
+    if (!result) {
+      return [];
+    }
+
+    const createdWallets: Wallet[] = [];
+
+    const { price, cardCode } = result;
+
+    for (let i = 0; i < line.quantity; i++) {
+      const finalCode = await this.getUniqueCode(ctx, cardCode);
+
+      const wallet = await this.create(
+        ctx,
+        {
+          customerId: order.customerId,
+          name: finalCode,
+        },
+        finalCode
+      );
+      const [walletWithBalance] = await this.adjustBalanceForWallet(
+        ctx,
+        price,
+        wallet.id,
+        `Initial gift card balance for order ${order.code}`
+      );
+      createdWallets.push(walletWithBalance);
+
+      await this.orderService.addNoteToOrder(ctx, {
+        id: order.id,
+        note: `Gift card wallet ${finalCode} created with balance ${
+          price / 100
+        } for product with id ${line.productVariant?.productId}`,
+        isPublic: false,
+      });
+    }
+
+    return createdWallets;
+  }
+
+  /**
+   * Returns a wallet code that does not yet exist in the database.
+   * If `baseCode` is already taken, `-XXXX` is appended where `XXXX` is a
+   * random 4-character alphanumeric suffix.
+   */
+  async getUniqueCode(ctx: RequestContext, baseCode: string): Promise<string> {
+    const repo = this.connection.getRepository(ctx, Wallet);
+    let candidate = baseCode;
+    while (await repo.findOne({ where: { code: candidate } })) {
+      candidate = `${baseCode}-${this.generateRandomSuffix(4)}`;
+    }
+    return candidate;
+  }
+
+  private generateRandomSuffix(length: number): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const bytes = randomBytes(length);
+    let suffix = '';
+    for (const byte of bytes) {
+      suffix += characters[byte % characters.length];
+    }
+    return suffix;
+  }
 
   findAll(
     ctx: RequestContext,
@@ -89,11 +227,21 @@ export class WalletService {
       });
   }
 
-  async create(ctx: RequestContext, input: CreateWalletInput): Promise<Wallet> {
+  async create(
+    ctx: RequestContext,
+    input: CreateWalletInput,
+    code?: string
+  ): Promise<Wallet> {
+    if (!input.customerId && !code) {
+      throw new UserInputError(
+        'Either a customerId or a code must be provided to create a wallet'
+      );
+    }
     const wallet = new Wallet({
       name: input.name,
       customer: { id: input.customerId },
       balance: 0,
+      code,
       currencyCode: ctx.channel.defaultCurrencyCode,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       metadata: input.metadata ?? undefined,
@@ -143,8 +291,19 @@ export class WalletService {
 
     const wallet = await walletRepo.findOneOrFail({
       where: { id: walletId },
-      relations: ['channels'],
+      relations: ['channels', 'customer'],
     });
+
+    if (
+      ctx.apiType === 'shop' &&
+      wallet.customer?.user?.id &&
+      !idsAreEqual(wallet.customer?.user?.id, user?.id)
+    ) {
+      throw new UserInputError(
+        `Wallet with id ${walletId} is not assigned to the current user`
+      );
+    }
+
     const isAllowedInChannel = wallet.channels.some((channel) =>
       idsAreEqual(channel.id, ctx.channelId)
     );
@@ -153,32 +312,26 @@ export class WalletService {
         `Wallet with id ${walletId} is not assigned to the current channel`
       );
     }
-    // Debit would violate CHECK (balance >= 0)
-    if (amount < 0 && wallet.balance + amount < 0) {
+    // Atomic balance update: the WHERE clause ensures we never end up with a
+    // negative balance even under concurrent debits. If the condition does not
+    // match we throw an "insufficient balance" error.
+    const res = await walletRepo
+      .createQueryBuilder()
+      .update(Wallet)
+      .set({ balance: () => `balance + :amount` })
+      .where('id = :id AND balance + :amount >= 0', { id: walletId, amount })
+      .execute();
+
+    if ((res.affected ?? 0) === 0) {
       throw new UserInputError(
         `Insufficient balance. Wallet has ${
           wallet.balance
         }, cannot debit ${-amount}`
       );
-    }
-    const res = await walletRepo
-      .createQueryBuilder()
-      .update(Wallet)
-      .set({ balance: () => `balance + :amount` })
-      .where('id = :id', { id: walletId })
-      .setParameters({ amount })
-      .execute();
-
-    if ((res.affected ?? 0) !== 1) {
-      Logger.warn(
-        `Wallet balance update did not affect exactly one row: ${JSON.stringify(
-          {
-            walletId,
-            affected: res.affected,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            raw: res.raw,
-          }
-        )}`
+    } else if ((res.affected ?? 0) > 1) {
+      // This should never happen since id is unique, but we check just in case
+      throw new InternalServerError(
+        `Unexpected error adjusting wallet balance: ${res.affected} wallets were updated`
       );
     }
 
@@ -264,14 +417,33 @@ export class WalletService {
     ctx: RequestContext,
     order: Order,
     amount: number,
-    walletId: ID
+    metadata: PaymentMetadata
   ) {
-    await this.adjustBalanceForWallet(
-      ctx,
-      -1 * amount,
-      walletId,
-      `Paid for order ${order.code}`
-    );
+    if (metadata.walletId) {
+      await this.adjustBalanceForWallet(
+        ctx,
+        -1 * amount,
+        metadata.walletId as ID,
+        `Paid for order ${order.code}`
+      );
+    }
+    if (metadata.giftCardCode) {
+      const wallet = await this.findByCode(
+        ctx,
+        metadata.giftCardCode as string
+      );
+      if (!wallet) {
+        throw new UserInputError(
+          `No wallet found for gift card code '${metadata.giftCardCode}'`
+        );
+      }
+      await this.adjustBalanceForWallet(
+        ctx,
+        -1 * amount,
+        wallet?.id,
+        `Paid for order ${order.code}`
+      );
+    }
   }
 
   async findOne(
@@ -290,6 +462,33 @@ export class WalletService {
       }
     );
     return wallet;
+  }
+
+  async findByCode(
+    ctx: RequestContext,
+    code: string,
+    relations?: RelationPaths<Wallet>
+  ): Promise<Wallet | null> {
+    const effectiveRelations = relations ?? this.relations.slice();
+    // Channel-scoped lookup: only return a wallet when it is assigned to the
+    // current channel, to prevent leaking wallet data across channels.
+    const wallet = await this.connection
+      .getRepository(ctx, Wallet)
+      .createQueryBuilder('wallet')
+      .leftJoinAndSelect('wallet.channels', 'channel')
+      .where('wallet.code = :code', { code })
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .getOne();
+    if (!wallet) {
+      return null;
+    }
+    // Re-fetch with requested relations now that we've confirmed channel access.
+    return (
+      (await this.connection.getRepository(ctx, Wallet).findOne({
+        where: { id: wallet.id },
+        relations: unique(effectiveRelations),
+      })) ?? null
+    );
   }
 
   /**
@@ -395,5 +594,28 @@ export class WalletService {
     const nonFailedRefunds =
       payment.refunds?.filter((refund) => refund.state !== 'Failed') ?? [];
     return summate(nonFailedRefunds, 'total');
+  }
+
+  getGiftCardWallets(
+    ctx: RequestContext,
+    options?: ListQueryOptions<Wallet>,
+    relations: RelationPaths<Wallet> = []
+  ): Promise<PaginatedList<Wallet>> {
+    return this.listQueryBuilder
+      .build(Wallet, options, {
+        ctx,
+        channelId: ctx.channelId,
+        where: {
+          code: Not(IsNull()),
+        },
+        relations,
+      })
+      .getManyAndCount()
+      .then(([items, totalItems]) => {
+        return {
+          items,
+          totalItems,
+        };
+      });
   }
 }
