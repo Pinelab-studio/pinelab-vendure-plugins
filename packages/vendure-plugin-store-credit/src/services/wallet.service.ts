@@ -137,10 +137,15 @@ export class WalletService implements OnApplicationBootstrap {
           customerId: order.customerId,
           name: finalCode,
         },
-        price,
         finalCode
       );
-      createdWallets.push(wallet);
+      const [walletWithBalance] = await this.adjustBalanceForWallet(
+        ctx,
+        price,
+        wallet.id,
+        `Initial gift card balance for order ${order.code}`
+      );
+      createdWallets.push(walletWithBalance);
 
       await this.orderService.addNoteToOrder(ctx, {
         id: order.id,
@@ -216,7 +221,6 @@ export class WalletService implements OnApplicationBootstrap {
   async create(
     ctx: RequestContext,
     input: CreateWalletInput,
-    balance: number = 0,
     code?: string
   ): Promise<Wallet> {
     if (!input.customerId && !code) {
@@ -227,7 +231,7 @@ export class WalletService implements OnApplicationBootstrap {
     const wallet = new Wallet({
       name: input.name,
       customer: { id: input.customerId },
-      balance,
+      balance: 0,
       code,
       currencyCode: ctx.channel.defaultCurrencyCode,
       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment

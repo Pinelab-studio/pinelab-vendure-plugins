@@ -36,7 +36,6 @@ export class AdminResolver {
     return this.walletService.create(
       ctx,
       args.input,
-      0,
       args.input.code ?? undefined
     );
   }

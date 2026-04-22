@@ -98,14 +98,10 @@ export async function createWalletsForCustomers(
     const batch = customers.slice(i, i + batchSize);
     for (const customer of batch) {
       try {
-        const wallet = await walletService.create(
-          ctx,
-          {
-            customerId: customer.id,
-            name: walletDetails.name,
-          },
-          0
-        );
+        const wallet = await walletService.create(ctx, {
+          customerId: customer.id,
+          name: walletDetails.name,
+        });
         if (walletDetails.balance > 0) {
           const [updatedWallet] = await walletService.adjustBalanceForWallet(
             ctx,

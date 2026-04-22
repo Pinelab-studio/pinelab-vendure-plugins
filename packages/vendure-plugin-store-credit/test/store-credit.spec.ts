@@ -1304,9 +1304,9 @@ describe('Refunding Order using gift card wallet', () => {
       { id: refundWallet.id }
     );
     expect(walletAfter.balance).toBe(492140 + walletBefore.balance);
-    expect(walletAfter.adjustments.items.length).toBe(1);
-    expect(walletAfter.adjustments.items[0].amount).toBe(492140);
-    expect(walletAfter.adjustments.items[0].description).toContain(
+    expect(walletAfter.adjustments.items.length).toBe(2);
+    expect(walletAfter.adjustments.items[1].amount).toBe(492140);
+    expect(walletAfter.adjustments.items[1].description).toContain(
       `Refund for order ${orderToRefund.code}: Product Damaged`
     );
   });
