@@ -3,14 +3,14 @@ import { Wallet } from '../entities/wallet.entity';
 
 /**
  * @description
- * This event is fired whenever a new GiftCardWallet is created,
- * typically during the checkout process or via administrative action.
+ * This event is fired once per order after all gift card wallets for that
+ * order have been created.
  */
 export class GiftCardWalletCreatedEvent extends VendureEvent {
   constructor(
     public readonly ctx: RequestContext,
-    public readonly wallet: Wallet,
-    public readonly order?: Order
+    public readonly wallets: Wallet[],
+    public readonly order: Order
   ) {
     super();
   }

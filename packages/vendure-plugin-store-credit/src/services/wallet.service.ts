@@ -65,19 +65,41 @@ export class WalletService implements OnApplicationBootstrap {
 
   onApplicationBootstrap() {
     this.eventBus.ofType(OrderPlacedEvent).subscribe((payload) => {
-      for (const line of payload.order.lines) {
-        this.createGiftCardForOrderLine(payload.ctx, payload.order, line).catch(
-          (err) => {
-            Logger.error(
-              `Error creating gift card wallet for order line ${
-                line.id
-              } in order ${payload.order.code}: ${asError(err).message}`,
-              loggerCtx
-            );
-          }
+      this.createGiftCardsForOrder(payload.ctx, payload.order).catch((err) => {
+        Logger.error(
+          `Error creating gift card wallets for order ${payload.order.code}: ${
+            asError(err).message
+          }`,
+          loggerCtx
+        );
+      });
+    });
+  }
+
+  /**
+   * Creates all gift card wallets for all eligible order lines and emits
+   * one event per order containing all created gift card wallets.
+   */
+  async createGiftCardsForOrder(ctx: RequestContext, order: Order) {
+    const createdWallets: Wallet[] = [];
+    for (const line of order.lines) {
+      try {
+        const wallets = await this.createGiftCardForOrderLine(ctx, order, line);
+        createdWallets.push(...wallets);
+      } catch (err) {
+        Logger.error(
+          `Error creating gift card wallet for order line ${line.id} in order ${
+            order.code
+          }: ${asError(err).message}`,
+          loggerCtx
         );
       }
-    });
+    }
+    if (createdWallets.length > 0) {
+      void this.eventBus.publish(
+        new GiftCardWalletCreatedEvent(ctx, createdWallets, order)
+      );
+    }
   }
 
   /**
@@ -90,7 +112,7 @@ export class WalletService implements OnApplicationBootstrap {
     ctx: RequestContext,
     order: Order,
     line: OrderLine
-  ) {
+  ): Promise<Wallet[]> {
     const result = await this.options?.createGiftCardWallet?.(
       ctx,
       new Injector(this.moduleRef),
@@ -98,7 +120,11 @@ export class WalletService implements OnApplicationBootstrap {
       line
     );
 
-    if (!result) return;
+    if (!result) {
+      return [];
+    }
+
+    const createdWallets: Wallet[] = [];
 
     const { price, cardCode } = result;
 
@@ -114,10 +140,7 @@ export class WalletService implements OnApplicationBootstrap {
         price,
         finalCode
       );
-
-      void this.eventBus.publish(
-        new GiftCardWalletCreatedEvent(ctx, wallet, order)
-      );
+      createdWallets.push(wallet);
 
       await this.orderService.addNoteToOrder(ctx, {
         id: order.id,
@@ -127,6 +150,8 @@ export class WalletService implements OnApplicationBootstrap {
         isPublic: false,
       });
     }
+
+    return createdWallets;
   }
 
   /**

@@ -73,7 +73,7 @@ import gql from 'graphql-tag';
 import { createWalletsForCustomers } from '../src/services/exported-helpers';
 import { GiftCardWalletCreatedEvent } from '../src/events/gift-card-wallet-created.event';
 import { firstValueFrom } from 'rxjs';
-import { take, toArray } from 'rxjs/operators';
+import { filter, take, toArray } from 'rxjs/operators';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -1050,9 +1050,8 @@ describe('Auto-creation on OrderPlacedEvent', () => {
   it('Should create a Wallet and Order History when checking out with gift card Product', async () => {
     const eventBus = server.app.get(EventBus);
 
-    // Set up the listener to capture 3 events and then complete the stream
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(take(3), toArray())
+      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(take(1), toArray())
     );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -1068,11 +1067,11 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     const events = await eventsPromise;
 
-    expect(events).toHaveLength(3);
+    expect(events).toHaveLength(1);
 
-    expect(events[0].wallet.code).toBe('8pZ2nL9qX5mB');
-    expect(events[1].wallet.code).toBe('8pZ2nL9qX5mB-2');
-    expect(events[2].wallet.code).toBe('8pZ2nL9qX5mB-3');
+    expect(events[0].wallets[0].code).toBe('8pZ2nL9qX5mB');
+    expect(events[0].wallets[1].code).toBe('8pZ2nL9qX5mB-2');
+    expect(events[0].wallets[2].code).toBe('8pZ2nL9qX5mB-3');
 
     const history = await server.app
       .get(HistoryService)
@@ -1080,18 +1079,18 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     expect(history.totalItems).toBeGreaterThanOrEqual(3);
 
     expect(history.items[history.items.length - 3].data.note).toBe(
-      `Gift card wallet ${events[0].wallet.code} created with balance ${
-        events[0].wallet.balance / 100
+      `Gift card wallet ${events[0].wallets[0].code} created with balance ${
+        events[0].wallets[0].balance / 100
       } for product with id 2`
     );
     expect(history.items[history.items.length - 2].data.note).toBe(
-      `Gift card wallet ${events[1].wallet.code} created with balance ${
-        events[1].wallet.balance / 100
+      `Gift card wallet ${events[0].wallets[1].code} created with balance ${
+        events[0].wallets[1].balance / 100
       } for product with id 2`
     );
     expect(history.items[history.items.length - 1].data.note).toBe(
-      `Gift card wallet ${events[2].wallet.code} created with balance ${
-        events[2].wallet.balance / 100
+      `Gift card wallet ${events[0].wallets[2].code} created with balance ${
+        events[0].wallets[2].balance / 100
       } for product with id 2`
     );
   });
@@ -1187,9 +1186,12 @@ describe('Refunding Order using gift card wallet', () => {
   it('Creates a new gift card wallet', async () => {
     const eventBus = server.app.get(EventBus);
 
-    // Set up the listener to capture 3 events and then complete the stream
     const eventsPromise = firstValueFrom(
-      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(take(1), toArray())
+      eventBus.ofType(GiftCardWalletCreatedEvent).pipe(
+        filter((event) => event.wallets.length > 0),
+        take(1),
+        toArray()
+      )
     );
     await shopClient.asUserWithCredentials(
       'hayden.zieme12@hotmail.com',
@@ -1207,8 +1209,8 @@ describe('Refunding Order using gift card wallet', () => {
 
     expect(events).toHaveLength(1);
 
-    expect(events[0].wallet.code).toBe('8pZ2nL9qX5mB-4');
-    refundWallet = events[0].wallet as any;
+    expect(events[0].wallets[0].code).toBe('8pZ2nL9qX5mB-4');
+    refundWallet = events[0].wallets[0] as any;
   });
 
   it('Places an order with a "real" payment method', async () => {
@@ -1586,7 +1588,11 @@ async function createGiftCardWalletForChannel(
 ): Promise<Wallet> {
   const eventBus = server.app.get(EventBus);
   const eventsPromise = firstValueFrom(
-    eventBus.ofType(GiftCardWalletCreatedEvent).pipe(take(1), toArray())
+    eventBus.ofType(GiftCardWalletCreatedEvent).pipe(
+      filter((event) => event.wallets.length > 0),
+      take(1),
+      toArray()
+    )
   );
 
   shopClient.setChannelToken(setChannelToken);
@@ -1600,7 +1606,7 @@ async function createGiftCardWalletForChannel(
 
   const events = await eventsPromise;
 
-  return events[0].wallet as any;
+  return events[0].wallets[0] as any;
 }
 
 /**
