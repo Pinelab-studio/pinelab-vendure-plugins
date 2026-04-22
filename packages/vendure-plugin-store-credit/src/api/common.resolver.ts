@@ -4,15 +4,12 @@ import {
   Ctx,
   Customer,
   ID,
-  Logger,
   PaginatedList,
   Permission,
   RelationPaths,
   Relations,
   RequestContext,
 } from '@vendure/core';
-import { asError } from 'catch-unknown';
-import { loggerCtx } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
 import { WalletService } from '../services/wallet.service';
