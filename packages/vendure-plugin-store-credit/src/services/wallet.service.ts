@@ -4,6 +4,7 @@ import {
   OnApplicationBootstrap,
   Optional,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import { summate } from '@vendure/common/lib/shared-utils';
 import { unique } from '@vendure/common/lib/unique';
 import {
@@ -161,18 +162,26 @@ export class WalletService implements OnApplicationBootstrap {
 
   /**
    * Returns a wallet code that does not yet exist in the database.
-   * If `baseCode` is already taken, `-2`, `-3`, ... are appended until a
-   * unique code is found.
+   * If `baseCode` is already taken, `-XXXX` is appended where `XXXX` is a
+   * random 4-character alphanumeric suffix.
    */
   async getUniqueCode(ctx: RequestContext, baseCode: string): Promise<string> {
     const repo = this.connection.getRepository(ctx, Wallet);
     let candidate = baseCode;
-    let suffix = 1;
     while (await repo.findOne({ where: { code: candidate } })) {
-      suffix += 1;
-      candidate = `${baseCode}-${suffix}`;
+      candidate = `${baseCode}-${this.generateRandomSuffix(4)}`;
     }
     return candidate;
+  }
+
+  private generateRandomSuffix(length: number): string {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const bytes = randomBytes(length);
+    let suffix = '';
+    for (const byte of bytes) {
+      suffix += characters[byte % characters.length];
+    }
+    return suffix;
   }
 
   findAll(

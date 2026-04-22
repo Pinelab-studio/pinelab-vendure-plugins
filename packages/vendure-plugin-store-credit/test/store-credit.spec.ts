@@ -1070,8 +1070,9 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     expect(events).toHaveLength(1);
 
     expect(events[0].wallets[0].code).toBe('8pZ2nL9qX5mB');
-    expect(events[0].wallets[1].code).toBe('8pZ2nL9qX5mB-2');
-    expect(events[0].wallets[2].code).toBe('8pZ2nL9qX5mB-3');
+    expect(events[0].wallets[1].code).toMatch(/^8pZ2nL9qX5mB-[A-Z0-9]{4}$/);
+    expect(events[0].wallets[2].code).toMatch(/^8pZ2nL9qX5mB-[A-Z0-9]{4}$/);
+    expect(events[0].wallets[1].code).not.toBe(events[0].wallets[2].code);
 
     const history = await server.app
       .get(HistoryService)
@@ -1209,7 +1210,7 @@ describe('Refunding Order using gift card wallet', () => {
 
     expect(events).toHaveLength(1);
 
-    expect(events[0].wallets[0].code).toBe('8pZ2nL9qX5mB-4');
+    expect(events[0].wallets[0].code).toMatch(/^8pZ2nL9qX5mB-[A-Z0-9]{4}$/);
     refundWallet = events[0].wallets[0] as any;
   });
 
@@ -1352,7 +1353,7 @@ describe('Refunding Order using gift card wallet', () => {
         walletId: expect.any(String),
         walletAdjustmentId: expect.any(String),
       },
-      transactionId: "Refunded to wallet '8pZ2nL9qX5mB-4' (18)",
+      transactionId: `Refunded to wallet '${refundWallet.name}' (${refundWallet.id})`,
     });
     expect(order.history.items[order.history.items.length - 1].data.note).toBe(
       `Refunded 492140 for order ${orderToRefund.code}: Product Damaged`
