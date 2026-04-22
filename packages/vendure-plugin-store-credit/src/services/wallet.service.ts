@@ -10,7 +10,6 @@ import {
   assertFound,
   ChannelService,
   EventBus,
-  generatePublicId,
   ID,
   idsAreEqual,
   Injector,
@@ -34,6 +33,7 @@ import {
   UserInputError,
   UserService,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
 import { CreateWalletInput } from '../api/generated/graphql';
 import { loggerCtx, STORE_CREDIT_PLUGIN_OPTIONS } from '../constants';
 import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
@@ -66,12 +66,27 @@ export class WalletService implements OnApplicationBootstrap {
   onApplicationBootstrap() {
     this.eventBus.ofType(OrderPlacedEvent).subscribe((payload) => {
       for (const line of payload.order.lines) {
-        void this.processOrderLineForWallets(payload.ctx, payload.order, line);
+        this.createGiftCardForOrderLine(payload.ctx, payload.order, line).catch(
+          (err) => {
+            Logger.error(
+              `Error creating gift card wallet for order line ${
+                line.id
+              } in order ${payload.order.code}: ${asError(err).message}`,
+              loggerCtx
+            );
+          }
+        );
       }
     });
   }
 
-  async processOrderLineForWallets(
+  /**
+   * Called for each order line of a placed order. If the configured
+   * `createGiftCardWallet` strategy returns a result for the given line, a gift
+   * card wallet is created per quantity of the line. The wallet `code` is made
+   * unique by suffixing `-N` when a code already exists in the DB.
+   */
+  async createGiftCardForOrderLine(
     ctx: RequestContext,
     order: Order,
     line: OrderLine
@@ -88,16 +103,7 @@ export class WalletService implements OnApplicationBootstrap {
     const { price, cardCode } = result;
 
     for (let i = 0; i < line.quantity; i++) {
-      const suffix = line.quantity > 1 ? `-${i + 1}` : '';
-      const finalCode = `${cardCode}${suffix}`;
-
-      const existing = await this.connection
-        .getRepository(ctx, Wallet)
-        .findOne({
-          where: { code: finalCode },
-        });
-
-      if (existing) continue;
+      const finalCode = await this.getUniqueCode(ctx, cardCode);
 
       const wallet = await this.create(
         ctx,
@@ -115,10 +121,28 @@ export class WalletService implements OnApplicationBootstrap {
 
       await this.orderService.addNoteToOrder(ctx, {
         id: order.id,
-        note: `Gift card wallet ${finalCode} created with balance ${price} for product with id ${line.productVariant?.productId}`,
+        note: `Gift card wallet ${finalCode} created with balance ${
+          price / 100
+        } for product with id ${line.productVariant?.productId}`,
         isPublic: false,
       });
     }
+  }
+
+  /**
+   * Returns a wallet code that does not yet exist in the database.
+   * If `baseCode` is already taken, `-2`, `-3`, ... are appended until a
+   * unique code is found.
+   */
+  async getUniqueCode(ctx: RequestContext, baseCode: string): Promise<string> {
+    const repo = this.connection.getRepository(ctx, Wallet);
+    let candidate = baseCode;
+    let suffix = 1;
+    while (await repo.findOne({ where: { code: candidate } })) {
+      suffix += 1;
+      candidate = `${baseCode}-${suffix}`;
+    }
+    return candidate;
   }
 
   findAll(
@@ -171,7 +195,9 @@ export class WalletService implements OnApplicationBootstrap {
     code?: string
   ): Promise<Wallet> {
     if (!input.customerId && !code) {
-      code = generatePublicId();
+      throw new UserInputError(
+        'Either a customerId or a code must be provided to create a wallet'
+      );
     }
     const wallet = new Wallet({
       name: input.name,
@@ -248,32 +274,26 @@ export class WalletService implements OnApplicationBootstrap {
         `Wallet with id ${walletId} is not assigned to the current channel`
       );
     }
-    // Debit would violate CHECK (balance >= 0)
-    if (amount < 0 && wallet.balance + amount < 0) {
+    // Atomic balance update: the WHERE clause ensures we never end up with a
+    // negative balance even under concurrent debits. If the condition does not
+    // match we throw an "insufficient balance" error.
+    const res = await walletRepo
+      .createQueryBuilder()
+      .update(Wallet)
+      .set({ balance: () => `balance + :amount` })
+      .where('id = :id AND balance + :amount >= 0', { id: walletId, amount })
+      .execute();
+
+    if ((res.affected ?? 0) === 0) {
       throw new UserInputError(
         `Insufficient balance. Wallet has ${
           wallet.balance
         }, cannot debit ${-amount}`
       );
-    }
-    const res = await walletRepo
-      .createQueryBuilder()
-      .update(Wallet)
-      .set({ balance: () => `balance + :amount` })
-      .where('id = :id', { id: walletId })
-      .setParameters({ amount })
-      .execute();
-
-    if ((res.affected ?? 0) !== 1) {
-      Logger.warn(
-        `Wallet balance update did not affect exactly one row: ${JSON.stringify(
-          {
-            walletId,
-            affected: res.affected,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-            raw: res.raw,
-          }
-        )}`
+    } else if ((res.affected ?? 0) > 1) {
+      // This should never happen since id is unique, but we check just in case
+      throw new InternalServerError(
+        `Unexpected error adjusting wallet balance: ${res.affected} wallets were updated`
       );
     }
 
@@ -412,15 +432,25 @@ export class WalletService implements OnApplicationBootstrap {
     relations?: RelationPaths<Wallet>
   ): Promise<Wallet | null> {
     const effectiveRelations = relations ?? this.relations.slice();
+    // Channel-scoped lookup: only return a wallet when it is assigned to the
+    // current channel, to prevent leaking wallet data across channels.
     const wallet = await this.connection
       .getRepository(ctx, Wallet)
-      .findOneOrFail({
-        where: {
-          code,
-        },
-        relations: effectiveRelations,
-      });
-    return wallet;
+      .createQueryBuilder('wallet')
+      .leftJoinAndSelect('wallet.channels', 'channel')
+      .where('wallet.code = :code', { code })
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .getOne();
+    if (!wallet) {
+      return null;
+    }
+    // Re-fetch with requested relations now that we've confirmed channel access.
+    return (
+      (await this.connection.getRepository(ctx, Wallet).findOne({
+        where: { id: wallet.id },
+        relations: unique(effectiveRelations),
+      })) ?? null
+    );
   }
 
   /**

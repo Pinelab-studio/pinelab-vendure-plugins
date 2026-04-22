@@ -3,7 +3,6 @@ import {
   AdministratorService,
   Customer,
   CustomerService,
-  generatePublicId,
   Logger,
   RequestContextService,
 } from '@vendure/core';
@@ -105,8 +104,7 @@ export async function createWalletsForCustomers(
             customerId: customer.id,
             name: walletDetails.name,
           },
-          0,
-          generatePublicId()
+          0
         );
         if (walletDetails.balance > 0) {
           const [updatedWallet] = await walletService.adjustBalanceForWallet(

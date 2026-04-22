@@ -71,7 +71,6 @@ import {
 } from './helpers';
 import gql from 'graphql-tag';
 import { createWalletsForCustomers } from '../src/services/exported-helpers';
-import * as IdGenerator from '@vendure/core/dist/common/generate-public-id';
 import { GiftCardWalletCreatedEvent } from '../src/events/gift-card-wallet-created.event';
 import { firstValueFrom } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
@@ -801,14 +800,6 @@ describe('Exported helpers', () => {
 });
 
 describe('Gift Card Wallet CRUD', () => {
-  const spy = vi.spyOn(IdGenerator, 'generatePublicId');
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-
-    spy.mockImplementationOnce(() => '7K9P2W1Z8N');
-  });
-
   it('Should create a gift card wallet in a specific channel', async () => {
     const { createWallet: wallet } = await adminClient.query<
       { createWallet: Wallet },
@@ -816,18 +807,20 @@ describe('Gift Card Wallet CRUD', () => {
     >(CREATE_WALLET, {
       input: {
         name: 'My Gift Card',
+        code: '7K9P2W1Z8N',
       },
     });
     expect(wallet.id).toBeDefined();
     expect(wallet.name).toBe('My Gift Card');
     expect(wallet.code).toBe('7K9P2W1Z8N');
     expect(wallet.currencyCode).toBe('USD');
-
-    spy.mockRestore();
   });
 
   it('Should find wallet by code', async () => {
-    const { walletByCode: wallet } = await shopClient.query<
+    // Use adminClient: walletByCode on the admin API requires UpdateOrder permission,
+    // which superadmin has. Using adminClient avoids polluting the shopClient's
+    // active order state which is relied on by later test blocks.
+    const { walletByCode: wallet } = await adminClient.query<
       { walletByCode: Wallet },
       QueryWalletByCodeArgs
     >(GET_WALLET_BY_CODE, {
@@ -839,15 +832,14 @@ describe('Gift Card Wallet CRUD', () => {
     expect(wallet.currencyCode).toBe('USD');
   });
 
-  it('should throw an error when provided with a non-existent gift card code', async () => {
-    await expect(
-      shopClient.query<{ walletByCode: Wallet }, QueryWalletByCodeArgs>(
-        GET_WALLET_BY_CODE,
-        {
-          code: 'non-existent-code',
-        }
-      )
-    ).rejects.toThrowError();
+  it('should return null when provided with a non-existent gift card code', async () => {
+    const { walletByCode } = await adminClient.query<
+      { walletByCode: Wallet | null },
+      QueryWalletByCodeArgs
+    >(GET_WALLET_BY_CODE, {
+      code: 'non-existent-code',
+    });
+    expect(walletByCode).toBeNull();
   });
 });
 
@@ -885,7 +877,7 @@ describe('Gift Card Payment', () => {
     expect(order.totalWithTax).toBe(155880);
   });
 
-  it('Should partially pay for order with store-credit using gift card wallet and amount input', async () => {
+  it('Should partially pay for order with gift card', async () => {
     const { wallet: walletBefore } = await adminClient.query(
       GET_WALLET_WITH_ADJUSTMENTS,
       { id: 12 }
@@ -981,6 +973,7 @@ describe('Gift Card Payment', () => {
     >(CREATE_WALLET, {
       input: {
         name: 'Gift card with no funds',
+        code: 'NO_FUNDS_GIFT_CARD',
       },
     });
 
@@ -1077,7 +1070,7 @@ describe('Auto-creation on OrderPlacedEvent', () => {
 
     expect(events).toHaveLength(3);
 
-    expect(events[0].wallet.code).toBe('8pZ2nL9qX5mB-1');
+    expect(events[0].wallet.code).toBe('8pZ2nL9qX5mB');
     expect(events[1].wallet.code).toBe('8pZ2nL9qX5mB-2');
     expect(events[2].wallet.code).toBe('8pZ2nL9qX5mB-3');
 
@@ -1087,13 +1080,19 @@ describe('Auto-creation on OrderPlacedEvent', () => {
     expect(history.totalItems).toBeGreaterThanOrEqual(3);
 
     expect(history.items[history.items.length - 3].data.note).toBe(
-      `Gift card wallet ${events[0].wallet.code} created with balance ${events[0].wallet.balance} for product with id 2`
+      `Gift card wallet ${events[0].wallet.code} created with balance ${
+        events[0].wallet.balance / 100
+      } for product with id 2`
     );
     expect(history.items[history.items.length - 2].data.note).toBe(
-      `Gift card wallet ${events[1].wallet.code} created with balance ${events[1].wallet.balance} for product with id 2`
+      `Gift card wallet ${events[1].wallet.code} created with balance ${
+        events[1].wallet.balance / 100
+      } for product with id 2`
     );
     expect(history.items[history.items.length - 1].data.note).toBe(
-      `Gift card wallet ${events[2].wallet.code} created with balance ${events[2].wallet.balance} for product with id 2`
+      `Gift card wallet ${events[2].wallet.code} created with balance ${
+        events[2].wallet.balance / 100
+      } for product with id 2`
     );
   });
 
@@ -1208,7 +1207,7 @@ describe('Refunding Order using gift card wallet', () => {
 
     expect(events).toHaveLength(1);
 
-    expect(events[0].wallet.code).toBe('8pZ2nL9qX5mB');
+    expect(events[0].wallet.code).toBe('8pZ2nL9qX5mB-4');
     refundWallet = events[0].wallet as any;
   });
 
@@ -1351,7 +1350,7 @@ describe('Refunding Order using gift card wallet', () => {
         walletId: expect.any(String),
         walletAdjustmentId: expect.any(String),
       },
-      transactionId: "Refunded to wallet '8pZ2nL9qX5mB' (18)",
+      transactionId: "Refunded to wallet '8pZ2nL9qX5mB-4' (18)",
     });
     expect(order.history.items[order.history.items.length - 1].data.note).toBe(
       `Refunded 492140 for order ${orderToRefund.code}: Product Damaged`

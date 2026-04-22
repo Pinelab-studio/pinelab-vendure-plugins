@@ -7,14 +7,20 @@ import { RequestContext, Injector, Order, OrderLine } from '@vendure/core';
 export interface StoreCreditPluginOptions {
   /**
    * @description
-   * A custom hook or factory function that determines if a `Wallet` should be
-   * created based on an OrderLine.
-   * * Returning an object with `price` and `cardCode` will trigger the creation logic.
-   * Returning `false` will skip wallet creation for that specific line item.
-   * * @param ctx - The current RequestContext, useful for language or session-specific logic.
-   * @param injector - The Vendure Injector, used to access other services (e.g., ProductService).
-   * @param order - The complete Order entity containing the current transaction data.
-   * @param orderLine - The specific line item being evaluated for gift card eligibility.
+   * Determines if a gift card wallet should be created for a given OrderLine.
+   *
+   * Creates a gift card wallet when the hook returns an object with `price`
+   * and `cardCode`. Returning `false` skips wallet creation for that line.
+   *
+   * **Important:** `cardCode` is used to authorize spending against the
+   * wallet, so it must be unguessable. Always return a cryptographically
+   * random value with sufficient entropy (see the plugin README for
+   * guidance).
+   *
+   * @param ctx - The current RequestContext.
+   * @param injector - The Vendure Injector, to access other services.
+   * @param order - The Order that was just placed.
+   * @param orderLine - The OrderLine being evaluated.
    */
   createGiftCardWallet?: (
     ctx: RequestContext,

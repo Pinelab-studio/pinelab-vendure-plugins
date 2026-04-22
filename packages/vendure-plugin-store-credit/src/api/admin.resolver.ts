@@ -33,7 +33,12 @@ export class AdminResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: MutationCreateWalletArgs
   ): Promise<Wallet> {
-    return this.walletService.create(ctx, args.input);
+    return this.walletService.create(
+      ctx,
+      args.input,
+      0,
+      args.input.code ?? undefined
+    );
   }
 
   @Transaction()
@@ -75,6 +80,7 @@ export class AdminResolver {
   }
 
   @Query()
+  @Allow(Permission.ReadCustomer)
   giftCardWallets(
     @Ctx() ctx: RequestContext,
     @Args() args: WalletListOptions,

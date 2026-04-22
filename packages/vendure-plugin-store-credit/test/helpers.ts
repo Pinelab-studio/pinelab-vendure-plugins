@@ -66,6 +66,7 @@ export const ADMIN_WALLET_FIELDS = gql`
     adjustments(options: $options) {
       items {
         id
+        createdAt
         amount
         description
         mutatedBy {
@@ -85,6 +86,7 @@ export const SHOP_WALLET_FIELDS = gql`
     adjustments(options: $options) {
       items {
         id
+        createdAt
         amount
         description
       }

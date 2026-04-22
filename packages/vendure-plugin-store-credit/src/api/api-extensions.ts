@@ -75,6 +75,7 @@ export const adminApiExtensions = gql`
   input CreateWalletInput {
     customerId: ID
     name: String!
+    code: String
     metadata: JSON
   }
 

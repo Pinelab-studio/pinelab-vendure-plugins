@@ -22,11 +22,6 @@ import { WalletAdjustment } from './wallet-adjustment.entity';
 @Entity()
 @Index(['createdAt'])
 @Check(`"balance" >= 0`)
-@Index(['name', 'customer'], {
-  unique: true,
-  where: '"customerId" IS NOT NULL',
-})
-@Index(['name'], { unique: true, where: '"customerId" IS NULL' })
 export class Wallet extends VendureEntity implements ChannelAware {
   constructor(input?: DeepPartial<Wallet>) {
     super(input);

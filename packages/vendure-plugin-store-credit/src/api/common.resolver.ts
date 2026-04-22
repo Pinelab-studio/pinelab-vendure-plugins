@@ -1,24 +1,32 @@
 import { Args, Parent, Query, ResolveField, Resolver } from '@nestjs/graphql';
 import {
+  ActiveOrderService,
   Ctx,
-  RequestContext,
   Customer,
+  ID,
+  Logger,
+  PaginatedList,
+  Permission,
   RelationPaths,
   Relations,
-  PaginatedList,
-  ID,
+  RequestContext,
 } from '@vendure/core';
+import { asError } from 'catch-unknown';
+import { loggerCtx } from '../constants';
+import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 import { Wallet } from '../entities/wallet.entity';
+import { WalletService } from '../services/wallet.service';
 import {
   CustomerWalletsArgs,
   WalletAdjustmentsArgs,
 } from './generated/graphql';
-import { WalletService } from '../services/wallet.service';
-import { WalletAdjustment } from '../entities/wallet-adjustment.entity';
 
 @Resolver()
 export class CommonResolver {
-  constructor(private readonly walletService: WalletService) {}
+  constructor(
+    private readonly walletService: WalletService,
+    private readonly activeOrderService: ActiveOrderService
+  ) {}
 
   @ResolveField('wallets')
   @Resolver('Customer')
@@ -62,12 +70,34 @@ export class CommonResolver {
     return this.walletService.findOne(ctx, args.id, relations);
   }
 
+  /**
+   * Look up a wallet by its code (e.g. a gift card code).
+   *
+   * - On the admin API, the caller must have the UpdateOrder permission.
+   * - On the shop API, the caller must have an active order on the session
+   *   (i.e. actually be in the process of placing an order). This prevents
+   *   using this query as an oracle to brute-force wallet codes.
+   * - Returns `null` for unknown codes (never throws) to avoid leaking whether
+   *   a given code exists.
+   */
   @Query()
   async walletByCode(
     @Ctx() ctx: RequestContext,
     @Args() args: { code: string },
     @Relations({ entity: Wallet }) relations: RelationPaths<Wallet>
   ) {
-    return this.walletService.findByCode(ctx, args.code, relations);
+    if (ctx.apiType === 'admin') {
+      if (!ctx.userHasPermissions([Permission.UpdateOrder])) {
+        return null;
+      }
+    } else {
+      const activeOrder = await this.activeOrderService.getOrderFromContext(
+        ctx
+      );
+      if (!activeOrder) {
+        return null;
+      }
+    }
+    return await this.walletService.findByCode(ctx, args.code, relations);
   }
 }

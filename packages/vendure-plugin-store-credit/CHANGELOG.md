@@ -1,6 +1,11 @@
 # 1.5.0 (2026-04-15)
 
 - Added support for `Wallet` based Gift Cards
+- Security: `walletByCode` is now channel-scoped, returns `null` for unknown codes, requires `UpdateOrder` on the admin API and an active order on the shop API (to prevent enumeration attacks)
+- Security: wallet debits are now performed atomically to prevent race conditions / double-spend
+- BREAKING: `WalletService.create` now throws when neither `customerId` nor `code` is provided. The admin `CreateWalletInput` has a new optional `code` field; pass a code explicitly when creating a wallet without a customer
+- BREAKING: the admin `giftCardWallets` query now requires the `ReadCustomer` permission
+- The removed unique index on `wallet.name` allows duplicate wallet names across customers
 
 # 1.4.1 (2026-02-20)
 
