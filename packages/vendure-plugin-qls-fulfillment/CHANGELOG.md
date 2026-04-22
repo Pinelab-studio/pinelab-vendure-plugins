@@ -1,3 +1,7 @@
+# 1.8.0 (2026-22-05)
+
+- Upgraded to Vendure 3.6.2
+
 # 1.7.0 (2026-03-15)
 
 - Pass order phone number to QLS
