@@ -1,8 +1,4 @@
-import { Controller, Get, Inject, Res } from '@nestjs/common';
-import { ConfigService, VENDURE_VERSION } from '@vendure/core';
-import { Response } from 'express';
-import fs from 'fs/promises';
-import Handlebars from 'handlebars';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { AdminSocialAuthPluginOptions } from '../admin-social-auth.plugin';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 
