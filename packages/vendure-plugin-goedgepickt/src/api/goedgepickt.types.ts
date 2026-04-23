@@ -122,7 +122,7 @@ export interface Order {
 }
 
 export interface IncomingStockUpdateEvent {
-  event: 'stockUpdated';
+  event: 'stockUpdated' | 'compoundProductStockUpdated';
   newStock: string;
   productSku: string;
   productUuid: string;
