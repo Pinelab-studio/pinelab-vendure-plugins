@@ -93,6 +93,16 @@ export class GoedgepicktController {
             { retries: 20 }
           );
           break;
+        case 'compoundProductStockUpdated':
+          await this.service.jobQueue.add(
+            {
+              action: 'incoming-stock-webhook',
+              ctx: ctx.serialize(),
+              sku: body.productSku,
+            },
+            { retries: 20 }
+          );
+          break;
         default:
           return Logger.warn(
             `Unknown incoming event: ${JSON.stringify(body)}`,
