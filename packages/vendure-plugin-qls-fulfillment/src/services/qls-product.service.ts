@@ -183,12 +183,12 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             variant,
             existingQlsProduct ?? null
           );
-          if (result === 'created') {
+          if (result.status === 'created') {
             createdQlsProducts.push(variant);
-          } else if (result === 'updated') {
+          } else if (result.status === 'updated') {
             updatedQlsProducts.push(variant);
           }
-          if (result === 'created' || result === 'updated') {
+          if (result.status === 'created' || result.status === 'updated') {
             // Wait only if we created or updated a product, otherwise no calls have been made yet.
             await waitToPreventRateLimit();
           }
@@ -316,10 +316,32 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           variant,
           existingQlsProduct ?? null
         );
-        if (result === 'created') {
+        if (result.status === 'created') {
           createdInQls.push(variant);
-        } else if (result === 'updated') {
+        } else if (result.status === 'updated') {
           updatedInQls.push(variant);
+        }
+        if (result.qlsProductId && this.options.saveAdditionalData) {
+          try {
+            const qlsProduct = await client.getFulfillmentProductById(
+              result.qlsProductId
+            );
+            if (qlsProduct) {
+              await this.options.saveAdditionalData(
+                ctx,
+                new Injector(this.moduleRef),
+                qlsProduct,
+                variant
+              );
+            }
+          } catch (e) {
+            Logger.error(
+              `Error in saveAdditionalData for variant '${variant.sku}': ${
+                asError(e).message
+              }`,
+              loggerCtx
+            );
+          }
         }
       } catch (e) {
         const error = asError(e);
@@ -412,7 +434,10 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     client: QlsClient,
     variant: ProductVariant,
     existingProduct: FulfillmentProduct | null
-  ): Promise<'created' | 'updated' | 'not-changed'> {
+  ): Promise<{
+    status: 'created' | 'updated' | 'not-changed';
+    qlsProductId?: string;
+  }> {
     if (
       await this.options.excludeVariantFromSync?.(
         ctx,
@@ -424,7 +449,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         `Variant '${variant.sku}' excluded from sync to QLS.`,
         loggerCtx
       );
-      return 'not-changed';
+      return { status: 'not-changed' };
     }
     if (!variant.enabled || !variant.product?.enabled) {
       const disabledEntity = !variant.enabled ? 'Variant' : 'Product';
@@ -439,7 +464,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
           loggerCtx
         );
       }
-      return 'not-changed';
+      return { status: 'not-changed', qlsProductId: existingProduct?.id };
     }
     let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
@@ -501,7 +526,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         loggerCtx
       );
     }
-    return createdOrUpdated;
+    return { status: createdOrUpdated, qlsProductId: qlsProduct?.id };
   }
 
   /**
