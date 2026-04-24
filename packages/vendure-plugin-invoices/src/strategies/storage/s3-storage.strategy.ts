@@ -39,7 +39,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     try {
       const AWS = await import('aws-sdk');
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-      this.s3 = new AWS.S3(this.config);
+      this.s3 = new AWS.S3(this.config as any);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Logger.error(
