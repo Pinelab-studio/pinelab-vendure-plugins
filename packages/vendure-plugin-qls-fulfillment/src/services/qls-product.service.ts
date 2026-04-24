@@ -192,6 +192,27 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             // Wait only if we created or updated a product, otherwise no calls have been made yet.
             await waitToPreventRateLimit();
           }
+          if (result.qlsProductId && this.options.saveAdditionalData) {
+            try {
+              const qlsProduct = await client.getFulfillmentProductById(
+                result.qlsProductId
+              );
+              if (qlsProduct) {
+                await this.options.saveAdditionalData(
+                  ctx,
+                  new Injector(this.moduleRef),
+                  qlsProduct
+                );
+              }
+            } catch (e) {
+              Logger.error(
+                `Error in saveAdditionalData for variant '${variant.sku}': ${
+                  asError(e).message
+                }`,
+                loggerCtx
+              );
+            }
+          }
         } catch (e) {
           const error = asError(e);
           Logger.error(
@@ -321,21 +342,24 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         } else if (result.status === 'updated') {
           updatedInQls.push(variant);
         }
-        if (result.qlsProductId && this.options.saveRawWarehouseStockData) {
-          const qlsProduct = await client.getFulfillmentProductById(
-            result.qlsProductId
-          );
-          // Update QLS warehouse stock data in Vendure, only on sync variants to prevent rate limit issues, and only if the option is enabled
-          if (qlsProduct && qlsProduct.warehouse_stocks) {
-            await this.connection.getRepository(ctx, ProductVariant).update(
-              { id: variant.id },
-              {
-                customFields: {
-                  qlsRawWarehouseStockData: JSON.stringify(
-                    qlsProduct.warehouse_stocks
-                  ),
-                },
-              }
+        if (result.qlsProductId && this.options.saveAdditionalData) {
+          try {
+            const qlsProduct = await client.getFulfillmentProductById(
+              result.qlsProductId
+            );
+            if (qlsProduct) {
+              await this.options.saveAdditionalData(
+                ctx,
+                new Injector(this.moduleRef),
+                qlsProduct
+              );
+            }
+          } catch (e) {
+            Logger.error(
+              `Error in saveAdditionalData for variant '${variant.sku}': ${
+                asError(e).message
+              }`,
+              loggerCtx
             );
           }
         }

@@ -10,6 +10,7 @@ import {
   CustomValue,
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
+  FulfillmentProduct,
   FulfillmentProductInput,
 } from './lib/client-types';
 
@@ -90,11 +91,16 @@ export interface QlsPluginOptions {
    */
   qlsProductIdUiTab?: string | null;
   /**
-   * After syncing a variant to QLS, fetch the full product from QLS and save
-   * the raw warehouse stock data in the `qlsRawWarehouseStockData` custom field.
-   * Defaults to false.
+   * Optional hook called after syncing a variant to QLS.
+   * Receives the full QLS product, a RequestContext, and an Injector, allowing
+   * you to save any additional data to your own database. The saving itself
+   * happens inside this hook — if not provided, nothing is persisted.
    */
-  saveRawWarehouseStockData?: boolean;
+  saveAdditionalData?: (
+    ctx: RequestContext,
+    injector: Injector,
+    qlsProduct: FulfillmentProduct
+  ) => Promise<void> | void;
   /**
    * Additional order items to add to the QLS order.
    */

@@ -34,20 +34,6 @@ export function getVariantCustomFields(
       readonly: true,
       ui: { tab: uiTab },
     },
-    {
-      name: 'qlsRawWarehouseStockData',
-      type: 'text',
-      label: [
-        {
-          value: 'QLS Raw Warehouse Stock Data',
-          languageCode: LanguageCode.en,
-        },
-      ],
-      nullable: true,
-      public: false,
-      readonly: true,
-      ui: { tab: uiTab },
-    },
   ];
 }
 
