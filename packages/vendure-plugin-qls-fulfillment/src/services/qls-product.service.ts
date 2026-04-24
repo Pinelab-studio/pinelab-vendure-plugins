@@ -192,27 +192,6 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
             // Wait only if we created or updated a product, otherwise no calls have been made yet.
             await waitToPreventRateLimit();
           }
-          if (result.qlsProductId && this.options.saveAdditionalData) {
-            try {
-              const qlsProduct = await client.getFulfillmentProductById(
-                result.qlsProductId
-              );
-              if (qlsProduct) {
-                await this.options.saveAdditionalData(
-                  ctx,
-                  new Injector(this.moduleRef),
-                  qlsProduct
-                );
-              }
-            } catch (e) {
-              Logger.error(
-                `Error in saveAdditionalData for variant '${variant.sku}': ${
-                  asError(e).message
-                }`,
-                loggerCtx
-              );
-            }
-          }
         } catch (e) {
           const error = asError(e);
           Logger.error(
