@@ -9,10 +9,8 @@ import {
 } from './api/sendcloud.resolver';
 import { SendcloudService } from './api/sendcloud.service';
 import { PLUGIN_OPTIONS } from './api/constants';
-import { SendcloudController } from './api/sendcloud.controller';
 import { SendcloudConfigEntity } from './api/sendcloud-config.entity';
 import { sendcloudHandler } from './api/sendcloud.handler';
-import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
 
 @VendurePlugin({
   adminApiExtensions: {
@@ -49,19 +47,13 @@ import { rawBodyMiddleware } from '../../util/src/raw-body.middleware';
     },
   ],
   imports: [PluginCommonModule],
-  controllers: [SendcloudController],
   entities: [SendcloudConfigEntity],
   configuration: (config) => {
-    config.apiOptions.middleware.push({
-      route: '/sendcloud/webhook*splat',
-      handler: rawBodyMiddleware,
-      beforeListen: true,
-    });
     config.shippingOptions.fulfillmentHandlers.push(sendcloudHandler);
     config.authOptions.customPermissions.push(sendcloudPermission);
     return config;
   },
-  compatibility: '>=3.2.0',
+  compatibility: '>=3.1.0',
 })
 export class SendcloudPlugin {
   private static options: SendcloudPluginOptions;

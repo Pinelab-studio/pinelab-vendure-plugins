@@ -1,3 +1,7 @@
+# 5.0.0 (2026-04-20)
+
+- **BREAKING:** Removed legacy Angular admin UI (`src/ui/`). The plugin now exclusively uses the React Dashboard via `@vendure/dashboard`.
+
 # 4.5.1 (2026-03-09)
 
 - Fixed `getMostRecentInvoiceForOrder` to return the latest invoice instead of the oldest one.

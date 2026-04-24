@@ -22,7 +22,6 @@ import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-
 import fetch from 'node-fetch';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { addShippingMethod, cancelOrder } from '../../test/src/admin-utils';
-import getFilesInAdminUiFolder from '../../test/src/compile-admin-ui.util';
 import { initialData } from '../../test/src/initial-data';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
@@ -34,16 +33,75 @@ import {
   MutationUpsertInvoiceConfigArgs,
 } from '../src';
 import { InvoiceCreatedEvent } from '../src/services/invoice-created-event';
-import { getOrderWithInvoices } from '../src/ui/invoices-detail-view/invoices-detail-view';
-import {
-  createInvoice as createInvoiceMutation,
-  exportToAccounting,
-  getConfigQuery,
-  upsertConfigMutation,
-} from '../src/ui/queries.graphql';
 import { MockAccountingStrategy } from './mock-accounting-strategy';
 import gql from 'graphql-tag';
 import { waitFor } from '../../test/src/test-helpers';
+
+const invoiceFragment = gql`
+  fragment invoiceFields on Invoice {
+    id
+    createdAt
+    invoiceNumber
+    isCreditInvoice
+    downloadUrl
+    accountingReference {
+      reference
+      link
+      errorMessage
+    }
+  }
+`;
+
+const getOrderWithInvoices = gql`
+  ${invoiceFragment}
+  query order($id: ID!) {
+    order(id: $id) {
+      id
+      code
+      state
+      invoices {
+        ...invoiceFields
+      }
+    }
+  }
+`;
+
+const upsertConfigMutation = gql`
+  mutation upsertInvoiceConfig($input: InvoiceConfigInput!) {
+    upsertInvoiceConfig(input: $input) {
+      id
+      enabled
+      createCreditInvoices
+      templateString
+    }
+  }
+`;
+
+const getConfigQuery = gql`
+  query invoiceConfig {
+    invoiceConfig {
+      id
+      enabled
+      createCreditInvoices
+      templateString
+    }
+  }
+`;
+
+const createInvoiceMutation = gql`
+  ${invoiceFragment}
+  mutation createInvoice($orderId: ID!) {
+    createInvoice(orderId: $orderId) {
+      ...invoiceFields
+    }
+  }
+`;
+
+const exportToAccounting = gql`
+  mutation exportInvoiceToAccountingPlatform($invoiceNumber: Int!) {
+    exportInvoiceToAccountingPlatform(invoiceNumber: $invoiceNumber)
+  }
+`;
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -455,13 +513,6 @@ describe('Generate without credit invoicing', function () {
     expect(events[1].creditInvoice).toBeUndefined();
   });
 });
-
-if (process.env.TEST_ADMIN_UI) {
-  it('Should compile admin', async () => {
-    const files = await getFilesInAdminUiFolder(__dirname, InvoicePlugin.ui);
-    expect(files?.length).toBeGreaterThan(0);
-  }, 200000);
-}
 
 afterAll(async () => {
   await server.destroy();

@@ -17,35 +17,26 @@ In v4 the field `invoice.isCreditInvoice` was changed from a getter to a physica
 
 ## Getting started
 
-1. Install the plugin with `yarn add @vendure-hub/pinelab-invoice-plugin`
+1. Install the plugin with `yarn add @pinelab/pinelab-invoice-plugin`
 2. Add the following config to your `vendure-config.ts`:
 
 ```ts
-import { InvoicePlugin } from '@vendure-hub/pinelab-invoice-plugin';
+import { InvoicePlugin } from '@pinelab/pinelab-invoice-plugin';
 
 plugins: [
   InvoicePlugin.init({
     // Used for generating download URLS for the admin ui
     vendureHost: 'http://localhost:3106',
   }),
-  // Add the invoices UI components to the admin ui
-  AdminUiPlugin.init({
-    port: 3002,
-    route: 'admin',
-    app: compileUiExtensions({
-      outputPath: path.join(__dirname, '__admin-ui'),
-      extensions: [InvoicePlugin.ui],
-    }),
-  }),
 ];
 ```
 
 2. Run a [migration](https://www.vendure.io/docs/developer-guide/migrations/), to add the Invoice and InvoiceConfig entities to the database.
-3. Start Vendure and login to the admin dashboard
+3. Start Vendure and login to the admin dashboard.
 4. Make sure you have the permission `AllowInvoicesPermission`
-5. Go to `Sales > Invoices`.
-6. Unfold the `Settings` accordion.
-7. Check the checkbox to `Enable invoice generation` for the current channel on order placement.
+5. Go to `Sales > Invoices` to see all generated invoices. The order detail page will have generated invoices for that order only.
+6. Go to `Settings > Invoices` to enable invoice generation and edit the invoice handlebars template.
+7. Check the checkbox to `Enable invoice generation` for the current channel on order placement. Invoices are generated on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
 ### Docker
@@ -89,7 +80,7 @@ Add the following link to your email template:
 When the customer clicks the link, the server will check if the `ordercode`, `channelCode` and `customer emailaddress`
 match with the requested order. If so, it will return the invoice.
 
-This link will always return the first invoice generated for an order. If invoices were recreated via the Admin UI, you can specify the invoice number in the url: ``
+This link will always return the first invoice generated for an order. If invoices were recreated via the Admin UI, you can specify the invoice number in the url.
 
 ## Recreating invoices and credit invoices
 

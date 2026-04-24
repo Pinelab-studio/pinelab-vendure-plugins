@@ -47,3 +47,4 @@ __admin-ui/
 .swc
 .cursor/mcp.json
 .vendure-dashboard-temp
+packages/vendure-plugin-invoices/src/generated-graphql-types.ts

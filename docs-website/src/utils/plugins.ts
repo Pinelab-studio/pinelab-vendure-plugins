@@ -12,6 +12,7 @@ interface PackageJson {
   description: string;
   version: string;
   icon: string;
+  dependencies?: Record<string, string>;
 }
 
 export interface Plugin {
@@ -25,6 +26,7 @@ export interface Plugin {
   markdownContent: string;
   changelogContent: string;
   nrOfDownloads: number;
+  nrOfDependencies: number;
 }
 
 const packageDir = '../packages/';
@@ -71,9 +73,7 @@ export async function getPlugins(): Promise<Plugin[]> {
       const changelogContent = await parseMarkdown(changelog);
       const nrOfDownloads = await getNrOfDownloads(packageJson.name);
       const compatibility = await getCompatibilityRange(pluginDir.name);
-      const slug = packageJson.name
-        .replace('@pinelab/', '')
-        .replace('@vendure-hub/', '');
+      const slug = packageJson.name.replace('@pinelab/', '');
       plugins.push({
         name,
         npmName: packageJson.name,
@@ -85,6 +85,9 @@ export async function getPlugins(): Promise<Plugin[]> {
         changelogContent,
         nrOfDownloads,
         compatibility,
+        nrOfDependencies: packageJson.dependencies
+          ? Object.keys(packageJson.dependencies).length
+          : 0,
       });
     } catch (e) {
       console.error(`Error reading plugin ${pluginDir.name}`, e);
@@ -107,7 +110,7 @@ export async function parseMarkdown(readmeString: string): Promise<string> {
   // `highlight` example uses https://highlightjs.org
   marked.setOptions({
     renderer: new marked.Renderer(),
-    highlight: function (code, lang) {
+    highlight: function (code: any, lang: any) {
       const language = hljs.getLanguage(lang) ? lang : 'plaintext';
       return hljs.highlight(code, { language }).value;
     },

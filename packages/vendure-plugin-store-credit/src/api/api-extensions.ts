@@ -11,6 +11,7 @@ export const commonApiExtension = gql`
 
   type Wallet implements Node {
     id: ID!
+    code: String
     name: String!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -60,6 +61,7 @@ export const commonApiExtension = gql`
 
   extend type Query {
     wallet(id: ID!): Wallet!
+    walletByCode(code: String!): Wallet
   }
 `;
 
@@ -71,8 +73,9 @@ export const adminApiExtensions = gql`
   }
 
   input CreateWalletInput {
-    customerId: ID!
+    customerId: ID
     name: String!
+    code: String
     metadata: JSON
   }
 
@@ -95,6 +98,10 @@ export const adminApiExtensions = gql`
     refundPaymentToStoreCredit(
       input: StoreCreditRefundInput!
     ): WalletAdjustment!
+  }
+
+  extend type Query {
+    giftCardWallets(options: WalletListOptions): WalletList!
   }
 `;
 

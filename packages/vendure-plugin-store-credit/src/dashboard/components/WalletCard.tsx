@@ -7,39 +7,46 @@ import { useWalletAdjustmentList } from './use-wallet-adjustment';
 import { Trans } from '@lingui/react/macro';
 import { TriangleAlert } from 'lucide-react';
 import { Alert, AlertDescription } from '@/vdb/components/ui/alert.js';
+import { twMerge } from 'tailwind-merge';
 
 interface WalletCardProps {
   wallet: Wallet;
+  isCollapsed: boolean;
 }
 
-const WalletCard: React.FC<WalletCardProps> = ({ wallet }) => {
+const WalletCard: React.FC<WalletCardProps> = ({
+  wallet,
+  isCollapsed: isCollapsed,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const { formatCurrency } = useLocalFormat();
   const { adjustments, hasNextPage, fetchNextPage, error } =
     useWalletAdjustmentList({ walletId: wallet.id, pageSize: 10 });
   return (
-    <div className="w-[350px] flex flex-col overflow-hidden border border-border rounded-md text-sm">
+    <div className="flex flex-col overflow-hidden border border-border rounded-md text-sm">
       <div className="p-4 border-b border-border">
         <div className="flex justify-between items-center">
           <h2 className="m-0 text-sm font-semibold">{wallet.name}</h2>
-          <WalletAdjustmentDialog
-            open={isEditing}
-            onOpenChange={setIsEditing}
-            walletId={wallet.id}
-            currencyCode={wallet.currencyCode}
-          >
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={(e) => {
-                setIsEditing(true);
-                e.preventDefault();
-              }}
+          {!isCollapsed && (
+            <WalletAdjustmentDialog
+              open={isEditing}
+              onOpenChange={setIsEditing}
+              walletId={wallet.id}
+              currencyCode={wallet.currencyCode}
             >
-              Adjust Balance
-            </Button>
-          </WalletAdjustmentDialog>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  setIsEditing(true);
+                  e.preventDefault();
+                }}
+              >
+                Adjust Balance
+              </Button>
+            </WalletAdjustmentDialog>
+          )}
         </div>
         <div className="mt-2 text-lg font-semibold">
           {formatCurrency(wallet.balance, wallet.currencyCode)}
@@ -55,7 +62,12 @@ const WalletCard: React.FC<WalletCardProps> = ({ wallet }) => {
         </Alert>
       )}
 
-      <div className="max-h-[200px] overflow-y-auto p-4 min-h-[120px]">
+      <div
+        className={twMerge(
+          'overflow-y-auto p-4 min-h-30', // Base styles
+          !isCollapsed ? 'max-h-50' : ''
+        )}
+      >
         <p className="text-xs font-medium uppercase mb-3 text-muted-foreground">
           Activity Log
         </p>
