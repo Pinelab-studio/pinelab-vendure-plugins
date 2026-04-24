@@ -1,3 +1,7 @@
+# 1.8.1 (2026-04-24)
+
+- Replaced `saveRawWarehouseStockData` boolean with `saveAdditionalData` hook, allowing you to handle and persist any QLS product data yourself
+
 # 1.8.0 (2026-04-21)
 
 - Added configurable `saveRawWarehouseStockData` option
