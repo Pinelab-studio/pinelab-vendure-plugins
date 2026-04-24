@@ -1,3 +1,7 @@
+# 2.1.0 (2026-22-05)
+
+- Upgraded to Vendure 3.6.2
+
 # 2.0.0 (2026-04-12)
 
 - **Breaking**: Removed all webhook handling. Sendcloud is responsible for fulfillment.
