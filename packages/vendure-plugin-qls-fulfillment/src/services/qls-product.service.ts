@@ -330,7 +330,8 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
               await this.options.saveAdditionalData(
                 ctx,
                 new Injector(this.moduleRef),
-                qlsProduct
+                qlsProduct,
+                variant
               );
             }
           } catch (e) {

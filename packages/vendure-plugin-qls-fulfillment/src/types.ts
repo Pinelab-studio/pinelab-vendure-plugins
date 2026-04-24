@@ -99,7 +99,8 @@ export interface QlsPluginOptions {
   saveAdditionalData?: (
     ctx: RequestContext,
     injector: Injector,
-    qlsProduct: FulfillmentProduct
+    qlsProduct: FulfillmentProduct,
+    variant: ProductVariant
   ) => Promise<void> | void;
   /**
    * Additional order items to add to the QLS order.
