@@ -55,6 +55,7 @@ export class QlsPlugin {
       synchronizeStockLevels: true,
       autoPushOrders: true,
       qlsProductIdUiTab: 'QLS',
+      saveRawWarehouseStockData: false,
       ...options,
     };
     return QlsPlugin;
