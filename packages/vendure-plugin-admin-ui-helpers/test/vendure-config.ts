@@ -9,7 +9,7 @@ import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
 import path from 'path';
-import { AdminUIHelpersPlugin } from '../src/admin-ui-helpers.plugin';
+import { AdminUIHelpersPlugin } from '../src/plugin';
 
 require('dotenv').config();
 
