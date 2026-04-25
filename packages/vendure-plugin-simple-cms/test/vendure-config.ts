@@ -33,6 +33,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
             {
               name: 'subtitle',
               type: 'string',
+              nullable: true,
               isTranslatable: false,
             },
             {
@@ -63,6 +64,29 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               entity: Asset,
               graphQLType: 'Asset',
               uiComponent: 'asset-selector',
+            },
+          ],
+        },
+        banner: {
+          displayName: 'Banner',
+          allowMultiple: true,
+          fields: [
+            {
+              name: 'title',
+              type: 'string',
+              isTranslatable: true,
+            },
+            {
+              name: 'priority',
+              type: 'int',
+              isTranslatable: false,
+              nullable: true,
+            },
+            {
+              name: 'image',
+              type: 'relation',
+              entity: Asset,
+              graphQLType: 'Asset',
             },
           ],
         },

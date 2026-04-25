@@ -15,3 +15,7 @@ Features:
 - Content entry translations
 
 // TODO example type definitions and storefront usage
+
+## TODO
+
+- Emit events for content entry CRUD

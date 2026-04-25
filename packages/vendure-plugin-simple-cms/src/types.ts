@@ -22,7 +22,7 @@ interface BaseField {
  * Example: `string`, `number`, `boolean`, `date`
  */
 export interface PrimitiveFieldDefinition extends Translatable, BaseField {
-  type: 'string' | 'text' | 'number' | 'boolean' | 'date';
+  type: 'string' | 'text' | 'int' | 'float' | 'boolean' | 'date';
   uiComponent?: string;
 }
 

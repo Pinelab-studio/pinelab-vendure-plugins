@@ -53,17 +53,49 @@ export class ContentEntryService {
 
   async findOne(
     ctx: RequestContext,
-    id: ID,
-    relations?: RelationPaths<ContentEntry>
+    id: ID
   ): Promise<ContentEntry | undefined> {
-    const effectiveRelations = relations ?? this.relations.slice();
     return this.connection.findOneInChannel(
       ctx,
       ContentEntry,
       id,
-      ctx.channelId,
-      { relations: unique(effectiveRelations) }
+      ctx.channelId
     );
+  }
+
+  /**
+   * Find a single entry by its `code`, scoped to the current channel.
+   */
+  async findByCode(
+    ctx: RequestContext,
+    code: string
+  ): Promise<ContentEntry | undefined> {
+    return this.connection
+      .getRepository(ctx, ContentEntry)
+      .createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.channels', 'channel')
+      .leftJoinAndSelect('entry.translatableFields', 'translatableFields')
+      .where('entry.code = :code', { code })
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .getOne()
+      .then((e) => e ?? undefined);
+  }
+
+  /**
+   * Find all entries for a given `contentTypeCode`, scoped to the current channel.
+   */
+  async findByContentTypeCode(
+    ctx: RequestContext,
+    contentTypeCode: string
+  ): Promise<ContentEntry[]> {
+    return this.connection
+      .getRepository(ctx, ContentEntry)
+      .createQueryBuilder('entry')
+      .leftJoinAndSelect('entry.channels', 'channel')
+      .leftJoinAndSelect('entry.translatableFields', 'translatableFields')
+      .where('entry.contentTypeCode = :contentTypeCode', { contentTypeCode })
+      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
+      .getMany();
   }
 
   async create(

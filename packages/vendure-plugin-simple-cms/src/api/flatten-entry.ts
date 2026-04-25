@@ -35,7 +35,9 @@ export function flattenEntry(
   options: SimpleCmsPluginOptions
 ): Record<string, unknown> {
   const typeDef = options.contentTypes[entity.contentTypeCode];
-  const typeName = typeDef ? toGraphQLTypeName(typeDef.displayName) : 'Unknown';
+  const typeName = typeDef
+    ? toGraphQLTypeName(entity.contentTypeCode)
+    : 'AdminContentEntry';
   const translations = (entity.translatableFields ?? []).map((t) => ({
     ...t,
     ...(t.fields ?? {}),

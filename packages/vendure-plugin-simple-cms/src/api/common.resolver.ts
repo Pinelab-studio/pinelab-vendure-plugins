@@ -6,6 +6,7 @@ import { ContentEntryService } from '../services/content-entry.service';
 import {
   QueryContentEntriesArgs,
   QueryContentEntryArgs,
+  QueryContentEntryByCodeArgs,
 } from './generated/graphql';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { SimpleCmsPluginOptions } from '../types';
@@ -25,15 +26,11 @@ export class CommonResolver {
     @Args() args: QueryContentEntriesArgs,
     @Relations({ entity: ContentEntry }) relations: RelationPaths<ContentEntry>
   ) {
-    const result = await this.contentEntryService.findAll(
+    const items = await this.contentEntryService.findByContentTypeCode(
       ctx,
-      args.options ?? undefined,
-      relations
+      args.contentTypeCode
     );
-    return {
-      items: result.items.map((e) => flattenEntry(ctx, e, this.options)),
-      totalItems: result.totalItems,
-    };
+    return items.map((e) => flattenEntry(ctx, e, this.options));
   }
 
   @Query()
@@ -42,11 +39,16 @@ export class CommonResolver {
     @Args() args: QueryContentEntryArgs,
     @Relations({ entity: ContentEntry }) relations: RelationPaths<ContentEntry>
   ) {
-    const entry = await this.contentEntryService.findOne(
-      ctx,
-      args.id,
-      relations
-    );
+    const entry = await this.contentEntryService.findOne(ctx, args.id);
+    return entry ? flattenEntry(ctx, entry, this.options) : undefined;
+  }
+
+  @Query()
+  async contentEntryByCode(
+    @Ctx() ctx: RequestContext,
+    @Args() args: QueryContentEntryByCodeArgs
+  ) {
+    const entry = await this.contentEntryService.findByCode(ctx, args.code);
     return entry ? flattenEntry(ctx, entry, this.options) : undefined;
   }
 }
