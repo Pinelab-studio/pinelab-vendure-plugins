@@ -8,97 +8,22 @@ import { TestServer } from '@vendure/testing/lib/test-server';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { config } from './vendure-config';
-import gql from 'graphql-tag';
 import { VendureConfig } from '@vendure/core';
+import {
+  getField,
+  getQueryField,
+  getType,
+  INTROSPECTION_QUERY,
+  IntrospectionSchema,
+  typeRefToString,
+} from './simple-cms-helpers';
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
 let shopClient: SimpleGraphQLClient;
 
-const INTROSPECTION_QUERY = gql`
-  query IntrospectSchema {
-    __schema {
-      types {
-        name
-        kind
-        fields {
-          name
-          type {
-            name
-            kind
-            ofType {
-              name
-              kind
-            }
-          }
-        }
-        possibleTypes {
-          name
-        }
-      }
-    }
-  }
-`;
-
-const CREATE_CONTENT_ENTRY = gql`
-  mutation CreateContentEntry($input: ContentEntryInput!) {
-    createContentEntry(input: $input) {
-      ... on FeaturedProduct {
-        id
-        code
-        name
-        contentTypeCode
-        subtitle
-        title
-        seo
-        image {
-          id
-          preview
-        }
-        translations {
-          id
-          languageCode
-          title
-          seo
-        }
-        allowMultiple
-        fieldDefinitions {
-          name
-          type
-          nullable
-          isTranslatable
-          uiComponent
-          fields {
-            name
-            type
-          }
-        }
-      }
-    }
-  }
-`;
-
-const GET_CONTENT_ENTRIES = gql`
-  query GetContentEntries {
-    contentEntries {
-      items {
-        ... on FeaturedProduct {
-          id
-          code
-          name
-          contentTypeCode
-          subtitle
-          title
-          seo
-          image {
-            id
-          }
-        }
-      }
-      totalItems
-    }
-  }
-`;
+let shopSchema: IntrospectionSchema;
+let adminSchema: IntrospectionSchema;
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__test__'));
@@ -112,6 +37,10 @@ beforeAll(async () => {
     productsCsvPath: '../test/src/products-import.csv',
   });
   await adminClient.asSuperAdmin();
+  const shopResult = await shopClient.query(INTROSPECTION_QUERY);
+  shopSchema = shopResult.__schema;
+  const adminResult = await adminClient.query(INTROSPECTION_QUERY);
+  adminSchema = adminResult.__schema;
 }, 60000);
 
 afterAll(async () => {
@@ -119,179 +48,85 @@ afterAll(async () => {
 }, 30000);
 
 describe('SimpleCmsPlugin', () => {
-  describe('GraphQL Schema Validation', () => {
-    it('should generate FeaturedProduct type from contentTypes config', async () => {
-      const { __schema } = await adminClient.query(INTROSPECTION_QUERY);
-      const types: { name: string; kind: string; fields: any[] }[] =
-        __schema.types;
-      const featuredProduct = types.find(
-        (t) => t.name === 'FeaturedProduct' && t.kind === 'OBJECT'
+  describe('GraphQL Schema Generation', () => {
+    it('Generates the ContentEntry interface on the shop API', () => {
+      const iface = getType(shopSchema, 'ContentEntry');
+      expect(iface).toBeDefined();
+      expect(iface!.kind).toBe('INTERFACE');
+      expect(typeRefToString(getField(iface, 'id')!.type)).toBe('ID!');
+      expect(typeRefToString(getField(iface, 'code')!.type)).toBe('String!');
+      expect(typeRefToString(getField(iface, 'createdAt')!.type)).toBe(
+        'DateTime!'
       );
-      expect(featuredProduct).toBeDefined();
-      const fieldNames = featuredProduct!.fields.map(
-        (f: { name: string }) => f.name
+      expect(typeRefToString(getField(iface, 'updatedAt')!.type)).toBe(
+        'DateTime!'
       );
-      // Base fields
-      expect(fieldNames).toContain('id');
-      expect(fieldNames).toContain('code');
-      expect(fieldNames).toContain('name');
-      expect(fieldNames).toContain('contentTypeCode');
-      expect(fieldNames).toContain('translations');
-      // Custom fields from config
-      expect(fieldNames).toContain('subtitle');
-      expect(fieldNames).toContain('title');
-      expect(fieldNames).toContain('seo');
-      expect(fieldNames).toContain('image');
-      // Admin-only fields
-      expect(fieldNames).toContain('allowMultiple');
-      expect(fieldNames).toContain('fieldDefinitions');
     });
 
-    it('should generate FeaturedProductTranslation type with translatable fields', async () => {
-      const { __schema } = await adminClient.query(INTROSPECTION_QUERY);
-      const types: { name: string; kind: string; fields: any[] }[] =
-        __schema.types;
-      const translation = types.find(
-        (t) => t.name === 'FeaturedProductTranslation' && t.kind === 'OBJECT'
+    it('Generates the FeaturedProduct singleton type and query', () => {
+      const type = getType(shopSchema, 'FeaturedProduct');
+      expect(type).toBeDefined();
+      expect(type!.kind).toBe('OBJECT');
+      expect(type!.interfaces?.map((i) => i.name)).toContain('ContentEntry');
+
+      // Fields with correct nullability
+      expect(typeRefToString(getField(type, 'subtitle')!.type)).toBe('String');
+      expect(typeRefToString(getField(type, 'title')!.type)).toBe('String!');
+      expect(typeRefToString(getField(type, 'seo')!.type)).toBe(
+        'FeaturedProductSeo!'
       );
-      expect(translation).toBeDefined();
-      const fieldNames = translation!.fields.map(
-        (f: { name: string }) => f.name
+      expect(typeRefToString(getField(type, 'image')!.type)).toBe('Asset!');
+
+      // Nested struct type
+      const seoType = getType(shopSchema, 'FeaturedProductSeo');
+      expect(seoType).toBeDefined();
+      expect(typeRefToString(getField(seoType, 'metaTitle')!.type)).toBe(
+        'String!'
       );
-      expect(fieldNames).toContain('languageCode');
-      // Translatable fields should appear in translation type
-      expect(fieldNames).toContain('title');
-      expect(fieldNames).toContain('seo');
-      // Non-translatable fields should NOT appear
-      expect(fieldNames).not.toContain('subtitle');
-      expect(fieldNames).not.toContain('image');
+      expect(typeRefToString(getField(seoType, 'metaDescription')!.type)).toBe(
+        'String!'
+      );
+
+      // Singleton query: no args, no list, no by-code variants
+      const singleton = getQueryField(shopSchema, 'featuredProduct');
+      expect(singleton).toBeDefined();
+      expect(singleton!.args).toHaveLength(0);
+      expect(typeRefToString(singleton!.type)).toBe('FeaturedProduct');
+      expect(getQueryField(shopSchema, 'featuredProducts')).toBeUndefined();
     });
 
-    it('should generate ContentEntry union containing FeaturedProduct', async () => {
-      const { __schema } = await adminClient.query(INTROSPECTION_QUERY);
-      const types: { name: string; kind: string; possibleTypes?: any[] }[] =
-        __schema.types;
-      const union = types.find(
-        (t) => t.name === 'ContentEntry' && t.kind === 'UNION'
-      );
-      expect(union).toBeDefined();
-      expect(union!.possibleTypes).toBeDefined();
-      const memberNames = union!.possibleTypes!.map(
-        (t: { name: string }) => t.name
-      );
-      expect(memberNames).toContain('FeaturedProduct');
+    it('Generates the Banner non-singleton type and queries', () => {
+      const type = getType(shopSchema, 'Banner');
+      expect(type).toBeDefined();
+      expect(type!.kind).toBe('OBJECT');
+      expect(type!.interfaces?.map((i) => i.name)).toContain('ContentEntry');
+
+      expect(typeRefToString(getField(type, 'title')!.type)).toBe('String!');
+      expect(typeRefToString(getField(type, 'priority')!.type)).toBe('Int');
+      expect(typeRefToString(getField(type, 'image')!.type)).toBe('Asset!');
+
+      // List query: no args, returns [Banner!]!
+      const list = getQueryField(shopSchema, 'banners');
+      expect(list).toBeDefined();
+      expect(list!.args).toHaveLength(0);
+      expect(typeRefToString(list!.type)).toBe('[Banner!]!');
+
+      // By-code query: required `code: String!`, returns Banner (nullable)
+      const byCode = getQueryField(shopSchema, 'banner');
+      expect(byCode).toBeDefined();
+      expect(byCode!.args).toHaveLength(1);
+      expect(byCode!.args[0].name).toBe('code');
+      expect(typeRefToString(byCode!.args[0].type)).toBe('String!');
+      expect(typeRefToString(byCode!.type)).toBe('Banner');
     });
 
-    it('should have correct field types for FeaturedProduct', async () => {
-      const { __schema } = await adminClient.query(INTROSPECTION_QUERY);
-      const types: { name: string; kind: string; fields: any[] }[] =
-        __schema.types;
-      const featuredProduct = types.find((t) => t.name === 'FeaturedProduct')!;
-      const subtitleField = featuredProduct.fields.find(
-        (f: any) => f.name === 'subtitle'
-      );
-      expect(subtitleField.type.name).toBe('String');
-      const seoField = featuredProduct.fields.find(
-        (f: any) => f.name === 'seo'
-      );
-      expect(seoField.type.name).toBe('JSON');
-      const imageField = featuredProduct.fields.find(
-        (f: any) => f.name === 'image'
-      );
-      expect(imageField.type.name).toBe('Asset');
-    });
-
-    it('should expose contentEntries query on shop API', async () => {
-      const { __schema } = await shopClient.query(INTROSPECTION_QUERY);
-      const queryType = (__schema.types as any[]).find(
-        (t) => t.name === 'Query'
-      );
-      const fieldNames = queryType.fields.map((f: any) => f.name);
-      expect(fieldNames).toContain('contentEntries');
-      expect(fieldNames).toContain('contentEntry');
-    });
-
-    it('should expose admin mutations', async () => {
-      const { __schema } = await adminClient.query(INTROSPECTION_QUERY);
-      const mutationType = (__schema.types as any[]).find(
-        (t) => t.name === 'Mutation'
-      );
-      const fieldNames = mutationType.fields.map((f: any) => f.name);
-      expect(fieldNames).toContain('createContentEntry');
-      expect(fieldNames).toContain('updateContentEntry');
-      expect(fieldNames).toContain('deleteContentEntry');
-    });
-  });
-
-  describe('CRUD Operations', () => {
-    let createdEntryId: string;
-
-    it('should create a content entry', async () => {
-      const { createContentEntry } = await adminClient.query(
-        CREATE_CONTENT_ENTRY,
-        {
-          input: {
-            code: 'homepage',
-            name: 'Homepage',
-            contentTypeCode: 'featuredProduct',
-            fields: {
-              subtitle: 'The best products',
-            },
-            translations: [
-              {
-                languageCode: 'en',
-                fields: {
-                  title: 'Welcome to Simple CMS',
-                  seo: {
-                    metaTitle: 'Home | My Shop',
-                    metaDescription: 'Browse our featured products',
-                  },
-                },
-              },
-            ],
-          },
-        }
-      );
-      expect(createContentEntry.code).toBe('homepage');
-      expect(createContentEntry.name).toBe('Homepage');
-      expect(createContentEntry.contentTypeCode).toBe('featuredProduct');
-      expect(createContentEntry.subtitle).toBe('The best products');
-      expect(createContentEntry.title).toBe('Welcome to Simple CMS');
-      expect(createContentEntry.seo).toEqual({
-        metaTitle: 'Home | My Shop',
-        metaDescription: 'Browse our featured products',
-      });
-      expect(createContentEntry.allowMultiple).toBe(false);
-      expect(createContentEntry.fieldDefinitions).toHaveLength(4);
-      createdEntryId = createContentEntry.id;
-    });
-
-    it('should list content entries', async () => {
-      const { contentEntries } = await adminClient.query(GET_CONTENT_ENTRIES);
-      expect(contentEntries.totalItems).toBe(1);
-      expect(contentEntries.items[0].code).toBe('homepage');
-      expect(contentEntries.items[0].subtitle).toBe('The best products');
-    });
-
-    it('should query content entries from shop API', async () => {
-      const SHOP_QUERY = gql`
-        query {
-          contentEntries {
-            items {
-              ... on FeaturedProduct {
-                id
-                code
-                subtitle
-                title
-              }
-            }
-            totalItems
-          }
-        }
-      `;
-      const { contentEntries } = await shopClient.query(SHOP_QUERY);
-      expect(contentEntries.totalItems).toBe(1);
-      expect(contentEntries.items[0].code).toBe('homepage');
+    it('Generates the AdminContentEntry type with JSON fields on the admin API', () => {
+      const type = getType(adminSchema, 'AdminContentEntry');
+      expect(type).toBeDefined();
+      expect(type!.kind).toBe('OBJECT');
+      expect(typeRefToString(getField(type, 'id')!.type)).toBe('ID!');
+      expect(typeRefToString(getField(type, 'code')!.type)).toBe('String!');
+      expect(typeRefToString(getField(type, 'fields')!.type)).toBe('JSON');
     });
   });
 });

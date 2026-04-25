@@ -49,47 +49,6 @@ const CREATE_CONTENT_ENTRY = gql`
   });
 
   await adminClient.asSuperAdmin();
-  await adminClient
-    .query(CREATE_CONTENT_ENTRY, {
-      input: {
-        code: 'homepage',
-        name: 'Homepage',
-        contentTypeCode: 'featuredProduct',
-        fields: {
-          // Primitive non-translatable field
-          subtitle: 'The best products',
-          // Relation field (Asset ID)
-          image: 1,
-        },
-        translations: [
-          {
-            languageCode: 'en',
-            fields: {
-              // Translatable primitive field
-              title: 'Welcome to Simple CMS',
-              // Translatable struct field
-              seo: {
-                metaTitle: 'Home | My Shop',
-                metaDescription: 'Browse our featured products',
-              },
-            },
-          },
-          {
-            languageCode: 'nl',
-            fields: {
-              title: 'Welkom bij Simple CMS',
-              seo: {
-                metaTitle: 'Home | Mijn Winkel',
-                metaDescription: 'Bekijk onze uitgelichte producten',
-              },
-            },
-          },
-        ],
-      },
-    })
-    .catch((error) => {
-      console.error(error);
-    });
 
   // eslint-disable-next-line no-console
   console.log('Vendure dev server started with initial content entry');
