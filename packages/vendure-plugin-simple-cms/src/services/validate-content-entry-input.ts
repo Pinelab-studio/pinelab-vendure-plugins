@@ -10,7 +10,6 @@ import {
   ContentEntryTranslationInput,
 } from '../api/generated/graphql';
 
-const KEY_REGEX = /^[A-Za-z_][A-Za-z0-9_]*$/;
 const ISO_DATE_REGEX =
   /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:?\d{2})?)?$/;
 
@@ -24,7 +23,6 @@ type AnyFieldDefinition =
  * `TypeDefinition`. Throws `UserInputError` on the first violation.
  *
  * Performed checks:
- *  - `code` matches `[A-Za-z_][A-Za-z0-9_]*`.
  *  - `input.fields` only contains keys for non-translatable fields and
  *    relation fields; no unknown keys allowed.
  *  - Required (non-nullable) non-translatable fields are present.
@@ -38,12 +36,6 @@ export function validateContentEntryInput(
   contentType: TypeDefinition,
   input: ContentEntryInput
 ): void {
-  if (!KEY_REGEX.test(input.code)) {
-    throw new UserInputError(
-      `Invalid code '${input.code}': must match /^[A-Za-z_][A-Za-z0-9_]*$/`
-    );
-  }
-
   const translatableFields = contentType.fields.filter(
     (f): f is PrimitiveFieldDefinition | StructFieldDefinition =>
       f.type !== 'relation' && f.isTranslatable === true

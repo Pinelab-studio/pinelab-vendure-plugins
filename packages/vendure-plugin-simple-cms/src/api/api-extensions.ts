@@ -25,8 +25,6 @@ export function shopApiExtensions(
 export const adminSchemaExtensions = gql`
   type AdminContentEntry implements ContentEntry {
     id: ID!
-    code: String!
-    name: String!
     contentTypeCode: String!
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -41,7 +39,6 @@ export const adminSchemaExtensions = gql`
 
   interface ContentEntry {
     id: ID!
-    code: String!
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -52,8 +49,6 @@ export const adminSchemaExtensions = gql`
   }
 
   input ContentEntryInput {
-    code: String!
-    name: String!
     contentTypeCode: String!
     fields: JSON!
     translations: [ContentEntryTranslationInput!]
@@ -61,7 +56,6 @@ export const adminSchemaExtensions = gql`
 
   extend type Query {
     contentEntry(id: ID!): AdminContentEntry
-    contentEntryByCode(code: String!): AdminContentEntry
     contentEntries(contentTypeCode: String!): [AdminContentEntry!]!
   }
 

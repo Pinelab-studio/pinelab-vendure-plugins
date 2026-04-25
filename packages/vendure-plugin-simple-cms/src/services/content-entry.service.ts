@@ -65,24 +65,6 @@ export class ContentEntryService {
   }
 
   /**
-   * Find a single entry by its `code`, scoped to the current channel.
-   */
-  async findByCode(
-    ctx: RequestContext,
-    code: string
-  ): Promise<ContentEntry | undefined> {
-    return this.connection
-      .getRepository(ctx, ContentEntry)
-      .createQueryBuilder('entry')
-      .leftJoinAndSelect('entry.channels', 'channel')
-      .leftJoinAndSelect('entry.translatableFields', 'translatableFields')
-      .where('entry.code = :code', { code })
-      .andWhere('channel.id = :channelId', { channelId: ctx.channelId })
-      .getOne()
-      .then((e) => e ?? undefined);
-  }
-
-  /**
    * Find all entries for a given `contentTypeCode`, scoped to the current channel.
    */
   async findByContentTypeCode(
@@ -107,8 +89,6 @@ export class ContentEntryService {
     await this.validateAllowMultiple(ctx, input.contentTypeCode);
     validateContentEntryInput(contentType, input);
     const entry = new ContentEntry({
-      code: input.code,
-      name: input.name,
       contentTypeCode: input.contentTypeCode,
       fields: input.fields,
     });
@@ -149,8 +129,6 @@ export class ContentEntryService {
       );
     }
     validateContentEntryInput(contentType, input);
-    existing.code = input.code;
-    existing.name = input.name;
     existing.contentTypeCode = input.contentTypeCode;
     existing.fields = input.fields;
     await this.connection.getRepository(ctx, ContentEntry).save(existing);

@@ -18,4 +18,6 @@ Features:
 
 ## TODO
 
+- Make admin API return the field definitions so that we can render Ui components
 - Emit events for content entry CRUD
+- Implement React Dashboard

@@ -104,7 +104,6 @@ function generateContentType(
   const nestedTypes: string[] = [];
   const fieldLines: string[] = [
     '  id: ID!',
-    '  code: String!',
     '  createdAt: DateTime!',
     '  updatedAt: DateTime!',
   ];
@@ -124,7 +123,7 @@ function generateContentType(
 /**
  * Generates the top-level Query field SDL for a content type.
  *
- * - `allowMultiple: true`  → list query + by-code query
+ * - `allowMultiple: true`  → list query + by-id query
  * - `allowMultiple: false` → singleton query (no args)
  */
 function generateQueryFields(
@@ -136,7 +135,7 @@ function generateQueryFields(
     const listName = `${contentTypeKey}s`;
     return [
       `  ${listName}: [${typeName}!]!`,
-      `  ${contentTypeKey}(code: String!): ${typeName}`,
+      `  ${contentTypeKey}(id: ID!): ${typeName}`,
     ];
   }
   return [`  ${contentTypeKey}: ${typeName}`];
@@ -151,7 +150,6 @@ function generateQueryFields(
 export function generateShopSchema(options: SimpleCmsPluginOptions): string {
   const interfaceSDL = `interface ContentEntry {
   id: ID!
-  code: String!
   createdAt: DateTime!
   updatedAt: DateTime!
 }`;

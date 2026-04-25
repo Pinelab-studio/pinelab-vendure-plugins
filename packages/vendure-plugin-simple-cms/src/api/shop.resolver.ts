@@ -58,9 +58,9 @@ export function createShopResolver(
   )) {
     if (def.allowMultiple) {
       const listMethodName = `list_${contentTypeKey}`;
-      const byCodeMethodName = `find_${contentTypeKey}`;
+      const byIdMethodName = `find_${contentTypeKey}`;
       const listFieldName = `${contentTypeKey}s`;
-      const byCodeFieldName = contentTypeKey;
+      const byIdFieldName = contentTypeKey;
 
       // List query: returns all entries of this content type
       async function listResolver(
@@ -79,24 +79,24 @@ export function createShopResolver(
       } as PropertyDescriptor);
       Ctx()(proto, listMethodName, 0);
 
-      // By-code query: returns a single entry by its `code`
-      async function byCodeResolver(
+      // By-id query: returns a single entry by its `id`, scoped to this content type
+      async function byIdResolver(
         this: DynamicShopResolver,
         ctx: RequestContext,
-        args: { code: string }
+        args: { id: string }
       ) {
-        const entry = await this.contentEntryService.findByCode(ctx, args.code);
+        const entry = await this.contentEntryService.findOne(ctx, args.id);
         if (!entry || entry.contentTypeCode !== contentTypeKey) {
           return null;
         }
         return flattenEntry(ctx, entry, this.opts);
       }
-      proto[byCodeMethodName] = byCodeResolver;
-      Query(byCodeFieldName)(proto, byCodeMethodName, {
-        value: byCodeResolver,
+      proto[byIdMethodName] = byIdResolver;
+      Query(byIdFieldName)(proto, byIdMethodName, {
+        value: byIdResolver,
       } as PropertyDescriptor);
-      Ctx()(proto, byCodeMethodName, 0);
-      Args()(proto, byCodeMethodName, 1);
+      Ctx()(proto, byIdMethodName, 0);
+      Args()(proto, byIdMethodName, 1);
     } else {
       const singletonMethodName = `single_${contentTypeKey}`;
       const singletonFieldName = contentTypeKey;

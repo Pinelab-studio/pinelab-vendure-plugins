@@ -18,7 +18,6 @@ import {
   MutationDeleteContentEntryArgs,
   QueryContentEntriesArgs,
   QueryContentEntryArgs,
-  QueryContentEntryByCodeArgs,
 } from './generated/graphql';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { SimpleCmsPluginOptions } from '../types';
@@ -87,15 +86,6 @@ export class AdminResolver {
     @Args() args: QueryContentEntryArgs
   ) {
     const entry = await this.contentEntryService.findOne(ctx, args.id);
-    return entry ? flattenEntry(ctx, entry, this.options) : undefined;
-  }
-
-  @Query()
-  async contentEntryByCode(
-    @Ctx() ctx: RequestContext,
-    @Args() args: QueryContentEntryByCodeArgs
-  ) {
-    const entry = await this.contentEntryService.findByCode(ctx, args.code);
     return entry ? flattenEntry(ctx, entry, this.options) : undefined;
   }
 }

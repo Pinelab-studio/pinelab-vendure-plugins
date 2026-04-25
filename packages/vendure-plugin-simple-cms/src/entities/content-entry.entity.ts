@@ -11,7 +11,6 @@ import { ContentEntryTranslation } from './content-entry-translation.entity';
 
 @Entity()
 @Index(['updatedAt'])
-@Index(['code'])
 export class ContentEntry extends VendureEntity implements ChannelAware {
   constructor(input?: Partial<ContentEntry>) {
     super(input);
@@ -20,12 +19,6 @@ export class ContentEntry extends VendureEntity implements ChannelAware {
   @ManyToMany(() => Channel)
   @JoinTable()
   channels!: Channel[];
-
-  @Column()
-  code!: string;
-
-  @Column()
-  name!: string;
 
   @Column()
   @Index()

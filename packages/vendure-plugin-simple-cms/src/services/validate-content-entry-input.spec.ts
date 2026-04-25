@@ -1,8 +1,8 @@
 import { Asset, LanguageCode } from '@vendure/core';
 import { describe, expect, it } from 'vitest';
-import { TypeDefinition } from '../src/types';
-import { validateContentEntryInput } from '../src/services/validate-content-entry-input';
-import { ContentEntryInput } from '../src/api/generated/graphql';
+import { TypeDefinition } from '../types';
+import { validateContentEntryInput } from './validate-content-entry-input';
+import { ContentEntryInput } from '../api/generated/graphql';
 
 const featuredProduct: TypeDefinition = {
   displayName: 'Featured Product',
@@ -49,8 +49,6 @@ function fpInput(
   overrides: Partial<ContentEntryInput> = {}
 ): ContentEntryInput {
   return {
-    code: 'home_featured',
-    name: 'Home featured',
     contentTypeCode: 'featuredProduct',
     fields: { image: { id: 1 } },
     translations: [
@@ -70,8 +68,6 @@ function bannerInput(
   overrides: Partial<ContentEntryInput> = {}
 ): ContentEntryInput {
   return {
-    code: 'top',
-    name: 'Top',
     contentTypeCode: 'banner',
     fields: { image: { id: 1 }, priority: 1 },
     translations: [
@@ -101,15 +97,6 @@ describe('validateContentEntryInput', () => {
         bannerInput({ fields: { image: { id: 1 } } })
       )
     ).not.toThrow();
-  });
-
-  it('Rejects an invalid code', () => {
-    expect(() =>
-      validateContentEntryInput(banner, bannerInput({ code: '1abc' }))
-    ).toThrow(/Invalid code/);
-    expect(() =>
-      validateContentEntryInput(banner, bannerInput({ code: 'foo-bar' }))
-    ).toThrow(/Invalid code/);
   });
 
   it('Rejects unknown top-level field', () => {
@@ -156,16 +143,12 @@ describe('validateContentEntryInput', () => {
     };
     expect(() =>
       validateContentEntryInput(def, {
-        code: 'x',
-        name: 'X',
         contentTypeCode: 'x',
         fields: { flag: 'true', when: '2024-01-01' },
       } as ContentEntryInput)
     ).toThrow(/boolean/);
     expect(() =>
       validateContentEntryInput(def, {
-        code: 'x',
-        name: 'X',
         contentTypeCode: 'x',
         fields: { flag: true, when: 'not a date' },
       } as ContentEntryInput)

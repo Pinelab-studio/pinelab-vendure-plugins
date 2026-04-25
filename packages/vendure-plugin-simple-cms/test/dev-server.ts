@@ -13,8 +13,6 @@ const CREATE_CONTENT_ENTRY = gql`
   mutation CreateContentEntry($input: ContentEntryInput!) {
     createContentEntry(input: $input) {
       id
-      code
-      name
       contentTypeCode
       fields
       translations {

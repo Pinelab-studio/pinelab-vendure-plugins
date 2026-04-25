@@ -55,7 +55,7 @@ describe('SimpleCmsPlugin', () => {
       expect(iface).toBeDefined();
       expect(iface!.kind).toBe('INTERFACE');
       expect(typeRefToString(getField(iface, 'id')!.type)).toBe('ID!');
-      expect(typeRefToString(getField(iface, 'code')!.type)).toBe('String!');
+      expect(getField(iface, 'code')).toBeUndefined();
       expect(typeRefToString(getField(iface, 'createdAt')!.type)).toBe(
         'DateTime!'
       );
@@ -69,6 +69,7 @@ describe('SimpleCmsPlugin', () => {
       expect(type).toBeDefined();
       expect(type!.kind).toBe('OBJECT');
       expect(type!.interfaces?.map((i) => i.name)).toContain('ContentEntry');
+      expect(getField(type, 'code')).toBeUndefined();
 
       // Fields with correct nullability
       expect(typeRefToString(getField(type, 'subtitle')!.type)).toBe('String');
@@ -88,7 +89,7 @@ describe('SimpleCmsPlugin', () => {
         'String!'
       );
 
-      // Singleton query: no args, no list, no by-code variants
+      // Singleton query: no args, no list, no by-id variants
       const singleton = getQueryField(shopSchema, 'featuredProduct');
       expect(singleton).toBeDefined();
       expect(singleton!.args).toHaveLength(0);
@@ -101,6 +102,7 @@ describe('SimpleCmsPlugin', () => {
       expect(type).toBeDefined();
       expect(type!.kind).toBe('OBJECT');
       expect(type!.interfaces?.map((i) => i.name)).toContain('ContentEntry');
+      expect(getField(type, 'code')).toBeUndefined();
 
       expect(typeRefToString(getField(type, 'title')!.type)).toBe('String!');
       expect(typeRefToString(getField(type, 'priority')!.type)).toBe('Int');
@@ -112,13 +114,13 @@ describe('SimpleCmsPlugin', () => {
       expect(list!.args).toHaveLength(0);
       expect(typeRefToString(list!.type)).toBe('[Banner!]!');
 
-      // By-code query: required `code: String!`, returns Banner (nullable)
-      const byCode = getQueryField(shopSchema, 'banner');
-      expect(byCode).toBeDefined();
-      expect(byCode!.args).toHaveLength(1);
-      expect(byCode!.args[0].name).toBe('code');
-      expect(typeRefToString(byCode!.args[0].type)).toBe('String!');
-      expect(typeRefToString(byCode!.type)).toBe('Banner');
+      // By-id query: required `id: ID!`, returns Banner (nullable)
+      const byId = getQueryField(shopSchema, 'banner');
+      expect(byId).toBeDefined();
+      expect(byId!.args).toHaveLength(1);
+      expect(byId!.args[0].name).toBe('id');
+      expect(typeRefToString(byId!.args[0].type)).toBe('ID!');
+      expect(typeRefToString(byId!.type)).toBe('Banner');
     });
 
     it('Generates the AdminContentEntry type with JSON fields on the admin API', () => {
@@ -126,18 +128,20 @@ describe('SimpleCmsPlugin', () => {
       expect(type).toBeDefined();
       expect(type!.kind).toBe('OBJECT');
       expect(typeRefToString(getField(type, 'id')!.type)).toBe('ID!');
-      expect(typeRefToString(getField(type, 'code')!.type)).toBe('String!');
+      expect(getField(type, 'code')).toBeUndefined();
+      expect(getField(type, 'name')).toBeUndefined();
       expect(typeRefToString(getField(type, 'fields')!.type)).toBe('JSON!');
     });
   });
 
   describe('createContentEntry admin mutation + shop API fetches', () => {
+    let topBannerId: string;
+    let sideBannerId: string;
+
     const CREATE_CONTENT_ENTRY = gql`
       mutation CreateContentEntry($input: ContentEntryInput!) {
         createContentEntry(input: $input) {
           id
-          code
-          name
           contentTypeCode
           fields
           translations {
@@ -152,7 +156,6 @@ describe('SimpleCmsPlugin', () => {
       query GetFeaturedProduct {
         featuredProduct {
           id
-          code
           title
           subtitle
           seo {
@@ -170,7 +173,6 @@ describe('SimpleCmsPlugin', () => {
       query GetBanners {
         banners {
           id
-          code
           title
           priority
           image {
@@ -180,13 +182,21 @@ describe('SimpleCmsPlugin', () => {
       }
     `;
 
+    const GET_BANNER_BY_ID = gql`
+      query GetBanner($id: ID!) {
+        banner(id: $id) {
+          id
+          title
+          priority
+        }
+      }
+    `;
+
     it('Creates a FeaturedProduct (singleton)', async () => {
       const { createContentEntry } = await adminClient.query(
         CREATE_CONTENT_ENTRY,
         {
           input: {
-            code: 'home_featured',
-            name: 'Home featured',
             contentTypeCode: 'featuredProduct',
             fields: { subtitle: 'Sub', image: { id: 1 } },
             translations: [
@@ -204,7 +214,7 @@ describe('SimpleCmsPlugin', () => {
           },
         }
       );
-      expect(createContentEntry.code).toBe('home_featured');
+      expect(createContentEntry.id).toBeTruthy();
       expect(createContentEntry.contentTypeCode).toBe('featuredProduct');
       expect(createContentEntry.fields.subtitle).toBe('Sub');
       expect(createContentEntry.translations).toHaveLength(1);
@@ -214,8 +224,6 @@ describe('SimpleCmsPlugin', () => {
       await expect(
         adminClient.query(CREATE_CONTENT_ENTRY, {
           input: {
-            code: 'home_featured_2',
-            name: 'Second',
             contentTypeCode: 'featuredProduct',
             fields: { image: { id: 1 } },
             translations: [
@@ -236,8 +244,6 @@ describe('SimpleCmsPlugin', () => {
       await expect(
         adminClient.query(CREATE_CONTENT_ENTRY, {
           input: {
-            code: 'no_image',
-            name: 'No image',
             contentTypeCode: 'banner',
             fields: {},
             translations: [{ languageCode: 'en', fields: { title: 'X' } }],
@@ -250,8 +256,6 @@ describe('SimpleCmsPlugin', () => {
       await expect(
         adminClient.query(CREATE_CONTENT_ENTRY, {
           input: {
-            code: 'wrong_translatable',
-            name: 'Wrong',
             contentTypeCode: 'banner',
             fields: { image: { id: 1 }, title: 'should be in translations' },
             translations: [],
@@ -265,8 +269,6 @@ describe('SimpleCmsPlugin', () => {
         CREATE_CONTENT_ENTRY,
         {
           input: {
-            code: 'top_banner',
-            name: 'Top banner',
             contentTypeCode: 'banner',
             fields: { image: { id: 1 }, priority: 1 },
             translations: [
@@ -275,8 +277,9 @@ describe('SimpleCmsPlugin', () => {
           },
         }
       );
-      expect(createContentEntry.code).toBe('top_banner');
+      expect(createContentEntry.id).toBeTruthy();
       expect(createContentEntry.fields.priority).toBe(1);
+      topBannerId = createContentEntry.id;
     });
 
     it('Creates a second Banner', async () => {
@@ -284,8 +287,6 @@ describe('SimpleCmsPlugin', () => {
         CREATE_CONTENT_ENTRY,
         {
           input: {
-            code: 'side_banner',
-            name: 'Side banner',
             contentTypeCode: 'banner',
             fields: { image: { id: 1 }, priority: 2 },
             translations: [
@@ -294,14 +295,14 @@ describe('SimpleCmsPlugin', () => {
           },
         }
       );
-      expect(createContentEntry.code).toBe('side_banner');
+      expect(createContentEntry.id).toBeTruthy();
       expect(createContentEntry.fields.priority).toBe(2);
+      sideBannerId = createContentEntry.id;
     });
 
     it('Fetches the singleton FeaturedProduct via the shop API', async () => {
       const { featuredProduct } = await shopClient.query(GET_FEATURED_PRODUCT);
       expect(featuredProduct).toBeDefined();
-      expect(featuredProduct.code).toBe('home_featured');
       expect(featuredProduct.title).toBe('Featured title');
       expect(featuredProduct.subtitle).toBe('Sub');
       expect(featuredProduct.seo.metaTitle).toBe('Meta');
@@ -312,14 +313,25 @@ describe('SimpleCmsPlugin', () => {
     it('Fetches both Banners via the shop API', async () => {
       const { banners } = await shopClient.query(GET_BANNERS);
       expect(banners).toHaveLength(2);
-      const codes = banners.map((b: { code: string }) => b.code).sort();
-      expect(codes).toEqual(['side_banner', 'top_banner']);
-      const top = banners.find(
-        (b: { code: string }) => b.code === 'top_banner'
-      );
-      expect(top.title).toBe('Top banner EN');
-      expect(top.priority).toBe(1);
-      expect(top.image.id).toBeTruthy();
+      const ids = banners.map((b: { id: string }) => b.id).sort();
+      expect(ids).toEqual([topBannerId, sideBannerId].sort());
+    });
+
+    it('Fetches a single Banner by id via the shop API', async () => {
+      const { banner } = await shopClient.query(GET_BANNER_BY_ID, {
+        id: topBannerId,
+      });
+      expect(banner).toBeDefined();
+      expect(banner.id).toBe(topBannerId);
+      expect(banner.title).toBe('Top banner EN');
+      expect(banner.priority).toBe(1);
+    });
+
+    it('Returns null when banner(id:) is called with an unknown id', async () => {
+      const { banner } = await shopClient.query(GET_BANNER_BY_ID, {
+        id: '999999',
+      });
+      expect(banner).toBeNull();
     });
   });
 });
