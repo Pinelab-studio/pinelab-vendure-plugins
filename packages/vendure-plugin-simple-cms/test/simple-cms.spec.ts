@@ -9,6 +9,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { config } from './vendure-config';
 import { VendureConfig } from '@vendure/core';
+import gql from 'graphql-tag';
 import {
   getField,
   getQueryField,
@@ -127,6 +128,198 @@ describe('SimpleCmsPlugin', () => {
       expect(typeRefToString(getField(type, 'id')!.type)).toBe('ID!');
       expect(typeRefToString(getField(type, 'code')!.type)).toBe('String!');
       expect(typeRefToString(getField(type, 'fields')!.type)).toBe('JSON!');
+    });
+  });
+
+  describe('createContentEntry admin mutation + shop API fetches', () => {
+    const CREATE_CONTENT_ENTRY = gql`
+      mutation CreateContentEntry($input: ContentEntryInput!) {
+        createContentEntry(input: $input) {
+          id
+          code
+          name
+          contentTypeCode
+          fields
+          translations {
+            languageCode
+            fields
+          }
+        }
+      }
+    `;
+
+    const GET_FEATURED_PRODUCT = gql`
+      query GetFeaturedProduct {
+        featuredProduct {
+          id
+          code
+          title
+          subtitle
+          seo {
+            metaTitle
+            metaDescription
+          }
+          image {
+            id
+          }
+        }
+      }
+    `;
+
+    const GET_BANNERS = gql`
+      query GetBanners {
+        banners {
+          id
+          code
+          title
+          priority
+          image {
+            id
+          }
+        }
+      }
+    `;
+
+    it('Creates a FeaturedProduct (singleton)', async () => {
+      const { createContentEntry } = await adminClient.query(
+        CREATE_CONTENT_ENTRY,
+        {
+          input: {
+            code: 'home_featured',
+            name: 'Home featured',
+            contentTypeCode: 'featuredProduct',
+            fields: { subtitle: 'Sub', image: { id: 1 } },
+            translations: [
+              {
+                languageCode: 'en',
+                fields: {
+                  title: 'Featured title',
+                  seo: {
+                    metaTitle: 'Meta',
+                    metaDescription: 'Description',
+                  },
+                },
+              },
+            ],
+          },
+        }
+      );
+      expect(createContentEntry.code).toBe('home_featured');
+      expect(createContentEntry.contentTypeCode).toBe('featuredProduct');
+      expect(createContentEntry.fields.subtitle).toBe('Sub');
+      expect(createContentEntry.translations).toHaveLength(1);
+    });
+
+    it('Rejects creating a second FeaturedProduct (singleton)', async () => {
+      await expect(
+        adminClient.query(CREATE_CONTENT_ENTRY, {
+          input: {
+            code: 'home_featured_2',
+            name: 'Second',
+            contentTypeCode: 'featuredProduct',
+            fields: { image: { id: 1 } },
+            translations: [
+              {
+                languageCode: 'en',
+                fields: {
+                  title: 'X',
+                  seo: { metaTitle: 'a', metaDescription: 'b' },
+                },
+              },
+            ],
+          },
+        })
+      ).rejects.toThrow(/only allows a single entry/);
+    });
+
+    it('Rejects creating an entry missing required image relation', async () => {
+      await expect(
+        adminClient.query(CREATE_CONTENT_ENTRY, {
+          input: {
+            code: 'no_image',
+            name: 'No image',
+            contentTypeCode: 'banner',
+            fields: {},
+            translations: [{ languageCode: 'en', fields: { title: 'X' } }],
+          },
+        })
+      ).rejects.toThrow(/Required field 'image' is missing/);
+    });
+
+    it('Rejects translatable field placed in top-level fields', async () => {
+      await expect(
+        adminClient.query(CREATE_CONTENT_ENTRY, {
+          input: {
+            code: 'wrong_translatable',
+            name: 'Wrong',
+            contentTypeCode: 'banner',
+            fields: { image: { id: 1 }, title: 'should be in translations' },
+            translations: [],
+          },
+        })
+      ).rejects.toThrow(/translatable/);
+    });
+
+    it('Creates a first Banner', async () => {
+      const { createContentEntry } = await adminClient.query(
+        CREATE_CONTENT_ENTRY,
+        {
+          input: {
+            code: 'top_banner',
+            name: 'Top banner',
+            contentTypeCode: 'banner',
+            fields: { image: { id: 1 }, priority: 1 },
+            translations: [
+              { languageCode: 'en', fields: { title: 'Top banner EN' } },
+            ],
+          },
+        }
+      );
+      expect(createContentEntry.code).toBe('top_banner');
+      expect(createContentEntry.fields.priority).toBe(1);
+    });
+
+    it('Creates a second Banner', async () => {
+      const { createContentEntry } = await adminClient.query(
+        CREATE_CONTENT_ENTRY,
+        {
+          input: {
+            code: 'side_banner',
+            name: 'Side banner',
+            contentTypeCode: 'banner',
+            fields: { image: { id: 1 }, priority: 2 },
+            translations: [
+              { languageCode: 'en', fields: { title: 'Side banner EN' } },
+            ],
+          },
+        }
+      );
+      expect(createContentEntry.code).toBe('side_banner');
+      expect(createContentEntry.fields.priority).toBe(2);
+    });
+
+    it('Fetches the singleton FeaturedProduct via the shop API', async () => {
+      const { featuredProduct } = await shopClient.query(GET_FEATURED_PRODUCT);
+      expect(featuredProduct).toBeDefined();
+      expect(featuredProduct.code).toBe('home_featured');
+      expect(featuredProduct.title).toBe('Featured title');
+      expect(featuredProduct.subtitle).toBe('Sub');
+      expect(featuredProduct.seo.metaTitle).toBe('Meta');
+      expect(featuredProduct.seo.metaDescription).toBe('Description');
+      expect(featuredProduct.image.id).toBeTruthy();
+    });
+
+    it('Fetches both Banners via the shop API', async () => {
+      const { banners } = await shopClient.query(GET_BANNERS);
+      expect(banners).toHaveLength(2);
+      const codes = banners.map((b: { code: string }) => b.code).sort();
+      expect(codes).toEqual(['side_banner', 'top_banner']);
+      const top = banners.find(
+        (b: { code: string }) => b.code === 'top_banner'
+      );
+      expect(top.title).toBe('Top banner EN');
+      expect(top.priority).toBe(1);
+      expect(top.image.id).toBeTruthy();
     });
   });
 });

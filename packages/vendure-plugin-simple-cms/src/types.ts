@@ -11,7 +11,7 @@ interface Translatable {
 interface BaseField {
   name: string;
   /**
-   * Whether the field is nullable. Default is true.
+   * Whether the field is nullable. Default is false (i.e. required).
    */
   nullable?: boolean;
 }
