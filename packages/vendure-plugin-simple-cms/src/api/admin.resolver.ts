@@ -1,5 +1,5 @@
 import { Inject } from '@nestjs/common';
-import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
@@ -16,6 +16,9 @@ import {
   MutationCreateContentEntryArgs,
   MutationUpdateContentEntryArgs,
   MutationDeleteContentEntryArgs,
+  QueryContentEntriesArgs,
+  QueryContentEntryArgs,
+  QueryContentEntryByCodeArgs,
 } from './generated/graphql';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { SimpleCmsPluginOptions } from '../types';
@@ -64,5 +67,35 @@ export class AdminResolver {
   ): Promise<DeletionResponse> {
     await this.contentEntryService.delete(ctx, args.id);
     return { result: DeletionResult.DELETED };
+  }
+
+  @Query()
+  async contentEntries(
+    @Ctx() ctx: RequestContext,
+    @Args() args: QueryContentEntriesArgs
+  ) {
+    const items = await this.contentEntryService.findByContentTypeCode(
+      ctx,
+      args.contentTypeCode
+    );
+    return items.map((e) => flattenEntry(ctx, e, this.options));
+  }
+
+  @Query()
+  async contentEntry(
+    @Ctx() ctx: RequestContext,
+    @Args() args: QueryContentEntryArgs
+  ) {
+    const entry = await this.contentEntryService.findOne(ctx, args.id);
+    return entry ? flattenEntry(ctx, entry, this.options) : undefined;
+  }
+
+  @Query()
+  async contentEntryByCode(
+    @Ctx() ctx: RequestContext,
+    @Args() args: QueryContentEntryByCodeArgs
+  ) {
+    const entry = await this.contentEntryService.findByCode(ctx, args.code);
+    return entry ? flattenEntry(ctx, entry, this.options) : undefined;
   }
 }

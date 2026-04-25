@@ -30,7 +30,7 @@ export const adminSchemaExtensions = gql`
     contentTypeCode: String!
     createdAt: DateTime!
     updatedAt: DateTime!
-    fields: JSON
+    fields: JSON!
     translations: [AdminContentEntryTranslation!]!
   }
 

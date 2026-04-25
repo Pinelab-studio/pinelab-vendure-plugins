@@ -126,7 +126,7 @@ describe('SimpleCmsPlugin', () => {
       expect(type!.kind).toBe('OBJECT');
       expect(typeRefToString(getField(type, 'id')!.type)).toBe('ID!');
       expect(typeRefToString(getField(type, 'code')!.type)).toBe('String!');
-      expect(typeRefToString(getField(type, 'fields')!.type)).toBe('JSON');
+      expect(typeRefToString(getField(type, 'fields')!.type)).toBe('JSON!');
     });
   });
 });

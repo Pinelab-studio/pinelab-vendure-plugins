@@ -3,7 +3,6 @@ import { ContentEntry } from './entities/content-entry.entity';
 import { ContentEntryTranslation } from './entities/content-entry-translation.entity';
 import { ContentEntryService } from './services/content-entry.service';
 import { adminSchemaExtensions, shopApiExtensions } from './api/api-extensions';
-import { CommonResolver } from './api/common.resolver';
 import { AdminResolver } from './api/admin.resolver';
 import {
   createShopResolver,
@@ -31,7 +30,7 @@ import { SimpleCmsPluginOptions } from './types';
   },
   adminApiExtensions: {
     schema: () => adminSchemaExtensions,
-    resolvers: [CommonResolver, AdminResolver],
+    resolvers: [AdminResolver],
   },
   compatibility: '>=3.2.0',
   dashboard: './dashboard/index.tsx',
