@@ -16,14 +16,12 @@ const CREATE_CONTENT_ENTRY = gql`
       contentTypeCode
       fields
       translations {
-        id
         languageCode
         fields
       }
     }
   }
 `;
-
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
   dotenv.config();
@@ -48,6 +46,50 @@ const CREATE_CONTENT_ENTRY = gql`
 
   await adminClient.asSuperAdmin();
 
+  // Create a FeaturedProduct (singleton) for testing
+  await adminClient.query(CREATE_CONTENT_ENTRY, {
+    input: {
+      contentTypeCode: 'featuredProduct',
+      fields: { subtitle: 'Sub', image: { id: 1 } },
+      translations: [
+        {
+          languageCode: 'en',
+          fields: {
+            title: 'Featured title',
+            seo: {
+              metaTitle: 'Meta',
+              metaDescription: 'Description',
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  // Create a first Banner
+  await adminClient.query(CREATE_CONTENT_ENTRY, {
+    input: {
+      contentTypeCode: 'banner',
+      fields: { image: { id: 1 }, priority: 1 },
+      translations: [
+        { languageCode: 'en', fields: { title: 'Top banner EN' } },
+      ],
+    },
+  });
+
+  // Create a second Banner
+  await adminClient.query(CREATE_CONTENT_ENTRY, {
+    input: {
+      contentTypeCode: 'banner',
+      fields: { image: { id: 1 }, priority: 2 },
+      translations: [
+        { languageCode: 'en', fields: { title: 'Side banner EN' } },
+      ],
+    },
+  });
+
   // eslint-disable-next-line no-console
-  console.log('Vendure dev server started with initial content entry');
+  console.log(
+    'Vendure dev server started with 1 FeaturedProduct and 2 Banners'
+  );
 })();
