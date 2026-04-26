@@ -14,6 +14,7 @@ const REFUND_ORDER = graphql(`
       }
       ... on ErrorResult {
         message
+        errorCode
       }
     }
   }
@@ -27,6 +28,7 @@ const CANCEL_ORDER = graphql(`
       }
       ... on ErrorResult {
         message
+        errorCode
       }
     }
   }
@@ -90,16 +92,19 @@ export function CancelOrderButton({
       const orderState = entity.state;
 
       // 2. Perform Refund if necessary
-      if (['PaymentSettled', 'Delivered', 'Shipped'].includes(orderState)) {
+      if (
+        ['PaymentSettled', 'Delivered', 'Shipped'].includes(orderState) &&
+        entity.payments?.length
+      ) {
         let lines = entity.lines.map((line: any) => ({
           quantity: line.quantity,
           orderLineId: String(line.id),
         }));
 
         await refundMutation.mutateAsync({
-          lines: entity.state === 'AddingItems' ? [] : lines,
+          lines,
           reason: 'Manual refund',
-          paymentId: entity.payments![0].id,
+          paymentId: entity.payments[0].id,
           adjustment: 0,
           shipping: entity.shippingWithTax,
         });

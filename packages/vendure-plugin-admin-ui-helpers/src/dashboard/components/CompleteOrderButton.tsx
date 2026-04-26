@@ -135,10 +135,10 @@ export function CompleteOrderButton({
 
   const handleComplete = async () => {
     try {
-      const { data: hydratedOrder } = await refetchOrder();
       if (!window.confirm('Are you sure? This can not be undone.')) {
         return;
       }
+      const { data: hydratedOrder } = await refetchOrder();
       if (order.state === 'AddingItems') {
         return toast.error('Active orders cannot be completed.');
       }
@@ -159,6 +159,7 @@ export function CompleteOrderButton({
         ).find((handler) => handler.code === handlerCode);
         if (!handler) {
           toast.error(`No handler found for ${handlerCode}`);
+          return;
         }
         const args = handler.args.map((arg) => ({ name: arg.name, value: '' }));
         const createFullfilmentResponse =
@@ -183,6 +184,7 @@ export function CompleteOrderButton({
           toast.error(
             `${creationError.errorCode} - ${creationError.transitionError}`
           );
+          return;
         }
         const transitionFulfillmentToStateResponse =
           await transitionMutation.mutateAsync({
@@ -194,7 +196,7 @@ export function CompleteOrderButton({
           transitionFulfillmentToStateResponse?.transitionFulfillmentToState as FulfillmentStateTransitionError;
         if (transitionError?.errorCode) {
           toast.error(
-            `${creationError.errorCode} - ${creationError.transitionError}`
+            `${transitionError.errorCode} - ${transitionError.transitionError}`
           );
         }
       }
@@ -216,10 +218,9 @@ export function CompleteOrderButton({
           toast.error(
             `${transitionError.errorCode} - ${transitionError.transitionError}`
           );
+          return;
         }
       }
-      // await dataService.order.getOrder(orderId).single$.toPromise();
-      await refetchOrder();
       toast.success('Order completed');
     } catch (e: any) {
       toast.error(e.message);
