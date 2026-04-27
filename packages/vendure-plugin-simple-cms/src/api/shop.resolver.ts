@@ -2,11 +2,12 @@ import { Inject, Injectable, Type } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
 import {
   Ctx,
+  Logger,
   RequestContext,
   TransactionalConnection,
   TranslatorService,
 } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
+import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { SimpleCmsPluginOptions } from '../types';
 import { ContentEntryService } from '../services/content-entry.service';
 import { flattenEntry } from './flatten-entry';
@@ -98,7 +99,15 @@ export function createShopResolver(
           result[field.name] = hasTranslations
             ? this.translator.translate(loaded as never, ctx)
             : loaded;
-        } catch {
+        } catch (error) {
+          Logger.error(
+            `Failed to load relation field '${field.name}' for content type '${
+              typeDef.displayName
+            }': ${(error as any)?.message}`,
+            loggerCtx,
+            (error as any).stack
+          );
+
           // If loading fails for any reason, keep the original `{ id }` value
           // so the consumer still receives the relation reference.
           result[field.name] = relationValue;
