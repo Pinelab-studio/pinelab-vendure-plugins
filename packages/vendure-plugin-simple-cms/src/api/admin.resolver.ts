@@ -18,10 +18,77 @@ import {
   MutationDeleteContentEntryArgs,
   QueryContentEntriesArgs,
   QueryContentEntryArgs,
+  SimpleCmsContentType,
+  SimpleCmsField,
 } from './generated/graphql';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { SimpleCmsPluginOptions } from '../types';
+import {
+  PrimitiveFieldDefinition,
+  SimpleCmsPluginOptions,
+  TypeDefinition,
+} from '../types';
 import { flattenEntry } from './flatten-entry';
+
+/**
+ * Maps a primitive field definition (used both at top-level and as
+ * a nested field of a struct) to its DTO representation.
+ */
+function mapPrimitiveField(field: PrimitiveFieldDefinition): SimpleCmsField {
+  return {
+    name: field.name,
+    type: field.type,
+    nullable: field.nullable === true,
+    isTranslatable: field.isTranslatable,
+    graphQLType: null,
+    fields: null,
+    ui: field.ui ?? null,
+  };
+}
+
+/**
+ * Maps a top-level field definition (primitive | struct | relation)
+ * to its DTO representation.
+ */
+function mapField(field: TypeDefinition['fields'][number]): SimpleCmsField {
+  if (field.type === 'struct') {
+    return {
+      name: field.name,
+      type: 'struct',
+      nullable: field.nullable === true,
+      isTranslatable: field.isTranslatable,
+      graphQLType: null,
+      fields: field.fields.map(mapPrimitiveField),
+      ui: null,
+    };
+  }
+  if (field.type === 'relation') {
+    return {
+      name: field.name,
+      type: 'relation',
+      nullable: field.nullable === true,
+      isTranslatable: null,
+      graphQLType: field.graphQLType,
+      fields: null,
+      ui: field.ui ?? null,
+    };
+  }
+  return mapPrimitiveField(field);
+}
+
+/**
+ * Maps a content-type definition to its DTO representation.
+ */
+function toContentTypeDto(
+  code: string,
+  def: TypeDefinition
+): SimpleCmsContentType {
+  return {
+    code,
+    displayName: def.displayName,
+    allowMultiple: def.allowMultiple,
+    fields: def.fields.map(mapField),
+  };
+}
 
 @Resolver()
 export class AdminResolver {
@@ -87,5 +154,31 @@ export class AdminResolver {
   ) {
     const entry = await this.contentEntryService.findOne(ctx, args.id);
     return entry ? flattenEntry(ctx, entry, this.options) : undefined;
+  }
+
+  /**
+   * Returns metadata for all configured content types, including UI
+   * configuration so the React Dashboard can render the correct form
+   * inputs for each field.
+   */
+  @Query()
+  @Allow(Permission.ReadCatalog)
+  simpleCmsContentTypes(): SimpleCmsContentType[] {
+    return Object.entries(this.options.contentTypes ?? {}).map(([code, def]) =>
+      toContentTypeDto(code, def)
+    );
+  }
+
+  /**
+   * Returns metadata for a single content type by its code, or null if
+   * no such content type is configured.
+   */
+  @Query()
+  @Allow(Permission.ReadCatalog)
+  simpleCmsContentType(
+    @Args() args: { code: string }
+  ): SimpleCmsContentType | null {
+    const def = this.options.contentTypes?.[args.code];
+    return def ? toContentTypeDto(args.code, def) : null;
   }
 }

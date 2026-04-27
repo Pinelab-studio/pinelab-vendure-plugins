@@ -17,13 +17,24 @@ interface BaseField {
 }
 
 /**
+ * UI configuration consumed by the React Dashboard to render the
+ * appropriate form input for a field. The `component` key identifies
+ * the form input component; any additional keys are arbitrary props
+ * passed through to that component.
+ */
+export interface UiConfig {
+  component: string;
+  [key: string]: unknown;
+}
+
+/**
  * The field definition for a primitive field.
  * A primitive field is a field that is a single value.
  * Example: `string`, `number`, `boolean`, `date`
  */
 export interface PrimitiveFieldDefinition extends Translatable, BaseField {
   type: 'string' | 'text' | 'int' | 'float' | 'boolean' | 'date';
-  uiComponent?: string;
+  ui?: UiConfig;
 }
 
 /**
@@ -44,7 +55,7 @@ export interface RelationFieldDefinition extends BaseField {
   entity: Type<VendureEntity>;
   graphQLType: string;
   eager?: boolean;
-  uiComponent?: string;
+  ui?: UiConfig;
 }
 
 export interface TypeDefinition {

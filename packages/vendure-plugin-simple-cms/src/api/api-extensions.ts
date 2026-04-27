@@ -57,6 +57,34 @@ export const adminSchemaExtensions = gql`
   extend type Query {
     contentEntry(id: ID!): AdminContentEntry
     contentEntries(contentTypeCode: String!): [AdminContentEntry!]!
+    simpleCmsContentTypes: [SimpleCmsContentType!]!
+    simpleCmsContentType(code: String!): SimpleCmsContentType
+  }
+
+  type SimpleCmsContentType {
+    code: String!
+    displayName: String!
+    allowMultiple: Boolean!
+    fields: [SimpleCmsField!]!
+  }
+
+  """
+  Metadata about a single field on a SimpleCms content type. Optional fields
+  are populated based on the field kind:
+   - 'string' | 'text' | 'int' | 'float' | 'boolean' | 'date': primitive
+   - 'struct': nested primitive fields under \`fields\`
+   - 'relation': uses \`graphQLType\`
+  The \`ui\` JSON object carries dashboard form rendering hints, e.g.
+  \`{ component: 'product-selector-form-input', ...arbitraryProps }\`.
+  """
+  type SimpleCmsField {
+    name: String!
+    type: String!
+    nullable: Boolean!
+    isTranslatable: Boolean
+    graphQLType: String
+    fields: [SimpleCmsField!]
+    ui: JSON
   }
 
   extend type Mutation {

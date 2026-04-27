@@ -28,6 +28,8 @@ let adminSchema: IntrospectionSchema;
 
 beforeAll(async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__test__'));
+  // Override from dev-server
+  (config.dbConnectionOptions as any).autoSave = false;
   ({ server, adminClient, shopClient } = createTestEnvironment(
     config as Required<VendureConfig>
   ));
@@ -131,6 +133,63 @@ describe('SimpleCmsPlugin', () => {
       expect(getField(type, 'code')).toBeUndefined();
       expect(getField(type, 'name')).toBeUndefined();
       expect(typeRefToString(getField(type, 'fields')!.type)).toBe('JSON!');
+    });
+
+    it('Exposes content type metadata (incl. ui config) via the admin API', async () => {
+      const GET_CONTENT_TYPES = gql`
+        query {
+          simpleCmsContentTypes {
+            code
+            displayName
+            allowMultiple
+            fields {
+              name
+              type
+              nullable
+              isTranslatable
+              graphQLType
+              ui
+              fields {
+                name
+                type
+                ui
+              }
+            }
+          }
+        }
+      `;
+      const { simpleCmsContentTypes } = await adminClient.query(
+        GET_CONTENT_TYPES
+      );
+      expect(simpleCmsContentTypes).toHaveLength(2);
+
+      const featured = simpleCmsContentTypes.find(
+        (c: { code: string }) => c.code === 'featuredProduct'
+      );
+      expect(featured.displayName).toBe('Featured Product');
+      expect(featured.allowMultiple).toBe(false);
+
+      const productField = featured.fields.find(
+        (f: { name: string }) => f.name === 'product'
+      );
+      expect(productField.type).toBe('relation');
+      expect(productField.graphQLType).toBe('Product');
+      expect(productField.isTranslatable).toBeNull();
+      expect(productField.ui).toEqual({
+        component: 'product-selector-form-input',
+      });
+
+      const seoField = featured.fields.find(
+        (f: { name: string }) => f.name === 'seo'
+      );
+      expect(seoField.type).toBe('struct');
+      expect(seoField.ui).toBeNull();
+      const metaDescription = seoField.fields.find(
+        (f: { name: string }) => f.name === 'metaDescription'
+      );
+      expect(metaDescription.ui).toEqual({
+        component: 'textarea-form-input',
+      });
     });
   });
 

@@ -14,6 +14,10 @@ Features:
 - Content entries
 - Content entry translations
 
+## Content types
+
+The first defined string field will be used as display name in the dashboard
+
 // TODO example type definitions and storefront usage
 
 ## TODO
@@ -21,3 +25,4 @@ Features:
 - Make admin API return the field definitions so that we can render Ui components
 - Emit events for content entry CRUD
 - Implement React Dashboard
+-

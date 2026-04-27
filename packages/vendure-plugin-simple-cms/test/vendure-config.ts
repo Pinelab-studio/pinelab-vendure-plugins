@@ -55,6 +55,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
                   name: 'metaDescription',
                   type: 'text',
                   isTranslatable: false,
+                  ui: { component: 'textarea-form-input' },
                 },
               ],
             },
@@ -64,7 +65,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               entity: Product,
               graphQLType: 'Product',
               nullable: false,
-              uiComponent: 'product-selector', // TODO replace with actual vendure component
+              ui: { component: 'product-selector-form-input' },
             },
           ],
         },
