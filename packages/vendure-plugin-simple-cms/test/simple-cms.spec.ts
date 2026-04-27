@@ -77,7 +77,7 @@ describe('SimpleCmsPlugin', () => {
       expect(typeRefToString(getField(type, 'seo')!.type)).toBe(
         'FeaturedProductSeo!'
       );
-      expect(typeRefToString(getField(type, 'image')!.type)).toBe('Asset!');
+      expect(typeRefToString(getField(type, 'product')!.type)).toBe('Product!');
 
       // Nested struct type
       const seoType = getType(shopSchema, 'FeaturedProductSeo');
@@ -106,7 +106,7 @@ describe('SimpleCmsPlugin', () => {
 
       expect(typeRefToString(getField(type, 'title')!.type)).toBe('String!');
       expect(typeRefToString(getField(type, 'priority')!.type)).toBe('Int');
-      expect(typeRefToString(getField(type, 'image')!.type)).toBe('Asset!');
+      expect(typeRefToString(getField(type, 'product')!.type)).toBe('Product!');
 
       // List query: no args, returns [Banner!]!
       const list = getQueryField(shopSchema, 'banners');
@@ -157,13 +157,19 @@ describe('SimpleCmsPlugin', () => {
         featuredProduct {
           id
           title
-          subtitle
           seo {
             metaTitle
             metaDescription
           }
-          image {
+          product {
             id
+            name
+            slug
+            variants {
+              id
+              name
+              sku
+            }
           }
         }
       }
@@ -175,8 +181,15 @@ describe('SimpleCmsPlugin', () => {
           id
           title
           priority
-          image {
+          product {
             id
+            name
+            slug
+            variants {
+              id
+              name
+              sku
+            }
           }
         }
       }
@@ -198,7 +211,7 @@ describe('SimpleCmsPlugin', () => {
         {
           input: {
             contentTypeCode: 'featuredProduct',
-            fields: { subtitle: 'Sub', image: { id: 1 } },
+            fields: { product: { id: 1 } },
             translations: [
               {
                 languageCode: 'en',
@@ -216,7 +229,7 @@ describe('SimpleCmsPlugin', () => {
       );
       expect(createContentEntry.id).toBeTruthy();
       expect(createContentEntry.contentTypeCode).toBe('featuredProduct');
-      expect(createContentEntry.fields.subtitle).toBe('Sub');
+      expect(createContentEntry.fields.product).toBeTruthy();
       expect(createContentEntry.translations).toHaveLength(1);
     });
 
@@ -225,7 +238,7 @@ describe('SimpleCmsPlugin', () => {
         adminClient.query(CREATE_CONTENT_ENTRY, {
           input: {
             contentTypeCode: 'featuredProduct',
-            fields: { image: { id: 1 } },
+            fields: { product: { id: 1 } },
             translations: [
               {
                 languageCode: 'en',
@@ -240,7 +253,7 @@ describe('SimpleCmsPlugin', () => {
       ).rejects.toThrow(/only allows a single entry/);
     });
 
-    it('Rejects creating an entry missing required image relation', async () => {
+    it('Rejects creating an entry missing required product relation', async () => {
       await expect(
         adminClient.query(CREATE_CONTENT_ENTRY, {
           input: {
@@ -249,7 +262,7 @@ describe('SimpleCmsPlugin', () => {
             translations: [{ languageCode: 'en', fields: { title: 'X' } }],
           },
         })
-      ).rejects.toThrow(/Required field 'image' is missing/);
+      ).rejects.toThrow(/Required field 'product' is missing/);
     });
 
     it('Rejects translatable field placed in top-level fields', async () => {
@@ -257,7 +270,7 @@ describe('SimpleCmsPlugin', () => {
         adminClient.query(CREATE_CONTENT_ENTRY, {
           input: {
             contentTypeCode: 'banner',
-            fields: { image: { id: 1 }, title: 'should be in translations' },
+            fields: { product: { id: 1 }, title: 'should be in translations' },
             translations: [],
           },
         })
@@ -270,7 +283,7 @@ describe('SimpleCmsPlugin', () => {
         {
           input: {
             contentTypeCode: 'banner',
-            fields: { image: { id: 1 }, priority: 1 },
+            fields: { product: { id: 1 }, priority: 1 },
             translations: [
               { languageCode: 'en', fields: { title: 'Top banner EN' } },
             ],
@@ -288,7 +301,7 @@ describe('SimpleCmsPlugin', () => {
         {
           input: {
             contentTypeCode: 'banner',
-            fields: { image: { id: 1 }, priority: 2 },
+            fields: { product: { id: 1 }, priority: 2 },
             translations: [
               { languageCode: 'en', fields: { title: 'Side banner EN' } },
             ],
@@ -304,10 +317,14 @@ describe('SimpleCmsPlugin', () => {
       const { featuredProduct } = await shopClient.query(GET_FEATURED_PRODUCT);
       expect(featuredProduct).toBeDefined();
       expect(featuredProduct.title).toBe('Featured title');
-      expect(featuredProduct.subtitle).toBe('Sub');
       expect(featuredProduct.seo.metaTitle).toBe('Meta');
       expect(featuredProduct.seo.metaDescription).toBe('Description');
-      expect(featuredProduct.image.id).toBeTruthy();
+      expect(featuredProduct.product.id).toBeTruthy();
+      expect(featuredProduct.product.name).toBeTruthy();
+      expect(featuredProduct.product.slug).toBeTruthy();
+      expect(featuredProduct.product.variants.length).toBeGreaterThan(0);
+      expect(featuredProduct.product.variants[0].name).toBeTruthy();
+      expect(featuredProduct.product.variants[0].sku).toBeTruthy();
     });
 
     it('Fetches both Banners via the shop API', async () => {
@@ -315,6 +332,15 @@ describe('SimpleCmsPlugin', () => {
       expect(banners).toHaveLength(2);
       const ids = banners.map((b: { id: string }) => b.id).sort();
       expect(ids).toEqual([topBannerId, sideBannerId].sort());
+
+      for (const banner of banners) {
+        expect(banner.product.id).toBeTruthy();
+        expect(banner.product.name).toBeTruthy();
+        expect(banner.product.slug).toBeTruthy();
+        expect(banner.product.variants.length).toBeGreaterThan(0);
+        expect(banner.product.variants[0].name).toBeTruthy();
+        expect(banner.product.variants[0].sku).toBeTruthy();
+      }
     });
 
     it('Fetches a single Banner by id via the shop API', async () => {

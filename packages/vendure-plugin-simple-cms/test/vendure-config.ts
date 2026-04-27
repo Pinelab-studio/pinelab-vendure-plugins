@@ -1,5 +1,5 @@
 import {
-  Asset,
+  Product,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -59,12 +59,12 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               ],
             },
             {
-              name: 'image',
+              name: 'product',
               type: 'relation',
-              entity: Asset,
-              graphQLType: 'Asset',
+              entity: Product,
+              graphQLType: 'Product',
               nullable: false,
-              uiComponent: 'asset-selector',
+              uiComponent: 'product-selector', // TODO replace with actual vendure component
             },
           ],
         },
@@ -84,10 +84,10 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               nullable: true,
             },
             {
-              name: 'image',
+              name: 'product',
               type: 'relation',
-              entity: Asset,
-              graphQLType: 'Asset',
+              entity: Product,
+              graphQLType: 'Product',
               nullable: false,
             },
           ],

@@ -1,6 +1,11 @@
 import { Inject, Injectable, Type } from '@nestjs/common';
 import { Args, Query, Resolver } from '@nestjs/graphql';
-import { Ctx, RequestContext } from '@vendure/core';
+import {
+  Ctx,
+  RequestContext,
+  TransactionalConnection,
+  TranslatorService,
+} from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 import { SimpleCmsPluginOptions } from '../types';
 import { ContentEntryService } from '../services/content-entry.service';
@@ -27,7 +32,7 @@ export class ContentEntryInterfaceResolver {
 /**
  * Builds a NestJS resolver class with one Query method per content type.
  *
- * - `allowMultiple: true`  → list query (`<key>s`) and by-code query (`<key>(code)`).
+ * - `allowMultiple: true`  → list query (`<key>s`) and by-id query (`<key>(id)`).
  * - `allowMultiple: false` → singleton query (`<key>`) returning the
  *   first entry of that type for the channel.
  *
@@ -43,9 +48,64 @@ export function createShopResolver(
   class DynamicShopResolver {
     constructor(
       readonly contentEntryService: ContentEntryService,
+      readonly connection: TransactionalConnection,
+      readonly translator: TranslatorService,
       @Inject(PLUGIN_INIT_OPTIONS)
       readonly opts: SimpleCmsPluginOptions
     ) {}
+
+    /**
+     * Resolves relation fields by loading the related entities from the database
+     * using the proper TypeORM 0.3 `findOne({ where: { id } })` signature.
+     *
+     * If the loaded entity is `Translatable` (i.e. has a `translations` relation
+     * with a `languageCode`), it is run through {@link TranslatorService.translate}
+     * so that translated fields (e.g. `name`, `slug`) resolve correctly via the
+     * standard Vendure field resolvers.
+     */
+    async resolveRelationFields(
+      entry: Record<string, unknown>,
+      typeDef: SimpleCmsPluginOptions['contentTypes'][string],
+      ctx: RequestContext
+    ): Promise<Record<string, unknown>> {
+      const result = { ...entry };
+      for (const field of typeDef.fields) {
+        if (field.type !== 'relation') {
+          continue;
+        }
+        const relationValue = entry[field.name] as
+          | Record<string, unknown>
+          | undefined;
+        if (!relationValue || relationValue.id == null) {
+          continue;
+        }
+        try {
+          const repository = this.connection.getRepository(ctx, field.entity);
+          // Translatable entities expose a `translations` relation; load it so
+          // the TranslatorService can pick the correct language.
+          const loaded = (await repository.findOne({
+            where: { id: relationValue.id as never },
+            relations: ['translations'],
+          })) as unknown;
+          if (!loaded) {
+            continue;
+          }
+          const hasTranslations =
+            Array.isArray(
+              (loaded as { translations?: unknown[] }).translations
+            ) &&
+            (loaded as { translations: unknown[] }).translations.length > 0;
+          result[field.name] = hasTranslations
+            ? this.translator.translate(loaded as never, ctx)
+            : loaded;
+        } catch {
+          // If loading fails for any reason, keep the original `{ id }` value
+          // so the consumer still receives the relation reference.
+          result[field.name] = relationValue;
+        }
+      }
+      return result;
+    }
   }
 
   const proto = DynamicShopResolver.prototype as unknown as Record<
@@ -71,7 +131,10 @@ export function createShopResolver(
           ctx,
           contentTypeKey
         );
-        return items.map((e) => flattenEntry(ctx, e, this.opts));
+        const flattened = items.map((e) => flattenEntry(ctx, e, this.opts));
+        return Promise.all(
+          flattened.map((entry) => this.resolveRelationFields(entry, def, ctx))
+        );
       }
       proto[listMethodName] = listResolver;
       Query(listFieldName)(proto, listMethodName, {
@@ -89,7 +152,8 @@ export function createShopResolver(
         if (!entry || entry.contentTypeCode !== contentTypeKey) {
           return null;
         }
-        return flattenEntry(ctx, entry, this.opts);
+        const flattened = flattenEntry(ctx, entry, this.opts);
+        return this.resolveRelationFields(flattened, def, ctx);
       }
       proto[byIdMethodName] = byIdResolver;
       Query(byIdFieldName)(proto, byIdMethodName, {
@@ -110,7 +174,11 @@ export function createShopResolver(
           contentTypeKey
         );
         const entry = items[0];
-        return entry ? flattenEntry(ctx, entry, this.opts) : null;
+        if (!entry) {
+          return null;
+        }
+        const flattened = flattenEntry(ctx, entry, this.opts);
+        return this.resolveRelationFields(flattened, def, ctx);
       }
       proto[singletonMethodName] = singletonResolver;
       Query(singletonFieldName)(proto, singletonMethodName, {

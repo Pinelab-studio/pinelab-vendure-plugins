@@ -50,7 +50,7 @@ const CREATE_CONTENT_ENTRY = gql`
   await adminClient.query(CREATE_CONTENT_ENTRY, {
     input: {
       contentTypeCode: 'featuredProduct',
-      fields: { subtitle: 'Sub', image: { id: 1 } },
+      fields: { product: { id: 1 } },
       translations: [
         {
           languageCode: 'en',
@@ -70,7 +70,7 @@ const CREATE_CONTENT_ENTRY = gql`
   await adminClient.query(CREATE_CONTENT_ENTRY, {
     input: {
       contentTypeCode: 'banner',
-      fields: { image: { id: 1 }, priority: 1 },
+      fields: { product: { id: 1 }, priority: 1 },
       translations: [
         { languageCode: 'en', fields: { title: 'Top banner EN' } },
       ],
@@ -81,7 +81,7 @@ const CREATE_CONTENT_ENTRY = gql`
   await adminClient.query(CREATE_CONTENT_ENTRY, {
     input: {
       contentTypeCode: 'banner',
-      fields: { image: { id: 1 }, priority: 2 },
+      fields: { product: { id: 1 }, priority: 2 },
       translations: [
         { languageCode: 'en', fields: { title: 'Side banner EN' } },
       ],

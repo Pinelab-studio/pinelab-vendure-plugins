@@ -18,17 +18,6 @@ Features:
 
 ## TODO
 
-- Fix creation of image in banners: this doesnt work, banner isnt resolved
-
-{
-banners {
-id
-createdAt
-priority
-image {
-createdAt
-}
-
 - Make admin API return the field definitions so that we can render Ui components
 - Emit events for content entry CRUD
 - Implement React Dashboard
