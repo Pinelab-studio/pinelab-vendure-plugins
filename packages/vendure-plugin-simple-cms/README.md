@@ -14,15 +14,89 @@ Features:
 - Content entries
 - Content entry translations
 
-## Content types
+## Getting Started
 
-The first defined string field will be used as display name in the dashboard
+Install the plugin along with your own content types:
 
-// TODO example type definitions and storefront usage
+```ts
+import { Asset, Product } from '@vendure/core';
+import { SimpleCmsPlugin } from '@pinelab/vendure-plugin-simple-cms';
+
+SimpleCmsPlugin.init({
+  contentTypes: {
+    // A single Hero block, edited as one entry
+    hero: {
+      displayName: 'Hero',
+      allowMultiple: false,
+      fields: [
+        { name: 'title', type: 'string', isTranslatable: true },
+        {
+          name: 'subtitle',
+          type: 'string',
+          isTranslatable: true,
+          nullable: true,
+        },
+        {
+          name: 'image',
+          type: 'relation',
+          entity: Asset,
+          graphQLType: 'Asset',
+        },
+      ],
+    },
+
+    // Multiple blog posts, with translatable body and a featured product
+    blogPost: {
+      displayName: 'Blog post',
+      allowMultiple: true,
+      fields: [
+        { name: 'title', type: 'string', isTranslatable: true },
+        { name: 'slug', type: 'string', isTranslatable: false },
+        { name: 'body', type: 'text', isTranslatable: true },
+        {
+          name: 'publishedAt',
+          type: 'date',
+          isTranslatable: false,
+          nullable: true,
+        },
+        {
+          name: 'featured',
+          type: 'boolean',
+          isTranslatable: false,
+          nullable: true,
+        },
+        {
+          name: 'featuredProduct',
+          type: 'relation',
+          entity: Product,
+          graphQLType: 'Product',
+          nullable: true,
+        },
+        // Nested struct: list of CTA links
+        {
+          name: 'cta',
+          type: 'struct',
+          isTranslatable: true,
+          fields: [
+            { name: 'label', type: 'string', isTranslatable: true },
+            { name: 'url', type: 'string', isTranslatable: false },
+          ],
+        },
+      ],
+    },
+  },
+});
+```
+
+Field types reference:
+
+- `string`, `text`, `int`, `float`, `boolean`, `date` — primitives
+- `relation` — references another Vendure entity (`Asset`, `Product`, `ProductVariant`, …)
+- `struct` — nested object containing primitive sub-fields
+
+Set `isTranslatable: true` on any primitive or struct field to store a value per language.
+Set `allowMultiple: false` to enforce a single entry per channel (singletons like a Hero or Footer).
 
 ## TODO
 
-- Make admin API return the field definitions so that we can render Ui components
-- Emit events for content entry CRUD
-- Implement React Dashboard
--
+- Relation saving and fetching: Saving seems to work, but on refresh no relation is shown

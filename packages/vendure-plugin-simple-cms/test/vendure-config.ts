@@ -5,6 +5,7 @@ import {
   LogLevel,
   mergeConfig,
   VendureConfig,
+  Asset,
 } from '@vendure/core';
 import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
@@ -75,8 +76,9 @@ export const config: VendureConfig = mergeConfig(testConfig, {
           fields: [
             {
               name: 'title',
-              type: 'string',
+              type: 'text',
               isTranslatable: true,
+              ui: { component: 'rich-text-form-input' },
             },
             {
               name: 'priority',
@@ -90,6 +92,7 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               entity: Product,
               graphQLType: 'Product',
               nullable: false,
+              ui: { component: 'product-selector-form-input' },
             },
           ],
         },
@@ -104,11 +107,12 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               nullable: false,
             },
             {
-              name: 'product',
+              name: 'asset',
               type: 'relation',
-              entity: Product,
-              graphQLType: 'Product',
+              entity: Asset,
+              graphQLType: 'Asset',
               nullable: false,
+              // ui: { component: ''}
             },
           ],
         },

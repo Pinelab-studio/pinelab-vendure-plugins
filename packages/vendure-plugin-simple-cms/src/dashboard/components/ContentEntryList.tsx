@@ -1,7 +1,18 @@
-import { ListPage } from '@vendure/dashboard';
+import {
+  Button,
+  DetailPageButton,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  ListPage,
+  PageActionBarRight,
+} from '@vendure/dashboard';
 import { graphql } from '@/vdb/graphql/graphql';
 import { api } from '@/vdb/graphql/api.js';
-import { Tag } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
+import { ChevronDown, PlusIcon, Tag } from 'lucide-react';
 
 /**
  * Paginated list of all CMS content entries.
@@ -9,7 +20,8 @@ import { Tag } from 'lucide-react';
  * Columns: id, displayName, contentTypeCode, updatedAt.
  * Default sort: updatedAt DESC.
  * Includes a `contentTypeCode` faceted filter populated by the
- * `simpleCmsContentTypes` admin query.
+ * `simpleCmsContentTypes` admin query, plus a "New" dropdown to create
+ * an entry of a chosen content type.
  */
 const getContentEntries = graphql(`
   query ContentEntries($options: AdminContentEntryListOptions) {
@@ -46,6 +58,35 @@ async function loadContentTypeOptions() {
   }));
 }
 
+/** Dropdown trigger listing all content types as create targets. */
+function NewContentEntryButton() {
+  const { data } = useQuery({
+    queryKey: ['simple-cms-content-types-for-new'],
+    queryFn: () => api.query(getContentTypes, {}),
+  });
+  const types = data?.simpleCmsContentTypes ?? [];
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button>
+          <PlusIcon className="mr-2 h-4 w-4" />
+          New
+          <ChevronDown className="ml-1 h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {types.map((ct) => (
+          <DropdownMenuItem key={ct.code} asChild>
+            <Link to="/content/new" search={{ contentType: ct.code } as any}>
+              {ct.displayName}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 export function ContentEntryList({ route }: { route: any }) {
   return (
     <ListPage
@@ -63,7 +104,15 @@ export function ContentEntryList({ route }: { route: any }) {
       defaultSort={[{ id: 'updatedAt', desc: true }]}
       customizeColumns={{
         id: { enableColumnFilter: false },
-        displayName: { enableColumnFilter: false },
+        displayName: {
+          enableColumnFilter: false,
+          cell: ({ row }: any) => (
+            <DetailPageButton
+              id={row.original.id}
+              label={row.original.displayName ?? row.original.id}
+            />
+          ),
+        },
         createdAt: { enableColumnFilter: false },
         updatedAt: { enableColumnFilter: false },
       }}
@@ -74,6 +123,10 @@ export function ContentEntryList({ route }: { route: any }) {
           optionsFn: loadContentTypeOptions,
         },
       }}
-    />
+    >
+      <PageActionBarRight>
+        <NewContentEntryButton />
+      </PageActionBarRight>
+    </ListPage>
   );
 }

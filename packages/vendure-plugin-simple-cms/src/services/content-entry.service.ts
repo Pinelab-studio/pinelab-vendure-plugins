@@ -2,6 +2,8 @@ import { Inject, Injectable } from '@nestjs/common';
 import { unique } from '@vendure/common/lib/unique';
 import {
   ChannelService,
+  ConfigService,
+  EventBus,
   ID,
   LanguageCode,
   ListQueryBuilder,
@@ -21,6 +23,7 @@ import {
   ContentEntryInput,
 } from '../api/generated/graphql';
 import { validateContentEntryInput } from './validate-content-entry-input';
+import { SimpleCmsContentEntryEvent } from '../events/simple-cms-content-entry-event';
 
 @Injectable()
 export class ContentEntryService {
@@ -30,6 +33,8 @@ export class ContentEntryService {
     private readonly connection: TransactionalConnection,
     private readonly channelService: ChannelService,
     private readonly listQueryBuilder: ListQueryBuilder,
+    private readonly configService: ConfigService,
+    private readonly eventBus: EventBus,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: SimpleCmsPluginOptions
   ) {}
@@ -88,9 +93,10 @@ export class ContentEntryService {
     const contentType = this.getContentType(input.contentTypeCode);
     await this.validateAllowMultiple(ctx, input.contentTypeCode);
     validateContentEntryInput(contentType, input);
+    const decodedInput = this.decodeRelationIds(contentType, input);
     const entry = new ContentEntry({
-      contentTypeCode: input.contentTypeCode,
-      fields: input.fields,
+      contentTypeCode: decodedInput.contentTypeCode,
+      fields: decodedInput.fields,
     });
     const savedEntry = await this.connection
       .getRepository(ctx, ContentEntry)
@@ -107,6 +113,9 @@ export class ContentEntryService {
     if (!result) {
       throw new Error('ContentEntry not found after creation');
     }
+    await this.eventBus.publish(
+      new SimpleCmsContentEntryEvent(result, 'created', ctx, input)
+    );
     return result;
   }
 
@@ -129,8 +138,9 @@ export class ContentEntryService {
       );
     }
     validateContentEntryInput(contentType, input);
-    existing.contentTypeCode = input.contentTypeCode;
-    existing.fields = input.fields;
+    const decodedInput = this.decodeRelationIds(contentType, input);
+    existing.contentTypeCode = decodedInput.contentTypeCode;
+    existing.fields = decodedInput.fields;
     await this.connection.getRepository(ctx, ContentEntry).save(existing);
     // Remove old translations and save new ones
     if (existing.translatableFields?.length) {
@@ -143,6 +153,9 @@ export class ContentEntryService {
     if (!result) {
       throw new Error('ContentEntry not found after update');
     }
+    await this.eventBus.publish(
+      new SimpleCmsContentEntryEvent(result, 'updated', ctx, input)
+    );
     return result;
   }
 
@@ -159,6 +172,9 @@ export class ContentEntryService {
       );
     }
     await this.connection.getRepository(ctx, ContentEntry).remove(existing);
+    await this.eventBus.publish(
+      new SimpleCmsContentEntryEvent(existing, 'deleted', ctx, id)
+    );
   }
 
   /**
@@ -227,5 +243,44 @@ export class ContentEntryService {
         `Content type '${contentTypeCode}' only allows a single entry and one already exists`
       );
     }
+  }
+
+  /**
+   * Decode any relation-field ids in the input from the public
+   * (encoded) form back to the internal database id form, using the
+   * configured `EntityIdStrategy`.
+   *
+   * The Vendure `IdInterceptor` only decodes values typed as `ID` in the
+   * GraphQL schema. Our `fields` arg is typed as `JSON`, so nested
+   * `{ id: ... }` values inside relation fields are NOT auto-decoded on
+   * input. Without this step, the encoded id (e.g. `"T_2"`) would be
+   * stored verbatim, and the response encoder would then encode it a
+   * second time on read (e.g. `"T_T_2"`).
+   */
+  private decodeRelationIds(
+    contentType: TypeDefinition,
+    input: ContentEntryInput
+  ): ContentEntryInput {
+    const strategy = this.configService.entityIdStrategy;
+    const fields = { ...((input.fields ?? {}) as Record<string, unknown>) };
+    for (const def of contentType.fields) {
+      if (def.type !== 'relation') continue;
+      const value = fields[def.name];
+      if (
+        value &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        'id' in (value as Record<string, unknown>)
+      ) {
+        const raw = (value as Record<string, unknown>).id;
+        if (typeof raw === 'string' || typeof raw === 'number') {
+          fields[def.name] = {
+            ...(value as object),
+            id: strategy.decodeId(raw as never),
+          };
+        }
+      }
+    }
+    return { ...input, fields };
   }
 }
