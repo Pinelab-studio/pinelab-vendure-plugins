@@ -45,48 +45,52 @@ const CREATE_CONTENT_ENTRY = gql`
   });
 
   await adminClient.asSuperAdmin();
-
-  // Create a FeaturedProduct (singleton) for testing
-  await adminClient.query(CREATE_CONTENT_ENTRY, {
-    input: {
-      contentTypeCode: 'featuredProduct',
-      fields: { product: { id: 1 } },
-      translations: [
-        {
-          languageCode: 'en',
-          fields: {
-            title: 'Featured title',
-            seo: {
-              metaTitle: 'Meta',
-              metaDescription: 'Description',
+  try {
+    // Create a FeaturedProduct (singleton) for testing
+    await adminClient.query(CREATE_CONTENT_ENTRY, {
+      input: {
+        contentTypeCode: 'featuredProduct',
+        fields: { product: { id: 1 } },
+        translations: [
+          {
+            languageCode: 'en',
+            fields: {
+              title: 'Featured title',
+              seo: {
+                metaTitle: 'Meta',
+                metaDescription: 'Description',
+              },
             },
           },
-        },
-      ],
-    },
-  });
+        ],
+      },
+    });
 
-  // Create a first Banner
-  await adminClient.query(CREATE_CONTENT_ENTRY, {
-    input: {
-      contentTypeCode: 'banner',
-      fields: { product: { id: 1 }, priority: 1 },
-      translations: [
-        { languageCode: 'en', fields: { title: 'Top banner EN' } },
-      ],
-    },
-  });
+    // Create a first Banner
+    await adminClient.query(CREATE_CONTENT_ENTRY, {
+      input: {
+        contentTypeCode: 'banner',
+        fields: { product: { id: 1 }, priority: 1 },
+        translations: [
+          { languageCode: 'en', fields: { title: 'Top banner EN' } },
+        ],
+      },
+    });
 
-  // Create a second Banner
-  await adminClient.query(CREATE_CONTENT_ENTRY, {
-    input: {
-      contentTypeCode: 'banner',
-      fields: { product: { id: 1 }, priority: 2 },
-      translations: [
-        { languageCode: 'en', fields: { title: 'Side banner EN' } },
-      ],
-    },
-  });
+    // Create a second Banner
+    await adminClient.query(CREATE_CONTENT_ENTRY, {
+      input: {
+        contentTypeCode: 'banner',
+        fields: { product: { id: 1 }, priority: 2 },
+        translations: [
+          { languageCode: 'en', fields: { title: 'Side banner EN' } },
+        ],
+      },
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Error seeding content entries', err);
+  }
 
   // eslint-disable-next-line no-console
   console.log(

@@ -93,6 +93,25 @@ export const config: VendureConfig = mergeConfig(testConfig, {
             },
           ],
         },
+        metric: {
+          displayName: 'Metric',
+          allowMultiple: true,
+          fields: [
+            {
+              name: 'value',
+              type: 'int',
+              isTranslatable: false,
+              nullable: false,
+            },
+            {
+              name: 'product',
+              type: 'relation',
+              entity: Product,
+              graphQLType: 'Product',
+              nullable: false,
+            },
+          ],
+        },
       },
     }),
     DefaultSearchPlugin,

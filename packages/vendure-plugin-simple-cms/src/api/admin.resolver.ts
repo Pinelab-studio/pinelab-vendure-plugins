@@ -1,5 +1,12 @@
 import { Inject } from '@nestjs/common';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import {
   Allow,
   Ctx,
@@ -13,6 +20,7 @@ import {
 } from '@vendure/common/lib/generated-types';
 import { ContentEntryService } from '../services/content-entry.service';
 import {
+  AdminContentEntry,
   MutationCreateContentEntryArgs,
   MutationUpdateContentEntryArgs,
   MutationDeleteContentEntryArgs,
@@ -28,6 +36,8 @@ import {
   TypeDefinition,
 } from '../types';
 import { flattenEntry } from './flatten-entry';
+import { deriveDisplayName } from './derive-display-name';
+import { ContentEntry } from '../entities/content-entry.entity';
 
 /**
  * Maps a primitive field definition (used both at top-level and as
@@ -140,11 +150,14 @@ export class AdminResolver {
     @Ctx() ctx: RequestContext,
     @Args() args: QueryContentEntriesArgs
   ) {
-    const items = await this.contentEntryService.findByContentTypeCode(
+    const result = await this.contentEntryService.findAll(
       ctx,
-      args.contentTypeCode
+      args.options ?? undefined
     );
-    return items.map((e) => flattenEntry(ctx, e, this.options));
+    return {
+      items: result.items.map((e) => flattenEntry(ctx, e, this.options)),
+      totalItems: result.totalItems,
+    };
   }
 
   @Query()
@@ -180,5 +193,15 @@ export class AdminResolver {
   ): SimpleCmsContentType | null {
     const def = this.options.contentTypes?.[args.code];
     return def ? toContentTypeDto(args.code, def) : null;
+  }
+
+  @ResolveField('displayName')
+  @Resolver('AdminContentEntry')
+  displayName(
+    @Ctx() ctx: RequestContext,
+    @Parent() entry: AdminContentEntry & ContentEntry
+  ): string | null {
+    const def = this.options.contentTypes?.[entry.contentTypeCode];
+    return deriveDisplayName(entry, def, ctx.languageCode);
   }
 }

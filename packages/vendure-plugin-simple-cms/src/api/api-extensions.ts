@@ -23,13 +23,21 @@ export function shopApiExtensions(
 }
 
 export const adminSchemaExtensions = gql`
-  type AdminContentEntry implements ContentEntry {
+  type AdminContentEntry implements ContentEntry & Node {
     id: ID!
     contentTypeCode: String!
     createdAt: DateTime!
     updatedAt: DateTime!
     fields: JSON!
     translations: [AdminContentEntryTranslation!]!
+    """
+    Display name derived from the first \`string\` field of the
+    content type definition. Resolves the active language for
+    translatable fields, falling back to the first available
+    translation. Returns null if no string field is defined or
+    the value is empty/missing.
+    """
+    displayName: String
   }
 
   type AdminContentEntryTranslation {
@@ -54,9 +62,33 @@ export const adminSchemaExtensions = gql`
     translations: [ContentEntryTranslationInput!]
   }
 
+  type AdminContentEntryList implements PaginatedList {
+    items: [AdminContentEntry!]!
+    totalItems: Int!
+  }
+
+  input ContentEntryListFilter {
+    id: IDOperators
+    createdAt: DateOperators
+    updatedAt: DateOperators
+    contentTypeCode: StringOperators
+    _and: [ContentEntryListFilter!]
+    _or: [ContentEntryListFilter!]
+  }
+
+  input AdminContentEntryListOptions {
+    skip: Int
+    take: Int
+    filter: ContentEntryListFilter
+    filterOperator: LogicalOperator
+    sort: JSON
+  }
+
   extend type Query {
     contentEntry(id: ID!): AdminContentEntry
-    contentEntries(contentTypeCode: String!): [AdminContentEntry!]!
+    contentEntries(
+      options: AdminContentEntryListOptions
+    ): AdminContentEntryList!
     simpleCmsContentTypes: [SimpleCmsContentType!]!
     simpleCmsContentType(code: String!): SimpleCmsContentType
   }
@@ -104,6 +136,8 @@ export const scalars = gql`
   scalar LanguageCode
   scalar LogicalOperator
   scalar StringOperators
+  scalar IDOperators
+  scalar DateOperators
   scalar Node
   scalar PaginatedList
   scalar DeletionResponse
