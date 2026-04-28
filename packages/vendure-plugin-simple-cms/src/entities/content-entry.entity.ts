@@ -1,6 +1,7 @@
 import { Channel, VendureEntity, ChannelAware } from '@vendure/core';
 import {
   Column,
+  DeleteDateColumn,
   Entity,
   Index,
   JoinTable,
@@ -31,4 +32,8 @@ export class ContentEntry extends VendureEntity implements ChannelAware {
     eager: true,
   })
   translatableFields!: ContentEntryTranslation[];
+
+  /** Soft-delete timestamp. Set by TypeORM on soft removal; null when active. */
+  @DeleteDateColumn()
+  deletedAt!: Date | null;
 }

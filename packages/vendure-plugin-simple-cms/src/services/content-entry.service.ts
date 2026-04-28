@@ -171,7 +171,7 @@ export class ContentEntryService {
         `ContentEntry with id '${String(id)}' not found`
       );
     }
-    await this.connection.getRepository(ctx, ContentEntry).remove(existing);
+    await this.connection.getRepository(ctx, ContentEntry).softRemove(existing);
     await this.eventBus.publish(
       new SimpleCmsContentEntryEvent(existing, 'deleted', ctx, id)
     );

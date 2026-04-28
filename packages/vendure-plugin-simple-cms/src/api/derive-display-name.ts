@@ -7,7 +7,7 @@ import { ContentEntry } from '../entities/content-entry.entity';
  *
  * Strategy:
  *  - Pick the first top-level field from the type definition where
- *    `type === 'string'` (declaration order).
+ *    `type === 'string'` or `type === 'text'` (declaration order).
  *  - If that field is translatable, look up the value from the
  *    translation matching the active language; if absent, fall back
  *    to the first available translation.
@@ -28,7 +28,9 @@ export function deriveDisplayName(
   if (!def) {
     return null;
   }
-  const stringField = def.fields.find((f) => f.type === 'string');
+  const stringField = def.fields.find(
+    (f) => f.type === 'string' || f.type === 'text'
+  );
   if (!stringField) {
     return null;
   }

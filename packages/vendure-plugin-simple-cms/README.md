@@ -100,3 +100,4 @@ Set `allowMultiple: false` to enforce a single entry per channel (singletons lik
 ## TODO
 
 - Relation saving and fetching: Saving seems to work, but on refresh no relation is shown
+- Update shows "are you sure, you will lose everything", but that is not true, we are saving

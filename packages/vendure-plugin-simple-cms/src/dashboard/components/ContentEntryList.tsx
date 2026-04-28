@@ -47,6 +47,15 @@ const getContentTypes = graphql(`
   }
 `);
 
+/** Soft-deletes a content entry by id. */
+const deleteContentEntry = graphql(`
+  mutation DeleteContentEntry($id: ID!) {
+    deleteContentEntry(id: $id) {
+      result
+    }
+  }
+`);
+
 /**
  * Loads available content types and maps them to faceted filter options.
  */
@@ -93,6 +102,7 @@ export function ContentEntryList({ route }: { route: any }) {
       pageId="simple-cms-content-entries"
       title="Content"
       listQuery={getContentEntries}
+      deleteMutation={deleteContentEntry}
       route={route}
       defaultVisibility={{
         id: true,

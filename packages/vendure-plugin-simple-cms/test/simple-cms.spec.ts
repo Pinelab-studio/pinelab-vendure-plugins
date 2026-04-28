@@ -9,7 +9,6 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { config } from './vendure-config';
 import { VendureConfig } from '@vendure/core';
-import gql from 'graphql-tag';
 import {
   getField,
   getQueryField,
@@ -17,6 +16,14 @@ import {
   INTROSPECTION_QUERY,
   IntrospectionSchema,
   typeRefToString,
+  CREATE_CONTENT_ENTRY,
+  DELETE_CONTENT_ENTRY,
+  CONTENT_ENTRIES_QUERY,
+  GET_CONTENT_ENTRY,
+  GET_CONTENT_TYPES,
+  GET_FEATURED_PRODUCT,
+  GET_BANNERS,
+  GET_BANNER_BY_ID,
 } from './simple-cms-helpers';
 
 let server: TestServer;
@@ -136,28 +143,6 @@ describe('SimpleCmsPlugin', () => {
     });
 
     it('Exposes content type metadata (incl. ui config) via the admin API', async () => {
-      const GET_CONTENT_TYPES = gql`
-        query {
-          simpleCmsContentTypes {
-            code
-            displayName
-            allowMultiple
-            fields {
-              name
-              type
-              nullable
-              isTranslatable
-              graphQLType
-              ui
-              fields {
-                name
-                type
-                ui
-              }
-            }
-          }
-        }
-      `;
       const { simpleCmsContentTypes } = await adminClient.query(
         GET_CONTENT_TYPES
       );
@@ -196,73 +181,6 @@ describe('SimpleCmsPlugin', () => {
   describe('createContentEntry admin mutation + shop API fetches', () => {
     let topBannerId: string;
     let sideBannerId: string;
-
-    const CREATE_CONTENT_ENTRY = gql`
-      mutation CreateContentEntry($input: ContentEntryInput!) {
-        createContentEntry(input: $input) {
-          id
-          contentTypeCode
-          fields
-          translations {
-            languageCode
-            fields
-          }
-        }
-      }
-    `;
-
-    const GET_FEATURED_PRODUCT = gql`
-      query GetFeaturedProduct {
-        featuredProduct {
-          id
-          title
-          seo {
-            metaTitle
-            metaDescription
-          }
-          product {
-            id
-            name
-            slug
-            variants {
-              id
-              name
-              sku
-            }
-          }
-        }
-      }
-    `;
-
-    const GET_BANNERS = gql`
-      query GetBanners {
-        banners {
-          id
-          title
-          priority
-          product {
-            id
-            name
-            slug
-            variants {
-              id
-              name
-              sku
-            }
-          }
-        }
-      }
-    `;
-
-    const GET_BANNER_BY_ID = gql`
-      query GetBanner($id: ID!) {
-        banner(id: $id) {
-          id
-          title
-          priority
-        }
-      }
-    `;
 
     it('Creates a FeaturedProduct (singleton)', async () => {
       const { createContentEntry } = await adminClient.query(
@@ -421,28 +339,6 @@ describe('SimpleCmsPlugin', () => {
   });
 
   describe('Paginated contentEntries admin query', () => {
-    const CONTENT_ENTRIES_QUERY = gql`
-      query ContentEntries($options: AdminContentEntryListOptions) {
-        contentEntries(options: $options) {
-          totalItems
-          items {
-            id
-            contentTypeCode
-            updatedAt
-            displayName
-          }
-        }
-      }
-    `;
-
-    const CREATE_CONTENT_ENTRY = gql`
-      mutation CreateContentEntry($input: ContentEntryInput!) {
-        createContentEntry(input: $input) {
-          id
-        }
-      }
-    `;
-
     it('Returns paginated list of all content entries', async () => {
       const { contentEntries } = await adminClient.query(
         CONTENT_ENTRIES_QUERY,
@@ -523,7 +419,7 @@ describe('SimpleCmsPlugin', () => {
         {
           input: {
             contentTypeCode: 'metric',
-            fields: { value: 42, product: { id: 1 } },
+            fields: { value: 42, asset: { id: 1 } },
           },
         }
       );
@@ -535,6 +431,53 @@ describe('SimpleCmsPlugin', () => {
       );
       expect(contentEntries.items).toHaveLength(1);
       expect(contentEntries.items[0].displayName).toBeNull();
+    });
+  });
+
+  describe('Soft delete', () => {
+    let entryToDeleteId: string;
+
+    it('Creates a banner entry to be soft-deleted', async () => {
+      const { createContentEntry } = await adminClient.query(
+        CREATE_CONTENT_ENTRY,
+        {
+          input: {
+            contentTypeCode: 'banner',
+            fields: { product: { id: 1 }, priority: 99 },
+            translations: [
+              { languageCode: 'en', fields: { title: 'Delete me' } },
+            ],
+          },
+        }
+      );
+      expect(createContentEntry.id).toBeTruthy();
+      entryToDeleteId = createContentEntry.id;
+    });
+
+    it('Soft-deletes the entry and returns DELETED result', async () => {
+      const { deleteContentEntry } = await adminClient.query(
+        DELETE_CONTENT_ENTRY,
+        { id: entryToDeleteId }
+      );
+      expect(deleteContentEntry.result).toBe('DELETED');
+    });
+
+    it('Excluded the soft-deleted entry from the contentEntries list', async () => {
+      const { contentEntries } = await adminClient.query(
+        CONTENT_ENTRIES_QUERY,
+        {
+          options: { filter: { contentTypeCode: { eq: 'banner' } } },
+        }
+      );
+      const ids = contentEntries.items.map((e: { id: string }) => e.id);
+      expect(ids).not.toContain(entryToDeleteId);
+    });
+
+    it('Returns null for the soft-deleted entry via contentEntry(id:)', async () => {
+      const { contentEntry } = await adminClient.query(GET_CONTENT_ENTRY, {
+        id: entryToDeleteId,
+      });
+      expect(contentEntry).toBeNull();
     });
   });
 });

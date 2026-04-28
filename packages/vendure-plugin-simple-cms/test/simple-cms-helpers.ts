@@ -126,3 +126,125 @@ export function getField(
 ): IntrospectionField | undefined {
   return type?.fields?.find((f) => f.name === name);
 }
+
+// ─── GraphQL document helpers ────────────────────────────────────────────────
+
+export const CREATE_CONTENT_ENTRY = gql`
+  mutation CreateContentEntry($input: ContentEntryInput!) {
+    createContentEntry(input: $input) {
+      id
+      contentTypeCode
+      fields
+      translations {
+        languageCode
+        fields
+      }
+    }
+  }
+`;
+
+export const DELETE_CONTENT_ENTRY = gql`
+  mutation DeleteContentEntry($id: ID!) {
+    deleteContentEntry(id: $id) {
+      result
+    }
+  }
+`;
+
+export const CONTENT_ENTRIES_QUERY = gql`
+  query ContentEntries($options: AdminContentEntryListOptions) {
+    contentEntries(options: $options) {
+      totalItems
+      items {
+        id
+        contentTypeCode
+        updatedAt
+        displayName
+      }
+    }
+  }
+`;
+
+export const GET_CONTENT_ENTRY = gql`
+  query ContentEntry($id: ID!) {
+    contentEntry(id: $id) {
+      id
+    }
+  }
+`;
+
+export const GET_CONTENT_TYPES = gql`
+  query {
+    simpleCmsContentTypes {
+      code
+      displayName
+      allowMultiple
+      fields {
+        name
+        type
+        nullable
+        isTranslatable
+        graphQLType
+        ui
+        fields {
+          name
+          type
+          ui
+        }
+      }
+    }
+  }
+`;
+
+export const GET_FEATURED_PRODUCT = gql`
+  query GetFeaturedProduct {
+    featuredProduct {
+      id
+      title
+      seo {
+        metaTitle
+        metaDescription
+      }
+      product {
+        id
+        name
+        slug
+        variants {
+          id
+          name
+          sku
+        }
+      }
+    }
+  }
+`;
+
+export const GET_BANNERS = gql`
+  query GetBanners {
+    banners {
+      id
+      title
+      priority
+      product {
+        id
+        name
+        slug
+        variants {
+          id
+          name
+          sku
+        }
+      }
+    }
+  }
+`;
+
+export const GET_BANNER_BY_ID = gql`
+  query GetBanner($id: ID!) {
+    banner(id: $id) {
+      id
+      title
+      priority
+    }
+  }
+`;
