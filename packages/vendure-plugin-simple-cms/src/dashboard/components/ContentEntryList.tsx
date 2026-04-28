@@ -61,6 +61,12 @@ export function ContentEntryList({ route }: { route: any }) {
         createdAt: false,
       }}
       defaultSort={[{ id: 'updatedAt', desc: true }]}
+      customizeColumns={{
+        id: { enableColumnFilter: false },
+        displayName: { enableColumnFilter: false },
+        createdAt: { enableColumnFilter: false },
+        updatedAt: { enableColumnFilter: false },
+      }}
       facetedFilters={{
         contentTypeCode: {
           title: 'Content type',
