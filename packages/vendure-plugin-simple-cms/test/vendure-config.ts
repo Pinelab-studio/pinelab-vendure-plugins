@@ -50,12 +50,10 @@ export const config: VendureConfig = mergeConfig(testConfig, {
                 {
                   name: 'metaTitle',
                   type: 'string',
-                  isTranslatable: false,
                 },
                 {
                   name: 'metaDescription',
                   type: 'text',
-                  isTranslatable: false,
                   ui: { component: 'textarea-form-input' },
                 },
               ],

@@ -54,8 +54,6 @@ const getContentTypeDoc = graphql(`
           name
           type
           nullable
-          isTranslatable
-          graphQLType
           ui
         }
       }
@@ -189,6 +187,9 @@ export function ContentEntryDetail({
       toast.success('Content entry created');
       const newId = res?.createContentEntry?.id;
       await queryClient.invalidateQueries({ queryKey: ['ContentEntries'] });
+      // Reset the form to mark it as clean so the Page component does not
+      // show an "unsaved changes" warning when navigating to the new entry.
+      form.reset();
       if (newId) {
         navigate({ to: '/content/$id', params: { id: newId } as any });
       }

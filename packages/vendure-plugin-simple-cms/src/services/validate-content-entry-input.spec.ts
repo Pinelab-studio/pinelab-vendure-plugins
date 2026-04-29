@@ -15,8 +15,8 @@ const featuredProduct: TypeDefinition = {
       type: 'struct',
       isTranslatable: true,
       fields: [
-        { name: 'metaTitle', type: 'string', isTranslatable: false },
-        { name: 'metaDescription', type: 'text', isTranslatable: false },
+        { name: 'metaTitle', type: 'string' },
+        { name: 'metaDescription', type: 'text' },
       ],
     },
     {

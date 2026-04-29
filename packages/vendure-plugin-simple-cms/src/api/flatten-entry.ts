@@ -15,7 +15,6 @@ function mapFieldDefinition(field: TypeDefinition['fields'][number]) {
             name: sub.name,
             type: sub.type,
             nullable: sub.nullable === true,
-            isTranslatable: sub.isTranslatable,
             fields: null,
           }))
         : null,

@@ -104,10 +104,14 @@ export const adminSchemaExtensions = gql`
   Metadata about a single field on a SimpleCms content type. Optional fields
   are populated based on the field kind:
    - 'string' | 'text' | 'int' | 'float' | 'boolean' | 'date': primitive
-   - 'struct': nested primitive fields under \`fields\`
+   - 'struct': nested primitive sub-fields under \`fields\`
    - 'relation': uses \`graphQLType\`
   The \`ui\` JSON object carries dashboard form rendering hints, e.g.
   \`{ component: 'product-selector-form-input', ...arbitraryProps }\`.
+
+  \`isTranslatable\` is only meaningful at the top-level field. A struct
+  is translatable as a whole; its sub-fields cannot individually opt
+  in or out, and therefore expose no \`isTranslatable\` property.
   """
   type SimpleCmsField {
     name: String!
@@ -115,7 +119,18 @@ export const adminSchemaExtensions = gql`
     nullable: Boolean!
     isTranslatable: Boolean
     graphQLType: String
-    fields: [SimpleCmsField!]
+    fields: [SimpleCmsStructSubField!]
+    ui: JSON
+  }
+
+  """
+  Metadata about a sub-field of a struct field. Sub-fields are always
+  primitive and inherit translation behaviour from their parent struct.
+  """
+  type SimpleCmsStructSubField {
+    name: String!
+    type: String!
+    nullable: Boolean!
     ui: JSON
   }
 

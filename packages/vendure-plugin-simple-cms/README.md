@@ -78,8 +78,8 @@ SimpleCmsPlugin.init({
           type: 'struct',
           isTranslatable: true,
           fields: [
-            { name: 'label', type: 'string', isTranslatable: true },
-            { name: 'url', type: 'string', isTranslatable: false },
+            { name: 'label', type: 'string' },
+            { name: 'url', type: 'string' },
           ],
         },
       ],
@@ -94,10 +94,10 @@ Field types reference:
 - `relation` — references another Vendure entity (`Asset`, `Product`, `ProductVariant`, …)
 - `struct` — nested object containing primitive sub-fields
 
-Set `isTranslatable: true` on any primitive or struct field to store a value per language.
+Set `isTranslatable: true` on any primitive or struct field to store a value per language. A struct is translatable as a whole — its sub-fields cannot individually opt in or out.
 Set `allowMultiple: false` to enforce a single entry per channel (singletons like a Hero or Footer).
 
 ## TODO
 
+- Translations in admin ui
 - Relation saving and fetching: Saving seems to work, but on refresh no relation is shown
-- Update shows "are you sure, you will lose everything", but that is not true, we are saving

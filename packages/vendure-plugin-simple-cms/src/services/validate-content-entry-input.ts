@@ -2,6 +2,7 @@ import { UserInputError } from '@vendure/core';
 import {
   PrimitiveFieldDefinition,
   StructFieldDefinition,
+  StructSubFieldDefinition,
   RelationFieldDefinition,
   TypeDefinition,
 } from '../types';
@@ -16,6 +17,7 @@ const ISO_DATE_REGEX =
 type AnyFieldDefinition =
   | PrimitiveFieldDefinition
   | StructFieldDefinition
+  | StructSubFieldDefinition
   | RelationFieldDefinition;
 
 /**

@@ -30,34 +30,16 @@ import {
   SimpleCmsField,
 } from './generated/graphql';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
-import {
-  PrimitiveFieldDefinition,
-  SimpleCmsPluginOptions,
-  TypeDefinition,
-} from '../types';
+import { SimpleCmsPluginOptions, TypeDefinition } from '../types';
 import { flattenEntry } from './flatten-entry';
 import { deriveDisplayName } from './derive-display-name';
 import { ContentEntry } from '../entities/content-entry.entity';
 
 /**
- * Maps a primitive field definition (used both at top-level and as
- * a nested field of a struct) to its DTO representation.
- */
-function mapPrimitiveField(field: PrimitiveFieldDefinition): SimpleCmsField {
-  return {
-    name: field.name,
-    type: field.type,
-    nullable: field.nullable === true,
-    isTranslatable: field.isTranslatable,
-    graphQLType: null,
-    fields: null,
-    ui: field.ui ?? null,
-  };
-}
-
-/**
  * Maps a top-level field definition (primitive | struct | relation)
- * to its DTO representation.
+ * to its DTO representation. The `SimpleCmsField` GraphQL type is a
+ * flat union-like shape, so different field kinds populate different
+ * subsets of properties.
  */
 function mapField(field: TypeDefinition['fields'][number]): SimpleCmsField {
   if (field.type === 'struct') {
@@ -67,7 +49,12 @@ function mapField(field: TypeDefinition['fields'][number]): SimpleCmsField {
       nullable: field.nullable === true,
       isTranslatable: field.isTranslatable,
       graphQLType: null,
-      fields: field.fields.map(mapPrimitiveField),
+      fields: field.fields.map((sub) => ({
+        name: sub.name,
+        type: sub.type,
+        nullable: sub.nullable === true,
+        ui: sub.ui ?? null,
+      })),
       ui: null,
     };
   }
@@ -82,21 +69,15 @@ function mapField(field: TypeDefinition['fields'][number]): SimpleCmsField {
       ui: field.ui ?? null,
     };
   }
-  return mapPrimitiveField(field);
-}
-
-/**
- * Maps a content-type definition to its DTO representation.
- */
-function toContentTypeDto(
-  code: string,
-  def: TypeDefinition
-): SimpleCmsContentType {
+  // Primitive
   return {
-    code,
-    displayName: def.displayName,
-    allowMultiple: def.allowMultiple,
-    fields: def.fields.map(mapField),
+    name: field.name,
+    type: field.type,
+    nullable: field.nullable === true,
+    isTranslatable: field.isTranslatable,
+    graphQLType: null,
+    fields: null,
+    ui: field.ui ?? null,
   };
 }
 
@@ -177,8 +158,13 @@ export class AdminResolver {
   @Query()
   @Allow(Permission.ReadCatalog)
   simpleCmsContentTypes(): SimpleCmsContentType[] {
-    return Object.entries(this.options.contentTypes ?? {}).map(([code, def]) =>
-      toContentTypeDto(code, def)
+    return Object.entries(this.options.contentTypes ?? {}).map(
+      ([code, def]) => ({
+        code,
+        displayName: def.displayName,
+        allowMultiple: def.allowMultiple,
+        fields: def.fields.map(mapField),
+      })
     );
   }
 
@@ -192,7 +178,13 @@ export class AdminResolver {
     @Args() args: { code: string }
   ): SimpleCmsContentType | null {
     const def = this.options.contentTypes?.[args.code];
-    return def ? toContentTypeDto(args.code, def) : null;
+    if (!def) return null;
+    return {
+      code: args.code,
+      displayName: def.displayName,
+      allowMultiple: def.allowMultiple,
+      fields: def.fields.map(mapField),
+    };
   }
 
   @ResolveField('displayName')

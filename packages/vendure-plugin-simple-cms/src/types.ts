@@ -28,12 +28,35 @@ export interface UiConfig {
 }
 
 /**
+ * The set of primitive scalar types supported for fields and struct sub-fields.
+ */
+export type PrimitiveType =
+  | 'string'
+  | 'text'
+  | 'int'
+  | 'float'
+  | 'boolean'
+  | 'date';
+
+/**
  * The field definition for a primitive field.
  * A primitive field is a field that is a single value.
  * Example: `string`, `number`, `boolean`, `date`
  */
 export interface PrimitiveFieldDefinition extends Translatable, BaseField {
-  type: 'string' | 'text' | 'int' | 'float' | 'boolean' | 'date';
+  type: PrimitiveType;
+  ui?: UiConfig;
+}
+
+/**
+ * The field definition for a sub-field of a struct.
+ * Sub-fields are NOT individually translatable: a struct as a whole
+ * is either translatable or not (driven by the parent struct's
+ * `isTranslatable` flag). This mirrors Vendure's native
+ * struct custom field behaviour.
+ */
+export interface StructSubFieldDefinition extends BaseField {
+  type: PrimitiveType;
   ui?: UiConfig;
 }
 
@@ -41,10 +64,13 @@ export interface PrimitiveFieldDefinition extends Translatable, BaseField {
  * The field definition for a struct field.
  * A struct field is a field that contains other fields.
  * Example: `{key: string, value: string}`
+ *
+ * The whole struct is either translatable or not via `isTranslatable`.
+ * Individual sub-fields cannot opt in or out of translation.
  */
 export interface StructFieldDefinition extends Translatable, BaseField {
   type: 'struct';
-  fields: PrimitiveFieldDefinition[];
+  fields: StructSubFieldDefinition[];
 }
 
 /**

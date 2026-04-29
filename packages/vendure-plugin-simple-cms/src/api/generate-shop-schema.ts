@@ -3,6 +3,7 @@ import {
   RelationFieldDefinition,
   SimpleCmsPluginOptions,
   StructFieldDefinition,
+  StructSubFieldDefinition,
   TypeDefinition,
 } from '../types';
 
@@ -53,6 +54,7 @@ function fieldTypeSDL(
   field:
     | PrimitiveFieldDefinition
     | StructFieldDefinition
+    | StructSubFieldDefinition
     | RelationFieldDefinition,
   parentTypeName: string
 ): string {

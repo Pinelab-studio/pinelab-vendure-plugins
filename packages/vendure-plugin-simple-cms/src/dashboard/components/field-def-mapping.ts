@@ -13,13 +13,20 @@
  * Any user-set `ui` config (component + arbitrary props) is preserved
  * verbatim so configured custom inputs continue to work.
  */
+export interface SimpleCmsStructSubFieldDto {
+  name: string;
+  type: string;
+  nullable: boolean;
+  ui?: Record<string, unknown> | null;
+}
+
 export interface SimpleCmsFieldDto {
   name: string;
   type: string;
   nullable: boolean;
   isTranslatable?: boolean | null;
   graphQLType?: string | null;
-  fields?: SimpleCmsFieldDto[] | null;
+  fields?: SimpleCmsStructSubFieldDto[] | null;
   ui?: Record<string, unknown> | null;
 }
 
@@ -47,7 +54,7 @@ export interface MappedFieldDef {
  * Vendure's form-engine helpers.
  */
 export function mapSimpleCmsFieldToFieldDef(
-  f: SimpleCmsFieldDto
+  f: SimpleCmsFieldDto | SimpleCmsStructSubFieldDto
 ): MappedFieldDef {
   const required = !f.nullable;
   let type = f.type;
@@ -73,8 +80,9 @@ export function mapSimpleCmsFieldToFieldDef(
     ui,
   };
 
-  if (f.type === 'relation' && f.graphQLType) {
-    fieldDef.entity = f.graphQLType;
+  const asTopLevel = f as SimpleCmsFieldDto;
+  if (asTopLevel.type === 'relation' && asTopLevel.graphQLType) {
+    fieldDef.entity = asTopLevel.graphQLType;
     // Required so Vendure's `DefaultRelationInput` recognizes the field
     // as a relation custom field config and renders the entity-specific
     // selector (e.g. AssetPicker style for `Asset`).

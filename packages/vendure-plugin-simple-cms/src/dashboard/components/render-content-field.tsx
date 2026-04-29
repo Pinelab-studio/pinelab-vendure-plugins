@@ -3,10 +3,11 @@ import { Control } from 'react-hook-form';
 import {
   mapSimpleCmsFieldToFieldDef,
   SimpleCmsFieldDto,
+  SimpleCmsStructSubFieldDto,
 } from './field-def-mapping';
 
 interface RenderFieldProps {
-  field: SimpleCmsFieldDto;
+  field: SimpleCmsFieldDto | SimpleCmsStructSubFieldDto;
   /**
    * Full dotted path to the field in the react-hook-form values.
    * For non-translatable: 'fields.<name>'; for active-language translatable:
@@ -26,11 +27,12 @@ interface RenderFieldProps {
  *   sub-fields.
  */
 export function RenderField({ field, name, control }: RenderFieldProps) {
-  if (field.type === 'struct' && field.fields?.length) {
+  const asTopLevel = field as SimpleCmsFieldDto;
+  if (asTopLevel.type === 'struct' && asTopLevel.fields?.length) {
     return (
       <fieldset className="border rounded p-4 space-y-4">
         <legend className="px-2 text-sm font-medium">{field.name}</legend>
-        {field.fields.map((sub) => (
+        {asTopLevel.fields.map((sub) => (
           <RenderField
             key={sub.name}
             field={sub}
