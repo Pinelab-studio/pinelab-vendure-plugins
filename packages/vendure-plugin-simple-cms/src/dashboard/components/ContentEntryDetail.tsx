@@ -1,9 +1,11 @@
 import {
   api,
   Button,
+  ContentLanguageSelector,
   graphql,
   Page,
   PageActionBar,
+  PageActionBarLeft,
   PageActionBarRight,
   PageBlock,
   PageLayout,
@@ -155,9 +157,19 @@ export function ContentEntryDetail({
     const activeTranslation = entry?.translations?.find(
       (t) => t.languageCode === contentLanguage
     );
-    const translation: Record<string, unknown> = {
-      ...(activeTranslation?.fields ?? {}),
-    };
+    // Start with an explicit `null` for every translatable field defined
+    // in the content type, so that switching to a language without an
+    // existing translation reliably clears any previously rendered values
+    // when `form.reset(defaultValues)` is called. Without this, fields
+    // missing from `defaultValues.translation` may retain their prior
+    // controller values.
+    const translation: Record<string, unknown> = {};
+    for (const def of contentType?.fields ?? []) {
+      if ((def as any).isTranslatable) {
+        translation[def.name] = null;
+      }
+    }
+    Object.assign(translation, activeTranslation?.fields ?? {});
     // Flatten relation `{ id, ... }` objects to bare id strings, since
     // DefaultRelationInput expects `value` to be an id.
     for (const def of contentType?.fields ?? []) {
@@ -238,12 +250,44 @@ export function ContentEntryDetail({
       }
     }
 
+    // The backend replaces ALL translations on update, so we must send
+    // every existing translation alongside the one currently being edited.
+    // Merge: keep all other-language translations untouched, replace the
+    // active language's translation with the form values. Relation values
+    // inside other-language translations are normalized to `{ id }` shape
+    // because the entry payload returns them as full objects.
+    const otherTranslations = (entry?.translations ?? [])
+      .filter((t) => t.languageCode !== contentLanguage)
+      .map((t) => {
+        const normalizedFields: Record<string, unknown> = {
+          ...(t.fields ?? {}),
+        };
+        for (const def of contentType.fields ?? []) {
+          if (
+            (def as any).type === 'relation' &&
+            (def as any).isTranslatable &&
+            def.name in normalizedFields
+          ) {
+            normalizedFields[def.name] = normalizeRelationValue(
+              normalizedFields[def.name]
+            );
+          }
+        }
+        return { languageCode: t.languageCode, fields: normalizedFields };
+      });
+
+    const translations = [...otherTranslations];
+    if (Object.keys(translationFields).length) {
+      translations.push({
+        languageCode: contentLanguage,
+        fields: translationFields,
+      });
+    }
+
     const input: any = {
       contentTypeCode: resolvedContentTypeCode,
       fields,
-      translations: Object.keys(translationFields).length
-        ? [{ languageCode: contentLanguage, fields: translationFields }]
-        : undefined,
+      translations: translations.length ? translations : undefined,
     };
 
     if (isCreate) {
@@ -286,6 +330,12 @@ export function ContentEntryDetail({
   const submitDisabled =
     isPending || !form.formState.isDirty || !form.formState.isValid;
 
+  // Show the language switcher only when the content type has at least
+  // one translatable field — otherwise switching languages is a no-op.
+  const hasTranslatableField = (contentType.fields ?? []).some(
+    (f) => !!(f as any).isTranslatable
+  );
+
   return (
     <Page form={form} submitHandler={form.handleSubmit(onSubmit)}>
       <PageTitle>{title}</PageTitle>
@@ -293,6 +343,11 @@ export function ContentEntryDetail({
         {contentType.displayName}
       </div>
       <PageActionBar>
+        {hasTranslatableField && (
+          <PageActionBarLeft>
+            <ContentLanguageSelector />
+          </PageActionBarLeft>
+        )}
         <PageActionBarRight>
           <Button type="submit" disabled={submitDisabled}>
             {isCreate ? 'Create' : 'Update'}
@@ -306,9 +361,16 @@ export function ContentEntryDetail({
               const f = def as unknown as SimpleCmsFieldDto;
               const isTranslatable = !!f.isTranslatable;
               const baseName = isTranslatable ? 'translation' : 'fields';
+              // Include contentLanguage in key for translatable fields so
+              // the inputs fully remount when the user switches language,
+              // guaranteeing the new value is reflected even if RHF's
+              // controller fails to pick up the reset.
+              const key = isTranslatable
+                ? `${f.name}::${contentLanguage}`
+                : f.name;
               return (
                 <RenderField
-                  key={f.name}
+                  key={key}
                   field={f}
                   name={`${baseName}.${f.name}`}
                   control={form.control}
