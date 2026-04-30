@@ -99,5 +99,4 @@ Set `allowMultiple: false` to enforce a single entry per channel (singletons lik
 
 ## TODO
 
-- Translations in admin ui
 - Relation saving and fetching: Saving seems to work, but on refresh no relation is shown

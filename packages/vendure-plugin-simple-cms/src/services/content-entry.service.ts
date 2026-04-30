@@ -261,7 +261,7 @@ export class ContentEntryService {
     contentType: TypeDefinition,
     input: ContentEntryInput
   ): ContentEntryInput {
-    const strategy = this.configService.entityIdStrategy;
+    const strategy = this.configService.entityOptions.entityIdStrategy;
     const fields = { ...((input.fields ?? {}) as Record<string, unknown>) };
     for (const def of contentType.fields) {
       if (def.type !== 'relation') continue;
@@ -276,7 +276,7 @@ export class ContentEntryService {
         if (typeof raw === 'string' || typeof raw === 'number') {
           fields[def.name] = {
             ...(value as object),
-            id: strategy.decodeId(raw as never),
+            id: strategy!.decodeId(raw as never),
           };
         }
       }
