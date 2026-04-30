@@ -13,6 +13,7 @@ import { api } from '@/vdb/graphql/api.js';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, PlusIcon, Tag } from 'lucide-react';
+import { ContentTypeBadge } from './ContentTypeBadge';
 
 /**
  * Paginated list of all CMS content entries.
@@ -105,7 +106,7 @@ export function ContentEntryList({ route }: { route: any }) {
       deleteMutation={deleteContentEntry}
       route={route}
       defaultVisibility={{
-        id: true,
+        id: false,
         displayName: true,
         contentTypeCode: true,
         updatedAt: true,
@@ -113,7 +114,6 @@ export function ContentEntryList({ route }: { route: any }) {
       }}
       defaultSort={[{ id: 'updatedAt', desc: true }]}
       customizeColumns={{
-        id: { enableColumnFilter: false },
         displayName: {
           enableColumnFilter: false,
           cell: ({ row }: any) => (
@@ -125,6 +125,11 @@ export function ContentEntryList({ route }: { route: any }) {
         },
         createdAt: { enableColumnFilter: false },
         updatedAt: { enableColumnFilter: false },
+        contentTypeCode: {
+          cell: ({ row }: any) => (
+            <ContentTypeBadge code={row.original.contentTypeCode} />
+          ),
+        },
       }}
       facetedFilters={{
         contentTypeCode: {

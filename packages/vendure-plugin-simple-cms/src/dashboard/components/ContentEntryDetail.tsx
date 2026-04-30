@@ -19,6 +19,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { RenderField } from './render-content-field';
 import { SimpleCmsFieldDto } from './field-def-mapping';
+import { ContentTypeBadge } from './ContentTypeBadge';
 
 /** Fetch a single content entry with its translations. */
 const getContentEntryDoc = graphql(`
@@ -339,8 +340,11 @@ export function ContentEntryDetail({
   return (
     <Page form={form} submitHandler={form.handleSubmit(onSubmit)}>
       <PageTitle>{title}</PageTitle>
-      <div className="text-sm text-muted-foreground -mt-2 mb-2">
-        {contentType.displayName}
+      <div className="-mt-2 mb-2">
+        <ContentTypeBadge
+          code={resolvedContentTypeCode}
+          label={contentType.displayName}
+        />
       </div>
       <PageActionBar>
         {hasTranslatableField && (
