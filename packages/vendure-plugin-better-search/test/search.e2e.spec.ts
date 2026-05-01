@@ -12,6 +12,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
 import { waitFor } from '../../test/src/test-helpers';
 import { BetterSearchPlugin } from '../src';
+import { OramaHybridSemanticEngine } from '../src/config/orama-hybrid-semantic-engine';
 
 interface BetterSearchResult {
   productId: string;
@@ -45,7 +46,25 @@ beforeAll(async () => {
     initialData,
     productsCsvPath: './test/search-products.csv',
   });
-}, 30000);
+  // Pre-warm the Universal Sentence Encoder so the first search query doesn't
+  // pay the per-process JIT-compilation cost (which exceeds the per-test
+  // timeout on pure-JS TFJS).
+  await OramaHybridSemanticEngine.warmup();
+  // Pre-warm the GraphQL/Nest pipeline with a dummy search so the first real
+  // test doesn't pay schema-build / first-request latency.
+  await shopClient
+    .query(
+      gql`
+        query Warmup($term: String!) {
+          betterSearch(term: $term) {
+            productId
+          }
+        }
+      `,
+      { term: 'warmup' }
+    )
+    .catch(() => {});
+}, 60000);
 
 afterAll(async () => {
   await server.destroy();
