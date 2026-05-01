@@ -1,3 +1,7 @@
+# 1.0.0 (2026-02-05)
+
+- Refactored the plugin to be a full Search Plugin, instead of a custom search query.
+
 # 0.4.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3
