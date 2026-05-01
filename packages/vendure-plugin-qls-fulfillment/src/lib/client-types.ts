@@ -72,6 +72,7 @@ export type FulfillmentProduct = {
    * All EANs of the product, including the main EAN
    */
   barcodes_and_ean: string[];
+  warehouse_stocks?: unknown[];
 };
 
 export interface FulfillmentOrderInput {

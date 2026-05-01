@@ -11,6 +11,30 @@ import {
   CurrencyCode,
 } from '@vendure/common/lib/generated-types';
 
+export const CREATE_PRODUCT = gql`
+  mutation CreateProduct($input: CreateProductInput!) {
+    createProduct(input: $input) {
+      id
+      name
+      slug
+      description
+      enabled
+    }
+  }
+`;
+
+export const CREATE_PRODUCT_VARIANTS = gql`
+  mutation CreateProductVariants($input: [CreateProductVariantInput!]!) {
+    createProductVariants(input: $input) {
+      id
+      name
+      sku
+      price
+      stockOnHand
+    }
+  }
+`;
+
 export const MAGIC_NUMBER = 0xbaaaaaad;
 
 export const CANCEL_ORDER = gql`
@@ -23,36 +47,62 @@ export const CANCEL_ORDER = gql`
   }
 `;
 
-export const WALLET_FIELDS = gql`
-  fragment WalletFields on Wallet {
+export const WALLET_BASE_FIELDS = gql`
+  fragment WalletBaseFields on Wallet {
     id
+    code
     name
     createdAt
     updatedAt
     currencyCode
     balance
     metadata
+  }
+`;
+
+export const ADMIN_WALLET_FIELDS = gql`
+  fragment AdminWalletFields on Wallet {
+    ...WalletBaseFields
     adjustments(options: $options) {
       items {
         id
+        createdAt
         amount
         description
         mutatedBy {
           id
+          identifier
         }
       }
       totalItems
     }
   }
+  ${WALLET_BASE_FIELDS}
+`;
+
+export const SHOP_WALLET_FIELDS = gql`
+  fragment ShopWalletFields on Wallet {
+    ...WalletBaseFields
+    adjustments(options: $options) {
+      items {
+        id
+        createdAt
+        amount
+        description
+      }
+      totalItems
+    }
+  }
+  ${WALLET_BASE_FIELDS}
 `;
 
 export const GET_WALLET_WITH_ADJUSTMENTS = gql`
   query GetWalletById($id: ID!, $options: WalletAdjustmentListOptions) {
     wallet(id: $id) {
-      ...WalletFields
+      ...AdminWalletFields
     }
   }
-  ${WALLET_FIELDS}
+  ${ADMIN_WALLET_FIELDS}
 `;
 
 export const CREATE_WALLET = gql`
@@ -61,10 +111,19 @@ export const CREATE_WALLET = gql`
     $options: WalletAdjustmentListOptions
   ) {
     createWallet(input: $input) {
-      ...WalletFields
+      ...AdminWalletFields
     }
   }
-  ${WALLET_FIELDS}
+  ${ADMIN_WALLET_FIELDS}
+`;
+
+export const GET_WALLET_BY_CODE = gql`
+  query GetWalletByCode($code: String!, $options: WalletAdjustmentListOptions) {
+    walletByCode(code: $code) {
+      ...ShopWalletFields
+    }
+  }
+  ${SHOP_WALLET_FIELDS}
 `;
 
 export const ADJUST_BALANCE_FOR_WALLET = gql`
@@ -73,10 +132,10 @@ export const ADJUST_BALANCE_FOR_WALLET = gql`
     $options: WalletAdjustmentListOptions
   ) {
     adjustBalanceForWallet(input: $input) {
-      ...WalletFields
+      ...AdminWalletFields
     }
   }
-  ${WALLET_FIELDS}
+  ${ADMIN_WALLET_FIELDS}
 `;
 
 export const CREATE_PAYMENT_METHOD = gql`
@@ -109,13 +168,13 @@ export const GET_CUSTOMER_WITH_WALLETS = gql`
       id
       wallets {
         items {
-          ...WalletFields
+          ...AdminWalletFields
         }
         totalItems
       }
     }
   }
-  ${WALLET_FIELDS}
+  ${ADMIN_WALLET_FIELDS}
 `;
 
 export const CREATE_CHANNEL = gql`

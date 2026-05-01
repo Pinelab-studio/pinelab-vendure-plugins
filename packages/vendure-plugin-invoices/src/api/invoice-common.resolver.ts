@@ -8,7 +8,7 @@ import {
   RequestContext,
 } from '@vendure/core';
 import { InvoiceService } from '../services/invoice.service';
-import { Invoice } from '../ui/generated/graphql';
+import { Invoice } from '../generated-graphql-types';
 
 export const invoicePermission = new PermissionDefinition({
   name: 'AllowInvoicesPermission',

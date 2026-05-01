@@ -1,5 +1,6 @@
 import gql from 'graphql-tag';
-// This is only used by codegen so it knows DateTime is a custom scalar
+// These stubs are only used by codegen so it can resolve
+// Vendure core types referenced in the plugin schema
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const scalars = gql`
   scalar DateTime
@@ -8,6 +9,13 @@ const scalars = gql`
   scalar StringOperators
   scalar NumberOperators
   scalar Money
+  interface Node {
+    id: ID!
+  }
+  interface PaginatedList {
+    items: [Node!]!
+    totalItems: Int!
+  }
 `;
 
 const commonSchemaExtensions = gql`
@@ -28,7 +36,7 @@ const commonSchemaExtensions = gql`
     totalWithTax: Money!
   }
 
-  type Invoice {
+  type Invoice implements Node {
     id: ID!
     createdAt: DateTime
     invoiceNumber: Int!
@@ -63,7 +71,7 @@ export const adminSchemaExtensions = gql`
     templateString: String!
   }
 
-  type InvoiceList {
+  type InvoiceList implements PaginatedList {
     items: [Invoice!]!
     totalItems: Int!
   }

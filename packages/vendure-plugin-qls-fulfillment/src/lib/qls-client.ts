@@ -56,6 +56,19 @@ export class QlsClient {
     return result.data[0];
   }
 
+  async getFulfillmentProductById(
+    fulfillmentProductId: string
+  ): Promise<FulfillmentProduct | undefined> {
+    const result = await this.rawRequest<FulfillmentProduct>(
+      'GET',
+      `fulfillment/products/${fulfillmentProductId}`
+    );
+    if (!result.data) {
+      return undefined;
+    }
+    return result.data;
+  }
+
   /**
    * Get stock for all fulfillment products.
    * Might require multiple requests if the result is paginated.

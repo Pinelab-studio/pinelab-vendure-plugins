@@ -16,7 +16,7 @@
     }
   },
   "include": ["src/"],
-  "exclude": ["src/gql"],
+  "exclude": ["src/gql", "src/dashboard"],
   "references": [
     {
       "path": "./tsconfig.dashboard.json"

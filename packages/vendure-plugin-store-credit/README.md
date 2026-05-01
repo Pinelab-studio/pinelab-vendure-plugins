@@ -148,6 +148,24 @@ query Wallet($id: ID!) {
 }
 ```
 
+## Gift card code security
+
+Gift card wallets are identified by their `code`. Treat this code like cash:
+anyone who knows the code can spend the wallet. It is the responsibility of the
+consuming project (via the `createGiftCardWallet` strategy) to make sure the
+returned `cardCode` is sufficiently unguessable — use a cryptographically
+secure random generator (e.g. `crypto.randomUUID()` or `generatePublicId()`
+from `@vendure/core`) and never derive the code from predictable data like
+order id or sequence numbers.
+
+The `walletByCode` query has a few safeguards to reduce enumeration risk:
+
+- on the admin API it requires the `UpdateOrder` permission;
+- on the shop API it requires the caller to have an active order on the session;
+- it returns `null` for unknown codes (instead of throwing) so the API does not
+  leak whether a given code exists;
+- lookups are channel-scoped.
+
 # Helper scripts
 
 You can create wallets with a specified balance for all (or given) customers with the following script that is included:

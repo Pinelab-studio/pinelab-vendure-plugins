@@ -11,6 +11,7 @@ import {
 declare module '@vendure/core' {
   interface CustomProductVariantFields {
     qlsProductId?: string;
+    qlsRawWarehouseStockData?: string;
   }
 
   interface CustomOrderFields {

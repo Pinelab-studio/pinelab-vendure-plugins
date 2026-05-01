@@ -16,5 +16,5 @@ export * from './util/order-calculations';
 export * from './util/default-template';
 export * from './util/v2-migration';
 export * from './services/invoice.service';
-export * from './ui/generated/graphql';
+export * from './generated-graphql-types';
 export * from './services/invoice-created-event';
