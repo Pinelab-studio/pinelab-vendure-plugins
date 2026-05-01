@@ -35,11 +35,36 @@ Current favorite is Orama.
 Update april 14:
 Implemented FlexSearch. FlexSearch is supposed to be faster for simple full-text lookup, but it doesn't natively support weighted multi-field scoring or BM25-style relevance ranking. We had to build a mini ranking engine around it. Upcoming performance tests will show us the results.
 
+Update may 1:
+Also implemented and tested Orama with semantic search. Not necessary per se, but could be a fancy add-on.
+
 Next steps: Performance testing, pick one, implement it in a running shop, and test relevance there.
 
 ### Synthetic performance testing
 
 We will test performance of each of the engines in a local resource restricted environment to see which performs best.
+
+We have tested each engine with an X number of queries in an isolated node env on the same machine. See @package.json for run commands, and @benchmark-engines.ts for the performance test case.
+
+Results:
+
+**Syntehtic performance Results**
+
+12 queries × 50 loops = **600 searches** per engine.
+
+| Engine       | Total time | RSS    |
+| ------------ | ---------- | ------ |
+| `flexsearch` | 8 ms       | 168 MB |
+| `minisearch` | 39 ms      | 173 MB |
+| `orama-bm25` | 362 ms     | 198 MB |
+| `orama-qps`  | 379 ms     | 195 MB |
+| `semantic`   | 52 967 ms  | 966 MB |
+
+For a small-to-medium Vendure shop (≤10k variants) needing fast, relevant, typo-tolerant in-memory search, we will go with Minisearch: at ~0.065 ms per query (39 ms for 600 queries) it is roughly 9× faster than Orama-BM25/QPS while passing every synthetic relevance test, has the lowest memory footprint of the BM25-family engines (173 MB RSS), and natively supports field boosting, document boosting, fuzzy matching and stemming hooks.
+
+FlexSearch is faster (8 ms) but its relevance is shaky and requires a hand-rolled BM25-style ranker, Orama is the obvious fallback if Minisearch's manual stemming/length-normalization workarounds become a maintenance burden, and the semantic engine (53 s, 966 MB RSS) is unfit for this scope and only worth revisiting later as a worker-thread re-ranker for long-tail queries.
+
+Next step: implement minisearch as Vendure Search plugin, see next step below.
 
 ### Prepare for live project
 
