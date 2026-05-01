@@ -12,6 +12,7 @@ interface PackageJson {
   description: string;
   version: string;
   icon: string;
+  keywords?: string[];
   dependencies?: Record<string, string>;
 }
 
@@ -23,6 +24,7 @@ export interface Plugin {
   slug: string;
   description: string;
   icon: string;
+  keywords: string[];
   markdownContent: string;
   changelogContent: string;
   nrOfDownloads: number;
@@ -81,6 +83,7 @@ export async function getPlugins(): Promise<Plugin[]> {
         slug,
         description: packageJson.description,
         icon: getIcon(slug),
+        keywords: packageJson.keywords ?? [],
         markdownContent,
         changelogContent,
         nrOfDownloads,
@@ -162,4 +165,38 @@ export async function getCompatibilityRange(
   const fileContent = await readFile(path.join(srcDir, pluginFile), 'utf-8');
   const matches = fileContent.match(/compatibility:\s*['"]([^'"]+)['"]/);
   return matches?.[1];
+}
+
+/**
+ * Returns the raw README and CHANGELOG markdown for every plugin keyed by slug.
+ * Slug is the npm package name without the `@pinelab/` prefix (matching `Plugin.slug`).
+ */
+export async function getAllPluginRawDocs(): Promise<
+  Record<string, { readme: string; changelog: string }>
+> {
+  const pluginDirectories = await getPluginDirectories();
+  const result: Record<string, { readme: string; changelog: string }> = {};
+  for (const pluginDir of pluginDirectories) {
+    try {
+      const packageJson: { name: string } = JSON.parse(
+        await readFile(
+          path.join(packageDir, pluginDir.name, 'package.json'),
+          'utf8'
+        )
+      );
+      const slug = packageJson.name.replace('@pinelab/', '');
+      const readme = await readFile(
+        path.join(packageDir, pluginDir.name, 'README.md'),
+        'utf8'
+      );
+      const changelog = await readFile(
+        path.join(packageDir, pluginDir.name, 'CHANGELOG.md'),
+        'utf8'
+      );
+      result[slug] = { readme, changelog };
+    } catch (e) {
+      console.error(`Error reading raw docs for ${pluginDir.name}`, e);
+    }
+  }
+  return result;
 }
