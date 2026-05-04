@@ -1,0 +1,251 @@
+---
+/**
+ * Navigation component with pixelated transition for the mobile menu.
+ * Desktop: horizontal nav links.
+ * Mobile: hamburger button that triggers a randomized pixel-grid reveal.
+ */
+interface NavItem {
+  label: string;
+  href: string;
+  external?: boolean;
+}
+
+const navItems: NavItem[] = [
+  { label: 'Plugins', href: '/#plugins' },
+  {
+    label: 'Pinelab.studio',
+    href: 'https://pinelab.studio/',
+    external: true,
+  },
+];
+
+const contactHref = 'https://pinelab.studio/contact/';
+---
+
+<header
+  class="bg-base sticky top-0 z-40 -mx-8 -mt-8 mb-8 border-b border-gray-800 px-8 pt-4 pb-4"
+>
+  <div class="mx-auto flex max-w-7xl items-center justify-between">
+    <a href="/" class="-m-1.5 p-1.5">
+      <span class="sr-only">Pinelab Plugins</span>
+      <img
+        src="/pinelab-plugins-logo.png"
+        alt="Pinelab"
+        class="hidden h-5 lg:block"
+      />
+      <img src="/pinelab-sticker.webp" alt="Pinelab" class="h-8 lg:hidden" />
+    </a>
+    <div class="flex items-center gap-x-3 lg:hidden">
+      <button
+        id="mobile-menu-btn"
+        type="button"
+        class="text-base-contrast -mr-2 inline-flex cursor-pointer items-center justify-center rounded-md p-2.5 lg:hidden"
+      >
+        <span class="sr-only">Open main menu</span>
+        <svg
+          class="size-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"></path>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="hidden items-center gap-6 lg:flex">
+      {
+        navItems.map((item) => (
+          <a
+            href={item.href}
+            target={item.external ? '_blank' : undefined}
+            class="hover:text-white"
+          >
+            {item.label}
+          </a>
+        ))
+      }
+      <a href={contactHref} target="_blank" class="hover:text-white">Contact</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Pixel transition overlay (above everything, non-interactive) -->
+<div
+  id="pixel-overlay"
+  style="position:fixed;inset:0;z-index:100;pointer-events:none;"
+>
+</div>
+
+<!-- Mobile menu (hidden by default) -->
+<div id="mobile-menu" class="fixed inset-0 z-50 hidden lg:hidden">
+  <div class="bg-base fixed inset-0 z-50 overflow-y-auto px-8">
+    <div class="-mx-8 flex items-center justify-between px-8 pt-4">
+      <a href="/" class="-m-1.5 p-1.5">
+        <span class="sr-only">Pinelab Plugins</span>
+        <img src="/pinelab-plugins-logo.png" alt="Pinelab" class="h-5" />
+      </a>
+      <button
+        id="close-menu-btn"
+        type="button"
+        class="text-base-contrast -mr-2 rounded-md p-2.5"
+      >
+        <span class="sr-only">Close menu</span>
+        <svg
+          class="size-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M6 18 18 6M6 6l12 12"></path>
+        </svg>
+      </button>
+    </div>
+    <div class="mt-6 flow-root">
+      <div class="-my-6 divide-y divide-gray-800">
+        <div class="space-y-2 py-6">
+          {
+            navItems.map((item) => (
+              <a
+                href={item.href}
+                target={item.external ? '_blank' : undefined}
+                class="-mx-8 block px-8 py-3 font-normal hover:bg-gray-800"
+              >
+                {item.label}
+              </a>
+            ))
+          }
+        </div>
+        <div class="py-6">
+          <a
+            href={contactHref}
+            target="_blank"
+            class="-mx-8 block px-8 py-3 font-normal hover:bg-gray-800"
+          >
+            Contact
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /** Pixel grid config */
+  const GRID_SIZE = 24;
+  const PIXEL_COLOR = '#101010';
+  const DURATION = 200; // ms
+
+  const overlay = document.getElementById('pixel-overlay');
+  const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+  const closeMenuBtn = document.getElementById('close-menu-btn');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  /**
+   * Build the pixel grid: GRID_SIZE x GRID_SIZE absolutely positioned divs
+   * covering the full viewport via the fixed overlay.
+   */
+  const pixels: HTMLDivElement[] = [];
+  if (overlay) {
+    const cellSize = 100 / GRID_SIZE;
+    for (let row = 0; row < GRID_SIZE; row++) {
+      for (let col = 0; col < GRID_SIZE; col++) {
+        const pixel = document.createElement('div');
+        pixel.style.cssText = `
+          position:absolute;
+          background:${PIXEL_COLOR};
+          opacity:0;
+          width:${cellSize}%;
+          height:${cellSize}%;
+          left:${col * cellSize}%;
+          top:${row * cellSize}%;
+        `;
+        overlay.appendChild(pixel);
+        pixels.push(pixel);
+      }
+    }
+  }
+
+  /** Fisher-Yates shuffle (returns new array). */
+  function shuffle(arr: number[]): number[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  /**
+   * Animate pixels to target opacity using requestAnimationFrame for
+   * smooth, frame-synced rendering. Pixels appear/disappear in random
+   * order over DURATION ms.
+   */
+  function animatePixels(show: boolean): Promise<void> {
+    return new Promise((resolve) => {
+      const order = shuffle([...Array(pixels.length).keys()]);
+      const start = performance.now();
+      let done = 0;
+      const opacity = show ? '1' : '0';
+
+      function frame(now: number) {
+        const progress = Math.min((now - start) / DURATION, 1);
+        const target = Math.floor(progress * order.length);
+
+        while (done < target) {
+          pixels[order[done]].style.opacity = opacity;
+          done++;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          while (done < order.length) {
+            pixels[order[done]].style.opacity = opacity;
+            done++;
+          }
+          resolve();
+        }
+      }
+
+      requestAnimationFrame(frame);
+    });
+  }
+
+  let isAnimating = false;
+
+  /** Open the mobile menu with a pixel transition. */
+  async function openMenu() {
+    if (isAnimating) return;
+    isAnimating = true;
+    await animatePixels(true);
+    mobileMenu?.classList.remove('hidden');
+    await animatePixels(false);
+    isAnimating = false;
+  }
+
+  /** Close the mobile menu with a pixel transition. */
+  async function closeMenu() {
+    if (isAnimating) return;
+    isAnimating = true;
+    await animatePixels(true);
+    mobileMenu?.classList.add('hidden');
+    await animatePixels(false);
+    isAnimating = false;
+  }
+
+  mobileMenuBtn?.addEventListener('click', openMenu);
+  closeMenuBtn?.addEventListener('click', closeMenu);
+
+  mobileMenu?.querySelectorAll('a').forEach((link) => {
+    link.addEventListener('click', closeMenu);
+  });
+</script>

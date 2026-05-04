@@ -2,11 +2,19 @@
 @plugin "@tailwindcss/typography";
 
 html {
-  font-family: 'Ubuntu Sans', Arial, Helvetica, sans-serif;
+  font-family: 'Ubuntu Mono', monospace;
+  font-weight: 400;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Ubuntu Mono', monospace;
+  font-weight: 700;
 }
 
 @theme {
-  --font-sans: 'Ubuntu Sans', Arial, Helvetica, sans-serif;
+  --font-sans: 'Ubuntu Mono', monospace;
   --color-*: initial;
   --color-green-50: #ebfef5;
   --color-green-100: #cefde5;
@@ -45,46 +53,99 @@ html {
 
   --color-red-100: #fee2e2;
   --color-red-800: #991b1b;
+  --color-orange-600: #d97706;
 
   --color-white: #ffffff;
+
+  --color-base: #101010;
+  --color-base-contrast: #dfdfde;
+  --color-accent: #bcf660;
+  --color-accent-dark: #1c2e00;
+  --color-accent-darker: #182600;
 }
 
-/* Navbar white after scrolling */
-
-header {
-  background-color: transparent;
-}
-
-body.scrolled header {
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.prose-styles {
-  @apply prose-lg hover:prose-a:text-green-500 prose prose-a:font-semibold prose-a:text-green-600 prose-blockquote:text-green-600 prose-h3:text-green-900 text-gray-500;
-}
-
-/* Highlight inline code */
-code:not([class]) {
-  user-select: all; /* Makes the entire block selectable */
-  border-radius: 5px;
-  padding: 0.2em 0.4em;
-  background-color: #ebf9f3; /* Light grey background */
-  color: #02393b; /* Contrasting text color */
-}
-
-code {
-  border-radius: 5px;
-}
-
-/* Copy link for headings */
-.icon-link:before {
-  content: '#';
-  margin-left: 10px;
+/* Heading anchor links inside rendered markdown - only visible on hover */
+.blog-content .icon-link {
   text-decoration: none;
 }
+
+.blog-content .icon-link:before {
+  content: '#';
+  margin-left: 10px;
+  opacity: 0;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.blog-content :is(h1, h2, h3, h4, h5, h6):hover .icon-link:before,
+.blog-content .icon-link:hover:before,
+.blog-content .icon-link:focus:before {
+  opacity: 1;
+}
+
 /* Remove backticks or any content before or after code blocks */
 .prose code::before,
 .prose code::after {
-  content: none; /* Prevent backticks or any other content from being added */
+  content: none;
+}
+
+/* Inline code styling, only when not wrapped in pre and not class assigned */
+code:not([class]):not(pre code) {
+  -webkit-user-select: all;
+  -moz-user-select: all;
+  user-select: all;
+  border-radius: 5px;
+  padding: 0.2em 0.4em;
+  background: linear-gradient(135deg, #1c2e00, #182600);
+  color: var(--color-base-contrast);
+}
+
+/* Pre tag background color */
+pre {
+  background-color: #22272e !important;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+}
+pre code.hljs {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+/* Always show scrollbar to prevent layout shift */
+html {
+  overflow-y: scroll !important;
+  padding-right: 0 !important;
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+table {
+  display: block;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+body {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
 }

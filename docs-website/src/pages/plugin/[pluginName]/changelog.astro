@@ -1,6 +1,11 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import { getPlugins, type Plugin } from '../../../utils/plugins';
+import {
+  buildBreadcrumbs,
+  buildChangelogArticle,
+  buildSoftwareApplication,
+} from '../../../utils/structured-data';
 import 'highlight.js/styles/github-dark-dimmed.css';
 
 export async function getStaticPaths() {
@@ -12,39 +17,49 @@ export async function getStaticPaths() {
 }
 
 const plugin: Plugin = Astro.props.plugin;
+
+const structuredData = [
+  buildSoftwareApplication(plugin),
+  buildChangelogArticle(plugin),
+  buildBreadcrumbs([
+    { name: 'Home', url: 'https://plugins.pinelab.studio/' },
+    { name: 'Plugins', url: 'https://plugins.pinelab.studio/#plugins' },
+    {
+      name: plugin.name,
+      url: `https://plugins.pinelab.studio/plugin/${plugin.slug}`,
+    },
+    {
+      name: 'Changelog',
+      url: `https://plugins.pinelab.studio/plugin/${plugin.slug}/changelog`,
+    },
+  ]),
+];
 ---
 
 <Layout
   metaTitle={`${plugin.name} Changelog`}
   metaDescription={`Changelog for Vendure plugin ${plugin.name}`}
+  structuredData={structuredData}
 >
-  <section
-    class="mt-18 mx-auto max-w-7xl px-6 pb-24 sm:pb-32 lg:items-center 10 lg:px-8 lg:pb-40"
-  >
-    <div>
-      <pre>
-    <code class="hljs language-shell">
-    <span class="hljs-comment"># Install this plugin</span>
-    <span class="hljs-attr">npm</span> install {plugin.npmName}
-    </code>
-    </pre>
+  <section class="mt-8 mb-24">
+    <pre
+      class="rounded"><code class="hljs language-shell"><span class="hljs-comment"># Install this plugin</span>
+<span class="hljs-attr">npm</span> install {plugin.npmName}</code></pre>
 
-      <!-- Changelog link -->
-      <div class="text-left mb-2">
-        <a class="text-green-600" href={`/plugin/${plugin.slug}`}>
-          &lsaquo; Readme</a
-        >
-      </div>
-
-      <div class="mb-12">
-        <h1
-          class="text-5xl font-semibold tracking-tight text-pretty text-gray-800 sm:text-4xl"
-        >
-          Changelog for <code>{plugin.slug}</code>
-        </h1>
-      </div>
-
-      <div class="prose !max-w-none" set:html={plugin.changelogContent} />
+    <!-- Back to readme link -->
+    <div class="mt-2 mb-8 text-left">
+      <a class="underline hover:opacity-80" href={`/plugin/${plugin.slug}`}>
+        &lsaquo; Readme
+      </a>
     </div>
+
+    <h1 class="mb-12 text-4xl font-bold lg:text-5xl">
+      Changelog for <code>{plugin.slug}</code>
+    </h1>
+
+    <div
+      class="prose prose-lg prose-invert blog-content !max-w-none"
+      set:html={plugin.changelogContent}
+    />
   </section>
 </Layout>
