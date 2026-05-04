@@ -43,7 +43,7 @@ export interface Plugin {
 }
 
 const packageDir = '../packages/';
-let pluginsCache: Plugin[] | null = null;
+let plugins: Plugin[] = [];
 
 /**
  * Get all plugin directories starting with `vendure-plugin`
@@ -57,11 +57,10 @@ export async function getPluginDirectories(): Promise<Dirent[]> {
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
-  if (pluginsCache) {
-    return pluginsCache;
+  if (plugins?.length) {
+    return plugins;
   }
   const pluginDirectories = await getPluginDirectories();
-  let plugins: Plugin[] = [];
   for (const pluginDir of pluginDirectories) {
     try {
       const packageJsonFilePath = path.join(
