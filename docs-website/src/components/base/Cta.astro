@@ -1,0 +1,31 @@
+---
+interface Props {
+  href: string;
+  variant?: 'primary' | 'secondary';
+  size?: 'normal' | 'small';
+  class?: string;
+  target?: string;
+}
+const {
+  href,
+  variant = 'primary',
+  size = 'normal',
+  class: className = '',
+  target,
+} = Astro.props;
+---
+
+<a
+  href={href}
+  target={target}
+  class:list={[
+    'inline-block rounded-lg',
+    size === 'small' ? 'px-3 py-1.5 text-sm' : 'px-6 py-3',
+    variant === 'primary'
+      ? 'bg-base-contrast text-base hover:opacity-90'
+      : 'border-base-contrast text-base-contrast border hover:opacity-90',
+    className,
+  ]}
+>
+  <slot />
+</a>

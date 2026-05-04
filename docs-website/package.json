@@ -16,7 +16,7 @@
   "dependencies": {
     "@astrojs/react": "^4.2.0",
     "@astrojs/sitemap": "^3.2.1",
-    "@fontsource/ubuntu-sans": "^5.1.1",
+    "@fontsource/ubuntu-mono": "^5.1.1",
     "@jsdevtools/rehype-toc": "^3.0.2",
     "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.0.4",

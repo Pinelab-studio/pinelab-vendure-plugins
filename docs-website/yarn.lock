@@ -370,10 +370,10 @@
   resolved "https://registry.yarnpkg.com/@esbuild/win32-x64/-/win32-x64-0.25.0.tgz#c8e119a30a7c8d60b9d2e22d2073722dde3b710b"
   integrity sha512-ZENoHJBxA20C2zFzh6AI4fT6RraMzjYw4xKWemRTRmRVtN9c5DcH9r/f2ihEkMjOW5eGgrwCslG/+Y/3bL+DHQ==
 
-"@fontsource/ubuntu-sans@^5.1.1":
-  version "5.2.5"
-  resolved "https://registry.yarnpkg.com/@fontsource/ubuntu-sans/-/ubuntu-sans-5.2.5.tgz#4ba638521d2b62ac566e4275d613c0750fa15fa1"
-  integrity sha512-TdGZe5Pr2jLG/greKKsu8Cpg1pfRUUEBj6Fha3kgvCnRVTHoSjWZVDuber6eDE9h+CbQluadDAvRvB81hAetfQ==
+"@fontsource/ubuntu-mono@^5.1.1":
+  version "5.2.8"
+  resolved "https://registry.yarnpkg.com/@fontsource/ubuntu-mono/-/ubuntu-mono-5.2.8.tgz#ba0ed70cfaa071f979055722369e3f93248e6f44"
+  integrity sha512-N4nT8+GYWWcDODVSBLU4f3PycZQH9YIF6SypDI0rti3HrLqcXFS9u6wMvAd9vx1FmjAQkYv7Ld9CZ8XYTEOD0A==
 
 "@img/sharp-darwin-arm64@0.33.5":
   version "0.33.5"
