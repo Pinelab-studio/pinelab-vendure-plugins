@@ -21,9 +21,17 @@ const navigation = {
     { name: 'Plugins', href: '/#plugins' },
   ],
   resources: [
-    { name: 'Recipes', href: 'https://pinelab.studio/recipes/' },
-    { name: 'Pinelab.studio', href: 'https://pinelab.studio/' },
-    { name: 'llms.txt', href: '/llms.txt' },
+    {
+      name: 'Recipes',
+      href: 'https://pinelab.studio/recipes/',
+      external: true,
+    },
+    {
+      name: 'Pinelab.studio',
+      href: 'https://pinelab.studio/',
+      external: true,
+    },
+    { name: 'llms.txt', href: '/llms.txt', external: false },
   ],
   social: [
     ...contacts.map((contact) => ({
@@ -103,7 +111,12 @@ const navigation = {
           {
             navigation.resources.map((item) => (
               <li>
-                <a href={item.href} target="_blank" class="hover:text-white">
+                <a
+                  href={item.href}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noopener noreferrer' : undefined}
+                  class="hover:text-white"
+                >
                   {item.name}
                 </a>
               </li>

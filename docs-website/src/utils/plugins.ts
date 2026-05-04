@@ -105,7 +105,6 @@ export async function getPlugins(): Promise<Plugin[]> {
         author: parseAuthor(packageJson.author),
         license: packageJson.license ?? 'MIT',
       });
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Avoid npm rate limits
     } catch (e) {
       console.error(`Error reading plugin ${pluginDir.name}`, e);
     }

@@ -22,7 +22,7 @@ export function buildOrganization(): Record<string, unknown> {
     '@id': ORG_ID,
     name: 'Pinelab Studio',
     url: 'https://pinelab.studio',
-    logo: `${SITE_URL}/pinelab-logo-text.png`,
+    logo: `${SITE_URL}/pinelab-plugins-logo.png`,
     sameAs: [
       'https://www.linkedin.com/company/pinelab-studio',
       'https://github.com/Pinelab-studio',
