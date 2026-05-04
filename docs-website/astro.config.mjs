@@ -16,9 +16,10 @@ export default defineConfig({
   },
   integrations: [
     react(),
+    // Sitemap under sitemap-0.xml
     sitemap({
       filter: (page) => {
-        return !page.includes('/billing');
+        return !page.includes('/billing') && !page.includes('/llms/');
       },
     }),
   ],

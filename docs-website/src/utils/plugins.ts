@@ -33,13 +33,23 @@ export interface Plugin {
   description: string;
   icon: string;
   keywords: string[];
-  markdownContent: string;
-  changelogContent: string;
+  readme: string;
+  /**
+   * Non-html formatted markdown content
+   */
+  markdownReadme: string;
+  changelog: string;
+  markdownChangelog: string;
   nrOfDependencies: number;
   /** ISO date string of last npm publish, if available */
   lastModified?: string;
   author: PluginAuthor;
   license: string;
+  /**
+   * Path within the GitHub repo where this plugin's `package.json` lives,
+   * relative to the repo root. E.g. `packages/vendure-plugin-store-credit`.
+   */
+  repoSubpath: string;
 }
 
 const packageDir = '../packages/';
@@ -78,7 +88,7 @@ export async function getPlugins(): Promise<Plugin[]> {
       readme = readme.replace(/^.*Official documentation.*$/gm, '');
       // Get title from first line
       const name = readme.split('\n')[0].replace('#', '').trim();
-      const markdownContent = await parseMarkdown(readme);
+      const htmlDocs = await parseMarkdown(readme);
       // CHANGELOG
       const changelogFilePath = path.join(
         packageDir,
@@ -98,8 +108,10 @@ export async function getPlugins(): Promise<Plugin[]> {
         description: packageJson.description,
         icon: getIcon(slug),
         keywords: packageJson.keywords ?? [],
-        markdownContent,
-        changelogContent,
+        readme: htmlDocs,
+        markdownReadme: readme,
+        changelog: changelogContent,
+        markdownChangelog: changelog,
         compatibility,
         nrOfDependencies: packageJson.dependencies
           ? Object.keys(packageJson.dependencies).length
@@ -107,6 +119,7 @@ export async function getPlugins(): Promise<Plugin[]> {
         lastModified,
         author: parseAuthor(packageJson.author),
         license: packageJson.license ?? 'MIT',
+        repoSubpath: `packages/${pluginDir.name}`,
       });
     } catch (e) {
       console.error(`Error reading plugin ${pluginDir.name}`, e);
@@ -211,38 +224,4 @@ export function parseAuthor(author: PackageJson['author']): PluginAuthor {
     email: author.email,
     url: author.url,
   };
-}
-
-/**
- * Returns the raw README and CHANGELOG markdown for every plugin keyed by slug.
- * Slug is the npm package name without the `@pinelab/` prefix (matching `Plugin.slug`).
- */
-export async function getAllPluginRawDocs(): Promise<
-  Record<string, { readme: string; changelog: string }>
-> {
-  const pluginDirectories = await getPluginDirectories();
-  const result: Record<string, { readme: string; changelog: string }> = {};
-  for (const pluginDir of pluginDirectories) {
-    try {
-      const packageJson: { name: string } = JSON.parse(
-        await readFile(
-          path.join(packageDir, pluginDir.name, 'package.json'),
-          'utf8'
-        )
-      );
-      const slug = packageJson.name.replace('@pinelab/', '');
-      const readme = await readFile(
-        path.join(packageDir, pluginDir.name, 'README.md'),
-        'utf8'
-      );
-      const changelog = await readFile(
-        path.join(packageDir, pluginDir.name, 'CHANGELOG.md'),
-        'utf8'
-      );
-      result[slug] = { readme, changelog };
-    } catch (e) {
-      console.error(`Error reading raw docs for ${pluginDir.name}`, e);
-    }
-  }
-  return result;
 }
