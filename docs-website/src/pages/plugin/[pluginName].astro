@@ -1,5 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Callout from '../../components/base/Callout.astro';
 import { getPlugins, type Plugin } from '../../utils/plugins';
 import {
   buildBreadcrumbs,
@@ -73,6 +74,21 @@ const structuredData = [
       class="prose prose-lg prose-invert blog-content !max-w-none mt-8"
       set:html={plugin.markdownContent}
     />
+
+    <div class="mt-8">
+      <Callout>
+        <h2 class="text-xl font-semibold">Security</h2>
+        <p class="mt-2">
+          We try to keep plugins small and focussed, with minimal external
+          dependencies: preferably none. Most of our plugins are using <a
+            href="https://docs.npmjs.com/trusted-publishers"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="underline hover:opacity-80">NPM Trusted Publishing</a
+          > with OIDC, and the ones that aren't are in the process of being migrated.
+        </p>
+      </Callout>
+    </div>
 
     <p class="mt-24">
       Need help? <a

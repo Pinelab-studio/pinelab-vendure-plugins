@@ -43,6 +43,7 @@ export interface Plugin {
 }
 
 const packageDir = '../packages/';
+let pluginsCache: Plugin[] | null = null;
 
 /**
  * Get all plugin directories starting with `vendure-plugin`
@@ -56,8 +57,11 @@ export async function getPluginDirectories(): Promise<Dirent[]> {
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
+  if (pluginsCache) {
+    return pluginsCache;
+  }
   const pluginDirectories = await getPluginDirectories();
-  const plugins: Plugin[] = [];
+  let plugins: Plugin[] = [];
   for (const pluginDir of pluginDirectories) {
     try {
       const packageJsonFilePath = path.join(
@@ -110,12 +114,12 @@ export async function getPlugins(): Promise<Plugin[]> {
     }
   }
   // Sort newest first by lastModified; missing dates sink to the bottom
-  const pluginsSortedByLastModified = plugins.sort((a, b) => {
+  plugins = plugins.sort((a, b) => {
     const aDate = a.lastModified ? new Date(a.lastModified).getTime() : 0;
     const bDate = b.lastModified ? new Date(b.lastModified).getTime() : 0;
     return bDate - aDate;
   });
-  return pluginsSortedByLastModified;
+  return plugins;
 }
 
 /**
