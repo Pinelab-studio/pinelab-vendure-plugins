@@ -1,14 +1,22 @@
 ---
 import Footer from '../components/Footer.astro';
 import Navigation from '../components/Navigation.astro';
+import StructuredData from '../components/StructuredData.astro';
+import {
+  buildGraph,
+  buildOrganization,
+  buildWebSite,
+} from '../utils/structured-data';
 import '../styles/global.css';
 import '@fontsource/ubuntu-mono';
 
 interface Props {
   metaTitle: string;
   metaDescription: string;
+  /** Extra JSON-LD nodes to merge into the page's @graph */
+  structuredData?: Array<Record<string, unknown>>;
 }
-const { metaDescription, metaTitle } = Astro.props;
+const { metaDescription, metaTitle, structuredData = [] } = Astro.props;
 const ogImage = `${Astro.site}ogimage.png`;
 
 let canonical = String(Astro.site);
@@ -19,6 +27,13 @@ if (Astro.url.pathname !== '/') {
   canonical = `${Astro.site}${path}`;
 }
 const fullTitle = `${metaTitle} - Pinelab Plugins`;
+
+// Always include Organization + WebSite, plus any per-page nodes
+const graph = buildGraph([
+  buildOrganization(),
+  buildWebSite(),
+  ...structuredData,
+]);
 ---
 
 <!DOCTYPE html>
@@ -37,6 +52,8 @@ const fullTitle = `${metaTitle} - Pinelab Plugins`;
     <meta property="og:url" content={Astro.site} />
     <link rel="canonical" href={canonical} />
 
+    <StructuredData data={graph} />
+
     <script
       defer
       src="https://cloud.umami.is/script.js"
@@ -52,14 +69,12 @@ const fullTitle = `${metaTitle} - Pinelab Plugins`;
     </main>
 
     <Footer />
-  </body>
+  </body><style is:global>
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      scroll-behavior: smooth;
+    }
+  </style>
 </html>
-
-<style is:global>
-  html,
-  body {
-    margin: 0;
-    width: 100%;
-    scroll-behavior: smooth;
-  }
-</style>

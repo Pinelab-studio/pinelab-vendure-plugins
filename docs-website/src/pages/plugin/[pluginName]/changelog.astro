@@ -1,6 +1,11 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
 import { getPlugins, type Plugin } from '../../../utils/plugins';
+import {
+  buildBreadcrumbs,
+  buildChangelogArticle,
+  buildSoftwareApplication,
+} from '../../../utils/structured-data';
 import 'highlight.js/styles/github-dark-dimmed.css';
 
 export async function getStaticPaths() {
@@ -12,11 +17,29 @@ export async function getStaticPaths() {
 }
 
 const plugin: Plugin = Astro.props.plugin;
+
+const structuredData = [
+  buildSoftwareApplication(plugin),
+  buildChangelogArticle(plugin),
+  buildBreadcrumbs([
+    { name: 'Home', url: 'https://plugins.pinelab.studio/' },
+    { name: 'Plugins', url: 'https://plugins.pinelab.studio/#plugins' },
+    {
+      name: plugin.name,
+      url: `https://plugins.pinelab.studio/plugin/${plugin.slug}`,
+    },
+    {
+      name: 'Changelog',
+      url: `https://plugins.pinelab.studio/plugin/${plugin.slug}/changelog`,
+    },
+  ]),
+];
 ---
 
 <Layout
   metaTitle={`${plugin.name} Changelog`}
   metaDescription={`Changelog for Vendure plugin ${plugin.name}`}
+  structuredData={structuredData}
 >
   <section class="mt-8 mb-24">
     <pre

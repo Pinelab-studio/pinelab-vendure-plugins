@@ -9,14 +9,24 @@ import {
 } from '../utils/contributors';
 import Contributor from '../components/Contributor.astro';
 import Cta from '../components/base/Cta.astro';
+import {
+  buildBreadcrumbs,
+  buildPluginItemList,
+} from '../utils/structured-data';
 
 const plugins = await getPlugins();
 const contributors = await getPluginsContributors();
+
+const structuredData = [
+  buildBreadcrumbs([{ name: 'Home', url: 'https://plugins.pinelab.studio/' }]),
+  buildPluginItemList(plugins),
+];
 ---
 
 <Layout
   metaTitle="Pinelab Vendure Plugins"
   metaDescription="Battle tested Vendure plugins, built by Pinelab.studio"
+  structuredData={structuredData}
 >
   <HeroSection />
 

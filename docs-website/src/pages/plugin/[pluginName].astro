@@ -1,6 +1,10 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { getPlugins, type Plugin } from '../../utils/plugins';
+import {
+  buildBreadcrumbs,
+  buildSoftwareApplication,
+} from '../../utils/structured-data';
 import 'highlight.js/styles/github-dark-dimmed.css';
 
 export async function getStaticPaths() {
@@ -12,9 +16,25 @@ export async function getStaticPaths() {
 }
 
 const plugin: Plugin = Astro.props.plugin;
+
+const structuredData = [
+  buildSoftwareApplication(plugin),
+  buildBreadcrumbs([
+    { name: 'Home', url: 'https://plugins.pinelab.studio/' },
+    { name: 'Plugins', url: 'https://plugins.pinelab.studio/#plugins' },
+    {
+      name: plugin.name,
+      url: `https://plugins.pinelab.studio/plugin/${plugin.slug}`,
+    },
+  ]),
+];
 ---
 
-<Layout metaTitle={plugin.name} metaDescription={plugin.description}>
+<Layout
+  metaTitle={plugin.name}
+  metaDescription={plugin.description}
+  structuredData={structuredData}
+>
   <section class="mt-8 mb-24">
     <pre
       class="rounded"><code class="hljs language-shell"><span class="hljs-comment"># Install this plugin</span>
