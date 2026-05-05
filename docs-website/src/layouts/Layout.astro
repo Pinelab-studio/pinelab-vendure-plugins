@@ -7,8 +7,8 @@ import {
   buildOrganization,
   buildWebSite,
 } from '../utils/structured-data';
+import { Font } from 'astro:assets';
 import '../styles/global.css';
-import '@fontsource/ubuntu-mono';
 
 interface Props {
   metaTitle: string;
@@ -41,6 +41,8 @@ const graph = buildGraph([
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <!-- Preload primary font to prevent FOUT/FOIT on mobile -->
+    <Font cssVariable="--font-ubuntu-mono" preload />
     <link rel="icon" type="image/png" href="/pinelab-sticker.webp" />
     <meta name="generator" content={Astro.generator} />
     <!-- meta tags -->

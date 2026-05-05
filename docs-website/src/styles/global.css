@@ -2,19 +2,19 @@
 @plugin "@tailwindcss/typography";
 
 html {
-  font-family: 'Ubuntu Mono', monospace;
+  font-family: var(--font-ubuntu-mono), monospace;
   font-weight: 400;
 }
 
 h1,
 h2,
 h3 {
-  font-family: 'Ubuntu Mono', monospace;
+  font-family: var(--font-ubuntu-mono), monospace;
   font-weight: 700;
 }
 
-@theme {
-  --font-sans: 'Ubuntu Mono', monospace;
+@theme inline {
+  --font-sans: var(--font-ubuntu-mono), monospace;
   --color-*: initial;
   --color-green-50: #ebfef5;
   --color-green-100: #cefde5;
