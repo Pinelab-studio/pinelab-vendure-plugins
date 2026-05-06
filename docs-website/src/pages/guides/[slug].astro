@@ -1,6 +1,6 @@
 ---
 import { getCollection, render, type CollectionEntry } from 'astro:content';
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import {
   buildBreadcrumbs,
@@ -33,11 +33,23 @@ const { Content, headings } = await render(entry);
 const toc = headings.filter((h) => h.depth === 2);
 
 const url = `https://plugins.pinelab.studio/guides/${entry.data.slug}`;
-// `heroImage` is rendered at the top of the page AND used as the OG
-// image for SEO/social sharing. Must be an absolute URL on a host
-// authorized via `image.domains` in astro.config.mjs.
-const heroImage = entry.data.heroImage;
 const heroAlt = entry.data.heroImageAlt ?? entry.data.title;
+
+// Download and optimize the remote image at build time.
+// Converts to WebP format with 80% quality for smaller file size.
+// The resulting `localImage.src` is a local path used for both
+// rendering and structured data (OG image / SEO).
+let localImage: Awaited<ReturnType<typeof getImage>> | undefined;
+if (entry.data.heroImage) {
+  localImage = await getImage({
+    src: entry.data.heroImage,
+    inferSize: true,
+    format: 'webp',
+    quality: 80,
+    width: 1200, // Set a max width to prevent excessively large images
+    height: 630, // Set a max height to prevent excessively large images
+  });
+}
 
 const structuredData = [
   buildGuideArticle({
@@ -47,7 +59,7 @@ const structuredData = [
     datePublished: entry.data.pubDate,
     dateModified: entry.data.updatedDate,
     authorName: entry.data.author,
-    image: heroImage,
+    image: localImage?.src ?? entry.data.heroImage,
   }),
   buildBreadcrumbs([
     { name: 'Home', url: 'https://plugins.pinelab.studio/' },
@@ -64,11 +76,12 @@ const structuredData = [
 >
   <article class="mt-8 mb-24">
     {
-      heroImage && (
-        <Image
-          src={heroImage}
+      localImage && (
+        <img
+          src={localImage.src}
           alt={heroAlt}
-          inferSize
+          width="1200"
+          height="630"
           class="mb-8 max-h-96 w-full rounded object-cover"
         />
       )
