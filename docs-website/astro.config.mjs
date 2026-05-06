@@ -23,6 +23,20 @@ export default defineConfig({
       optimizedFallbacks: true,
     },
   ],
+  markdown: {
+    // Single dark theme: site has no light/dark toggle, body is dark.
+    // https://docs.astro.build/en/guides/syntax-highlighting/
+    shikiConfig: {
+      theme: 'github-dark',
+    },
+  },
+  image: {
+    // Authorize remote image hosts used in guide hero images. Images
+    // from these hosts can be optimized and have their dimensions
+    // inferred at build time via `inferSize`.
+    // https://docs.astro.build/en/guides/images/#authorizing-remote-images
+    domains: ['images.unsplash.com'],
+  },
   vite: {
     plugins: [tailwindcss()],
   },
