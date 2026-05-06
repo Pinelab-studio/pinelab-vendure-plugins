@@ -4,7 +4,7 @@ title: SEO checklist for Vendure
 description: A practical SEO baseline for Vendure storefronts — meta tags, JSON-LD structured data, image alt text, robots.txt and sitemaps.
 pubDate: 2026-05-06
 author: Martijn
-heroImage: https://images.unsplash.com/photo-1560472354-b33ff0c44a43?q=80&w=951&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D
+heroImage: https://images.unsplash.com/photo-1560472354-b33ff0c44a43
 heroImageAlt: SEO analytics dashboard on a laptop screen
 ---
 
