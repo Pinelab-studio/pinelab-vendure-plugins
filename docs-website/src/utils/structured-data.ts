@@ -131,6 +131,46 @@ export function buildChangelogArticle(plugin: Plugin): Record<string, unknown> {
 }
 
 /**
+ * Article JSON-LD for a guide page (/guides/<slug>).
+ */
+export function buildGuideArticle(args: {
+  url: string;
+  title: string;
+  description: string;
+  datePublished: Date;
+  dateModified?: Date;
+  authorName: string;
+  image?: string;
+}): Record<string, unknown> {
+  const {
+    url,
+    title,
+    description,
+    datePublished,
+    dateModified,
+    authorName,
+    image,
+  } = args;
+  return {
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: title,
+    description,
+    url,
+    inLanguage: 'en',
+    datePublished: datePublished.toISOString(),
+    dateModified: (dateModified ?? datePublished).toISOString(),
+    ...(image ? { image } : {}),
+    mainEntityOfPage: url,
+    author: {
+      '@type': authorName === 'Pinelab' ? 'Organization' : 'Person',
+      name: authorName,
+    },
+    publisher: { '@id': ORG_ID },
+  };
+}
+
+/**
  * ItemList of all plugins for the homepage.
  */
 export function buildPluginItemList(

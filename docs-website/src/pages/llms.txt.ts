@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getCollection } from 'astro:content';
 import { getPlugins } from '../utils/plugins';
 
 const SITE = 'https://plugins.pinelab.studio';
@@ -10,9 +11,15 @@ const SITE = 'https://plugins.pinelab.studio';
  * linking to a single per-plugin markdown file at `/llms/<slug>.md` that
  * contains the full README, a link to the GitHub source directory, and
  * the full CHANGELOG appended at the bottom.
+ *
+ * Also lists every guide (from the `guides` content collection), each
+ * linking to a per-guide markdown file at `/llms/guides/<slug>.md`.
  */
 export const GET: APIRoute = async () => {
   const plugins = await getPlugins();
+  const guides = (await getCollection('guides')).sort(
+    (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
+  );
 
   const lines: string[] = [];
   lines.push('# Pinelab Vendure Plugins');
@@ -32,6 +39,18 @@ export const GET: APIRoute = async () => {
         ? ` Keywords: ${plugin.keywords.join(', ')}.`
         : '';
     lines.push(`- [${plugin.name}](${docUrl}): ${description}.${keywordsPart}`);
+  }
+
+  if (guides.length > 0) {
+    lines.push('');
+    lines.push('## Guides');
+    lines.push('');
+    for (const guide of guides) {
+      const docUrl = `${SITE}/llms/guides/${guide.data.slug}.md`;
+      lines.push(
+        `- [${guide.data.title}](${docUrl}): ${guide.data.description}`
+      );
+    }
   }
 
   lines.push('');
