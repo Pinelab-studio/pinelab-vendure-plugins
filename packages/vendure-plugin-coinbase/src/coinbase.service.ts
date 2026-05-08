@@ -9,6 +9,7 @@ import {
   OrderStateTransitionError,
   PaymentMethodService,
   RequestContext,
+  TransactionalConnection,
 } from '@vendure/core';
 import { coinbaseHandler } from './coinbase.handler';
 import { loggerCtx } from './constants';
@@ -22,7 +23,8 @@ export class CoinbaseService {
     private orderService: OrderService,
     private channelService: ChannelService,
     private paymentMethodService: PaymentMethodService,
-    private entityHydrator: EntityHydrator
+    private entityHydrator: EntityHydrator,
+    private connection: TransactionalConnection
   ) {}
 
   async createPaymentIntent(ctx: RequestContext): Promise<string> {
@@ -121,27 +123,29 @@ export class CoinbaseService {
         );
       }
     }
-    const addPaymentToOrderResult = await this.orderService.addPaymentToOrder(
-      ctx,
-      order.id,
-      {
-        method: method.code,
-        metadata: {
-          id: event.id,
-          code: event.data.code,
-          addresses: event.data.addresses,
-          metadata: event.data.metadata,
-        },
-      }
-    );
-    if ((addPaymentToOrderResult as ErrorResult).errorCode) {
-      throw Error(
-        `Error adding payment to order ${orderCode}: ${
-          (addPaymentToOrderResult as ErrorResult).message
-        }`
+    return this.connection.withTransaction(ctx, async (transactionCtx) => {
+      const addPaymentToOrderResult = await this.orderService.addPaymentToOrder(
+        transactionCtx,
+        order.id,
+        {
+          method: method.code,
+          metadata: {
+            id: event.id,
+            code: event.data.code,
+            addresses: event.data.addresses,
+            metadata: event.data.metadata,
+          },
+        }
       );
-    }
-    Logger.info(`Payment for order ${orderCode} settled`, loggerCtx);
+      if ((addPaymentToOrderResult as ErrorResult).errorCode) {
+        throw Error(
+          `Error adding payment to order ${orderCode}: ${
+            (addPaymentToOrderResult as ErrorResult).message
+          }`
+        );
+      }
+      Logger.info(`Payment for order ${orderCode} settled`, loggerCtx);
+    });
   }
 
   private async getCoinbasePaymentMethod(ctx: RequestContext) {

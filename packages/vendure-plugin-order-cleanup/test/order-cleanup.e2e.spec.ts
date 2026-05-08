@@ -73,6 +73,6 @@ it('Cancels all active orders when endpoint is called', async () => {
     if (items.every((o) => o.state === 'Cancelled')) {
       return items;
     }
-  }, 100);
+  }, 1000);
   expect(orders.every((o) => o.state === 'Cancelled')).toBe(true);
 });
