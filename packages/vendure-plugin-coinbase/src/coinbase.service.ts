@@ -131,9 +131,9 @@ export class CoinbaseService {
           method: method.code,
           metadata: {
             id: event.id,
-            code: event.data.code,
-            addresses: event.data.addresses,
-            metadata: event.data.metadata,
+            code: event.data?.code,
+            addresses: event.data?.addresses,
+            metadata: event.data?.metadata,
           },
         }
       );
