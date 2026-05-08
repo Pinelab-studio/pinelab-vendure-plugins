@@ -31,6 +31,7 @@ beforeAll(async () => {
     plugins: [
       OrderCleanupPlugin.init({
         olderThanDays: 0, // For testing this will delete all orders
+        batchSize: 1, // SQLite does not support concurrent transactions
       }),
     ],
   });

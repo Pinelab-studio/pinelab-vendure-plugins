@@ -8,6 +8,14 @@ export interface OrderCleanupPluginOptions {
    * Orders not updated in the given number of days will be cancelled
    */
   olderThanDays: number;
+  /**
+   * @description
+   * Number of orders to cancel concurrently in each batch.
+   * Reduce to 1 when using SQLite (e.g. in tests), since SQLite's single
+   * connection cannot handle concurrent transactions.
+   * @default 10
+   */
+  batchSize?: number;
 }
 
 @VendurePlugin({
