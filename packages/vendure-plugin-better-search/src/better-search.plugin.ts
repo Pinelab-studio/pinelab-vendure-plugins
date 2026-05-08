@@ -23,7 +23,7 @@ import { BetterSearchDocuments } from './entities/better-search-documents.entity
   },
   compatibility: '^3.0.0',
   shopApiExtensions: {
-    schema: shopApiExtensions,
+    // schema: shopApiExtensions,
     resolvers: [SearchShopResolver],
   },
   entities: [BetterSearchDocuments],

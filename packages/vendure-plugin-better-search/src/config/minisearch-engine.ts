@@ -1,6 +1,6 @@
 /**
  * MiniSearch-based search engine. Indexes product name, slug and description
- * per variant (in the request language) and returns one BetterSearchResult per product.
+ * per variant (in the request language) and returns one BetterSearchDocument per variant.
  */
 import {
   ProductVariant,
@@ -9,10 +9,9 @@ import {
   ID,
 } from '@vendure/core';
 import MiniSearch from 'minisearch';
-import { BetterSearchResult } from '../api/generated/graphql';
-import { SearchEngine } from '../types';
+import { BetterSearchDocument, SearchEngine } from '../types';
 
-/** One document per variant: searchable text + stored fields for building BetterSearchResult. */
+/** One document per variant: searchable text + stored fields for building BetterSearchDocument. */
 export interface MinisearchDocument {
   id: string;
   productId: string;
@@ -22,6 +21,7 @@ export interface MinisearchDocument {
   price: number;
   priceWithTax: number;
   sku: string;
+  facetIds: string[];
   facetValueIds: string[];
   collectionIds: string[];
   collectionNames: string[];
@@ -62,6 +62,13 @@ function variantToDocument(
   const facetValueIds = (product?.facetValues ?? variant.facetValues ?? []).map(
     (fv) => String(fv.id)
   );
+  const facetIds = [
+    ...new Set(
+      (product?.facetValues ?? variant.facetValues ?? [])
+        .map((fv) => String((fv as any).facetId ?? ''))
+        .filter(Boolean)
+    ),
+  ];
   const collections =
     (
       variant as unknown as {
@@ -90,6 +97,7 @@ function variantToDocument(
     price,
     priceWithTax,
     sku: variant.sku ?? '',
+    facetIds,
     facetValueIds,
     collectionIds,
     collectionNames,
@@ -104,9 +112,11 @@ export class MinisearchEngine implements SearchEngine {
         'productId',
         'productName',
         'slug',
+        'description',
         'price',
         'priceWithTax',
         'sku',
+        'facetIds',
         'facetValueIds',
         'collectionIds',
         'collectionNames',
@@ -126,7 +136,7 @@ export class MinisearchEngine implements SearchEngine {
     ctx: RequestContext,
     searchIndex: unknown,
     term: string
-  ): Promise<BetterSearchResult[]> {
+  ): Promise<BetterSearchDocument[]> {
     const miniSearch = searchIndex as MiniSearch<MinisearchDocument>;
     if (!miniSearch?.search) {
       throw new Error('Invalid search index');
@@ -135,40 +145,40 @@ export class MinisearchEngine implements SearchEngine {
       prefix: true,
       fuzzy: 0.3,
       boostDocument: (documentId, term, storedFields) => {
-        if (
-          storedFields?.productName === term ||
-          storedFields?.slug === term ||
-          storedFields?.variantName === term
-        ) {
+        if (storedFields?.productName === term || storedFields?.slug === term) {
           return 1.2;
         }
         return 1;
       },
     });
-    const docs: BetterSearchResult[] = hits.map((h) => {
-      const x = h;
-      return {
-        id: String(x.id),
-        productId: String(x.productId ?? ''),
-        productName: String(x.productName ?? ''),
-        slug: String(x.slug ?? ''),
-        description: String(x.description ?? ''),
-        price: Number(x.price ?? 0),
-        priceWithTax: Number(x.priceWithTax ?? 0),
-        sku: String(x.sku ?? ''),
-        facetValueIds: Array.isArray(x.facetValueIds) ? x.facetValueIds : [],
-        collectionIds: Array.isArray(x.collectionIds) ? x.collectionIds : [],
-        collectionNames: Array.isArray(x.collectionNames)
-          ? x.collectionNames
-          : [],
-        score: Math.round((x.score ?? 0) * 100) / 100,
-        lowestPrice: Number(x.price ?? 0),
-        lowestPriceWithTax: Number(x.priceWithTax ?? 0),
-        highestPrice: Number(x.price ?? 0),
-        highestPriceWithTax: Number(x.priceWithTax ?? 0),
-        skus: typeof x.sku === 'string' ? [x.sku] : [],
-      };
-    });
-    return Promise.resolve(docs);
+    return Promise.resolve(
+      hits.map(
+        (h) =>
+          ({
+            productVariantId: String(h.id),
+            productId: String(h.productId ?? ''),
+            productName: String(h.productName ?? ''),
+            productVariantName: String(h.productName ?? ''), // fallback: use product name
+            slug: String(h.slug ?? ''),
+            description: String(h.description ?? ''),
+            sku: String(h.sku ?? ''),
+            lowestPrice: Number(h.price ?? 0),
+            lowestPriceWithTax: Number(h.priceWithTax ?? 0),
+            highestPrice: Number(h.price ?? 0),
+            highestPriceWithTax: Number(h.priceWithTax ?? 0),
+            facetIds: Array.isArray(h.facetIds) ? h.facetIds : [],
+            facetValueIds: Array.isArray(h.facetValueIds)
+              ? h.facetValueIds
+              : [],
+            collectionIds: Array.isArray(h.collectionIds)
+              ? h.collectionIds
+              : [],
+            collectionNames: Array.isArray(h.collectionNames)
+              ? h.collectionNames
+              : [],
+            score: Math.round((h.score ?? 0) * 100) / 100,
+          } satisfies BetterSearchDocument)
+      )
+    );
   }
 }

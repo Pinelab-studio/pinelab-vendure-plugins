@@ -18,7 +18,7 @@
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "rimraf dist && yarn generate && tsc",
+    "build": "rimraf dist && tsc",
     "start": "ts-node --swc test/dev-server.ts",
     "benchmark": "ts-node test/benchmark/benchmark.ts",
     "benchmark:build": "tsc -p tsconfig.benchmark.json",

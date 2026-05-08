@@ -5,5 +5,11 @@
     "types": ["node"]
   },
   "include": ["src/"],
-  "exclude": ["src/ui"]
+  "exclude": [
+    "src/ui",
+    "src/config/flexsearch-engine.ts",
+    "src/config/orama-bm25-engine.ts",
+    "src/config/orama-hybrid-semantic-engine.ts",
+    "src/config/orama-qps-engine.ts"
+  ]
 }

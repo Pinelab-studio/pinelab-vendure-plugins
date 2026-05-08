@@ -1,5 +1,32 @@
 import { ProductVariant, RequestContext } from '@vendure/core';
-import { BetterSearchResult } from './api/generated/graphql';
+
+/**
+ * Internal document type returned by search engines.
+ * Contains all fields needed to construct a Vendure SearchResult.
+ */
+export interface BetterSearchDocument {
+  /** Variant ID (equals the document id in the search index) */
+  productVariantId: string;
+  productId: string;
+  productName: string;
+  /** Fallback to productName when variant name is not separately loaded */
+  productVariantName: string;
+  slug: string;
+  description: string;
+  sku: string;
+  /** Lowest price across variants (in channel's minor currency unit) */
+  lowestPrice: number;
+  lowestPriceWithTax: number;
+  /** Highest price across variants (in channel's minor currency unit) */
+  highestPrice: number;
+  highestPriceWithTax: number;
+  /** Parent facet IDs (deduped) */
+  facetIds: string[];
+  facetValueIds: string[];
+  collectionIds: string[];
+  collectionNames: string[];
+  score: number;
+}
 
 /**
  * @description
@@ -17,22 +44,20 @@ export interface BetterSearchOptions {
 
 /**
  * A strategy to create a search index and search for results.
- *
- * FIXME: this is just temporary, to test different engines and algorithms.
  */
 export interface SearchEngine {
   /**
    * Function that creates the index based on given documents.
    * Should return a serialized version of the index.
    */
-  createIndex: (
+  createIndex(
     ctx: RequestContext,
     documents: ProductVariant[]
-  ) => Promise<unknown>;
+  ): Promise<unknown>;
 
   search(
     ctx: RequestContext,
     searchIndex: unknown,
     term: string
-  ): Promise<BetterSearchResult[]>;
+  ): Promise<BetterSearchDocument[]>;
 }

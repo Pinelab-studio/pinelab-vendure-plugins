@@ -10,25 +10,15 @@ import {
 import gql from 'graphql-tag';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { initialData } from '../../test/src/initial-data';
-import { waitFor } from '../../test/src/test-helpers';
 import { BetterSearchPlugin } from '../src';
-import { OramaHybridSemanticEngine } from '../src/config/orama-hybrid-semantic-engine';
 
-interface BetterSearchResult {
+/** Subset of Vendure's SearchResult we care about in these tests. */
+interface SearchResultItem {
   productId: string;
   slug: string;
   productName: string;
-  lowestPrice: number;
-  lowestPriceWithTax: number;
-  highestPrice: number;
-  highestPriceWithTax: number;
-  facetValueIds: string[];
-  collectionIds: string[];
-  collectionNames: string[];
-  skus: string[];
+  score: number;
 }
-
-type SearchResponse = BetterSearchResult[];
 
 let server: TestServer;
 let adminClient: SimpleGraphQLClient;
@@ -46,18 +36,14 @@ beforeAll(async () => {
     initialData,
     productsCsvPath: './test/search-products.csv',
   });
-  // Pre-warm the Universal Sentence Encoder so the first search query doesn't
-  // pay the per-process JIT-compilation cost (which exceeds the per-test
-  // timeout on pure-JS TFJS).
-  await OramaHybridSemanticEngine.warmup();
   // Pre-warm the GraphQL/Nest pipeline with a dummy search so the first real
   // test doesn't pay schema-build / first-request latency.
   await shopClient
     .query(
       gql`
         query Warmup($term: String!) {
-          betterSearch(term: $term) {
-            productId
+          search(input: { term: $term }) {
+            totalItems
           }
         }
       `,
@@ -234,24 +220,21 @@ describe('Relevance', () => {
 
 const SEARCH_QUERY = gql`
   query Search($term: String!) {
-    betterSearch(term: $term) {
-      productId
-      slug
-      productName
-      lowestPrice
-      lowestPriceWithTax
-      highestPrice
-      highestPriceWithTax
-      facetValueIds
-      collectionIds
-      collectionNames
-      skus
+    search(input: { term: $term }) {
+      totalItems
+      items {
+        productId
+        slug
+        productName
+        score
+      }
     }
   }
 `;
 
-async function search(query: string) {
+async function search(query: string): Promise<{ items: SearchResultItem[] }> {
   const result = await shopClient.query(SEARCH_QUERY, { term: query });
-  const items = (result as { betterSearch: SearchResponse }).betterSearch;
+  const items = (result as { search: { items: SearchResultItem[] } }).search
+    .items;
   return { items };
 }

@@ -75,9 +75,27 @@ Next step: implement minisearch as Vendure Search plugin, see next step below.
    3. Implement search-as-you-type endpoint to save compute power.
 3. Run load test against deployed search and see if the non-search actions in Vendure are unaffected by heavy search.
 
+**Requirements for search plugin impl**
+
+- Implement basic search strategy interface, to make this a proper search plugin.
+- Make channel aware, and allow only enabling for specific channel
+-
+- Index in worker and serialize index to database
+- Run search in worker thread, in main instance, because we need to expose it via shop-api `search` query
+- Cache index in worker thread, but allow cache busting. (Get last updated date from column in DB?)
+- Basic analytics to evaluate live usage
+- Implement filtering as defined by Vendure's search interface
+
 ### Live project relevance+performance testing
 
 We deploy the implemented engine of the previous phase in a live shop and have customers actually use it.
 
 1. Monitor CPU and memory usage compared to current search solution when deployed.
 2. Implement analytics to review usage (empty results, most searched keywords, duration of searches etc) and improve relevance and perhaps improve performance.
+
+### Relevance improvements
+
+These are requirements that we can add after testing live usage, but are a must for proper e-commerce search. Without these, the provided solution can not be seen as a drop-in replacement for search.
+
+- Boost specific documents, for example boosting popular products
+- Index custom fields: Internal, and exposed fields
