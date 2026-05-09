@@ -85,6 +85,7 @@ Next step: implement minisearch as Vendure Search plugin, see next step below.
 - Cache index in worker thread, but allow cache busting. (Get last updated date from column in DB?)
 - Basic analytics to evaluate live usage
 - Implement filtering as defined by Vendure's search interface
+- Log index size every X % of the time for monitoring.
 
 ### Live project relevance+performance testing
 
