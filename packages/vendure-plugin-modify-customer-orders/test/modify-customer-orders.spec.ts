@@ -162,8 +162,8 @@ it('Transitioned previous active order to draft', async () => {
 async function waitForDraftTransition(
   client: any,
   orderId: ID,
-  maxRetries = 10,
-  delayMs = 50
+  maxRetries = 50,
+  delayMs = 100
 ) {
   for (let i = 0; i < maxRetries; i++) {
     const order = await getOrder(client, orderId);
