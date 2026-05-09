@@ -1,6 +1,6 @@
 import { PluginCommonModule, Type, VendurePlugin } from '@vendure/core';
-
-import { shopApiExtensions } from './api/api-extensions';
+import { adminApiExtensions } from './api/api-extensions';
+import { SearchAdminResolver } from './api/search-admin.resolver';
 import { SearchShopResolver } from './api/search.resolver';
 import { BETTER_SEARCH_PLUGIN_OPTIONS } from './constants';
 import { SearchService } from './services/search.service';
@@ -23,8 +23,11 @@ import { BetterSearchDocuments } from './entities/better-search-documents.entity
   },
   compatibility: '^3.0.0',
   shopApiExtensions: {
-    // schema: shopApiExtensions,
     resolvers: [SearchShopResolver],
+  },
+  adminApiExtensions: {
+    schema: adminApiExtensions,
+    resolvers: [SearchAdminResolver],
   },
   entities: [BetterSearchDocuments],
 })

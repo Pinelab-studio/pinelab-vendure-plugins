@@ -60,4 +60,14 @@ export interface SearchEngine {
     searchIndex: unknown,
     term: string
   ): Promise<BetterSearchDocument[]>;
+
+  /**
+   * Extracts stored documents from the index for inspection purposes.
+   * Returns each document as a plain JSON-serializable object.
+   */
+  getDocuments(
+    searchIndex: unknown,
+    skip: number,
+    take: number
+  ): Promise<Record<string, unknown>[]>;
 }

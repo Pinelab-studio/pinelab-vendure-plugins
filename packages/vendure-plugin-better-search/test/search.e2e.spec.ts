@@ -214,6 +214,30 @@ describe('Relevance', () => {
   });
 });
 
+describe('inspectSearchIndex', () => {
+  beforeAll(async () => {
+    await adminClient.asSuperAdmin();
+  });
+
+  it('returns stored documents with expected fields', async () => {
+    const result = await adminClient.query(
+      gql`
+        query {
+          inspectSearchIndex(skip: 0, take: 50)
+        }
+      `
+    );
+    const data = (
+      result as unknown as { inspectSearchIndex: Record<string, unknown>[] }
+    ).inspectSearchIndex;
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBeGreaterThan(0);
+    expect(data[0]).toHaveProperty('id');
+    expect(data[0]).toHaveProperty('sku');
+    expect(data[0]).toHaveProperty('productName');
+  });
+});
+
 // describe('Filtering', () => {
 //   // TODO implement later, when we have decided on what search algorithm to use based on performance and relevance.
 // });

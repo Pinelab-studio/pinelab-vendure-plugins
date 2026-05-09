@@ -22,13 +22,19 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    dbConnectionOptions: {
+      autosave: true,
+    } as any,
+    authOptions: {
+      tokenMethod: ['bearer', 'cookie'],
+    },
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
     plugins: [
       BetterSearchPlugin.init({}),
-      DefaultSearchPlugin,
+      // DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',

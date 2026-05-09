@@ -132,6 +132,27 @@ export class MinisearchEngine implements SearchEngine {
     return Promise.resolve(miniSearch);
   }
 
+  getDocuments(
+    searchIndex: unknown,
+    skip: number,
+    take: number
+  ): Promise<Record<string, unknown>[]> {
+    const ms = searchIndex as MiniSearch<MinisearchDocument>;
+    const json = ms.toJSON();
+    const storedFields = json.storedFields as Record<
+      string,
+      Record<string, unknown>
+    >;
+    const documentIds = json.documentIds as Record<string, string>;
+    const entries = Object.entries(storedFields);
+    return Promise.resolve(
+      entries.slice(skip, skip + take).map(([shortId, doc]) => ({
+        id: documentIds[shortId] ?? shortId,
+        ...doc,
+      }))
+    );
+  }
+
   search(
     ctx: RequestContext,
     searchIndex: unknown,

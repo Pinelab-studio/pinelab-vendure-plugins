@@ -79,8 +79,8 @@ Next step: implement minisearch as Vendure Search plugin, see next step below.
 
 - Implement basic search strategy interface, to make this a proper search plugin.
 - Make channel aware, and allow only enabling for specific channel
--
 - Index in worker and serialize index to database
+- Lighter search as you type endpoint, instead of a full search
 - Run search in worker thread, in main instance, because we need to expose it via shop-api `search` query
 - Cache index in worker thread, but allow cache busting. (Get last updated date from column in DB?)
 - Basic analytics to evaluate live usage
@@ -99,3 +99,5 @@ These are requirements that we can add after testing live usage, but are a must 
 
 - Boost specific documents, for example boosting popular products
 - Index custom fields: Internal, and exposed fields
+- Loading additional data, like extra relations or external sources
+- Allow index inspection in admin
