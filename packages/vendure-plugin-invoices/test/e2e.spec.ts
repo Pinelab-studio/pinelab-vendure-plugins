@@ -229,6 +229,7 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Emitted event for created invoice', async () => {
+    await waitFor(() => events[0]?.newInvoice);
     const newInvoice = events[0].newInvoice;
     expect(newInvoice.createdAt).toBeDefined();
     expect(newInvoice.channelId).toBeDefined();

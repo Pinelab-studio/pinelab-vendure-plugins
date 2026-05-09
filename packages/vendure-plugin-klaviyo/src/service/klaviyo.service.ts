@@ -252,7 +252,7 @@ export class KlaviyoService implements OnApplicationBootstrap {
       }
     } catch (e: unknown) {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      if (isAxiosError(e) && e.response?.data?.errors[0]?.detail) {
+      if (isAxiosError(e) && e.response?.data?.errors?.[0]?.detail) {
         // Throw more specific Klaviyo error if available
 
         throw Error(

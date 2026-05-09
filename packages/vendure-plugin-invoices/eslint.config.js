@@ -3,6 +3,9 @@ module.exports = (async () => {
   return [
     ...parentConfig,
     {
+      ignores: ['src/**/*.js', 'src/**/*.d.ts'],
+    },
+    {
       languageOptions: {
         parserOptions: {
           project: './tsconfig.eslint.json',

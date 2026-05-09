@@ -20,15 +20,8 @@ export default defineConfig({
       // Monorepo path adapter: TS preserves directory structure relative
       // to the monorepo root in the compiled output
       pathAdapter: {
-        getCompiledConfigPath: ({
-          inputRootDir,
-          outputPath,
-          configFileName,
-        }) => {
-          // TS compiler uses monorepoRoot/packages/ as rootDir,
-          // so strip everything up to and including 'packages/'
-          const relPath = inputRootDir.split('/packages/')[1] ?? '';
-          return join(outputPath, relPath, configFileName);
+        getCompiledConfigPath: ({ outputPath, configFileName }) => {
+          return join(outputPath, configFileName);
         },
       },
     }),

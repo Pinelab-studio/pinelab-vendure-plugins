@@ -1,3 +1,7 @@
+# 1.9.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 1.8.2 (2026-04-24)
 
 - Added `variant` parameter to the `saveAdditionalData` hook
