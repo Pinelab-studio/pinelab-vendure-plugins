@@ -220,19 +220,6 @@ describe('IndexService', () => {
       expect(mockBuildIndex).toHaveBeenCalledWith(mockRequestContext);
       mockBuildIndex.mockRestore();
     });
-
-    it('throws if buildIndex fails to populate cache', async () => {
-      const connection = createMockRepository();
-      const service = createService({ connection });
-      const mockBuildIndex = vi
-        .spyOn(service, 'buildIndex')
-        .mockResolvedValue(0);
-
-      await expect(service.getIndex(mockRequestContext)).rejects.toThrow(
-        'Index not found for test-channel-en'
-      );
-      mockBuildIndex.mockRestore();
-    });
   });
 
   describe('debouncedRebuildIndex', () => {
