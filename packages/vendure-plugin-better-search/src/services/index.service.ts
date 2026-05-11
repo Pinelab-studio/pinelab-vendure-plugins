@@ -33,7 +33,11 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
   private rebuildIndicesQueue = new Map<string, RequestContext>();
 
-  private cachedIndices = new Map<string, unknown>();
+  /** In-memory cache of deserialized indices plus metadata to check TTL. */
+  private cachedIndices = new Map<
+    string,
+    { index: unknown; updatedAt: Date; lastCheckedAt: number }
+  >();
 
   constructor(
     private connection: TransactionalConnection,
@@ -143,11 +147,15 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
       allProducts.flatMap((p) => p.variants)
     );
     const indexKey = createIndexKey(ctx);
-    this.cachedIndices.set(indexKey, searchIndex);
     const serialized = engine.serializeIndex(searchIndex);
-    await this.connection
+    const saved = await this.connection
       .getRepository(ctx, BetterSearchIndex)
       .save({ id: indexKey, data: serialized });
+    this.cachedIndices.set(indexKey, {
+      index: searchIndex,
+      updatedAt: saved.updatedAt,
+      lastCheckedAt: Date.now(),
+    });
     const time = Math.round(performance.now() - start);
     Logger.info(
       `Created index for ${indexKey} with ${allProducts.length} products in ${time}ms`,
@@ -157,31 +165,80 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Gets the index from cache, falling back to the database, and
-   * finally rebuilding in-memory if neither has it.
+   * Gets the index from cache (respecting a 10-second TTL), falling back to
+   * the database, and finally rebuilding in-memory if neither has it.
+   *
+   * @param ignoreCacheTtl When true, always return the cached index without
+   *   checking whether the DB record has been updated.
    */
-  async getIndex(ctx: RequestContext): Promise<unknown> {
+  async getIndex(
+    ctx: RequestContext,
+    ignoreCacheTtl = false
+  ): Promise<unknown> {
     const indexKey = createIndexKey(ctx);
-    let index = this.cachedIndices.get(indexKey);
-    if (index) {
-      return index;
+    const cached = this.cachedIndices.get(indexKey);
+
+    // 1. Cache hit with valid TTL
+    const ttlValid =
+      cached && (ignoreCacheTtl || Date.now() - cached.lastCheckedAt < 10_000);
+    if (ttlValid) {
+      return cached.index;
     }
-    // Attempt to load from the database
+
+    // 2. Cache hit but TTL expired — check DB updatedAt
+    if (cached) {
+      const stored = await this.connection
+        .getRepository(ctx, BetterSearchIndex)
+        .findOne({
+          select: ['updatedAt'],
+          where: { id: indexKey },
+        });
+      const dbIsNewer = stored && stored.updatedAt > cached.updatedAt;
+      if (!dbIsNewer) {
+        cached.lastCheckedAt = Date.now();
+        return cached.index;
+      }
+      const fresh = await this.connection
+        .getRepository(ctx, BetterSearchIndex)
+        .findOne({ where: { id: indexKey } });
+      if (!fresh) {
+        cached.lastCheckedAt = Date.now();
+        return cached.index;
+      }
+      const deserialized = engine.deserializeIndex(fresh.data);
+      this.cachedIndices.set(indexKey, {
+        index: deserialized,
+        updatedAt: fresh.updatedAt,
+        lastCheckedAt: Date.now(),
+      });
+      return deserialized;
+    }
+
+    // 3. No cache — load full record from DB
     const stored = await this.connection
       .getRepository(ctx, BetterSearchIndex)
       .findOne({ where: { id: indexKey } });
     if (stored) {
-      index = engine.deserializeIndex(stored.data);
-      this.cachedIndices.set(indexKey, index);
-      return index;
+      const deserialized = engine.deserializeIndex(stored.data);
+      this.cachedIndices.set(indexKey, {
+        index: deserialized,
+        updatedAt: stored.updatedAt,
+        lastCheckedAt: Date.now(),
+      });
+      return deserialized;
     }
-    // No index created yet, can be the case after first install of the plugin
+
+    // 4. Nothing in DB — build fresh
+    Logger.info(
+      `No index found for '${indexKey}' in cache or database, building new index...`,
+      loggerCtx
+    );
     await this.buildIndex(ctx);
-    index = this.cachedIndices.get(indexKey);
-    if (!index) {
+    const rebuilt = this.cachedIndices.get(indexKey);
+    if (!rebuilt) {
       throw new Error(`Index not found for ${indexKey}`);
     }
-    return index;
+    return rebuilt.index;
   }
 
   /**
