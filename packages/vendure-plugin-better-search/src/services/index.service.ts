@@ -23,6 +23,7 @@ import { asError } from 'catch-unknown';
 import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
 import { BetterSearchOptions } from '../types';
 import { createIndexKey } from './util';
+import { BetterSearchIndex } from '../entities/better-search-index.entity';
 
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
@@ -143,7 +144,10 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
     );
     const indexKey = createIndexKey(ctx);
     this.cachedIndices.set(indexKey, searchIndex);
-    // TODO store in database (documents, or index?)
+    const serialized = engine.serializeIndex(searchIndex);
+    await this.connection
+      .getRepository(ctx, BetterSearchIndex)
+      .save({ id: indexKey, data: serialized });
     const time = Math.round(performance.now() - start);
     Logger.info(
       `Created index for ${indexKey} with ${allProducts.length} products in ${time}ms`,
@@ -153,18 +157,27 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   }
 
   /**
-   * Get's the index from cache,
+   * Gets the index from cache, falling back to the database, and
+   * finally rebuilding in-memory if neither has it.
    */
   async getIndex(ctx: RequestContext): Promise<unknown> {
-    // TODO get from DB
     const indexKey = createIndexKey(ctx);
     let index = this.cachedIndices.get(indexKey);
-    if (!index) {
-      // No index created yet, can be the case after first install of the plugin
-      await this.buildIndex(ctx);
-      // TODO trigger job, never rebuild index in main!
-      index = this.cachedIndices.get(indexKey);
+    if (index) {
+      return index;
     }
+    // Attempt to load from the database
+    const stored = await this.connection
+      .getRepository(ctx, BetterSearchIndex)
+      .findOne({ where: { id: indexKey } });
+    if (stored) {
+      index = engine.deserializeIndex(stored.data);
+      this.cachedIndices.set(indexKey, index);
+      return index;
+    }
+    // No index created yet, can be the case after first install of the plugin
+    await this.buildIndex(ctx);
+    index = this.cachedIndices.get(indexKey);
     if (!index) {
       throw new Error(`Index not found for ${indexKey}`);
     }

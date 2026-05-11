@@ -65,11 +65,11 @@ query Search {
 }
 ```
 
-⚠️ Set the env variable `BETTER_SEARCH_INDEX_COLUMN_TYPE` for your specific database! Without this, `text` is used as default, but this will be too small for most projects. **Run a database migration after setting this env variable!**
+⚠️ Set the env variable `BETTER_SEARCH_INDEX_COLUMN_TYPE` for your specific database! Without this, `blob` is used as default, but this will be too small for most projects. **Run a database migration after setting this env variable!**
 
 ```bash
 # For MySQL
-BETTER_SEARCH_INDEX_COLUMN_TYPE=mediumblob
+BETTER_SEARCH_INDEX_COLUMN_TYPE=longblob
 
 # For PostgreSQL
 BETTER_SEARCH_INDEX_COLUMN_TYPE=bytea

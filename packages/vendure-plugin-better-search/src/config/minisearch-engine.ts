@@ -202,4 +202,27 @@ export class MinisearchEngine implements SearchEngine {
       )
     );
   }
+
+  serializeIndex(searchIndex: unknown): string {
+    return JSON.stringify(searchIndex as MiniSearch<MinisearchDocument>);
+  }
+
+  deserializeIndex(serialized: string): unknown {
+    return MiniSearch.loadJSON(serialized, {
+      fields: ['productName', 'slug', 'description'],
+      storeFields: [
+        'productId',
+        'productName',
+        'slug',
+        'description',
+        'price',
+        'priceWithTax',
+        'sku',
+        'facetIds',
+        'facetValueIds',
+        'collectionIds',
+        'collectionNames',
+      ],
+    });
+  }
 }

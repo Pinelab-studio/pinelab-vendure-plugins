@@ -70,4 +70,14 @@ export interface SearchEngine {
     skip: number,
     take: number
   ): Promise<Record<string, unknown>[]>;
+
+  /**
+   * Serializes the in-memory index to a string for database storage.
+   */
+  serializeIndex(searchIndex: unknown): string;
+
+  /**
+   * Deserializes a string from the database back into an in-memory index.
+   */
+  deserializeIndex(serialized: string): unknown;
 }

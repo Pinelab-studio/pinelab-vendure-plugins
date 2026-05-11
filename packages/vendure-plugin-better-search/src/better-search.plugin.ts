@@ -6,7 +6,7 @@ import { BETTER_SEARCH_PLUGIN_OPTIONS } from './constants';
 import { SearchService } from './services/search.service';
 import { BetterSearchOptions } from './types';
 import { IndexService } from './services/index.service';
-import { BetterSearchDocuments } from './entities/better-search-documents.entity';
+import { BetterSearchIndex } from './entities/better-search-index.entity';
 
 @VendurePlugin({
   imports: [PluginCommonModule],
@@ -29,7 +29,7 @@ import { BetterSearchDocuments } from './entities/better-search-documents.entity
     schema: adminApiExtensions,
     resolvers: [SearchAdminResolver],
   },
-  entities: [BetterSearchDocuments],
+  entities: [BetterSearchIndex],
 })
 export class BetterSearchPlugin {
   static options: BetterSearchOptions;
