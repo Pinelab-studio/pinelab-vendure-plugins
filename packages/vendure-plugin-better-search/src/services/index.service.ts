@@ -253,7 +253,7 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Adds index rebuild to the queue, and waits for more events to come in before triggering an index rebuild, for improved performance.
    */
-  private async debouncedRebuildIndex(ctx: RequestContext) {
+  async debouncedRebuildIndex(ctx: RequestContext) {
     const key = createIndexKey(ctx);
     this.rebuildIndicesQueue.set(key, ctx);
     // Wait for debounce time, so that more rebuilds can be added to the rebuild queue and are deduplicated
