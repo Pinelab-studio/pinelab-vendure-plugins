@@ -1,3 +1,8 @@
+# 2.1.1 (2026-05-19)
+
+- Fixed `trackInventory` query filter to use correct boolean string value
+- Set stock monitoring query limit to 100 variants
+
 # 2.1.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3
