@@ -94,6 +94,36 @@ export const UPDATE_PRODUCT_VARIANT_STOCK_ON_HAND = gql`
   }
 `;
 
+export const UPDATE_PRODUCT_VARIANT_ENABLED = gql`
+  mutation UpdateProductVariantEnabled($id: ID!, $enabled: Boolean!) {
+    updateProductVariants(input: [{ id: $id, enabled: $enabled }]) {
+      id
+      enabled
+    }
+  }
+`;
+
+export const GET_VARIANT_PRODUCT = gql`
+  query GetVariantProduct($id: ID!) {
+    productVariant(id: $id) {
+      id
+      product {
+        id
+        enabled
+      }
+    }
+  }
+`;
+
+export const UPDATE_PRODUCT_ENABLED = gql`
+  mutation UpdateProductEnabled($input: UpdateProductInput!) {
+    updateProduct(input: $input) {
+      id
+      enabled
+    }
+  }
+`;
+
 export const VARIANT_STOCK_LOCATIONS = gql`
   query GetVariantStockLocationsQuery($id: ID!) {
     productVariant(id: $id) {
