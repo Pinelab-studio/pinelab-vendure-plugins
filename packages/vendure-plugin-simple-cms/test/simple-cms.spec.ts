@@ -34,7 +34,7 @@ let shopSchema: IntrospectionSchema;
 let adminSchema: IntrospectionSchema;
 
 beforeAll(async () => {
-  registerInitializer('sqljs', new SqljsInitializer('__data__test__'));
+  registerInitializer('sqljs', new SqljsInitializer('__data__'));
   // Override from dev-server
   (config.dbConnectionOptions as any).autoSave = false;
   ({ server, adminClient, shopClient } = createTestEnvironment(
@@ -116,6 +116,9 @@ describe('SimpleCmsPlugin', () => {
       expect(typeRefToString(getField(type, 'title')!.type)).toBe('String!');
       expect(typeRefToString(getField(type, 'priority')!.type)).toBe('Int');
       expect(typeRefToString(getField(type, 'product')!.type)).toBe('Product!');
+      expect(typeRefToString(getField(type, 'relatedProducts')!.type)).toBe(
+        '[Product!]'
+      );
 
       // List query: no args, returns [Banner!]!
       const list = getQueryField(shopSchema, 'banners');
@@ -160,6 +163,7 @@ describe('SimpleCmsPlugin', () => {
       expect(productField.type).toBe('relation');
       expect(productField.graphQLType).toBe('Product');
       expect(productField.isTranslatable).toBeNull();
+      expect(productField.list).toBe(false);
       expect(productField.ui).toEqual({
         component: 'product-selector-form-input',
       });
@@ -175,6 +179,19 @@ describe('SimpleCmsPlugin', () => {
       expect(metaDescription.ui).toEqual({
         component: 'textarea-form-input',
       });
+
+      // Banner relation fields should expose single vs multi via `list`
+      const banner = simpleCmsContentTypes.find(
+        (c: { code: string }) => c.code === 'banner'
+      );
+      const bannerProduct = banner.fields.find(
+        (f: { name: string }) => f.name === 'product'
+      );
+      expect(bannerProduct.list).toBe(false);
+      const bannerRelated = banner.fields.find(
+        (f: { name: string }) => f.name === 'relatedProducts'
+      );
+      expect(bannerRelated.list).toBe(true);
     });
   });
 
@@ -254,13 +271,34 @@ describe('SimpleCmsPlugin', () => {
       ).rejects.toThrow(/translatable/);
     });
 
+    it('Rejects a non-array for a list relation field', async () => {
+      await expect(
+        adminClient.query(CREATE_CONTENT_ENTRY, {
+          input: {
+            contentTypeCode: 'banner',
+            fields: {
+              product: { id: 1 },
+              relatedProducts: { id: 1 },
+            },
+            translations: [
+              { languageCode: 'en', fields: { title: 'Wrong relation type' } },
+            ],
+          },
+        })
+      ).rejects.toThrow(/must be an array/);
+    });
+
     it('Creates a first Banner', async () => {
       const { createContentEntry } = await adminClient.query(
         CREATE_CONTENT_ENTRY,
         {
           input: {
             contentTypeCode: 'banner',
-            fields: { product: { id: 1 }, priority: 1 },
+            fields: {
+              product: { id: 1 },
+              priority: 1,
+              relatedProducts: [{ id: 1 }],
+            },
             translations: [
               { languageCode: 'en', fields: { title: 'Top banner EN' } },
             ],
@@ -278,7 +316,11 @@ describe('SimpleCmsPlugin', () => {
         {
           input: {
             contentTypeCode: 'banner',
-            fields: { product: { id: 1 }, priority: 2 },
+            fields: {
+              product: { id: 1 },
+              priority: 2,
+              relatedProducts: [{ id: 1 }],
+            },
             translations: [
               { languageCode: 'en', fields: { title: 'Side banner EN' } },
             ],
@@ -317,7 +359,20 @@ describe('SimpleCmsPlugin', () => {
         expect(banner.product.variants.length).toBeGreaterThan(0);
         expect(banner.product.variants[0].name).toBeTruthy();
         expect(banner.product.variants[0].sku).toBeTruthy();
+
+        expect(Array.isArray(banner.relatedProducts)).toBe(true);
+        for (const p of banner.relatedProducts) {
+          expect(p.id).toBeTruthy();
+          expect(p.name).toBeTruthy();
+          expect(p.slug).toBeTruthy();
+        }
       }
+
+      // Each banner has one related product in the test data
+      const top = banners.find((b: { id: string }) => b.id === topBannerId);
+      expect(top.relatedProducts.length).toBe(1);
+      const side = banners.find((b: { id: string }) => b.id === sideBannerId);
+      expect(side.relatedProducts.length).toBe(1);
     });
 
     it('Fetches a single Banner by id via the shop API', async () => {
@@ -412,14 +467,22 @@ describe('SimpleCmsPlugin', () => {
       expect(contentEntries.items[1].displayName).toBe('Side banner EN');
     });
 
-    it('Returns null displayName for content type without any string field', async () => {
-      // Create a metric entry (no string field defined)
+    it('Resolves displayName for metric from its name field', async () => {
       const { createContentEntry } = await adminClient.query(
         CREATE_CONTENT_ENTRY,
         {
           input: {
             contentTypeCode: 'metric',
             fields: { value: 42, asset: { id: 1 } },
+            translations: [
+              {
+                languageCode: 'en',
+                fields: {
+                  name: 'My Metric',
+                  description: 'A test metric',
+                },
+              },
+            ],
           },
         }
       );
@@ -430,7 +493,7 @@ describe('SimpleCmsPlugin', () => {
         { options: { filter: { contentTypeCode: { eq: 'metric' } } } }
       );
       expect(contentEntries.items).toHaveLength(1);
-      expect(contentEntries.items[0].displayName).toBeNull();
+      expect(contentEntries.items[0].displayName).toBe('My Metric');
     });
   });
 
@@ -443,7 +506,11 @@ describe('SimpleCmsPlugin', () => {
         {
           input: {
             contentTypeCode: 'banner',
-            fields: { product: { id: 1 }, priority: 99 },
+            fields: {
+              product: { id: 1 },
+              priority: 99,
+              relatedProducts: [],
+            },
             translations: [
               { languageCode: 'en', fields: { title: 'Delete me' } },
             ],

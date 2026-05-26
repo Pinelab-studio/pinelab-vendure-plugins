@@ -185,6 +185,7 @@ export const GET_CONTENT_TYPES = gql`
         nullable
         isTranslatable
         graphQLType
+        list
         ui
         fields {
           name
@@ -226,6 +227,16 @@ export const GET_BANNERS = gql`
       title
       priority
       product {
+        id
+        name
+        slug
+        variants {
+          id
+          name
+          sku
+        }
+      }
+      relatedProducts {
         id
         name
         slug

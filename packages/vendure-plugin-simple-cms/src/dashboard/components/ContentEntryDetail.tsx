@@ -52,6 +52,7 @@ const getContentTypeDoc = graphql(`
         nullable
         isTranslatable
         graphQLType
+        list
         ui
         fields {
           name
@@ -97,13 +98,30 @@ interface ContentEntryDetailProps {
  * SimpleCms admin API. Accepts:
  *  - a bare id string/number (as emitted by `DefaultRelationInput`)
  *  - an existing `{ id, ... }` object (passes through as `{ id }`)
+ *  - an array of any of the above (for multi-relations)
  *  - null/undefined/empty → null
  */
 function normalizeRelationValue(
   value: unknown
-): { id: string | number } | null {
+): { id: string | number } | Array<{ id: string | number }> | null {
   if (value === null || value === undefined || value === '') {
     return null;
+  }
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === 'string' || typeof item === 'number') {
+          return { id: item };
+        }
+        if (typeof item === 'object' && item !== null) {
+          const id = (item as { id?: unknown }).id;
+          if (typeof id === 'string' || typeof id === 'number') {
+            return { id };
+          }
+        }
+        return null;
+      })
+      .filter((item): item is { id: string | number } => item !== null);
   }
   if (typeof value === 'string' || typeof value === 'number') {
     return { id: value };
@@ -177,7 +195,11 @@ export function ContentEntryDetail({
       if ((def as any).type !== 'relation') continue;
       const target = (def as any).isTranslatable ? translation : fields;
       const v = target[def.name];
-      if (v && typeof v === 'object' && 'id' in (v as any)) {
+      if (Array.isArray(v)) {
+        target[def.name] = v
+          .filter((item) => item && typeof item === 'object' && 'id' in item)
+          .map((item) => (item as any).id);
+      } else if (v && typeof v === 'object' && 'id' in (v as any)) {
         target[def.name] = (v as any).id;
       }
     }

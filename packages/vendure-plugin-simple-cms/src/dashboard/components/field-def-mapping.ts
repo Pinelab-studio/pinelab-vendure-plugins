@@ -26,6 +26,7 @@ export interface SimpleCmsFieldDto {
   nullable: boolean;
   isTranslatable?: boolean | null;
   graphQLType?: string | null;
+  list?: boolean | null;
   fields?: SimpleCmsStructSubFieldDto[] | null;
   ui?: Record<string, unknown> | null;
 }
@@ -87,6 +88,7 @@ export function mapSimpleCmsFieldToFieldDef(
     // as a relation custom field config and renders the entity-specific
     // selector (e.g. AssetPicker style for `Asset`).
     fieldDef.readonly = false;
+    fieldDef.list = asTopLevel.list ?? false;
   }
 
   return fieldDef;

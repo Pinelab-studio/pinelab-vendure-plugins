@@ -7,6 +7,7 @@ import {
   TransactionalConnection,
   TranslatorService,
 } from '@vendure/core';
+import { In } from 'typeorm';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import { SimpleCmsPluginOptions } from '../types';
 import { ContentEntryService } from '../services/content-entry.service';
@@ -56,8 +57,10 @@ export function createShopResolver(
     ) {}
 
     /**
-     * Resolves relation fields by loading the related entities from the database
-     * using the proper TypeORM 0.3 `findOne({ where: { id } })` signature.
+     * Resolves relation fields by loading the related entities from the database.
+     *
+     * Single relations use `findOne`; list relations use `findBy` with `In(ids)`
+     * and preserve the order of the input array.
      *
      * If the loaded entity is `Translatable` (i.e. has a `translations` relation
      * with a `languageCode`), it is run through {@link TranslatorService.translate}
@@ -74,6 +77,59 @@ export function createShopResolver(
         if (field.type !== 'relation') {
           continue;
         }
+
+        if (field.list) {
+          const relationValue = entry[field.name] as
+            | Array<Record<string, unknown>>
+            | undefined;
+          if (!Array.isArray(relationValue) || relationValue.length === 0) {
+            continue;
+          }
+          const ids = relationValue.map((v) => v.id).filter((id) => id != null);
+          if (ids.length === 0) {
+            continue;
+          }
+          try {
+            const repository = this.connection.getRepository(ctx, field.entity);
+            const loaded = (await repository.findBy({
+              id: In(ids as never),
+            })) as unknown[];
+            // Preserve input order and translate
+            const idMap = new Map(
+              loaded.map((e) => [(e as { id: unknown }).id, e])
+            );
+            const ordered: unknown[] = [];
+            for (const id of ids) {
+              const entity = idMap.get(id);
+              if (!entity) continue;
+              const hasTranslations =
+                Array.isArray(
+                  (entity as { translations?: unknown[] }).translations
+                ) &&
+                (entity as { translations: unknown[] }).translations.length > 0;
+              ordered.push(
+                hasTranslations
+                  ? this.translator.translate(entity as never, ctx)
+                  : entity
+              );
+            }
+            result[field.name] = ordered;
+          } catch (error) {
+            Logger.error(
+              `Failed to load relation field '${
+                field.name
+              }' for content type '${typeDef.displayName}': ${
+                (error as any)?.message
+              }`,
+              loggerCtx,
+              (error as any).stack
+            );
+            result[field.name] = relationValue;
+          }
+          continue;
+        }
+
+        // Single relation
         const relationValue = entry[field.name] as
           | Record<string, unknown>
           | undefined;
@@ -82,8 +138,6 @@ export function createShopResolver(
         }
         try {
           const repository = this.connection.getRepository(ctx, field.entity);
-          // Translatable entities expose a `translations` relation; load it so
-          // the TranslatorService can pick the correct language.
           const loaded = (await repository.findOne({
             where: { id: relationValue.id as never },
             relations: ['translations'],

@@ -225,6 +225,28 @@ function assertRelationValue(
   fieldDef: RelationFieldDefinition,
   value: unknown
 ): void {
+  if (fieldDef.list) {
+    if (!Array.isArray(value)) {
+      throw new UserInputError(
+        `Relation field '${fieldDef.name}' must be an array of objects with an 'id' property`
+      );
+    }
+    for (const item of value) {
+      if (typeof item !== 'object' || item === null || Array.isArray(item)) {
+        throw new UserInputError(
+          `Relation field '${fieldDef.name}' must be an array of objects with an 'id' property`
+        );
+      }
+      const id = (item as Record<string, unknown>).id;
+      if (typeof id !== 'string' && typeof id !== 'number') {
+        throw new UserInputError(
+          `Relation field '${fieldDef.name}' must have a string or number 'id'`
+        );
+      }
+    }
+    return;
+  }
+
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new UserInputError(
       `Relation field '${fieldDef.name}' must be an object with an 'id' property`

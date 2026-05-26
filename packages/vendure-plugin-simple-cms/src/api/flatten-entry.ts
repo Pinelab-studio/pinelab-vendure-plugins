@@ -9,6 +9,7 @@ function mapFieldDefinition(field: TypeDefinition['fields'][number]) {
     type: field.type,
     nullable: field.nullable === true,
     isTranslatable: field.type !== 'relation' ? field.isTranslatable : false,
+    list: field.type === 'relation' ? field.list ?? false : undefined,
     fields:
       field.type === 'struct'
         ? field.fields.map((sub) => ({

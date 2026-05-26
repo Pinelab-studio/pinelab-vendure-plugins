@@ -11,6 +11,7 @@ import { DashboardPlugin } from '@vendure/dashboard/plugin';
 import { testConfig } from '@vendure/testing';
 import path from 'path';
 import { SimpleCmsPlugin } from '../src';
+import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 
 export const config: VendureConfig = mergeConfig(testConfig, {
   logger: new DefaultLogger({ level: LogLevel.Debug }),
@@ -76,7 +77,6 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               name: 'title',
               type: 'text',
               isTranslatable: true,
-              ui: { component: 'rich-text-form-input' },
             },
             {
               name: 'priority',
@@ -92,12 +92,32 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               nullable: false,
               ui: { component: 'product-selector-form-input' },
             },
+            {
+              name: 'relatedProducts',
+              type: 'relation',
+              entity: Product,
+              graphQLType: 'Product',
+              list: true,
+              nullable: true,
+              ui: { component: 'product-selector-form-input' },
+            },
           ],
         },
         metric: {
           displayName: 'Metric',
           allowMultiple: true,
           fields: [
+            {
+              name: 'name',
+              type: 'string',
+              isTranslatable: true,
+            },
+            {
+              name: 'description',
+              type: 'text',
+              isTranslatable: true,
+              ui: { component: 'rich-text-form-input' },
+            },
             {
               name: 'value',
               type: 'int',
@@ -117,6 +137,10 @@ export const config: VendureConfig = mergeConfig(testConfig, {
       },
     }),
     DefaultSearchPlugin,
+    AssetServerPlugin.init({
+      route: 'assets',
+      assetUploadDir: path.join(__dirname, '../__data__/assets'),
+    }),
     DashboardPlugin.init({
       route: 'dashboard',
       appDir: path.join(__dirname, '../dist/dashboard'),

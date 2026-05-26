@@ -266,6 +266,25 @@ export class ContentEntryService {
     for (const def of contentType.fields) {
       if (def.type !== 'relation') continue;
       const value = fields[def.name];
+      if (def.list && Array.isArray(value)) {
+        fields[def.name] = value.map((item) => {
+          if (
+            typeof item !== 'object' ||
+            item === null ||
+            !('id' in (item as Record<string, unknown>))
+          ) {
+            return item;
+          }
+          const raw = (item as Record<string, unknown>).id;
+          if (typeof raw === 'string') {
+            return { ...(item as object), id: strategy!.decodeId(raw) };
+          } else if (typeof raw === 'number') {
+            return { ...(item as object), id: raw };
+          }
+          return item;
+        });
+        continue;
+      }
       if (
         value &&
         typeof value === 'object' &&
@@ -273,10 +292,15 @@ export class ContentEntryService {
         'id' in (value as Record<string, unknown>)
       ) {
         const raw = (value as Record<string, unknown>).id;
-        if (typeof raw === 'string' || typeof raw === 'number') {
+        if (typeof raw === 'string') {
           fields[def.name] = {
             ...(value as object),
-            id: strategy!.decodeId(raw as never),
+            id: strategy!.decodeId(raw),
+          };
+        } else if (typeof raw === 'number') {
+          fields[def.name] = {
+            ...(value as object),
+            id: raw,
           };
         }
       }

@@ -81,6 +81,11 @@ export interface RelationFieldDefinition extends BaseField {
   entity: Type<VendureEntity>;
   graphQLType: string;
   eager?: boolean;
+  /**
+   * If true, the field stores an array of related entities (multi-select).
+   * If false or omitted, the field stores a single related entity.
+   */
+  list?: boolean;
   ui?: UiConfig;
 }
 

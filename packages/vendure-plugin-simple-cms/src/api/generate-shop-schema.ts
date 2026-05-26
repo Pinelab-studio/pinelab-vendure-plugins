@@ -67,6 +67,9 @@ function fieldTypeSDL(
   } else {
     typeName = primitiveToScalar(field.type);
   }
+  if (field.type === 'relation' && field.list) {
+    typeName = `[${typeName}!]`;
+  }
   return isNullable ? typeName : `${typeName}!`;
 }
 

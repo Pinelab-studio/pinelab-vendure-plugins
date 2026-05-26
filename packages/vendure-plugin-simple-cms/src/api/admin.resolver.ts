@@ -65,6 +65,7 @@ function mapField(field: TypeDefinition['fields'][number]): SimpleCmsField {
       nullable: field.nullable === true,
       isTranslatable: null,
       graphQLType: field.graphQLType,
+      list: field.list ?? false,
       fields: null,
       ui: field.ui ?? null,
     };

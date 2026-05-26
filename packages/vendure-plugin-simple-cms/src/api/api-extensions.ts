@@ -119,6 +119,7 @@ export const adminSchemaExtensions = gql`
     nullable: Boolean!
     isTranslatable: Boolean
     graphQLType: String
+    list: Boolean
     fields: [SimpleCmsStructSubField!]
     ui: JSON
   }
