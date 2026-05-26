@@ -168,8 +168,8 @@ beforeAll(async () => {
   // Listen for invoice created events
   server.app
     .get(EventBus)
-    .ofType(InvoiceCreatedEvent)
-    .subscribe((event) => events.push(event));
+    .filter((e) => e.constructor.name === 'InvoiceCreatedEvent')
+    .subscribe((event) => events.push(event as InvoiceCreatedEvent));
 }, 30000);
 
 it('Should start successfully', async () => {
