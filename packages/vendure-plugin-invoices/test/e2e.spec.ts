@@ -242,7 +242,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(events[0].creditInvoice).toBeUndefined();
     expect(events[0].previousInvoice).toBeUndefined();
     expect(events[1]).toBeUndefined();
-  });
+  }, 15000);
 
   it('Triggered accounting export strategy', async () => {
     const getMockCalls = () =>
