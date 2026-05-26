@@ -4,6 +4,8 @@ import {
   ID,
   Order,
   OrderService,
+  Product,
+  ProductService,
   ProductVariant,
   ProductVariantService,
   Promotion,
@@ -20,6 +22,7 @@ export class GiftService {
     private promotionService: PromotionService,
     private orderService: OrderService,
     private variantService: ProductVariantService,
+    private productService: ProductService,
     private stockLevelService: StockLevelService
   ) {}
 
@@ -45,11 +48,20 @@ export class GiftService {
       return [];
     }
     const variants = await this.variantService.findByIds(ctx, variantIds);
+    const productIds = [...new Set(variants.map((v) => v.productId))];
+    const products = await this.productService.findByIds(ctx, productIds);
+    const enabledProductIds = new Set(
+      products.filter((p) => p.enabled).map((p) => p.id)
+    );
     const variantsWithStock: ProductVariant[] = [];
-    // only add variants with stock to the list
     await Promise.all(
       variants.map(async (variant) => {
-        if ((await this.hasStock(ctx, variant)) && variant.enabled) {
+        if (
+          (await this.hasStock(ctx, variant)) &&
+          variant.enabled &&
+          enabledProductIds.has(variant.productId)
+        ) {
+          // Only return variants which are enabled, whose product is enabled and which have stock
           variantsWithStock.push(variant);
         }
       })

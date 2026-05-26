@@ -3,8 +3,8 @@
  * Index page listing every guide in the `guides` content collection.
  * Sorted by `pubDate` descending (newest first).
  */
-import { getCollection } from 'astro:content';
-import { Image } from 'astro:assets';
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { getImage } from 'astro:assets';
 import Layout from '../../layouts/Layout.astro';
 import Heading1 from '../../components/base/Heading1.astro';
 import Paragraph from '../../components/base/Paragraph.astro';
@@ -12,6 +12,27 @@ import { buildBreadcrumbs } from '../../utils/structured-data';
 
 const guides = (await getCollection('guides')).sort(
   (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
+);
+
+type GuideWithImage = CollectionEntry<'guides'> & {
+  optimizedImage?: Awaited<ReturnType<typeof getImage>>;
+};
+
+const guidesWithImages: GuideWithImage[] = await Promise.all(
+  guides.map(async (g) => {
+    let optimizedImage: Awaited<ReturnType<typeof getImage>> | undefined;
+    if (g.data.heroImage) {
+      optimizedImage = await getImage({
+        src: g.data.heroImage,
+        inferSize: true,
+        format: 'webp',
+        quality: 80,
+        width: 600,
+        height: 315,
+      });
+    }
+    return { ...g, optimizedImage };
+  })
 );
 
 const url = 'https://plugins.pinelab.studio/guides';
@@ -48,17 +69,18 @@ const structuredData = [
         </Paragraph>
       ) : (
         <ul class="mt-10 grid gap-8 sm:grid-cols-2">
-          {guides.map((g) => (
+          {guidesWithImages.map((g) => (
             <li class="border-base-contrast/20 hover:border-base-contrast/40 group rounded border transition-colors">
               <a
                 href={`/guides/${g.data.slug}`}
                 class="block h-full overflow-hidden rounded"
               >
-                {g.data.heroImage && (
-                  <Image
-                    src={g.data.heroImage}
+                {g.optimizedImage && (
+                  <img
+                    src={g.optimizedImage.src}
                     alt={g.data.heroImageAlt ?? g.data.title}
-                    inferSize
+                    width={600}
+                    height={315}
                     class="h-48 w-full object-cover"
                   />
                 )}

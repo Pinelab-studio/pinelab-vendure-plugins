@@ -114,9 +114,7 @@ export class StockMonitoringService
         ])
         .where('pv.deletedAt IS NULL')
         .andWhere('pv.enabled = :enabled', { enabled: true })
-        .andWhere('pv.trackInventory != :trackInventory', {
-          trackInventory: false,
-        })
+        .andWhere('pv.trackInventory != "FALSE"')
         .groupBy('pv.id')
         .having('availableStock < threshold')
         .limit(limit)
