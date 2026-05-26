@@ -91,8 +91,9 @@ export function createShopResolver(
           }
           try {
             const repository = this.connection.getRepository(ctx, field.entity);
-            const loaded = (await repository.findBy({
-              id: In(ids as never),
+            const loaded = (await repository.find({
+              where: { id: In(ids as never) },
+              relations: ['translations'],
             })) as unknown[];
             // Preserve input order and translate
             const idMap = new Map(

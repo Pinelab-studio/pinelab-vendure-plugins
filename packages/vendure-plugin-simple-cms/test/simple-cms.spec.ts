@@ -119,6 +119,12 @@ describe('SimpleCmsPlugin', () => {
       expect(typeRefToString(getField(type, 'relatedProducts')!.type)).toBe(
         '[Product!]'
       );
+      expect(typeRefToString(getField(type, 'variant')!.type)).toBe(
+        'ProductVariant'
+      );
+      expect(typeRefToString(getField(type, 'relatedVariants')!.type)).toBe(
+        '[ProductVariant!]'
+      );
 
       // List query: no args, returns [Banner!]!
       const list = getQueryField(shopSchema, 'banners');
@@ -164,9 +170,7 @@ describe('SimpleCmsPlugin', () => {
       expect(productField.graphQLType).toBe('Product');
       expect(productField.isTranslatable).toBeNull();
       expect(productField.list).toBe(false);
-      expect(productField.ui).toEqual({
-        component: 'product-selector-form-input',
-      });
+      expect(productField.ui).toBeNull();
 
       const seoField = featured.fields.find(
         (f: { name: string }) => f.name === 'seo'
@@ -188,10 +192,35 @@ describe('SimpleCmsPlugin', () => {
         (f: { name: string }) => f.name === 'product'
       );
       expect(bannerProduct.list).toBe(false);
+      expect(bannerProduct.ui).toBeNull();
+
       const bannerRelated = banner.fields.find(
         (f: { name: string }) => f.name === 'relatedProducts'
       );
       expect(bannerRelated.list).toBe(true);
+      expect(bannerRelated.ui).toEqual({
+        component: 'product-multi-form-input',
+        selectionMode: 'product',
+      });
+
+      const bannerVariant = banner.fields.find(
+        (f: { name: string }) => f.name === 'variant'
+      );
+      expect(bannerVariant.type).toBe('relation');
+      expect(bannerVariant.graphQLType).toBe('ProductVariant');
+      expect(bannerVariant.list).toBe(false);
+      expect(bannerVariant.ui).toBeNull();
+
+      const bannerRelatedVariants = banner.fields.find(
+        (f: { name: string }) => f.name === 'relatedVariants'
+      );
+      expect(bannerRelatedVariants.type).toBe('relation');
+      expect(bannerRelatedVariants.graphQLType).toBe('ProductVariant');
+      expect(bannerRelatedVariants.list).toBe(true);
+      expect(bannerRelatedVariants.ui).toEqual({
+        component: 'product-multi-form-input',
+        selectionMode: 'variant',
+      });
     });
   });
 
@@ -288,6 +317,23 @@ describe('SimpleCmsPlugin', () => {
       ).rejects.toThrow(/must be an array/);
     });
 
+    it('Rejects a non-array for a list relation field (relatedVariants)', async () => {
+      await expect(
+        adminClient.query(CREATE_CONTENT_ENTRY, {
+          input: {
+            contentTypeCode: 'banner',
+            fields: {
+              product: { id: 1 },
+              relatedVariants: { id: 1 },
+            },
+            translations: [
+              { languageCode: 'en', fields: { title: 'Wrong relation type' } },
+            ],
+          },
+        })
+      ).rejects.toThrow(/must be an array/);
+    });
+
     it('Creates a first Banner', async () => {
       const { createContentEntry } = await adminClient.query(
         CREATE_CONTENT_ENTRY,
@@ -298,6 +344,8 @@ describe('SimpleCmsPlugin', () => {
               product: { id: 1 },
               priority: 1,
               relatedProducts: [{ id: 1 }],
+              variant: { id: 1 },
+              relatedVariants: [{ id: 1 }, { id: 2 }],
             },
             translations: [
               { languageCode: 'en', fields: { title: 'Top banner EN' } },
@@ -320,6 +368,8 @@ describe('SimpleCmsPlugin', () => {
               product: { id: 1 },
               priority: 2,
               relatedProducts: [{ id: 1 }],
+              variant: { id: 2 },
+              relatedVariants: [{ id: 2 }, { id: 3 }],
             },
             translations: [
               { languageCode: 'en', fields: { title: 'Side banner EN' } },
@@ -366,13 +416,38 @@ describe('SimpleCmsPlugin', () => {
           expect(p.name).toBeTruthy();
           expect(p.slug).toBeTruthy();
         }
+
+        expect(banner.variant).toBeTruthy();
+        expect(banner.variant.id).toBeTruthy();
+        expect(banner.variant.name).toBeTruthy();
+        expect(banner.variant.sku).toBeTruthy();
+        expect(banner.variant.product.id).toBeTruthy();
+        expect(banner.variant.product.name).toBeTruthy();
+
+        expect(Array.isArray(banner.relatedVariants)).toBe(true);
+        for (const v of banner.relatedVariants) {
+          expect(v.id).toBeTruthy();
+          expect(v.name).toBeTruthy();
+          expect(v.sku).toBeTruthy();
+          expect(v.product.id).toBeTruthy();
+          expect(v.product.name).toBeTruthy();
+        }
       }
 
       // Each banner has one related product in the test data
       const top = banners.find((b: { id: string }) => b.id === topBannerId);
       expect(top.relatedProducts.length).toBe(1);
+      expect(top.variant.id).toBeTruthy();
+      expect(top.relatedVariants.length).toBe(2);
+      expect(top.relatedVariants[0].id).toBeTruthy();
+      expect(top.relatedVariants[1].id).toBeTruthy();
+
       const side = banners.find((b: { id: string }) => b.id === sideBannerId);
       expect(side.relatedProducts.length).toBe(1);
+      expect(side.variant.id).toBeTruthy();
+      expect(side.relatedVariants.length).toBe(2);
+      expect(side.relatedVariants[0].id).toBeTruthy();
+      expect(side.relatedVariants[1].id).toBeTruthy();
     });
 
     it('Fetches a single Banner by id via the shop API', async () => {
@@ -446,11 +521,7 @@ describe('SimpleCmsPlugin', () => {
         { options: { filter: { contentTypeCode: { eq: 'featuredProduct' } } } }
       );
       expect(contentEntries.items).toHaveLength(1);
-      // featuredProduct.fields starts with `subtitle` (string, non-translatable, null)
-      // then `title` (string, translatable, value 'Featured title')
-      // -> first string field is `subtitle`, but its value is null/missing so falls through? Actually, deriveDisplayName picks the FIRST defined string field regardless of value. With subtitle=null, displayName -> null.
-      // Adjust expectation: subtitle is not provided, so displayName is null.
-      expect(contentEntries.items[0].displayName).toBeNull();
+      expect(contentEntries.items[0].displayName).toBe('Featured title');
     });
 
     it('Resolves displayName for banner (first string field is translatable title)', async () => {
@@ -510,6 +581,8 @@ describe('SimpleCmsPlugin', () => {
               product: { id: 1 },
               priority: 99,
               relatedProducts: [],
+              variant: null,
+              relatedVariants: [],
             },
             translations: [
               { languageCode: 'en', fields: { title: 'Delete me' } },

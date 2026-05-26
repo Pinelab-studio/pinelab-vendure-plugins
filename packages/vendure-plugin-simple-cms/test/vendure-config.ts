@@ -1,5 +1,6 @@
 import {
   Product,
+  ProductVariant,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
@@ -33,15 +34,15 @@ export const config: VendureConfig = mergeConfig(testConfig, {
           allowMultiple: false,
           fields: [
             {
+              name: 'title',
+              type: 'string',
+              isTranslatable: true,
+            },
+            {
               name: 'subtitle',
               type: 'string',
               nullable: true,
               isTranslatable: false,
-            },
-            {
-              name: 'title',
-              type: 'string',
-              isTranslatable: true,
             },
             {
               name: 'seo',
@@ -65,7 +66,6 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               entity: Product,
               graphQLType: 'Product',
               nullable: false,
-              ui: { component: 'product-selector-form-input' },
             },
           ],
         },
@@ -90,7 +90,6 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               entity: Product,
               graphQLType: 'Product',
               nullable: false,
-              ui: { component: 'product-selector-form-input' },
             },
             {
               name: 'relatedProducts',
@@ -99,7 +98,29 @@ export const config: VendureConfig = mergeConfig(testConfig, {
               graphQLType: 'Product',
               list: true,
               nullable: true,
-              ui: { component: 'product-selector-form-input' },
+              ui: {
+                component: 'product-multi-form-input',
+                selectionMode: 'product',
+              },
+            },
+            {
+              name: 'variant',
+              type: 'relation',
+              entity: ProductVariant,
+              graphQLType: 'ProductVariant',
+              nullable: true,
+            },
+            {
+              name: 'relatedVariants',
+              type: 'relation',
+              entity: ProductVariant,
+              graphQLType: 'ProductVariant',
+              list: true,
+              nullable: true,
+              ui: {
+                component: 'product-multi-form-input',
+                selectionMode: 'variant',
+              },
             },
           ],
         },

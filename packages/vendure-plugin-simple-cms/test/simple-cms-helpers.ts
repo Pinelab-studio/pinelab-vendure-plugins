@@ -246,6 +246,24 @@ export const GET_BANNERS = gql`
           sku
         }
       }
+      variant {
+        id
+        name
+        sku
+        product {
+          id
+          name
+        }
+      }
+      relatedVariants {
+        id
+        name
+        sku
+        product {
+          id
+          name
+        }
+      }
     }
   }
 `;

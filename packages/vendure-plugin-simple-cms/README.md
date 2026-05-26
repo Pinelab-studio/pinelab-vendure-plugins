@@ -88,7 +88,147 @@ SimpleCmsPlugin.init({
 });
 ```
 
-Field types reference:
+## Defining Content Types
+
+Below is a complete example showing all supported field types and configurations:
+
+```ts
+import { Asset, Product, ProductVariant } from '@vendure/core';
+import { SimpleCmsPlugin } from '@pinelab/vendure-plugin-simple-cms';
+
+SimpleCmsPlugin.init({
+  contentTypes: {
+    // Singleton: only one entry per channel
+    featuredProduct: {
+      displayName: 'Featured Product',
+      allowMultiple: false,
+      fields: [
+        {
+          name: 'title',
+          type: 'string',
+          isTranslatable: true,
+        },
+        {
+          name: 'subtitle',
+          type: 'string',
+          nullable: true,
+          isTranslatable: false,
+        },
+        {
+          name: 'seo',
+          type: 'struct',
+          isTranslatable: true,
+          fields: [
+            { name: 'metaTitle', type: 'string' },
+            {
+              name: 'metaDescription',
+              type: 'text',
+              ui: { component: 'textarea-form-input' },
+            },
+          ],
+        },
+        {
+          name: 'product',
+          type: 'relation',
+          entity: Product,
+          graphQLType: 'Product',
+          nullable: false,
+        },
+      ],
+    },
+
+    // Multiple entries per channel
+    banner: {
+      displayName: 'Banner',
+      allowMultiple: true,
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+          isTranslatable: true,
+        },
+        {
+          name: 'priority',
+          type: 'int',
+          isTranslatable: false,
+          nullable: true,
+        },
+        {
+          name: 'product',
+          type: 'relation',
+          entity: Product,
+          graphQLType: 'Product',
+          nullable: false,
+        },
+        {
+          name: 'relatedProducts',
+          type: 'relation',
+          entity: Product,
+          graphQLType: 'Product',
+          list: true,
+          nullable: true,
+          ui: {
+            component: 'product-multi-form-input',
+            selectionMode: 'product',
+          },
+        },
+        {
+          name: 'variant',
+          type: 'relation',
+          entity: ProductVariant,
+          graphQLType: 'ProductVariant',
+          nullable: true,
+        },
+        {
+          name: 'relatedVariants',
+          type: 'relation',
+          entity: ProductVariant,
+          graphQLType: 'ProductVariant',
+          list: true,
+          nullable: true,
+          ui: {
+            component: 'product-multi-form-input',
+            selectionMode: 'variant',
+          },
+        },
+      ],
+    },
+
+    metric: {
+      displayName: 'Metric',
+      allowMultiple: true,
+      fields: [
+        {
+          name: 'name',
+          type: 'string',
+          isTranslatable: true,
+        },
+        {
+          name: 'description',
+          type: 'text',
+          isTranslatable: true,
+          ui: { component: 'rich-text-form-input' },
+        },
+        {
+          name: 'value',
+          type: 'int',
+          isTranslatable: false,
+          nullable: false,
+        },
+        {
+          name: 'asset',
+          type: 'relation',
+          entity: Asset,
+          graphQLType: 'Asset',
+          nullable: false,
+        },
+      ],
+    },
+  },
+});
+```
+
+### Field types reference
 
 - `string`, `text`, `int`, `float`, `boolean`, `date` — primitives
 - `relation` — references another Vendure entity (`Asset`, `Product`, `ProductVariant`, …)
