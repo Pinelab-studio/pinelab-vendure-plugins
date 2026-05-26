@@ -1,3 +1,7 @@
+# 2.3.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 2.0.0 (2026-03-23)
 
 - Added support for the new React Dashboard: Google Login button is added below the default login form.

@@ -1,3 +1,7 @@
+# 1.6.0 (2026-02-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 1.5.1 (2026-05-19)
 
 - Exclude variants whose parent product is disabled from eligible gifts

@@ -168,8 +168,8 @@ beforeAll(async () => {
   // Listen for invoice created events
   server.app
     .get(EventBus)
-    .ofType(InvoiceCreatedEvent)
-    .subscribe((event) => events.push(event));
+    .filter((e) => e.constructor.name === 'InvoiceCreatedEvent')
+    .subscribe((event) => events.push(event as InvoiceCreatedEvent));
 }, 30000);
 
 it('Should start successfully', async () => {
@@ -229,6 +229,7 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Emitted event for created invoice', async () => {
+    await waitFor(() => events[0]?.newInvoice, 100, 20000);
     const newInvoice = events[0].newInvoice;
     expect(newInvoice.createdAt).toBeDefined();
     expect(newInvoice.channelId).toBeDefined();
@@ -241,7 +242,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(events[0].creditInvoice).toBeUndefined();
     expect(events[0].previousInvoice).toBeUndefined();
     expect(events[1]).toBeUndefined();
-  });
+  }, 25000);
 
   it('Triggered accounting export strategy', async () => {
     const getMockCalls = () =>

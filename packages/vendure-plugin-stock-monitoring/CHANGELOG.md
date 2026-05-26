@@ -1,3 +1,7 @@
+# 2.2.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 2.1.1 (2026-05-19)
 
 - Fixed `trackInventory` query filter to use correct boolean string value

@@ -1,6 +1,5 @@
 import { RequestContext } from '@vendure/core';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
-import { AddressLookupInput } from '../generated/graphql';
 import { PostNLLookupStrategy } from './post-nl-lookup-strategy';
 
 type MockFetch = Mock<Parameters<typeof fetch>, ReturnType<typeof fetch>>;
@@ -12,7 +11,7 @@ describe('PostNLLookupStrategy', () => {
 
   beforeEach(() => {
     // Reset fetch mock before each test
-    mockFetch = vi.fn() as MockFetch;
+    mockFetch = vi.fn();
     global.fetch = mockFetch;
     strategy = new PostNLLookupStrategy({ apiKey: 'test-api-key' });
     ctx = {} as RequestContext;
@@ -41,7 +40,7 @@ describe('PostNLLookupStrategy', () => {
         expected: "House number is required for lookup in 'BE'",
       },
     ])('$name', ({ input, expected }) => {
-      const result = strategy.validateInput?.(input as AddressLookupInput);
+      const result = strategy.validateInput?.(input);
       expect(result).toBe(expected);
     });
   });
