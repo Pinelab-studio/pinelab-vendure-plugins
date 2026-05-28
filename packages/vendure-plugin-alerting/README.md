@@ -50,9 +50,39 @@ const plugins: VendurePlugin[] = [
 ];
 ```
 
+## Email notifier
+
+Send alerts as plain-text emails via Vendure's built-in `NodemailerEmailSender`. No templates are required — the alert subject and text are sent directly.
+
+```ts
+import { EmailNotifier } from '@pinelab/vendure-plugin-alerting';
+
+const email = new EmailNotifier({
+  name: 'email',
+  from: 'alerts@example.com',
+  to: 'admin@example.com',
+  transport: {
+    type: 'smtp',
+    host: 'smtp.example.com',
+    port: 587,
+    auth: {
+      user: 'username',
+      pass: 'password',
+    },
+  },
+});
+
+new LogAlert([email]).onLog('error').notify((log) => ({
+  subject: `[${log.level}] ${log.loggerCtx}`,
+  text: log.message,
+}));
+```
+
+You can use any transport supported by the EmailPlugin, such as `ses`, `sendmail`, or `file`. You can also pass a custom `EmailSender` via the `emailSender` option.
+
 ## Custom Notifiers
 
-Implement the `Notifier` interface to create custom channels (e.g. email, SMS) and use custom metadata.
+Implement the `Notifier` interface to create custom channels (e.g. SMS) and use custom metadata.
 
 ```ts
 import { AlertMessage, Notifier } from '@pinelab/vendure-plugin-alerting';

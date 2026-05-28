@@ -46,7 +46,17 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
     this.jobQueue = await this.jobQueueService.createQueue({
       name: 'alerting-notify',
       process: async (job) => {
-        await this.processJob(job.data.notifierName, job.data.alertMessage);
+        try {
+          await this.processJob(job.data.notifierName, job.data.alertMessage);
+        } catch (e: unknown) {
+          const err = e instanceof Error ? e : new Error(String(e));
+          Logger.error(
+            `Failed to process alert job for notifier "${job.data.notifierName}": ${err.message}`,
+            loggerCtx,
+            err.stack
+          );
+          throw e;
+        }
       },
     });
   }
