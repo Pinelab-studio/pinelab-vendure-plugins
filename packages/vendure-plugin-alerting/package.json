@@ -6,6 +6,22 @@
   "homepage": "https://plugins.pinelab.studio/",
   "repository": "https://github.com/Pinelab-studio/pinelab-vendure-plugins",
   "license": "MIT",
+  "keywords": [
+    "vendure",
+    "vendure-plugin",
+    "notification",
+    "alerting",
+    "alerts",
+    "vendure-event",
+    "log-based-alerting",
+    "logging",
+    "slack",
+    "email",
+    "webhook",
+    "n8n",
+    "monitoring",
+    "error-handling"
+  ],
   "private": false,
   "publishConfig": {
     "access": "public"
