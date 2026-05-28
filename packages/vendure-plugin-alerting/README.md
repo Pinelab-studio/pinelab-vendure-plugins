@@ -32,8 +32,8 @@ const plugins: VendurePlugin[] = [
       // Alert on order payment failure
       new EventAlert([slack, n8n])
         .on(PaymentStateTransitionEvent)
-        .filter((e) => e.toState === 'Error')
-        .notify((e) => `Payment error for order "${e.order.code}"`),
+        .filter((e) => e.toState === 'Error') // Use this to decide when to alert
+        .notify((e) => `Payment error for order "${e.order.code}"`), // Notifies via Slack and n8n
 
       // Alert on any error log from PaymentService
       new LogAlert([slack])
@@ -50,78 +50,37 @@ const plugins: VendurePlugin[] = [
 ];
 ```
 
-## API
+## Custom Notifiers
 
-### `EventAlert<E extends VendureEvent = never>`
-
-Builder class for defining event-based alerts. The generic `E` is inferred from the events passed to `on()`.
-
-| Method          | Description                                                                       |
-| --------------- | --------------------------------------------------------------------------------- |
-| `on(...events)` | Trigger on one or more Vendure events.                                            |
-| `filter(fn)`    | Only alert if `fn(event)` returns `true`.                                         |
-| `notify(fn)`    | Build the `AlertMessage`. `fn` can return a `string` or an `AlertMessage` object. |
-
-### `LogAlert`
-
-Builder class for defining log-based alerts.
-
-| Method             | Description                                                                       |
-| ------------------ | --------------------------------------------------------------------------------- |
-| `onLog(...levels)` | Trigger on log messages at the given levels.                                      |
-| `filter(fn)`       | Only alert if `fn(logContext)` returns `true`.                                    |
-| `notify(fn)`       | Build the `AlertMessage`. `fn` can return a `string` or an `AlertMessage` object. |
-
-### `Notifier`
-
-Interface for outgoing delivery channels.
-
-```ts
-interface Notifier {
-  readonly name: string;
-  notify(message: AlertMessage): Promise<void>;
-}
-```
-
-### `WebhookNotifier`
-
-Generic HTTP notifier. Sends the `AlertMessage` as JSON by default.
-
-```ts
-new WebhookNotifier({
-  name: string;
-  url: string;
-  method?: 'POST' | 'GET'; // default POST
-  headers?: Record<string, string>;
-});
-```
-
-Per-request headers can be provided via `message.metadata.headers` in the `notify` callback.
-
-### `AlertMessage`
-
-```ts
-interface AlertMessage {
-  subject: string;
-  text: string;
-  metadata?: Record<string, any>;
-}
-```
-
-# Custom Notifiers
-
-Implement the `Notifier` interface to create custom channels (e.g. email, SMS).
+Implement the `Notifier` interface to create custom channels (e.g. email, SMS) and use custom metadata.
 
 ```ts
 import { AlertMessage, Notifier } from '@pinelab/vendure-plugin-alerting';
 
+// Example notifier that uses custom metadata
 export class CustomNotifier implements Notifier {
   name = 'my-custom-notifier';
 
-  notify(message: AlertMessage): Promise<void> {
-    // This is where you would implement the logic to send the alert message to your desired destination,
+  notify({subject, text, metadata}: AlertMessage): Promise<void> {
+    // This is where you would implement the logic to send the alert message to your desired destination.
+    // With the given metadata you could send custom body or headers for example.
+    const authorization = metadata.myHeaders.bearerToken
   }
 }
+
+// You would use this Notifier like this:
+const customNotifier = new CustomNotifier();
+new EventAlert([customNotifier])
+  .on(PaymentStateTransitionEvent)
+  .filter((e) => e.toState === 'Error')
+  .notify((log) => ({
+    subject: `My subject`,
+    text: `my custom message`,
+    metadata: {
+      key: "you can pass anything you want to your custom notifier here"
+      key2: "It is up to your notifier to use the metadata object"
+    }
+  })),
 ```
 
 ## Deduplication
