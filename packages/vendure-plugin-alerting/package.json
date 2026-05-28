@@ -1,6 +1,6 @@
 {
   "name": "@pinelab/vendure-plugin-alerting",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Vendure plugin for sending alerts based on events and log to various notifiers like Slack, email or N8N",
   "author": "Martijn van de Brug <martijn@pinelab.studio>",
   "homepage": "https://plugins.pinelab.studio/",
