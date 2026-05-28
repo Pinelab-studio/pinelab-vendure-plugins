@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Move the Sendcloud configuration from the UI/admin to plugin initialization code, remove the custom history entry, and replace it with a private order note. After this, the plugin should have no UI at all.
 
 ## Required Changes
@@ -12,7 +11,6 @@ Move the Sendcloud configuration from the UI/admin to plugin initialization code
 - [ ] Remove the custom history entry; use the built-in private "add note to order" feature instead.
 - [ ] Update `README.md` with the new code-based configuration example.
 - [ ] Ensure the plugin still compiles and works with the new config pattern.
-
 
 ## Notes
 

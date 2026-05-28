@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Replace the current manual/UI trigger for generating "Frequently Bought Together" suggestions with an automatic scheduled task.
 
 ## Required Changes
@@ -11,7 +10,6 @@ Replace the current manual/UI trigger for generating "Frequently Bought Together
 - [ ] Add a Vendure scheduled job that runs the suggestion logic on a configured interval.
 - [ ] Update `README.md` to reflect the removal of the UI and explain how the scheduled task works.
 - [ ] Ensure the plugin still compiles and the job executes correctly.
-
 
 ## Notes
 

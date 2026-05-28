@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Remove the legacy Angular UI (history entry) and replace it with a React Dashboard action bar dropdown menu item on the order detail page.
 
 ## Required Changes
@@ -13,7 +12,6 @@ Remove the legacy Angular UI (history entry) and replace it with a React Dashboa
 - [ ] Label the item **"Push to Goedgepickt"**.
 - [ ] Clicking it should trigger the `syncOrderToGoedgepickt` mutation.
 - [ ] Ensure the plugin still compiles and the button is visible.
-
 
 ## Notes
 

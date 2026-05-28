@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Migrate the single legacy Angular UI component of the Limited Products plugin to the new React Dashboard.
 
 ## Required Changes
@@ -11,7 +10,6 @@ Migrate the single legacy Angular UI component of the Limited Products plugin to
 - [ ] Implement the equivalent single component in React under `src/dashboard/` using `@vendure/dashboard`.
 - [ ] Register the extension via `defineDashboardExtension`.
 - [ ] Ensure the plugin still compiles and the new React UI is accessible.
-
 
 ## Notes
 

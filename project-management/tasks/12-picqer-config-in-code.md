@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Remove the legacy Angular UI from the Picqer plugin and move configuration to plugin initialization code via a strategy function.
 
 ## Required Changes
@@ -11,7 +10,6 @@ Remove the legacy Angular UI from the Picqer plugin and move configuration to pl
 - [ ] Remove the legacy Angular UI completely (both the module registration and any components).
 - [ ] Update `README.md` with the new code-based configuration example.
 - [ ] Ensure the plugin still compiles and works with the new config pattern.
-
 
 ## Notes
 

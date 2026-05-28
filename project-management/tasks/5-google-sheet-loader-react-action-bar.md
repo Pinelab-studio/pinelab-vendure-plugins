@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Migrate the Google Sheet Loader action bar dropdown button from the legacy Angular Admin UI to the new React Dashboard.
 
 ## Required Changes
@@ -10,7 +9,6 @@ Migrate the Google Sheet Loader action bar dropdown button from the legacy Angul
 - [ ] Remove the legacy Angular UI registration and action bar component.
 - [ ] Add a React action bar dropdown item via `addActionBarDropdownMenuItem`.
 - [ ] Ensure the plugin still compiles and the button is visible in the React Dashboard.
-
 
 ## Notes
 
