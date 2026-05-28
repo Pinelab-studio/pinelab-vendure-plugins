@@ -4,6 +4,8 @@
 
 Send notifications based on Vendure events and log messages via configurable notifiers like webhooks, slack or N8N.
 
+![image](https://plugins.pinelab.studio/plugin-images/alerting.png)
+
 ## Getting started
 
 ```ts
