@@ -66,11 +66,14 @@ export class EventAlert<E extends VendureEvent = never> extends BaseAlert<E> {
   /**
    * Trigger this alert when any of the given Vendure events are published.
    *
-   * @returns A new {@linkcode EventAlert} whose event union now includes {@linkcode T}.
+   * @returns A new {@linkcode EventAlert} whose event union now includes all
+   *   the events passed in.
    */
-  on<T extends VendureEvent>(...events: Type<T>[]): EventAlert<E | T> {
+  on<T extends VendureEvent[]>(
+    ...events: { [I in keyof T]: Type<T[I]> }
+  ): EventAlert<E | T[number]> {
     this.events.push(...(events as Type<VendureEvent>[]));
-    return this as EventAlert<E | T>;
+    return this as EventAlert<E | T[number]>;
   }
 }
 

@@ -63,11 +63,14 @@ describe('Alerting plugin', function () {
               .on(ProductEvent)
               .notify((e) => `Product event: ${e.type}`),
 
-            // Alert 2: filtered event alert with object notify, multiple notifiers
+            // Alert 2: filtered event alert with object notify, multiple notifiers, multiple events
             new EventAlert([notifier1, notifier2])
-              .on(ProductEvent)
+              .on(ProductEvent, ProductVariantEvent)
               .filter((e) => e.type === 'created')
-              .notify(() => ({ subject: 'Filtered', text: 'Product created' })),
+              .notify(() => ({
+                subject: 'Filtered',
+                text: 'Product created',
+              })),
 
             // Alert 3: log-based alert
             new LogAlert([notifier1])
