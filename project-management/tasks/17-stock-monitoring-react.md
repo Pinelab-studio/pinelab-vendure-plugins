@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Migrate the Stock Monitoring widget from the legacy Angular Admin UI to the new React Dashboard.
 
 ## Required Changes
@@ -11,7 +10,6 @@ Migrate the Stock Monitoring widget from the legacy Angular Admin UI to the new 
 - [ ] Implement the equivalent widget in React under `src/dashboard/` using `@vendure/dashboard`.
 - [ ] Register the extension via `defineDashboardExtension`.
 - [ ] Ensure the plugin still compiles and the new React widget is accessible.
-
 
 ## Notes
 

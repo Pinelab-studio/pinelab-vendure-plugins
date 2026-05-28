@@ -2,7 +2,6 @@
 
 ## Goal
 
-
 Migrate the Stripe Subscription history component from the legacy Angular Admin UI to the new React Dashboard.
 
 ## Required Changes
@@ -11,7 +10,6 @@ Migrate the Stripe Subscription history component from the legacy Angular Admin 
 - [ ] Implement the equivalent component in React under `src/dashboard/` using `@vendure/dashboard`.
 - [ ] Register the extension via `defineDashboardExtension`.
 - [ ] Ensure the plugin still compiles and the new React UI is accessible.
-
 
 ## Notes
 
