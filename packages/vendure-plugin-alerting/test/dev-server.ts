@@ -79,7 +79,7 @@ class DummyTemplateLoader implements TemplateLoader {
         alerts: [
           new EventAlert([slack, emailNotifier])
             .on(ProductEvent)
-            .notify((e) => `Product event: ${e.type}`),
+            .notify((ctx, injector, event) => `Product event: ${event.type}`),
 
           new LogAlert([slack, emailNotifier])
             .onLog('error')

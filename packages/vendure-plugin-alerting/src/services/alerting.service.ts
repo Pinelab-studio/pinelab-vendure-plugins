@@ -1,3 +1,4 @@
+import { ModuleRef } from '@nestjs/core';
 import {
   Inject,
   Injectable,
@@ -6,12 +7,14 @@ import {
 } from '@nestjs/common';
 import {
   EventBus,
+  Injector,
   JobQueue,
   JobQueueService,
   Logger,
+  RequestContext,
   Type,
-  VendureLogger,
   VendureEvent,
+  VendureLogger,
 } from '@vendure/core';
 import { loggerCtx, PLUGIN_INIT_OPTIONS } from '../constants';
 import {
@@ -21,7 +24,8 @@ import {
   AlertTrigger,
   LogAlertContext,
 } from '../types';
-import { BaseAlert, EventAlert, LogAlert } from '../config/alert';
+import { EventAlert } from '../config/event-alert';
+import { LogAlert } from '../config/log-alert';
 import { Notifier } from '../config/notifier';
 import { AlertingLogger } from './alert-logger';
 
@@ -36,11 +40,16 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
   private dedupMap = new Map<string, number>();
   private notifiersByName = new Map<string, Notifier>();
 
+  private injector: Injector;
+
   constructor(
     private eventBus: EventBus,
     private jobQueueService: JobQueueService,
-    @Inject(PLUGIN_INIT_OPTIONS) private options: AlertingPluginOptions
-  ) {}
+    @Inject(PLUGIN_INIT_OPTIONS) private options: AlertingPluginOptions,
+    private moduleRef: ModuleRef
+  ) {
+    this.injector = new Injector(this.moduleRef);
+  }
 
   async onModuleInit(): Promise<void> {
     this.jobQueue = await this.jobQueueService.createQueue({
@@ -105,26 +114,50 @@ export class AlertingService implements OnModuleInit, OnApplicationBootstrap {
     return new AlertingLogger(logger);
   }
 
-  private async handleTrigger<T>(
-    alert: BaseAlert<T>,
-    trigger: T
+  private async handleTrigger(
+    alert: EventAlert<any> | LogAlert,
+    trigger: VendureEvent | LogAlertContext
   ): Promise<void> {
-    // Prevent infinite loops: skip logs emitted by this plugin
-    const logCtx = (trigger as unknown as LogAlertContext).loggerCtx;
-    if (logCtx === loggerCtx) {
+    let raw: string | AlertMessage;
+
+    if (alert instanceof LogAlert) {
+      // Prevent infinite loops: skip logs emitted by this plugin
+      const logCtx = (trigger as LogAlertContext).loggerCtx;
+      if (logCtx === loggerCtx) {
+        return;
+      }
+
+      // Apply filter if configured
+      if (alert.filterFn) {
+        const passes = await alert.filterFn(trigger as LogAlertContext);
+        if (!passes) {
+          return;
+        }
+      }
+
+      if (!alert.notifyFn) {
+        return;
+      }
+      raw = await alert.notifyFn(trigger as LogAlertContext);
+    } else if (alert instanceof EventAlert) {
+      // Apply filter if configured
+      if (alert.filterFn) {
+        const passes = await alert.filterFn(trigger as VendureEvent);
+        if (!passes) {
+          return;
+        }
+      }
+
+      if (!alert.eventNotifyFn) {
+        return;
+      }
+      const event = trigger as VendureEvent;
+      const ctx = (event as any).ctx as RequestContext | undefined;
+      raw = await alert.eventNotifyFn(ctx, this.injector, event);
+    } else {
       return;
     }
 
-    // Apply filter if configured
-    if (alert.filterFn) {
-      const passes = await alert.filterFn(trigger);
-      if (!passes) {
-        return;
-      }
-    }
-
-    // Build message
-    const raw = await alert.notifyFn(trigger);
     const message: AlertMessage =
       typeof raw === 'string' ? { subject: 'Alert', text: raw } : raw;
 

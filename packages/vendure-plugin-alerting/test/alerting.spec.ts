@@ -1,6 +1,7 @@
 import {
   DefaultLogger,
   EventBus,
+  Injector,
   LogLevel,
   mergeConfig,
   ProductEvent,
@@ -45,11 +46,13 @@ describe('Alerting plugin', function () {
   let serverStarted = false;
   let notifier1: TestNotifier;
   let notifier2: TestNotifier;
+  let notifier3: TestNotifier;
   let ctx: any;
 
   beforeAll(async () => {
     notifier1 = new TestNotifier('notifier1');
     notifier2 = new TestNotifier('notifier2');
+    notifier3 = new TestNotifier('notifier3');
 
     registerInitializer('sqljs', new SqljsInitializer('__data__'));
     const config = mergeConfig(testConfig, {
@@ -61,7 +64,7 @@ describe('Alerting plugin', function () {
             // Alert 1: simple event alert with string notify
             new EventAlert([notifier1])
               .on(ProductEvent)
-              .notify((e) => `Product event: ${e.type}`),
+              .notify((_ctx, _injector, e) => `Product event: ${e.type}`),
 
             // Alert 2: filtered event alert with object notify, multiple notifiers, multiple events
             new EventAlert([notifier1, notifier2])
@@ -80,6 +83,15 @@ describe('Alerting plugin', function () {
                 subject: `[${log.level}] Alert`,
                 text: log.message,
               })),
+
+            // Alert 4: async event alert with ctx and injector
+            new EventAlert([notifier3])
+              .on(ProductEvent)
+              .notify(async (eventCtx, injector, event) => {
+                expect(eventCtx).toBeDefined();
+                expect(injector).toBeInstanceOf(Injector);
+                return `Async product event: ${event.type}`;
+              }),
           ],
           deduplicationWindowMs: 500,
         }),
@@ -98,11 +110,14 @@ describe('Alerting plugin', function () {
   beforeEach(async () => {
     notifier1.messages = [];
     notifier2.messages = [];
+    notifier3.messages = [];
     const service = server.app.get(AlertingService) as any;
     if (service.dedupMap) {
       service.dedupMap.clear();
     }
-    await new Promise((r) => setTimeout(r, 50));
+    // Wait for any in-flight JobQueue messages from the previous test to settle.
+    // Without this, a late alert job can bleed into the next test and cause flakiness.
+    await new Promise((r) => setTimeout(r, 300));
   });
 
   it('Should start successfully', async () => {
@@ -156,10 +171,23 @@ describe('Alerting plugin', function () {
 
   it('Should send log-based alerts', async () => {
     Logger.error('Test error message', 'TestCtx');
-    await waitFor(() => notifier1.messages.length >= 1);
-    expect(notifier1.messages.length).toBe(1);
-    expect(notifier1.messages[0].subject).toBe('[error] Alert');
-    expect(notifier1.messages[0].text).toBe('Test error message');
+    await waitFor(() =>
+      notifier1.messages.some((m) => m.text === 'Test error message')
+    );
+    const msg = notifier1.messages.find(
+      (m) => m.text === 'Test error message'
+    )!;
+    expect(msg.subject).toBe('[error] Alert');
+    expect(msg.text).toBe('Test error message');
+  });
+
+  it('Should pass ctx and injector to async event notify', async () => {
+    server.app
+      .get(EventBus)
+      .publish(new ProductEvent(ctx, undefined as any, 'updated'));
+    await waitFor(() => notifier3.messages.length >= 1);
+    expect(notifier3.messages.length).toBe(1);
+    expect(notifier3.messages[0].text).toBe('Async product event: updated');
   });
 
   it('Should not alert on its own logger context', async () => {

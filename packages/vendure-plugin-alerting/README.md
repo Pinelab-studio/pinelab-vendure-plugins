@@ -15,7 +15,11 @@ import {
   LogAlert,
   WebhookNotifier,
 } from '@pinelab/vendure-plugin-alerting';
-import { PaymentStateTransitionEvent } from '@vendure/core';
+import {
+  PaymentStateTransitionEvent,
+  ProductEvent,
+  ProductService,
+} from '@vendure/core';
 
 // Slack example. Get the webhook URL from your slack account: https://docs.slack.dev/messaging/sending-messages-using-incoming-webhooks/
 const slack = new WebhookNotifier({
@@ -36,6 +40,15 @@ const plugins: VendurePlugin[] = [
         .on(PaymentStateTransitionEvent)
         .filter((e) => e.toState === 'Error') // Use this to decide when to alert
         .notify((e) => `Payment error for order "${e.order.code}"`), // Notifies via Slack and n8n
+
+      // Async notify with RequestContext and Injector
+      new EventAlert([slack])
+        .on(ProductEvent)
+        .notify(async (ctx, injector, event) => {
+          const productService = injector.get(ProductService);
+          const product = await productService.findOne(ctx, event.entity.id);
+          return `Product updated: ${product?.name}`;
+        }),
 
       // Alert on any error log from PaymentService
       new LogAlert([slack])
@@ -122,6 +135,11 @@ Identical alerts (same notifier + subject + text) fired within `deduplicationWin
 ## Retry
 
 Alert delivery is backed by the Vendure JobQueue. If a notifier throws, the job is retried with the configured retry strategy.
+
+## Guidelines
+
+- `notify()` is executed in the main process **before** the alert is enqueued to the worker. Keep the function lightweight — do not run heavy or long-running logic inside `notify()`.
+- Be selective about the events and log levels you subscribe to. Listening to **all** `warn` and `error` logs can generate a high volume of alerts and put unnecessary load on your system.
 
 ## License
 
