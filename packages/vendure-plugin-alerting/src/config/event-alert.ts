@@ -14,7 +14,7 @@ import { AlertMessage } from '../types';
  * new EventAlert([webhookNotifier])
  *   .on(ProductEvent, OrderPlacedEvent)
  *   .filter(e => e.type === 'created')
- *   .notify(e => `Product ${e.type}`);
+ *   .notify((_ctx, _injector, e) => `Product ${e.type}`);
  * ```
  */
 export class EventAlert<E extends VendureEvent = never> {
