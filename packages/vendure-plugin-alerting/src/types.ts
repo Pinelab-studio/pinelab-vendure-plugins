@@ -1,4 +1,5 @@
-import { EventAlert, LogAlert } from './config/alert';
+import { EventAlert } from './config/event-alert';
+import { LogAlert } from './config/log-alert';
 
 export interface AlertMessage {
   subject: string;
