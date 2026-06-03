@@ -1,3 +1,7 @@
+# 5.1.1 (2026-06-03)
+
+- Added `puppeteerLaunchOptions` config option and `PUPPETEER_EXECUTABLE_PATH` env var support for custom Chrome binary paths in Docker/production environments.
+
 # 5.1.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

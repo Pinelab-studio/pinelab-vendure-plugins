@@ -5,7 +5,7 @@ import path from 'path';
 export default defineConfig({
   test: {
     testTimeout: 10000,
-    include: './test/e2e.spec.ts',
+    include: ['./test/e2e.spec.ts', './test/puppeteer-launch-options.spec.ts'],
     typecheck: {
       tsconfig: path.join(__dirname, 'test/tsconfig.e2e.json'),
     },

@@ -39,37 +39,71 @@ plugins: [
 7. Check the checkbox to `Enable invoice generation` for the current channel on order placement. Invoices are generated on order placement.
 8. A default HTML template is set for you. Click the `Preview` button to view a sample PDF invoice.
 
-### Docker
+### Running in Docker / production
 
-To make Puppeteer work on Docker, you need some additional steps in your Dockerfile. This is the Dockerfile we use ourselves:
+Puppeteer bundles its own Chromium binary, which is downloaded during `npm install`. This can be unreliable in containerized environments: the download may silently fail on certain base images, behind proxies, or in air-gapped CI. When the bundled binary is missing at runtime, invoice generation fails with `Could not find Chrome`.
+
+The recommended approach is to **install system Chrome** and tell Puppeteer to use it via the `PUPPETEER_EXECUTABLE_PATH` env var. This is more reliable, produces smaller images, and avoids the postinstall download entirely.
 
 ```Dockerfile
-FROM node:18
+FROM node:24
 
-# Set Puppeteer home dir
-ENV PUPPETEER_CACHE_DIR=/usr/src/app/
-# Install puppeteer dependencies as defined in https://github.com/puppeteer/puppeteer/blob/main/docker/Dockerfile
+WORKDIR /usr/src/app
+
+# Skip Puppeteer's bundled Chromium download — we use system Chrome instead
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+
+# Install Google Chrome Stable and required dependencies
 RUN apt-get update \
     && apt-get install -y wget gnupg \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
-    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] https://dl-ssl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub \
+       | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] \
+       https://dl-ssl.google.com/linux/chrome/deb/ stable main" \
+       > /etc/apt/sources.list.d/google.list \
     && apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf libxss1 dbus dbus-x11 \
-      --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r pptruser && useradd -rm -g pptruser -G audio,video pptruser
-
-# Create app directory
-WORKDIR /usr/src/app
+    && apt-get install -y --no-install-recommends \
+       google-chrome-stable \
+       fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-khmeros fonts-kacst fonts-freefont-ttf \
+       libxss1 dbus dbus-x11 \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY . .
 RUN npm install
 RUN npm run build
 
-
-# Run the web service on container startup.
 CMD [ "npm", "run", "start" ]
 ```
+
+> **Note:** `--no-sandbox` is required when running Chrome as root inside a container. The plugin passes this flag by default. If you run as a non-root user, you can remove it via `puppeteerLaunchOptions`.
+
+### Custom Puppeteer launch options
+
+You can customize how Puppeteer launches Chrome in two ways. Both are fully backward compatible — when neither is set, the plugin uses its defaults (`headless: true`, `args: ['--no-sandbox']`).
+
+**Option 1: Plugin config** (recommended for most cases)
+
+```ts
+InvoicePlugin.init({
+  vendureHost: 'https://my-vendure.example.com',
+  puppeteerLaunchOptions: {
+    executablePath: '/usr/bin/google-chrome-stable',
+    args: ['--no-sandbox', '--disable-gpu'],
+    timeout: 60000,
+  },
+});
+```
+
+Any [Puppeteer launch option](https://pptr.dev/api/puppeteer.launchoptions) can be passed here. The plugin merges your options over its defaults (your values win).
+
+**Option 2: `PUPPETEER_EXECUTABLE_PATH` env var**
+
+```bash
+PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable
+```
+
+This env var is Puppeteer's standard convention. It takes the **highest precedence** — even over `executablePath` set in `puppeteerLaunchOptions`. This is useful for overriding the Chrome path per environment (e.g. different paths in CI vs production) without changing code.
 
 ## Adding invoices to your order-confirmation email
 
