@@ -121,6 +121,7 @@ const mockAccountingStrategySpy = {
   exportCreditInvoice: vi.spyOn(mockAccountingStrategy, 'exportCreditInvoice'),
 };
 
+
 /**
  * Get latest invoice via admin API
  */
@@ -512,6 +513,39 @@ describe('Generate without credit invoicing', function () {
     // Previous should be defined, but credit is empty because we disabled the createCreditInvoices config
     expect(events[1].previousInvoice).toBeDefined();
     expect(events[1].creditInvoice).toBeUndefined();
+  });
+});
+
+describe('Puppeteer launch options', function () {
+  it('Uses PUPPETEER_EXECUTABLE_PATH when set', async () => {
+    process.env.PUPPETEER_EXECUTABLE_PATH = '/tmp/fake-chrome-for-test';
+    try {
+      const res = await adminClient.fetch(
+        `http://localhost:3106/invoices/preview/${order.code}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ template: defaultTemplate }),
+        }
+      );
+      // Puppeteer should fail because the binary at that path doesn't exist,
+      // proving the env var was forwarded to puppeteer.launch().
+      expect(res.status).toBe(500);
+    } finally {
+      delete process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+  });
+
+  it('Still works after clearing PUPPETEER_EXECUTABLE_PATH', async () => {
+    expect(process.env.PUPPETEER_EXECUTABLE_PATH).toBeUndefined();
+    const res = await adminClient.fetch(
+      `http://localhost:3106/invoices/preview/${order.code}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ template: defaultTemplate }),
+      }
+    );
+    // Falls back to bundled Chrome and succeeds
+    expect(res.status).toBe(201);
   });
 });
 
