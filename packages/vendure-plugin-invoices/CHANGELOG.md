@@ -1,6 +1,8 @@
-# 5.1.1 (2026-06-03)
+# 6.0.0 (2026-06-04)
 
-- Added `puppeteerLaunchOptions` config option and `PUPPETEER_EXECUTABLE_PATH` env var support for custom Chrome binary paths in Docker/production environments.
+- **BREAKING:** The recommended Docker setup now uses system-installed Chrome instead of Puppeteer's bundled Chromium. Consumers should update their Dockerfile to install `google-chrome-stable` and set `PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable`. See the README for a working Dockerfile.
+- Added `puppeteerLaunchOptions` config option for passing custom options to `puppeteer.launch()` (e.g. `executablePath`, `args`, `timeout`).
+- Added `PUPPETEER_EXECUTABLE_PATH` env var support to override the Chrome binary path without code changes.
 
 # 5.1.0 (2026-08-05)
 
