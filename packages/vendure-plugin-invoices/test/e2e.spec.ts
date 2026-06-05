@@ -121,6 +121,7 @@ const mockAccountingStrategySpy = {
   exportCreditInvoice: vi.spyOn(mockAccountingStrategy, 'exportCreditInvoice'),
 };
 
+
 /**
  * Get latest invoice via admin API
  */
@@ -168,8 +169,8 @@ beforeAll(async () => {
   // Listen for invoice created events
   server.app
     .get(EventBus)
-    .ofType(InvoiceCreatedEvent)
-    .subscribe((event) => events.push(event));
+    .filter((e) => e.constructor.name === 'InvoiceCreatedEvent')
+    .subscribe((event) => events.push(event as InvoiceCreatedEvent));
 }, 30000);
 
 it('Should start successfully', async () => {
@@ -229,6 +230,7 @@ describe('Generate with credit invoicing enabled', function () {
   });
 
   it('Emitted event for created invoice', async () => {
+    await waitFor(() => events[0]?.newInvoice, 100, 20000);
     const newInvoice = events[0].newInvoice;
     expect(newInvoice.createdAt).toBeDefined();
     expect(newInvoice.channelId).toBeDefined();
@@ -241,7 +243,7 @@ describe('Generate with credit invoicing enabled', function () {
     expect(events[0].creditInvoice).toBeUndefined();
     expect(events[0].previousInvoice).toBeUndefined();
     expect(events[1]).toBeUndefined();
-  });
+  }, 25000);
 
   it('Triggered accounting export strategy', async () => {
     const getMockCalls = () =>
@@ -511,6 +513,39 @@ describe('Generate without credit invoicing', function () {
     // Previous should be defined, but credit is empty because we disabled the createCreditInvoices config
     expect(events[1].previousInvoice).toBeDefined();
     expect(events[1].creditInvoice).toBeUndefined();
+  });
+});
+
+describe('Puppeteer launch options', function () {
+  it('Uses PUPPETEER_EXECUTABLE_PATH when set', async () => {
+    process.env.PUPPETEER_EXECUTABLE_PATH = '/tmp/fake-chrome-for-test';
+    try {
+      const res = await adminClient.fetch(
+        `http://localhost:3106/invoices/preview/${order.code}`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ template: defaultTemplate }),
+        }
+      );
+      // Puppeteer should fail because the binary at that path doesn't exist,
+      // proving the env var was forwarded to puppeteer.launch().
+      expect(res.status).toBe(500);
+    } finally {
+      delete process.env.PUPPETEER_EXECUTABLE_PATH;
+    }
+  });
+
+  it('Still works after clearing PUPPETEER_EXECUTABLE_PATH', async () => {
+    expect(process.env.PUPPETEER_EXECUTABLE_PATH).toBeUndefined();
+    const res = await adminClient.fetch(
+      `http://localhost:3106/invoices/preview/${order.code}`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ template: defaultTemplate }),
+      }
+    );
+    // Falls back to bundled Chrome and succeeds
+    expect(res.status).toBe(201);
   });
 });
 

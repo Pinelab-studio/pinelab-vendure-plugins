@@ -1,0 +1,112 @@
+---
+/**
+ * Index page listing every guide in the `guides` content collection.
+ * Sorted by `pubDate` descending (newest first).
+ */
+import { getCollection, type CollectionEntry } from 'astro:content';
+import { getImage } from 'astro:assets';
+import Layout from '../../layouts/Layout.astro';
+import Heading1 from '../../components/base/Heading1.astro';
+import Paragraph from '../../components/base/Paragraph.astro';
+import { buildBreadcrumbs } from '../../utils/structured-data';
+
+const guides = (await getCollection('guides')).sort(
+  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime()
+);
+
+type GuideWithImage = CollectionEntry<'guides'> & {
+  optimizedImage?: Awaited<ReturnType<typeof getImage>>;
+};
+
+const guidesWithImages: GuideWithImage[] = await Promise.all(
+  guides.map(async (g) => {
+    let optimizedImage: Awaited<ReturnType<typeof getImage>> | undefined;
+    if (g.data.heroImage) {
+      optimizedImage = await getImage({
+        src: g.data.heroImage,
+        inferSize: true,
+        format: 'webp',
+        quality: 80,
+        width: 600,
+        height: 315,
+      });
+    }
+    return { ...g, optimizedImage };
+  })
+);
+
+const url = 'https://plugins.pinelab.studio/guides';
+
+const structuredData = [
+  buildBreadcrumbs([
+    { name: 'Home', url: 'https://plugins.pinelab.studio/' },
+    { name: 'Guides', url },
+  ]),
+];
+---
+
+<Layout
+  metaTitle="Guides"
+  metaDescription="Practical guides for building with Vendure — SEO, integrations, and patterns proven in production."
+  structuredData={structuredData}
+>
+  <section class="mb-24">
+    <Heading1>Guides</Heading1>
+
+    <Paragraph>
+      Practical, production-tested guides for building with Vendure. Each guide
+      distills patterns we use in our own client projects. Each guide aims to be
+      an AI ready prompt to implement the described feature. So <a
+        href="/ai-integration/"
+        class="underline">point your AI assistant to our docs</a
+      >, and start building.
+    </Paragraph>
+
+    {
+      guides.length === 0 ? (
+        <Paragraph>
+          <i>No guides yet — check back soon.</i>
+        </Paragraph>
+      ) : (
+        <ul class="mt-10 grid gap-8 sm:grid-cols-2">
+          {guidesWithImages.map((g) => (
+            <li class="border-base-contrast/20 hover:border-base-contrast/40 group rounded border transition-colors">
+              <a
+                href={`/guides/${g.data.slug}`}
+                class="block h-full overflow-hidden rounded"
+              >
+                {g.optimizedImage && (
+                  <img
+                    src={g.optimizedImage.src}
+                    alt={g.data.heroImageAlt ?? g.data.title}
+                    width={600}
+                    height={315}
+                    class="h-48 w-full object-cover"
+                  />
+                )}
+                <div class="p-5">
+                  <h2 class="mb-2 text-xl font-semibold group-hover:underline">
+                    {g.data.title}
+                  </h2>
+                  <p class="text-base-contrast/80 mb-3 text-sm">
+                    {g.data.description}
+                  </p>
+                  <time
+                    datetime={g.data.pubDate.toISOString()}
+                    class="text-base-contrast/60 text-xs"
+                  >
+                    {g.data.pubDate.toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </time>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+  </section>
+</Layout>

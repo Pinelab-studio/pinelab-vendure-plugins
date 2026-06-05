@@ -1,0 +1,12 @@
+---
+/**
+ * Emits a single JSON-LD <script> tag with the supplied schema graph.
+ * Pass the object returned by `buildGraph(...)` as the `data` prop.
+ */
+interface Props {
+  data: Record<string, unknown>;
+}
+const { data } = Astro.props;
+---
+
+<script type="application/ld+json" is:inline set:html={JSON.stringify(data)} />

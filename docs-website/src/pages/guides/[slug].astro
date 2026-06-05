@@ -1,0 +1,175 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import { Image, getImage } from 'astro:assets';
+import Layout from '../../layouts/Layout.astro';
+import {
+  buildBreadcrumbs,
+  buildGuideArticle,
+} from '../../utils/structured-data';
+
+/**
+ * Dynamic route for guides. Each Markdown file in `src/content/guides/`
+ * becomes /guides/<slug>, where `slug` is taken from the file's
+ * frontmatter (NOT the filename). Uses the `guides` build-time content
+ * collection.
+ */
+export async function getStaticPaths() {
+  const guides = await getCollection('guides');
+  return guides.map((entry) => ({
+    params: { slug: entry.data.slug },
+    props: { entry },
+  }));
+}
+
+interface Props {
+  entry: CollectionEntry<'guides'>;
+}
+
+const { entry } = Astro.props;
+const { Content, headings } = await render(entry);
+
+// Table of contents: only H2s. Each heading has a `slug` matching the
+// auto-generated id rendered on the heading element by Astro.
+const toc = headings.filter((h) => h.depth === 2);
+
+const url = `https://plugins.pinelab.studio/guides/${entry.data.slug}`;
+const heroAlt = entry.data.heroImageAlt ?? entry.data.title;
+
+// Download and optimize the remote image at build time.
+// Converts to WebP format with 80% quality for smaller file size.
+// The resulting `localImage.src` is a local path used for both
+// rendering and structured data (OG image / SEO).
+let localImage: Awaited<ReturnType<typeof getImage>> | undefined;
+if (entry.data.heroImage) {
+  localImage = await getImage({
+    src: entry.data.heroImage,
+    inferSize: true,
+    format: 'webp',
+    quality: 80,
+    width: 1200, // Set a max width to prevent excessively large images
+    height: 630, // Set a max height to prevent excessively large images
+  });
+}
+
+const structuredData = [
+  buildGuideArticle({
+    url,
+    title: entry.data.title,
+    description: entry.data.description,
+    datePublished: entry.data.pubDate,
+    dateModified: entry.data.updatedDate,
+    authorName: entry.data.author,
+    image: localImage?.src ?? entry.data.heroImage,
+  }),
+  buildBreadcrumbs([
+    { name: 'Home', url: 'https://plugins.pinelab.studio/' },
+    { name: 'Guides', url: 'https://plugins.pinelab.studio/guides' },
+    { name: entry.data.title, url },
+  ]),
+];
+---
+
+<Layout
+  metaTitle={entry.data.title}
+  metaDescription={entry.data.description}
+  structuredData={structuredData}
+>
+  <article class="mt-8 mb-24">
+    {
+      localImage && (
+        <img
+          src={localImage.src}
+          alt={heroAlt}
+          width="1200"
+          height="630"
+          class="mb-8 max-h-96 w-full rounded object-cover"
+        />
+      )
+    }
+    <header class="mb-8">
+      <h1 class="text-4xl font-bold">{entry.data.title}</h1>
+      <p class="text-base-contrast/70 mt-2 text-sm">
+        <time datetime={entry.data.pubDate.toISOString()}>
+          {
+            entry.data.pubDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })
+          }
+        </time>
+        {entry.data.author ? ` · ${entry.data.author}` : ''}
+      </p>
+    </header>
+
+    {
+      toc.length > 0 && (
+        <details
+          id="toc-accordion"
+          class="toc-accordion border-base-contrast/20 mb-10 rounded border p-4"
+          open
+        >
+          <summary class="cursor-pointer font-semibold md:cursor-default">
+            On this page
+          </summary>
+          <nav aria-label="Table of contents" class="mt-2">
+            <ol class="list-decimal space-y-1 pl-6">
+              {toc.map((h) => (
+                <li>
+                  <a
+                    href={`#${h.slug}`}
+                    class="underline underline-offset-2 hover:opacity-80"
+                  >
+                    {h.text}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        </details>
+      )
+    }
+
+    <div class="prose prose-invert blog-content !max-w-none">
+      <Content />
+    </div>
+  </article>
+</Layout>
+
+<style>
+  /* Desktop (md+, 768px+): hide the disclosure marker and disable
+     pointer interaction so the TOC reads as a static block. */
+  @media (min-width: 768px) {
+    .toc-accordion > summary {
+      list-style: none;
+      pointer-events: none;
+    }
+    .toc-accordion > summary::-webkit-details-marker {
+      display: none;
+    }
+    .toc-accordion > summary::marker {
+      content: '';
+    }
+  }
+</style>
+
+<script is:inline>
+  // Sync the <details open> attribute with viewport size. Default
+  // markup ships with `open` (so SSR + no-JS users see the TOC).
+  // On mobile (<768px) we collapse it; users can still toggle.
+  (function () {
+    var el = document.getElementById('toc-accordion');
+    if (!el) return;
+    var mq = window.matchMedia('(min-width: 768px)');
+    var userToggled = false;
+    el.addEventListener('toggle', function () {
+      userToggled = true;
+    });
+    function apply() {
+      if (userToggled) return;
+      el.open = mq.matches;
+    }
+    apply();
+    mq.addEventListener('change', apply);
+  })();
+</script>

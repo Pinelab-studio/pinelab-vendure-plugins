@@ -147,10 +147,14 @@ describe('Klaviyo', () => {
     expect(profile.location.country).toBe('NL');
   });
 
-  it("Has sent 'Ordered Product' to Klaviyo", () => {
-    const productEvent = klaviyoRequests.filter(
-      (r) => r.data.attributes.metric.data.attributes.name === 'Ordered Product'
-    );
+  it("Has sent 'Ordered Product' to Klaviyo", async () => {
+    const productEvent = await waitFor(() => {
+      const events = klaviyoRequests.filter(
+        (r) =>
+          r.data.attributes.metric.data.attributes.name === 'Ordered Product'
+      );
+      if (events.length >= 2) return events;
+    });
     const orderItem1 = productEvent[0].data.attributes.properties as any;
     const orderItem2 = productEvent[1].data.attributes.properties as any;
     expect(orderItem1).toEqual({

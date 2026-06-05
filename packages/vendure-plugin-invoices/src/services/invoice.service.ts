@@ -54,6 +54,7 @@ import { defaultTemplate } from '../util/default-template';
 import { createTempFile } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
+import { buildLaunchOptions } from '../util/puppeteer.util';
 
 import { filter } from 'rxjs';
 import { In } from 'typeorm';
@@ -552,11 +553,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     let browser: Browser | undefined;
     try {
       const compiledHtml = Handlebars.compile(htmlTemplateString)(data);
-      browser = await puppeteer.launch({
-        headless: true,
-        // We are not using puppeteer to fetch any external resources, so we dont care about the security concerns here
-        args: ['--no-sandbox'],
-      });
+      browser = await puppeteer.launch(
+        buildLaunchOptions(this.config.puppeteerLaunchOptions)
+      );
       const page = await browser.newPage();
       await page.setContent(compiledHtml);
       await page.pdf({

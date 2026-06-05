@@ -48,3 +48,4 @@ __admin-ui/
 .cursor/mcp.json
 .vendure-dashboard-temp
 packages/vendure-plugin-invoices/src/generated-graphql-types.ts
+.vendure/

@@ -53,6 +53,21 @@ describe('Stock monitoring plugin', function () {
       },
       productsCsvPath: '../test/src/products-import.csv',
     });
+    await adminClient.asSuperAdmin();
+    await adminClient.query(gql`
+      mutation {
+        updateProductVariants(
+          input: [
+            { id: 1, trackInventory: TRUE }
+            { id: 2, trackInventory: TRUE }
+            { id: 3, trackInventory: TRUE }
+            { id: 4, trackInventory: TRUE }
+          ]
+        ) {
+          id
+        }
+      }
+    `);
     serverStarted = true;
   }, 60000);
 
@@ -61,6 +76,7 @@ describe('Stock monitoring plugin', function () {
   });
 
   it('Fails for unauthenticated call', async () => {
+    await adminClient.asAnonymousUser();
     const queryPromise = adminClient.query(gql`
       query productVariantsWithLowStock {
         productVariantsWithLowStock {
@@ -108,9 +124,9 @@ describe('Stock monitoring plugin', function () {
     const { productVariantsWithLowStock } = await adminClient.query(
       GET_OUT_OF_STOCK_VARIANTS
     );
-    expect(productVariantsWithLowStock.length).toBe(3);
     expect(updateProductVariants[0].stockLevels[0].stockOnHand).toBe(105);
     expect(updateProductVariants[0].stockLevels[0].stockAllocated).toBe(0);
+    expect(productVariantsWithLowStock.length).toBe(3);
   });
 
   const emittedEvents: StockDroppedBelowThresholdEvent[] = [];

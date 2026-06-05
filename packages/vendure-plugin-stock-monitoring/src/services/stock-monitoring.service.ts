@@ -114,9 +114,7 @@ export class StockMonitoringService
         ])
         .where('pv.deletedAt IS NULL')
         .andWhere('pv.enabled = :enabled', { enabled: true })
-        .andWhere('pv.trackInventory != :trackInventory', {
-          trackInventory: false,
-        })
+        .andWhere('pv.trackInventory != "FALSE"')
         .groupBy('pv.id')
         .having('availableStock < threshold')
         .limit(limit)
@@ -126,6 +124,15 @@ export class StockMonitoringService
       await this.cacheService.set(cacheKey, variantIds, { ttl: 60000 });
     }
     const variants = await this.variantService.findByIds(ctx, variantIds);
+    // findByIds does not preserve input order, so re-sort to match the cached ASC order
+    const idOrder = new Map(
+      variantIds.map((id, index) => [id.toString(), index])
+    );
+    variants.sort(
+      (a, b) =>
+        (idOrder.get(a.id.toString()) ?? 0) -
+        (idOrder.get(b.id.toString()) ?? 0)
+    );
     return variants;
   }
 

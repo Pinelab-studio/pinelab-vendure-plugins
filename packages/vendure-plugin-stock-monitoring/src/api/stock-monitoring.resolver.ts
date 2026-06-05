@@ -17,6 +17,6 @@ export class StockMonitoringResolver {
   async productVariantsWithLowStock(
     @Ctx() ctx: RequestContext
   ): Promise<ProductVariant[]> {
-    return this.stockMonitoringService.getVariantsBelowThreshold(ctx);
+    return this.stockMonitoringService.getVariantsBelowThreshold(ctx, 100);
   }
 }
