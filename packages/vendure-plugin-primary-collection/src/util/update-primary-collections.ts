@@ -7,7 +7,6 @@ import {
 import { Channel, Logger, Product } from '@vendure/core';
 import { DEFAULT_CHANNEL_CODE } from '@vendure/common/lib/shared-constants';
 import { loggerCtx } from '../constants';
-import { ProductPrimaryCollection } from './helpers';
 
 export async function updatePrimaryCollections(queryRunner: QueryRunner) {
   try {
@@ -36,7 +35,7 @@ export async function updatePrimaryCollections(queryRunner: QueryRunner) {
             {
               channelId: defaultChannel.id,
               collectionId: primaryCollectionData.primaryCollectionId,
-            } as ProductPrimaryCollection,
+            },
           ]),
         },
       });

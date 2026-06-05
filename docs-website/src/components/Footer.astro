@@ -1,6 +1,6 @@
 ---
 const companyDetails = {
-  name: 'Pinelab Studio',
+  name: 'Pinelab.studio',
   street: 'Cornelis Trooststraat 48',
   postalCode: '8932 BR',
   city: 'Leeuwarden',
@@ -21,8 +21,17 @@ const navigation = {
     { name: 'Plugins', href: '/#plugins' },
   ],
   resources: [
-    { name: 'Recipes', href: 'https://pinelab.studio/recipes/' },
-    { name: 'Pinelab.studio', href: 'https://pinelab.studio/' },
+    {
+      name: 'Recipes',
+      href: 'https://pinelab.studio/recipes/',
+      external: true,
+    },
+    {
+      name: 'Pinelab.studio',
+      href: 'https://pinelab.studio/',
+      external: true,
+    },
+    { name: 'llms.txt', href: '/llms.txt', external: false },
   ],
   social: [
     ...contacts.map((contact) => ({
@@ -41,22 +50,19 @@ const navigation = {
 };
 ---
 
-<footer class="bg-swamp-950">
-  <div class="mx-auto max-w-7xl px-6 pt-16 pb-8 sm:pt-24 lg:px-8 lg:pt-32">
-    <div class="xl:grid xl:grid-cols-3 xl:gap-8">
-      <div class="space-y-8">
+<footer class="-mx-8 border-t border-gray-800 text-base-contrast">
+  <div class="mx-auto max-w-7xl p-8 xl:px-0">
+    <div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div class="space-y-4">
         <img
-          class="h-9 w-9"
+          class="mb-4 h-9 w-9"
           src="/pinelab-sticker.webp"
           alt="Pinelab.studio"
           loading="lazy"
           width="313"
           height="294"
         />
-        <!-- <p class="text-sm/6 text-balance text-gray-300">
-          Creating customizable webshops with Vendure
-        </p> -->
-        <p class="text-sm/6 text-gray-400">
+        <p>
           {companyDetails.name}
           <br />
           {companyDetails.street}, {companyDetails.postalCode}
@@ -68,71 +74,59 @@ const navigation = {
           <br />
           VAT {companyDetails.vatId}
         </p>
-        <p class="text-sm/6 text-gray-400">
-          🍪 Have you seen a cookie banner? No? That is because we use
-          consentless, privacy friendly analytics!
+        <p>
+          🍪 Have you seen a cookie banner? No? That is because we use privacy
+          friendly analytics!
         </p>
       </div>
-      <div class="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
-        <div class="md:grid md:grid-cols-2 md:gap-8">
-          <div>
-            <h3 class="text-sm/6 font-semibold text-white">Contact</h3>
-            <ul role="list" class="mt-6 space-y-4">
-              {
-                navigation.social.map((item) => (
-                  <li>
-                    <a href={item.href} class="text-sm/6 text-gray-400">
-                      {item.name}
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
-          </div>
-          <div class="mt-10 md:mt-0">
-            <h3 class="text-sm/6 font-semibold text-white">Pages</h3>
-            <ul role="list" class="mt-6 space-y-4">
-              {
-                navigation.pages.map((item) => (
-                  <li>
-                    <a
-                      href={item.href}
-                      class="text-sm/6 text-gray-400 hover:text-white"
-                    >
-                      {item.name}
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
-          </div>
-        </div>
-        <div class="md:grid md:grid-cols-2 md:gap-8">
-          <div>
-            <h3 class="text-sm/6 font-semibold text-white">Resources</h3>
-            <ul role="list" class="mt-6 space-y-4">
-              {
-                navigation.resources.map((item) => (
-                  <li>
-                    <a
-                      href={item.href}
-                      target="_blank"
-                      class="text-sm/6 text-gray-400 hover:text-white"
-                    >
-                      {item.name}
-                    </a>
-                  </li>
-                ))
-              }
-            </ul>
-          </div>
-        </div>
+      <div>
+        <h3 class="text-xl font-semibold">Contact</h3>
+        <ul role="list" class="mt-4 space-y-4">
+          {
+            navigation.social.map((item) => (
+              <li>
+                <a href={item.href} class="hover:text-white">
+                  {item.name}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-xl font-semibold">Pages</h3>
+        <ul role="list" class="mt-4 space-y-4">
+          {
+            navigation.pages.map((item) => (
+              <li>
+                <a href={item.href} class="hover:text-white">
+                  {item.name}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <h3 class="mt-8 text-xl font-semibold">Resources</h3>
+        <ul role="list" class="mt-4 space-y-4">
+          {
+            navigation.resources.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noopener noreferrer' : undefined}
+                  class="hover:text-white"
+                >
+                  {item.name}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
       </div>
     </div>
-    <div class="mt-16 border-t border-white/10 pt-8 sm:mt-20 lg:mt-24">
-      <p class="text-sm/6 text-gray-400">
-        &copy; Your trusted partner in ecommerce since 2021
-      </p>
+    <div class="mt-8 border-t border-white/10 pt-8">
+      <p>&copy; Your trusted partner in ecommerce since 2021</p>
     </div>
   </div>
 </footer>

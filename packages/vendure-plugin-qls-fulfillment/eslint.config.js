@@ -3,6 +3,9 @@ module.exports = (async () => {
   return [
     ...parentConfig,
     {
+      ignores: ['scripts/**'],
+    },
+    {
       languageOptions: {
         parserOptions: {
           project: './tsconfig.json',

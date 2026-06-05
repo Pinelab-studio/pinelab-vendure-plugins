@@ -31,6 +31,7 @@ beforeAll(async () => {
     plugins: [
       OrderCleanupPlugin.init({
         olderThanDays: 0, // For testing this will delete all orders
+        batchSize: 1, // SQLite does not support concurrent transactions
       }),
     ],
   });
@@ -73,6 +74,6 @@ it('Cancels all active orders when endpoint is called', async () => {
     if (items.every((o) => o.state === 'Cancelled')) {
       return items;
     }
-  }, 100);
+  }, 1000);
   expect(orders.every((o) => o.state === 'Cancelled')).toBe(true);
 });

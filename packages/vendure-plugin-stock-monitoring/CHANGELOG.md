@@ -1,3 +1,17 @@
+# 2.2.1 (2026-05-29)
+
+- Fixed stock-monitoring widget to display items sorted from lowest to highest available stock
+- Widget now shows available stock (stockOnHand - stockAllocated) instead of only stockOnHand
+
+# 2.2.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
+# 2.1.1 (2026-05-19)
+
+- Fixed `trackInventory` query filter to use correct boolean string value
+- Set stock monitoring query limit to 100 variants
+
 # 2.1.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3

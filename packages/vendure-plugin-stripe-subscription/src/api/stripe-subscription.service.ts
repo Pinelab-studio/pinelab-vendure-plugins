@@ -536,33 +536,35 @@ export class StripeSubscriptionService {
         );
       }
     }
-    const addPaymentToOrderResult = await this.orderService.addPaymentToOrder(
-      ctx,
-      order.id,
-      {
-        method: paymentMethodCode,
-        metadata: {
-          setupIntentId: object.id,
-          amount: object.metadata.amount,
-        },
-      }
-    );
-
-    if ((addPaymentToOrderResult as ErrorResult).errorCode) {
-      throw Error(
-        `[${loggerCtx}]: Error adding payment to order ${order.code}: ${
-          (addPaymentToOrderResult as ErrorResult).message
-        }`
+    return this.connection.withTransaction(ctx, async (transactionCtx) => {
+      const addPaymentToOrderResult = await this.orderService.addPaymentToOrder(
+        transactionCtx,
+        order.id,
+        {
+          method: paymentMethodCode,
+          metadata: {
+            setupIntentId: object.id,
+            amount: object.metadata.amount,
+          },
+        }
       );
-    }
-    Logger.info(
-      `Successfully settled payment for order ${
-        order.code
-      } with amount ${printMoney(object.metadata.amount)}, for channel ${
-        ctx.channel.token
-      }`,
-      loggerCtx
-    );
+
+      if ((addPaymentToOrderResult as ErrorResult).errorCode) {
+        throw Error(
+          `[${loggerCtx}]: Error adding payment to order ${order.code}: ${
+            (addPaymentToOrderResult as ErrorResult).message
+          }`
+        );
+      }
+      Logger.info(
+        `Successfully settled payment for order ${
+          order.code
+        } with amount ${printMoney(object.metadata.amount)}, for channel ${
+          ctx.channel.token
+        }`,
+        loggerCtx
+      );
+    });
   }
 
   /**

@@ -10,6 +10,7 @@ import {
   CustomValue,
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
+  FulfillmentProduct,
   FulfillmentProductInput,
 } from './lib/client-types';
 
@@ -89,6 +90,18 @@ export interface QlsPluginOptions {
    * Defaults to 'QLS'.
    */
   qlsProductIdUiTab?: string | null;
+  /**
+   * Optional hook called after syncing a variant to QLS.
+   * Receives the full QLS product, a RequestContext, and an Injector, allowing
+   * you to save any additional data to your own database. The saving itself
+   * happens inside this hook — if not provided, nothing is persisted.
+   */
+  saveAdditionalData?: (
+    ctx: RequestContext,
+    injector: Injector,
+    qlsProduct: FulfillmentProduct,
+    variant: ProductVariant
+  ) => Promise<void> | void;
   /**
    * Additional order items to add to the QLS order.
    */

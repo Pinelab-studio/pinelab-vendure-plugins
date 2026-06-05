@@ -98,6 +98,10 @@ import { createSettledOrder } from '../../test/src/shop-utils';
             },
           ];
         },
+        saveAdditionalData: async (ctx, injector, qlsProduct) => {
+          // Just a test implementation
+          console.log('Saving additional data for QLS product:', qlsProduct);
+        },
       }),
       DefaultSchedulerPlugin,
       DefaultSearchPlugin,

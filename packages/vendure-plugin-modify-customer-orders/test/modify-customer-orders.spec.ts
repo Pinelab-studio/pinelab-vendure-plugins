@@ -1,5 +1,6 @@
 import {
   DefaultLogger,
+  ID,
   LogLevel,
   mergeConfig,
   Order,
@@ -150,10 +151,37 @@ it('Assigned the draft order to customer as active order', async () => {
 });
 
 it('Transitioned previous active order to draft', async () => {
-  const draftOrder = await getOrder(adminClient, newActiveOrder?.id);
+  const draftOrder = await waitForDraftTransition(
+    adminClient,
+    newActiveOrder?.id
+  );
   expect(draftOrder?.active).toBe(false);
   expect(draftOrder?.state).toBe('Draft');
 });
+
+async function waitForDraftTransition(
+  client: any,
+  orderId: ID,
+  maxRetries = 50,
+  delayMs = 100
+) {
+  for (let i = 0; i < maxRetries; i++) {
+    const order = await getOrder(client, orderId);
+
+    // If the background task has finished, return the updated order
+    if (order?.active === false && order?.state === 'Draft') {
+      return order;
+    }
+
+    // Otherwise, wait a few milliseconds and check again
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+
+  // If it times out, fetch it one last time.
+  // Returning the unchanged order here ensures your expect() assertions still
+  // print a clear error message (e.g., "expected true to be false") rather than just hanging.
+  return await getOrder(client, orderId);
+}
 
 if (process.env.TEST_ADMIN_UI) {
   it('Should compile admin', async () => {

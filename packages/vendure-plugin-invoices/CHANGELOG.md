@@ -1,3 +1,13 @@
+# 6.0.0 (2026-06-04)
+
+- **BREAKING:** The recommended Docker setup now uses system-installed Chrome instead of Puppeteer's bundled Chromium. Consumers should update their Dockerfile to install `google-chrome-stable` and set `PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable`. See the README for a working Dockerfile.
+- Added `puppeteerLaunchOptions` config option for passing custom options to `puppeteer.launch()` (e.g. `executablePath`, `args`, `timeout`).
+- Added `PUPPETEER_EXECUTABLE_PATH` env var support to override the Chrome binary path without code changes.
+
+# 5.1.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 5.0.0 (2026-04-20)
 
 - **BREAKING:** Removed legacy Angular admin UI (`src/ui/`). The plugin now exclusively uses the React Dashboard via `@vendure/dashboard`.
