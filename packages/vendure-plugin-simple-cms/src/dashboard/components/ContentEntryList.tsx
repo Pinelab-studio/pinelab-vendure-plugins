@@ -97,6 +97,7 @@ function NewContentEntryButton() {
   );
 }
 
+/** Dashboard list page for browsing, filtering, and managing CMS content entries. */
 export function ContentEntryList({ route }: { route: any }) {
   return (
     <ListPage

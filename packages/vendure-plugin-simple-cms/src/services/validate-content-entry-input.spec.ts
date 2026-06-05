@@ -45,6 +45,7 @@ const banner: TypeDefinition = {
   ],
 };
 
+/** Builds a default `featuredProduct` ContentEntryInput for tests. */
 function fpInput(
   overrides: Partial<ContentEntryInput> = {}
 ): ContentEntryInput {
@@ -64,6 +65,7 @@ function fpInput(
   } as ContentEntryInput;
 }
 
+/** Builds a default `banner` ContentEntryInput for tests. */
 function bannerInput(
   overrides: Partial<ContentEntryInput> = {}
 ): ContentEntryInput {

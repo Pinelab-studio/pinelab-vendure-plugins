@@ -90,6 +90,7 @@ export class AdminResolver {
     private readonly options: SimpleCmsPluginOptions
   ) {}
 
+  /** Creates a new content entry and returns the flattened admin representation. */
   @Transaction()
   @Mutation()
   @Allow(Permission.CreateCatalog)
@@ -101,6 +102,7 @@ export class AdminResolver {
     return flattenEntry(ctx, entry, this.options);
   }
 
+  /** Updates an existing content entry by ID and returns the flattened admin representation. */
   @Transaction()
   @Mutation()
   @Allow(Permission.UpdateCatalog)
@@ -116,6 +118,7 @@ export class AdminResolver {
     return flattenEntry(ctx, entry, this.options);
   }
 
+  /** Soft-deletes a content entry by ID. */
   @Transaction()
   @Mutation()
   @Allow(Permission.DeleteCatalog)
@@ -127,6 +130,7 @@ export class AdminResolver {
     return { result: DeletionResult.DELETED };
   }
 
+  /** Returns a paginated, filterable list of all content entries. */
   @Query()
   async contentEntries(
     @Ctx() ctx: RequestContext,
@@ -142,6 +146,7 @@ export class AdminResolver {
     };
   }
 
+  /** Returns a single content entry by ID, or undefined if not found. */
   @Query()
   async contentEntry(
     @Ctx() ctx: RequestContext,
@@ -188,6 +193,7 @@ export class AdminResolver {
     };
   }
 
+  /** Resolves the `displayName` field for an `AdminContentEntry`. */
   @ResolveField('displayName')
   @Resolver('AdminContentEntry')
   displayName(
