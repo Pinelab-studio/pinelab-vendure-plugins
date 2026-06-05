@@ -91,9 +91,14 @@ export function createShopResolver(
           }
           try {
             const repository = this.connection.getRepository(ctx, field.entity);
+            const hasTranslationsRelation = repository.metadata.relations.some(
+              (r) => r.propertyName === 'translations'
+            );
             const loaded = (await repository.find({
               where: { id: In(ids as never) },
-              relations: ['translations'],
+              ...(hasTranslationsRelation
+                ? { relations: ['translations'] }
+                : {}),
             })) as unknown[];
             // Preserve input order and translate
             const idMap = new Map(
@@ -116,14 +121,13 @@ export function createShopResolver(
             }
             result[field.name] = ordered;
           } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
             Logger.error(
               `Failed to load relation field '${
                 field.name
-              }' for content type '${typeDef.displayName}': ${
-                (error as any)?.message
-              }`,
+              }' for content type '${typeDef.displayName}': ${err.message}`,
               loggerCtx,
-              (error as any).stack
+              err.stack
             );
             result[field.name] = relationValue;
           }
@@ -139,9 +143,14 @@ export function createShopResolver(
         }
         try {
           const repository = this.connection.getRepository(ctx, field.entity);
+          const hasTranslationsRelation = repository.metadata.relations.some(
+            (r) => r.propertyName === 'translations'
+          );
           const loaded = (await repository.findOne({
             where: { id: relationValue.id as never },
-            relations: ['translations'],
+            ...(hasTranslationsRelation
+              ? { relations: ['translations'] }
+              : {}),
           })) as unknown;
           if (!loaded) {
             continue;
@@ -155,12 +164,13 @@ export function createShopResolver(
             ? this.translator.translate(loaded as never, ctx)
             : loaded;
         } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
           Logger.error(
             `Failed to load relation field '${field.name}' for content type '${
               typeDef.displayName
-            }': ${(error as any)?.message}`,
+            }': ${err.message}`,
             loggerCtx,
-            (error as any).stack
+            err.stack
           );
 
           // If loading fails for any reason, keep the original `{ id }` value
@@ -187,7 +197,7 @@ export function createShopResolver(
       const byIdFieldName = contentTypeKey;
 
       // List query: returns all entries of this content type
-      async function listResolver(
+      const listResolver = async function (
         this: DynamicShopResolver,
         ctx: RequestContext
       ) {
@@ -199,7 +209,7 @@ export function createShopResolver(
         return Promise.all(
           flattened.map((entry) => this.resolveRelationFields(entry, def, ctx))
         );
-      }
+      };
       proto[listMethodName] = listResolver;
       Query(listFieldName)(proto, listMethodName, {
         value: listResolver,
@@ -207,7 +217,7 @@ export function createShopResolver(
       Ctx()(proto, listMethodName, 0);
 
       // By-id query: returns a single entry by its `id`, scoped to this content type
-      async function byIdResolver(
+      const byIdResolver = async function (
         this: DynamicShopResolver,
         ctx: RequestContext,
         args: { id: string }
@@ -218,7 +228,7 @@ export function createShopResolver(
         }
         const flattened = flattenEntry(ctx, entry, this.opts);
         return this.resolveRelationFields(flattened, def, ctx);
-      }
+      };
       proto[byIdMethodName] = byIdResolver;
       Query(byIdFieldName)(proto, byIdMethodName, {
         value: byIdResolver,
@@ -229,7 +239,7 @@ export function createShopResolver(
       const singletonMethodName = `single_${contentTypeKey}`;
       const singletonFieldName = contentTypeKey;
 
-      async function singletonResolver(
+      const singletonResolver = async function (
         this: DynamicShopResolver,
         ctx: RequestContext
       ) {
@@ -243,7 +253,7 @@ export function createShopResolver(
         }
         const flattened = flattenEntry(ctx, entry, this.opts);
         return this.resolveRelationFields(flattened, def, ctx);
-      }
+      };
       proto[singletonMethodName] = singletonResolver;
       Query(singletonFieldName)(proto, singletonMethodName, {
         value: singletonResolver,

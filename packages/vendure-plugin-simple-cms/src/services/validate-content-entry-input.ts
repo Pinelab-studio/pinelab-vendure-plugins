@@ -50,6 +50,7 @@ export function validateContentEntryInput(
   validateTranslations(translatableFields, input.translations ?? null);
 }
 
+/** Validates non-translatable fields in `input.fields`: rejects unknown/translatable keys and checks required values. */
 function validateTopLevelFields(
   nonTranslatable: AnyFieldDefinition[],
   translatable: Array<PrimitiveFieldDefinition | StructFieldDefinition>,
@@ -87,6 +88,7 @@ function validateTopLevelFields(
   }
 }
 
+/** Validates translation rows: unique language codes, no unknown keys, and required fields present per row. */
 function validateTranslations(
   translatable: Array<PrimitiveFieldDefinition | StructFieldDefinition>,
   translations: ContentEntryTranslationInput[] | null
@@ -95,7 +97,7 @@ function validateTranslations(
     // If there are required translatable fields but no translations row at all,
     // we still expect at least one row. Otherwise required-field check below
     // would never fire.
-    const hasRequired = translatable.some((f) => f.nullable === false);
+    const hasRequired = translatable.some((f) => f.nullable !== true);
     if (hasRequired) {
       throw new UserInputError(
         `At least one translation is required for translatable fields`
@@ -139,6 +141,7 @@ function validateTranslations(
   }
 }
 
+/** Asserts that a value matches the expected type for its field definition. Throws on mismatch. */
 function assertValueMatchesType(
   fieldDef: AnyFieldDefinition,
   value: unknown
@@ -189,6 +192,7 @@ function assertValueMatchesType(
   }
 }
 
+/** Validates a struct value: must be a plain object with only allowed sub-fields. */
 function assertStructValue(
   fieldDef: StructFieldDefinition,
   value: unknown
@@ -221,6 +225,7 @@ function assertStructValue(
   }
 }
 
+/** Validates a relation value: must be `{ id }` (single) or `[{ id }, ...]` (list). */
 function assertRelationValue(
   fieldDef: RelationFieldDefinition,
   value: unknown

@@ -39,10 +39,12 @@ export class SimpleCmsPlugin {
   static options: SimpleCmsPluginOptions;
   private static shopResolver?: Type<unknown>;
 
+  /** Configures the plugin with content type definitions. Resets any cached shop resolver. */
   static init(options: SimpleCmsPluginOptions): Type<SimpleCmsPlugin> {
     this.options = {
       ...options,
     };
+    this.shopResolver = undefined;
     return SimpleCmsPlugin;
   }
 

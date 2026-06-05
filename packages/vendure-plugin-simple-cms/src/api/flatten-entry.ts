@@ -3,6 +3,7 @@ import { ContentEntry } from '../entities/content-entry.entity';
 import { SimpleCmsPluginOptions, TypeDefinition } from '../types';
 import { toGraphQLTypeName } from './api-extensions';
 
+/** Maps a type definition field to its serializable DTO shape for the admin API response. */
 function mapFieldDefinition(field: TypeDefinition['fields'][number]) {
   return {
     name: field.name,

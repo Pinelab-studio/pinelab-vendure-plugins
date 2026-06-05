@@ -45,9 +45,9 @@ const CREATE_CONTENT_ENTRY = gql`
   });
 
   await adminClient.asSuperAdmin();
-  try {
-    // Create a FeaturedProduct (singleton) for testing
-    await adminClient.query(CREATE_CONTENT_ENTRY, {
+  const seeds = [
+    {
+      label: 'FeaturedProduct',
       input: {
         contentTypeCode: 'featuredProduct',
         fields: { product: { id: 1 } },
@@ -64,10 +64,9 @@ const CREATE_CONTENT_ENTRY = gql`
           },
         ],
       },
-    });
-
-    // Create a first Banner
-    await adminClient.query(CREATE_CONTENT_ENTRY, {
+    },
+    {
+      label: 'Banner 1',
       input: {
         contentTypeCode: 'banner',
         fields: { product: { id: 1 }, priority: 1 },
@@ -75,10 +74,9 @@ const CREATE_CONTENT_ENTRY = gql`
           { languageCode: 'en', fields: { title: 'Top banner EN' } },
         ],
       },
-    });
-
-    // Create a second Banner
-    await adminClient.query(CREATE_CONTENT_ENTRY, {
+    },
+    {
+      label: 'Banner 2',
       input: {
         contentTypeCode: 'banner',
         fields: { product: { id: 1 }, priority: 2 },
@@ -86,10 +84,15 @@ const CREATE_CONTENT_ENTRY = gql`
           { languageCode: 'en', fields: { title: 'Side banner EN' } },
         ],
       },
-    });
-  } catch (err) {
-    // eslint-disable-next-line no-console
-    console.error('Error seeding content entries', err);
+    },
+  ];
+  for (const seed of seeds) {
+    try {
+      await adminClient.query(CREATE_CONTENT_ENTRY, { input: seed.input });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error(`Error seeding ${seed.label}`, err);
+    }
   }
 
   // eslint-disable-next-line no-console

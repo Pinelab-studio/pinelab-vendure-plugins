@@ -336,11 +336,18 @@ export function ContentEntryDetail({
   }
 
   if (!contentType) {
+    const isLoading = contentTypeQuery.isLoading || contentTypeQuery.isFetching;
     return (
       <Page>
-        <PageTitle>Loading…</PageTitle>
+        <PageTitle>{isLoading ? 'Loading' : 'Not Found'}</PageTitle>
         <PageLayout>
-          <PageBlock column="main" blockId="loading" />
+          <PageBlock column="main" blockId="loading">
+            {!isLoading && (
+              <p className="text-sm text-muted-foreground">
+                Content type &apos;{resolvedContentTypeCode}&apos; not found.
+              </p>
+            )}
+          </PageBlock>
         </PageLayout>
       </Page>
     );

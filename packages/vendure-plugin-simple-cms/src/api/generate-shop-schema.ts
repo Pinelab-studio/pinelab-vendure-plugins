@@ -92,9 +92,10 @@ function generateStructType(
   field: StructFieldDefinition
 ): string {
   const typeName = `${parentTypeName}${toPascalCase(field.name)}`;
-  const lines = field.fields.map(
-    (f) => `  ${f.name}: ${fieldTypeSDL(f, typeName)}`
-  );
+  const lines = field.fields.map((f) => {
+    assertValidIdentifier(f.name, `sub-field name in struct '${field.name}'`);
+    return `  ${f.name}: ${fieldTypeSDL(f, typeName)}`;
+  });
   return `type ${typeName} {\n${lines.join('\n')}\n}`;
 }
 
@@ -161,8 +162,16 @@ export function generateShopSchema(options: SimpleCmsPluginOptions): string {
   const contentTypes = Object.entries(options.contentTypes ?? {});
   const objectTypes: string[] = [];
   const queryFields: string[] = [];
+  const seenTypeNames = new Set<string>();
   for (const [key, def] of contentTypes) {
     assertValidIdentifier(key, 'content type key');
+    const typeName = toPascalCase(key);
+    if (seenTypeNames.has(typeName)) {
+      throw new Error(
+        `[SimpleCmsPlugin] Duplicate GraphQL type name '${typeName}' produced by content type key '${key}'`
+      );
+    }
+    seenTypeNames.add(typeName);
     const { mainType, nestedTypes } = generateContentType(key, def);
     objectTypes.push(mainType, ...nestedTypes);
     queryFields.push(...generateQueryFields(key, def));

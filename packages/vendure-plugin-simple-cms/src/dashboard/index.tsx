@@ -34,7 +34,12 @@ defineDashboardExtension({
         breadcrumb: [{ path: '/content', label: 'Content' }, 'Edit'],
       }),
       component: (route) => {
-        const params = (route as any).useParams?.() as { id: string };
+        const params = (route as any).useParams?.() as
+          | { id: string }
+          | undefined;
+        if (!params?.id) {
+          return <ContentEntryDetail />;
+        }
         return <ContentEntryDetail id={params.id} />;
       },
     },
