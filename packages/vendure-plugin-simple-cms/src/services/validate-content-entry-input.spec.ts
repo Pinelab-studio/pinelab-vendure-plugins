@@ -62,7 +62,7 @@ function fpInput(
       },
     ],
     ...overrides,
-  } as ContentEntryInput;
+  };
 }
 
 /** Builds a default `banner` ContentEntryInput for tests. */
@@ -76,7 +76,7 @@ function bannerInput(
       { languageCode: LanguageCode.en, fields: { title: 'Hello' } },
     ],
     ...overrides,
-  } as ContentEntryInput;
+  };
 }
 
 describe('validateContentEntryInput', () => {
@@ -147,13 +147,13 @@ describe('validateContentEntryInput', () => {
       validateContentEntryInput(def, {
         contentTypeCode: 'x',
         fields: { flag: 'true', when: '2024-01-01' },
-      } as ContentEntryInput)
+      })
     ).toThrow(/boolean/);
     expect(() =>
       validateContentEntryInput(def, {
         contentTypeCode: 'x',
         fields: { flag: true, when: 'not a date' },
-      } as ContentEntryInput)
+      })
     ).toThrow(/ISO 8601/);
   });
 
