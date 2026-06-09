@@ -20,6 +20,7 @@ import {
 import { TestServer } from '@vendure/testing/lib/test-server';
 import { getSuperadminContext } from '@vendure/testing/lib/utils/get-superadmin-context';
 import fetch from 'node-fetch';
+import { promises as fs } from 'fs';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { addShippingMethod, cancelOrder } from '../../test/src/admin-utils';
 import { initialData } from '../../test/src/initial-data';
@@ -120,7 +121,6 @@ const mockAccountingStrategySpy = {
   exportInvoice: vi.spyOn(mockAccountingStrategy, 'exportInvoice'),
   exportCreditInvoice: vi.spyOn(mockAccountingStrategy, 'exportCreditInvoice'),
 };
-
 
 /**
  * Get latest invoice via admin API
@@ -448,6 +448,24 @@ describe('Download invoices', function () {
     );
     expect(res.status).toBe(403);
   });
+
+  it('Returns 403 when invoice file is missing', async () => {
+    const ctx = await getSuperadminContext(server.app);
+    const invoiceRepo = server.app
+      .get(TransactionalConnection)
+      .getRepository(ctx, InvoiceEntity);
+    const invoice = await invoiceRepo.findOne({
+      where: { invoiceNumber: 10001 },
+    });
+    expect(invoice).toBeDefined();
+    // Delete the invoice file from disk
+    await fs.unlink(invoice!.storageReference);
+    // Attempt to download - should return 403 instead of crashing the server
+    const res = await fetch(
+      `http://localhost:3106/invoices/e2e-default-channel/${order.code}/10001?email=hayden.zieme12%40hotmail.com`
+    );
+    expect(res.status).toBe(403);
+  });
 });
 
 describe('Generate without credit invoicing', function () {
@@ -514,6 +532,35 @@ describe('Generate without credit invoicing', function () {
     expect(events[1].previousInvoice).toBeDefined();
     expect(events[1].creditInvoice).toBeUndefined();
   });
+});
+
+describe('Concurrent invoice generation', function () {
+  let concurrentOrder1: any;
+  let concurrentOrder2: any;
+
+  it('Creates orders for concurrent test', async () => {
+    concurrentOrder1 = await createSettledOrder(shopClient, 1);
+    concurrentOrder2 = await createSettledOrder(shopClient, 1);
+    expect(concurrentOrder1.id).toBeDefined();
+    expect(concurrentOrder2.id).toBeDefined();
+  });
+
+  it('Handles concurrent invoice generation without duplicate numbers', async () => {
+    // Trigger invoice generation for both orders concurrently
+    const [result1, result2] = await Promise.all([
+      adminClient.query(createInvoiceMutation, {
+        orderId: concurrentOrder1.id,
+      }),
+      adminClient.query(createInvoiceMutation, {
+        orderId: concurrentOrder2.id,
+      }),
+    ]);
+    expect(result1.createInvoice.invoiceNumber).toBeDefined();
+    expect(result2.createInvoice.invoiceNumber).toBeDefined();
+    expect(result1.createInvoice.invoiceNumber).not.toBe(
+      result2.createInvoice.invoiceNumber
+    );
+  }, 30000);
 });
 
 describe('Puppeteer launch options', function () {

@@ -473,6 +473,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Create an invoice and save it's reference on an order in the database.
    * Passing a `previousInvoice` will generate a credit invoice.
+   * Uses a retry loop to handle duplicate invoice number conflicts from concurrent inserts.
    */
   private async createAndSaveInvoice(
     ctx: RequestContext,
@@ -493,43 +494,72 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     if (isCreditInvoiceFor) {
       orderTotals = reverseOrderTotals(isCreditInvoiceFor.orderTotals);
     }
-    const { invoiceNumber, invoiceTmpFile } = await this.generatePdfFile(
-      ctx,
-      templateString,
-      order,
-      // Pass reverse order totals and previous invoice if we are creating a credit invoice
-      isCreditInvoiceFor
-        ? {
-            previousInvoice: isCreditInvoiceFor,
-            reversedOrderTotals: orderTotals,
-          }
-        : undefined
-    );
 
-    // First create row in the DB, then save the file, then save the storageReference in the created row
-    const invoiceRowId = await this.createInvoiceRow(ctx, {
-      invoiceNumber,
-      orderId: order.id as string,
-      isCreditInvoice: !!isCreditInvoiceFor,
-      orderTotals,
-      isCreditInvoiceFor,
-    });
-    const storageReference = await this.config.storageStrategy.save(
-      invoiceTmpFile,
-      invoiceNumber,
-      ctx.channel.token,
-      !!isCreditInvoiceFor
+    const maxRetries = 5;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const { invoiceNumber, invoiceTmpFile } = await this.generatePdfFile(
+        ctx,
+        templateString,
+        order,
+        isCreditInvoiceFor
+          ? {
+              previousInvoice: isCreditInvoiceFor,
+              reversedOrderTotals: orderTotals,
+            }
+          : undefined
+      );
+
+      try {
+        // First create row in the DB, then save the file, then save the storageReference in the created row
+        const invoiceRowId = await this.createInvoiceRow(ctx, {
+          invoiceNumber,
+          orderId: order.id as string,
+          isCreditInvoice: !!isCreditInvoiceFor,
+          orderTotals,
+          isCreditInvoiceFor,
+        });
+        const storageReference = await this.config.storageStrategy.save(
+          invoiceTmpFile,
+          invoiceNumber,
+          ctx.channel.token,
+          !!isCreditInvoiceFor
+        );
+        // Save storage reference on the invoice row
+        const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
+        await invoiceRepo.update(invoiceRowId, { storageReference });
+        Logger.info(
+          `Created ${
+            isCreditInvoiceFor ? 'credit ' : ' '
+          }invoice ${invoiceNumber} for order ${order.code}`,
+          loggerCtx
+        );
+        return await invoiceRepo.findOneOrFail({
+          where: { id: invoiceRowId },
+        });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        const isDuplicate =
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          error?.code === 'ER_DUP_ENTRY' ||
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          error?.message?.includes('UNIQUE constraint failed') ||
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+          error?.message?.includes('duplicate key');
+        if (isDuplicate && attempt < maxRetries - 1) {
+          Logger.warn(
+            `Duplicate invoice number ${invoiceNumber} detected for order ${
+              order.code
+            } (attempt ${attempt + 1}/${maxRetries}), retrying...`,
+            loggerCtx
+          );
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error(
+      `Failed to create invoice for order ${order.code} after ${maxRetries} attempts due to duplicate invoice numbers`
     );
-    // Save storage reference on the invoice row
-    const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
-    await invoiceRepo.update(invoiceRowId, { storageReference });
-    Logger.info(
-      `Created ${
-        isCreditInvoiceFor ? 'credit ' : ' '
-      }invoice ${invoiceNumber} for order ${order.code}`,
-      loggerCtx
-    );
-    return await invoiceRepo.findOneOrFail({ where: { id: invoiceRowId } });
   }
 
   /**
