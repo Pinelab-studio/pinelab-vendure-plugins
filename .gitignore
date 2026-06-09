@@ -17,6 +17,7 @@
 .vscode
 Thumbs.db
 __data__
+__data__test__
 bazel-out
 chrome-profiler-events*.json
 connect.lock

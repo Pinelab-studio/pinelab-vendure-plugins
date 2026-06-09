@@ -1,4 +1,5 @@
 import { vendureDashboardPlugin } from '@vendure/dashboard/vite';
+import { existsSync } from 'fs';
 import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
@@ -23,11 +24,8 @@ export default defineConfig({
           outputPath,
           configFileName,
         }) => {
-          // Tell Vendure the compiled vendure-config.js is placed in ".vendure-dashboard-temp/vendure-plugin-store-credit/test/vendure-config.js"
-          // This is because we import test-payment from outside the root dir.
-          // The `getCompiledConfigPath` should simply tell Vendure where to find the vendure-config.js in .vendure-dashboard-temp
-          const relPath = inputRootDir.split('/packages/')[1] ?? '';
-          return join(outputPath, relPath, configFileName);
+          // Tell Vendure the compiled vendure-config.js is placed in ".vendure-dashboard-temp/test/vendure-config.js"
+          return join(outputPath, 'test', configFileName);
         },
       },
     }),
