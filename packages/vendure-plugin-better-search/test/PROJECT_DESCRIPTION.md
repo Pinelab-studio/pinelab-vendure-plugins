@@ -78,6 +78,7 @@ Next step: implement minisearch as Vendure Search plugin, see next step below.
 **Requirements for search plugin impl**
 
 - Implement basic search strategy interface, to make this a proper search plugin.
+  - Findings: EXCELLENT results on the live dataset of Wormenkwekerijwasse.nl, much better than current solution. Moving on to implementing features below.
 - Make channel aware, and allow only enabling for specific channel
 - Index in worker and serialize index to database
 - Lighter search as you type endpoint, instead of a full search

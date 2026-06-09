@@ -44,6 +44,6 @@ import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
   const { server } = createTestEnvironment(config);
   await server.init({
     initialData,
-    productsCsvPath: './test/search-products.csv',
+    productsCsvPath: './test/wkw-products.csv',
   });
 })();
