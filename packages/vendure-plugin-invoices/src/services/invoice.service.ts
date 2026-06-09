@@ -51,7 +51,7 @@ import {
   InvoiceOrderTotals,
 } from '../generated-graphql-types';
 import { defaultTemplate } from '../util/default-template';
-import { createTempFile } from '../util/file.util';
+import { createTempFile, safeRemove } from '../util/file.util';
 import { reverseOrderTotals } from '../util/order-calculations';
 import { InvoiceCreatedEvent } from './invoice-created-event';
 import { buildLaunchOptions } from '../util/puppeteer.util';
@@ -538,6 +538,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
+        safeRemove(invoiceTmpFile);
         const errorCode = (error as { code?: string })?.code;
         const errorMessage = (error as { message?: string })?.message;
         const isDuplicate =
