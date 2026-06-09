@@ -538,13 +538,12 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
+        const errorCode = (error as { code?: string })?.code;
+        const errorMessage = (error as { message?: string })?.message;
         const isDuplicate =
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          error?.code === 'ER_DUP_ENTRY' ||
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          error?.message?.includes('UNIQUE constraint failed') ||
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-          error?.message?.includes('duplicate key');
+          errorCode === 'ER_DUP_ENTRY' ||
+          !!errorMessage?.includes('UNIQUE constraint failed') ||
+          !!errorMessage?.includes('duplicate key');
         if (isDuplicate && attempt < maxRetries - 1) {
           Logger.warn(
             `Duplicate invoice number ${invoiceNumber} detected for order ${
