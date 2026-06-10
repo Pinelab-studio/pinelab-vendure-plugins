@@ -8,6 +8,7 @@ import {
 } from '@vendure/core';
 import {
   CustomValue,
+  FulfillmentOrder,
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
   FulfillmentProductDetail,
@@ -65,6 +66,17 @@ export interface QlsPluginOptions {
       ctx: RequestContext,
       order: Order
     ) => FulfillmentOrderInput['receiver_contact'] | undefined;
+    /**
+     * Optional hook called after an order has been successfully created in QLS.
+     * Receives the Vendure order, the created QLS order, a RequestContext, and an Injector.
+     * Errors in this hook are caught and logged, and will not fail the order push job.
+     */
+    pullAdditionalOrderFields?: (
+      ctx: RequestContext,
+      injector: Injector,
+      order: Order,
+      createdQlsOrder: FulfillmentOrder
+    ) => Promise<void> | void;
     /**
      * Additional order items to add to the QLS order.
      */

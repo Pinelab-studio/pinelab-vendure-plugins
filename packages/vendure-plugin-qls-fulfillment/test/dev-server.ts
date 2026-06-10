@@ -7,6 +7,7 @@ import {
   EntityHydrator,
   LogLevel,
   mergeConfig,
+  Order,
   OrderProcess,
   ProductVariant,
   TransactionalConnection,
@@ -23,6 +24,7 @@ import { QlsPlugin, qlsSyncAllProductsTask } from '../src';
 import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
 import path from 'path';
 import { createSettledOrder } from '../../test/src/shop-utils';
+import { convertProcessSignalToExitCode } from 'util';
 
 /**
  * The dev-server is just for development. Feel free to break anything here.
@@ -94,6 +96,17 @@ import { createSettledOrder } from '../../test/src/shop-utils';
                 amount_ordered: 1,
               },
             ];
+          },
+          pullAdditionalOrderFields: async (ctx, injector, order, qlsOrder) => {
+            console.log('Order created in QLS:', qlsOrder);
+            console.log('Order created in QLS:', order);
+            // Example: log or save additional data after order is created in QLS
+            injector
+              .get(TransactionalConnection)
+              .rawConnection.getRepository(Order)
+              .update(order.id, {
+                code: order.code + '-JUST_TESTING_HOOK',
+              });
           },
         },
         productSync: {

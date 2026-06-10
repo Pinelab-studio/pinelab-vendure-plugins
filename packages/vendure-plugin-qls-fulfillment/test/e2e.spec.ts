@@ -242,6 +242,15 @@ it('Pushes order to QLS', async () => {
       delivery_options: [{ tag: 'dhl-germany-national' }],
     };
   };
+  const pulledOrders: Array<{ orderCode: string; qlsId: string }> = [];
+  QlsPlugin.options.orderSync.pullAdditionalOrderFields = (
+    ctx,
+    injector,
+    order,
+    qlsOrder
+  ) => {
+    pulledOrders.push({ orderCode: order.code, qlsId: qlsOrder.id });
+  };
   const createdOrders: string[] = [];
   vi.stubGlobal(
     'fetch',
@@ -294,6 +303,9 @@ it('Pushes order to QLS', async () => {
     ],
     brand_id: 'mock-brand-id',
   });
+  expect(pulledOrders.length).toBe(1);
+  expect(pulledOrders[0].orderCode).toBeDefined();
+  expect(pulledOrders[0].qlsId).toBe('1');
   // await new Promise(resolve => setTimeout(resolve, 5000));
 }, 20000);
 

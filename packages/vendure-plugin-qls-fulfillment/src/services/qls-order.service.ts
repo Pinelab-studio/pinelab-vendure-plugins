@@ -296,6 +296,21 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
             error.stack
           );
         });
+      try {
+        await this.options.orderSync.pullAdditionalOrderFields?.(
+          ctx,
+          new Injector(this.moduleRef),
+          order,
+          result
+        );
+      } catch (e) {
+        const error = asError(e);
+        Logger.error(
+          `Error in pullAdditionalOrderFields for order '${order.code}': ${error.message}`,
+          loggerCtx,
+          error.stack
+        );
+      }
       return `Order '${order.code}' created in QLS with id '${result.id}'`;
     } catch (e) {
       const error = asError(e);
