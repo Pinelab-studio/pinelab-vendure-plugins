@@ -225,7 +225,7 @@ it('Pushes order to QLS', async () => {
     return false;
   };
   // Add additional order fields
-  QlsPlugin.options.getAdditionalOrderFields = (ctx, injector, order) => {
+  QlsPlugin.options.pushAdditionalOrderFields = (ctx, injector, order) => {
     return {
       delivery_options: [{ tag: 'dhl-germany-national' }],
     };

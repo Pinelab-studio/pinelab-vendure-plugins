@@ -121,7 +121,6 @@ const mockAccountingStrategySpy = {
   exportCreditInvoice: vi.spyOn(mockAccountingStrategy, 'exportCreditInvoice'),
 };
 
-
 /**
  * Get latest invoice via admin API
  */

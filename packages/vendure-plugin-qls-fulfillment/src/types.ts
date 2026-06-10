@@ -11,6 +11,7 @@ import {
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
   FulfillmentProduct,
+  FulfillmentProductDetail,
   FulfillmentProductInput,
 } from './lib/client-types';
 
@@ -31,10 +32,10 @@ export interface QlsPluginOptions {
   ) => AdditionalVariantFields;
 
   /**
-   * Function to get the set service point code for an order.
-   * Return undefined to not use a service point at all.
+   * Function to get additional order fields when pushing an order to QLS.
+   * Return undefined to not use additional fields at all.
    */
-  getAdditionalOrderFields?: (
+  pushAdditionalOrderFields?: (
     ctx: RequestContext,
     injector: Injector,
     order: Order
@@ -96,10 +97,10 @@ export interface QlsPluginOptions {
    * you to save any additional data to your own database. The saving itself
    * happens inside this hook — if not provided, nothing is persisted.
    */
-  saveAdditionalData?: (
+  saveAdditionalVariantData?: (
     ctx: RequestContext,
     injector: Injector,
-    qlsProduct: FulfillmentProduct,
+    qlsProduct: FulfillmentProductDetail,
     variant: ProductVariant
   ) => Promise<void> | void;
   /**

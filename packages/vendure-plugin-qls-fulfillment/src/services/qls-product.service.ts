@@ -321,13 +321,13 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         } else if (result.status === 'updated') {
           updatedInQls.push(variant);
         }
-        if (result.qlsProductId && this.options.saveAdditionalData) {
+        if (result.qlsProductId && this.options.saveAdditionalVariantData) {
           try {
             const qlsProduct = await client.getFulfillmentProductById(
               result.qlsProductId
             );
             if (qlsProduct) {
-              await this.options.saveAdditionalData(
+              await this.options.saveAdditionalVariantData(
                 ctx,
                 new Injector(this.moduleRef),
                 qlsProduct,

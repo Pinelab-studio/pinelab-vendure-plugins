@@ -203,7 +203,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         return message;
       }
       const additionalOrderFields =
-        await this.options.getAdditionalOrderFields?.(
+        await this.options.pushAdditionalOrderFields?.(
           ctx,
           new Injector(this.moduleRef),
           order

@@ -65,9 +65,16 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           url: process.env.QLS_URL,
           brandId: process.env.QLS_BRAND_ID!,
         }),
-        getAdditionalOrderFields: () => {
+        pushAdditionalOrderFields: () => {
           return {
             delivery_options: [{ tag: 'dhl-germany-national' }],
+            custom_values: [
+              {
+                key: 'vendureOrder',
+                value:
+                  'https://vendure.huidpraktijkshop.nl/admin/orders/420113',
+              },
+            ],
           };
         },
         getAdditionalVariantFields: (ctx, variant) => ({
@@ -98,7 +105,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
             },
           ];
         },
-        saveAdditionalData: async (ctx, injector, qlsProduct) => {
+        saveAdditionalVariantData: async (ctx, injector, qlsProduct) => {
           // Just a test implementation
           console.log('Saving additional data for QLS product:', qlsProduct);
         },
@@ -138,10 +145,7 @@ import { createSettledOrder } from '../../test/src/shop-utils';
     shopClient,
     1,
     true,
-    [
-      { id: 'T_1', quantity: 1 },
-      { id: 'T_2', quantity: 2 },
-    ],
+    [{ id: 'T_1', quantity: 1 }],
     undefined,
     {
       input: {

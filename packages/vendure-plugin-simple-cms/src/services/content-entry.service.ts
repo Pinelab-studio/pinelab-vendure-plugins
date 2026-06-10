@@ -37,7 +37,7 @@ export class ContentEntryService {
     private readonly eventBus: EventBus,
     @Inject(PLUGIN_INIT_OPTIONS)
     private readonly options: SimpleCmsPluginOptions
-  ) { }
+  ) {}
 
   /** Returns a paginated list of all content entries in the current channel. */
   findAll(
@@ -295,11 +295,7 @@ export class ContentEntryService {
       const value = fields[def.name];
       if (def.list && Array.isArray(value)) {
         fields[def.name] = (value as unknown[]).map((item: unknown) => {
-          if (
-            typeof item !== 'object' ||
-            item === null ||
-            !('id' in item)
-          ) {
+          if (typeof item !== 'object' || item === null || !('id' in item)) {
             return item;
           }
           const obj = item as Record<string, unknown>;

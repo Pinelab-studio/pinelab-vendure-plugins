@@ -360,9 +360,12 @@ describe('SendCloud', () => {
       .post('/api/v2/parcels')
       .times(3) // 1 initial + 2 retries
       .reply(500, { error: { message: 'Internal Server Error' } });
-    const { id: failedOrderId } = await createSettledOrder(shopClient, 1, true, [
-      { id: 'T_1', quantity: 1 },
-    ]);
+    const { id: failedOrderId } = await createSettledOrder(
+      shopClient,
+      1,
+      true,
+      [{ id: 'T_1', quantity: 1 }]
+    );
     await waitFor(async () => {
       const o = await getOrder(adminClient, String(failedOrderId));
       return o?.state === 'PaymentSettled' ? true : undefined;
@@ -403,9 +406,7 @@ describe('SendCloud', () => {
         query OrderHistory($id: ID!) {
           order(id: $id) {
             history(
-              options: {
-                filter: { type: { eq: "SENDCLOUD_NOTIFICATION" } }
-              }
+              options: { filter: { type: { eq: "SENDCLOUD_NOTIFICATION" } } }
             ) {
               totalItems
               items {
