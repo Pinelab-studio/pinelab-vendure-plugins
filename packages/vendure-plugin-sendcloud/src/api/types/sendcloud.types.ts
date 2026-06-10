@@ -25,6 +25,11 @@ export interface SendcloudPluginOptions {
    * disabled: !!process.env.TEST
    */
   disabled?: boolean;
+  /**
+   * Maximum number of times the job queue will retry syncing an order to SendCloud.
+   * @default 10
+   */
+  maxRetries?: number;
 }
 
 export type AdditionalParcelInputFn = (

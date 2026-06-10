@@ -53,7 +53,7 @@ export class SendcloudService implements OnApplicationBootstrap {
     @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions,
     private entityHydrator: EntityHydrator,
     private historyService: HistoryService
-  ) {}
+  ) { }
 
   async onApplicationBootstrap(): Promise<void> {
     // Listen for Settled orders to sync to sendcloud
@@ -63,7 +63,7 @@ export class SendcloudService implements OnApplicationBootstrap {
           orderCode: event.order.code,
           ctx: event.ctx.serialize(),
         },
-        { retries: 20 }
+        { retries: this.options.maxRetries ?? 10 }
       );
     });
     // Handle jobs
