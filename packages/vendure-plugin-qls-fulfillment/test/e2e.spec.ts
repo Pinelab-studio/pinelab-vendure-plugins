@@ -37,19 +37,23 @@ beforeAll(async () => {
             brandId: 'mock-brand-id',
           };
         },
-        getAdditionalVariantFields: (ctx, variant) => ({
-          ean: variant.sku,
-          additionalEANs: ['1234567890'],
-        }),
         webhookSecret: '1234',
-        addAdditionalOrderItems: async (ctx, injector, order) => {
-          return [
-            {
-              name: 'Additional free gift',
-              product_id: '1234567890', // Just a test
-              amount_ordered: 3,
-            },
-          ];
+        productSync: {
+          getAdditionalVariantFields: (ctx, variant) => ({
+            ean: variant.sku,
+            additionalEANs: ['1234567890'],
+          }),
+        },
+        orderSync: {
+          addAdditionalOrderItems: async (ctx, injector, order) => {
+            return [
+              {
+                name: 'Additional free gift',
+                product_id: '1234567890', // Just a test
+                amount_ordered: 3,
+              },
+            ];
+          },
         },
       }),
     ],
@@ -198,7 +202,7 @@ it('Updates stock via webhook', async () => {
 });
 
 it('Does not update stock when stock sync is disabled', async () => {
-  QlsPlugin.options.synchronizeStockLevels = false;
+  QlsPlugin.options.productSync.synchronizeStockLevels = false;
   const res = await adminClient.fetch(
     `http://localhost:3050/qls/webhook/${E2E_DEFAULT_CHANNEL_TOKEN}?secret=1234`,
     {
@@ -218,14 +222,22 @@ it('Does not update stock when stock sync is disabled', async () => {
 
 it('Pushes order to QLS', async () => {
   // Test excluded product as well
-  QlsPlugin.options.excludeVariantFromSync = (ctx, injector, variant) => {
+  QlsPlugin.options.productSync.excludeVariantFromSync = (
+    ctx,
+    injector,
+    variant
+  ) => {
     if (variant.sku === 'L2201516') {
       return true;
     }
     return false;
   };
   // Add additional order fields
-  QlsPlugin.options.pushAdditionalOrderFields = (ctx, injector, order) => {
+  QlsPlugin.options.orderSync.pushAdditionalOrderFields = (
+    ctx,
+    injector,
+    order
+  ) => {
     return {
       delivery_options: [{ tag: 'dhl-germany-national' }],
     };

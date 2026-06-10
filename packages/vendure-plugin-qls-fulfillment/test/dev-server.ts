@@ -8,6 +8,8 @@ import {
   LogLevel,
   mergeConfig,
   OrderProcess,
+  ProductVariant,
+  TransactionalConnection,
   VendureConfig,
 } from '@vendure/core';
 import {
@@ -65,49 +67,53 @@ import { createSettledOrder } from '../../test/src/shop-utils';
           url: process.env.QLS_URL,
           brandId: process.env.QLS_BRAND_ID!,
         }),
-        pushAdditionalOrderFields: () => {
-          return {
-            delivery_options: [{ tag: 'dhl-germany-national' }],
-            custom_values: [
-              {
-                key: 'vendureOrder',
-                value:
-                  'https://vendure.huidpraktijkshop.nl/admin/orders/420113',
-              },
-            ],
-          };
-        },
-        getAdditionalVariantFields: (ctx, variant) => ({
-          ean: variant.sku,
-          image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
-          // Just testing additionalEANs: [Math.floor(Math.random() * 1000).toString()],
-          additionalEANs: ['somethingelse'],
-        }),
         webhookSecret: '121231',
-        excludeVariantFromSync: async (ctx, injector, variant) => {
-          await injector.get(EntityHydrator).hydrate(ctx, variant, {
-            relations: ['facetValues'],
-          });
-          return variant.id == 1; // Just as a test
+        orderSync: {
+          pushAdditionalOrderFields: () => {
+            return {
+              delivery_options: [{ tag: 'dhl-germany-national' }],
+              custom_values: [
+                {
+                  key: 'vendureOrder',
+                  value:
+                    'https://vendure.huidpraktijkshop.nl/admin/orders/420113',
+                },
+              ],
+            };
+          },
+          autoPushOrders: true,
+          processOrderFrom: (ctx, order) => {
+            return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours from now
+          },
+          addAdditionalOrderItems: async (ctx, injector, order) => {
+            return [
+              {
+                // Just a test
+                name: 'ALHYDRAN 100ml 123421',
+                product_id: 'ec814961-8c84-4e3b-b54b-125efbf1764d',
+                amount_ordered: 1,
+              },
+            ];
+          },
         },
-        autoPushOrders: true,
-        processOrderFrom: (ctx, order) => {
-          return new Date(Date.now() + 1000 * 60 * 60 * 2); // 2 hours from now
-        },
-        qlsProductIdUiTab: null,
-        addAdditionalOrderItems: async (ctx, injector, order) => {
-          return [
-            {
-              // Just a test
-              name: 'ALHYDRAN 100ml 123421',
-              product_id: 'ec814961-8c84-4e3b-b54b-125efbf1764d',
-              amount_ordered: 1,
-            },
-          ];
-        },
-        saveAdditionalVariantData: async (ctx, injector, qlsProduct) => {
-          // Just a test implementation
-          console.log('Saving additional data for QLS product:', qlsProduct);
+        productSync: {
+          getAdditionalVariantFields: (ctx, variant) => ({
+            ean: variant.sku,
+            image_url: `https://pinelab.studio/remote-img/6fa890c7-cd4c-4715-ad73-daa99cd6fe7f_pinelab_e-commerce_hero_image_medium.webp`,
+            // Just testing additionalEANs: [Math.floor(Math.random() * 1000).toString()],
+            additionalEANs: ['somethingelse'],
+          }),
+          excludeVariantFromSync: async (ctx, injector, variant) => {
+            await injector.get(EntityHydrator).hydrate(ctx, variant, {
+              relations: ['facetValues'],
+            });
+            return variant.id == 1; // Just as a test
+          },
+          qlsProductIdUiTab: null,
+          saveAdditionalVariantData: async (ctx, injector, qlsProduct) => {
+            // Just a test implementation
+            console.log('Saving additional data for QLS product:', qlsProduct);
+          },
         },
       }),
       DefaultSchedulerPlugin,
@@ -139,6 +145,11 @@ import { createSettledOrder } from '../../test/src/shop-utils';
       ],
     },
     productsCsvPath: '../test/src/products-import.csv',
+  });
+
+  const connection = server.app.get(TransactionalConnection);
+  await connection.rawConnection.getRepository(ProductVariant).update(1, {
+    customFields: { qlsProductId: 'f54acef4-5bb9-449d-a985-67d7998d21c6' },
   });
 
   await createSettledOrder(

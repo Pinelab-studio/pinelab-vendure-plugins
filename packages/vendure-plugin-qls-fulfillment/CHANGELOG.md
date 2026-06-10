@@ -1,3 +1,8 @@
+# 2.0.0 (2026-06-10)
+
+- Restructure plugin options into nested `orderSync` and `productSync` objects. This is a **breaking change**: all plugin options must now be organized under `orderSync` (for order-related hooks) and `productSync` (for product-related hooks).
+- Renamed `getAdditionalOrderFields` to `pushAdditionalOrderFields` in `orderSync` options.
+
 # 1.9.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

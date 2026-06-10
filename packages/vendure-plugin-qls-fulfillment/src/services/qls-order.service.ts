@@ -53,7 +53,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
   onApplicationBootstrap(): void {
     // Listen for OrderPlacedEvent and add a job to the queue
     this.eventBus.ofType(OrderPlacedEvent).subscribe((event) => {
-      if (!this.options.autoPushOrders) {
+      if (!this.options.orderSync.autoPushOrders) {
         Logger.info(
           `Auto push orders disabled, not triggering push order job for order ${event.order.code}`,
           loggerCtx
@@ -150,7 +150,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         order.lines.map(async (line) => {
           // Check if product variant should be excluded from sync
           if (
-            await this.options.excludeVariantFromSync?.(
+            await this.options.productSync.excludeVariantFromSync?.(
               ctx,
               new Injector(this.moduleRef),
               line.productVariant
@@ -178,7 +178,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
       // Add additional order items, if any
       try {
         const additionalOrderItems =
-          await this.options.addAdditionalOrderItems?.(
+          await this.options.orderSync.addAdditionalOrderItems?.(
             ctx,
             new Injector(this.moduleRef),
             order
@@ -203,7 +203,7 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         return message;
       }
       const additionalOrderFields =
-        await this.options.pushAdditionalOrderFields?.(
+        await this.options.orderSync.pushAdditionalOrderFields?.(
           ctx,
           new Injector(this.moduleRef),
           order
@@ -234,8 +234,12 @@ export class QlsOrderService implements OnModuleInit, OnApplicationBootstrap {
         );
       }
       const processable =
-        (await this.options.processOrderFrom?.(ctx, order)) ?? new Date();
-      const receiverContact = this.options.getReceiverContact?.(ctx, order);
+        (await this.options.orderSync.processOrderFrom?.(ctx, order)) ??
+        new Date();
+      const receiverContact = this.options.orderSync.getReceiverContact?.(
+        ctx,
+        order
+      );
       const qlsOrder: Omit<FulfillmentOrderInput, 'brand_id'> = {
         customer_reference: order.code,
         processable: processable.toISOString(),
