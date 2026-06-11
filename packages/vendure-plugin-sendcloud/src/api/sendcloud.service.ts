@@ -53,7 +53,7 @@ export class SendcloudService implements OnApplicationBootstrap {
     @Inject(PLUGIN_OPTIONS) private options: SendcloudPluginOptions,
     private entityHydrator: EntityHydrator,
     private historyService: HistoryService
-  ) { }
+  ) {}
 
   async onApplicationBootstrap(): Promise<void> {
     // Listen for Settled orders to sync to sendcloud

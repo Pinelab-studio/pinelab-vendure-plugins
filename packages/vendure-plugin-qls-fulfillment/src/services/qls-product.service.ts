@@ -321,13 +321,16 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
         } else if (result.status === 'updated') {
           updatedInQls.push(variant);
         }
-        if (result.qlsProductId && this.options.saveAdditionalData) {
+        if (
+          result.qlsProductId &&
+          this.options.productSync.saveAdditionalVariantData
+        ) {
           try {
             const qlsProduct = await client.getFulfillmentProductById(
               result.qlsProductId
             );
             if (qlsProduct) {
-              await this.options.saveAdditionalData(
+              await this.options.productSync.saveAdditionalVariantData(
                 ctx,
                 new Injector(this.moduleRef),
                 qlsProduct,
@@ -439,7 +442,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     qlsProductId?: string;
   }> {
     if (
-      await this.options.excludeVariantFromSync?.(
+      await this.options.productSync.excludeVariantFromSync?.(
         ctx,
         new Injector(this.moduleRef),
         variant
@@ -469,7 +472,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     let qlsProduct = existingProduct;
     let createdOrUpdated: 'created' | 'updated' | 'not-changed' = 'not-changed';
     const { additionalEANs, ...additionalVariantFields } =
-      this.options.getAdditionalVariantFields(ctx, variant);
+      this.options.productSync.getAdditionalVariantFields(ctx, variant);
     if (!existingProduct) {
       const result = await client.createFulfillmentProduct({
         name: variant.name,
@@ -665,7 +668,7 @@ export class QlsProductService implements OnModuleInit, OnApplicationBootstrap {
     variantId: ID,
     availableStock: number
   ) {
-    if (!this.options.synchronizeStockLevels) {
+    if (!this.options.productSync.synchronizeStockLevels) {
       Logger.warn(
         `Stock sync disabled. Not updating stock for variant '${variantId}'`,
         loggerCtx

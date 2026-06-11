@@ -121,11 +121,10 @@ export function createShopResolver(
             }
             result[field.name] = ordered;
           } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
+            const err =
+              error instanceof Error ? error : new Error(String(error));
             Logger.error(
-              `Failed to load relation field '${
-                field.name
-              }' for content type '${typeDef.displayName}': ${err.message}`,
+              `Failed to load relation field '${field.name}' for content type '${typeDef.displayName}': ${err.message}`,
               loggerCtx,
               err.stack
             );
@@ -148,9 +147,7 @@ export function createShopResolver(
           );
           const loaded = (await repository.findOne({
             where: { id: relationValue.id as never },
-            ...(hasTranslationsRelation
-              ? { relations: ['translations'] }
-              : {}),
+            ...(hasTranslationsRelation ? { relations: ['translations'] } : {}),
           })) as unknown;
           if (!loaded) {
             continue;
@@ -166,9 +163,7 @@ export function createShopResolver(
         } catch (error) {
           const err = error instanceof Error ? error : new Error(String(error));
           Logger.error(
-            `Failed to load relation field '${field.name}' for content type '${
-              typeDef.displayName
-            }': ${err.message}`,
+            `Failed to load relation field '${field.name}' for content type '${typeDef.displayName}': ${err.message}`,
             loggerCtx,
             err.stack
           );

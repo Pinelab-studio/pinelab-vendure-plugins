@@ -8,9 +8,10 @@ import {
 } from '@vendure/core';
 import {
   CustomValue,
+  FulfillmentOrder,
   FulfillmentOrderInput,
   FulfillmentOrderLineInput,
-  FulfillmentProduct,
+  FulfillmentProductDetail,
   FulfillmentProductInput,
 } from './lib/client-types';
 
@@ -22,94 +23,115 @@ export interface QlsPluginOptions {
     ctx: RequestContext
   ) => QlsClientConfig | undefined | Promise<QlsClientConfig | undefined>;
   /**
-   * Required to get the EAN and image URL for a product variant.
-   * Also allows you to override other product attributes like name, price, etc.
-   */
-  getAdditionalVariantFields: (
-    ctx: RequestContext,
-    variant: ProductVariant
-  ) => AdditionalVariantFields;
-
-  /**
-   * Function to get the set service point code for an order.
-   * Return undefined to not use a service point at all.
-   */
-  getAdditionalOrderFields?: (
-    ctx: RequestContext,
-    injector: Injector,
-    order: Order
-  ) =>
-    | Promise<AdditionalOrderFields | undefined>
-    | AdditionalOrderFields
-    | undefined;
-  /**
    * A key used to verify if the caller is authorized to call the webhook.
    * Set this to a random string
    */
   webhookSecret: string;
   /**
-   * Allows you to disable the pulling in of stock levels from QLS. When disabled, stock in Vendure will not be modified based on QLS stock levels.
-   * Defaults to true.
+   * Options related to order pushing to QLS
    */
-  synchronizeStockLevels?: boolean;
+  orderSync: {
+    /**
+     * Function to get additional order fields when pushing an order to QLS.
+     * Return undefined to not use additional fields at all.
+     */
+    pushAdditionalOrderFields?: (
+      ctx: RequestContext,
+      injector: Injector,
+      order: Order
+    ) =>
+      | Promise<AdditionalOrderFields | undefined>
+      | AdditionalOrderFields
+      | undefined;
+    /**
+     * Allows you to disable the automatic pushing of orders to QLS. You can still push orders manually via the Admin UI.
+     * Defaults to true.
+     */
+    autoPushOrders?: boolean;
+    /**
+     * Allows you to define a date from when the order should be processed by QLS.
+     * You can for example make orders processable 2 hours from now, so that you can still edit the order in QLS
+     * Defaults to now.
+     */
+    processOrderFrom?: (
+      ctx: RequestContext,
+      order: Order
+    ) => Date | Promise<Date>;
+    /**
+     * Optional function to customize the receiver contact details when creating a QLS order.
+     * Allows you to set different fields or override default mapping from the order's shipping address and customer.
+     * If not provided, default mapping will be used.
+     */
+    getReceiverContact?: (
+      ctx: RequestContext,
+      order: Order
+    ) => FulfillmentOrderInput['receiver_contact'] | undefined;
+    /**
+     * Optional hook called after an order has been successfully created in QLS.
+     * Receives the Vendure order, the created QLS order, a RequestContext, and an Injector.
+     * Errors in this hook are caught and logged, and will not fail the order push job.
+     */
+    pullAdditionalOrderFields?: (
+      ctx: RequestContext,
+      injector: Injector,
+      order: Order,
+      createdQlsOrder: FulfillmentOrder
+    ) => Promise<void> | void;
+    /**
+     * Additional order items to add to the QLS order.
+     */
+    addAdditionalOrderItems?: (
+      ctx: RequestContext,
+      injector: Injector,
+      order: Order
+    ) => FulfillmentOrderLineInput[] | Promise<FulfillmentOrderLineInput[]>;
+  };
   /**
-   * Allows you to disable the automatic pushing of orders to QLS. You can still push orders manually via the Admin UI.
-   * Defaults to true.
+   * Options related to product syncing to QLS
    */
-  autoPushOrders?: boolean;
-  /**
-   * Allows you to define a date from when the order should be processed by QLS.
-   * You can for example make orders processable 2 hours from now, so that you can still edit the order in QLS
-   * Defaults to now.
-   */
-  processOrderFrom?: (
-    ctx: RequestContext,
-    order: Order
-  ) => Date | Promise<Date>;
-  /**
-   * Optional function to determine if a product variant should be excluded from syncing to QLS.
-   * Return true to exclude the variant from sync, false or undefined to include it.
-   */
-  excludeVariantFromSync?: (
-    ctx: RequestContext,
-    injector: Injector,
-    variant: ProductVariant
-  ) => boolean | Promise<boolean>;
-  /**
-   * Optional function to customize the receiver contact details when creating a QLS order.
-   * Allows you to set different fields or override default mapping from the order's shipping address and customer.
-   * If not provided, default mapping will be used.
-   */
-  getReceiverContact?: (
-    ctx: RequestContext,
-    order: Order
-  ) => FulfillmentOrderInput['receiver_contact'] | undefined;
-  /**
-   * Admin UI tab name where the QLS Product ID custom field is shown on ProductVariant.
-   * `null` will show the custom field on the default tab.
-   * Defaults to 'QLS'.
-   */
-  qlsProductIdUiTab?: string | null;
-  /**
-   * Optional hook called after syncing a variant to QLS.
-   * Receives the full QLS product, a RequestContext, and an Injector, allowing
-   * you to save any additional data to your own database. The saving itself
-   * happens inside this hook — if not provided, nothing is persisted.
-   */
-  saveAdditionalData?: (
-    ctx: RequestContext,
-    injector: Injector,
-    qlsProduct: FulfillmentProduct,
-    variant: ProductVariant
-  ) => Promise<void> | void;
-  /**
-   * Additional order items to add to the QLS order.
-   */
-  addAdditionalOrderItems?: (
-    ctx: RequestContext,
-    injector: Injector,
-    order: Order
-  ) => FulfillmentOrderLineInput[] | Promise<FulfillmentOrderLineInput[]>;
+  productSync: {
+    /**
+     * Required to get the EAN and image URL for a product variant.
+     * Also allows you to override other product attributes like name, price, etc.
+     */
+    getAdditionalVariantFields: (
+      ctx: RequestContext,
+      variant: ProductVariant
+    ) => AdditionalVariantFields;
+    /**
+     * Allows you to disable the pulling in of stock levels from QLS. When disabled, stock in Vendure will not be modified based on QLS stock levels.
+     * Defaults to true.
+     */
+    synchronizeStockLevels?: boolean;
+    /**
+     * Optional function to determine if a product variant should be excluded from syncing to QLS.
+     * Return true to exclude the variant from sync, false or undefined to include it.
+     * This is also used during order pushing: variants that are excluded from sync will not be pushed to QLS in an order.
+     */
+    excludeVariantFromSync?: (
+      ctx: RequestContext,
+      injector: Injector,
+      variant: ProductVariant
+    ) => boolean | Promise<boolean>;
+    /**
+     * Optional hook called after syncing a variant to QLS.
+     * Receives the full QLS product, a RequestContext, and an Injector, allowing
+     * you to save any additional data to your own database. The saving itself
+     * happens inside this hook — if not provided, nothing is persisted.
+     */
+    saveAdditionalVariantData?: (
+      ctx: RequestContext,
+      injector: Injector,
+      qlsProduct: FulfillmentProductDetail,
+      variant: ProductVariant
+    ) => Promise<void> | void;
+    /**
+     * Admin UI tab name where the QLS Product ID custom field is shown on ProductVariant.
+     * `null` will show the custom field on the default tab.
+     * Defaults to 'QLS'.
+     */
+    qlsProductIdUiTab?: string | null;
+  };
 }
 
 /**
