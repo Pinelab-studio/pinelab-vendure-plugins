@@ -1,5 +1,5 @@
 import { vendureDashboardPlugin } from '@vendure/dashboard/vite';
-import { join, resolve } from 'path';
+import { join, relative, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
@@ -13,16 +13,21 @@ export default defineConfig({
   plugins: [
     vendureDashboardPlugin({
       vendureConfigPath: pathToFileURL('./test/vendure-config.ts'),
-      api: { host: 'http://localhost', port: '3050' },
+      api: { host: 'http://localhost', port: 3050 },
       gqlOutputPath: './src/gql',
       // Use a local temp dir instead of the default inside node_modules
       tempCompilationDir: join(__dirname, '.vendure-dashboard-temp'),
-      // Monorepo path adapter: TS preserves directory structure relative
-      // to the monorepo root in the compiled output
+      // Monorepo path adapter: compile relative to the monorepo root so
+      // that imports outside this package (e.g. ../test) stay inside the
+      // temp dir instead of emitting .js files next to the .ts sources
       pathAdapter: {
-        getCompiledConfigPath: ({ outputPath, configFileName }) => {
-          return join(outputPath, configFileName);
-        },
+        sourceRoot: monorepoRoot,
+        getCompiledConfigPath: ({ inputRootDir, outputPath, configFileName }) =>
+          join(
+            outputPath,
+            relative(monorepoRoot, inputRootDir),
+            configFileName
+          ),
       },
     }),
   ],

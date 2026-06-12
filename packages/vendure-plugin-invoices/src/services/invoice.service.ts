@@ -176,9 +176,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       ...options,
       ...(options?.filter?.invoiceNumber
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
+          { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
         : // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        { filter: {} }),
+          { filter: {} }),
       sort: { updatedAt: SortOrder.DESC },
     };
     const qb = this.listQueryBuilder.build(InvoiceEntity, entityOptions, {
@@ -275,7 +275,8 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     });
     if (!invoices) {
       throw Error(
-        `No invoices found for channel ${ctx.channelId
+        `No invoices found for channel ${
+          ctx.channelId
         } and invoiceNumbers ${JSON.stringify(invoiceNumbers)}`
       );
     }
@@ -543,7 +544,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           !!errorMessage?.includes('duplicate key');
         if (isDuplicate && attempt < maxRetries - 1) {
           Logger.warn(
-            `Duplicate invoice number ${invoiceNumber} detected for order ${order.code} (attempt ${attempt + 1}/${maxRetries}), retrying...`,
+            `Duplicate invoice number ${invoiceNumber} detected for order ${
+              order.code
+            } (attempt ${attempt + 1}/${maxRetries}), retrying...`,
             loggerCtx
           );
           continue;
