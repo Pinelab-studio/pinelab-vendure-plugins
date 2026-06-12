@@ -122,6 +122,7 @@ const mockAccountingStrategySpy = {
   exportCreditInvoice: vi.spyOn(mockAccountingStrategy, 'exportCreditInvoice'),
 };
 
+
 /**
  * Get latest invoice via admin API
  */
@@ -545,22 +546,25 @@ describe('Concurrent invoice generation', function () {
     expect(concurrentOrder2.id).toBeDefined();
   });
 
-  it('Handles concurrent invoice generation without duplicate numbers', async () => {
-    // Trigger invoice generation for both orders concurrently
-    const [result1, result2] = await Promise.all([
-      adminClient.query(createInvoiceMutation, {
-        orderId: concurrentOrder1.id,
-      }),
-      adminClient.query(createInvoiceMutation, {
-        orderId: concurrentOrder2.id,
-      }),
-    ]);
-    expect(result1.createInvoice.invoiceNumber).toBeDefined();
-    expect(result2.createInvoice.invoiceNumber).toBeDefined();
-    expect(result1.createInvoice.invoiceNumber).not.toBe(
-      result2.createInvoice.invoiceNumber
-    );
-  }, 30000);
+  it(
+    'Handles concurrent invoice generation without duplicate numbers',
+    async () => {
+      const [result1, result2] = await Promise.all([
+        adminClient.query(createInvoiceMutation, {
+          orderId: concurrentOrder1.id,
+        }),
+        adminClient.query(createInvoiceMutation, {
+          orderId: concurrentOrder2.id,
+        }),
+      ]);
+      expect(result1.createInvoice.invoiceNumber).toBeDefined();
+      expect(result2.createInvoice.invoiceNumber).toBeDefined();
+      expect(result1.createInvoice.invoiceNumber).not.toBe(
+        result2.createInvoice.invoiceNumber
+      );
+    },
+    30000
+  );
 });
 
 describe('Puppeteer launch options', function () {

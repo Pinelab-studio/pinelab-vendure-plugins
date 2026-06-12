@@ -85,12 +85,19 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     const files: ZippableFile[] = await Promise.all(
       invoices.map(async (invoice) => {
         const tmpFile = await createTempFile('.pdf');
-        const object = await this.s3!.getObject({
-          Bucket: this.bucket,
-          Key: invoice.storageReference,
-        }).promise();
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        await writeFile(tmpFile, object.Body?.toString() as string);
+        try {
+          const object = await this.s3!.getObject({
+            Bucket: this.bucket,
+            Key: invoice.storageReference,
+          }).promise();
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          await writeFile(tmpFile, object.Body?.toString() as string);
+        } catch {
+          safeRemove(tmpFile);
+          throw new Error(
+            `Invoice file not found in S3 at key: ${invoice.storageReference}`
+          );
+        }
         return {
           path: tmpFile,
           name: invoice.invoiceNumber + '.pdf',

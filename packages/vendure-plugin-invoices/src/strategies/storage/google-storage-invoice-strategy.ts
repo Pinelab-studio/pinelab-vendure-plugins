@@ -88,10 +88,17 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
     const files: ZippableFile[] = await Promise.all(
       invoices.map(async (invoice) => {
         const tmpFile = await createTempFile('.pdf');
-        await this.storage
-          .bucket(this.bucketName)
-          .file(invoice.storageReference)
-          .download({ destination: tmpFile });
+        try {
+          await this.storage
+            .bucket(this.bucketName)
+            .file(invoice.storageReference)
+            .download({ destination: tmpFile });
+        } catch {
+          safeRemove(tmpFile);
+          throw new Error(
+            `Invoice file not found in Google Cloud Storage at path: ${invoice.storageReference}`
+          );
+        }
         return {
           path: tmpFile,
           name: invoice.invoiceNumber + '.pdf',

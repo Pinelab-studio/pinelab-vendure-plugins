@@ -176,9 +176,9 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       ...options,
       ...(options?.filter?.invoiceNumber
         ? // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
+        { filter: { invoiceNumber: options?.filter?.invoiceNumber } }
         : // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-          { filter: {} }),
+        { filter: {} }),
       sort: { updatedAt: SortOrder.DESC },
     };
     const qb = this.listQueryBuilder.build(InvoiceEntity, entityOptions, {
@@ -275,8 +275,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
     });
     if (!invoices) {
       throw Error(
-        `No invoices found for channel ${
-          ctx.channelId
+        `No invoices found for channel ${ctx.channelId
         } and invoiceNumbers ${JSON.stringify(invoiceNumbers)}`
       );
     }
@@ -510,7 +509,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
       );
 
       try {
-        // First create row in the DB, then save the file, then save the storageReference in the created row
         const invoiceRowId = await this.createInvoiceRow(ctx, {
           invoiceNumber,
           orderId: order.id as string,
@@ -524,7 +522,6 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           ctx.channel.token,
           !!isCreditInvoiceFor
         );
-        // Save storage reference on the invoice row
         const invoiceRepo = this.connection.getRepository(ctx, InvoiceEntity);
         await invoiceRepo.update(invoiceRowId, { storageReference });
         Logger.info(
@@ -536,8 +533,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
         return await invoiceRepo.findOneOrFail({
           where: { id: invoiceRowId },
         });
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (error: any) {
+      } catch (error: unknown) {
         safeRemove(invoiceTmpFile);
         const errorCode = (error as { code?: string })?.code;
         const errorMessage = (error as { message?: string })?.message;
@@ -547,9 +543,7 @@ export class InvoiceService implements OnModuleInit, OnApplicationBootstrap {
           !!errorMessage?.includes('duplicate key');
         if (isDuplicate && attempt < maxRetries - 1) {
           Logger.warn(
-            `Duplicate invoice number ${invoiceNumber} detected for order ${
-              order.code
-            } (attempt ${attempt + 1}/${maxRetries}), retrying...`,
+            `Duplicate invoice number ${invoiceNumber} detected for order ${order.code} (attempt ${attempt + 1}/${maxRetries}), retrying...`,
             loggerCtx
           );
           continue;

@@ -40,27 +40,19 @@ export class LocalFileStrategy implements LocalStorageStrategy {
       'Content-Type': 'application/zip',
       'Content-Disposition': `inline; filename="invoices-${invoices.length}.zip"`,
     });
-    const zippableFiles: ZippableFile[] = [];
     for (const invoice of invoices) {
       if (!(await exists(invoice.storageReference))) {
         throw new Error(
           `Invoice file not found at path: ${invoice.storageReference}`
         );
       }
-      zippableFiles.push({
-        path: invoice.storageReference,
-        name: invoice.invoiceNumber + '.pdf',
-      });
     }
+    const zippableFiles: ZippableFile[] = invoices.map((invoice) => ({
+      path: invoice.storageReference,
+      name: invoice.invoiceNumber + '.pdf',
+    }));
     const zipFile = await zipFiles(zippableFiles);
-    const stream = createReadStream(zipFile);
-    stream.on('error', (err) => {
-      if (!res.headersSent) {
-        res.status(500).end();
-      }
-      stream.destroy(err);
-    });
-    return stream;
+    return createReadStream(zipFile);
   }
 
   /**
@@ -76,13 +68,6 @@ export class LocalFileStrategy implements LocalStorageStrategy {
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${invoice.invoiceNumber}.pdf"`,
     });
-    const stream = createReadStream(filePath);
-    stream.on('error', (err) => {
-      if (!res.headersSent) {
-        res.status(500).end();
-      }
-      stream.destroy(err);
-    });
-    return stream;
+    return createReadStream(filePath);
   }
 }
