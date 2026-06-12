@@ -90,8 +90,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
             Bucket: this.bucket,
             Key: invoice.storageReference,
           }).promise();
-          // eslint-disable-next-line @typescript-eslint/no-base-to-string
-          await writeFile(tmpFile, object.Body?.toString() as string);
+          await writeFile(tmpFile, object.Body as Buffer);
         } catch {
           safeRemove(tmpFile);
           throw new Error(
@@ -105,6 +104,9 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
       })
     );
     const zipFile = await zipFiles(files);
+    for (const file of files) {
+      safeRemove(file.path);
+    }
     return createReadStream(zipFile);
   }
 }

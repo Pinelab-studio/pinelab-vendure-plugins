@@ -106,6 +106,9 @@ export class GoogleStorageInvoiceStrategy implements RemoteStorageStrategy {
       })
     );
     const zipFile = await zipFiles(files);
+    for (const file of files) {
+      safeRemove(file.path);
+    }
     return createReadStream(zipFile);
   }
 }
