@@ -1,3 +1,8 @@
+# 6.0.1 (2026-06-09)
+
+- Fixed server crash when invoice file is missing from disk. `LocalFileStrategy.streamFile()` and `streamMultiple()` now check file existence before streaming and attach error handlers to prevent unhandled stream errors.
+- Fixed duplicate invoice number generation when two orders are processed concurrently. The plugin now retries with a new number on unique constraint violations.
+
 # 6.0.0 (2026-06-04)
 
 - **BREAKING:** The recommended Docker setup now uses system-installed Chrome instead of Puppeteer's bundled Chromium. Consumers should update their Dockerfile to install `google-chrome-stable` and set `PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable`. See the README for a working Dockerfile.
