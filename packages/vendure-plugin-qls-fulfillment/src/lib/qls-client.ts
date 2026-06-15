@@ -60,7 +60,7 @@ export class QlsClient {
   async getFulfillmentProductById(
     fulfillmentProductId: string
   ): Promise<FulfillmentProductDetail | undefined> {
-    const result = await this.rawRequest<FulfillmentProductDetail>(
+    const result = await this.rawRequest<any>(
       'GET',
       `fulfillment/products/${fulfillmentProductId}`
     );

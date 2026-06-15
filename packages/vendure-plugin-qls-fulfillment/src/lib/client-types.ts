@@ -197,13 +197,6 @@ export type IncomingOrderWebhook = Pick<
  * Getting via list, sku or filtering does NOT return this full object
  */
 export interface FulfillmentProductDetail {
-  data: Data;
-  meta: Meta;
-  errors: any[];
-  pagination: any;
-}
-
-export interface Data {
   id: string;
   company_id: string;
   collection_id: any;

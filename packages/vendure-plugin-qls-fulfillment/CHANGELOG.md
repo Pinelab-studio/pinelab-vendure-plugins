@@ -1,3 +1,7 @@
+# 2.0.1 (2026-06-15)
+
+- Fixed fulfillment product detail type
+
 # 2.0.0 (2026-06-10)
 
 - Restructure plugin options into nested `orderSync` and `productSync` objects. This is a **breaking change**: all plugin options must now be organized under `orderSync` (for order-related hooks) and `productSync` (for product-related hooks).
