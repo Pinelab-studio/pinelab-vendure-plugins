@@ -49,21 +49,4 @@ export class OrderExportPlugin {
     OrderExportPlugin.config = config;
     return this;
   }
-
-  static ui: AdminUiExtension = {
-    extensionPath: path.join(__dirname, 'ui'),
-    ngModules: [
-      {
-        type: 'lazy',
-        route: 'export-orders',
-        ngModuleFileName: 'order-export.module.ts',
-        ngModuleName: 'OrderExportModule',
-      },
-      {
-        type: 'shared',
-        ngModuleFileName: 'order-export-nav.module.ts',
-        ngModuleName: 'OrderExportNavModule',
-      },
-    ],
-  };
 }
