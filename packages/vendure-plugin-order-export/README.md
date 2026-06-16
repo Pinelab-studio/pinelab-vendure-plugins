@@ -7,7 +7,7 @@ You can implement your own strategy to determine what and how data is exported.
 
 ## Getting started
 
-1. Add the server and admin UI extensions in your `vendure-config.ts`
+1. Add the server in your `vendure-config.ts`
 
 ```ts
 import { OrderExportPlugin } from '@pinelab/vendure-plugin-order-export';
@@ -18,15 +18,6 @@ plugins: [
     // Optionally add your own strategies here
     exportStrategies: [],
   }),
-   AdminUiPlugin.init({
-      port: 3002,
-      route: 'admin',
-      app: compileUiExtensions({
-         outputPath: path.join(__dirname, '__admin-ui'),
-         extensions: [OrderExportPlugin.ui],
-      }),
-   }),
-   ...
 ];
 ```
 
@@ -45,7 +36,7 @@ import { promises as fs } from 'fs';
 import { createObjectCsvWriter } from 'csv-writer';
 
 export class MyCustomExport implements ExportStrategy {
-  // Name as shown in the admin UI
+  // Name as shown in the dashboard
   readonly name = 'my-custom-export';
   // Content-type of your export file
   readonly contentType = 'text/csv';
