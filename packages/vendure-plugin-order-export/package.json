@@ -18,11 +18,14 @@
     "CHANGELOG.md"
   ],
   "scripts": {
+    "lint": "echo 'No linting configured'",
+    "start": "yarn ts-node test/dev-server.ts",
     "serve": "nodemon --watch \"src/**\" --ext \"ts,json\" --exec \"ts-node test/dev-server.ts\"",
-    "start": "ts-node test/dev-server.ts",
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
-    "test": "vitest run",
-    "lint": "echo 'No linting configured'"
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/dashboard/**/*' dist/ && yarn build:dashboard",
+    "build:dashboard": "vite build --config ./vite.config.mts",
+    "dev:dashboard": "vite --clearScreen false",
+    "generate": "graphql-codegen",
+    "test": "vitest --bail 1 run"
   },
   "dependencies": {
     "csv-writer": "^1.6.0"

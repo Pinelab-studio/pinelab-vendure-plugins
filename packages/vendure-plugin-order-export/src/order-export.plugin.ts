@@ -17,6 +17,7 @@ export interface ExportPluginConfig {
 
 @VendurePlugin({
   imports: [PluginCommonModule],
+  dashboard: './dashboard/index.tsx',
   providers: [
     {
       provide: PLUGIN_INIT_OPTIONS,
