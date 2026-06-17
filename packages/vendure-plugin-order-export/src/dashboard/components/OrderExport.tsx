@@ -29,6 +29,10 @@ const StrategiesQuery = graphql(`
   }
 `);
 
+/**
+ * Renders the order export UI, allowing the user to select a date range and
+ * export strategy, then download the resulting file.
+ */
 export function OrderExportComponent() {
   const [dateRange, setDateRange] = useState<DefinedDateRange>({
     from: startOfMonth(new Date()),
@@ -49,6 +53,11 @@ export function OrderExportComponent() {
     }
   }, [strategies]);
 
+  /**
+   * Fetches the export file from the server using the selected strategy and
+   * date range, then triggers a browser download. Manages the loading state
+   * and shows a toast notification on error.
+   */
   async function handleDownload() {
     setIsDownloading(true);
     try {
