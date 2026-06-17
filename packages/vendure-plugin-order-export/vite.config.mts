@@ -3,6 +3,8 @@ import { join, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { defineConfig } from 'vite';
 
+const __dirname = import.meta.dirname;
+
 export default defineConfig({
   base: '/dashboard',
   build: {
@@ -20,6 +22,14 @@ export default defineConfig({
         // causes src/ files to compile to tempDir/../src/ outside tempDir
         // where plugin discovery cannot find them)
         sourceRoot: __dirname,
+        /**
+         * Resolves the absolute path to the compiled Vendure config file
+         * inside the temp compilation directory.
+         *
+         * @param outputPath The root directory where compiled files are written
+         * @param configFileName The filename of the compiled config (e.g. vendure-config.js)
+         * @returns The absolute path to the compiled config file under the test/ subdirectory
+         */
         getCompiledConfigPath: ({ outputPath, configFileName }) => {
           return join(outputPath, 'test', configFileName);
         },

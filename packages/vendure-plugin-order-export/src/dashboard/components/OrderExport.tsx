@@ -59,7 +59,9 @@ export function OrderExportComponent() {
       if (sessionToken) headers['Authorization'] = `Bearer ${sessionToken}`;
 
       const url =
-        `${getApiBaseUrl()}/export-orders/export/${strategy}` +
+        `${getApiBaseUrl()}/export-orders/export/${encodeURIComponent(
+          strategy
+        )}` +
         `?startDate=${dateRange.from.toISOString()}&endDate=${dateRange.to.toISOString()}`;
 
       const res = await fetch(url, { credentials: 'include', headers });
