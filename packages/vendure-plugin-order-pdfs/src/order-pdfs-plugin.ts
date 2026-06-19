@@ -43,6 +43,7 @@ export interface PDFTemplatePluginOptions {
 @VendurePlugin({
   imports: [PluginCommonModule],
   entities: [PDFTemplateEntity],
+  dashboard: './dashboard/index.tsx',
   providers: [
     OrderPDFsService,
     {
