@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Heading1 from '../components/base/Heading1.astro';
+import Heading2 from '../components/base/Heading2.astro';
+import Paragraph from '../components/base/Paragraph.astro';
+import 'highlight.js/styles/github-dark-dimmed.css';
+
+const llmsTxtUrl = `${Astro.site}llms.txt`;
+const examplePrompt = `I want to implement B2B ordering, where customers can view placed orders of colleagues. Are there any plugins that facilitate this? Use ${llmsTxtUrl}`;
+---
+
+<Layout
+  metaTitle="AI integration"
+  metaDescription="Use Pinelab's experience to implement features in Vendure with your AI coding assistant"
+>
+  <section class="mb-24">
+    <Heading1>AI integration</Heading1>
+
+    <Paragraph>
+      Generating code is easy, generating production-tested code is hard — code
+      needs to run in production to mature, and that's what our plugins and
+      guides are for. Even if you are not planning to use our plugins,
+      integrating will still give your AI assistant better context of what is
+      possible with plugins.
+    </Paragraph>
+
+    <Heading2>llms.txt</Heading2>
+
+    <Paragraph>
+      We expose an llms.txt at <code>{llmsTxtUrl}</code>
+      listing every plugin, its docs and other related guides. Point your AI assistant
+      at it and ask about your use case.
+    </Paragraph>
+
+    <pre
+      class="rounded whitespace-pre-wrap"><code class="hljs language-bash"><span class="hljs-comment"># Example prompt</span>
+
+{examplePrompt}</code></pre>
+
+    <div class="mt-12"></div>
+  </section>
+</Layout>

@@ -17,6 +17,7 @@
 .vscode
 Thumbs.db
 __data__
+__data__test__
 bazel-out
 chrome-profiler-events*.json
 connect.lock
@@ -48,3 +49,4 @@ __admin-ui/
 .vendure-dashboard-temp
 packages/vendure-plugin-invoices/src/generated-graphql-types.ts
 packages/vendure-plugin-better-search/local_cache/
+.vendure/

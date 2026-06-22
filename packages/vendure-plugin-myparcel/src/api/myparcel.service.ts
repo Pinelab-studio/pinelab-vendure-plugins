@@ -345,23 +345,14 @@ export class MyparcelService implements OnApplicationBootstrap {
         });
         return res.data;
       }
-    } catch (err: any) {
-      if (err.response?.status >= 400 && err.response?.status < 500) {
-        const errorMessage = this.getReadableError(err.response.data);
-        Logger.warn(err.response.data, loggerCtx);
-        throw errorMessage ? new MyParcelError(errorMessage) : err;
-      } else {
-        Logger.warn(err.response, loggerCtx);
-        throw err;
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const errorData = JSON.stringify(err.response?.data);
+        Logger.warn(errorData, loggerCtx);
+        throw new MyParcelError(errorData);
       }
+      throw err;
     }
-  }
-
-  private getReadableError(data: MyparcelErrorResponse): string | undefined {
-    const error = Object.values(data.errors?.[0] || {}).find(
-      (value) => value?.human?.[0]
-    );
-    return error?.human?.[0];
   }
 }
 

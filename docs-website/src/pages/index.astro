@@ -8,101 +8,92 @@ import {
   type Contributor as ContributorType,
 } from '../utils/contributors';
 import Contributor from '../components/Contributor.astro';
+import Cta from '../components/base/Cta.astro';
+import {
+  buildBreadcrumbs,
+  buildPluginItemList,
+} from '../utils/structured-data';
 
 const plugins = await getPlugins();
 const contributors = await getPluginsContributors();
+
+const structuredData = [
+  buildBreadcrumbs([{ name: 'Home', url: 'https://plugins.pinelab.studio/' }]),
+  buildPluginItemList(plugins),
+];
 ---
 
 <Layout
   metaTitle="Pinelab Vendure Plugins"
   metaDescription="Battle tested Vendure plugins, built by Pinelab.studio"
+  structuredData={structuredData}
 >
   <HeroSection />
 
-  <section id="plugins">
-    <div
-      class="mx-auto max-w-7xl px-6 pb-24 sm:pb-32 lg:flex lg:items-center lg:gap-x-10 lg:px-8 lg:pb-40"
-    >
-      <div
-        class="gap-x-2 gap-y-14 lg:gap-12 grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 mt-12"
-      >
-        {
-          plugins.map((plugin) => (
-            <div>
-              <div class="space-y-3">
-                <div class="lg:inline-flex lg:items-center lg:gap-3">
-                  <div class="flex items-center justify-center size-10 text-green-500 rounded-full">
-                    <img src={plugin.icon} class="rounded" />
-                  </div>
-                  <a
-                    aria-label={plugin.name}
-                    href={`/plugin/${plugin.slug}`}
-                    title={plugin.name}
-                    class="mt-5 font-semibold text-purple-900 lg:mt-0"
-                  >
-                    {plugin.name}
-                  </a>
-                </div>
-                <p class="text-sm text-slate-500">{plugin.description}</p>
-                <div class="mt-2">
-                  <a
-                    aria-label={plugin.name}
-                    href={`/plugin/${plugin.slug}`}
-                    title={plugin.name}
-                    class="text-green-500 hover:text-green-600 inline-flex items-center group"
-                  >
-                    Learn more
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                      class="size-4 ml-3 group-hover:translate-x-2 transition duration-500 ease-in-out transform"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </a>
-                </div>
-              </div>
+  <section id="plugins" class="mt-16 mb-24 scroll-mt-24">
+    <h2 class="mb-8 text-3xl font-bold lg:text-4xl">Plugins</h2>
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {
+        plugins.map((plugin) => (
+          <div
+            data-href={`/plugin/${plugin.slug}`}
+            class="plugin-card flex cursor-pointer flex-col gap-3 rounded-lg border border-gray-800 p-6"
+          >
+            <div class="flex items-center gap-3">
+              <img src={plugin.icon} class="size-10 rounded" alt="" />
+              <span class="text-base-contrast font-semibold">
+                {plugin.name}
+              </span>
             </div>
-          ))
-        }
-      </div>
+            <p class="flex-1 text-sm text-gray-400">{plugin.description}</p>
+            <div>
+              <Cta
+                href={`/plugin/${plugin.slug}`}
+                variant="secondary"
+                size="small"
+              >
+                Learn more
+              </Cta>
+            </div>
+          </div>
+        ))
+      }
     </div>
   </section>
 
-  <div class="mb-14">
-    {
-      contributors.length > 0 && (
-        <div class="mx-auto max-w-7xl lg:px-16 md:px-12 px-8 xl:px-24 ">
-          <h2 class="text-center font-bold text-gray-600 text-4xl">
-            Contributors
-          </h2>
-          <p class="text-slate-500 mb-16 text-center">
-            Thanks to everyone who contributed to our plugins!
-          </p>
-          <div class="flex flex-wrap gap-x-4 sm:gap-x-16 gap-y-4 sm:gap-y-12 items-center justify-center">
-            {contributors.map((c: ContributorType) => {
-              return (
-                <>
-                  <a href={c.html_url} target="_blank">
-                    <div class="flex justify-center">
-                      <Contributor
-                        name={c.login}
-                        image={c.avatar_url}
-                        contributions={c.contributions}
-                      />
-                    </div>
-                  </a>
-                </>
-              );
-            })}
-          </div>
+  {
+    contributors.length > 0 && (
+      <section class="mb-16">
+        <h2 class="mb-2 text-center text-3xl font-bold lg:text-4xl">
+          Contributors
+        </h2>
+        <p class="mb-12 text-center text-gray-400">
+          Thanks to everyone who contributed to our plugins!
+        </p>
+        <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-4 sm:gap-x-12 sm:gap-y-8">
+          {contributors.map((c: ContributorType) => (
+            <a href={c.html_url} target="_blank">
+              <Contributor
+                name={c.login}
+                image={c.avatar_url}
+                contributions={c.contributions}
+              />
+            </a>
+          ))}
         </div>
-      )
-    }
-  </div>
+      </section>
+    )
+  }
 </Layout>
+
+<script>
+  /** Make plugin cards clickable while letting inner links handle their own clicks. */
+  document.querySelectorAll<HTMLElement>('.plugin-card').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('a')) return; // inner Cta handles itself
+      const href = card.dataset.href;
+      if (href) window.location.href = href;
+    });
+  });
+</script>

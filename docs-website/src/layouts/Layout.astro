@@ -1,17 +1,22 @@
 ---
 import Footer from '../components/Footer.astro';
-import GoogleAnalytics from '../components/GoogleAnalytics.astro';
-import { Navigation } from '../components/Navigation.tsx';
+import Navigation from '../components/Navigation.astro';
+import StructuredData from '../components/StructuredData.astro';
+import {
+  buildGraph,
+  buildOrganization,
+  buildWebSite,
+} from '../utils/structured-data';
+import { Font } from 'astro:assets';
 import '../styles/global.css';
-import '@fontsource/ubuntu-sans';
-// import ubuntuSans500 from "@fontsource/ubuntu-sans/files/ubuntu-sans-latin-500-normal.woff2?url";
-// import ubuntuSans600 from "@fontsource/ubuntu-sans/files/ubuntu-sans-latin-600-normal.woff2?url";
 
 interface Props {
   metaTitle: string;
   metaDescription: string;
+  /** Extra JSON-LD nodes to merge into the page's @graph */
+  structuredData?: Array<Record<string, unknown>>;
 }
-const { metaDescription, metaTitle } = Astro.props;
+const { metaDescription, metaTitle, structuredData = [] } = Astro.props;
 const ogImage = `${Astro.site}ogimage.png`;
 
 let canonical = String(Astro.site);
@@ -22,6 +27,13 @@ if (Astro.url.pathname !== '/') {
   canonical = `${Astro.site}${path}`;
 }
 const fullTitle = `${metaTitle} - Pinelab Plugins`;
+
+// Always include Organization + WebSite, plus any per-page nodes
+const graph = buildGraph([
+  buildOrganization(),
+  buildWebSite(),
+  ...structuredData,
+]);
 ---
 
 <!DOCTYPE html>
@@ -29,6 +41,8 @@ const fullTitle = `${metaTitle} - Pinelab Plugins`;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
+    <!-- Preload primary font to prevent FOUT/FOIT on mobile -->
+    <Font cssVariable="--font-ubuntu-mono" preload />
     <link rel="icon" type="image/png" href="/pinelab-sticker.webp" />
     <meta name="generator" content={Astro.generator} />
     <!-- meta tags -->
@@ -39,52 +53,35 @@ const fullTitle = `${metaTitle} - Pinelab Plugins`;
     <meta property="og:image" content={ogImage} />
     <meta property="og:url" content={Astro.site} />
     <link rel="canonical" href={canonical} />
-
-    <!-- <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href={ubuntuSans600}
-      crossorigin="anonymous"
+    <meta
+      name="google-site-verification"
+      content="JsngyXyEPIPlRY-5EbAXR9LZWwYi_OS3VUhd2WktSsg"
     />
-    <link
-      rel="preload"
-      as="font"
-      type="font/woff2"
-      href={ubuntuSans500}
-      crossorigin="anonymous"
-    /> -->
+
+    <StructuredData data={graph} />
+
     <script
       defer
       src="https://cloud.umami.is/script.js"
       data-website-id="f55cdd0f-cb0a-4879-89fd-f2dba97effe5"></script>
-  </head><body class="flex min-h-screen flex-col text-gray-800">
-    <Navigation client:media="(width <= 64rem)" />
+  </head>
+  <body
+    class="bg-base text-base-contrast flex min-h-screen flex-col p-8 text-lg"
+  >
+    <Navigation />
 
-    <main class="flex-1">
+    <main class="mx-auto w-full max-w-7xl flex-1">
       <slot />
     </main>
 
     <Footer />
-  </body>
-  <!--  Make navbar white after scroll -->
-  <script is:inline>
-    window.addEventListener('scroll', () => {
-      if (window.scrollY > 200) {
-        document.body.classList.add('scrolled');
-      } else {
-        document.body.classList.remove('scrolled');
+    <style is:global>
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        scroll-behavior: smooth;
       }
-    });
-  </script>
+    </style>
+  </body>
 </html>
-
-<style>
-  html,
-  body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    scroll-behavior: smooth;
-  }
-</style>

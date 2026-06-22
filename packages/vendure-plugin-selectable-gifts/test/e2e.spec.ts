@@ -15,6 +15,9 @@ import { SelectableGiftsPlugin } from '../src';
 import {
   ADD_GIFT_TO_ORDER,
   ADD_ITEM_TO_ORDER,
+  GET_VARIANT_PRODUCT,
+  UPDATE_PRODUCT_ENABLED,
+  UPDATE_PRODUCT_VARIANT_ENABLED,
   UPDATE_PRODUCT_VARIANT_STOCK_ON_HAND,
   VARIANT_STOCK_LOCATIONS,
   createPromotion,
@@ -268,6 +271,44 @@ describe('Storefront free gift selection', function () {
     expect(eligibleGifts[0].name).not.toBeNull();
     expect(eligibleGifts[0].name?.trim()).not.toEqual('');
     expect(eligibleGifts[0].priceWithTax).toBeGreaterThan(0);
+  });
+
+  it('Should not return disabled variant as eligible gift', async () => {
+    const { updateProductVariants } = await adminClient.query(
+      UPDATE_PRODUCT_VARIANT_ENABLED,
+      { id: giftForOrdersAbove0, enabled: false }
+    );
+    expect(updateProductVariants[0].enabled).toBe(false);
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBe(0);
+    // Re-enable so subsequent stock test is unaffected
+    await adminClient.query(UPDATE_PRODUCT_VARIANT_ENABLED, {
+      id: giftForOrdersAbove0,
+      enabled: true,
+    });
+  });
+
+  /**
+   * This test documents the expected behavior: when a parent product is disabled,
+   * its variants should NOT be returned as eligible gifts. This is not yet
+   * implemented in the service, so this test is expected to fail until
+   * product.enabled is also checked in GiftService.getEligibleGiftsForOrder.
+   */
+  it('Should not return variant whose parent product is disabled as eligible gift', async () => {
+    const { productVariant } = await adminClient.query(GET_VARIANT_PRODUCT, {
+      id: giftForOrdersAbove0,
+    });
+    const productId = productVariant.product.id;
+    const { updateProduct } = await adminClient.query(UPDATE_PRODUCT_ENABLED, {
+      input: { id: productId, enabled: false },
+    });
+    expect(updateProduct.enabled).toBe(false);
+    const eligibleGifts = await getEligibleGifts(shopClient);
+    expect(eligibleGifts.length).toBe(0);
+    // Re-enable so subsequent tests are unaffected
+    await adminClient.query(UPDATE_PRODUCT_ENABLED, {
+      input: { id: productId, enabled: true },
+    });
   });
 
   it('Should return only in stock variants as eligible gifts', async () => {

@@ -1,3 +1,7 @@
+# 2.4.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 2.3.0 (2026-02-05)
 
 - Upgraded to Vendure 3.5.3

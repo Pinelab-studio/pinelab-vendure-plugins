@@ -1,3 +1,17 @@
+# 2.0.1 (2026-06-15)
+
+- Fixed fulfillment product detail type
+
+# 2.0.0 (2026-06-10)
+
+- Restructure plugin options into nested `orderSync` and `productSync` objects. This is a **breaking change**: all plugin options must now be organized under `orderSync` (for order-related hooks) and `productSync` (for product-related hooks).
+- Renamed `getAdditionalOrderFields` to `pushAdditionalOrderFields` in `orderSync` options.
+- Added `pullAdditionalOrderFields` hook in `orderSync` options, called after an order is successfully created in QLS. Errors in this hook are caught and logged, and will not fail the order push job.
+
+# 1.9.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 1.8.2 (2026-04-24)
 
 - Added `variant` parameter to the `saveAdditionalData` hook

@@ -12,7 +12,16 @@ interface PackageJson {
   description: string;
   version: string;
   icon: string;
+  keywords?: string[];
   dependencies?: Record<string, string>;
+  author?: string | { name?: string; email?: string; url?: string };
+  license?: string;
+}
+
+export interface PluginAuthor {
+  name: string;
+  email?: string;
+  url?: string;
 }
 
 export interface Plugin {
@@ -23,13 +32,28 @@ export interface Plugin {
   slug: string;
   description: string;
   icon: string;
-  markdownContent: string;
-  changelogContent: string;
-  nrOfDownloads: number;
+  keywords: string[];
+  readme: string;
+  /**
+   * Non-html formatted markdown content
+   */
+  markdownReadme: string;
+  changelog: string;
+  markdownChangelog: string;
   nrOfDependencies: number;
+  /** ISO date string of last npm publish, if available */
+  lastModified?: string;
+  author: PluginAuthor;
+  license: string;
+  /**
+   * Path within the GitHub repo where this plugin's `package.json` lives,
+   * relative to the repo root. E.g. `packages/vendure-plugin-store-credit`.
+   */
+  repoSubpath: string;
 }
 
 const packageDir = '../packages/';
+let plugins: Plugin[] = [];
 
 /**
  * Get all plugin directories starting with `vendure-plugin`
@@ -43,8 +67,10 @@ export async function getPluginDirectories(): Promise<Dirent[]> {
 }
 
 export async function getPlugins(): Promise<Plugin[]> {
+  if (plugins?.length) {
+    return plugins;
+  }
   const pluginDirectories = await getPluginDirectories();
-  const plugins: Plugin[] = [];
   for (const pluginDir of pluginDirectories) {
     try {
       const packageJsonFilePath = path.join(
@@ -62,7 +88,7 @@ export async function getPlugins(): Promise<Plugin[]> {
       readme = readme.replace(/^.*Official documentation.*$/gm, '');
       // Get title from first line
       const name = readme.split('\n')[0].replace('#', '').trim();
-      const markdownContent = await parseMarkdown(readme);
+      const htmlDocs = await parseMarkdown(readme);
       // CHANGELOG
       const changelogFilePath = path.join(
         packageDir,
@@ -71,8 +97,8 @@ export async function getPlugins(): Promise<Plugin[]> {
       );
       const changelog = await readFile(changelogFilePath, 'utf8');
       const changelogContent = await parseMarkdown(changelog);
-      const nrOfDownloads = await getNrOfDownloads(packageJson.name);
       const compatibility = await getCompatibilityRange(pluginDir.name);
+      const lastModified = await getLastModified(packageJson.name);
       const slug = packageJson.name.replace('@pinelab/', '');
       plugins.push({
         name,
@@ -81,26 +107,31 @@ export async function getPlugins(): Promise<Plugin[]> {
         slug,
         description: packageJson.description,
         icon: getIcon(slug),
-        markdownContent,
-        changelogContent,
-        nrOfDownloads,
+        keywords: packageJson.keywords ?? [],
+        readme: htmlDocs,
+        markdownReadme: readme,
+        changelog: changelogContent,
+        markdownChangelog: changelog,
         compatibility,
         nrOfDependencies: packageJson.dependencies
           ? Object.keys(packageJson.dependencies).length
           : 0,
+        lastModified,
+        author: parseAuthor(packageJson.author),
+        license: packageJson.license ?? 'MIT',
+        repoSubpath: `packages/${pluginDir.name}`,
       });
     } catch (e) {
       console.error(`Error reading plugin ${pluginDir.name}`, e);
     }
   }
-  const pluginsSortedByDownloads = plugins.sort((a, b) => {
-    // Move vendure-hub packages to the top
-    if (a.npmName.indexOf('@vendure-hub') > -1) {
-      return -1;
-    }
-    return b.nrOfDownloads - a.nrOfDownloads;
+  // Sort newest first by lastModified; missing dates sink to the bottom
+  plugins = plugins.sort((a, b) => {
+    const aDate = a.lastModified ? new Date(a.lastModified).getTime() : 0;
+    const bDate = b.lastModified ? new Date(b.lastModified).getTime() : 0;
+    return bDate - aDate;
   });
-  return pluginsSortedByDownloads;
+  return plugins;
 }
 
 /**
@@ -134,22 +165,6 @@ export async function parseMarkdown(readmeString: string): Promise<string> {
   return String(result);
 }
 
-export async function getNrOfDownloads(
-  packageName: string,
-  period: string = 'last-month'
-): Promise<number> {
-  const response = await fetch(
-    `https://api.npmjs.org/downloads/point/${period}/${packageName}`
-  );
-  if (!response.ok) {
-    console.error(
-      `Error fetching downloads for ${packageName}: ${response.statusText}`
-    );
-    return 0;
-  }
-  return (await response.json()).downloads as number;
-}
-
 export async function getCompatibilityRange(
   pluginDirectoryName: string
 ): Promise<string | undefined> {
@@ -162,4 +177,51 @@ export async function getCompatibilityRange(
   const fileContent = await readFile(path.join(srcDir, pluginFile), 'utf-8');
   const matches = fileContent.match(/compatibility:\s*['"]([^'"]+)['"]/);
   return matches?.[1];
+}
+
+/**
+ * Fetches the last published date for a package from the npm registry.
+ * Returns undefined if the request fails or the package isn't published.
+ */
+export async function getLastModified(
+  packageName: string
+): Promise<string | undefined> {
+  const response = await fetch(`https://registry.npmjs.org/${packageName}`);
+  if (!response.ok) {
+    console.error(`Error fetching last modified date for ${packageName}`);
+    return undefined;
+  }
+  const data = (await response.json()) as { time?: { modified?: string } };
+  return data.time?.modified;
+}
+
+/**
+ * Normalizes the package.json `author` field (string or object) into a
+ * structured PluginAuthor. Falls back to "Pinelab Studio" if absent.
+ */
+export function parseAuthor(author: PackageJson['author']): PluginAuthor {
+  const fallback: PluginAuthor = {
+    name: 'Pinelab Studio',
+    url: 'https://pinelab.studio',
+  };
+  if (!author) return fallback;
+  if (typeof author === 'string') {
+    // Format: "Name <email> (url)"
+    const match = author.match(
+      /^([^<(]+?)\s*(?:<([^>]+)>)?\s*(?:\(([^)]+)\))?$/
+    );
+    if (match) {
+      return {
+        name: match[1].trim() || fallback.name,
+        email: match[2]?.trim(),
+        url: match[3]?.trim(),
+      };
+    }
+    return { name: author };
+  }
+  return {
+    name: author.name ?? fallback.name,
+    email: author.email,
+    url: author.url,
+  };
 }

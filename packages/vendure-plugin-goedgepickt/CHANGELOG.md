@@ -1,3 +1,7 @@
+# 2.3.0 (2026-08-05)
+
+- Upgraded to Vendure 3.6.3
+
 # 2.2.1 (2026-04-23)
 
 - Added support for incoming compound product stock update webhook

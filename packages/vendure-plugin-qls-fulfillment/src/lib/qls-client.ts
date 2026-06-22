@@ -5,6 +5,7 @@ import type {
   FulfillmentOrder,
   FulfillmentOrderInput,
   FulfillmentProduct,
+  FulfillmentProductDetail,
   FulfillmentProductInput,
   QlsApiResponse,
 } from './client-types';
@@ -58,8 +59,8 @@ export class QlsClient {
 
   async getFulfillmentProductById(
     fulfillmentProductId: string
-  ): Promise<FulfillmentProduct | undefined> {
-    const result = await this.rawRequest<FulfillmentProduct>(
+  ): Promise<FulfillmentProductDetail | undefined> {
+    const result = await this.rawRequest<any>(
       'GET',
       `fulfillment/products/${fulfillmentProductId}`
     );

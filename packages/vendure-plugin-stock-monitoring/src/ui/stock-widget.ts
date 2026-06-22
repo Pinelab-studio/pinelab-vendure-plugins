@@ -58,6 +58,7 @@ export class StockWidgetComponent implements OnInit {
               productId
               stockLevels {
                 stockOnHand
+                stockAllocated
               }
             }
           }
@@ -67,6 +68,9 @@ export class StockWidgetComponent implements OnInit {
   }
 
   reduceSum(stockLevels: any[]): number {
-    return stockLevels.reduce((acc, val) => (acc += val.stockOnHand), 0);
+    return stockLevels.reduce(
+      (acc, val) => acc + val.stockOnHand - (val.stockAllocated || 0),
+      0
+    );
   }
 }

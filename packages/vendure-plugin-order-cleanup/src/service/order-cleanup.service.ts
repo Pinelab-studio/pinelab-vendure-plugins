@@ -35,7 +35,11 @@ export class OrderCleanupService implements OnModuleInit {
       name: 'order-cleanup',
       process: async (job) => {
         const ctx = RequestContext.deserialize(job.data.ctx);
-        await this.cancelStaleOrders(ctx, job.data.olderThanDays);
+        await this.cancelStaleOrders(
+          ctx,
+          job.data.olderThanDays,
+          this.options.batchSize
+        );
       },
     });
   }

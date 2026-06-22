@@ -177,6 +177,7 @@ describe('Webhook plugin', function () {
       });
     await publishMockProductEvent();
     await waitFor(() => receivedPayloads.length === 1);
+    await new Promise((r) => setTimeout(r, 500));
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');
     expect(receivedPayloads[0].ctx).toBeDefined();
@@ -262,6 +263,7 @@ describe('Webhook plugin', function () {
       });
     await publishMockProductEvent();
     await waitFor(() => receivedPayloads.length === 1);
+    await new Promise((r) => setTimeout(r, 500));
     expect(receivedPayloads.length).toBe(1);
     expect(receivedPayloads[0].type).toBe('created');
     expect(receivedPayloads[0].ctx).toBeDefined();

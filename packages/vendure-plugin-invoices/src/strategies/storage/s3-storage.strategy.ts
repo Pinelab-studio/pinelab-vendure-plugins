@@ -39,7 +39,7 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     try {
       const AWS = await import('aws-sdk');
       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-      this.s3 = new AWS.S3(this.config as any);
+      this.s3 = new AWS.S3(this.config);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (e: any) {
       Logger.error(
@@ -85,12 +85,19 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
     const files: ZippableFile[] = await Promise.all(
       invoices.map(async (invoice) => {
         const tmpFile = await createTempFile('.pdf');
-        const object = await this.s3!.getObject({
-          Bucket: this.bucket,
-          Key: invoice.storageReference,
-        }).promise();
-        // eslint-disable-next-line @typescript-eslint/no-base-to-string
-        await writeFile(tmpFile, object.Body?.toString() as string);
+        try {
+          const object = await this.s3!.getObject({
+            Bucket: this.bucket,
+            Key: invoice.storageReference,
+          }).promise();
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string
+          await writeFile(tmpFile, object.Body?.toString() as string);
+        } catch {
+          safeRemove(tmpFile);
+          throw new Error(
+            `Invoice file not found in S3 at key: ${invoice.storageReference}`
+          );
+        }
         return {
           path: tmpFile,
           name: invoice.invoiceNumber + '.pdf',
@@ -98,6 +105,9 @@ export class S3StorageStrategy implements RemoteStorageStrategy {
       })
     );
     const zipFile = await zipFiles(files);
+    for (const file of files) {
+      safeRemove(file.path);
+    }
     return createReadStream(zipFile);
   }
 }

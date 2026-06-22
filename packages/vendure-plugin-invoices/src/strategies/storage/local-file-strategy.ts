@@ -27,7 +27,8 @@ export class LocalFileStrategy implements LocalStorageStrategy {
       name = `${invoiceNumber}-credit.pdf`;
     }
     const newPath = `${this.invoiceDir}/${name}`;
-    await fs.rename(tmpFile, newPath);
+    await fs.copyFile(tmpFile, newPath);
+    await fs.unlink(tmpFile);
     return newPath;
   }
 
@@ -39,6 +40,13 @@ export class LocalFileStrategy implements LocalStorageStrategy {
       'Content-Type': 'application/zip',
       'Content-Disposition': `inline; filename="invoices-${invoices.length}.zip"`,
     });
+    for (const invoice of invoices) {
+      if (!(await exists(invoice.storageReference))) {
+        throw new Error(
+          `Invoice file not found at path: ${invoice.storageReference}`
+        );
+      }
+    }
     const zippableFiles: ZippableFile[] = invoices.map((invoice) => ({
       path: invoice.storageReference,
       name: invoice.invoiceNumber + '.pdf',
@@ -47,11 +55,19 @@ export class LocalFileStrategy implements LocalStorageStrategy {
     return createReadStream(zipFile);
   }
 
-  streamFile(invoice: InvoiceEntity, res: Response): ReadStream {
+  /**
+   * Streams a single invoice file to the response.
+   * Throws if the file does not exist on disk.
+   */
+  async streamFile(invoice: InvoiceEntity, res: Response): Promise<ReadStream> {
+    const filePath = invoice.storageReference;
+    if (!(await exists(filePath))) {
+      throw new Error(`Invoice file not found at path: ${filePath}`);
+    }
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `inline; filename="${invoice.invoiceNumber}.pdf"`,
     });
-    return createReadStream(invoice.storageReference);
+    return createReadStream(filePath);
   }
 }

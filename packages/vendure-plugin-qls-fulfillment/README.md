@@ -23,7 +23,52 @@ This plugin contains:
 
 ## Getting started
 
-// TODO
+```ts
+import { QlsPlugin } from '@pinelab/vendure-plugin-qls-fulfillment';
+
+// In your VendureConfig:
+plugins: [
+  QlsPlugin.init({
+    getConfig: (ctx) => {
+      // Return config for the current channel, or undefined to disable QLS for this channel
+      return {
+        username: 'qls-username',
+        password: 'qls-password',
+        companyId: 'your-company-id',
+        brandId: 'your-brand-id',
+      };
+    },
+    webhookSecret: 'your-random-secret',
+    productSync: {
+      // Required: map Vendure variants to QLS product fields
+      getAdditionalVariantFields: (ctx, variant) => ({
+        ean: variant.sku,
+        image_url: `https://your-cdn.com/${variant.featuredAsset?.preview}`,
+        additionalEANs: ['1234567890'],
+      }),
+      // Optional: exclude certain variants from being synced to QLS
+      excludeVariantFromSync: (ctx, injector, variant) => {
+        return variant.sku.startsWith('DONOTSYNC');
+      },
+    },
+    orderSync: {
+      // Optional: push additional fields to QLS when creating an order
+      pushAdditionalOrderFields: (ctx, injector, order) => ({
+        custom_values: [
+          {
+            key: 'vendureOrder',
+            value: `https://your-admin.com/admin/orders/${order.code}`,
+          },
+        ],
+      }),
+      // Optional: delay order processing in QLS by 2 hours
+      processOrderFrom: (ctx, order) => {
+        return new Date(Date.now() + 1000 * 60 * 60 * 2);
+      },
+    },
+  }),
+];
+```
 
 This plugin requires the default order process to be configured with `checkFulfillmentStates: false`, so that orders can be transitioned to Shipped and Delivered without the need of fulfillment. Fulfillment is the responsibility of Picqer, so we won't handle that in Vendure when using this plugin.
 

@@ -56,6 +56,7 @@ describe('SendCloud', () => {
       logger: new DefaultLogger({ level: LogLevel.Debug }),
       plugins: [
         SendcloudPlugin.init({
+          maxRetries: 2,
           weightFn: (line) =>
             (line.productVariant.product?.customFields as any)?.weight || 5,
           hsCodeFn: (line) =>
@@ -351,6 +352,84 @@ describe('SendCloud', () => {
     expect(v2After.stockAllocated).toBe(0);
     expect(v2After.stockOnHand).toBe(94);
   });
+
+  it('Only retries the configured maxRetries (default 2) times when SendCloud returns an error', async () => {
+    // Remove the persistent success interceptor so our fail interceptor takes priority
+    nock.cleanAll();
+    nock('https://panel.sendcloud.sc')
+      .post('/api/v2/parcels')
+      .times(3) // 1 initial + 2 retries
+      .reply(500, { error: { message: 'Internal Server Error' } });
+    const { id: failedOrderId } = await createSettledOrder(
+      shopClient,
+      1,
+      true,
+      [{ id: 'T_1', quantity: 1 }]
+    );
+    await waitFor(async () => {
+      const o = await getOrder(adminClient, String(failedOrderId));
+      return o?.state === 'PaymentSettled' ? true : undefined;
+    });
+    // Wait for all retries to complete by polling history entries
+    await waitFor(
+      async () => {
+        const { order } = await adminClient.query(
+          gql`
+            query OrderHistory($id: ID!) {
+              order(id: $id) {
+                history(
+                  options: {
+                    filter: { type: { eq: "SENDCLOUD_NOTIFICATION" } }
+                  }
+                ) {
+                  totalItems
+                  items {
+                    data
+                  }
+                }
+              }
+            }
+          `,
+          { id: failedOrderId }
+        );
+        const errorEntries = order?.history?.items?.filter(
+          (h: any) => h.data?.valid === 'false' || h.data?.valid === false
+        );
+        // Expect exactly 3 error entries: 1 initial attempt + 2 retries
+        return errorEntries?.length >= 3 ? errorEntries : undefined;
+      },
+      500,
+      30000
+    );
+    const { order: finalOrder } = await adminClient.query(
+      gql`
+        query OrderHistory($id: ID!) {
+          order(id: $id) {
+            history(
+              options: { filter: { type: { eq: "SENDCLOUD_NOTIFICATION" } } }
+            ) {
+              totalItems
+              items {
+                data
+              }
+            }
+          }
+        }
+      `,
+      { id: failedOrderId }
+    );
+    const errorEntries = finalOrder?.history?.items?.filter(
+      (h: any) => h.data?.valid === 'false' || h.data?.valid === false
+    );
+    // With maxRetries defaulting to 2: 1 initial + 2 retries = 3 total attempts
+    expect(errorEntries.length).toBe(3);
+    // Re-enable the persistent success interceptor for remaining tests
+    nock.cleanAll();
+    nock('https://panel.sendcloud.sc')
+      .persist()
+      .post('/api/v2/parcels')
+      .reply(200, { parcel: { id: 'test-id' } });
+  }, 60000);
 
   if (process.env.TEST_ADMIN_UI) {
     it('Should compile admin', async () => {
