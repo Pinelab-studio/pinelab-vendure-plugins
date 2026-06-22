@@ -24,6 +24,15 @@ import { BETTER_SEARCH_PLUGIN_OPTIONS, engine, loggerCtx } from '../constants';
 import { BetterSearchOptions } from '../types';
 import { createIndexKey } from './util';
 import { BetterSearchIndex } from '../entities/better-search-index.entity';
+import {
+  BetterSearchIndexEvent,
+  BetterSearchIndexType,
+} from '../events/better-search-index.event';
+
+/**
+ * Cache TTL for keeping the search index in memory, before fetching it again from the DB
+ */
+const INDEX_CACHE_TTL = 10_000;
 
 @Injectable()
 export class IndexService implements OnModuleInit, OnApplicationBootstrap {
@@ -101,67 +110,88 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
   /**
    * Fetches all products, let the search engine create the index, and saves the index to the database.
    */
-  async buildIndex(ctx: RequestContext): Promise<number> {
-    const start = performance.now();
-    Logger.info(
-      `Rebuilding index for channel '${ctx.channel.token} (${ctx.languageCode})'...`,
-      loggerCtx
-    );
-    // Get all products
-    let skip = 0;
-    const take = 100;
-    const allProducts: Product[] = [];
-    let hasMore = true;
-    while (hasMore) {
-      const { items: products } = await this.productService.findAll(
-        ctx,
-        {
-          skip,
-          take,
-          filter: {
-            deletedAt: {
-              isNull: true,
-            },
-            enabled: {
-              eq: true,
+  async buildIndex(_ctx: RequestContext): Promise<number> {
+    let productCount = 0;
+    for (const languageCode of _ctx.channel.availableLanguageCodes) {
+      const ctx = new RequestContext({
+        isAuthorized: true,
+        authorizedAsOwnerOnly: false,
+        apiType: _ctx.apiType,
+        channel: _ctx.channel,
+        languageCode,
+      });
+      const start = performance.now();
+      Logger.info(
+        `Rebuilding index for channel '${ctx.channel.token}' (${languageCode})...`,
+        loggerCtx
+      );
+      // Get all products
+      let skip = 0;
+      const take = 100;
+      const allProducts: Product[] = [];
+      let hasMore = true;
+      while (hasMore) {
+        const { items: products } = await this.productService.findAll(
+          ctx,
+          {
+            skip,
+            take,
+            filter: {
+              deletedAt: {
+                isNull: true,
+              },
+              enabled: {
+                eq: true,
+              },
             },
           },
-        },
-        // FIXME we might need to optimize this, instead of too many joins
-        ['featuredAsset', 'facetValues.translations', 'variants.collections']
-      );
-      skip += take;
-      if (products.length < take) {
-        hasMore = false;
-      }
-      // Set all products on the variant object as well
-      products.forEach((p) => {
-        p.variants.forEach((v) => {
-          v.product = p;
+          // FIXME we might need to optimize this, instead of too many joins
+          ['featuredAsset', 'facetValues.translations', 'variants.collections']
+        );
+        skip += take;
+        if (products.length < take) {
+          hasMore = false;
+        }
+        // Set all products on the variant object as well
+        products.forEach((p) => {
+          p.variants.forEach((v) => {
+            v.product = p;
+          });
         });
+        allProducts.push(...products);
+      }
+      const searchIndex = await engine.createIndex(
+        ctx,
+        allProducts.flatMap((p) => p.variants)
+      );
+      const indexKey = createIndexKey(ctx);
+      const serialized = engine.serializeIndex(searchIndex);
+      const saved = await this.connection
+        .getRepository(ctx, BetterSearchIndex)
+        .save({ id: indexKey, data: serialized });
+      this.cachedIndices.set(indexKey, {
+        index: searchIndex,
+        updatedAt: saved.updatedAt,
+        lastCheckedAt: Date.now(),
       });
-      allProducts.push(...products);
+      const time = Math.round(performance.now() - start);
+      Logger.info(
+        `Created index for ${indexKey} with ${allProducts.length} products in ${time}ms`,
+        loggerCtx
+      );
+      this.eventBus
+        .publish(new BetterSearchIndexEvent(ctx, allProducts.length, 'full'))
+        .catch((e) => {
+          const error = asError(e);
+          Logger.error(
+            `Failed to publish BetterSearchIndexEvent: ${error.message}`,
+            loggerCtx,
+            error.stack
+          );
+        });
+      productCount = allProducts.length;
     }
-    const searchIndex = await engine.createIndex(
-      ctx,
-      allProducts.flatMap((p) => p.variants)
-    );
-    const indexKey = createIndexKey(ctx);
-    const serialized = engine.serializeIndex(searchIndex);
-    const saved = await this.connection
-      .getRepository(ctx, BetterSearchIndex)
-      .save({ id: indexKey, data: serialized });
-    this.cachedIndices.set(indexKey, {
-      index: searchIndex,
-      updatedAt: saved.updatedAt,
-      lastCheckedAt: Date.now(),
-    });
-    const time = Math.round(performance.now() - start);
-    Logger.info(
-      `Created index for ${indexKey} with ${allProducts.length} products in ${time}ms`,
-      loggerCtx
-    );
-    return allProducts.length;
+    return productCount;
   }
 
   /**
@@ -180,7 +210,8 @@ export class IndexService implements OnModuleInit, OnApplicationBootstrap {
 
     // 1. Cache hit with valid TTL
     const ttlValid =
-      cached && (ignoreCacheTtl || Date.now() - cached.lastCheckedAt < 10_000);
+      cached &&
+      (ignoreCacheTtl || Date.now() - cached.lastCheckedAt < INDEX_CACHE_TTL);
     if (ttlValid) {
       return cached.index;
     }

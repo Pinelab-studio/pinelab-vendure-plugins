@@ -1,4 +1,4 @@
-import { DefaultLogger, LogLevel, mergeConfig } from '@vendure/core';
+import { DefaultLogger, EventBus, LogLevel, mergeConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
@@ -7,10 +7,27 @@ import {
   testConfig,
   TestServer,
 } from '@vendure/testing';
-import gql from 'graphql-tag';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  LanguageCode,
+  CurrencyCode,
+} from '@vendure/common/lib/generated-types';
+import {
+  WARMUP_QUERY,
+  SEARCH_QUERY,
+  CREATE_CHANNEL,
+  GET_PRODUCTS,
+  ASSIGN_PRODUCTS_TO_CHANNEL,
+  UPDATE_CHANNEL,
+  UPDATE_PRODUCT,
+  INSPECT_INDEX,
+  INSPECT_SEARCH_INDEX,
+} from './helpers';
+import { firstValueFrom } from 'rxjs';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { BetterSearchIndexEvent } from '../src/events/better-search-index.event';
 import { initialData } from '../../test/src/initial-data';
 import { BetterSearchPlugin } from '../src';
+import { waitFor } from '../../test/src/test-helpers';
 
 /** Subset of Vendure's SearchResult we care about in these tests. */
 interface SearchResultItem {
@@ -38,18 +55,7 @@ beforeAll(async () => {
   });
   // Pre-warm the GraphQL/Nest pipeline with a dummy search so the first real
   // test doesn't pay schema-build / first-request latency.
-  await shopClient
-    .query(
-      gql`
-        query Warmup($term: String!) {
-          search(input: { term: $term }) {
-            totalItems
-          }
-        }
-      `,
-      { term: 'warmup' }
-    )
-    .catch(() => {});
+  await shopClient.query(WARMUP_QUERY, { term: 'warmup' }).catch(() => {});
 }, 60000);
 
 afterAll(async () => {
@@ -220,13 +226,7 @@ describe('inspectSearchIndex', () => {
   });
 
   it('returns stored documents with expected fields', async () => {
-    const result = await adminClient.query(
-      gql`
-        query {
-          inspectSearchIndex(skip: 0, take: 50)
-        }
-      `
-    );
+    const result = await adminClient.query(INSPECT_SEARCH_INDEX);
     const data = (
       result as unknown as { inspectSearchIndex: Record<string, unknown>[] }
     ).inspectSearchIndex;
@@ -242,19 +242,119 @@ describe('inspectSearchIndex', () => {
 //   // TODO implement later, when we have decided on what search algorithm to use based on performance and relevance.
 // });
 
-const SEARCH_QUERY = gql`
-  query Search($term: String!) {
-    search(input: { term: $term }) {
-      totalItems
-      items {
-        productId
-        slug
-        productName
-        score
+describe('Multi-channel and multi-language', () => {
+  let secondChannelId: string;
+  let secondChannelToken: string;
+  let appleProductId: string;
+
+  beforeAll(async () => {
+    await adminClient.asSuperAdmin();
+    const createResult = (await adminClient.query(CREATE_CHANNEL, {
+      input: {
+        code: 'second-channel',
+        token: 'second-channel',
+        defaultLanguageCode: LanguageCode.en,
+        defaultCurrencyCode: CurrencyCode.USD,
+        defaultShippingZoneId: 1,
+        defaultTaxZoneId: 1,
+        pricesIncludeTax: true,
+        availableLanguageCodes: [LanguageCode.en, LanguageCode.de],
+        availableCurrencyCodes: [CurrencyCode.USD],
+      },
+    })) as { createChannel: { id: string; code: string; token: string } };
+    secondChannelId = createResult.createChannel.id;
+    secondChannelToken = createResult.createChannel.token;
+
+    const productsResult = (await adminClient.query(GET_PRODUCTS)) as {
+      products: { items: Array<{ id: string; slug: string; name: string }> };
+    };
+    const appleProduct = productsResult.products.items.find(
+      (p) => p.slug === 'apple'
+    );
+    appleProductId = appleProduct!.id;
+
+    await adminClient.query(ASSIGN_PRODUCTS_TO_CHANNEL, {
+      input: {
+        channelId: secondChannelId,
+        productIds: [appleProductId],
+      },
+    });
+  }, 30000);
+
+  it('finds only products assigned to the second channel', async () => {
+    shopClient.setChannelToken(secondChannelToken);
+    adminClient.setChannelToken(secondChannelToken);
+
+    const searchResult = (await shopClient.query(SEARCH_QUERY, {
+      term: 'apple',
+    })) as { search: { totalItems: number; items: SearchResultItem[] } };
+    expect(searchResult.search.totalItems).toBeGreaterThan(0);
+    expect(searchResult.search.items[0].slug).toBe('apple');
+
+    const indexResult = await adminClient.query(INSPECT_INDEX, {
+      skip: 0,
+      take: 50,
+    });
+    const indexData = (
+      indexResult as unknown as {
+        inspectSearchIndex: Record<string, unknown>[];
       }
-    }
-  }
-`;
+    ).inspectSearchIndex;
+    expect(indexData.length).toBe(1);
+
+    const wirelessResult = (await shopClient.query(SEARCH_QUERY, {
+      term: 'wireless',
+    })) as { search: { totalItems: number } };
+    expect(wirelessResult.search.totalItems).toBe(0);
+  }, 30000);
+
+  it('finds translated products in the correct language', async () => {
+    // Listen for events so we know when reindex
+    let indexEvent: BetterSearchIndexEvent;
+    server.app
+      .get(EventBus)
+      .ofType(BetterSearchIndexEvent)
+      .subscribe((e) => {
+        if (e.ctx.languageCode === 'de') {
+          indexEvent = e;
+        }
+      });
+
+    await adminClient.query(UPDATE_PRODUCT, {
+      input: {
+        id: appleProductId,
+        translations: [
+          {
+            languageCode: LanguageCode.en,
+            name: 'Apple',
+            slug: 'apple',
+            description: 'Apple.',
+          },
+          {
+            languageCode: LanguageCode.de,
+            name: 'Apfel',
+            slug: 'apfel',
+            description: 'Apfel.',
+          },
+        ],
+      },
+    });
+
+    const event = await waitFor(() => (!!indexEvent ? indexEvent : undefined));
+    expect(event.numberOfProductsIndexed).toBeGreaterThan(0);
+    expect(event.type).toBe('full');
+    shopClient.setChannelToken(secondChannelToken);
+    const germanResult = await shopClient.query(
+      SEARCH_QUERY,
+      {
+        term: 'Apfel',
+      },
+      { languageCode: 'de' }
+    );
+    expect(germanResult.search.totalItems).toBeGreaterThan(0);
+    expect(germanResult.search.items[0].slug).toBe('apfel');
+  });
+});
 
 async function search(query: string): Promise<{ items: SearchResultItem[] }> {
   const result = await shopClient.query(SEARCH_QUERY, { term: query });

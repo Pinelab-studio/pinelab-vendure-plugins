@@ -79,11 +79,13 @@ Next step: implement minisearch as Vendure Search plugin, see next step below.
 
 - Implement basic search strategy interface, to make this a proper search plugin.
   - Findings: EXCELLENT results on the live dataset of Wormenkwekerijwasse.nl, much better than current solution. Moving on to implementing features below.
-- Make channel aware, and allow only enabling for specific channel
+- Make channel and language aware, and allow only enabling for specific channel
+  > > WE ARE HERE NOW
 - Index in worker and serialize index to database
 - Lighter search as you type endpoint, instead of a full search
 - Run search in worker thread, in main instance, because we need to expose it via shop-api `search` query
 - Cache index in worker thread, but allow cache busting. (Get last updated date from column in DB?)
+- Partial reindexing >> debounce should remember what variants/products should be reindexed
 - Basic analytics to evaluate live usage
 - Implement filtering as defined by Vendure's search interface
 - Log index size every X % of the time for monitoring.
