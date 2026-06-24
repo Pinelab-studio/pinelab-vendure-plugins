@@ -13,7 +13,6 @@ import { initialData } from '../../test/src/initial-data';
 import dotenv from 'dotenv';
 import { BetterSearchPlugin } from '../src';
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import { searchConfig } from './search-config';
 
 // eslint-disable-next-line @typescript-eslint/no-floating-promises
 (async () => {
@@ -23,13 +22,19 @@ import { searchConfig } from './search-config';
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
   const config = mergeConfig(testConfig, {
     logger: new DefaultLogger({ level: LogLevel.Debug }),
+    dbConnectionOptions: {
+      autosave: true,
+    } as any,
+    authOptions: {
+      tokenMethod: ['bearer', 'cookie'],
+    },
     apiOptions: {
       adminApiPlayground: {},
       shopApiPlayground: {},
     },
     plugins: [
-      BetterSearchPlugin.init(searchConfig),
-      DefaultSearchPlugin,
+      BetterSearchPlugin.init({}),
+      // DefaultSearchPlugin,
       AdminUiPlugin.init({
         port: 3002,
         route: 'admin',
@@ -39,6 +44,6 @@ import { searchConfig } from './search-config';
   const { server } = createTestEnvironment(config);
   await server.init({
     initialData,
-    productsCsvPath: './test/search-products.csv',
+    productsCsvPath: './test/wkw-products.csv',
   });
 })();

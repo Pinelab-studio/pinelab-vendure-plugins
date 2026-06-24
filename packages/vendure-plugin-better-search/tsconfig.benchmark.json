@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist-benchmark",
+    "rootDir": ".",
+    "types": ["node"],
+    "noEmitOnError": false
+  },
+  "include": ["src/", "test/benchmark-engines.ts"],
+  "exclude": ["src/ui"]
+}
