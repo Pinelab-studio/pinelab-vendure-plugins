@@ -33,13 +33,8 @@ import { VendureLogger } from '@vendure/core';
 
 const { combine, errors } = format;
 
-export class CloudLogger implements VendureLogger {
-  private readonly name: string;
-
-  constructor(private logger: Logger, name: string) {
-    // Should resolve to 'server' or 'worker';
-    this.name = name;
-  }
+export class GCPLogger implements VendureLogger {
+  constructor(private logger: Logger, name: string) {}
 
   error(message: string, context?: string, trace?: string) {
     this.logger.error(message, { trace, labels: this.getLabels(context) });
@@ -64,12 +59,12 @@ export class CloudLogger implements VendureLogger {
   private getLabels(context?: string) {
     return {
       module: context,
-      name: this.name,
+      name: process.env.LOGGER_FILENAME ?? 'LOGGER_FILENAME-not-set', // Should resolve to 'server' or 'worker'
     };
   }
 }
 
-export function createGCPLogger(name: string): CloudLogger {
+export function createGCPLogger(): GCPLogger {
   // This will be the log file name in Google Cloud under the dropdown Log names in GCP
   const cloudLoggingWinston = new LoggingWinston({
     logName: 'vendure_prod',
@@ -81,7 +76,7 @@ export function createGCPLogger(name: string): CloudLogger {
     transports: [cloudLoggingWinston],
   });
 
-  return new CloudLogger(winstonLogger, name);
+  return new GCPLogger(winstonLogger);
 }
 ```
 
@@ -107,7 +102,7 @@ export const config: VendureConfig = {
   // When local use default logger, otherwise push to GCP logs.
   logger: IS_LOCAL
     ? new DefaultLogger({ level: LogLevel.Debug })
-    : createGCPLogger(process.env.LOGGER_FILENAME),
+    : createGCPLogger(),
   plugins: [
     // ...
   ],
@@ -122,18 +117,31 @@ Spread the config and override the logger for each process:
 
 ```ts
 // vendure/src/index.ts
+import { bootstrap } from '@vendure/core';
+import { config } from './vendure-config';
 
 process.env.LOGGER_FILENAME = 'server';
 
-// Your bootstrap code
+bootstrap(config).catch((err) => {
+  console.log(err);
+});
 ```
 
 ```ts
 // vendure/src/index-worker.ts
+import { bootstrapWorker } from '@vendure/core';
+import { config } from './vendure-config';
 
 process.env.LOGGER_FILENAME = 'worker';
 
-// Your bootstrap code
+bootstrapWorker(config)
+  .then(async (worker) => {
+    await worker.startJobQueue();
+    await worker.startHealthCheckServer({ port: 3001 });
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 ```
 
 ## What you see in GCP Log Viewer
