@@ -38,6 +38,12 @@ const guides = defineCollection({
     heroImage: z.string().url().optional(),
     /** Alt text for `heroImage`. Falls back to `title` when omitted. */
     heroImageAlt: z.string().optional(),
+    /**
+     * Optional smaller hero image URL for the guides overview.
+     * Should be the same image as `heroImage` but at a smaller width
+     * (e.g. `w=500` for Unsplash). Used on the /guides index page.
+     */
+    heroImageSmall: z.string().url().optional(),
   }),
 });
 
