@@ -31,6 +31,10 @@ interface AcceptBluePluginOptionsInput {
   /**
    * Allows you to define custom additional input when a charge is created.
    * This function is only called when the initial charge is created, not for future payments with recurring schedules.
+   *
+   * All monetary amounts (amount_details and line_items costs) should be provided in Vendure's
+   * cent-based format (e.g. 5500 for $55.00). They are automatically converted to dollars
+   * before being sent to Accept Blue.
    */
   additionalChargeInput?: (
     ctx: RequestContext,
