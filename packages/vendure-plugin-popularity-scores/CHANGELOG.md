@@ -1,3 +1,7 @@
+# 1.11.1 (2026-06-29)
+
+- Fixed NaN error when calculating popularity scores with cancelled orders (#676)
+
 # 1.11.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3

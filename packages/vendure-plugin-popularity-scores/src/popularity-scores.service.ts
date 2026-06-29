@@ -79,6 +79,10 @@ export class PopularityScoresService implements OnModuleInit {
       .andWhere('product.enabled')
       .andWhere('productVariant.enabled')
       .andWhere('order_channel.id = :id', { id: channel.id })
+      .andWhere('order.state NOT IN (:...excludedStates)', {
+        excludedStates: ['Cancelled'],
+      })
+      .andWhere('orderLine.quantity > 0')
       .addGroupBy('product.id')
       .addOrderBy('count', 'DESC')
       .getRawMany();
