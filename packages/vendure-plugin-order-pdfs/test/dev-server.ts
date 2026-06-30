@@ -1,56 +1,25 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
-import {
-  DefaultLogger,
-  DefaultSearchPlugin,
-  LogLevel,
-  mergeConfig,
-  RequestContextService,
-} from '@vendure/core';
+import { RequestContextService, VendureConfig } from '@vendure/core';
 import {
   createTestEnvironment,
   registerInitializer,
   SqljsInitializer,
-  testConfig,
 } from '@vendure/testing';
 import { initialData } from '../../test/src/initial-data';
 import { testPaymentMethod } from '../../test/src/test-payment-method';
-import { OrderPDFsPlugin } from '../src';
-import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
-import path from 'path';
 import { OrderPDFsService } from '../src/api/order-pdfs.service';
 import { addShippingMethod } from '../../test/src/admin-utils';
 import { createSettledOrder } from '../../test/src/shop-utils';
 import { defaultTemplate } from '../src/ui/default-template';
+import { config } from './vendure-config';
 
 require('dotenv').config();
 
 (async () => {
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
-  const devConfig = mergeConfig(testConfig, {
-    logger: new DefaultLogger({ level: LogLevel.Debug }),
-    plugins: [
-      OrderPDFsPlugin.init({
-        allowPublicDownload: true,
-      }),
-      DefaultSearchPlugin,
-      AdminUiPlugin.init({
-        port: 3002,
-        route: 'admin',
-        app: compileUiExtensions({
-          outputPath: path.join(__dirname, '__admin-ui'),
-          extensions: [OrderPDFsPlugin.ui],
-          devMode: true,
-        }),
-      }),
-    ],
-    paymentOptions: {
-      paymentMethodHandlers: [testPaymentMethod],
-    },
-    apiOptions: {
-      adminApiPlayground: true,
-    },
-  });
-  const { server, adminClient, shopClient } = createTestEnvironment(devConfig);
+  const { server, adminClient, shopClient } = createTestEnvironment(
+    config as Required<VendureConfig>
+  );
   await server.init({
     initialData: {
       ...initialData,
