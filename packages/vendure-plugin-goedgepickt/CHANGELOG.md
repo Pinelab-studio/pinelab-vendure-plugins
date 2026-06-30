@@ -1,3 +1,7 @@
+# 2.3.1 (2026-06-30)
+
+- Send house numbers as strings to Goedgepickt API to prevent "Billing house number moet een tekst zijn" errors
+
 # 2.3.0 (2026-08-05)
 
 - Upgraded to Vendure 3.6.3
