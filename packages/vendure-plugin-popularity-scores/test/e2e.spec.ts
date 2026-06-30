@@ -14,7 +14,12 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { TestServer } from '@vendure/testing/lib/test-server';
-import { createCollection, getAllOrders } from '../../test/src/admin-utils';
+import {
+  cancelOrder,
+  createCollection,
+  getAllOrders,
+  getOrder,
+} from '../../test/src/admin-utils';
 import {
   CreateCollectionMutation,
   LanguageCode,
@@ -142,6 +147,28 @@ describe('Sort by Popularity Plugin', function () {
     ).toBe(true);
   });
 
+  it('Should place and cancel an order without breaking score calculation', async () => {
+    const settledOrder = await createSettledOrder(shopClient, 1, true, [
+      { id: 'T_2', quantity: 3 },
+    ]);
+    const order = await getOrder(adminClient, settledOrder.id);
+    await cancelOrder(adminClient, order!);
+    const orders = await getAllOrders(adminClient);
+    const cancelledOrder = orders.find((o) => o.id === settledOrder.id);
+    expect(cancelledOrder!.lines.every((l) => l.quantity === 0)).toBe(true);
+    // Trigger popularity score calculation with cancelled order present
+    const res = await adminClient.fetch(
+      `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/test-secret`
+    );
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 1000));
+    const {
+      products: { items: products },
+    } = await adminClient.query(GET_PRODUCTS_WITH_POPULARITY_SCORES);
+    const laptopProduct = products.find((p: any) => p.name === 'Laptop');
+    expect(laptopProduct.customFields.popularityScore).toBeGreaterThanOrEqual(0);
+  });
+
   it('Fails for unauthenticated calls to calculate popularity endpoint', async () => {
     const res = await adminClient.fetch(
       `http://localhost:3106/popularity-scores/calculate-scores/e2e-default-channel/invalid-secreet`
@@ -161,9 +188,9 @@ describe('Sort by Popularity Plugin', function () {
     const {
       products: { items: products },
     } = await adminClient.query(GET_PRODUCTS_WITH_POPULARITY_SCORES);
-    const carProduct = products.find((p) => p.name === 'Cars');
-    const laptopProduct = products.find((p) => p.name === 'Laptop');
-    const motorsProduct = products.find((p) => p.name === 'Motors');
+    const carProduct = products.find((p: any) => p.name === 'Cars');
+    const laptopProduct = products.find((p: any) => p.name === 'Laptop');
+    const motorsProduct = products.find((p: any) => p.name === 'Motors');
     expect(carProduct.customFields.popularityScore).toBe(1000);
     expect(laptopProduct.customFields.popularityScore).toBe(70);
     expect(motorsProduct.customFields.popularityScore).toBe(175);
